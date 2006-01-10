@@ -42,7 +42,6 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
     m_frequencyScale(LinearFrequencyScale),
     m_cache(0),
     m_cacheInvalid(true),
-    m_maxCachedFrequency(0),
     m_pixmapCache(0),
     m_pixmapCacheInvalid(true),
     m_fillThread(0),
@@ -463,19 +462,13 @@ SpectrogramLayer::setMaxFrequency(size_t mf)
     if (m_maxFrequency == mf) return;
 
     m_mutex.lock();
-
-    // don't need to invalidate main cache here...
-
+    // don't need to invalidate main cache here
     m_pixmapCacheInvalid = true;
     
     m_maxFrequency = mf;
     emit layerParametersChanged();
     
     m_mutex.unlock();
-
-    // ... but we do still need to do this, in case m_maxFrequency
-    // now > m_maxCachedFrequency
-    fillCache();
 }
 
 size_t
@@ -731,8 +724,6 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 
     for (size_t i = 0; i < m_windowSize / 2; ++i) {
 
-	if (int(i) >= m_cache->height()) break;
-
 	int value = 0;
 
 	if (m_colourScale == PhaseColourScale) {
@@ -741,6 +732,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	    value = int((phase * 128 / M_PI) + 128);
 
 	} else {
+
 	    double mag = sqrt(output[i][0] * output[i][0] +
 			      output[i][1] * output[i][1]);
 	    mag /= m_windowSize / 2;
@@ -773,7 +765,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	    break;
 	}
 
-	if (column < m_cache->width()) {
+	if (column < m_cache->width() && (int)i < m_cache->height()) {
 	    m_cache->setPixel(column, i, value + 1); // 0 is "unset"
 	}
     }
@@ -795,19 +787,12 @@ SpectrogramLayer::CacheFillThread::run()
 
 //	std::cerr << "SpectrogramLayer::CacheFillThread::run in loop" << std::endl;
 
-	if (m_layer.m_model &&
-	    (m_layer.m_cacheInvalid ||
-	     m_layer.m_maxFrequency > m_layer.m_maxCachedFrequency)) {
+	if (m_layer.m_model && m_layer.m_cacheInvalid) {
 
 //	    std::cerr << "SpectrogramLayer::CacheFillThread::run: something to do" << std::endl;
 
 	    while (!m_layer.m_model->isReady()) {
 		m_layer.m_condition.wait(&m_layer.m_mutex, 100);
-	    }
-
-	    size_t minFreq = 0;
-	    if (!m_layer.m_cacheInvalid) {
-		minFreq = m_layer.m_maxCachedFrequency;
 	    }
 
 	    m_layer.m_cachedInitialVisibleArea = false;
@@ -837,15 +822,9 @@ SpectrogramLayer::CacheFillThread::run()
 	    }
 
 	    delete m_layer.m_cache;
-	    size_t bins = windowSize / 2;
-	    if (m_layer.m_maxFrequency > 0) {
-		int sr = m_layer.m_model->getSampleRate();
-		bins = int((double(m_layer.m_maxFrequency) * windowSize) / sr + 0.1);
-		if (bins > windowSize / 2) bins = windowSize / 2;
-	    }
 	    m_layer.m_cache = new QImage((end - start) / windowIncrement + 1,
-					 bins, //!!!
-					 QImage::Format_Indexed8);
+					windowSize / 2,
+					QImage::Format_Indexed8);
     
 	    m_layer.setCacheColourmap();
     
@@ -859,12 +838,12 @@ SpectrogramLayer::CacheFillThread::run()
 		fftw_malloc(windowSize * sizeof(fftw_complex));
 
 	    fftw_plan plan = fftw_plan_dft_r2c_1d(windowSize, input,
-						  output, FFTW_MEASURE);
+						  output, FFTW_ESTIMATE);
 
 	    Window<double> windower(m_layer.m_windowType, m_layer.m_windowSize);
 
 	    if (!plan) {
-		std::cerr << "WARNING: fftw_plan(" << windowSize << ") failed!" << std::endl;
+		std::cerr << "WARNING: fftw_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
 		fftw_free(input);
 		fftw_free(output);
 		m_layer.m_mutex.lock();

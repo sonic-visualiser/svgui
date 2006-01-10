@@ -165,7 +165,6 @@ protected:
     
     QImage *m_cache;
     bool m_cacheInvalid;
-    size_t m_maxCachedFrequency;
 
     mutable QPixmap *m_pixmapCache;
     mutable bool m_pixmapCacheInvalid;
