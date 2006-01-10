@@ -1,0 +1,305 @@
+/* -*- c-basic-offset: 4 -*-  vi:set ts=8 sts=4 sw=4: */
+
+/*
+    A waveform viewer and audio annotation editor.
+    Chris Cannam, Queen Mary University of London, 2005
+    
+    This is experimental software.  Not for distribution.
+*/
+
+#include "TimeInstantLayer.h"
+
+#include "base/Model.h"
+#include "base/RealTime.h"
+#include "base/View.h"
+#include "base/Profiler.h"
+
+#include "model/SparseOneDimensionalModel.h"
+
+#include <QPainter>
+
+#include <iostream>
+
+TimeInstantLayer::TimeInstantLayer(View *w) :
+    Layer(w),
+    m_model(0),
+    m_colour(QColor(200, 50, 255))
+{
+    m_view->addLayer(this);
+}
+
+void
+TimeInstantLayer::setModel(SparseOneDimensionalModel *model)
+{
+    if (m_model == model) return;
+    m_model = model;
+
+    connect(m_model, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
+    connect(m_model, SIGNAL(modelChanged(size_t, size_t)),
+	    this, SIGNAL(modelChanged(size_t, size_t)));
+
+    connect(m_model, SIGNAL(completionChanged()),
+	    this, SIGNAL(modelCompletionChanged()));
+
+    std::cerr << "TimeInstantLayer::setModel(" << model << ")" << std::endl;
+
+    emit modelReplaced();
+}
+
+Layer::PropertyList
+TimeInstantLayer::getProperties() const
+{
+    PropertyList list;
+    list.push_back(tr("Colour"));
+    return list;
+}
+
+Layer::PropertyType
+TimeInstantLayer::getPropertyType(const PropertyName &name) const
+{
+    return ValueProperty;
+}
+
+int
+TimeInstantLayer::getPropertyRangeAndValue(const PropertyName &name,
+					 int *min, int *max) const
+{
+    int deft = 0;
+
+    if (name == tr("Colour")) {
+
+	*min = 0;
+	*max = 5;
+
+	if (m_colour == Qt::black) deft = 0;
+	else if (m_colour == Qt::darkRed) deft = 1;
+	else if (m_colour == Qt::darkBlue) deft = 2;
+	else if (m_colour == Qt::darkGreen) deft = 3;
+	else if (m_colour == QColor(200, 50, 255)) deft = 4;
+	else if (m_colour == QColor(255, 150, 50)) deft = 5;
+
+    } else {
+	
+	deft = Layer::getPropertyRangeAndValue(name, min, max);
+    }
+
+    return deft;
+}
+
+QString
+TimeInstantLayer::getPropertyValueLabel(const PropertyName &name,
+				    int value) const
+{
+    if (name == tr("Colour")) {
+	switch (value) {
+	default:
+	case 0: return tr("Black");
+	case 1: return tr("Red");
+	case 2: return tr("Blue");
+	case 3: return tr("Green");
+	case 4: return tr("Purple");
+	case 5: return tr("Orange");
+	}
+    }
+    return tr("<unknown>");
+}
+
+void
+TimeInstantLayer::setProperty(const PropertyName &name, int value)
+{
+    if (name == tr("Colour")) {
+	switch (value) {
+	default:
+	case 0:	setBaseColour(Qt::black); break;
+	case 1: setBaseColour(Qt::darkRed); break;
+	case 2: setBaseColour(Qt::darkBlue); break;
+	case 3: setBaseColour(Qt::darkGreen); break;
+	case 4: setBaseColour(QColor(200, 50, 255)); break;
+	case 5: setBaseColour(QColor(255, 150, 50)); break;
+	}
+    }
+}
+
+void
+TimeInstantLayer::setBaseColour(QColor colour)
+{
+    if (m_colour == colour) return;
+    m_colour = colour;
+    emit layerParametersChanged();
+}
+
+bool
+TimeInstantLayer::isLayerScrollable() const
+{
+    QPoint discard;
+    return !m_view->shouldIlluminateLocalFeatures(this, discard);
+}
+
+QRect
+TimeInstantLayer::getFeatureDescriptionRect(QPainter &paint, QPoint pos) const
+{
+    return QRect(0, 0,
+		 std::max(100, paint.fontMetrics().width(tr("No local points"))),
+		 50); //!!! cruddy
+}
+
+SparseOneDimensionalModel::PointList
+TimeInstantLayer::getLocalPoints(int x) const
+{
+    if (!m_model) return SparseOneDimensionalModel::PointList();
+
+    long startFrame = m_view->getStartFrame();
+    long endFrame = m_view->getEndFrame();
+    int zoomLevel = m_view->getZoomLevel();
+    long frame = startFrame + x * zoomLevel;
+
+    SparseOneDimensionalModel::PointList onPoints =
+	m_model->getPoints(frame);
+
+    if (!onPoints.empty()) {
+	return onPoints;
+    }
+
+    SparseOneDimensionalModel::PointList prevPoints =
+	m_model->getPreviousPoints(frame);
+    SparseOneDimensionalModel::PointList nextPoints =
+	m_model->getNextPoints(frame);
+
+    SparseOneDimensionalModel::PointList usePoints = prevPoints;
+
+    if (prevPoints.empty()) {
+	usePoints = nextPoints;
+    } else if (prevPoints.begin()->frame < startFrame &&
+	       !(nextPoints.begin()->frame > endFrame)) {
+	usePoints = nextPoints;
+    } else if (nextPoints.begin()->frame - frame <
+	       frame - prevPoints.begin()->frame) {
+	usePoints = nextPoints;
+    }
+
+    return usePoints;
+}
+
+void
+TimeInstantLayer::paintLocalFeatureDescription(QPainter &paint, QRect rect,
+					       QPoint pos) const
+{
+    //!!! bleagh
+
+    int x = pos.x();
+    
+    if (!m_model || !m_model->getSampleRate()) return;
+
+    SparseOneDimensionalModel::PointList points = getLocalPoints(x);
+
+    QFontMetrics metrics = paint.fontMetrics();
+    int xbase = rect.x() + 5;
+    int ybase = rect.y() + 5;
+
+    if (points.empty()) {
+	QString label = tr("No local points");
+	if (!m_model->isReady()) {
+	    label = tr("In progress");
+	}
+	paint.drawText(xbase + 5, ybase + 5 + metrics.ascent(), label);
+	return;
+    }
+
+    long useFrame = points.begin()->frame;
+
+    RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
+    QString timeText = QString("%1").arg(rt.toText(true).c_str());
+
+    int timewidth = metrics.width(timeText);
+    int labelwidth = metrics.width(points.begin()->label);
+
+    int boxheight = metrics.height() * 2 + 3;
+    int boxwidth = std::max(timewidth, labelwidth);
+
+    paint.drawRect(xbase, ybase, boxwidth + 10,
+		   boxheight + 10 - metrics.descent() + 1);
+
+    paint.drawText(xbase + 5, ybase + 5 + metrics.ascent(), timeText);
+    paint.drawText(xbase + 5, ybase + 7 + metrics.ascent() + metrics.height(),
+		   points.begin()->label);
+}
+
+void
+TimeInstantLayer::paint(QPainter &paint, QRect rect) const
+{
+    if (!m_model || !m_model->isOK()) return;
+
+//    Profiler profiler("TimeInstantLayer::paint", true);
+
+    long startFrame = m_view->getStartFrame();
+    int zoomLevel = m_view->getZoomLevel();
+
+    int x0 = rect.left(), x1 = rect.right();
+    long frame0 = startFrame + x0 * zoomLevel;
+    long frame1 = startFrame + x1 * zoomLevel;
+
+    SparseOneDimensionalModel::PointList points(m_model->getPoints
+						(frame0, frame1));
+
+    paint.setPen(m_colour);
+
+    QColor brushColour(m_colour);
+    brushColour.setAlpha(100);
+    paint.setBrush(brushColour);
+
+//    std::cerr << "TimeInstantLayer::paint: resolution is "
+//	      << m_model->getResolution() << " frames" << std::endl;
+
+    QPoint localPos;
+    long illuminateFrame = -1;
+
+    if (m_view->shouldIlluminateLocalFeatures(this, localPos)) {
+	SparseOneDimensionalModel::PointList localPoints =
+	    getLocalPoints(localPos.x());
+	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
+    }
+	
+    for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	const SparseOneDimensionalModel::Point &p(*i);
+
+	int x = (p.frame - startFrame) / zoomLevel;
+	int w = m_model->getResolution() / zoomLevel;
+
+	if (w < 1) w = 1;
+	if (p.frame == illuminateFrame) {
+	    paint.setPen(Qt::black); //!!!
+	} else {
+	    paint.setPen(brushColour);
+	}
+	paint.drawRect(x, 0, w - 1, m_view->height() - 1);
+	paint.setPen(m_colour);
+	
+	if (p.label != "") {
+
+	    // only draw if there's enough room from here to the next point
+
+	    int lw = paint.fontMetrics().width(p.label);
+	    bool good = true;
+
+	    SparseOneDimensionalModel::PointList::const_iterator j = i;
+	    if (++j != points.end()) {
+		int nx = (j->frame - startFrame) / zoomLevel;
+		if (nx >= x && nx - x - w - 3 <= lw) good = false;
+	    }
+
+	    if (good) {
+		paint.drawText(x + w + 2,
+			       m_view->height() - paint.fontMetrics().height(),
+			       p.label);
+	    }
+	}
+    }
+}
+
+
+#ifdef INCLUDE_MOCFILES
+#include "TimeInstantLayer.moc.cpp"
+#endif
+
