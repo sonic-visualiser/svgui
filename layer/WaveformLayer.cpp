@@ -336,11 +336,11 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     long startFrame = m_view->getStartFrame();
     int zoomLevel = m_view->getZoomLevel();
 
-
+#ifdef DEBUG_WAVEFORM_PAINT
     Profiler profiler("WaveformLayer::paint", true);
     std::cerr << "WaveformLayer::paint (" << rect.x() << "," << rect.y()
 	      << ") [" << rect.width() << "x" << rect.height() << "]: zoom " << zoomLevel << ", start " << startFrame << std::endl;
-
+#endif
 
     size_t channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false;

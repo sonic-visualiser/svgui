@@ -208,7 +208,7 @@ TimeInstantLayer::paintLocalFeatureDescription(QPainter &paint, QRect rect,
     long useFrame = points.begin()->frame;
 
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
-    QString timeText = QString("%1").arg(rt.toText(true).c_str());
+    QString timeText = QString(tr("Time %1")).arg(rt.toText(true).c_str());
 
     int timewidth = metrics.width(timeText);
     int labelwidth = metrics.width(points.begin()->label);
