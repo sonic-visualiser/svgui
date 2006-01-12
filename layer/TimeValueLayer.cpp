@@ -313,10 +313,13 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
 
+    int w = m_model->getResolution() / zoomLevel;
+
     paint.save();
 
-    if (m_plotStyle == PlotLines ||
-	m_plotStyle == PlotCurve) {
+    if (w > 1 &&
+	(m_plotStyle == PlotLines ||
+	 m_plotStyle == PlotCurve)) {
 	paint.setRenderHint(QPainter::Antialiasing, true);
     }
     QPainterPath path;
@@ -330,7 +333,6 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	int y = int(nearbyint(m_view->height() -
 			      ((p.value - min) * m_view->height()) /
 			      (max - min)));
-	int w = m_model->getResolution() / zoomLevel;
 
 	if (w < 1) w = 1;
 
