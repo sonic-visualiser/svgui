@@ -2,7 +2,7 @@
 
 /*
     A waveform viewer and audio annotation editor.
-    Chris Cannam, Queen Mary University of London, 2005
+    Chris Cannam, Queen Mary University of London, 2005-2006
     
     This is experimental software.  Not for distribution.
 */
@@ -86,7 +86,7 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == tr("Plot Type")) {
 	
 	*min = 0;
-	*max = 2;
+	*max = 3;
 	
 	deft = int(m_plotStyle);
 
@@ -118,6 +118,7 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	case 0: return tr("Points");
 	case 1: return tr("Stems");
 	case 2: return tr("Lines");
+	case 3: return tr("Curve");
 	}
     }
     return tr("<unknown>");
@@ -317,7 +318,11 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
 	if (w < 1) w = 1;
 
-	paint.setPen(m_colour);
+	if (m_plotStyle == PlotCurve) {
+	    paint.setPen(QPen(QBrush(m_colour), 2));
+	} else {
+	    paint.setPen(m_colour);
+	}	    
 	paint.setBrush(brushColour);
 
 	if (m_plotStyle == PlotStems) {
@@ -338,27 +343,29 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	    paint.setBrush(Qt::black);//!!!
 	}
 
-	paint.drawRect(x, y - 1, w, 2);
+	if (m_plotStyle != PlotCurve) {
+	    paint.drawRect(x, y - 1, w, 2);
+	}
 
-//	if (w > 1) {
-//	    paint.setPen(brushColour);
-//	    paint.drawRect(x, y - 1, w - 1, 2);
-//	    paint.setPen(m_colour);
-//	}
-//	paint.drawLine(x, 0, x, m_view->height());
+	if (m_plotStyle == PlotLines || m_plotStyle == PlotCurve) {
 
-	if (m_plotStyle == PlotLines) {
-
-	    paint.setPen(brushColour);
 	    SparseTimeValueModel::PointList::const_iterator j = i;
 	    ++j;
+
 	    if (j != points.end()) {
+
 		const SparseTimeValueModel::Point &q(*j);
 		int nx = (q.frame - startFrame) / zoomLevel;
 		int ny = int(nearbyint(m_view->height() -
 				       ((q.value - min) * m_view->height()) /
 				       (max - min)));
-		paint.drawLine(x + w, y, nx, ny);
+
+		if (m_plotStyle == PlotLines) {
+		    paint.setPen(brushColour);
+		    paint.drawLine(x + w, y, nx, ny);
+		} else {
+		    paint.drawLine(x, y, nx, ny);
+		}
 	    }
 	}
 
