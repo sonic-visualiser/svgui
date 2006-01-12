@@ -2,7 +2,7 @@
 
 /*
   A waveform viewer and audio annotation editor.
-  Chris Cannam, Queen Mary University of London, 2005
+  Chris Cannam, Queen Mary University of London, 2005-2006
     
   This is experimental software.  Not for distribution.
 */
