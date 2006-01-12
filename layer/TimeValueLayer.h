@@ -45,7 +45,7 @@ public:
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
 
-    enum PlotStyle { PlotPoints, PlotStems, PlotLines, PlotCurve };
+    enum PlotStyle { PlotPoints, PlotStems, PlotConnectedPoints, PlotLines, PlotCurve };
 
     void setPlotStyle(PlotStyle style);
     PlotStyle getPlotStyle() const { return m_plotStyle; }
@@ -55,6 +55,9 @@ public:
     virtual bool isLayerScrollable() const;
 
     virtual int getCompletion() const { return m_model->getCompletion(); }
+
+    virtual QString toXmlString(QString indent = "",
+				QString extraAttributes = "") const;
 
 protected:
     SparseTimeValueModel::PointList getLocalPoints(int) const;

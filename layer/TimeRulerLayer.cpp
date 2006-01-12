@@ -281,6 +281,13 @@ TimeRulerLayer::paint(QPainter &paint, QRect rect) const
     paint.restore();
 }
     
+QString
+TimeRulerLayer::toXmlString(QString indent, QString extraAttributes) const
+{
+    return Layer::toXmlString(indent, extraAttributes +
+			      QString(" colour=\"%1\"").arg(encodeColour(m_colour)));
+}
+
 
 #ifdef INCLUDE_MOCFILES
 #include "TimeRulerLayer.moc.cpp"

@@ -89,14 +89,40 @@ LayerFactory::getValidLayerTypes(Model *model)
 }
 
 LayerFactory::LayerType
-LayerFactory::getLayerType(Layer *layer)
+LayerFactory::getLayerType(const Layer *layer)
 {
-    if (dynamic_cast<WaveformLayer *>(layer)) return Waveform;
-    if (dynamic_cast<SpectrogramLayer *>(layer)) return Spectrogram;
-    if (dynamic_cast<TimeRulerLayer *>(layer)) return TimeRuler;
-    if (dynamic_cast<TimeInstantLayer *>(layer)) return TimeInstants;
-    if (dynamic_cast<TimeValueLayer *>(layer)) return TimeValues;
-    if (dynamic_cast<Colour3DPlotLayer *>(layer)) return Colour3DPlot;
+    if (dynamic_cast<const WaveformLayer *>(layer)) return Waveform;
+    if (dynamic_cast<const SpectrogramLayer *>(layer)) return Spectrogram;
+    if (dynamic_cast<const TimeRulerLayer *>(layer)) return TimeRuler;
+    if (dynamic_cast<const TimeInstantLayer *>(layer)) return TimeInstants;
+    if (dynamic_cast<const TimeValueLayer *>(layer)) return TimeValues;
+    if (dynamic_cast<const Colour3DPlotLayer *>(layer)) return Colour3DPlot;
+    return UnknownLayer;
+}
+
+QString
+LayerFactory::getLayerTypeName(LayerType type)
+{
+    switch (type) {
+    case Waveform: return "waveform";
+    case Spectrogram: return "spectrogram";
+    case TimeRuler: return "timeruler";
+    case TimeInstants: return "timeinstants";
+    case TimeValues: return "timevalues";
+    case Colour3DPlot: return "colour3dplot";
+    default: return "unknown";
+    }
+}
+
+LayerFactory::LayerType
+LayerFactory::getLayerTypeForName(QString name)
+{
+    if (name == "waveform") return Waveform;
+    if (name == "spectrogram") return Spectrogram;
+    if (name == "timeruler") return TimeRuler;
+    if (name == "timeinstants") return TimeInstants;
+    if (name == "timevalues") return TimeValues;
+    if (name == "colour3dplot") return Colour3DPlot;
     return UnknownLayer;
 }
 

@@ -1643,6 +1643,33 @@ SpectrogramLayer::paintVerticalScale(QPainter &paint, QRect rect) const
     }
 }
 
+QString
+SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
+{
+    QString s;
+    
+    s += QString("channel=\"%1\" "
+		 "windowSize=\"%2\" "
+		 "windowType=\"%3\" "
+		 "windowOverlap=\"%4\" "
+		 "gain=\"%5\" "
+		 "maxFrequency=\"%6\" "
+		 "colourScale=\"%7\" "
+		 "colourScheme=\"%8\" "
+		 "frequencyScale=\"%9\"")
+	.arg(m_channel)
+	.arg(m_windowSize)
+	.arg(m_windowType)
+	.arg(m_windowOverlap)
+	.arg(m_gain)
+	.arg(m_maxFrequency)
+	.arg(m_colourScale)
+	.arg(m_colourScheme)
+	.arg(m_frequencyScale);
+
+    return Layer::toXmlString(indent, extraAttributes + " " + s);
+}
+
 #ifdef INCLUDE_MOCFILES
 #include "SpectrogramLayer.moc.cpp"
 #endif

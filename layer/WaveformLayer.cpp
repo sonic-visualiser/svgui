@@ -739,6 +739,31 @@ WaveformLayer::paintVerticalScale(QPainter &paint, QRect rect) const
     }
 }
 
+QString
+WaveformLayer::toXmlString(QString indent, QString extraAttributes) const
+{
+    QString s;
+    
+    s += QString("gain=\"%1\" "
+		 "colour=\"%2\" "
+		 "showMeans=\"%3\" "
+		 "greyscale=\"%4\" "
+		 "channelMode=\"%5\" "
+		 "channel=\"%6\" "
+		 "scale=\"%7\" "
+		 "aggressive=\"%8\"")
+	.arg(m_gain)
+	.arg(encodeColour(m_colour))
+	.arg(m_showMeans)
+	.arg(m_greyscale)
+	.arg(m_channelMode)
+	.arg(m_channel)
+	.arg(m_scale)
+	.arg(m_aggressive);
+
+    return Layer::toXmlString(indent, extraAttributes + " " + s);
+}
+
 #ifdef INCLUDE_MOCFILES
 #include "WaveformLayer.moc.cpp"
 #endif

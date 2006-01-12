@@ -17,6 +17,7 @@
 #include "model/SparseTimeValueModel.h"
 
 #include <QPainter>
+#include <QPainterPath>
 
 #include <iostream>
 #include <cmath>
@@ -25,7 +26,7 @@ TimeValueLayer::TimeValueLayer(View *w) :
     Layer(w),
     m_model(0),
     m_colour(Qt::black),
-    m_plotStyle(PlotLines)
+    m_plotStyle(PlotConnectedPoints)
 {
     m_view->addLayer(this);
 }
@@ -86,7 +87,7 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == tr("Plot Type")) {
 	
 	*min = 0;
-	*max = 3;
+	*max = 4;
 	
 	deft = int(m_plotStyle);
 
@@ -117,8 +118,9 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	default:
 	case 0: return tr("Points");
 	case 1: return tr("Stems");
-	case 2: return tr("Lines");
-	case 3: return tr("Curve");
+	case 2: return tr("Connected Points");
+	case 3: return tr("Lines");
+	case 4: return tr("Curve");
 	}
     }
     return tr("<unknown>");
@@ -161,6 +163,12 @@ TimeValueLayer::setPlotStyle(PlotStyle style)
 bool
 TimeValueLayer::isLayerScrollable() const
 {
+    // We don't illuminate sections in the line or curve modes, so
+    // they're always scrollable
+
+    if (m_plotStyle == PlotLines ||
+	m_plotStyle == PlotCurve) return true;
+
     QPoint discard;
     return !m_view->shouldIlluminateLocalFeatures(this, discard);
 }
@@ -304,7 +312,15 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	    getLocalPoints(localPos.x());
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
-	
+
+    paint.save();
+
+    if (m_plotStyle == PlotLines ||
+	m_plotStyle == PlotCurve) {
+	paint.setRenderHint(QPainter::Antialiasing, true);
+    }
+    QPainterPath path;
+    
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
@@ -318,12 +334,14 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
 	if (w < 1) w = 1;
 
-	if (m_plotStyle == PlotCurve) {
-	    paint.setPen(QPen(QBrush(m_colour), 2));
+	if (m_plotStyle == PlotLines ||
+	    m_plotStyle == PlotCurve) {
+	    paint.setPen(m_colour);
+	    paint.setBrush(Qt::NoBrush);
 	} else {
 	    paint.setPen(m_colour);
+	    paint.setBrush(brushColour);
 	}	    
-	paint.setBrush(brushColour);
 
 	if (m_plotStyle == PlotStems) {
 	    paint.setPen(brushColour);
@@ -336,18 +354,29 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	}
 
 	if (illuminateFrame == p.frame) {
+
 	    //!!! aside from the problem of choosing a colour, it'd be
 	    //better to save the highlighted rects and draw them at
 	    //the end perhaps
-	    paint.setPen(Qt::black);//!!!
-	    paint.setBrush(Qt::black);//!!!
+
+	    //!!! not equipped to illuminate the right section in line
+	    //or curve mode
+
+	    if (m_plotStyle != PlotCurve &&
+		m_plotStyle != PlotLines) {
+		paint.setPen(Qt::black);//!!!
+		paint.setBrush(Qt::black);//!!!
+	    }	    
 	}
 
-	if (m_plotStyle != PlotCurve) {
+	if (m_plotStyle != PlotLines &&
+	    m_plotStyle != PlotCurve) {
 	    paint.drawRect(x, y - 1, w, 2);
 	}
 
-	if (m_plotStyle == PlotLines || m_plotStyle == PlotCurve) {
+	if (m_plotStyle == PlotConnectedPoints ||
+	    m_plotStyle == PlotLines ||
+	    m_plotStyle == PlotCurve) {
 
 	    SparseTimeValueModel::PointList::const_iterator j = i;
 	    ++j;
@@ -360,22 +389,51 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 				       ((q.value - min) * m_view->height()) /
 				       (max - min)));
 
-		if (m_plotStyle == PlotLines) {
+		if (m_plotStyle == PlotConnectedPoints) {
+
 		    paint.setPen(brushColour);
 		    paint.drawLine(x + w, y, nx, ny);
+
+		} else if (m_plotStyle == PlotLines) {
+
+		    paint.drawLine(x + w/2, y, nx + w/2, ny);
+
 		} else {
-		    paint.drawLine(x, y, nx, ny);
+
+		    if (path.isEmpty()) {
+			path.moveTo(x + w/2, y);
+		    }
+
+		    if (nx - x > 5) {
+			path.cubicTo(x + w, y, nx, ny, nx + w/2, ny);
+		    } else {
+			path.lineTo(nx + w/2, ny);
+		    }
 		}
 	    }
 	}
 
-	
 ///	if (p.label != "") {
 ///	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
 ///	}
     }
-	
-	
+
+    if (m_plotStyle == PlotCurve && !path.isEmpty()) {
+	paint.drawPath(path);
+    }
+
+    paint.restore();
+
+    // looks like save/restore doesn't deal with this:
+    paint.setRenderHint(QPainter::Antialiasing, false);
+}
+
+QString
+TimeValueLayer::toXmlString(QString indent, QString extraAttributes) const
+{
+    return Layer::toXmlString(indent, extraAttributes +
+			      QString(" colour=\"%1\" plotStyle=\"%2\"")
+			      .arg(encodeColour(m_colour)).arg(m_plotStyle));
 }
 
 

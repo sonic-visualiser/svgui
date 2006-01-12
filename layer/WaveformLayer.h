@@ -157,6 +157,9 @@ public:
 
     virtual QString getPropertyContainerIconName() const { return "waveform"; }
 
+    virtual QString toXmlString(QString indent = "",
+				QString extraAttributes = "") const;
+
 protected:
     int dBscale(float sample, int m) const;
 
@@ -165,14 +168,14 @@ protected:
     /// Return value is number of channels displayed
     size_t getChannelArrangement(size_t &min, size_t &max, bool &merging) const;
 
-    float m_gain;
-    QColor m_colour;
-    bool m_showMeans;
-    bool m_greyscale;
-    ChannelMode m_channelMode;
-    int m_channel;
-    Scale m_scale;
-    bool m_aggressive;
+    float        m_gain;
+    QColor       m_colour;
+    bool         m_showMeans;
+    bool         m_greyscale;
+    ChannelMode  m_channelMode;
+    int          m_channel;
+    Scale        m_scale;
+    bool         m_aggressive;
 
     mutable QPixmap *m_cache;
     mutable bool m_cacheValid;

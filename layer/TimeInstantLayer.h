@@ -51,6 +51,9 @@ public:
 
     virtual int getCompletion() const { return m_model->getCompletion(); }
 
+    virtual QString toXmlString(QString indent = "",
+				QString extraAttributes = "") const;
+
 protected:
     SparseOneDimensionalModel::PointList getLocalPoints(int) const;
 
