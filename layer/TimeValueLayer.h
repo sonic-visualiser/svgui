@@ -2,7 +2,7 @@
 
 /*
     A waveform viewer and audio annotation editor.
-    Chris Cannam, Queen Mary University of London, 2005
+    Chris Cannam, Queen Mary University of London, 2005-2006
     
     This is experimental software.  Not for distribution.
 */
@@ -45,7 +45,7 @@ public:
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
 
-    enum PlotStyle { PlotPoints, PlotStems, PlotLines };
+    enum PlotStyle { PlotPoints, PlotStems, PlotLines, PlotCurve };
 
     void setPlotStyle(PlotStyle style);
     PlotStyle getPlotStyle() const { return m_plotStyle; }
