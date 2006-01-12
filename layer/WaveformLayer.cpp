@@ -2,7 +2,7 @@
 
 /*
     A waveform viewer and audio annotation editor.
-    Chris Cannam, Queen Mary University of London, 2005
+    Chris Cannam, Queen Mary University of London, 2005-2006
    
     This is experimental software.  Not for distribution.
 */
@@ -18,6 +18,8 @@
 
 #include <iostream>
 #include <cmath>
+
+//#define DEBUG_WAVEFORM_PAINT 1
 
 using std::cerr;
 using std::endl;
@@ -394,7 +396,9 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     long frame0 = startFrame + x0 * zoomLevel;
     long frame1 = startFrame + (x1 + 1) * zoomLevel;
      
-//    std::cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << ")" <<  std::endl;
+#ifdef DEBUG_WAVEFORM_PAINT
+    std::cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << ")" <<  std::endl;
+#endif
 
     RangeSummarisableTimeValueModel::RangeBlock ranges;
     RangeSummarisableTimeValueModel::RangeBlock otherChannelRanges;
