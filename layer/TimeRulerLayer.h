@@ -48,6 +48,9 @@ public:
 
     virtual QString getPropertyContainerIconName() const { return "timeruler"; }
 
+    virtual QString toXmlString(QString indent = "",
+				QString extraAttributes = "") const;
+
 protected:
     Model *m_model;
     QColor m_colour;

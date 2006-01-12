@@ -298,6 +298,12 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
     }
 }
 
+QString
+TimeInstantLayer::toXmlString(QString indent, QString extraAttributes) const
+{
+    return Layer::toXmlString(indent, extraAttributes +
+			      QString(" colour=\"%1\"").arg(encodeColour(m_colour)));
+}
 
 #ifdef INCLUDE_MOCFILES
 #include "TimeInstantLayer.moc.cpp"

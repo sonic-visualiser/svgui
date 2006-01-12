@@ -44,7 +44,7 @@ public:
     typedef std::set<LayerType> LayerTypeSet;
     LayerTypeSet getValidLayerTypes(Model *model);
 
-    LayerType getLayerType(Layer *);
+    LayerType getLayerType(const Layer *);
 
     Layer *createLayer(LayerType type, View *view,
 		       Model *model = 0, int channel = -1);
@@ -52,6 +52,9 @@ public:
     QString getLayerPresentationName(LayerType type);
 
     void setModel(Layer *layer, Model *model);
+
+    QString getLayerTypeName(LayerType);
+    LayerType getLayerTypeForName(QString);
 
 protected:
     template <typename LayerClass, typename ModelClass>

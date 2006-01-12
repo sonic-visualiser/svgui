@@ -126,6 +126,9 @@ public:
 
     virtual QString getPropertyContainerIconName() const { return "spectrogram"; }
 
+    virtual QString toXmlString(QString indent = "",
+				QString extraAttributes = "") const;
+
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);
@@ -135,14 +138,14 @@ protected slots:
 protected:
     const DenseTimeValueModel *m_model; // I do not own this
     
-    int m_channel;
-    size_t m_windowSize;
-    WindowType m_windowType;
-    size_t m_windowOverlap;
-    float m_gain;
-    size_t m_maxFrequency;
-    ColourScale m_colourScale;
-    ColourScheme m_colourScheme;
+    int            m_channel;
+    size_t         m_windowSize;
+    WindowType     m_windowType;
+    size_t         m_windowOverlap;
+    float          m_gain;
+    size_t         m_maxFrequency;
+    ColourScale    m_colourScale;
+    ColourScheme   m_colourScheme;
     FrequencyScale m_frequencyScale;
 
     class CacheFillThread : public QThread
