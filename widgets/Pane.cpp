@@ -389,7 +389,16 @@ Pane::wheelEvent(QWheelEvent *e)
 
     emit paneInteractedWith();
 }
-    
+
+QString
+Pane::toXmlString(QString indent, QString extraAttributes) const
+{
+    return View::toXmlString
+	(indent,
+	 QString("type=\"pane\" centreLineVisible=\"%1\" %2")
+	 .arg(m_centreLineVisible).arg(extraAttributes));
+}
+
 
 #ifdef INCLUDE_MOCFILES
 #include "Pane.moc.cpp"

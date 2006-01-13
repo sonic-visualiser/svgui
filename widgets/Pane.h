@@ -34,6 +34,9 @@ public:
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
 
+    virtual QString toXmlString(QString indent = "",
+				QString extraAttributes = "") const;
+
 signals:
     void paneInteractedWith();
 
