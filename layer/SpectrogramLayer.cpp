@@ -36,6 +36,7 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
     m_windowType(HanningWindow),
     m_windowOverlap(50),
     m_gain(1.0),
+    m_colourRotation(0),
     m_maxFrequency(8000),
     m_colourScale(dBColourScale),
     m_colourScheme(DefaultColours),
@@ -108,6 +109,7 @@ SpectrogramLayer::getProperties() const
     list.push_back(tr("Window Size"));
     list.push_back(tr("Window Overlap"));
     list.push_back(tr("Gain"));
+    list.push_back(tr("Colour Rotation"));
     list.push_back(tr("Max Frequency"));
     list.push_back(tr("Frequency Scale"));
     return list;
@@ -117,6 +119,7 @@ Layer::PropertyType
 SpectrogramLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == tr("Gain")) return RangeProperty;
+    if (name == tr("Colour Rotation")) return RangeProperty;
     return ValueProperty;
 }
 
@@ -126,6 +129,7 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == tr("Window Size") ||
 	name == tr("Window Overlap")) return tr("Window");
     if (name == tr("Gain") ||
+	name == tr("Colour Rotation") ||
 	name == tr("Colour Scale")) return tr("Scale");
     if (name == tr("Max Frequency") ||
 	name == tr("Frequency Scale")) return tr("Frequency");
@@ -146,6 +150,13 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	deft = lrint(log10(m_gain) * 20.0);
 	if (deft < *min) deft = *min;
 	if (deft > *max) deft = *max;
+
+    } else if (name == tr("Colour Rotation")) {
+
+	*min = 0;
+	*max = 256;
+
+	deft = m_colourRotation;
 
     } else if (name == tr("Colour Scale")) {
 
@@ -218,7 +229,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
+					int value) const
 {
     if (name == tr("Colour")) {
 	switch (value) {
@@ -295,6 +306,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == tr("Gain")) {
 	setGain(pow(10, float(value)/20.0));
+    } else if (name == tr("Colour Rotation")) {
+	setColourRotation(value);
     } else if (name == tr("Colour")) {
 	if (m_view) m_view->setLightBackground(value == 2);
 	switch (value) {
@@ -354,11 +367,12 @@ SpectrogramLayer::setChannel(int ch)
     m_pixmapCacheInvalid = true;
     
     m_channel = ch;
-    emit layerParametersChanged();
-    
-    m_mutex.unlock();
-    fillCache();
 
+    m_mutex.unlock();
+
+    emit layerParametersChanged();
+
+    fillCache();
 }
 
 int
@@ -377,11 +391,12 @@ SpectrogramLayer::setWindowSize(size_t ws)
     m_pixmapCacheInvalid = true;
     
     m_windowSize = ws;
-    emit layerParametersChanged();
     
     m_mutex.unlock();
-    fillCache();
 
+    emit layerParametersChanged();
+
+    fillCache();
 }
 
 size_t
@@ -400,9 +415,11 @@ SpectrogramLayer::setWindowOverlap(size_t wi)
     m_pixmapCacheInvalid = true;
     
     m_windowOverlap = wi;
-    emit layerParametersChanged();
     
     m_mutex.unlock();
+
+    emit layerParametersChanged();
+
     fillCache();
 }
 
@@ -422,9 +439,11 @@ SpectrogramLayer::setWindowType(WindowType w)
     m_pixmapCacheInvalid = true;
     
     m_windowType = w;
-    emit layerParametersChanged();
     
     m_mutex.unlock();
+
+    emit layerParametersChanged();
+
     fillCache();
 }
 
@@ -444,9 +463,11 @@ SpectrogramLayer::setGain(float gain)
     m_pixmapCacheInvalid = true;
     
     m_gain = gain;
-    emit layerParametersChanged();
     
     m_mutex.unlock();
+
+    emit layerParametersChanged();
+
     fillCache();
 }
 
@@ -466,15 +487,37 @@ SpectrogramLayer::setMaxFrequency(size_t mf)
     m_pixmapCacheInvalid = true;
     
     m_maxFrequency = mf;
-    emit layerParametersChanged();
     
     m_mutex.unlock();
+
+    emit layerParametersChanged();
 }
 
 size_t
 SpectrogramLayer::getMaxFrequency() const
 {
     return m_maxFrequency;
+}
+
+void
+SpectrogramLayer::setColourRotation(int r)
+{
+    m_mutex.lock();
+    // don't need to invalidate main cache here
+    m_pixmapCacheInvalid = true;
+
+    if (r < 0) r = 0;
+    if (r > 256) r = 256;
+    int distance = r - m_colourRotation;
+
+    if (distance != 0) {
+	rotateCacheColourmap(-distance);
+	m_colourRotation = r;
+    }
+    
+    m_mutex.unlock();
+
+    emit layerParametersChanged();
 }
 
 void
@@ -487,10 +530,11 @@ SpectrogramLayer::setColourScale(ColourScale colourScale)
     m_pixmapCacheInvalid = true;
     
     m_colourScale = colourScale;
-    emit layerParametersChanged();
     
     m_mutex.unlock();
     fillCache();
+
+    emit layerParametersChanged();
 }
 
 SpectrogramLayer::ColourScale
@@ -508,11 +552,21 @@ SpectrogramLayer::setColourScheme(ColourScheme scheme)
     // don't need to invalidate main cache here
     m_pixmapCacheInvalid = true;
     
+    int formerColourRotation = m_colourRotation;
+
     m_colourScheme = scheme;
     setCacheColourmap();
-    emit layerParametersChanged();
-    
+
+    int distance = formerColourRotation - m_colourRotation;
+
+    if (distance != 0) {
+	rotateCacheColourmap(-distance);
+	m_colourRotation = formerColourRotation;
+    }
+
     m_mutex.unlock();
+
+    emit layerParametersChanged();
 }
 
 SpectrogramLayer::ColourScheme
@@ -531,9 +585,10 @@ SpectrogramLayer::setFrequencyScale(FrequencyScale frequencyScale)
     m_pixmapCacheInvalid = true;
     
     m_frequencyScale = frequencyScale;
-    emit layerParametersChanged();
     
     m_mutex.unlock();
+
+    emit layerParametersChanged();
 }
 
 SpectrogramLayer::FrequencyScale
@@ -678,21 +733,43 @@ SpectrogramLayer::setCacheColourmap()
 	m_cache->setColor
 	    (pixel, qRgb(colour.red(), colour.green(), colour.blue()));
     }
+
+    m_colourRotation = 0;
+}
+
+void
+SpectrogramLayer::rotateCacheColourmap(int distance)
+{
+    QRgb newPixels[256];
+
+    newPixels[0] = m_cache->color(0);
+
+    for (int pixel = 1; pixel < 256; ++pixel) {
+	int target = pixel + distance;
+	while (target < 1) target += 255;
+	while (target > 255) target -= 255;
+	newPixels[target] = m_cache->color(pixel);
+    }
+
+    for (int pixel = 0; pixel < 256; ++pixel) {
+	m_cache->setColor(pixel, newPixels[pixel]);
+    }
 }
 
 bool
 SpectrogramLayer::fillCacheColumn(int column, double *input,
 				  fftw_complex *output,
 				  fftw_plan plan, 
+				  size_t windowSize,
+				  size_t increment,
 				  const Window<double> &windower,
 				  bool lock) const
 {
-    size_t increment = m_windowSize - m_windowSize * m_windowOverlap / 100;
     int startFrame = increment * column;
-    int endFrame = startFrame + m_windowSize;
+    int endFrame = startFrame + windowSize;
 
-    startFrame -= int(m_windowSize - increment) / 2;
-    endFrame   -= int(m_windowSize - increment) / 2;
+    startFrame -= int(windowSize - increment) / 2;
+    endFrame   -= int(windowSize - increment) / 2;
     size_t pfx = 0;
 
     if (startFrame < 0) {
@@ -704,13 +781,13 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 
     size_t got = m_model->getValues(m_channel, startFrame + pfx,
 				    endFrame, input + pfx);
-    while (got + pfx < m_windowSize) {
+    while (got + pfx < windowSize) {
 	input[got + pfx] = 0.0;
 	++got;
     }
 
     if (m_gain != 1.0) {
-	for (size_t i = 0; i < m_windowSize; ++i) {
+	for (size_t i = 0; i < windowSize; ++i) {
 	    input[i] *= m_gain;
 	}
     }
@@ -722,7 +799,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
     if (lock) m_mutex.lock();
     bool interrupted = false;
 
-    for (size_t i = 0; i < m_windowSize / 2; ++i) {
+    for (size_t i = 0; i < windowSize / 2; ++i) {
 
 	int value = 0;
 
@@ -735,7 +812,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 
 	    double mag = sqrt(output[i][0] * output[i][0] +
 			      output[i][1] * output[i][1]);
-	    mag /= m_windowSize / 2;
+	    mag /= windowSize / 2;
 
 	    switch (m_colourScale) {
 		
@@ -804,6 +881,8 @@ SpectrogramLayer::CacheFillThread::run()
 
 	    size_t start = m_layer.m_model->getStartFrame();
 	    size_t end = m_layer.m_model->getEndFrame();
+
+	    WindowType windowType = m_layer.m_windowType;
 	    size_t windowSize = m_layer.m_windowSize;
 	    size_t windowIncrement = m_layer.getWindowIncrement();
 
@@ -822,9 +901,17 @@ SpectrogramLayer::CacheFillThread::run()
 	    }
 
 	    delete m_layer.m_cache;
-	    m_layer.m_cache = new QImage((end - start) / windowIncrement + 1,
-					windowSize / 2,
-					QImage::Format_Indexed8);
+	    size_t width = (end - start) / windowIncrement + 1;
+	    size_t height = windowSize / 2;
+	    m_layer.m_cache = new QImage(width, height,
+					 QImage::Format_Indexed8);
+
+	    // If we're using JACK in mlock mode, this will be locked
+	    // and we ought to unlock to avoid memory exhaustion.
+	    // Shame it doesn't appear to be possible to allocate
+	    // unlocked in the first place.
+	    //!!! hm, I don't think this is working.
+	    MUNLOCK((void *)m_layer.m_cache, width * height);
     
 	    m_layer.setCacheColourmap();
     
@@ -840,7 +927,7 @@ SpectrogramLayer::CacheFillThread::run()
 	    fftw_plan plan = fftw_plan_dft_r2c_1d(windowSize, input,
 						  output, FFTW_ESTIMATE);
 
-	    Window<double> windower(m_layer.m_windowType, m_layer.m_windowSize);
+	    Window<double> windower(windowType, windowSize);
 
 	    if (!plan) {
 		std::cerr << "WARNING: fftw_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
@@ -863,7 +950,9 @@ SpectrogramLayer::CacheFillThread::run()
 		for (size_t f = visibleStart; f < visibleEnd; f += windowIncrement) {
 	    
 		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
-					    input, output, plan, windower, false);
+					    input, output, plan,
+					    windowSize, windowIncrement,
+					    windower, false);
 
 		    m_layer.m_mutex.unlock();
 		    m_layer.m_mutex.lock();
@@ -892,7 +981,9 @@ SpectrogramLayer::CacheFillThread::run()
 		for (size_t f = visibleEnd; f < end; f += windowIncrement) {
 	    
 		    if (!m_layer.fillCacheColumn(int((f - start) / windowIncrement),
-						 input, output, plan, windower, true)) {
+						 input, output, plan,
+						 windowSize, windowIncrement,
+						 windower, true)) {
 			interrupted = true;
 			m_fillExtent = 0;
 			break;
@@ -921,7 +1012,9 @@ SpectrogramLayer::CacheFillThread::run()
 		for (size_t f = start; f < remainingEnd; f += windowIncrement) {
 
 		    if (!m_layer.fillCacheColumn(int((f - start) / windowIncrement),
-						 input, output, plan, windower, true)) {
+						 input, output, plan,
+						 windowSize, windowIncrement,
+						 windower, true)) {
 			interrupted = true;
 			m_fillExtent = 0;
 			break;
@@ -1348,11 +1441,25 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 	    }
 		    
 	    if (divisor > 0.0) {
+
 		int pixel = int(total / divisor);
 		if (pixel > 255) pixel = 255;
 		if (pixel < 1) pixel = 1;
 		assert(x <= scaled.width());
 		scaled.setPixel(x, y, m_cache->color(pixel));
+/*
+		float pixel = total / divisor;
+		float lq = pixel - int(pixel);
+		float hq = int(pixel) + 1 - pixel;
+		int pixNum = int(pixel);
+		QRgb low = m_cache->color(pixNum > 255 ? 255 : pixNum);
+		QRgb high = m_cache->color(pixNum > 254 ? 255 : pixNum + 1);
+		QRgb mixed = qRgb
+		    (qRed(low) * lq + qRed(high) * hq + 0.01,
+		     qGreen(low) * lq + qGreen(high) * hq + 0.01,
+		     qBlue(low) * lq + qBlue(high) * hq + 0.01);
+		scaled.setPixel(x, y, mixed);
+*/
 	    } else {
 		assert(x <= scaled.width());
 		scaled.setPixel(x, y, qRgb(0, 0, 0));

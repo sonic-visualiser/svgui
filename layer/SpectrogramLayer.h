@@ -118,6 +118,12 @@ public:
     void setColourScheme(ColourScheme scheme);
     ColourScheme getColourScheme() const;
 
+    /**
+     * Specify the colourmap rotation for the colour scale.
+     */
+    void setColourRotation(int);
+    int getColourRotation() const;
+
     virtual VerticalPosition getPreferredFrameCountPosition() const {
 	return PositionTop;
     }
@@ -143,6 +149,7 @@ protected:
     WindowType     m_windowType;
     size_t         m_windowOverlap;
     float          m_gain;
+    int            m_colourRotation;
     size_t         m_maxFrequency;
     ColourScale    m_colourScale;
     ColourScheme   m_colourScheme;
@@ -184,11 +191,14 @@ protected:
     bool m_exiting;
 
     void setCacheColourmap();
+    void rotateCacheColourmap(int distance);
 
     bool fillCacheColumn(int column,
 			 double *inputBuffer,
 			 fftw_complex *outputBuffer,
 			 fftw_plan plan,
+			 size_t windowSize,
+			 size_t windowIncrement,
 			 const Window<double> &windower,
 			 bool lock)
 	const;
