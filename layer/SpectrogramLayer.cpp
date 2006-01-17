@@ -142,6 +142,10 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 {
     int deft = 0;
 
+    int throwaway;
+    if (!min) min = &throwaway;
+    if (!max) max = &throwaway;
+
     if (name == tr("Gain")) {
 
 	*min = -50;
@@ -552,17 +556,8 @@ SpectrogramLayer::setColourScheme(ColourScheme scheme)
     // don't need to invalidate main cache here
     m_pixmapCacheInvalid = true;
     
-    int formerColourRotation = m_colourRotation;
-
     m_colourScheme = scheme;
     setCacheColourmap();
-
-    int distance = formerColourRotation - m_colourRotation;
-
-    if (distance != 0) {
-	rotateCacheColourmap(-distance);
-	m_colourRotation = formerColourRotation;
-    }
 
     m_mutex.unlock();
 
@@ -685,6 +680,8 @@ SpectrogramLayer::setCacheColourmap()
 {
     if (m_cacheInvalid || !m_cache) return;
 
+    int formerRotation = m_colourRotation;
+
     m_cache->setNumColors(256);
     
     m_cache->setColor(0, qRgb(255, 255, 255));
@@ -735,11 +732,15 @@ SpectrogramLayer::setCacheColourmap()
     }
 
     m_colourRotation = 0;
+    rotateCacheColourmap(m_colourRotation - formerRotation);
+    m_colourRotation = formerRotation;
 }
 
 void
 SpectrogramLayer::rotateCacheColourmap(int distance)
 {
+    if (!m_cache) return;
+
     QRgb newPixels[256];
 
     newPixels[0] = m_cache->color(0);
@@ -914,7 +915,7 @@ SpectrogramLayer::CacheFillThread::run()
 	    MUNLOCK((void *)m_layer.m_cache, width * height);
     
 	    m_layer.setCacheColourmap();
-    
+
 	    m_layer.m_cache->fill(0);
 	    m_layer.m_mutex.unlock();
 
@@ -1441,13 +1442,13 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 	    }
 		    
 	    if (divisor > 0.0) {
-
+/*
 		int pixel = int(total / divisor);
 		if (pixel > 255) pixel = 255;
 		if (pixel < 1) pixel = 1;
 		assert(x <= scaled.width());
 		scaled.setPixel(x, y, m_cache->color(pixel));
-/*
+*/
 		float pixel = total / divisor;
 		float lq = pixel - int(pixel);
 		float hq = int(pixel) + 1 - pixel;
@@ -1459,7 +1460,7 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 		     qGreen(low) * lq + qGreen(high) * hq + 0.01,
 		     qBlue(low) * lq + qBlue(high) * hq + 0.01);
 		scaled.setPixel(x, y, mixed);
-*/
+
 	    } else {
 		assert(x <= scaled.width());
 		scaled.setPixel(x, y, qRgb(0, 0, 0));

@@ -67,8 +67,8 @@ TimeRulerLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     if (name == tr("Colour")) {
 
-	*min = 0;
-	*max = 5;
+	if (min) *min = 0;
+	if (max) *max = 5;
 
 	if (m_colour == Qt::black) deft = 0;
 	else if (m_colour == Qt::darkRed) deft = 1;

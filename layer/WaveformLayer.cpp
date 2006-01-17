@@ -98,6 +98,10 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 {
     int deft = 0;
 
+    int throwaway;
+    if (!min) min = &throwaway;
+    if (!max) max = &throwaway;
+
     if (name == tr("Gain")) {
 
 	*min = -50;
