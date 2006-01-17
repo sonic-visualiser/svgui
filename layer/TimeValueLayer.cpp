@@ -74,8 +74,8 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     if (name == tr("Colour")) {
 
-	*min = 0;
-	*max = 5;
+	if (min) *min = 0;
+	if (max) *max = 5;
 
 	if (m_colour == Qt::black) deft = 0;
 	else if (m_colour == Qt::darkRed) deft = 1;
@@ -86,8 +86,8 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == tr("Plot Type")) {
 	
-	*min = 0;
-	*max = 4;
+	if (min) *min = 0;
+	if (max) *max = 4;
 	
 	deft = int(m_plotStyle);
 
