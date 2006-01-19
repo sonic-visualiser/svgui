@@ -99,11 +99,20 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
     size_t modelEnd = m_model->getEndFrame();
     size_t modelWindow = m_model->getWindowSize();
 
+    size_t cacheWidth = (modelEnd - modelStart) / modelWindow + 1;
+    size_t cacheHeight = m_model->getYBinCount();
+
+    if (m_cache &&
+	(m_cache->width() != cacheWidth ||
+	 m_cache->height() != cacheHeight)) {
+
+	delete m_cache;
+	m_cache = 0;
+    }
+
     if (!m_cache) {
 
-	m_cache = new QImage((modelEnd - modelStart) / modelWindow + 1,
-			     m_model->getYBinCount(),
-			     QImage::Format_Indexed8);
+	m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
 
 	m_cache->setNumColors(256);
 	DenseThreeDimensionalModel::BinValueSet values;
