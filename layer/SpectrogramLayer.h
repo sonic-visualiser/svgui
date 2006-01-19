@@ -135,6 +135,8 @@ public:
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
+    void setProperties(const QXmlAttributes &attributes);
+
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);

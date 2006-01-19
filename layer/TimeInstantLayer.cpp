@@ -305,6 +305,18 @@ TimeInstantLayer::toXmlString(QString indent, QString extraAttributes) const
 			      QString(" colour=\"%1\"").arg(encodeColour(m_colour)));
 }
 
+void
+TimeInstantLayer::setProperties(const QXmlAttributes &attributes)
+{
+    QString colourSpec = attributes.value("colour");
+    if (colourSpec != "") {
+	QColor colour(colourSpec);
+	if (colour.isValid()) {
+	    setBaseColour(QColor(colourSpec));
+	}
+    }
+}
+
 #ifdef INCLUDE_MOCFILES
 #include "TimeInstantLayer.moc.cpp"
 #endif

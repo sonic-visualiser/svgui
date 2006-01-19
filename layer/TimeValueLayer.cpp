@@ -287,6 +287,7 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
     SparseTimeValueModel::PointList points(m_model->getPoints
 					   (frame0, frame1));
+    if (points.empty()) return;
 
     paint.setPen(m_colour);
 
@@ -436,6 +437,23 @@ TimeValueLayer::toXmlString(QString indent, QString extraAttributes) const
     return Layer::toXmlString(indent, extraAttributes +
 			      QString(" colour=\"%1\" plotStyle=\"%2\"")
 			      .arg(encodeColour(m_colour)).arg(m_plotStyle));
+}
+
+void
+TimeValueLayer::setProperties(const QXmlAttributes &attributes)
+{
+    QString colourSpec = attributes.value("colour");
+    if (colourSpec != "") {
+	QColor colour(colourSpec);
+	if (colour.isValid()) {
+	    setBaseColour(QColor(colourSpec));
+	}
+    }
+
+    bool ok;
+    PlotStyle style = (PlotStyle)
+	attributes.value("plotStyle").toInt(&ok);
+    if (ok) setPlotStyle(style);
 }
 
 

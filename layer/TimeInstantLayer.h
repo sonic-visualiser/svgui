@@ -54,6 +54,8 @@ public:
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
+    void setProperties(const QXmlAttributes &attributes);
+
 protected:
     SparseOneDimensionalModel::PointList getLocalPoints(int) const;
 

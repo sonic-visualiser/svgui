@@ -768,6 +768,46 @@ WaveformLayer::toXmlString(QString indent, QString extraAttributes) const
     return Layer::toXmlString(indent, extraAttributes + " " + s);
 }
 
+void
+WaveformLayer::setProperties(const QXmlAttributes &attributes)
+{
+    bool ok = false;
+
+    float gain = attributes.value("gain").toFloat(&ok);
+    if (ok) setGain(gain);
+
+    QString colourSpec = attributes.value("colour");
+    if (colourSpec != "") {
+	QColor colour(colourSpec);
+	if (colour.isValid()) {
+	    setBaseColour(QColor(colourSpec));
+	}
+    }
+
+    bool showMeans = (attributes.value("showMeans") == "1" ||
+		      attributes.value("showMeans") == "true");
+    setShowMeans(showMeans);
+
+    bool greyscale = (attributes.value("greyscale") == "1" ||
+		      attributes.value("greyscale") == "true");
+    setUseGreyscale(greyscale);
+
+    ChannelMode channelMode = (ChannelMode)
+	attributes.value("channelMode").toInt(&ok);
+    if (ok) setChannelMode(channelMode);
+
+    int channel = attributes.value("channel").toInt(&ok);
+    if (ok) setChannel(channel);
+
+    Scale scale = (Scale)
+	attributes.value("scale").toInt(&ok);
+    if (ok) setScale(scale);
+
+    bool aggressive = (attributes.value("aggressive") == "1" ||
+		       attributes.value("aggressive") == "true");
+    setUseGreyscale(aggressive);
+}
+
 #ifdef INCLUDE_MOCFILES
 #include "WaveformLayer.moc.cpp"
 #endif

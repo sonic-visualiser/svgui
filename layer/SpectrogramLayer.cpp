@@ -1778,6 +1778,44 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
     return Layer::toXmlString(indent, extraAttributes + " " + s);
 }
 
+void
+SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
+{
+    bool ok = false;
+
+    int channel = attributes.value("channel").toInt(&ok);
+    if (ok) setChannel(channel);
+
+    size_t windowSize = attributes.value("windowSize").toUInt(&ok);
+    if (ok) setWindowSize(windowSize);
+
+    WindowType windowType = (WindowType)
+	attributes.value("windowType").toInt(&ok);
+    if (ok) setWindowType(windowType);
+
+    size_t windowOverlap = attributes.value("windowOverlap").toUInt(&ok);
+    if (ok) setWindowOverlap(windowOverlap);
+
+    float gain = attributes.value("gain").toFloat(&ok);
+    if (ok) setGain(gain);
+
+    size_t maxFrequency = attributes.value("maxFrequency").toUInt(&ok);
+    if (ok) setMaxFrequency(maxFrequency);
+
+    ColourScale colourScale = (ColourScale)
+	attributes.value("colourScale").toInt(&ok);
+    if (ok) setColourScale(colourScale);
+
+    ColourScheme colourScheme = (ColourScheme)
+	attributes.value("colourScheme").toInt(&ok);
+    if (ok) setColourScheme(colourScheme);
+
+    FrequencyScale frequencyScale = (FrequencyScale)
+	attributes.value("frequencyScale").toInt(&ok);
+    if (ok) setFrequencyScale(frequencyScale);
+}
+    
+
 #ifdef INCLUDE_MOCFILES
 #include "SpectrogramLayer.moc.cpp"
 #endif
