@@ -51,6 +51,8 @@ LayerFactory::getLayerPresentationName(LayerType type)
 	// fact -- there's nothing permanently melodic-range about it
 	// that should be encoded in its name
 	return Layer::tr("Spectrogram");
+
+    default: break;
     }
 
     return Layer::tr("Layer");
@@ -189,6 +191,8 @@ LayerFactory::createLayer(LayerType type, View *view,
 	layer = new SpectrogramLayer(view, SpectrogramLayer::MelodicRange);
 	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	break;
+
+    default: break;
     }
 
     if (!layer) {

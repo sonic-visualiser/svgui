@@ -59,6 +59,8 @@ public:
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
+    void setProperties(const QXmlAttributes &attributes);
+
 protected:
     SparseTimeValueModel::PointList getLocalPoints(int) const;
 

@@ -58,6 +58,8 @@ public:
 
     virtual QString getPropertyContainerIconName() const { return "colour3d"; }
 
+    void setProperties(const QXmlAttributes &attributes) { }
+    
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);

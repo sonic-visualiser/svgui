@@ -51,6 +51,8 @@ public:
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
+    void setProperties(const QXmlAttributes &attributes);
+
 protected:
     Model *m_model;
     QColor m_colour;

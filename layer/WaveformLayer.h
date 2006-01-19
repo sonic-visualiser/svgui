@@ -160,6 +160,8 @@ public:
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
+    void setProperties(const QXmlAttributes &attributes);
+
 protected:
     int dBscale(float sample, int m) const;
 

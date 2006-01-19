@@ -288,6 +288,18 @@ TimeRulerLayer::toXmlString(QString indent, QString extraAttributes) const
 			      QString(" colour=\"%1\"").arg(encodeColour(m_colour)));
 }
 
+void
+TimeRulerLayer::setProperties(const QXmlAttributes &attributes)
+{
+    QString colourSpec = attributes.value("colour");
+    if (colourSpec != "") {
+	QColor colour(colourSpec);
+	if (colour.isValid()) {
+	    setBaseColour(QColor(colourSpec));
+	}
+    }
+}
+
 
 #ifdef INCLUDE_MOCFILES
 #include "TimeRulerLayer.moc.cpp"
