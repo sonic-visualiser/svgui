@@ -16,6 +16,7 @@
 
 #include "base/ZoomConstraint.h"
 #include "base/View.h"
+#include "base/Selection.h"
 
 class QWidget;
 class QPaintEvent;
@@ -40,6 +41,9 @@ public:
 signals:
     void paneInteractedWith();
 
+public slots:
+    virtual void toolModeChanged();
+
 protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void mousePressEvent(QMouseEvent *e);
@@ -55,8 +59,10 @@ protected:
     QPoint m_mousePos;
     bool m_clickedInRange;
     bool m_shiftPressed;
+    bool m_ctrlPressed;
     size_t m_dragCentreFrame;
     bool m_centreLineVisible;
+    size_t m_selectionStartFrame;
 };
 
 #endif

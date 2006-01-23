@@ -13,6 +13,7 @@
 #include "base/ZoomConstraint.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
+#include "base/ViewManager.h"
 
 #include <QPaintEvent>
 #include <QPainter>
@@ -27,6 +28,7 @@ Pane::Pane(QWidget *w) :
     m_identifyFeatures(false),
     m_clickedInRange(false),
     m_shiftPressed(false),
+    m_ctrlPressed(false),
     m_centreLineVisible(true)
 {
     setObjectName("Pane");
@@ -223,6 +225,8 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     if (m_clickedInRange && m_shiftPressed) {
+	//!!! be nice if this looked a bit more in keeping with the
+	//selection block
 	paint.setPen(Qt::blue);
 	paint.drawRect(m_clickPos.x(), m_clickPos.y(),
 		       m_mousePos.x() - m_clickPos.x(),
@@ -238,7 +242,36 @@ Pane::mousePressEvent(QMouseEvent *e)
     m_clickPos = e->pos();
     m_clickedInRange = true;
     m_shiftPressed = (e->modifiers() & Qt::ShiftModifier);
-    m_dragCentreFrame = m_centreFrame;
+    m_ctrlPressed = (e->modifiers() & Qt::ControlModifier);
+
+    ViewManager::ToolMode mode = ViewManager::NavigateMode;
+    if (m_manager) mode = m_manager->getToolMode();
+
+    if (mode == ViewManager::NavigateMode) {
+
+	m_dragCentreFrame = m_centreFrame;
+
+    } else if (mode == ViewManager::SelectMode) {
+
+	int mouseFrame = e->x() * m_zoomLevel + getStartFrame();
+	size_t resolution = 1;
+	int snapFrame = mouseFrame;
+	
+	Layer *layer = getSelectedLayer();
+	if (layer) {
+	    snapFrame = layer->getNearestFeatureFrame(mouseFrame, resolution,
+						      false);
+	}
+	
+	if (snapFrame < 0) snapFrame = 0;
+	m_selectionStartFrame = snapFrame;
+	if (m_manager) {
+	    m_manager->setInProgressSelection(Selection(snapFrame,
+							snapFrame + resolution),
+					      !m_ctrlPressed);
+	}
+	update();
+    }
 
     emit paneInteractedWith();
 }
@@ -246,37 +279,67 @@ Pane::mousePressEvent(QMouseEvent *e)
 void
 Pane::mouseReleaseEvent(QMouseEvent *e)
 {
+    ViewManager::ToolMode mode = ViewManager::NavigateMode;
+    if (m_manager) mode = m_manager->getToolMode();
+
     if (m_clickedInRange) {
 	mouseMoveEvent(e);
     }
-    if (m_shiftPressed) {
 
-	int x0 = std::min(m_clickPos.x(), m_mousePos.x());
-	int x1 = std::max(m_clickPos.x(), m_mousePos.x());
-	int w = x1 - x0;
+    if (mode == ViewManager::NavigateMode) {
 
-	long newStartFrame = getStartFrame() + m_zoomLevel * x0;
+	if (m_shiftPressed) {
 
-	if (newStartFrame <= -long(width() * m_zoomLevel)) {
-	    newStartFrame  = -long(width() * m_zoomLevel) + 1;
-	}
-
-	if (newStartFrame >= long(getModelsEndFrame())) {
-	    newStartFrame  = getModelsEndFrame() - 1;
-	}
-
-	float ratio = float(w) / float(width());
+	    int x0 = std::min(m_clickPos.x(), m_mousePos.x());
+	    int x1 = std::max(m_clickPos.x(), m_mousePos.x());
+	    int w = x1 - x0;
+	    
+	    long newStartFrame = getStartFrame() + m_zoomLevel * x0;
+	    
+	    if (newStartFrame <= -long(width() * m_zoomLevel)) {
+		newStartFrame  = -long(width() * m_zoomLevel) + 1;
+	    }
+	    
+	    if (newStartFrame >= long(getModelsEndFrame())) {
+		newStartFrame  = getModelsEndFrame() - 1;
+	    }
+	    
+	    float ratio = float(w) / float(width());
 //	std::cerr << "ratio: " << ratio << std::endl;
-	size_t newZoomLevel = (size_t)nearbyint(m_zoomLevel * ratio);
-	if (newZoomLevel < 1) newZoomLevel = 1;
+	    size_t newZoomLevel = (size_t)nearbyint(m_zoomLevel * ratio);
+	    if (newZoomLevel < 1) newZoomLevel = 1;
 
 //	std::cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << std::endl;
-	setZoomLevel(getZoomConstraintBlockSize(newZoomLevel));
-	setStartFrame(newStartFrame);
+	    setZoomLevel(getZoomConstraintBlockSize(newZoomLevel));
+	    setStartFrame(newStartFrame);
 
-	//cerr << "mouseReleaseEvent: start frame now " << m_startFrame << endl;
+	    //cerr << "mouseReleaseEvent: start frame now " << m_startFrame << endl;
 //	update();
-    }
+	}
+
+    } else if (mode == ViewManager::SelectMode) {
+
+	if (m_manager && m_manager->haveInProgressSelection()) {
+
+	    bool exclusive;
+	    Selection selection = m_manager->getInProgressSelection(exclusive);
+	    
+	    if (selection.getEndFrame() < selection.getStartFrame() + 2) {
+		selection = Selection();
+	    }
+	    
+	    m_manager->clearInProgressSelection();
+	    
+	    if (exclusive) {
+		m_manager->setSelection(selection);
+	    } else {
+		m_manager->addSelection(selection);
+	    }
+	}
+	
+	update();
+    } 
+
     m_clickedInRange = false;
 
     emit paneInteractedWith();
@@ -285,6 +348,9 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 void
 Pane::mouseMoveEvent(QMouseEvent *e)
 {
+    ViewManager::ToolMode mode = ViewManager::NavigateMode;
+    if (m_manager) mode = m_manager->getToolMode();
+
     if (!m_clickedInRange) {
 	
 //	std::cerr << "Pane: calling identifyLocalFeatures" << std::endl;
@@ -302,35 +368,90 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	    update();
 	}
 
-    } else if (m_shiftPressed) {
-
-	m_mousePos = e->pos();
-	update();
-
-    } else {
-
-	long xoff = int(e->x()) - int(m_clickPos.x());
-	long frameOff = xoff * m_zoomLevel;
-
-	size_t newCentreFrame = m_dragCentreFrame;
+	return;
 	
-	if (frameOff < 0) {
-	    newCentreFrame -= frameOff;
-	} else if (newCentreFrame >= size_t(frameOff)) {
-	    newCentreFrame -= frameOff;
+    }
+
+    if (mode == ViewManager::NavigateMode) {
+
+	if (m_shiftPressed) {
+
+	    m_mousePos = e->pos();
+	    update();
+
 	} else {
-	    newCentreFrame = 0;
+
+	    long xoff = int(e->x()) - int(m_clickPos.x());
+	    long frameOff = xoff * m_zoomLevel;
+	    
+	    size_t newCentreFrame = m_dragCentreFrame;
+	    
+	    if (frameOff < 0) {
+		newCentreFrame -= frameOff;
+	    } else if (newCentreFrame >= size_t(frameOff)) {
+		newCentreFrame -= frameOff;
+	    } else {
+		newCentreFrame = 0;
+	    }
+	    
+	    if (newCentreFrame >= getModelsEndFrame()) {
+		newCentreFrame = getModelsEndFrame();
+		if (newCentreFrame > 0) --newCentreFrame;
+	    }
+	    
+	    if (std::max(m_centreFrame, newCentreFrame) -
+		std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
+		setCentreFrame(newCentreFrame);
+	    }
 	}
 
-	if (newCentreFrame >= getModelsEndFrame()) {
-	    newCentreFrame = getModelsEndFrame();
-	    if (newCentreFrame > 0) --newCentreFrame;
+    } else if (mode == ViewManager::SelectMode) {
+
+	int mouseFrame = e->x() * m_zoomLevel + getStartFrame();
+	size_t resolution = 1;
+	int snapFrameLeft = mouseFrame;
+	int snapFrameRight = mouseFrame;
+	
+	Layer *layer = getSelectedLayer();
+	if (layer) {
+	    snapFrameLeft = layer->getNearestFeatureFrame(mouseFrame, resolution,
+							  false);
+	    snapFrameRight = layer->getNearestFeatureFrame(mouseFrame, resolution,
+							   true);
+	}
+	
+	if (snapFrameLeft < 0) snapFrameLeft = 0;
+	if (snapFrameRight < 0) snapFrameRight = 0;
+	
+	size_t min, max;
+	
+	if (m_selectionStartFrame > snapFrameLeft) {
+	    min = snapFrameLeft;
+	    max = m_selectionStartFrame;
+	} else if (snapFrameRight > m_selectionStartFrame) {
+	    min = m_selectionStartFrame;
+	    max = snapFrameRight;
+	} else {
+	    min = snapFrameLeft;
+	    max = snapFrameRight;
 	}
 
-	if (std::max(m_centreFrame, newCentreFrame) -
-	    std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
-	    setCentreFrame(newCentreFrame);
+	if (m_manager) {
+	    m_manager->setInProgressSelection(Selection(min, max),
+					      !m_ctrlPressed);
 	}
+	
+	if (!m_manager || !m_manager->isPlaying()) {
+	    int offset = mouseFrame - getStartFrame();
+	    int available = getEndFrame() - getStartFrame();
+	    if (offset >= available * 0.9) {
+		setCentreFrame(m_centreFrame + int(offset - available * 0.9) + 1);
+	    } else if (offset <= available * 0.15) {
+		setCentreFrame(m_centreFrame - int(available * 0.15 - offset) - 1);
+	    }
+	}
+
+	update();
     }
 }
 
@@ -388,6 +509,36 @@ Pane::wheelEvent(QWheelEvent *e)
     }
 
     emit paneInteractedWith();
+}
+
+void
+Pane::toolModeChanged()
+{
+    ViewManager::ToolMode mode = m_manager->getToolMode();
+    std::cerr << "Pane::toolModeChanged(" << mode << ")" << std::endl;
+
+    switch (mode) {
+
+    case ViewManager::NavigateMode:
+	setCursor(Qt::PointingHandCursor);
+	break;
+	
+    case ViewManager::SelectMode:
+	setCursor(Qt::ArrowCursor);
+	break;
+	
+    case ViewManager::EditMode:
+	setCursor(Qt::SizeAllCursor);
+	break;
+	
+    case ViewManager::DrawMode:
+	setCursor(Qt::CrossCursor);
+	break;
+	
+    case ViewManager::TextMode:
+	setCursor(Qt::IBeamCursor);
+	break;
+    }
 }
 
 QString

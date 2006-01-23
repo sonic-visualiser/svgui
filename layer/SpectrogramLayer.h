@@ -54,6 +54,10 @@ public:
     virtual QRect getFeatureDescriptionRect(QPainter &, QPoint) const;
     virtual void paintLocalFeatureDescription(QPainter &, QRect, QPoint) const;
 
+    virtual int getNearestFeatureFrame(int frame, 
+				       size_t &resolution,
+				       bool snapRight = true) const;
+
     void setModel(const DenseTimeValueModel *model);
 
     virtual PropertyList getProperties() const;
