@@ -385,6 +385,8 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 	paint->setPen(Qt::black);
 	paint->setBrush(Qt::NoBrush);
 
+	paint->setRenderHint(QPainter::Antialiasing, false);
+
     } else {
 	paint = &viewPainter;
     }

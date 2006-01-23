@@ -224,6 +224,38 @@ TimeInstantLayer::paintLocalFeatureDescription(QPainter &paint, QRect rect,
 		   points.begin()->label);
 }
 
+int
+TimeInstantLayer::getNearestFeatureFrame(int frame,
+					 size_t &resolution,
+					 bool snapRight) const
+{
+    if (!m_model) {
+	return Layer::getNearestFeatureFrame(frame, resolution, snapRight);
+    }
+
+    resolution = m_model->getResolution();
+    SparseOneDimensionalModel::PointList points(m_model->getPoints(frame, frame));
+
+    int returnFrame = frame;
+
+    for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (snapRight) {
+	    if (i->frame > frame) {
+		returnFrame = i->frame;
+		break;
+	    }
+	} else {
+	    if (i->frame <= frame) {
+		returnFrame = i->frame;
+	    }
+	}
+    }
+
+    return returnFrame;
+}
+
 void
 TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 {

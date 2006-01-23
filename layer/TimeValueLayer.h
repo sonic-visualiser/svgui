@@ -31,6 +31,10 @@ public:
     virtual QRect getFeatureDescriptionRect(QPainter &, QPoint) const;
     virtual void paintLocalFeatureDescription(QPainter &, QRect, QPoint) const;
 
+    virtual int getNearestFeatureFrame(int frame, 
+				       size_t &resolution,
+				       bool snapRight = true) const;
+
     virtual const Model *getModel() const { return m_model; }
     void setModel(SparseTimeValueModel *model);
 

@@ -268,6 +268,38 @@ TimeValueLayer::paintLocalFeatureDescription(QPainter &paint, QRect rect,
 		   points.begin()->label);
 }
 
+int
+TimeValueLayer::getNearestFeatureFrame(int frame,
+				       size_t &resolution,
+				       bool snapRight) const
+{
+    if (!m_model) {
+	return Layer::getNearestFeatureFrame(frame, resolution, snapRight);
+    }
+
+    resolution = m_model->getResolution();
+    SparseTimeValueModel::PointList points(m_model->getPoints(frame, frame));
+
+    int returnFrame = frame;
+
+    for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (snapRight) {
+	    if (i->frame > frame) {
+		returnFrame = i->frame;
+		break;
+	    }
+	} else {
+	    if (i->frame <= frame) {
+		returnFrame = i->frame;
+	    }
+	}
+    }
+
+    return returnFrame;
+}
+
 void
 TimeValueLayer::paint(QPainter &paint, QRect rect) const
 {

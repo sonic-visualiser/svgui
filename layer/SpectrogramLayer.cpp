@@ -1636,6 +1636,17 @@ SpectrogramLayer::paintLocalFeatureDescription(QPainter &paint,
 		   ybase + 9 + fontAscent + fontHeight * 2, dBMaxText);
 }
 
+int
+SpectrogramLayer::getNearestFeatureFrame(int frame, 
+					 size_t &resolution,
+					 bool snapRight) const
+{
+    resolution = getWindowIncrement();
+    int snapFrame = (frame / resolution) * resolution;
+    if (snapRight) snapFrame += resolution;
+    return snapFrame;
+}
+
 /*!!!
 
 bool
