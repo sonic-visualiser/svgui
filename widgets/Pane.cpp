@@ -445,9 +445,15 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	    int offset = mouseFrame - getStartFrame();
 	    int available = getEndFrame() - getStartFrame();
 	    if (offset >= available * 0.9) {
-		setCentreFrame(m_centreFrame + int(offset - available * 0.9) + 1);
+		int move = int(offset - available * 0.9) + 1;
+		setCentreFrame(m_centreFrame + move);
 	    } else if (offset <= available * 0.15) {
-		setCentreFrame(m_centreFrame - int(available * 0.15 - offset) - 1);
+		int move = int(available * 0.15 - offset) + 1;
+		if (m_centreFrame > move) {
+		    setCentreFrame(m_centreFrame - move);
+		} else {
+		    setCentreFrame(0);
+		}
 	    }
 	}
 
