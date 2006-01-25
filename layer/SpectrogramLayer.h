@@ -132,6 +132,8 @@ public:
 	return PositionTop;
     }
 
+    virtual bool isLayerOpaque() const { return true; }
+
     virtual int getCompletion() const;
 
     virtual QString getPropertyContainerIconName() const { return "spectrogram"; }
