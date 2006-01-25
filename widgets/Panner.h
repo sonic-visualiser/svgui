@@ -46,6 +46,7 @@ protected:
     virtual void mousePressEvent(QMouseEvent *e);
     virtual void mouseReleaseEvent(QMouseEvent *e);
     virtual void mouseMoveEvent(QMouseEvent *e);
+    virtual bool shouldLabelSelections() const { return false; }
 
     QPoint m_clickPos;
     QPoint m_mousePos;

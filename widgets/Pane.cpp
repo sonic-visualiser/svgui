@@ -440,15 +440,20 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	    m_manager->setInProgressSelection(Selection(min, max),
 					      !m_ctrlPressed);
 	}
-	
-	if (!m_manager || !m_manager->isPlaying()) {
+
+	bool doScroll = false;
+	if (!m_manager) doScroll = true;
+	if (!m_manager->isPlaying()) doScroll = true;
+	if (m_followPlay != PlaybackScrollContinuous) doScroll = true;
+
+	if (doScroll) {
 	    int offset = mouseFrame - getStartFrame();
 	    int available = getEndFrame() - getStartFrame();
-	    if (offset >= available * 0.9) {
-		int move = int(offset - available * 0.9) + 1;
+	    if (offset >= available * 0.95) {
+		int move = int(offset - available * 0.95) + 1;
 		setCentreFrame(m_centreFrame + move);
-	    } else if (offset <= available * 0.15) {
-		int move = int(available * 0.15 - offset) + 1;
+	    } else if (offset <= available * 0.10) {
+		int move = int(available * 0.10 - offset) + 1;
 		if (m_centreFrame > move) {
 		    setCentreFrame(m_centreFrame - move);
 		} else {
