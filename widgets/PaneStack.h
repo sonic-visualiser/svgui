@@ -16,6 +16,7 @@
 class QWidget;
 class QLabel;
 class Pane;
+class Layer;
 class ViewManager;
 class PropertyContainer;
 class PropertyStack;
@@ -37,6 +38,7 @@ public:
 
 signals:
     void currentPaneChanged(Pane *pane);
+    void currentLayerChanged(Pane *pane, Layer *layer);
 
 public slots:
     void propertyContainerAdded(PropertyContainer *);

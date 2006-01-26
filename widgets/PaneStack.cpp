@@ -190,6 +190,10 @@ PaneStack::propertyContainerSelected(PropertyContainer *pc)
 	++i;
 	++j;
     }
+
+    Layer *layer = dynamic_cast<Layer *>(pc);
+    if (layer) emit currentLayerChanged(m_currentPane, layer);
+    else emit currentLayerChanged(m_currentPane, 0);
 }
 
 void

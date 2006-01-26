@@ -29,6 +29,8 @@ Pane::Pane(QWidget *w) :
     m_clickedInRange(false),
     m_shiftPressed(false),
     m_ctrlPressed(false),
+    m_navigating(false),
+    m_resizing(false),
     m_centreLineVisible(true)
 {
     setObjectName("Pane");
@@ -236,6 +238,39 @@ Pane::paintEvent(QPaintEvent *e)
     paint.end();
 }
 
+Selection
+Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge)
+{
+    closeToLeftEdge = closeToRightEdge = false;
+
+    if (!m_manager) return Selection();
+
+    long testFrame = (x - 5) * m_zoomLevel + getStartFrame();
+    if (testFrame < 0) {
+	testFrame = x * m_zoomLevel + getStartFrame();
+	if (testFrame < 0) return Selection();
+    }
+
+    Selection selection = m_manager->getContainingSelection(testFrame, true);
+    if (selection.isEmpty()) return selection;
+
+    int lx = (int(selection.getStartFrame()) - getStartFrame()) / m_zoomLevel;
+    int rx = (int(selection.getEndFrame()) - getStartFrame()) / m_zoomLevel;
+    
+    int fuzz = 2;
+    if (x < lx - fuzz || x > rx + fuzz) return Selection();
+
+    int width = rx - lx;
+    fuzz = 3;
+    if (width < 12) fuzz = width / 4;
+    if (fuzz < 1) fuzz = 1;
+
+    if (x < lx + fuzz) closeToLeftEdge = true;
+    if (x > rx - fuzz) closeToRightEdge = true;
+
+    return selection;
+}
+
 void
 Pane::mousePressEvent(QMouseEvent *e)
 {
@@ -247,30 +282,66 @@ Pane::mousePressEvent(QMouseEvent *e)
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
 
-    if (mode == ViewManager::NavigateMode) {
+    m_navigating = false;
 
+    if (mode == ViewManager::NavigateMode || (e->buttons() & Qt::MidButton)) {
+
+	if (mode != ViewManager::NavigateMode) {
+	    setCursor(Qt::PointingHandCursor);
+	}
+
+	m_navigating = true;
 	m_dragCentreFrame = m_centreFrame;
 
     } else if (mode == ViewManager::SelectMode) {
 
-	int mouseFrame = e->x() * m_zoomLevel + getStartFrame();
-	size_t resolution = 1;
-	int snapFrame = mouseFrame;
+	bool closeToLeft = false, closeToRight = false;
+	Selection selection = getSelectionAt(e->x(), closeToLeft, closeToRight);
+
+	if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
+
+	    m_manager->removeSelection(selection);
+
+	    if (closeToLeft) {
+		m_selectionStartFrame = selection.getEndFrame();
+	    } else {
+		m_selectionStartFrame = selection.getStartFrame();
+	    }
+
+	    m_manager->setInProgressSelection(selection, false);
+	    m_resizing = true;
 	
+	} else {
+
+	    int mouseFrame = e->x() * m_zoomLevel + getStartFrame();
+	    size_t resolution = 1;
+	    int snapFrame = mouseFrame;
+	
+	    Layer *layer = getSelectedLayer();
+	    if (layer) {
+		snapFrame = layer->getNearestFeatureFrame(mouseFrame, resolution,
+							  false);
+	    }
+	    
+	    if (snapFrame < 0) snapFrame = 0;
+	    m_selectionStartFrame = snapFrame;
+	    if (m_manager) {
+		m_manager->setInProgressSelection(Selection(snapFrame,
+							    snapFrame + resolution),
+						  !m_ctrlPressed);
+	    }
+
+	    m_resizing = false;
+	}
+
+	update();
+
+    } else if (mode == ViewManager::DrawMode) {
+
 	Layer *layer = getSelectedLayer();
 	if (layer) {
-	    snapFrame = layer->getNearestFeatureFrame(mouseFrame, resolution,
-						      false);
+	    layer->drawStart(e);
 	}
-	
-	if (snapFrame < 0) snapFrame = 0;
-	m_selectionStartFrame = snapFrame;
-	if (m_manager) {
-	    m_manager->setInProgressSelection(Selection(snapFrame,
-							snapFrame + resolution),
-					      !m_ctrlPressed);
-	}
-	update();
     }
 
     emit paneInteractedWith();
@@ -286,7 +357,14 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	mouseMoveEvent(e);
     }
 
-    if (mode == ViewManager::NavigateMode) {
+    if (m_navigating || mode == ViewManager::NavigateMode) {
+
+	m_navigating = false;
+
+	if (mode != ViewManager::NavigateMode) {
+	    // restore cursor
+	    toolModeChanged();
+	}
 
 	if (m_shiftPressed) {
 
@@ -338,7 +416,15 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	}
 	
 	update();
-    } 
+
+    } else if (mode == ViewManager::DrawMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer) {
+	    layer->drawEnd(e);
+	    update();
+	}
+    }
 
     m_clickedInRange = false;
 
@@ -353,26 +439,34 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     if (!m_clickedInRange) {
 	
-//	std::cerr << "Pane: calling identifyLocalFeatures" << std::endl;
+	if (mode == ViewManager::SelectMode) {
+	    bool closeToLeft = false, closeToRight = false;
+	    getSelectionAt(e->x(), closeToLeft, closeToRight);
+	    if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
+		setCursor(Qt::SizeHorCursor);
+	    } else {
+		setCursor(Qt::ArrowCursor);
+	    }
+	}
 
-//!!!	identifyLocalFeatures(true, e->x(), e->y());
+	if (mode != ViewManager::DrawMode) {
 
-	bool previouslyIdentifying = m_identifyFeatures;
-	QPoint prevPoint = m_identifyPoint;
+	    bool previouslyIdentifying = m_identifyFeatures;
+	    QPoint prevPoint = m_identifyPoint;
 
-	m_identifyFeatures = true;
-	m_identifyPoint = e->pos();
-
-	if (m_identifyFeatures != previouslyIdentifying ||
-	    m_identifyPoint != prevPoint) {
-	    update();
+	    m_identifyFeatures = true;
+	    m_identifyPoint = e->pos();
+	    
+	    if (m_identifyFeatures != previouslyIdentifying ||
+		m_identifyPoint != prevPoint) {
+		update();
+	    }
 	}
 
 	return;
-	
     }
 
-    if (mode == ViewManager::NavigateMode) {
+    if (m_navigating || mode == ViewManager::NavigateMode) {
 
 	if (m_shiftPressed) {
 
@@ -438,7 +532,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
 	if (m_manager) {
 	    m_manager->setInProgressSelection(Selection(min, max),
-					      !m_ctrlPressed);
+					      !m_resizing && !m_ctrlPressed);
 	}
 
 	bool doScroll = false;
@@ -463,6 +557,13 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	}
 
 	update();
+
+    } else if (mode == ViewManager::DrawMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer) {
+	    layer->drawDrag(e);
+	}
     }
 }
 
@@ -485,8 +586,6 @@ Pane::wheelEvent(QWheelEvent *e)
 {
     //std::cerr << "wheelEvent, delta " << e->delta() << std::endl;
 
-    int newZoomLevel = m_zoomLevel;
-
     int count = e->delta();
 
     if (count > 0) {
@@ -498,25 +597,45 @@ Pane::wheelEvent(QWheelEvent *e)
 	if (count <= -120) count /= 120;
 	else count = -1;
     }
-  
-    while (count > 0) {
-	if (newZoomLevel <= 2) {
-	    newZoomLevel = 1;
-	    break;
+
+    if (e->modifiers() & Qt::ControlModifier) {
+
+	if (getStartFrame() < 0 && 
+	    getEndFrame() >= getModelsEndFrame()) return;
+
+	long delta = ((width() / 2) * count * m_zoomLevel);
+
+	if (int(m_centreFrame) < delta) {
+	    setCentreFrame(0);
+	} else if (int(m_centreFrame) - delta >= int(getModelsEndFrame())) {
+	    setCentreFrame(getModelsEndFrame());
+	} else {
+	    setCentreFrame(m_centreFrame - delta);
 	}
-	newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
-						  ZoomConstraint::RoundDown);
-	--count;
-    }
 
-    while (count < 0) {
-	newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
-						  ZoomConstraint::RoundUp);
-	++count;
-    }
+    } else {
 
-    if (newZoomLevel != m_zoomLevel) {
-	setZoomLevel(newZoomLevel);
+	int newZoomLevel = m_zoomLevel;
+  
+	while (count > 0) {
+	    if (newZoomLevel <= 2) {
+		newZoomLevel = 1;
+		break;
+	    }
+	    newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
+						      ZoomConstraint::RoundDown);
+	    --count;
+	}
+	
+	while (count < 0) {
+	    newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
+						      ZoomConstraint::RoundUp);
+	    ++count;
+	}
+	
+	if (newZoomLevel != m_zoomLevel) {
+	    setZoomLevel(newZoomLevel);
+	}
     }
 
     emit paneInteractedWith();

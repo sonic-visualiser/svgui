@@ -136,8 +136,6 @@ public:
 
     virtual int getCompletion() const;
 
-    virtual QString getPropertyContainerIconName() const { return "spectrogram"; }
-
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 

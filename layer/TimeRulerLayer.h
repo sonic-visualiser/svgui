@@ -46,8 +46,6 @@ public:
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
-    virtual QString getPropertyContainerIconName() const { return "timeruler"; }
-
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
