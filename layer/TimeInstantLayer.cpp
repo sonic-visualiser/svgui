@@ -24,6 +24,7 @@
 TimeInstantLayer::TimeInstantLayer(View *w) :
     Layer(w),
     m_model(0),
+    m_editing(false),
     m_editingPoint(0, tr("New Point")),
     m_colour(QColor(200, 50, 255))
 {
@@ -355,6 +356,7 @@ TimeInstantLayer::drawStart(QMouseEvent *e)
     if (frame < 0) frame = 0;
     m_editingPoint = SparseOneDimensionalModel::Point(frame, tr("New Point"));
     m_model->addPoint(m_editingPoint);
+    m_editing = true;
 }
 
 void
@@ -362,7 +364,7 @@ TimeInstantLayer::drawDrag(QMouseEvent *e)
 {
     std::cerr << "TimeInstantLayer::drawDrag(" << e->x() << ")" << std::endl;
 
-    if (!m_model) return;
+    if (!m_model || !m_editing) return;
 
     long frame = e->x() * m_view->getZoomLevel() + m_view->getStartFrame();
     if (frame < 0) frame = 0;
@@ -375,7 +377,44 @@ void
 TimeInstantLayer::drawEnd(QMouseEvent *e)
 {
     std::cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << std::endl;
+    if (!m_model || !m_editing) return;
+    m_editing = false;
+}
+
+void
+TimeInstantLayer::editStart(QMouseEvent *e)
+{
+    std::cerr << "TimeInstantLayer::editStart(" << e->x() << ")" << std::endl;
+
     if (!m_model) return;
+
+    SparseOneDimensionalModel::PointList points = getLocalPoints(e->x());
+    if (points.empty()) return;
+
+    m_editingPoint = *points.begin();
+    m_editing = true;
+}
+
+void
+TimeInstantLayer::editDrag(QMouseEvent *e)
+{
+    std::cerr << "TimeInstantLayer::editDrag(" << e->x() << ")" << std::endl;
+
+    if (!m_model || !m_editing) return;
+
+    long frame = e->x() * m_view->getZoomLevel() + m_view->getStartFrame();
+    if (frame < 0) frame = 0;
+    m_model->deletePoint(m_editingPoint);
+    m_editingPoint.frame = frame;
+    m_model->addPoint(m_editingPoint);
+}
+
+void
+TimeInstantLayer::editEnd(QMouseEvent *e)
+{
+    std::cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << std::endl;
+    if (!m_model || !m_editing) return;
+    m_editing = false;
 }
 
 QString
