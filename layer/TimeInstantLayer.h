@@ -35,6 +35,10 @@ public:
 				       size_t &resolution,
 				       bool snapRight = true) const;
 
+    virtual void drawStart(QMouseEvent *);
+    virtual void drawDrag(QMouseEvent *);
+    virtual void drawEnd(QMouseEvent *);
+
     virtual const Model *getModel() const { return m_model; }
     void setModel(SparseOneDimensionalModel *model);
 
@@ -49,8 +53,6 @@ public:
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
 
-    virtual QString getPropertyContainerIconName() const { return "instants"; }
-
     virtual bool isLayerScrollable() const;
 
     virtual int getCompletion() const { return m_model->getCompletion(); }
@@ -64,6 +66,7 @@ protected:
     SparseOneDimensionalModel::PointList getLocalPoints(int) const;
 
     SparseOneDimensionalModel *m_model;
+    SparseOneDimensionalModel::Point m_editingPoint;
     QColor m_colour;
 };
 

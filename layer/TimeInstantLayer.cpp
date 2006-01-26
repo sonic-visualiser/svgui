@@ -17,12 +17,14 @@
 #include "model/SparseOneDimensionalModel.h"
 
 #include <QPainter>
+#include <QMouseEvent>
 
 #include <iostream>
 
 TimeInstantLayer::TimeInstantLayer(View *w) :
     Layer(w),
     m_model(0),
+    m_editingPoint(0, tr("New Point")),
     m_colour(QColor(200, 50, 255))
 {
     m_view->addLayer(this);
@@ -295,13 +297,22 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	 i != points.end(); ++i) {
 
 	const SparseOneDimensionalModel::Point &p(*i);
+	SparseOneDimensionalModel::PointList::const_iterator j = i;
+	++j;
 
 	int x = (p.frame - startFrame) / zoomLevel;
 	float w = float(m_model->getResolution()) / zoomLevel;
 	int iw = w;
 	if (iw < 2) {
-	    if (w < 0.5) iw = 1;
-	    else iw = 2;
+	    if (iw < 1) {
+		iw = 2;
+		if (j != points.end()) {
+		    int nx = ((*j).frame - startFrame) / zoomLevel;
+		    if (nx < x + 3) iw = 1;
+		}
+	    } else {
+		iw = 2;
+	    }
 	}
 
 	if (p.frame == illuminateFrame) {
@@ -319,8 +330,7 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	    int lw = paint.fontMetrics().width(p.label);
 	    bool good = true;
 
-	    SparseOneDimensionalModel::PointList::const_iterator j = i;
-	    if (++j != points.end()) {
+	    if (j != points.end()) {
 		int nx = (j->frame - startFrame) / zoomLevel;
 		if (nx >= x && nx - x - w - 3 <= lw) good = false;
 	    }
@@ -332,6 +342,40 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	    }
 	}
     }
+}
+
+void
+TimeInstantLayer::drawStart(QMouseEvent *e)
+{
+    std::cerr << "TimeInstantLayer::drawStart(" << e->x() << ")" << std::endl;
+
+    if (!m_model) return;
+
+    long frame = e->x() * m_view->getZoomLevel() + m_view->getStartFrame();
+    if (frame < 0) frame = 0;
+    m_editingPoint = SparseOneDimensionalModel::Point(frame, tr("New Point"));
+    m_model->addPoint(m_editingPoint);
+}
+
+void
+TimeInstantLayer::drawDrag(QMouseEvent *e)
+{
+    std::cerr << "TimeInstantLayer::drawDrag(" << e->x() << ")" << std::endl;
+
+    if (!m_model) return;
+
+    long frame = e->x() * m_view->getZoomLevel() + m_view->getStartFrame();
+    if (frame < 0) frame = 0;
+    m_model->deletePoint(m_editingPoint);
+    m_editingPoint.frame = frame;
+    m_model->addPoint(m_editingPoint);
+}
+
+void
+TimeInstantLayer::drawEnd(QMouseEvent *e)
+{
+    std::cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << std::endl;
+    if (!m_model) return;
 }
 
 QString

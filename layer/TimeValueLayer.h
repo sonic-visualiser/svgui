@@ -54,8 +54,6 @@ public:
     void setPlotStyle(PlotStyle style);
     PlotStyle getPlotStyle() const { return m_plotStyle; }
 
-    virtual QString getPropertyContainerIconName() const { return "values"; }
-
     virtual bool isLayerScrollable() const;
 
     virtual int getCompletion() const { return m_model->getCompletion(); }

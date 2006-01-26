@@ -90,6 +90,16 @@ LayerFactory::getValidLayerTypes(Model *model)
     return types;
 }
 
+LayerFactory::LayerTypeSet
+LayerFactory::getValidEmptyLayerTypes()
+{
+    LayerTypeSet types;
+    types.insert(TimeInstants);
+    types.insert(TimeValues);
+    //!!! and in principle Colour3DPlot -- now that's a challenge
+    return types;
+}
+
 LayerFactory::LayerType
 LayerFactory::getLayerType(const Layer *layer)
 {
@@ -100,6 +110,20 @@ LayerFactory::getLayerType(const Layer *layer)
     if (dynamic_cast<const TimeValueLayer *>(layer)) return TimeValues;
     if (dynamic_cast<const Colour3DPlotLayer *>(layer)) return Colour3DPlot;
     return UnknownLayer;
+}
+
+QString
+LayerFactory::getLayerIconName(LayerType type)
+{
+    switch (type) {
+    case Waveform: return "waveform";
+    case Spectrogram: return "spectrogram";
+    case TimeRuler: return "timeruler";
+    case TimeInstants: return "instants";
+    case TimeValues: return "values";
+    case Colour3DPlot: return "colour3d";
+    default: return "unknown";
+    }
 }
 
 QString
@@ -151,6 +175,19 @@ LayerFactory::setModel(Layer *layer, Model *model)
 
     if (trySetModel<SpectrogramLayer, DenseTimeValueModel>(layer, model))
 	return;
+}
+
+Model *
+LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
+{
+    if (layerType == TimeInstants) {
+	return new SparseOneDimensionalModel(baseModel->getSampleRate(), 1);
+    } else if (layerType == TimeValues) {
+	return new SparseTimeValueModel(baseModel->getSampleRate(), 1,
+					0.0, 0.0, true);
+    } else {
+	return 0;
+    }
 }
 
 Layer *

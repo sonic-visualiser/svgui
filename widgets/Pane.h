@@ -53,6 +53,8 @@ protected:
     virtual void leaveEvent(QEvent *e);
     virtual void wheelEvent(QWheelEvent *e);
 
+    Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight);
+
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
     QPoint m_clickPos;
@@ -60,6 +62,8 @@ protected:
     bool m_clickedInRange;
     bool m_shiftPressed;
     bool m_ctrlPressed;
+    bool m_navigating;
+    bool m_resizing;
     size_t m_dragCentreFrame;
     bool m_centreLineVisible;
     size_t m_selectionStartFrame;

@@ -43,6 +43,7 @@ public:
 
     typedef std::set<LayerType> LayerTypeSet;
     LayerTypeSet getValidLayerTypes(Model *model);
+    LayerTypeSet getValidEmptyLayerTypes();
 
     LayerType getLayerType(const Layer *);
 
@@ -52,7 +53,9 @@ public:
     QString getLayerPresentationName(LayerType type);
 
     void setModel(Layer *layer, Model *model);
+    Model *createEmptyModel(LayerType type, Model *baseModel);
 
+    QString getLayerIconName(LayerType);
     QString getLayerTypeName(LayerType);
     LayerType getLayerTypeForName(QString);
 
@@ -62,6 +65,7 @@ protected:
 	LayerClass *layer = dynamic_cast<LayerClass *>(layerBase);
 	if (!layer) return false;
 	ModelClass *model = dynamic_cast<ModelClass *>(modelBase);
+	if (!model) return false;
 	layer->setModel(model);
 	return true;
     }

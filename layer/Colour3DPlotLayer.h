@@ -56,8 +56,6 @@ public:
     virtual void setProperty(const PropertyName &, int value);
 */
 
-    virtual QString getPropertyContainerIconName() const { return "colour3d"; }
-
     void setProperties(const QXmlAttributes &attributes) { }
     
 protected slots:
