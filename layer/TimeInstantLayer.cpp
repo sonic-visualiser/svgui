@@ -297,15 +297,19 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	const SparseOneDimensionalModel::Point &p(*i);
 
 	int x = (p.frame - startFrame) / zoomLevel;
-	int w = m_model->getResolution() / zoomLevel;
+	float w = float(m_model->getResolution()) / zoomLevel;
+	int iw = w;
+	if (iw < 2) {
+	    if (w < 0.5) iw = 1;
+	    else iw = 2;
+	}
 
-	if (w < 1) w = 1;
 	if (p.frame == illuminateFrame) {
 	    paint.setPen(Qt::black); //!!!
 	} else {
 	    paint.setPen(brushColour);
 	}
-	paint.drawRect(x, 0, w - 1, m_view->height() - 1);
+	paint.drawRect(x, 0, iw - 1, m_view->height() - 1);
 	paint.setPen(m_colour);
 	
 	if (p.label != "") {
