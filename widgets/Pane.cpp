@@ -342,6 +342,13 @@ Pane::mousePressEvent(QMouseEvent *e)
 	if (layer) {
 	    layer->drawStart(e);
 	}
+
+    } else if (mode == ViewManager::EditMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer) {
+	    layer->editStart(e);
+	}
     }
 
     emit paneInteractedWith();
@@ -422,6 +429,14 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	Layer *layer = getSelectedLayer();
 	if (layer) {
 	    layer->drawEnd(e);
+	    update();
+	}
+
+    } else if (mode == ViewManager::EditMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer) {
+	    layer->editEnd(e);
 	    update();
 	}
     }
@@ -563,6 +578,13 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	Layer *layer = getSelectedLayer();
 	if (layer) {
 	    layer->drawDrag(e);
+	}
+
+    } else if (mode == ViewManager::EditMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer) {
+	    layer->editDrag(e);
 	}
     }
 }

@@ -39,6 +39,10 @@ public:
     virtual void drawDrag(QMouseEvent *);
     virtual void drawEnd(QMouseEvent *);
 
+    virtual void editStart(QMouseEvent *);
+    virtual void editDrag(QMouseEvent *);
+    virtual void editEnd(QMouseEvent *);
+
     virtual const Model *getModel() const { return m_model; }
     void setModel(SparseOneDimensionalModel *model);
 
@@ -66,6 +70,7 @@ protected:
     SparseOneDimensionalModel::PointList getLocalPoints(int) const;
 
     SparseOneDimensionalModel *m_model;
+    bool m_editing;
     SparseOneDimensionalModel::Point m_editingPoint;
     QColor m_colour;
 };
