@@ -27,6 +27,7 @@ public:
     PropertyStack(QWidget *parent, View *client);
 
     bool containsContainer(PropertyContainer *container) const;
+    int getContainerIndex(PropertyContainer *container) const;
 
 signals:
     void propertyContainerSelected(PropertyContainer *container);

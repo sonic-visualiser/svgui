@@ -95,6 +95,17 @@ PropertyStack::containsContainer(PropertyContainer *pc) const
     return false;
 }
 
+int
+PropertyStack::getContainerIndex(PropertyContainer *pc) const
+{
+    for (size_t i = 0; i < m_client->getPropertyContainerCount(); ++i) {
+	PropertyContainer *container = m_client->getPropertyContainer(i);
+	if (pc == container) return i;
+    }
+
+    return false;
+}
+
 void
 PropertyStack::propertyContainerAdded(PropertyContainer *)
 {
