@@ -227,12 +227,14 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     if (m_clickedInRange && m_shiftPressed) {
-	//!!! be nice if this looked a bit more in keeping with the
-	//selection block
-	paint.setPen(Qt::blue);
-	paint.drawRect(m_clickPos.x(), m_clickPos.y(),
-		       m_mousePos.x() - m_clickPos.x(),
-		       m_mousePos.y() - m_clickPos.y());
+	if (m_manager && (m_manager->getToolMode() == ViewManager::NavigateMode)) {
+	    //!!! be nice if this looked a bit more in keeping with the
+	    //selection block
+	    paint.setPen(Qt::blue);
+	    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
+			   m_mousePos.x() - m_clickPos.x(),
+			   m_mousePos.y() - m_clickPos.y());
+	}
     }
     
     paint.end();
@@ -578,6 +580,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	Layer *layer = getSelectedLayer();
 	if (layer) {
 	    layer->drawDrag(e);
+	    update();
 	}
 
     } else if (mode == ViewManager::EditMode) {
@@ -585,6 +588,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	Layer *layer = getSelectedLayer();
 	if (layer) {
 	    layer->editDrag(e);
+	    update();
 	}
     }
 }
@@ -680,7 +684,7 @@ Pane::toolModeChanged()
 	break;
 	
     case ViewManager::EditMode:
-	setCursor(Qt::SizeAllCursor);
+	setCursor(Qt::UpArrowCursor);
 	break;
 	
     case ViewManager::DrawMode:

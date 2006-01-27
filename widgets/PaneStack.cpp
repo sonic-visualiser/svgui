@@ -157,6 +157,37 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
     emit currentPaneChanged(m_currentPane);
 }
 
+void
+PaneStack::setCurrentLayer(Pane *pane, Layer *layer) // may be null
+{
+    setCurrentPane(pane);
+
+    if (m_currentPane) {
+
+	std::vector<Pane *>::iterator i = m_panes.begin();
+	std::vector<QWidget *>::iterator j = m_propertyStacks.begin();
+
+	while (i != m_panes.end()) {
+
+	    if (*i == pane) {
+		PropertyStack *stack = dynamic_cast<PropertyStack *>(*j);
+		if (stack) {
+		    if (stack->containsContainer(layer)) {
+			stack->setCurrentIndex(stack->getContainerIndex(layer));
+			emit currentLayerChanged(pane, layer);
+		    } else {
+			stack->setCurrentIndex(stack->getContainerIndex(pane));
+			emit currentLayerChanged(pane, 0);
+		    }
+		}
+		break;
+	    }
+	    ++i;
+	    ++j;
+	}
+    }
+}
+
 Pane *
 PaneStack::getCurrentPane() 
 {

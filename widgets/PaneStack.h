@@ -34,6 +34,7 @@ public:
     int getPaneCount() const;
 
     void setCurrentPane(Pane *pane);
+    void setCurrentLayer(Pane *pane, Layer *layer);
     Pane *getCurrentPane();
 
 signals:
