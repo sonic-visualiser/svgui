@@ -348,6 +348,7 @@ TimeInstantLayer::drawStart(QMouseEvent *e)
 
     long frame = getFrameForX(e->x());
     if (frame < 0) frame = 0;
+    frame = frame / m_model->getResolution() * m_model->getResolution();
     m_editingPoint = SparseOneDimensionalModel::Point(frame, tr("New Point"));
     m_model->addPoint(m_editingPoint);
     m_editing = true;
@@ -362,6 +363,7 @@ TimeInstantLayer::drawDrag(QMouseEvent *e)
 
     long frame = getFrameForX(e->x());
     if (frame < 0) frame = 0;
+    frame = frame / m_model->getResolution() * m_model->getResolution();
     m_model->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
     m_model->addPoint(m_editingPoint);
@@ -398,6 +400,7 @@ TimeInstantLayer::editDrag(QMouseEvent *e)
 
     long frame = getFrameForX(e->x());
     if (frame < 0) frame = 0;
+    frame = frame / m_model->getResolution() * m_model->getResolution();
     m_model->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
     m_model->addPoint(m_editingPoint);

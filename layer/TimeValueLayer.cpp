@@ -18,6 +18,7 @@
 
 #include <QPainter>
 #include <QPainterPath>
+#include <QMouseEvent>
 
 #include <iostream>
 #include <cmath>
@@ -25,6 +26,8 @@
 TimeValueLayer::TimeValueLayer(View *w) :
     Layer(w),
     m_model(0),
+    m_editing(false),
+    m_editingPoint(0, 0.0, tr("New Point")),
     m_colour(Qt::black),
     m_plotStyle(PlotConnectedPoints)
 {
@@ -297,6 +300,30 @@ TimeValueLayer::getNearestFeatureFrame(int frame,
     return returnFrame;
 }
 
+int
+TimeValueLayer::getYForValue(float value) const
+{
+    float min = m_model->getValueMinimum();
+    float max = m_model->getValueMaximum();
+    if (max == min) max = min + 1.0;
+
+    int h = m_view->height();
+
+    return int(h - ((value - min) * h) / (max - min));
+}
+
+float
+TimeValueLayer::getValueForY(int y) const
+{
+    float min = m_model->getValueMinimum();
+    float max = m_model->getValueMaximum();
+    if (max == min) max = min + 1.0;
+
+    int h = m_view->height();
+
+    return min + (float(h - y) * float(max - min)) / h;
+}
+
 void
 TimeValueLayer::paint(QPainter &paint, QRect rect) const
 {
@@ -359,9 +386,7 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	const SparseTimeValueModel::Point &p(*i);
 
 	int x = getXForFrame(p.frame);
-	int y = int(nearbyint(m_view->height() -
-			      ((p.value - min) * m_view->height()) /
-			      (max - min)));
+	int y = getYForValue(p.value);
 
 	if (w < 1) w = 1;
 
@@ -416,9 +441,7 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
 		const SparseTimeValueModel::Point &q(*j);
 		int nx = getXForFrame(q.frame);
-		int ny = int(nearbyint(m_view->height() -
-				       ((q.value - min) * m_view->height()) /
-				       (max - min)));
+		int ny = getYForValue(q.value);
 
 		if (m_plotStyle == PlotConnectedPoints) {
 
@@ -457,6 +480,92 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
     // looks like save/restore doesn't deal with this:
     paint.setRenderHint(QPainter::Antialiasing, false);
+}
+
+void
+TimeValueLayer::drawStart(QMouseEvent *e)
+{
+    std::cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
+
+    if (!m_model) return;
+
+    long frame = getFrameForX(e->x());
+    if (frame < 0) frame = 0;
+    frame = frame / m_model->getResolution() * m_model->getResolution();
+
+    float value = getValueForY(e->y());
+
+    m_editingPoint = SparseTimeValueModel::Point(frame, value, tr("New Point"));
+    m_model->addPoint(m_editingPoint);
+    m_editing = true;
+}
+
+void
+TimeValueLayer::drawDrag(QMouseEvent *e)
+{
+    std::cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+
+    if (!m_model || !m_editing) return;
+
+    long frame = getFrameForX(e->x());
+    if (frame < 0) frame = 0;
+    frame = frame / m_model->getResolution() * m_model->getResolution();
+
+    float value = getValueForY(e->y());
+
+    m_model->deletePoint(m_editingPoint);
+    m_editingPoint.frame = frame;
+    m_editingPoint.value = value;
+    m_model->addPoint(m_editingPoint);
+}
+
+void
+TimeValueLayer::drawEnd(QMouseEvent *e)
+{
+    std::cerr << "TimeValueLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+    if (!m_model || !m_editing) return;
+    m_editing = false;
+}
+
+void
+TimeValueLayer::editStart(QMouseEvent *e)
+{
+    std::cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+
+    if (!m_model) return;
+
+    SparseTimeValueModel::PointList points = getLocalPoints(e->x());
+    if (points.empty()) return;
+
+    m_editingPoint = *points.begin();
+    m_editing = true;
+}
+
+void
+TimeValueLayer::editDrag(QMouseEvent *e)
+{
+    std::cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+
+    if (!m_model || !m_editing) return;
+
+    long frame = getFrameForX(e->x());
+    if (frame < 0) frame = 0;
+    frame = frame / m_model->getResolution() * m_model->getResolution();
+
+    float value = getValueForY(e->y());
+
+    m_model->deletePoint(m_editingPoint);
+    m_editingPoint.frame = frame;
+    m_editingPoint.value = value;
+    m_model->addPoint(m_editingPoint);
+}
+
+void
+TimeValueLayer::editEnd(QMouseEvent *e)
+{
+    std::cerr << "TimeValueLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+    if (!m_model || !m_editing) return;
+    m_editing = false;
 }
 
 QString
