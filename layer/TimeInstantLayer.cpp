@@ -58,7 +58,7 @@ TimeInstantLayer::getProperties() const
 }
 
 Layer::PropertyType
-TimeInstantLayer::getPropertyType(const PropertyName &name) const
+TimeInstantLayer::getPropertyType(const PropertyName &) const
 {
     return ValueProperty;
 }
@@ -151,10 +151,7 @@ TimeInstantLayer::getLocalPoints(int x) const
 {
     if (!m_model) return SparseOneDimensionalModel::PointList();
 
-    long startFrame = m_view->getStartFrame();
-    long endFrame = m_view->getEndFrame();
-    int zoomLevel = m_view->getZoomLevel();
-    long frame = startFrame + x * zoomLevel;
+    long frame = getFrameForX(x);
 
     SparseOneDimensionalModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -172,8 +169,8 @@ TimeInstantLayer::getLocalPoints(int x) const
 
     if (prevPoints.empty()) {
 	usePoints = nextPoints;
-    } else if (prevPoints.begin()->frame < startFrame &&
-	       !(nextPoints.begin()->frame > endFrame)) {
+    } else if (prevPoints.begin()->frame < m_view->getStartFrame() &&
+	       !(nextPoints.begin()->frame > m_view->getEndFrame())) {
 	usePoints = nextPoints;
     } else if (nextPoints.begin()->frame - frame <
 	       frame - prevPoints.begin()->frame) {
@@ -266,12 +263,10 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 
 //    Profiler profiler("TimeInstantLayer::paint", true);
 
-    long startFrame = m_view->getStartFrame();
-    int zoomLevel = m_view->getZoomLevel();
-
     int x0 = rect.left(), x1 = rect.right();
-    long frame0 = startFrame + x0 * zoomLevel;
-    long frame1 = startFrame + x1 * zoomLevel;
+
+    long frame0 = getFrameForX(x0);
+    long frame1 = getFrameForX(x1);
 
     SparseOneDimensionalModel::PointList points(m_model->getPoints
 						(frame0, frame1));
@@ -301,21 +296,20 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	SparseOneDimensionalModel::PointList::const_iterator j = i;
 	++j;
 
-	int x = (p.frame - startFrame) / zoomLevel;
-	float w = float(m_model->getResolution()) / zoomLevel;
-	int iw = w;
+	int x = getXForFrame(p.frame);
+	int iw = getXForFrame(p.frame + m_model->getResolution()) - x;
 	if (iw < 2) {
 	    if (iw < 1) {
 		iw = 2;
 		if (j != points.end()) {
-		    int nx = ((*j).frame - startFrame) / zoomLevel;
+		    int nx = getXForFrame(j->frame);
 		    if (nx < x + 3) iw = 1;
 		}
 	    } else {
 		iw = 2;
 	    }
 	}
-
+		
 	if (p.frame == illuminateFrame) {
 	    paint.setPen(Qt::black); //!!!
 	} else {
@@ -332,12 +326,12 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	    bool good = true;
 
 	    if (j != points.end()) {
-		int nx = (j->frame - startFrame) / zoomLevel;
-		if (nx >= x && nx - x - w - 3 <= lw) good = false;
+		int nx = getXForFrame(j->frame);
+		if (nx >= x && nx - x - iw - 3 <= lw) good = false;
 	    }
 
 	    if (good) {
-		paint.drawText(x + w + 2,
+		paint.drawText(x + iw + 2,
 			       m_view->height() - paint.fontMetrics().height(),
 			       p.label);
 	    }
@@ -352,7 +346,7 @@ TimeInstantLayer::drawStart(QMouseEvent *e)
 
     if (!m_model) return;
 
-    long frame = e->x() * m_view->getZoomLevel() + m_view->getStartFrame();
+    long frame = getFrameForX(e->x());
     if (frame < 0) frame = 0;
     m_editingPoint = SparseOneDimensionalModel::Point(frame, tr("New Point"));
     m_model->addPoint(m_editingPoint);
@@ -366,7 +360,7 @@ TimeInstantLayer::drawDrag(QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = e->x() * m_view->getZoomLevel() + m_view->getStartFrame();
+    long frame = getFrameForX(e->x());
     if (frame < 0) frame = 0;
     m_model->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
@@ -402,7 +396,7 @@ TimeInstantLayer::editDrag(QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = e->x() * m_view->getZoomLevel() + m_view->getStartFrame();
+    long frame = getFrameForX(e->x());
     if (frame < 0) frame = 0;
     m_model->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;

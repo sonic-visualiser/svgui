@@ -1101,31 +1101,28 @@ SpectrogramLayer::getYBinRange(int y, float &q0, float &q1) const
 }
 
 bool
-SpectrogramLayer::getXBinRange(int x, float &s0, float &s1, LayerRange *range) const
+SpectrogramLayer::getXBinRange(int x, float &s0, float &s1) const
 {
-    long   startFrame;
-    int    zoomLevel;
+//    long   startFrame;
+//    int    zoomLevel;
     size_t modelStart;
     size_t modelEnd;
 
-    if (range) {
-	startFrame = range->startFrame;
-	zoomLevel  = range->zoomLevel;
-	modelStart = range->modelStart;
-	modelEnd   = range->modelEnd;
-    } else {
-	startFrame = m_view->getStartFrame();
-        zoomLevel  = m_view->getZoomLevel();
-	modelStart = m_model->getStartFrame();
-	modelEnd   = m_model->getEndFrame();
-    }
+//    startFrame = m_view->getStartFrame();
+//    zoomLevel  = m_view->getZoomLevel();
+    modelStart = m_model->getStartFrame();
+    modelEnd   = m_model->getEndFrame();
 
     // Each pixel column covers an exact range of sample frames:
+    int f0 = getFrameForX(x) - modelStart;
+    int f1 = getFrameForX(x + 1) - modelStart - 1;
+
+/*
     int f0 = startFrame + x * zoomLevel - modelStart;
     int f1 = f0 + zoomLevel - 1;
-    
+*/
     if (f1 < int(modelStart) || f0 > int(modelEnd)) return false;
-    
+      
     // And that range may be drawn from a possibly non-integral
     // range of spectrogram windows:
 
@@ -1290,8 +1287,8 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 	    m_pixmapCache->width() == m_view->width() &&
 	    m_pixmapCache->height() == m_view->height()) {
 
-	    if (m_pixmapCacheStartFrame / zoomLevel ==
-		startFrame / zoomLevel) {
+	    if (getXForFrame(m_pixmapCacheStartFrame) ==
+		getXForFrame(startFrame)) {
 	    
 #ifdef DEBUG_SPECTROGRAM_REPAINT
 		std::cerr << "SpectrogramLayer: pixmap cache good" << std::endl;
@@ -1309,7 +1306,8 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 
 		recreateWholePixmapCache = false;
 
-		int dx = (m_pixmapCacheStartFrame - startFrame) / zoomLevel;
+		int dx = getXForFrame(m_pixmapCacheStartFrame) -
+		         getXForFrame(startFrame);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
 		std::cerr << "SpectrogramLayer: dx = " << dx << " (pixmap cache " << m_pixmapCache->width() << "x" << m_pixmapCache->height() << ")" << std::endl;
@@ -1377,9 +1375,6 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 
     QImage scaled(w, h, QImage::Format_RGB32);
 
-    LayerRange range = { m_view->getStartFrame(), m_view->getZoomLevel(),
-			m_model->getStartFrame(), m_model->getEndFrame() };
-
     m_mutex.unlock();
 
     for (int y = 0; y < h; ++y) {
@@ -1411,7 +1406,7 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 
 	    float s0 = 0, s1 = 0;
 
-	    if (!getXBinRange(x0 + x, s0, s1, &range)) {
+	    if (!getXBinRange(x0 + x, s0, s1)) {
 		assert(x <= scaled.width());
 		scaled.setPixel(x, y, qRgb(0, 0, 0));
 		continue;
