@@ -188,10 +188,7 @@ TimeValueLayer::getLocalPoints(int x) const
 {
     if (!m_model) return SparseTimeValueModel::PointList();
 
-    long startFrame = m_view->getStartFrame();
-    long endFrame = m_view->getEndFrame();
-    int zoomLevel = m_view->getZoomLevel();
-    long frame = startFrame + x * zoomLevel;
+    long frame = getFrameForX(x);
 
     SparseTimeValueModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -209,8 +206,8 @@ TimeValueLayer::getLocalPoints(int x) const
 
     if (prevPoints.empty()) {
 	usePoints = nextPoints;
-    } else if (prevPoints.begin()->frame < startFrame &&
-	       !(nextPoints.begin()->frame > endFrame)) {
+    } else if (prevPoints.begin()->frame < m_view->getStartFrame() &&
+	       !(nextPoints.begin()->frame > m_view->getEndFrame())) {
 	usePoints = nextPoints;
     } else if (nextPoints.begin()->frame - frame <
 	       frame - prevPoints.begin()->frame) {
@@ -310,12 +307,9 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
 //    Profiler profiler("TimeValueLayer::paint", true);
 
-    long startFrame = m_view->getStartFrame();
-    int zoomLevel = m_view->getZoomLevel();
-
     int x0 = rect.left(), x1 = rect.right();
-    long frame0 = startFrame + x0 * zoomLevel;
-    long frame1 = startFrame + x1 * zoomLevel;
+    long frame0 = getFrameForX(x0);
+    long frame1 = getFrameForX(x1);
 
     SparseTimeValueModel::PointList points(m_model->getPoints
 					   (frame0, frame1));
@@ -346,7 +340,9 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
 
-    int w = m_model->getResolution() / zoomLevel;
+    int w =
+	getXForFrame(frame0 + m_model->getResolution()) -
+	getXForFrame(frame0);
 
     paint.save();
 
@@ -362,7 +358,7 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
 	const SparseTimeValueModel::Point &p(*i);
 
-	int x = (p.frame - startFrame) / zoomLevel;
+	int x = getXForFrame(p.frame);
 	int y = int(nearbyint(m_view->height() -
 			      ((p.value - min) * m_view->height()) /
 			      (max - min)));
@@ -419,7 +415,7 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	    if (j != points.end()) {
 
 		const SparseTimeValueModel::Point &q(*j);
-		int nx = (q.frame - startFrame) / zoomLevel;
+		int nx = getXForFrame(q.frame);
 		int ny = int(nearbyint(m_view->height() -
 				       ((q.value - min) * m_view->height()) /
 				       (max - min)));

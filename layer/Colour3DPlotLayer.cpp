@@ -181,10 +181,8 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
     //direction.  This one is only really appropriate for models with
     //far fewer bins in both directions.
 
-    int sx0 = ((startFrame + x0 * zoomLevel) - int(modelStart)) /
-	int(modelWindow);
-    int sx1 = ((startFrame + x1 * zoomLevel) - int(modelStart)) / 
-	int(modelWindow);
+    int sx0 = int((getFrameForX(x0) - long(modelStart)) / long(modelWindow));
+    int sx1 = int((getFrameForX(x1) - long(modelStart)) / long(modelWindow));
     int sw = sx1 - sx0;
     int sh = m_model->getYBinCount();
 
@@ -202,10 +200,8 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 
 	for (int sy = 0; sy < sh; ++sy) {
 
-	    int rx0 = ((fx + int(modelStart))
-		       - int(startFrame)) / zoomLevel;
-	    int rx1 = ((fx + int(modelWindow) + int(modelStart))
-		       - int(startFrame)) / zoomLevel;
+	    int rx0 = getXForFrame(fx + int(modelStart));
+	    int rx1 = getXForFrame(fx + int(modelStart) + int(modelWindow));
 
 	    int ry0 = h - (sy * h) / sh - 1;
 	    int ry1 = h - ((sy + 1) * h) / sh - 2;

@@ -217,9 +217,7 @@ protected:
 	size_t modelStart;
 	size_t modelEnd;
     };
-    /// LayerRange is only passed in to save lookup time
-    bool getXBinRange(int x, float &windowMin, float &windowMax,
-		      LayerRange *range = 0) const;
+    bool getXBinRange(int x, float &windowMin, float &windowMax) const;
 
     bool getYBinSourceRange(int y, float &freqMin, float &freqMax) const;
     bool getXBinSourceRange(int x, RealTime &timeMin, RealTime &timeMax) const;

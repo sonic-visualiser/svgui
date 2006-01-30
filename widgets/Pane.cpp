@@ -247,17 +247,17 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge)
 
     if (!m_manager) return Selection();
 
-    long testFrame = (x - 5) * m_zoomLevel + getStartFrame();
+    long testFrame = getFrameForX(x - 5);
     if (testFrame < 0) {
-	testFrame = x * m_zoomLevel + getStartFrame();
+	testFrame = getFrameForX(x);
 	if (testFrame < 0) return Selection();
     }
 
     Selection selection = m_manager->getContainingSelection(testFrame, true);
     if (selection.isEmpty()) return selection;
 
-    int lx = (int(selection.getStartFrame()) - getStartFrame()) / m_zoomLevel;
-    int rx = (int(selection.getEndFrame()) - getStartFrame()) / m_zoomLevel;
+    int lx = getXForFrame(selection.getStartFrame());
+    int rx = getXForFrame(selection.getEndFrame());
     
     int fuzz = 2;
     if (x < lx - fuzz || x > rx + fuzz) return Selection();
@@ -315,7 +315,7 @@ Pane::mousePressEvent(QMouseEvent *e)
 	
 	} else {
 
-	    int mouseFrame = e->x() * m_zoomLevel + getStartFrame();
+	    int mouseFrame = getFrameForX(e->x());
 	    size_t resolution = 1;
 	    int snapFrame = mouseFrame;
 	
@@ -381,10 +381,11 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	    int x1 = std::max(m_clickPos.x(), m_mousePos.x());
 	    int w = x1 - x0;
 	    
-	    long newStartFrame = getStartFrame() + m_zoomLevel * x0;
+	    long newStartFrame = getFrameForX(x0);
 	    
-	    if (newStartFrame <= -long(width() * m_zoomLevel)) {
-		newStartFrame  = -long(width() * m_zoomLevel) + 1;
+	    long visibleFrames = getEndFrame() - getStartFrame();
+	    if (newStartFrame <= -visibleFrames) {
+		newStartFrame  = -visibleFrames + 1;
 	    }
 	    
 	    if (newStartFrame >= long(getModelsEndFrame())) {
@@ -492,9 +493,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
 	} else {
 
-	    long xoff = int(e->x()) - int(m_clickPos.x());
-	    long frameOff = xoff * m_zoomLevel;
-	    
+	    long frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
+
 	    size_t newCentreFrame = m_dragCentreFrame;
 	    
 	    if (frameOff < 0) {
@@ -509,16 +509,15 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 		newCentreFrame = getModelsEndFrame();
 		if (newCentreFrame > 0) --newCentreFrame;
 	    }
-	    
-	    if (std::max(m_centreFrame, newCentreFrame) -
-		std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
+
+	    if (getXForFrame(m_centreFrame) != getXForFrame(newCentreFrame)) {
 		setCentreFrame(newCentreFrame);
 	    }
 	}
 
     } else if (mode == ViewManager::SelectMode) {
 
-	int mouseFrame = e->x() * m_zoomLevel + getStartFrame();
+	int mouseFrame = getFrameForX(e->x());
 	size_t resolution = 1;
 	int snapFrameLeft = mouseFrame;
 	int snapFrameRight = mouseFrame;
@@ -626,6 +625,8 @@ Pane::wheelEvent(QWheelEvent *e)
 
     if (e->modifiers() & Qt::ControlModifier) {
 
+	// Scroll left or right, rapidly
+
 	if (getStartFrame() < 0 && 
 	    getEndFrame() >= getModelsEndFrame()) return;
 
@@ -640,6 +641,8 @@ Pane::wheelEvent(QWheelEvent *e)
 	}
 
     } else {
+
+	// Zoom in or out
 
 	int newZoomLevel = m_zoomLevel;
   
