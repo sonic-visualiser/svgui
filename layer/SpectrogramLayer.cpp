@@ -1103,31 +1103,19 @@ SpectrogramLayer::getYBinRange(int y, float &q0, float &q1) const
 bool
 SpectrogramLayer::getXBinRange(int x, float &s0, float &s1) const
 {
-//    long   startFrame;
-//    int    zoomLevel;
-    size_t modelStart;
-    size_t modelEnd;
-
-//    startFrame = m_view->getStartFrame();
-//    zoomLevel  = m_view->getZoomLevel();
-    modelStart = m_model->getStartFrame();
-    modelEnd   = m_model->getEndFrame();
+    size_t modelStart = m_model->getStartFrame();
+    size_t modelEnd = m_model->getEndFrame();
 
     // Each pixel column covers an exact range of sample frames:
     int f0 = getFrameForX(x) - modelStart;
     int f1 = getFrameForX(x + 1) - modelStart - 1;
 
-/*
-    int f0 = startFrame + x * zoomLevel - modelStart;
-    int f1 = f0 + zoomLevel - 1;
-*/
     if (f1 < int(modelStart) || f0 > int(modelEnd)) return false;
       
     // And that range may be drawn from a possibly non-integral
     // range of spectrogram windows:
 
     size_t windowIncrement = getWindowIncrement();
-
     s0 = float(f0) / windowIncrement;
     s1 = float(f1) / windowIncrement;
 

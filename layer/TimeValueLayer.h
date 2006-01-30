@@ -35,6 +35,14 @@ public:
 				       size_t &resolution,
 				       bool snapRight = true) const;
 
+    virtual void drawStart(QMouseEvent *);
+    virtual void drawDrag(QMouseEvent *);
+    virtual void drawEnd(QMouseEvent *);
+
+    virtual void editStart(QMouseEvent *);
+    virtual void editDrag(QMouseEvent *);
+    virtual void editEnd(QMouseEvent *);
+
     virtual const Model *getModel() const { return m_model; }
     void setModel(SparseTimeValueModel *model);
 
@@ -64,9 +72,14 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
 protected:
+    int getYForValue(float value) const;
+    float getValueForY(int y) const;
+
     SparseTimeValueModel::PointList getLocalPoints(int) const;
 
     SparseTimeValueModel *m_model;
+    bool m_editing;
+    SparseTimeValueModel::Point m_editingPoint;
     QColor m_colour;
     PlotStyle m_plotStyle;
 };

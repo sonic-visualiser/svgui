@@ -579,7 +579,6 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	Layer *layer = getSelectedLayer();
 	if (layer) {
 	    layer->drawDrag(e);
-	    update();
 	}
 
     } else if (mode == ViewManager::EditMode) {
@@ -587,7 +586,6 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	Layer *layer = getSelectedLayer();
 	if (layer) {
 	    layer->editDrag(e);
-	    update();
 	}
     }
 }
