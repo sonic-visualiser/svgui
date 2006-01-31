@@ -59,6 +59,8 @@ public:
 
     virtual bool isLayerScrollable() const;
 
+    virtual bool isLayerEditable() const { return true; }
+
     virtual int getCompletion() const { return m_model->getCompletion(); }
 
     virtual QString toXmlString(QString indent = "",

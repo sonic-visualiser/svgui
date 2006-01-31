@@ -27,6 +27,7 @@ TimeValueLayer::TimeValueLayer(View *w) :
     Layer(w),
     m_model(0),
     m_editing(false),
+    m_originalPoint(0, 0.0, tr("New Point")),
     m_editingPoint(0, 0.0, tr("New Point")),
     m_editingCommand(0),
     m_colour(Qt::black),
@@ -497,6 +498,7 @@ TimeValueLayer::drawStart(QMouseEvent *e)
     float value = getValueForY(e->y());
 
     m_editingPoint = SparseTimeValueModel::Point(frame, value, tr("New Point"));
+    m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) m_editingCommand->finish();
     m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
@@ -546,6 +548,7 @@ TimeValueLayer::editStart(QMouseEvent *e)
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
+    m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
 	m_editingCommand->finish();
@@ -584,7 +587,25 @@ TimeValueLayer::editEnd(QMouseEvent *e)
 {
     std::cerr << "TimeValueLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
-    if (m_editingCommand) m_editingCommand->finish();
+
+    if (m_editingCommand) {
+
+	QString newName = m_editingCommand->getName();
+
+	if (m_editingPoint.frame != m_originalPoint.frame) {
+	    if (m_editingPoint.value != m_originalPoint.value) {
+		newName = tr("Edit Point");
+	    } else {
+		newName = tr("Relocate Point");
+	    }
+	} else {
+	    newName = tr("Change Point Value");
+	}
+
+	m_editingCommand->setName(newName);
+	m_editingCommand->finish();
+    }
+
     m_editingCommand = 0;
     m_editing = false;
 }

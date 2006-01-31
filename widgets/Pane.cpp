@@ -341,14 +341,14 @@ Pane::mousePressEvent(QMouseEvent *e)
     } else if (mode == ViewManager::DrawMode) {
 
 	Layer *layer = getSelectedLayer();
-	if (layer) {
+	if (layer && layer->isLayerEditable()) {
 	    layer->drawStart(e);
 	}
 
     } else if (mode == ViewManager::EditMode) {
 
 	Layer *layer = getSelectedLayer();
-	if (layer) {
+	if (layer && layer->isLayerEditable()) {
 	    layer->editStart(e);
 	}
     }
@@ -430,7 +430,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     } else if (mode == ViewManager::DrawMode) {
 
 	Layer *layer = getSelectedLayer();
-	if (layer) {
+	if (layer && layer->isLayerEditable()) {
 	    layer->drawEnd(e);
 	    update();
 	}
@@ -438,7 +438,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     } else if (mode == ViewManager::EditMode) {
 
 	Layer *layer = getSelectedLayer();
-	if (layer) {
+	if (layer && layer->isLayerEditable()) {
 	    layer->editEnd(e);
 	    update();
 	}
@@ -577,14 +577,14 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     } else if (mode == ViewManager::DrawMode) {
 
 	Layer *layer = getSelectedLayer();
-	if (layer) {
+	if (layer && layer->isLayerEditable()) {
 	    layer->drawDrag(e);
 	}
 
     } else if (mode == ViewManager::EditMode) {
 
 	Layer *layer = getSelectedLayer();
-	if (layer) {
+	if (layer && layer->isLayerEditable()) {
 	    layer->editDrag(e);
 	}
     }
