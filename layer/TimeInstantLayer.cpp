@@ -290,6 +290,8 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
 	
+    int prevX = -1;
+
     for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
@@ -298,6 +300,8 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	++j;
 
 	int x = getXForFrame(p.frame);
+	if (x == prevX && p.frame != illuminateFrame) continue;
+
 	int iw = getXForFrame(p.frame + m_model->getResolution()) - x;
 	if (iw < 2) {
 	    if (iw < 1) {
@@ -316,7 +320,12 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	} else {
 	    paint.setPen(brushColour);
 	}
-	paint.drawRect(x, 0, iw - 1, m_view->height() - 1);
+
+	if (iw > 1) {
+	    paint.drawRect(x, 0, iw - 1, m_view->height() - 1);
+	} else {
+	    paint.drawLine(x, 0, x, m_view->height() - 1);
+	}
 	paint.setPen(m_colour);
 	
 	if (p.label != "") {
@@ -337,6 +346,8 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 			       p.label);
 	    }
 	}
+
+	prevX = x;
     }
 }
 
@@ -381,6 +392,11 @@ TimeInstantLayer::drawEnd(QMouseEvent *e)
 {
     std::cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << std::endl;
     if (!m_model || !m_editing) return;
+    QString newName = tr("Add Point at %1 s")
+	.arg(RealTime::frame2RealTime(m_editingPoint.frame,
+				      m_model->getSampleRate())
+	     .toText(false).c_str());
+    m_editingCommand->setName(newName);
     m_editingCommand->finish();
     m_editingCommand = 0;
     m_editing = false;
@@ -432,7 +448,14 @@ TimeInstantLayer::editEnd(QMouseEvent *e)
 {
     std::cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << std::endl;
     if (!m_model || !m_editing) return;
-    if (m_editingCommand) m_editingCommand->finish();
+    if (m_editingCommand) {
+	QString newName = tr("Move Point to %1 s")
+	    .arg(RealTime::frame2RealTime(m_editingPoint.frame,
+					  m_model->getSampleRate())
+		 .toText(false).c_str());
+	m_editingCommand->setName(newName);
+	m_editingCommand->finish();
+    }
     m_editingCommand = 0;
     m_editing = false;
 }
