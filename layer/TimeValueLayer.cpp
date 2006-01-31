@@ -28,6 +28,7 @@ TimeValueLayer::TimeValueLayer(View *w) :
     m_model(0),
     m_editing(false),
     m_editingPoint(0, 0.0, tr("New Point")),
+    m_editingCommand(0),
     m_colour(Qt::black),
     m_plotStyle(PlotConnectedPoints)
 {
@@ -496,7 +497,12 @@ TimeValueLayer::drawStart(QMouseEvent *e)
     float value = getValueForY(e->y());
 
     m_editingPoint = SparseTimeValueModel::Point(frame, value, tr("New Point"));
-    m_model->addPoint(m_editingPoint);
+
+    if (m_editingCommand) m_editingCommand->finish();
+    m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
+							     tr("Draw Point"));
+    m_editingCommand->addPoint(m_editingPoint);
+
     m_editing = true;
 }
 
@@ -513,10 +519,10 @@ TimeValueLayer::drawDrag(QMouseEvent *e)
 
     float value = getValueForY(e->y());
 
-    m_model->deletePoint(m_editingPoint);
+    m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
     m_editingPoint.value = value;
-    m_model->addPoint(m_editingPoint);
+    m_editingCommand->addPoint(m_editingPoint);
 }
 
 void
@@ -524,6 +530,8 @@ TimeValueLayer::drawEnd(QMouseEvent *e)
 {
     std::cerr << "TimeValueLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
+    m_editingCommand->finish();
+    m_editingCommand = 0;
     m_editing = false;
 }
 
@@ -538,6 +546,12 @@ TimeValueLayer::editStart(QMouseEvent *e)
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
+
+    if (m_editingCommand) {
+	m_editingCommand->finish();
+	m_editingCommand = 0;
+    }
+
     m_editing = true;
 }
 
@@ -554,10 +568,15 @@ TimeValueLayer::editDrag(QMouseEvent *e)
 
     float value = getValueForY(e->y());
 
-    m_model->deletePoint(m_editingPoint);
+    if (!m_editingCommand) {
+	m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
+								 tr("Drag Point"));
+    }
+
+    m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
     m_editingPoint.value = value;
-    m_model->addPoint(m_editingPoint);
+    m_editingCommand->addPoint(m_editingPoint);
 }
 
 void
@@ -565,6 +584,8 @@ TimeValueLayer::editEnd(QMouseEvent *e)
 {
     std::cerr << "TimeValueLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
+    if (m_editingCommand) m_editingCommand->finish();
+    m_editingCommand = 0;
     m_editing = false;
 }
 

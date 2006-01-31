@@ -80,6 +80,7 @@ protected:
     SparseTimeValueModel *m_model;
     bool m_editing;
     SparseTimeValueModel::Point m_editingPoint;
+    SparseTimeValueModel::EditCommand *m_editingCommand;
     QColor m_colour;
     PlotStyle m_plotStyle;
 };
