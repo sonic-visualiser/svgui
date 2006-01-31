@@ -72,6 +72,7 @@ protected:
     SparseOneDimensionalModel *m_model;
     bool m_editing;
     SparseOneDimensionalModel::Point m_editingPoint;
+    SparseOneDimensionalModel::EditCommand *m_editingCommand;
     QColor m_colour;
 };
 
