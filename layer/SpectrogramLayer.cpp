@@ -13,6 +13,7 @@
 #include "base/Profiler.h"
 #include "base/AudioLevel.h"
 #include "base/Window.h"
+#include "base/Pitch.h"
 
 #include <QPainter>
 #include <QImage>

@@ -43,7 +43,13 @@ public:
     virtual const Model *getModel() const { return m_model; }
     virtual void paint(QPainter &paint, QRect rect) const;
 
+    virtual int getNearestFeatureFrame(int frame, 
+				       size_t &resolution,
+				       bool snapRight = true) const;
+
     void setModel(const DenseThreeDimensionalModel *model);
+
+    virtual int getCompletion() const { return m_model->getCompletion(); }
 
 
 /*
