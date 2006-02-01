@@ -158,6 +158,8 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 		//!!! divide-by-zero!
 		int pixel = int(((value - min) * 256) / (max - min));
 
+		if (pixel == 256) pixel = 255;
+
 		m_cache->setPixel(f / modelWindow, y, pixel);
 	    }
 	}
@@ -225,14 +227,18 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 
 	    if (sx >= 0 && sx < m_cache->width() &&
 		sy >= 0 && sy < m_cache->height()) {
-		int dv = m_cache->pixelIndex(sx, sy);
-		if (dv != 0 && paint.fontMetrics().height() < (h / sh)) {
-		    QString text = QString("%1").arg(dv);
-		    if (paint.fontMetrics().width(text) < w - 3) {
-			paint.setPen(Qt::white);
-			paint.drawText(rx0 + 2,
-				       ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
-				       QString("%1").arg(dv));
+		if (w > 10) {
+		    int dv = m_cache->pixelIndex(sx, sy);
+//		    if (dv != 0 && paint.fontMetrics().height() < (h / sh)) {
+		    if (paint.fontMetrics().height() < (h / sh)) {
+			float value = m_model->getBinValue(fx, sy);
+			QString text = QString("%1").arg(value); //dv);
+			if (paint.fontMetrics().width(text) < w - 3) {
+			    paint.setPen(Qt::white);
+			    paint.drawText(rx0 + 2,
+					   ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
+					   QString("%1").arg(value));
+			}
 		    }
 		}
 	    }
@@ -264,6 +270,23 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 
     paint.drawImage(x0, 0, scaled);
 */
+}
+
+int
+Colour3DPlotLayer::getNearestFeatureFrame(int frame,
+					  size_t &resolution,
+					  bool snapRight) const
+{
+    if (!m_model) {
+	return Layer::getNearestFeatureFrame(frame, resolution, snapRight);
+    }
+
+    resolution = m_model->getWindowSize();
+    
+    int returnFrame = (frame / resolution) * resolution;
+    if (snapRight) returnFrame += resolution;
+    
+    return returnFrame;
 }
 
 #ifdef INCLUDE_MOCFILES
