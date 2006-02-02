@@ -399,8 +399,8 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     y0 = rect.top();
     y1 = rect.bottom();
 
-    long frame0 = startFrame + x0 * zoomLevel;
-    long frame1 = startFrame + (x1 + 1) * zoomLevel;
+    long frame0 = getFrameForX(x0);
+    long frame1 = getFrameForX(x1 + 1);
      
 #ifdef DEBUG_WAVEFORM_PAINT
     std::cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << ")" <<  std::endl;
@@ -644,6 +644,74 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 	delete paint;
 	viewPainter.drawPixmap(rect, *m_cache, rect);
     }
+}
+
+QString
+WaveformLayer::getFeatureDescription(QPoint &pos) const
+{
+    int x = pos.x();
+
+    if (!m_model || !m_model->isOK()) return "";
+
+    long f0 = getFrameForX(x);
+    long f1 = getFrameForX(x + 1);
+
+    if (f0 < 0) f0 = 0;
+    if (f1 <= f0) return "";
+    
+    QString text;
+
+    RealTime rt0 = RealTime::frame2RealTime(f0, m_model->getSampleRate());
+    RealTime rt1 = RealTime::frame2RealTime(f1, m_model->getSampleRate());
+
+    if (f1 != f0 + 1 && (rt0.sec != rt1.sec || rt0.msec() != rt1.msec())) {
+	text += tr("Time:\t%1 - %2")
+	    .arg(rt0.toText(true).c_str())
+	    .arg(rt1.toText(true).c_str());
+    } else {
+	text += tr("Time:\t%1")
+	    .arg(rt0.toText(true).c_str());
+    }
+
+    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    bool mergingChannels = false;
+
+    channels = getChannelArrangement(minChannel, maxChannel, mergingChannels);
+    if (channels == 0) return "";
+
+    for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
+
+	size_t blockSize = m_view->getZoomLevel();
+	RangeSummarisableTimeValueModel::RangeBlock ranges =
+	    m_model->getRanges(ch, f0, f1, blockSize);
+
+	if (ranges.empty()) continue;
+	
+	RangeSummarisableTimeValueModel::Range range = ranges[0];
+	
+	QString label = tr("Level:");
+	if (minChannel != maxChannel) {
+	    if (ch == 0) label = tr("Left:");
+	    else if (ch == 1) label = tr("Right:");
+	    else label = tr("Channel %1").arg(ch + 1);
+	}
+
+	int min = int(range.min * 1000);
+	int max = int(range.max * 1000);
+	int db = int(AudioLevel::multiplier_to_dB(std::max(fabsf(range.min),
+							   fabsf(range.max)))
+		     * 100);
+
+	if (min != max) {
+	    text += tr("\n%1\t%2 - %3 (%4 dB peak)")
+		.arg(label).arg(float(min)/1000).arg(float(max)/1000).arg(float(db)/100);
+	} else {
+	    text += tr("\n%1\t%2 (%3 dB peak)")
+		.arg(label).arg(float(min)/1000).arg(float(db)/100);
+	}
+    }
+
+    return text;
 }
 
 int
