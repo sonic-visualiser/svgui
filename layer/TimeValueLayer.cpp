@@ -92,7 +92,7 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == tr("Plot Type")) {
 	
 	if (min) *min = 0;
-	if (max) *max = 4;
+	if (max) *max = 5;
 	
 	deft = int(m_plotStyle);
 
@@ -126,6 +126,7 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	case 2: return tr("Connected Points");
 	case 3: return tr("Lines");
 	case 4: return tr("Curve");
+	case 5: return tr("Segmentation");
 	}
     }
     return tr("<unknown>");
@@ -371,13 +372,17 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	int y = getYForValue(p.value);
 
 	if (w < 1) w = 1;
+	paint.setPen(m_colour);
 
-	if (m_plotStyle == PlotLines ||
-	    m_plotStyle == PlotCurve) {
-	    paint.setPen(m_colour);
+	if (m_plotStyle == PlotSegmentation) {
+	    int value = ((p.value - min) / (max - min)) * 255.999;
+	    QColor colour = QColor::fromHsv(256 - value, value / 2 + 128, value);
+	    paint.setBrush(QColor(colour.red(), colour.green(), colour.blue(),
+				  120));
+	} else if (m_plotStyle == PlotLines ||
+		   m_plotStyle == PlotCurve) {
 	    paint.setBrush(Qt::NoBrush);
 	} else {
-	    paint.setPen(m_colour);
 	    paint.setBrush(brushColour);
 	}	    
 
@@ -403,12 +408,15 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	    if (m_plotStyle != PlotCurve &&
 		m_plotStyle != PlotLines) {
 		paint.setPen(Qt::black);//!!!
-		paint.setBrush(Qt::black);//!!!
+		if (m_plotStyle != PlotSegmentation) {
+		    paint.setBrush(Qt::black);//!!!
+		}
 	    }	    
 	}
 
 	if (m_plotStyle != PlotLines &&
-	    m_plotStyle != PlotCurve) {
+	    m_plotStyle != PlotCurve &&
+	    m_plotStyle != PlotSegmentation) {
 	    paint.drawRect(x, y - 1, w, 2);
 	}
 
@@ -446,6 +454,30 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 			path.lineTo(nx + w/2, ny);
 		    }
 		}
+	    }
+	}
+
+	if (m_plotStyle == PlotSegmentation) {
+	    
+	    SparseTimeValueModel::PointList::const_iterator j = i;
+	    ++j;
+
+	    if (j != points.end()) {
+		
+		const SparseTimeValueModel::Point &q(*j);
+		int nx = getXForFrame(q.frame);
+
+		if (nx == x) continue;
+
+		if (nx < x + 5 && illuminateFrame != p.frame) {
+		    paint.setPen(Qt::NoPen);
+		}
+
+		paint.drawRect(x, -1, nx - x, m_view->height() + 1);
+
+	    } else {
+
+		paint.drawLine(x, 0, x, m_view->height());
 	    }
 	}
 
