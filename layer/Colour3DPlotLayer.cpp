@@ -66,6 +66,96 @@ Colour3DPlotLayer::cacheInvalid(size_t, size_t)
     cacheInvalid();
 }
 
+bool
+Colour3DPlotLayer::isLayerScrollable() const
+{
+    QPoint discard;
+    return !m_view->shouldIlluminateLocalFeatures(this, discard);
+}
+
+QString
+Colour3DPlotLayer::getFeatureDescription(QPoint &pos) const
+{
+    if (!m_model) return "";
+
+    int x = pos.x();
+    int y = pos.y();
+
+    size_t modelStart = m_model->getStartFrame();
+    size_t modelWindow = m_model->getWindowSize();
+
+    int sx0 = modelWindow *
+	int((getFrameForX(x) - long(modelStart)) / long(modelWindow));
+    int sx1 = sx0 + modelWindow;
+
+    float binHeight = float(m_view->height()) / m_model->getYBinCount();
+    int sy = (m_view->height() - y) / binHeight;
+
+    float value = m_model->getBinValue(sx0, sy);
+    
+    QString binName = m_model->getBinName(sy);
+    if (binName == "") binName = QString("[%1]").arg(sy + 1);
+    else binName = QString("%1 [%2]").arg(binName).arg(sy + 1);
+
+    QString text = tr("Time:\t%1 - %2\nBin:\t%3\nValue:\t%4")
+	.arg(RealTime::frame2RealTime(sx0, m_model->getSampleRate())
+	     .toText(true).c_str())
+	.arg(RealTime::frame2RealTime(sx1, m_model->getSampleRate())
+	     .toText(true).c_str())
+	.arg(binName)
+	.arg(value);
+
+    return text;
+}
+
+int
+Colour3DPlotLayer::getVerticalScaleWidth(QPainter &paint) const
+{
+    if (!m_model) return 0;
+
+    QString sampleText("123");
+    int tw = paint.fontMetrics().width(sampleText);
+
+    for (size_t i = 0; i < m_model->getYBinCount(); ++i) {
+	if (m_model->getBinName(i).length() > sampleText.length()) {
+	    sampleText = m_model->getBinName(i);
+	}
+    }
+    if (sampleText != "123") {
+	tw = std::max(tw, paint.fontMetrics().width(sampleText));
+    }
+
+    return tw + 13;
+}
+
+void
+Colour3DPlotLayer::paintVerticalScale(QPainter &paint, QRect rect) const
+{
+    if (!m_model) return;
+
+    int h = rect.height(), w = rect.width();
+    float binHeight = float(m_view->height()) / m_model->getYBinCount();
+
+//    int textHeight = paint.fontMetrics().height();
+//    int toff = -textHeight + paint.fontMetrics().ascent() + 2;
+
+    for (size_t i = 0; i < m_model->getYBinCount(); ++i) {
+
+	int y0 = m_view->height() - (i * binHeight) - 1;
+	
+	QString text = m_model->getBinName(i);
+	if (text == "") text = QString("[%1]").arg(i + 1);
+
+	paint.drawLine(0, y0, w, y0);
+
+	int cy = y0 - binHeight/2;
+	int ty = cy + paint.fontMetrics().ascent()/2;
+
+//	int tx = w - 10 - paint.fontMetrics().width(text);
+	paint.drawText(10, ty, text);
+    }
+}
+
 void
 Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 {
@@ -193,6 +283,9 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
     std::cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", window size " << m_model->getWindowSize() << std::endl;
 */
 
+    QPoint illuminatePos;
+    bool illuminate = m_view->shouldIlluminateLocalFeatures(this, illuminatePos);
+
     for (int sx = sx0 - 1; sx <= sx1; ++sx) {
 
 	int fx = sx * int(modelWindow);
@@ -223,7 +316,16 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 
 	    int w = rx1 - rx0;
 	    if (w < 1) w = 1;
-	    paint.drawRect(rx0, ry0 - h / sh - 1, w, h / sh + 1);
+
+	    QRect r(rx0, ry0 - h / sh - 1, w, h / sh + 1);
+
+	    if (illuminate) {
+		if (r.contains(illuminatePos)) {
+		    paint.setPen(Qt::black);//!!!
+		}
+	    }
+
+	    paint.drawRect(r);
 
 	    if (sx >= 0 && sx < m_cache->width() &&
 		sy >= 0 && sy < m_cache->height()) {

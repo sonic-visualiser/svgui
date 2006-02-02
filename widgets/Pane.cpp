@@ -113,6 +113,57 @@ Pane::paintEvent(QPaintEvent *e)
 	}
 
 	if (m_identifyFeatures) {
+
+	    QPoint pos = m_identifyPoint;
+	    QString desc = (*vi)->getFeatureDescription(pos);
+	    
+	    if (desc != "") {
+
+		paint.save();
+
+		int tabStop =
+		    paint.fontMetrics().width(tr("Some lengthy prefix:"));
+
+		QRect boundingRect = 
+		    paint.fontMetrics().boundingRect
+		    (rect(),
+		     Qt::AlignRight | Qt::AlignTop | Qt::TextExpandTabs,
+		     desc, tabStop);
+
+		if (hasLightBackground()) {
+		    paint.setPen(Qt::NoPen);
+		    paint.setBrush(QColor(250, 250, 250, 200));
+		} else {
+		    paint.setPen(Qt::NoPen);
+		    paint.setBrush(QColor(50, 50, 50, 200));
+		}
+
+		int extra = paint.fontMetrics().descent();
+		paint.drawRect(width() - boundingRect.width() - 10 - extra,
+			       10 - extra,
+			       boundingRect.width() + 2 * extra,
+			       boundingRect.height() + extra);
+
+		if (hasLightBackground()) {
+		    paint.setPen(QColor(150, 20, 0));
+		} else {
+		    paint.setPen(QColor(255, 150, 100));
+		}
+		
+		QTextOption option;
+		option.setWrapMode(QTextOption::NoWrap);
+		option.setAlignment(Qt::AlignRight | Qt::AlignTop);
+		option.setTabStop(tabStop);
+		paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
+				      boundingRect.width(),
+				      boundingRect.height()),
+			       desc,
+			       option);
+
+		paint.restore();
+	    }
+
+/*!!!
 	    QRect descRect = (*vi)->getFeatureDescriptionRect(paint,
 							      m_identifyPoint);
 	    if (descRect.width() > 0 && descRect.height() > 0 &&
@@ -137,6 +188,8 @@ Pane::paintEvent(QPaintEvent *e)
 		
 		paint.restore();
 	    }
+
+*/
 	}
 
 	break;

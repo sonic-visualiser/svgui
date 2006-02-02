@@ -33,6 +33,8 @@ public:
     virtual const Model *getModel() const { return m_model; }
     virtual void paint(QPainter &paint, QRect rect) const;
 
+    virtual QString getFeatureDescription(QPoint &) const;
+
     virtual int getVerticalScaleWidth(QPainter &) const;
     virtual void paintVerticalScale(QPainter &paint, QRect rect) const;
 

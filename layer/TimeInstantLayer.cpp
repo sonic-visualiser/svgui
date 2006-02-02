@@ -139,14 +139,6 @@ TimeInstantLayer::isLayerScrollable() const
     return !m_view->shouldIlluminateLocalFeatures(this, discard);
 }
 
-QRect
-TimeInstantLayer::getFeatureDescriptionRect(QPainter &paint, QPoint pos) const
-{
-    return QRect(0, 0,
-		 std::max(100, paint.fontMetrics().width(tr("No local points"))),
-		 50); //!!! cruddy
-}
-
 SparseOneDimensionalModel::PointList
 TimeInstantLayer::getLocalPoints(int x) const
 {
@@ -181,48 +173,40 @@ TimeInstantLayer::getLocalPoints(int x) const
     return usePoints;
 }
 
-void
-TimeInstantLayer::paintLocalFeatureDescription(QPainter &paint, QRect rect,
-					       QPoint pos) const
+QString
+TimeInstantLayer::getFeatureDescription(QPoint &pos) const
 {
-    //!!! bleagh
-
     int x = pos.x();
-    
-    if (!m_model || !m_model->getSampleRate()) return;
+
+    if (!m_model || !m_model->getSampleRate()) return "";
 
     SparseOneDimensionalModel::PointList points = getLocalPoints(x);
 
-    QFontMetrics metrics = paint.fontMetrics();
-    int xbase = rect.x() + 5;
-    int ybase = rect.y() + 5;
-
     if (points.empty()) {
-	QString label = tr("No local points");
 	if (!m_model->isReady()) {
-	    label = tr("In progress");
+	    return tr("In progress");
+	} else {
+	    return tr("No local points");
 	}
-	paint.drawText(xbase + 5, ybase + 5 + metrics.ascent(), label);
-	return;
     }
 
     long useFrame = points.begin()->frame;
 
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
-    QString timeText = QString(tr("Time %1")).arg(rt.toText(true).c_str());
+    
+    QString text;
 
-    int timewidth = metrics.width(timeText);
-    int labelwidth = metrics.width(points.begin()->label);
+    if (points.begin()->label == "") {
+	text = QString(tr("Time:\t%1\nNo label"))
+	    .arg(rt.toText(true).c_str());
+    } else {
+	text = QString(tr("Time:\t%1\nLabel:\t%2"))
+	    .arg(rt.toText(true).c_str())
+	    .arg(points.begin()->label);
+    }
 
-    int boxheight = metrics.height() * 2 + 3;
-    int boxwidth = std::max(timewidth, labelwidth);
-
-    paint.drawRect(xbase, ybase, boxwidth + 10,
-		   boxheight + 10 - metrics.descent() + 1);
-
-    paint.drawText(xbase + 5, ybase + 5 + metrics.ascent(), timeText);
-    paint.drawText(xbase + 5, ybase + 7 + metrics.ascent() + metrics.height(),
-		   points.begin()->label);
+    pos = QPoint(getXForFrame(useFrame), pos.y());
+    return text;
 }
 
 int

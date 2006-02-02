@@ -1472,8 +1472,6 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint() returning" << std::endl;
 #endif
-
-//!!!    drawLocalFeatureDescription(paint);
 }
 
 int
@@ -1483,141 +1481,6 @@ SpectrogramLayer::getCompletion() const
     size_t completion = m_fillThread->getFillCompletion();
 //    std::cerr << "SpectrogramLayer::getCompletion: completion = " << completion << std::endl;
     return completion;
-}
-
-QRect
-SpectrogramLayer::getFeatureDescriptionRect(QPainter &paint, QPoint pos) const
-{
-    if (!m_model || !m_model->isOK()) return QRect();
-
-    QString timeLabel = tr("Time: ");
-    QString freqLabel = tr("Hz: ");
-    QString dBLabel = tr("dB: ");
-
-    // assume time is widest
-    RealTime rtMin, rtMax;
-    if (!getXBinSourceRange(pos.x(), rtMin, rtMax)) return QRect();
-    QString timeMinText = QString("%1").arg(rtMin.toText(true).c_str());
-    QString timeMaxText = QString(" - %1").arg(rtMax.toText(true).c_str());
-
-    QFontMetrics metrics = paint.fontMetrics();
-
-    int labelwidth = 
-	std::max(std::max(metrics.width(timeLabel),
-			  metrics.width(freqLabel)),
-		 metrics.width(dBLabel));
-
-    int boxwidth = labelwidth + 
-	metrics.width(timeMinText) + metrics.width(timeMaxText);
-
-    int fontHeight = metrics.height();
-    int boxheight = fontHeight * 3 + 4;
-
-    return QRect(0, 0, boxwidth + 20, boxheight + 15);
-}
-
-void
-SpectrogramLayer::paintLocalFeatureDescription(QPainter &paint,
-					       QRect rect, QPoint pos) const
-{
-    int x = pos.x();
-    int y = pos.y();
-
-    if (!m_model || !m_model->isOK()) return;
-
-    float dbMin = 0, dbMax = 0;
-    float freqMin = 0, freqMax = 0;
-    RealTime rtMin, rtMax;
-
-    bool haveDb = false;
-
-    if (!getXBinSourceRange(x, rtMin, rtMax)) return;
-    if (!getYBinSourceRange(y, freqMin, freqMax)) return;
-    if (getXYBinSourceRange(x, y, dbMin, dbMax)) haveDb = true;
-
-    QString timeLabel = tr("Time: ");
-    QString freqLabel = tr("Hz: ");
-    QString dBLabel = tr("dB: ");
-
-    QString timeMinText = QString("%1").arg(rtMin.toText(true).c_str());
-    QString timeMaxText = QString(" - %1").arg(rtMax.toText(true).c_str());
-
-    QString freqMinText = QString("%1").arg(freqMin);
-    QString freqMaxText = "";
-    if (freqMax != freqMin) {
-	freqMaxText = QString(" - %1").arg(freqMax);
-    }
-
-    QString dBMinText = "";
-    QString dBMaxText = "";
-
-    if (haveDb) {
-	int dbmxi = int(dbMax - 0.001);
-	int dbmni = int(dbMin - 0.001);
-	dBMinText = QString("%1").arg(dbmni);
-	if (dbmxi != dbmni) dBMaxText = QString(" - %1").arg(dbmxi);
-    }
-
-    QFontMetrics metrics = paint.fontMetrics();
-
-    int labelwidth = 
-	std::max(std::max(metrics.width(timeLabel),
-			  metrics.width(freqLabel)),
-		 metrics.width(dBLabel));
-
-    int minwidth = 
-	std::max(std::max(metrics.width(timeMinText),
-			  metrics.width(freqMinText)),
-		 metrics.width(dBMinText));
-
-    int maxwidth = 
-	std::max(std::max(metrics.width(timeMaxText),
-			  metrics.width(freqMaxText)),
-		 metrics.width(dBMaxText));
-
-    int boxwidth = labelwidth + minwidth + maxwidth;
-
-    int fontAscent = metrics.ascent();
-    int fontHeight = metrics.height();
-
-    int boxheight = fontHeight * 3 + 4;
-
-//    paint.setPen(Qt::white);
-//    paint.setBrush(Qt::NoBrush);
-
-//!!!    int xbase = m_view->width() - boxwidth - 20;
-    int xbase = rect.x() + 5;
-    int ybase = rect.y() + 5;
-
-    paint.drawRect(xbase, ybase, boxwidth + 10,
-		   boxheight + 10 - metrics.descent() + 1);
-
-    paint.drawText(xbase + 5 + labelwidth - metrics.width(timeLabel),
-		   ybase + 5 + fontAscent, timeLabel);
-
-    paint.drawText(xbase + 5 + labelwidth - metrics.width(freqLabel),
-		   ybase + 7 + fontAscent + fontHeight, freqLabel);
-
-    paint.drawText(xbase + 5 + labelwidth - metrics.width(dBLabel),
-		   ybase + 9 + fontAscent + fontHeight * 2, dBLabel);
-    
-    paint.drawText(xbase + 5 + labelwidth + minwidth - metrics.width(timeMinText),
-		   ybase + 5 + fontAscent, timeMinText);
-
-    paint.drawText(xbase + 5 + labelwidth + minwidth - metrics.width(freqMinText),
-		   ybase + 7 + fontAscent + fontHeight, freqMinText);
-
-    paint.drawText(xbase + 5 + labelwidth + minwidth - metrics.width(dBMinText),
-		   ybase + 9 + fontAscent + fontHeight * 2, dBMinText);
-    
-    paint.drawText(xbase + 5 + labelwidth + minwidth,
-		   ybase + 5 + fontAscent, timeMaxText);
-
-    paint.drawText(xbase + 5 + labelwidth + minwidth,
-		   ybase + 7 + fontAscent + fontHeight, freqMaxText);
-    
-    paint.drawText(xbase + 5 + labelwidth + minwidth,
-		   ybase + 9 + fontAscent + fontHeight * 2, dBMaxText);
 }
 
 int
@@ -1631,48 +1494,61 @@ SpectrogramLayer::getNearestFeatureFrame(int frame,
     return snapFrame;
 }
 
-/*!!!
-
-bool
-SpectrogramLayer::identifyLocalFeatures(bool on, int x, int y)
+QString
+SpectrogramLayer::getFeatureDescription(QPoint &pos) const
 {
-    return true; //!!!
+    int x = pos.x();
+    int y = pos.y();
 
-    m_identify = on;
-    m_identifyX = x;
-    m_identifyY = y;
-
-    m_view->update();
-*/
-/*
-    if (!m_model || !m_model->isOK()) return false;
-
-    std::cerr << "SpectrogramLayer::identifyLocalFeatures(" << on << "," << x << "," << y << ")" << std::endl;
+    if (!m_model || !m_model->isOK()) return "";
 
     float dbMin = 0, dbMax = 0;
     float freqMin = 0, freqMax = 0;
+    QString pitchMin, pitchMax;
     RealTime rtMin, rtMax;
 
-    if (getXBinSourceRange(x, rtMin, rtMax)) {
-	std::cerr << "Times: " << rtMin << " -> " << rtMax << std::endl;
-    } else return false;
+    bool haveDb = false;
 
-    if (getYBinSourceRange(y, freqMin, freqMax)) {
-	std::cerr << "Frequencies: " << freqMin << " -> " << freqMax << std::endl;
-    } else return false;
+    if (!getXBinSourceRange(x, rtMin, rtMax)) return "";
+    if (!getYBinSourceRange(y, freqMin, freqMax)) return "";
+    if (getXYBinSourceRange(x, y, dbMin, dbMax)) haveDb = true;
 
-    if (getXYBinSourceRange(x, y, dbMin, dbMax)) {
-	std::cerr << "dB: " << dbMin << " -> " << dbMax << std::endl;
+    //!!! want to actually do a one-off FFT to recalculate the dB value!
+
+    QString text;
+
+    if (rtMin != rtMax) {
+	text += tr("Time:\t%1 - %2\n")
+	    .arg(rtMin.toText(true).c_str())
+	    .arg(rtMax.toText(true).c_str());
+    } else {
+	text += tr("Time:\t%1\n")
+	    .arg(rtMin.toText(true).c_str());
     }
 
-    m_identifyX = x;
-    m_identifyY = y;
-    m_identify = true;
-*/
-    /*!!!
-    return true;
+    if (freqMin != freqMax) {
+	text += tr("Frequency:\t%1 - %2 Hz\nPitch:\t%3 - %4\n")
+	    .arg(freqMin)
+	    .arg(freqMax)
+	    .arg(Pitch::getPitchLabelForFrequency(freqMin))
+	    .arg(Pitch::getPitchLabelForFrequency(freqMax));
+    } else {
+	text += tr("Frequency:\t%1 Hz\nPitch:\t%2\n")
+	    .arg(freqMin)
+	    .arg(Pitch::getPitchLabelForFrequency(freqMin));
+    }	
+
+    if (haveDb) {
+	if (lrintf(dbMin) != lrintf(dbMax)) {
+	    text += tr("dB:\t%1 - %2").arg(lrintf(dbMin)).arg(lrintf(dbMax));
+	} else {
+	    text += tr("dB:\t%1").arg(lrintf(dbMin));
+	}
+    }
+
+    return text;
 }
-    */
+
 int
 SpectrogramLayer::getVerticalScaleWidth(QPainter &paint) const
 {

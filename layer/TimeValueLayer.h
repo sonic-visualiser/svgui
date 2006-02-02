@@ -28,8 +28,7 @@ public:
 
     virtual void paint(QPainter &paint, QRect rect) const;
 
-    virtual QRect getFeatureDescriptionRect(QPainter &, QPoint) const;
-    virtual void paintLocalFeatureDescription(QPainter &, QRect, QPoint) const;
+    virtual QString getFeatureDescription(QPoint &) const;
 
     virtual int getNearestFeatureFrame(int frame, 
 				       size_t &resolution,
