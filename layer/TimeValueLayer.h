@@ -56,7 +56,14 @@ public:
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
 
-    enum PlotStyle { PlotPoints, PlotStems, PlotConnectedPoints, PlotLines, PlotCurve };
+    enum PlotStyle {
+	PlotPoints,
+	PlotStems,
+	PlotConnectedPoints,
+	PlotLines,
+	PlotCurve,
+	PlotSegmentation
+    };
 
     void setPlotStyle(PlotStyle style);
     PlotStyle getPlotStyle() const { return m_plotStyle; }

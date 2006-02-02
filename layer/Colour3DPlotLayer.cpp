@@ -228,8 +228,8 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 //	    int hue = 256 - spread;
 //	    QColor color = QColor::fromHsv(hue, spread/2 + 128, spread);
 	    int hue = 256 - value;
-	    QColor color = QColor::fromHsv(hue, value/2 + 128, value);
-	    m_cache->setColor(value, qRgba(color.red(), color.green(), color.blue(), 80));
+	    QColor colour = QColor::fromHsv(hue, value/2 + 128, value);
+	    m_cache->setColor(value, qRgba(colour.red(), colour.green(), colour.blue(), 80));
 //	    std::cerr << "Colour3DPlotLayer: Index " << value << ": hue " << hue << std::endl;
 	}
 
