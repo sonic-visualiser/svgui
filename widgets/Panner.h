@@ -53,9 +53,8 @@ protected:
     bool m_clickedInRange;
     size_t m_dragCentreFrame;
     
-    typedef std::pair<size_t, int> WidgetRec; // centre, zoom (-1 = invalid)
-    typedef std::map<void *, WidgetRec> WidgetMap;
-    WidgetMap m_widgets;
+    typedef std::set<void *> WidgetSet;
+    WidgetSet m_widgets;
 };
 
 #endif

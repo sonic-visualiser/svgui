@@ -43,7 +43,7 @@ Panner::modelReplaced()
 void
 Panner::registerView(View *widget)
 {
-    m_widgets[widget] = WidgetRec(0, -1);
+    m_widgets.insert(widget);
     update(); 
 }
 
@@ -62,7 +62,6 @@ Panner::viewManagerCentreFrameChanged(void *p, unsigned long f, bool)
 
     if (p == this) return;
     if (m_widgets.find(p) != m_widgets.end()) {
-	m_widgets[p].first = f;
 	update();
     }
 }
@@ -72,7 +71,6 @@ Panner::viewManagerZoomLevelChanged(void *p, unsigned long z, bool)
 {
     if (p == this) return;
     if (m_widgets.find(p) != m_widgets.end()) {
-	m_widgets[p].second = z;
 	update();
     }
 }
@@ -82,14 +80,8 @@ Panner::viewManagerPlaybackFrameChanged(unsigned long f)
 {
     bool changed = false;
 
-    if (m_playPointerFrame / m_zoomLevel != f / m_zoomLevel) changed = true;
+    if (getXForFrame(m_playPointerFrame) != getXForFrame(f)) changed = true;
     m_playPointerFrame = f;
-
-    for (WidgetMap::iterator i = m_widgets.begin(); i != m_widgets.end(); ++i) {
-	unsigned long of = i->second.first;
-	i->second.first = f;
-	if (of / m_zoomLevel != f / m_zoomLevel) changed = true;
-    }
 
     if (changed) update();
 }
@@ -97,12 +89,6 @@ Panner::viewManagerPlaybackFrameChanged(unsigned long f)
 void
 Panner::paintEvent(QPaintEvent *e)
 {
-/*!!!
-    // Force View to recalculate zoom in case the size of the
-    // widget has changed.  (We need a better name/mechanism for this)
-    m_newModel = true;
-*/
-
     // Recalculate zoom in case the size of the widget has changed.
 
     size_t startFrame = getModelsStartFrame();
@@ -139,30 +125,28 @@ Panner::paintEvent(QPaintEvent *e)
     paint.setPen(Qt::black);
 
     int y = 0;
-    long prevCentre = 0;
-    long prevZoom = -1;
 
-    for (WidgetMap::iterator i = m_widgets.begin(); i != m_widgets.end(); ++i) {
-	if (!i->first) continue;
+    int prevx0 = -10;
+    int prevx1 = -10;
 
-	View *w = (View *)i->first;
-	if (i->second.second < 0) i->second.second = w->getZoomLevel();
-	if (i->second.second < 0) continue;
+    for (WidgetSet::iterator i = m_widgets.begin(); i != m_widgets.end(); ++i) {
+	if (!*i) continue;
 
-	long c = (long)i->second.first;
-	long z = (long)i->second.second;
+	View *w = (View *)*i;
 
-	long f0 = c - (w->width() / 2) * z;
-	long f1 = c + (w->width() / 2) * z;
+	long f0 = w->getFrameForX(0);
+	long f1 = w->getFrameForX(w->width());
 
-	int x0 = (f0 - long(getCentreFrame())) / getZoomLevel() + width()/2;
-	int x1 = (f1 - long(getCentreFrame())) / getZoomLevel() + width()/2 - 1;
+	int x0 = getXForFrame(f0);
+	int x1 = getXForFrame(f1);
 
-	if (c != prevCentre || z != prevZoom) {
+	if (x0 != prevx0 || x1 != prevx1) {
 	    y += height() / 10 + 1;
-	    prevCentre = c;
-	    prevZoom = z;
+	    prevx0 = x0;
+	    prevx1 = x1;
 	}
+
+	if (x1 <= x0) x1 = x0 + 1;
 	
 	paint.drawRect(x0, y, x1 - x0, height() - 2 * y);
     }
@@ -174,10 +158,11 @@ void
 Panner::mousePressEvent(QMouseEvent *e)
 {
     m_clickPos = e->pos();
-    for (WidgetMap::iterator i = m_widgets.begin(); i != m_widgets.end(); ++i) {
-	if (i->first && i->second.second >= 0) {
+    for (WidgetSet::iterator i = m_widgets.begin(); i != m_widgets.end(); ++i) {
+	if (*i) {
 	    m_clickedInRange = true;
-	    m_dragCentreFrame = i->second.first;
+	    m_dragCentreFrame = ((View *)*i)->getCentreFrame();
+	    break;
 	}
     }
 }
@@ -195,17 +180,6 @@ void
 Panner::mouseMoveEvent(QMouseEvent *e)
 {
     if (!m_clickedInRange) return;
-
-/*!!!
-    long newFrame = getStartFrame() + e->x() * m_zoomLevel;
-
-    if (newFrame < 0) newFrame = 0;
-    if (newFrame >= getModelsEndFrame()) {
-	newFrame = getModelsEndFrame();
-	if (newFrame > 0) --newFrame;
-    }
-    emit centreFrameChanged(this, newFrame, true);
-*/
 
     long xoff = int(e->x()) - int(m_clickPos.x());
     long frameOff = xoff * m_zoomLevel;

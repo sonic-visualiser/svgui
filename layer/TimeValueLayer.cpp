@@ -462,23 +462,22 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	    SparseTimeValueModel::PointList::const_iterator j = i;
 	    ++j;
 
+	    int nx;
+
 	    if (j != points.end()) {
-		
 		const SparseTimeValueModel::Point &q(*j);
-		int nx = getXForFrame(q.frame);
-
-		if (nx == x) continue;
-
-		if (nx < x + 5 && illuminateFrame != p.frame) {
-		    paint.setPen(Qt::NoPen);
-		}
-
-		paint.drawRect(x, -1, nx - x, m_view->height() + 1);
-
+		nx = getXForFrame(q.frame);
 	    } else {
-
-		paint.drawLine(x, 0, x, m_view->height());
+		nx = getXForFrame(m_model->getEndFrame());
 	    }
+
+	    if (nx <= x) continue;
+
+	    if (nx < x + 5 && illuminateFrame != p.frame) {
+		paint.setPen(Qt::NoPen);
+	    }
+
+	    paint.drawRect(x, -1, nx - x, m_view->height() + 1);
 	}
 
 ///	if (p.label != "") {
