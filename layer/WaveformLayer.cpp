@@ -412,15 +412,20 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     
     QColor greys[3];
     if (m_colour == Qt::black) {
-	for (int i = 0; i < 3; ++i) {
+	for (int i = 0; i < 3; ++i) { // 0 lightest, 2 darkest
 	    int level = 192 - 64 * i;
 	    greys[i] = QColor(level, level, level);
 	}
     } else {
-	int factor = (m_view->hasLightBackground() ? 120 : 80);
-	greys[2] = m_colour.light(factor);
-	greys[1] = greys[2].light(factor);
-	greys[0] = greys[1].light(factor);
+	int h, s, v;
+	m_colour.getHsv(&h, &s, &v);
+	for (int i = 0; i < 3; ++i) { // 0 lightest, 2 darkest
+	    if (m_view->hasLightBackground()) {
+		greys[i] = QColor::fromHsv(h, s * (i + 1) / 4, v);
+	    } else {
+		greys[i] = QColor::fromHsv(h, s * (3 - i) / 4, v);
+	    }
+	}
     }
         
     QColor midColour = m_colour;
@@ -549,22 +554,29 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 		meanTop     =  AudioLevel::multiplier_to_preview(range.absmean * m_gain, m);
 	    }
 
-	    int topFill = (rangeTop < 0 ? -rangeTop : rangeTop) % greyLevels;
-	    int bottomFill = (rangeBottom < 0 ? -rangeBottom : rangeBottom) % greyLevels;
+	    rangeBottom = my * greyLevels - rangeBottom;
+	    rangeTop    = my * greyLevels - rangeTop;
+	    meanBottom  = my - meanBottom;
+	    meanTop     = my - meanTop;
+
+	    int topFill = (rangeTop % greyLevels);
+	    if (topFill > 0) topFill = greyLevels - topFill;
+
+	    int bottomFill = (rangeBottom % greyLevels);
+
 	    rangeTop = rangeTop / greyLevels;
 	    rangeBottom = rangeBottom / greyLevels;
 
 	    bool clipped = false;
-	    if (rangeTop < -m) { rangeTop = -m; clipped = true; }
-	    if (rangeTop >  m) { rangeTop =  m; clipped = true; }
-	    if (rangeBottom < -m) { rangeBottom = -m; clipped = true; }
-	    if (rangeBottom >  m) { rangeBottom =  m; clipped = true; }
-	    
-	    rangeBottom = my - rangeBottom;
-	    rangeTop    = my - rangeTop;
-	    meanBottom  = my - meanBottom;
-	    meanTop     = my - meanTop;
 
+	    if (rangeTop < my - m) { rangeTop = my - m; }
+	    if (rangeTop > my + m) { rangeTop = my + m; }
+	    if (rangeBottom < my - m) { rangeBottom = my - m; }
+	    if (rangeBottom > my + m) { rangeBottom = my + m; }
+
+	    if (range.max * m_gain <= -1.0 ||
+		range.max * m_gain >= 1.0) clipped = true;
+	    
 	    if (meanBottom > rangeBottom) meanBottom = rangeBottom;
 	    if (meanTop < rangeTop) meanTop = rangeTop;
 
@@ -614,12 +626,12 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 			if (topFill > 0 &&
 			    (!drawMean || (rangeTop < meanTop - 1))) {
 			    paint->setPen(greys[topFill - 1]);
-			    paint->drawPoint(x, rangeTop - 1);
+			    paint->drawPoint(x, rangeTop);
 			}
 			if (bottomFill > 0 && 
 			    (!drawMean || (rangeBottom > meanBottom + 1))) {
 			    paint->setPen(greys[bottomFill - 1]);
-			    paint->drawPoint(x, rangeBottom + 1);
+			    paint->drawPoint(x, rangeBottom);
 			}
 		    }
 		}

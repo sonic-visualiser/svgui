@@ -40,9 +40,15 @@ Pane::Pane(QWidget *w) :
 bool
 Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos)
 {
+/*!!!
     for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
 	--vi;
 	if (layer != *vi) return false;
+	pos = m_identifyPoint;
+	return m_identifyFeatures;
+    }
+*/
+    if (layer == getSelectedLayer()) {
 	pos = m_identifyPoint;
 	return m_identifyFeatures;
     }
@@ -162,34 +168,6 @@ Pane::paintEvent(QPaintEvent *e)
 
 		paint.restore();
 	    }
-
-/*!!!
-	    QRect descRect = (*vi)->getFeatureDescriptionRect(paint,
-							      m_identifyPoint);
-	    if (descRect.width() > 0 && descRect.height() > 0 &&
-		r.left() + r.width() >= width() - descRect.width() &&
-		r.top() < descRect.height()) {
-		
-//		Profiler profiler("Pane::paintEvent - painting local feature description", true);
-		
-//		std::cerr << "Pane::paintEvent: calling paint.save() in feature description block" << std::endl;
-		paint.save();
-		
-		paint.setPen(Qt::black);
-		paint.setBrush(Qt::white);
-		
-		QRect rect(width() - descRect.width() - 1, 0,
-			   descRect.width(), descRect.height());
-		
-		paint.drawRect(rect);
-		
-		paint.setBrush(Qt::NoBrush);
-		(*vi)->paintLocalFeatureDescription(paint, rect, m_identifyPoint);
-		
-		paint.restore();
-	    }
-
-*/
 	}
 
 	break;
