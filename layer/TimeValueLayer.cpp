@@ -210,6 +210,15 @@ TimeValueLayer::getLocalPoints(int x) const
 	usePoints = nextPoints;
     }
 
+    if (!usePoints.empty()) {
+	int fuzz = 2;
+	int px = getXForFrame(usePoints.begin()->frame);
+	if ((px > x && px - x > fuzz) ||
+	    (px < x && x - px > fuzz + 1)) {
+	    usePoints.clear();
+	}
+    }
+
     return usePoints;
 }
 
@@ -251,36 +260,76 @@ TimeValueLayer::getFeatureDescription(QPoint &pos) const
     return text;
 }
 
-int
-TimeValueLayer::getNearestFeatureFrame(int frame,
-				       size_t &resolution,
-				       bool snapRight) const
+bool
+TimeValueLayer::snapToFeatureFrame(int &frame,
+				   size_t &resolution,
+				   SnapType snap) const
 {
     if (!m_model) {
-	return Layer::getNearestFeatureFrame(frame, resolution, snapRight);
+	return Layer::snapToFeatureFrame(frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
-    SparseTimeValueModel::PointList points(m_model->getPoints(frame, frame));
+    SparseTimeValueModel::PointList points;
 
-    int returnFrame = frame;
+    if (snap == SnapNeighbouring) {
+	
+	points = getLocalPoints(getXForFrame(frame));
+	if (points.empty()) return false;
+	frame = points.begin()->frame;
+	return true;
+    }    
+
+    points = m_model->getPoints(frame, frame);
+    int snapped = frame;
+    bool found = false;
 
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
-	if (snapRight) {
+	if (snap == SnapRight) {
+
 	    if (i->frame > frame) {
-		returnFrame = i->frame;
+		snapped = i->frame;
+		found = true;
 		break;
 	    }
-	} else {
+
+	} else if (snap == SnapLeft) {
+
 	    if (i->frame <= frame) {
-		returnFrame = i->frame;
+		snapped = i->frame;
+		found = true; // don't break, as the next may be better
+	    } else {
+		break;
+	    }
+
+	} else { // nearest
+
+	    SparseTimeValueModel::PointList::const_iterator j = i;
+	    ++j;
+
+	    if (j == points.end()) {
+
+		snapped = i->frame;
+		found = true;
+		break;
+
+	    } else if (j->frame >= frame) {
+
+		if (j->frame - frame < frame - i->frame) {
+		    snapped = j->frame;
+		} else {
+		    snapped = i->frame;
+		}
+		found = true;
+		break;
 	    }
 	}
     }
 
-    return returnFrame;
+    frame = snapped;
+    return found;
 }
 
 int
@@ -473,7 +522,8 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
 	    if (nx <= x) continue;
 
-	    if (nx < x + 5 && illuminateFrame != p.frame) {
+	    if (illuminateFrame != p.frame &&
+		(nx < x + 5 || x >= m_view->width() - 1)) {
 		paint.setPen(Qt::NoPen);
 	    }
 

@@ -1483,16 +1483,27 @@ SpectrogramLayer::getCompletion() const
     return completion;
 }
 
-int
-SpectrogramLayer::getNearestFeatureFrame(int frame, 
-					 size_t &resolution,
-					 bool snapRight) const
+bool
+SpectrogramLayer::snapToFeatureFrame(int &frame,
+				     size_t &resolution,
+				     SnapType snap) const
 {
     resolution = getWindowIncrement();
-    int snapFrame = (frame / resolution) * resolution;
-    if (snapRight) snapFrame += resolution;
-    return snapFrame;
-}
+    int left = (frame / resolution) * resolution;
+    int right = left + resolution;
+
+    switch (snap) {
+    case SnapLeft:  frame = left;  break;
+    case SnapRight: frame = right; break;
+    case SnapNearest:
+    case SnapNeighbouring:
+	if (frame - left > right - frame) frame = right;
+	else frame = left;
+	break;
+    }
+    
+    return true;
+} 
 
 QString
 SpectrogramLayer::getFeatureDescription(QPoint &pos) const

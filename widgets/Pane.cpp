@@ -40,14 +40,6 @@ Pane::Pane(QWidget *w) :
 bool
 Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos)
 {
-/*!!!
-    for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
-	--vi;
-	if (layer != *vi) return false;
-	pos = m_identifyPoint;
-	return m_identifyFeatures;
-    }
-*/
     if (layer == getSelectedLayer()) {
 	pos = m_identifyPoint;
 	return m_identifyFeatures;
@@ -352,8 +344,7 @@ Pane::mousePressEvent(QMouseEvent *e)
 	
 	    Layer *layer = getSelectedLayer();
 	    if (layer) {
-		snapFrame = layer->getNearestFeatureFrame(mouseFrame, resolution,
-							  false);
+		layer->snapToFeatureFrame(snapFrame, resolution, Layer::SnapLeft);
 	    }
 	    
 	    if (snapFrame < 0) snapFrame = 0;
@@ -486,6 +477,9 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
 
+    QPoint prevPoint = m_identifyPoint;
+    m_identifyPoint = e->pos();
+
     if (!m_clickedInRange) {
 	
 	if (mode == ViewManager::SelectMode) {
@@ -501,10 +495,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	if (mode != ViewManager::DrawMode) {
 
 	    bool previouslyIdentifying = m_identifyFeatures;
-	    QPoint prevPoint = m_identifyPoint;
-
 	    m_identifyFeatures = true;
-	    m_identifyPoint = e->pos();
 	    
 	    if (m_identifyFeatures != previouslyIdentifying ||
 		m_identifyPoint != prevPoint) {
@@ -555,12 +546,12 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	
 	Layer *layer = getSelectedLayer();
 	if (layer) {
-	    snapFrameLeft = layer->getNearestFeatureFrame(mouseFrame, resolution,
-							  false);
-	    snapFrameRight = layer->getNearestFeatureFrame(mouseFrame, resolution,
-							   true);
+	    layer->snapToFeatureFrame(snapFrameLeft, resolution, Layer::SnapLeft);
+	    layer->snapToFeatureFrame(snapFrameRight, resolution, Layer::SnapRight);
 	}
 	
+	std::cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << std::endl;
+
 	if (snapFrameLeft < 0) snapFrameLeft = 0;
 	if (snapFrameRight < 0) snapFrameRight = 0;
 	

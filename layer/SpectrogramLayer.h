@@ -53,9 +53,9 @@ public:
 
     virtual QString getFeatureDescription(QPoint &) const;
 
-    virtual int getNearestFeatureFrame(int frame, 
-				       size_t &resolution,
-				       bool snapRight = true) const;
+    virtual bool snapToFeatureFrame(int &frame,
+				    size_t &resolution,
+				    SnapType snap) const;
 
     void setModel(const DenseTimeValueModel *model);
 
