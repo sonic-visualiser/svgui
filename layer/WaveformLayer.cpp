@@ -385,11 +385,11 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 	paint->setPen(Qt::black);
 	paint->setBrush(Qt::NoBrush);
 
-	paint->setRenderHint(QPainter::Antialiasing, false);
-
     } else {
 	paint = &viewPainter;
     }
+
+    paint->setRenderHint(QPainter::Antialiasing, false);
 
     int x0 = 0, x1 = w - 1;
     int y0 = 0, y1 = h - 1;
@@ -398,6 +398,9 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     x1 = rect.right();
     y0 = rect.top();
     y1 = rect.bottom();
+
+    if (x0 > 0) --x0;
+    if (x1 < m_view->width()) ++x1;
 
     long frame0 = getFrameForX(x0);
     long frame1 = getFrameForX(x1 + 1);
@@ -440,6 +443,7 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
 
 	int prevRangeBottom = -1, prevRangeTop = -1;
+	QColor prevRangeBottomColour = m_colour, prevRangeTopColour = m_colour;
 
 	int m = (h / channels) / 2;
 	int my = m + (((ch - minChannel) * h) / channels);
@@ -593,15 +597,17 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 	    if (x != x0 && prevRangeBottom != -1) {
 		if (prevRangeBottom > rangeBottom &&
 		    prevRangeTop    > rangeBottom) {
-		    paint->setPen(midColour);
-		    paint->drawLine(x-1, prevRangeTop, x, rangeBottom);
+//		    paint->setPen(midColour);
 		    paint->setPen(m_colour);
+		    paint->drawLine(x-1, prevRangeTop, x, rangeBottom);
+		    paint->setPen(prevRangeTopColour);
 		    paint->drawPoint(x-1, prevRangeTop);
 		} else if (prevRangeBottom < rangeTop &&
 			   prevRangeTop    < rangeTop) {
-		    paint->setPen(midColour);
-		    paint->drawLine(x-1, prevRangeBottom, x, rangeTop);
+//		    paint->setPen(midColour);
 		    paint->setPen(m_colour);
+		    paint->drawLine(x-1, prevRangeBottom, x, rangeTop);
+		    paint->setPen(prevRangeBottomColour);
 		    paint->drawPoint(x-1, prevRangeBottom);
 		}
 	    }
@@ -620,6 +626,9 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 
 	    paint->drawLine(x, rangeBottom, x, rangeTop);
 
+	    prevRangeTopColour = m_colour;
+	    prevRangeBottomColour = m_colour;
+
 	    if (m_greyscale && (m_scale == LinearScale) && ready) {
 		if (!clipped) {
 		    if (rangeTop < rangeBottom) {
@@ -627,11 +636,13 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 			    (!drawMean || (rangeTop < meanTop - 1))) {
 			    paint->setPen(greys[topFill - 1]);
 			    paint->drawPoint(x, rangeTop);
+			    prevRangeTopColour = greys[topFill - 1];
 			}
 			if (bottomFill > 0 && 
 			    (!drawMean || (rangeBottom > meanBottom + 1))) {
 			    paint->setPen(greys[bottomFill - 1]);
 			    paint->drawPoint(x, rangeBottom);
+			    prevRangeBottomColour = greys[bottomFill - 1];
 			}
 		    }
 		}

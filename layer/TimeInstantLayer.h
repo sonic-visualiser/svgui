@@ -30,9 +30,9 @@ public:
 
     virtual QString getFeatureDescription(QPoint &) const;
 
-    virtual int getNearestFeatureFrame(int frame, 
-				       size_t &resolution,
-				       bool snapRight = true) const;
+    virtual bool snapToFeatureFrame(int &frame,
+				    size_t &resolution,
+				    SnapType snap) const;
 
     virtual void drawStart(QMouseEvent *);
     virtual void drawDrag(QMouseEvent *);
@@ -56,6 +56,14 @@ public:
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
 
+    enum PlotStyle {
+	PlotInstants,
+	PlotSegmentation
+    };
+
+    void setPlotStyle(PlotStyle style);
+    PlotStyle getPlotStyle() const { return m_plotStyle; }
+
     virtual bool isLayerScrollable() const;
 
     virtual bool isLayerEditable() const { return true; }
@@ -75,6 +83,7 @@ protected:
     SparseOneDimensionalModel::Point m_editingPoint;
     SparseOneDimensionalModel::EditCommand *m_editingCommand;
     QColor m_colour;
+    PlotStyle m_plotStyle;
 };
 
 #endif

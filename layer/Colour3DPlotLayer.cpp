@@ -374,21 +374,30 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 */
 }
 
-int
-Colour3DPlotLayer::getNearestFeatureFrame(int frame,
-					  size_t &resolution,
-					  bool snapRight) const
+bool
+Colour3DPlotLayer::snapToFeatureFrame(int &frame,
+				      size_t &resolution,
+				      SnapType snap) const
 {
     if (!m_model) {
-	return Layer::getNearestFeatureFrame(frame, resolution, snapRight);
+	return Layer::snapToFeatureFrame(frame, resolution, snap);
     }
 
     resolution = m_model->getWindowSize();
+    int left = (frame / resolution) * resolution;
+    int right = left + resolution;
+
+    switch (snap) {
+    case SnapLeft:  frame = left;  break;
+    case SnapRight: frame = right; break;
+    case SnapNearest:
+    case SnapNeighbouring:
+	if (frame - left > right - frame) frame = right;
+	else frame = left;
+	break;
+    }
     
-    int returnFrame = (frame / resolution) * resolution;
-    if (snapRight) returnFrame += resolution;
-    
-    return returnFrame;
+    return true;
 }
 
 #ifdef INCLUDE_MOCFILES

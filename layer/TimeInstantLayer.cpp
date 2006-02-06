@@ -27,7 +27,8 @@ TimeInstantLayer::TimeInstantLayer(View *w) :
     m_editing(false),
     m_editingPoint(0, tr("New Point")),
     m_editingCommand(0),
-    m_colour(QColor(200, 50, 255))
+    m_colour(QColor(200, 50, 255)),
+    m_plotStyle(PlotInstants)
 {
     m_view->addLayer(this);
 }
@@ -55,6 +56,7 @@ TimeInstantLayer::getProperties() const
 {
     PropertyList list;
     list.push_back(tr("Colour"));
+    list.push_back(tr("Plot Type"));
     return list;
 }
 
@@ -82,6 +84,13 @@ TimeInstantLayer::getPropertyRangeAndValue(const PropertyName &name,
 	else if (m_colour == QColor(200, 50, 255)) deft = 4;
 	else if (m_colour == QColor(255, 150, 50)) deft = 5;
 
+    } else if (name == tr("Plot Type")) {
+	
+	if (min) *min = 0;
+	if (max) *max = 1;
+	
+	deft = int(m_plotStyle);
+
     } else {
 	
 	deft = Layer::getPropertyRangeAndValue(name, min, max);
@@ -104,6 +113,12 @@ TimeInstantLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("Purple");
 	case 5: return tr("Orange");
 	}
+    } else if (name == tr("Plot Type")) {
+	switch (value) {
+	default:
+	case 0: return tr("Instants");
+	case 1: return tr("Segmentation");
+	}
     }
     return tr("<unknown>");
 }
@@ -121,6 +136,8 @@ TimeInstantLayer::setProperty(const PropertyName &name, int value)
 	case 4: setBaseColour(QColor(200, 50, 255)); break;
 	case 5: setBaseColour(QColor(255, 150, 50)); break;
 	}
+    } else if (name == tr("Plot Type")) {
+	setPlotStyle(PlotStyle(value));
     }
 }
 
@@ -129,6 +146,14 @@ TimeInstantLayer::setBaseColour(QColor colour)
 {
     if (m_colour == colour) return;
     m_colour = colour;
+    emit layerParametersChanged();
+}
+
+void
+TimeInstantLayer::setPlotStyle(PlotStyle style)
+{
+    if (m_plotStyle == style) return;
+    m_plotStyle = style;
     emit layerParametersChanged();
 }
 
@@ -142,6 +167,10 @@ TimeInstantLayer::isLayerScrollable() const
 SparseOneDimensionalModel::PointList
 TimeInstantLayer::getLocalPoints(int x) const
 {
+    // Return a set of points that all have the same frame number, the
+    // nearest to the given x coordinate, and that are within a
+    // certain fuzz distance of that x coordinate.
+
     if (!m_model) return SparseOneDimensionalModel::PointList();
 
     long frame = getFrameForX(x);
@@ -168,6 +197,15 @@ TimeInstantLayer::getLocalPoints(int x) const
     } else if (nextPoints.begin()->frame - frame <
 	       frame - prevPoints.begin()->frame) {
 	usePoints = nextPoints;
+    }
+
+    if (!usePoints.empty()) {
+	int fuzz = 2;
+	int px = getXForFrame(usePoints.begin()->frame);
+	if ((px > x && px - x > fuzz) ||
+	    (px < x && x - px > fuzz + 1)) {
+	    usePoints.clear();
+	}
     }
 
     return usePoints;
@@ -209,36 +247,76 @@ TimeInstantLayer::getFeatureDescription(QPoint &pos) const
     return text;
 }
 
-int
-TimeInstantLayer::getNearestFeatureFrame(int frame,
-					 size_t &resolution,
-					 bool snapRight) const
+bool
+TimeInstantLayer::snapToFeatureFrame(int &frame,
+				     size_t &resolution,
+				     SnapType snap) const
 {
     if (!m_model) {
-	return Layer::getNearestFeatureFrame(frame, resolution, snapRight);
+	return Layer::snapToFeatureFrame(frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
-    SparseOneDimensionalModel::PointList points(m_model->getPoints(frame, frame));
+    SparseOneDimensionalModel::PointList points;
 
-    int returnFrame = frame;
+    if (snap == SnapNeighbouring) {
+	
+	points = getLocalPoints(getXForFrame(frame));
+	if (points.empty()) return false;
+	frame = points.begin()->frame;
+	return true;
+    }    
+
+    points = m_model->getPoints(frame, frame);
+    int snapped = frame;
+    bool found = false;
 
     for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
-	if (snapRight) {
-	    if (i->frame > frame) {
-		returnFrame = i->frame;
+	if (snap == SnapRight) {
+
+	    if (i->frame >= frame) {
+		snapped = i->frame;
+		found = true;
 		break;
 	    }
-	} else {
+
+	} else if (snap == SnapLeft) {
+
 	    if (i->frame <= frame) {
-		returnFrame = i->frame;
+		snapped = i->frame;
+		found = true; // don't break, as the next may be better
+	    } else {
+		break;
+	    }
+
+	} else { // nearest
+
+	    SparseOneDimensionalModel::PointList::const_iterator j = i;
+	    ++j;
+
+	    if (j == points.end()) {
+
+		snapped = i->frame;
+		found = true;
+		break;
+
+	    } else if (j->frame >= frame) {
+
+		if (j->frame - frame < frame - i->frame) {
+		    snapped = j->frame;
+		} else {
+		    snapped = i->frame;
+		}
+		found = true;
+		break;
 	    }
 	}
     }
 
-    return returnFrame;
+    frame = snapped;
+    return found;
 }
 
 void
@@ -256,11 +334,33 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
     SparseOneDimensionalModel::PointList points(m_model->getPoints
 						(frame0, frame1));
 
+    bool odd = false;
+    if (m_plotStyle == PlotSegmentation && !points.empty()) {
+	int index = m_model->getIndexOf(*points.begin());
+	odd = ((index % 2) == 1);
+    }
+
     paint.setPen(m_colour);
 
     QColor brushColour(m_colour);
     brushColour.setAlpha(100);
     paint.setBrush(brushColour);
+
+    QColor oddBrushColour(brushColour);
+    if (m_plotStyle == PlotSegmentation) {
+	if (m_colour == Qt::black) {
+	    oddBrushColour = Qt::gray;
+	} else if (m_colour == Qt::darkRed) {
+	    oddBrushColour = Qt::red;
+	} else if (m_colour == Qt::darkBlue) {
+	    oddBrushColour = Qt::blue;
+	} else if (m_colour == Qt::darkGreen) {
+	    oddBrushColour = Qt::green;
+	} else {
+	    oddBrushColour = oddBrushColour.light(150);
+	}
+	oddBrushColour.setAlpha(100);
+    }
 
 //    std::cerr << "TimeInstantLayer::paint: resolution is "
 //	      << m_model->getResolution() << " frames" << std::endl;
@@ -305,11 +405,39 @@ TimeInstantLayer::paint(QPainter &paint, QRect rect) const
 	    paint.setPen(brushColour);
 	}
 
-	if (iw > 1) {
-	    paint.drawRect(x, 0, iw - 1, m_view->height() - 1);
+	if (m_plotStyle == PlotInstants) {
+	    if (iw > 1) {
+		paint.drawRect(x, 0, iw - 1, m_view->height() - 1);
+	    } else {
+		paint.drawLine(x, 0, x, m_view->height() - 1);
+	    }
 	} else {
-	    paint.drawLine(x, 0, x, m_view->height() - 1);
+
+	    if (odd) paint.setBrush(oddBrushColour);
+	    else paint.setBrush(brushColour);
+	    
+	    int nx;
+	    
+	    if (j != points.end()) {
+		const SparseOneDimensionalModel::Point &q(*j);
+		nx = getXForFrame(q.frame);
+	    } else {
+		nx = getXForFrame(m_model->getEndFrame());
+	    }
+
+	    if (nx >= x) {
+		
+		if (illuminateFrame != p.frame &&
+		    (nx < x + 5 || x >= m_view->width() - 1)) {
+		    paint.setPen(Qt::NoPen);
+		}
+
+		paint.drawRect(x, -1, nx - x, m_view->height() + 1);
+	    }
+
+	    odd = !odd;
 	}
+
 	paint.setPen(m_colour);
 	
 	if (p.label != "") {
@@ -448,7 +576,8 @@ QString
 TimeInstantLayer::toXmlString(QString indent, QString extraAttributes) const
 {
     return Layer::toXmlString(indent, extraAttributes +
-			      QString(" colour=\"%1\"").arg(encodeColour(m_colour)));
+			      QString(" colour=\"%1\" plotStyle=\"%2\"")
+			      .arg(encodeColour(m_colour)).arg(m_plotStyle));
 }
 
 void
@@ -461,6 +590,11 @@ TimeInstantLayer::setProperties(const QXmlAttributes &attributes)
 	    setBaseColour(QColor(colourSpec));
 	}
     }
+
+    bool ok;
+    PlotStyle style = (PlotStyle)
+	attributes.value("plotStyle").toInt(&ok);
+    if (ok) setPlotStyle(style);
 }
 
 #ifdef INCLUDE_MOCFILES
