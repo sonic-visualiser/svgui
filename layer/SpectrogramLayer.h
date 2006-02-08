@@ -140,6 +140,8 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    void setLayerDormant();
+
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);
@@ -193,6 +195,7 @@ protected:
     QTimer *m_updateTimer;
     size_t m_lastFillExtent;
     bool m_cachedInitialVisibleArea;
+    mutable bool m_dormant;
     bool m_exiting;
 
     void setCacheColourmap();

@@ -49,6 +49,7 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
     m_fillThread(0),
     m_updateTimer(0),
     m_lastFillExtent(0),
+    m_dormant(false),
     m_exiting(false)
 {
     if (config == MelodicRange) {
@@ -594,6 +595,19 @@ SpectrogramLayer::getFrequencyScale() const
 }
 
 void
+SpectrogramLayer::setLayerDormant()
+{
+    m_mutex.lock();
+    m_dormant = true;
+    delete m_cache;
+    m_cache = 0;
+    m_pixmapCacheInvalid = true;
+    delete m_pixmapCache;
+    m_pixmapCache = 0;
+    m_mutex.unlock();
+}
+
+void
 SpectrogramLayer::cacheInvalid()
 {
     m_cacheInvalid = true;
@@ -866,7 +880,7 @@ SpectrogramLayer::CacheFillThread::run()
 
 //	std::cerr << "SpectrogramLayer::CacheFillThread::run in loop" << std::endl;
 
-	if (m_layer.m_model && m_layer.m_cacheInvalid) {
+	if (m_layer.m_model && m_layer.m_cacheInvalid && !m_layer.m_dormant) {
 
 //	    std::cerr << "SpectrogramLayer::CacheFillThread::run: something to do" << std::endl;
 
@@ -1219,6 +1233,13 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 #endif
 
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
+	return;
+    }
+
+    if (m_dormant) {
+	std::cerr << "SpectrogramLayer::paint(): Layer is dormant, de-hibernating" << std::endl;
+	m_dormant = false;
+	((SpectrogramLayer *)this)->fillCache();
 	return;
     }
 
