@@ -7,11 +7,11 @@
     This is experimental software.  Not for distribution.
 */
 
-#ifndef _TIME_VALUE_LAYER_H_
-#define _TIME_VALUE_LAYER_H_
+#ifndef _NOTE_LAYER_H_
+#define _NOTE_LAYER_H_
 
 #include "base/Layer.h"
-#include "model/SparseTimeValueModel.h"
+#include "model/NoteModel.h"
 
 #include <QObject>
 #include <QColor>
@@ -19,12 +19,12 @@
 class View;
 class QPainter;
 
-class TimeValueLayer : public Layer
+class NoteLayer : public Layer
 {
     Q_OBJECT
 
 public:
-    TimeValueLayer(View *w);
+    NoteLayer(View *w);
 
     virtual void paint(QPainter &paint, QRect rect) const;
 
@@ -43,7 +43,7 @@ public:
     virtual void editEnd(QMouseEvent *);
 
     virtual const Model *getModel() const { return m_model; }
-    void setModel(SparseTimeValueModel *model);
+    void setModel(NoteModel *model);
 
     virtual PropertyList getProperties() const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
@@ -56,17 +56,14 @@ public:
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
 
-    enum PlotStyle {
-	PlotPoints,
-	PlotStems,
-	PlotConnectedPoints,
-	PlotLines,
-	PlotCurve,
-	PlotSegmentation
+    enum VerticalScale {
+	MinMaxRangeScale,
+	MIDIRangeScale,
+	FrequencyScale
     };
 
-    void setPlotStyle(PlotStyle style);
-    PlotStyle getPlotStyle() const { return m_plotStyle; }
+    void setVerticalScale(VerticalScale scale);
+    VerticalScale getVerticalScale() const { return m_verticalScale; }
 
     virtual bool isLayerScrollable() const;
 
@@ -83,15 +80,15 @@ protected:
     int getYForValue(float value) const;
     float getValueForY(int y) const;
 
-    SparseTimeValueModel::PointList getLocalPoints(int) const;
+    NoteModel::PointList getLocalPoints(int) const;
 
-    SparseTimeValueModel *m_model;
+    NoteModel *m_model;
     bool m_editing;
-    SparseTimeValueModel::Point m_originalPoint;
-    SparseTimeValueModel::Point m_editingPoint;
-    SparseTimeValueModel::EditCommand *m_editingCommand;
+    NoteModel::Point m_originalPoint;
+    NoteModel::Point m_editingPoint;
+    NoteModel::EditCommand *m_editingCommand;
     QColor m_colour;
-    PlotStyle m_plotStyle;
+    VerticalScale m_verticalScale;
 };
 
 #endif

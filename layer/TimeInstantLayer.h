@@ -7,8 +7,8 @@
     This is experimental software.  Not for distribution.
 */
 
-#ifndef _TIME_INSTANT_VIEW_H_
-#define _TIME_INSTANT_VIEW_H_
+#ifndef _TIME_INSTANT_LAYER_H_
+#define _TIME_INSTANT_LAYER_H_
 
 #include "base/Layer.h"
 #include "model/SparseOneDimensionalModel.h"

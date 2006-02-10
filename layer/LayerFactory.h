@@ -28,6 +28,7 @@ public:
 	TimeRuler,
 	TimeInstants,
 	TimeValues,
+	Notes,
 	Colour3DPlot,
 
 	// Layers with different initial parameters
