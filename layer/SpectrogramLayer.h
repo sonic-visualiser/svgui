@@ -7,8 +7,8 @@
     This is experimental software.  Not for distribution.
 */
 
-#ifndef _SPECTROGRAM_VIEW_H_
-#define _SPECTROGRAM_VIEW_H_
+#ifndef _SPECTROGRAM_LAYER_H_
+#define _SPECTROGRAM_LAYER_H_
 
 #include "base/Layer.h"
 #include "base/Window.h"

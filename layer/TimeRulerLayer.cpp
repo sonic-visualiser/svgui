@@ -185,7 +185,7 @@ TimeRulerLayer::paint(QPainter &paint, QRect rect) const
     long ms = rt.sec * 1000 + rt.msec();
     ms = (ms / incms) * incms - incms;
 
-    RealTime incRt = RealTime(incms / 1000, (incms % 1000) * 1000000);
+    RealTime incRt = RealTime::fromMilliseconds(incms);
     long incFrame = RealTime::realTime2Frame(incRt, sampleRate);
     int incX = incFrame / zoomLevel;
     int ticks = 10;
@@ -207,7 +207,7 @@ TimeRulerLayer::paint(QPainter &paint, QRect rect) const
 
     while (1) {
 
-	rt = RealTime(ms / 1000, (ms % 1000) * 1000000);
+	rt = RealTime::fromMilliseconds(ms);
 	ms += incms;
 
 	long frame = RealTime::realTime2Frame(rt, sampleRate);

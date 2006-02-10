@@ -7,8 +7,8 @@
     This is experimental software.  Not for distribution.
 */
 
-#ifndef _WAVEFORM_VIEW_H_
-#define _WAVEFORM_VIEW_H_
+#ifndef _WAVEFORM_LAYER_H_
+#define _WAVEFORM_LAYER_H_
 
 #include <QRect>
 #include <QColor>
