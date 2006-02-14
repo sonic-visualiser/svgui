@@ -82,6 +82,8 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 {
     m_mutex.lock();
     m_model = model;
+    delete m_cache;
+    m_cache = 0;
     m_mutex.unlock();
 
     if (!m_model || !m_model->isOK()) return;
@@ -697,9 +699,10 @@ SpectrogramLayer::setCacheColourmap()
 
     int formerRotation = m_colourRotation;
 
-    m_cache->setNumColors(256);
+//    m_cache->setNumColors(256);
     
-    m_cache->setColor(0, qRgb(255, 255, 255));
+//    m_cache->setColour(0, qRgb(255, 255, 255));
+    m_cache->setColour(0, Qt::white);
 
     for (int pixel = 1; pixel < 256; ++pixel) {
 
@@ -742,8 +745,9 @@ SpectrogramLayer::setCacheColourmap()
 	    break;
 	}
 
-	m_cache->setColor
-	    (pixel, qRgb(colour.red(), colour.green(), colour.blue()));
+//	m_cache->setColor
+//	    (pixel, qRgb(colour.red(), colour.green(), colour.blue()));
+	m_cache->setColour(pixel, colour);
     }
 
     m_colourRotation = 0;
@@ -756,19 +760,19 @@ SpectrogramLayer::rotateCacheColourmap(int distance)
 {
     if (!m_cache) return;
 
-    QRgb newPixels[256];
+    QColor newPixels[256];
 
-    newPixels[0] = m_cache->color(0);
+    newPixels[0] = m_cache->getColour(0);
 
     for (int pixel = 1; pixel < 256; ++pixel) {
 	int target = pixel + distance;
 	while (target < 1) target += 255;
 	while (target > 255) target -= 255;
-	newPixels[target] = m_cache->color(pixel);
+	newPixels[target] = m_cache->getColour(pixel);
     }
 
     for (int pixel = 0; pixel < 256; ++pixel) {
-	m_cache->setColor(pixel, newPixels[pixel]);
+	m_cache->setColour(pixel, newPixels[pixel]);
     }
 }
 
@@ -858,13 +862,70 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	    break;
 	}
 
-	if (column < m_cache->width() && (int)i < m_cache->height()) {
-	    m_cache->setPixel(column, i, value + 1); // 0 is "unset"
-	}
+	m_cache->setValueAt(column, i, value + 1);
     }
 
     if (lock) m_mutex.unlock();
     return !interrupted;
+}
+
+SpectrogramLayer::Cache::Cache(size_t width, size_t height) :
+    m_width(width),
+    m_height(height)
+{
+    m_values = new unsigned char[m_width * m_height];
+    MUNLOCK(m_values, m_width * m_height * sizeof(unsigned char));
+}
+
+SpectrogramLayer::Cache::~Cache()
+{
+    delete[] m_values;
+}
+
+size_t
+SpectrogramLayer::Cache::getWidth() const
+{
+    return m_width;
+}
+
+size_t
+SpectrogramLayer::Cache::getHeight() const
+{
+    return m_height;
+}
+
+unsigned char
+SpectrogramLayer::Cache::getValueAt(size_t x, size_t y) const
+{
+    if (x >= m_width || y >= m_height) return 0;
+    return m_values[y * m_width + x];
+}
+
+void
+SpectrogramLayer::Cache::setValueAt(size_t x, size_t y, unsigned char value)
+{
+    if (x >= m_width || y >= m_height) return;
+    m_values[y * m_width + x] = value;
+}
+
+QColor
+SpectrogramLayer::Cache::getColour(unsigned char index) const
+{
+    return m_colours[index];
+}
+
+void
+SpectrogramLayer::Cache::setColour(unsigned char index, QColor colour)
+{
+    m_colours[index] = colour;
+}
+
+void
+SpectrogramLayer::Cache::fill(unsigned char value)
+{
+    for (size_t i = 0; i < m_width * m_height; ++i) {
+	m_values[i] = value;
+    }
 }
 
 void
@@ -919,16 +980,8 @@ SpectrogramLayer::CacheFillThread::run()
 	    delete m_layer.m_cache;
 	    size_t width = (end - start) / windowIncrement + 1;
 	    size_t height = windowSize / 2;
-	    m_layer.m_cache = new QImage(width, height,
-					 QImage::Format_Indexed8);
+	    m_layer.m_cache = new Cache(width, height);
 
-	    // If we're using JACK in mlock mode, this will be locked
-	    // and we ought to unlock to avoid memory exhaustion.
-	    // Shame it doesn't appear to be possible to allocate
-	    // unlocked in the first place.
-	    //!!! hm, I don't think this is working.
-	    MUNLOCK((void *)m_layer.m_cache, width * height);
-    
 	    m_layer.setCacheColourmap();
 
 	    m_layer.m_cache->fill(0);
@@ -1194,15 +1247,15 @@ SpectrogramLayer::getXYBinSourceRange(int x, int y, float &dbMin, float &dbMax) 
     if (m_mutex.tryLock()) {
 	if (m_cache && !m_cacheInvalid) {
 
-	    int cw = m_cache->width();
-	    int ch = m_cache->height();
+	    int cw = m_cache->getWidth();
+	    int ch = m_cache->getHeight();
 
 	    int min = -1, max = -1;
 
 	    for (int q = q0i; q <= q1i; ++q) {
 		for (int s = s0i; s <= s1i; ++s) {
 		    if (s >= 0 && q >= 0 && s < cw && q < ch) {
-			int value = m_cache->scanLine(q)[s];
+			int value = int(m_cache->getValueAt(s, q));
 			if (min == -1 || value < min) min = value;
 			if (max == -1 || value > max) max = value;
 		    }	
@@ -1395,8 +1448,8 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 	    break;
 	}
 
-	int cw = m_cache->width();
-	int ch = m_cache->height();
+	int cw = m_cache->getWidth();
+	int ch = m_cache->getHeight();
 
 	float q0 = 0, q1 = 0;
 
@@ -1440,20 +1493,21 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 		    if (q == q1i) qprop *= q1 - q;
 
 		    if (s >= 0 && q >= 0 && s < cw && q < ch) {
-			total += qprop * m_cache->scanLine(q)[s];
+			total += qprop * m_cache->getValueAt(s, q);
 			divisor += qprop;
 		    }
 		}
 	    }
 		    
 	    if (divisor > 0.0) {
-/*
 		int pixel = int(total / divisor);
 		if (pixel > 255) pixel = 255;
 		if (pixel < 1) pixel = 1;
 		assert(x <= scaled.width());
-		scaled.setPixel(x, y, m_cache->color(pixel));
-*/
+		QColor c = m_cache->getColour(pixel);
+		scaled.setPixel(x, y,
+				qRgb(c.red(), c.green(), c.blue()));
+/*
 		float pixel = total / divisor;
 		float lq = pixel - int(pixel);
 		float hq = int(pixel) + 1 - pixel;
@@ -1465,7 +1519,7 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 		     qGreen(low) * lq + qGreen(high) * hq + 0.01,
 		     qBlue(low) * lq + qBlue(high) * hq + 0.01);
 		scaled.setPixel(x, y, mixed);
-
+*/
 	    } else {
 		assert(x <= scaled.width());
 		scaled.setPixel(x, y, qRgb(0, 0, 0));

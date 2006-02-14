@@ -34,7 +34,7 @@ class RealTime;
  */
 
 class SpectrogramLayer : public Layer,
-			public PowerOfSqrtTwoZoomConstraint
+			 public PowerOfSqrtTwoZoomConstraint
 {
     Q_OBJECT
 
@@ -162,6 +162,36 @@ protected:
     ColourScheme   m_colourScheme;
     FrequencyScale m_frequencyScale;
 
+    // A QImage would do just as well here, and we originally used
+    // one: the problem is that we want to munlock() the memory it
+    // uses, and it's much easier to do that if we control it.  This
+    // cache is hardwired to an effective 8-bit colour mapped layout.
+    class Cache {
+    public:
+	Cache(size_t width, size_t height);
+	~Cache();
+
+	size_t getWidth() const;
+	size_t getHeight() const;
+	
+	unsigned char getValueAt(size_t x, size_t y) const;
+	void setValueAt(size_t x, size_t y, unsigned char value);
+
+	QColor getColour(unsigned char index) const;
+	void setColour(unsigned char index, QColor colour);
+
+	void fill(unsigned char value);
+
+    protected:
+	size_t m_width;
+	size_t m_height;
+	unsigned char *m_values;
+	QColor m_colours[256];
+    };
+    
+    Cache *m_cache;
+    bool m_cacheInvalid;
+
     class CacheFillThread : public QThread
     {
     public:
@@ -179,9 +209,6 @@ protected:
     };
 
     void fillCache();
-    
-    QImage *m_cache;
-    bool m_cacheInvalid;
 
     mutable QPixmap *m_pixmapCache;
     mutable bool m_pixmapCacheInvalid;
