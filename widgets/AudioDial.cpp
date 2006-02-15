@@ -38,7 +38,6 @@
 #include <QTimer>
 #include <QPainter>
 #include <QPixmap>
-#include <QImage>
 #include <QColormap>
 #include <QMouseEvent>
 #include <QPaintEvent>
