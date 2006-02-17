@@ -49,7 +49,6 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
     m_fillThread(0),
     m_updateTimer(0),
     m_lastFillExtent(0),
-    m_dormant(false),
     m_exiting(false)
 {
     if (config == MelodicRange) {
@@ -597,16 +596,29 @@ SpectrogramLayer::getFrequencyScale() const
 }
 
 void
-SpectrogramLayer::setLayerDormant()
+SpectrogramLayer::setLayerDormant(bool dormant)
 {
-    m_mutex.lock();
-    m_dormant = true;
-    delete m_cache;
-    m_cache = 0;
-    m_pixmapCacheInvalid = true;
-    delete m_pixmapCache;
-    m_pixmapCache = 0;
-    m_mutex.unlock();
+    if (dormant == m_dormant) return;
+
+    if (dormant) {
+
+	m_mutex.lock();
+	m_dormant = true;
+
+	delete m_cache;
+	m_cache = 0;
+	
+	m_pixmapCacheInvalid = true;
+	delete m_pixmapCache;
+	m_pixmapCache = 0;
+	
+	m_mutex.unlock();
+
+    } else {
+
+	m_dormant = false;
+	fillCache();
+    }
 }
 
 void
@@ -983,8 +995,17 @@ SpectrogramLayer::CacheFillThread::run()
 	    m_layer.m_cache = new Cache(width, height);
 
 	    m_layer.setCacheColourmap();
-
 	    m_layer.m_cache->fill(0);
+
+	    // We don't need a lock when writing to or reading from
+	    // the pixels in the cache, because it's a fixed size
+	    // array.  We do need to ensure we have the width and
+	    // height of the cache and the FFT parameters fixed before
+	    // we unlock, in case they change in the model while we
+	    // aren't holding a lock.  It's safe for us to continue to
+	    // use the "old" values if that happens, because they will
+	    // continue to match the dimensions of the actual cache
+	    // (which we manage, not the model).
 	    m_layer.m_mutex.unlock();
 
 	    double *input = (double *)
@@ -1002,7 +1023,6 @@ SpectrogramLayer::CacheFillThread::run()
 		std::cerr << "WARNING: fftw_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
 		fftw_free(input);
 		fftw_free(output);
-		m_layer.m_mutex.lock();
 		continue;
 	    }
 
@@ -1014,17 +1034,12 @@ SpectrogramLayer::CacheFillThread::run()
 
 	    if (doVisibleFirst) {
 
-		m_layer.m_mutex.lock();
-
 		for (size_t f = visibleStart; f < visibleEnd; f += windowIncrement) {
 	    
 		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
 					    input, output, plan,
 					    windowSize, windowIncrement,
 					    windower, false);
-
-		    m_layer.m_mutex.unlock();
-		    m_layer.m_mutex.lock();
 
 		    if (m_layer.m_cacheInvalid || m_layer.m_exiting) {
 			interrupted = true;
@@ -1039,8 +1054,6 @@ SpectrogramLayer::CacheFillThread::run()
 			counter = 0;
 		    }
 		}
-
-		m_layer.m_mutex.unlock();
 	    }
 
 	    m_layer.m_cachedInitialVisibleArea = true;
@@ -1290,9 +1303,7 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
     }
 
     if (m_dormant) {
-	std::cerr << "SpectrogramLayer::paint(): Layer is dormant, de-hibernating" << std::endl;
-	m_dormant = false;
-	((SpectrogramLayer *)this)->fillCache();
+	std::cerr << "SpectrogramLayer::paint(): Layer is dormant" << std::endl;
 	return;
     }
 

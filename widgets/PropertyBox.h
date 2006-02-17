@@ -15,6 +15,8 @@
 #include <QFrame>
 #include <map>
 
+class QLayout;
+class QWidget;
 class QGridLayout;
 
 class PropertyBox : public QFrame
@@ -34,8 +36,10 @@ protected slots:
     void propertyControllerChanged(int);
 
 protected:
+    void populateViewPlayBox(PropertyContainer *, QLayout *);
     void updatePropertyEditor(PropertyContainer::PropertyName);
 
+    QWidget *m_mainWidget;
     QGridLayout *m_layout;
     PropertyContainer *m_container;
     std::map<QString, QLayout *> m_groupLayouts;

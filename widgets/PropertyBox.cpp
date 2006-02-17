@@ -10,14 +10,19 @@
 #include "PropertyBox.h"
 
 #include "base/PropertyContainer.h"
+#include "base/PlayParameters.h"
+#include "base/Layer.h"
 
 #include "AudioDial.h"
+#include "LEDButton.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QLabel>
+#include <QFrame>
 
 #include <cassert>
 #include <iostream>
@@ -32,8 +37,35 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 	container->getPropertyContainerName().toStdString() << "\")]::PropertyBox" << std::endl;
 #endif
 
+    QVBoxLayout *vbox = new QVBoxLayout;
+    setLayout(vbox);
+
+    bool needViewPlayBox = false;
+
+    if (container->getPlayParameters() || dynamic_cast<Layer *>(container)) {
+	needViewPlayBox = true;
+    }
+
+    if (needViewPlayBox) {
+#ifdef DEBUG_PROPERTY_BOX
+	std::cerr << "Adding view play box" << std::endl;
+#endif
+	QFrame *frame = new QFrame;
+	frame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+	QHBoxLayout *hbox = new QHBoxLayout;
+	frame->setLayout(hbox);
+	vbox->addWidget(frame);
+	populateViewPlayBox(container, hbox);
+	hbox->insertStretch(-1, 10);
+    }
+
+    m_mainWidget = new QWidget;
+    vbox->addWidget(m_mainWidget);
+
+    vbox->insertStretch(-1, 10);
+
     m_layout = new QGridLayout;
-    setLayout(m_layout);
+    m_mainWidget->setLayout(m_layout);
 
     PropertyContainer::PropertyList properties = container->getProperties();
 
@@ -57,8 +89,32 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 PropertyBox::~PropertyBox()
 {
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox[" << this << "(\"" << m_container->getPropertyContainerName().toStdString() << "\")]::~PropertyBox" << std::endl;
+    std::cerr << "PropertyBox[" << this << "]::~PropertyBox" << std::endl;
 #endif
+}
+
+void
+PropertyBox::populateViewPlayBox(PropertyContainer *container, QLayout *layout)
+{
+    Layer *layer = dynamic_cast<Layer *>(container);
+    PlayParameters *params = container->getPlayParameters();
+    if (!params && !layer) return;
+
+    std::cerr << "PropertyBox::populateViewPlayBox: container " << container << " (name " << container->getPropertyContainerName().toStdString() << ") params " << params << std::endl;
+    
+    if (layer) {
+	LEDButton *showButton = new LEDButton(Qt::blue);
+	layout->addWidget(showButton);
+	connect(showButton, SIGNAL(stateChanged(bool)),
+		layer, SLOT(showLayer(bool)));
+    }
+    
+    if (params) {
+	LEDButton *playButton = new LEDButton(Qt::darkGreen);
+	layout->addWidget(playButton);
+	connect(playButton, SIGNAL(stateChanged(bool)),
+		params, SLOT(setPlayAudible(bool)));
+    }
 }
 
 void
@@ -92,8 +148,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 #ifdef DEBUG_PROPERTY_BOX
 		std::cerr << "PropertyBox: adding label \"" << groupName.toStdString() << "\" and frame for group for \"" << name.toStdString() << "\"" << std::endl;
 #endif
-		m_layout->addWidget(new QLabel(groupName, this), row, 0);
-		QFrame *frame = new QFrame(this);
+		m_layout->addWidget(new QLabel(groupName, m_mainWidget), row, 0);
+		QFrame *frame = new QFrame(m_mainWidget);
 		m_layout->addWidget(frame, row, 1, 1, 2);
 		m_groupLayouts[groupName] = new QHBoxLayout;
 		m_groupLayouts[groupName]->setMargin(0);
@@ -103,7 +159,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 #ifdef DEBUG_PROPERTY_BOX 
 	    std::cerr << "PropertyBox: adding label \"" << name.toStdString() << "\"" << std::endl;
 #endif
-	    m_layout->addWidget(new QLabel(name, this), row, 0);
+	    m_layout->addWidget(new QLabel(name, m_mainWidget), row, 0);
 	}
     }
 
@@ -166,7 +222,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 		dial->setFixedWidth(32);
 		dial->setFixedHeight(32);
 		m_layout->addWidget(dial, row, 1);
-		QLabel *label = new QLabel(this);
+		QLabel *label = new QLabel(m_mainWidget);
 		connect(dial, SIGNAL(valueChanged(int)),
 			label, SLOT(setNum(int)));
 		label->setNum(value);
@@ -246,8 +302,8 @@ PropertyBox::propertyControllerChanged(int value)
     QObject *obj = sender();
     QString name = obj->objectName();
 
-//    std::cerr << "PropertyBox::propertyControllerChanged(" << name.toStdString()
-//	      << ", " << value << ")" << std::endl;
+    std::cerr << "PropertyBox::propertyControllerChanged(" << name.toStdString()
+	      << ", " << value << ")" << std::endl;
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
     

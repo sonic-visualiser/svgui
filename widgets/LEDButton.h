@@ -17,7 +17,7 @@
 
     The original KDE widget comes in round and rectangular and flat,
     raised, and sunken variants.  This version retains only the round
-    sunken variant.
+    sunken variant.  This version also implements a simple button API.
 */
 
 #ifndef _LED_BUTTON_H_
@@ -55,14 +55,17 @@ public:
     virtual QSize sizeHint() const;
     virtual QSize minimumSizeHint() const;
 
-public slots:
+signals:
+    void stateChanged(bool);
 
+public slots:
     void toggle();
     void on();
     void off();
 
 protected:
     void paintEvent(QPaintEvent *);
+    void mousePressEvent(QMouseEvent *);
 
 private:
     State led_state;
