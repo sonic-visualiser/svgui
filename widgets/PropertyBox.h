@@ -18,6 +18,7 @@
 class QLayout;
 class QWidget;
 class QGridLayout;
+class QVBoxLayout;
 
 class PropertyBox : public QFrame
 {
@@ -29,19 +30,33 @@ public:
 
     PropertyContainer *getContainer() { return m_container; }
 
+signals:
+    void changePlayGain(float);
+    void changePlayGainDial(int);
+    void changePlayPan(float);
+    void changePlayPanDial(int);
+
 public slots:
     void propertyContainerPropertyChanged(PropertyContainer *);
 
 protected slots:
     void propertyControllerChanged(int);
 
+    void playGainChanged(float);
+    void playGainDialChanged(int);
+    void playPanChanged(float);
+    void playPanDialChanged(int);
+
+    void populateViewPlayFrame();
+
 protected:
-    void populateViewPlayBox(PropertyContainer *, QLayout *);
     void updatePropertyEditor(PropertyContainer::PropertyName);
 
     QWidget *m_mainWidget;
     QGridLayout *m_layout;
     PropertyContainer *m_container;
+    QFrame *m_viewPlayFrame;
+    QVBoxLayout *m_mainBox;
     std::map<QString, QLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };

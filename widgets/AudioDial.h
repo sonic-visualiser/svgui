@@ -84,6 +84,8 @@ public slots:
      */
     void setMouseDial(bool mouseDial);
 
+    void setDefaultValue(int defaultValue);
+
 protected:
     void drawTick(QPainter &paint, float angle, int size, bool internal);
     virtual void paintEvent(QPaintEvent *);
@@ -92,11 +94,14 @@ protected:
     virtual void mousePressEvent(QMouseEvent *pMouseEvent);
     virtual void mouseMoveEvent(QMouseEvent *pMouseEvent);
     virtual void mouseReleaseEvent(QMouseEvent *pMouseEvent);
+    virtual void mouseDoubleClickEvent(QMouseEvent *pMouseEvent);
 
 private:
     QColor m_knobColor;
     QColor m_meterColor;
     
+    int m_defaultValue;
+
     // Alternate mouse behavior tracking.
     bool m_mouseDial;
     bool m_mousePressed;

@@ -107,7 +107,7 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = -50;
 	*max = 50;
 
-	deft = int(nearbyint(log10(m_gain) * 20.0));
+	deft = lrint(log10(m_gain) * 20.0);
 	if (deft < *min) deft = *min;
 	if (deft > *max) deft = *max;
 

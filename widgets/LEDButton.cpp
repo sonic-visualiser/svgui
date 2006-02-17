@@ -24,6 +24,8 @@
 #include <QColor>
 #include <QMouseEvent>
 
+#include <iostream>
+
 
 class LEDButton::LEDButtonPrivate
 {
@@ -38,7 +40,7 @@ class LEDButton::LEDButtonPrivate
 
 LEDButton::LEDButton(QWidget *parent) :
     QWidget(parent),
-    led_state(On)
+    led_state(true)
 {
     QColor col(Qt::green);
     d = new LEDButton::LEDButtonPrivate;
@@ -53,7 +55,7 @@ LEDButton::LEDButton(QWidget *parent) :
 
 LEDButton::LEDButton(const QColor& col, QWidget *parent) :
     QWidget(parent),
-    led_state(On)
+    led_state(true)
 {
     d = new LEDButton::LEDButtonPrivate;
     d->dark_factor = 300;
@@ -64,7 +66,7 @@ LEDButton::LEDButton(const QColor& col, QWidget *parent) :
     setColor(col);
 }
 
-LEDButton::LEDButton(const QColor& col, LEDButton::State state, QWidget *parent) :
+LEDButton::LEDButton(const QColor& col, bool state, QWidget *parent) :
     QWidget(parent),
     led_state(state)
 {
@@ -87,9 +89,13 @@ LEDButton::~LEDButton()
 void
 LEDButton::mousePressEvent(QMouseEvent *e)
 {
+    std::cerr << "LEDButton(" << this << ")::mousePressEvent" << std::endl;
+
     if (e->buttons() & Qt::LeftButton) {
 	toggle();
-	emit stateChanged(state());
+	bool newState = state();
+	std::cerr << "emitting new state " << newState << std::endl;
+	emit stateChanged(newState);
     }
 }
 
@@ -112,39 +118,30 @@ LEDButton::paintEvent(QPaintEvent *)
     if (width < 0) 
 	width = 0;
 
-    // maybe we could stop HERE, if width <=0 ?
+    QPixmap *tmpMap = 0;
+
+    if (led_state) {
+	if (d->on_map) {
+	    paint.begin(this);
+	    paint.drawPixmap(0, 0, *d->on_map);
+	    paint.end();
+	    return;
+	}
+    } else {
+	if (d->off_map) {
+	    paint.begin(this);
+	    paint.drawPixmap(0, 0, *d->off_map);
+	    paint.end();
+	    return;
+	}
+    }
 
     int scale = 1;
-    QPixmap *tmpMap = 0;
-    bool smooth = true;
+    width *= scale;
 
-    if (smooth) {
-	if (led_state) {
-	    if (d->on_map) {
-		paint.begin(this);
-		paint.drawPixmap(0, 0, *d->on_map);
-		paint.end();
-		return;
-	    }
-	} else {
-	    if (d->off_map) {
-		paint.begin(this);
-		paint.drawPixmap(0, 0, *d->off_map);
-		paint.end();
-		return;
-	    }
-	}
-
-	scale = 1;
-	width *= scale;
-
-	tmpMap = new QPixmap(width, width);
-	tmpMap->fill(palette().background().color());
-	paint.begin(tmpMap);
-
-    } else {
-	paint.begin(this);
-    }
+    tmpMap = new QPixmap(width, width);
+    tmpMap->fill(palette().background().color());
+    paint.begin(tmpMap);
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
@@ -221,8 +218,10 @@ LEDButton::paintEvent(QPaintEvent *)
     //
     // painting done
 
-    if (smooth) {
-	QPixmap *&dest = led_state ? d->on_map : d->off_map;
+    QPixmap *&dest = led_state ? d->on_map : d->off_map;
+
+    if (scale > 1) {
+
 	QImage i = tmpMap->toImage();
 	width /= scale;
 	delete tmpMap;
@@ -230,13 +229,18 @@ LEDButton::paintEvent(QPaintEvent *)
 			   (i.scaled(width, width, 
 				     Qt::KeepAspectRatio,
 				     Qt::SmoothTransformation)));
-	paint.begin(this);
-	paint.drawPixmap(0, 0, *dest);
-	paint.end();
+
+    } else {
+
+	dest = tmpMap;
     }
+
+    paint.begin(this);
+    paint.drawPixmap(0, 0, *dest);
+    paint.end();
 }
 
-LEDButton::State
+bool
 LEDButton::state() const
 {
     return led_state;
@@ -249,7 +253,7 @@ LEDButton::color() const
 }
 
 void
-LEDButton::setState( State state )
+LEDButton::setState( bool state )
 {
     if (led_state != state)
     {
@@ -261,7 +265,7 @@ LEDButton::setState( State state )
 void
 LEDButton::toggleState()
 {
-    led_state = (led_state == On) ? Off : On;
+    led_state = (led_state == true) ? false : true;
     // setColor(led_color);
     update();
 }
@@ -305,13 +309,13 @@ LEDButton::toggle()
 void
 LEDButton::on()
 {
-    setState(On);
+    setState(true);
 }
 
 void
 LEDButton::off()
 {
-    setState(Off);
+    setState(false);
 }
 
 QSize

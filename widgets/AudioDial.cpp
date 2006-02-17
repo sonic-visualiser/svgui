@@ -41,6 +41,7 @@
 #include <QColormap>
 #include <QMouseEvent>
 #include <QPaintEvent>
+#include <QInputDialog>
 
 using std::endl;
 using std::cerr;
@@ -61,7 +62,8 @@ using std::cerr;
 // Constructor.
 AudioDial::AudioDial(QWidget *parent) :
     QDial(parent),
-    m_knobColor(Qt::black), m_meterColor(Qt::white)
+    m_knobColor(Qt::black), m_meterColor(Qt::white),
+    m_defaultValue(0)
 {
     m_mouseDial = false;
     m_mousePressed = false;
@@ -139,7 +141,7 @@ void AudioDial::paintEvent(QPaintEvent *)
 
     // Tick notches...
 
-    if ( true/* notchesVisible() */) {
+    if ( notchesVisible() ) {
 //	std::cerr << "Notches visible" << std::endl;
 	pen.setColor(palette().dark().color());
 	pen.setWidth(scale);
@@ -293,6 +295,12 @@ void AudioDial::setMouseDial(bool mouseDial)
 }
 
 
+void AudioDial::setDefaultValue(int defaultValue)
+{
+    m_defaultValue = defaultValue;
+}
+
+
 // Alternate mouse behavior event handlers.
 void AudioDial::mousePressEvent(QMouseEvent *mouseEvent)
 {
@@ -301,6 +309,30 @@ void AudioDial::mousePressEvent(QMouseEvent *mouseEvent)
     } else if (mouseEvent->button() == Qt::LeftButton) {
 	m_mousePressed = true;
 	m_posMouse = mouseEvent->pos();
+    } else if (mouseEvent->button() == Qt::MidButton) {
+	int dv = m_defaultValue;
+	if (dv < minimum()) dv = minimum();
+	if (dv > maximum()) dv = maximum();
+	setValue(m_defaultValue);
+    }
+}
+
+
+void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
+{
+    if (m_mouseDial) {
+	QDial::mouseDoubleClickEvent(mouseEvent);
+    } else if (mouseEvent->button() == Qt::LeftButton) {
+	bool ok = false;
+	int newValue = QInputDialog::getInteger
+	    (this,
+	     tr("Enter new value"),
+	     tr("Select a new value in the range %1 to %2:")
+	     .arg(minimum()).arg(maximum()),
+	     value(), minimum(), maximum(), pageStep(), &ok);
+	if (ok) {
+	    setValue(newValue);
+	}
     }
 }
 

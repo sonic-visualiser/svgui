@@ -30,27 +30,18 @@ class QColor;
 class LEDButton : public QWidget
 {
     Q_OBJECT
-    Q_ENUMS(State)
-    Q_PROPERTY(State state READ state WRITE setState)
     Q_PROPERTY(QColor color READ color WRITE setColor)
     Q_PROPERTY(int darkFactor READ darkFactor WRITE setDarkFactor)
 
 public:
-    enum State { Off, On };
-
     LEDButton(QWidget *parent = 0);
     LEDButton(const QColor &col, QWidget *parent = 0);
-    LEDButton(const QColor& col, LEDButton::State state, QWidget *parent = 0);
+    LEDButton(const QColor& col, bool state, QWidget *parent = 0);
     ~LEDButton();
 
-    State state() const;
+    bool state() const;
     QColor color() const;
     int darkFactor() const;
-
-    void setState(State state);
-    void toggleState();
-    void setColor(const QColor& color);
-    void setDarkFactor(int darkfactor);
 
     virtual QSize sizeHint() const;
     virtual QSize minimumSizeHint() const;
@@ -63,12 +54,17 @@ public slots:
     void on();
     void off();
 
+    void setState(bool);
+    void toggleState();
+    void setColor(const QColor& color);
+    void setDarkFactor(int darkfactor);
+
 protected:
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *);
 
 private:
-    State led_state;
+    bool led_state;
     QColor led_color;
 
 private:
