@@ -22,6 +22,7 @@
 #include <QPainter>
 #include <QImage>
 #include <QColor>
+#include <QMouseEvent>
 
 
 class LEDButton::LEDButtonPrivate
@@ -84,6 +85,15 @@ LEDButton::~LEDButton()
 }
 
 void
+LEDButton::mousePressEvent(QMouseEvent *e)
+{
+    if (e->buttons() & Qt::LeftButton) {
+	toggle();
+	emit stateChanged(state());
+    }
+}
+
+void
 LEDButton::paintEvent(QPaintEvent *)
 {
     QPainter paint;
@@ -125,7 +135,7 @@ LEDButton::paintEvent(QPaintEvent *)
 	    }
 	}
 
-	scale = 3;
+	scale = 1;
 	width *= scale;
 
 	tmpMap = new QPixmap(width, width);
@@ -136,7 +146,7 @@ LEDButton::paintEvent(QPaintEvent *)
 	paint.begin(this);
     }
 
-    paint.setRenderHint(QPainter::Antialiasing, false);
+    paint.setRenderHint(QPainter::Antialiasing, true);
 
     // Set the color of the LED according to given parameters
     color = (led_state) ? led_color : d->offcolor;
@@ -187,7 +197,8 @@ LEDButton::paintEvent(QPaintEvent *)
     // around the LED which resembles a shadow with light coming
     // from the upper left.
 
-    pen.setWidth( 2 * scale + 1 ); // ### shouldn't this value be smaller for smaller LEDs?
+//    pen.setWidth( 2 * scale + 1 ); // ### shouldn't this value be smaller for smaller LEDs?
+    pen.setWidth(2 * scale);
     brush.setStyle(Qt::NoBrush);
     paint.setBrush(brush); // This avoids filling of the ellipse
 
@@ -201,8 +212,8 @@ LEDButton::paintEvent(QPaintEvent *)
 	pen.setColor(color);
 	paint.setPen(pen);
 	int w = width - pen.width()/2 - scale + 1;
-	paint.drawArc(pen.width()/2, pen.width()/2, w, w, angle + arc, 240);
-	paint.drawArc(pen.width()/2, pen.width()/2, w, w, angle - arc, 240);
+	paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle + arc, 240);
+	paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle - arc, 240);
 	color = color.dark(110); //FIXME: this should somehow use the contrast value
     }	// end for ( angle = 720; angle < 6480; angle += 160 )
 
@@ -213,11 +224,12 @@ LEDButton::paintEvent(QPaintEvent *)
     if (smooth) {
 	QPixmap *&dest = led_state ? d->on_map : d->off_map;
 	QImage i = tmpMap->toImage();
-	width /= 3;
-	i = i.scaled(width, width, 
-		     Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+	width /= scale;
 	delete tmpMap;
-	dest = new QPixmap(QPixmap::fromImage(i));
+	dest = new QPixmap(QPixmap::fromImage
+			   (i.scaled(width, width, 
+				     Qt::KeepAspectRatio,
+				     Qt::SmoothTransformation)));
 	paint.begin(this);
 	paint.drawPixmap(0, 0, *dest);
 	paint.end();
@@ -305,12 +317,12 @@ LEDButton::off()
 QSize
 LEDButton::sizeHint() const
 {
-    return QSize(16, 16);
+    return QSize(17, 17);
 }
 
 QSize
 LEDButton::minimumSizeHint() const
 {
-    return QSize(16, 16 );
+    return QSize(17, 17);
 }
 

@@ -28,7 +28,6 @@ class Pane : public View
 
 public:
     Pane(QWidget *parent = 0);
-    virtual QString getPropertyContainerIconName() const { return "pane"; }
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos);
 

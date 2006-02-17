@@ -176,7 +176,9 @@ PaneStack::setCurrentLayer(Pane *pane, Layer *layer) // may be null
 			stack->setCurrentIndex(stack->getContainerIndex(layer));
 			emit currentLayerChanged(pane, layer);
 		    } else {
-			stack->setCurrentIndex(stack->getContainerIndex(pane));
+			stack->setCurrentIndex
+			    (stack->getContainerIndex
+			     (pane->getPropertyContainer(0)));
 			emit currentLayerChanged(pane, 0);
 		    }
 		}
