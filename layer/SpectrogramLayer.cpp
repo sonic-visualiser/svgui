@@ -79,9 +79,14 @@ SpectrogramLayer::~SpectrogramLayer()
 void
 SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 {
+    std::cerr << "SpectrogramLayer(" << this << "): setModel(" << model << ")" << std::endl;
+
     m_mutex.lock();
     m_model = model;
-    delete m_cache;
+    delete m_cache; //!!! hang on, this isn't safe to do here is it? 
+		    // we need some sort of guard against the fill
+		    // thread trying to read the defunct model too.
+		    // should we use a scavenger?
     m_cache = 0;
     m_mutex.unlock();
 
@@ -605,10 +610,12 @@ SpectrogramLayer::setLayerDormant(bool dormant)
 	m_mutex.lock();
 	m_dormant = true;
 
-	delete m_cache;
-	m_cache = 0;
+//	delete m_cache;
+//	m_cache = 0;
 	
+	m_cacheInvalid = true;
 	m_pixmapCacheInvalid = true;
+	m_cachedInitialVisibleArea = false;
 	delete m_pixmapCache;
 	m_pixmapCache = 0;
 	
@@ -828,7 +835,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 
     fftw_execute(plan);
 
-    if (lock) m_mutex.lock();
+//    if (lock) m_mutex.lock();
     bool interrupted = false;
 
     for (size_t i = 0; i < windowSize / 2; ++i) {
@@ -877,7 +884,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	m_cache->setValueAt(column, i, value + 1);
     }
 
-    if (lock) m_mutex.unlock();
+//    if (lock) m_mutex.unlock();
     return !interrupted;
 }
 
@@ -953,7 +960,14 @@ SpectrogramLayer::CacheFillThread::run()
 
 //	std::cerr << "SpectrogramLayer::CacheFillThread::run in loop" << std::endl;
 
-	if (m_layer.m_model && m_layer.m_cacheInvalid && !m_layer.m_dormant) {
+	if (m_layer.m_dormant) {
+
+	    if (m_layer.m_cacheInvalid) {
+		delete m_layer.m_cache;
+		m_layer.m_cache = 0;
+	    }
+
+	} else if (m_layer.m_model && m_layer.m_cacheInvalid) {
 
 //	    std::cerr << "SpectrogramLayer::CacheFillThread::run: something to do" << std::endl;
 

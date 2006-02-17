@@ -420,6 +420,22 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	int x = getXForFrame(p.frame);
 	int y = getYForValue(p.value);
 
+	bool haveNext = false;
+	int nx = getXForFrame(m_model->getEndFrame());
+	int ny = y;
+
+	SparseTimeValueModel::PointList::const_iterator j = i;
+	++j;
+
+	if (j != points.end()) {
+	    const SparseTimeValueModel::Point &q(*j);
+	    nx = getXForFrame(q.frame);
+	    ny = getYForValue(q.value);
+	    haveNext = true;
+	}
+
+	int labelY = y;
+
 	if (w < 1) w = 1;
 	paint.setPen(m_colour);
 
@@ -428,6 +444,7 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	    QColor colour = QColor::fromHsv(256 - value, value / 2 + 128, value);
 	    paint.setBrush(QColor(colour.red(), colour.green(), colour.blue(),
 				  120));
+	    labelY = m_view->height();
 	} else if (m_plotStyle == PlotLines ||
 		   m_plotStyle == PlotCurve) {
 	    paint.setBrush(Qt::NoBrush);
@@ -473,17 +490,10 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 	    m_plotStyle == PlotLines ||
 	    m_plotStyle == PlotCurve) {
 
-	    SparseTimeValueModel::PointList::const_iterator j = i;
-	    ++j;
-
-	    if (j != points.end()) {
-
-		const SparseTimeValueModel::Point &q(*j);
-		int nx = getXForFrame(q.frame);
-		int ny = getYForValue(q.value);
+	    if (haveNext) {
 
 		if (m_plotStyle == PlotConnectedPoints) {
-
+		    
 		    paint.setPen(brushColour);
 		    paint.drawLine(x + w, y, nx, ny);
 
@@ -508,18 +518,6 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
 
 	if (m_plotStyle == PlotSegmentation) {
 	    
-	    SparseTimeValueModel::PointList::const_iterator j = i;
-	    ++j;
-
-	    int nx;
-
-	    if (j != points.end()) {
-		const SparseTimeValueModel::Point &q(*j);
-		nx = getXForFrame(q.frame);
-	    } else {
-		nx = getXForFrame(m_model->getEndFrame());
-	    }
-
 	    if (nx <= x) continue;
 
 	    if (illuminateFrame != p.frame &&

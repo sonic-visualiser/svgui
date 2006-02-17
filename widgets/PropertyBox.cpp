@@ -37,37 +37,23 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 	container->getPropertyContainerName().toStdString() << "\")]::PropertyBox" << std::endl;
 #endif
 
-    QVBoxLayout *vbox = new QVBoxLayout;
-    setLayout(vbox);
+    m_mainBox = new QVBoxLayout;
+    setLayout(m_mainBox);
 
     bool needViewPlayBox = false;
 
-    if (container->getPlayParameters() || dynamic_cast<Layer *>(container)) {
-	needViewPlayBox = true;
-    }
-
-    if (needViewPlayBox) {
-#ifdef DEBUG_PROPERTY_BOX
-	std::cerr << "Adding view play box" << std::endl;
-#endif
-	QFrame *frame = new QFrame;
-	frame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
-	QHBoxLayout *hbox = new QHBoxLayout;
-	frame->setLayout(hbox);
-	vbox->addWidget(frame);
-	populateViewPlayBox(container, hbox);
-	hbox->insertStretch(-1, 10);
-    }
-
     m_mainWidget = new QWidget;
-    vbox->addWidget(m_mainWidget);
+    m_mainBox->addWidget(m_mainWidget);
+    m_mainBox->insertStretch(1, 10);
 
-    vbox->insertStretch(-1, 10);
+    m_viewPlayFrame = 0;
+    populateViewPlayFrame();
 
     m_layout = new QGridLayout;
+    m_layout->setMargin(0);
     m_mainWidget->setLayout(m_layout);
 
-    PropertyContainer::PropertyList properties = container->getProperties();
+    PropertyContainer::PropertyList properties = m_container->getProperties();
 
     blockSignals(true);
 
@@ -94,26 +80,110 @@ PropertyBox::~PropertyBox()
 }
 
 void
-PropertyBox::populateViewPlayBox(PropertyContainer *container, QLayout *layout)
+PropertyBox::populateViewPlayFrame()
 {
-    Layer *layer = dynamic_cast<Layer *>(container);
-    PlayParameters *params = container->getPlayParameters();
+    std::cerr << "PropertyBox(" << m_container << ")::populateViewPlayFrame" << std::endl;
+
+    if (m_viewPlayFrame) {
+	delete m_viewPlayFrame;
+	m_viewPlayFrame = 0;
+    }
+
+    if (!m_container) return;
+
+    Layer *layer = dynamic_cast<Layer *>(m_container);
+    if (layer) {
+	connect(layer, SIGNAL(modelReplaced()),
+		this, SLOT(populateViewPlayFrame()));
+    }
+
+    PlayParameters *params = m_container->getPlayParameters();
     if (!params && !layer) return;
 
-    std::cerr << "PropertyBox::populateViewPlayBox: container " << container << " (name " << container->getPropertyContainerName().toStdString() << ") params " << params << std::endl;
+    m_viewPlayFrame = new QFrame;
+    m_viewPlayFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    m_mainBox->addWidget(m_viewPlayFrame);
+
+    QHBoxLayout *layout = new QHBoxLayout;
+    m_viewPlayFrame->setLayout(layout);
+
+    layout->setMargin(layout->margin() / 2);
+
+    std::cerr << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName().toStdString() << ") params " << params << std::endl;
     
     if (layer) {
+	QLabel *showLabel = new QLabel(tr("Show"));
+	layout->addWidget(showLabel);
+	layout->setAlignment(showLabel, Qt::AlignVCenter);
+
 	LEDButton *showButton = new LEDButton(Qt::blue);
 	layout->addWidget(showButton);
 	connect(showButton, SIGNAL(stateChanged(bool)),
 		layer, SLOT(showLayer(bool)));
+	layout->setAlignment(showButton, Qt::AlignVCenter);
     }
     
     if (params) {
+
+	QLabel *playLabel = new QLabel(tr("Play"));
+	layout->addWidget(playLabel);
+	layout->setAlignment(playLabel, Qt::AlignVCenter);
+
 	LEDButton *playButton = new LEDButton(Qt::darkGreen);
 	layout->addWidget(playButton);
 	connect(playButton, SIGNAL(stateChanged(bool)),
 		params, SLOT(setPlayAudible(bool)));
+	connect(params, SIGNAL(playAudibleChanged(bool)),
+		playButton, SLOT(setState(bool)));
+	layout->setAlignment(playButton, Qt::AlignVCenter);
+
+	layout->insertStretch(-1, 10);
+
+	AudioDial *gainDial = new AudioDial;
+	layout->addWidget(gainDial);
+	gainDial->setMeterColor(Qt::darkRed);
+	gainDial->setMinimum(-50);
+	gainDial->setMaximum(50);
+	gainDial->setPageStep(1);
+	gainDial->setFixedWidth(24);
+	gainDial->setFixedHeight(24);
+	gainDial->setNotchesVisible(false);
+	gainDial->setToolTip(tr("Layer playback level"));
+	gainDial->setDefaultValue(0);
+	connect(gainDial, SIGNAL(valueChanged(int)),
+		this, SLOT(playGainDialChanged(int)));
+	connect(params, SIGNAL(playGainChanged(float)),
+		this, SLOT(playGainChanged(float)));
+	connect(this, SIGNAL(changePlayGain(float)),
+		params, SLOT(setPlayGain(float)));
+	connect(this, SIGNAL(changePlayGainDial(int)),
+		gainDial, SLOT(setValue(int)));
+	layout->setAlignment(gainDial, Qt::AlignVCenter);
+
+	AudioDial *panDial = new AudioDial;
+	layout->addWidget(panDial);
+	panDial->setMeterColor(Qt::darkGreen);
+	panDial->setMinimum(-50);
+	panDial->setMaximum(50);
+	panDial->setPageStep(1);
+	panDial->setFixedWidth(24);
+	panDial->setFixedHeight(24);
+	panDial->setNotchesVisible(false);
+	panDial->setToolTip(tr("Layer playback pan"));
+	panDial->setDefaultValue(0);
+	connect(panDial, SIGNAL(valueChanged(int)),
+		this, SLOT(playPanDialChanged(int)));
+	connect(params, SIGNAL(playPanChanged(float)),
+		this, SLOT(playPanChanged(float)));
+	connect(this, SIGNAL(changePlayPan(float)),
+		params, SLOT(setPlayPan(float)));
+	connect(this, SIGNAL(changePlayPanDial(int)),
+		panDial, SLOT(setValue(int)));
+	layout->setAlignment(panDial, Qt::AlignVCenter);
+
+    } else {
+
+	layout->insertStretch(-1, 10);
     }
 }
 
@@ -209,7 +279,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    dial->setMinimum(min);
 	    dial->setMaximum(max);
 	    dial->setPageStep(1);
-	    dial->setNotchesVisible(true);
+	    dial->setNotchesVisible((max - min) <= 12);
+	    dial->setDefaultValue(value);
 	    connect(dial, SIGNAL(valueChanged(int)),
 		    this, SLOT(propertyControllerChanged(int)));
 
@@ -302,8 +373,10 @@ PropertyBox::propertyControllerChanged(int value)
     QObject *obj = sender();
     QString name = obj->objectName();
 
+#ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox::propertyControllerChanged(" << name.toStdString()
 	      << ", " << value << ")" << std::endl;
+#endif
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
     
@@ -320,7 +393,39 @@ PropertyBox::propertyControllerChanged(int value)
     }
 }
     
-	    
+void
+PropertyBox::playGainChanged(float gain)
+{
+    int dialValue = lrint(log10(gain) * 20.0);
+    if (dialValue < -50) dialValue = -50;
+    if (dialValue >  50) dialValue =  50;
+    emit changePlayGainDial(dialValue);
+}
+
+void
+PropertyBox::playGainDialChanged(int dialValue)
+{
+    float gain = pow(10, float(dialValue) / 20.0);
+    emit changePlayGain(gain);
+}
+    
+void
+PropertyBox::playPanChanged(float pan)
+{
+    int dialValue = lrint(pan * 50.0);
+    if (dialValue < -50) dialValue = -50;
+    if (dialValue >  50) dialValue =  50;
+    emit changePlayPanDial(dialValue);
+}
+
+void
+PropertyBox::playPanDialChanged(int dialValue)
+{
+    float pan = float(dialValue) / 50.0;
+    if (pan < -1.0) pan = -1.0;
+    if (pan >  1.0) pan =  1.0;
+    emit changePlayPan(pan);
+}
 
 #ifdef INCLUDE_MOCFILES
 #include "PropertyBox.moc.cpp"
