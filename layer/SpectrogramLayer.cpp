@@ -15,6 +15,8 @@
 #include "base/Window.h"
 #include "base/Pitch.h"
 
+#include "dsp/maths/MathUtilities.h"
+
 #include <QPainter>
 #include <QImage>
 #include <QPixmap>
@@ -42,7 +44,9 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
     m_colourScale(dBColourScale),
     m_colourScheme(DefaultColours),
     m_frequencyScale(LinearFrequencyScale),
+    m_frequencyAdjustment(RawFrequency),
     m_cache(0),
+    m_phaseAdjustCache(0),
     m_cacheInvalid(true),
     m_pixmapCache(0),
     m_pixmapCacheInvalid(true),
@@ -74,6 +78,7 @@ SpectrogramLayer::~SpectrogramLayer()
     delete m_fillThread;
     
     delete m_cache;
+    delete m_phaseAdjustCache;
 }
 
 void
@@ -82,12 +87,15 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     std::cerr << "SpectrogramLayer(" << this << "): setModel(" << model << ")" << std::endl;
 
     m_mutex.lock();
+    m_cacheInvalid = true;
     m_model = model;
     delete m_cache; //!!! hang on, this isn't safe to do here is it? 
 		    // we need some sort of guard against the fill
 		    // thread trying to read the defunct model too.
 		    // should we use a scavenger?
     m_cache = 0;
+    delete m_phaseAdjustCache; //!!! likewise
+    m_phaseAdjustCache = 0;
     m_mutex.unlock();
 
     if (!m_model || !m_model->isOK()) return;
@@ -120,6 +128,7 @@ SpectrogramLayer::getProperties() const
     list.push_back(tr("Colour Rotation"));
     list.push_back(tr("Max Frequency"));
     list.push_back(tr("Frequency Scale"));
+    list.push_back(tr("Frequency Adjustment"));
     return list;
 }
 
@@ -135,12 +144,15 @@ QString
 SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == tr("Window Size") ||
+	name == tr("Window Type") ||
 	name == tr("Window Overlap")) return tr("Window");
+    if (name == tr("Colour") ||
+	name == tr("Colour Rotation")) return tr("Colour");
     if (name == tr("Gain") ||
-	name == tr("Colour Rotation") ||
 	name == tr("Colour Scale")) return tr("Scale");
     if (name == tr("Max Frequency") ||
-	name == tr("Frequency Scale")) return tr("Frequency");
+	name == tr("Frequency Scale") ||
+	name == tr("Frequency Adjustment")) return tr("Frequency");
     return QString();
 }
 
@@ -232,6 +244,12 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 1;
 	deft = (int)m_frequencyScale;
 
+    } else if (name == tr("Frequency Adjustment")) {
+
+	*min = 0;
+	*max = 2;
+	deft = (int)m_frequencyAdjustment;
+
     } else {
 	deft = Layer::getPropertyRangeAndValue(name, min, max);
     }
@@ -266,7 +284,7 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == tr("Window Type")) {
 	switch ((WindowType)value) {
 	default:
-	case RectangularWindow: return tr("Rectangular");
+	case RectangularWindow: return tr("Rectangle");
 	case BartlettWindow: return tr("Bartlett");
 	case HammingWindow: return tr("Hamming");
 	case HanningWindow: return tr("Hanning");
@@ -281,11 +299,11 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == tr("Window Overlap")) {
 	switch (value) {
 	default:
-	case 0: return tr("None");
-	case 1: return tr("25 %");
-	case 2: return tr("50 %");
-	case 3: return tr("75 %");
-	case 4: return tr("90 %");
+	case 0: return tr("0%");
+	case 1: return tr("25%");
+	case 2: return tr("50%");
+	case 3: return tr("75%");
+	case 4: return tr("90%");
 	}
     }
     if (name == tr("Max Frequency")) {
@@ -308,6 +326,14 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	default:
 	case 0: return tr("Linear");
 	case 1: return tr("Log");
+	}
+    }
+    if (name == tr("Frequency Adjustment")) {
+	switch (value) {
+	default:
+	case 0: return tr("Bins");
+	case 1: return tr("Pitches");
+	case 2: return tr("Peaks");
 	}
     }
     return tr("<unknown>");
@@ -365,6 +391,13 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	default:
 	case 0: setFrequencyScale(LinearFrequencyScale); break;
 	case 1: setFrequencyScale(LogFrequencyScale); break;
+	}
+    } else if (name == tr("Frequency Adjustment")) {
+	switch (value) {
+	default:
+	case 0: setFrequencyAdjustment(RawFrequency); break;
+	case 1: setFrequencyAdjustment(PhaseAdjustedFrequency); break;
+	case 2: setFrequencyAdjustment(PhaseAdjustedPeaks); break;
 	}
     }
 }
@@ -584,6 +617,7 @@ SpectrogramLayer::setFrequencyScale(FrequencyScale frequencyScale)
     if (m_frequencyScale == frequencyScale) return;
 
     m_mutex.lock();
+
     // don't need to invalidate main cache here
     m_pixmapCacheInvalid = true;
     
@@ -598,6 +632,31 @@ SpectrogramLayer::FrequencyScale
 SpectrogramLayer::getFrequencyScale() const
 {
     return m_frequencyScale;
+}
+
+void
+SpectrogramLayer::setFrequencyAdjustment(FrequencyAdjustment frequencyAdjustment)
+{
+    if (m_frequencyAdjustment == frequencyAdjustment) return;
+
+    m_mutex.lock();
+
+    m_cacheInvalid = true;
+    m_pixmapCacheInvalid = true;
+    
+    m_frequencyAdjustment = frequencyAdjustment;
+    
+    m_mutex.unlock();
+
+    fillCache();
+
+    emit layerParametersChanged();
+}
+
+SpectrogramLayer::FrequencyAdjustment
+SpectrogramLayer::getFrequencyAdjustment() const
+{
+    return m_frequencyAdjustment;
 }
 
 void
@@ -718,9 +777,6 @@ SpectrogramLayer::setCacheColourmap()
 
     int formerRotation = m_colourRotation;
 
-//    m_cache->setNumColors(256);
-    
-//    m_cache->setColour(0, qRgb(255, 255, 255));
     m_cache->setColour(0, Qt::white);
 
     for (int pixel = 1; pixel < 256; ++pixel) {
@@ -764,8 +820,6 @@ SpectrogramLayer::setCacheColourmap()
 	    break;
 	}
 
-//	m_cache->setColor
-//	    (pixel, qRgb(colour.red(), colour.green(), colour.blue()));
 	m_cache->setColour(pixel, colour);
     }
 
@@ -802,8 +856,31 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 				  size_t windowSize,
 				  size_t increment,
 				  const Window<double> &windower,
-				  bool lock) const
+				  bool resetStoredPhase) const
 {
+    static std::vector<double> storedPhase;
+
+    bool phaseAdjust =
+	(m_frequencyAdjustment == PhaseAdjustedFrequency ||
+	 m_frequencyAdjustment == PhaseAdjustedPeaks);
+    bool haveStoredPhase = true;
+    size_t sampleRate = 0;
+
+    static int counter = 0;
+
+    if (phaseAdjust) {
+	if (resetStoredPhase || (storedPhase.size() != windowSize / 2)) {
+	    haveStoredPhase = false;
+	    storedPhase.clear();
+	    for (size_t i = 0; i < windowSize / 2; ++i) {
+		storedPhase.push_back(0.0);
+	    }
+	    counter = 0;
+	}
+	++counter;
+	sampleRate = m_model->getSampleRate();
+    }
+
     int startFrame = increment * column;
     int endFrame = startFrame + windowSize;
 
@@ -833,18 +910,112 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 
     windower.cut(input);
 
+    for (size_t i = 0; i < windowSize/2; ++i) {
+	double temp = input[i];
+	input[i] = input[i + windowSize/2];
+	input[i + windowSize/2] = temp;
+    }
+    
     fftw_execute(plan);
 
-//    if (lock) m_mutex.lock();
     bool interrupted = false;
+
+    double prevMag = 0.0;
 
     for (size_t i = 0; i < windowSize / 2; ++i) {
 
 	int value = 0;
+	double phase = 0.0;
+
+	    double mag = sqrt(output[i][0] * output[i][0] +
+			      output[i][1] * output[i][1]);
+	    mag /= windowSize / 2;
+
+	if (phaseAdjust || (m_colourScale == PhaseColourScale)) {
+
+//	    phase = atan2(-output[i][1], output[i][0]);
+//	    phase = atan2(output[i][1], output[i][0]);
+	    phase = atan2(output[i][0], output[i][1]);
+//	    phase = MathUtilities::princarg(phase);
+	}	    
+
+	if (phaseAdjust && m_phaseAdjustCache && haveStoredPhase) {
+
+	    bool peak = true;
+	    if (m_frequencyAdjustment == PhaseAdjustedPeaks) {
+		if (mag < prevMag) peak = false;
+		else {
+		    double nextMag = 0.0;
+		    if (i < windowSize / 2 - 1) {
+			nextMag = sqrt(output[i+1][0] * output[i+1][0] +
+				       output[i+1][1] * output[i+1][1]);
+			nextMag /= windowSize / 2;
+		    }
+		    if (mag < nextMag) peak = false;
+		}
+		prevMag = mag;
+	    }
+
+	    if (!peak) {
+		if (m_cacheInvalid || m_exiting) {
+		    interrupted = true;
+		    break;
+		}
+		m_phaseAdjustCache->setValueAt(column, i, SCHAR_MIN);
+	    } else {
+
+//	    if (i > 45 && i < 55 && counter == 10)  {
+	    
+	    double freq = (double(i) * sampleRate) / m_windowSize;
+//	    std::cout << "\nbin = " << i << " initial estimate freq = " << freq
+//		      << " mag = " << mag << std::endl;
+
+	    double prevPhase = storedPhase[i];
+
+	    double expectedPhase =
+		prevPhase + (2 * M_PI * i * increment) / m_windowSize;
+
+	    double phaseError = MathUtilities::princarg(phase - expectedPhase);
+	    
+//	    if (fabs(phaseError) > (1.2 * (increment * M_PI) / m_windowSize)) {
+//		std::cout << "error > " << (1.2 * (increment * M_PI) / m_windowSize) << std::endl;
+//	    }// else {
+
+//	    std::cout << "prevPhase = " << prevPhase << ", phase = " << phase
+//		      << ", expected = " << MathUtilities::princarg(expectedPhase) << ", error = "
+//		      << phaseError << std::endl;
+
+	    double newFreq =
+		(sampleRate *
+		 (expectedPhase + phaseError - prevPhase)) /
+		//(prevPhase - (expectedPhase + phaseError))) /
+		(2 * M_PI * increment);
+
+//	    std::cout << freq << " (" << Pitch::getPitchLabelForFrequency(freq).toStdString() <<  ") -> " << newFreq << " (" << Pitch::getPitchLabelForFrequency(newFreq).toStdString() << ")" << std::endl;
+//	    }
+//}
+
+	    double binRange = (double(i + 1) * sampleRate) / windowSize - freq;
+	    
+	    int offset = lrint(((newFreq - freq) / binRange) * 10);//!!!
+
+	    if (m_cacheInvalid || m_exiting) {
+		interrupted = true;
+		break;
+	    }
+	    if (offset > SCHAR_MIN && offset <= SCHAR_MAX) {
+		signed char coff = offset;
+		m_phaseAdjustCache->setValueAt(column, i, (unsigned char)coff);
+	    } else {
+		m_phaseAdjustCache->setValueAt(column, i, 0);
+	    }
+	    }
+	    storedPhase[i] = phase;
+	}
 
 	if (m_colourScale == PhaseColourScale) {
 
-	    double phase = atan2(-output[i][1], output[i][0]);
+	    phase = MathUtilities::princarg(phase);
 	    value = int((phase * 128 / M_PI) + 128);
 
 	} else {
@@ -884,7 +1055,6 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	m_cache->setValueAt(column, i, value + 1);
     }
 
-//    if (lock) m_mutex.unlock();
     return !interrupted;
 }
 
@@ -892,14 +1062,26 @@ SpectrogramLayer::Cache::Cache(size_t width, size_t height) :
     m_width(width),
     m_height(height)
 {
-    m_values = new unsigned char[m_width * m_height];
+    // use malloc rather than new[], because we want to be able to use realloc
+    m_values = (unsigned char *)
+	malloc(m_width * m_height * sizeof(unsigned char));
+    if (!m_values) throw std::bad_alloc();
     MUNLOCK(m_values, m_width * m_height * sizeof(unsigned char));
 }
 
 SpectrogramLayer::Cache::~Cache()
 {
-    delete[] m_values;
+    if (m_values) free(m_values);
 }
+
+void
+SpectrogramLayer::Cache::resize(size_t width, size_t height)
+{
+    m_values = (unsigned char *)
+	realloc(m_values, m_width * m_height * sizeof(unsigned char));
+    if (!m_values) throw std::bad_alloc();
+    MUNLOCK(m_values, m_width * m_height * sizeof(unsigned char));
+}    
 
 size_t
 SpectrogramLayer::Cache::getWidth() const
@@ -964,7 +1146,9 @@ SpectrogramLayer::CacheFillThread::run()
 
 	    if (m_layer.m_cacheInvalid) {
 		delete m_layer.m_cache;
+		delete m_layer.m_phaseAdjustCache;
 		m_layer.m_cache = 0;
+		m_layer.m_phaseAdjustCache = 0;
 	    }
 
 	} else if (m_layer.m_model && m_layer.m_cacheInvalid) {
@@ -1003,18 +1187,40 @@ SpectrogramLayer::CacheFillThread::run()
 		visibleEnd = m_layer.m_view->getEndFrame();
 	    }
 
-	    delete m_layer.m_cache;
 	    size_t width = (end - start) / windowIncrement + 1;
 	    size_t height = windowSize / 2;
-	    m_layer.m_cache = new Cache(width, height);
+
+	    if (!m_layer.m_cache) {
+		m_layer.m_cache = new Cache(width, height);
+	    } else if (width != m_layer.m_cache->getWidth() ||
+		       height != m_layer.m_cache->getHeight()) {
+		m_layer.m_cache->resize(width, height);
+	    }
 
 	    m_layer.setCacheColourmap();
 	    m_layer.m_cache->fill(0);
 
+	    if (m_layer.m_frequencyAdjustment == PhaseAdjustedFrequency ||
+		m_layer.m_frequencyAdjustment == PhaseAdjustedPeaks) {
+		
+		if (!m_layer.m_phaseAdjustCache) {
+		    m_layer.m_phaseAdjustCache = new Cache(width, height);
+		} else if (width != m_layer.m_phaseAdjustCache->getWidth() ||
+			   height != m_layer.m_phaseAdjustCache->getHeight()) {
+		    m_layer.m_phaseAdjustCache->resize(width, height);
+		}
+
+		m_layer.m_phaseAdjustCache->fill(0);
+
+	    } else {
+		delete m_layer.m_phaseAdjustCache;
+		m_layer.m_phaseAdjustCache = 0;
+	    }
+
 	    // We don't need a lock when writing to or reading from
 	    // the pixels in the cache, because it's a fixed size
 	    // array.  We do need to ensure we have the width and
-	    // height of the cache and the FFT parameters fixed before
+	    // height of the cache and the FFT parameters known before
 	    // we unlock, in case they change in the model while we
 	    // aren't holding a lock.  It's safe for us to continue to
 	    // use the "old" values if that happens, because they will
@@ -1053,7 +1259,8 @@ SpectrogramLayer::CacheFillThread::run()
 		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
 					    input, output, plan,
 					    windowSize, windowIncrement,
-					    windower, false);
+					    //!!! actually if we're doing phase adjustment we also want to fill the column preceding the visible area so that we have the right values for the first visible one (also applies below)
+					    windower, f == visibleStart);
 
 		    if (m_layer.m_cacheInvalid || m_layer.m_exiting) {
 			interrupted = true;
@@ -1079,7 +1286,7 @@ SpectrogramLayer::CacheFillThread::run()
 		    if (!m_layer.fillCacheColumn(int((f - start) / windowIncrement),
 						 input, output, plan,
 						 windowSize, windowIncrement,
-						 windower, true)) {
+						 windower, f == visibleEnd)) {
 			interrupted = true;
 			m_fillExtent = 0;
 			break;
@@ -1110,7 +1317,7 @@ SpectrogramLayer::CacheFillThread::run()
 		    if (!m_layer.fillCacheColumn(int((f - start) / windowIncrement),
 						 input, output, plan,
 						 windowSize, windowIncrement,
-						 windower, true)) {
+						 windower, f == start)) {
 			interrupted = true;
 			m_fillExtent = 0;
 			break;
@@ -1177,7 +1384,7 @@ SpectrogramLayer::getYBinRange(int y, float &q0, float &q1) const
 	
 	float maxlogf = log10f(maxf);
 	float minlogf = log10f(minf);
-
+ 
 	float logf0 = minlogf + ((maxlogf - minlogf) * (h - y - 1)) / h;
 	float logf1 = minlogf + ((maxlogf - minlogf) * (h - y)) / h;
 	
@@ -1249,11 +1456,69 @@ const
     int sr = m_model->getSampleRate();
 
     for (int q = q0i; q <= q1i; ++q) {
-	int binfreq = (sr * (q + 1)) / m_windowSize;
+	int binfreq = (sr * q) / m_windowSize;
 	if (q == q0i) freqMin = binfreq;
 	if (q == q1i) freqMax = binfreq;
     }
     return true;
+}
+
+bool
+SpectrogramLayer::getAdjustedYBinSourceRange(int x, int y,
+					     float &freqMin, float &freqMax,
+					     float &adjFreqMin, float &adjFreqMax)
+const
+{
+    float s0 = 0, s1 = 0;
+    if (!getXBinRange(x, s0, s1)) return false;
+
+    float q0 = 0, q1 = 0;
+    if (!getYBinRange(y, q0, q1)) return false;
+
+    int s0i = int(s0 + 0.001);
+    int s1i = int(s1);
+
+    int q0i = int(q0 + 0.001);
+    int q1i = int(q1);
+
+    int sr = m_model->getSampleRate();
+
+    bool haveAdj = false;
+
+    for (int q = q0i; q <= q1i; ++q) {
+
+	for (int s = s0i; s <= s1i; ++s) {
+
+	    float binfreq = (sr * q) / m_windowSize;
+	    if (q == q0i) freqMin = binfreq;
+	    if (q == q1i) freqMax = binfreq;
+	    
+	    if ((m_frequencyAdjustment == PhaseAdjustedFrequency ||
+		 m_frequencyAdjustment == PhaseAdjustedPeaks) &&
+		m_phaseAdjustCache) {
+
+		unsigned char cadj = m_phaseAdjustCache->getValueAt(s, q);
+		int adjust = int((signed char)cadj);
+		if (adjust == SCHAR_MIN &&
+		    m_frequencyAdjustment == PhaseAdjustedPeaks) {
+		    continue;
+		}
+		
+		float nextBinFreq = (sr * (q + 1)) / m_windowSize;
+		float fadjust = (adjust * (nextBinFreq - binfreq)) / 10.0;//!!!
+		float f = binfreq + fadjust;
+		if (!haveAdj || f < adjFreqMin) adjFreqMin = f;
+		if (!haveAdj || f > adjFreqMax) adjFreqMax = f;
+		haveAdj = true;
+	    }
+	}
+    }
+
+    if (!haveAdj) {
+	adjFreqMin = adjFreqMax = 0.0f;
+    }
+
+    return haveAdj;
 }
     
 bool
@@ -1462,9 +1727,132 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 //    std::cerr << "x0 " << x0 << ", x1 " << x1 << ", w " << w << ", h " << h << std::endl;
 
     QImage scaled(w, h, QImage::Format_RGB32);
+    scaled.fill(0);
+
+    float ymag[h];
+    float ydiv[h];
+    
+    size_t bins = m_windowSize / 2;
+    int sr = m_model->getSampleRate();
+    
+    if (m_maxFrequency > 0) {
+	bins = int((double(m_maxFrequency) * m_windowSize) / sr + 0.1);
+	if (bins > m_windowSize / 2) bins = m_windowSize / 2;
+    }
+	
+    float maxFreq = (float(bins) * sr) / m_windowSize;
 
     m_mutex.unlock();
 
+    for (int x = 0; x < w; ++x) {
+
+	m_mutex.lock();
+	if (m_cacheInvalid) {
+	    m_mutex.unlock();
+	    break;
+	}
+
+	for (int y = 0; y < h; ++y) {
+	    ymag[y] = 0.0f;
+	    ydiv[y] = 0.0f;
+	}
+
+	float s0 = 0, s1 = 0;
+
+	if (!getXBinRange(x0 + x, s0, s1)) {
+	    assert(x <= scaled.width());
+	    for (int y = 0; y < h; ++y) {
+		scaled.setPixel(x, y, qRgb(0, 0, 0));
+	    }
+	    m_mutex.unlock();
+	    continue;
+	}
+
+	int s0i = int(s0 + 0.001);
+	int s1i = int(s1);
+
+	for (int q = 0; q < bins; ++q) {
+
+	    for (int s = s0i; s <= s1i; ++s) {
+
+		float sprop = 1.0;
+		if (s == s0i) sprop *= (s + 1) - s0;
+		if (s == s1i) sprop *= s1 - s;
+
+		float f0 = (float(q) * sr) / m_windowSize;
+		float f1 = (float(q + 1) * sr) / m_windowSize;
+ 
+		if ((m_frequencyAdjustment == PhaseAdjustedFrequency ||
+		     m_frequencyAdjustment == PhaseAdjustedPeaks) &&
+		    m_phaseAdjustCache) {
+
+		    unsigned char cadj = m_phaseAdjustCache->getValueAt(s, q);
+		    int adjust = int((signed char)cadj);
+
+		    if (adjust == SCHAR_MIN &&
+			m_frequencyAdjustment == PhaseAdjustedPeaks) {
+			continue;
+		    }
+
+		    float fadjust = (adjust * (f1 - f0)) / 10.0;//!!! was 100
+		    f0 = f1 = f0 + fadjust;
+		}
+	    
+		float y0 = h - (h * f1) / maxFreq;
+		float y1 = h - (h * f0) / maxFreq;
+
+		if (m_frequencyScale == LogFrequencyScale) {
+		    
+		    float maxf = m_maxFrequency;
+		    if (maxf == 0.0) maxf = float(sr) / 2;
+		    
+		    float minf = float(sr) / m_windowSize;
+		    
+		    float maxlogf = log10f(maxf);
+		    float minlogf = log10f(minf);
+		    
+		    y0 = h - (h * (log10f(f1) - minlogf)) / (maxlogf - minlogf);
+		    y1 = h - (h * (log10f(f0) - minlogf)) / (maxlogf - minlogf);
+		}
+
+		int y0i = int(y0 + 0.001);
+		int y1i = int(y1);
+
+		for (int y = y0i; y <= y1i; ++y) {
+		    
+		    if (y < 0 || y >= h) continue;
+
+		    float yprop = sprop;
+		    if (y == y0i) yprop *= (y + 1) - y0;
+		    if (y == y1i) yprop *= y1 - y;
+		    
+		    ymag[y] += yprop * m_cache->getValueAt(s, q);
+		    ydiv[y] += yprop;
+		}
+	    }
+	}
+
+	for (int y = 0; y < h; ++y) {
+
+	    int pixel = 1;
+
+	    if (ydiv[y] > 0.0) {
+		pixel = int(ymag[y] / ydiv[y]);
+		if (pixel > 255) pixel = 255;
+		if (pixel < 1) pixel = 1;
+	    }
+
+	    assert(x <= scaled.width());
+	    QColor c = m_cache->getColour(pixel);
+	    scaled.setPixel(x, y,
+			    qRgb(c.red(), c.green(), c.blue()));
+	}
+    
+
+	m_mutex.unlock();
+    }
+
+#ifdef NOT_DEFINED
     for (int y = 0; y < h; ++y) {
 
 	m_mutex.lock();
@@ -1553,6 +1941,7 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 
 	m_mutex.unlock();
     }
+#endif
 
     paint.drawImage(x0, y0, scaled);
 
@@ -1615,14 +2004,41 @@ SpectrogramLayer::getFeatureDescription(QPoint &pos) const
 
     float dbMin = 0, dbMax = 0;
     float freqMin = 0, freqMax = 0;
+    float adjFreqMin = 0, adjFreqMax = 0;
     QString pitchMin, pitchMax;
     RealTime rtMin, rtMax;
 
     bool haveDb = false;
 
     if (!getXBinSourceRange(x, rtMin, rtMax)) return "";
-    if (!getYBinSourceRange(y, freqMin, freqMax)) return "";
     if (getXYBinSourceRange(x, y, dbMin, dbMax)) haveDb = true;
+
+    QString adjFreqText = "", adjPitchText = "";
+
+    if ((m_frequencyAdjustment == PhaseAdjustedFrequency ||
+	 m_frequencyAdjustment == PhaseAdjustedPeaks) &&
+	m_phaseAdjustCache) {
+
+	if (!getAdjustedYBinSourceRange(x, y, freqMin, freqMax,
+					adjFreqMin, adjFreqMax)) return "";
+
+	if (adjFreqMin != adjFreqMax) {
+	    adjFreqText = tr("Adjusted Frequency:\t%1 - %2 Hz\n")
+		.arg(adjFreqMin).arg(adjFreqMax);
+	    adjPitchText = tr("Adjusted Pitch:\t%3 - %4\n")
+		.arg(Pitch::getPitchLabelForFrequency(adjFreqMin))
+		.arg(Pitch::getPitchLabelForFrequency(adjFreqMax));
+	} else {
+	    adjFreqText = tr("Adjusted Frequency:\t%1 Hz\n")
+		.arg(adjFreqMin);
+	    adjPitchText = tr("Adjusted Pitch:\t%2\n")
+		.arg(Pitch::getPitchLabelForFrequency(adjFreqMin));
+	}
+
+    } else {
+	
+	if (!getYBinSourceRange(y, freqMin, freqMax)) return "";
+    }
 
     //!!! want to actually do a one-off FFT to recalculate the dB value!
 
@@ -1638,15 +2054,19 @@ SpectrogramLayer::getFeatureDescription(QPoint &pos) const
     }
 
     if (freqMin != freqMax) {
-	text += tr("Frequency:\t%1 - %2 Hz\nPitch:\t%3 - %4\n")
+	text += tr("Frequency:\t%1 - %2 Hz\n%3Pitch:\t%4 - %5\n%6")
 	    .arg(freqMin)
 	    .arg(freqMax)
+	    .arg(adjFreqText)
 	    .arg(Pitch::getPitchLabelForFrequency(freqMin))
-	    .arg(Pitch::getPitchLabelForFrequency(freqMax));
+	    .arg(Pitch::getPitchLabelForFrequency(freqMax))
+	    .arg(adjPitchText);
     } else {
-	text += tr("Frequency:\t%1 Hz\nPitch:\t%2\n")
+	text += tr("Frequency:\t%1 Hz\n%2Pitch:\t%3\n%4")
 	    .arg(freqMin)
-	    .arg(Pitch::getPitchLabelForFrequency(freqMin));
+	    .arg(adjFreqText)
+	    .arg(Pitch::getPitchLabelForFrequency(freqMin))
+	    .arg(adjPitchText);
     }	
 
     if (haveDb) {
@@ -1742,20 +2162,23 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 		 "windowSize=\"%2\" "
 		 "windowType=\"%3\" "
 		 "windowOverlap=\"%4\" "
-		 "gain=\"%5\" "
-		 "maxFrequency=\"%6\" "
-		 "colourScale=\"%7\" "
-		 "colourScheme=\"%8\" "
-		 "frequencyScale=\"%9\"")
+		 "gain=\"%5\" ")
 	.arg(m_channel)
 	.arg(m_windowSize)
 	.arg(m_windowType)
 	.arg(m_windowOverlap)
-	.arg(m_gain)
+	.arg(m_gain);
+
+    s += QString("maxFrequency=\"%1\" "
+		 "colourScale=\"%2\" "
+		 "colourScheme=\"%3\" "
+		 "frequencyScale=\"%4\" "
+		 "frequencyAdjustment=\"%5\"")
 	.arg(m_maxFrequency)
 	.arg(m_colourScale)
 	.arg(m_colourScheme)
-	.arg(m_frequencyScale);
+	.arg(m_frequencyScale)
+	.arg(m_frequencyAdjustment);
 
     return Layer::toXmlString(indent, extraAttributes + " " + s);
 }
@@ -1795,6 +2218,10 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     FrequencyScale frequencyScale = (FrequencyScale)
 	attributes.value("frequencyScale").toInt(&ok);
     if (ok) setFrequencyScale(frequencyScale);
+
+    FrequencyAdjustment frequencyAdjustment = (FrequencyAdjustment)
+	attributes.value("frequencyAdjustment").toInt(&ok);
+    if (ok) setFrequencyAdjustment(frequencyAdjustment);
 }
     
 

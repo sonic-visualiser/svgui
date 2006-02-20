@@ -29,6 +29,7 @@ public:
 	TimeInstants,
 	TimeValues,
 	Notes,
+	Text,
 	Colour3DPlot,
 
 	// Layers with different initial parameters
