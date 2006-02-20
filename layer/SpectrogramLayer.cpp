@@ -45,6 +45,7 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
     m_colourScheme(DefaultColours),
     m_frequencyScale(LinearFrequencyScale),
     m_frequencyAdjustment(RawFrequency),
+    m_normalizeColumns(false),
     m_cache(0),
     m_phaseAdjustCache(0),
     m_cacheInvalid(true),
@@ -124,6 +125,7 @@ SpectrogramLayer::getProperties() const
     list.push_back(tr("Window Type"));
     list.push_back(tr("Window Size"));
     list.push_back(tr("Window Overlap"));
+    list.push_back(tr("Normalize"));
     list.push_back(tr("Gain"));
     list.push_back(tr("Colour Rotation"));
     list.push_back(tr("Max Frequency"));
@@ -137,6 +139,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == tr("Gain")) return RangeProperty;
     if (name == tr("Colour Rotation")) return RangeProperty;
+    if (name == tr("Normalize")) return ToggleProperty;
     return ValueProperty;
 }
 
@@ -149,6 +152,7 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == tr("Colour") ||
 	name == tr("Colour Rotation")) return tr("Colour");
     if (name == tr("Gain") ||
+	name == tr("Normalize") ||
 	name == tr("Colour Scale")) return tr("Scale");
     if (name == tr("Max Frequency") ||
 	name == tr("Frequency Scale") ||
@@ -249,6 +253,10 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = 0;
 	*max = 2;
 	deft = (int)m_frequencyAdjustment;
+
+    } else if (name == tr("Normalize")) {
+	
+	deft = (m_normalizeColumns ? 1 : 0);
 
     } else {
 	deft = Layer::getPropertyRangeAndValue(name, min, max);
@@ -399,6 +407,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 1: setFrequencyAdjustment(PhaseAdjustedFrequency); break;
 	case 2: setFrequencyAdjustment(PhaseAdjustedPeaks); break;
 	}
+    } else if (name == "Normalize") {
+	setNormalizeColumns(value ? true : false);
     }
 }
 
@@ -657,6 +667,27 @@ SpectrogramLayer::FrequencyAdjustment
 SpectrogramLayer::getFrequencyAdjustment() const
 {
     return m_frequencyAdjustment;
+}
+
+void
+SpectrogramLayer::setNormalizeColumns(bool n)
+{
+    if (m_normalizeColumns == n) return;
+    m_mutex.lock();
+
+    m_cacheInvalid = true;
+    m_pixmapCacheInvalid = true;
+    m_normalizeColumns = n;
+    m_mutex.unlock();
+
+    fillCache();
+    emit layerParametersChanged();
+}
+
+bool
+SpectrogramLayer::getNormalizeColumns() const
+{
+    return m_normalizeColumns;
 }
 
 void
@@ -922,14 +953,28 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 
     double prevMag = 0.0;
 
+    double maxMag = 0.0;
+    if (m_normalizeColumns) {
+	for (size_t i = 0; i < windowSize/2; ++i) {
+	    double mag = sqrt(output[i][0] * output[i][0] +
+			      output[i][1] * output[i][1]);
+	    mag /= windowSize / 2;
+	    if (mag > maxMag) maxMag = mag;
+	}
+    }
+
     for (size_t i = 0; i < windowSize / 2; ++i) {
 
 	int value = 0;
 	double phase = 0.0;
 
-	    double mag = sqrt(output[i][0] * output[i][0] +
-			      output[i][1] * output[i][1]);
-	    mag /= windowSize / 2;
+	double mag = sqrt(output[i][0] * output[i][0] +
+			  output[i][1] * output[i][1]);
+	mag /= windowSize / 2;
+
+	if (m_normalizeColumns && maxMag > 0.0) {
+	    mag /= maxMag;
+	}
 
 	if (phaseAdjust || (m_colourScale == PhaseColourScale)) {
 
@@ -942,7 +987,8 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	if (phaseAdjust && m_phaseAdjustCache && haveStoredPhase) {
 
 	    bool peak = true;
-	    if (m_frequencyAdjustment == PhaseAdjustedPeaks) {
+//	    if (m_frequencyAdjustment == PhaseAdjustedPeaks) {
+	    if (true) { //!!!
 		if (mag < prevMag) peak = false;
 		else {
 		    double nextMag = 0.0;
@@ -950,6 +996,9 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 			nextMag = sqrt(output[i+1][0] * output[i+1][0] +
 				       output[i+1][1] * output[i+1][1]);
 			nextMag /= windowSize / 2;
+			if (m_normalizeColumns && maxMag > 0.0) {
+			    nextMag /= maxMag;
+			}
 		    }
 		    if (mag < nextMag) peak = false;
 		}
@@ -964,16 +1013,33 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 		m_phaseAdjustCache->setValueAt(column, i, SCHAR_MIN);
 	    } else {
 
-//	    if (i > 45 && i < 55 && counter == 10)  {
+	    if (i < 100 && counter == 10)  {
 	    
+//		if (counter == 10) {
+
 	    double freq = (double(i) * sampleRate) / m_windowSize;
 //	    std::cout << "\nbin = " << i << " initial estimate freq = " << freq
 //		      << " mag = " << mag << std::endl;
 
 	    double prevPhase = storedPhase[i];
 
+	    // If the frequency is 100Hz and the sample rate is
+	    // 10000Hz and we have 1000 samples (1/10sec) per bin,
+	    // then we expect phase 0 
+
+	    // 2pi happens in 1/freq sec
+	    // one hop happens in hopsize/sr sec
+	    // freq is bin*sr / windowsize
+	    // thus 2pi happens in windowsize/(bin*sr) sec
+	    
+	    // need to know what phase increment we expect from
+	    // hopsize/sr sec
+	    // must be 2pi * ((hopsize/sr) / (windowsize/(bin*sr)))
+	    // = 2pi * ((hopsize * bin * sr) / (windowsize * sr))
+	    // = 2pi * (hopsize * bin) / windowsize
+
 	    double expectedPhase =
-		prevPhase + (2 * M_PI * i * increment) / m_windowSize;
+		prevPhase + (2.0 * M_PI * i * increment) / m_windowSize;
 
 	    double phaseError = MathUtilities::princarg(phase - expectedPhase);
 	    
@@ -981,9 +1047,9 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 //		std::cout << "error > " << (1.2 * (increment * M_PI) / m_windowSize) << std::endl;
 //	    }// else {
 
-//	    std::cout << "prevPhase = " << prevPhase << ", phase = " << phase
-//		      << ", expected = " << MathUtilities::princarg(expectedPhase) << ", error = "
-//		      << phaseError << std::endl;
+	    std::cout << "prev = " << prevPhase << ", phase = " << phase
+		      << ", exp = " << expectedPhase << " prin = " << MathUtilities::princarg(expectedPhase) << ", error = "
+		      << phaseError << " inc = " << increment << " i = " << i << ", pi = " << M_PI <<  std::endl;
 
 	    double newFreq =
 		(sampleRate *
@@ -991,9 +1057,8 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 		//(prevPhase - (expectedPhase + phaseError))) /
 		(2 * M_PI * increment);
 
-//	    std::cout << freq << " (" << Pitch::getPitchLabelForFrequency(freq).toStdString() <<  ") -> " << newFreq << " (" << Pitch::getPitchLabelForFrequency(newFreq).toStdString() << ")" << std::endl;
+	    std::cout << freq << " (" << Pitch::getPitchLabelForFrequency(freq).toStdString() <<  ") -> " << newFreq << " (" << Pitch::getPitchLabelForFrequency(newFreq).toStdString() << ")" << std::endl;
 //	    }
-//}
 
 	    double binRange = (double(i + 1) * sampleRate) / windowSize - freq;
 	    
@@ -1010,6 +1075,8 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 		m_phaseAdjustCache->setValueAt(column, i, 0);
 	    }
 	    }
+}
+
 	    storedPhase[i] = phase;
 	}
 
@@ -1019,10 +1086,6 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	    value = int((phase * 128 / M_PI) + 128);
 
 	} else {
-
-	    double mag = sqrt(output[i][0] * output[i][0] +
-			      output[i][1] * output[i][1]);
-	    mag /= windowSize / 2;
 
 	    switch (m_colourScale) {
 		
@@ -2173,12 +2236,14 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 		 "colourScale=\"%2\" "
 		 "colourScheme=\"%3\" "
 		 "frequencyScale=\"%4\" "
-		 "frequencyAdjustment=\"%5\"")
+		 "frequencyAdjustment=\"%5\" "
+		 "normalizeColumns=\"%6\"")
 	.arg(m_maxFrequency)
 	.arg(m_colourScale)
 	.arg(m_colourScheme)
 	.arg(m_frequencyScale)
-	.arg(m_frequencyAdjustment);
+	.arg(m_frequencyAdjustment)
+	.arg(m_normalizeColumns ? "true" : "false");
 
     return Layer::toXmlString(indent, extraAttributes + " " + s);
 }
@@ -2222,6 +2287,10 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     FrequencyAdjustment frequencyAdjustment = (FrequencyAdjustment)
 	attributes.value("frequencyAdjustment").toInt(&ok);
     if (ok) setFrequencyAdjustment(frequencyAdjustment);
+
+    bool normalizeColumns =
+	(attributes.value("normalizeColumns").trimmed() == "true");
+    setNormalizeColumns(normalizeColumns);
 }
     
 

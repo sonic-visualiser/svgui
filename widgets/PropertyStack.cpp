@@ -17,7 +17,7 @@
 
 #include <iostream>
 
-#define DEBUG_PROPERTY_STACK 1
+//#define DEBUG_PROPERTY_STACK 1
 
 PropertyStack::PropertyStack(QWidget *parent, View *client) :
     QTabWidget(parent),

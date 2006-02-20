@@ -82,7 +82,9 @@ PropertyBox::~PropertyBox()
 void
 PropertyBox::populateViewPlayFrame()
 {
+#ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox(" << m_container << ")::populateViewPlayFrame" << std::endl;
+#endif
 
     if (m_viewPlayFrame) {
 	delete m_viewPlayFrame;
@@ -109,8 +111,10 @@ PropertyBox::populateViewPlayFrame()
 
     layout->setMargin(layout->margin() / 2);
 
+#ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName().toStdString() << ") params " << params << std::endl;
-    
+#endif
+
     if (layer) {
 	QLabel *showLabel = new QLabel(tr("Show"));
 	layout->addWidget(showLabel);
