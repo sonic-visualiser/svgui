@@ -15,6 +15,7 @@
 #include "TimeInstantLayer.h"
 #include "TimeValueLayer.h"
 #include "NoteLayer.h"
+#include "TextLayer.h"
 #include "Colour3DPlotLayer.h"
 
 #include "model/RangeSummarisableTimeValueModel.h"
@@ -22,6 +23,7 @@
 #include "model/SparseOneDimensionalModel.h"
 #include "model/SparseTimeValueModel.h"
 #include "model/NoteModel.h"
+#include "model/TextModel.h"
 #include "model/DenseThreeDimensionalModel.h"
 
 LayerFactory *
@@ -47,6 +49,7 @@ LayerFactory::getLayerPresentationName(LayerType type)
     case TimeInstants: return Layer::tr("Time Instants");
     case TimeValues:   return Layer::tr("Time Values");
     case Notes:        return Layer::tr("Notes");
+    case Text:         return Layer::tr("Text");
     case Colour3DPlot: return Layer::tr("Colour 3D Plot");
 
     case MelodicRangeSpectrogram:
@@ -85,10 +88,14 @@ LayerFactory::getValidLayerTypes(Model *model)
 
     if (dynamic_cast<SparseTimeValueModel *>(model)) {
 	types.insert(TimeValues);
-    }
-
+    
+}
     if (dynamic_cast<NoteModel *>(model)) {
 	types.insert(Notes);
+    }
+
+    if (dynamic_cast<TextModel *>(model)) {
+	types.insert(Text);
     }
 
     // We don't count TimeRuler here as it doesn't actually display
@@ -104,6 +111,7 @@ LayerFactory::getValidEmptyLayerTypes()
     types.insert(TimeInstants);
     types.insert(TimeValues);
     types.insert(Notes);
+    types.insert(Text);
     //!!! and in principle Colour3DPlot -- now that's a challenge
     return types;
 }
@@ -117,6 +125,7 @@ LayerFactory::getLayerType(const Layer *layer)
     if (dynamic_cast<const TimeInstantLayer *>(layer)) return TimeInstants;
     if (dynamic_cast<const TimeValueLayer *>(layer)) return TimeValues;
     if (dynamic_cast<const NoteLayer *>(layer)) return Notes;
+    if (dynamic_cast<const TextLayer *>(layer)) return Text;
     if (dynamic_cast<const Colour3DPlotLayer *>(layer)) return Colour3DPlot;
     return UnknownLayer;
 }
@@ -131,6 +140,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case TimeInstants: return "instants";
     case TimeValues: return "values";
     case Notes: return "notes";
+    case Text: return "text";
     case Colour3DPlot: return "colour3d";
     default: return "unknown";
     }
@@ -146,6 +156,7 @@ LayerFactory::getLayerTypeName(LayerType type)
     case TimeInstants: return "timeinstants";
     case TimeValues: return "timevalues";
     case Notes: return "notes";
+    case Text: return "text";
     case Colour3DPlot: return "colour3dplot";
     default: return "unknown";
     }
@@ -160,6 +171,7 @@ LayerFactory::getLayerTypeForName(QString name)
     if (name == "timeinstants") return TimeInstants;
     if (name == "timevalues") return TimeValues;
     if (name == "notes") return Notes;
+    if (name == "text") return Text;
     if (name == "colour3dplot") return Colour3DPlot;
     return UnknownLayer;
 }
@@ -185,6 +197,9 @@ LayerFactory::setModel(Layer *layer, Model *model)
     if (trySetModel<NoteLayer, NoteModel>(layer, model))
 	return;
 
+    if (trySetModel<TextLayer, TextModel>(layer, model))
+	return;
+
     if (trySetModel<Colour3DPlotLayer, DenseThreeDimensionalModel>(layer, model))
 	return;
 
@@ -203,6 +218,8 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
     } else if (layerType == Notes) {
 	return new NoteModel(baseModel->getSampleRate(), 1,
 			     0.0, 0.0, true);
+    } else if (layerType == Text) {
+	return new TextModel(baseModel->getSampleRate(), 1, true);
     } else {
 	return 0;
     }
@@ -240,6 +257,10 @@ LayerFactory::createLayer(LayerType type, View *view,
 
     case Notes:
 	layer = new NoteLayer(view);
+	break;
+
+    case Text:
+	layer = new TextLayer(view);
 	break;
 
     case Colour3DPlot:

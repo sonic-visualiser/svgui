@@ -492,7 +492,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	    }
 	}
 
-	if (mode != ViewManager::DrawMode) {
+//!!!	if (mode != ViewManager::DrawMode) {
 
 	    bool previouslyIdentifying = m_identifyFeatures;
 	    m_identifyFeatures = true;
@@ -501,7 +501,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 		m_identifyPoint != prevPoint) {
 		update();
 	    }
-	}
+//	}
 
 	return;
     }

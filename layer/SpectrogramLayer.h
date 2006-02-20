@@ -107,13 +107,28 @@ public:
     void setColourScale(ColourScale);
     ColourScale getColourScale() const;
 
-    enum FrequencyScale { LinearFrequencyScale, LogFrequencyScale };
+    enum FrequencyScale {
+	LinearFrequencyScale,
+	LogFrequencyScale
+    };
     
     /**
      * Specify the scale for the y axis.
      */
     void setFrequencyScale(FrequencyScale);
     FrequencyScale getFrequencyScale() const;
+
+    enum FrequencyAdjustment {
+	RawFrequency,
+	PhaseAdjustedFrequency,
+	PhaseAdjustedPeaks
+    };
+    
+    /**
+     * Specify the processing of frequency bins for the y axis.
+     */
+    void setFrequencyAdjustment(FrequencyAdjustment);
+    FrequencyAdjustment getFrequencyAdjustment() const;
 
     enum ColourScheme { DefaultColours, WhiteOnBlack, BlackOnWhite,
 			RedOnBlue, YellowOnBlack, RedOnBlack };
@@ -151,16 +166,17 @@ protected slots:
 protected:
     const DenseTimeValueModel *m_model; // I do not own this
     
-    int            m_channel;
-    size_t         m_windowSize;
-    WindowType     m_windowType;
-    size_t         m_windowOverlap;
-    float          m_gain;
-    int            m_colourRotation;
-    size_t         m_maxFrequency;
-    ColourScale    m_colourScale;
-    ColourScheme   m_colourScheme;
-    FrequencyScale m_frequencyScale;
+    int                 m_channel;
+    size_t              m_windowSize;
+    WindowType          m_windowType;
+    size_t              m_windowOverlap;
+    float               m_gain;
+    int                 m_colourRotation;
+    size_t              m_maxFrequency;
+    ColourScale         m_colourScale;
+    ColourScheme        m_colourScheme;
+    FrequencyScale      m_frequencyScale;
+    FrequencyAdjustment m_frequencyAdjustment;
 
     // A QImage would do just as well here, and we originally used
     // one: the problem is that we want to munlock() the memory it
@@ -173,6 +189,8 @@ protected:
 
 	size_t getWidth() const;
 	size_t getHeight() const;
+
+	void resize(size_t width, size_t height);
 	
 	unsigned char getValueAt(size_t x, size_t y) const;
 	void setValueAt(size_t x, size_t y, unsigned char value);
@@ -190,6 +208,7 @@ protected:
     };
     
     Cache *m_cache;
+    Cache *m_phaseAdjustCache;
     bool m_cacheInvalid;
 
     class CacheFillThread : public QThread
@@ -234,7 +253,7 @@ protected:
 			 size_t windowSize,
 			 size_t windowIncrement,
 			 const Window<double> &windower,
-			 bool lock)
+			 bool resetStoredPhase)
 	const;
 
     bool getYBinRange(int y, float &freqBinMin, float &freqBinMax) const;
@@ -248,6 +267,9 @@ protected:
     bool getXBinRange(int x, float &windowMin, float &windowMax) const;
 
     bool getYBinSourceRange(int y, float &freqMin, float &freqMax) const;
+    bool getAdjustedYBinSourceRange(int x, int y,
+				    float &freqMin, float &freqMax,
+				    float &adjFreqMin, float &adjFreqMax) const;
     bool getXBinSourceRange(int x, RealTime &timeMin, RealTime &timeMax) const;
     bool getXYBinSourceRange(int x, int y, float &dbMin, float &dbMax) const;
 
