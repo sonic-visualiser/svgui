@@ -42,6 +42,8 @@ public:
     virtual void editDrag(QMouseEvent *);
     virtual void editEnd(QMouseEvent *);
 
+    virtual void editOpen(QMouseEvent *); // on double-click
+
     virtual const Model *getModel() const { return m_model; }
     void setModel(TextModel *model);
 
@@ -75,6 +77,7 @@ protected:
 
     TextModel *m_model;
     bool m_editing;
+    QPoint m_editOrigin;
     TextModel::Point m_originalPoint;
     TextModel::Point m_editingPoint;
     TextModel::EditCommand *m_editingCommand;

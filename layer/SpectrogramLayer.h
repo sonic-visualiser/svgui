@@ -130,6 +130,9 @@ public:
     void setFrequencyAdjustment(FrequencyAdjustment);
     FrequencyAdjustment getFrequencyAdjustment() const;
 
+    void setNormalizeColumns(bool n);
+    bool getNormalizeColumns() const;
+
     enum ColourScheme { DefaultColours, WhiteOnBlack, BlackOnWhite,
 			RedOnBlue, YellowOnBlack, RedOnBlack };
 
@@ -177,6 +180,7 @@ protected:
     ColourScheme        m_colourScheme;
     FrequencyScale      m_frequencyScale;
     FrequencyAdjustment m_frequencyAdjustment;
+    bool                m_normalizeColumns;
 
     // A QImage would do just as well here, and we originally used
     // one: the problem is that we want to munlock() the memory it

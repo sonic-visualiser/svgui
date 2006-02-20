@@ -18,6 +18,7 @@
 
 #include <QPainter>
 #include <QMouseEvent>
+#include <QInputDialog>
 
 #include <iostream>
 #include <cmath>
@@ -47,7 +48,7 @@ TextLayer::setModel(TextModel *model)
     connect(m_model, SIGNAL(completionChanged()),
 	    this, SIGNAL(modelCompletionChanged()));
 
-    std::cerr << "TextLayer::setModel(" << model << ")" << std::endl;
+//    std::cerr << "TextLayer::setModel(" << model << ")" << std::endl;
 
     emit modelReplaced();
 }
@@ -329,13 +330,16 @@ TextLayer::paint(QPainter &paint, QRect rect) const
     if (points.empty()) return;
 
     QColor brushColour(m_colour);
-    brushColour.setAlpha(80);
-    paint.setBrush(brushColour);
 
+    int h, s, v;
+    brushColour.getHsv(&h, &s, &v);
+    brushColour.setHsv(h, s, 255, 100);
+
+    QColor penColour;
     if (m_view->hasLightBackground()) {
-	paint.setPen(Qt::black);
+	penColour = Qt::black;
     } else {
-	paint.setPen(Qt::white);
+	penColour = Qt::white;
     }
 
 //    std::cerr << "TextLayer::paint: resolution is "
@@ -365,22 +369,15 @@ TextLayer::paint(QPainter &paint, QRect rect) const
 	int y = getYForHeight(p.height);
 
 	if (illuminateFrame == p.frame) {
-/*
-	    //!!! aside from the problem of choosing a colour, it'd be
-	    //better to save the highlighted rects and draw them at
-	    //the end perhaps
-
-	    //!!! not equipped to illuminate the right section in line
-	    //or curve mode
-
-	    if (m_plotStyle != PlotCurve &&
-		m_plotStyle != PlotLines) {
-		paint.setPen(Qt::black);//!!!
-		if (m_plotStyle != PlotSegmentation) {
-		    paint.setBrush(Qt::black);//!!!
-		}
-	    }	 
-*/   
+	    paint.setBrush(penColour);
+	    if (m_view->hasLightBackground()) {
+		paint.setPen(Qt::white);
+	    } else {
+		paint.setPen(Qt::black);
+	    }
+	} else {
+	    paint.setPen(penColour);
+	    paint.setBrush(brushColour);
 	}
 
 	QString label = p.label;
@@ -428,7 +425,7 @@ TextLayer::paint(QPainter &paint, QRect rect) const
 void
 TextLayer::drawStart(QMouseEvent *e)
 {
-    std::cerr << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model) {
 	std::cerr << "TextLayer::drawStart: no model" << std::endl;
@@ -454,7 +451,7 @@ TextLayer::drawStart(QMouseEvent *e)
 void
 TextLayer::drawDrag(QMouseEvent *e)
 {
-    std::cerr << "TextLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "TextLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model || !m_editing) return;
 
@@ -473,8 +470,20 @@ TextLayer::drawDrag(QMouseEvent *e)
 void
 TextLayer::drawEnd(QMouseEvent *e)
 {
-    std::cerr << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
+
+    bool ok = false;
+    QString label = QInputDialog::getText(m_view, tr("Enter label"),
+					  tr("Please enter a new label:"),
+					  QLineEdit::Normal, "", &ok);
+
+    if (ok) {
+	TextModel::RelabelCommand *command =
+	    new TextModel::RelabelCommand(m_model, m_editingPoint, label);
+	m_editingCommand->addCommand(command);
+    }
+
     m_editingCommand->finish();
     m_editingCommand = 0;
     m_editing = false;
@@ -483,13 +492,14 @@ TextLayer::drawEnd(QMouseEvent *e)
 void
 TextLayer::editStart(QMouseEvent *e)
 {
-    std::cerr << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model) return;
 
     TextModel::PointList points = getLocalPoints(e->x(), e->y());
     if (points.empty()) return;
 
+    m_editOrigin = e->pos();
     m_editingPoint = *points.begin();
     m_originalPoint = m_editingPoint;
 
@@ -506,11 +516,17 @@ TextLayer::editDrag(QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
-    long frame = getFrameForX(e->x());
-    if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    long frameDiff = getFrameForX(e->x()) - getFrameForX(m_editOrigin.x());
+    float heightDiff = getHeightForY(e->y()) - getHeightForY(m_editOrigin.y());
 
-    float height = getHeightForY(e->y());
+    long frame = m_originalPoint.frame + frameDiff;
+    float height = m_originalPoint.height + heightDiff;
+
+//    long frame = getFrameForX(e->x());
+    if (frame < 0) frame = 0;
+    frame = (frame / m_model->getResolution()) * m_model->getResolution();
+
+//    float height = getHeightForY(e->y());
 
     if (!m_editingCommand) {
 	m_editingCommand = new TextModel::EditCommand(m_model, tr("Drag Label"));
@@ -525,7 +541,7 @@ TextLayer::editDrag(QMouseEvent *e)
 void
 TextLayer::editEnd(QMouseEvent *e)
 {
-    std::cerr << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {
@@ -536,10 +552,10 @@ TextLayer::editEnd(QMouseEvent *e)
 	    if (m_editingPoint.height != m_originalPoint.height) {
 		newName = tr("Move Label");
 	    } else {
-		newName = tr("Relocate Label");
+		newName = tr("Move Label Horizontally");
 	    }
 	} else {
-	    newName = tr("Change Point Height");
+	    newName = tr("Move Label Vertically");
 	}
 
 	m_editingCommand->setName(newName);
@@ -549,6 +565,29 @@ TextLayer::editEnd(QMouseEvent *e)
     m_editingCommand = 0;
     m_editing = false;
 }
+
+void
+TextLayer::editOpen(QMouseEvent *e)
+{
+    std::cerr << "TextLayer::editOpen" << std::endl;
+
+    if (!m_model) return;
+
+    TextModel::PointList points = getLocalPoints(e->x(), e->y());
+    if (points.empty()) return;
+
+    QString label = points.begin()->label;
+
+    bool ok = false;
+    label = QInputDialog::getText(m_view, tr("Enter label"),
+				  tr("Please enter a new label:"),
+				  QLineEdit::Normal, label, &ok);
+    if (ok && label != points.begin()->label) {
+	TextModel::RelabelCommand *command =
+	    new TextModel::RelabelCommand(m_model, *points.begin(), label);
+	CommandHistory::getInstance()->addCommand(command, true);
+    }
+}    
 
 QString
 TextLayer::toXmlString(QString indent, QString extraAttributes) const

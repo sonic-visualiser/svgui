@@ -616,6 +616,22 @@ void
 Pane::mouseDoubleClickEvent(QMouseEvent *e)
 {
     std::cerr << "mouseDoubleClickEvent" << std::endl;
+
+    m_clickPos = e->pos();
+    m_clickedInRange = true;
+    m_shiftPressed = (e->modifiers() & Qt::ShiftModifier);
+    m_ctrlPressed = (e->modifiers() & Qt::ControlModifier);
+
+    ViewManager::ToolMode mode = ViewManager::NavigateMode;
+    if (m_manager) mode = m_manager->getToolMode();
+
+    if (mode == ViewManager::EditMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer && layer->isLayerEditable()) {
+	    layer->editOpen(e);
+	}
+    }
 }
 
 void
@@ -713,10 +729,11 @@ Pane::toolModeChanged()
     case ViewManager::DrawMode:
 	setCursor(Qt::CrossCursor);
 	break;
-	
+/*	
     case ViewManager::TextMode:
 	setCursor(Qt::IBeamCursor);
 	break;
+*/
     }
 }
 
