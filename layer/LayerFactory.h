@@ -34,6 +34,7 @@ public:
 
 	// Layers with different initial parameters
 	MelodicRangeSpectrogram,
+	PeakFrequencySpectrogram,
 
 	// Not-a-layer-type
 	UnknownLayer = 255

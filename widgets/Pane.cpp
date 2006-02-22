@@ -550,7 +550,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	    layer->snapToFeatureFrame(snapFrameRight, resolution, Layer::SnapRight);
 	}
 	
-	std::cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << std::endl;
+//	std::cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << std::endl;
 
 	if (snapFrameLeft < 0) snapFrameLeft = 0;
 	if (snapFrameRight < 0) snapFrameRight = 0;

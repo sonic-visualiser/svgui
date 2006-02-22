@@ -58,6 +58,10 @@ LayerFactory::getLayerPresentationName(LayerType type)
 	// that should be encoded in its name
 	return Layer::tr("Spectrogram");
 
+    case PeakFrequencySpectrogram:
+	// likewise
+	return Layer::tr("Spectrogram");
+
     default: break;
     }
 
@@ -76,6 +80,7 @@ LayerFactory::getValidLayerTypes(Model *model)
     if (dynamic_cast<DenseTimeValueModel *>(model)) {
 	types.insert(Spectrogram);
 	types.insert(MelodicRangeSpectrogram);
+	types.insert(PeakFrequencySpectrogram);
     }
 
     if (dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
@@ -269,6 +274,11 @@ LayerFactory::createLayer(LayerType type, View *view,
 
     case MelodicRangeSpectrogram: 
 	layer = new SpectrogramLayer(view, SpectrogramLayer::MelodicRange);
+	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
+	break;
+
+    case PeakFrequencySpectrogram: 
+	layer = new SpectrogramLayer(view, SpectrogramLayer::MelodicPeaks);
 	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	break;
 

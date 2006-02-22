@@ -39,7 +39,7 @@ class SpectrogramLayer : public Layer,
     Q_OBJECT
 
 public:
-    enum Configuration { FullRangeDb, MelodicRange };
+    enum Configuration { FullRangeDb, MelodicRange, MelodicPeaks };
     
     SpectrogramLayer(View *w, Configuration = FullRangeDb);
     ~SpectrogramLayer();
@@ -94,11 +94,27 @@ public:
     void setGain(float gain);
     float getGain() const;
 
+    /**
+     * Set the threshold for sample values to be shown in the FFT,
+     * in voltage units.
+     *
+     * The default is 0.0.
+     */
+    void setThreshold(float threshold);
+    float getThreshold() const;
+
+    void setMinFrequency(size_t);
+    size_t getMinFrequency() const;
+
     void setMaxFrequency(size_t); // 0 -> no maximum
     size_t getMaxFrequency() const;
 
-    enum ColourScale { LinearColourScale, MeterColourScale, dBColourScale,
-		       PhaseColourScale };
+    enum ColourScale {
+	LinearColourScale,
+	MeterColourScale,
+	dBColourScale,
+	PhaseColourScale
+    };
 
     /**
      * Specify the scale for sample levels.  See WaveformLayer for
@@ -118,17 +134,17 @@ public:
     void setFrequencyScale(FrequencyScale);
     FrequencyScale getFrequencyScale() const;
 
-    enum FrequencyAdjustment {
-	RawFrequency,
-	PhaseAdjustedFrequency,
-	PhaseAdjustedPeaks
+    enum BinDisplay {
+	AllBins,
+	PeakBins,
+	PeakFrequencies
     };
     
     /**
      * Specify the processing of frequency bins for the y axis.
      */
-    void setFrequencyAdjustment(FrequencyAdjustment);
-    FrequencyAdjustment getFrequencyAdjustment() const;
+    void setBinDisplay(BinDisplay);
+    BinDisplay getBinDisplay() const;
 
     void setNormalizeColumns(bool n);
     bool getNormalizeColumns() const;
@@ -174,14 +190,18 @@ protected:
     WindowType          m_windowType;
     size_t              m_windowOverlap;
     float               m_gain;
+    float               m_threshold;
     int                 m_colourRotation;
+    size_t              m_minFrequency;
     size_t              m_maxFrequency;
     ColourScale         m_colourScale;
     ColourScheme        m_colourScheme;
     FrequencyScale      m_frequencyScale;
-    FrequencyAdjustment m_frequencyAdjustment;
+    BinDisplay          m_binDisplay;
     bool                m_normalizeColumns;
 
+    enum { NO_VALUE = 0 };
+    
     // A QImage would do just as well here, and we originally used
     // one: the problem is that we want to munlock() the memory it
     // uses, and it's much easier to do that if we control it.  This
