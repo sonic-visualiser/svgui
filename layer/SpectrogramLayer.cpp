@@ -39,12 +39,14 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
     m_windowType(HanningWindow),
     m_windowOverlap(50),
     m_gain(1.0),
+    m_threshold(0.0),
     m_colourRotation(0),
+    m_minFrequency(0),
     m_maxFrequency(8000),
     m_colourScale(dBColourScale),
     m_colourScheme(DefaultColours),
     m_frequencyScale(LinearFrequencyScale),
-    m_frequencyAdjustment(RawFrequency),
+    m_binDisplay(AllBins),
     m_normalizeColumns(false),
     m_cache(0),
     m_phaseAdjustCache(0),
@@ -62,6 +64,16 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
 	setWindowType(ParzenWindow);
 	setMaxFrequency(1000);
 	setColourScale(LinearColourScale);
+    } else if (config == MelodicPeaks) {
+	setWindowSize(4096);
+	setWindowOverlap(90);
+	setWindowType(BlackmanWindow);
+	setMaxFrequency(1500);
+	setMinFrequency(40);
+	setFrequencyScale(LogFrequencyScale);
+	setColourScale(dBColourScale);
+	setBinDisplay(PeakFrequencies);
+	setNormalizeColumns(true);
     }
 
     if (m_view) m_view->setLightBackground(false);
@@ -126,11 +138,13 @@ SpectrogramLayer::getProperties() const
     list.push_back(tr("Window Size"));
     list.push_back(tr("Window Overlap"));
     list.push_back(tr("Normalize"));
+    list.push_back(tr("Bin Display"));
+    list.push_back(tr("Threshold"));
     list.push_back(tr("Gain"));
     list.push_back(tr("Colour Rotation"));
+    list.push_back(tr("Min Frequency"));
     list.push_back(tr("Max Frequency"));
     list.push_back(tr("Frequency Scale"));
-    list.push_back(tr("Frequency Adjustment"));
     return list;
 }
 
@@ -140,6 +154,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
     if (name == tr("Gain")) return RangeProperty;
     if (name == tr("Colour Rotation")) return RangeProperty;
     if (name == tr("Normalize")) return ToggleProperty;
+    if (name == tr("Threshold")) return RangeProperty;
     return ValueProperty;
 }
 
@@ -152,11 +167,14 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == tr("Colour") ||
 	name == tr("Colour Rotation")) return tr("Colour");
     if (name == tr("Gain") ||
+	name == tr("Threshold") ||
 	name == tr("Normalize") ||
+	name == tr("Bin Display") ||
 	name == tr("Colour Scale")) return tr("Scale");
     if (name == tr("Max Frequency") ||
+	name == tr("Min Frequency") ||
 	name == tr("Frequency Scale") ||
-	name == tr("Frequency Adjustment")) return tr("Frequency");
+	name == tr("Frequency Adjustment")) return tr("Range");
     return QString();
 }
 
@@ -176,6 +194,15 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 50;
 
 	deft = lrint(log10(m_gain) * 20.0);
+	if (deft < *min) deft = *min;
+	if (deft > *max) deft = *max;
+
+    } else if (name == tr("Threshold")) {
+
+	*min = -50;
+	*max = 0;
+
+	deft = lrintf(AudioLevel::multiplier_to_dB(m_threshold));
 	if (deft < *min) deft = *min;
 	if (deft > *max) deft = *max;
 
@@ -224,6 +251,24 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	deft = m_windowOverlap / 25;
 	if (m_windowOverlap == 90) deft = 4;
     
+    } else if (name == tr("Min Frequency")) {
+
+	*min = 0;
+	*max = 9;
+
+	switch (m_minFrequency) {
+	case 0: default: deft = 0; break;
+	case 10: deft = 1; break;
+	case 20: deft = 2; break;
+	case 40: deft = 3; break;
+	case 100: deft = 4; break;
+	case 250: deft = 5; break;
+	case 500: deft = 6; break;
+	case 1000: deft = 7; break;
+	case 4000: deft = 8; break;
+	case 10000: deft = 9; break;
+	}
+    
     } else if (name == tr("Max Frequency")) {
 
 	*min = 0;
@@ -248,11 +293,11 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 1;
 	deft = (int)m_frequencyScale;
 
-    } else if (name == tr("Frequency Adjustment")) {
+    } else if (name == tr("Bin Display")) {
 
 	*min = 0;
 	*max = 2;
-	deft = (int)m_frequencyAdjustment;
+	deft = (int)m_binDisplay;
 
     } else if (name == tr("Normalize")) {
 	
@@ -283,9 +328,9 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == tr("Colour Scale")) {
 	switch (value) {
 	default:
-	case 0: return tr("Level Linear");
-	case 1: return tr("Level Meter");
-	case 2: return tr("Level dB");
+	case 0: return tr("Linear");
+	case 1: return tr("Meter");
+	case 2: return tr("dB");
 	case 3: return tr("Phase");
 	}
     }
@@ -314,6 +359,21 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("90%");
 	}
     }
+    if (name == tr("Min Frequency")) {
+	switch (value) {
+	default:
+	case 0: return tr("None");
+	case 1: return tr("10 Hz");
+	case 2: return tr("20 Hz");
+	case 3: return tr("40 Hz");
+	case 4: return tr("100 Hz");
+	case 5: return tr("250 Hz");
+	case 6: return tr("500 Hz");
+	case 7: return tr("1 KHz");
+	case 8: return tr("4 KHz");
+	case 9: return tr("10 KHz");
+	}
+    }
     if (name == tr("Max Frequency")) {
 	switch (value) {
 	default:
@@ -336,12 +396,12 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 1: return tr("Log");
 	}
     }
-    if (name == tr("Frequency Adjustment")) {
+    if (name == tr("Bin Display")) {
 	switch (value) {
 	default:
-	case 0: return tr("Bins");
-	case 1: return tr("Pitches");
-	case 2: return tr("Peaks");
+	case 0: return tr("All Bins");
+	case 1: return tr("Peak Bins");
+	case 2: return tr("Frequencies");
 	}
     }
     return tr("<unknown>");
@@ -352,6 +412,9 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == tr("Gain")) {
 	setGain(pow(10, float(value)/20.0));
+    } else if (name == tr("Threshold")) {
+	if (value == -50) setThreshold(0.0);
+	else setThreshold(AudioLevel::dB_to_multiplier(value));
     } else if (name == tr("Colour Rotation")) {
 	setColourRotation(value);
     } else if (name == tr("Colour")) {
@@ -372,6 +435,20 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
     } else if (name == tr("Window Overlap")) {
 	if (value == 4) setWindowOverlap(90);
 	else setWindowOverlap(25 * value);
+    } else if (name == tr("Min Frequency")) {
+	switch (value) {
+	default:
+	case 0: setMinFrequency(0); break;
+	case 1: setMinFrequency(10); break;
+	case 2: setMinFrequency(20); break;
+	case 3: setMinFrequency(40); break;
+	case 4: setMinFrequency(100); break;
+	case 5: setMinFrequency(250); break;
+	case 6: setMinFrequency(500); break;
+	case 7: setMinFrequency(1000); break;
+	case 8: setMinFrequency(4000); break;
+	case 9: setMinFrequency(10000); break;
+	}
     } else if (name == tr("Max Frequency")) {
 	switch (value) {
 	case 0: setMaxFrequency(500); break;
@@ -400,12 +477,12 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 0: setFrequencyScale(LinearFrequencyScale); break;
 	case 1: setFrequencyScale(LogFrequencyScale); break;
 	}
-    } else if (name == tr("Frequency Adjustment")) {
+    } else if (name == tr("Bin Display")) {
 	switch (value) {
 	default:
-	case 0: setFrequencyAdjustment(RawFrequency); break;
-	case 1: setFrequencyAdjustment(PhaseAdjustedFrequency); break;
-	case 2: setFrequencyAdjustment(PhaseAdjustedPeaks); break;
+	case 0: setBinDisplay(AllBins); break;
+	case 1: setBinDisplay(PeakBins); break;
+	case 2: setBinDisplay(PeakFrequencies); break;
 	}
     } else if (name == "Normalize") {
 	setNormalizeColumns(value ? true : false);
@@ -533,6 +610,52 @@ SpectrogramLayer::getGain() const
 }
 
 void
+SpectrogramLayer::setThreshold(float threshold)
+{
+    if (m_threshold == threshold) return; //!!! inadequate for floats!
+
+    m_mutex.lock();
+    m_cacheInvalid = true;
+    m_pixmapCacheInvalid = true;
+    
+    m_threshold = threshold;
+    
+    m_mutex.unlock();
+
+    emit layerParametersChanged();
+
+    fillCache();
+}
+
+float
+SpectrogramLayer::getThreshold() const
+{
+    return m_threshold;
+}
+
+void
+SpectrogramLayer::setMinFrequency(size_t mf)
+{
+    if (m_minFrequency == mf) return;
+
+    m_mutex.lock();
+    // don't need to invalidate main cache here
+    m_pixmapCacheInvalid = true;
+    
+    m_minFrequency = mf;
+    
+    m_mutex.unlock();
+
+    emit layerParametersChanged();
+}
+
+size_t
+SpectrogramLayer::getMinFrequency() const
+{
+    return m_minFrequency;
+}
+
+void
 SpectrogramLayer::setMaxFrequency(size_t mf)
 {
     if (m_maxFrequency == mf) return;
@@ -645,16 +768,16 @@ SpectrogramLayer::getFrequencyScale() const
 }
 
 void
-SpectrogramLayer::setFrequencyAdjustment(FrequencyAdjustment frequencyAdjustment)
+SpectrogramLayer::setBinDisplay(BinDisplay binDisplay)
 {
-    if (m_frequencyAdjustment == frequencyAdjustment) return;
+    if (m_binDisplay == binDisplay) return;
 
     m_mutex.lock();
 
     m_cacheInvalid = true;
     m_pixmapCacheInvalid = true;
     
-    m_frequencyAdjustment = frequencyAdjustment;
+    m_binDisplay = binDisplay;
     
     m_mutex.unlock();
 
@@ -663,10 +786,10 @@ SpectrogramLayer::setFrequencyAdjustment(FrequencyAdjustment frequencyAdjustment
     emit layerParametersChanged();
 }
 
-SpectrogramLayer::FrequencyAdjustment
-SpectrogramLayer::getFrequencyAdjustment() const
+SpectrogramLayer::BinDisplay
+SpectrogramLayer::getBinDisplay() const
 {
-    return m_frequencyAdjustment;
+    return m_binDisplay;
 }
 
 void
@@ -808,7 +931,7 @@ SpectrogramLayer::setCacheColourmap()
 
     int formerRotation = m_colourRotation;
 
-    m_cache->setColour(0, Qt::white);
+    m_cache->setColour(NO_VALUE, Qt::white);
 
     for (int pixel = 1; pixel < 256; ++pixel) {
 
@@ -866,7 +989,7 @@ SpectrogramLayer::rotateCacheColourmap(int distance)
 
     QColor newPixels[256];
 
-    newPixels[0] = m_cache->getColour(0);
+    newPixels[NO_VALUE] = m_cache->getColour(NO_VALUE);
 
     for (int pixel = 1; pixel < 256; ++pixel) {
 	int target = pixel + distance;
@@ -891,13 +1014,9 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 {
     static std::vector<double> storedPhase;
 
-    bool phaseAdjust =
-	(m_frequencyAdjustment == PhaseAdjustedFrequency ||
-	 m_frequencyAdjustment == PhaseAdjustedPeaks);
+    bool phaseAdjust = (m_binDisplay == PeakFrequencies);
     bool haveStoredPhase = true;
     size_t sampleRate = 0;
-
-    static int counter = 0;
 
     if (phaseAdjust) {
 	if (resetStoredPhase || (storedPhase.size() != windowSize / 2)) {
@@ -906,9 +1025,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	    for (size_t i = 0; i < windowSize / 2; ++i) {
 		storedPhase.push_back(0.0);
 	    }
-	    counter = 0;
 	}
-	++counter;
 	sampleRate = m_model->getSampleRate();
     }
 
@@ -939,6 +1056,15 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	}
     }
 
+    if (m_channel == -1) {
+	int channels = m_model->getChannelCount();
+	if (channels > 1) {
+	    for (size_t i = 0; i < windowSize; ++i) {
+		input[i] /= channels;
+	    }
+	}
+    }
+
     windower.cut(input);
 
     for (size_t i = 0; i < windowSize/2; ++i) {
@@ -952,8 +1078,8 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
     bool interrupted = false;
 
     double prevMag = 0.0;
-
     double maxMag = 0.0;
+
     if (m_normalizeColumns) {
 	for (size_t i = 0; i < windowSize/2; ++i) {
 	    double mag = sqrt(output[i][0] * output[i][0] +
@@ -963,6 +1089,11 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	}
     }
 
+    if (maxMag == 0.0) maxMag = 1.0;
+
+    bool peaksOnly = (m_binDisplay == PeakBins ||
+		      m_binDisplay == PeakFrequencies);
+
     for (size_t i = 0; i < windowSize / 2; ++i) {
 
 	int value = 0;
@@ -970,120 +1101,96 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 
 	double mag = sqrt(output[i][0] * output[i][0] +
 			  output[i][1] * output[i][1]);
-	mag /= windowSize / 2;
 
-	if (m_normalizeColumns && maxMag > 0.0) {
-	    mag /= maxMag;
+	mag /= (windowSize / 2);
+	if (m_normalizeColumns) mag /= maxMag;
+
+	bool showThis = true;
+
+	if (peaksOnly) {
+	    if (mag < prevMag) showThis = false;
+	    else {
+		double nextMag = 0.0;
+		if (i < windowSize / 2 - 1) {
+		    nextMag = sqrt(output[i+1][0] * output[i+1][0] +
+				   output[i+1][1] * output[i+1][1]);
+		    nextMag /= windowSize / 2;
+		    if (m_normalizeColumns) nextMag /= maxMag;
+		}
+		if (mag < nextMag) showThis = false;
+	    }
+	    prevMag = mag;
 	}
 
-	if (phaseAdjust || (m_colourScale == PhaseColourScale)) {
+	if (mag < m_threshold) showThis = false;
 
-//	    phase = atan2(-output[i][1], output[i][0]);
-//	    phase = atan2(output[i][1], output[i][0]);
-	    phase = atan2(output[i][0], output[i][1]);
-//	    phase = MathUtilities::princarg(phase);
+	if (phaseAdjust || (m_colourScale == PhaseColourScale)) {
+	    phase = atan2(output[i][1], output[i][0]);
+	    phase = MathUtilities::princarg(phase);
 	}	    
 
-	if (phaseAdjust && m_phaseAdjustCache && haveStoredPhase) {
+	if (phaseAdjust && m_phaseAdjustCache) {
+	    m_phaseAdjustCache->setValueAt(column, i, 0);
+	}
 
-	    bool peak = true;
-//	    if (m_frequencyAdjustment == PhaseAdjustedPeaks) {
-	    if (true) { //!!!
-		if (mag < prevMag) peak = false;
-		else {
-		    double nextMag = 0.0;
-		    if (i < windowSize / 2 - 1) {
-			nextMag = sqrt(output[i+1][0] * output[i+1][0] +
-				       output[i+1][1] * output[i+1][1]);
-			nextMag /= windowSize / 2;
-			if (m_normalizeColumns && maxMag > 0.0) {
-			    nextMag /= maxMag;
-			}
-		    }
-		    if (mag < nextMag) peak = false;
-		}
-		prevMag = mag;
-	    }
-
-	    if (!peak) {
-		if (m_cacheInvalid || m_exiting) {
-		    interrupted = true;
-		    break;
-		}
-		m_phaseAdjustCache->setValueAt(column, i, SCHAR_MIN);
-	    } else {
-
-	    if (i < 100 && counter == 10)  {
-	    
-//		if (counter == 10) {
+	if (phaseAdjust && m_phaseAdjustCache && haveStoredPhase && showThis) {
 
 	    double freq = (double(i) * sampleRate) / m_windowSize;
-//	    std::cout << "\nbin = " << i << " initial estimate freq = " << freq
-//		      << " mag = " << mag << std::endl;
-
 	    double prevPhase = storedPhase[i];
 
-	    // If the frequency is 100Hz and the sample rate is
-	    // 10000Hz and we have 1000 samples (1/10sec) per bin,
-	    // then we expect phase 0 
-
-	    // 2pi happens in 1/freq sec
-	    // one hop happens in hopsize/sr sec
-	    // freq is bin*sr / windowsize
-	    // thus 2pi happens in windowsize/(bin*sr) sec
-	    
-	    // need to know what phase increment we expect from
-	    // hopsize/sr sec
-	    // must be 2pi * ((hopsize/sr) / (windowsize/(bin*sr)))
-	    // = 2pi * ((hopsize * bin * sr) / (windowsize * sr))
-	    // = 2pi * (hopsize * bin) / windowsize
+	    // At frequency f, phase shift of 2pi (one cycle) happens in 1/f sec.
+	    // At hopsize h and sample rate sr, one hop happens in h/sr sec.
+	    // At window size w, for bin i, f is i*sr/w.
+	    // thus 2pi phase shift happens in w/(b*sr) sec.
+	    // We need to know what phase shift we expect from h/sr sec.
+	    // -> 2pi * ((h/sr) / (w/(i*sr)))
+	    //  = 2pi * ((h * i * sr) / (w * sr))
+	    //  = 2pi * (h * i) / w.
 
 	    double expectedPhase =
 		prevPhase + (2.0 * M_PI * i * increment) / m_windowSize;
 
 	    double phaseError = MathUtilities::princarg(phase - expectedPhase);
 	    
-//	    if (fabs(phaseError) > (1.2 * (increment * M_PI) / m_windowSize)) {
-//		std::cout << "error > " << (1.2 * (increment * M_PI) / m_windowSize) << std::endl;
-//	    }// else {
+	    if (fabs(phaseError) < (1.1 * (increment * M_PI) / m_windowSize)) {
 
-	    std::cout << "prev = " << prevPhase << ", phase = " << phase
-		      << ", exp = " << expectedPhase << " prin = " << MathUtilities::princarg(expectedPhase) << ", error = "
-		      << phaseError << " inc = " << increment << " i = " << i << ", pi = " << M_PI <<  std::endl;
+		// The new frequency estimate based on the phase error
+		// resulting from assuming the "native" frequency of this bin
 
-	    double newFreq =
-		(sampleRate *
-		 (expectedPhase + phaseError - prevPhase)) /
-		//(prevPhase - (expectedPhase + phaseError))) /
-		(2 * M_PI * increment);
+		double newFreq =
+		    (sampleRate *
+		     (expectedPhase + phaseError - prevPhase)) /
+		    (2 * M_PI * increment);
 
-	    std::cout << freq << " (" << Pitch::getPitchLabelForFrequency(freq).toStdString() <<  ") -> " << newFreq << " (" << Pitch::getPitchLabelForFrequency(newFreq).toStdString() << ")" << std::endl;
-//	    }
-
-	    double binRange = (double(i + 1) * sampleRate) / windowSize - freq;
+		// Convert the frequency difference to an unsigned char
+		// for storage in the phase adjust cache
+		
+		double binRange = (double(i + 1) * sampleRate) / windowSize - freq;
 	    
-	    int offset = lrint(((newFreq - freq) / binRange) * 10);//!!!
+		int offset = lrint(((newFreq - freq) / binRange) * 100);
 
-	    if (m_cacheInvalid || m_exiting) {
-		interrupted = true;
-		break;
-	    }
-	    if (offset > SCHAR_MIN && offset <= SCHAR_MAX) {
-		signed char coff = offset;
-		m_phaseAdjustCache->setValueAt(column, i, (unsigned char)coff);
-	    } else {
-		m_phaseAdjustCache->setValueAt(column, i, 0);
-	    }
-	    }
-}
+		if (m_cacheInvalid || m_exiting) {
+		    interrupted = true;
+		    break;
+		}
 
-	    storedPhase[i] = phase;
-	}
+		if (offset >= SCHAR_MIN && offset <= SCHAR_MAX) {
+		    signed char coff = offset;
+		    m_phaseAdjustCache->setValueAt(column, i, (unsigned char)coff);
+		} else {
+
+		    if (fabs(phaseError) < ((increment * M_PI) / m_windowSize)) {
+			std::cerr << "WARNING: Phase error " << phaseError << " ( < " << ((increment * M_PI) / m_windowSize) << ") but offset " << offset << " out of range" << std::endl;
+		    }
+		}
+	    }	
+	}	
+
+	if (phaseAdjust) storedPhase[i] = phase;
 
 	if (m_colourScale == PhaseColourScale) {
 
-	    phase = MathUtilities::princarg(phase);
-	    value = int((phase * 128 / M_PI) + 128);
+	    value = int((phase * 127 / M_PI) + 128);
 
 	} else {
 
@@ -1091,11 +1198,11 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 		
 	    default:
 	    case LinearColourScale:
-		value = int(mag * 50 * 256);
+		value = int(mag * 50 * 255) + 1;
 		break;
 		
 	    case MeterColourScale:
-		value = AudioLevel::multiplier_to_preview(mag * 50, 256);
+		value = AudioLevel::multiplier_to_preview(mag * 50, 255) + 1;
 	    break;
 
 	    case dBColourScale:
@@ -1103,11 +1210,11 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 		mag = (mag + 80.0) / 80.0;
 		if (mag < 0.0) mag = 0.0;
 		if (mag > 1.0) mag = 1.0;
-		value = int(mag * 256);
+		value = int(mag * 255) + 1;
 	    }
 	}
 
-	if (value > 254) value = 254;
+	if (value > UCHAR_MAX) value = UCHAR_MAX;
 	if (value < 0) value = 0;
 
 	if (m_cacheInvalid || m_exiting) {
@@ -1115,7 +1222,11 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	    break;
 	}
 
-	m_cache->setValueAt(column, i, value + 1);
+	if (showThis) {
+	    m_cache->setValueAt(column, i, value);
+	} else {
+	    m_cache->setValueAt(column, i, NO_VALUE);
+	}
     }
 
     return !interrupted;
@@ -1140,6 +1251,7 @@ SpectrogramLayer::Cache::~Cache()
 void
 SpectrogramLayer::Cache::resize(size_t width, size_t height)
 {
+    std::cerr << "SpectrogramLayer::Cache[" << this << "]::resize(" << width << "x" << height << ")" << std::endl;
     m_values = (unsigned char *)
 	realloc(m_values, m_width * m_height * sizeof(unsigned char));
     if (!m_values) throw std::bad_alloc();
@@ -1187,6 +1299,7 @@ SpectrogramLayer::Cache::setColour(unsigned char index, QColor colour)
 void
 SpectrogramLayer::Cache::fill(unsigned char value)
 {
+    std::cerr << "SpectrogramLayer::Cache[" << this << "]::fill(" << value << ")" << std::endl;
     for (size_t i = 0; i < m_width * m_height; ++i) {
 	m_values[i] = value;
     }
@@ -1261,10 +1374,9 @@ SpectrogramLayer::CacheFillThread::run()
 	    }
 
 	    m_layer.setCacheColourmap();
-	    m_layer.m_cache->fill(0);
+	    m_layer.m_cache->fill(NO_VALUE);
 
-	    if (m_layer.m_frequencyAdjustment == PhaseAdjustedFrequency ||
-		m_layer.m_frequencyAdjustment == PhaseAdjustedPeaks) {
+	    if (m_layer.m_binDisplay == PeakFrequencies) {
 		
 		if (!m_layer.m_phaseAdjustCache) {
 		    m_layer.m_phaseAdjustCache = new Cache(width, height);
@@ -1306,6 +1418,7 @@ SpectrogramLayer::CacheFillThread::run()
 		std::cerr << "WARNING: fftw_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
 		fftw_free(input);
 		fftw_free(output);
+		m_layer.m_mutex.lock();
 		continue;
 	    }
 
@@ -1331,16 +1444,17 @@ SpectrogramLayer::CacheFillThread::run()
 			break;
 		    }
 
-		    if (++counter == updateAt) {
+		    if (++counter == updateAt || f == visibleEnd - 1) {
 			if (f < end) m_fillExtent = f;
 			m_fillCompletion = size_t(100 * fabsf(float(f - visibleStart) /
 							      float(end - start)));
 			counter = 0;
 		    }
 		}
-	    }
 
-	    m_layer.m_cachedInitialVisibleArea = true;
+		m_layer.m_cachedInitialVisibleArea = true;
+		std::cerr << "SpectrogramLayer::CacheFillThread::run: visible bit done" << std::endl;
+	    }
 
 	    if (!interrupted && doVisibleFirst) {
 		
@@ -1356,8 +1470,8 @@ SpectrogramLayer::CacheFillThread::run()
 		    }
 
 
-		    if (++counter == updateAt) {
-			if (f < end) m_fillExtent = f;
+		    if (++counter == updateAt || f == end - 1) {
+			m_fillExtent = f;
 			m_fillCompletion = size_t(100 * fabsf(float(f - visibleStart) /
 							      float(end - start)));
 			counter = 0;
@@ -1386,7 +1500,9 @@ SpectrogramLayer::CacheFillThread::run()
 			break;
 		    }
 		    
-		    if (++counter == updateAt) {
+		    if (++counter == updateAt ||
+			f == visibleEnd - 1 ||
+			f == remainingEnd - 1) {
 			m_fillExtent = f;
 			m_fillCompletion = baseCompletion +
 			    size_t(100 * fabsf(float(f - start) /
@@ -1548,6 +1664,9 @@ const
 
     bool haveAdj = false;
 
+    bool peaksOnly = (m_binDisplay == PeakBins ||
+		      m_binDisplay == PeakFrequencies);
+
     for (int q = q0i; q <= q1i; ++q) {
 
 	for (int s = s0i; s <= s1i; ++s) {
@@ -1555,20 +1674,19 @@ const
 	    float binfreq = (sr * q) / m_windowSize;
 	    if (q == q0i) freqMin = binfreq;
 	    if (q == q1i) freqMax = binfreq;
+
+	    if (m_cache->getValueAt(s, q) == NO_VALUE) {
+		continue;
+	    }
 	    
-	    if ((m_frequencyAdjustment == PhaseAdjustedFrequency ||
-		 m_frequencyAdjustment == PhaseAdjustedPeaks) &&
+	    if (m_binDisplay == PeakFrequencies &&
 		m_phaseAdjustCache) {
 
 		unsigned char cadj = m_phaseAdjustCache->getValueAt(s, q);
 		int adjust = int((signed char)cadj);
-		if (adjust == SCHAR_MIN &&
-		    m_frequencyAdjustment == PhaseAdjustedPeaks) {
-		    continue;
-		}
 		
 		float nextBinFreq = (sr * (q + 1)) / m_windowSize;
-		float fadjust = (adjust * (nextBinFreq - binfreq)) / 10.0;//!!!
+		float fadjust = (adjust * (nextBinFreq - binfreq)) / 100.0;//!!!
 		float f = binfreq + fadjust;
 		if (!haveAdj || f < adjFreqMin) adjFreqMin = f;
 		if (!haveAdj || f > adjFreqMax) adjFreqMax = f;
@@ -1599,6 +1717,8 @@ SpectrogramLayer::getXYBinSourceRange(int x, int y, float &dbMin, float &dbMax) 
     int s0i = int(s0 + 0.001);
     int s1i = int(s1);
 
+    bool rv = false;
+
     if (m_mutex.tryLock()) {
 	if (m_cache && !m_cacheInvalid) {
 
@@ -1611,25 +1731,24 @@ SpectrogramLayer::getXYBinSourceRange(int x, int y, float &dbMin, float &dbMax) 
 		for (int s = s0i; s <= s1i; ++s) {
 		    if (s >= 0 && q >= 0 && s < cw && q < ch) {
 			int value = int(m_cache->getValueAt(s, q));
+			if (value == NO_VALUE) continue;
 			if (min == -1 || value < min) min = value;
 			if (max == -1 || value > max) max = value;
 		    }	
 		}
 	    }
 
-	    if (min < 0) return false;
-
-	    dbMin = (float(min) / 256.0) * 80.0 - 80.0;
-	    dbMax = (float(max + 1) / 256.0) * 80.0 - 80.1;
-
-	    m_mutex.unlock();
-	    return true;
+	    if (min >= 0) {
+		dbMin = (float(min) / 256.0) * 80.0 - 80.0;
+		dbMax = (float(max + 1) / 256.0) * 80.0 - 80.1;
+		rv = true;
+	    }
 	}
 
 	m_mutex.unlock();
     }
 
-    return false;
+    return rv;
 }
    
 void
@@ -1653,16 +1772,7 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
     std::cerr << "SpectrogramLayer::paint(): About to lock" << std::endl;
 #endif
 
-/*
-    if (m_cachedInitialVisibleArea) {
-	if (!m_mutex.tryLock()) {
-	    m_view->update();
-	    return;
-	}
-    } else {
-*/
-	m_mutex.lock();
-//    }
+    m_mutex.lock();
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): locked" << std::endl;
@@ -1794,15 +1904,22 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 
     float ymag[h];
     float ydiv[h];
-    
-    size_t bins = m_windowSize / 2;
+
     int sr = m_model->getSampleRate();
     
+    size_t bins = m_windowSize / 2;
     if (m_maxFrequency > 0) {
 	bins = int((double(m_maxFrequency) * m_windowSize) / sr + 0.1);
 	if (bins > m_windowSize / 2) bins = m_windowSize / 2;
     }
 	
+    size_t minbin = 0;
+    if (m_minFrequency > 0) {
+	minbin = int((double(m_minFrequency) * m_windowSize) / sr + 0.1);
+	if (minbin >= bins) minbin = bins - 1;
+    }
+
+    float minFreq = (float(minbin) * sr) / m_windowSize;
     float maxFreq = (float(bins) * sr) / m_windowSize;
 
     m_mutex.unlock();
@@ -1834,7 +1951,7 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 	int s0i = int(s0 + 0.001);
 	int s1i = int(s1);
 
-	for (int q = 0; q < bins; ++q) {
+	for (int q = minbin; q < bins; ++q) {
 
 	    for (int s = s0i; s <= s1i; ++s) {
 
@@ -1845,34 +1962,38 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 		float f0 = (float(q) * sr) / m_windowSize;
 		float f1 = (float(q + 1) * sr) / m_windowSize;
  
-		if ((m_frequencyAdjustment == PhaseAdjustedFrequency ||
-		     m_frequencyAdjustment == PhaseAdjustedPeaks) &&
+		if ((m_binDisplay == PeakFrequencies) &&
 		    m_phaseAdjustCache) {
 
 		    unsigned char cadj = m_phaseAdjustCache->getValueAt(s, q);
 		    int adjust = int((signed char)cadj);
-
-		    if (adjust == SCHAR_MIN &&
-			m_frequencyAdjustment == PhaseAdjustedPeaks) {
-			continue;
-		    }
-
-		    float fadjust = (adjust * (f1 - f0)) / 10.0;//!!! was 100
+		    float fadjust = (adjust * (f1 - f0)) / 100.0;
 		    f0 = f1 = f0 + fadjust;
 		}
 	    
-		float y0 = h - (h * f1) / maxFreq;
-		float y1 = h - (h * f0) / maxFreq;
+		float y0 = h - (h * (f1 - minFreq)) / maxFreq;
+		float y1 = h - (h * (f0 - minFreq)) / maxFreq;
+
+		//!!! We want a general View::getYForFrequency and inverse
+		// that can be passed min freq, max freq and log/linear.  We
+		// can then introduce a central correspondence between, say,
+		// spectrogram layer and a frequency-scaled MIDI layer on the
+		// same view.
 
 		if (m_frequencyScale == LogFrequencyScale) {
 		    
-		    float maxf = m_maxFrequency;
-		    if (maxf == 0.0) maxf = float(sr) / 2;
+		    //!!! also, shouldn't be recalculating this every time!
+
+//		    float maxf = m_maxFrequency;
+//		    if (maxf == 0.0) maxf = float(sr) / 2;
 		    
-		    float minf = float(sr) / m_windowSize;
+//		    float minf = float(sr) / m_windowSize;
 		    
-		    float maxlogf = log10f(maxf);
-		    float minlogf = log10f(minf);
+		    float maxlogf = log10f(maxFreq);
+		    float minlogf;
+
+		    if (minFreq > 0) minlogf = log10f(minFreq);
+		    else minlogf = log10f(float(sr) / m_windowSize);
 		    
 		    y0 = h - (h * (log10f(f1) - minlogf)) / (maxlogf - minlogf);
 		    y1 = h - (h * (log10f(f0) - minlogf)) / (maxlogf - minlogf);
@@ -1888,8 +2009,11 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 		    float yprop = sprop;
 		    if (y == y0i) yprop *= (y + 1) - y0;
 		    if (y == y1i) yprop *= y1 - y;
-		    
-		    ymag[y] += yprop * m_cache->getValueAt(s, q);
+
+		    int value = m_cache->getValueAt(s, q);
+		    if (value == NO_VALUE) continue;
+
+		    ymag[y] += yprop * value;
 		    ydiv[y] += yprop;
 		}
 	    }
@@ -1914,97 +2038,6 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 
 	m_mutex.unlock();
     }
-
-#ifdef NOT_DEFINED
-    for (int y = 0; y < h; ++y) {
-
-	m_mutex.lock();
-	if (m_cacheInvalid) {
-	    m_mutex.unlock();
-	    break;
-	}
-
-	int cw = m_cache->getWidth();
-	int ch = m_cache->getHeight();
-
-	float q0 = 0, q1 = 0;
-
-	if (!getYBinRange(y0 + y, q0, q1)) {
-	    for (int x = 0; x < w; ++x) {
-		assert(x <= scaled.width());
-		scaled.setPixel(x, y, qRgb(0, 0, 0));
-	    }
-	    m_mutex.unlock();
-	    continue;
-	}
-
-	int q0i = int(q0 + 0.001);
-	int q1i = int(q1);
-
-	for (int x = 0; x < w; ++x) {
-
-	    float s0 = 0, s1 = 0;
-
-	    if (!getXBinRange(x0 + x, s0, s1)) {
-		assert(x <= scaled.width());
-		scaled.setPixel(x, y, qRgb(0, 0, 0));
-		continue;
-	    }
-
-	    int s0i = int(s0 + 0.001);
-	    int s1i = int(s1);
-
-	    float total = 0, divisor = 0;
-
-	    for (int s = s0i; s <= s1i; ++s) {
-
-		float sprop = 1.0;
-		if (s == s0i) sprop *= (s + 1) - s0;
-		if (s == s1i) sprop *= s1 - s;
-
-		for (int q = q0i; q <= q1i; ++q) {
-
-		    float qprop = sprop;
-		    if (q == q0i) qprop *= (q + 1) - q0;
-		    if (q == q1i) qprop *= q1 - q;
-
-		    if (s >= 0 && q >= 0 && s < cw && q < ch) {
-			total += qprop * m_cache->getValueAt(s, q);
-			divisor += qprop;
-		    }
-		}
-	    }
-		    
-	    if (divisor > 0.0) {
-		int pixel = int(total / divisor);
-		if (pixel > 255) pixel = 255;
-		if (pixel < 1) pixel = 1;
-		assert(x <= scaled.width());
-		QColor c = m_cache->getColour(pixel);
-		scaled.setPixel(x, y,
-				qRgb(c.red(), c.green(), c.blue()));
-/*
-		float pixel = total / divisor;
-		float lq = pixel - int(pixel);
-		float hq = int(pixel) + 1 - pixel;
-		int pixNum = int(pixel);
-		QRgb low = m_cache->color(pixNum > 255 ? 255 : pixNum);
-		QRgb high = m_cache->color(pixNum > 254 ? 255 : pixNum + 1);
-		QRgb mixed = qRgb
-		    (qRed(low) * lq + qRed(high) * hq + 0.01,
-		     qGreen(low) * lq + qGreen(high) * hq + 0.01,
-		     qBlue(low) * lq + qBlue(high) * hq + 0.01);
-		scaled.setPixel(x, y, mixed);
-*/
-	    } else {
-		assert(x <= scaled.width());
-		scaled.setPixel(x, y, qRgb(0, 0, 0));
-	    }
-	}
-
-	m_mutex.unlock();
-    }
-#endif
 
     paint.drawImage(x0, y0, scaled);
 
@@ -2078,8 +2111,7 @@ SpectrogramLayer::getFeatureDescription(QPoint &pos) const
 
     QString adjFreqText = "", adjPitchText = "";
 
-    if ((m_frequencyAdjustment == PhaseAdjustedFrequency ||
-	 m_frequencyAdjustment == PhaseAdjustedPeaks) &&
+    if ((m_binDisplay == PeakFrequencies) &&
 	m_phaseAdjustCache) {
 
 	if (!getAdjustedYBinSourceRange(x, y, freqMin, freqMax,
@@ -2225,24 +2257,30 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 		 "windowSize=\"%2\" "
 		 "windowType=\"%3\" "
 		 "windowOverlap=\"%4\" "
-		 "gain=\"%5\" ")
+		 "gain=\"%5\" "
+		 "threshold=\"%6\" ")
 	.arg(m_channel)
 	.arg(m_windowSize)
 	.arg(m_windowType)
 	.arg(m_windowOverlap)
-	.arg(m_gain);
+	.arg(m_gain)
+	.arg(m_threshold);
 
-    s += QString("maxFrequency=\"%1\" "
-		 "colourScale=\"%2\" "
-		 "colourScheme=\"%3\" "
-		 "frequencyScale=\"%4\" "
-		 "frequencyAdjustment=\"%5\" "
-		 "normalizeColumns=\"%6\"")
+    s += QString("minFrequency=\"%1\" "
+		 "maxFrequency=\"%2\" "
+		 "colourScale=\"%3\" "
+		 "colourScheme=\"%4\" "
+		 "colourRotation=\"%5\" "
+		 "frequencyScale=\"%6\" "
+		 "binDisplay=\"%7\" "
+		 "normalizeColumns=\"%8\"")
+	.arg(m_minFrequency)
 	.arg(m_maxFrequency)
 	.arg(m_colourScale)
 	.arg(m_colourScheme)
+	.arg(m_colourRotation)
 	.arg(m_frequencyScale)
-	.arg(m_frequencyAdjustment)
+	.arg(m_binDisplay)
 	.arg(m_normalizeColumns ? "true" : "false");
 
     return Layer::toXmlString(indent, extraAttributes + " " + s);
@@ -2269,6 +2307,12 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     float gain = attributes.value("gain").toFloat(&ok);
     if (ok) setGain(gain);
 
+    float threshold = attributes.value("threshold").toFloat(&ok);
+    if (ok) setThreshold(threshold);
+
+    size_t minFrequency = attributes.value("minFrequency").toUInt(&ok);
+    if (ok) setMinFrequency(minFrequency);
+
     size_t maxFrequency = attributes.value("maxFrequency").toUInt(&ok);
     if (ok) setMaxFrequency(maxFrequency);
 
@@ -2280,13 +2324,16 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 	attributes.value("colourScheme").toInt(&ok);
     if (ok) setColourScheme(colourScheme);
 
+    int colourRotation = attributes.value("colourRotation").toInt(&ok);
+    if (ok) setColourRotation(colourRotation);
+
     FrequencyScale frequencyScale = (FrequencyScale)
 	attributes.value("frequencyScale").toInt(&ok);
     if (ok) setFrequencyScale(frequencyScale);
 
-    FrequencyAdjustment frequencyAdjustment = (FrequencyAdjustment)
-	attributes.value("frequencyAdjustment").toInt(&ok);
-    if (ok) setFrequencyAdjustment(frequencyAdjustment);
+    BinDisplay binDisplay = (BinDisplay)
+	attributes.value("binDisplay").toInt(&ok);
+    if (ok) setBinDisplay(binDisplay);
 
     bool normalizeColumns =
 	(attributes.value("normalizeColumns").trimmed() == "true");
