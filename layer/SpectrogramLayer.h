@@ -21,6 +21,8 @@
 
 #include <fftw3.h>
 
+#include <stdint.h>
+
 class View;
 class QPainter;
 class QImage;
@@ -200,39 +202,102 @@ protected:
     BinDisplay          m_binDisplay;
     bool                m_normalizeColumns;
 
-    enum { NO_VALUE = 0 };
+    // At the moment we cache one unsigned char per bin for the
+    // magnitude -- which is nothing like precise enough to allow us
+    // to subsequently adjust gain etc without recalculating the
+    // cached values -- plus optionally one unsigned char per bin for
+    // phase-adjusted frequency.
     
-    // A QImage would do just as well here, and we originally used
-    // one: the problem is that we want to munlock() the memory it
-    // uses, and it's much easier to do that if we control it.  This
-    // cache is hardwired to an effective 8-bit colour mapped layout.
+    // To speed up redrawing after parameter changes, we would like to
+    // cache magnitude in a way that can have gain applied afterwards
+    // and can determine whether something is a peak or not, and also
+    // cache phase rather than only phase-adjusted frequency so that
+    // we don't have to recalculate if switching between phase and
+    // magnitude displays.
+
+    // This implies probably 16 bits for a normalized magnitude (in
+    // dB?) and at most 16 bits for phase.  16 or 32 bits per bin
+    // instead of 8 or 16.
+
+    // Each column's magnitudes are expected to be stored normalized
+    // to [0,1] with respect to the column, so the normalization
+    // factor should be calculated before all values in a column, and
+    // set appropriately.
+
     class Cache {
     public:
-	Cache(size_t width, size_t height);
+	Cache(); // of size zero, call resize() before using
 	~Cache();
 
-	size_t getWidth() const;
-	size_t getHeight() const;
-
-	void resize(size_t width, size_t height);
+	size_t getWidth() const { return m_width; }
+	size_t getHeight() const { return m_height; }
 	
-	unsigned char getValueAt(size_t x, size_t y) const;
-	void setValueAt(size_t x, size_t y, unsigned char value);
+	void resize(size_t width, size_t height);
+	void reset(); // zero-fill or 1-fill as appropriate without changing size
+	
+	float getMagnitudeAt(size_t x, size_t y) const {
+	    return getNormalizedMagnitudeAt(x, y) * m_factor[x];
+	}
 
-	QColor getColour(unsigned char index) const;
-	void setColour(unsigned char index, QColor colour);
+	float getNormalizedMagnitudeAt(size_t x, size_t y) const {
+	    return float(m_magnitude[y][x]) / 65535.0;
+	}
 
-	void fill(unsigned char value);
+	float getPhaseAt(size_t x, size_t y) const {
+	    return (float(m_phase[y][x]) / 32767.0) * M_PI;
+	}
 
-    protected:
+	bool isLocalPeak(size_t x, size_t y) const {
+	    if (y > 0 && m_magnitude[y][x] < m_magnitude[y-1][x]) return false;
+	    if (y < m_height-1 && m_magnitude[y][x] < m_magnitude[y+1][x]) return false;
+	    return true;
+	}
+
+	bool isOverThreshold(size_t x, size_t y, float threshold) const {
+	    if (threshold == 0.0) return true;
+	    return getMagnitudeAt(x, y) > threshold;
+	}
+
+	void setNormalizationFactor(size_t x, float factor) {
+	    m_factor[x] = factor;
+	}
+
+	void setMagnitudeAt(size_t x, size_t y, float mag) {
+	    // norm factor must already be set
+	    setNormalizedMagnitudeAt(x, y, mag / m_factor[x]);
+	}
+
+	void setNormalizedMagnitudeAt(size_t x, size_t y, float norm) {
+	    m_magnitude[y][x] = uint16_t(norm * 65535.0);
+	}
+
+	void setPhaseAt(size_t x, size_t y, float phase) {
+	    // phase in range -pi -> pi
+	    m_phase[y][x] = uint16_t((phase * 32767) / M_PI);
+	}
+
+	QColor getColour(unsigned char index) const {
+	    return m_colours[index];
+	}
+
+	void setColour(unsigned char index, QColor colour) {
+	    m_colours[index] = colour;
+	}
+
+    private:
 	size_t m_width;
 	size_t m_height;
-	unsigned char *m_values;
+	uint16_t **m_magnitude;
+	uint16_t **m_phase;
+	float *m_factor;
 	QColor m_colours[256];
+
+	void resize(uint16_t **&, size_t, size_t);
     };
-    
+
+    enum { NO_VALUE = 0 }; // colour index for unused pixels
+
     Cache *m_cache;
-    Cache *m_phaseAdjustCache;
     bool m_cacheInvalid;
 
     class CacheFillThread : public QThread
@@ -264,21 +329,29 @@ protected:
     CacheFillThread *m_fillThread;
     QTimer *m_updateTimer;
     size_t m_lastFillExtent;
-    bool m_cachedInitialVisibleArea;
     bool m_exiting;
 
     void setCacheColourmap();
     void rotateCacheColourmap(int distance);
 
-    bool fillCacheColumn(int column,
+    void fillCacheColumn(int column,
 			 double *inputBuffer,
 			 fftw_complex *outputBuffer,
 			 fftw_plan plan,
 			 size_t windowSize,
 			 size_t windowIncrement,
-			 const Window<double> &windower,
-			 bool resetStoredPhase)
+			 const Window<double> &windower)
 	const;
+
+    static float calculateFrequency(size_t bin,
+				    size_t windowSize,
+				    size_t windowIncrement,
+				    size_t sampleRate,
+				    float previousPhase,
+				    float currentPhase,
+				    bool &steadyState);
+
+    unsigned char getDisplayValue(float input) const;
 
     bool getYBinRange(int y, float &freqBinMin, float &freqBinMax) const;
 
@@ -295,7 +368,8 @@ protected:
 				    float &freqMin, float &freqMax,
 				    float &adjFreqMin, float &adjFreqMax) const;
     bool getXBinSourceRange(int x, RealTime &timeMin, RealTime &timeMax) const;
-    bool getXYBinSourceRange(int x, int y, float &dbMin, float &dbMax) const;
+    bool getXYBinSourceRange(int x, int y, float &min, float &max,
+			     float &phaseMin, float &phaseMax) const;
 
     size_t getWindowIncrement() const {
 	return m_windowSize - m_windowSize * m_windowOverlap / 100;
