@@ -244,7 +244,8 @@ protected:
 	}
 
 	float getPhaseAt(size_t x, size_t y) const {
-	    return (float(m_phase[y][x]) / 32767.0) * M_PI;
+	    int16_t i = (int16_t)m_phase[y][x];
+	    return (float(i) / 32767.0) * M_PI;
 	}
 
 	bool isLocalPeak(size_t x, size_t y) const {
@@ -273,7 +274,7 @@ protected:
 
 	void setPhaseAt(size_t x, size_t y, float phase) {
 	    // phase in range -pi -> pi
-	    m_phase[y][x] = uint16_t((phase * 32767) / M_PI);
+	    m_phase[y][x] = uint16_t(int16_t((phase * 32767) / M_PI));
 	}
 
 	QColor getColour(unsigned char index) const {
