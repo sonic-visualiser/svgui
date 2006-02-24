@@ -70,7 +70,7 @@ SpectrogramLayer::SpectrogramLayer(View *w, Configuration config) :
 	setMaxFrequency(2000);
 	setMinFrequency(40);
 	setFrequencyScale(LogFrequencyScale);
-	setColourScale(dBColourScale);
+	setColourScale(MeterColourScale);
 	setBinDisplay(PeakFrequencies);
 	setNormalizeColumns(true);
     }
@@ -1221,6 +1221,8 @@ SpectrogramLayer::Cache::resize(size_t width, size_t height)
 
     m_width = width;
     m_height = height;
+
+    std::cerr << "done, width = " << m_width << " height = " << m_height << std::endl;
 }
 
 void
@@ -1295,6 +1297,8 @@ SpectrogramLayer::CacheFillThread::run()
 
 	    size_t start = m_layer.m_model->getStartFrame();
 	    size_t end = m_layer.m_model->getEndFrame();
+
+	    std::cerr << "start = " << start << ", end = " << end << std::endl;
 
 	    WindowType windowType = m_layer.m_windowType;
 	    size_t windowSize = m_layer.m_windowSize;
@@ -1533,7 +1537,9 @@ SpectrogramLayer::getXBinRange(int x, float &s0, float &s1) const
     int f0 = getFrameForX(x) - modelStart;
     int f1 = getFrameForX(x + 1) - modelStart - 1;
 
-    if (f1 < int(modelStart) || f0 > int(modelEnd)) return false;
+    if (f1 < int(modelStart) || f0 > int(modelEnd)) {
+	return false;
+    }
       
     // And that range may be drawn from a possibly non-integral
     // range of spectrogram windows:
@@ -1864,7 +1870,7 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 //    std::cerr << "x0 " << x0 << ", x1 " << x1 << ", w " << w << ", h " << h << std::endl;
 
     QImage scaled(w, h, QImage::Format_RGB32);
-    scaled.fill(0);
+    scaled.fill(m_cache->getColour(0).rgb());
 
     float ymag[h];
     float ydiv[h];
@@ -1910,9 +1916,6 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 
 	if (!getXBinRange(x0 + x, s0, s1)) {
 	    assert(x <= scaled.width());
-	    for (int y = 0; y < h; ++y) {
-		scaled.setPixel(x, y, qRgb(0, 0, 0));
-	    }
 	    m_mutex.unlock();
 	    continue;
 	}
@@ -2338,7 +2341,9 @@ SpectrogramLayer::paintVerticalScale(QPainter &paint, QRect rect) const
 	    if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
 		// black notes
 		paint.drawLine(w - pkw, y, w, y);
-		paint.drawRect(w - pkw, y - (py-y)/4, pkw/2, 2*((py-y)/4));
+		int rh = ((py - y) / 4) * 2;
+		if (rh < 2) rh = 2;
+		paint.drawRect(w - pkw, y - (py-y)/4, pkw/2, rh);
 	    } else if (n == 0 || n == 5) {
 		// C, A
 		if (py < h) {

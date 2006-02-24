@@ -14,6 +14,7 @@
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/ViewManager.h"
+#include "layer/WaveformLayer.h"
 
 #include <QPaintEvent>
 #include <QPainter>
@@ -87,9 +88,15 @@ Pane::paintEvent(QPaintEvent *e)
     if (e) {
 	paint.setClipRect(r);
     }
-	
+
+    const Model *waveformModel = 0; // just for reporting purposes
+    
     for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
 	--vi;
+
+	if (dynamic_cast<WaveformLayer *>(*vi)) {
+	    waveformModel = (*vi)->getModel();
+	}
 
 	int sw = (*vi)->getVerticalScaleWidth(paint);
 
@@ -109,7 +116,7 @@ Pane::paintEvent(QPaintEvent *e)
 
 	    paint.restore();
 	}
-
+	
 	if (m_identifyFeatures) {
 
 	    QPoint pos = m_identifyPoint;
@@ -247,6 +254,20 @@ Pane::paintEvent(QPaintEvent *e)
 	    paint.setPen(QColor(200, 200, 200));
 	}
 	paint.drawText(x, y, text);
+
+	if (waveformModel) {
+	    
+	    QString desc = tr("%1 / %2Hz")
+		.arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
+					      waveformModel->getSampleRate())
+		     .toText(false).c_str())
+		.arg(waveformModel->getSampleRate());
+
+	    paint.drawText(width() - paint.fontMetrics().width(desc) - 5,
+			   height() - paint.fontMetrics().height() +
+			   paint.fontMetrics().ascent() - 6,
+			   desc);
+	}
     }
 
     if (m_clickedInRange && m_shiftPressed) {

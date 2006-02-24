@@ -659,6 +659,7 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     }
 
     if (m_aggressive) {
+
 	if (ready && rect == m_view->rect()) {
 	    m_cacheValid = true;
 	    m_cacheZoomLevel = zoomLevel;
