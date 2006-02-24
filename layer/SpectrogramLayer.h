@@ -152,7 +152,7 @@ public:
     bool getNormalizeColumns() const;
 
     enum ColourScheme { DefaultColours, WhiteOnBlack, BlackOnWhite,
-			RedOnBlue, YellowOnBlack, RedOnBlack };
+			RedOnBlue, YellowOnBlack, Rainbow };
 
     void setColourScheme(ColourScheme scheme);
     ColourScheme getColourScheme() const;
@@ -353,6 +353,12 @@ protected:
 				    bool &steadyState);
 
     unsigned char getDisplayValue(float input) const;
+    float getInputForDisplayValue(unsigned char uc) const;
+
+    int getColourScaleWidth(QPainter &) const;
+
+    float getEffectiveMinFrequency() const;
+    float getEffectiveMaxFrequency() const;
 
     bool getYBinRange(int y, float &freqBinMin, float &freqBinMax) const;
 
