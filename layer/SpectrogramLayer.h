@@ -260,7 +260,7 @@ protected:
 	}
 
 	void setNormalizationFactor(size_t x, float factor) {
-	    m_factor[x] = factor;
+	    if (x < m_width) m_factor[x] = factor;
 	}
 
 	void setMagnitudeAt(size_t x, size_t y, float mag) {
@@ -269,12 +269,16 @@ protected:
 	}
 
 	void setNormalizedMagnitudeAt(size_t x, size_t y, float norm) {
-	    m_magnitude[y][x] = uint16_t(norm * 65535.0);
+	    if (x < m_width && y < m_height) {
+		m_magnitude[y][x] = uint16_t(norm * 65535.0);
+	    }
 	}
 
 	void setPhaseAt(size_t x, size_t y, float phase) {
 	    // phase in range -pi -> pi
-	    m_phase[y][x] = uint16_t(int16_t((phase * 32767) / M_PI));
+	    if (x < m_width && y < m_height) {
+		m_phase[y][x] = uint16_t(int16_t((phase * 32767) / M_PI));
+	    }
 	}
 
 	QColor getColour(unsigned char index) const {
