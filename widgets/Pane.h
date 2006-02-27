@@ -31,6 +31,9 @@ public:
     virtual QString getPropertyContainerIconName() const { return "pane"; }
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos);
+    virtual bool shouldIlluminateLocalSelection(QPoint &pos,
+						bool &closeToLeft,
+						bool &closeToRight);
 
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
@@ -55,6 +58,11 @@ protected:
 
     Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight);
 
+    bool editSelectionStart(QMouseEvent *e);
+    bool editSelectionDrag(QMouseEvent *e);
+    bool editSelectionEnd(QMouseEvent *e);
+    bool selectionIsBeingEdited() const;
+
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
     QPoint m_clickPos;
@@ -67,6 +75,8 @@ protected:
     size_t m_dragCentreFrame;
     bool m_centreLineVisible;
     size_t m_selectionStartFrame;
+    Selection m_editingSelection;
+    int m_editingSelectionEdge;
 };
 
 #endif

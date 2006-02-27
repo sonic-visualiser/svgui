@@ -169,6 +169,9 @@ public:
 
     virtual bool isLayerOpaque() const { return true; }
 
+    float getYForFrequency(float frequency) const;
+    float getFrequencyForY(int y) const;
+
     virtual int getCompletion() const;
 
     virtual QString toXmlString(QString indent = "",
