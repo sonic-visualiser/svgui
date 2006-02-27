@@ -17,6 +17,8 @@
 
 #include "model/NoteModel.h"
 
+#include "SpectrogramLayer.h" // for optional frequency alignment
+
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
@@ -353,7 +355,7 @@ int
 NoteLayer::getYForValue(float value) const
 {
     float min, max, h = m_view->height();
-    
+
     switch (m_verticalScale) {
 
     case MIDIRangeScale:
@@ -367,12 +369,26 @@ NoteLayer::getYForValue(float value) const
 	break;
 
     case FrequencyScale:
+    
+	value = Pitch::getFrequencyForPitch(lrintf(value),
+					    value - lrintf(value));
+
+	// If we have a spectrogram layer on the same view as us, align
+	// ourselves with it...
+	for (int i = 0; i < m_view->getLayerCount(); ++i) {
+	    SpectrogramLayer *spectrogram = dynamic_cast<SpectrogramLayer *>
+		(m_view->getLayer(i));
+	    if (spectrogram) {
+		return spectrogram->getYForFrequency(value);
+	    }
+	}
+
+	// ...otherwise just interpolate
 	std::cerr << "FrequencyScale: value in = " << value << std::endl;
 	min = m_model->getValueMinimum();
 	min = Pitch::getFrequencyForPitch(lrintf(min), min - lrintf(min));
 	max = m_model->getValueMaximum();
 	max = Pitch::getFrequencyForPitch(lrintf(max), max - lrintf(max));
-	value = Pitch::getFrequencyForPitch(lrintf(value), value - lrintf(value));
 	std::cerr << "FrequencyScale: min = " << min << ", max = " << max << ", value = " << value << std::endl;
 	break;
     }

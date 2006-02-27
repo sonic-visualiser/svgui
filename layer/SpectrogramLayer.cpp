@@ -2031,6 +2031,24 @@ SpectrogramLayer::paint(QPainter &paint, QRect rect) const
 #endif
 }
 
+float
+SpectrogramLayer::getYForFrequency(float frequency) const
+{
+    return m_view->getYForFrequency(frequency,
+				    getEffectiveMinFrequency(),
+				    getEffectiveMaxFrequency(),
+				    m_frequencyScale == LogFrequencyScale);
+}
+
+float
+SpectrogramLayer::getFrequencyForY(int y) const
+{
+    return m_view->getFrequencyForY(y,
+				    getEffectiveMinFrequency(),
+				    getEffectiveMaxFrequency(),
+				    m_frequencyScale == LogFrequencyScale);
+}
+
 int
 SpectrogramLayer::getCompletion() const
 {

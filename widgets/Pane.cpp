@@ -41,11 +41,54 @@ Pane::Pane(QWidget *w) :
 bool
 Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos)
 {
-    if (layer == getSelectedLayer()) {
+    QPoint discard;
+    bool b0, b1;
+
+    if (layer == getSelectedLayer() &&
+	!shouldIlluminateLocalSelection(discard, b0, b1)) {
+
 	pos = m_identifyPoint;
 	return m_identifyFeatures;
     }
 
+    return false;
+}
+
+bool
+Pane::shouldIlluminateLocalSelection(QPoint &pos,
+				     bool &closeToLeft,
+				     bool &closeToRight)
+{
+    if (m_identifyFeatures &&
+	m_manager &&
+	m_manager->getToolMode() == ViewManager::EditMode &&
+	!m_manager->getSelections().empty() &&
+	!selectionIsBeingEdited()) {
+
+	Selection s(getSelectionAt(m_identifyPoint.x(),
+				   closeToLeft, closeToRight));
+
+	if (!s.isEmpty()) {
+	    if (getSelectedLayer() && getSelectedLayer()->isLayerEditable()) {
+		
+		pos = m_identifyPoint;
+		return true;
+	    }
+	}
+    }
+
+    return false;
+}
+
+bool
+Pane::selectionIsBeingEdited() const
+{
+    if (!m_editingSelection.isEmpty()) {
+	if (m_mousePos != m_clickPos &&
+	    getFrameForX(m_mousePos.x()) != getFrameForX(m_clickPos.x())) {
+	    return true;
+	}
+    }
     return false;
 }
 
@@ -281,6 +324,42 @@ Pane::paintEvent(QPaintEvent *e)
 	}
     }
     
+    if (selectionIsBeingEdited()) {
+
+	int offset = m_mousePos.x() - m_clickPos.x();
+	int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
+	int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
+
+	if (m_editingSelectionEdge < 0) {
+	    p1 = getXForFrame(m_editingSelection.getEndFrame());
+	} else if (m_editingSelectionEdge > 0) {
+	    p0 = getXForFrame(m_editingSelection.getStartFrame());
+	}
+
+	paint.save();
+	if (hasLightBackground()) {
+	    paint.setPen(QPen(Qt::black, 2));
+	} else {
+	    paint.setPen(QPen(Qt::white, 2));
+	}
+
+	//!!! duplicating display policy with View::drawSelections
+
+	if (m_editingSelectionEdge < 0) {
+	    paint.drawLine(p0, 1, p1, 1);
+	    paint.drawLine(p0, 0, p0, height());
+	    paint.drawLine(p0, height() - 1, p1, height() - 1);
+	} else if (m_editingSelectionEdge > 0) {
+	    paint.drawLine(p0, 1, p1, 1);
+	    paint.drawLine(p1, 0, p1, height());
+	    paint.drawLine(p0, height() - 1, p1, height() - 1);
+	} else {
+	    paint.setBrush(Qt::NoBrush);
+	    paint.drawRect(p0, 1, p1 - p0, height() - 2);
+	}
+	paint.restore();
+    }
+
     paint.end();
 }
 
@@ -322,6 +401,8 @@ Pane::mousePressEvent(QMouseEvent *e)
 {
     m_clickPos = e->pos();
     m_clickedInRange = true;
+    m_editingSelection = Selection();
+    m_editingSelectionEdge = 0;
     m_shiftPressed = (e->modifiers() & Qt::ShiftModifier);
     m_ctrlPressed = (e->modifiers() & Qt::ControlModifier);
 
@@ -390,9 +471,11 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->editStart(e);
+	if (!editSelectionStart(e)) {
+	    Layer *layer = getSelectedLayer();
+	    if (layer && layer->isLayerEditable()) {
+		layer->editStart(e);
+	    }
 	}
     }
 
@@ -480,10 +563,12 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->editEnd(e);
-	    update();
+	if (!editSelectionEnd(e)) {
+	    Layer *layer = getSelectedLayer();
+	    if (layer && layer->isLayerEditable()) {
+		layer->editEnd(e);
+		update();
+	    }
 	}
     }
 
@@ -626,9 +711,11 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->editDrag(e);
+	if (!editSelectionDrag(e)) {
+	    Layer *layer = getSelectedLayer();
+	    if (layer && layer->isLayerEditable()) {
+		layer->editDrag(e);
+	    }
 	}
     }
 }
@@ -725,6 +812,35 @@ Pane::wheelEvent(QWheelEvent *e)
     }
 
     emit paneInteractedWith();
+}
+
+bool
+Pane::editSelectionStart(QMouseEvent *e)
+{
+    bool closeToLeft, closeToRight;
+    Selection s(getSelectionAt(e->x(), closeToLeft, closeToRight));
+    if (s.isEmpty()) return false;
+    m_editingSelection = s;
+    m_editingSelectionEdge = (closeToLeft ? -1 : closeToRight ? 1 : 0);
+    m_mousePos = e->pos();
+    return true;
+}
+
+bool
+Pane::editSelectionDrag(QMouseEvent *e)
+{
+    if (m_editingSelection.isEmpty()) return false;
+    m_mousePos = e->pos();
+    update();
+    return true;
+}
+
+bool
+Pane::editSelectionEnd(QMouseEvent *e)
+{
+    if (m_editingSelection.isEmpty()) return false;
+    m_editingSelection = Selection();
+    return true;
 }
 
 void

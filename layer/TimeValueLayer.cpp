@@ -543,6 +543,32 @@ TimeValueLayer::paint(QPainter &paint, QRect rect) const
     paint.setRenderHint(QPainter::Antialiasing, false);
 }
 
+int
+TimeValueLayer::getVerticalScaleWidth(QPainter &paint) const
+{
+    return 100; //!!!
+}
+
+void
+TimeValueLayer::paintVerticalScale(QPainter &paint, QRect rect) const
+{
+    if (!m_model) return;
+
+    float v = m_model->getValueMinimum();
+    float inc = (m_model->getValueMaximum() - v) / 10;
+
+    while (v < m_model->getValueMaximum()) {
+	int y = getYForValue(v);
+	QString label = QString("%1").arg(v);
+	paint.drawLine(100 - 10, y, 100, y);
+	paint.drawText(100 - 15 - paint.fontMetrics().width(label),
+		       y - paint.fontMetrics().height() /2 + paint.fontMetrics().ascent(),
+		       label);
+	v += inc;
+    }
+
+}
+
 void
 TimeValueLayer::drawStart(QMouseEvent *e)
 {

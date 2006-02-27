@@ -28,6 +28,9 @@ public:
 
     virtual void paint(QPainter &paint, QRect rect) const;
 
+    virtual int getVerticalScaleWidth(QPainter &) const;
+    virtual void paintVerticalScale(QPainter &paint, QRect rect) const;
+
     virtual QString getFeatureDescription(QPoint &) const;
 
     virtual bool snapToFeatureFrame(int &frame,
