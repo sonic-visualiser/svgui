@@ -617,6 +617,66 @@ NoteLayer::editEnd(QMouseEvent *e)
     m_editing = false;
 }
 
+void
+NoteLayer::moveSelection(Selection s, size_t newStartFrame)
+{
+    NoteModel::EditCommand *command =
+	new NoteModel::EditCommand(m_model, tr("Drag Selection"));
+
+    NoteModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (NoteModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (s.contains(i->frame)) {
+	    NoteModel::Point newPoint(*i);
+	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+	    command->deletePoint(*i);
+	    command->addPoint(newPoint);
+	}
+    }
+
+    command->finish();
+}
+
+void
+NoteLayer::resizeSelection(Selection s, Selection newSize)
+{
+    NoteModel::EditCommand *command =
+	new NoteModel::EditCommand(m_model, tr("Resize Selection"));
+
+    NoteModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    double ratio =
+	double(newSize.getEndFrame() - newSize.getStartFrame()) /
+	double(s.getEndFrame() - s.getStartFrame());
+
+    for (NoteModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (s.contains(i->frame)) {
+
+	    double targetStart = i->frame;
+	    targetStart = newSize.getStartFrame() + 
+		double(targetStart - s.getStartFrame()) * ratio;
+
+	    double targetEnd = i->frame + i->duration;
+	    targetEnd = newSize.getStartFrame() +
+		double(targetEnd - s.getStartFrame()) * ratio;
+
+	    NoteModel::Point newPoint(*i);
+	    newPoint.frame = lrint(targetStart);
+	    newPoint.duration = lrint(targetEnd - targetStart);
+	    command->deletePoint(*i);
+	    command->addPoint(newPoint);
+	}
+    }
+
+    command->finish();
+}
+
 QString
 NoteLayer::toXmlString(QString indent, QString extraAttributes) const
 {

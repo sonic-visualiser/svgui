@@ -42,6 +42,9 @@ public:
     virtual void editDrag(QMouseEvent *);
     virtual void editEnd(QMouseEvent *);
 
+    virtual void moveSelection(Selection s, size_t newStartFrame);
+    virtual void resizeSelection(Selection s, Selection newSize);
+
     virtual void editOpen(QMouseEvent *); // on double-click
 
     virtual const Model *getModel() const { return m_model; }
