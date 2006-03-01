@@ -572,6 +572,82 @@ TimeInstantLayer::editEnd(QMouseEvent *e)
     m_editing = false;
 }
 
+void
+TimeInstantLayer::moveSelection(Selection s, size_t newStartFrame)
+{
+    SparseOneDimensionalModel::EditCommand *command =
+	new SparseOneDimensionalModel::EditCommand(m_model,
+						   tr("Drag Selection"));
+
+    SparseOneDimensionalModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (s.contains(i->frame)) {
+	    SparseOneDimensionalModel::Point newPoint(*i);
+	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+	    command->deletePoint(*i);
+	    command->addPoint(newPoint);
+	}
+    }
+
+    command->finish();
+}
+
+void
+TimeInstantLayer::resizeSelection(Selection s, Selection newSize)
+{
+    SparseOneDimensionalModel::EditCommand *command =
+	new SparseOneDimensionalModel::EditCommand(m_model,
+						   tr("Resize Selection"));
+
+    SparseOneDimensionalModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    double ratio =
+	double(newSize.getEndFrame() - newSize.getStartFrame()) /
+	double(s.getEndFrame() - s.getStartFrame());
+
+    for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (s.contains(i->frame)) {
+
+	    double target = i->frame;
+	    target = newSize.getStartFrame() + 
+		double(target - s.getStartFrame()) * ratio;
+
+	    SparseOneDimensionalModel::Point newPoint(*i);
+	    newPoint.frame = lrint(target);
+	    command->deletePoint(*i);
+	    command->addPoint(newPoint);
+	}
+    }
+
+    command->finish();
+}
+
+void
+TimeInstantLayer::deleteSelection(Selection s)
+{
+    SparseOneDimensionalModel::EditCommand *command =
+	new SparseOneDimensionalModel::EditCommand(m_model,
+						   tr("Delete Selection"));
+
+    SparseOneDimensionalModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+	if (s.contains(i->frame)) command->deletePoint(*i);
+    }
+
+    command->finish();
+}
+  
+
 QString
 TimeInstantLayer::toXmlString(QString indent, QString extraAttributes) const
 {

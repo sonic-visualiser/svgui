@@ -589,6 +589,61 @@ TextLayer::editOpen(QMouseEvent *e)
     }
 }    
 
+void
+TextLayer::moveSelection(Selection s, size_t newStartFrame)
+{
+    TextModel::EditCommand *command =
+	new TextModel::EditCommand(m_model, tr("Drag Selection"));
+
+    TextModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (TextModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (s.contains(i->frame)) {
+	    TextModel::Point newPoint(*i);
+	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+	    command->deletePoint(*i);
+	    command->addPoint(newPoint);
+	}
+    }
+
+    command->finish();
+}
+
+void
+TextLayer::resizeSelection(Selection s, Selection newSize)
+{
+    TextModel::EditCommand *command =
+	new TextModel::EditCommand(m_model, tr("Resize Selection"));
+
+    TextModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    double ratio =
+	double(newSize.getEndFrame() - newSize.getStartFrame()) /
+	double(s.getEndFrame() - s.getStartFrame());
+
+    for (TextModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (s.contains(i->frame)) {
+
+	    double target = i->frame;
+	    target = newSize.getStartFrame() + 
+		double(target - s.getStartFrame()) * ratio;
+
+	    TextModel::Point newPoint(*i);
+	    newPoint.frame = lrint(target);
+	    command->deletePoint(*i);
+	    command->addPoint(newPoint);
+	}
+    }
+
+    command->finish();
+}
+
 QString
 TextLayer::toXmlString(QString indent, QString extraAttributes) const
 {

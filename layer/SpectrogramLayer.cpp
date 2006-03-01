@@ -1327,7 +1327,7 @@ SpectrogramLayer::CacheFillThread::run()
 
 	    m_layer.m_cache->resize(width, height);
 	    m_layer.setCacheColourmap();
-	    m_layer.m_cache->reset();
+//!!!	    m_layer.m_cache->reset();
 
 	    // We don't need a lock when writing to or reading from
 	    // the pixels in the cache.  We do need to ensure we have
@@ -2165,6 +2165,18 @@ SpectrogramLayer::getFeatureDescription(QPoint &pos) const
     if (haveValues) {
 	float dbMin = AudioLevel::multiplier_to_dB(magMin);
 	float dbMax = AudioLevel::multiplier_to_dB(magMax);
+	QString dbMinString;
+	QString dbMaxString;
+	if (dbMin == AudioLevel::DB_FLOOR) {
+	    dbMinString = tr("-Inf");
+	} else {
+	    dbMinString = QString("%1").arg(lrintf(dbMin));
+	}
+	if (dbMax == AudioLevel::DB_FLOOR) {
+	    dbMaxString = tr("-Inf");
+	} else {
+	    dbMaxString = QString("%1").arg(lrintf(dbMax));
+	}
 	if (lrintf(dbMin) != lrintf(dbMax)) {
 	    text += tr("dB:\t%1 - %2").arg(lrintf(dbMin)).arg(lrintf(dbMax));
 	} else {

@@ -42,6 +42,10 @@ public:
     virtual void editDrag(QMouseEvent *);
     virtual void editEnd(QMouseEvent *);
 
+    virtual void moveSelection(Selection s, size_t newStartFrame);
+    virtual void resizeSelection(Selection s, Selection newSize);
+    virtual void deleteSelection(Selection s);
+
     virtual const Model *getModel() const { return m_model; }
     void setModel(SparseOneDimensionalModel *model);
 

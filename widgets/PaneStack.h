@@ -30,8 +30,11 @@ public:
 
     Pane *addPane(bool suppressPropertyBox = false); // I own the returned value
     Pane *getPane(int n); // I own the returned value
-    void deletePane(Pane *pane); // Deletes the pane and all its views
+    void deletePane(Pane *pane); // Deletes the pane and all its layers
     int getPaneCount() const;
+
+//!!!    void hidePane(Pane *pane);
+//    void showPane(Pane *pane);
 
     void setCurrentPane(Pane *pane);
     void setCurrentLayer(Pane *pane, Layer *layer);

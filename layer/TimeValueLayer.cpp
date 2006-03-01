@@ -695,6 +695,63 @@ TimeValueLayer::editEnd(QMouseEvent *e)
     m_editing = false;
 }
 
+void
+TimeValueLayer::moveSelection(Selection s, size_t newStartFrame)
+{
+    SparseTimeValueModel::EditCommand *command =
+	new SparseTimeValueModel::EditCommand(m_model,
+					      tr("Drag Selection"));
+
+    SparseTimeValueModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (SparseTimeValueModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (s.contains(i->frame)) {
+	    SparseTimeValueModel::Point newPoint(*i);
+	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+	    command->deletePoint(*i);
+	    command->addPoint(newPoint);
+	}
+    }
+
+    command->finish();
+}
+
+void
+TimeValueLayer::resizeSelection(Selection s, Selection newSize)
+{
+    SparseTimeValueModel::EditCommand *command =
+	new SparseTimeValueModel::EditCommand(m_model,
+					      tr("Resize Selection"));
+
+    SparseTimeValueModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    double ratio =
+	double(newSize.getEndFrame() - newSize.getStartFrame()) /
+	double(s.getEndFrame() - s.getStartFrame());
+
+    for (SparseTimeValueModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	if (s.contains(i->frame)) {
+
+	    double target = i->frame;
+	    target = newSize.getStartFrame() + 
+		double(target - s.getStartFrame()) * ratio;
+
+	    SparseTimeValueModel::Point newPoint(*i);
+	    newPoint.frame = lrint(target);
+	    command->deletePoint(*i);
+	    command->addPoint(newPoint);
+	}
+    }
+
+    command->finish();
+}
+
 QString
 TimeValueLayer::toXmlString(QString indent, QString extraAttributes) const
 {

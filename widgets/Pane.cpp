@@ -817,6 +817,12 @@ Pane::wheelEvent(QWheelEvent *e)
 bool
 Pane::editSelectionStart(QMouseEvent *e)
 {
+    if (!m_identifyFeatures ||
+	!m_manager ||
+	m_manager->getToolMode() != ViewManager::EditMode) {
+	return false;
+    }
+
     bool closeToLeft, closeToRight;
     Selection s(getSelectionAt(e->x(), closeToLeft, closeToRight));
     if (s.isEmpty()) return false;
@@ -839,6 +845,42 @@ bool
 Pane::editSelectionEnd(QMouseEvent *e)
 {
     if (m_editingSelection.isEmpty()) return false;
+
+    int offset = m_mousePos.x() - m_clickPos.x();
+    Layer *layer = getSelectedLayer();
+
+    if (offset == 0 || !layer) {
+	m_editingSelection = Selection();
+	return true;
+    }
+
+    int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
+    int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
+
+    long f0 = getFrameForX(p0);
+    long f1 = getFrameForX(p1);
+
+    Selection newSelection(f0, f1);
+    
+    if (m_editingSelectionEdge == 0) {
+	
+	layer->moveSelection(m_editingSelection, f0);
+	
+    } else {
+	
+	if (m_editingSelectionEdge < 0) {
+	    f1 = m_editingSelection.getEndFrame();
+	} else {
+	    f0 = m_editingSelection.getStartFrame();
+	}
+
+	newSelection = Selection(f0, f1);
+	layer->resizeSelection(m_editingSelection, newSelection);
+    }
+    
+    m_manager->removeSelection(m_editingSelection);
+    m_manager->addSelection(newSelection);
+
     m_editingSelection = Selection();
     return true;
 }
