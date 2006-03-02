@@ -24,23 +24,23 @@ class TimeInstantLayer : public Layer
     Q_OBJECT
 
 public:
-    TimeInstantLayer(View *w);
+    TimeInstantLayer();
 
-    virtual void paint(QPainter &paint, QRect rect) const;
+    virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(QPoint &) const;
+    virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(int &frame,
+    virtual bool snapToFeatureFrame(View *v, int &frame,
 				    size_t &resolution,
 				    SnapType snap) const;
 
-    virtual void drawStart(QMouseEvent *);
-    virtual void drawDrag(QMouseEvent *);
-    virtual void drawEnd(QMouseEvent *);
+    virtual void drawStart(View *v, QMouseEvent *);
+    virtual void drawDrag(View *v, QMouseEvent *);
+    virtual void drawEnd(View *v, QMouseEvent *);
 
-    virtual void editStart(QMouseEvent *);
-    virtual void editDrag(QMouseEvent *);
-    virtual void editEnd(QMouseEvent *);
+    virtual void editStart(View *v, QMouseEvent *);
+    virtual void editDrag(View *v, QMouseEvent *);
+    virtual void editEnd(View *v, QMouseEvent *);
 
     virtual void moveSelection(Selection s, size_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
@@ -68,7 +68,7 @@ public:
     void setPlotStyle(PlotStyle style);
     PlotStyle getPlotStyle() const { return m_plotStyle; }
 
-    virtual bool isLayerScrollable() const;
+    virtual bool isLayerScrollable(const View *v) const;
 
     virtual bool isLayerEditable() const { return true; }
 
@@ -80,7 +80,7 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
 protected:
-    SparseOneDimensionalModel::PointList getLocalPoints(int) const;
+    SparseOneDimensionalModel::PointList getLocalPoints(View *v, int) const;
 
     SparseOneDimensionalModel *m_model;
     bool m_editing;

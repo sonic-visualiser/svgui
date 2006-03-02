@@ -24,28 +24,28 @@ class TextLayer : public Layer
     Q_OBJECT
 
 public:
-    TextLayer(View *w);
+    TextLayer();
 
-    virtual void paint(QPainter &paint, QRect rect) const;
+    virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(QPoint &) const;
+    virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(int &frame,
+    virtual bool snapToFeatureFrame(View *v, int &frame,
 				    size_t &resolution,
 				    SnapType snap) const;
 
-    virtual void drawStart(QMouseEvent *);
-    virtual void drawDrag(QMouseEvent *);
-    virtual void drawEnd(QMouseEvent *);
+    virtual void drawStart(View *v, QMouseEvent *);
+    virtual void drawDrag(View *v, QMouseEvent *);
+    virtual void drawEnd(View *v, QMouseEvent *);
 
-    virtual void editStart(QMouseEvent *);
-    virtual void editDrag(QMouseEvent *);
-    virtual void editEnd(QMouseEvent *);
+    virtual void editStart(View *v, QMouseEvent *);
+    virtual void editDrag(View *v, QMouseEvent *);
+    virtual void editEnd(View *v, QMouseEvent *);
 
     virtual void moveSelection(Selection s, size_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
 
-    virtual void editOpen(QMouseEvent *); // on double-click
+    virtual void editOpen(View *, QMouseEvent *); // on double-click
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(TextModel *model);
@@ -61,7 +61,7 @@ public:
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
 
-    virtual bool isLayerScrollable() const;
+    virtual bool isLayerScrollable(const View *v) const;
 
     virtual bool isLayerEditable() const { return true; }
 
@@ -73,10 +73,10 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
 protected:
-    int getYForHeight(float height) const;
-    float getHeightForY(int y) const;
+    int getYForHeight(View *v, float height) const;
+    float getHeightForY(View *v, int y) const;
 
-    TextModel::PointList getLocalPoints(int x, int y) const;
+    TextModel::PointList getLocalPoints(View *v, int x, int y) const;
 
     TextModel *m_model;
     bool m_editing;

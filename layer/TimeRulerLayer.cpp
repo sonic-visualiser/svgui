@@ -20,13 +20,13 @@
 using std::cerr;
 using std::endl;
 
-TimeRulerLayer::TimeRulerLayer(View *w) :
-    Layer(w),
+TimeRulerLayer::TimeRulerLayer() :
+    Layer(),
     m_model(0),
     m_colour(Qt::black),
     m_labelHeight(LabelTop)
 {
-    m_view->addLayer(this);
+    
 }
 
 void
@@ -120,7 +120,7 @@ TimeRulerLayer::setProperty(const PropertyName &name, int value)
 }
 
 void
-TimeRulerLayer::paint(QPainter &paint, QRect rect) const
+TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
 //    std::cerr << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
 //	      << ") [" << rect.width() << "x" << rect.height() << "]" << std::endl;
@@ -130,10 +130,10 @@ TimeRulerLayer::paint(QPainter &paint, QRect rect) const
     int sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
-    long startFrame = m_view->getStartFrame();
-    long endFrame = m_view->getEndFrame();
+    long startFrame = v->getStartFrame();
+    long endFrame = v->getEndFrame();
 
-    int zoomLevel = m_view->getZoomLevel();
+    int zoomLevel = v->getZoomLevel();
 
     long rectStart = startFrame + (rect.x() - 100) * zoomLevel;
     long rectEnd = startFrame + (rect.x() + rect.width() + 100) * zoomLevel;
@@ -142,14 +142,14 @@ TimeRulerLayer::paint(QPainter &paint, QRect rect) const
 
 //    std::cerr << "TimeRulerLayer::paint: calling paint.save()" << std::endl;
     paint.save();
-//!!!    paint.setClipRect(m_view->rect());
+//!!!    paint.setClipRect(v->rect());
 
     int minPixelSpacing = 50;
 
     RealTime rtStart = RealTime::frame2RealTime(startFrame, sampleRate);
     RealTime rtEnd = RealTime::frame2RealTime(endFrame, sampleRate);
-//    cerr << "startFrame " << startFrame << ", endFrame " << m_view->getEndFrame() << ", rtStart " << rtStart << ", rtEnd " << rtEnd << endl;
-    int count = m_view->width() / minPixelSpacing;
+//    cerr << "startFrame " << startFrame << ", endFrame " << v->getEndFrame() << ", rtStart " << rtStart << ", rtEnd " << rtEnd << endl;
+    int count = v->width() / minPixelSpacing;
     if (count < 1) count = 1;
     RealTime rtGap = (rtEnd - rtStart) / count;
 //    cerr << "rtGap is " << rtGap << endl;
@@ -217,11 +217,11 @@ TimeRulerLayer::paint(QPainter &paint, QRect rect) const
 	if (x < rect.x() || x >= rect.x() + rect.width()) continue;
 
 	paint.setPen(greyColour);
-	paint.drawLine(x, 0, x, m_view->height());
+	paint.drawLine(x, 0, x, v->height());
 
 	paint.setPen(m_colour);
 	paint.drawLine(x, 0, x, 5);
-	paint.drawLine(x, m_view->height() - 6, x, m_view->height() - 1);
+	paint.drawLine(x, v->height() - 6, x, v->height() - 1);
 
 	QString text(QString::fromStdString(rt.toText()));
 
@@ -233,15 +233,15 @@ TimeRulerLayer::paint(QPainter &paint, QRect rect) const
 	    y = 6 + metrics.ascent();
 	    break;
 	case LabelMiddle:
-	    y = m_view->height() / 2 - metrics.height() / 2 + metrics.ascent();
+	    y = v->height() / 2 - metrics.height() / 2 + metrics.ascent();
 	    break;
 	case LabelBottom:
-	    y = m_view->height() - metrics.height() + metrics.ascent() - 6;
+	    y = v->height() - metrics.height() + metrics.ascent() - 6;
 	}
 
 	int tw = metrics.width(text);
 
-	paint.setPen(m_view->palette().background().color());
+	paint.setPen(v->palette().background().color());
 
 	//!!! simple drawing function for this please
 	//!!! and need getContrastingColour() in widget, or use the
@@ -267,14 +267,14 @@ TimeRulerLayer::paint(QPainter &paint, QRect rect) const
 	    if (ticks == 10) {
 		if ((i % 2) == 1) {
 		    if (i == 5) {
-			paint.drawLine(x, 0, x, m_view->height());
+			paint.drawLine(x, 0, x, v->height());
 		    } else sz = 3;
 		} else {
 		    sz = 7;
 		}
 	    }
 	    paint.drawLine(x, 0, x, sz);
-	    paint.drawLine(x, m_view->height() - sz - 1, x, m_view->height() - 1);
+	    paint.drawLine(x, v->height() - sz - 1, x, v->height() - 1);
 	}
     }
 

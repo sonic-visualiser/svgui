@@ -231,54 +231,53 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
 }
 
 Layer *
-LayerFactory::createLayer(LayerType type, View *view,
-			  Model *model, int channel)
+LayerFactory::createLayer(LayerType type, Model *model, int channel)
 {
     Layer *layer = 0;
 
     switch (type) {
 
     case Waveform:
-	layer = new WaveformLayer(view);
+	layer = new WaveformLayer;
 	static_cast<WaveformLayer *>(layer)->setChannel(channel);
 	break;
 
     case Spectrogram:
-	layer = new SpectrogramLayer(view);
+	layer = new SpectrogramLayer;
 	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	break;
 
     case TimeRuler:
-	layer = new TimeRulerLayer(view);
+	layer = new TimeRulerLayer;
 	break;
 
     case TimeInstants:
-	layer = new TimeInstantLayer(view);
+	layer = new TimeInstantLayer;
 	break;
 
     case TimeValues:
-	layer = new TimeValueLayer(view);
+	layer = new TimeValueLayer;
 	break;
 
     case Notes:
-	layer = new NoteLayer(view);
+	layer = new NoteLayer;
 	break;
 
     case Text:
-	layer = new TextLayer(view);
+	layer = new TextLayer;
 	break;
 
     case Colour3DPlot:
-	layer = new Colour3DPlotLayer(view);
+	layer = new Colour3DPlotLayer;
 	break;
 
     case MelodicRangeSpectrogram: 
-	layer = new SpectrogramLayer(view, SpectrogramLayer::MelodicRange);
+	layer = new SpectrogramLayer(SpectrogramLayer::MelodicRange);
 	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	break;
 
     case PeakFrequencySpectrogram: 
-	layer = new SpectrogramLayer(view, SpectrogramLayer::MelodicPeaks);
+	layer = new SpectrogramLayer(SpectrogramLayer::MelodicPeaks);
 	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	break;
 

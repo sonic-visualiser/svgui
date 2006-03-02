@@ -24,8 +24,8 @@
 using std::cerr;
 using std::endl;
 
-WaveformLayer::WaveformLayer(View *w) :
-    Layer(w),
+WaveformLayer::WaveformLayer() :
+    Layer(),
     m_model(0),
     m_gain(1.0f),
     m_colour(Qt::black),
@@ -38,7 +38,7 @@ WaveformLayer::WaveformLayer(View *w) :
     m_cache(0),
     m_cacheValid(false)
 {
-    m_view->addLayer(this);
+    
 }
 
 WaveformLayer::~WaveformLayer()
@@ -333,14 +333,14 @@ WaveformLayer::getChannelArrangement(size_t &min, size_t &max, bool &merging)
 }    
 
 void
-WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
+WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
 	return;
     }
   
-    long startFrame = m_view->getStartFrame();
-    int zoomLevel = m_view->getZoomLevel();
+    long startFrame = v->getStartFrame();
+    int zoomLevel = v->getZoomLevel();
 
 #ifdef DEBUG_WAVEFORM_PAINT
     Profiler profiler("WaveformLayer::paint", true);
@@ -354,8 +354,8 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     channels = getChannelArrangement(minChannel, maxChannel, mergingChannels);
     if (channels == 0) return;
 
-    int w = m_view->width();
-    int h = m_view->height();
+    int w = v->width();
+    int h = v->height();
 
     bool ready = m_model->isReady();
     QPainter *paint;
@@ -379,7 +379,7 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 	paint = new QPainter(m_cache);
 
 	paint->setPen(Qt::NoPen);
-	paint->setBrush(m_view->palette().background());
+	paint->setBrush(v->palette().background());
 	paint->drawRect(rect);
 
 	paint->setPen(Qt::black);
@@ -400,10 +400,10 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     y1 = rect.bottom();
 
     if (x0 > 0) --x0;
-    if (x1 < m_view->width()) ++x1;
+    if (x1 < v->width()) ++x1;
 
-    long frame0 = getFrameForX(x0);
-    long frame1 = getFrameForX(x1 + 1);
+    long frame0 = v->getFrameForX(x0);
+    long frame1 = v->getFrameForX(x1 + 1);
      
 #ifdef DEBUG_WAVEFORM_PAINT
     std::cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << ")" <<  std::endl;
@@ -420,13 +420,13 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 	    greys[i] = QColor(level, level, level);
 	}
     } else {
-	int h, s, v;
-	m_colour.getHsv(&h, &s, &v);
+	int hue, sat, val;
+	m_colour.getHsv(&hue, &sat, &val);
 	for (int i = 0; i < 3; ++i) { // 0 lightest, 2 darkest
-	    if (m_view->hasLightBackground()) {
-		greys[i] = QColor::fromHsv(h, s * (i + 1) / 4, v);
+	    if (v->hasLightBackground()) {
+		greys[i] = QColor::fromHsv(hue, sat * (i + 1) / 4, val);
 	    } else {
-		greys[i] = QColor::fromHsv(h, s * (3 - i) / 4, v);
+		greys[i] = QColor::fromHsv(hue, sat * (3 - i) / 4, val);
 	    }
 	}
     }
@@ -434,7 +434,7 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
     QColor midColour = m_colour;
     if (midColour == Qt::black) {
 	midColour = Qt::gray;
-    } else if (m_view->hasLightBackground()) {
+    } else if (v->hasLightBackground()) {
 	midColour = midColour.light(150);
     } else {
 	midColour = midColour.light(50);
@@ -660,7 +660,7 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 
     if (m_aggressive) {
 
-	if (ready && rect == m_view->rect()) {
+	if (ready && rect == v->rect()) {
 	    m_cacheValid = true;
 	    m_cacheZoomLevel = zoomLevel;
 	}
@@ -671,14 +671,14 @@ WaveformLayer::paint(QPainter &viewPainter, QRect rect) const
 }
 
 QString
-WaveformLayer::getFeatureDescription(QPoint &pos) const
+WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
     int x = pos.x();
 
     if (!m_model || !m_model->isOK()) return "";
 
-    long f0 = getFrameForX(x);
-    long f1 = getFrameForX(x + 1);
+    long f0 = v->getFrameForX(x);
+    long f1 = v->getFrameForX(x + 1);
 
     if (f0 < 0) f0 = 0;
     if (f1 <= f0) return "";
@@ -705,7 +705,7 @@ WaveformLayer::getFeatureDescription(QPoint &pos) const
 
     for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
 
-	size_t blockSize = m_view->getZoomLevel();
+	size_t blockSize = v->getZoomLevel();
 	RangeSummarisableTimeValueModel::RangeBlock ranges =
 	    m_model->getRanges(ch, f0, f1, blockSize);
 
@@ -739,7 +739,7 @@ WaveformLayer::getFeatureDescription(QPoint &pos) const
 }
 
 int
-WaveformLayer::getVerticalScaleWidth(QPainter &paint) const
+WaveformLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 {
     if (m_scale == LinearScale) {
 	return paint.fontMetrics().width("0.0") + 13;
@@ -750,7 +750,7 @@ WaveformLayer::getVerticalScaleWidth(QPainter &paint) const
 }
 
 void
-WaveformLayer::paintVerticalScale(QPainter &paint, QRect rect) const
+WaveformLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
 	return;

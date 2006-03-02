@@ -21,12 +21,12 @@
 #include <cassert>
 
 
-Colour3DPlotLayer::Colour3DPlotLayer(View *w) :
-    Layer(w),
+Colour3DPlotLayer::Colour3DPlotLayer() :
+    Layer(),
     m_model(0),
     m_cache(0)
 {
-    m_view->addLayer(this);
+    
 }
 
 Colour3DPlotLayer::~Colour3DPlotLayer()
@@ -67,14 +67,14 @@ Colour3DPlotLayer::cacheInvalid(size_t, size_t)
 }
 
 bool
-Colour3DPlotLayer::isLayerScrollable() const
+Colour3DPlotLayer::isLayerScrollable(const View *v) const
 {
     QPoint discard;
-    return !m_view->shouldIlluminateLocalFeatures(this, discard);
+    return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 QString
-Colour3DPlotLayer::getFeatureDescription(QPoint &pos) const
+Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
     if (!m_model) return "";
 
@@ -85,11 +85,11 @@ Colour3DPlotLayer::getFeatureDescription(QPoint &pos) const
     size_t modelWindow = m_model->getWindowSize();
 
     int sx0 = modelWindow *
-	int((getFrameForX(x) - long(modelStart)) / long(modelWindow));
+	int((v->getFrameForX(x) - long(modelStart)) / long(modelWindow));
     int sx1 = sx0 + modelWindow;
 
-    float binHeight = float(m_view->height()) / m_model->getYBinCount();
-    int sy = (m_view->height() - y) / binHeight;
+    float binHeight = float(v->height()) / m_model->getYBinCount();
+    int sy = (v->height() - y) / binHeight;
 
     float value = m_model->getBinValue(sx0, sy);
     
@@ -109,7 +109,7 @@ Colour3DPlotLayer::getFeatureDescription(QPoint &pos) const
 }
 
 int
-Colour3DPlotLayer::getVerticalScaleWidth(QPainter &paint) const
+Colour3DPlotLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 {
     if (!m_model) return 0;
 
@@ -129,19 +129,19 @@ Colour3DPlotLayer::getVerticalScaleWidth(QPainter &paint) const
 }
 
 void
-Colour3DPlotLayer::paintVerticalScale(QPainter &paint, QRect rect) const
+Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model) return;
 
     int h = rect.height(), w = rect.width();
-    float binHeight = float(m_view->height()) / m_model->getYBinCount();
+    float binHeight = float(v->height()) / m_model->getYBinCount();
 
 //    int textHeight = paint.fontMetrics().height();
 //    int toff = -textHeight + paint.fontMetrics().ascent() + 2;
 
     for (size_t i = 0; i < m_model->getYBinCount(); ++i) {
 
-	int y0 = m_view->height() - (i * binHeight) - 1;
+	int y0 = v->height() - (i * binHeight) - 1;
 	
 	QString text = m_model->getBinName(i);
 	if (text == "") text = QString("[%1]").arg(i + 1);
@@ -157,10 +157,10 @@ Colour3DPlotLayer::paintVerticalScale(QPainter &paint, QRect rect) const
 }
 
 void
-Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
+Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
 //    Profiler profiler("Colour3DPlotLayer::paint");
-//    std::cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << m_view->getZoomLevel() << std::endl;
+//    std::cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << std::endl;
 
     //!!! This doesn't yet accommodate the fact that the model may
     //have a different sample rate from an underlying model.  At the
@@ -176,14 +176,14 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
     int completion = 0;
     if (!m_model || !m_model->isOK() || !m_model->isReady(&completion)) {
 	if (completion > 0) {
-	    paint.fillRect(0, 10, m_view->width() * completion / 100,
+	    paint.fillRect(0, 10, v->width() * completion / 100,
 			   10, QColor(120, 120, 120));
 	}
 	return;
     }
 
-    long startFrame = m_view->getStartFrame();
-    int zoomLevel = m_view->getZoomLevel();
+    long startFrame = v->getStartFrame();
+    int zoomLevel = v->getZoomLevel();
 
     size_t modelStart = m_model->getStartFrame();
     size_t modelEnd = m_model->getEndFrame();
@@ -261,7 +261,7 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 //    int y0 = rect.top();
 //    int y1 = rect.bottom();
     int w = x1 - x0;
-    int h = m_view->height();
+    int h = v->height();
 
     // The cache is from the model's start frame to the model's end
     // frame at the model's window increment frames per pixel.  We
@@ -273,8 +273,8 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
     //direction.  This one is only really appropriate for models with
     //far fewer bins in both directions.
 
-    int sx0 = int((getFrameForX(x0) - long(modelStart)) / long(modelWindow));
-    int sx1 = int((getFrameForX(x1) - long(modelStart)) / long(modelWindow));
+    int sx0 = int((v->getFrameForX(x0) - long(modelStart)) / long(modelWindow));
+    int sx1 = int((v->getFrameForX(x1) - long(modelStart)) / long(modelWindow));
     int sw = sx1 - sx0;
     int sh = m_model->getYBinCount();
 
@@ -284,7 +284,7 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 */
 
     QPoint illuminatePos;
-    bool illuminate = m_view->shouldIlluminateLocalFeatures(this, illuminatePos);
+    bool illuminate = v->shouldIlluminateLocalFeatures(this, illuminatePos);
 
     for (int sx = sx0 - 1; sx <= sx1; ++sx) {
 
@@ -295,8 +295,8 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 
 	for (int sy = 0; sy < sh; ++sy) {
 
-	    int rx0 = getXForFrame(fx + int(modelStart));
-	    int rx1 = getXForFrame(fx + int(modelStart) + int(modelWindow));
+	    int rx0 = v->getXForFrame(fx + int(modelStart));
+	    int rx1 = v->getXForFrame(fx + int(modelStart) + int(modelWindow));
 
 	    int ry0 = h - (sy * h) / sh - 1;
 	    int ry1 = h - ((sy + 1) * h) / sh - 2;
@@ -375,12 +375,12 @@ Colour3DPlotLayer::paint(QPainter &paint, QRect rect) const
 }
 
 bool
-Colour3DPlotLayer::snapToFeatureFrame(int &frame,
+Colour3DPlotLayer::snapToFeatureFrame(View *v, int &frame,
 				      size_t &resolution,
 				      SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(frame, resolution, snap);
+	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getWindowSize();

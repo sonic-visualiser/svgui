@@ -30,10 +30,11 @@ public:
     Pane(QWidget *parent = 0);
     virtual QString getPropertyContainerIconName() const { return "pane"; }
 
-    virtual bool shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos);
+    virtual bool shouldIlluminateLocalFeatures(const Layer *layer,
+					       QPoint &pos) const;
     virtual bool shouldIlluminateLocalSelection(QPoint &pos,
 						bool &closeToLeft,
-						bool &closeToRight);
+						bool &closeToRight) const;
 
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
@@ -56,7 +57,7 @@ protected:
     virtual void leaveEvent(QEvent *e);
     virtual void wheelEvent(QWheelEvent *e);
 
-    Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight);
+    Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight) const;
 
     bool editSelectionStart(QMouseEvent *e);
     bool editSelectionDrag(QMouseEvent *e);

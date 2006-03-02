@@ -26,8 +26,8 @@
 #include <iostream>
 #include <cmath>
 
-NoteLayer::NoteLayer(View *w) :
-    Layer(w),
+NoteLayer::NoteLayer() :
+    Layer(),
     m_model(0),
     m_editing(false),
     m_originalPoint(0, 0.0, 0, tr("New Point")),
@@ -36,7 +36,7 @@ NoteLayer::NoteLayer(View *w) :
     m_colour(Qt::black),
     m_verticalScale(MinMaxRangeScale)
 {
-    m_view->addLayer(this);
+    
 }
 
 void
@@ -167,18 +167,18 @@ NoteLayer::setVerticalScale(VerticalScale scale)
 }
 
 bool
-NoteLayer::isLayerScrollable() const
+NoteLayer::isLayerScrollable(const View *v) const
 {
     QPoint discard;
-    return !m_view->shouldIlluminateLocalFeatures(this, discard);
+    return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 NoteModel::PointList
-NoteLayer::getLocalPoints(int x) const
+NoteLayer::getLocalPoints(View *v, int x) const
 {
     if (!m_model) return NoteModel::PointList();
 
-    long frame = getFrameForX(x);
+    long frame = v->getFrameForX(x);
 
     NoteModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -196,8 +196,8 @@ NoteLayer::getLocalPoints(int x) const
 
     if (prevPoints.empty()) {
 	usePoints = nextPoints;
-    } else if (prevPoints.begin()->frame < m_view->getStartFrame() &&
-	       !(nextPoints.begin()->frame > m_view->getEndFrame())) {
+    } else if (prevPoints.begin()->frame < v->getStartFrame() &&
+	       !(nextPoints.begin()->frame > v->getEndFrame())) {
 	usePoints = nextPoints;
     } else if (nextPoints.begin()->frame - frame <
 	       frame - prevPoints.begin()->frame) {
@@ -206,7 +206,7 @@ NoteLayer::getLocalPoints(int x) const
 
     if (!usePoints.empty()) {
 	int fuzz = 2;
-	int px = getXForFrame(usePoints.begin()->frame);
+	int px = v->getXForFrame(usePoints.begin()->frame);
 	if ((px > x && px - x > fuzz) ||
 	    (px < x && x - px > fuzz + 1)) {
 	    usePoints.clear();
@@ -217,13 +217,13 @@ NoteLayer::getLocalPoints(int x) const
 }
 
 QString
-NoteLayer::getFeatureDescription(QPoint &pos) const
+NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
     int x = pos.x();
 
     if (!m_model || !m_model->getSampleRate()) return "";
 
-    NoteModel::PointList points = getLocalPoints(x);
+    NoteModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
 	if (!m_model->isReady()) {
@@ -238,11 +238,11 @@ NoteLayer::getFeatureDescription(QPoint &pos) const
 
     for (i = points.begin(); i != points.end(); ++i) {
 
-	int y = getYForValue(i->value);
+	int y = getYForValue(v, i->value);
 	int h = 3;
 
 	if (m_model->getValueQuantization() != 0.0) {
-	    h = y - getYForValue(i->value + m_model->getValueQuantization());
+	    h = y - getYForValue(v, i->value + m_model->getValueQuantization());
 	    if (h < 3) h = 3;
 	}
 
@@ -274,18 +274,18 @@ NoteLayer::getFeatureDescription(QPoint &pos) const
 	    .arg(note.label);
     }
 
-    pos = QPoint(getXForFrame(note.frame),
-		 getYForValue(note.value));
+    pos = QPoint(v->getXForFrame(note.frame),
+		 getYForValue(v, note.value));
     return text;
 }
 
 bool
-NoteLayer::snapToFeatureFrame(int &frame,
-				   size_t &resolution,
-				   SnapType snap) const
+NoteLayer::snapToFeatureFrame(View *v, int &frame,
+			      size_t &resolution,
+			      SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(frame, resolution, snap);
+	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
@@ -293,7 +293,7 @@ NoteLayer::snapToFeatureFrame(int &frame,
 
     if (snap == SnapNeighbouring) {
 	
-	points = getLocalPoints(getXForFrame(frame));
+	points = getLocalPoints(v, v->getXForFrame(frame));
 	if (points.empty()) return false;
 	frame = points.begin()->frame;
 	return true;
@@ -352,9 +352,9 @@ NoteLayer::snapToFeatureFrame(int &frame,
 }
 
 int
-NoteLayer::getYForValue(float value) const
+NoteLayer::getYForValue(View *v, float value) const
 {
-    float min, max, h = m_view->height();
+    float min, max, h = v->height();
 
     switch (m_verticalScale) {
 
@@ -375,11 +375,11 @@ NoteLayer::getYForValue(float value) const
 
 	// If we have a spectrogram layer on the same view as us, align
 	// ourselves with it...
-	for (int i = 0; i < m_view->getLayerCount(); ++i) {
+	for (int i = 0; i < v->getLayerCount(); ++i) {
 	    SpectrogramLayer *spectrogram = dynamic_cast<SpectrogramLayer *>
-		(m_view->getLayer(i));
+		(v->getLayer(i));
 	    if (spectrogram) {
-		return spectrogram->getYForFrequency(value);
+		return spectrogram->getYForFrequency(v, value);
 	    }
 	}
 
@@ -400,19 +400,19 @@ NoteLayer::getYForValue(float value) const
 }
 
 float
-NoteLayer::getValueForY(int y) const
+NoteLayer::getValueForY(View *v, int y) const
 {
     float min = m_model->getValueMinimum();
     float max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
-    int h = m_view->height();
+    int h = v->height();
 
     return min + (float(h - y) * float(max - min)) / h;
 }
 
 void
-NoteLayer::paint(QPainter &paint, QRect rect) const
+NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
@@ -422,8 +422,8 @@ NoteLayer::paint(QPainter &paint, QRect rect) const
 //    Profiler profiler("NoteLayer::paint", true);
 
     int x0 = rect.left(), x1 = rect.right();
-    long frame0 = getFrameForX(x0);
-    long frame1 = getFrameForX(x1);
+    long frame0 = v->getFrameForX(x0);
+    long frame1 = v->getFrameForX(x1);
 
     NoteModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
@@ -440,15 +440,15 @@ NoteLayer::paint(QPainter &paint, QRect rect) const
     float max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
-    int origin = int(nearbyint(m_view->height() -
-			       (-min * m_view->height()) / (max - min)));
+    int origin = int(nearbyint(v->height() -
+			       (-min * v->height()) / (max - min)));
 
     QPoint localPos;
     long illuminateFrame = -1;
 
-    if (m_view->shouldIlluminateLocalFeatures(this, localPos)) {
+    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
 	NoteModel::PointList localPoints =
-	    getLocalPoints(localPos.x());
+	    getLocalPoints(v, localPos.x());
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
 
@@ -460,13 +460,13 @@ NoteLayer::paint(QPainter &paint, QRect rect) const
 
 	const NoteModel::Point &p(*i);
 
-	int x = getXForFrame(p.frame);
-	int y = getYForValue(p.value);
-	int w = getXForFrame(p.frame + p.duration) - x;
+	int x = v->getXForFrame(p.frame);
+	int y = getYForValue(v, p.value);
+	int w = v->getXForFrame(p.frame + p.duration) - x;
 	int h = 3;
 	
 	if (m_model->getValueQuantization() != 0.0) {
-	    h = y - getYForValue(p.value + m_model->getValueQuantization());
+	    h = y - getYForValue(v, p.value + m_model->getValueQuantization());
 	    if (h < 3) h = 3;
 	}
 
@@ -492,17 +492,17 @@ NoteLayer::paint(QPainter &paint, QRect rect) const
 }
 
 void
-NoteLayer::drawStart(QMouseEvent *e)
+NoteLayer::drawStart(View *v, QMouseEvent *e)
 {
     std::cerr << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model) return;
 
-    long frame = getFrameForX(e->x());
+    long frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(e->y());
+    float value = getValueForY(v, e->y());
 
     m_editingPoint = NoteModel::Point(frame, value, 0, tr("New Point"));
     m_originalPoint = m_editingPoint;
@@ -516,17 +516,17 @@ NoteLayer::drawStart(QMouseEvent *e)
 }
 
 void
-NoteLayer::drawDrag(QMouseEvent *e)
+NoteLayer::drawDrag(View *v, QMouseEvent *e)
 {
     std::cerr << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model || !m_editing) return;
 
-    long frame = getFrameForX(e->x());
+    long frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(e->y());
+    float value = getValueForY(v, e->y());
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
@@ -535,7 +535,7 @@ NoteLayer::drawDrag(QMouseEvent *e)
 }
 
 void
-NoteLayer::drawEnd(QMouseEvent *e)
+NoteLayer::drawEnd(View *v, QMouseEvent *e)
 {
     std::cerr << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -545,13 +545,13 @@ NoteLayer::drawEnd(QMouseEvent *e)
 }
 
 void
-NoteLayer::editStart(QMouseEvent *e)
+NoteLayer::editStart(View *v, QMouseEvent *e)
 {
     std::cerr << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model) return;
 
-    NoteModel::PointList points = getLocalPoints(e->x());
+    NoteModel::PointList points = getLocalPoints(v, e->x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -566,17 +566,17 @@ NoteLayer::editStart(QMouseEvent *e)
 }
 
 void
-NoteLayer::editDrag(QMouseEvent *e)
+NoteLayer::editDrag(View *v, QMouseEvent *e)
 {
     std::cerr << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model || !m_editing) return;
 
-    long frame = getFrameForX(e->x());
+    long frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(e->y());
+    float value = getValueForY(v, e->y());
 
     if (!m_editingCommand) {
 	m_editingCommand = new NoteModel::EditCommand(m_model,
@@ -590,7 +590,7 @@ NoteLayer::editDrag(QMouseEvent *e)
 }
 
 void
-NoteLayer::editEnd(QMouseEvent *e)
+NoteLayer::editEnd(View *v, QMouseEvent *e)
 {
     std::cerr << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;

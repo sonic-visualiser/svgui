@@ -39,7 +39,7 @@ Pane::Pane(QWidget *w) :
 }
 
 bool
-Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos)
+Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
 {
     QPoint discard;
     bool b0, b1;
@@ -57,7 +57,7 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos)
 bool
 Pane::shouldIlluminateLocalSelection(QPoint &pos,
 				     bool &closeToLeft,
-				     bool &closeToRight)
+				     bool &closeToRight) const
 {
     if (m_identifyFeatures &&
 	m_manager &&
@@ -141,7 +141,7 @@ Pane::paintEvent(QPaintEvent *e)
 	    waveformModel = (*vi)->getModel();
 	}
 
-	int sw = (*vi)->getVerticalScaleWidth(paint);
+	int sw = (*vi)->getVerticalScaleWidth(this, paint);
 
 	if (sw > 0 && r.left() < sw) {
 
@@ -155,7 +155,7 @@ Pane::paintEvent(QPaintEvent *e)
 	    paint.drawRect(0, 0, sw, height());
 
 	    paint.setBrush(Qt::NoBrush);
-	    (*vi)->paintVerticalScale(paint, QRect(0, 0, sw, height()));
+	    (*vi)->paintVerticalScale(this, paint, QRect(0, 0, sw, height()));
 
 	    paint.restore();
 	}
@@ -163,7 +163,7 @@ Pane::paintEvent(QPaintEvent *e)
 	if (m_identifyFeatures) {
 
 	    QPoint pos = m_identifyPoint;
-	    QString desc = (*vi)->getFeatureDescription(pos);
+	    QString desc = (*vi)->getFeatureDescription(this, pos);
 	    
 	    if (desc != "") {
 
@@ -364,7 +364,7 @@ Pane::paintEvent(QPaintEvent *e)
 }
 
 Selection
-Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge)
+Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
 {
     closeToLeftEdge = closeToRightEdge = false;
 
@@ -446,7 +446,8 @@ Pane::mousePressEvent(QMouseEvent *e)
 	
 	    Layer *layer = getSelectedLayer();
 	    if (layer) {
-		layer->snapToFeatureFrame(snapFrame, resolution, Layer::SnapLeft);
+		layer->snapToFeatureFrame(this, snapFrame,
+					  resolution, Layer::SnapLeft);
 	    }
 	    
 	    if (snapFrame < 0) snapFrame = 0;
@@ -466,7 +467,7 @@ Pane::mousePressEvent(QMouseEvent *e)
 
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
-	    layer->drawStart(e);
+	    layer->drawStart(this, e);
 	}
 
     } else if (mode == ViewManager::EditMode) {
@@ -474,7 +475,7 @@ Pane::mousePressEvent(QMouseEvent *e)
 	if (!editSelectionStart(e)) {
 	    Layer *layer = getSelectedLayer();
 	    if (layer && layer->isLayerEditable()) {
-		layer->editStart(e);
+		layer->editStart(this, e);
 	    }
 	}
     }
@@ -557,7 +558,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
-	    layer->drawEnd(e);
+	    layer->drawEnd(this, e);
 	    update();
 	}
 
@@ -566,7 +567,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	if (!editSelectionEnd(e)) {
 	    Layer *layer = getSelectedLayer();
 	    if (layer && layer->isLayerEditable()) {
-		layer->editEnd(e);
+		layer->editEnd(this, e);
 		update();
 	    }
 	}
@@ -652,8 +653,10 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	
 	Layer *layer = getSelectedLayer();
 	if (layer) {
-	    layer->snapToFeatureFrame(snapFrameLeft, resolution, Layer::SnapLeft);
-	    layer->snapToFeatureFrame(snapFrameRight, resolution, Layer::SnapRight);
+	    layer->snapToFeatureFrame(this, snapFrameLeft,
+				      resolution, Layer::SnapLeft);
+	    layer->snapToFeatureFrame(this, snapFrameRight,
+				      resolution, Layer::SnapRight);
 	}
 	
 //	std::cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << std::endl;
@@ -706,7 +709,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
-	    layer->drawDrag(e);
+	    layer->drawDrag(this, e);
 	}
 
     } else if (mode == ViewManager::EditMode) {
@@ -714,7 +717,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	if (!editSelectionDrag(e)) {
 	    Layer *layer = getSelectedLayer();
 	    if (layer && layer->isLayerEditable()) {
-		layer->editDrag(e);
+		layer->editDrag(this, e);
 	    }
 	}
     }
@@ -737,7 +740,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
-	    layer->editOpen(e);
+	    layer->editOpen(this, e);
 	}
     }
 }

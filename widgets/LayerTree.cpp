@@ -135,7 +135,8 @@ LayerTreeModel::parent(const QModelIndex &index) const
 
     Layer *layer = dynamic_cast<Layer *>(obj);
     if (layer) {
-	const View *view = layer->getView();
+//!!!	const View *view = layer->getView();
+	const View *view = 0;
 	Pane *pane = const_cast<Pane *>(dynamic_cast<const Pane *>(view));
 	if (pane) {
 	    // need index of pane in pane stack

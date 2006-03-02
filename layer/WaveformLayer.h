@@ -26,17 +26,17 @@ class WaveformLayer : public Layer
     Q_OBJECT
 
 public:
-    WaveformLayer(View *w);
+    WaveformLayer();
     ~WaveformLayer();
 
     virtual const ZoomConstraint *getZoomConstraint() const { return m_model; }
     virtual const Model *getModel() const { return m_model; }
-    virtual void paint(QPainter &paint, QRect rect) const;
+    virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(QPoint &) const;
+    virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual int getVerticalScaleWidth(QPainter &) const;
-    virtual void paintVerticalScale(QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(View *v, QPainter &) const;
+    virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
 
     void setModel(const RangeSummarisableTimeValueModel *model);
 
