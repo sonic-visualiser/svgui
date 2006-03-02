@@ -23,8 +23,8 @@
 #include <iostream>
 #include <cmath>
 
-TextLayer::TextLayer(View *w) :
-    Layer(w),
+TextLayer::TextLayer() :
+    Layer(),
     m_model(0),
     m_editing(false),
     m_originalPoint(0, 0.0, tr("Empty Label")),
@@ -32,7 +32,7 @@ TextLayer::TextLayer(View *w) :
     m_editingCommand(0),
     m_colour(255, 150, 50) // orange
 {
-    m_view->addLayer(this);
+    
 }
 
 void
@@ -138,20 +138,20 @@ TextLayer::setBaseColour(QColor colour)
 }
 
 bool
-TextLayer::isLayerScrollable() const
+TextLayer::isLayerScrollable(const View *v) const
 {
     QPoint discard;
-    return !m_view->shouldIlluminateLocalFeatures(this, discard);
+    return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 
 TextModel::PointList
-TextLayer::getLocalPoints(int x, int y) const
+TextLayer::getLocalPoints(View *v, int x, int y) const
 {
     if (!m_model) return TextModel::PointList();
 
-    long frame0 = getFrameForX(-150);
-    long frame1 = getFrameForX(m_view->width() + 150);
+    long frame0 = v->getFrameForX(-150);
+    long frame1 = v->getFrameForX(v->width() + 150);
     
     TextModel::PointList points(m_model->getPoints(frame0, frame1));
 
@@ -163,8 +163,8 @@ TextLayer::getLocalPoints(int x, int y) const
 
 	const TextModel::Point &p(*i);
 
-	int px = getXForFrame(p.frame);
-	int py = getYForHeight(p.height);
+	int px = v->getXForFrame(p.frame);
+	int py = getYForHeight(v, p.height);
 
 	QString label = p.label;
 	if (label == "") {
@@ -175,9 +175,9 @@ TextLayer::getLocalPoints(int x, int y) const
 	    (QRect(0, 0, 150, 200),
 	     Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, label);
 
-	if (py + rect.height() > m_view->height()) {
-	    if (rect.height() > m_view->height()) py = 0;
-	    else py = m_view->height() - rect.height() - 1;
+	if (py + rect.height() > v->height()) {
+	    if (rect.height() > v->height()) py = 0;
+	    else py = v->height() - rect.height() - 1;
 	}
 
 	if (x >= px && x < px + rect.width() &&
@@ -190,13 +190,13 @@ TextLayer::getLocalPoints(int x, int y) const
 }
 
 QString
-TextLayer::getFeatureDescription(QPoint &pos) const
+TextLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
     int x = pos.x();
 
     if (!m_model || !m_model->getSampleRate()) return "";
 
-    TextModel::PointList points = getLocalPoints(x, pos.y());
+    TextModel::PointList points = getLocalPoints(v, x, pos.y());
 
     if (points.empty()) {
 	if (!m_model->isReady()) {
@@ -219,7 +219,8 @@ TextLayer::getFeatureDescription(QPoint &pos) const
 	    .arg(points.begin()->label);
     }
 
-    pos = QPoint(getXForFrame(useFrame), getYForHeight(points.begin()->height));
+    pos = QPoint(v->getXForFrame(useFrame),
+		 getYForHeight(v, points.begin()->height));
     return text;
 }
 
@@ -227,12 +228,12 @@ TextLayer::getFeatureDescription(QPoint &pos) const
 //!!! too much overlap with TimeValueLayer/TimeInstantLayer
 
 bool
-TextLayer::snapToFeatureFrame(int &frame,
+TextLayer::snapToFeatureFrame(View *v, int &frame,
 			      size_t &resolution,
 			      SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(frame, resolution, snap);
+	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
@@ -240,7 +241,7 @@ TextLayer::snapToFeatureFrame(int &frame,
 
     if (snap == SnapNeighbouring) {
 	
-	points = getLocalPoints(getXForFrame(frame), -1);
+	points = getLocalPoints(v, v->getXForFrame(frame), -1);
 	if (points.empty()) return false;
 	frame = points.begin()->frame;
 	return true;
@@ -299,21 +300,21 @@ TextLayer::snapToFeatureFrame(int &frame,
 }
 
 int
-TextLayer::getYForHeight(float height) const
+TextLayer::getYForHeight(View *v, float height) const
 {
-    int h = m_view->height();
+    int h = v->height();
     return h - int(height * h);
 }
 
 float
-TextLayer::getHeightForY(int y) const
+TextLayer::getHeightForY(View *v, int y) const
 {
-    int h = m_view->height();
+    int h = v->height();
     return float(h - y) / h;
 }
 
 void
-TextLayer::paint(QPainter &paint, QRect rect) const
+TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
@@ -323,20 +324,20 @@ TextLayer::paint(QPainter &paint, QRect rect) const
 //    Profiler profiler("TextLayer::paint", true);
 
     int x0 = rect.left(), x1 = rect.right();
-    long frame0 = getFrameForX(x0);
-    long frame1 = getFrameForX(x1);
+    long frame0 = v->getFrameForX(x0);
+    long frame1 = v->getFrameForX(x1);
 
     TextModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
 
     QColor brushColour(m_colour);
 
-    int h, s, v;
-    brushColour.getHsv(&h, &s, &v);
+    int h, s, val;
+    brushColour.getHsv(&h, &s, &val);
     brushColour.setHsv(h, s, 255, 100);
 
     QColor penColour;
-    if (m_view->hasLightBackground()) {
+    if (v->hasLightBackground()) {
 	penColour = Qt::black;
     } else {
 	penColour = Qt::white;
@@ -348,8 +349,8 @@ TextLayer::paint(QPainter &paint, QRect rect) const
     QPoint localPos;
     long illuminateFrame = -1;
 
-    if (m_view->shouldIlluminateLocalFeatures(this, localPos)) {
-	TextModel::PointList localPoints = getLocalPoints(localPos.x(),
+    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
+	TextModel::PointList localPoints = getLocalPoints(v, localPos.x(),
 							  localPos.y());
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
@@ -358,19 +359,19 @@ TextLayer::paint(QPainter &paint, QRect rect) const
     int boxMaxHeight = 200;
 
     paint.save();
-    paint.setClipRect(rect.x(), 0, rect.width() + boxMaxWidth, m_view->height());
+    paint.setClipRect(rect.x(), 0, rect.width() + boxMaxWidth, v->height());
     
     for (TextModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
 	const TextModel::Point &p(*i);
 
-	int x = getXForFrame(p.frame);
-	int y = getYForHeight(p.height);
+	int x = v->getXForFrame(p.frame);
+	int y = getYForHeight(v, p.height);
 
 	if (illuminateFrame == p.frame) {
 	    paint.setBrush(penColour);
-	    if (m_view->hasLightBackground()) {
+	    if (v->hasLightBackground()) {
 		paint.setPen(Qt::white);
 	    } else {
 		paint.setPen(Qt::black);
@@ -392,9 +393,9 @@ TextLayer::paint(QPainter &paint, QRect rect) const
 	QRect textRect = QRect(3, 2, boxRect.width(), boxRect.height());
 	boxRect = QRect(0, 0, boxRect.width() + 6, boxRect.height() + 2);
 
-	if (y + boxRect.height() > m_view->height()) {
-	    if (boxRect.height() > m_view->height()) y = 0;
-	    else y = m_view->height() - boxRect.height() - 1;
+	if (y + boxRect.height() > v->height()) {
+	    if (boxRect.height() > v->height()) y = 0;
+	    else y = v->height() - boxRect.height() - 1;
 	}
 
 	boxRect = QRect(x, y, boxRect.width(), boxRect.height());
@@ -423,7 +424,7 @@ TextLayer::paint(QPainter &paint, QRect rect) const
 }
 
 void
-TextLayer::drawStart(QMouseEvent *e)
+TextLayer::drawStart(View *v, QMouseEvent *e)
 {
 //    std::cerr << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
@@ -432,11 +433,11 @@ TextLayer::drawStart(QMouseEvent *e)
 	return;
     }
 
-    long frame = getFrameForX(e->x());
+    long frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float height = getHeightForY(e->y());
+    float height = getHeightForY(v, e->y());
 
     m_editingPoint = TextModel::Point(frame, height, "");
     m_originalPoint = m_editingPoint;
@@ -449,17 +450,17 @@ TextLayer::drawStart(QMouseEvent *e)
 }
 
 void
-TextLayer::drawDrag(QMouseEvent *e)
+TextLayer::drawDrag(View *v, QMouseEvent *e)
 {
 //    std::cerr << "TextLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model || !m_editing) return;
 
-    long frame = getFrameForX(e->x());
+    long frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float height = getHeightForY(e->y());
+    float height = getHeightForY(v, e->y());
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
@@ -468,13 +469,13 @@ TextLayer::drawDrag(QMouseEvent *e)
 }
 
 void
-TextLayer::drawEnd(QMouseEvent *e)
+TextLayer::drawEnd(View *v, QMouseEvent *e)
 {
 //    std::cerr << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
 
     bool ok = false;
-    QString label = QInputDialog::getText(m_view, tr("Enter label"),
+    QString label = QInputDialog::getText(v, tr("Enter label"),
 					  tr("Please enter a new label:"),
 					  QLineEdit::Normal, "", &ok);
 
@@ -490,13 +491,13 @@ TextLayer::drawEnd(QMouseEvent *e)
 }
 
 void
-TextLayer::editStart(QMouseEvent *e)
+TextLayer::editStart(View *v, QMouseEvent *e)
 {
 //    std::cerr << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model) return;
 
-    TextModel::PointList points = getLocalPoints(e->x(), e->y());
+    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
     if (points.empty()) return;
 
     m_editOrigin = e->pos();
@@ -512,21 +513,21 @@ TextLayer::editStart(QMouseEvent *e)
 }
 
 void
-TextLayer::editDrag(QMouseEvent *e)
+TextLayer::editDrag(View *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
-    long frameDiff = getFrameForX(e->x()) - getFrameForX(m_editOrigin.x());
-    float heightDiff = getHeightForY(e->y()) - getHeightForY(m_editOrigin.y());
+    long frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
+    float heightDiff = getHeightForY(v, e->y()) - getHeightForY(v, m_editOrigin.y());
 
     long frame = m_originalPoint.frame + frameDiff;
     float height = m_originalPoint.height + heightDiff;
 
-//    long frame = getFrameForX(e->x());
+//    long frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = (frame / m_model->getResolution()) * m_model->getResolution();
 
-//    float height = getHeightForY(e->y());
+//    float height = getHeightForY(v, e->y());
 
     if (!m_editingCommand) {
 	m_editingCommand = new TextModel::EditCommand(m_model, tr("Drag Label"));
@@ -539,7 +540,7 @@ TextLayer::editDrag(QMouseEvent *e)
 }
 
 void
-TextLayer::editEnd(QMouseEvent *e)
+TextLayer::editEnd(View *v, QMouseEvent *e)
 {
 //    std::cerr << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -567,19 +568,19 @@ TextLayer::editEnd(QMouseEvent *e)
 }
 
 void
-TextLayer::editOpen(QMouseEvent *e)
+TextLayer::editOpen(View *v, QMouseEvent *e)
 {
     std::cerr << "TextLayer::editOpen" << std::endl;
 
     if (!m_model) return;
 
-    TextModel::PointList points = getLocalPoints(e->x(), e->y());
+    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
     if (points.empty()) return;
 
     QString label = points.begin()->label;
 
     bool ok = false;
-    label = QInputDialog::getText(m_view, tr("Enter label"),
+    label = QInputDialog::getText(v, tr("Enter label"),
 				  tr("Please enter a new label:"),
 				  QLineEdit::Normal, label, &ok);
     if (ok && label != points.begin()->label) {

@@ -43,19 +43,19 @@ class SpectrogramLayer : public Layer,
 public:
     enum Configuration { FullRangeDb, MelodicRange, MelodicPeaks };
     
-    SpectrogramLayer(View *w, Configuration = FullRangeDb);
+    SpectrogramLayer(Configuration = FullRangeDb);
     ~SpectrogramLayer();
 
     virtual const ZoomConstraint *getZoomConstraint() const { return this; }
     virtual const Model *getModel() const { return m_model; }
-    virtual void paint(QPainter &paint, QRect rect) const;
+    virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
-    virtual int getVerticalScaleWidth(QPainter &) const;
-    virtual void paintVerticalScale(QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(View *v, QPainter &) const;
+    virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(QPoint &) const;
+    virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(int &frame,
+    virtual bool snapToFeatureFrame(View *v, int &frame,
 				    size_t &resolution,
 				    SnapType snap) const;
 
@@ -169,8 +169,8 @@ public:
 
     virtual bool isLayerOpaque() const { return true; }
 
-    float getYForFrequency(float frequency) const;
-    float getFrequencyForY(int y) const;
+    float getYForFrequency(View *v, float frequency) const;
+    float getFrequencyForY(View *v, int y) const;
 
     virtual int getCompletion() const;
 
@@ -179,7 +179,7 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
-    virtual void setLayerDormant(bool dormant);
+    virtual void setLayerDormant(const bool dormant);
 
 protected slots:
     void cacheInvalid();
@@ -243,17 +243,17 @@ protected:
 	}
 
 	float getNormalizedMagnitudeAt(size_t x, size_t y) const {
-	    return float(m_magnitude[y][x]) / 65535.0;
+	    return float(m_magnitude[x][y]) / 65535.0;
 	}
 
 	float getPhaseAt(size_t x, size_t y) const {
-	    int16_t i = (int16_t)m_phase[y][x];
+	    int16_t i = (int16_t)m_phase[x][y];
 	    return (float(i) / 32767.0) * M_PI;
 	}
 
 	bool isLocalPeak(size_t x, size_t y) const {
-	    if (y > 0 && m_magnitude[y][x] < m_magnitude[y-1][x]) return false;
-	    if (y < m_height-1 && m_magnitude[y][x] < m_magnitude[y+1][x]) return false;
+	    if (y > 0 && m_magnitude[x][y] < m_magnitude[x][y-1]) return false;
+	    if (y < m_height-1 && m_magnitude[x][y] < m_magnitude[x][y+1]) return false;
 	    return true;
 	}
 
@@ -273,14 +273,14 @@ protected:
 
 	void setNormalizedMagnitudeAt(size_t x, size_t y, float norm) {
 	    if (x < m_width && y < m_height) {
-		m_magnitude[y][x] = uint16_t(norm * 65535.0);
+		m_magnitude[x][y] = uint16_t(norm * 65535.0);
 	    }
 	}
 
 	void setPhaseAt(size_t x, size_t y, float phase) {
 	    // phase in range -pi -> pi
 	    if (x < m_width && y < m_height) {
-		m_phase[y][x] = uint16_t(int16_t((phase * 32767) / M_PI));
+		m_phase[x][y] = uint16_t(int16_t((phase * 32767) / M_PI));
 	    }
 	}
 
@@ -336,6 +336,7 @@ protected:
 
     CacheFillThread *m_fillThread;
     QTimer *m_updateTimer;
+    mutable size_t m_candidateFillStartFrame;
     size_t m_lastFillExtent;
     bool m_exiting;
 
@@ -367,22 +368,21 @@ protected:
     float getEffectiveMinFrequency() const;
     float getEffectiveMaxFrequency() const;
 
-    bool getYBinRange(int y, float &freqBinMin, float &freqBinMax) const;
-
     struct LayerRange {
 	long   startFrame;
 	int    zoomLevel;
 	size_t modelStart;
 	size_t modelEnd;
     };
-    bool getXBinRange(int x, float &windowMin, float &windowMax) const;
+    bool getXBinRange(View *v, int x, float &windowMin, float &windowMax) const;
+    bool getYBinRange(View *v, int y, float &freqBinMin, float &freqBinMax) const;
 
-    bool getYBinSourceRange(int y, float &freqMin, float &freqMax) const;
-    bool getAdjustedYBinSourceRange(int x, int y,
+    bool getYBinSourceRange(View *v, int y, float &freqMin, float &freqMax) const;
+    bool getAdjustedYBinSourceRange(View *v, int x, int y,
 				    float &freqMin, float &freqMax,
 				    float &adjFreqMin, float &adjFreqMax) const;
-    bool getXBinSourceRange(int x, RealTime &timeMin, RealTime &timeMax) const;
-    bool getXYBinSourceRange(int x, int y, float &min, float &max,
+    bool getXBinSourceRange(View *v, int x, RealTime &timeMin, RealTime &timeMax) const;
+    bool getXYBinSourceRange(View *v, int x, int y, float &min, float &max,
 			     float &phaseMin, float &phaseMax) const;
 
     size_t getWindowIncrement() const {

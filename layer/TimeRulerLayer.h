@@ -24,9 +24,9 @@ class TimeRulerLayer : public Layer
     Q_OBJECT
 
 public:
-    TimeRulerLayer(View *w);
+    TimeRulerLayer();
 
-    virtual void paint(QPainter &paint, QRect rect) const;
+    virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
     void setModel(Model *);
     virtual const Model *getModel() const { return m_model; }
