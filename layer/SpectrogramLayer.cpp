@@ -1686,8 +1686,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << ", pixmap cache invalid " << m_pixmapCacheInvalid << std::endl;
 #endif
-
-    m_candidateFillStartFrame = v->getStartFrame();
+    
+    long sf = v->getStartFrame();
+    if (sf < 0) m_candidateFillStartFrame = 0;
+    else m_candidateFillStartFrame = sf;
 
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
 	return;
@@ -1883,6 +1885,15 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int s0i = int(s0 + 0.001);
 	int s1i = int(s1);
 
+	if (s1i >= m_cache->getWidth()) {
+	    if (s0i >= m_cache->getWidth()) {
+		m_mutex.unlock();
+		continue;
+	    } else {
+		s1i = s0i;
+	    }
+	}
+
 	for (size_t q = minbin; q < bins; ++q) {
 
 	    float f0 = (float(q) * sr) / m_windowSize;
@@ -1890,8 +1901,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	    float y0 = 0, y1 = 0;
 
-	    if (m_binDisplay != PeakFrequencies ||
-		s1i >= int(m_cache->getWidth())) {
+	    if (m_binDisplay != PeakFrequencies) {
 		y0 = v->getYForFrequency(f1, minFreq, maxFreq, logarithmic);
 		y1 = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
 	    }
