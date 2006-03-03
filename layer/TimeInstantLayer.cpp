@@ -20,6 +20,7 @@
 #include <QMouseEvent>
 
 #include <iostream>
+#include <cmath>
 
 TimeInstantLayer::TimeInstantLayer() :
     Layer(),
