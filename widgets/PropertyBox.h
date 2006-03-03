@@ -35,6 +35,7 @@ signals:
     void changePlayGainDial(int);
     void changePlayPan(float);
     void changePlayPanDial(int);
+    void showLayer(bool);
 
 public slots:
     void propertyContainerPropertyChanged(PropertyContainer *);

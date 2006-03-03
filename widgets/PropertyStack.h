@@ -38,6 +38,8 @@ public slots:
     void propertyContainerPropertyChanged(PropertyContainer *);
     void propertyContainerNameChanged(PropertyContainer *);
 
+    void showLayer(bool);
+
 protected slots:
     void selectedContainerChanged(int);
 

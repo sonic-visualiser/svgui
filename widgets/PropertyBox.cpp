@@ -123,8 +123,8 @@ PropertyBox::populateViewPlayFrame()
 
 	LEDButton *showButton = new LEDButton(Qt::blue);
 	layout->addWidget(showButton);
-//!!!	connect(showButton, SIGNAL(stateChanged(bool)),
-//		layer, SLOT(showLayer(bool)));
+	connect(showButton, SIGNAL(stateChanged(bool)),
+		this, SIGNAL(showLayer(bool)));
 	layout->setAlignment(showButton, Qt::AlignVCenter);
     }
     

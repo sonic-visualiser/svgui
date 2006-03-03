@@ -179,7 +179,7 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
-    virtual void setLayerDormant(const bool dormant);
+    virtual void setLayerDormant(const View *v, bool dormant);
 
 protected slots:
     void cacheInvalid();
