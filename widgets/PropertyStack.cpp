@@ -11,6 +11,7 @@
 #include "PropertyBox.h"
 #include "base/PropertyContainer.h"
 #include "base/View.h"
+#include "base/Layer.h"
 
 #include <QIcon>
 #include <QTabWidget>
@@ -69,6 +70,8 @@ PropertyStack::repopulate()
 	QString iconName = container->getPropertyContainerIconName();
 
 	PropertyBox *box = new PropertyBox(container);
+
+	connect(box, SIGNAL(showLayer(bool)), this, SLOT(showLayer(bool)));
 
 	QIcon icon(QString(":/icons/%1.png").arg(iconName));
 	if (icon.isNull()) {
@@ -135,6 +138,22 @@ PropertyStack::propertyContainerNameChanged(PropertyContainer *pc)
 {
     if (sender() != m_client) return;
     repopulate();
+}
+
+void
+PropertyStack::showLayer(bool show)
+{
+    QObject *obj = sender();
+    
+    for (unsigned int i = 0; i < m_boxes.size(); ++i) {
+	if (obj == m_boxes[i]) {
+	    Layer *layer = dynamic_cast<Layer *>(m_boxes[i]->getContainer());
+	    if (layer) {
+		layer->showLayer(m_client, show);
+		return;
+	    }
+	}
+    }
 }
 
 void

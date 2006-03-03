@@ -798,14 +798,15 @@ SpectrogramLayer::getNormalizeColumns() const
 }
 
 void
-SpectrogramLayer::setLayerDormant(const bool dormant)
+SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 {
-    if (dormant == m_dormant) return;
+    QMutexLocker locker(&m_mutex);
+
+    if (dormant == m_dormancy[v]) return;
 
     if (dormant) {
 
-	m_mutex.lock();
-	m_dormant = true;
+	m_dormancy[v] = true;
 
 //	delete m_cache;
 //	m_cache = 0;
@@ -815,12 +816,9 @@ SpectrogramLayer::setLayerDormant(const bool dormant)
 	delete m_pixmapCache;
 	m_pixmapCache = 0;
 	
-	m_mutex.unlock();
-
     } else {
 
-	m_dormant = false;
-	fillCache();
+	m_dormancy[v] = false;
     }
 }
 
@@ -1272,8 +1270,13 @@ SpectrogramLayer::CacheFillThread::run()
 
 //	std::cerr << "SpectrogramLayer::CacheFillThread::run in loop" << std::endl;
 
-	if (m_layer.m_dormant) {
+/*!!! Need a way of finding out whether this layer is dormant in 
+      all the views that are currently visible... or not
 
+	if (m_layer.m_dormancy[) {
+*/
+	if (0) { //!!!
+	
 	    if (m_layer.m_cacheInvalid) {
 		delete m_layer.m_cache;
 		m_layer.m_cache = 0;
@@ -1695,7 +1698,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
-    if (m_dormant) {
+    if (isLayerDormant(v)) {
 	std::cerr << "SpectrogramLayer::paint(): Layer is dormant" << std::endl;
 	return;
     }
