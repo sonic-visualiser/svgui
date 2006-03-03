@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <cmath>
 
 //#define DEBUG_PROPERTY_BOX 1
 
