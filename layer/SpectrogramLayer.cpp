@@ -1270,14 +1270,24 @@ SpectrogramLayer::CacheFillThread::run()
 
 //	std::cerr << "SpectrogramLayer::CacheFillThread::run in loop" << std::endl;
 
-/*!!! Need a way of finding out whether this layer is dormant in 
-      all the views that are currently visible... or not
+	bool haveUndormantViews = false;
 
-	if (m_layer.m_dormancy[) {
-*/
-	if (0) { //!!!
+	for (std::map<const void *, bool>::iterator i =
+		 m_layer.m_dormancy.begin();
+	     i != m_layer.m_dormancy.end(); ++i) {
+
+	    if (!i->second) {
+		haveUndormantViews = true;
+		break;
+	    }
+	}
+
+	if (!haveUndormantViews) {
+
+	    if (m_layer.m_cacheInvalid && m_layer.m_cache) {
+		std::cerr << "All views dormant, freeing spectrogram cache"
+			  << std::endl;
 	
-	    if (m_layer.m_cacheInvalid) {
 		delete m_layer.m_cache;
 		m_layer.m_cache = 0;
 	    }
@@ -1288,7 +1298,10 @@ SpectrogramLayer::CacheFillThread::run()
 
 	    while (!m_layer.m_model->isReady()) {
 		m_layer.m_condition.wait(&m_layer.m_mutex, 100);
+		if (m_layer.m_exiting) break;
 	    }
+
+	    if (m_layer.m_exiting) break;
 
 	    m_layer.m_cacheInvalid = false;
 	    m_fillExtent = 0;
@@ -1699,9 +1712,14 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     }
 
     if (isLayerDormant(v)) {
-	std::cerr << "SpectrogramLayer::paint(): Layer is dormant" << std::endl;
-	return;
+	std::cerr << "SpectrogramLayer::paint(): Layer is dormant, making it undormant again" << std::endl;
     }
+
+    // Need to do this even if !isLayerDormant, as that could mean v
+    // is not in the dormancy map at all -- we need it to be present
+    // and accountable for when determining whether we need the cache
+    // in the cache-fill thread above.
+    m_dormancy[v] = false;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): About to lock" << std::endl;
