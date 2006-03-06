@@ -300,11 +300,13 @@ Pane::paintEvent(QPaintEvent *e)
 
 	if (waveformModel) {
 	    
-	    QString desc = tr("%1 / %2Hz")
+	    QString desc = tr("%1 / %2Hz%3")
 		.arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
-					      waveformModel->getSampleRate())
+					      sampleRate)
 		     .toText(false).c_str())
-		.arg(waveformModel->getSampleRate());
+		.arg(sampleRate)
+		.arg((m_manager &&
+		      sampleRate != m_manager->getPlaybackSampleRate()) ? " (R)" : "");
 
 	    paint.drawText(width() - paint.fontMetrics().width(desc) - 5,
 			   height() - paint.fontMetrics().height() +
