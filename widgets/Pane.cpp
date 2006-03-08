@@ -300,21 +300,28 @@ Pane::paintEvent(QPaintEvent *e)
 
 	if (waveformModel) {
 
-	    // Show (R) for waveform models that will be resampled on
-	    // playback.
-
-	    //!!! Inadequate for auxiliary waveform layers, which are
-	    //played at the wrong rate if their rate differs from the
-	    //main model.  Need to discover and label with (X) or
-	    //something.
+	    size_t mainModelRate = m_manager->getMainModelSampleRate();
+	    size_t playbackRate = m_manager->getPlaybackSampleRate();
 	    
+	    QString srNote = "";
+
+	    // Show (R) for waveform models that will be resampled on
+	    // playback, and (X) for waveform models that will be
+	    // played at the wrong rate because their rate differs
+	    // from that of the main model.
+
+	    if (sampleRate == mainModelRate) {
+		if (sampleRate != playbackRate) srNote = " " + tr("(R)");
+	    } else {
+		srNote = " " + tr("(X)");
+	    }
+
 	    QString desc = tr("%1 / %2Hz%3")
 		.arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
 					      sampleRate)
 		     .toText(false).c_str())
 		.arg(sampleRate)
-		.arg((m_manager &&
-		      sampleRate != m_manager->getPlaybackSampleRate()) ? " (R)" : "");
+		.arg(srNote);
 
 	    paint.drawText(width() - paint.fontMetrics().width(desc) - 5,
 			   height() - paint.fontMetrics().height() +
