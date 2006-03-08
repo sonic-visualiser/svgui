@@ -299,6 +299,14 @@ Pane::paintEvent(QPaintEvent *e)
 	paint.drawText(x, y, text);
 
 	if (waveformModel) {
+
+	    // Show (R) for waveform models that will be resampled on
+	    // playback.
+
+	    //!!! Inadequate for auxiliary waveform layers, which are
+	    //played at the wrong rate if their rate differs from the
+	    //main model.  Need to discover and label with (X) or
+	    //something.
 	    
 	    QString desc = tr("%1 / %2Hz%3")
 		.arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
