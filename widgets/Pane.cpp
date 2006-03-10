@@ -133,6 +133,7 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     const Model *waveformModel = 0; // just for reporting purposes
+    int verticalScaleWidth = 0;
     
     for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
 	--vi;
@@ -141,9 +142,9 @@ Pane::paintEvent(QPaintEvent *e)
 	    waveformModel = (*vi)->getModel();
 	}
 
-	int sw = (*vi)->getVerticalScaleWidth(this, paint);
+	verticalScaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
 
-	if (sw > 0 && r.left() < sw) {
+	if (verticalScaleWidth > 0 && r.left() < verticalScaleWidth) {
 
 //	    Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
@@ -152,10 +153,11 @@ Pane::paintEvent(QPaintEvent *e)
 
 	    paint.setPen(Qt::black);
 	    paint.setBrush(Qt::white);
-	    paint.drawRect(0, 0, sw, height());
+	    paint.drawRect(0, 0, verticalScaleWidth, height());
 
 	    paint.setBrush(Qt::NoBrush);
-	    (*vi)->paintVerticalScale(this, paint, QRect(0, 0, sw, height()));
+	    (*vi)->paintVerticalScale
+		(this, paint, QRect(0, 0, verticalScaleWidth, height()));
 
 	    paint.restore();
 	}
@@ -313,6 +315,7 @@ Pane::paintEvent(QPaintEvent *e)
 	    if (sampleRate == mainModelRate) {
 		if (sampleRate != playbackRate) srNote = " " + tr("(R)");
 	    } else {
+		std::cerr << "Sample rate = " << sampleRate << ", main model rate = " << mainModelRate << std::endl;
 		srNote = " " + tr("(X)");
 	    }
 
@@ -323,10 +326,52 @@ Pane::paintEvent(QPaintEvent *e)
 		.arg(sampleRate)
 		.arg(srNote);
 
-	    paint.drawText(width() - paint.fontMetrics().width(desc) - 5,
+	    paint.drawText(verticalScaleWidth + 5,
+			   //width() - paint.fontMetrics().width(desc) - 5,
 			   height() - paint.fontMetrics().height() +
 			   paint.fontMetrics().ascent() - 6,
 			   desc);
+	}
+
+	std::vector<QString> texts;
+	int maxTextWidth = 0;
+
+	for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+
+	    QString layerName = (*i)->objectName();
+	    QString modelName;
+	    if ((*i)->getModel()) modelName = (*i)->getModel()->objectName();
+	    
+	    QString text;
+	    if (modelName != "") {
+		text = QString("%1: %2").arg(modelName).arg(layerName);
+	    } else {
+		text = layerName;
+	    }
+	    
+	    texts.push_back(text);
+	    int tw = paint.fontMetrics().width(text);
+	    if (tw > maxTextWidth) maxTextWidth = tw;
+	}
+
+	int lly = height() - 6;
+
+	for (int i = 0; i < texts.size(); ++i) {
+
+	    if (i == texts.size() - 1) {
+		if (m_lightBackground) {
+		    paint.setPen(Qt::black);
+		} else {
+		    paint.setPen(Qt::white);
+		}
+	    }
+
+	    paint.drawText(width() - maxTextWidth - 5,
+			   lly - paint.fontMetrics().height() +
+			   paint.fontMetrics().ascent(),
+			   texts[i]);
+	    
+	    lly -= paint.fontMetrics().height();
 	}
     }
 
