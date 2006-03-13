@@ -49,7 +49,7 @@ public:
 
     LayerType getLayerType(const Layer *);
 
-    Layer *createLayer(LayerType type, Model *model = 0, int channel = -1);
+    Layer *createLayer(LayerType type, int channel = -1);
 
     QString getLayerPresentationName(LayerType type);
 

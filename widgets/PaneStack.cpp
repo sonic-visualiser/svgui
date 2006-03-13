@@ -45,25 +45,28 @@ PaneStack::addPane(bool suppressPropertyBox)
     layout->addWidget(currentIndicator);
     layout->setStretchFactor(currentIndicator, 1);
     currentIndicator->setScaledContents(true);
-    m_currentIndicators.push_back(currentIndicator);
 
     Pane *pane = new Pane(frame);
     pane->setViewManager(m_viewManager);
     layout->addWidget(pane);
     layout->setStretchFactor(pane, 10);
-    m_panes.push_back(pane);
 
     QWidget *properties = 0;
     if (suppressPropertyBox) {
 	properties = new QFrame();
     } else {
 	properties = new PropertyStack(frame, pane);
-	connect(properties, SIGNAL(propertyContainerSelected(PropertyContainer *)),
-		this, SLOT(propertyContainerSelected(PropertyContainer *)));
+	connect(properties, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
+		this, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
     }
     layout->addWidget(properties);
     layout->setStretchFactor(properties, 1);
-    m_propertyStacks.push_back(properties);
+
+    PaneRec rec;
+    rec.pane = pane;
+    rec.propertyStack = properties;
+    rec.currentIndicator = currentIndicator;
+    m_panes.push_back(rec);
 
     frame->setLayout(layout);
     addWidget(frame);
@@ -85,34 +88,50 @@ PaneStack::addPane(bool suppressPropertyBox)
 Pane *
 PaneStack::getPane(int n)
 {
-    return m_panes[n];
+    return m_panes[n].pane;
+}
+
+Pane *
+PaneStack::getHiddenPane(int n)
+{
+    return m_hiddenPanes[n].pane;
 }
 
 void
 PaneStack::deletePane(Pane *pane)
 {
-    int n = 0;
-    std::vector<Pane *>::iterator i = m_panes.begin();
-    std::vector<QWidget *>::iterator j = m_propertyStacks.begin();
-    std::vector<QLabel *>::iterator k = m_currentIndicators.begin();
+    std::vector<PaneRec>::iterator i;
+    bool found = false;
 
-    while (i != m_panes.end()) {
-	if (*i == pane) break;
-	++i;
-	++j;
-	++k;
-	++n;
+    for (i = m_panes.begin(); i != m_panes.end(); ++i) {
+	if (i->pane == pane) {
+	    m_panes.erase(i);
+	    found = true;
+	    break;
+	}
     }
-    if (n >= int(m_panes.size())) return;
 
-    m_panes.erase(i);
-    m_propertyStacks.erase(j);
-    m_currentIndicators.erase(k);
-    delete widget(n);
+    if (!found) {
+
+	for (i = m_hiddenPanes.begin(); i != m_hiddenPanes.end(); ++i) {
+	    if (i->pane == pane) {
+		m_hiddenPanes.erase(i);
+		found = true;
+		break;
+	    }
+	}
+
+	if (!found) {
+	    std::cerr << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << std::endl;
+	    return;
+	}
+    }
+
+    delete pane->parent();
 
     if (m_currentPane == pane) {
 	if (m_panes.size() > 0) {
-	    setCurrentPane(m_panes[0]);
+	    setCurrentPane(m_panes[0].pane);
 	} else {
 	    setCurrentPane(0);
 	}
@@ -125,13 +144,70 @@ PaneStack::getPaneCount() const
     return m_panes.size();
 }
 
+int
+PaneStack::getHiddenPaneCount() const
+{
+    return m_hiddenPanes.size();
+}
+
+void
+PaneStack::hidePane(Pane *pane)
+{
+    std::vector<PaneRec>::iterator i = m_panes.begin();
+
+    while (i != m_panes.end()) {
+	if (i->pane == pane) {
+
+	    m_hiddenPanes.push_back(*i);
+	    m_panes.erase(i);
+
+	    QWidget *pw = dynamic_cast<QWidget *>(pane->parent());
+	    if (pw) pw->hide();
+
+	    if (m_currentPane == pane) {
+		if (m_panes.size() > 0) {
+		    setCurrentPane(m_panes[0].pane);
+		} else {
+		    setCurrentPane(0);
+		}
+	    }
+	    
+	    return;
+	}
+	++i;
+    }
+
+    std::cerr << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << std::endl;
+}
+
+void
+PaneStack::showPane(Pane *pane)
+{
+    std::vector<PaneRec>::iterator i = m_hiddenPanes.begin();
+
+    while (i != m_hiddenPanes.end()) {
+	if (i->pane == pane) {
+	    m_panes.push_back(*i);
+	    m_hiddenPanes.erase(i);
+	    QWidget *pw = dynamic_cast<QWidget *>(pane->parent());
+	    if (pw) pw->show();
+
+	    //!!! update current pane
+
+	    return;
+	}
+	++i;
+    }
+
+    std::cerr << "WARNING: PaneStack::showPane(" << pane << "): Pane not found in hidden panes" << std::endl;
+}
+
 void
 PaneStack::setCurrentPane(Pane *pane) // may be null
 {
     if (m_currentPane == pane) return;
     
-    std::vector<Pane *>::iterator i = m_panes.begin();
-    std::vector<QLabel *>::iterator k = m_currentIndicators.begin();
+    std::vector<PaneRec>::iterator i = m_panes.begin();
 
     // We used to do this by setting the foreground and background
     // role, but it seems the background role is ignored and the
@@ -143,18 +219,24 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
     QPixmap unselectedMap(1, 1);
     unselectedMap.fill(QApplication::palette().color(QPalette::Background));
 
+    bool found = false;
+
     while (i != m_panes.end()) {
-	if (*i == pane) {
-	    (*k)->setPixmap(selectedMap);
+	if (i->pane == pane) {
+	    i->currentIndicator->setPixmap(selectedMap);
+	    found = true;
 	} else {
-	    (*k)->setPixmap(unselectedMap);
+	    i->currentIndicator->setPixmap(unselectedMap);
 	}
 	++i;
-	++k;
     }
-    m_currentPane = pane;
 
-    emit currentPaneChanged(m_currentPane);
+    if (found || pane == 0) {
+	m_currentPane = pane;
+	emit currentPaneChanged(m_currentPane);
+    } else {
+	std::cerr << "WARNING: PaneStack::setCurrentPane(" << pane << "): pane is not a visible pane in this stack" << std::endl;
+    }
 }
 
 void
@@ -164,13 +246,13 @@ PaneStack::setCurrentLayer(Pane *pane, Layer *layer) // may be null
 
     if (m_currentPane) {
 
-	std::vector<Pane *>::iterator i = m_panes.begin();
-	std::vector<QWidget *>::iterator j = m_propertyStacks.begin();
+	std::vector<PaneRec>::iterator i = m_panes.begin();
 
 	while (i != m_panes.end()) {
 
-	    if (*i == pane) {
-		PropertyStack *stack = dynamic_cast<PropertyStack *>(*j);
+	    if (i->pane == pane) {
+		PropertyStack *stack = dynamic_cast<PropertyStack *>
+		    (i->propertyStack);
 		if (stack) {
 		    if (stack->containsContainer(layer)) {
 			stack->setCurrentIndex(stack->getContainerIndex(layer));
@@ -185,7 +267,6 @@ PaneStack::setCurrentLayer(Pane *pane, Layer *layer) // may be null
 		break;
 	    }
 	    ++i;
-	    ++j;
 	}
     }
 }
@@ -209,19 +290,19 @@ PaneStack::propertyContainerRemoved(PropertyContainer *)
 }
 
 void
-PaneStack::propertyContainerSelected(PropertyContainer *pc)
+PaneStack::propertyContainerSelected(View *client, PropertyContainer *pc)
 {
-    std::vector<Pane *>::iterator i = m_panes.begin();
-    std::vector<QWidget *>::iterator j = m_propertyStacks.begin();
+    std::vector<PaneRec>::iterator i = m_panes.begin();
 
     while (i != m_panes.end()) {
-	PropertyStack *stack = dynamic_cast<PropertyStack *>(*j);
-	if (stack && stack->containsContainer(pc)) {
-	    setCurrentPane(*i);
+	PropertyStack *stack = dynamic_cast<PropertyStack *>(i->propertyStack);
+	if (stack &&
+	    stack->getClient() == client &&
+	    stack->containsContainer(pc)) {
+	    setCurrentPane(i->pane);
 	    break;
 	}
 	++i;
-	++j;
     }
 
     Layer *layer = dynamic_cast<Layer *>(pc);
@@ -242,14 +323,14 @@ PaneStack::sizePropertyStacks()
 {
     int maxMinWidth = 0;
 
-    for (unsigned int i = 0; i < m_propertyStacks.size(); ++i) {
-	if (!m_propertyStacks[i]) continue;
+    for (size_t i = 0; i < m_panes.size(); ++i) {
+	if (!m_panes[i].propertyStack) continue;
 	std::cerr << "PaneStack::sizePropertyStacks: " << i << ": min " 
-		  << m_propertyStacks[i]->minimumSizeHint().width() << ", current "
-		  << m_propertyStacks[i]->width() << std::endl;
+		  << m_panes[i].propertyStack->minimumSizeHint().width() << ", current "
+		  << m_panes[i].propertyStack->width() << std::endl;
 
-	if (m_propertyStacks[i]->minimumSizeHint().width() > maxMinWidth) {
-	    maxMinWidth = m_propertyStacks[i]->minimumSizeHint().width();
+	if (m_panes[i].propertyStack->minimumSizeHint().width() > maxMinWidth) {
+	    maxMinWidth = m_panes[i].propertyStack->minimumSizeHint().width();
 	}
     }
 
@@ -263,9 +344,9 @@ PaneStack::sizePropertyStacks()
     int setWidth = maxMinWidth;
 #endif
 
-    for (unsigned int i = 0; i < m_propertyStacks.size(); ++i) {
-	if (!m_propertyStacks[i]) continue;
-	m_propertyStacks[i]->setMinimumWidth(setWidth);
+    for (size_t i = 0; i < m_panes.size(); ++i) {
+	if (!m_panes[i].propertyStack) continue;
+	m_panes[i].propertyStack->setMinimumWidth(setWidth);
     }
 }
     

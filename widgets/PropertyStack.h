@@ -26,11 +26,12 @@ class PropertyStack : public QTabWidget
 public:
     PropertyStack(QWidget *parent, View *client);
 
+    View *getClient() { return m_client; }
     bool containsContainer(PropertyContainer *container) const;
     int getContainerIndex(PropertyContainer *container) const;
 
 signals:
-    void propertyContainerSelected(PropertyContainer *container);
+    void propertyContainerSelected(View *client, PropertyContainer *container);
 
 public slots:
     void propertyContainerAdded(PropertyContainer *);

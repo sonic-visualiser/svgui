@@ -231,7 +231,7 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
 }
 
 Layer *
-LayerFactory::createLayer(LayerType type, Model *model, int channel)
+LayerFactory::createLayer(LayerType type, int channel)
 {
     Layer *layer = 0;
 
@@ -288,7 +288,6 @@ LayerFactory::createLayer(LayerType type, Model *model, int channel)
 	std::cerr << "LayerFactory::createLayer: Unknown layer type " 
 		  << type << std::endl;
     } else {
-	if (model) setModel(layer, model);
 	std::cerr << "LayerFactory::createLayer: Setting object name "
 		  << getLayerPresentationName(type).toStdString() << " on " << layer << std::endl;
 	layer->setObjectName(getLayerPresentationName(type));
