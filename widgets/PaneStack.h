@@ -15,6 +15,7 @@
 
 class QWidget;
 class QLabel;
+class View;
 class Pane;
 class Layer;
 class ViewManager;
@@ -29,12 +30,16 @@ public:
     PaneStack(QWidget *parent, ViewManager *viewManager);
 
     Pane *addPane(bool suppressPropertyBox = false); // I own the returned value
-    Pane *getPane(int n); // I own the returned value
-    void deletePane(Pane *pane); // Deletes the pane and all its layers
-    int getPaneCount() const;
+    void deletePane(Pane *pane); // Deletes the pane, but _not_ its layers
 
-//!!!    void hidePane(Pane *pane);
-//    void showPane(Pane *pane);
+    int getPaneCount() const; // Returns only count of visible panes
+    Pane *getPane(int n); // Of visible panes; I own the returned value
+
+    void hidePane(Pane *pane); // Also removes pane from getPane/getPaneCount
+    void showPane(Pane *pane); // Returns pane to getPane/getPaneCount
+
+    int getHiddenPaneCount() const;
+    Pane *getHiddenPane(int n); // I own the returned value
 
     void setCurrentPane(Pane *pane);
     void setCurrentLayer(Pane *pane, Layer *layer);
@@ -47,17 +52,23 @@ signals:
 public slots:
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);
-    void propertyContainerSelected(PropertyContainer *);
+    void propertyContainerSelected(View *client, PropertyContainer *);
     void paneInteractedWith();
 
 protected:
     Pane *m_currentPane;
-    //!!! should be a single vector of structs
-    std::vector<Pane *> m_panes; // I own these
-    std::vector<QWidget *> m_propertyStacks; // I own these
-    std::vector<QLabel *> m_currentIndicators; // I own these
-    ViewManager *m_viewManager; // I don't own this
 
+    struct PaneRec
+    {
+	Pane *pane;
+	QWidget *propertyStack;
+	QLabel *currentIndicator;
+    };
+
+    std::vector<PaneRec> m_panes;
+    std::vector<PaneRec> m_hiddenPanes;
+
+    ViewManager *m_viewManager; // I don't own this
     void sizePropertyStacks();
 };
 

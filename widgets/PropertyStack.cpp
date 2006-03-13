@@ -41,8 +41,8 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
     connect(m_client, SIGNAL(propertyContainerNameChanged(PropertyContainer *)),
 	    this, SLOT(propertyContainerNameChanged(PropertyContainer *)));
 
-    connect(this, SIGNAL(propertyContainerSelected(PropertyContainer *)),
-	    m_client, SLOT(propertyContainerSelected(PropertyContainer *)));
+    connect(this, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
+	    m_client, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
 }
 
 void
@@ -160,7 +160,7 @@ void
 PropertyStack::selectedContainerChanged(int n)
 {
     if (n >= int(m_boxes.size())) return;
-    emit propertyContainerSelected(m_boxes[n]->getContainer());
+    emit propertyContainerSelected(m_client, m_boxes[n]->getContainer());
 }
 
 #ifdef INCLUDE_MOCFILES
