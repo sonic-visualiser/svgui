@@ -49,12 +49,15 @@ public:
 
     LayerType getLayerType(const Layer *);
 
-    Layer *createLayer(LayerType type, int channel = -1);
+    Layer *createLayer(LayerType type);
 
     QString getLayerPresentationName(LayerType type);
 
     void setModel(Layer *layer, Model *model);
     Model *createEmptyModel(LayerType type, Model *baseModel);
+
+    int getChannel(Layer *layer);
+    void setChannel(Layer *layer, int channel);
 
     QString getLayerIconName(LayerType);
     QString getLayerTypeName(LayerType);

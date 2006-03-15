@@ -230,8 +230,33 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
     }
 }
 
+int
+LayerFactory::getChannel(Layer *layer)
+{
+    if (dynamic_cast<WaveformLayer *>(layer)) {
+	return dynamic_cast<WaveformLayer *>(layer)->getChannel();
+    } 
+    if (dynamic_cast<SpectrogramLayer *>(layer)) {
+	return dynamic_cast<SpectrogramLayer *>(layer)->getChannel();
+    }
+    return -1;
+}
+
+void
+LayerFactory::setChannel(Layer *layer, int channel)
+{
+    if (dynamic_cast<WaveformLayer *>(layer)) {
+	dynamic_cast<WaveformLayer *>(layer)->setChannel(channel);
+	return;
+    } 
+    if (dynamic_cast<SpectrogramLayer *>(layer)) {
+	dynamic_cast<SpectrogramLayer *>(layer)->setChannel(channel);
+	return;
+    }
+}
+
 Layer *
-LayerFactory::createLayer(LayerType type, int channel)
+LayerFactory::createLayer(LayerType type)
 {
     Layer *layer = 0;
 
@@ -239,12 +264,10 @@ LayerFactory::createLayer(LayerType type, int channel)
 
     case Waveform:
 	layer = new WaveformLayer;
-	static_cast<WaveformLayer *>(layer)->setChannel(channel);
 	break;
 
     case Spectrogram:
 	layer = new SpectrogramLayer;
-	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	break;
 
     case TimeRuler:
@@ -273,12 +296,10 @@ LayerFactory::createLayer(LayerType type, int channel)
 
     case MelodicRangeSpectrogram: 
 	layer = new SpectrogramLayer(SpectrogramLayer::MelodicRange);
-	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	break;
 
     case PeakFrequencySpectrogram: 
 	layer = new SpectrogramLayer(SpectrogramLayer::MelodicPeaks);
-	static_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	break;
 
     default: break;
