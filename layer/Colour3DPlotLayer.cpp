@@ -285,6 +285,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     QPoint illuminatePos;
     bool illuminate = v->shouldIlluminateLocalFeatures(this, illuminatePos);
+    char labelbuf[10];
 
     for (int sx = sx0 - 1; sx <= sx1; ++sx) {
 
@@ -293,10 +294,17 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	if (fx + modelWindow < int(modelStart) ||
 	    fx > int(modelEnd)) continue;
 
-	for (int sy = 0; sy < sh; ++sy) {
+	int rx0 = v->getXForFrame(fx + int(modelStart));
+	int rx1 = v->getXForFrame(fx + int(modelStart) + int(modelWindow));
 
-	    int rx0 = v->getXForFrame(fx + int(modelStart));
-	    int rx1 = v->getXForFrame(fx + int(modelStart) + int(modelWindow));
+	int w = rx1 - rx0;
+	if (w < 1) w = 1;
+
+	bool showLabel = (w > 10 &&
+			  paint.fontMetrics().width("0.000000") < w - 3 &&
+			  paint.fontMetrics().height() < (h / sh));
+
+	for (int sy = 0; sy < sh; ++sy) {
 
 	    int ry0 = h - (sy * h) / sh - 1;
 	    int ry1 = h - ((sy + 1) * h) / sh - 2;
@@ -307,15 +315,10 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
 
 	    QColor pen(255, 255, 255, 80);
-//	    QColor pen(pixel);
 	    QColor brush(pixel);
 	    brush.setAlpha(160);
-//	    paint.setPen(pen);
 	    paint.setPen(Qt::NoPen);
 	    paint.setBrush(brush);
-
-	    int w = rx1 - rx0;
-	    if (w < 1) w = 1;
 
 	    QRect r(rx0, ry0 - h / sh - 1, w, h / sh + 1);
 
@@ -327,21 +330,17 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	    paint.drawRect(r);
 
-	    if (sx >= 0 && sx < m_cache->width() &&
-		sy >= 0 && sy < m_cache->height()) {
-		if (w > 10) {
+	    if (showLabel) {
+		if (sx >= 0 && sx < m_cache->width() &&
+		    sy >= 0 && sy < m_cache->height()) {
 		    int dv = m_cache->pixelIndex(sx, sy);
-//		    if (dv != 0 && paint.fontMetrics().height() < (h / sh)) {
-		    if (paint.fontMetrics().height() < (h / sh)) {
-			float value = m_model->getBinValue(fx, sy);
-			QString text = QString("%1").arg(value); //dv);
-			if (paint.fontMetrics().width(text) < w - 3) {
-			    paint.setPen(Qt::white);
-			    paint.drawText(rx0 + 2,
-					   ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
-					   QString("%1").arg(value));
-			}
-		    }
+		    float value = m_model->getBinValue(fx, sy);
+		    sprintf(labelbuf, "%06f", value);
+		    QString text(labelbuf);
+		    paint.setPen(Qt::white);
+		    paint.drawText(rx0 + 2,
+				   ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
+				   text);
 		}
 	    }
 	}
