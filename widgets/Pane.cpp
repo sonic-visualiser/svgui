@@ -135,6 +135,9 @@ Pane::paintEvent(QPaintEvent *e)
     const Model *waveformModel = 0; // just for reporting purposes
     int verticalScaleWidth = 0;
     
+    int fontHeight = paint.fontMetrics().height();
+    int fontAscent = paint.fontMetrics().ascent();
+
     for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
 	--vi;
 
@@ -217,6 +220,9 @@ Pane::paintEvent(QPaintEvent *e)
 	break;
     }
     
+    int sampleRate = getModelsSampleRate();
+    paint.setBrush(Qt::NoBrush);
+
     if (m_centreLineVisible) {
 
 	if (hasLightBackground()) {
@@ -224,16 +230,12 @@ Pane::paintEvent(QPaintEvent *e)
 	} else {
 	    paint.setPen(QColor(200, 200, 200));
 	}	
-	paint.setBrush(Qt::NoBrush);
 	paint.drawLine(width() / 2, 0, width() / 2, height() - 1);
-	
-//    QFont font(paint.font());
-//    font.setBold(true);
-//    paint.setFont(font);
 
-	int sampleRate = getModelsSampleRate();
-	int y = height() - paint.fontMetrics().height()
-	    + paint.fontMetrics().ascent() - 6;
+	paint.setPen(QColor(50, 50, 50));
+
+	int y = height() - fontHeight
+	    + fontAscent - 6;
 	
 	LayerList::iterator vi = m_layers.end();
 	
@@ -242,12 +244,12 @@ Pane::paintEvent(QPaintEvent *e)
 	    switch ((*--vi)->getPreferredFrameCountPosition()) {
 		
 	    case Layer::PositionTop:
-		y = paint.fontMetrics().ascent() + 6;
+		y = fontAscent + 6;
 		break;
 		
 	    case Layer::PositionMiddle:
-		y = (height() - paint.fontMetrics().height()) / 2
-		    + paint.fontMetrics().ascent();
+		y = (height() - fontHeight) / 2
+		    + fontAscent;
 		break;
 
 	    case Layer::PositionBottom:
@@ -265,73 +267,56 @@ Pane::paintEvent(QPaintEvent *e)
 	    int tw = paint.fontMetrics().width(text);
 	    int x = width()/2 - 4 - tw;
 
-	    if (hasLightBackground()) {
-		paint.setPen(palette().background().color());
-		for (int dx = -1; dx <= 1; ++dx) {
-		    for (int dy = -1; dy <= 1; ++dy) {
-			if ((dx && dy) || !(dx || dy)) continue;
-			paint.drawText(x + dx, y + dy, text);
-		    }
-		}
-		paint.setPen(QColor(50, 50, 50));
-	    } else {
-		paint.setPen(QColor(200, 200, 200));
-	    }
-
-	    paint.drawText(x, y, text);
+	    drawVisibleText(paint, x, y, text, OutlinedText);
 	}
 
 	QString text = QString("%1").arg(m_centreFrame);
 
 	int tw = paint.fontMetrics().width(text);
 	int x = width()/2 + 4;
-    
-	if (hasLightBackground()) {
-	    paint.setPen(palette().background().color());
-	    for (int dx = -1; dx <= 1; ++dx) {
-		for (int dy = -1; dy <= 1; ++dy) {
-		    if ((dx && dy) || !(dx || dy)) continue;
-		    paint.drawText(x + dx, y + dy, text);
-		}
-	    }
-	    paint.setPen(QColor(50, 50, 50));
-	} else {
-	    paint.setPen(QColor(200, 200, 200));
-	}
-	paint.drawText(x, y, text);
 
-	if (waveformModel) {
+	drawVisibleText(paint, x, y, text, OutlinedText);
 
-	    size_t mainModelRate = m_manager->getMainModelSampleRate();
-	    size_t playbackRate = m_manager->getPlaybackSampleRate();
+    } else {
+
+	paint.setPen(QColor(50, 50, 50));
+    }
+
+    if (waveformModel &&
+	r.y() + r.height() >= height() - fontHeight - 6) {
+
+	size_t mainModelRate = m_manager->getMainModelSampleRate();
+	size_t playbackRate = m_manager->getPlaybackSampleRate();
 	    
-	    QString srNote = "";
+	QString srNote = "";
 
-	    // Show (R) for waveform models that will be resampled on
-	    // playback, and (X) for waveform models that will be
-	    // played at the wrong rate because their rate differs
-	    // from that of the main model.
+	// Show (R) for waveform models that will be resampled on
+	// playback, and (X) for waveform models that will be played
+	// at the wrong rate because their rate differs from that of
+	// the main model.
 
-	    if (sampleRate == mainModelRate) {
-		if (sampleRate != playbackRate) srNote = " " + tr("(R)");
-	    } else {
-		std::cerr << "Sample rate = " << sampleRate << ", main model rate = " << mainModelRate << std::endl;
-		srNote = " " + tr("(X)");
-	    }
-
-	    QString desc = tr("%1 / %2Hz%3")
-		.arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
-					      sampleRate)
-		     .toText(false).c_str())
-		.arg(sampleRate)
-		.arg(srNote);
-
-	    paint.drawText(verticalScaleWidth + 5,
-			   //width() - paint.fontMetrics().width(desc) - 5,
-			   height() - paint.fontMetrics().height() +
-			   paint.fontMetrics().ascent() - 6,
-			   desc);
+	if (sampleRate == mainModelRate) {
+	    if (sampleRate != playbackRate) srNote = " " + tr("(R)");
+	} else {
+	    std::cerr << "Sample rate = " << sampleRate << ", main model rate = " << mainModelRate << std::endl;
+	    srNote = " " + tr("(X)");
 	}
+
+	QString desc = tr("%1 / %2Hz%3")
+	    .arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
+					  sampleRate)
+		 .toText(false).c_str())
+	    .arg(sampleRate)
+	    .arg(srNote);
+
+	if (r.x() < verticalScaleWidth + 5 + paint.fontMetrics().width(desc)) {
+	    drawVisibleText(paint, verticalScaleWidth + 5,
+			    height() - fontHeight + fontAscent - 6,
+			    desc, OutlinedText);
+	}
+    }
+
+    if (r.y() + r.height() >= height() - m_layers.size() * fontHeight - 6) {
 
 	std::vector<QString> texts;
 	int maxTextWidth = 0;
@@ -348,30 +333,28 @@ Pane::paintEvent(QPaintEvent *e)
 	    } else {
 		text = layerName;
 	    }
-	    
+	
 	    texts.push_back(text);
 	    int tw = paint.fontMetrics().width(text);
 	    if (tw > maxTextWidth) maxTextWidth = tw;
 	}
-
+    
 	int lly = height() - 6;
 
-	for (int i = 0; i < texts.size(); ++i) {
-
-	    if (i == texts.size() - 1) {
-		if (m_lightBackground) {
-		    paint.setPen(Qt::black);
-		} else {
-		    paint.setPen(Qt::white);
-		}
-	    }
-
-	    paint.drawText(width() - maxTextWidth - 5,
-			   lly - paint.fontMetrics().height() +
-			   paint.fontMetrics().ascent(),
-			   texts[i]);
+	if (r.x() + r.width() >= width() - maxTextWidth - 5) {
 	    
-	    lly -= paint.fontMetrics().height();
+	    for (int i = 0; i < texts.size(); ++i) {
+
+		if (i == texts.size() - 1) {
+		    paint.setPen(Qt::black);
+		}
+		
+		drawVisibleText(paint, width() - maxTextWidth - 5,
+				lly - fontHeight + fontAscent,
+				texts[i], OutlinedText);
+		
+		lly -= fontHeight;
+	    }
 	}
     }
 
@@ -663,6 +646,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
 //!!!	if (mode != ViewManager::DrawMode) {
 
+	if (getSelectedLayer()) {
+
 	    bool previouslyIdentifying = m_identifyFeatures;
 	    m_identifyFeatures = true;
 	    
@@ -670,6 +655,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 		m_identifyPoint != prevPoint) {
 		update();
 	    }
+	}
+
 //	}
 
 	return;
@@ -986,8 +973,8 @@ Pane::toXmlString(QString indent, QString extraAttributes) const
 {
     return View::toXmlString
 	(indent,
-	 QString("type=\"pane\" centreLineVisible=\"%1\" %2")
-	 .arg(m_centreLineVisible).arg(extraAttributes));
+	 QString("type=\"pane\" centreLineVisible=\"%1\" height=\"%2\" %3")
+	 .arg(m_centreLineVisible).arg(height()).arg(extraAttributes));
 }
 
 

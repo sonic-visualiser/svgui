@@ -174,13 +174,13 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 
 int
 SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
-					    int *min, int *max) const
+					   int *min, int *max) const
 {
     int deft = 0;
 
-    int throwaway;
-    if (!min) min = &throwaway;
-    if (!max) max = &throwaway;
+    int garbage0, garbage1;
+    if (!min) min = &garbage0;
+    if (!max) max = &garbage1;
 
     if (name == tr("Gain")) {
 
@@ -412,7 +412,6 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
     } else if (name == tr("Colour Rotation")) {
 	setColourRotation(value);
     } else if (name == tr("Colour")) {
-//!!!	if (v) v->setLightBackground(value == 2);
 	switch (value) {
 	default:
 	case 0:	setColourScheme(DefaultColours); break;
@@ -582,6 +581,9 @@ SpectrogramLayer::getWindowType() const
 void
 SpectrogramLayer::setGain(float gain)
 {
+    std::cerr << "SpectrogramLayer::setGain(" << gain << ") (my gain is now "
+	      << m_gain << ")" << std::endl;
+
     if (m_gain == gain) return;
 
     m_mutex.lock();
@@ -874,8 +876,8 @@ SpectrogramLayer::fillTimerTimedOut()
 #ifdef DEBUG_SPECTROGRAM_REPAINT
 		std::cerr << "complete!" << std::endl;
 #endif
-		emit modelChanged();
 		m_pixmapCacheInvalid = true;
+		emit modelChanged();
 		delete m_updateTimer;
 		m_updateTimer = 0;
 		m_lastFillExtent = 0;
@@ -884,8 +886,8 @@ SpectrogramLayer::fillTimerTimedOut()
 		std::cerr << "SpectrogramLayer: emitting modelChanged("
 			  << m_lastFillExtent << "," << fillExtent << ")" << std::endl;
 #endif
-		emit modelChanged(m_lastFillExtent, fillExtent);
 		m_pixmapCacheInvalid = true;
+		emit modelChanged(m_lastFillExtent, fillExtent);
 		m_lastFillExtent = fillExtent;
 	    }
 	} else {
@@ -896,8 +898,8 @@ SpectrogramLayer::fillTimerTimedOut()
 		std::cerr << "SpectrogramLayer: going backwards, emitting modelChanged("
 			  << sf << "," << m_model->getEndFrame() << ")" << std::endl;
 #endif
-		emit modelChanged(sf, m_model->getEndFrame());
 		m_pixmapCacheInvalid = true;
+		emit modelChanged(sf, m_model->getEndFrame());
 //	    }
 	    m_lastFillExtent = fillExtent;
 	}
@@ -1206,7 +1208,7 @@ SpectrogramLayer::Cache::~Cache()
 void
 SpectrogramLayer::Cache::resize(size_t width, size_t height)
 {
-    std::cerr << "SpectrogramLayer::Cache[" << this << "]::resize(" << width << "x" << height << ")" << std::endl;
+    std::cerr << "SpectrogramLayer::Cache[" << this << "]::resize(" << width << "x" << height << " = " << width*height << ")" << std::endl;
     
     if (m_width == width && m_height == height) return;
 
@@ -1698,6 +1700,12 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 void
 SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
+    if (m_colourScheme == BlackOnWhite) {
+	v->setLightBackground(true);
+    } else {
+	v->setLightBackground(false);
+    }
+
 //    Profiler profiler("SpectrogramLayer::paint", true);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << ", pixmap cache invalid " << m_pixmapCacheInvalid << std::endl;
