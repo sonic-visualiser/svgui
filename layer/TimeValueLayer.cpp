@@ -406,12 +406,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     paint.save();
 
-    if (w > 1 &&
-	(m_plotStyle == PlotLines ||
-	 m_plotStyle == PlotCurve)) {
-	paint.setRenderHint(QPainter::Antialiasing, true);
-    }
     QPainterPath path;
+    int pointCount = 0;
     
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
@@ -504,14 +500,27 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 		} else {
 
-		    if (path.isEmpty()) {
-			path.moveTo(x + w/2, y);
+		    float x0 = x + float(w)/2;
+		    float x1 = nx + float(w)/2;
+		    
+		    float y0 = y;
+		    float y1 = ny;
+
+		    if (pointCount == 0) {
+			path.moveTo((x0 + x1) / 2, (y0 + y1) / 2);
 		    }
+		    ++pointCount;
 
 		    if (nx - x > 5) {
-			path.cubicTo(x + w, y, nx, ny, nx + w/2, ny);
+			path.cubicTo(x0, y0,
+				     x0, y0,
+				     (x0 + x1) / 2, (y0 + y1) / 2);
+
+			// // or
+			// path.quadTo(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
+
 		    } else {
-			path.lineTo(nx + w/2, ny);
+			path.lineTo((x0 + x1) / 2, (y0 + y1) / 2);
 		    }
 		}
 	    }
@@ -529,12 +538,13 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    paint.drawRect(x, -1, nx - x, v->height() + 1);
 	}
 
-///	if (p.label != "") {
-///	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
-///	}
+	if (p.label != "") {
+	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
+	}
     }
 
     if (m_plotStyle == PlotCurve && !path.isEmpty()) {
+	paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->width());
 	paint.drawPath(path);
     }
 
@@ -547,23 +557,31 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 int
 TimeValueLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 {
-    return 100; //!!!
+    if (m_plotStyle == PlotSegmentation) return 0;
+    return paint.fontMetrics().width("+0.000e+00") + 15;
 }
 
 void
 TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model) return;
+    if (m_plotStyle == PlotSegmentation) return;
 
     float val = m_model->getValueMinimum();
     float inc = (m_model->getValueMaximum() - val) / 10;
 
+    char buffer[40];
+
+    int w = getVerticalScaleWidth(v, paint);
+
     while (val < m_model->getValueMaximum()) {
 	int y = getYForValue(v, val);
-	QString label = QString("%1").arg(val);
-	paint.drawLine(100 - 10, y, 100, y);
-	paint.drawText(100 - 15 - paint.fontMetrics().width(label),
-		       y - paint.fontMetrics().height() /2 + paint.fontMetrics().ascent(),
+//	QString label = QString("%1").arg(val);
+	sprintf(buffer, "%+.3e", val);
+	QString label = QString(buffer);
+	paint.drawLine(w - 5, y, w, y);//  100 - 10, y, 100, y);
+	paint.drawText(5, // 100 - 15 - paint.fontMetrics().width(label),
+		       y - paint.fontMetrics().height() + paint.fontMetrics().ascent(),
 		       label);
 	val += inc;
     }

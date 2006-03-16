@@ -137,8 +137,8 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     long rectStart = startFrame + (rect.x() - 100) * zoomLevel;
     long rectEnd = startFrame + (rect.x() + rect.width() + 100) * zoomLevel;
-    if (rectStart < startFrame) rectStart = startFrame;
-    if (rectEnd > endFrame) rectEnd = endFrame;
+//    if (rectStart < startFrame) rectStart = startFrame;
+//    if (rectEnd > endFrame) rectEnd = endFrame;
 
 //    std::cerr << "TimeRulerLayer::paint: calling paint.save()" << std::endl;
     paint.save();
@@ -197,6 +197,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
     QRect newClipRect(oldClipRect.x() - 25, oldClipRect.y(),
 		      oldClipRect.width() + 50, oldClipRect.height());
     paint.setClipRect(newClipRect);
+    paint.setClipRect(rect);
 
     QColor greyColour(m_colour);
     if (m_colour == Qt::black) {
@@ -241,22 +242,13 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	int tw = metrics.width(text);
 
-	paint.setPen(v->palette().background().color());
-
-	//!!! simple drawing function for this please
-	//!!! and need getContrastingColour() in widget, or use the
-	//palette properly -- get the base class able to draw text
-	//using the proper colour (or this technique) automatically
-	for (int dx = -1; dx <= 1; ++dx) {
-	    for (int dy = -1; dy <= 1; ++dy) {
-		if ((dx && dy) || !(dx || dy)) continue;
-		paint.drawText(x + 2 - tw / 2 + dx, y + dy, text);
-	    }
+	if (v->getLayer(0) == this) {
+	    // backmost layer, don't worry about outlining the text
+	    paint.drawText(x+2 - tw/2, y, text);
+	} else {
+	    v->drawVisibleText(paint, x+2 - tw/2, y, text, View::OutlinedText);
 	}
-	
-	paint.setPen(m_colour);
-	paint.drawText(x + 2 - tw / 2, y, text);
-		
+
 	paint.setPen(greyColour);
 
 	for (int i = 1; i < ticks; ++i) {

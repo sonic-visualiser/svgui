@@ -264,7 +264,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    m_propertyControllers[name] = cb;
 	}
 
-	if (cb->isChecked() != (value > 0)) cb->setChecked(value > 0);
+	if (cb->isChecked() != (value > 0)) {
+	    cb->blockSignals(true);
+	    cb->setChecked(value > 0);
+	    cb->blockSignals(false);
+	}
 	break;
     }
 
@@ -308,7 +312,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    m_propertyControllers[name] = dial;
 	}
 
-	if (dial->value() != value) dial->setValue(value);
+	if (dial->value() != value) {
+	    dial->blockSignals(true);
+	    dial->setValue(value);
+	    dial->blockSignals(false);
+	}
 	break;
     }
 
@@ -340,7 +348,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    m_propertyControllers[name] = cb;
 	}
 
-	if (cb->currentIndex() != value) cb->setCurrentIndex(value);
+	if (cb->currentIndex() != value) {
+	    cb->blockSignals(true);
+	    cb->setCurrentIndex(value);
+	    cb->blockSignals(false);
+	}
 
 #ifdef Q_WS_MAC
 	// Crashes on startup without this, for some reason
@@ -360,6 +372,10 @@ PropertyBox::propertyContainerPropertyChanged(PropertyContainer *pc)
 {
     if (pc != m_container) return;
     
+#ifdef DEBUG_PROPERTY_BOX
+    std::cerr << "PropertyBox::propertyContainerPropertyChanged" << std::endl;
+#endif
+
     PropertyContainer::PropertyList properties = m_container->getProperties();
     size_t i;
 
@@ -386,7 +402,7 @@ PropertyBox::propertyControllerChanged(int value)
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
     
     if (type != PropertyContainer::InvalidProperty) {
-	m_container->setProperty(name, value);
+	m_container->setPropertyWithCommand(name, value);
     }
 
     if (type == PropertyContainer::RangeProperty) {
