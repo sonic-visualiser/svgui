@@ -13,8 +13,31 @@
 
 #include "widgets/Pane.h"
 #include "base/Layer.h"
+#include "base/Model.h"
 
 #include <iostream>
+
+
+class ViewObjectAssoc : public QObject
+{
+public:
+    ViewObjectAssoc(QObject *parent, View *v, QObject *o) :
+	QObject(parent), view(v), object(o) {
+	++extantCount;
+    }
+
+    virtual ~ViewObjectAssoc() {
+	std::cerr << "~ViewObjectAssoc (now " << --extantCount << " extant)"
+		  << std::endl;
+    }
+
+    View *view;
+    QObject *object;
+
+    static int extantCount;
+};
+
+int ViewObjectAssoc::extantCount = 0;
 
 
 LayerTreeModel::LayerTreeModel(PaneStack *stack, QObject *parent) :
@@ -30,10 +53,10 @@ LayerTreeModel::~LayerTreeModel()
 QVariant
 LayerTreeModel::data(const QModelIndex &index, int role) const
 {
-    std::cerr << "LayerTreeModel::data(" << &index << ", role " << role << ")" << std::endl;
-
     if (!index.isValid()) return QVariant();
     if (role != Qt::DisplayRole) return QVariant();
+
+    std::cerr << "LayerTreeModel::data(" << &index << ", role " << role << ")" << std::endl;
 
     QObject *obj = static_cast<QObject *>(index.internalPointer());
     
@@ -55,28 +78,43 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
 	return QVariant();
     }
 
-    Layer *layer = dynamic_cast<Layer *>(obj);
-    if (layer) {
-	std::cerr << "node is layer" << std::endl;
-	return QVariant(QString("%1").arg(layer->objectName()));
+    ViewObjectAssoc *assoc = dynamic_cast<ViewObjectAssoc *>(obj);
+    if (assoc) {
+	std::cerr << "node is assoc" << std::endl;
+	Layer *layer = dynamic_cast<Layer *>(assoc->object);
+	if (layer) {
+	    std::cerr << "with layer" << std::endl;
+	    return QVariant(layer->objectName());
+	}
+	Model *model = dynamic_cast<Model *>(assoc->object);
+	if (model) {
+	    std::cerr << "with model" << std::endl;
+	    return QVariant(model->objectName());
+	}
     }
 
     return QVariant();
 }
 
-/*
 Qt::ItemFlags
 LayerTreeModel::flags(const QModelIndex &index) const
 {
+    if (!index.isValid()) return Qt::ItemIsEnabled;
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
 QVariant
-LayerTreeModel::headerData(const QModelIndex &index,
+LayerTreeModel::headerData(int section,
 			   Qt::Orientation orientation,
 			   int role) const
 {
+    if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
+	if (section == 0) return QVariant(tr("Layer"));
+	else if (section == 1) return QVariant(tr("Model"));
+    }
+
+    return QVariant();
 }
-*/
 
 QModelIndex
 LayerTreeModel::index(int row, int column, const QModelIndex &parent) const
@@ -87,6 +125,7 @@ LayerTreeModel::index(int row, int column, const QModelIndex &parent) const
     if (!parent.isValid()) {
 	// this is the pane stack
 	std::cerr << "parent invalid, returning pane stack as root" << std::endl;
+	if (column > 0) return QModelIndex();
 	return createIndex(row, column, m_stack);
     }
 
@@ -94,6 +133,7 @@ LayerTreeModel::index(int row, int column, const QModelIndex &parent) const
     
     PaneStack *paneStack = dynamic_cast<PaneStack *>(obj);
     if (paneStack) {
+	if (column > 0) return QModelIndex();
 	if (paneStack == m_stack && row < m_stack->getPaneCount()) {
 	    std::cerr << "parent is pane stack, returning a pane" << std::endl;
 	    return createIndex(row, column, m_stack->getPane(row));
@@ -104,9 +144,20 @@ LayerTreeModel::index(int row, int column, const QModelIndex &parent) const
 
     Pane *pane = dynamic_cast<Pane *>(obj);
     if (pane) {
+	std::cerr << "parent is pane" << std::endl;
 	if (row < pane->getLayerCount()) {
-	    std::cerr << "parent is pane, returning layer" << std::endl;
-	    return createIndex(row, column, pane->getLayer(row));
+	    Layer *layer = pane->getLayer(row);
+	    if (column == 0) {
+		std::cerr << "parent is pane, returning layer" << std::endl;
+		ViewObjectAssoc *assoc = new ViewObjectAssoc
+		    (const_cast<LayerTreeModel *>(this), pane, layer);
+		return createIndex(row, column, assoc);
+	    } else {
+		std::cerr << "parent is pane, column != 0, returning model" << std::endl;
+		ViewObjectAssoc *assoc = new ViewObjectAssoc
+		    (const_cast<LayerTreeModel *>(this), pane, layer->getModel());
+		return createIndex(row, column, assoc);
+	    }		
 	}
     }
 
@@ -133,25 +184,22 @@ LayerTreeModel::parent(const QModelIndex &index) const
 	return createIndex(0, 0, m_stack);
     }
 
-    Layer *layer = dynamic_cast<Layer *>(obj);
-    if (layer) {
-//!!!	const View *view = layer->getView();
-	const View *view = 0;
-	Pane *pane = const_cast<Pane *>(dynamic_cast<const Pane *>(view));
+    ViewObjectAssoc *assoc = dynamic_cast<ViewObjectAssoc *>(obj);
+    if (assoc) {
+	View *view = assoc->view;
+	Pane *pane = dynamic_cast<Pane *>(view);
 	if (pane) {
 	    // need index of pane in pane stack
 	    for (int i = 0; i < m_stack->getPaneCount(); ++i) {
 		if (pane == m_stack->getPane(i)) {
-		    std::cerr << "node is layer, returning pane " << i << " as parent" << std::endl;
+		    std::cerr << "node is assoc, returning pane " << i << " as parent" << std::endl;
 		    return createIndex(i, 0, pane);
 		}
 	    }
 	}
-	std::cerr << "node is layer, but no parent found" << std::endl;
+	std::cerr << "node is assoc, but no parent found" << std::endl;
 	return QModelIndex();
     }
-
-	
 
     std::cerr << "unknown node" << std::endl;
     return QModelIndex();
@@ -194,14 +242,20 @@ LayerTreeModel::rowCount(const QModelIndex &parent) const
 int
 LayerTreeModel::columnCount(const QModelIndex &parent) const
 {
-    if (!parent.isValid()) return 1;
+    if (!parent.isValid()) {
+	std::cerr << "LayerTreeModel::columnCount: parent invalid, returning 2" << std::endl;
+	return 2;
+    }
 
     QObject *obj = static_cast<QObject *>(parent.internalPointer());
     
     Pane *pane = dynamic_cast<Pane *>(obj);
     if (pane) {
-	return 1; // 2; // layer and model
+	std::cerr << "LayerTreeModel::columnCount: pane, returning 2" << std::endl;
+	return 2; // layer and model
     }
+
+    std::cerr << "LayerTreeModel::columnCount: returning 1" << std::endl;
 
     return 1;
 }

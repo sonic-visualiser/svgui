@@ -323,17 +323,7 @@ Pane::paintEvent(QPaintEvent *e)
 
 	for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
 
-	    QString layerName = (*i)->objectName();
-	    QString modelName;
-	    if ((*i)->getModel()) modelName = (*i)->getModel()->objectName();
-	    
-	    QString text;
-	    if (modelName != "") {
-		text = QString("%1: %2").arg(modelName).arg(layerName);
-	    } else {
-		text = layerName;
-	    }
-	
+	    QString text = (*i)->getLayerPresentationName();
 	    texts.push_back(text);
 	    int tw = paint.fontMetrics().width(text);
 	    if (tw > maxTextWidth) maxTextWidth = tw;
