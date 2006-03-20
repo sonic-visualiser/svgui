@@ -153,7 +153,7 @@ PropertyBox::populateViewPlayFrame()
 	gainDial->setFixedWidth(24);
 	gainDial->setFixedHeight(24);
 	gainDial->setNotchesVisible(false);
-	gainDial->setToolTip(tr("Layer playback Level"));
+	gainDial->setToolTip(tr("Playback Level"));
 	gainDial->setDefaultValue(0);
 	connect(gainDial, SIGNAL(valueChanged(int)),
 		this, SLOT(playGainDialChanged(int)));
@@ -174,7 +174,7 @@ PropertyBox::populateViewPlayFrame()
 	panDial->setFixedWidth(24);
 	panDial->setFixedHeight(24);
 	panDial->setNotchesVisible(false);
-	panDial->setToolTip(tr("Layer playback Pan / Balance"));
+	panDial->setToolTip(tr("Playback Pan / Balance"));
 	panDial->setDefaultValue(0);
 	connect(panDial, SIGNAL(valueChanged(int)),
 		this, SLOT(playPanDialChanged(int)));
