@@ -330,8 +330,22 @@ Pane::paintEvent(QPaintEvent *e)
 	for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
 
 	    QString text = (*i)->getLayerPresentationName();
-	    texts.push_back(text);
 	    int tw = paint.fontMetrics().width(text);
+            bool reduced = false;
+            while (tw > width() / 3 && text.length() > 4) {
+                if (!reduced && text.length() > 8) {
+                    text = text.left(text.length() - 4);
+                } else {
+                    text = text.left(text.length() - 2);
+                }
+                reduced = true;
+                tw = paint.fontMetrics().width(text + "...");
+            }
+            if (reduced) {
+                texts.push_back(text + "...");
+            } else {
+                texts.push_back(text);
+            }
 	    if (tw > maxTextWidth) maxTextWidth = tw;
 	}
     
