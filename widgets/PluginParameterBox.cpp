@@ -25,7 +25,8 @@
 #include <iostream>
 #include <string>
 
-PluginParameterBox::PluginParameterBox(PluginInstance *plugin) :
+PluginParameterBox::PluginParameterBox(PluginInstance *plugin, QWidget *parent) :
+    QFrame(parent),
     m_plugin(plugin)
 {
     m_layout = new QGridLayout;
@@ -44,6 +45,12 @@ PluginParameterBox::populate()
 
     m_params.clear();
 
+    if (params.empty()) {
+        m_layout->addWidget
+            (new QLabel(tr("This plugin has no adjustable parameters.")),
+             0, 0);
+    }
+
     for (size_t i = 0; i < params.size(); ++i) {
 
         QString name = params[i].name.c_str();
@@ -53,6 +60,7 @@ PluginParameterBox::populate()
         float min = params[i].minValue;
         float max = params[i].maxValue;
         float deft = params[i].defaultValue;
+        float value = m_plugin->getParameter(params[i].name);
 
         float qtz = 0.0;
         if (params[i].isQuantized) qtz = params[i].quantizeStep;
@@ -80,6 +88,9 @@ PluginParameterBox::populate()
         dial->setPageStep(1);
         dial->setNotchesVisible((imax - imin) <= 12);
         dial->setDefaultValue(int((deft - min) / qtz));
+        dial->setValue(int((value - min) / qtz));
+	dial->setFixedWidth(32);
+	dial->setFixedHeight(32);
         connect(dial, SIGNAL(valueChanged(int)),
                 this, SLOT(dialChanged(int)));
         m_layout->addWidget(dial, i, 1);
@@ -88,9 +99,9 @@ PluginParameterBox::populate()
         spinbox->setObjectName(name);
         spinbox->setMinimum(min);
         spinbox->setMaximum(max);
-        spinbox->setSuffix(unit);
+        spinbox->setSuffix(QString(" %1").arg(unit));
         spinbox->setSingleStep(qtz);
-        spinbox->setValue(deft);
+        spinbox->setValue(value);
         connect(spinbox, SIGNAL(valueChanged(double)),
                 this, SLOT(spinBoxChanged(double)));
         m_layout->addWidget(spinbox, i, 2);

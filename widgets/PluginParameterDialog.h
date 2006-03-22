@@ -13,45 +13,35 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PLUGIN_PARAMETER_BOX_H_
-#define _PLUGIN_PARAMETER_BOX_H_
+#ifndef _PLUGIN_PARAMETER_DIALOG_H_
+#define _PLUGIN_PARAMETER_DIALOG_H_
 
-#include "plugin/PluginInstance.h"
+#include <QDialog>
 
-#include <QFrame>
-#include <map>
+class PluginInstance;
+class PluginParameterBox;
 
-class AudioDial;
-class QDoubleSpinBox;
-class QGridLayout;
+/**
+ * A dialog for editing the parameters of a given plugin, using a
+ * PluginParameterBox.  This dialog does not contain any mechanism for
+ * selecting the plugin in the first place.  Note that the dialog
+ * directly modifies the parameters of the plugin, so they will remain
+ * modified even if the dialog is then cancelled.
+ */
 
-class PluginParameterBox : public QFrame
+class PluginParameterDialog : public QDialog
 {
     Q_OBJECT
     
 public:
-    PluginParameterBox(PluginInstance *, QWidget *parent = 0);
-    ~PluginParameterBox();
+    PluginParameterDialog(PluginInstance *, QWidget *parent = 0);
+    ~PluginParameterDialog();
 
     PluginInstance *getPlugin() { return m_plugin; }
 
-protected slots:
-    void dialChanged(int);
-    void spinBoxChanged(double);
-
 protected:
-    void populate();
-
-    QGridLayout *m_layout;
     PluginInstance *m_plugin;
-
-    struct ParamRec {
-        AudioDial *dial;
-        QDoubleSpinBox *spin;
-        PluginInstance::ParameterDescriptor param;
-    };
-
-    std::map<QString, ParamRec> m_params;
+    PluginParameterBox *m_parameterBox;
 };
 
 #endif
