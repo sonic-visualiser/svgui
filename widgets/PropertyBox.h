@@ -45,6 +45,7 @@ signals:
 
 public slots:
     void propertyContainerPropertyChanged(PropertyContainer *);
+    void pluginConfigurationChanged(QString);
 
 protected slots:
     void propertyControllerChanged(int);

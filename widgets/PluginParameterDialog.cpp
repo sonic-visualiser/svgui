@@ -88,6 +88,8 @@ PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
     paramBox->setLayout(paramLayout);
 
     m_parameterBox = new PluginParameterBox(m_plugin);
+    connect(m_parameterBox, SIGNAL(pluginConfigurationChanged(QString)),
+            this,  SIGNAL(pluginConfigurationChanged(QString)));
     paramLayout->addWidget(m_parameterBox);
 
     QHBoxLayout *hbox = new QHBoxLayout;

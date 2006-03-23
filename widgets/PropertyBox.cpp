@@ -154,7 +154,9 @@ PropertyBox::populateViewPlayFrame()
 	layout->insertStretch(-1, 10);
 
         if (params->getPlayPluginId() != "") {
-            QPushButton *pluginButton = new QPushButton("E");
+            QPushButton *pluginButton = new QPushButton(QIcon(":icons/faders.png"), "");
+            pluginButton->setFixedWidth(24);
+            pluginButton->setFixedHeight(24);
             layout->addWidget(pluginButton);
             connect(pluginButton, SIGNAL(clicked()),
                     this, SLOT(editPlugin()));
@@ -486,13 +488,31 @@ PropertyBox::editPlugin()
     instance->setParametersFromXml(configurationXml);
 
     PluginParameterDialog *dialog = new PluginParameterDialog(instance);
+    connect(dialog, SIGNAL(pluginConfigurationChanged(QString)),
+            this, SLOT(pluginConfigurationChanged(QString)));
+
     if (dialog->exec() == QDialog::Accepted) {
         params->setPlayPluginConfiguration(instance->toXmlString());
+    } else {
+        // restore in case we mucked about with the configuration
+        // as a consequence of signals from the dialog
+        params->setPlayPluginConfiguration(configurationXml);
     }
 
     delete dialog;
     delete instance;
 }
+
+void
+PropertyBox::pluginConfigurationChanged(QString configurationXml)
+{
+    PlayParameters *params = m_container->getPlayParameters();
+    if (!params) return;
+
+    params->setPlayPluginConfiguration(configurationXml);
+}    
+    
+    
 
 #ifdef INCLUDE_MOCFILES
 #include "PropertyBox.moc.cpp"

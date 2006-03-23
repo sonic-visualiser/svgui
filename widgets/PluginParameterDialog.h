@@ -39,6 +39,9 @@ public:
 
     PluginInstance *getPlugin() { return m_plugin; }
 
+signals:
+    void pluginConfigurationChanged(QString);
+
 protected:
     PluginInstance *m_plugin;
     PluginParameterBox *m_parameterBox;
