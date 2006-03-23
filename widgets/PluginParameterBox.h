@@ -36,6 +36,9 @@ public:
 
     PluginInstance *getPlugin() { return m_plugin; }
 
+signals:
+    void pluginConfigurationChanged(QString);
+
 protected slots:
     void dialChanged(int);
     void spinBoxChanged(double);

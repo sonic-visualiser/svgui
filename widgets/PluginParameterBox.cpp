@@ -192,6 +192,8 @@ PluginParameterBox::dialChanged(int ival)
     }
 
     m_plugin->setParameter(name.toStdString(), newValue);
+
+    emit pluginConfigurationChanged(m_plugin->toXmlString());
 }
 
 void
@@ -209,6 +211,8 @@ PluginParameterBox::checkBoxChanged(int state)
 
     if (state) m_plugin->setParameter(name.toStdString(), 1.0);
     else m_plugin->setParameter(name.toStdString(), 0.0);
+
+    emit pluginConfigurationChanged(m_plugin->toXmlString());
 }
 
 void
@@ -253,6 +257,8 @@ PluginParameterBox::spinBoxChanged(double value)
     }
 
     m_plugin->setParameter(name.toStdString(), value);
+
+    emit pluginConfigurationChanged(m_plugin->toXmlString());
 }
 
 void
@@ -289,5 +295,7 @@ PluginParameterBox::programComboChanged(const QString &newProgram)
             i->second.dial->blockSignals(false);
         }
     }
+
+    emit pluginConfigurationChanged(m_plugin->toXmlString());
 }
 
