@@ -14,10 +14,14 @@
 */
 
 #include "PropertyBox.h"
+#include "PluginParameterDialog.h"
 
 #include "base/PropertyContainer.h"
 #include "base/PlayParameters.h"
 #include "base/Layer.h"
+
+#include "plugin/RealTimePluginFactory.h"
+#include "plugin/RealTimePluginInstance.h"
 
 #include "AudioDial.h"
 #include "LEDButton.h"
@@ -27,6 +31,7 @@
 #include <QVBoxLayout>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QPushButton>
 #include <QLabel>
 #include <QFrame>
 
@@ -46,8 +51,6 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 
     m_mainBox = new QVBoxLayout;
     setLayout(m_mainBox);
-
-    bool needViewPlayBox = false;
 
     m_mainWidget = new QWidget;
     m_mainBox->addWidget(m_mainWidget);
@@ -149,6 +152,13 @@ PropertyBox::populateViewPlayFrame()
 	layout->setAlignment(playButton, Qt::AlignVCenter);
 
 	layout->insertStretch(-1, 10);
+
+        if (params->getPlayPluginId() != "") {
+            QPushButton *pluginButton = new QPushButton("E");
+            layout->addWidget(pluginButton);
+            connect(pluginButton, SIGNAL(clicked()),
+                    this, SLOT(editPlugin()));
+        }
 
 	AudioDial *gainDial = new AudioDial;
 	layout->addWidget(gainDial);
@@ -452,6 +462,36 @@ PropertyBox::playPanDialChanged(int dialValue)
     if (pan < -1.0) pan = -1.0;
     if (pan >  1.0) pan =  1.0;
     emit changePlayPan(pan);
+}
+
+void
+PropertyBox::editPlugin()
+{
+    //!!! should probably just emit and let something else do this
+
+    PlayParameters *params = m_container->getPlayParameters();
+    if (!params) return;
+
+    QString pluginId = params->getPlayPluginId();
+    QString configurationXml = params->getPlayPluginConfiguration();
+    
+    RealTimePluginFactory *factory =
+	RealTimePluginFactory::instanceFor(pluginId);
+    if (!factory) return;
+
+    RealTimePluginInstance *instance =
+        factory->instantiatePlugin(pluginId, 0, 0, 48000, 1024, 1);
+    if (!instance) return;
+
+    instance->setParametersFromXml(configurationXml);
+
+    PluginParameterDialog *dialog = new PluginParameterDialog(instance);
+    if (dialog->exec() == QDialog::Accepted) {
+        params->setPlayPluginConfiguration(instance->toXmlString());
+    }
+
+    delete dialog;
+    delete instance;
 }
 
 #ifdef INCLUDE_MOCFILES

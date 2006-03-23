@@ -39,6 +39,9 @@ PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
     QGridLayout *subgrid = new QGridLayout;
     pluginBox->setLayout(subgrid);
 
+    subgrid->setSpacing(0);
+    subgrid->setMargin(10);
+
     QFont font(pluginBox->font());
     font.setBold(true);
 
@@ -55,17 +58,23 @@ PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
     copyrightLabel->setFont(font);
 
+    QLabel *typeLabel = new QLabel(plugin->getType().c_str());
+    typeLabel->setFont(font);
+
     subgrid->addWidget(new QLabel(tr("Name:")), 0, 0);
     subgrid->addWidget(nameLabel, 0, 1);
 
-    subgrid->addWidget(new QLabel(tr("Maker:")), 1, 0);
-    subgrid->addWidget(makerLabel, 1, 1);
+    subgrid->addWidget(new QLabel(tr("Type:")), 1, 0);
+    subgrid->addWidget(typeLabel, 1, 1);
 
-    subgrid->addWidget(new QLabel(tr("Copyright:")), 2, 0);
-    subgrid->addWidget(copyrightLabel, 2, 1);
+    subgrid->addWidget(new QLabel(tr("Maker:")), 2, 0);
+    subgrid->addWidget(makerLabel, 2, 1);
 
-    subgrid->addWidget(new QLabel(tr("Version:")), 3, 0);
-    subgrid->addWidget(versionLabel, 3, 1);
+    subgrid->addWidget(new QLabel(tr("Copyright:  ")), 3, 0);
+    subgrid->addWidget(copyrightLabel, 3, 1);
+
+    subgrid->addWidget(new QLabel(tr("Version:")), 4, 0);
+    subgrid->addWidget(versionLabel, 4, 1);
 
     subgrid->setColumnStretch(1, 2);
 
@@ -75,6 +84,7 @@ PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
     grid->setRowStretch(1, 10);
 
     QHBoxLayout *paramLayout = new QHBoxLayout;
+    paramLayout->setMargin(0);
     paramBox->setLayout(paramLayout);
 
     m_parameterBox = new PluginParameterBox(m_plugin);

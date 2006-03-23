@@ -23,6 +23,7 @@
 
 class AudioDial;
 class QDoubleSpinBox;
+class QCheckBox;
 class QGridLayout;
 
 class PluginParameterBox : public QFrame
@@ -38,6 +39,8 @@ public:
 protected slots:
     void dialChanged(int);
     void spinBoxChanged(double);
+    void checkBoxChanged(int);
+    void programComboChanged(const QString &);
 
 protected:
     void populate();
@@ -48,6 +51,7 @@ protected:
     struct ParamRec {
         AudioDial *dial;
         QDoubleSpinBox *spin;
+        QCheckBox *check;
         PluginInstance::ParameterDescriptor param;
     };
 
