@@ -56,6 +56,8 @@ protected slots:
 
     void populateViewPlayFrame();
 
+    void editPlugin();
+
 protected:
     void updatePropertyEditor(PropertyContainer::PropertyName);
 
