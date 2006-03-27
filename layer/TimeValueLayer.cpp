@@ -22,6 +22,8 @@
 
 #include "model/SparseTimeValueModel.h"
 
+#include "SpectrogramLayer.h" // for optional frequency alignment
+
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
@@ -37,7 +39,8 @@ TimeValueLayer::TimeValueLayer() :
     m_editingPoint(0, 0.0, tr("New Point")),
     m_editingCommand(0),
     m_colour(Qt::black),
-    m_plotStyle(PlotConnectedPoints)
+    m_plotStyle(PlotConnectedPoints),
+    m_verticalScale(LinearScale)
 {
     
 }
@@ -66,6 +69,7 @@ TimeValueLayer::getProperties() const
     PropertyList list;
     list.push_back(tr("Colour"));
     list.push_back(tr("Plot Type"));
+    list.push_back(tr("Vertical Scale"));
     return list;
 }
 
@@ -102,6 +106,13 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 	
 	deft = int(m_plotStyle);
 
+    } else if (name == tr("Vertical Scale")) {
+	
+	if (min) *min = 0;
+	if (max) *max = 3;
+	
+	deft = int(m_verticalScale);
+
     } else {
 	
 	deft = Layer::getPropertyRangeAndValue(name, min, max);
@@ -134,6 +145,14 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("Curve");
 	case 5: return tr("Segmentation");
 	}
+    } else if (name == tr("Vertical Scale")) {
+	switch (value) {
+	default:
+	case 0: return tr("Linear Scale");
+	case 1: return tr("Log Scale");
+	case 2: return tr("+/-1 Scale");
+	case 3: return tr("Frequency Scale");
+	}
     }
     return tr("<unknown>");
 }
@@ -153,6 +172,8 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
 	}
     } else if (name == tr("Plot Type")) {
 	setPlotStyle(PlotStyle(value));
+    } else if (name == tr("Vertical Scale")) {
+	setVerticalScale(VerticalScale(value));
     }
 }
 
@@ -169,6 +190,14 @@ TimeValueLayer::setPlotStyle(PlotStyle style)
 {
     if (m_plotStyle == style) return;
     m_plotStyle = style;
+    emit layerParametersChanged();
+}
+
+void
+TimeValueLayer::setVerticalScale(VerticalScale scale)
+{
+    if (m_verticalScale == scale) return;
+    m_verticalScale = scale;
     emit layerParametersChanged();
 }
 
@@ -340,7 +369,7 @@ TimeValueLayer::snapToFeatureFrame(View *v, int &frame,
 }
 
 int
-TimeValueLayer::getYForValue(View *v, float value) const
+TimeValueLayer::getYForValue(View *v, float val) const
 {
     float min = m_model->getValueMinimum();
     float max = m_model->getValueMaximum();
@@ -348,12 +377,37 @@ TimeValueLayer::getYForValue(View *v, float value) const
 
     int h = v->height();
 
-    return int(h - ((value - min) * h) / (max - min));
+    if (m_verticalScale == FrequencyScale || m_verticalScale == LogScale) {
+        
+        if (m_verticalScale == FrequencyScale) {
+            // If we have a spectrogram layer on the same view as us, align
+            // ourselves with it...
+            for (int i = 0; i < v->getLayerCount(); ++i) {
+                SpectrogramLayer *spectrogram = dynamic_cast<SpectrogramLayer *>
+                    (v->getLayer(i));
+                if (spectrogram) {
+                    return spectrogram->getYForFrequency(v, val);
+                }
+            }
+        }
+
+        min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
+        max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+        val = (val < 0.0) ? -log10(-val) : (val == 0.0) ? 0.0 : log10(val);
+
+    } else if (m_verticalScale == PlusMinusOneScale) {
+        min = -1.0;
+        max = 1.0;
+    }
+
+    return int(h - ((val - min) * h) / (max - min));
 }
 
 float
 TimeValueLayer::getValueForY(View *v, int y) const
 {
+    //!!!
+
     float min = m_model->getValueMinimum();
     float max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;

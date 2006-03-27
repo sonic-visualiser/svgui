@@ -80,6 +80,16 @@ public:
     void setPlotStyle(PlotStyle style);
     PlotStyle getPlotStyle() const { return m_plotStyle; }
 
+    enum VerticalScale {
+        LinearScale,
+        LogScale,
+        PlusMinusOneScale,
+        FrequencyScale
+    };
+    
+    void setVerticalScale(VerticalScale scale);
+    VerticalScale getVerticalScale() const { return m_verticalScale; }
+
     virtual bool isLayerScrollable(const View *v) const;
 
     virtual bool isLayerEditable() const { return true; }
@@ -104,6 +114,7 @@ protected:
     SparseTimeValueModel::EditCommand *m_editingCommand;
     QColor m_colour;
     PlotStyle m_plotStyle;
+    VerticalScale m_verticalScale;
 };
 
 #endif
