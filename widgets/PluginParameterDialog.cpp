@@ -49,14 +49,14 @@ PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
     nameLabel->setFont(font);
 
     QLabel *makerLabel = new QLabel(plugin->getMaker().c_str());
-    makerLabel->setFont(font);
+//    makerLabel->setFont(font);
 
     QLabel *versionLabel = new QLabel(QString("%1")
                                       .arg(plugin->getPluginVersion()));
-    versionLabel->setFont(font);
+//    versionLabel->setFont(font);
 
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
-    copyrightLabel->setFont(font);
+//    copyrightLabel->setFont(font);
 
     QLabel *typeLabel = new QLabel(plugin->getType().c_str());
     typeLabel->setFont(font);
