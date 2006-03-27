@@ -408,6 +408,8 @@ NoteLayer::getYForValue(View *v, float value) const
 float
 NoteLayer::getValueForY(View *v, int y) const
 {
+    //!!!
+
     float min = m_model->getValueMinimum();
     float max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
