@@ -2119,10 +2119,10 @@ SpectrogramLayer::getFeatureDescription(View *v, QPoint &pos) const
 	}
 
 	if (adjFreqMin != adjFreqMax) {
-	    adjFreqText = tr("Adjusted Frequency:\t%1 - %2 Hz\n")
+	    adjFreqText = tr("Peak Frequency:\t%1 - %2 Hz\n")
 		.arg(adjFreqMin).arg(adjFreqMax);
 	} else {
-	    adjFreqText = tr("Adjusted Frequency:\t%1 Hz\n")
+	    adjFreqText = tr("Peak Frequency:\t%1 Hz\n")
 		.arg(adjFreqMin);
 	}
 
@@ -2130,9 +2130,9 @@ SpectrogramLayer::getFeatureDescription(View *v, QPoint &pos) const
 	QString pmax = Pitch::getPitchLabelForFrequency(adjFreqMax);
 
 	if (pmin != pmax) {
-	    adjPitchText = tr("Adjusted Pitch:\t%3 - %4\n").arg(pmin).arg(pmax);
+	    adjPitchText = tr("Peak Pitch:\t%3 - %4\n").arg(pmin).arg(pmax);
 	} else {
-	    adjPitchText = tr("Adjusted Pitch:\t%2\n").arg(pmin);
+	    adjPitchText = tr("Peak Pitch:\t%2\n").arg(pmin);
 	}
 
     } else {
@@ -2152,19 +2152,19 @@ SpectrogramLayer::getFeatureDescription(View *v, QPoint &pos) const
     }
 
     if (freqMin != freqMax) {
-	text += tr("Frequency:\t%1 - %2 Hz\n%3Pitch:\t%4 - %5\n%6")
+	text += tr("%1Bin Frequency:\t%2 - %3 Hz\n%4Bin Pitch:\t%5 - %6\n")
+	    .arg(adjFreqText)
 	    .arg(freqMin)
 	    .arg(freqMax)
-	    .arg(adjFreqText)
+	    .arg(adjPitchText)
 	    .arg(Pitch::getPitchLabelForFrequency(freqMin))
-	    .arg(Pitch::getPitchLabelForFrequency(freqMax))
-	    .arg(adjPitchText);
+	    .arg(Pitch::getPitchLabelForFrequency(freqMax));
     } else {
-	text += tr("Frequency:\t%1 Hz\n%2Pitch:\t%3\n%4")
-	    .arg(freqMin)
+	text += tr("%1Bin Frequency:\t%2 Hz\n%3Bin Pitch:\t%4\n")
 	    .arg(adjFreqText)
-	    .arg(Pitch::getPitchLabelForFrequency(freqMin))
-	    .arg(adjPitchText);
+	    .arg(freqMin)
+	    .arg(adjPitchText)
+	    .arg(Pitch::getPitchLabelForFrequency(freqMin));
     }	
 
     if (haveValues) {
