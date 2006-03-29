@@ -38,7 +38,7 @@ TimeValueLayer::TimeValueLayer() :
     m_originalPoint(0, 0.0, tr("New Point")),
     m_editingPoint(0, 0.0, tr("New Point")),
     m_editingCommand(0),
-    m_colour(Qt::black),
+    m_colour(Qt::darkGreen),
     m_plotStyle(PlotConnectedPoints),
     m_verticalScale(LinearScale)
 {
@@ -646,6 +646,10 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	val += inc;
     }
 
+    if (m_model->getScaleUnits() != "") {
+        paint.drawText(5, 5 + paint.fontMetrics().ascent(),
+                       m_model->getScaleUnits());
+    }
 }
 
 void

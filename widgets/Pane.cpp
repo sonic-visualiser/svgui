@@ -656,6 +656,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
 //!!!	if (mode != ViewManager::DrawMode) {
 
+        if (!m_manager->isPlaying()) {
+
 	if (getSelectedLayer()) {
 
 	    bool previouslyIdentifying = m_identifyFeatures;
@@ -666,6 +668,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 		update();
 	    }
 	}
+
+        }
 
 //	}
 
