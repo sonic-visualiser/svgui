@@ -64,6 +64,12 @@ public:
     float getGain() const { return m_gain; }
 
     /**
+     * Toggle automatic normalization of the currently visible waveform.
+     */
+    void setAutoNormalize(bool);
+    bool getAutoNormalize() const { return m_autoNormalize; }
+
+    /**
      * Set the basic display colour for waveforms.
      *
      * The default is black.
@@ -95,13 +101,14 @@ public:
     bool getUseGreyscale() const { return m_greyscale; }
 
 
-    enum ChannelMode { SeparateChannels, MergeChannels };
+    enum ChannelMode { SeparateChannels, MixChannels, MergeChannels };
 
     /**
      * Specify whether multi-channel audio data should be displayed
-     * with a separate axis per channel (SeparateChannels), or with a
+     * with a separate axis per channel (SeparateChannels), with a
      * single synthetic axis showing channel 0 above the axis and
-     * channel 1 below (MergeChannels).
+     * channel 1 below (MergeChannels), or with a single axis showing
+     * the average of the channels (MixChannels).
      * 
      * MergeChannels does not work for files with more than 2
      * channels.
@@ -161,6 +168,8 @@ public:
     void setAggressiveCacheing(bool);
     bool getAggressiveCacheing() const { return m_aggressive; }
 
+    virtual bool isLayerScrollable(const View *) const;
+
     virtual int getCompletion() const;
 
     virtual QString toXmlString(QString indent = "",
@@ -174,9 +183,11 @@ protected:
     const RangeSummarisableTimeValueModel *m_model; // I do not own this
 
     /// Return value is number of channels displayed
-    size_t getChannelArrangement(size_t &min, size_t &max, bool &merging) const;
+    size_t getChannelArrangement(size_t &min, size_t &max,
+                                 bool &merging, bool &mixing) const;
 
     float        m_gain;
+    bool         m_autoNormalize;
     QColor       m_colour;
     bool         m_showMeans;
     bool         m_greyscale;
@@ -184,6 +195,8 @@ protected:
     int          m_channel;
     Scale        m_scale;
     bool         m_aggressive;
+
+    mutable std::vector<float> m_effectiveGains;
 
     mutable QPixmap *m_cache;
     mutable bool m_cacheValid;
