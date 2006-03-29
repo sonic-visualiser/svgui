@@ -162,7 +162,7 @@ Pane::paintEvent(QPaintEvent *e)
 
 	    paint.setPen(Qt::black);
 	    paint.setBrush(Qt::white);
-	    paint.drawRect(0, 0, verticalScaleWidth, height());
+	    paint.drawRect(0, -1, verticalScaleWidth, height()+1);
 
 	    paint.setBrush(Qt::NoBrush);
 	    (*vi)->paintVerticalScale

@@ -78,7 +78,11 @@ WaveformLayer::getProperties() const
     list.push_back(tr("Scale"));
     list.push_back(tr("Gain"));
     list.push_back(tr("Normalize Visible Area"));
-    list.push_back(tr("Channels"));
+
+    if (m_model && m_model->getChannelCount() > 1 && m_channel == -1) {
+        list.push_back(tr("Channels"));
+    }
+
     return list;
 }
 
@@ -369,6 +373,9 @@ WaveformLayer::isLayerScrollable(const View *) const
     return !m_autoNormalize;
 }
 
+static float meterdbs[] = { -40, -30, -20, -15, -10,
+                            -5, -3, -2, -1, -0.5, 0 };
+
 void
 WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 {
@@ -487,28 +494,6 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	int prevRangeBottom = -1, prevRangeTop = -1;
 	QColor prevRangeBottomColour = m_colour, prevRangeTopColour = m_colour;
 
-	int m = (h / channels) / 2;
-	int my = m + (((ch - minChannel) * h) / channels);
-	
-//	std::cerr << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << std::endl;
-
-	if (my - m > y1 || my + m < y0) continue;
-
-	paint->setPen(greys[0]);
-	paint->drawLine(x0, my, x1, my);
-
-	if (frame1 <= 0) continue;
-
-	size_t modelZoomLevel = zoomLevel;
-
-	ranges = m_model->getRanges
-	    (ch, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
-        
-	if (mergingChannels || mixingChannels) {
-	    otherChannelRanges = m_model->getRanges
-		(1, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
-	}
-
         m_effectiveGains[ch] = m_gain;
 
         if (m_autoNormalize) {
@@ -528,6 +513,80 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
         }
 
         float gain = m_effectiveGains[ch];
+
+	int m = (h / channels) / 2;
+	int my = m + (((ch - minChannel) * h) / channels);
+	
+//	std::cerr << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << std::endl;
+
+	if (my - m > y1 || my + m < y0) continue;
+
+        if ((m_scale == dBScale || m_scale == MeterScale) &&
+            m_channelMode != MergeChannels) {
+            m = (h / channels);
+            my = m + (((ch - minChannel) * h) / channels);
+        }
+
+	paint->setPen(greys[0]);
+	paint->drawLine(x0, my, x1, my);
+
+        int n = 10;
+        int py = -1;
+        
+        if (v->hasLightBackground()) {
+
+            paint->setPen(QColor(240, 240, 240));
+
+            for (int i = 1; i < n; ++i) {
+                
+                float val = 0.0, nval = 0.0;
+
+                switch (m_scale) {
+
+                case LinearScale:
+                    val = (i * gain) / n;
+                    if (i > 0) nval = -val;
+                    break;
+
+                case MeterScale:
+                    val = AudioLevel::dB_to_multiplier(meterdbs[i]) * gain;
+                    break;
+
+                case dBScale:
+                    val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10) * gain;
+                    break;
+                }
+
+                if (val < -1.0 || val > 1.0) continue;
+
+                int y = getYForValue(v, m_scale, val, ch, minChannel, maxChannel);
+
+                if (py >= 0 && abs(y - py) < 10) continue;
+                else py = y;
+
+                int ny = y;
+                if (nval != 0.0) {
+                    ny = getYForValue(v, m_scale, nval, ch, minChannel, maxChannel);
+                }
+
+                paint->drawLine(x0, y, x1, y);
+                if (ny != y) {
+                    paint->drawLine(x0, ny, x1, ny);
+                }
+            }
+        }
+
+	if (frame1 <= 0) continue;
+
+	size_t modelZoomLevel = zoomLevel;
+
+	ranges = m_model->getRanges
+	    (ch, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
+        
+	if (mergingChannels || mixingChannels) {
+	    otherChannelRanges = m_model->getRanges
+		(1, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
+	}
 
 	for (int x = x0; x <= x1; ++x) {
 
@@ -832,6 +891,45 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 int
+WaveformLayer::getYForValue(View *v, Scale scale, float value, size_t channel,
+                            size_t minChannel, size_t maxChannel) const
+{
+    if (maxChannel < minChannel || channel < minChannel) return 0;
+
+    int w = v->width();
+    int h = v->height();
+
+    int channels = maxChannel - minChannel + 1;
+    int m = (h / channels) / 2;
+    int my = m + (((channel - minChannel) * h) / channels);
+	
+    if ((m_scale == dBScale || m_scale == MeterScale) &&
+        m_channelMode != MergeChannels) {
+        m = (h / channels);
+        my = m + (((channel - minChannel) * h) / channels);
+    }
+
+    int vy = 0;
+
+    switch (scale) {
+
+    case LinearScale:
+        vy = int(m * value);
+        break;
+
+    case MeterScale:
+        vy = AudioLevel::multiplier_to_preview(value, m);
+        break;
+
+    case dBScale:
+        vy = dBscale(value, m);
+        break;
+    }
+
+    return my - vy;
+}
+
+int
 WaveformLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 {
     if (m_scale == LinearScale) {
@@ -864,75 +962,101 @@ WaveformLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
     for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
 
-	int m = (h / channels) / 2;
-	int my = m + (((ch - minChannel) * h) / channels);
-	int py = -1;
+	int lastLabelledY = -1;
 
         if (ch < m_effectiveGains.size()) gain = m_effectiveGains[ch];
 
-	for (int i = 0; i <= 10; ++i) {
+        int n = 10;
 
-	    int vy = 0;
+	for (int i = 0; i <= n; ++i) {
+
+            float val = 0.0, nval = 0.0;
 	    QString text = "";
 
-	    if (m_scale == LinearScale) {
-
-		vy = int((m * i * gain) / 10);
-
-		text = QString("%1").arg(float(i) / 10.0);
+            switch (m_scale) {
+                
+            case LinearScale:
+                val = (i * gain) / n;
+		text = QString("%1").arg(float(i) / n);
 		if (i == 0) text = "0.0";
-		if (i == 10) text = "1.0";
+                else {
+                    nval = -val;
+                    if (i == n) text = "1.0";
+                }
+                break;
 
-	    } else {
-
-		int db;
-		bool minvalue = false;
-		
-		if (m_scale == MeterScale) {
-		    static int dbs[] = { -50, -40, -30, -20, -15,
-					 -10, -5, -3, -2, -1, 0 };
-		    db = dbs[i];
-		    if (db == -50) minvalue = true;
-		    vy = AudioLevel::multiplier_to_preview
-			(AudioLevel::dB_to_multiplier(db) * gain, m);
-		} else {
-		    db = -100 + i * 10;
-		    if (db == -100) minvalue = true;
-		    vy = dBscale
-			(AudioLevel::dB_to_multiplier(db) * gain, m);
+            case MeterScale:
+                val = AudioLevel::dB_to_multiplier(meterdbs[i]) * gain;
+		text = QString("%1").arg(meterdbs[i]);
+		if (i == n) text = tr("0dB");
+		if (i == 0) {
+                    text = tr("-Inf");
+                    val = 0.0;
 		}
+                break;
 
-		text = QString("%1").arg(db);
-		if (db == 0) text = tr("0dB");
-		if (minvalue) {
-		    text = tr("-Inf");
-		    vy = 0;
+            case dBScale:
+                val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10) * gain;
+		text = QString("%1").arg(-(10*n) + i * 10);
+		if (i == n) text = tr("0dB");
+		if (i == 0) {
+                    text = tr("-Inf");
+                    val = 0.0;
 		}
-	    }
+                break;
+            }
 
-	    if (vy < 0) vy = -vy;
-//	    if (vy >= m - 1) continue;
+            if (val < -1.0 || val > 1.0) continue;
 
-	    if (py >= 0 && (vy - py) < textHeight - 1) {
-		paint.drawLine(w - 4, my - vy, w, my - vy);
-		if (vy > 0) paint.drawLine(w - 4, my + vy, w, my + vy);
-		continue;
-	    }
+            int y = getYForValue(v, m_scale, val, ch, minChannel, maxChannel);
 
-	    paint.drawLine(w - 7, my - vy, w, my - vy);
-	    if (vy > 0) paint.drawLine(w - 7, my + vy, w, my + vy);
+            int ny = y;
+            if (nval != 0.0) {
+                ny = getYForValue(v, m_scale, nval, ch, minChannel, maxChannel);
+            }
 
-	    int tx = 3;
-	    if (m_scale != LinearScale) {
-		tx = w - 10 - paint.fontMetrics().width(text);
-	    }
-	    
-	    if (vy >= m - 1) continue;
+            bool spaceForLabel = (i == 0 ||
+                                  abs(y - lastLabelledY) >= textHeight - 1);
 
-	    paint.drawText(tx, my - vy + toff, text);
-	    if (vy > 0) paint.drawText(tx, my + vy + toff, text);
-		
-	    py = vy;
+            if (spaceForLabel) {
+
+                int tx = 3;
+                if (m_scale != LinearScale) {
+                    tx = w - 10 - paint.fontMetrics().width(text);
+                }
+                  
+                int ty = y;
+                if (ty < paint.fontMetrics().ascent()) {
+                    ty = paint.fontMetrics().ascent();
+                } else if (ty > h - paint.fontMetrics().descent()) {
+                    ty = h - paint.fontMetrics().descent();
+                } else {
+                    ty += toff;
+                }
+                paint.drawText(tx, ty, text);
+
+                lastLabelledY = ty - toff;
+
+                if (ny != y) {
+                    ty = ny;
+                    if (ty < paint.fontMetrics().ascent()) {
+                        ty = paint.fontMetrics().ascent();
+                    } else if (ty > h - paint.fontMetrics().descent()) {
+                        ty = h - paint.fontMetrics().descent();
+                    } else {
+                        ty += toff;
+                    }
+                    paint.drawText(tx, ty, text);
+                }
+
+                paint.drawLine(w - 7, y, w, y);
+                if (ny != y) paint.drawLine(w - 7, ny, w, ny);
+
+            } else {
+
+                paint.drawLine(w - 4, y, w, y);
+                if (ny != y) paint.drawLine(w - 4, ny, w, ny);
+            }
 	}
     }
 }

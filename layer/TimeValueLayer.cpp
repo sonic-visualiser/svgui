@@ -417,6 +417,28 @@ TimeValueLayer::getValueForY(View *v, int y) const
     return min + (float(h - y) * float(max - min)) / h;
 }
 
+QColor
+TimeValueLayer::getColourForValue(float val) const
+{
+    float min = m_model->getValueMinimum();
+    float max = m_model->getValueMaximum();
+    if (max == min) max = min + 1.0;
+
+    if (m_verticalScale == FrequencyScale || m_verticalScale == LogScale) {
+        min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
+        max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+        val = (val < 0.0) ? -log10(-val) : (val == 0.0) ? 0.0 : log10(val);
+    } else if (m_verticalScale == PlusMinusOneScale) {
+        min = -1.0;
+        max = 1.0;
+    }
+
+    int iv = ((val - min) / (max - min)) * 255.999;
+
+    QColor colour = QColor::fromHsv(256 - iv, iv / 2 + 128, iv);
+    return QColor(colour.red(), colour.green(), colour.blue(), 120);
+}
+
 void
 TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
@@ -497,10 +519,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	paint.setPen(m_colour);
 
 	if (m_plotStyle == PlotSegmentation) {
-	    int value = ((p.value - min) / (max - min)) * 255.999;
-	    QColor colour = QColor::fromHsv(256 - value, value / 2 + 128, value);
-	    paint.setBrush(QColor(colour.red(), colour.green(), colour.blue(),
-				  120));
+            paint.setBrush(getColourForValue(p.value));
 	    labelY = v->height();
 	} else if (m_plotStyle == PlotLines ||
 		   m_plotStyle == PlotCurve) {
@@ -617,35 +636,82 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 int
 TimeValueLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 {
-    if (m_plotStyle == PlotSegmentation) return 0;
-    return paint.fontMetrics().width("+0.000e+00") + 15;
+    int w = paint.fontMetrics().width("-000.000");
+    if (m_plotStyle == PlotSegmentation) return w + 20;
+    else return w + 10;
 }
 
 void
 TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model) return;
-    if (m_plotStyle == PlotSegmentation) return;
 
-    float val = m_model->getValueMinimum();
-    float inc = (m_model->getValueMaximum() - val) / 10;
+    int h = v->height();
+
+    int n = 10;
+
+    float max = m_model->getValueMaximum();
+    float min = m_model->getValueMinimum();
+    float val = min;
+    float inc = (max - val) / n;
 
     char buffer[40];
 
     int w = getVerticalScaleWidth(v, paint);
 
-    while (val < m_model->getValueMaximum()) {
-	int y = getYForValue(v, val);
-//	QString label = QString("%1").arg(val);
-	sprintf(buffer, "%+.3e", val);
-	QString label = QString(buffer);
-	paint.drawLine(w - 5, y, w, y);//  100 - 10, y, 100, y);
-	paint.drawText(5, // 100 - 15 - paint.fontMetrics().width(label),
-		       y - paint.fontMetrics().height() + paint.fontMetrics().ascent(),
-		       label);
-	val += inc;
+    int tx = 5;
+
+    int boxx = 5, boxy = 5;
+    if (m_model->getScaleUnits() != "") {
+        boxy += paint.fontMetrics().height();
+    }
+    int boxw = 10, boxh = h - boxy - 5;
+
+    if (m_plotStyle == PlotSegmentation) {
+        tx += boxx + boxw;
+        paint.drawRect(boxx, boxy, boxw, boxh);
     }
 
+    if (m_plotStyle == PlotSegmentation) {
+        paint.save();
+        for (int y = 0; y < boxh; ++y) {
+            float val = ((boxh - y) * (max - min)) / boxh + min;
+            paint.setPen(getColourForValue(val));
+            paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
+        }
+        paint.restore();
+    }
+
+    for (int i = 0; i < n; ++i) {
+
+	int y, ty;
+        bool drawText = true;
+
+        if (m_plotStyle == PlotSegmentation) {
+            y = boxy + int(boxh - ((val - min) * boxh) / (max - min));
+            ty = y;
+        } else {
+            if (i == n-1) {
+                if (m_model->getScaleUnits() != "") drawText = false;
+            }
+            y = getYForValue(v, val);
+            ty = y - paint.fontMetrics().height() +
+                     paint.fontMetrics().ascent();
+        }
+
+	sprintf(buffer, "%.3f", val);
+	QString label = QString(buffer);
+
+        if (m_plotStyle != PlotSegmentation) {
+            paint.drawLine(w - 5, y, w, y);
+        } else {
+            paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
+        }
+
+        if (drawText) paint.drawText(tx, ty, label);
+	val += inc;
+    }
+    
     if (m_model->getScaleUnits() != "") {
         paint.drawText(5, 5 + paint.fontMetrics().ascent(),
                        m_model->getScaleUnits());

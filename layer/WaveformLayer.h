@@ -186,6 +186,9 @@ protected:
     size_t getChannelArrangement(size_t &min, size_t &max,
                                  bool &merging, bool &mixing) const;
 
+    int getYForValue(View *v, Scale scale, float value, size_t channel,
+                     size_t minChannel, size_t maxChannel) const;
+
     float        m_gain;
     bool         m_autoNormalize;
     QColor       m_colour;
