@@ -105,6 +105,8 @@ protected:
     int getYForValue(View *, float value) const;
     float getValueForY(View *, int y) const;
 
+    QColor getColourForValue(float value) const;
+
     SparseTimeValueModel::PointList getLocalPoints(View *v, int) const;
 
     SparseTimeValueModel *m_model;
