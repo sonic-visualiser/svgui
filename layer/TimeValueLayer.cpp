@@ -22,6 +22,8 @@
 
 #include "model/SparseTimeValueModel.h"
 
+#include "widgets/ItemEditDialog.h"
+
 #include "SpectrogramLayer.h" // for optional frequency alignment
 
 #include <QPainter>
@@ -842,6 +844,43 @@ TimeValueLayer::editEnd(View *v, QMouseEvent *e)
 
     m_editingCommand = 0;
     m_editing = false;
+}
+
+void
+TimeValueLayer::editOpen(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+
+    SparseTimeValueModel::Point point = *points.begin();
+
+    ItemEditDialog *dialog = new ItemEditDialog
+        (m_model->getSampleRate(),
+         ItemEditDialog::ShowTime |
+         ItemEditDialog::ShowValue |
+         ItemEditDialog::ShowText);
+
+    dialog->setFrameTime(point.frame);
+    dialog->setValue(point.value);
+    dialog->setText(point.label);
+
+    if (dialog->exec() == QDialog::Accepted) {
+
+        SparseTimeValueModel::Point newPoint = point;
+        newPoint.frame = dialog->getFrameTime();
+        newPoint.value = dialog->getValue();
+        newPoint.label = dialog->getText();
+        
+        SparseTimeValueModel::EditCommand *command =
+            new SparseTimeValueModel::EditCommand(m_model, tr("Edit Point"));
+        command->deletePoint(point);
+        command->addPoint(newPoint);
+        command->finish();
+    }
+
+    delete dialog;
 }
 
 void

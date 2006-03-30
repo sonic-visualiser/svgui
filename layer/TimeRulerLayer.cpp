@@ -248,12 +248,16 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	int tw = metrics.width(text);
 
-	if (v->getLayer(0) == this) {
-	    // backmost layer, don't worry about outlining the text
-	    paint.drawText(x+2 - tw/2, y, text);
-	} else {
-	    v->drawVisibleText(paint, x+2 - tw/2, y, text, View::OutlinedText);
-	}
+        if (v->getViewManager() && v->getViewManager()->getOverlayMode() !=
+            ViewManager::NoOverlays) {
+
+            if (v->getLayer(0) == this) {
+                // backmost layer, don't worry about outlining the text
+                paint.drawText(x+2 - tw/2, y, text);
+            } else {
+                v->drawVisibleText(paint, x+2 - tw/2, y, text, View::OutlinedText);
+            }
+        }
 
 	paint.setPen(greyColour);
 

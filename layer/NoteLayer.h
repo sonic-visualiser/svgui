@@ -48,6 +48,8 @@ public:
     virtual void editDrag(View *v, QMouseEvent *);
     virtual void editEnd(View *v, QMouseEvent *);
 
+    virtual void editOpen(View *v, QMouseEvent *);
+
     virtual void moveSelection(Selection s, size_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
 
