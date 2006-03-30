@@ -487,7 +487,7 @@ PropertyBox::editPlugin()
 
     instance->setParametersFromXml(configurationXml);
 
-    PluginParameterDialog *dialog = new PluginParameterDialog(instance);
+    PluginParameterDialog *dialog = new PluginParameterDialog(instance, -1, -1, -1);
     connect(dialog, SIGNAL(pluginConfigurationChanged(QString)),
             this, SLOT(pluginConfigurationChanged(QString)));
 

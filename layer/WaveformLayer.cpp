@@ -56,6 +56,20 @@ WaveformLayer::~WaveformLayer()
 void
 WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
 {
+    bool channelsChanged = false;
+    if (m_channel == -1) {
+        if (!m_model) {
+            if (model) {
+                channelsChanged = true;
+            }
+        } else {
+            if (model &&
+                m_model->getChannelCount() != model->getChannelCount()) {
+                channelsChanged = true;
+            }
+        }
+    }
+
     m_model = model;
     m_cacheValid = false;
     if (!m_model || !m_model->isOK()) return;
@@ -68,6 +82,8 @@ WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
 	    this, SIGNAL(modelCompletionChanged()));
 
     emit modelReplaced();
+
+    if (channelsChanged) emit layerParametersChanged();
 }
 
 Layer::PropertyList

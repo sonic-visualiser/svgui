@@ -22,11 +22,17 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QMessageBox>
+#include <QComboBox>
 
 PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
+                                             int sourceChannels,
+                                             int targetChannels,
+                                             int defaultChannel,
 					     QWidget *parent) :
     QDialog(parent),
     m_plugin(plugin),
+    m_channel(defaultChannel),
     m_parameterBox(0)
 {
     QGridLayout *grid = new QGridLayout;
@@ -49,14 +55,11 @@ PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
     nameLabel->setFont(font);
 
     QLabel *makerLabel = new QLabel(plugin->getMaker().c_str());
-//    makerLabel->setFont(font);
 
     QLabel *versionLabel = new QLabel(QString("%1")
                                       .arg(plugin->getPluginVersion()));
-//    versionLabel->setFont(font);
 
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
-//    copyrightLabel->setFont(font);
 
     QLabel *typeLabel = new QLabel(plugin->getType().c_str());
     typeLabel->setFont(font);
@@ -92,8 +95,57 @@ PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
             this,  SIGNAL(pluginConfigurationChanged(QString)));
     paramLayout->addWidget(m_parameterBox);
 
+    if (sourceChannels != targetChannels) {
+
+        // At the moment we can only cope with the case where
+        // sourceChannels > targetChannels and targetChannels == 1
+
+        if (sourceChannels < targetChannels) {
+
+            QMessageBox::warning
+                (parent,
+                 tr("Channel mismatch"),
+                 tr("This plugin requires at least %1 input channels, but only %2 %3 available.  The plugin probably will not work correctly.").arg(targetChannels).arg(sourceChannels).arg(sourceChannels != 1 ? tr("are") : tr("is")),
+                 QMessageBox::Ok,
+                 QMessageBox::NoButton);
+
+        } else {
+
+            QGroupBox *channelBox = new QGroupBox;
+            channelBox->setTitle(tr("Channels"));
+            grid->addWidget(channelBox, 2, 0);
+            
+            QVBoxLayout *channelLayout = new QVBoxLayout;
+            channelBox->setLayout(channelLayout);
+
+            if (targetChannels != 1) {
+
+                channelLayout->addWidget
+                    (new QLabel(tr("This plugin accepts no more than %1 input channels,\nbut %2 are available.  Only the first %3 will be used.\n")
+                                .arg(targetChannels)
+                                .arg(sourceChannels)
+                                .arg(targetChannels)));
+
+            } else {
+
+                channelLayout->addWidget(new QLabel(tr("This plugin only has a single channel input,\nbut the source has %1 channels.").arg(sourceChannels)));
+
+                QComboBox *channelCombo = new QComboBox;
+                channelCombo->addItem(tr("Use sum of source channels").arg(sourceChannels));
+                for (int i = 0; i < sourceChannels; ++i) {
+                    channelCombo->addItem(tr("Use channel %1 only").arg(i + 1));
+                }
+
+                connect(channelCombo, SIGNAL(activated(int)),
+                        this, SLOT(channelComboChanged(int)));
+
+                channelLayout->addWidget(channelCombo);
+            }
+        }
+    }
+
     QHBoxLayout *hbox = new QHBoxLayout;
-    grid->addLayout(hbox, 2, 0);
+    grid->addLayout(hbox, 3, 0);
     
     QPushButton *ok = new QPushButton(tr("OK"));
     QPushButton *cancel = new QPushButton(tr("Cancel"));
@@ -106,5 +158,11 @@ PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
 
 PluginParameterDialog::~PluginParameterDialog()
 {
+}
+
+void
+PluginParameterDialog::channelComboChanged(int index)
+{
+    m_channel = index - 1;
 }
 
