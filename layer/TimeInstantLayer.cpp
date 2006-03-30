@@ -22,6 +22,8 @@
 
 #include "model/SparseOneDimensionalModel.h"
 
+#include "widgets/ItemEditDialog.h"
+
 #include <QPainter>
 #include <QMouseEvent>
 
@@ -577,6 +579,40 @@ TimeInstantLayer::editEnd(View *v, QMouseEvent *e)
     }
     m_editingCommand = 0;
     m_editing = false;
+}
+
+void
+TimeInstantLayer::editOpen(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    SparseOneDimensionalModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+
+    SparseOneDimensionalModel::Point point = *points.begin();
+
+    ItemEditDialog *dialog = new ItemEditDialog
+        (m_model->getSampleRate(),
+         ItemEditDialog::ShowTime |
+         ItemEditDialog::ShowText);
+
+    dialog->setFrameTime(point.frame);
+    dialog->setText(point.label);
+
+    if (dialog->exec() == QDialog::Accepted) {
+
+        SparseOneDimensionalModel::Point newPoint = point;
+        newPoint.frame = dialog->getFrameTime();
+        newPoint.label = dialog->getText();
+        
+        SparseOneDimensionalModel::EditCommand *command =
+            new SparseOneDimensionalModel::EditCommand(m_model, tr("Edit Point"));
+        command->deletePoint(point);
+        command->addPoint(newPoint);
+        command->finish();
+    }
+
+    delete dialog;
 }
 
 void

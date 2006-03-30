@@ -144,86 +144,90 @@ Pane::paintEvent(QPaintEvent *e)
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
-    for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
-	--vi;
+    if (m_manager &&
+        m_manager->getOverlayMode() != ViewManager::NoOverlays) {
 
-	if (dynamic_cast<WaveformLayer *>(*vi)) {
-	    waveformModel = (*vi)->getModel();
-	}
+        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+            --vi;
 
-	verticalScaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
+            if (dynamic_cast<WaveformLayer *>(*vi)) {
+                waveformModel = (*vi)->getModel();
+            }
 
-	if (verticalScaleWidth > 0 && r.left() < verticalScaleWidth) {
+            verticalScaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
+
+            if (verticalScaleWidth > 0 && r.left() < verticalScaleWidth) {
 
 //	    Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
 //	    std::cerr << "Pane::paintEvent: calling paint.save() in vertical scale block" << std::endl;
-	    paint.save();
+                paint.save();
 
-	    paint.setPen(Qt::black);
-	    paint.setBrush(Qt::white);
-	    paint.drawRect(0, -1, verticalScaleWidth, height()+1);
+                paint.setPen(Qt::black);
+                paint.setBrush(Qt::white);
+                paint.drawRect(0, -1, verticalScaleWidth, height()+1);
 
-	    paint.setBrush(Qt::NoBrush);
-	    (*vi)->paintVerticalScale
-		(this, paint, QRect(0, 0, verticalScaleWidth, height()));
+                paint.setBrush(Qt::NoBrush);
+                (*vi)->paintVerticalScale
+                    (this, paint, QRect(0, 0, verticalScaleWidth, height()));
 
-	    paint.restore();
-	}
+                paint.restore();
+            }
 	
-	if (m_identifyFeatures) {
+            if (m_identifyFeatures) {
 
-	    QPoint pos = m_identifyPoint;
-	    QString desc = (*vi)->getFeatureDescription(this, pos);
+                QPoint pos = m_identifyPoint;
+                QString desc = (*vi)->getFeatureDescription(this, pos);
 	    
-	    if (desc != "") {
+                if (desc != "") {
 
-		paint.save();
+                    paint.save();
 
-		int tabStop =
-		    paint.fontMetrics().width(tr("Some lengthy prefix:"));
+                    int tabStop =
+                        paint.fontMetrics().width(tr("Some lengthy prefix:"));
 
-		QRect boundingRect = 
-		    paint.fontMetrics().boundingRect
-		    (rect(),
-		     Qt::AlignRight | Qt::AlignTop | Qt::TextExpandTabs,
-		     desc, tabStop);
+                    QRect boundingRect = 
+                        paint.fontMetrics().boundingRect
+                        (rect(),
+                         Qt::AlignRight | Qt::AlignTop | Qt::TextExpandTabs,
+                         desc, tabStop);
 
-		if (hasLightBackground()) {
-		    paint.setPen(Qt::NoPen);
-		    paint.setBrush(QColor(250, 250, 250, 200));
-		} else {
-		    paint.setPen(Qt::NoPen);
-		    paint.setBrush(QColor(50, 50, 50, 200));
-		}
+                    if (hasLightBackground()) {
+                        paint.setPen(Qt::NoPen);
+                        paint.setBrush(QColor(250, 250, 250, 200));
+                    } else {
+                        paint.setPen(Qt::NoPen);
+                        paint.setBrush(QColor(50, 50, 50, 200));
+                    }
 
-		int extra = paint.fontMetrics().descent();
-		paint.drawRect(width() - boundingRect.width() - 10 - extra,
-			       10 - extra,
-			       boundingRect.width() + 2 * extra,
-			       boundingRect.height() + extra);
+                    int extra = paint.fontMetrics().descent();
+                    paint.drawRect(width() - boundingRect.width() - 10 - extra,
+                                   10 - extra,
+                                   boundingRect.width() + 2 * extra,
+                                   boundingRect.height() + extra);
 
-		if (hasLightBackground()) {
-		    paint.setPen(QColor(150, 20, 0));
-		} else {
-		    paint.setPen(QColor(255, 150, 100));
-		}
+                    if (hasLightBackground()) {
+                        paint.setPen(QColor(150, 20, 0));
+                    } else {
+                        paint.setPen(QColor(255, 150, 100));
+                    }
 		
-		QTextOption option;
-		option.setWrapMode(QTextOption::NoWrap);
-		option.setAlignment(Qt::AlignRight | Qt::AlignTop);
-		option.setTabStop(tabStop);
-		paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
-				      boundingRect.width(),
-				      boundingRect.height()),
-			       desc,
-			       option);
+                    QTextOption option;
+                    option.setWrapMode(QTextOption::NoWrap);
+                    option.setAlignment(Qt::AlignRight | Qt::AlignTop);
+                    option.setTabStop(tabStop);
+                    paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
+                                          boundingRect.width(),
+                                          boundingRect.height()),
+                                   desc,
+                                   option);
 
-		paint.restore();
-	    }
-	}
+                    paint.restore();
+                }
+            }
 
-	break;
+            break;
+        }
     }
     
     int sampleRate = getModelsSampleRate();
@@ -264,24 +268,28 @@ Pane::paintEvent(QPaintEvent *e)
 	    }
 	}
 
-	if (sampleRate) {
+        if (m_manager &&
+            m_manager->getOverlayMode() != ViewManager::NoOverlays) {
 
-	    QString text(QString::fromStdString
-			 (RealTime::frame2RealTime
-			  (m_centreFrame, sampleRate).toText(true)));
+            if (sampleRate) {
 
-	    int tw = paint.fontMetrics().width(text);
-	    int x = width()/2 - 4 - tw;
-
-	    drawVisibleText(paint, x, y, text, OutlinedText);
-	}
-
-	QString text = QString("%1").arg(m_centreFrame);
-
-	int tw = paint.fontMetrics().width(text);
-	int x = width()/2 + 4;
-
-	drawVisibleText(paint, x, y, text, OutlinedText);
+                QString text(QString::fromStdString
+                             (RealTime::frame2RealTime
+                              (m_centreFrame, sampleRate).toText(true)));
+                
+                int tw = paint.fontMetrics().width(text);
+                int x = width()/2 - 4 - tw;
+                
+                drawVisibleText(paint, x, y, text, OutlinedText);
+            }
+            
+            QString text = QString("%1").arg(m_centreFrame);
+            
+            int tw = paint.fontMetrics().width(text);
+            int x = width()/2 + 4;
+            
+            drawVisibleText(paint, x, y, text, OutlinedText);
+        }
 
     } else {
 
@@ -289,6 +297,8 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     if (waveformModel &&
+        m_manager &&
+        m_manager->getOverlayMode() != ViewManager::NoOverlays &&
 	r.y() + r.height() >= height() - fontHeight - 6) {
 
 	size_t mainModelRate = m_manager->getMainModelSampleRate();
@@ -322,7 +332,9 @@ Pane::paintEvent(QPaintEvent *e)
 	}
     }
 
-    if (r.y() + r.height() >= height() - m_layers.size() * fontHeight - 6) {
+    if (m_manager &&
+        m_manager->getOverlayMode() == ViewManager::AllOverlays &&
+        r.y() + r.height() >= height() - m_layers.size() * fontHeight - 6) {
 
 	std::vector<QString> texts;
 	int maxTextWidth = 0;

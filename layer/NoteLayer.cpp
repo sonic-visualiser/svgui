@@ -23,6 +23,8 @@
 
 #include "model/NoteModel.h"
 
+#include "widgets/ItemEditDialog.h"
+
 #include "SpectrogramLayer.h" // for optional frequency alignment
 
 #include <QPainter>
@@ -623,6 +625,46 @@ NoteLayer::editEnd(View *v, QMouseEvent *e)
 
     m_editingCommand = 0;
     m_editing = false;
+}
+
+void
+NoteLayer::editOpen(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    NoteModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+
+    NoteModel::Point note = *points.begin();
+
+    ItemEditDialog *dialog = new ItemEditDialog
+        (m_model->getSampleRate(),
+         ItemEditDialog::ShowTime |
+         ItemEditDialog::ShowDuration |
+         ItemEditDialog::ShowValue |
+         ItemEditDialog::ShowText);
+
+    dialog->setFrameTime(note.frame);
+    dialog->setValue(note.value);
+    dialog->setFrameDuration(note.duration);
+    dialog->setText(note.label);
+
+    if (dialog->exec() == QDialog::Accepted) {
+
+        NoteModel::Point newNote = note;
+        newNote.frame = dialog->getFrameTime();
+        newNote.value = dialog->getValue();
+        newNote.duration = dialog->getFrameDuration();
+        newNote.label = dialog->getText();
+        
+        NoteModel::EditCommand *command = new NoteModel::EditCommand
+            (m_model, tr("Edit Point"));
+        command->deletePoint(note);
+        command->addPoint(newNote);
+        command->finish();
+    }
+
+    delete dialog;
 }
 
 void
