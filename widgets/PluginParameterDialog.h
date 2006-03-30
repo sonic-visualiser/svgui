@@ -34,16 +34,26 @@ class PluginParameterDialog : public QDialog
     Q_OBJECT
     
 public:
-    PluginParameterDialog(PluginInstance *, QWidget *parent = 0);
+    PluginParameterDialog(PluginInstance *,
+                          int sourceChannels,
+                          int targetChannels,
+                          int defaultChannel,
+                          QWidget *parent = 0);
     ~PluginParameterDialog();
 
     PluginInstance *getPlugin() { return m_plugin; }
 
+    int getChannel() const { return m_channel; }
+
 signals:
     void pluginConfigurationChanged(QString);
 
+protected slots:
+    void channelComboChanged(int);
+
 protected:
     PluginInstance *m_plugin;
+    int m_channel;
     PluginParameterBox *m_parameterBox;
 };
 
