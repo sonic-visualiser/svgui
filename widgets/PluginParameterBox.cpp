@@ -17,6 +17,8 @@
 
 #include "AudioDial.h"
 
+#include "plugin/PluginXml.h"
+
 #include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QComboBox>
@@ -27,7 +29,7 @@
 #include <iostream>
 #include <string>
 
-PluginParameterBox::PluginParameterBox(PluginInstance *plugin, QWidget *parent) :
+PluginParameterBox::PluginParameterBox(Vamp::PluginBase *plugin, QWidget *parent) :
     QFrame(parent),
     m_plugin(plugin)
 {
@@ -43,8 +45,8 @@ PluginParameterBox::~PluginParameterBox()
 void
 PluginParameterBox::populate()
 {
-    PluginInstance::ParameterList params = m_plugin->getParameterDescriptors();
-    PluginInstance::ProgramList programs = m_plugin->getPrograms();
+    Vamp::PluginBase::ParameterList params = m_plugin->getParameterDescriptors();
+    Vamp::PluginBase::ProgramList programs = m_plugin->getPrograms();
 
     m_params.clear();
 
@@ -170,7 +172,7 @@ PluginParameterBox::dialChanged(int ival)
         return;
     }
 
-    PluginInstance::ParameterDescriptor params = m_params[name].param;
+    Vamp::PluginBase::ParameterDescriptor params = m_params[name].param;
 
     float min = params.minValue;
     float max = params.maxValue;
@@ -193,7 +195,7 @@ PluginParameterBox::dialChanged(int ival)
 
     m_plugin->setParameter(name.toStdString(), newValue);
 
-    emit pluginConfigurationChanged(m_plugin->toXmlString());
+    emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
 
 void
@@ -207,12 +209,12 @@ PluginParameterBox::checkBoxChanged(int state)
         return;
     }
 
-    PluginInstance::ParameterDescriptor params = m_params[name].param;
+    Vamp::PluginBase::ParameterDescriptor params = m_params[name].param;
 
     if (state) m_plugin->setParameter(name.toStdString(), 1.0);
     else m_plugin->setParameter(name.toStdString(), 0.0);
 
-    emit pluginConfigurationChanged(m_plugin->toXmlString());
+    emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
 
 void
@@ -226,7 +228,7 @@ PluginParameterBox::spinBoxChanged(double value)
         return;
     }
 
-    PluginInstance::ParameterDescriptor params = m_params[name].param;
+    Vamp::PluginBase::ParameterDescriptor params = m_params[name].param;
 
     float min = params.minValue;
     float max = params.maxValue;
@@ -258,7 +260,7 @@ PluginParameterBox::spinBoxChanged(double value)
 
     m_plugin->setParameter(name.toStdString(), value);
 
-    emit pluginConfigurationChanged(m_plugin->toXmlString());
+    emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
 
 void
@@ -269,7 +271,7 @@ PluginParameterBox::programComboChanged(const QString &newProgram)
     for (std::map<QString, ParamRec>::iterator i = m_params.begin();
          i != m_params.end(); ++i) {
 
-        PluginInstance::ParameterDescriptor &param = i->second.param;
+        Vamp::PluginBase::ParameterDescriptor &param = i->second.param;
         float value = m_plugin->getParameter(param.name);
 
         if (i->second.spin) {
@@ -296,6 +298,6 @@ PluginParameterBox::programComboChanged(const QString &newProgram)
         }
     }
 
-    emit pluginConfigurationChanged(m_plugin->toXmlString());
+    emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
 

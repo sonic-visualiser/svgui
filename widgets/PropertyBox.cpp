@@ -22,6 +22,7 @@
 
 #include "plugin/RealTimePluginFactory.h"
 #include "plugin/RealTimePluginInstance.h"
+#include "plugin/PluginXml.h"
 
 #include "AudioDial.h"
 #include "LEDButton.h"
@@ -485,14 +486,14 @@ PropertyBox::editPlugin()
         factory->instantiatePlugin(pluginId, 0, 0, 48000, 1024, 1);
     if (!instance) return;
 
-    instance->setParametersFromXml(configurationXml);
+    PluginXml(instance).setParametersFromXml(configurationXml);
 
     PluginParameterDialog *dialog = new PluginParameterDialog(instance, -1, -1, -1);
     connect(dialog, SIGNAL(pluginConfigurationChanged(QString)),
             this, SLOT(pluginConfigurationChanged(QString)));
 
     if (dialog->exec() == QDialog::Accepted) {
-        params->setPlayPluginConfiguration(instance->toXmlString());
+        params->setPlayPluginConfiguration(PluginXml(instance).toXmlString());
     } else {
         // restore in case we mucked about with the configuration
         // as a consequence of signals from the dialog

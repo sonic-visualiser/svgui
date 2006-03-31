@@ -25,7 +25,7 @@
 #include <QMessageBox>
 #include <QComboBox>
 
-PluginParameterDialog::PluginParameterDialog(PluginInstance *plugin,
+PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                                              int sourceChannels,
                                              int targetChannels,
                                              int defaultChannel,

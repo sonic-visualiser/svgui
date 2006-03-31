@@ -16,7 +16,7 @@
 #ifndef _PLUGIN_PARAMETER_BOX_H_
 #define _PLUGIN_PARAMETER_BOX_H_
 
-#include "plugin/PluginInstance.h"
+#include "vamp-sdk/PluginBase.h"
 
 #include <QFrame>
 #include <map>
@@ -31,10 +31,10 @@ class PluginParameterBox : public QFrame
     Q_OBJECT
     
 public:
-    PluginParameterBox(PluginInstance *, QWidget *parent = 0);
+    PluginParameterBox(Vamp::PluginBase *, QWidget *parent = 0);
     ~PluginParameterBox();
 
-    PluginInstance *getPlugin() { return m_plugin; }
+    Vamp::PluginBase *getPlugin() { return m_plugin; }
 
 signals:
     void pluginConfigurationChanged(QString);
@@ -49,13 +49,13 @@ protected:
     void populate();
 
     QGridLayout *m_layout;
-    PluginInstance *m_plugin;
+    Vamp::PluginBase *m_plugin;
 
     struct ParamRec {
         AudioDial *dial;
         QDoubleSpinBox *spin;
         QCheckBox *check;
-        PluginInstance::ParameterDescriptor param;
+        Vamp::PluginBase::ParameterDescriptor param;
     };
 
     std::map<QString, ParamRec> m_params;
