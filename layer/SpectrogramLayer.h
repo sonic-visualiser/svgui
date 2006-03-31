@@ -18,6 +18,7 @@
 
 #include "base/Layer.h"
 #include "base/Window.h"
+#include "base/RealTime.h"
 #include "model/PowerOfSqrtTwoZoomConstraint.h"
 #include "model/DenseTimeValueModel.h"
 
@@ -34,7 +35,6 @@ class QPainter;
 class QImage;
 class QPixmap;
 class QTimer;
-class RealTime;
 
 /**
  * SpectrogramLayer represents waveform data (obtained from a
@@ -158,7 +158,7 @@ public:
     bool getNormalizeColumns() const;
 
     enum ColourScheme { DefaultColours, WhiteOnBlack, BlackOnWhite,
-			RedOnBlue, YellowOnBlack, Rainbow };
+			RedOnBlue, YellowOnBlack, BlueOnBlack, Rainbow };
 
     void setColourScheme(ColourScheme scheme);
     ColourScheme getColourScheme() const;

@@ -223,7 +223,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == tr("Colour")) {
 
 	*min = 0;
-	*max = 5;
+	*max = 6;
 
 	deft = (int)m_colourScheme;
 
@@ -322,7 +322,8 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 2: return tr("Black on White");
 	case 3: return tr("Red on Blue");
 	case 4: return tr("Yellow on Black");
-	case 5: return tr("Fruit Salad");
+	case 5: return tr("Blue on Black");
+	case 6: return tr("Fruit Salad");
 	}
     }
     if (name == tr("Colour Scale")) {
@@ -425,7 +426,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 2: setColourScheme(BlackOnWhite); break;
 	case 3: setColourScheme(RedOnBlue); break;
 	case 4: setColourScheme(YellowOnBlack); break;
-	case 5: setColourScheme(Rainbow); break;
+	case 5: setColourScheme(BlueOnBlack); break;
+	case 6: setColourScheme(Rainbow); break;
 	}
     } else if (name == tr("Window Type")) {
 	setWindowType(WindowType(value));
@@ -961,6 +963,12 @@ SpectrogramLayer::setCacheColourmap()
 			    pixel / 4);
 	    break;
 
+        case BlueOnBlack:
+            colour = QColor::fromHsv
+                (240, pixel > 226 ? 256 - (pixel - 226) * 8 : 255,
+                 (pixel * pixel) / 255);
+            break;
+
 	case Rainbow:
 	    hue = 250 - pixel;
 	    if (hue < 0) hue += 256;
@@ -1201,6 +1209,8 @@ SpectrogramLayer::Cache::Cache() :
 
 SpectrogramLayer::Cache::~Cache()
 {
+    std::cerr << "SpectrogramLayer::Cache[" << this << "]::~Cache" << std::endl;
+
     for (size_t i = 0; i < m_width; ++i) {
 	if (m_magnitude && m_magnitude[i]) free(m_magnitude[i]);
 	if (m_phase && m_phase[i]) free(m_phase[i]);

@@ -600,8 +600,12 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	    (ch, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
         
 	if (mergingChannels || mixingChannels) {
-	    otherChannelRanges = m_model->getRanges
-		(1, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
+            if (m_model->getChannelCount() > 1) {
+                otherChannelRanges = m_model->getRanges
+                    (1, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
+            } else {
+                otherChannelRanges = ranges;
+            }
 	}
 
 	for (int x = x0; x <= x1; ++x) {
