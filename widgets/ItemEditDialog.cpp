@@ -17,257 +17,362 @@
 
 #include <QLineEdit>
 #include <QDoubleSpinBox>
+#include <QSpinBox>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QGroupBox>
+
+#include <float.h> // for FLT_MIN/MAX
 
 
-ItemEditDialog::ItemEditDialog(size_t sampleRate, int options, QWidget *parent) :
+ItemEditDialog::ItemEditDialog(size_t sampleRate, int options,
+                               QString valueUnits, QWidget *parent) :
     QDialog(parent),
     m_sampleRate(sampleRate),
-    m_frame(0),
-    m_duration(0),
-    m_value(0.0)
+    m_frameTimeSpinBox(0),
+    m_realTimeSecsSpinBox(0),
+    m_realTimeUSecsSpinBox(0),
+    m_frameDurationSpinBox(0),
+    m_realDurationSecsSpinBox(0),
+    m_realDurationUSecsSpinBox(0),
+    m_valueSpinBox(0),
+    m_textField(0)
 {
     QGridLayout *grid = new QGridLayout;
     setLayout(grid);
-    
-    int row = 0;
-    QLineEdit *line = 0;
+
+    QGroupBox *timeBox = 0;
+    QGroupBox *valueBox = 0;
+    QGridLayout *subgrid = 0;
+
+    int row = 0, subrow = 0;
+
+    size_t singleStep = RealTime::frame2RealTime(2, sampleRate).usec() - 1;
+
+    if ((options & ShowTime) || (options & ShowDuration)) {
+
+        timeBox = new QGroupBox;
+        timeBox->setTitle(tr("Timing"));
+        grid->addWidget(timeBox, row, 0);
+
+        subgrid = new QGridLayout;
+        timeBox->setLayout(subgrid);
+
+        ++row;
+    }
 
     if (options & ShowTime) {
 
-        grid->addWidget(new QLabel(tr("Frame time:")), row, 0);
+        subgrid->addWidget(new QLabel(tr("Time:")), subrow, 0);
 
-        line = new QLineEdit;
-        line->setValidator(new QIntValidator(this));
-        grid->addWidget(line, row, 1);
-        connect(line, SIGNAL(textChanged(QString)),
-                this, SLOT(frameTimeChanged(QString)));
+        m_frameTimeSpinBox = new QSpinBox;
+        m_frameTimeSpinBox->setMaximum(INT_MAX);
+        m_frameTimeSpinBox->setSuffix(tr(" frames"));
+        subgrid->addWidget(m_frameTimeSpinBox, subrow, 1, 1, 2);
+        connect(m_frameTimeSpinBox, SIGNAL(valueChanged(int)),
+                this, SLOT(frameTimeChanged(int)));
 
-        ++row;
+        ++subrow;
 
-        grid->addWidget(new QLabel(tr("Secs:")), row, 0);
+        m_realTimeSecsSpinBox = new QSpinBox;
+        m_realTimeSecsSpinBox->setMaximum(999999);
+        m_realTimeSecsSpinBox->setSuffix(tr(" sec"));
+        subgrid->addWidget(m_realTimeSecsSpinBox, subrow, 1);
+        connect(m_realTimeSecsSpinBox, SIGNAL(valueChanged(int)),
+                this, SLOT(realTimeSecsChanged(int)));
 
-        line = new QLineEdit;
-        line->setValidator(new QIntValidator(this));
-        grid->addWidget(line, row, 1);
-        connect(line, SIGNAL(textChanged(QString)),
-                this, SLOT(realTimeSecsChanged(QString)));
+        m_realTimeUSecsSpinBox = new QSpinBox;
+        m_realTimeUSecsSpinBox->setMaximum(999999);
+        m_realTimeUSecsSpinBox->setSuffix(tr(" usec"));
+        m_realTimeUSecsSpinBox->setSingleStep(singleStep);
+        subgrid->addWidget(m_realTimeUSecsSpinBox, subrow, 2);
+        connect(m_realTimeUSecsSpinBox, SIGNAL(valueChanged(int)),
+                this, SLOT(realTimeUSecsChanged(int)));
 
-        ++row;
-
-        grid->addWidget(new QLabel(tr("Nsecs:")), row, 0);
-
-        line = new QLineEdit;
-        line->setValidator(new QIntValidator(this));
-        grid->addWidget(line, row, 1);
-        connect(line, SIGNAL(textChanged(QString)),
-                this, SLOT(realTimeSecsChanged(QString)));
-
-        ++row;
+        ++subrow;
     }
 
     if (options & ShowDuration) {
 
-        grid->addWidget(new QLabel(tr("Frame duration:")), row, 0);
+        subgrid->addWidget(new QLabel(tr("Duration:")), subrow, 0);
 
-        line = new QLineEdit;
-        line->setValidator(new QIntValidator(this));
-        grid->addWidget(line, row, 1);
-        connect(line, SIGNAL(textChanged(QString)),
-                this, SLOT(frameDurationChanged(QString)));
+        m_frameDurationSpinBox = new QSpinBox;
+        m_frameDurationSpinBox->setMaximum(INT_MAX);
+        m_frameDurationSpinBox->setSuffix(tr(" frames"));
+        subgrid->addWidget(m_frameDurationSpinBox, subrow, 1, 1, 2);
+        connect(m_frameDurationSpinBox, SIGNAL(valueChanged(int)),
+                this, SLOT(frameDurationChanged(int)));
 
-        ++row;
+        ++subrow;
 
-        grid->addWidget(new QLabel(tr("Secs:")), row, 0);
+        m_realDurationSecsSpinBox = new QSpinBox;
+        m_realDurationSecsSpinBox->setMaximum(999999);
+        m_realDurationSecsSpinBox->setSuffix(tr(" sec"));
+        subgrid->addWidget(m_realDurationSecsSpinBox, subrow, 1);
+        connect(m_realDurationSecsSpinBox, SIGNAL(valueChanged(int)),
+                this, SLOT(realDurationSecsChanged(int)));
 
-        line = new QLineEdit;
-        line->setValidator(new QIntValidator(this));
-        grid->addWidget(line, row, 1);
-        connect(line, SIGNAL(textChanged(QString)),
-                this, SLOT(realDurationSecsChanged(QString)));
+        m_realDurationUSecsSpinBox = new QSpinBox;
+        m_realDurationUSecsSpinBox->setMaximum(999999);
+        m_realDurationUSecsSpinBox->setSuffix(tr(" usec"));
+        m_realDurationUSecsSpinBox->setSingleStep(singleStep);
+        subgrid->addWidget(m_realDurationUSecsSpinBox, subrow, 3);
+        connect(m_realDurationUSecsSpinBox, SIGNAL(valueChanged(int)),
+                this, SLOT(realDurationUSecsChanged(int)));
 
-        ++row;
+        ++subrow;
+    }
 
-        grid->addWidget(new QLabel(tr("Nsecs:")), row, 0);
+    if ((options & ShowValue) || (options & ShowText)) {
 
-        line = new QLineEdit;
-        line->setValidator(new QIntValidator(this));
-        grid->addWidget(line, row, 1);
-        connect(line, SIGNAL(textChanged(QString)),
-                this, SLOT(realDurationSecsChanged(QString)));
+        valueBox = new QGroupBox;
+        valueBox->setTitle(tr("Properties"));
+        grid->addWidget(valueBox, row, 0);
+
+        subgrid = new QGridLayout;
+        valueBox->setLayout(subgrid);
 
         ++row;
     }
 
+    subrow = 0;
+
     if (options & ShowValue) {
         
-        grid->addWidget(new QLabel(tr("Value:")), row, 0);
+        subgrid->addWidget(new QLabel(tr("Value:")), subrow, 0);
 
-        QDoubleSpinBox *spinbox = new QDoubleSpinBox;
-        grid->addWidget(spinbox, row, 1);
-        connect(spinbox, SIGNAL(valueChanged(double)),
+        m_valueSpinBox = new QDoubleSpinBox;
+        m_valueSpinBox->setSuffix(QString(" %1").arg(valueUnits));
+        m_valueSpinBox->setDecimals(10);
+        m_valueSpinBox->setMinimum(-1e100);
+        m_valueSpinBox->setMaximum(1e100);
+        connect(m_valueSpinBox, SIGNAL(valueChanged(double)),
                 this, SLOT(valueChanged(double)));
+        subgrid->addWidget(m_valueSpinBox, subrow, 1);
 
-        ++row;
+        ++subrow;
     }
 
     if (options & ShowText) {
         
-        grid->addWidget(new QLabel(tr("Text:")), row, 0);
+        subgrid->addWidget(new QLabel(tr("Text:")), subrow, 0);
 
-        line = new QLineEdit;
-        grid->addWidget(line, row, 1);
-        connect(line, SIGNAL(textChanged(QString)),
+        m_textField = new QLineEdit;
+        connect(m_textField, SIGNAL(textChanged(QString)),
                 this, SLOT(textChanged(QString)));
+        subgrid->addWidget(m_textField, subrow, 1);
 
-        ++row;
+        ++subrow;
+    }
+
+    if (options & ShowText) {
+        m_textField->setFocus(Qt::OtherFocusReason);
+    } else if (options & ShowValue) {
+        m_valueSpinBox->setFocus(Qt::OtherFocusReason);
     }
 
     QHBoxLayout *hbox = new QHBoxLayout;
     grid->addLayout(hbox, row, 0, 1, 2);
     
     QPushButton *ok = new QPushButton(tr("OK"));
+    m_resetButton = new QPushButton(tr("Reset"));
     QPushButton *cancel = new QPushButton(tr("Cancel"));
     hbox->addStretch(10);
     hbox->addWidget(ok);
+    hbox->addWidget(m_resetButton);
     hbox->addWidget(cancel);
+    ok->setDefault(true);
     connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
+    connect(m_resetButton, SIGNAL(clicked()), this, SLOT(reset()));
     connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
+    m_resetButton->setEnabled(false);
 }
 
 void
 ItemEditDialog::setFrameTime(long frame)
 {
-    m_frame = frame;
-    //!!!
+    if (!m_frameTimeSpinBox) return;
+
+    RealTime rt(RealTime::frame2RealTime(frame, m_sampleRate));
+    m_realTimeSecsSpinBox->setValue(rt.sec);
+    m_realTimeUSecsSpinBox->setValue(rt.usec());
+    m_frameTimeSpinBox->setValue(frame);
+    m_defaultFrame = frame;
+    m_resetButton->setEnabled(false);
 }
 
 long
 ItemEditDialog::getFrameTime() const
 {
-    return m_frame;
+    return m_frameTimeSpinBox->value();
 }
 
 void
 ItemEditDialog::setRealTime(RealTime rt)
 {
-    m_frame = RealTime::realTime2Frame(rt, m_sampleRate);
-    //!!!
+    setFrameTime(RealTime::realTime2Frame(rt, m_sampleRate));
 }
 
 RealTime
 ItemEditDialog::getRealTime() const
 {
-    return RealTime::frame2RealTime(m_frame, m_sampleRate);
+    return RealTime::frame2RealTime(getFrameTime(), m_sampleRate);
 }
 
 void
 ItemEditDialog::setFrameDuration(long duration)
 {
-    m_duration = duration;
-    //!!!
+    if (!m_frameDurationSpinBox) return;
+
+    RealTime rt(RealTime::frame2RealTime(duration, m_sampleRate));
+    m_realDurationSecsSpinBox->setValue(rt.sec);
+    m_realDurationUSecsSpinBox->setValue(rt.usec());
+    m_frameDurationSpinBox->setValue(duration);
+    m_defaultDuration = duration;
+    m_resetButton->setEnabled(false);
 }
 
 long
 ItemEditDialog::getFrameDuration() const
 {
-    return m_duration;
+    return m_frameDurationSpinBox->value();
 }
 
 void
 ItemEditDialog::setRealDuration(RealTime rt)
 {
-    m_duration = RealTime::realTime2Frame(rt, m_sampleRate);
+    setFrameDuration(RealTime::realTime2Frame(rt, m_sampleRate));
 }
 
 RealTime
 ItemEditDialog::getRealDuration() const
 {
-    return RealTime::frame2RealTime(m_duration, m_sampleRate);
+    return RealTime::frame2RealTime(getFrameDuration(), m_sampleRate);
 }
 
 void
 ItemEditDialog::setValue(float v)
 {
-    m_value = v; 
-    //!!!
+    if (!m_valueSpinBox) return;
+
+    m_valueSpinBox->setValue(v);
+    m_defaultValue = v;
+    m_resetButton->setEnabled(false);
 }
 
 float
 ItemEditDialog::getValue() const
 {
-    return m_value;
+    return m_valueSpinBox->value();
 }
 
 void
 ItemEditDialog::setText(QString text)
 {
-    m_text = text;
-    //!!!
+    if (!m_textField) return;
+
+    m_textField->setText(text);
+    m_defaultText = text;
+    m_resetButton->setEnabled(false);
 }
 
 QString
 ItemEditDialog::getText() const
 {
-    return m_text;
+    return m_textField->text();
 }
 
 void
-ItemEditDialog::frameTimeChanged(QString s)
+ItemEditDialog::frameTimeChanged(int i)
 {
-    setFrameTime(s.toInt());
+    m_realTimeSecsSpinBox->blockSignals(true);
+    m_realTimeUSecsSpinBox->blockSignals(true);
+
+    RealTime rt(RealTime::frame2RealTime(i, m_sampleRate));
+    m_realTimeSecsSpinBox->setValue(rt.sec);
+    m_realTimeUSecsSpinBox->setValue(rt.usec());
+
+    m_realTimeSecsSpinBox->blockSignals(false);
+    m_realTimeUSecsSpinBox->blockSignals(false);
+    m_resetButton->setEnabled(true);
 }
 
 void
-ItemEditDialog::realTimeSecsChanged(QString s)
+ItemEditDialog::realTimeSecsChanged(int i)
 {
     RealTime rt = getRealTime();
-    rt.sec = s.toInt();
-    setRealTime(rt);
+    rt.sec = i;
+    size_t frame = RealTime::realTime2Frame(rt, m_sampleRate);
+    m_frameTimeSpinBox->setValue(frame);
+    m_resetButton->setEnabled(true);
 }
 
 void
-ItemEditDialog::realTimeNSecsChanged(QString s)
+ItemEditDialog::realTimeUSecsChanged(int i)
 {
     RealTime rt = getRealTime();
-    rt.nsec = s.toInt();
-    setRealTime(rt);
+    rt.nsec = i * 1000;
+    size_t frame = RealTime::realTime2Frame(rt, m_sampleRate);
+    m_frameTimeSpinBox->setValue(frame);
+    m_resetButton->setEnabled(true);
 }
 
 void
-ItemEditDialog::frameDurationChanged(QString s)
+ItemEditDialog::frameDurationChanged(int i)
 {
-    setFrameDuration(s.toInt());
+    m_realDurationSecsSpinBox->blockSignals(true);
+    m_realDurationUSecsSpinBox->blockSignals(true);
+
+    RealTime rt(RealTime::frame2RealTime(i, m_sampleRate));
+    m_realDurationSecsSpinBox->setValue(rt.sec);
+    m_realDurationUSecsSpinBox->setValue(rt.usec());
+
+    m_realDurationSecsSpinBox->blockSignals(false);
+    m_realDurationUSecsSpinBox->blockSignals(false);
+    m_resetButton->setEnabled(true);
 }
 
 void
-ItemEditDialog::realDurationSecsChanged(QString s)
+ItemEditDialog::realDurationSecsChanged(int i)
 {
     RealTime rt = getRealDuration();
-    rt.sec = s.toInt();
-    setRealDuration(rt);
+    rt.sec = i;
+    size_t frame = RealTime::realTime2Frame(rt, m_sampleRate);
+    m_frameDurationSpinBox->setValue(frame);
+    m_resetButton->setEnabled(true);
 }
 
 void
-ItemEditDialog::realDurationNSecsChanged(QString s)
+ItemEditDialog::realDurationUSecsChanged(int i)
 {
     RealTime rt = getRealDuration();
-    rt.nsec = s.toInt();
-    setRealDuration(rt);
+    rt.nsec = i * 1000;
+    size_t frame = RealTime::realTime2Frame(rt, m_sampleRate);
+    m_frameDurationSpinBox->setValue(frame);
+    m_resetButton->setEnabled(true);
 }
 
 void
-ItemEditDialog::valueChanged(double v)
+ItemEditDialog::valueChanged(double)
 {
-    setValue((float)v);
+    m_resetButton->setEnabled(true);
 }
 
 void
-ItemEditDialog::textChanged(QString text)
+ItemEditDialog::textChanged(QString)
 {
-    setText(text);
+    m_resetButton->setEnabled(true);
+}
+
+void
+ItemEditDialog::reset()
+{
+    setFrameTime(m_defaultFrame);
+    setFrameDuration(m_defaultDuration);
+    setValue(m_defaultValue);
+    setText(m_defaultText);
+    m_resetButton->setEnabled(false);
 }
 

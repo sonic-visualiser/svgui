@@ -21,6 +21,10 @@
 
 #include "base/RealTime.h"
 
+class QSpinBox;
+class QDoubleSpinBox;
+class QLineEdit;
+
 class ItemEditDialog : public QDialog
 {
     Q_OBJECT
@@ -33,7 +37,8 @@ public:
         ShowText       = 1 << 3
     };
 
-    ItemEditDialog(size_t sampleRate, int options, QWidget *parent = 0);
+    ItemEditDialog(size_t sampleRate, int options, QString valueUnits = "",
+                   QWidget *parent = 0);
 
     void setFrameTime(long frame);
     long getFrameTime() const;
@@ -49,26 +54,36 @@ public:
 
     void setValue(float value);
     float getValue() const;
-    
+
     void setText(QString text);
     QString getText() const;
 
 protected slots:
-    void frameTimeChanged(QString);
-    void realTimeSecsChanged(QString);
-    void realTimeNSecsChanged(QString);
-    void frameDurationChanged(QString);
-    void realDurationSecsChanged(QString);
-    void realDurationNSecsChanged(QString);
+    void frameTimeChanged(int);
+    void realTimeSecsChanged(int);
+    void realTimeUSecsChanged(int);
+    void frameDurationChanged(int);
+    void realDurationSecsChanged(int);
+    void realDurationUSecsChanged(int);
     void valueChanged(double);
     void textChanged(QString);
+    void reset();
 
 protected:
     size_t m_sampleRate;
-    long m_frame;
-    long m_duration;
-    double m_value;
-    QString m_text;
+    long m_defaultFrame;
+    long m_defaultDuration;
+    float m_defaultValue;
+    QString m_defaultText;
+    QSpinBox *m_frameTimeSpinBox;
+    QSpinBox *m_realTimeSecsSpinBox;
+    QSpinBox *m_realTimeUSecsSpinBox;
+    QSpinBox *m_frameDurationSpinBox;
+    QSpinBox *m_realDurationSecsSpinBox;
+    QSpinBox *m_realDurationUSecsSpinBox;
+    QDoubleSpinBox *m_valueSpinBox;
+    QLineEdit *m_textField;
+    QPushButton *m_resetButton;
 };
 
 #endif

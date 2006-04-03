@@ -860,7 +860,8 @@ TimeValueLayer::editOpen(View *v, QMouseEvent *e)
         (m_model->getSampleRate(),
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowValue |
-         ItemEditDialog::ShowText);
+         ItemEditDialog::ShowText,
+         m_model->getScaleUnits());
 
     dialog->setFrameTime(point.frame);
     dialog->setValue(point.value);
