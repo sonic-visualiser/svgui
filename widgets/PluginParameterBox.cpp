@@ -95,6 +95,8 @@ PluginParameterBox::populate()
         float qtz = 0.0;
         if (params[i].isQuantized) qtz = params[i].quantizeStep;
 
+        std::vector<std::string> valueNames = params[i].valueNames;
+
         // construct an integer range
 
         int imin = 0, imax = 100;
@@ -116,8 +118,24 @@ PluginParameterBox::populate()
         rec.dial = 0;
         rec.spin = 0;
         rec.check = 0;
+        rec.combo = 0;
         
-        if (min == 0.0 && max == 1.0 && qtz == 1.0) {
+        if (params[i].isQuantized && !valueNames.empty()) {
+            
+            QComboBox *combobox = new QComboBox;
+            combobox->setObjectName(name);
+            for (unsigned int j = 0; j < valueNames.size(); ++j) {
+                combobox->addItem(valueNames[j].c_str());
+                if (lrintf((value - min) / qtz) == j) {
+                    combobox->setCurrentIndex(j);
+                }
+            }
+            connect(combobox, SIGNAL(activated(int)),
+                    this, SLOT(dialChanged(int)));
+            m_layout->addWidget(combobox, i + offset, 1, 1, 2);
+            rec.combo = combobox;
+
+        } else if (min == 0.0 && max == 1.0 && qtz == 1.0) {
             
             QCheckBox *checkbox = new QCheckBox;
             checkbox->setObjectName(name);
@@ -135,8 +153,8 @@ PluginParameterBox::populate()
             dial->setMaximum(imax);
             dial->setPageStep(1);
             dial->setNotchesVisible((imax - imin) <= 12);
-            dial->setDefaultValue(int((deft - min) / qtz));
-            dial->setValue(int((value - min) / qtz));
+            dial->setDefaultValue(lrintf((deft - min) / qtz));
+            dial->setValue(lrintf((value - min) / qtz));
             dial->setFixedWidth(32);
             dial->setFixedHeight(32);
             connect(dial, SIGNAL(valueChanged(int)),
@@ -293,8 +311,14 @@ PluginParameterBox::programComboChanged(const QString &newProgram)
             }
 
             i->second.dial->blockSignals(true);
-            i->second.dial->setValue(int((value - min) / qtz));
+            i->second.dial->setValue(lrintf((value - min) / qtz));
             i->second.dial->blockSignals(false);
+        }
+
+        if (i->second.combo) {
+            i->second.combo->blockSignals(true);
+            i->second.combo->setCurrentIndex(value);
+            i->second.combo->blockSignals(false);
         }
     }
 

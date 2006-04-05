@@ -25,6 +25,7 @@ class AudioDial;
 class QDoubleSpinBox;
 class QCheckBox;
 class QGridLayout;
+class QComboBox;
 
 class PluginParameterBox : public QFrame
 {
@@ -55,6 +56,7 @@ protected:
         AudioDial *dial;
         QDoubleSpinBox *spin;
         QCheckBox *check;
+        QComboBox *combo;
         Vamp::PluginBase::ParameterDescriptor param;
     };
 
