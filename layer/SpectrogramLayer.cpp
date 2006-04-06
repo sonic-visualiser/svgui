@@ -21,8 +21,6 @@
 #include "base/Window.h"
 #include "base/Pitch.h"
 
-#include "dsp/maths/MathUtilities.h"
-
 #include <QPainter>
 #include <QImage>
 #include <QPixmap>
@@ -35,6 +33,18 @@
 #include <cmath>
 
 //#define DEBUG_SPECTROGRAM_REPAINT 1
+
+static double mod(double x, double y)
+{
+    double a = floor(x / y);
+    double b = x - (y * a);
+    return b;
+}
+
+static double princarg(double ang)
+{
+    return mod(ang + M_PI, -2 * M_PI) + M_PI;
+}
 
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
@@ -1028,7 +1038,7 @@ SpectrogramLayer::calculateFrequency(size_t bin,
     float expectedPhase =
 	oldPhase + (2.0 * M_PI * bin * windowIncrement) / windowSize;
 
-    float phaseError = MathUtilities::princarg(newPhase - expectedPhase);
+    float phaseError = princarg(newPhase - expectedPhase);
 	    
     if (fabs(phaseError) < (1.1 * (windowIncrement * M_PI) / windowSize)) {
 
@@ -1115,7 +1125,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	if (mag > factor) factor = mag;
 
 	double phase = atan2(output[i][1], output[i][0]);
-	phase = MathUtilities::princarg(phase);
+	phase = princarg(phase);
 
 	output[i][0] = mag;
 	m_cache->setPhaseAt(column, i, phase);
