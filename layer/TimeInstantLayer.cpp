@@ -19,6 +19,7 @@
 #include "base/RealTime.h"
 #include "base/View.h"
 #include "base/Profiler.h"
+#include "base/Clipboard.h"
 
 #include "model/SparseOneDimensionalModel.h"
 
@@ -689,7 +690,46 @@ TimeInstantLayer::deleteSelection(Selection s)
 
     command->finish();
 }
-  
+
+void
+TimeInstantLayer::copy(Selection s, Clipboard &to)
+{
+    SparseOneDimensionalModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+	if (s.contains(i->frame)) {
+            Clipboard::Point point(i->frame, i->label);
+            to.addPoint(point);
+        }
+    }
+}
+
+void
+TimeInstantLayer::paste(const Clipboard &from, int frameOffset)
+{
+    const Clipboard::PointList &points = from.getPoints();
+
+    SparseOneDimensionalModel::EditCommand *command =
+	new SparseOneDimensionalModel::EditCommand(m_model, tr("Paste"));
+
+    for (Clipboard::PointList::const_iterator i = points.begin();
+         i != points.end(); ++i) {
+        
+        if (!i->haveFrame()) continue;
+        size_t frame = 0;
+        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
+            frame = i->getFrame() + frameOffset;
+        }
+        SparseOneDimensionalModel::Point newPoint(frame);
+        if (i->haveLabel()) newPoint.label = i->getLabel();
+        
+        command->addPoint(newPoint);
+    }
+
+    command->finish();
+}
 
 QString
 TimeInstantLayer::toXmlString(QString indent, QString extraAttributes) const

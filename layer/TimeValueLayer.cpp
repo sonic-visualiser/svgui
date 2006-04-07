@@ -502,7 +502,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int y = getYForValue(v, p.value);
 
 	bool haveNext = false;
-	int nx = v->getXForFrame(m_model->getEndFrame());
+	int nx = v->getXForFrame(v->getModelsEndFrame());
+// m_model->getEndFrame());
 	int ny = y;
 
 	SparseTimeValueModel::PointList::const_iterator j = i;
@@ -513,7 +514,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    nx = v->getXForFrame(q.frame);
 	    ny = getYForValue(v, q.value);
 	    haveNext = true;
-	}
+        }
+
+//        std::cout << "frame = " << p.frame << ", x = " << x << ", haveNext = " << haveNext 
+//                  << ", nx = " << nx << std::endl;
 
 	int labelY = y;
 
@@ -608,6 +612,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
 
 	if (m_plotStyle == PlotSegmentation) {
+
+//            std::cerr << "drawing rect" << std::endl;
 	    
 	    if (nx <= x) continue;
 
@@ -728,18 +734,40 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
     if (!m_model) return;
 
     long frame = v->getFrameForX(e->x());
+    long resolution = m_model->getResolution();
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = (frame / resolution) * resolution;
 
     float value = getValueForY(v, e->y());
 
-    m_editingPoint = SparseTimeValueModel::Point(frame, value, tr("New Point"));
+    bool havePoint = false;
+
+    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    if (!points.empty()) {
+        for (SparseTimeValueModel::PointList::iterator i = points.begin();
+             i != points.end(); ++i) {
+            if (((i->frame / resolution) * resolution) != frame) {
+                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+                continue;
+            }
+            m_editingPoint = *i;
+            havePoint = true;
+        }
+    }
+
+    if (!havePoint) {
+        m_editingPoint = SparseTimeValueModel::Point
+            (frame, value, tr("New Point"));
+    }
+
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) m_editingCommand->finish();
     m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
 							     tr("Draw Point"));
-    m_editingCommand->addPoint(m_editingPoint);
+    if (!havePoint) {
+        m_editingCommand->addPoint(m_editingPoint);
+    }
 
     m_editing = true;
 }
@@ -752,12 +780,45 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
     if (!m_model || !m_editing) return;
 
     long frame = v->getFrameForX(e->x());
+    long resolution = m_model->getResolution();
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = (frame / resolution) * resolution;
 
     float value = getValueForY(v, e->y());
 
-    m_editingCommand->deletePoint(m_editingPoint);
+    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+
+    std::cerr << points.size() << " points" << std::endl;
+
+    bool havePoint = false;
+
+    if (!points.empty()) {
+        for (SparseTimeValueModel::PointList::iterator i = points.begin();
+             i != points.end(); ++i) {
+            if (i->frame == m_editingPoint.frame &&
+                i->value == m_editingPoint.value) {
+                std::cerr << "ignoring current editing point at " << i->frame << ", " << i->value << std::endl;
+                continue;
+            }
+            if (((i->frame / resolution) * resolution) != frame) {
+                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+                continue;
+            }
+            std::cerr << "adjusting to new point at " << i->frame << ", " << i->value << std::endl;
+            m_editingPoint = *i;
+            m_originalPoint = m_editingPoint;
+            m_editingCommand->deletePoint(m_editingPoint);
+            havePoint = true;
+        }
+    }
+
+    if (!havePoint) {
+        if (frame == m_editingPoint.frame) {
+            m_editingCommand->deletePoint(m_editingPoint);
+        }
+    }
+
+//    m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
     m_editingPoint.value = value;
     m_editingCommand->addPoint(m_editingPoint);
@@ -936,6 +997,71 @@ TimeValueLayer::resizeSelection(Selection s, Selection newSize)
 	    command->deletePoint(*i);
 	    command->addPoint(newPoint);
 	}
+    }
+
+    command->finish();
+}
+
+void
+TimeValueLayer::deleteSelection(Selection s)
+{
+    SparseTimeValueModel::EditCommand *command =
+	new SparseTimeValueModel::EditCommand(m_model,
+					      tr("Delete Selected Points"));
+
+    SparseTimeValueModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (SparseTimeValueModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+        if (s.contains(i->frame)) {
+            command->deletePoint(*i);
+        }
+    }
+
+    command->finish();
+}    
+
+void
+TimeValueLayer::copy(Selection s, Clipboard &to)
+{
+    SparseTimeValueModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (SparseTimeValueModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+	if (s.contains(i->frame)) {
+            Clipboard::Point point(i->frame, i->label);
+            to.addPoint(point);
+        }
+    }
+}
+
+void
+TimeValueLayer::paste(const Clipboard &from, int frameOffset)
+{
+    const Clipboard::PointList &points = from.getPoints();
+
+    SparseTimeValueModel::EditCommand *command =
+	new SparseTimeValueModel::EditCommand(m_model, tr("Paste"));
+
+    for (Clipboard::PointList::const_iterator i = points.begin();
+         i != points.end(); ++i) {
+        
+        if (!i->haveFrame()) continue;
+        size_t frame = 0;
+        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
+            frame = i->getFrame() + frameOffset;
+        }
+        SparseTimeValueModel::Point newPoint(frame);
+  
+        if (i->haveLabel()) newPoint.label = i->getLabel();
+        if (i->haveValue()) newPoint.value = i->getValue();
+        else newPoint.value = (m_model->getValueMinimum() +
+                               m_model->getValueMaximum()) / 2;
+        
+        command->addPoint(newPoint);
     }
 
     command->finish();

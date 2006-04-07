@@ -131,7 +131,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                 channelLayout->addWidget(new QLabel(tr("This plugin only has a single channel input,\nbut the source has %1 channels.").arg(sourceChannels)));
 
                 QComboBox *channelCombo = new QComboBox;
-                channelCombo->addItem(tr("Use sum of source channels"));
+                channelCombo->addItem(tr("Use mean of source channels"));
                 for (int i = 0; i < sourceChannels; ++i) {
                     channelCombo->addItem(tr("Use channel %1 only").arg(i + 1));
                 }

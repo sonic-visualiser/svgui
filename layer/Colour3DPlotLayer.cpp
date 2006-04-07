@@ -333,6 +333,9 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    paint.setPen(Qt::black);//!!!
 		}
 	    }
+            
+//            std::cout << "rect " << rx0 << "," << (ry0 - h / sh - 1) << " "
+//                      << w << "x" << (h / sh + 1) << std::endl;
 
 	    paint.drawRect(r);
 

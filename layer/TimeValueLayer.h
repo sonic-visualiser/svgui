@@ -55,6 +55,10 @@ public:
 
     virtual void moveSelection(Selection s, size_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
+    virtual void deleteSelection(Selection s);
+
+    virtual void copy(Selection s, Clipboard &to);
+    virtual void paste(const Clipboard &from, int frameOffset);
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(SparseTimeValueModel *model);
