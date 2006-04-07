@@ -651,6 +651,65 @@ TextLayer::resizeSelection(Selection s, Selection newSize)
     command->finish();
 }
 
+void
+TextLayer::deleteSelection(Selection s)
+{
+    TextModel::EditCommand *command =
+	new TextModel::EditCommand(m_model, tr("Delete Selection"));
+
+    TextModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (TextModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+	if (s.contains(i->frame)) command->deletePoint(*i);
+    }
+
+    command->finish();
+}
+
+void
+TextLayer::copy(Selection s, Clipboard &to)
+{
+    TextModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (TextModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+	if (s.contains(i->frame)) {
+            Clipboard::Point point(i->frame, i->height, i->label);
+            to.addPoint(point);
+        }
+    }
+}
+
+void
+TextLayer::paste(const Clipboard &from, int frameOffset)
+{
+    const Clipboard::PointList &points = from.getPoints();
+
+    TextModel::EditCommand *command =
+	new TextModel::EditCommand(m_model, tr("Paste"));
+
+    for (Clipboard::PointList::const_iterator i = points.begin();
+         i != points.end(); ++i) {
+        
+        if (!i->haveFrame()) continue;
+        size_t frame = 0;
+        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
+            frame = i->getFrame() + frameOffset;
+        }
+        TextModel::Point newPoint(frame);
+        if (i->haveValue()) newPoint.height = i->haveValue();
+        if (i->haveLabel()) newPoint.label = i->getLabel();
+        else newPoint.label = tr("New Point");
+        
+        command->addPoint(newPoint);
+    }
+
+    command->finish();
+}
+
 QString
 TextLayer::toXmlString(QString indent, QString extraAttributes) const
 {

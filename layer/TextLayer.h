@@ -50,6 +50,10 @@ public:
 
     virtual void moveSelection(Selection s, size_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
+    virtual void deleteSelection(Selection s);
+
+    virtual void copy(Selection s, Clipboard &to);
+    virtual void paste(const Clipboard &from, int frameOffset);
 
     virtual void editOpen(View *, QMouseEvent *); // on double-click
 

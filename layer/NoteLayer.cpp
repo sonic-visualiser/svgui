@@ -727,6 +727,72 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
     command->finish();
 }
 
+void
+NoteLayer::deleteSelection(Selection s)
+{
+    NoteModel::EditCommand *command =
+	new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
+
+    NoteModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (NoteModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+        if (s.contains(i->frame)) {
+            command->deletePoint(*i);
+        }
+    }
+
+    command->finish();
+}    
+
+void
+NoteLayer::copy(Selection s, Clipboard &to)
+{
+    NoteModel::PointList points =
+	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (NoteModel::PointList::iterator i = points.begin();
+	 i != points.end(); ++i) {
+	if (s.contains(i->frame)) {
+            Clipboard::Point point(i->frame, i->label);
+            to.addPoint(point);
+        }
+    }
+}
+
+void
+NoteLayer::paste(const Clipboard &from, int frameOffset)
+{
+    const Clipboard::PointList &points = from.getPoints();
+
+    NoteModel::EditCommand *command =
+	new NoteModel::EditCommand(m_model, tr("Paste"));
+
+    for (Clipboard::PointList::const_iterator i = points.begin();
+         i != points.end(); ++i) {
+        
+        if (!i->haveFrame()) continue;
+        size_t frame = 0;
+        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
+            frame = i->getFrame() + frameOffset;
+        }
+        NoteModel::Point newPoint(frame);
+  
+        if (i->haveLabel()) newPoint.label = i->getLabel();
+        if (i->haveValue()) newPoint.value = i->getValue();
+        else newPoint.value = (m_model->getValueMinimum() +
+                               m_model->getValueMaximum()) / 2;
+        if (i->haveDuration()) newPoint.duration = i->getDuration();
+        else newPoint.duration = m_model->getResolution(); //!!!
+        
+        command->addPoint(newPoint);
+    }
+
+    command->finish();
+}
+
 QString
 NoteLayer::toXmlString(QString indent, QString extraAttributes) const
 {

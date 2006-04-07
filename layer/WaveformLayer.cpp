@@ -892,18 +892,31 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 	    else label = tr("Channel %1").arg(ch + 1);
 	}
 
-	int min = int(range.min * 1000);
-	int max = int(range.max * 1000);
+        bool singleValue = false;
+        float min, max;
+
+        if (fabs(range.min) < 0.01) {
+            min = range.min;
+            max = range.max;
+            singleValue = (min == max);
+        } else {
+            int imin = int(range.min * 1000);
+            int imax = int(range.max * 1000);
+            singleValue = (imin == imax);
+            min = float(imin)/1000;
+            max = float(imax)/1000;
+        }
+
 	int db = int(AudioLevel::multiplier_to_dB(std::max(fabsf(range.min),
 							   fabsf(range.max)))
 		     * 100);
 
-	if (min != max) {
+	if (!singleValue) {
 	    text += tr("\n%1\t%2 - %3 (%4 dB peak)")
-		.arg(label).arg(float(min)/1000).arg(float(max)/1000).arg(float(db)/100);
+		.arg(label).arg(min).arg(max).arg(float(db)/100);
 	} else {
 	    text += tr("\n%1\t%2 (%3 dB peak)")
-		.arg(label).arg(float(min)/1000).arg(float(db)/100);
+		.arg(label).arg(min).arg(float(db)/100);
 	}
     }
 
