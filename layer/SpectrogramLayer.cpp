@@ -948,19 +948,24 @@ SpectrogramLayer::setCacheColourmap()
 	case DefaultColours:
 	    hue = 256 - pixel;
 	    colour = QColor::fromHsv(hue, pixel/2 + 128, pixel);
+            m_crosshairColour = QColor(255, 150, 50);
+//            m_crosshairColour = QColor::fromHsv(240, 160, 255);
 	    break;
 
 	case WhiteOnBlack:
 	    colour = QColor(pixel, pixel, pixel);
+            m_crosshairColour = Qt::red;
 	    break;
 
 	case BlackOnWhite:
 	    colour = QColor(256-pixel, 256-pixel, 256-pixel);
+            m_crosshairColour = Qt::darkGreen;
 	    break;
 
 	case RedOnBlue:
 	    colour = QColor(pixel > 128 ? (pixel - 128) * 2 : 0, 0,
 			    pixel < 128 ? pixel : (256 - pixel));
+            m_crosshairColour = Qt::green;
 	    break;
 
 	case YellowOnBlack:
@@ -971,18 +976,21 @@ SpectrogramLayer::setCacheColourmap()
 			    256 - px,
 			    pixel,
 			    pixel / 4);
+            m_crosshairColour = QColor::fromHsv(240, 255, 255);
 	    break;
 
         case BlueOnBlack:
             colour = QColor::fromHsv
                 (240, pixel > 226 ? 256 - (pixel - 226) * 8 : 255,
                  (pixel * pixel) / 255);
+            m_crosshairColour = Qt::red;
             break;
 
 	case Rainbow:
 	    hue = 250 - pixel;
 	    if (hue < 0) hue += 256;
 	    colour = QColor::fromHsv(pixel, 255, 255);
+            m_crosshairColour = Qt::white;
 	    break;
 	}
 
@@ -2104,6 +2112,60 @@ SpectrogramLayer::snapToFeatureFrame(View *v, int &frame,
     
     return true;
 } 
+
+bool
+SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
+                                      QPoint cursorPos,
+                                      std::vector<QRect> &extents) const
+{
+    QRect vertical(cursorPos.x() - 12, 0, 12, v->height());
+    extents.push_back(vertical);
+
+    QRect horizontal(0, cursorPos.y(), cursorPos.x(), 1);
+    extents.push_back(horizontal);
+
+    return true;
+}
+
+void
+SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
+                                  QPoint cursorPos) const
+{
+    paint.save();
+    paint.setPen(m_crosshairColour);
+
+    paint.drawLine(0, cursorPos.y(), cursorPos.x() - 1, cursorPos.y());
+    paint.drawLine(cursorPos.x(), 0, cursorPos.x(), v->height());
+    
+    float fundamental = getFrequencyForY(v, cursorPos.y());
+
+    int harmonic = 2;
+
+    while (harmonic < 100) {
+
+        float hy = lrintf(getYForFrequency(v, fundamental * harmonic));
+        if (hy < 0 || hy > v->height()) break;
+        
+        int len = 7;
+
+        if (harmonic % 2 == 0) {
+            if (harmonic % 4 == 0) {
+                len = 12;
+            } else {
+                len = 10;
+            }
+        }
+
+        paint.drawLine(cursorPos.x() - len,
+                       hy,
+                       cursorPos.x(),
+                       hy);
+
+        ++harmonic;
+    }
+
+    paint.restore();
+}
 
 QString
 SpectrogramLayer::getFeatureDescription(View *v, QPoint &pos) const

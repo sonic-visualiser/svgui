@@ -59,6 +59,10 @@ public:
     virtual int getVerticalScaleWidth(View *v, QPainter &) const;
     virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
 
+    virtual bool getCrosshairExtents(View *, QPainter &, QPoint cursorPos,
+                                     std::vector<QRect> &extents) const;
+    virtual void paintCrosshairs(View *, QPainter &, QPoint) const;
+
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(View *v, int &frame,
@@ -207,6 +211,7 @@ protected:
     size_t              m_maxFrequency;
     ColourScale         m_colourScale;
     ColourScheme        m_colourScheme;
+    QColor              m_crosshairColour;
     FrequencyScale      m_frequencyScale;
     BinDisplay          m_binDisplay;
     bool                m_normalizeColumns;
