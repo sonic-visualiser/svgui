@@ -29,6 +29,8 @@
 #include <iostream>
 #include <string>
 
+#include <cmath>
+
 PluginParameterBox::PluginParameterBox(Vamp::PluginBase *plugin, QWidget *parent) :
     QFrame(parent),
     m_plugin(plugin)
