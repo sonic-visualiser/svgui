@@ -2092,6 +2092,15 @@ SpectrogramLayer::getCompletion() const
 }
 
 bool
+SpectrogramLayer::getValueExtents(float &min, float &max, QString &unit) const
+{
+    min = getEffectiveMinFrequency();
+    max = getEffectiveMaxFrequency();
+    unit = "Hz";
+    return true;
+}
+
+bool
 SpectrogramLayer::snapToFeatureFrame(View *v, int &frame,
 				     size_t &resolution,
 				     SnapType snap) const

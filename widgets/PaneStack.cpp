@@ -331,16 +331,16 @@ PaneStack::sizePropertyStacks()
 
     for (size_t i = 0; i < m_panes.size(); ++i) {
 	if (!m_panes[i].propertyStack) continue;
-	std::cerr << "PaneStack::sizePropertyStacks: " << i << ": min " 
-		  << m_panes[i].propertyStack->minimumSizeHint().width() << ", current "
-		  << m_panes[i].propertyStack->width() << std::endl;
+//	std::cerr << "PaneStack::sizePropertyStacks: " << i << ": min " 
+//		  << m_panes[i].propertyStack->minimumSizeHint().width() << ", current "
+//		  << m_panes[i].propertyStack->width() << std::endl;
 
 	if (m_panes[i].propertyStack->minimumSizeHint().width() > maxMinWidth) {
 	    maxMinWidth = m_panes[i].propertyStack->minimumSizeHint().width();
 	}
     }
 
-    std::cerr << "PaneStack::sizePropertyStacks: max min width " << maxMinWidth << std::endl;
+//    std::cerr << "PaneStack::sizePropertyStacks: max min width " << maxMinWidth << std::endl;
 
 #ifdef Q_WS_MAC
     // This is necessary to compensate for cb->setMinimumSize(10, 10)

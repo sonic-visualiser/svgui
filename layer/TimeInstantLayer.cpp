@@ -385,7 +385,8 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
     }
 	
     int prevX = -1;
-
+    int textY = v->getTextLabelHeight(this, paint);
+    
     for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
@@ -463,9 +464,7 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
 
 	    if (good) {
-		paint.drawText(x + iw + 2,
-			       v->height() - paint.fontMetrics().height(),
-			       p.label);
+		paint.drawText(x + iw + 2, textY, p.label);
 	    }
 	}
 

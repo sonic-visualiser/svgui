@@ -184,6 +184,8 @@ public:
 
     virtual int getCompletion() const;
 
+    virtual bool getValueExtents(float &min, float &max, QString &unit) const;
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 

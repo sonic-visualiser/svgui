@@ -336,6 +336,23 @@ WaveformLayer::getCompletion() const
     return completion;
 }
 
+bool
+WaveformLayer::getValueExtents(float &min, float &max, QString &unit) const
+{
+    if (m_scale == LinearScale) {
+        min = 0.0;
+        max = 1.0;
+        unit = "V";
+    } else if (m_scale == MeterScale) {
+        return false; //!!!
+    } else {
+        min = AudioLevel::multiplier_to_dB(0.0);
+        max = AudioLevel::multiplier_to_dB(1.0);
+        unit = "dB";
+    }
+    return true;
+}
+
 int
 WaveformLayer::dBscale(float sample, int m) const
 {

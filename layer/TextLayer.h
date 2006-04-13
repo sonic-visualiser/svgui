@@ -77,6 +77,8 @@ public:
 
     virtual int getCompletion() const { return m_model->getCompletion(); }
 
+    virtual bool getValueExtents(float &min, float &max, QString &unit) const;
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 

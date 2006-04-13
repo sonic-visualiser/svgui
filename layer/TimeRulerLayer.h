@@ -52,6 +52,10 @@ public:
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
+    virtual bool getValueExtents(float &min, float &max, QString &unit) const {
+        return false;
+    }
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
