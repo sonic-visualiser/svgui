@@ -85,6 +85,12 @@ public:
 
     virtual int getCompletion() const { return m_model->getCompletion(); }
 
+    virtual bool needsTextLabelHeight() const { return true; }
+
+    virtual bool getValueExtents(float &min, float &max, QString &unit) const {
+        return false;
+    }
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 

@@ -64,6 +64,7 @@ public:
 
     virtual int getCompletion() const { return m_model->getCompletion(); }
 
+    virtual bool getValueExtents(float &, float &, QString &) const { return false; }
 
 /*
     virtual PropertyList getProperties() const;

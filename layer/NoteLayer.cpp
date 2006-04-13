@@ -181,6 +181,16 @@ NoteLayer::isLayerScrollable(const View *v) const
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
+bool
+NoteLayer::getValueExtents(float &min, float &max, QString &unit) const
+{
+    if (!m_model) return false;
+    min = m_model->getValueMinimum();
+    max = m_model->getValueMaximum();
+    unit = m_model->getScaleUnits();
+    return true;
+}
+
 NoteModel::PointList
 NoteLayer::getLocalPoints(View *v, int x) const
 {

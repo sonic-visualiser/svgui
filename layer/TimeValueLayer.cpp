@@ -216,6 +216,15 @@ TimeValueLayer::isLayerScrollable(const View *v) const
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
+bool
+TimeValueLayer::getValueExtents(float &min, float &max, QString &unit) const
+{
+    min = m_model->getValueMinimum();
+    max = m_model->getValueMaximum();
+    unit = m_model->getScaleUnits();
+    return true;
+}
+
 SparseTimeValueModel::PointList
 TimeValueLayer::getLocalPoints(View *v, int x) const
 {
@@ -373,6 +382,17 @@ TimeValueLayer::snapToFeatureFrame(View *v, int &frame,
 int
 TimeValueLayer::getYForValue(View *v, float val) const
 {
+    float min = 0.0, max = 0.0;
+    int h = v->height();
+
+    if (!v->getValueExtents(m_model->getScaleUnits(), min, max)) {
+        min = m_model->getValueMinimum();
+        max = m_model->getValueMaximum();
+    }
+
+    if (max == min) max = min + 1.0;
+
+/*!!!
     float min = m_model->getValueMinimum();
     float max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
@@ -401,6 +421,7 @@ TimeValueLayer::getYForValue(View *v, float val) const
         min = -1.0;
         max = 1.0;
     }
+*/
 
     return int(h - ((val - min) * h) / (max - min));
 }
@@ -492,6 +513,11 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     QPainterPath path;
     int pointCount = 0;
+
+    int textY = 0;
+    if (m_plotStyle == PlotSegmentation) {
+        textY = v->getTextLabelHeight(this, paint);
+    }
     
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
@@ -500,6 +526,11 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	int x = v->getXForFrame(p.frame);
 	int y = getYForValue(v, p.value);
+
+        if (m_plotStyle != PlotSegmentation) {
+            textY = y - paint.fontMetrics().height()
+                      + paint.fontMetrics().ascent();
+        }
 
 	bool haveNext = false;
 	int nx = v->getXForFrame(v->getModelsEndFrame());
@@ -576,8 +607,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 		if (m_plotStyle == PlotConnectedPoints) {
 		    
+                    paint.save();
 		    paint.setPen(brushColour);
 		    paint.drawLine(x + w, y, nx, ny);
+                    paint.restore();
 
 		} else if (m_plotStyle == PlotLines) {
 
@@ -626,7 +659,9 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
 
 	if (p.label != "") {
-	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
+            if (!haveNext || nx > x + 6 + paint.fontMetrics().width(p.label)) {
+                paint.drawText(x + 5, textY, p.label);
+            }
 	}
     }
 
