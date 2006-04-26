@@ -114,11 +114,6 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     m_mutex.lock();
     m_cacheInvalid = true;
     m_model = model;
-    delete m_cache; //!!! hang on, this isn't safe to do here is it? 
-		    // we need some sort of guard against the fill
-		    // thread trying to read the defunct model too.
-		    // should we use a scavenger?
-    m_cache = 0;
     m_mutex.unlock();
 
     if (!m_model || !m_model->isOK()) return;
@@ -1375,8 +1370,8 @@ SpectrogramLayer::CacheFillThread::run()
 	    // in the model while we aren't holding a lock.  It's safe
 	    // for us to continue to use the "old" values if that
 	    // happens, because they will continue to match the
-	    // dimensions of the actual cache (which we manage, not
-	    // the model).
+	    // dimensions of the actual cache (which this thread
+	    // manages, not the layer's).
 	    m_layer.m_mutex.unlock();
 
 	    double *input = (double *)
