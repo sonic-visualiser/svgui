@@ -85,7 +85,7 @@ public:
 
     virtual int getCompletion() const { return m_model->getCompletion(); }
 
-    virtual bool needsTextLabelHeight() const { return true; }
+    virtual bool needsTextLabelHeight() const { return m_model->hasTextLabels(); }
 
     virtual bool getValueExtents(float &min, float &max, QString &unit) const {
         return false;
