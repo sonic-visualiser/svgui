@@ -142,7 +142,7 @@ SpectrogramLayer::getProperties() const
     list.push_back(tr("Window Type"));
     list.push_back(tr("Window Size"));
     list.push_back(tr("Window Overlap"));
-    list.push_back(tr("Normalize"));
+    list.push_back(tr("Normalize Columns"));
     list.push_back(tr("Bin Display"));
     list.push_back(tr("Threshold"));
     list.push_back(tr("Gain"));
@@ -158,7 +158,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == tr("Gain")) return RangeProperty;
     if (name == tr("Colour Rotation")) return RangeProperty;
-    if (name == tr("Normalize")) return ToggleProperty;
+    if (name == tr("Normalize Columns")) return ToggleProperty;
     if (name == tr("Threshold")) return RangeProperty;
     return ValueProperty;
 }
@@ -173,7 +173,7 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 	name == tr("Gain") ||
 	name == tr("Threshold") ||
 	name == tr("Colour Rotation")) return tr("Colour");
-    if (name == tr("Normalize") ||
+    if (name == tr("Normalize Columns") ||
 	name == tr("Bin Display") ||
 	name == tr("Colour Scale")) return tr("Scale");
     if (name == tr("Max Frequency") ||
@@ -304,7 +304,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 2;
 	deft = (int)m_binDisplay;
 
-    } else if (name == tr("Normalize")) {
+    } else if (name == tr("Normalize Columns")) {
 	
 	deft = (m_normalizeColumns ? 1 : 0);
 
@@ -490,7 +490,7 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 1: setBinDisplay(PeakBins); break;
 	case 2: setBinDisplay(PeakFrequencies); break;
 	}
-    } else if (name == "Normalize") {
+    } else if (name == "Normalize Columns") {
 	setNormalizeColumns(value ? true : false);
     }
 }

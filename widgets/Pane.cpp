@@ -525,7 +525,7 @@ Pane::mousePressEvent(QMouseEvent *e)
 	    int snapFrame = mouseFrame;
 	
 	    Layer *layer = getSelectedLayer();
-	    if (layer) {
+	    if (layer && !m_shiftPressed) {
 		layer->snapToFeatureFrame(this, snapFrame,
 					  resolution, Layer::SnapLeft);
 	    }
@@ -740,7 +740,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	int snapFrameRight = mouseFrame;
 	
 	Layer *layer = getSelectedLayer();
-	if (layer) {
+	if (layer && !m_shiftPressed) {
 	    layer->snapToFeatureFrame(this, snapFrameLeft,
 				      resolution, Layer::SnapLeft);
 	    layer->snapToFeatureFrame(this, snapFrameRight,
