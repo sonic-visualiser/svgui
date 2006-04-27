@@ -103,7 +103,7 @@ public:
     virtual int getCompletion() const { return m_model->getCompletion(); }
 
     virtual bool needsTextLabelHeight() const {
-        return m_plotStyle == PlotSegmentation;
+        return m_plotStyle == PlotSegmentation && m_model->hasTextLabels();
     }
 
     virtual bool getValueExtents(float &min, float &max, QString &unit) const;
