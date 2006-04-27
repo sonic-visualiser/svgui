@@ -131,6 +131,13 @@ Fader::mouseDoubleClickEvent(QMouseEvent *)
 void
 Fader::mousePressEvent(QMouseEvent *ev)
 {
+    if (ev->button() == Qt::MidButton) {
+        setValue(1.0);
+        emit valueChanged(1.0);
+        update();
+        return;
+    }
+
     int x = ev->x() - 6;
     const int max_x = 116 - 12;
 
