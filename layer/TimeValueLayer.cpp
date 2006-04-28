@@ -1067,7 +1067,7 @@ TimeValueLayer::copy(Selection s, Clipboard &to)
     for (SparseTimeValueModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
-            Clipboard::Point point(i->frame, i->label);
+            Clipboard::Point point(i->frame, i->value, i->label);
             to.addPoint(point);
         }
     }

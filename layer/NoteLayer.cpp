@@ -766,7 +766,7 @@ NoteLayer::copy(Selection s, Clipboard &to)
     for (NoteModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
-            Clipboard::Point point(i->frame, i->label);
+            Clipboard::Point point(i->frame, i->value, i->duration, i->label);
             to.addPoint(point);
         }
     }
