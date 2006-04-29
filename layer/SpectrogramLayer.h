@@ -218,22 +218,15 @@ protected:
     BinDisplay          m_binDisplay;
     bool                m_normalizeColumns;
 
-    // At the moment we cache one unsigned char per bin for the
-    // magnitude -- which is nothing like precise enough to allow us
-    // to subsequently adjust gain etc without recalculating the
-    // cached values -- plus optionally one unsigned char per bin for
-    // phase-adjusted frequency.
-    
-    // To speed up redrawing after parameter changes, we would like to
-    // cache magnitude in a way that can have gain applied afterwards
-    // and can determine whether something is a peak or not, and also
-    // cache phase rather than only phase-adjusted frequency so that
-    // we don't have to recalculate if switching between phase and
-    // magnitude displays.
+    // We would like to cache magnitude in a way that can have gain
+    // applied afterwards and can determine whether something is a
+    // peak or not, and also cache phase rather than only
+    // phase-adjusted frequency so that we don't have to recalculate
+    // if switching between phase and magnitude displays.  At the same
+    // time, we don't want to waste too much memory.
 
     // This implies probably 16 bits for a normalized magnitude (in
-    // dB?) and at most 16 bits for phase.  16 or 32 bits per bin
-    // instead of 8 or 16.
+    // dB?) and at most 16 bits for phase.
 
     // Each column's magnitudes are expected to be stored normalized
     // to [0,1] with respect to the column, so the normalization
