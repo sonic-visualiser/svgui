@@ -69,10 +69,19 @@ Layer::PropertyList
 TimeValueLayer::getProperties() const
 {
     PropertyList list;
-    list.push_back(tr("Colour"));
-    list.push_back(tr("Plot Type"));
-    list.push_back(tr("Vertical Scale"));
+    list.push_back("Colour");
+    list.push_back("Plot Type");
+    list.push_back("Vertical Scale");
     return list;
+}
+
+QString
+TimeValueLayer::getPropertyLabel(const PropertyName &name) const
+{
+    if (name == "Colour") return tr("Colour");
+    if (name == "Plot Type") return tr("Plot Type");
+    if (name == "Vertical Scale") return tr("Vertical Scale");
+    return "";
 }
 
 Layer::PropertyType
@@ -89,7 +98,7 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     int deft = 0;
 
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 
 	if (min) *min = 0;
 	if (max) *max = 5;
@@ -101,14 +110,14 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 	else if (m_colour == QColor(200, 50, 255)) deft = 4;
 	else if (m_colour == QColor(255, 150, 50)) deft = 5;
 
-    } else if (name == tr("Plot Type")) {
+    } else if (name == "Plot Type") {
 	
 	if (min) *min = 0;
 	if (max) *max = 5;
 	
 	deft = int(m_plotStyle);
 
-    } else if (name == tr("Vertical Scale")) {
+    } else if (name == "Vertical Scale") {
 	
 	if (min) *min = 0;
 	if (max) *max = 3;
@@ -127,7 +136,7 @@ QString
 TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0: return tr("Black");
@@ -137,7 +146,7 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("Purple");
 	case 5: return tr("Orange");
 	}
-    } else if (name == tr("Plot Type")) {
+    } else if (name == "Plot Type") {
 	switch (value) {
 	default:
 	case 0: return tr("Points");
@@ -147,7 +156,7 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("Curve");
 	case 5: return tr("Segmentation");
 	}
-    } else if (name == tr("Vertical Scale")) {
+    } else if (name == "Vertical Scale") {
 	switch (value) {
 	default:
 	case 0: return tr("Linear Scale");
@@ -162,7 +171,7 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 void
 TimeValueLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0:	setBaseColour(Qt::black); break;
@@ -172,9 +181,9 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
 	case 4: setBaseColour(QColor(200, 50, 255)); break;
 	case 5: setBaseColour(QColor(255, 150, 50)); break;
 	}
-    } else if (name == tr("Plot Type")) {
+    } else if (name == "Plot Type") {
 	setPlotStyle(PlotStyle(value));
-    } else if (name == tr("Vertical Scale")) {
+    } else if (name == "Vertical Scale") {
 	setVerticalScale(VerticalScale(value));
     }
 }

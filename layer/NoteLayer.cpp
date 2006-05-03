@@ -69,9 +69,17 @@ Layer::PropertyList
 NoteLayer::getProperties() const
 {
     PropertyList list;
-    list.push_back(tr("Colour"));
-    list.push_back(tr("Vertical Scale"));
+    list.push_back("Colour");
+    list.push_back("Vertical Scale");
     return list;
+}
+
+QString
+NoteLayer::getPropertyLabel(const PropertyName &name) const
+{
+    if (name == "Colour") return tr("Colour");
+    if (name == "Vertical Scale") return tr("Vertical Scale");
+    return "";
 }
 
 Layer::PropertyType
@@ -88,7 +96,7 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     int deft = 0;
 
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 
 	if (min) *min = 0;
 	if (max) *max = 5;
@@ -100,7 +108,7 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 	else if (m_colour == QColor(200, 50, 255)) deft = 4;
 	else if (m_colour == QColor(255, 150, 50)) deft = 5;
 
-    } else if (name == tr("Vertical Scale")) {
+    } else if (name == "Vertical Scale") {
 	
 	if (min) *min = 0;
 	if (max) *max = 2;
@@ -119,7 +127,7 @@ QString
 NoteLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0: return tr("Black");
@@ -129,7 +137,7 @@ NoteLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("Purple");
 	case 5: return tr("Orange");
 	}
-    } else if (name == tr("Vertical Scale")) {
+    } else if (name == "Vertical Scale") {
 	switch (value) {
 	default:
 	case 0: return tr("Note Range In Use");
@@ -143,7 +151,7 @@ NoteLayer::getPropertyValueLabel(const PropertyName &name,
 void
 NoteLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0:	setBaseColour(Qt::black); break;
@@ -153,7 +161,7 @@ NoteLayer::setProperty(const PropertyName &name, int value)
 	case 4: setBaseColour(QColor(200, 50, 255)); break;
 	case 5: setBaseColour(QColor(255, 150, 50)); break;
 	}
-    } else if (name == tr("Vertical Scale")) {
+    } else if (name == "Vertical Scale") {
 	setVerticalScale(VerticalScale(value));
     }
 }

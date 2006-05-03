@@ -65,9 +65,17 @@ Layer::PropertyList
 TimeInstantLayer::getProperties() const
 {
     PropertyList list;
-    list.push_back(tr("Colour"));
-    list.push_back(tr("Plot Type"));
+    list.push_back("Colour");
+    list.push_back("Plot Type");
     return list;
+}
+
+QString
+TimeInstantLayer::getPropertyLabel(const PropertyName &name) const
+{
+    if (name == "Colour") return tr("Colour");
+    if (name == "Plot Type") return tr("Plot Type");
+    return "";
 }
 
 Layer::PropertyType
@@ -82,7 +90,7 @@ TimeInstantLayer::getPropertyRangeAndValue(const PropertyName &name,
 {
     int deft = 0;
 
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 
 	if (min) *min = 0;
 	if (max) *max = 5;
@@ -94,7 +102,7 @@ TimeInstantLayer::getPropertyRangeAndValue(const PropertyName &name,
 	else if (m_colour == QColor(200, 50, 255)) deft = 4;
 	else if (m_colour == QColor(255, 150, 50)) deft = 5;
 
-    } else if (name == tr("Plot Type")) {
+    } else if (name == "Plot Type") {
 	
 	if (min) *min = 0;
 	if (max) *max = 1;
@@ -113,7 +121,7 @@ QString
 TimeInstantLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0: return tr("Black");
@@ -123,7 +131,7 @@ TimeInstantLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("Purple");
 	case 5: return tr("Orange");
 	}
-    } else if (name == tr("Plot Type")) {
+    } else if (name == "Plot Type") {
 	switch (value) {
 	default:
 	case 0: return tr("Instants");
@@ -136,7 +144,7 @@ TimeInstantLayer::getPropertyValueLabel(const PropertyName &name,
 void
 TimeInstantLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0:	setBaseColour(Qt::black); break;
@@ -146,7 +154,7 @@ TimeInstantLayer::setProperty(const PropertyName &name, int value)
 	case 4: setBaseColour(QColor(200, 50, 255)); break;
 	case 5: setBaseColour(QColor(255, 150, 50)); break;
 	}
-    } else if (name == tr("Plot Type")) {
+    } else if (name == "Plot Type") {
 	setPlotStyle(PlotStyle(value));
     }
 }
