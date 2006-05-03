@@ -63,8 +63,14 @@ Layer::PropertyList
 TextLayer::getProperties() const
 {
     PropertyList list;
-    list.push_back(tr("Colour"));
+    list.push_back("Colour");
     return list;
+}
+
+QString
+TextLayer::getPropertyLabel(const PropertyName &name) const
+{
+    if (name == "Colour") return tr("Colour");
 }
 
 Layer::PropertyType
@@ -81,7 +87,7 @@ TextLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     int deft = 0;
 
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 
 	if (min) *min = 0;
 	if (max) *max = 5;
@@ -105,7 +111,7 @@ QString
 TextLayer::getPropertyValueLabel(const PropertyName &name,
 				 int value) const
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0: return tr("Black");
@@ -122,7 +128,7 @@ TextLayer::getPropertyValueLabel(const PropertyName &name,
 void
 TextLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0:	setBaseColour(Qt::black); break;

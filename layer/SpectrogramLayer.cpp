@@ -141,49 +141,68 @@ Layer::PropertyList
 SpectrogramLayer::getProperties() const
 {
     PropertyList list;
-    list.push_back(tr("Colour"));
-    list.push_back(tr("Colour Scale"));
-    list.push_back(tr("Window Type"));
-    list.push_back(tr("Window Size"));
-    list.push_back(tr("Window Overlap"));
-    list.push_back(tr("Normalize Columns"));
-    list.push_back(tr("Bin Display"));
-    list.push_back(tr("Threshold"));
-    list.push_back(tr("Gain"));
-    list.push_back(tr("Colour Rotation"));
-    list.push_back(tr("Min Frequency"));
-    list.push_back(tr("Max Frequency"));
-    list.push_back(tr("Frequency Scale"));
+    list.push_back("Colour");
+    list.push_back("Colour Scale");
+    list.push_back("Window Type");
+    list.push_back("Window Size");
+    list.push_back("Window Overlap");
+    list.push_back("Normalize Columns");
+    list.push_back("Bin Display");
+    list.push_back("Threshold");
+    list.push_back("Gain");
+    list.push_back("Colour Rotation");
+    list.push_back("Min Frequency");
+    list.push_back("Max Frequency");
+    list.push_back("Frequency Scale");
     return list;
+}
+
+QString
+SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
+{
+    if (name == "Colour") return tr("Colour");
+    if (name == "Colour Scale") return tr("Colour Scale");
+    if (name == "Window Type") return tr("Window Type");
+    if (name == "Window Size") return tr("Window Size");
+    if (name == "Window Overlap") return tr("Window Overlap");
+    if (name == "Normalize Columns") return tr("Normalize Columns");
+    if (name == "Bin Display") return tr("Bin Display");
+    if (name == "Threshold") return tr("Threshold");
+    if (name == "Gain") return tr("Gain");
+    if (name == "Colour Rotation") return tr("Colour Rotation");
+    if (name == "Min Frequency") return tr("Min Frequency");
+    if (name == "Max Frequency") return tr("Max Frequency");
+    if (name == "Frequency Scale") return tr("Frequency Scale");
+    return "";
 }
 
 Layer::PropertyType
 SpectrogramLayer::getPropertyType(const PropertyName &name) const
 {
-    if (name == tr("Gain")) return RangeProperty;
-    if (name == tr("Colour Rotation")) return RangeProperty;
-    if (name == tr("Normalize Columns")) return ToggleProperty;
-    if (name == tr("Threshold")) return RangeProperty;
+    if (name == "Gain") return RangeProperty;
+    if (name == "Colour Rotation") return RangeProperty;
+    if (name == "Normalize Columns") return ToggleProperty;
+    if (name == "Threshold") return RangeProperty;
     return ValueProperty;
 }
 
 QString
 SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 {
-    if (name == tr("Window Size") ||
-	name == tr("Window Type") ||
-	name == tr("Window Overlap")) return tr("Window");
-    if (name == tr("Colour") ||
-	name == tr("Gain") ||
-	name == tr("Threshold") ||
-	name == tr("Colour Rotation")) return tr("Colour");
-    if (name == tr("Normalize Columns") ||
-	name == tr("Bin Display") ||
-	name == tr("Colour Scale")) return tr("Scale");
-    if (name == tr("Max Frequency") ||
-	name == tr("Min Frequency") ||
-	name == tr("Frequency Scale") ||
-	name == tr("Frequency Adjustment")) return tr("Range");
+    if (name == "Window Size" ||
+	name == "Window Type" ||
+	name == "Window Overlap") return tr("Window");
+    if (name == "Colour" ||
+	name == "Gain" ||
+	name == "Threshold" ||
+	name == "Colour Rotation") return tr("Colour");
+    if (name == "Normalize Columns" ||
+	name == "Bin Display" ||
+	name == "Colour Scale") return tr("Scale");
+    if (name == "Max Frequency" ||
+	name == "Min Frequency" ||
+	name == "Frequency Scale" ||
+	name == "Frequency Adjustment") return tr("Range");
     return QString();
 }
 
@@ -197,7 +216,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
     if (!min) min = &garbage0;
     if (!max) max = &garbage1;
 
-    if (name == tr("Gain")) {
+    if (name == "Gain") {
 
 	*min = -50;
 	*max = 50;
@@ -206,7 +225,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	if (deft < *min) deft = *min;
 	if (deft > *max) deft = *max;
 
-    } else if (name == tr("Threshold")) {
+    } else if (name == "Threshold") {
 
 	*min = -50;
 	*max = 0;
@@ -215,35 +234,35 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	if (deft < *min) deft = *min;
 	if (deft > *max) deft = *max;
 
-    } else if (name == tr("Colour Rotation")) {
+    } else if (name == "Colour Rotation") {
 
 	*min = 0;
 	*max = 256;
 
 	deft = m_colourRotation;
 
-    } else if (name == tr("Colour Scale")) {
+    } else if (name == "Colour Scale") {
 
 	*min = 0;
 	*max = 3;
 
 	deft = (int)m_colourScale;
 
-    } else if (name == tr("Colour")) {
+    } else if (name == "Colour") {
 
 	*min = 0;
 	*max = 6;
 
 	deft = (int)m_colourScheme;
 
-    } else if (name == tr("Window Type")) {
+    } else if (name == "Window Type") {
 
 	*min = 0;
 	*max = 6;
 
 	deft = (int)m_windowType;
 
-    } else if (name == tr("Window Size")) {
+    } else if (name == "Window Size") {
 
 	*min = 0;
 	*max = 10;
@@ -252,7 +271,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	int ws = m_windowSize;
 	while (ws > 32) { ws >>= 1; deft ++; }
 
-    } else if (name == tr("Window Overlap")) {
+    } else if (name == "Window Overlap") {
 	
 	*min = 0;
 	*max = 4;
@@ -260,7 +279,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	deft = m_windowOverlap / 25;
 	if (m_windowOverlap == 90) deft = 4;
     
-    } else if (name == tr("Min Frequency")) {
+    } else if (name == "Min Frequency") {
 
 	*min = 0;
 	*max = 9;
@@ -278,7 +297,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	case 10000: deft = 9; break;
 	}
     
-    } else if (name == tr("Max Frequency")) {
+    } else if (name == "Max Frequency") {
 
 	*min = 0;
 	*max = 9;
@@ -296,19 +315,19 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	default: deft = 9; break;
 	}
 
-    } else if (name == tr("Frequency Scale")) {
+    } else if (name == "Frequency Scale") {
 
 	*min = 0;
 	*max = 1;
 	deft = (int)m_frequencyScale;
 
-    } else if (name == tr("Bin Display")) {
+    } else if (name == "Bin Display") {
 
 	*min = 0;
 	*max = 2;
 	deft = (int)m_binDisplay;
 
-    } else if (name == tr("Normalize Columns")) {
+    } else if (name == "Normalize Columns") {
 	
 	deft = (m_normalizeColumns ? 1 : 0);
 
@@ -323,7 +342,7 @@ QString
 SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 					int value) const
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0: return tr("Default");
@@ -335,7 +354,7 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 6: return tr("Fruit Salad");
 	}
     }
-    if (name == tr("Colour Scale")) {
+    if (name == "Colour Scale") {
 	switch (value) {
 	default:
 	case 0: return tr("Linear");
@@ -344,7 +363,7 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 3: return tr("Phase");
 	}
     }
-    if (name == tr("Window Type")) {
+    if (name == "Window Type") {
 	switch ((WindowType)value) {
 	default:
 	case RectangularWindow: return tr("Rectangle");
@@ -356,10 +375,10 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case ParzenWindow: return tr("Parzen");
 	}
     }
-    if (name == tr("Window Size")) {
+    if (name == "Window Size") {
 	return QString("%1").arg(32 << value);
     }
-    if (name == tr("Window Overlap")) {
+    if (name == "Window Overlap") {
 	switch (value) {
 	default:
 	case 0: return tr("0%");
@@ -369,7 +388,7 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("90%");
 	}
     }
-    if (name == tr("Min Frequency")) {
+    if (name == "Min Frequency") {
 	switch (value) {
 	default:
 	case 0: return tr("No min");
@@ -384,7 +403,7 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 9: return tr("10 KHz");
 	}
     }
-    if (name == tr("Max Frequency")) {
+    if (name == "Max Frequency") {
 	switch (value) {
 	default:
 	case 0: return tr("500 Hz");
@@ -399,14 +418,14 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 9: return tr("No max");
 	}
     }
-    if (name == tr("Frequency Scale")) {
+    if (name == "Frequency Scale") {
 	switch (value) {
 	default:
 	case 0: return tr("Linear");
 	case 1: return tr("Log");
 	}
     }
-    if (name == tr("Bin Display")) {
+    if (name == "Bin Display") {
 	switch (value) {
 	default:
 	case 0: return tr("All Bins");
@@ -420,14 +439,14 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 void
 SpectrogramLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == tr("Gain")) {
+    if (name == "Gain") {
 	setGain(pow(10, float(value)/20.0));
-    } else if (name == tr("Threshold")) {
+    } else if (name == "Threshold") {
 	if (value == -50) setThreshold(0.0);
 	else setThreshold(AudioLevel::dB_to_multiplier(value));
-    } else if (name == tr("Colour Rotation")) {
+    } else if (name == "Colour Rotation") {
 	setColourRotation(value);
-    } else if (name == tr("Colour")) {
+    } else if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0:	setColourScheme(DefaultColours); break;
@@ -438,14 +457,14 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 5: setColourScheme(BlueOnBlack); break;
 	case 6: setColourScheme(Rainbow); break;
 	}
-    } else if (name == tr("Window Type")) {
+    } else if (name == "Window Type") {
 	setWindowType(WindowType(value));
-    } else if (name == tr("Window Size")) {
+    } else if (name == "Window Size") {
 	setWindowSize(32 << value);
-    } else if (name == tr("Window Overlap")) {
+    } else if (name == "Window Overlap") {
 	if (value == 4) setWindowOverlap(90);
 	else setWindowOverlap(25 * value);
-    } else if (name == tr("Min Frequency")) {
+    } else if (name == "Min Frequency") {
 	switch (value) {
 	default:
 	case 0: setMinFrequency(0); break;
@@ -459,7 +478,7 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 8: setMinFrequency(4000); break;
 	case 9: setMinFrequency(10000); break;
 	}
-    } else if (name == tr("Max Frequency")) {
+    } else if (name == "Max Frequency") {
 	switch (value) {
 	case 0: setMaxFrequency(500); break;
 	case 1: setMaxFrequency(1000); break;
@@ -473,7 +492,7 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	default:
 	case 9: setMaxFrequency(0); break;
 	}
-    } else if (name == tr("Colour Scale")) {
+    } else if (name == "Colour Scale") {
 	switch (value) {
 	default:
 	case 0: setColourScale(LinearColourScale); break;
@@ -481,13 +500,13 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 2: setColourScale(dBColourScale); break;
 	case 3: setColourScale(PhaseColourScale); break;
 	}
-    } else if (name == tr("Frequency Scale")) {
+    } else if (name == "Frequency Scale") {
 	switch (value) {
 	default:
 	case 0: setFrequencyScale(LinearFrequencyScale); break;
 	case 1: setFrequencyScale(LogFrequencyScale); break;
 	}
-    } else if (name == tr("Bin Display")) {
+    } else if (name == "Bin Display") {
 	switch (value) {
 	default:
 	case 0: setBinDisplay(AllBins); break;
@@ -1325,6 +1344,7 @@ SpectrogramLayer::CacheFillThread::run()
 		std::cerr << "WARNING: fftw_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
 		fftw_free(input);
 		fftw_free(output);
+                fftw_free(workbuffer);
 		m_layer.m_mutex.lock();
 		continue;
 	    }

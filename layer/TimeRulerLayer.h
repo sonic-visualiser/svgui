@@ -45,6 +45,7 @@ public:
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
     virtual PropertyList getProperties() const;
+    virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
     virtual int getPropertyRangeAndValue(const PropertyName &,
 					   int *min, int *max) const;

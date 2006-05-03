@@ -90,35 +90,46 @@ Layer::PropertyList
 WaveformLayer::getProperties() const
 {
     PropertyList list;
-    list.push_back(tr("Colour"));
-    list.push_back(tr("Scale"));
-    list.push_back(tr("Gain"));
-    list.push_back(tr("Normalize Visible Area"));
+    list.push_back("Colour");
+    list.push_back("Scale");
+    list.push_back("Gain");
+    list.push_back("Normalize Visible Area");
 
     if (m_model && m_model->getChannelCount() > 1 && m_channel == -1) {
-        list.push_back(tr("Channels"));
+        list.push_back("Channels");
     }
 
     return list;
 }
 
+QString
+WaveformLayer::getPropertyLabel(const PropertyName &name) const
+{
+    if (name == "Colour") return tr("Colour");
+    if (name == "Scale") return tr("Scale");
+    if (name == "Gain") return tr("Gain");
+    if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
+    if (name == "Channels") return tr("Channels");
+    return "";
+}
+
 Layer::PropertyType
 WaveformLayer::getPropertyType(const PropertyName &name) const
 {
-    if (name == tr("Gain")) return RangeProperty;
-    if (name == tr("Normalize Visible Area")) return ToggleProperty;
-    if (name == tr("Colour")) return ValueProperty;
-    if (name == tr("Channels")) return ValueProperty;
-    if (name == tr("Scale")) return ValueProperty;
+    if (name == "Gain") return RangeProperty;
+    if (name == "Normalize Visible Area") return ToggleProperty;
+    if (name == "Colour") return ValueProperty;
+    if (name == "Channels") return ValueProperty;
+    if (name == "Scale") return ValueProperty;
     return InvalidProperty;
 }
 
 QString
 WaveformLayer::getPropertyGroupName(const PropertyName &name) const
 {
-    if (name == tr("Gain") ||
-        name == tr("Normalize Visible Area") ||
-	name == tr("Scale")) return tr("Scale");
+    if (name == "Gain" ||
+        name == "Normalize Visible Area" ||
+	name == "Scale") return tr("Scale");
     return QString();
 }
 
@@ -132,7 +143,7 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
     if (!min) min = &garbage0;
     if (!max) max = &garbage1;
 
-    if (name == tr("Gain")) {
+    if (name == "Gain") {
 
 	*min = -50;
 	*max = 50;
@@ -141,11 +152,11 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 	if (deft < *min) deft = *min;
 	if (deft > *max) deft = *max;
 
-    } else if (name == tr("Normalize Visible Area")) {
+    } else if (name == "Normalize Visible Area") {
 
         deft = (m_autoNormalize ? 1 : 0);
 
-    } else if (name == tr("Colour")) {
+    } else if (name == "Colour") {
 
 	*min = 0;
 	*max = 5;
@@ -157,7 +168,7 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 	else if (m_colour == QColor(200, 50, 255)) deft = 4;
 	else if (m_colour == QColor(255, 150, 50)) deft = 5;
 
-    } else if (name == tr("Channels")) {
+    } else if (name == "Channels") {
 
         *min = 0;
         *max = 2;
@@ -165,7 +176,7 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
         else if (m_channelMode == MergeChannels) deft = 2;
         else deft = 0;
 
-    } else if (name == tr("Scale")) {
+    } else if (name == "Scale") {
 
 	*min = 0;
 	*max = 2;
@@ -183,7 +194,7 @@ QString
 WaveformLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
-    if (name == tr("Colour")) {
+    if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0: return tr("Black");
@@ -194,7 +205,7 @@ WaveformLayer::getPropertyValueLabel(const PropertyName &name,
 	case 5: return tr("Orange");
 	}
     }
-    if (name == tr("Scale")) {
+    if (name == "Scale") {
 	switch (value) {
 	default:
 	case 0: return tr("Linear");
@@ -202,7 +213,7 @@ WaveformLayer::getPropertyValueLabel(const PropertyName &name,
 	case 2: return tr("dB");
 	}
     }
-    if (name == tr("Channels")) {
+    if (name == "Channels") {
         switch (value) {
         default:
         case 0: return tr("Separate");
@@ -216,11 +227,11 @@ WaveformLayer::getPropertyValueLabel(const PropertyName &name,
 void
 WaveformLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == tr("Gain")) {
+    if (name == "Gain") {
 	setGain(pow(10, float(value)/20.0));
-    } else if (name == tr("Normalize Visible Area")) {
+    } else if (name == "Normalize Visible Area") {
         setAutoNormalize(value ? true : false);
-    } else if (name == tr("Colour")) {
+    } else if (name == "Colour") {
 	switch (value) {
 	default:
 	case 0:	setBaseColour(Qt::black); break;
@@ -230,11 +241,11 @@ WaveformLayer::setProperty(const PropertyName &name, int value)
 	case 4: setBaseColour(QColor(200, 50, 255)); break;
 	case 5: setBaseColour(QColor(255, 150, 50)); break;
 	}
-    } else if (name == tr("Channels")) {
+    } else if (name == "Channels") {
         if (value == 1) setChannelMode(MixChannels);
         else if (value == 2) setChannelMode(MergeChannels);
         else setChannelMode(SeparateChannels);
-    } else if (name == tr("Scale")) {
+    } else if (name == "Scale") {
 	switch (value) {
 	default:
 	case 0: setScale(LinearScale); break;

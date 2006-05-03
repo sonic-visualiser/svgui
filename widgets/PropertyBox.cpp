@@ -224,6 +224,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 		 m_propertyControllers.end());
 
     QString groupName = m_container->getPropertyGroupName(name);
+    QString propertyLabel = m_container->getPropertyLabel(name);
 
 #ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox[" << this
@@ -251,9 +252,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    }
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
-	    std::cerr << "PropertyBox: adding label \"" << name.toStdString() << "\"" << std::endl;
+	    std::cerr << "PropertyBox: adding label \"" << propertyLabel.toStdString() << "\"" << std::endl;
 #endif
-	    m_layout->addWidget(new QLabel(name, m_mainWidget), row, 0);
+	    m_layout->addWidget(new QLabel(propertyLabel, m_mainWidget), row, 0);
 	}
     }
 

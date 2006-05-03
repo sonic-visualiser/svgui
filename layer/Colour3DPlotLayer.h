@@ -66,6 +66,7 @@ public:
 
     virtual bool getValueExtents(float &, float &, QString &) const { return false; }
 
+    virtual QString getPropertyLabel(const PropertyName &) const { return ""; }
 /*
     virtual PropertyList getProperties() const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
