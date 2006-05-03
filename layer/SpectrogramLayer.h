@@ -219,7 +219,24 @@ protected:
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 
+    class ColourMap
+    {
+    public:
+        QColor getColour(unsigned char index) const {
+            return m_colours[index];
+        }
+    
+        void setColour(unsigned char index, QColor colour) {
+            m_colours[index] = colour;
+        }
+
+    private:
+        QColor m_colours[256];
+    };
+
+    ColourMap m_colourMap;
     FFTCacheBase *m_cache;
+    FFTCacheBase *m_writeCache;
     bool m_cacheInvalid;
 
     class CacheFillThread : public QThread
@@ -263,6 +280,7 @@ protected:
 			 fftw_plan plan,
 			 size_t windowSize,
 			 size_t windowIncrement,
+                         float *workbuffer,
 			 const Window<double> &windower)
 	const;
 
