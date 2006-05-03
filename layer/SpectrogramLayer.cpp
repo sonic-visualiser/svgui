@@ -21,6 +21,7 @@
 #include "base/Window.h"
 #include "base/Pitch.h"
 #include "base/FFTCache.h"
+#include "base/FFTFileCache.h"
 
 #include <QPainter>
 #include <QImage>
@@ -66,6 +67,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
     m_cache(0),
+    m_writeCache(0),
     m_cacheInvalid(true),
     m_pixmapCache(0),
     m_pixmapCacheInvalid(true),
@@ -104,6 +106,7 @@ SpectrogramLayer::~SpectrogramLayer()
     if (m_fillThread) m_fillThread->wait();
     delete m_fillThread;
     
+    delete m_writeCache;
     delete m_cache;
 }
 
@@ -928,9 +931,9 @@ SpectrogramLayer::setCacheColourmap()
     int formerRotation = m_colourRotation;
 
     if (m_colourScheme == BlackOnWhite) {
-	m_cache->setColour(NO_VALUE, Qt::white);
+	m_colourMap.setColour(NO_VALUE, Qt::white);
     } else {
-	m_cache->setColour(NO_VALUE, Qt::black);
+	m_colourMap.setColour(NO_VALUE, Qt::black);
     }
 
     for (int pixel = 1; pixel < 256; ++pixel) {
@@ -990,7 +993,7 @@ SpectrogramLayer::setCacheColourmap()
 	    break;
 	}
 
-	m_cache->setColour(pixel, colour);
+	m_colourMap.setColour(pixel, colour);
     }
 
     m_colourRotation = 0;
@@ -1005,17 +1008,17 @@ SpectrogramLayer::rotateCacheColourmap(int distance)
 
     QColor newPixels[256];
 
-    newPixels[NO_VALUE] = m_cache->getColour(NO_VALUE);
+    newPixels[NO_VALUE] = m_colourMap.getColour(NO_VALUE);
 
     for (int pixel = 1; pixel < 256; ++pixel) {
 	int target = pixel + distance;
 	while (target < 1) target += 255;
 	while (target > 255) target -= 255;
-	newPixels[target] = m_cache->getColour(pixel);
+	newPixels[target] = m_colourMap.getColour(pixel);
     }
 
     for (int pixel = 0; pixel < 256; ++pixel) {
-	m_cache->setColour(pixel, newPixels[pixel]);
+	m_colourMap.setColour(pixel, newPixels[pixel]);
     }
 }
 
@@ -1067,6 +1070,7 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 				  fftw_plan plan, 
 				  size_t windowSize,
 				  size_t increment,
+                                  float *workbuffer,
 				  const Window<double> &windower) const
 {
     //!!! we _do_ need a lock for these references to the model
@@ -1131,15 +1135,12 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 	double phase = atan2(output[i][1], output[i][0]);
 	phase = princarg(phase);
 
-	output[i][0] = mag;
-	m_cache->setPhaseAt(column, i, phase);
+        workbuffer[i] = mag;
+        workbuffer[i + windowSize/2] = phase;
     }
 
-    m_cache->setNormalizationFactor(column, factor);
-
-    for (size_t i = 0; i < windowSize/2; ++i) {
-	m_cache->setMagnitudeAt(column, i, output[i][0]);
-    }
+    m_writeCache->setColumnAt(column, workbuffer,
+                              workbuffer + windowSize/2, factor);
 }
 
 unsigned char
@@ -1278,13 +1279,22 @@ SpectrogramLayer::CacheFillThread::run()
 	    size_t width = (end - start) / windowIncrement + 1;
 	    size_t height = windowSize / 2;
 
-	    if (!m_layer.m_cache) {
-		m_layer.m_cache = new FFTMemoryCache;
-	    }
+//!!!	    if (!m_layer.m_cache) {
+//		m_layer.m_cache = new FFTMemoryCache;
+//	    }
+            if (!m_layer.m_writeCache) {
+                m_layer.m_writeCache = new FFTFileCache
+                    (QString("%1").arg(getObjectExportId(&m_layer)),
+                     MatrixFileCache::ReadWrite);
+            }
+	    m_layer.m_writeCache->resize(width, height);
+            if (m_layer.m_cache) delete m_layer.m_cache;
+            m_layer.m_cache = new FFTFileCache
+                (QString("%1").arg(getObjectExportId(&m_layer)),
+                 MatrixFileCache::ReadOnly);
 
-	    m_layer.m_cache->resize(width, height);
 	    m_layer.setCacheColourmap();
-//!!!	    m_layer.m_cache->reset();
+//!!!	    m_layer.m_writeCache->reset();
 
 	    // We don't need a lock when writing to or reading from
 	    // the pixels in the cache.  We do need to ensure we have
@@ -1302,6 +1312,9 @@ SpectrogramLayer::CacheFillThread::run()
 
 	    fftw_complex *output = (fftw_complex *)
 		fftw_malloc(windowSize * sizeof(fftw_complex));
+
+            float *workbuffer = (float *)
+                fftw_malloc(windowSize * sizeof(float));
 
 	    fftw_plan plan = fftw_plan_dft_r2c_1d(windowSize, input,
 						  output, FFTW_ESTIMATE);
@@ -1329,7 +1342,7 @@ SpectrogramLayer::CacheFillThread::run()
 		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
 					    input, output, plan,
 					    windowSize, windowIncrement,
-					    windower);
+                                            workbuffer, windower);
 
 		    if (m_layer.m_cacheInvalid || m_layer.m_exiting) {
 			interrupted = true;
@@ -1361,7 +1374,7 @@ SpectrogramLayer::CacheFillThread::run()
 		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
 					    input, output, plan,
 					    windowSize, windowIncrement,
-					    windower);
+					    workbuffer, windower);
 
 		    if (m_layer.m_cacheInvalid || m_layer.m_exiting) {
 			interrupted = true;
@@ -1382,6 +1395,7 @@ SpectrogramLayer::CacheFillThread::run()
 	    fftw_destroy_plan(plan);
 	    fftw_free(output);
 	    fftw_free(input);
+            fftw_free(workbuffer);
 
 	    if (!interrupted) {
 		m_fillExtent = end;
@@ -1813,7 +1827,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    std::cerr << "x0 " << x0 << ", x1 " << x1 << ", w " << w << ", h " << h << std::endl;
 
     QImage scaled(w, h, QImage::Format_RGB32);
-    scaled.fill(m_cache->getColour(0).rgb());
+    scaled.fill(m_colourMap.getColour(0).rgb());
 
     float ymag[h];
     float ydiv[h];
@@ -1953,7 +1967,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		pixel = getDisplayValue(avg);
 
 		assert(x <= scaled.width());
-		QColor c = m_cache->getColour(pixel);
+		QColor c = m_colourMap.getColour(pixel);
 		scaled.setPixel(x, y,
 				qRgb(c.red(), c.green(), c.blue()));
 	    }
@@ -2320,7 +2334,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	paint.setBrush(Qt::NoBrush);
 	for (int i = 0; i < ch; ++i) {
 	    int v = (i * 255) / ch + 1;
-	    paint.setPen(m_cache->getColour(v));
+	    paint.setPen(m_colourMap.getColour(v));
 	    paint.drawLine(5, 4 + textHeight + ch - i,
 			   cw + 2, 4 + textHeight + ch - i);
 	}
