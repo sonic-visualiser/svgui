@@ -19,10 +19,10 @@
 #include "base/Layer.h"
 #include "base/Window.h"
 #include "base/RealTime.h"
+#include "base/NonRTThread.h"
 #include "model/PowerOfSqrtTwoZoomConstraint.h"
 #include "model/DenseTimeValueModel.h"
 
-#include <QThread>
 #include <QMutex>
 #include <QWaitCondition>
 
@@ -240,7 +240,7 @@ protected:
     FFTCacheBase *m_writeCache;
     bool m_cacheInvalid;
 
-    class CacheFillThread : public QThread
+    class CacheFillThread : public NonRTThread
     {
     public:
 	CacheFillThread(SpectrogramLayer &layer) :
