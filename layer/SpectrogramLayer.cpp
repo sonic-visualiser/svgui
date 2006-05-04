@@ -1304,13 +1304,13 @@ SpectrogramLayer::CacheFillThread::run()
             if (!m_layer.m_writeCache) {
                 m_layer.m_writeCache = new FFTFileCache
                     (QString("%1").arg(getObjectExportId(&m_layer)),
-                     MatrixFileCache::ReadWrite);
+                     MatrixFile::ReadWrite);
             }
 	    m_layer.m_writeCache->resize(width, height);
             if (m_layer.m_cache) delete m_layer.m_cache;
             m_layer.m_cache = new FFTFileCache
                 (QString("%1").arg(getObjectExportId(&m_layer)),
-                 MatrixFileCache::ReadOnly);
+                 MatrixFile::ReadOnly);
 
 	    m_layer.setCacheColourmap();
 //!!!	    m_layer.m_writeCache->reset();
