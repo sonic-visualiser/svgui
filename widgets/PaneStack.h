@@ -54,12 +54,14 @@ public:
 signals:
     void currentPaneChanged(Pane *pane);
     void currentLayerChanged(Pane *pane, Layer *layer);
+    void rightButtonMenuRequested(Pane *pane, QPoint position);
 
 public slots:
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);
     void propertyContainerSelected(View *client, PropertyContainer *);
     void paneInteractedWith();
+    void rightButtonMenuRequested(QPoint);
 
 protected:
     Pane *m_currentPane;

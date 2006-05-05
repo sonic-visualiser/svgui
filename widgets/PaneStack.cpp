@@ -83,6 +83,8 @@ PaneStack::addPane(bool suppressPropertyBox)
 	    this, SLOT(propertyContainerRemoved(PropertyContainer *)));
     connect(pane, SIGNAL(paneInteractedWith()),
 	    this, SLOT(paneInteractedWith()));
+    connect(pane, SIGNAL(rightButtonMenuRequested(QPoint)),
+            this, SLOT(rightButtonMenuRequested(QPoint)));
 
     if (!m_currentPane) {
 	setCurrentPane(pane);
@@ -322,6 +324,14 @@ PaneStack::paneInteractedWith()
     Pane *pane = dynamic_cast<Pane *>(sender());
     if (!pane) return;
     setCurrentPane(pane);
+}
+
+void
+PaneStack::rightButtonMenuRequested(QPoint position)
+{
+    Pane *pane = dynamic_cast<Pane *>(sender());
+    if (!pane) return;
+    emit rightButtonMenuRequested(pane, position);
 }
 
 void

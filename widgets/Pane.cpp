@@ -479,6 +479,11 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
 void
 Pane::mousePressEvent(QMouseEvent *e)
 {
+    if (e->buttons() & Qt::RightButton) {
+        emit rightButtonMenuRequested(mapToGlobal(e->pos()));
+        return;
+    }
+
     m_clickPos = e->pos();
     m_clickedInRange = true;
     m_editingSelection = Selection();
@@ -566,6 +571,10 @@ Pane::mousePressEvent(QMouseEvent *e)
 void
 Pane::mouseReleaseEvent(QMouseEvent *e)
 {
+    if (e->buttons() & Qt::RightButton) {
+        return;
+    }
+
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
 
@@ -661,6 +670,10 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 void
 Pane::mouseMoveEvent(QMouseEvent *e)
 {
+    if (e->buttons() & Qt::RightButton) {
+        return;
+    }
+
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
 
@@ -814,6 +827,10 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 void
 Pane::mouseDoubleClickEvent(QMouseEvent *e)
 {
+    if (e->buttons() & Qt::RightButton) {
+        return;
+    }
+
     std::cerr << "mouseDoubleClickEvent" << std::endl;
 
     m_clickPos = e->pos();
