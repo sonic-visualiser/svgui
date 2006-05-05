@@ -20,8 +20,7 @@
 #include "base/AudioLevel.h"
 #include "base/Window.h"
 #include "base/Pitch.h"
-#include "base/FFTCache.h"
-#include "base/FFTFileCache.h"
+#include "fileio/FFTFileCache.h"
 
 #include <QPainter>
 #include <QImage>

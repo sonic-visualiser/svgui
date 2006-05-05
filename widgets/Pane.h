@@ -50,6 +50,7 @@ public:
 
 signals:
     void paneInteractedWith();
+    void rightButtonMenuRequested(QPoint position);
 
 public slots:
     virtual void toolModeChanged();
