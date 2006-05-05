@@ -715,7 +715,7 @@ SpectrogramLayer::setColourRotation(int r)
     int distance = r - m_colourRotation;
 
     if (distance != 0) {
-	rotateCacheColourmap(-distance);
+	rotateColourmap(-distance);
 	m_colourRotation = r;
     }
     
@@ -755,7 +755,7 @@ SpectrogramLayer::setColourScheme(ColourScheme scheme)
     m_pixmapCacheInvalid = true;
     
     m_colourScheme = scheme;
-    setCacheColourmap();
+    setColourmap();
 
     m_mutex.unlock();
 
@@ -942,10 +942,8 @@ SpectrogramLayer::fillTimerTimedOut()
 }
 
 void
-SpectrogramLayer::setCacheColourmap()
+SpectrogramLayer::setColourmap()
 {
-    if (m_cacheInvalid || !m_cache) return;
-
     int formerRotation = m_colourRotation;
 
     if (m_colourScheme == BlackOnWhite) {
@@ -1015,12 +1013,12 @@ SpectrogramLayer::setCacheColourmap()
     }
 
     m_colourRotation = 0;
-    rotateCacheColourmap(m_colourRotation - formerRotation);
+    rotateColourmap(m_colourRotation - formerRotation);
     m_colourRotation = formerRotation;
 }
 
 void
-SpectrogramLayer::rotateCacheColourmap(int distance)
+SpectrogramLayer::rotateColourmap(int distance)
 {
     if (!m_cache) return;
 
@@ -1311,7 +1309,7 @@ SpectrogramLayer::CacheFillThread::run()
                 (QString("%1").arg(getObjectExportId(&m_layer)),
                  MatrixFile::ReadOnly);
 
-	    m_layer.setCacheColourmap();
+	    m_layer.setColourmap();
 //!!!	    m_layer.m_writeCache->reset();
 
 	    // We don't need a lock when writing to or reading from
