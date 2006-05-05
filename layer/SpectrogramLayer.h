@@ -272,8 +272,8 @@ protected:
     size_t m_lastFillExtent;
     bool m_exiting;
 
-    void setCacheColourmap();
-    void rotateCacheColourmap(int distance);
+    void setColourmap();
+    void rotateColourmap(int distance);
 
     void fillCacheColumn(int column,
 			 double *inputBuffer,
