@@ -33,7 +33,7 @@
 #include <cassert>
 #include <cmath>
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 static double mod(double x, double y)
 {
@@ -1654,6 +1654,8 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 		for (int s = s0i; s <= s1i; ++s) {
 		    if (s >= 0 && q >= 0 && s < cw && q < ch) {
 
+                        if (!m_cache->haveColumnAt(s)) continue;
+
 			float value;
 
 			value = m_cache->getPhaseAt(s, q);
@@ -1905,6 +1907,18 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		s1i = s0i;
 	    }
 	}
+        
+        bool haveColumn = false;
+        for (size_t s = s0i; s <= s1i; ++s) {
+            if (m_cache->haveColumnAt(s)) {
+                haveColumn = true;
+                break;
+            }
+        }
+        if (!haveColumn) {
+            m_mutex.unlock();
+            continue;
+        }
 
 	for (size_t q = minbin; q < bins; ++q) {
 
