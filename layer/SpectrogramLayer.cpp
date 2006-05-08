@@ -27,13 +27,14 @@
 #include <QPixmap>
 #include <QRect>
 #include <QTimer>
+#include <QApplication>
 
 #include <iostream>
 
 #include <cassert>
 #include <cmath>
 
-#define DEBUG_SPECTROGRAM_REPAINT 1
+//#define DEBUG_SPECTROGRAM_REPAINT 1
 
 static double mod(double x, double y)
 {
@@ -1748,6 +1749,13 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     bool recreateWholePixmapCache = true;
 
+//    if (stillCacheing) {
+	x0 = rect.left();
+	x1 = rect.right() + 1;
+	y0 = rect.top();
+	y1 = rect.bottom() + 1;
+//    }
+
     if (!m_pixmapCacheInvalid) {
 
 	//!!! This cache may have been obsoleted entirely by the
@@ -1832,14 +1840,14 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 #endif
 	}
     }
-
+/*
     if (stillCacheing) {
 	x0 = rect.left();
 	x1 = rect.right() + 1;
 	y0 = rect.top();
 	y1 = rect.bottom() + 1;
     }
-
+*/
     int w = x1 - x0;
     int h = y1 - y0;
 
@@ -1847,9 +1855,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     QImage scaled(w, h, QImage::Format_RGB32);
     scaled.fill(m_colourMap.getColour(0).rgb());
-
-    float ymag[h];
-    float ydiv[h];
 
     int sr = m_model->getSampleRate();
     
@@ -1869,11 +1874,20 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     float minFreq = (float(minbin) * sr) / m_windowSize;
     float maxFreq = (float(bins) * sr) / m_windowSize;
 
+    float ymag[h];
+    float ydiv[h];
+    float yval[bins + 1];
+
     size_t increment = getWindowIncrement();
     
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
     m_mutex.unlock();
+
+    for (size_t q = minbin; q <= bins; ++q) {
+        float f0 = (float(q) * sr) / m_windowSize;
+        yval[q] = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
+    }
 
     for (int x = 0; x < w; ++x) {
 
@@ -1907,33 +1921,28 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		s1i = s0i;
 	    }
 	}
-        
-        bool haveColumn = false;
-        for (size_t s = s0i; s <= s1i; ++s) {
-            if (m_cache->haveColumnAt(s)) {
-                haveColumn = true;
-                break;
-            }
-        }
-        if (!haveColumn) {
-            m_mutex.unlock();
-            continue;
-        }
 
-	for (size_t q = minbin; q < bins; ++q) {
+        for (int s = s0i; s <= s1i; ++s) {
 
-	    float f0 = (float(q) * sr) / m_windowSize;
-	    float f1 = (float(q + 1) * sr) / m_windowSize;
+            if (!m_cache->haveColumnAt(s)) continue;
 
-	    float y0 = 0, y1 = 0;
+            for (size_t q = minbin; q < bins; ++q) {
 
-	    if (m_binDisplay != PeakFrequencies) {
-		y0 = v->getYForFrequency(f1, minFreq, maxFreq, logarithmic);
-		y1 = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
-	    }
+//                float f0 = (float(q) * sr) / m_windowSize;
+//                float f1 = (float(q + 1) * sr) / m_windowSize;
 
-	    for (int s = s0i; s <= s1i; ++s) {
+//                float y0 = 0, y1 = 0;
 
+                float y0 = yval[q + 1];
+                float y1 = yval[q];
+
+                
+/*
+                if (m_binDisplay != PeakFrequencies) {
+                    y0 = v->getYForFrequency(f1, minFreq, maxFreq, logarithmic);
+                    y1 = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
+                }
+*/
 		if (m_binDisplay == PeakBins ||
 		    m_binDisplay == PeakFrequencies) {
 		    if (!m_cache->isLocalPeak(s, q)) continue;
@@ -1949,7 +1958,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    s < int(m_cache->getWidth()) - 1) {
 
 		    bool steady = false;
-		    f0 = f1 = calculateFrequency(q,
+//		    f0 = f1 = calculateFrequency(q,
+                    float f = calculateFrequency(q,
 						 m_windowSize,
 						 increment,
 						 sr,
@@ -1958,11 +1968,22 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 						 steady);
 
 		    y0 = y1 = v->getYForFrequency
-			(f0, minFreq, maxFreq, logarithmic);
+//			(f0, minFreq, maxFreq, logarithmic);
+			(f, minFreq, maxFreq, logarithmic);
 		}
 		
 		int y0i = int(y0 + 0.001);
 		int y1i = int(y1);
+
+                float value;
+                
+                if (m_colourScale == PhaseColourScale) {
+                    value = m_cache->getPhaseAt(s, q);
+                } else if (m_normalizeColumns) {
+                    value = m_cache->getNormalizedMagnitudeAt(s, q) * m_gain;
+                } else {
+                    value = m_cache->getMagnitudeAt(s, q) * m_gain;
+                }
 
 		for (int y = y0i; y <= y1i; ++y) {
 		    
@@ -1971,17 +1992,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    float yprop = sprop;
 		    if (y == y0i) yprop *= (y + 1) - y0;
 		    if (y == y1i) yprop *= y1 - y;
-
-		    float value;
-
-		    if (m_colourScale == PhaseColourScale) {
-			value = m_cache->getPhaseAt(s, q);
-		    } else if (m_normalizeColumns) {
-			value = m_cache->getNormalizedMagnitudeAt(s, q) * m_gain;
-		    } else {
-			value = m_cache->getMagnitudeAt(s, q) * m_gain;
-		    }
-
 		    ymag[y] += yprop * value;
 		    ydiv[y] += yprop;
 		}

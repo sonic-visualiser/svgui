@@ -19,7 +19,7 @@
 #include "base/Layer.h"
 #include "base/Window.h"
 #include "base/RealTime.h"
-#include "base/NonRTThread.h"
+#include "base/Thread.h"
 #include "model/PowerOfSqrtTwoZoomConstraint.h"
 #include "model/DenseTimeValueModel.h"
 
@@ -240,7 +240,7 @@ protected:
     FFTCacheBase *m_writeCache;
     bool m_cacheInvalid;
 
-    class CacheFillThread : public NonRTThread
+    class CacheFillThread : public Thread
     {
     public:
 	CacheFillThread(SpectrogramLayer &layer) :
