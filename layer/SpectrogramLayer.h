@@ -193,6 +193,8 @@ public:
 
     virtual void setLayerDormant(const View *v, bool dormant);
 
+    virtual bool isLayerScrollable(const View *v) const { return false; }
+
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);
