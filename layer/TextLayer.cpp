@@ -71,6 +71,7 @@ QString
 TextLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Colour") return tr("Colour");
+    return "";
 }
 
 Layer::PropertyType
