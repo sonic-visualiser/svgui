@@ -20,11 +20,14 @@
 #include "base/Window.h"
 #include "base/RealTime.h"
 #include "base/Thread.h"
+#include "base/ResizeableBitmap.h"
 #include "model/PowerOfSqrtTwoZoomConstraint.h"
 #include "model/DenseTimeValueModel.h"
 
 #include <QMutex>
 #include <QWaitCondition>
+#include <QImage>
+#include <QPixmap>
 
 #include <fftw3.h>
 
@@ -260,11 +263,19 @@ protected:
 
     void fillCache();
 
-    mutable QPixmap *m_pixmapCache;
-    mutable bool m_pixmapCacheInvalid;
-    mutable long m_pixmapCacheStartFrame;
-    mutable size_t m_pixmapCacheZoomLevel;
-
+    struct PixmapCache
+    {
+        QPixmap pixmap;
+        QRect validArea;
+        long startFrame;
+        size_t zoomLevel;
+    };
+    typedef std::map<const View *, PixmapCache> ViewPixmapCache;
+    void invalidatePixmapCaches();
+    void invalidatePixmapCaches(size_t startFrame, size_t endFrame);
+    mutable ViewPixmapCache m_pixmapCaches;
+    mutable QImage m_drawBuffer;
+    
     QWaitCondition m_condition;
     mutable QMutex m_mutex;
 
