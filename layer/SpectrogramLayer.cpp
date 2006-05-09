@@ -1928,21 +1928,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
             for (size_t q = minbin; q < bins; ++q) {
 
-//                float f0 = (float(q) * sr) / m_windowSize;
-//                float f1 = (float(q + 1) * sr) / m_windowSize;
-
-//                float y0 = 0, y1 = 0;
-
                 float y0 = yval[q + 1];
                 float y1 = yval[q];
 
-                
-/*
-                if (m_binDisplay != PeakFrequencies) {
-                    y0 = v->getYForFrequency(f1, minFreq, maxFreq, logarithmic);
-                    y1 = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
-                }
-*/
 		if (m_binDisplay == PeakBins ||
 		    m_binDisplay == PeakFrequencies) {
 		    if (!m_cache->isLocalPeak(s, q)) continue;
@@ -1958,7 +1946,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    s < int(m_cache->getWidth()) - 1) {
 
 		    bool steady = false;
-//		    f0 = f1 = calculateFrequency(q,
                     float f = calculateFrequency(q,
 						 m_windowSize,
 						 increment,
@@ -1968,7 +1955,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 						 steady);
 
 		    y0 = y1 = v->getYForFrequency
-//			(f0, minFreq, maxFreq, logarithmic);
 			(f, minFreq, maxFreq, logarithmic);
 		}
 		
