@@ -1897,58 +1897,53 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 */
 
     if (recreateWholePixmapCache) {
-
         x0 = 0;
         x1 = v->width();
-//        cache.validArea = QRect(x0, 0, x1, v->height());
     }
 
-    if (1) {//!!!
+    int paintBlockWidth = (300000 / zoomLevel);
+    if (paintBlockWidth < 20) paintBlockWidth = 20;
 
-        int paintBlockWidth = (500000 / zoomLevel);
-        if (paintBlockWidth < 20) paintBlockWidth = 20;
+    if (cache.validArea.width() > 0) {
 
-        if (cache.validArea.width() > 0) {
-
-            int vx0 = 0, vx1 = 0;
-            vx0 = cache.validArea.x();
-            vx1 = cache.validArea.x() + cache.validArea.width();
-            
+        int vx0 = 0, vx1 = 0;
+        vx0 = cache.validArea.x();
+        vx1 = cache.validArea.x() + cache.validArea.width();
+        
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            std::cerr << "x0 " << x0 << ", x1 " << x1 << ", vx0 " << vx0 << ", vx1 " << vx1 << ", paintBlockWidth " << paintBlockWidth << std::endl;
+        std::cerr << "x0 " << x0 << ", x1 " << x1 << ", vx0 " << vx0 << ", vx1 " << vx1 << ", paintBlockWidth " << paintBlockWidth << std::endl;
 #endif            
-            if (x0 < vx0) {
-                if (x0 + paintBlockWidth < vx0) {
-                    x0 = vx0 - paintBlockWidth;
-                } else {
-                    x0 = 0;
-                }
-            } else if (x0 > vx1) {
-                x0 = vx1;
+        if (x0 < vx0) {
+            if (x0 + paintBlockWidth < vx0) {
+                x0 = vx0 - paintBlockWidth;
+            } else {
+                x0 = 0;
             }
-            
-            if (x1 < vx0) {
-                x1 = vx0;
-            } else if (x1 > vx1) {
-                if (vx1 + paintBlockWidth < x1) {
-                    x1 = vx1 + paintBlockWidth;
-                } else {
-                    x1 = v->width();
-                }
-            }
-            
-            cache.validArea = QRect
-                (std::min(vx0, x0), cache.validArea.y(),
-                 std::max(vx1 - std::min(vx0, x0),
-                          x1 - std::min(vx0, x0)),
-                 cache.validArea.height());
-            
-        } else {
-            if (x1 > x0 + paintBlockWidth) {
-                x1 = x0 + paintBlockWidth;
-            }
-            cache.validArea = QRect(x0, 0, x1 - x0, v->height());
+        } else if (x0 > vx1) {
+            x0 = vx1;
         }
+            
+        if (x1 < vx0) {
+            x1 = vx0;
+        } else if (x1 > vx1) {
+            if (vx1 + paintBlockWidth < x1) {
+                x1 = vx1 + paintBlockWidth;
+            } else {
+                x1 = v->width();
+            }
+        }
+            
+        cache.validArea = QRect
+            (std::min(vx0, x0), cache.validArea.y(),
+             std::max(vx1 - std::min(vx0, x0),
+                      x1 - std::min(vx0, x0)),
+             cache.validArea.height());
+            
+    } else {
+        if (x1 > x0 + paintBlockWidth) {
+            x1 = x0 + paintBlockWidth;
+        }
+        cache.validArea = QRect(x0, 0, x1 - x0, v->height());
     }
 
     int w = x1 - x0;
