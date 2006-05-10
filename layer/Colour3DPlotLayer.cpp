@@ -119,15 +119,17 @@ Colour3DPlotLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 {
     if (!m_model) return 0;
 
-    QString sampleText("123");
+    QString sampleText = QString("[%1]").arg(m_model->getYBinCount());
     int tw = paint.fontMetrics().width(sampleText);
+    bool another = false;
 
     for (size_t i = 0; i < m_model->getYBinCount(); ++i) {
 	if (m_model->getBinName(i).length() > sampleText.length()) {
 	    sampleText = m_model->getBinName(i);
+            another = true;
 	}
     }
-    if (sampleText != "123") {
+    if (another) {
 	tw = std::max(tw, paint.fontMetrics().width(sampleText));
     }
 
@@ -142,10 +144,13 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     int h = rect.height(), w = rect.width();
     float binHeight = float(v->height()) / m_model->getYBinCount();
 
-//    int textHeight = paint.fontMetrics().height();
-//    int toff = -textHeight + paint.fontMetrics().ascent() + 2;
+    int count = v->height() / paint.fontMetrics().height();
+    int step = m_model->getYBinCount() / count;
+    if (step == 0) step = 1;
 
     for (size_t i = 0; i < m_model->getYBinCount(); ++i) {
+
+        if ((i % step) != 0) continue;
 
 	int y0 = v->height() - (i * binHeight) - 1;
 	
@@ -154,10 +159,9 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
 	paint.drawLine(0, y0, w, y0);
 
-	int cy = y0 - binHeight/2;
+	int cy = y0 - (step * binHeight)/2;
 	int ty = cy + paint.fontMetrics().ascent()/2;
 
-//	int tx = w - 10 - paint.fontMetrics().width(text);
 	paint.drawText(10, ty, text);
     }
 }
@@ -188,9 +192,6 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
-    long startFrame = v->getStartFrame();
-    int zoomLevel = v->getZoomLevel();
-
     size_t modelStart = m_model->getStartFrame();
     size_t modelEnd = m_model->getEndFrame();
     size_t modelWindow = m_model->getWindowSize();
@@ -212,31 +213,16 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	m_cache->setNumColors(256);
 	DenseThreeDimensionalModel::BinValueSet values;
-/*
-	for (int pixel = 0; pixel < 256; ++pixel) {
-	    int hue = 256 - pixel;
-//	    int hue = 220 - pixel;
-//	    if (hue < 0) hue += 360;
-	    QColor color = QColor::fromHsv(hue, pixel/2 + 128, pixel);
-	    m_cache->setColor(pixel, qRgb(color.red(), color.green(), color.blue()));
-	}
-*/
 
 	float min = m_model->getMinimumLevel();
 	float max = m_model->getMaximumLevel();
 
 	if (max == min) max = min + 1.0;
 
-//	int min = lrintf(m_model->getMinimumLevel());
-//	int max = lrintf(m_model->getMaximumLevel());
 	for (int value = 0; value < 256; ++value) {
-//	    int spread = ((value - min) * 256) / (max - min);
-//	    int hue = 256 - spread;
-//	    QColor color = QColor::fromHsv(hue, spread/2 + 128, spread);
 	    int hue = 256 - value;
 	    QColor colour = QColor::fromHsv(hue, value/2 + 128, value);
 	    m_cache->setColor(value, qRgba(colour.red(), colour.green(), colour.blue(), 80));
-//	    std::cerr << "Colour3DPlotLayer: Index " << value << ": hue " << hue << std::endl;
 	}
 
 	m_cache->fill(min);
@@ -251,21 +237,23 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 		float value = min;
 		if (y < values.size()) value = values[y];
 
-		//!!! divide-by-zero!
 		int pixel = int(((value - min) * 256) / (max - min));
-
-		if (pixel == 256) pixel = 255;
+                if (pixel < 0) pixel = 0;
+		if (pixel > 255) pixel = 255;
 
 		m_cache->setPixel(f / modelWindow, y, pixel);
 	    }
 	}
     }
 
+    if (m_model->getYBinCount() >= v->height()) {
+        paintDense(v, paint, rect);
+        return;
+    }
+
     int x0 = rect.left();
     int x1 = rect.right() + 1;
 
-//    int y0 = rect.top();
-//    int y1 = rect.bottom();
     int w = x1 - x0;
     int h = v->height();
 
@@ -309,11 +297,10 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	bool showLabel = (w > 10 &&
 			  paint.fontMetrics().width("0.000000") < w - 3 &&
 			  paint.fontMetrics().height() < (h / sh));
-
+        
 	for (int sy = 0; sy < sh; ++sy) {
 
 	    int ry0 = h - (sy * h) / sh - 1;
-	    int ry1 = h - ((sy + 1) * h) / sh - 2;
 	    QRgb pixel = qRgb(255, 255, 255);
 	    if (sx >= 0 && sx < m_cache->width() &&
 		sy >= 0 && sy < m_cache->height()) {
@@ -342,7 +329,6 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    if (showLabel) {
 		if (sx >= 0 && sx < m_cache->width() &&
 		    sy >= 0 && sy < m_cache->height()) {
-		    int dv = m_cache->pixelIndex(sx, sy);
 		    float value = m_model->getBinValue(fx, sy);
 		    sprintf(labelbuf, "%06f", value);
 		    QString text(labelbuf);
@@ -354,32 +340,73 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
 	}
     }
-    
-/*
-    QRect targetRect(x0, 0, w, h);
-    QRect sourceRect(sx0, 0, sw, sh);
+}
 
-    QImage scaled(w, h, QImage::Format_RGB32);
+void
+Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
+{
+    long startFrame = v->getStartFrame();
+    int zoomLevel = v->getZoomLevel();
 
-    for (int x = 0; x < w; ++x) {
-	for (int y = 0; y < h; ++y) {
+    size_t modelStart = m_model->getStartFrame();
+    size_t modelEnd = m_model->getEndFrame();
+    size_t modelWindow = m_model->getWindowSize();
 
-	    
+    int x0 = rect.left();
+    int x1 = rect.right() + 1;
 
-	    int sx = sx0 + (x * sw) / w;
-	    int sy = sh - (y * sh) / h - 1;
-//	    std::cerr << "Colour3DPlotLayer::paint: sx " << sx << ", sy " << sy << ", cache w " << m_cache->width() << ", cache h " << m_cache->height() << std::endl;
-	    if (sx >= 0 && sy >= 0 &&
-		sx < m_cache->width() && sy < m_cache->height()) {
-		scaled.setPixel(x, y, m_cache->pixel(sx, sy));
-	    } else {
-		scaled.setPixel(x, y, qRgba(255, 255, 255, 80));
-	    }
-	}
+    int w = x1 - x0;
+    int h = v->height();
+    int sh = m_model->getYBinCount();
+
+    QImage img(w, h, QImage::Format_RGB32);
+
+    for (int x = x0; x < x1; ++x) {
+
+        float sx0 = (float(v->getFrameForX(x)) - modelStart) / modelWindow;
+        float sx1 = (float(v->getFrameForX(x+1)) - modelStart) / modelWindow;
+            
+        int sx0i = int(sx0 + 0.001);
+        int sx1i = int(sx1);
+
+        for (int y = 0; y < h; ++y) {
+
+            float sy0 = (float(h - y - 1) * sh) / h;
+            float sy1 = (float(h - y) * sh) / h;
+            
+            int sy0i = int(sy0 + 0.001);
+            int sy1i = int(sy1);
+
+            float mag = 0.0, div = 0.0;
+
+            for (int sx = sx0i; sx <= sx1i; ++sx) {
+
+                if (sx < 0 || sx >= m_cache->width()) continue;
+
+                for (int sy = sy0i; sy <= sy1i; ++sy) {
+
+                    if (sy < 0 || sy >= m_cache->height()) continue;
+
+                    float prop = 1.0;
+                    if (sx == sx0i) prop *= (sx + 1) - sx0;
+                    if (sx == sx1i) prop *= sx1 - sx;
+                    if (sy == sy0i) prop *= (sy + 1) - sy0;
+                    if (sy == sy1i) prop *= sy1 - sy;
+
+                    mag += prop * m_cache->pixelIndex(sx, sy);
+                    div += prop;
+                }
+            }
+
+            if (div != 0) mag /= div;
+            if (mag < 0) mag = 0;
+            if (mag > 255) mag = 255;
+
+            img.setPixel(x - x0, y, m_cache->color(int(mag + 0.001)));
+        }
     }
 
-    paint.drawImage(x0, 0, scaled);
-*/
+    paint.drawImage(x0, 0, img);
 }
 
 bool
