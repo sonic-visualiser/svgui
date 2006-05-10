@@ -34,7 +34,7 @@
 #include <cassert>
 #include <cmath>
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 static double mod(double x, double y)
 {
@@ -55,7 +55,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_channel(0),
     m_windowSize(1024),
     m_windowType(HanningWindow),
-    m_windowOverlap(50),
+    m_windowHopLevel(2),
     m_gain(1.0),
     m_threshold(0.0),
     m_colourRotation(0),
@@ -77,13 +77,13 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 {
     if (config == MelodicRange) {
 	setWindowSize(8192);
-	setWindowOverlap(90);
+	setWindowHopLevel(4);
 	setWindowType(ParzenWindow);
 	setMaxFrequency(1000);
 	setColourScale(LinearColourScale);
     } else if (config == MelodicPeaks) {
 	setWindowSize(4096);
-	setWindowOverlap(90);
+	setWindowHopLevel(5);
 	setWindowType(BlackmanWindow);
 	setMaxFrequency(2000);
 	setMinFrequency(40);
@@ -143,7 +143,7 @@ SpectrogramLayer::getProperties() const
     list.push_back("Colour Scale");
     list.push_back("Window Type");
     list.push_back("Window Size");
-    list.push_back("Window Overlap");
+    list.push_back("Window Increment");
     list.push_back("Normalize Columns");
     list.push_back("Bin Display");
     list.push_back("Threshold");
@@ -162,7 +162,7 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Colour Scale") return tr("Colour Scale");
     if (name == "Window Type") return tr("Window Type");
     if (name == "Window Size") return tr("Window Size");
-    if (name == "Window Overlap") return tr("Window Overlap");
+    if (name == "Window Increment") return tr("Window Increment");
     if (name == "Normalize Columns") return tr("Normalize Columns");
     if (name == "Bin Display") return tr("Bin Display");
     if (name == "Threshold") return tr("Threshold");
@@ -189,7 +189,7 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Window Size" ||
 	name == "Window Type" ||
-	name == "Window Overlap") return tr("Window");
+	name == "Window Increment") return tr("Window");
     if (name == "Colour" ||
 	name == "Gain" ||
 	name == "Threshold" ||
@@ -269,13 +269,12 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	int ws = m_windowSize;
 	while (ws > 32) { ws >>= 1; deft ++; }
 
-    } else if (name == "Window Overlap") {
+    } else if (name == "Window Increment") {
 	
 	*min = 0;
-	*max = 4;
+	*max = 5;
 	
-	deft = m_windowOverlap / 25;
-	if (m_windowOverlap == 90) deft = 4;
+        deft = m_windowHopLevel;
     
     } else if (name == "Min Frequency") {
 
@@ -376,14 +375,15 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == "Window Size") {
 	return QString("%1").arg(32 << value);
     }
-    if (name == "Window Overlap") {
+    if (name == "Window Increment") {
 	switch (value) {
 	default:
-	case 0: return tr("0%");
-	case 1: return tr("25%");
-	case 2: return tr("50%");
-	case 3: return tr("75%");
-	case 4: return tr("90%");
+	case 0: return tr("1/1");
+	case 1: return tr("3/4");
+	case 2: return tr("1/2");
+	case 3: return tr("1/4");
+	case 4: return tr("1/8");
+	case 5: return tr("1/16");
 	}
     }
     if (name == "Min Frequency") {
@@ -459,9 +459,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	setWindowType(WindowType(value));
     } else if (name == "Window Size") {
 	setWindowSize(32 << value);
-    } else if (name == "Window Overlap") {
-	if (value == 4) setWindowOverlap(90);
-	else setWindowOverlap(25 * value);
+    } else if (name == "Window Increment") {
+        setWindowHopLevel(value);
     } else if (name == "Min Frequency") {
 	switch (value) {
 	default:
@@ -588,15 +587,15 @@ SpectrogramLayer::getWindowSize() const
 }
 
 void
-SpectrogramLayer::setWindowOverlap(size_t wi)
+SpectrogramLayer::setWindowHopLevel(size_t v)
 {
-    if (m_windowOverlap == wi) return;
+    if (m_windowHopLevel == v) return;
 
     m_mutex.lock();
     m_cacheInvalid = true;
     invalidatePixmapCaches();
     
-    m_windowOverlap = wi;
+    m_windowHopLevel = v;
     
     m_mutex.unlock();
 
@@ -606,9 +605,9 @@ SpectrogramLayer::setWindowOverlap(size_t wi)
 }
 
 size_t
-SpectrogramLayer::getWindowOverlap() const
+SpectrogramLayer::getWindowHopLevel() const
 {
-    return m_windowOverlap;
+    return m_windowHopLevel;
 }
 
 void
@@ -1155,12 +1154,6 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
 
     double factor = 0.0;
 
-    // Calculate magnitude and phase from real and imaginary in
-    // output[i][0] and output[i][1] respectively, and store the phase
-    // straight into cache and the magnitude back into output[i][0]
-    // (because we'll need to know the normalization factor,
-    // i.e. maximum magnitude in this column, before we can store it)
-
     for (size_t i = 0; i < windowSize/2; ++i) {
 
 	double mag = sqrt(output[i][0] * output[i][0] +
@@ -1309,6 +1302,8 @@ SpectrogramLayer::CacheFillThread::run()
 	    WindowType windowType = m_layer.m_windowType;
 	    size_t windowSize = m_layer.m_windowSize;
 	    size_t windowIncrement = m_layer.getWindowIncrement();
+
+            std::cerr << "\nWINDOW INCREMENT: " << windowIncrement << " (for hop level " << m_layer.m_windowHopLevel << ")\n" << std::endl;
 
 	    size_t visibleStart = m_layer.m_candidateFillStartFrame;
 	    visibleStart = (visibleStart / windowIncrement) * windowIncrement;
@@ -1675,7 +1670,7 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 		for (int s = s0i; s <= s1i; ++s) {
 		    if (s >= 0 && q >= 0 && s < cw && q < ch) {
 
-                        if (!m_cache->haveColumnAt(s)) continue;
+                        if (!m_cache->haveSetColumnAt(s)) continue;
 
 			float value;
 
@@ -1957,9 +1952,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         m_drawBuffer = QImage(w, h, QImage::Format_RGB32);
     }
 
-//    if (m_binDisplay == PeakFrequencies) {
-        m_drawBuffer.fill(m_colourMap.getColour(0).rgb());
-//    }
+    m_drawBuffer.fill(m_colourMap.getColour(0).rgb());
 
     int sr = m_model->getSampleRate();
     
@@ -2031,7 +2024,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         for (int s = s0i; s <= s1i; ++s) {
 
-            if (!m_cache->haveColumnAt(s)) continue;
+            if (!m_cache->haveSetColumnAt(s)) continue;
 
             for (size_t q = minbin; q < bins; ++q) {
 
@@ -2579,13 +2572,13 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
     s += QString("channel=\"%1\" "
 		 "windowSize=\"%2\" "
 		 "windowType=\"%3\" "
-		 "windowOverlap=\"%4\" "
+		 "windowHopLevel=\"%4\" "
 		 "gain=\"%5\" "
 		 "threshold=\"%6\" ")
 	.arg(m_channel)
 	.arg(m_windowSize)
 	.arg(m_windowType)
-	.arg(m_windowOverlap)
+	.arg(m_windowHopLevel)
 	.arg(m_gain)
 	.arg(m_threshold);
 
@@ -2624,8 +2617,19 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 	attributes.value("windowType").toInt(&ok);
     if (ok) setWindowType(windowType);
 
-    size_t windowOverlap = attributes.value("windowOverlap").toUInt(&ok);
-    if (ok) setWindowOverlap(windowOverlap);
+    size_t windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
+    if (ok) setWindowHopLevel(windowHopLevel);
+    else {
+        size_t windowOverlap = attributes.value("windowOverlap").toUInt(&ok);
+        // a percentage value
+        if (ok) {
+            if (windowOverlap == 0) setWindowHopLevel(0);
+            else if (windowOverlap == 25) setWindowHopLevel(1);
+            else if (windowOverlap == 50) setWindowHopLevel(2);
+            else if (windowOverlap == 75) setWindowHopLevel(3);
+            else if (windowOverlap == 90) setWindowHopLevel(4);
+        }
+    }
 
     float gain = attributes.value("gain").toFloat(&ok);
     if (ok) setGain(gain);
