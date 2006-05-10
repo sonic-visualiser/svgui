@@ -87,6 +87,8 @@ protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this
     
     mutable QImage *m_cache;
+
+    virtual void paintDense(View *v, QPainter &paint, QRect rect) const;
 };
 
 #endif
