@@ -20,7 +20,6 @@
 #include "base/Window.h"
 #include "base/RealTime.h"
 #include "base/Thread.h"
-#include "base/ResizeableBitmap.h"
 #include "model/PowerOfSqrtTwoZoomConstraint.h"
 #include "model/DenseTimeValueModel.h"
 
@@ -94,8 +93,8 @@ public:
     void setWindowSize(size_t);
     size_t getWindowSize() const;
     
-    void setWindowOverlap(size_t percent);
-    size_t getWindowOverlap() const;
+    void setWindowHopLevel(size_t percent);
+    size_t getWindowHopLevel() const;
 
     void setWindowType(WindowType type);
     WindowType getWindowType() const;
@@ -210,7 +209,7 @@ protected:
     int                 m_channel;
     size_t              m_windowSize;
     WindowType          m_windowType;
-    size_t              m_windowOverlap;
+    size_t              m_windowHopLevel;
     float               m_gain;
     float               m_threshold;
     int                 m_colourRotation;
@@ -332,7 +331,9 @@ protected:
 			     float &phaseMin, float &phaseMax) const;
 
     size_t getWindowIncrement() const {
-	return m_windowSize - m_windowSize * m_windowOverlap / 100;
+        if (m_windowHopLevel == 0) return m_windowSize;
+        else if (m_windowHopLevel == 1) return (m_windowSize * 3) / 4;
+        else return m_windowSize / (1 << (m_windowHopLevel - 1));
     }
 };
 
