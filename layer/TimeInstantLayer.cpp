@@ -626,6 +626,8 @@ TimeInstantLayer::editOpen(View *v, QMouseEvent *e)
 void
 TimeInstantLayer::moveSelection(Selection s, size_t newStartFrame)
 {
+    if (!m_model) return;
+
     SparseOneDimensionalModel::EditCommand *command =
 	new SparseOneDimensionalModel::EditCommand(m_model,
 						   tr("Drag Selection"));
@@ -650,6 +652,8 @@ TimeInstantLayer::moveSelection(Selection s, size_t newStartFrame)
 void
 TimeInstantLayer::resizeSelection(Selection s, Selection newSize)
 {
+    if (!m_model) return;
+
     SparseOneDimensionalModel::EditCommand *command =
 	new SparseOneDimensionalModel::EditCommand(m_model,
 						   tr("Resize Selection"));
@@ -683,6 +687,8 @@ TimeInstantLayer::resizeSelection(Selection s, Selection newSize)
 void
 TimeInstantLayer::deleteSelection(Selection s)
 {
+    if (!m_model) return;
+
     SparseOneDimensionalModel::EditCommand *command =
 	new SparseOneDimensionalModel::EditCommand(m_model,
 						   tr("Delete Selection"));
@@ -701,6 +707,8 @@ TimeInstantLayer::deleteSelection(Selection s)
 void
 TimeInstantLayer::copy(Selection s, Clipboard &to)
 {
+    if (!m_model) return;
+
     SparseOneDimensionalModel::PointList points =
 	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
@@ -716,6 +724,8 @@ TimeInstantLayer::copy(Selection s, Clipboard &to)
 void
 TimeInstantLayer::paste(const Clipboard &from, int frameOffset)
 {
+    if (!m_model) return;
+
     const Clipboard::PointList &points = from.getPoints();
 
     SparseOneDimensionalModel::EditCommand *command =

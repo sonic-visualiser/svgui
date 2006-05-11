@@ -20,6 +20,7 @@
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/ViewManager.h"
+#include "base/CommandHistory.h"
 #include "layer/WaveformLayer.h"
 
 #include <QPaintEvent>
@@ -144,23 +145,30 @@ Pane::paintEvent(QPaintEvent *e)
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
-    for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
-        --vi;
-            
-        if (dynamic_cast<WaveformLayer *>(*vi)) {
-            waveformModel = (*vi)->getModel();
-        }
+    if (m_manager &&
+        !m_manager->isPlaying() &&
+        m_manager->getToolMode() == ViewManager::SelectMode) {
 
-        if (m_manager &&
-            !m_manager->isPlaying() &&
-            m_manager->getToolMode() == ViewManager::SelectMode) {
+        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+            --vi;
 
             std::vector<QRect> crosshairExtents;
 
             if ((*vi)->getCrosshairExtents(this, paint, m_identifyPoint,
                                            crosshairExtents)) {
                 (*vi)->paintCrosshairs(this, paint, m_identifyPoint);
+                break;
+            } else if ((*vi)->isLayerOpaque()) {
+                break;
             }
+        }
+    }
+
+    for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        --vi;
+            
+        if (dynamic_cast<WaveformLayer *>(*vi)) {
+            waveformModel = (*vi)->getModel();
         }
 
         if (!m_manager ||
@@ -972,10 +980,16 @@ Pane::editSelectionEnd(QMouseEvent *e)
     
     if (m_editingSelectionEdge == 0) {
 	
+        CommandHistory::getInstance()->startCompoundOperation
+            (tr("Drag Selection"), true);
+
 	layer->moveSelection(m_editingSelection, f0);
 	
     } else {
 	
+        CommandHistory::getInstance()->startCompoundOperation
+            (tr("Resize Selection"), true);
+
 	if (m_editingSelectionEdge < 0) {
 	    f1 = m_editingSelection.getEndFrame();
 	} else {
@@ -988,6 +1002,8 @@ Pane::editSelectionEnd(QMouseEvent *e)
     
     m_manager->removeSelection(m_editingSelection);
     m_manager->addSelection(newSelection);
+
+    CommandHistory::getInstance()->endCompoundOperation();
 
     m_editingSelection = Selection();
     return true;
