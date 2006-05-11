@@ -71,6 +71,7 @@ NoteLayer::getProperties() const
     PropertyList list;
     list.push_back("Colour");
     list.push_back("Vertical Scale");
+    list.push_back("Scale Units");
     return list;
 }
 
@@ -79,12 +80,14 @@ NoteLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Colour") return tr("Colour");
     if (name == "Vertical Scale") return tr("Vertical Scale");
+    if (name == "Scale Units") return tr("Pitch Units");
     return "";
 }
 
 Layer::PropertyType
-NoteLayer::getPropertyType(const PropertyName &) const
+NoteLayer::getPropertyType(const PropertyName &name) const
 {
+    if (name == "Scale Units") return UnitsProperty;
     return ValueProperty;
 }
 
@@ -114,6 +117,13 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 	if (max) *max = 2;
 	
 	deft = int(m_verticalScale);
+
+    } else if (name == "Scale Units") {
+
+        if (m_model) {
+            deft = UnitDatabase::getInstance()->getUnitId
+                (m_model->getScaleUnits());
+        }
 
     } else {
 	
@@ -163,6 +173,12 @@ NoteLayer::setProperty(const PropertyName &name, int value)
 	}
     } else if (name == "Vertical Scale") {
 	setVerticalScale(VerticalScale(value));
+    } else if (name == "Scale Units") {
+        if (m_model) {
+            m_model->setScaleUnits
+                (UnitDatabase::getInstance()->getUnitById(value));
+            emit modelChanged();
+        }
     }
 }
 
@@ -660,7 +676,8 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowDuration |
          ItemEditDialog::ShowValue |
-         ItemEditDialog::ShowText);
+         ItemEditDialog::ShowText,
+         m_model->getScaleUnits());
 
     dialog->setFrameTime(note.frame);
     dialog->setValue(note.value);
