@@ -19,6 +19,7 @@
 #include "base/PropertyContainer.h"
 #include "base/PlayParameters.h"
 #include "base/Layer.h"
+#include "base/UnitDatabase.h"
 
 #include "plugin/RealTimePluginFactory.h"
 #include "plugin/RealTimePluginInstance.h"
@@ -77,6 +78,9 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     blockSignals(false);
 
     m_layout->setRowStretch(m_layout->rowCount(), 10);
+
+    connect(UnitDatabase::getInstance(), SIGNAL(unitDatabaseChanged()),
+            this, SLOT(unitDatabaseChanged()));
 
 #ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox[" << this << "]::PropertyBox returning" << std::endl;
@@ -341,6 +345,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
     }
 
     case PropertyContainer::ValueProperty:
+    case PropertyContainer::UnitsProperty:
     {
 	QComboBox *cb;
 
@@ -354,11 +359,24 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 
 	    cb = new QComboBox();
 	    cb->setObjectName(name);
-	    for (int i = min; i <= max; ++i) {
-		cb->addItem(m_container->getPropertyValueLabel(name, i));
-	    }
+            cb->setDuplicatesEnabled(false);
+
+            if (type == PropertyContainer::ValueProperty) {
+                for (int i = min; i <= max; ++i) {
+                    cb->addItem(m_container->getPropertyValueLabel(name, i));
+                }
+                cb->setEditable(false);
+            } else {
+                QStringList units = UnitDatabase::getInstance()->getKnownUnits();
+                for (int i = 0; i < units.size(); ++i) {
+                    cb->addItem(units[i]);
+                }
+                cb->setEditable(true);
+            }
+
 	    connect(cb, SIGNAL(activated(int)),
 		    this, SLOT(propertyControllerChanged(int)));
+
 	    if (inGroup) {
 		cb->setToolTip(name);
 		m_groupLayouts[groupName]->addWidget(cb);
@@ -368,11 +386,23 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    m_propertyControllers[name] = cb;
 	}
 
-	if (cb->currentIndex() != value) {
-	    cb->blockSignals(true);
-	    cb->setCurrentIndex(value);
-	    cb->blockSignals(false);
-	}
+        cb->blockSignals(true);
+        if (type == PropertyContainer::ValueProperty) {
+            if (cb->currentIndex() != value) {
+                cb->setCurrentIndex(value);
+            }
+        } else {
+            QString unit = UnitDatabase::getInstance()->getUnitById(value);
+            if (cb->currentText() != unit) {
+                for (int i = 0; i < cb->count(); ++i) {
+                    if (cb->itemText(i) == unit) {
+                        cb->setCurrentIndex(i);
+                        break;
+                    }
+                }
+            }
+        }
+        cb->blockSignals(false);
 
 #ifdef Q_WS_MAC
 	// Crashes on startup without this, for some reason
@@ -409,6 +439,19 @@ PropertyBox::propertyContainerPropertyChanged(PropertyContainer *pc)
 }
 
 void
+PropertyBox::unitDatabaseChanged()
+{
+    blockSignals(true);
+
+    PropertyContainer::PropertyList properties = m_container->getProperties();
+    for (size_t i = 0; i < properties.size(); ++i) {
+	updatePropertyEditor(properties[i]);
+    }
+
+    blockSignals(false);
+}    
+
+void
 PropertyBox::propertyControllerChanged(int value)
 {
     QObject *obj = sender();
@@ -420,8 +463,15 @@ PropertyBox::propertyControllerChanged(int value)
 #endif
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
-    
-    if (type != PropertyContainer::InvalidProperty) {
+
+    if (type == PropertyContainer::UnitsProperty) {
+        QComboBox *cb = dynamic_cast<QComboBox *>(obj);
+        if (cb) {
+            QString unit = cb->currentText();
+            m_container->setPropertyWithCommand
+                (name, UnitDatabase::getInstance()->getUnitId(unit));
+        }
+    } else if (type != PropertyContainer::InvalidProperty) {
 	m_container->setPropertyWithCommand(name, value);
     }
 

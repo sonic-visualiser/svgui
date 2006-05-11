@@ -72,6 +72,7 @@ TimeValueLayer::getProperties() const
     list.push_back("Colour");
     list.push_back("Plot Type");
     list.push_back("Vertical Scale");
+    list.push_back("Scale Units");
     return list;
 }
 
@@ -81,13 +82,15 @@ TimeValueLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Colour") return tr("Colour");
     if (name == "Plot Type") return tr("Plot Type");
     if (name == "Vertical Scale") return tr("Vertical Scale");
+    if (name == "Scale Units") return tr("Scale Units");
     return "";
 }
 
 Layer::PropertyType
 TimeValueLayer::getPropertyType(const PropertyName &name) const
 {
-    return ValueProperty;
+    if (name == "Scale Units") return UnitsProperty;
+    else return ValueProperty;
 }
 
 int
@@ -123,6 +126,13 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 	if (max) *max = 3;
 	
 	deft = int(m_verticalScale);
+
+    } else if (name == "Scale Units") {
+
+        if (m_model) {
+            deft = UnitDatabase::getInstance()->getUnitId
+                (m_model->getScaleUnits());
+        }
 
     } else {
 	
@@ -185,6 +195,12 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
 	setPlotStyle(PlotStyle(value));
     } else if (name == "Vertical Scale") {
 	setVerticalScale(VerticalScale(value));
+    } else if (name == "Scale Units") {
+        if (m_model) {
+            m_model->setScaleUnits
+                (UnitDatabase::getInstance()->getUnitById(value));
+            emit modelChanged();
+        }
     }
 }
 

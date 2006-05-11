@@ -57,6 +57,8 @@ protected slots:
 
     void populateViewPlayFrame();
 
+    void unitDatabaseChanged();
+
     void editPlugin();
 
 protected:
