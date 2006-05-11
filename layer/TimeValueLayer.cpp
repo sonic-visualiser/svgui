@@ -992,6 +992,8 @@ TimeValueLayer::editOpen(View *v, QMouseEvent *e)
 void
 TimeValueLayer::moveSelection(Selection s, size_t newStartFrame)
 {
+    if (!m_model) return;
+
     SparseTimeValueModel::EditCommand *command =
 	new SparseTimeValueModel::EditCommand(m_model,
 					      tr("Drag Selection"));
@@ -1016,6 +1018,8 @@ TimeValueLayer::moveSelection(Selection s, size_t newStartFrame)
 void
 TimeValueLayer::resizeSelection(Selection s, Selection newSize)
 {
+    if (!m_model) return;
+
     SparseTimeValueModel::EditCommand *command =
 	new SparseTimeValueModel::EditCommand(m_model,
 					      tr("Resize Selection"));
@@ -1049,6 +1053,8 @@ TimeValueLayer::resizeSelection(Selection s, Selection newSize)
 void
 TimeValueLayer::deleteSelection(Selection s)
 {
+    if (!m_model) return;
+
     SparseTimeValueModel::EditCommand *command =
 	new SparseTimeValueModel::EditCommand(m_model,
 					      tr("Delete Selected Points"));
@@ -1070,6 +1076,8 @@ TimeValueLayer::deleteSelection(Selection s)
 void
 TimeValueLayer::copy(Selection s, Clipboard &to)
 {
+    if (!m_model) return;
+
     SparseTimeValueModel::PointList points =
 	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
@@ -1085,6 +1093,8 @@ TimeValueLayer::copy(Selection s, Clipboard &to)
 void
 TimeValueLayer::paste(const Clipboard &from, int frameOffset)
 {
+    if (!m_model) return;
+
     const Clipboard::PointList &points = from.getPoints();
 
     SparseTimeValueModel::EditCommand *command =

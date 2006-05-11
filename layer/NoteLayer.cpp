@@ -688,6 +688,8 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
 void
 NoteLayer::moveSelection(Selection s, size_t newStartFrame)
 {
+    if (!m_model) return;
+
     NoteModel::EditCommand *command =
 	new NoteModel::EditCommand(m_model, tr("Drag Selection"));
 
@@ -711,6 +713,8 @@ NoteLayer::moveSelection(Selection s, size_t newStartFrame)
 void
 NoteLayer::resizeSelection(Selection s, Selection newSize)
 {
+    if (!m_model) return;
+
     NoteModel::EditCommand *command =
 	new NoteModel::EditCommand(m_model, tr("Resize Selection"));
 
@@ -748,6 +752,8 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
 void
 NoteLayer::deleteSelection(Selection s)
 {
+    if (!m_model) return;
+
     NoteModel::EditCommand *command =
 	new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
 
@@ -768,6 +774,8 @@ NoteLayer::deleteSelection(Selection s)
 void
 NoteLayer::copy(Selection s, Clipboard &to)
 {
+    if (!m_model) return;
+
     NoteModel::PointList points =
 	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
@@ -783,6 +791,8 @@ NoteLayer::copy(Selection s, Clipboard &to)
 void
 NoteLayer::paste(const Clipboard &from, int frameOffset)
 {
+    if (!m_model) return;
+
     const Clipboard::PointList &points = from.getPoints();
 
     NoteModel::EditCommand *command =

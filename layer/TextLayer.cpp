@@ -605,13 +605,15 @@ TextLayer::editOpen(View *v, QMouseEvent *e)
     if (ok && label != points.begin()->label) {
 	TextModel::RelabelCommand *command =
 	    new TextModel::RelabelCommand(m_model, *points.begin(), label);
-	CommandHistory::getInstance()->addCommand(command, true);
+	CommandHistory::getInstance()->addCommand(command);
     }
 }    
 
 void
 TextLayer::moveSelection(Selection s, size_t newStartFrame)
 {
+    if (!m_model) return;
+
     TextModel::EditCommand *command =
 	new TextModel::EditCommand(m_model, tr("Drag Selection"));
 
@@ -635,6 +637,8 @@ TextLayer::moveSelection(Selection s, size_t newStartFrame)
 void
 TextLayer::resizeSelection(Selection s, Selection newSize)
 {
+    if (!m_model) return;
+
     TextModel::EditCommand *command =
 	new TextModel::EditCommand(m_model, tr("Resize Selection"));
 
@@ -667,6 +671,8 @@ TextLayer::resizeSelection(Selection s, Selection newSize)
 void
 TextLayer::deleteSelection(Selection s)
 {
+    if (!m_model) return;
+
     TextModel::EditCommand *command =
 	new TextModel::EditCommand(m_model, tr("Delete Selection"));
 
@@ -684,6 +690,8 @@ TextLayer::deleteSelection(Selection s)
 void
 TextLayer::copy(Selection s, Clipboard &to)
 {
+    if (!m_model) return;
+
     TextModel::PointList points =
 	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
@@ -699,6 +707,8 @@ TextLayer::copy(Selection s, Clipboard &to)
 void
 TextLayer::paste(const Clipboard &from, int frameOffset)
 {
+    if (!m_model) return;
+
     const Clipboard::PointList &points = from.getPoints();
 
     TextModel::EditCommand *command =
