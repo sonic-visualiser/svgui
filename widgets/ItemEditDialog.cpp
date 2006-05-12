@@ -118,7 +118,7 @@ ItemEditDialog::ItemEditDialog(size_t sampleRate, int options,
         m_realDurationUSecsSpinBox->setMaximum(999999);
         m_realDurationUSecsSpinBox->setSuffix(tr(" usec"));
         m_realDurationUSecsSpinBox->setSingleStep(singleStep);
-        subgrid->addWidget(m_realDurationUSecsSpinBox, subrow, 3);
+        subgrid->addWidget(m_realDurationUSecsSpinBox, subrow, 2);
         connect(m_realDurationUSecsSpinBox, SIGNAL(valueChanged(int)),
                 this, SLOT(realDurationUSecsChanged(int)));
 

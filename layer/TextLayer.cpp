@@ -143,7 +143,8 @@ TextLayer::setProperty(const PropertyName &name, int value)
 }
 
 bool
-TextLayer::getValueExtents(float &min, float &max, QString &unit) const
+TextLayer::getValueExtents(float &min, float &max,
+                           bool &logarithmic, QString &unit) const
 {
     return false;
 }

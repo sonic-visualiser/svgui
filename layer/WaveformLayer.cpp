@@ -312,7 +312,7 @@ WaveformLayer::setChannelMode(ChannelMode channelMode)
 void
 WaveformLayer::setChannel(int channel)
 {
-    std::cerr << "WaveformLayer::setChannel(" << channel << ")" << std::endl;
+//    std::cerr << "WaveformLayer::setChannel(" << channel << ")" << std::endl;
 
     if (m_channel == channel) return;
     m_channel = channel;
@@ -348,7 +348,8 @@ WaveformLayer::getCompletion() const
 }
 
 bool
-WaveformLayer::getValueExtents(float &min, float &max, QString &unit) const
+WaveformLayer::getValueExtents(float &min, float &max,
+                               bool &log, QString &unit) const
 {
     if (m_scale == LinearScale) {
         min = 0.0;

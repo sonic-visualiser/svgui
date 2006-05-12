@@ -315,8 +315,8 @@ LayerFactory::createLayer(LayerType type)
 	std::cerr << "LayerFactory::createLayer: Unknown layer type " 
 		  << type << std::endl;
     } else {
-	std::cerr << "LayerFactory::createLayer: Setting object name "
-		  << getLayerPresentationName(type).toStdString() << " on " << layer << std::endl;
+//	std::cerr << "LayerFactory::createLayer: Setting object name "
+//		  << getLayerPresentationName(type).toStdString() << " on " << layer << std::endl;
 	layer->setObjectName(getLayerPresentationName(type));
     }
 

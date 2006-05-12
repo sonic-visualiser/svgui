@@ -34,7 +34,7 @@
 #include <cassert>
 #include <cmath>
 
-#define DEBUG_SPECTROGRAM_REPAINT 1
+//#define DEBUG_SPECTROGRAM_REPAINT 1
 
 static double mod(double x, double y)
 {
@@ -111,7 +111,7 @@ SpectrogramLayer::~SpectrogramLayer()
 void
 SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 {
-    std::cerr << "SpectrogramLayer(" << this << "): setModel(" << model << ")" << std::endl;
+//    std::cerr << "SpectrogramLayer(" << this << "): setModel(" << model << ")" << std::endl;
 
     m_mutex.lock();
     m_cacheInvalid = true;
@@ -637,8 +637,8 @@ SpectrogramLayer::getWindowType() const
 void
 SpectrogramLayer::setGain(float gain)
 {
-    std::cerr << "SpectrogramLayer::setGain(" << gain << ") (my gain is now "
-	      << m_gain << ")" << std::endl;
+//    std::cerr << "SpectrogramLayer::setGain(" << gain << ") (my gain is now "
+//	      << m_gain << ")" << std::endl;
 
     if (m_gain == gain) return;
 
@@ -1292,18 +1292,18 @@ SpectrogramLayer::CacheFillThread::run()
 	    m_fillExtent = 0;
 	    m_fillCompletion = 0;
 
-	    std::cerr << "SpectrogramLayer::CacheFillThread::run: model is ready" << std::endl;
+	//    std::cerr << "SpectrogramLayer::CacheFillThread::run: model is ready" << std::endl;
 
 	    size_t start = m_layer.m_model->getStartFrame();
 	    size_t end = m_layer.m_model->getEndFrame();
 
-	    std::cerr << "start = " << start << ", end = " << end << std::endl;
+	//    std::cerr << "start = " << start << ", end = " << end << std::endl;
 
 	    WindowType windowType = m_layer.m_windowType;
 	    size_t windowSize = m_layer.m_windowSize;
 	    size_t windowIncrement = m_layer.getWindowIncrement();
 
-            std::cerr << "\nWINDOW INCREMENT: " << windowIncrement << " (for hop level " << m_layer.m_windowHopLevel << ")\n" << std::endl;
+        //    std::cerr << "\nWINDOW INCREMENT: " << windowIncrement << " (for hop level " << m_layer.m_windowHopLevel << ")\n" << std::endl;
 
 	    size_t visibleStart = m_layer.m_candidateFillStartFrame;
 	    visibleStart = (visibleStart / windowIncrement) * windowIncrement;
@@ -2174,13 +2174,23 @@ SpectrogramLayer::getCompletion() const
 }
 
 bool
-SpectrogramLayer::getValueExtents(float &min, float &max, QString &unit) const
+SpectrogramLayer::getValueExtents(float &min, float &max,
+                                  bool &logarithmic, QString &unit) const
 {
     min = getEffectiveMinFrequency();
     max = getEffectiveMaxFrequency();
+    logarithmic = (m_frequencyScale == LogFrequencyScale);
     unit = "Hz";
     return true;
 }
+
+bool
+SpectrogramLayer::getDisplayExtents(float &min, float &max) const
+{
+    min = getEffectiveMinFrequency();
+    max = getEffectiveMaxFrequency();
+    return true;
+}    
 
 bool
 SpectrogramLayer::snapToFeatureFrame(View *v, int &frame,

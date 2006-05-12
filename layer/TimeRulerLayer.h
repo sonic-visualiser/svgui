@@ -53,7 +53,8 @@ public:
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
-    virtual bool getValueExtents(float &min, float &max, QString &unit) const {
+    virtual bool getValueExtents(float &min, float &max,
+                                 bool &log, QString &unit) const {
         return false;
     }
 
