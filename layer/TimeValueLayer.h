@@ -88,10 +88,10 @@ public:
     PlotStyle getPlotStyle() const { return m_plotStyle; }
 
     enum VerticalScale {
+        AutoAlignScale,
         LinearScale,
         LogScale,
-        PlusMinusOneScale,
-        FrequencyScale
+        PlusMinusOneScale
     };
     
     void setVerticalScale(VerticalScale scale);
@@ -107,7 +107,10 @@ public:
         return m_plotStyle == PlotSegmentation && m_model->hasTextLabels();
     }
 
-    virtual bool getValueExtents(float &min, float &max, QString &unit) const;
+    virtual bool getValueExtents(float &min, float &max,
+                                 bool &logarithmic, QString &unit) const;
+
+    virtual bool getDisplayExtents(float &min, float &max) const;
 
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
@@ -115,10 +118,10 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
 protected:
+    void getScaleExtents(View *, float &min, float &max, bool &log) const;
     int getYForValue(View *, float value) const;
     float getValueForY(View *, int y) const;
-
-    QColor getColourForValue(float value) const;
+    QColor getColourForValue(View *v, float value) const;
 
     SparseTimeValueModel::PointList getLocalPoints(View *v, int) const;
 

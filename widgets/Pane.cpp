@@ -839,7 +839,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         return;
     }
 
-    std::cerr << "mouseDoubleClickEvent" << std::endl;
+//    std::cerr << "mouseDoubleClickEvent" << std::endl;
 
     m_clickPos = e->pos();
     m_clickedInRange = true;
@@ -849,7 +849,8 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
 
-    if (mode == ViewManager::EditMode) {
+    if (mode == ViewManager::NavigateMode ||
+        mode == ViewManager::EditMode) {
 
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
@@ -1013,7 +1014,7 @@ void
 Pane::toolModeChanged()
 {
     ViewManager::ToolMode mode = m_manager->getToolMode();
-    std::cerr << "Pane::toolModeChanged(" << mode << ")" << std::endl;
+//    std::cerr << "Pane::toolModeChanged(" << mode << ")" << std::endl;
 
     switch (mode) {
 

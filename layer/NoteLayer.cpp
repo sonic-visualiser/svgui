@@ -42,7 +42,7 @@ NoteLayer::NoteLayer() :
     m_editingPoint(0, 0.0, 0, tr("New Point")),
     m_editingCommand(0),
     m_colour(Qt::black),
-    m_verticalScale(MinMaxRangeScale)
+    m_verticalScale(AutoAlignScale)
 {
     
 }
@@ -60,7 +60,7 @@ NoteLayer::setModel(NoteModel *model)
     connect(m_model, SIGNAL(completionChanged()),
 	    this, SIGNAL(modelCompletionChanged()));
 
-    std::cerr << "NoteLayer::setModel(" << model << ")" << std::endl;
+//    std::cerr << "NoteLayer::setModel(" << model << ")" << std::endl;
 
     emit modelReplaced();
 }
@@ -114,7 +114,7 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Vertical Scale") {
 	
 	if (min) *min = 0;
-	if (max) *max = 2;
+	if (max) *max = 3;
 	
 	deft = int(m_verticalScale);
 
@@ -150,9 +150,10 @@ NoteLayer::getPropertyValueLabel(const PropertyName &name,
     } else if (name == "Vertical Scale") {
 	switch (value) {
 	default:
-	case 0: return tr("Note Range In Use");
-	case 1: return tr("MIDI Note Range");
-	case 2: return tr("Frequency");
+	case 0: return tr("Auto-Align");
+	case 1: return tr("Linear Scale");
+	case 2: return tr("Log Scale");
+	case 3: return tr("MIDI Note Range");
 	}
     }
     return tr("<unknown>");
@@ -206,12 +207,52 @@ NoteLayer::isLayerScrollable(const View *v) const
 }
 
 bool
-NoteLayer::getValueExtents(float &min, float &max, QString &unit) const
+NoteLayer::shouldConvertMIDIToHz() const
+{
+    QString unit = m_model->getScaleUnits();
+    return (unit != "Hz");
+//    if (unit == "" ||
+//        unit.startsWith("MIDI") ||
+//        unit.startsWith("midi")) return true;
+//    return false;
+}
+
+bool
+NoteLayer::getValueExtents(float &min, float &max,
+                           bool &logarithmic, QString &unit) const
 {
     if (!m_model) return false;
     min = m_model->getValueMinimum();
     max = m_model->getValueMaximum();
-    unit = m_model->getScaleUnits();
+
+    if (shouldConvertMIDIToHz()) unit = "Hz";
+    else unit = m_model->getScaleUnits();
+
+    if (m_verticalScale == MIDIRangeScale ||
+        m_verticalScale == LogScale) logarithmic = true;
+
+    return true;
+}
+
+bool
+NoteLayer::getDisplayExtents(float &min, float &max) const
+{
+    if (!m_model || m_verticalScale == AutoAlignScale) return false;
+
+    if (m_verticalScale == MIDIRangeScale) {
+        min = Pitch::getFrequencyForPitch(0);
+        max = Pitch::getFrequencyForPitch(127);
+        return true;
+    }
+
+    min = m_model->getValueMinimum();
+    max = m_model->getValueMaximum();
+
+    if (shouldConvertMIDIToHz()) {
+        min = Pitch::getFrequencyForPitch(lrintf(min));
+        max = Pitch::getFrequencyForPitch(lrintf(max + 1));
+    }
+
     return true;
 }
 
@@ -301,17 +342,38 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
     RealTime rd = RealTime::frame2RealTime(note.duration,
 					   m_model->getSampleRate());
     
+    QString pitchText;
+
+    if (shouldConvertMIDIToHz()) {
+
+        int mnote = lrintf(note.value);
+        int cents = lrintf((note.value - mnote) * 100);
+        float freq = Pitch::getFrequencyForPitch(mnote, cents);
+        pitchText = QString("%1 (%2 Hz)")
+            .arg(Pitch::getPitchLabel(mnote, cents)).arg(freq);
+
+    } else if (m_model->getScaleUnits() == "Hz") {
+
+        pitchText = QString("%1 Hz (%2)")
+            .arg(note.value)
+            .arg(Pitch::getPitchLabelForFrequency(note.value));
+
+    } else {
+        pitchText = QString("%1 %2")
+            .arg(note.value).arg(m_model->getScaleUnits());
+    }
+
     QString text;
 
     if (note.label == "") {
 	text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
 	    .arg(rt.toText(true).c_str())
-	    .arg(note.value)
+	    .arg(pitchText)
 	    .arg(rd.toText(true).c_str());
     } else {
 	text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
 	    .arg(rt.toText(true).c_str())
-	    .arg(note.value)
+	    .arg(pitchText)
 	    .arg(rd.toText(true).c_str())
 	    .arg(note.label);
     }
@@ -393,66 +455,107 @@ NoteLayer::snapToFeatureFrame(View *v, int &frame,
     return found;
 }
 
-int
-NoteLayer::getYForValue(View *v, float value) const
+void
+NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 {
-    float min, max, h = v->height();
+    min = 0.0;
+    max = 0.0;
+    log = false;
 
-    switch (m_verticalScale) {
+    QString queryUnits;
+    if (shouldConvertMIDIToHz()) queryUnits = "Hz";
+    else queryUnits = m_model->getScaleUnits();
 
-    case MIDIRangeScale:
-	min = 0.0;
-	max = 127.0;
-	break;
+    if (m_verticalScale == AutoAlignScale) {
 
-    case MinMaxRangeScale:
-	min = m_model->getValueMinimum();
-	max = m_model->getValueMaximum();
-	break;
+        if (!v->getValueExtents(queryUnits, min, max, log)) {
 
-    case FrequencyScale:
-    
-	value = Pitch::getFrequencyForPitch(lrintf(value),
-					    value - lrintf(value));
+            min = m_model->getValueMinimum();
+            max = m_model->getValueMaximum();
 
-	// If we have a spectrogram layer on the same view as us, align
-	// ourselves with it...
-	for (int i = 0; i < v->getLayerCount(); ++i) {
-	    SpectrogramLayer *spectrogram = dynamic_cast<SpectrogramLayer *>
-		(v->getLayer(i));
-	    if (spectrogram) {
-		return spectrogram->getYForFrequency(v, value);
-	    }
-	}
+            if (shouldConvertMIDIToHz()) {
+                min = Pitch::getFrequencyForPitch(lrintf(min));
+                max = Pitch::getFrequencyForPitch(lrintf(max + 1));
+            }
 
-	// ...otherwise just interpolate
-	std::cerr << "FrequencyScale: value in = " << value << std::endl;
-	min = m_model->getValueMinimum();
-	min = Pitch::getFrequencyForPitch(lrintf(min), min - lrintf(min));
-	max = m_model->getValueMaximum();
-	max = Pitch::getFrequencyForPitch(lrintf(max), max - lrintf(max));
-	std::cerr << "FrequencyScale: min = " << min << ", max = " << max << ", value = " << value << std::endl;
-	break;
+        } else if (log) {
+
+//            std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+
+            min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
+            max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+        }
+
+    } else {
+
+        min = m_model->getValueMinimum();
+        max = m_model->getValueMaximum();
+
+        if (m_verticalScale == MIDIRangeScale) {
+            min = Pitch::getFrequencyForPitch(0);
+            max = Pitch::getFrequencyForPitch(127);
+        } else if (shouldConvertMIDIToHz()) {
+            min = Pitch::getFrequencyForPitch(lrintf(min));
+            max = Pitch::getFrequencyForPitch(lrintf(max + 1));
+        }
+
+        if (m_verticalScale == LogScale || m_verticalScale == MIDIRangeScale) {
+            min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
+            max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+            log = true;
+        }
     }
 
-    if (max < min) max = min;
-    max = max + 1.0;
+    if (max == min) max = min + 1.0;
+}
 
-    return int(h - ((value - min) * h) / (max - min)) - 1;
+int
+NoteLayer::getYForValue(View *v, float val) const
+{
+    float min = 0.0, max = 0.0;
+    bool logarithmic = false;
+    int h = v->height();
+
+    getScaleExtents(v, min, max, logarithmic);
+
+//    std::cerr << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+
+    if (shouldConvertMIDIToHz()) {
+        val = Pitch::getFrequencyForPitch(lrintf(val),
+                                          lrintf((val - lrintf(val)) * 100));
+//        std::cerr << "shouldConvertMIDIToHz true, val now = " << val << std::endl;
+    }
+
+    if (logarithmic) {
+        val = (val < 0.0) ? -log10(-val) : (val == 0.0) ? 0.0 : log10(val);
+//        std::cerr << "logarithmic true, val now = " << val << std::endl;
+    }
+
+    int y = int(h - ((val - min) * h) / (max - min)) - 1;
+//    std::cerr << "y = " << y << std::endl;
+    return y;
 }
 
 float
 NoteLayer::getValueForY(View *v, int y) const
 {
-    //!!!
-
-    float min = m_model->getValueMinimum();
-    float max = m_model->getValueMaximum();
-    if (max == min) max = min + 1.0;
-
+    float min = 0.0, max = 0.0;
+    bool logarithmic = false;
     int h = v->height();
 
-    return min + (float(h - y) * float(max - min)) / h;
+    getScaleExtents(v, min, max, logarithmic);
+
+    float val = min + (float(h - y) * float(max - min)) / h;
+
+    if (logarithmic) {
+        val = pow(10, val);
+    }
+
+    if (shouldConvertMIDIToHz()) {
+        val = Pitch::getPitchForFrequency(val);
+    }
+
+    return val;
 }
 
 void
@@ -538,7 +641,7 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 void
 NoteLayer::drawStart(View *v, QMouseEvent *e)
 {
-    std::cerr << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model) return;
 
@@ -562,7 +665,7 @@ NoteLayer::drawStart(View *v, QMouseEvent *e)
 void
 NoteLayer::drawDrag(View *v, QMouseEvent *e)
 {
-    std::cerr << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model || !m_editing) return;
 
@@ -570,18 +673,28 @@ NoteLayer::drawDrag(View *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(v, e->y());
+    float newValue = getValueForY(v, e->y());
+
+    long newFrame = m_editingPoint.frame;
+    long newDuration = frame - newFrame;
+    if (newDuration < 0) {
+        newFrame = frame;
+        newDuration = -newDuration;
+    } else if (newDuration == 0) {
+        newDuration = 1;
+    }
 
     m_editingCommand->deletePoint(m_editingPoint);
-    m_editingPoint.frame = frame;
-    m_editingPoint.value = value;
+    m_editingPoint.frame = newFrame;
+    m_editingPoint.value = newValue;
+    m_editingPoint.duration = newDuration;
     m_editingCommand->addPoint(m_editingPoint);
 }
 
 void
 NoteLayer::drawEnd(View *v, QMouseEvent *e)
 {
-    std::cerr << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
     m_editingCommand->finish();
     m_editingCommand = 0;
@@ -591,7 +704,7 @@ NoteLayer::drawEnd(View *v, QMouseEvent *e)
 void
 NoteLayer::editStart(View *v, QMouseEvent *e)
 {
-    std::cerr << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model) return;
 
@@ -612,7 +725,7 @@ NoteLayer::editStart(View *v, QMouseEvent *e)
 void
 NoteLayer::editDrag(View *v, QMouseEvent *e)
 {
-    std::cerr << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model || !m_editing) return;
 
@@ -636,7 +749,7 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
 void
 NoteLayer::editEnd(View *v, QMouseEvent *e)
 {
-    std::cerr << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+//    std::cerr << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {

@@ -73,9 +73,10 @@ public:
     QColor getBaseColour() const { return m_colour; }
 
     enum VerticalScale {
-	MinMaxRangeScale,
-	MIDIRangeScale,
-	FrequencyScale
+        AutoAlignScale,
+        LinearScale,
+        LogScale,
+        MIDIRangeScale
     };
 
     void setVerticalScale(VerticalScale scale);
@@ -87,7 +88,10 @@ public:
 
     virtual int getCompletion() const { return m_model->getCompletion(); }
 
-    virtual bool getValueExtents(float &min, float &max, QString &unit) const;
+    virtual bool getValueExtents(float &min, float &max,
+                                 bool &log, QString &unit) const;
+
+    virtual bool getDisplayExtents(float &min, float &max) const;
 
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
@@ -95,8 +99,10 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
 protected:
+    void getScaleExtents(View *, float &min, float &max, bool &log) const;
     int getYForValue(View *v, float value) const;
     float getValueForY(View *v, int y) const;
+    bool shouldConvertMIDIToHz() const;
 
     NoteModel::PointList getLocalPoints(View *v, int) const;
 

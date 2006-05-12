@@ -88,7 +88,8 @@ public:
 
     virtual bool needsTextLabelHeight() const { return m_model->hasTextLabels(); }
 
-    virtual bool getValueExtents(float &min, float &max, QString &unit) const {
+    virtual bool getValueExtents(float &min, float &max,
+                                 bool &log, QString &unit) const {
         return false;
     }
 
