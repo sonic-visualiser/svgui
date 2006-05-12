@@ -1328,17 +1328,6 @@ SpectrogramLayer::CacheFillThread::run()
 	    m_layer.setColourmap();
 //!!!	    m_layer.m_writeCache->reset();
 
-	    // We don't need a lock when writing to or reading from
-	    // the pixels in the cache.  We do need to ensure we have
-	    // the width and height of the cache and the FFT
-	    // parameters known before we unlock, in case they change
-	    // in the model while we aren't holding a lock.  It's safe
-	    // for us to continue to use the "old" values if that
-	    // happens, because they will continue to match the
-	    // dimensions of the actual cache (which this thread
-	    // manages, not the layer's).
-	    m_layer.m_mutex.unlock();
-
 	    double *input = (double *)
 		fftw_malloc(windowSize * sizeof(double));
 
@@ -1351,16 +1340,26 @@ SpectrogramLayer::CacheFillThread::run()
 	    fftw_plan plan = fftw_plan_dft_r2c_1d(windowSize, input,
 						  output, FFTW_ESTIMATE);
 
-	    Window<double> windower(windowType, windowSize);
-
 	    if (!plan) {
 		std::cerr << "WARNING: fftw_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
 		fftw_free(input);
 		fftw_free(output);
                 fftw_free(workbuffer);
-		m_layer.m_mutex.lock();
 		continue;
 	    }
+
+	    // We don't need a lock when writing to or reading from
+	    // the pixels in the cache.  We do need to ensure we have
+	    // the width and height of the cache and the FFT
+	    // parameters known before we unlock, in case they change
+	    // in the model while we aren't holding a lock.  It's safe
+	    // for us to continue to use the "old" values if that
+	    // happens, because they will continue to match the
+	    // dimensions of the actual cache (which this thread
+	    // manages, not the layer's).
+	    m_layer.m_mutex.unlock();
+
+	    Window<double> windower(windowType, windowSize);
 
 	    int counter = 0;
 	    int updateAt = (end / windowIncrement) / 20;
