@@ -363,7 +363,15 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     for (int x = x0; x < x1; ++x) {
 
-        float sx0 = (float(v->getFrameForX(x)) - modelStart) / modelWindow;
+        long xf = v->getFrameForX(x);
+        if (xf < 0) {
+            for (int y = 0; y < h; ++y) {
+                img.setPixel(x - x0, y, m_cache->color(0));
+            }
+            continue;
+        }
+
+        float sx0 = (float(xf) - modelStart) / modelWindow;
         float sx1 = (float(v->getFrameForX(x+1)) - modelStart) / modelWindow;
             
         int sx0i = int(sx0 + 0.001);
