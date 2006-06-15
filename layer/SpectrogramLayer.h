@@ -207,6 +207,8 @@ protected slots:
     void fillTimerTimedOut();
 
 protected:
+    typedef float fftsample;
+
     const DenseTimeValueModel *m_model; // I do not own this
     
     int                 m_channel;
@@ -291,13 +293,13 @@ protected:
     void rotateColourmap(int distance);
 
     void fillCacheColumn(int column,
-			 double *inputBuffer,
-			 fftw_complex *outputBuffer,
-			 fftw_plan plan,
+			 fftsample *inputBuffer,
+			 fftwf_complex *outputBuffer,
+			 fftwf_plan plan,
 			 size_t windowSize,
 			 size_t windowIncrement,
                          float *workbuffer,
-			 const Window<double> &windower)
+			 const Window<fftsample> &windower)
 	const;
 
     static float calculateFrequency(size_t bin,
