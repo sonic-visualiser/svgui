@@ -170,6 +170,7 @@ PluginParameterBox::populate()
             spinbox->setSuffix(QString(" %1").arg(unit));
             spinbox->setSingleStep(qtz);
             spinbox->setValue(value);
+            spinbox->setDecimals(4);
             connect(spinbox, SIGNAL(valueChanged(double)),
                     this, SLOT(spinBoxChanged(double)));
             m_layout->addWidget(spinbox, i + offset, 2);
