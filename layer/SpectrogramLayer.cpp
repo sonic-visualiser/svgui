@@ -43,9 +43,21 @@ static double mod(double x, double y)
     return b;
 }
 
+static float modf(float x, float y)
+{
+    float a = floorf(x / y);
+    float b = x - (y * a);
+    return b;
+}
+
 static double princarg(double ang)
 {
     return mod(ang + M_PI, -2 * M_PI) + M_PI;
+}
+
+static float princargf(float ang)
+{
+    return modf(ang + M_PI, -2 * M_PI) + M_PI;
 }
 
 
@@ -1081,7 +1093,7 @@ SpectrogramLayer::calculateFrequency(size_t bin,
     float expectedPhase =
 	oldPhase + (2.0 * M_PI * bin * windowIncrement) / windowSize;
 
-    float phaseError = princarg(newPhase - expectedPhase);
+    float phaseError = princargf(newPhase - expectedPhase);
 	    
     if (fabs(phaseError) < (1.1 * (windowIncrement * M_PI) / windowSize)) {
 
@@ -1101,13 +1113,13 @@ SpectrogramLayer::calculateFrequency(size_t bin,
 }
 
 void
-SpectrogramLayer::fillCacheColumn(int column, double *input,
-				  fftw_complex *output,
-				  fftw_plan plan, 
+SpectrogramLayer::fillCacheColumn(int column, fftsample *input,
+				  fftwf_complex *output,
+				  fftwf_plan plan, 
 				  size_t windowSize,
 				  size_t increment,
                                   float *workbuffer,
-				  const Window<double> &windower) const
+				  const Window<fftsample> &windower) const
 {
     //!!! we _do_ need a lock for these references to the model
     // though, don't we?
@@ -1145,25 +1157,25 @@ SpectrogramLayer::fillCacheColumn(int column, double *input,
     windower.cut(input);
 
     for (size_t i = 0; i < windowSize/2; ++i) {
-	double temp = input[i];
+	fftsample temp = input[i];
 	input[i] = input[i + windowSize/2];
 	input[i + windowSize/2] = temp;
     }
     
-    fftw_execute(plan);
+    fftwf_execute(plan);
 
-    double factor = 0.0;
+    fftsample factor = 0.0;
 
     for (size_t i = 0; i < windowSize/2; ++i) {
 
-	double mag = sqrt(output[i][0] * output[i][0] +
-			  output[i][1] * output[i][1]);
+	fftsample mag = sqrtf(output[i][0] * output[i][0] +
+                              output[i][1] * output[i][1]);
 	mag /= windowSize / 2;
 
 	if (mag > factor) factor = mag;
 
-	double phase = atan2(output[i][1], output[i][0]);
-	phase = princarg(phase);
+	fftsample phase = atan2f(output[i][1], output[i][0]);
+	phase = princargf(phase);
 
         workbuffer[i] = mag;
         workbuffer[i + windowSize/2] = phase;
@@ -1328,23 +1340,23 @@ SpectrogramLayer::CacheFillThread::run()
 	    m_layer.setColourmap();
 //!!!	    m_layer.m_writeCache->reset();
 
-	    double *input = (double *)
-		fftw_malloc(windowSize * sizeof(double));
+	    fftsample *input = (fftsample *)
+		fftwf_malloc(windowSize * sizeof(fftsample));
 
-	    fftw_complex *output = (fftw_complex *)
-		fftw_malloc(windowSize * sizeof(fftw_complex));
+	    fftwf_complex *output = (fftwf_complex *)
+		fftwf_malloc(windowSize * sizeof(fftwf_complex));
 
             float *workbuffer = (float *)
-                fftw_malloc(windowSize * sizeof(float));
+                fftwf_malloc(windowSize * sizeof(float));
 
-	    fftw_plan plan = fftw_plan_dft_r2c_1d(windowSize, input,
-						  output, FFTW_ESTIMATE);
+	    fftwf_plan plan = fftwf_plan_dft_r2c_1d(windowSize, input,
+                                                    output, FFTW_ESTIMATE);
 
 	    if (!plan) {
-		std::cerr << "WARNING: fftw_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
-		fftw_free(input);
-		fftw_free(output);
-                fftw_free(workbuffer);
+		std::cerr << "WARNING: fftwf_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
+		fftwf_free(input);
+		fftwf_free(output);
+                fftwf_free(workbuffer);
 		continue;
 	    }
 
@@ -1359,7 +1371,7 @@ SpectrogramLayer::CacheFillThread::run()
 	    // manages, not the layer's).
 	    m_layer.m_mutex.unlock();
 
-	    Window<double> windower(windowType, windowSize);
+	    Window<fftsample> windower(windowType, windowSize);
 
 	    int counter = 0;
 	    int updateAt = (end / windowIncrement) / 20;
@@ -1424,10 +1436,10 @@ SpectrogramLayer::CacheFillThread::run()
 		}
 	    }
 
-	    fftw_destroy_plan(plan);
-	    fftw_free(output);
-	    fftw_free(input);
-            fftw_free(workbuffer);
+	    fftwf_destroy_plan(plan);
+	    fftwf_free(output);
+	    fftwf_free(input);
+            fftwf_free(workbuffer);
 
 	    if (!interrupted) {
 		m_fillExtent = end;
