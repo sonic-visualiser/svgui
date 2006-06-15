@@ -225,8 +225,11 @@ NoteLayer::getValueExtents(float &min, float &max,
     min = m_model->getValueMinimum();
     max = m_model->getValueMaximum();
 
-    if (shouldConvertMIDIToHz()) unit = "Hz";
-    else unit = m_model->getScaleUnits();
+    if (shouldConvertMIDIToHz()) {
+        unit = "Hz";
+        min = Pitch::getFrequencyForPitch(lrintf(min));
+        max = Pitch::getFrequencyForPitch(lrintf(max + 1));
+    } else unit = m_model->getScaleUnits();
 
     if (m_verticalScale == MIDIRangeScale ||
         m_verticalScale == LogScale) logarithmic = true;
@@ -478,12 +481,15 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
                 max = Pitch::getFrequencyForPitch(lrintf(max + 1));
             }
 
-        } else if (log) {
+            std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
 
-//            std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+        } else if (log) {
 
             min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
             max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+
+            std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+
         }
 
     } else {
