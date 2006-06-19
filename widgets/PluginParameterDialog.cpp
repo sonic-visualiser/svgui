@@ -17,6 +17,8 @@
 
 #include "PluginParameterBox.h"
 
+#include "vamp-sdk/Plugin.h"
+
 #include <QGridLayout>
 #include <QLabel>
 #include <QGroupBox>
@@ -29,6 +31,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                                              int sourceChannels,
                                              int targetChannels,
                                              int defaultChannel,
+                                             QString output,
 					     QWidget *parent) :
     QDialog(parent),
     m_plugin(plugin),
@@ -56,6 +59,29 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     QLabel *makerLabel = new QLabel(plugin->getMaker().c_str());
 
+    QLabel *outputLabel = 0;
+
+    if (output != "") {
+
+        Vamp::Plugin *fePlugin = dynamic_cast<Vamp::Plugin *>(plugin);
+
+        if (fePlugin) {
+
+            std::vector<Vamp::Plugin::OutputDescriptor> od =
+                fePlugin->getOutputDescriptors();
+
+            if (od.size() > 1) {
+
+                for (size_t i = 0; i < od.size(); ++i) {
+                    if (od[i].name == output.toStdString()) {
+                        outputLabel = new QLabel(od[i].description.c_str());
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     QLabel *versionLabel = new QLabel(QString("%1")
                                       .arg(plugin->getPluginVersion()));
 
@@ -70,14 +96,21 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     subgrid->addWidget(new QLabel(tr("Type:")), 1, 0);
     subgrid->addWidget(typeLabel, 1, 1);
 
-    subgrid->addWidget(new QLabel(tr("Maker:")), 2, 0);
-    subgrid->addWidget(makerLabel, 2, 1);
+    int outputOffset = 0;
+    if (outputLabel) {
+        subgrid->addWidget(new QLabel(tr("Output:")), 2, 0);
+        subgrid->addWidget(outputLabel, 2, 1);
+        outputOffset = 1;
+    }
 
-    subgrid->addWidget(new QLabel(tr("Copyright:  ")), 3, 0);
-    subgrid->addWidget(copyrightLabel, 3, 1);
+    subgrid->addWidget(new QLabel(tr("Maker:")), 2 + outputOffset, 0);
+    subgrid->addWidget(makerLabel, 2 + outputOffset, 1);
 
-    subgrid->addWidget(new QLabel(tr("Version:")), 4, 0);
-    subgrid->addWidget(versionLabel, 4, 1);
+    subgrid->addWidget(new QLabel(tr("Copyright:  ")), 3 + outputOffset, 0);
+    subgrid->addWidget(copyrightLabel, 3 + outputOffset, 1);
+
+    subgrid->addWidget(new QLabel(tr("Version:")), 4 + outputOffset, 0);
+    subgrid->addWidget(versionLabel, 4 + outputOffset, 1);
 
     subgrid->setColumnStretch(1, 2);
 

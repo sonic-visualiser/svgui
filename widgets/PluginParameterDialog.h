@@ -38,6 +38,7 @@ public:
                           int sourceChannels,
                           int targetChannels,
                           int defaultChannel,
+                          QString output = "",
                           QWidget *parent = 0);
     ~PluginParameterDialog();
 
