@@ -25,6 +25,7 @@ class QLayout;
 class QWidget;
 class QGridLayout;
 class QVBoxLayout;
+class QLabel;
 
 class PropertyBox : public QFrame
 {
@@ -64,6 +65,7 @@ protected slots:
 protected:
     void updatePropertyEditor(PropertyContainer::PropertyName);
 
+    QLabel *m_nameWidget;
     QWidget *m_mainWidget;
     QGridLayout *m_layout;
     PropertyContainer *m_container;

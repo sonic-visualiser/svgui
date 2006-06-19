@@ -215,6 +215,7 @@ protected:
     size_t              m_windowSize;
     WindowType          m_windowType;
     size_t              m_windowHopLevel;
+    size_t              m_fftSize;
     float               m_gain;
     float               m_threshold;
     int                 m_colourRotation;
@@ -297,6 +298,7 @@ protected:
 			 fftwf_complex *outputBuffer,
 			 fftwf_plan plan,
 			 size_t windowSize,
+                         size_t fftSize,
 			 size_t windowIncrement,
                          float *workbuffer,
 			 const Window<fftsample> &windower)
