@@ -54,9 +54,13 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     m_mainBox = new QVBoxLayout;
     setLayout(m_mainBox);
 
+//    m_nameWidget = new QLabel;
+//    m_mainBox->addWidget(m_nameWidget);
+//    m_nameWidget->setText(container->objectName());
+
     m_mainWidget = new QWidget;
     m_mainBox->addWidget(m_mainWidget);
-    m_mainBox->insertStretch(1, 10);
+    m_mainBox->insertStretch(2, 10);
 
     m_viewPlayFrame = 0;
     populateViewPlayFrame();

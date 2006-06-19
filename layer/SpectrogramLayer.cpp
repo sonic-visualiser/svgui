@@ -68,6 +68,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_windowSize(1024),
     m_windowType(HanningWindow),
     m_windowHopLevel(2),
+    m_fftSize(1024),
     m_gain(1.0),
     m_threshold(0.0),
     m_colourRotation(0),
@@ -584,6 +585,7 @@ SpectrogramLayer::setWindowSize(size_t ws)
     invalidatePixmapCaches();
     
     m_windowSize = ws;
+    m_fftSize = ws;
     
     m_mutex.unlock();
 
@@ -1113,10 +1115,12 @@ SpectrogramLayer::calculateFrequency(size_t bin,
 }
 
 void
-SpectrogramLayer::fillCacheColumn(int column, fftsample *input,
+SpectrogramLayer::fillCacheColumn(int column,
+                                  fftsample *input,
 				  fftwf_complex *output,
 				  fftwf_plan plan, 
 				  size_t windowSize,
+                                  size_t fftSize,
 				  size_t increment,
                                   float *workbuffer,
 				  const Window<fftsample> &windower) const
@@ -1131,17 +1135,24 @@ SpectrogramLayer::fillCacheColumn(int column, fftsample *input,
     endFrame   -= int(windowSize - increment) / 2;
     size_t pfx = 0;
 
+    size_t off = (m_fftSize - m_windowSize) / 2;
+
+    for (size_t i = 0; i < off; ++i) {
+        input[i] = 0.0;
+        input[m_fftSize - i - 1] = 0.0;
+    }
+
     if (startFrame < 0) {
 	pfx = size_t(-startFrame);
 	for (size_t i = 0; i < pfx; ++i) {
-	    input[i] = 0.0;
+	    input[off + i] = 0.0;
 	}
     }
 
     size_t got = m_model->getValues(m_channel, startFrame + pfx,
 				    endFrame, input + pfx);
     while (got + pfx < windowSize) {
-	input[got + pfx] = 0.0;
+	input[off + got + pfx] = 0.0;
 	++got;
     }
 
@@ -1149,7 +1160,7 @@ SpectrogramLayer::fillCacheColumn(int column, fftsample *input,
 	int channels = m_model->getChannelCount();
 	if (channels > 1) {
 	    for (size_t i = 0; i < windowSize; ++i) {
-		input[i] /= channels;
+		input[off + i] /= channels;
 	    }
 	}
     }
@@ -1157,20 +1168,20 @@ SpectrogramLayer::fillCacheColumn(int column, fftsample *input,
     windower.cut(input);
 
     for (size_t i = 0; i < windowSize/2; ++i) {
-	fftsample temp = input[i];
-	input[i] = input[i + windowSize/2];
-	input[i + windowSize/2] = temp;
+	fftsample temp = input[off + i];
+	input[off + i] = input[off + i + windowSize/2];
+	input[off + i + windowSize/2] = temp;
     }
-    
+
     fftwf_execute(plan);
 
     fftsample factor = 0.0;
 
-    for (size_t i = 0; i < windowSize/2; ++i) {
+    for (size_t i = 0; i < fftSize/2; ++i) {
 
 	fftsample mag = sqrtf(output[i][0] * output[i][0] +
                               output[i][1] * output[i][1]);
-	mag /= windowSize / 2;
+	mag /= fftSize / 2;
 
 	if (mag > factor) factor = mag;
 
@@ -1178,11 +1189,11 @@ SpectrogramLayer::fillCacheColumn(int column, fftsample *input,
 	phase = princargf(phase);
 
         workbuffer[i] = mag;
-        workbuffer[i + windowSize/2] = phase;
+        workbuffer[i + fftSize/2] = phase;
     }
 
     m_writeCache->setColumnAt(column, workbuffer,
-                              workbuffer + windowSize/2, factor);
+                              workbuffer + fftSize/2, factor);
 }
 
 unsigned char
@@ -1314,6 +1325,7 @@ SpectrogramLayer::CacheFillThread::run()
 	    WindowType windowType = m_layer.m_windowType;
 	    size_t windowSize = m_layer.m_windowSize;
 	    size_t windowIncrement = m_layer.getWindowIncrement();
+            size_t fftSize = m_layer.m_fftSize;
 
         //    std::cerr << "\nWINDOW INCREMENT: " << windowIncrement << " (for hop level " << m_layer.m_windowHopLevel << ")\n" << std::endl;
 
@@ -1321,7 +1333,7 @@ SpectrogramLayer::CacheFillThread::run()
 	    visibleStart = (visibleStart / windowIncrement) * windowIncrement;
 
 	    size_t width = (end - start) / windowIncrement + 1;
-	    size_t height = windowSize / 2;
+	    size_t height = fftSize / 2;
 
 //!!!	    if (!m_layer.m_cache) {
 //		m_layer.m_cache = new FFTMemoryCache;
@@ -1341,15 +1353,15 @@ SpectrogramLayer::CacheFillThread::run()
 //!!!	    m_layer.m_writeCache->reset();
 
 	    fftsample *input = (fftsample *)
-		fftwf_malloc(windowSize * sizeof(fftsample));
+		fftwf_malloc(fftSize * sizeof(fftsample));
 
 	    fftwf_complex *output = (fftwf_complex *)
-		fftwf_malloc(windowSize * sizeof(fftwf_complex));
+		fftwf_malloc(fftSize * sizeof(fftwf_complex));
 
             float *workbuffer = (float *)
-                fftwf_malloc(windowSize * sizeof(float));
+                fftwf_malloc(fftSize * sizeof(float));
 
-	    fftwf_plan plan = fftwf_plan_dft_r2c_1d(windowSize, input,
+	    fftwf_plan plan = fftwf_plan_dft_r2c_1d(fftSize, input,
                                                     output, FFTW_ESTIMATE);
 
 	    if (!plan) {
@@ -1385,7 +1397,8 @@ SpectrogramLayer::CacheFillThread::run()
 	    
 		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
 					    input, output, plan,
-					    windowSize, windowIncrement,
+					    windowSize, fftSize,
+                                            windowIncrement,
                                             workbuffer, windower);
 
 		    if (m_layer.m_cacheInvalid || m_layer.m_exiting) {
@@ -1417,7 +1430,8 @@ SpectrogramLayer::CacheFillThread::run()
 
 		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
 					    input, output, plan,
-					    windowSize, windowIncrement,
+					    windowSize, fftSize,
+                                            windowIncrement,
 					    workbuffer, windower);
 
 		    if (m_layer.m_cacheInvalid || m_layer.m_exiting) {
@@ -1457,12 +1471,12 @@ float
 SpectrogramLayer::getEffectiveMinFrequency() const
 {
     int sr = m_model->getSampleRate();
-    float minf = float(sr) / m_windowSize;
+    float minf = float(sr) / m_fftSize;
 
     if (m_minFrequency > 0.0) {
-	size_t minbin = size_t((double(m_minFrequency) * m_windowSize) / sr + 0.01);
+	size_t minbin = size_t((double(m_minFrequency) * m_fftSize) / sr + 0.01);
 	if (minbin < 1) minbin = 1;
-	minf = minbin * sr / m_windowSize;
+	minf = minbin * sr / m_fftSize;
     }
 
     return minf;
@@ -1475,9 +1489,9 @@ SpectrogramLayer::getEffectiveMaxFrequency() const
     float maxf = float(sr) / 2;
 
     if (m_maxFrequency > 0.0) {
-	size_t maxbin = size_t((double(m_maxFrequency) * m_windowSize) / sr + 0.1);
-	if (maxbin > m_windowSize / 2) maxbin = m_windowSize / 2;
-	maxf = maxbin * sr / m_windowSize;
+	size_t maxbin = size_t((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
+	if (maxbin > m_fftSize / 2) maxbin = m_fftSize / 2;
+	maxf = maxbin * sr / m_fftSize;
     }
 
     return maxf;
@@ -1500,15 +1514,15 @@ SpectrogramLayer::getYBinRange(View *v, int y, float &q0, float &q1) const
 
     // Now map these on to actual bins
 
-    int b0 = int((q0 * m_windowSize) / sr);
-    int b1 = int((q1 * m_windowSize) / sr);
+    int b0 = int((q0 * m_fftSize) / sr);
+    int b1 = int((q1 * m_fftSize) / sr);
     
     //!!! this is supposed to return fractions-of-bins, as it were, hence the floats
     q0 = b0;
     q1 = b1;
     
-//    q0 = (b0 * sr) / m_windowSize;
-//    q1 = (b1 * sr) / m_windowSize;
+//    q0 = (b0 * sr) / m_fftSize;
+//    q1 = (b1 * sr) / m_fftSize;
 
     return true;
 }
@@ -1569,7 +1583,7 @@ const
     int sr = m_model->getSampleRate();
 
     for (int q = q0i; q <= q1i; ++q) {
-	int binfreq = (sr * q) / m_windowSize;
+	int binfreq = (sr * q) / m_fftSize;
 	if (q == q0i) freqMin = binfreq;
 	if (q == q1i) freqMax = binfreq;
     }
@@ -1967,21 +1981,21 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int sr = m_model->getSampleRate();
     
-    size_t bins = m_windowSize / 2;
+    size_t bins = m_fftSize / 2;
     if (m_maxFrequency > 0) {
-	bins = int((double(m_maxFrequency) * m_windowSize) / sr + 0.1);
-	if (bins > m_windowSize / 2) bins = m_windowSize / 2;
+	bins = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
+	if (bins > m_fftSize / 2) bins = m_fftSize / 2;
     }
 	
     size_t minbin = 1;
     if (m_minFrequency > 0) {
-	minbin = int((double(m_minFrequency) * m_windowSize) / sr + 0.1);
+	minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.1);
 	if (minbin < 1) minbin = 1;
 	if (minbin >= bins) minbin = bins - 1;
     }
 
-    float minFreq = (float(minbin) * sr) / m_windowSize;
-    float maxFreq = (float(bins) * sr) / m_windowSize;
+    float minFreq = (float(minbin) * sr) / m_fftSize;
+    float maxFreq = (float(bins) * sr) / m_fftSize;
 
     float ymag[h];
     float ydiv[h];
@@ -1994,7 +2008,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     m_mutex.unlock();
 
     for (size_t q = minbin; q <= bins; ++q) {
-        float f0 = (float(q) * sr) / m_windowSize;
+        float f0 = (float(q) * sr) / m_fftSize;
         yval[q] = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
     }
 
@@ -2448,12 +2462,12 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
     int tickw = (m_frequencyScale == LogFrequencyScale ? 10 : 4);
     int pkw = (m_frequencyScale == LogFrequencyScale ? 10 : 0);
 
-    size_t bins = m_windowSize / 2;
+    size_t bins = m_fftSize / 2;
     int sr = m_model->getSampleRate();
 
     if (m_maxFrequency > 0) {
-	bins = int((double(m_maxFrequency) * m_windowSize) / sr + 0.1);
-	if (bins > m_windowSize / 2) bins = m_windowSize / 2;
+	bins = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
+	if (bins > m_fftSize / 2) bins = m_fftSize / 2;
     }
 
     int cw = getColourScaleWidth(paint);
@@ -2530,7 +2544,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	    continue;
 	}
 
-	int freq = (sr * bin) / m_windowSize;
+	int freq = (sr * bin) / m_fftSize;
 
 	if (py >= 0 && (vy - py) < textHeight - 1) {
 	    if (m_frequencyScale == LinearFrequencyScale) {
