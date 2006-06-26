@@ -26,16 +26,32 @@
 #include <QPainter>
 #include <QPalette>
 #include <QLabel>
+#include <QSplitter>
+#include <QStackedWidget>
 
 #include <iostream>
 
 PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
-    QSplitter(parent),
+    QFrame(parent),
     m_currentPane(0),
-    m_viewManager(viewManager)
+    m_splitter(new QSplitter),
+    m_propertyStackStack(new QStackedWidget),
+    m_viewManager(viewManager),
+    m_layoutStyle(PropertyStackPerPaneLayout)
 {
-    setOrientation(Qt::Vertical);
-    setOpaqueResize(false);
+    QHBoxLayout *layout = new QHBoxLayout;
+    layout->setMargin(0);
+    layout->setSpacing(0);
+
+    m_splitter->setOrientation(Qt::Vertical);
+    m_splitter->setOpaqueResize(false);
+
+    layout->addWidget(m_splitter);
+    layout->setStretchFactor(m_splitter, 1);
+    layout->addWidget(m_propertyStackStack);
+    m_propertyStackStack->hide();
+
+    setLayout(layout);
 }
 
 Pane *
@@ -65,17 +81,24 @@ PaneStack::addPane(bool suppressPropertyBox)
 	connect(properties, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
 		this, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
     }
-    layout->addWidget(properties);
+    if (m_layoutStyle == PropertyStackPerPaneLayout) {
+        layout->addWidget(properties);
+    } else {
+        properties->setParent(m_propertyStackStack);
+        m_propertyStackStack->addWidget(properties);
+    }
     layout->setStretchFactor(properties, 1);
 
     PaneRec rec;
     rec.pane = pane;
     rec.propertyStack = properties;
     rec.currentIndicator = currentIndicator;
+    rec.frame = frame;
+    rec.layout = layout;
     m_panes.push_back(rec);
 
     frame->setLayout(layout);
-    addWidget(frame);
+    m_splitter->addWidget(frame);
 
     connect(pane, SIGNAL(propertyContainerAdded(PropertyContainer *)),
 	    this, SLOT(propertyContainerAdded(PropertyContainer *)));
@@ -91,6 +114,39 @@ PaneStack::addPane(bool suppressPropertyBox)
     }
 
     return pane;
+}
+
+void
+PaneStack::setLayoutStyle(LayoutStyle style)
+{
+    if (style == m_layoutStyle) return;
+    m_layoutStyle = style;
+
+    std::vector<PaneRec>::iterator i;
+
+    switch (style) {
+
+    case SinglePropertyStackLayout:
+        
+        for (i = m_panes.begin(); i != m_panes.end(); ++i) {
+            i->layout->removeWidget(i->propertyStack);
+            i->propertyStack->setParent(m_propertyStackStack);
+            m_propertyStackStack->addWidget(i->propertyStack);
+        }
+        m_propertyStackStack->show();
+        break;
+
+    case PropertyStackPerPaneLayout:
+
+        for (i = m_panes.begin(); i != m_panes.end(); ++i) {
+            m_propertyStackStack->removeWidget(i->propertyStack);
+            i->propertyStack->setParent(i->frame);
+            i->layout->addWidget(i->propertyStack);
+            i->propertyStack->show();
+        }
+        m_propertyStackStack->hide();
+        break;
+    }
 }
 
 Pane *
@@ -139,7 +195,7 @@ PaneStack::deletePane(Pane *pane)
 
     if (m_currentPane == pane) {
 	if (m_panes.size() > 0) {
-	    setCurrentPane(m_panes[0].pane);
+            setCurrentPane(m_panes[0].pane);
 	} else {
 	    setCurrentPane(0);
 	}
@@ -232,6 +288,9 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
     while (i != m_panes.end()) {
 	if (i->pane == pane) {
 	    i->currentIndicator->setPixmap(selectedMap);
+            if (m_layoutStyle == SinglePropertyStackLayout) {
+                m_propertyStackStack->setCurrentWidget(i->propertyStack);
+            }
 	    found = true;
 	} else {
 	    i->currentIndicator->setPixmap(unselectedMap);
@@ -359,6 +418,8 @@ PaneStack::sizePropertyStacks()
 #else
     int setWidth = maxMinWidth;
 #endif
+
+    m_propertyStackStack->setMaximumWidth(setWidth + 10);
 
     for (size_t i = 0; i < m_panes.size(); ++i) {
 	if (!m_panes[i].propertyStack) continue;

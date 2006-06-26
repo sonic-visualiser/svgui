@@ -17,10 +17,13 @@
 #ifndef _PANESTACK_H_
 #define _PANESTACK_H_
 
-#include <QSplitter>
+#include <QFrame>
 
 class QWidget;
 class QLabel;
+class QStackedWidget;
+class QSplitter;
+class QHBoxLayout;
 class View;
 class Pane;
 class Layer;
@@ -28,7 +31,7 @@ class ViewManager;
 class PropertyContainer;
 class PropertyStack;
 
-class PaneStack : public QSplitter
+class PaneStack : public QFrame
 {
     Q_OBJECT
 
@@ -51,6 +54,14 @@ public:
     void setCurrentLayer(Pane *pane, Layer *layer);
     Pane *getCurrentPane();
 
+    enum LayoutStyle {
+        SinglePropertyStackLayout = 1,
+        PropertyStackPerPaneLayout = 2
+    };
+
+    LayoutStyle getLayoutStyle() const { return m_layoutStyle; }
+    void setLayoutStyle(LayoutStyle style);
+
 signals:
     void currentPaneChanged(Pane *pane);
     void currentLayerChanged(Pane *pane, Layer *layer);
@@ -68,16 +79,23 @@ protected:
 
     struct PaneRec
     {
-	Pane *pane;
-	QWidget *propertyStack;
-	QLabel *currentIndicator;
+	Pane        *pane;
+	QWidget     *propertyStack;
+	QLabel      *currentIndicator;
+        QFrame      *frame;
+        QHBoxLayout *layout;
     };
 
     std::vector<PaneRec> m_panes;
     std::vector<PaneRec> m_hiddenPanes;
 
+    QSplitter *m_splitter;
+    QStackedWidget *m_propertyStackStack;
+
     ViewManager *m_viewManager; // I don't own this
     void sizePropertyStacks();
+
+    LayoutStyle m_layoutStyle;
 };
 
 #endif
