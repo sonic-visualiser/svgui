@@ -284,7 +284,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    connect(cb, SIGNAL(stateChanged(int)),
 		    this, SLOT(propertyControllerChanged(int)));
 	    if (inGroup) {
-		cb->setToolTip(name);
+		cb->setToolTip(propertyLabel);
 		m_groupLayouts[groupName]->addWidget(cb);
 	    } else {
 		m_layout->addWidget(cb, row, 1, 1, 2);
@@ -324,7 +324,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    if (inGroup) {
 		dial->setFixedWidth(24);
 		dial->setFixedHeight(24);
-		dial->setToolTip(name);
+		dial->setToolTip(propertyLabel);
 		m_groupLayouts[groupName]->addWidget(dial);
 	    } else {
 		dial->setFixedWidth(32);
@@ -382,7 +382,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 		    this, SLOT(propertyControllerChanged(int)));
 
 	    if (inGroup) {
-		cb->setToolTip(name);
+		cb->setToolTip(propertyLabel);
 		m_groupLayouts[groupName]->addWidget(cb);
 	    } else {
 		m_layout->addWidget(cb, row, 1, 1, 2);
