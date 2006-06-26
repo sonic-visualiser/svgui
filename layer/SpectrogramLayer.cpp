@@ -36,31 +36,6 @@
 
 //#define DEBUG_SPECTROGRAM_REPAINT 1
 
-static double mod(double x, double y)
-{
-    double a = floor(x / y);
-    double b = x - (y * a);
-    return b;
-}
-
-static float modf(float x, float y)
-{
-    float a = floorf(x / y);
-    float b = x - (y * a);
-    return b;
-}
-
-static double princarg(double ang)
-{
-    return mod(ang + M_PI, -2 * M_PI) + M_PI;
-}
-
-static float princargf(float ang)
-{
-    return modf(ang + M_PI, -2 * M_PI) + M_PI;
-}
-
-
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     Layer(),
     m_model(0),
@@ -68,6 +43,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_windowSize(1024),
     m_windowType(HanningWindow),
     m_windowHopLevel(2),
+    m_zeroPadLevel(0),
     m_fftSize(1024),
     m_gain(1.0),
     m_threshold(0.0),
@@ -91,13 +67,13 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     if (config == MelodicRange) {
 	setWindowSize(8192);
 	setWindowHopLevel(4);
-	setWindowType(ParzenWindow);
+//	setWindowType(ParzenWindow);
 	setMaxFrequency(1000);
 	setColourScale(LinearColourScale);
     } else if (config == MelodicPeaks) {
 	setWindowSize(4096);
 	setWindowHopLevel(5);
-	setWindowType(BlackmanWindow);
+//	setWindowType(BlackmanWindow);
 	setMaxFrequency(2000);
 	setMinFrequency(40);
 	setFrequencyScale(LogFrequencyScale);
@@ -154,7 +130,7 @@ SpectrogramLayer::getProperties() const
     PropertyList list;
     list.push_back("Colour");
     list.push_back("Colour Scale");
-    list.push_back("Window Type");
+//    list.push_back("Window Type");
     list.push_back("Window Size");
     list.push_back("Window Increment");
     list.push_back("Normalize Columns");
@@ -165,6 +141,7 @@ SpectrogramLayer::getProperties() const
     list.push_back("Min Frequency");
     list.push_back("Max Frequency");
     list.push_back("Frequency Scale");
+    list.push_back("Zero Padding");
     return list;
 }
 
@@ -184,6 +161,7 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Min Frequency") return tr("Min Frequency");
     if (name == "Max Frequency") return tr("Max Frequency");
     if (name == "Frequency Scale") return tr("Frequency Scale");
+    if (name == "Zero Padding") return tr("Smoothing");
     return "";
 }
 
@@ -194,6 +172,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
     if (name == "Colour Rotation") return RangeProperty;
     if (name == "Normalize Columns") return ToggleProperty;
     if (name == "Threshold") return RangeProperty;
+    if (name == "Zero Padding") return ToggleProperty;
     return ValueProperty;
 }
 
@@ -202,7 +181,8 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Window Size" ||
 	name == "Window Type" ||
-	name == "Window Increment") return tr("Window");
+	name == "Window Increment" ||
+        name == "Zero Padding") return tr("Window");
     if (name == "Colour" ||
 	name == "Gain" ||
 	name == "Threshold" ||
@@ -288,6 +268,13 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 5;
 	
         deft = m_windowHopLevel;
+    
+    } else if (name == "Zero Padding") {
+	
+	*min = 0;
+	*max = 1;
+	
+        deft = m_zeroPadLevel > 0 ? 1 : 0;
     
     } else if (name == "Min Frequency") {
 
@@ -399,6 +386,10 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 5: return tr("1/16");
 	}
     }
+    if (name == "Zero Padding") {
+        if (value == 0) return tr("None");
+        return QString("%1x").arg(value + 1);
+    }
     if (name == "Min Frequency") {
 	switch (value) {
 	default:
@@ -474,6 +465,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	setWindowSize(32 << value);
     } else if (name == "Window Increment") {
         setWindowHopLevel(value);
+    } else if (name == "Zero Padding") {
+        setZeroPadLevel(value > 0.1 ? 3 : 0);
     } else if (name == "Min Frequency") {
 	switch (value) {
 	default:
@@ -585,7 +578,7 @@ SpectrogramLayer::setWindowSize(size_t ws)
     invalidatePixmapCaches();
     
     m_windowSize = ws;
-    m_fftSize = ws;
+    m_fftSize = ws * (m_zeroPadLevel + 1);
     
     m_mutex.unlock();
 
@@ -622,6 +615,31 @@ size_t
 SpectrogramLayer::getWindowHopLevel() const
 {
     return m_windowHopLevel;
+}
+
+void
+SpectrogramLayer::setZeroPadLevel(size_t v)
+{
+    if (m_zeroPadLevel == v) return;
+
+    m_mutex.lock();
+    m_cacheInvalid = true;
+    invalidatePixmapCaches();
+    
+    m_zeroPadLevel = v;
+    m_fftSize = m_windowSize * (v + 1);
+    
+    m_mutex.unlock();
+
+    emit layerParametersChanged();
+
+    fillCache();
+}
+
+size_t
+SpectrogramLayer::getZeroPadLevel() const
+{
+    return m_zeroPadLevel;
 }
 
 void
@@ -1150,7 +1168,8 @@ SpectrogramLayer::fillCacheColumn(int column,
     }
 
     size_t got = m_model->getValues(m_channel, startFrame + pfx,
-				    endFrame, input + pfx);
+				    endFrame, input + off + pfx);
+
     while (got + pfx < windowSize) {
 	input[off + got + pfx] = 0.0;
 	++got;
@@ -1165,12 +1184,12 @@ SpectrogramLayer::fillCacheColumn(int column,
 	}
     }
 
-    windower.cut(input);
+    windower.cut(input + off);
 
-    for (size_t i = 0; i < windowSize/2; ++i) {
-	fftsample temp = input[off + i];
-	input[off + i] = input[off + i + windowSize/2];
-	input[off + i + windowSize/2] = temp;
+    for (size_t i = 0; i < fftSize/2; ++i) {
+	fftsample temp = input[i];
+	input[i] = input[i + fftSize/2];
+	input[i + fftSize/2] = temp;
     }
 
     fftwf_execute(plan);
@@ -1181,7 +1200,7 @@ SpectrogramLayer::fillCacheColumn(int column,
 
 	fftsample mag = sqrtf(output[i][0] * output[i][0] +
                               output[i][1] * output[i][1]);
-	mag /= fftSize / 2;
+	mag /= windowSize / 2;
 
 	if (mag > factor) factor = mag;
 
@@ -1341,13 +1360,13 @@ SpectrogramLayer::CacheFillThread::run()
             if (!m_layer.m_writeCache) {
                 m_layer.m_writeCache = new FFTFileCache
                     (QString("%1").arg(getObjectExportId(&m_layer)),
-                     MatrixFile::ReadWrite);
+                     MatrixFile::ReadWrite, true);
             }
 	    m_layer.m_writeCache->resize(width, height);
             if (m_layer.m_cache) delete m_layer.m_cache;
             m_layer.m_cache = new FFTFileCache
                 (QString("%1").arg(getObjectExportId(&m_layer)),
-                 MatrixFile::ReadOnly);
+                 MatrixFile::ReadOnly, true);
 
 	    m_layer.setColourmap();
 //!!!	    m_layer.m_writeCache->reset();

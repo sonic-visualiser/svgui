@@ -93,11 +93,14 @@ public:
     void setWindowSize(size_t);
     size_t getWindowSize() const;
     
-    void setWindowHopLevel(size_t percent);
+    void setWindowHopLevel(size_t level);
     size_t getWindowHopLevel() const;
 
     void setWindowType(WindowType type);
     WindowType getWindowType() const;
+
+    void setZeroPadLevel(size_t level);
+    size_t getZeroPadLevel() const;
 
     /**
      * Set the gain multiplier for sample values in this view prior to
@@ -215,6 +218,7 @@ protected:
     size_t              m_windowSize;
     WindowType          m_windowType;
     size_t              m_windowHopLevel;
+    size_t              m_zeroPadLevel;
     size_t              m_fftSize;
     float               m_gain;
     float               m_threshold;
