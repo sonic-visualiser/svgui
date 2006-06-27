@@ -28,14 +28,12 @@
 #include <QImage>
 #include <QPixmap>
 
-#include <fftw3.h>
-
 class View;
 class QPainter;
 class QImage;
 class QPixmap;
 class QTimer;
-class FFTCacheBase;
+class FFTDataServer;
 
 /**
  * SpectrogramLayer represents waveform data (obtained from a
@@ -103,17 +101,15 @@ public:
     size_t getZeroPadLevel() const;
 
     /**
-     * Set the gain multiplier for sample values in this view prior to
-     * FFT calculation.
-     *
+     * Set the gain multiplier for sample values in this view.
      * The default is 1.0.
      */
     void setGain(float gain);
     float getGain() const;
 
     /**
-     * Set the threshold for sample values to be shown in the FFT,
-     * in voltage units.
+     * Set the threshold for sample values to qualify for being shown
+     * in the FFT, in voltage units.
      *
      * The default is 0.0.
      */
@@ -210,8 +206,6 @@ protected slots:
     void fillTimerTimedOut();
 
 protected:
-    typedef float fftsample;
-
     const DenseTimeValueModel *m_model; // I do not own this
     
     int                 m_channel;
@@ -250,27 +244,9 @@ protected:
     };
 
     ColourMap m_colourMap;
-    FFTCacheBase *m_cache;
-    FFTCacheBase *m_writeCache;
-    bool m_cacheInvalid;
 
-    class CacheFillThread : public Thread
-    {
-    public:
-	CacheFillThread(SpectrogramLayer &layer) :
-	    m_layer(layer), m_fillExtent(0) { }
-
-	size_t getFillExtent() const { return m_fillExtent; }
-	size_t getFillCompletion() const { return m_fillCompletion; }
-	virtual void run();
-
-    protected:
-	SpectrogramLayer &m_layer;
-	size_t m_fillExtent;
-	size_t m_fillCompletion;
-    };
-
-    void fillCache();
+    FFTDataServer *m_fftServer;
+    void getFFTServer();
 
     struct PixmapCache
     {
@@ -284,29 +260,15 @@ protected:
     void invalidatePixmapCaches(size_t startFrame, size_t endFrame);
     mutable ViewPixmapCache m_pixmapCaches;
     mutable QImage m_drawBuffer;
-    
-    QWaitCondition m_condition;
-    mutable QMutex m_mutex;
 
-    CacheFillThread *m_fillThread;
     QTimer *m_updateTimer;
+
     mutable size_t m_candidateFillStartFrame;
     size_t m_lastFillExtent;
     bool m_exiting;
 
     void setColourmap();
     void rotateColourmap(int distance);
-
-    void fillCacheColumn(int column,
-			 fftsample *inputBuffer,
-			 fftwf_complex *outputBuffer,
-			 fftwf_plan plan,
-			 size_t windowSize,
-                         size_t fftSize,
-			 size_t windowIncrement,
-                         float *workbuffer,
-			 const Window<fftsample> &windower)
-	const;
 
     static float calculateFrequency(size_t bin,
 				    size_t windowSize,

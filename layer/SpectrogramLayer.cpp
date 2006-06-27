@@ -20,7 +20,7 @@
 #include "base/AudioLevel.h"
 #include "base/Window.h"
 #include "base/Pitch.h"
-#include "fileio/FFTFileCache.h"
+#include "fileio/FFTDataServer.h"
 
 #include <QPainter>
 #include <QImage>
@@ -55,10 +55,8 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_frequencyScale(LinearFrequencyScale),
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
-    m_cache(0),
-    m_writeCache(0),
-    m_cacheInvalid(true),
-    m_fillThread(0),
+    m_fftServer(0),
+//    m_fftServerChanged(true),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
     m_lastFillExtent(0),
@@ -81,20 +79,19 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setBinDisplay(PeakFrequencies);
 	setNormalizeColumns(true);
     }
+
+    setColourmap();
 }
 
 SpectrogramLayer::~SpectrogramLayer()
 {
     delete m_updateTimer;
     m_updateTimer = 0;
-
-    m_exiting = true;
-    m_condition.wakeAll();
-    if (m_fillThread) m_fillThread->wait();
-    delete m_fillThread;
     
-    delete m_writeCache;
-    delete m_cache;
+    if (m_fftServer) {
+        FFTDataServer::releaseInstance(m_fftServer);
+        m_fftServer = 0;
+    }
 }
 
 void
@@ -102,10 +99,10 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 {
 //    std::cerr << "SpectrogramLayer(" << this << "): setModel(" << model << ")" << std::endl;
 
-    m_mutex.lock();
-    m_cacheInvalid = true;
+    if (model == m_model) return;
+
     m_model = model;
-    m_mutex.unlock();
+    getFFTServer();
 
     if (!m_model || !m_model->isOK()) return;
 
@@ -121,7 +118,35 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 	    this, SLOT(cacheInvalid(size_t, size_t)));
 
     emit modelReplaced();
-    fillCache();
+}
+
+void
+SpectrogramLayer::getFFTServer()
+{
+    //!!! really want to check that params differ from previous ones
+
+    if (m_fftServer) {
+        FFTDataServer::releaseInstance(m_fftServer);
+        m_fftServer = 0;
+    }
+
+    if (m_model) {
+        m_fftServer = FFTDataServer::getInstance(m_model,
+                                                 m_channel,
+                                                 m_windowType,
+                                                 m_windowSize,
+                                                 getWindowIncrement(),
+                                                 m_fftSize,
+                                                 true,
+                                                 m_candidateFillStartFrame);
+
+        m_lastFillExtent = 0;
+
+        delete m_updateTimer;
+        m_updateTimer = new QTimer(this);
+        connect(m_updateTimer, SIGNAL(timeout()), this, SLOT(fillTimerTimedOut()));
+        m_updateTimer->start(200);
+    }
 }
 
 Layer::PropertyList
@@ -549,17 +574,11 @@ SpectrogramLayer::setChannel(int ch)
 {
     if (m_channel == ch) return;
 
-    m_mutex.lock();
-    m_cacheInvalid = true;
     invalidatePixmapCaches();
-    
     m_channel = ch;
-
-    m_mutex.unlock();
+    getFFTServer();
 
     emit layerParametersChanged();
-
-    fillCache();
 }
 
 int
@@ -573,18 +592,14 @@ SpectrogramLayer::setWindowSize(size_t ws)
 {
     if (m_windowSize == ws) return;
 
-    m_mutex.lock();
-    m_cacheInvalid = true;
     invalidatePixmapCaches();
     
     m_windowSize = ws;
     m_fftSize = ws * (m_zeroPadLevel + 1);
     
-    m_mutex.unlock();
+    getFFTServer();
 
     emit layerParametersChanged();
-
-    fillCache();
 }
 
 size_t
@@ -598,17 +613,15 @@ SpectrogramLayer::setWindowHopLevel(size_t v)
 {
     if (m_windowHopLevel == v) return;
 
-    m_mutex.lock();
-    m_cacheInvalid = true;
     invalidatePixmapCaches();
     
     m_windowHopLevel = v;
     
-    m_mutex.unlock();
+    getFFTServer();
 
     emit layerParametersChanged();
 
-    fillCache();
+//    fillCache();
 }
 
 size_t
@@ -622,18 +635,14 @@ SpectrogramLayer::setZeroPadLevel(size_t v)
 {
     if (m_zeroPadLevel == v) return;
 
-    m_mutex.lock();
-    m_cacheInvalid = true;
     invalidatePixmapCaches();
     
     m_zeroPadLevel = v;
     m_fftSize = m_windowSize * (v + 1);
-    
-    m_mutex.unlock();
+
+    getFFTServer();
 
     emit layerParametersChanged();
-
-    fillCache();
 }
 
 size_t
@@ -647,17 +656,13 @@ SpectrogramLayer::setWindowType(WindowType w)
 {
     if (m_windowType == w) return;
 
-    m_mutex.lock();
-    m_cacheInvalid = true;
     invalidatePixmapCaches();
     
     m_windowType = w;
-    
-    m_mutex.unlock();
+
+    getFFTServer();
 
     emit layerParametersChanged();
-
-    fillCache();
 }
 
 WindowType
@@ -674,16 +679,11 @@ SpectrogramLayer::setGain(float gain)
 
     if (m_gain == gain) return;
 
-    m_mutex.lock();
     invalidatePixmapCaches();
     
     m_gain = gain;
     
-    m_mutex.unlock();
-
     emit layerParametersChanged();
-
-    fillCache();
 }
 
 float
@@ -697,16 +697,11 @@ SpectrogramLayer::setThreshold(float threshold)
 {
     if (m_threshold == threshold) return;
 
-    m_mutex.lock();
     invalidatePixmapCaches();
     
     m_threshold = threshold;
-    
-    m_mutex.unlock();
 
     emit layerParametersChanged();
-
-    fillCache();
 }
 
 float
@@ -720,12 +715,9 @@ SpectrogramLayer::setMinFrequency(size_t mf)
 {
     if (m_minFrequency == mf) return;
 
-    m_mutex.lock();
     invalidatePixmapCaches();
     
     m_minFrequency = mf;
-    
-    m_mutex.unlock();
 
     emit layerParametersChanged();
 }
@@ -741,13 +733,10 @@ SpectrogramLayer::setMaxFrequency(size_t mf)
 {
     if (m_maxFrequency == mf) return;
 
-    m_mutex.lock();
     invalidatePixmapCaches();
     
     m_maxFrequency = mf;
     
-    m_mutex.unlock();
-
     emit layerParametersChanged();
 }
 
@@ -760,7 +749,6 @@ SpectrogramLayer::getMaxFrequency() const
 void
 SpectrogramLayer::setColourRotation(int r)
 {
-    m_mutex.lock();
     invalidatePixmapCaches();
 
     if (r < 0) r = 0;
@@ -772,8 +760,6 @@ SpectrogramLayer::setColourRotation(int r)
 	m_colourRotation = r;
     }
     
-    m_mutex.unlock();
-
     emit layerParametersChanged();
 }
 
@@ -782,14 +768,10 @@ SpectrogramLayer::setColourScale(ColourScale colourScale)
 {
     if (m_colourScale == colourScale) return;
 
-    m_mutex.lock();
     invalidatePixmapCaches();
     
     m_colourScale = colourScale;
     
-    m_mutex.unlock();
-    fillCache();
-
     emit layerParametersChanged();
 }
 
@@ -804,13 +786,10 @@ SpectrogramLayer::setColourScheme(ColourScheme scheme)
 {
     if (m_colourScheme == scheme) return;
 
-    m_mutex.lock();
     invalidatePixmapCaches();
     
     m_colourScheme = scheme;
     setColourmap();
-
-    m_mutex.unlock();
 
     emit layerParametersChanged();
 }
@@ -826,13 +805,8 @@ SpectrogramLayer::setFrequencyScale(FrequencyScale frequencyScale)
 {
     if (m_frequencyScale == frequencyScale) return;
 
-    m_mutex.lock();
-
     invalidatePixmapCaches();
-    
     m_frequencyScale = frequencyScale;
-    
-    m_mutex.unlock();
 
     emit layerParametersChanged();
 }
@@ -848,15 +822,8 @@ SpectrogramLayer::setBinDisplay(BinDisplay binDisplay)
 {
     if (m_binDisplay == binDisplay) return;
 
-    m_mutex.lock();
-
     invalidatePixmapCaches();
-    
     m_binDisplay = binDisplay;
-    
-    m_mutex.unlock();
-
-    fillCache();
 
     emit layerParametersChanged();
 }
@@ -871,13 +838,10 @@ void
 SpectrogramLayer::setNormalizeColumns(bool n)
 {
     if (m_normalizeColumns == n) return;
-    m_mutex.lock();
 
     invalidatePixmapCaches();
     m_normalizeColumns = n;
-    m_mutex.unlock();
 
-    fillCache();
     emit layerParametersChanged();
 }
 
@@ -890,18 +854,12 @@ SpectrogramLayer::getNormalizeColumns() const
 void
 SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 {
-    QMutexLocker locker(&m_mutex);
-
     if (dormant == m_dormancy[v]) return;
 
     if (dormant) {
 
 	m_dormancy[v] = true;
 
-//	delete m_cache;
-//	m_cache = 0;
-	
-	m_cacheInvalid = true;
 	invalidatePixmapCaches();
         m_pixmapCaches.erase(v);
 	
@@ -914,9 +872,7 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 void
 SpectrogramLayer::cacheInvalid()
 {
-    m_cacheInvalid = true;
     invalidatePixmapCaches();
-    fillCache();
 }
 
 void
@@ -927,34 +883,11 @@ SpectrogramLayer::cacheInvalid(size_t, size_t)
 }
 
 void
-SpectrogramLayer::fillCache()
-{
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-    std::cerr << "SpectrogramLayer::fillCache" << std::endl;
-#endif
-    QMutexLocker locker(&m_mutex);
-
-    m_lastFillExtent = 0;
-
-    delete m_updateTimer;
-    m_updateTimer = new QTimer(this);
-    connect(m_updateTimer, SIGNAL(timeout()), this, SLOT(fillTimerTimedOut()));
-    m_updateTimer->start(200);
-
-    if (!m_fillThread) {
-	std::cerr << "SpectrogramLayer::fillCache creating thread" << std::endl;
-	m_fillThread = new CacheFillThread(*this);
-	m_fillThread->start();
-    }
-
-    m_condition.wakeAll();
-}   
-
-void
 SpectrogramLayer::fillTimerTimedOut()
 {
-    if (m_fillThread && m_model) {
-	size_t fillExtent = m_fillThread->getFillExtent();
+    if (m_fftServer && m_model) {
+
+	size_t fillExtent = m_fftServer->getFillExtent();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
 	std::cerr << "SpectrogramLayer::fillTimerTimedOut: extent " << fillExtent << ", last " << m_lastFillExtent << ", total " << m_model->getEndFrame() << std::endl;
 #endif
@@ -978,16 +911,12 @@ SpectrogramLayer::fillTimerTimedOut()
 		m_lastFillExtent = fillExtent;
 	    }
 	} else {
-//	    if (v) {
-		size_t sf = 0;
-//!!!		if (v->getStartFrame() > 0) sf = v->getStartFrame();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-		std::cerr << "SpectrogramLayer: going backwards, emitting modelChanged("
-			  << sf << "," << m_model->getEndFrame() << ")" << std::endl;
+            std::cerr << "SpectrogramLayer: going backwards, emitting modelChanged("
+                      << m_model->getStartFrame() << "," << m_model->getEndFrame() << ")" << std::endl;
 #endif
-		invalidatePixmapCaches();
-		emit modelChanged(sf, m_model->getEndFrame());
-//	    }
+            invalidatePixmapCaches();
+            emit modelChanged(m_model->getStartFrame(), m_model->getEndFrame());
 	    m_lastFillExtent = fillExtent;
 	}
     }
@@ -1072,7 +1001,7 @@ SpectrogramLayer::setColourmap()
 void
 SpectrogramLayer::rotateColourmap(int distance)
 {
-    if (!m_cache) return;
+    if (!m_fftServer) return;
 
     QColor newPixels[256];
 
@@ -1130,89 +1059,6 @@ SpectrogramLayer::calculateFrequency(size_t bin,
 
     steadyState = false;
     return frequency;
-}
-
-void
-SpectrogramLayer::fillCacheColumn(int column,
-                                  fftsample *input,
-				  fftwf_complex *output,
-				  fftwf_plan plan, 
-				  size_t windowSize,
-                                  size_t fftSize,
-				  size_t increment,
-                                  float *workbuffer,
-				  const Window<fftsample> &windower) const
-{
-    //!!! we _do_ need a lock for these references to the model
-    // though, don't we?
-
-    int startFrame = increment * column;
-    int endFrame = startFrame + windowSize;
-
-    startFrame -= int(windowSize - increment) / 2;
-    endFrame   -= int(windowSize - increment) / 2;
-    size_t pfx = 0;
-
-    size_t off = (m_fftSize - m_windowSize) / 2;
-
-    for (size_t i = 0; i < off; ++i) {
-        input[i] = 0.0;
-        input[m_fftSize - i - 1] = 0.0;
-    }
-
-    if (startFrame < 0) {
-	pfx = size_t(-startFrame);
-	for (size_t i = 0; i < pfx; ++i) {
-	    input[off + i] = 0.0;
-	}
-    }
-
-    size_t got = m_model->getValues(m_channel, startFrame + pfx,
-				    endFrame, input + off + pfx);
-
-    while (got + pfx < windowSize) {
-	input[off + got + pfx] = 0.0;
-	++got;
-    }
-
-    if (m_channel == -1) {
-	int channels = m_model->getChannelCount();
-	if (channels > 1) {
-	    for (size_t i = 0; i < windowSize; ++i) {
-		input[off + i] /= channels;
-	    }
-	}
-    }
-
-    windower.cut(input + off);
-
-    for (size_t i = 0; i < fftSize/2; ++i) {
-	fftsample temp = input[i];
-	input[i] = input[i + fftSize/2];
-	input[i + fftSize/2] = temp;
-    }
-
-    fftwf_execute(plan);
-
-    fftsample factor = 0.0;
-
-    for (size_t i = 0; i < fftSize/2; ++i) {
-
-	fftsample mag = sqrtf(output[i][0] * output[i][0] +
-                              output[i][1] * output[i][1]);
-	mag /= windowSize / 2;
-
-	if (mag > factor) factor = mag;
-
-	fftsample phase = atan2f(output[i][1], output[i][0]);
-	phase = princargf(phase);
-
-        workbuffer[i] = mag;
-        workbuffer[i + fftSize/2] = phase;
-    }
-
-    m_writeCache->setColumnAt(column, workbuffer,
-                              workbuffer + fftSize/2, factor);
 }
 
 unsigned char
@@ -1282,208 +1128,6 @@ SpectrogramLayer::getInputForDisplayValue(unsigned char uc) const
     }
 
     return input;
-}
-
-void
-SpectrogramLayer::CacheFillThread::run()
-{
-//    std::cerr << "SpectrogramLayer::CacheFillThread::run" << std::endl;
-
-    m_layer.m_mutex.lock();
-
-    while (!m_layer.m_exiting) {
-
-	bool interrupted = false;
-
-//	std::cerr << "SpectrogramLayer::CacheFillThread::run in loop" << std::endl;
-
-	bool haveUndormantViews = false;
-
-	for (std::map<const void *, bool>::iterator i =
-		 m_layer.m_dormancy.begin();
-	     i != m_layer.m_dormancy.end(); ++i) {
-
-	    if (!i->second) {
-		haveUndormantViews = true;
-		break;
-	    }
-	}
-
-	if (!haveUndormantViews) {
-
-	    if (m_layer.m_cacheInvalid && m_layer.m_cache) {
-		std::cerr << "All views dormant, freeing spectrogram cache"
-			  << std::endl;
-	
-		delete m_layer.m_cache;
-		m_layer.m_cache = 0;
-	    }
-
-	} else if (m_layer.m_model && m_layer.m_cacheInvalid) {
-
-//	    std::cerr << "SpectrogramLayer::CacheFillThread::run: something to do" << std::endl;
-
-	    while (!m_layer.m_model->isReady()) {
-		m_layer.m_condition.wait(&m_layer.m_mutex, 100);
-		if (m_layer.m_exiting) break;
-	    }
-
-	    if (m_layer.m_exiting) break;
-
-	    m_layer.m_cacheInvalid = false;
-	    m_fillExtent = 0;
-	    m_fillCompletion = 0;
-
-	//    std::cerr << "SpectrogramLayer::CacheFillThread::run: model is ready" << std::endl;
-
-	    size_t start = m_layer.m_model->getStartFrame();
-	    size_t end = m_layer.m_model->getEndFrame();
-
-	//    std::cerr << "start = " << start << ", end = " << end << std::endl;
-
-	    WindowType windowType = m_layer.m_windowType;
-	    size_t windowSize = m_layer.m_windowSize;
-	    size_t windowIncrement = m_layer.getWindowIncrement();
-            size_t fftSize = m_layer.m_fftSize;
-
-        //    std::cerr << "\nWINDOW INCREMENT: " << windowIncrement << " (for hop level " << m_layer.m_windowHopLevel << ")\n" << std::endl;
-
-	    size_t visibleStart = m_layer.m_candidateFillStartFrame;
-	    visibleStart = (visibleStart / windowIncrement) * windowIncrement;
-
-	    size_t width = (end - start) / windowIncrement + 1;
-	    size_t height = fftSize / 2;
-
-//!!!	    if (!m_layer.m_cache) {
-//		m_layer.m_cache = new FFTMemoryCache;
-//	    }
-            if (!m_layer.m_writeCache) {
-                m_layer.m_writeCache = new FFTFileCache
-                    (QString("%1").arg(getObjectExportId(&m_layer)),
-                     MatrixFile::ReadWrite, true);
-            }
-	    m_layer.m_writeCache->resize(width, height);
-            if (m_layer.m_cache) delete m_layer.m_cache;
-            m_layer.m_cache = new FFTFileCache
-                (QString("%1").arg(getObjectExportId(&m_layer)),
-                 MatrixFile::ReadOnly, true);
-
-	    m_layer.setColourmap();
-//!!!	    m_layer.m_writeCache->reset();
-
-	    fftsample *input = (fftsample *)
-		fftwf_malloc(fftSize * sizeof(fftsample));
-
-	    fftwf_complex *output = (fftwf_complex *)
-		fftwf_malloc(fftSize * sizeof(fftwf_complex));
-
-            float *workbuffer = (float *)
-                fftwf_malloc(fftSize * sizeof(float));
-
-	    fftwf_plan plan = fftwf_plan_dft_r2c_1d(fftSize, input,
-                                                    output, FFTW_ESTIMATE);
-
-	    if (!plan) {
-		std::cerr << "WARNING: fftwf_plan_dft_r2c_1d(" << windowSize << ") failed!" << std::endl;
-		fftwf_free(input);
-		fftwf_free(output);
-                fftwf_free(workbuffer);
-		continue;
-	    }
-
-	    // We don't need a lock when writing to or reading from
-	    // the pixels in the cache.  We do need to ensure we have
-	    // the width and height of the cache and the FFT
-	    // parameters known before we unlock, in case they change
-	    // in the model while we aren't holding a lock.  It's safe
-	    // for us to continue to use the "old" values if that
-	    // happens, because they will continue to match the
-	    // dimensions of the actual cache (which this thread
-	    // manages, not the layer's).
-	    m_layer.m_mutex.unlock();
-
-	    Window<fftsample> windower(windowType, windowSize);
-
-	    int counter = 0;
-	    int updateAt = (end / windowIncrement) / 20;
-	    if (updateAt < 100) updateAt = 100;
-
-	    bool doVisibleFirst = (visibleStart != start);
-
-	    if (doVisibleFirst) {
-
-		for (size_t f = visibleStart; f < end; f += windowIncrement) {
-	    
-		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
-					    input, output, plan,
-					    windowSize, fftSize,
-                                            windowIncrement,
-                                            workbuffer, windower);
-
-		    if (m_layer.m_cacheInvalid || m_layer.m_exiting) {
-			interrupted = true;
-			m_fillExtent = 0;
-			break;
-		    }
-
-		    if (++counter == updateAt) {
-			m_fillExtent = f;
-			m_fillCompletion = size_t(100 * fabsf(float(f - visibleStart) /
-							      float(end - start)));
-			counter = 0;
-		    }
-		}
-	    }
-
-	    if (!interrupted) {
-
-		size_t remainingEnd = end;
-		if (doVisibleFirst) {
-		    remainingEnd = visibleStart;
-		    if (remainingEnd > start) --remainingEnd;
-		    else remainingEnd = start;
-		}
-		size_t baseCompletion = m_fillCompletion;
-
-		for (size_t f = start; f < remainingEnd; f += windowIncrement) {
-
-		    m_layer.fillCacheColumn(int((f - start) / windowIncrement),
-					    input, output, plan,
-					    windowSize, fftSize,
-                                            windowIncrement,
-					    workbuffer, windower);
-
-		    if (m_layer.m_cacheInvalid || m_layer.m_exiting) {
-			interrupted = true;
-			m_fillExtent = 0;
-			break;
-		    }
-		    
-		    if (++counter == updateAt) {
-			m_fillExtent = f;
-			m_fillCompletion = baseCompletion +
-			    size_t(100 * fabsf(float(f - start) /
-					       float(end - start)));
-			counter = 0;
-		    }
-		}
-	    }
-
-	    fftwf_destroy_plan(plan);
-	    fftwf_free(output);
-	    fftwf_free(input);
-            fftwf_free(workbuffer);
-
-	    if (!interrupted) {
-		m_fillExtent = end;
-		m_fillCompletion = 100;
-	    }
-
-	    m_layer.m_mutex.lock();
-	}
-
-	if (!interrupted) m_layer.m_condition.wait(&m_layer.m_mutex, 2000);
-    }
 }
 
 float
@@ -1615,6 +1259,8 @@ SpectrogramLayer::getAdjustedYBinSourceRange(View *v, int x, int y,
 					     float &adjFreqMin, float &adjFreqMax)
 const
 {
+    if (!m_fftServer) return false;
+
     float s0 = 0, s1 = 0;
     if (!getXBinRange(v, x, s0, s1)) return false;
 
@@ -1645,23 +1291,21 @@ const
 	    if (q == q0i) freqMin = binfreq;
 	    if (q == q1i) freqMax = binfreq;
 
-	    if (!m_cache || m_cacheInvalid) break; //!!! lock?
+	    if (peaksOnly && !m_fftServer->isLocalPeak(s, q)) continue;
 
-	    if (peaksOnly && !m_cache->isLocalPeak(s, q)) continue;
-
-	    if (!m_cache->isOverThreshold(s, q, m_threshold)) continue;
+	    if (!m_fftServer->isOverThreshold(s, q, m_threshold)) continue;
 
 	    float freq = binfreq;
 	    bool steady = false;
 	    
-	    if (s < int(m_cache->getWidth()) - 1) {
+	    if (s < int(m_fftServer->getWidth()) - 1) {
 
 		freq = calculateFrequency(q, 
 					  windowSize,
 					  windowIncrement,
 					  sr, 
-					  m_cache->getPhaseAt(s, q),
-					  m_cache->getPhaseAt(s+1, q),
+					  m_fftServer->getPhaseAt(s, q),
+					  m_fftServer->getPhaseAt(s+1, q),
 					  steady);
 	    
 		if (!haveAdj || freq < adjFreqMin) adjFreqMin = freq;
@@ -1698,45 +1342,39 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 
     bool rv = false;
 
-    if (m_mutex.tryLock()) {
-	if (m_cache && !m_cacheInvalid) {
+    if (m_fftServer) {
 
-	    int cw = m_cache->getWidth();
-	    int ch = m_cache->getHeight();
+        int cw = m_fftServer->getWidth();
+        int ch = m_fftServer->getHeight();
 
-	    min = 0.0;
-	    max = 0.0;
-	    phaseMin = 0.0;
-	    phaseMax = 0.0;
-	    bool have = false;
+        min = 0.0;
+        max = 0.0;
+        phaseMin = 0.0;
+        phaseMax = 0.0;
+        bool have = false;
 
-	    for (int q = q0i; q <= q1i; ++q) {
-		for (int s = s0i; s <= s1i; ++s) {
-		    if (s >= 0 && q >= 0 && s < cw && q < ch) {
+        for (int q = q0i; q <= q1i; ++q) {
+            for (int s = s0i; s <= s1i; ++s) {
+                if (s >= 0 && q >= 0 && s < cw && q < ch) {
+                    
+                    float value;
 
-                        if (!m_cache->haveSetColumnAt(s)) continue;
+                    value = m_fftServer->getPhaseAt(s, q);
+                    if (!have || value < phaseMin) { phaseMin = value; }
+                    if (!have || value > phaseMax) { phaseMax = value; }
 
-			float value;
-
-			value = m_cache->getPhaseAt(s, q);
-			if (!have || value < phaseMin) { phaseMin = value; }
-			if (!have || value > phaseMax) { phaseMax = value; }
-
-			value = m_cache->getMagnitudeAt(s, q);
-			if (!have || value < min) { min = value; }
-			if (!have || value > max) { max = value; }
-
-			have = true;
-		    }	
-		}
-	    }
-
-	    if (have) {
-		rv = true;
-	    }
-	}
-
-	m_mutex.unlock();
+                    value = m_fftServer->getMagnitudeAt(s, q);
+                    if (!have || value < min) { min = value; }
+                    if (!have || value > max) { max = value; }
+                    
+                    have = true;
+                }	
+            }
+        }
+        
+        if (have) {
+            rv = true;
+        }
     }
 
     return rv;
@@ -1776,20 +1414,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     // in the cache-fill thread above.
     m_dormancy[v] = false;
 
+    if (!m_fftServer) { // lock the mutex before checking this
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-//    std::cerr << "SpectrogramLayer::paint(): About to lock" << std::endl;
-#endif
-
-    m_mutex.lock();
-
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-//    std::cerr << "SpectrogramLayer::paint(): locked" << std::endl;
-#endif
-
-    if (m_cacheInvalid) { // lock the mutex before checking this
-	m_mutex.unlock();
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-	std::cerr << "SpectrogramLayer::paint(): Cache invalid, returning" << std::endl;
+	std::cerr << "SpectrogramLayer::paint(): No FFT server, returning" << std::endl;
 #endif
 	return;
     }
@@ -1836,7 +1463,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		std::cerr << "SpectrogramLayer: pixmap cache good" << std::endl;
 #endif
 
-		m_mutex.unlock();
 		paint.drawPixmap(rect, cache.pixmap, rect);
 		return;
 
@@ -2024,24 +1650,12 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
-    m_mutex.unlock();
-
     for (size_t q = minbin; q <= bins; ++q) {
         float f0 = (float(q) * sr) / m_fftSize;
         yval[q] = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
     }
 
-    m_mutex.lock();
-
     for (int x = 0; x < w; ++x) {
-
-        if (x % 10 == 0) {
-            m_mutex.unlock();
-            m_mutex.lock();
-            if (m_cacheInvalid) {
-                break;
-            }
-        }
 
 	for (int y = 0; y < h; ++y) {
 	    ymag[y] = 0.0;
@@ -2058,8 +1672,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int s0i = int(s0 + 0.001);
 	int s1i = int(s1);
 
-	if (s1i >= m_cache->getWidth()) {
-	    if (s0i >= m_cache->getWidth()) {
+	if (s1i >= m_fftServer->getWidth()) {
+	    if (s0i >= m_fftServer->getWidth()) {
 		continue;
 	    } else {
 		s1i = s0i;
@@ -2068,7 +1682,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         for (int s = s0i; s <= s1i; ++s) {
 
-            if (!m_cache->haveSetColumnAt(s)) continue;
+//            if (!m_fftServer->haveSetColumnAt(s)) continue;
 
             for (size_t q = minbin; q < bins; ++q) {
 
@@ -2077,25 +1691,25 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 		if (m_binDisplay == PeakBins ||
 		    m_binDisplay == PeakFrequencies) {
-		    if (!m_cache->isLocalPeak(s, q)) continue;
+		    if (!m_fftServer->isLocalPeak(s, q)) continue;
 		}
 		
-		if (!m_cache->isOverThreshold(s, q, m_threshold)) continue;
+		if (!m_fftServer->isOverThreshold(s, q, m_threshold)) continue;
 
 		float sprop = 1.0;
 		if (s == s0i) sprop *= (s + 1) - s0;
 		if (s == s1i) sprop *= s1 - s;
  
 		if (m_binDisplay == PeakFrequencies &&
-		    s < int(m_cache->getWidth()) - 1) {
+		    s < int(m_fftServer->getWidth()) - 1) {
 
 		    bool steady = false;
                     float f = calculateFrequency(q,
 						 m_windowSize,
 						 increment,
 						 sr,
-						 m_cache->getPhaseAt(s, q),
-						 m_cache->getPhaseAt(s+1, q),
+						 m_fftServer->getPhaseAt(s, q),
+						 m_fftServer->getPhaseAt(s+1, q),
 						 steady);
 
 		    y0 = y1 = v->getYForFrequency
@@ -2108,11 +1722,11 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 float value;
                 
                 if (m_colourScale == PhaseColourScale) {
-                    value = m_cache->getPhaseAt(s, q);
+                    value = m_fftServer->getPhaseAt(s, q);
                 } else if (m_normalizeColumns) {
-                    value = m_cache->getNormalizedMagnitudeAt(s, q) * m_gain;
+                    value = m_fftServer->getNormalizedMagnitudeAt(s, q) * m_gain;
                 } else {
-                    value = m_cache->getMagnitudeAt(s, q) * m_gain;
+                    value = m_fftServer->getMagnitudeAt(s, q) * m_gain;
                 }
 
 		for (int y = y0i; y <= y1i; ++y) {
@@ -2145,8 +1759,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
     }
 
-    m_mutex.unlock();
-
     paint.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
 
     if (recreateWholePixmapCache) {
@@ -2157,7 +1769,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     cachePainter.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
     cachePainter.end();
     
-//    m_pixmapCacheInvalid = false;
     cache.startFrame = startFrame;
     cache.zoomLevel = zoomLevel;
 
@@ -2211,8 +1822,8 @@ SpectrogramLayer::getFrequencyForY(View *v, int y) const
 int
 SpectrogramLayer::getCompletion() const
 {
-    if (m_updateTimer == 0) return 100;
-    size_t completion = m_fillThread->getFillCompletion();
+    if (m_updateTimer == 0 || !m_fftServer) return 100;
+    size_t completion = m_fftServer->getFillCompletion();
 //    std::cerr << "SpectrogramLayer::getCompletion: completion = " << completion << std::endl;
     return completion;
 }
@@ -2495,7 +2106,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
     int textHeight = paint.fontMetrics().height();
     int toff = -textHeight + paint.fontMetrics().ascent() + 2;
 
-    if (m_cache && !m_cacheInvalid && h > textHeight * 2 + 10) { //!!! lock?
+    if (m_fftServer && h > textHeight * 2 + 10) {
 
 	int ch = h - textHeight * 2 - 8;
 	paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
@@ -2588,7 +2199,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
 	paint.drawLine(w - pkw - 1, 0, w - pkw - 1, h);
 
-	int sr = m_model->getSampleRate();//!!! lock?
+	int sr = m_model->getSampleRate();
 	float minf = getEffectiveMinFrequency();
 	float maxf = getEffectiveMaxFrequency();
 
