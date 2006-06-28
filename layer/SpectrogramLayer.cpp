@@ -166,7 +166,7 @@ SpectrogramLayer::getProperties() const
     list.push_back("Min Frequency");
     list.push_back("Max Frequency");
     list.push_back("Frequency Scale");
-    list.push_back("Zero Padding");
+//    list.push_back("Zero Padding");
     return list;
 }
 
@@ -1631,7 +1631,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	bins = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
 	if (bins > m_fftSize / 2) bins = m_fftSize / 2;
     }
-	
+
     size_t minbin = 1;
     if (m_minFrequency > 0) {
 	minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.1);
@@ -1639,6 +1639,19 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	if (minbin >= bins) minbin = bins - 1;
     }
 
+    //!!! quite wrong and won't work for layers that may be in more than one view
+    if (v->height() > (bins - minbin) / (m_zeroPadLevel + 1)) {
+        if (m_zeroPadLevel != 3) {
+            ((SpectrogramLayer *)this)->setZeroPadLevel(3);
+            return;
+        }
+    } else {
+        if (m_zeroPadLevel != 0) {
+            ((SpectrogramLayer *)this)->setZeroPadLevel(0);
+            return;
+        }
+    }
+	
     float minFreq = (float(minbin) * sr) / m_fftSize;
     float maxFreq = (float(bins) * sr) / m_fftSize;
 
