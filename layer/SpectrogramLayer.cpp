@@ -56,7 +56,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
     m_fftServer(0),
-//    m_fftServerChanged(true),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
     m_lastFillExtent(0),
@@ -177,7 +176,7 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Colour Scale") return tr("Colour Scale");
     if (name == "Window Type") return tr("Window Type");
     if (name == "Window Size") return tr("Window Size");
-    if (name == "Window Increment") return tr("Window Increment");
+    if (name == "Window Increment") return tr("Window Overlap");
     if (name == "Normalize Columns") return tr("Normalize Columns");
     if (name == "Bin Display") return tr("Bin Display");
     if (name == "Threshold") return tr("Threshold");
@@ -403,12 +402,12 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == "Window Increment") {
 	switch (value) {
 	default:
-	case 0: return tr("1/1");
-	case 1: return tr("3/4");
-	case 2: return tr("1/2");
-	case 3: return tr("1/4");
-	case 4: return tr("1/8");
-	case 5: return tr("1/16");
+	case 0: return tr("None");
+	case 1: return tr("25 %");
+	case 2: return tr("50 %");
+	case 3: return tr("75 %");
+	case 4: return tr("87.5 %");
+	case 5: return tr("93.75 %");
 	}
     }
     if (name == "Zero Padding") {
