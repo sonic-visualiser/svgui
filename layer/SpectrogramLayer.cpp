@@ -122,22 +122,20 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 void
 SpectrogramLayer::getFFTServer()
 {
-    //!!! really want to check that params differ from previous ones
-
     if (m_fftServer) {
         FFTDataServer::releaseInstance(m_fftServer);
         m_fftServer = 0;
     }
 
     if (m_model) {
-        m_fftServer = FFTDataServer::getInstance(m_model,
-                                                 m_channel,
-                                                 m_windowType,
-                                                 m_windowSize,
-                                                 getWindowIncrement(),
-                                                 m_fftSize,
-                                                 true,
-                                                 m_candidateFillStartFrame);
+        m_fftServer = FFTDataServer::getFuzzyInstance(m_model,
+                                                      m_channel,
+                                                      m_windowType,
+                                                      m_windowSize,
+                                                      getWindowIncrement(),
+                                                      m_fftSize,
+                                                      true,
+                                                      m_candidateFillStartFrame);
 
         m_lastFillExtent = 0;
 
@@ -1290,21 +1288,21 @@ const
 	    if (q == q0i) freqMin = binfreq;
 	    if (q == q1i) freqMax = binfreq;
 
-	    if (peaksOnly && !m_fftServer->isLocalPeak(s, q)) continue;
+	    if (peaksOnly && !isFFTLocalPeak(s, q)) continue;
 
-	    if (!m_fftServer->isOverThreshold(s, q, m_threshold)) continue;
+	    if (!isFFTOverThreshold(s, q, m_threshold)) continue;
 
 	    float freq = binfreq;
 	    bool steady = false;
 	    
-	    if (s < int(m_fftServer->getWidth()) - 1) {
+	    if (s < int(getFFTWidth()) - 1) {
 
 		freq = calculateFrequency(q, 
 					  windowSize,
 					  windowIncrement,
 					  sr, 
-					  m_fftServer->getPhaseAt(s, q),
-					  m_fftServer->getPhaseAt(s+1, q),
+					  getFFTPhaseAt(s, q),
+					  getFFTPhaseAt(s+1, q),
 					  steady);
 	    
 		if (!haveAdj || freq < adjFreqMin) adjFreqMin = freq;
@@ -1343,8 +1341,8 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 
     if (m_fftServer) {
 
-        int cw = m_fftServer->getWidth();
-        int ch = m_fftServer->getHeight();
+        int cw = getFFTWidth();
+        int ch = getFFTHeight();
 
         min = 0.0;
         max = 0.0;
@@ -1358,11 +1356,11 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
                     
                     float value;
 
-                    value = m_fftServer->getPhaseAt(s, q);
+                    value = getFFTPhaseAt(s, q);
                     if (!have || value < phaseMin) { phaseMin = value; }
                     if (!have || value > phaseMax) { phaseMax = value; }
 
-                    value = m_fftServer->getMagnitudeAt(s, q);
+                    value = getFFTMagnitudeAt(s, q);
                     if (!have || value < min) { min = value; }
                     if (!have || value > max) { max = value; }
                     
@@ -1639,8 +1637,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     }
 
     //!!! quite wrong and won't work for layers that may be in more than one view
-    if (v->height() > (bins - minbin) / (m_zeroPadLevel + 1)) {
+    if (v->height() / 1.5 > (bins - minbin) / (m_zeroPadLevel + 1)) {
         if (m_zeroPadLevel != 3) {
+            std::cerr << v->height()/1.5 << " > " << ((bins - minbin) / (m_zeroPadLevel + 1)) << ": switching to smoothed display" << std::endl;
             ((SpectrogramLayer *)this)->setZeroPadLevel(3);
             return;
         }
@@ -1684,8 +1683,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int s0i = int(s0 + 0.001);
 	int s1i = int(s1);
 
-	if (s1i >= m_fftServer->getWidth()) {
-	    if (s0i >= m_fftServer->getWidth()) {
+	if (s1i >= getFFTWidth()) {
+	    if (s0i >= getFFTWidth()) {
 		continue;
 	    } else {
 		s1i = s0i;
@@ -1694,7 +1693,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         for (int s = s0i; s <= s1i; ++s) {
 
-//            if (!m_fftServer->haveSetColumnAt(s)) continue;
+            if (!isFFTColumnReady(s)) continue;
 
             for (size_t q = minbin; q < bins; ++q) {
 
@@ -1703,25 +1702,25 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 		if (m_binDisplay == PeakBins ||
 		    m_binDisplay == PeakFrequencies) {
-		    if (!m_fftServer->isLocalPeak(s, q)) continue;
+		    if (!isFFTLocalPeak(s, q)) continue;
 		}
 		
-		if (!m_fftServer->isOverThreshold(s, q, m_threshold)) continue;
+		if (!isFFTOverThreshold(s, q, m_threshold)) continue;
 
 		float sprop = 1.0;
 		if (s == s0i) sprop *= (s + 1) - s0;
 		if (s == s1i) sprop *= s1 - s;
  
 		if (m_binDisplay == PeakFrequencies &&
-		    s < int(m_fftServer->getWidth()) - 1) {
+		    s < int(getFFTWidth()) - 1) {
 
 		    bool steady = false;
                     float f = calculateFrequency(q,
 						 m_windowSize,
 						 increment,
 						 sr,
-						 m_fftServer->getPhaseAt(s, q),
-						 m_fftServer->getPhaseAt(s+1, q),
+						 getFFTPhaseAt(s, q),
+						 getFFTPhaseAt(s+1, q),
 						 steady);
 
 		    y0 = y1 = v->getYForFrequency
@@ -1734,11 +1733,11 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 float value;
                 
                 if (m_colourScale == PhaseColourScale) {
-                    value = m_fftServer->getPhaseAt(s, q);
+                    value = getFFTPhaseAt(s, q);
                 } else if (m_normalizeColumns) {
-                    value = m_fftServer->getNormalizedMagnitudeAt(s, q) * m_gain;
+                    value = getFFTNormalizedMagnitudeAt(s, q) * m_gain;
                 } else {
-                    value = m_fftServer->getMagnitudeAt(s, q) * m_gain;
+                    value = getFFTMagnitudeAt(s, q) * m_gain;
                 }
 
 		for (int y = y0i; y <= y1i; ++y) {
