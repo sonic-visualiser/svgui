@@ -22,6 +22,7 @@
 #include "base/Thread.h"
 #include "model/PowerOfSqrtTwoZoomConstraint.h"
 #include "model/DenseTimeValueModel.h"
+#include "fileio/FFTDataServer.h"
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -33,7 +34,6 @@ class QPainter;
 class QImage;
 class QPixmap;
 class QTimer;
-class FFTDataServer;
 
 /**
  * SpectrogramLayer represents waveform data (obtained from a
@@ -307,6 +307,40 @@ protected:
         if (m_windowHopLevel == 0) return m_windowSize;
         else if (m_windowHopLevel == 1) return (m_windowSize * 3) / 4;
         else return m_windowSize / (1 << (m_windowHopLevel - 1));
+    }
+
+    size_t getFFTWidth() const {
+        return m_fftServer->getWidth(getWindowIncrement(), m_fftSize);
+    }
+    size_t getFFTHeight() const {
+        return m_fftServer->getHeight(getWindowIncrement(), m_fftSize);
+    }
+    float getFFTMagnitudeAt(size_t x, size_t y) const {
+        return m_fftServer->getMagnitudeAt(getWindowIncrement(), m_fftSize,
+                                              x, y);
+    }
+    float getFFTNormalizedMagnitudeAt(size_t x, size_t y) const {
+        return m_fftServer->getNormalizedMagnitudeAt(getWindowIncrement(), m_fftSize,
+                                                     x, y);
+    }
+    float getFFTPhaseAt(size_t x, size_t y) const {
+        return m_fftServer->getPhaseAt(getWindowIncrement(), m_fftSize,
+                                       x, y);
+    }
+    void getFFTValuesAt(size_t x, size_t y, float &real, float &imag) const {
+        m_fftServer->getValuesAt(getWindowIncrement(), m_fftSize,
+                                 x, y, real, imag);
+    }
+    bool isFFTLocalPeak(size_t x, size_t y) const {
+        return m_fftServer->isLocalPeak(getWindowIncrement(), m_fftSize,
+                                        x, y);
+    }
+    bool isFFTOverThreshold(size_t x, size_t y, float threshold) const {
+        return m_fftServer->isOverThreshold(getWindowIncrement(), m_fftSize,
+                                            x, y, threshold);
+    }
+    bool isFFTColumnReady(size_t x) const {
+        return m_fftServer->isColumnReady(getWindowIncrement(), m_fftSize, x);
     }
 };
 
