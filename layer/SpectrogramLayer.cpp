@@ -55,7 +55,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_frequencyScale(LinearFrequencyScale),
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
-    m_fftServer(0),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
     m_lastFillExtent(0),
@@ -87,10 +86,7 @@ SpectrogramLayer::~SpectrogramLayer()
     delete m_updateTimer;
     m_updateTimer = 0;
     
-    if (m_fftServer) {
-        FFTDataServer::releaseInstance(m_fftServer);
-        m_fftServer = 0;
-    }
+    invalidateFFTAdapters();
 }
 
 void
@@ -101,7 +97,7 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     if (model == m_model) return;
 
     m_model = model;
-    getFFTServer();
+    invalidateFFTAdapters();
 
     if (!m_model || !m_model->isOK()) return;
 
@@ -118,17 +114,21 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 
     emit modelReplaced();
 }
-
+/*!!!
 void
-SpectrogramLayer::getFFTServer()
+SpectrogramLayer::invalidateFFTAdapters()
 {
-    if (m_fftServer) {
-        FFTDataServer::releaseInstance(m_fftServer);
-        m_fftServer = 0;
-    }
+//    if (m_fftServer) {
+//        FFTDataServer::releaseInstance(m_fftServer);
+//        m_fftServer = 0;
+//    }
+
+    delete m_fftServer;
+    m_fftServer = 0;
 
     if (m_model) {
-        m_fftServer = FFTDataServer::getFuzzyInstance(m_model,
+//        m_fftServer = FFTDataServer::getFuzzyInstance(m_model,
+        m_fftServer = new FFTFuzzyAdapter(m_model,
                                                       m_channel,
                                                       m_windowType,
                                                       m_windowSize,
@@ -145,7 +145,7 @@ SpectrogramLayer::getFFTServer()
         m_updateTimer->start(200);
     }
 }
-
+*/
 Layer::PropertyList
 SpectrogramLayer::getProperties() const
 {
@@ -573,7 +573,7 @@ SpectrogramLayer::setChannel(int ch)
 
     invalidatePixmapCaches();
     m_channel = ch;
-    getFFTServer();
+    invalidateFFTAdapters();
 
     emit layerParametersChanged();
 }
@@ -594,7 +594,7 @@ SpectrogramLayer::setWindowSize(size_t ws)
     m_windowSize = ws;
     m_fftSize = ws * (m_zeroPadLevel + 1);
     
-    getFFTServer();
+    invalidateFFTAdapters();
 
     emit layerParametersChanged();
 }
@@ -614,7 +614,7 @@ SpectrogramLayer::setWindowHopLevel(size_t v)
     
     m_windowHopLevel = v;
     
-    getFFTServer();
+    invalidateFFTAdapters();
 
     emit layerParametersChanged();
 
@@ -637,7 +637,7 @@ SpectrogramLayer::setZeroPadLevel(size_t v)
     m_zeroPadLevel = v;
     m_fftSize = m_windowSize * (v + 1);
 
-    getFFTServer();
+    invalidateFFTAdapters();
 
     emit layerParametersChanged();
 }
@@ -657,7 +657,7 @@ SpectrogramLayer::setWindowType(WindowType w)
     
     m_windowType = w;
 
-    getFFTServer();
+    invalidateFFTAdapters();
 
     emit layerParametersChanged();
 }
@@ -859,6 +859,11 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 
 	invalidatePixmapCaches();
         m_pixmapCaches.erase(v);
+
+        if (m_fftAdapters.find(v) != m_fftAdapters.end()) {
+            delete m_fftAdapters[v];
+            m_fftAdapters.erase(v);
+        }
 	
     } else {
 
@@ -882,6 +887,7 @@ SpectrogramLayer::cacheInvalid(size_t, size_t)
 void
 SpectrogramLayer::fillTimerTimedOut()
 {
+/*!!!
     if (m_fftServer && m_model) {
 
 	size_t fillExtent = m_fftServer->getFillExtent();
@@ -917,6 +923,7 @@ SpectrogramLayer::fillTimerTimedOut()
 	    m_lastFillExtent = fillExtent;
 	}
     }
+*/
 }
 
 void
@@ -998,8 +1005,6 @@ SpectrogramLayer::setColourmap()
 void
 SpectrogramLayer::rotateColourmap(int distance)
 {
-    if (!m_fftServer) return;
-
     QColor newPixels[256];
 
     newPixels[NO_VALUE] = m_colourMap.getColour(NO_VALUE);
@@ -1169,6 +1174,8 @@ SpectrogramLayer::getYBinRange(View *v, int y, float &q0, float &q1) const
 
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
+    //!!! wrong for smoothing -- wrong fft size for fft adapter
+
     q0 = v->getFrequencyForY(y, minf, maxf, logarithmic);
     q1 = v->getFrequencyForY(y - 1, minf, maxf, logarithmic);
 
@@ -1242,6 +1249,8 @@ const
 
     int sr = m_model->getSampleRate();
 
+    //!!! wrong for smoothing -- wrong fft size for fft adapter
+
     for (int q = q0i; q <= q1i; ++q) {
 	int binfreq = (sr * q) / m_fftSize;
 	if (q == q0i) freqMin = binfreq;
@@ -1256,7 +1265,8 @@ SpectrogramLayer::getAdjustedYBinSourceRange(View *v, int x, int y,
 					     float &adjFreqMin, float &adjFreqMax)
 const
 {
-    if (!m_fftServer) return false;
+    FFTFuzzyAdapter *fft = getFFTAdapter(v);
+    if (!fft) return false;
 
     float s0 = 0, s1 = 0;
     if (!getXBinRange(v, x, s0, s1)) return false;
@@ -1288,21 +1298,21 @@ const
 	    if (q == q0i) freqMin = binfreq;
 	    if (q == q1i) freqMax = binfreq;
 
-	    if (peaksOnly && !isFFTLocalPeak(s, q)) continue;
+	    if (peaksOnly && !fft->isLocalPeak(s, q)) continue;
 
-	    if (!isFFTOverThreshold(s, q, m_threshold)) continue;
+	    if (!fft->isOverThreshold(s, q, m_threshold)) continue;
 
 	    float freq = binfreq;
 	    bool steady = false;
 	    
-	    if (s < int(getFFTWidth()) - 1) {
+	    if (s < int(fft->getWidth()) - 1) {
 
 		freq = calculateFrequency(q, 
 					  windowSize,
 					  windowIncrement,
 					  sr, 
-					  getFFTPhaseAt(s, q),
-					  getFFTPhaseAt(s+1, q),
+					  fft->getPhaseAt(s, q),
+					  fft->getPhaseAt(s+1, q),
 					  steady);
 	    
 		if (!haveAdj || freq < adjFreqMin) adjFreqMin = freq;
@@ -1339,10 +1349,12 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 
     bool rv = false;
 
-    if (m_fftServer) {
+    FFTFuzzyAdapter *fft = getFFTAdapter(v);
 
-        int cw = getFFTWidth();
-        int ch = getFFTHeight();
+    if (fft) {
+
+        int cw = fft->getWidth();
+        int ch = fft->getHeight();
 
         min = 0.0;
         max = 0.0;
@@ -1356,11 +1368,11 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
                     
                     float value;
 
-                    value = getFFTPhaseAt(s, q);
+                    value = fft->getPhaseAt(s, q);
                     if (!have || value < phaseMin) { phaseMin = value; }
                     if (!have || value > phaseMax) { phaseMax = value; }
 
-                    value = getFFTMagnitudeAt(s, q);
+                    value = fft->getMagnitudeAt(s, q);
                     if (!have || value < min) { min = value; }
                     if (!have || value > max) { max = value; }
                     
@@ -1377,6 +1389,88 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
     return rv;
 }
    
+size_t
+SpectrogramLayer::getZeroPadLevel(const View *v) const
+{
+    //!!! tidy all this stuff
+
+    if (m_binDisplay != AllBins) return 0;
+    if (m_frequencyScale == LogFrequencyScale) return 3;
+
+    int sr = m_model->getSampleRate();
+    
+    size_t bins = m_fftSize / 2;
+    if (m_maxFrequency > 0) {
+	bins = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
+	if (bins > m_fftSize / 2) bins = m_fftSize / 2;
+    }
+
+    size_t minbin = 1;
+    if (m_minFrequency > 0) {
+	minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.1);
+	if (minbin < 1) minbin = 1;
+	if (minbin >= bins) minbin = bins - 1;
+    }
+
+    if (v->height() / 1.5 > (bins - minbin) / (m_zeroPadLevel + 1)) {
+        return 3;
+    } else {
+        return 0;
+    }
+}
+
+size_t
+SpectrogramLayer::getFFTSize(const View *v) const
+{
+    return m_fftSize * (getZeroPadLevel(v) + 1);
+}
+	
+FFTFuzzyAdapter *
+SpectrogramLayer::getFFTAdapter(const View *v) const
+{
+    if (!m_model) return 0;
+
+    size_t fftSize = getFFTSize(v);
+
+    if (m_fftAdapters.find(v) != m_fftAdapters.end()) {
+        if (m_fftAdapters[v]->getHeight() != fftSize / 2) {
+            delete m_fftAdapters[v];
+            m_fftAdapters.erase(v);
+        }
+    }
+
+    if (m_fftAdapters.find(v) == m_fftAdapters.end()) {
+        m_fftAdapters[v] = new FFTFuzzyAdapter(m_model,
+                                               m_channel,
+                                               m_windowType,
+                                               m_windowSize,
+                                               getWindowIncrement(),
+                                               getFFTSize(v),
+                                               true,
+                                               m_candidateFillStartFrame);
+        m_lastFillExtent = 0;
+        
+        delete m_updateTimer;
+        m_updateTimer = new QTimer((SpectrogramLayer *)this);
+        connect(m_updateTimer, SIGNAL(timeout()),
+                this, SLOT(fillTimerTimedOut()));
+        m_updateTimer->start(200);
+    }
+
+    return m_fftAdapters[v];
+}
+
+void
+SpectrogramLayer::invalidateFFTAdapters()
+{
+    for (ViewFFTMap::iterator i = m_fftAdapters.begin();
+         i != m_fftAdapters.end(); ++i) {
+        delete i->second;
+    }
+    
+    m_fftAdapters.clear();
+}
+
 void
 SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
@@ -1411,10 +1505,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     // in the cache-fill thread above.
     m_dormancy[v] = false;
 
-    if (!m_fftServer) { // lock the mutex before checking this
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-	std::cerr << "SpectrogramLayer::paint(): No FFT server, returning" << std::endl;
-#endif
+    size_t fftSize = getFFTSize(v);
+    FFTFuzzyAdapter *fft = getFFTAdapter(v);
+    if (!fft) {
+	std::cerr << "ERROR: SpectrogramLayer::paint(): No FFT adapter, returning" << std::endl;
 	return;
     }
 
@@ -1623,35 +1717,21 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int sr = m_model->getSampleRate();
     
-    size_t bins = m_fftSize / 2;
+    size_t bins = fftSize / 2;
     if (m_maxFrequency > 0) {
-	bins = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
-	if (bins > m_fftSize / 2) bins = m_fftSize / 2;
+	bins = int((double(m_maxFrequency) * fftSize) / sr + 0.1);
+	if (bins > fftSize / 2) bins = fftSize / 2;
     }
 
     size_t minbin = 1;
     if (m_minFrequency > 0) {
-	minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.1);
+	minbin = int((double(m_minFrequency) * fftSize) / sr + 0.1);
 	if (minbin < 1) minbin = 1;
 	if (minbin >= bins) minbin = bins - 1;
     }
 
-    //!!! quite wrong and won't work for layers that may be in more than one view
-    if (v->height() / 1.5 > (bins - minbin) / (m_zeroPadLevel + 1)) {
-        if (m_zeroPadLevel != 3) {
-            std::cerr << v->height()/1.5 << " > " << ((bins - minbin) / (m_zeroPadLevel + 1)) << ": switching to smoothed display" << std::endl;
-            ((SpectrogramLayer *)this)->setZeroPadLevel(3);
-            return;
-        }
-    } else {
-        if (m_zeroPadLevel != 0) {
-            ((SpectrogramLayer *)this)->setZeroPadLevel(0);
-            return;
-        }
-    }
-	
-    float minFreq = (float(minbin) * sr) / m_fftSize;
-    float maxFreq = (float(bins) * sr) / m_fftSize;
+    float minFreq = (float(minbin) * sr) / fftSize;
+    float maxFreq = (float(bins) * sr) / fftSize;
 
     float ymag[h];
     float ydiv[h];
@@ -1662,7 +1742,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
     for (size_t q = minbin; q <= bins; ++q) {
-        float f0 = (float(q) * sr) / m_fftSize;
+        float f0 = (float(q) * sr) / fftSize;
         yval[q] = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
     }
 
@@ -1683,8 +1763,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int s0i = int(s0 + 0.001);
 	int s1i = int(s1);
 
-	if (s1i >= getFFTWidth()) {
-	    if (s0i >= getFFTWidth()) {
+	if (s1i >= fft->getWidth()) {
+	    if (s0i >= fft->getWidth()) {
 		continue;
 	    } else {
 		s1i = s0i;
@@ -1693,7 +1773,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         for (int s = s0i; s <= s1i; ++s) {
 
-            if (!isFFTColumnReady(s)) continue;
+            if (!fft->isColumnReady(s)) continue;
 
             for (size_t q = minbin; q < bins; ++q) {
 
@@ -1702,25 +1782,28 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 		if (m_binDisplay == PeakBins ||
 		    m_binDisplay == PeakFrequencies) {
-		    if (!isFFTLocalPeak(s, q)) continue;
+		    if (!fft->isLocalPeak(s, q)) continue;
 		}
-		
-		if (!isFFTOverThreshold(s, q, m_threshold)) continue;
+
+                if (m_threshold != 0.f &&
+                    !fft->isOverThreshold(s, q, m_threshold)) {
+                    continue;
+                }
 
 		float sprop = 1.0;
 		if (s == s0i) sprop *= (s + 1) - s0;
 		if (s == s1i) sprop *= s1 - s;
  
 		if (m_binDisplay == PeakFrequencies &&
-		    s < int(getFFTWidth()) - 1) {
+		    s < int(fft->getWidth()) - 1) {
 
 		    bool steady = false;
                     float f = calculateFrequency(q,
 						 m_windowSize,
 						 increment,
 						 sr,
-						 getFFTPhaseAt(s, q),
-						 getFFTPhaseAt(s+1, q),
+						 fft->getPhaseAt(s, q),
+						 fft->getPhaseAt(s+1, q),
 						 steady);
 
 		    y0 = y1 = v->getYForFrequency
@@ -1733,11 +1816,11 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 float value;
                 
                 if (m_colourScale == PhaseColourScale) {
-                    value = getFFTPhaseAt(s, q);
+                    value = fft->getPhaseAt(s, q);
                 } else if (m_normalizeColumns) {
-                    value = getFFTNormalizedMagnitudeAt(s, q) * m_gain;
+                    value = fft->getNormalizedMagnitudeAt(s, q) * m_gain;
                 } else {
-                    value = getFFTMagnitudeAt(s, q) * m_gain;
+                    value = fft->getMagnitudeAt(s, q) * m_gain;
                 }
 
 		for (int y = y0i; y <= y1i; ++y) {
@@ -1833,10 +1916,13 @@ SpectrogramLayer::getFrequencyForY(View *v, int y) const
 int
 SpectrogramLayer::getCompletion() const
 {
+/*!!!
     if (m_updateTimer == 0 || !m_fftServer) return 100;
     size_t completion = m_fftServer->getFillCompletion();
 //    std::cerr << "SpectrogramLayer::getCompletion: completion = " << completion << std::endl;
     return completion;
+*/
+    return 100;
 }
 
 bool
@@ -2117,7 +2203,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
     int textHeight = paint.fontMetrics().height();
     int toff = -textHeight + paint.fontMetrics().ascent() + 2;
 
-    if (m_fftServer && h > textHeight * 2 + 10) {
+    if (h > textHeight * 2 + 10) {
 
 	int ch = h - textHeight * 2 - 8;
 	paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
