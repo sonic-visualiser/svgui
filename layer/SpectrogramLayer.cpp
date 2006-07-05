@@ -34,7 +34,7 @@
 #include <cassert>
 #include <cmath>
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     Layer(),
@@ -57,7 +57,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_normalizeColumns(false),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
-    m_lastFillExtent(0),
     m_exiting(false)
 {
     if (config == MelodicRange) {
@@ -114,38 +113,7 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 
     emit modelReplaced();
 }
-/*!!!
-void
-SpectrogramLayer::invalidateFFTAdapters()
-{
-//    if (m_fftServer) {
-//        FFTDataServer::releaseInstance(m_fftServer);
-//        m_fftServer = 0;
-//    }
 
-    delete m_fftServer;
-    m_fftServer = 0;
-
-    if (m_model) {
-//        m_fftServer = FFTDataServer::getFuzzyInstance(m_model,
-        m_fftServer = new FFTFuzzyAdapter(m_model,
-                                                      m_channel,
-                                                      m_windowType,
-                                                      m_windowSize,
-                                                      getWindowIncrement(),
-                                                      m_fftSize,
-                                                      true,
-                                                      m_candidateFillStartFrame);
-
-        m_lastFillExtent = 0;
-
-        delete m_updateTimer;
-        m_updateTimer = new QTimer(this);
-        connect(m_updateTimer, SIGNAL(timeout()), this, SLOT(fillTimerTimedOut()));
-        m_updateTimer->start(200);
-    }
-}
-*/
 Layer::PropertyList
 SpectrogramLayer::getProperties() const
 {
@@ -560,7 +528,7 @@ SpectrogramLayer::invalidatePixmapCaches(size_t startFrame, size_t endFrame)
         //!!! when are views removed from the map? on setLayerDormant?
         const View *v = i->first;
 
-        if (startFrame < v->getEndFrame() && endFrame >= v->getStartFrame()) {
+        if (startFrame < v->getEndFrame() && int(endFrame) >= v->getStartFrame()) {
             i->second.validArea = QRect();
         }
     }
@@ -861,7 +829,7 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
         m_pixmapCaches.erase(v);
 
         if (m_fftAdapters.find(v) != m_fftAdapters.end()) {
-            delete m_fftAdapters[v];
+            delete m_fftAdapters[v].first;
             m_fftAdapters.erase(v);
         }
 	
@@ -887,43 +855,66 @@ SpectrogramLayer::cacheInvalid(size_t, size_t)
 void
 SpectrogramLayer::fillTimerTimedOut()
 {
-/*!!!
-    if (m_fftServer && m_model) {
+    if (!m_model) return;
 
-	size_t fillExtent = m_fftServer->getFillExtent();
+    bool allDone = true;
+
+    for (ViewFFTMap::iterator i = m_fftAdapters.begin();
+         i != m_fftAdapters.end(); ++i) {
+
+        const View *v = i->first;
+        const FFTFuzzyAdapter *adapter = i->second.first;
+        size_t lastFill = i->second.second;
+
+        if (adapter) {
+
+            size_t fill = adapter->getFillExtent();
+
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-	std::cerr << "SpectrogramLayer::fillTimerTimedOut: extent " << fillExtent << ", last " << m_lastFillExtent << ", total " << m_model->getEndFrame() << std::endl;
+            std::cerr << "SpectrogramLayer::fillTimerTimedOut: extent for " << adapter << ": " << fill << ", last " << lastFill << ", total " << m_model->getEndFrame() << std::endl;
 #endif
-	if (fillExtent >= m_lastFillExtent) {
-	    if (fillExtent >= m_model->getEndFrame() && m_lastFillExtent > 0) {
+
+            if (fill >= lastFill) {
+                if (fill >= m_model->getEndFrame() && lastFill > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-		std::cerr << "complete!" << std::endl;
+                    std::cerr << "complete!" << std::endl;
 #endif
-		invalidatePixmapCaches();
-		emit modelChanged();
-		delete m_updateTimer;
-		m_updateTimer = 0;
-		m_lastFillExtent = 0;
-	    } else if (fillExtent > m_lastFillExtent) {
+                    invalidatePixmapCaches();
+                    emit modelChanged();
+                    i->second.second = -1;
+
+                } else if (fill > lastFill) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-		std::cerr << "SpectrogramLayer: emitting modelChanged("
-			  << m_lastFillExtent << "," << fillExtent << ")" << std::endl;
+                    std::cerr << "SpectrogramLayer: emitting modelChanged("
+                              << lastFill << "," << fill << ")" << std::endl;
 #endif
-		invalidatePixmapCaches(m_lastFillExtent, fillExtent);
-		emit modelChanged(m_lastFillExtent, fillExtent);
-		m_lastFillExtent = fillExtent;
-	    }
-	} else {
+                    invalidatePixmapCaches(lastFill, fill);
+                    emit modelChanged(lastFill, fill);
+                    i->second.second = fill;
+                }
+            } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            std::cerr << "SpectrogramLayer: going backwards, emitting modelChanged("
-                      << m_model->getStartFrame() << "," << m_model->getEndFrame() << ")" << std::endl;
+                std::cerr << "SpectrogramLayer: going backwards, emitting modelChanged("
+                          << m_model->getStartFrame() << "," << m_model->getEndFrame() << ")" << std::endl;
 #endif
-            invalidatePixmapCaches();
-            emit modelChanged(m_model->getStartFrame(), m_model->getEndFrame());
-	    m_lastFillExtent = fillExtent;
-	}
+                invalidatePixmapCaches();
+                emit modelChanged(m_model->getStartFrame(), m_model->getEndFrame());
+                i->second.second = fill;
+            }
+
+            if (i->second.second >= 0) {
+                allDone = false;
+            }
+        }
     }
-*/
+
+    if (allDone) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        std::cerr << "SpectrogramLayer: all complete!" << std::endl;
+#endif
+        delete m_updateTimer;
+        m_updateTimer = 0;
+    }
 }
 
 void
@@ -1433,22 +1424,23 @@ SpectrogramLayer::getFFTAdapter(const View *v) const
     size_t fftSize = getFFTSize(v);
 
     if (m_fftAdapters.find(v) != m_fftAdapters.end()) {
-        if (m_fftAdapters[v]->getHeight() != fftSize / 2) {
-            delete m_fftAdapters[v];
+        if (m_fftAdapters[v].first->getHeight() != fftSize / 2) {
+            delete m_fftAdapters[v].first;
             m_fftAdapters.erase(v);
         }
     }
 
     if (m_fftAdapters.find(v) == m_fftAdapters.end()) {
-        m_fftAdapters[v] = new FFTFuzzyAdapter(m_model,
-                                               m_channel,
-                                               m_windowType,
-                                               m_windowSize,
-                                               getWindowIncrement(),
-                                               getFFTSize(v),
-                                               true,
-                                               m_candidateFillStartFrame);
-        m_lastFillExtent = 0;
+        m_fftAdapters[v] = FFTFillPair
+            (new FFTFuzzyAdapter(m_model,
+                                 m_channel,
+                                 m_windowType,
+                                 m_windowSize,
+                                 getWindowIncrement(),
+                                 getFFTSize(v),
+                                 true,
+                                 m_candidateFillStartFrame),
+             0);
         
         delete m_updateTimer;
         m_updateTimer = new QTimer((SpectrogramLayer *)this);
@@ -1457,7 +1449,7 @@ SpectrogramLayer::getFFTAdapter(const View *v) const
         m_updateTimer->start(200);
     }
 
-    return m_fftAdapters[v];
+    return m_fftAdapters[v].first;
 }
 
 void
@@ -1465,7 +1457,7 @@ SpectrogramLayer::invalidateFFTAdapters()
 {
     for (ViewFFTMap::iterator i = m_fftAdapters.begin();
          i != m_fftAdapters.end(); ++i) {
-        delete i->second;
+        delete i->second.first;
     }
     
     m_fftAdapters.clear();
@@ -1914,15 +1906,14 @@ SpectrogramLayer::getFrequencyForY(View *v, int y) const
 }
 
 int
-SpectrogramLayer::getCompletion() const
+SpectrogramLayer::getCompletion(View *v) const
 {
-/*!!!
-    if (m_updateTimer == 0 || !m_fftServer) return 100;
-    size_t completion = m_fftServer->getFillCompletion();
-//    std::cerr << "SpectrogramLayer::getCompletion: completion = " << completion << std::endl;
+    if (m_updateTimer == 0) return 100;
+    if (m_fftAdapters.find(v) == m_fftAdapters.end()) return 100;
+
+    size_t completion = m_fftAdapters[v].first->getFillCompletion();
+    std::cerr << "SpectrogramLayer::getCompletion: completion = " << completion << std::endl;
     return completion;
-*/
-    return 100;
 }
 
 bool

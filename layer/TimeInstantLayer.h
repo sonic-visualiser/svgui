@@ -84,7 +84,7 @@ public:
 
     virtual bool isLayerEditable() const { return true; }
 
-    virtual int getCompletion() const { return m_model->getCompletion(); }
+    virtual int getCompletion(View *) const { return m_model->getCompletion(); }
 
     virtual bool needsTextLabelHeight() const { return m_model->hasTextLabels(); }
 
