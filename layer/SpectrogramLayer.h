@@ -186,7 +186,7 @@ public:
     float getYForFrequency(View *v, float frequency) const;
     float getFrequencyForY(View *v, int y) const;
 
-    virtual int getCompletion() const;
+    virtual int getCompletion(View *v) const;
 
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;
@@ -264,7 +264,6 @@ protected:
     mutable QTimer *m_updateTimer;
 
     mutable size_t m_candidateFillStartFrame;
-    mutable size_t m_lastFillExtent;
     bool m_exiting;
 
     void setColourmap();
@@ -313,7 +312,9 @@ protected:
     size_t getFFTSize(const View *v) const;
     FFTFuzzyAdapter *getFFTAdapter(const View *v) const;
     void invalidateFFTAdapters();
-    typedef std::map<const View *, FFTFuzzyAdapter *> ViewFFTMap;
+
+    typedef std::pair<FFTFuzzyAdapter *, int> FFTFillPair; // adapter, last fill
+    typedef std::map<const View *, FFTFillPair> ViewFFTMap;
     mutable ViewFFTMap m_fftAdapters;
 };
 

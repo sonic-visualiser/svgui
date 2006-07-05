@@ -62,7 +62,7 @@ public:
 
     void setModel(const DenseThreeDimensionalModel *model);
 
-    virtual int getCompletion() const { return m_model->getCompletion(); }
+    virtual int getCompletion(View *) const { return m_model->getCompletion(); }
 
     virtual bool getValueExtents(float &, float &, bool &, QString &) const { return false; }
 

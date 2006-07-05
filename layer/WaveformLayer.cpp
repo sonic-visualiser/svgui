@@ -339,7 +339,7 @@ WaveformLayer::setAggressiveCacheing(bool aggressive)
 }
 
 int
-WaveformLayer::getCompletion() const
+WaveformLayer::getCompletion(View *) const
 {
     int completion = 100;
     if (!m_model || !m_model->isOK()) return completion;

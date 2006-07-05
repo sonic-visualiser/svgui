@@ -171,7 +171,7 @@ public:
 
     virtual bool isLayerScrollable(const View *) const;
 
-    virtual int getCompletion() const;
+    virtual int getCompletion(View *) const;
 
     virtual bool getValueExtents(float &min, float &max,
                                  bool &log, QString &unit) const;
