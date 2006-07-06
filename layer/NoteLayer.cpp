@@ -80,7 +80,7 @@ NoteLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Colour") return tr("Colour");
     if (name == "Vertical Scale") return tr("Vertical Scale");
-    if (name == "Scale Units") return tr("Pitch Units");
+    if (name == "Scale Units") return tr("Scale Units");
     return "";
 }
 
