@@ -1285,6 +1285,8 @@ const
 
 	for (int s = s0i; s <= s1i; ++s) {
 
+            if (!fft->isColumnReady(s)) continue;
+
 	    float binfreq = (sr * q) / m_windowSize;
 	    if (q == q0i) freqMin = binfreq;
 	    if (q == q1i) freqMax = binfreq;
@@ -1356,6 +1358,8 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
         for (int q = q0i; q <= q1i; ++q) {
             for (int s = s0i; s <= s1i; ++s) {
                 if (s >= 0 && q >= 0 && s < cw && q < ch) {
+
+                    if (!fft->isColumnReady(s)) continue;
                     
                     float value;
 
@@ -1472,7 +1476,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	v->setLightBackground(false);
     }
 
-//    Profiler profiler("SpectrogramLayer::paint", true);
+    Profiler profiler("SpectrogramLayer::paint", true);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << std::endl;
     
