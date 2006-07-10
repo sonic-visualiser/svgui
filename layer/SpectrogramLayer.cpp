@@ -20,6 +20,7 @@
 #include "base/AudioLevel.h"
 #include "base/Window.h"
 #include "base/Pitch.h"
+#include "base/Preferences.h"
 #include "fileio/FFTDataServer.h"
 
 #include <QPainter>
@@ -1390,6 +1391,7 @@ SpectrogramLayer::getZeroPadLevel(const View *v) const
     //!!! tidy all this stuff
 
     if (m_binDisplay != AllBins) return 0;
+    if (!Preferences::getInstance()->getSmoothSpectrogram()) return 0;
     if (m_frequencyScale == LogFrequencyScale) return 3;
 
     int sr = m_model->getSampleRate();
@@ -1407,10 +1409,16 @@ SpectrogramLayer::getZeroPadLevel(const View *v) const
 	if (minbin >= bins) minbin = bins - 1;
     }
 
-    if (v->height() / 1.5 > (bins - minbin) / (m_zeroPadLevel + 1)) {
-        return 3;
+    float perPixel =
+        float(v->height()) /
+        float((bins - minbin) / (m_zeroPadLevel + 1));
+
+    if (perPixel > 2.8) {
+        return 3; // 4x oversampling
+    } else if (perPixel > 1.5) {
+        return 1; // 2x
     } else {
-        return 0;
+        return 0; // 1x
     }
 }
 
