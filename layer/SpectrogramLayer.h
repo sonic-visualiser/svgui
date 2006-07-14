@@ -129,6 +129,7 @@ public:
 	LinearColourScale,
 	MeterColourScale,
 	dBColourScale,
+        OtherColourScale,
 	PhaseColourScale
     };
 
@@ -277,7 +278,7 @@ protected:
 				    float currentPhase,
 				    bool &steadyState);
 
-    unsigned char getDisplayValue(float input) const;
+    unsigned char getDisplayValue(View *v, float input) const;
     float getInputForDisplayValue(unsigned char uc) const;
 
     int getColourScaleWidth(QPainter &) const;
@@ -315,7 +316,62 @@ protected:
 
     typedef std::pair<FFTFuzzyAdapter *, int> FFTFillPair; // adapter, last fill
     typedef std::map<const View *, FFTFillPair> ViewFFTMap;
+    typedef std::vector<float> FloatVector;
     mutable ViewFFTMap m_fftAdapters;
+
+    class MagnitudeRange {
+    public:
+        MagnitudeRange() : m_min(0), m_max(0) { }
+        bool operator==(const MagnitudeRange &r) {
+            return r.m_min == m_min && r.m_max == m_max;
+        }
+        bool isSet() const { return (m_min != 0 || m_max != 0); }
+        void set(float min, float max) {
+            m_min = convert(min);
+            m_max = convert(max);
+            if (m_max < m_min) m_max = m_min;
+        }
+        bool sample(float f) {
+            unsigned int ui = convert(f);
+            bool changed = false;
+            if (isSet()) {
+                if (ui < m_min) { m_min = ui; changed = true; }
+                if (ui > m_max) { m_max = ui; changed = true; }
+            } else {
+                m_max = m_min = ui;
+                changed = true;
+            }
+            return changed;
+        }            
+        bool sample(const MagnitudeRange &r) {
+            bool changed = false;
+            if (isSet()) {
+                if (r.m_min < m_min) { m_min = r.m_min; changed = true; }
+                if (r.m_max > m_max) { m_max = r.m_max; changed = true; }
+            } else {
+                m_min = r.m_min;
+                m_max = r.m_max;
+                changed = true;
+            }
+            return changed;
+        }            
+        float getMin() const { return float(m_min) / UINT_MAX; }
+        float getMax() const { return float(m_max) / UINT_MAX; }
+    private:
+        unsigned int m_min;
+        unsigned int m_max;
+        unsigned int convert(float f) {
+            if (f < 0.f) f = 0.f;
+            if (f > 1.f) f = 1.f;
+            return (unsigned int)(f * UINT_MAX);
+        }
+    };
+
+    typedef std::map<const View *, MagnitudeRange> ViewMagMap;
+    mutable ViewMagMap m_viewMags;
+    mutable std::vector<MagnitudeRange> m_columnMags;
+    void invalidateMagnitudes();
+    bool updateViewMagnitudes(View *v) const;
 };
 
 #endif
