@@ -35,7 +35,7 @@
 #include <cassert>
 #include <cmath>
 
-#define DEBUG_SPECTROGRAM_REPAINT 1
+//#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     Layer(),
@@ -49,7 +49,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_gain(1.0),
     m_threshold(0.0),
     m_colourRotation(0),
-    m_minFrequency(0),
+    m_minFrequency(10),
     m_maxFrequency(8000),
     m_colourScale(dBColourScale),
     m_colourScheme(DefaultColours),
@@ -348,7 +348,8 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 0: return tr("Linear");
 	case 1: return tr("Meter");
 	case 2: return tr("dB");
-	case 3: return tr("Phase");
+	case 3: return tr("Other");
+	case 4: return tr("Phase");
 	}
     }
     if (name == "Window Type") {
@@ -492,7 +493,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 0: setColourScale(LinearColourScale); break;
 	case 1: setColourScale(MeterColourScale); break;
 	case 2: setColourScale(dBColourScale); break;
-	case 3: setColourScale(PhaseColourScale); break;
+	case 3: setColourScale(OtherColourScale); break;
+	case 4: setColourScale(PhaseColourScale); break;
 	}
     } else if (name == "Frequency Scale") {
 	switch (value) {
@@ -682,6 +684,7 @@ SpectrogramLayer::setMinFrequency(size_t mf)
     if (m_minFrequency == mf) return;
 
     invalidatePixmapCaches();
+    invalidateMagnitudes();
     
     m_minFrequency = mf;
 
@@ -700,6 +703,7 @@ SpectrogramLayer::setMaxFrequency(size_t mf)
     if (m_maxFrequency == mf) return;
 
     invalidatePixmapCaches();
+    invalidateMagnitudes();
     
     m_maxFrequency = mf;
     
@@ -806,6 +810,7 @@ SpectrogramLayer::setNormalizeColumns(bool n)
     if (m_normalizeColumns == n) return;
 
     invalidatePixmapCaches();
+    invalidateMagnitudes();
     m_normalizeColumns = n;
 
     emit layerParametersChanged();
@@ -844,6 +849,7 @@ void
 SpectrogramLayer::cacheInvalid()
 {
     invalidatePixmapCaches();
+    invalidateMagnitudes();
 }
 
 void
@@ -1056,29 +1062,70 @@ SpectrogramLayer::calculateFrequency(size_t bin,
 }
 
 unsigned char
-SpectrogramLayer::getDisplayValue(float input) const
+SpectrogramLayer::getDisplayValue(View *v, float input) const
 {
     int value;
+
+    //!!! for the moment we're always normalizing visible area
+    float min = m_viewMags[v].getMin();
+    float max = m_viewMags[v].getMax();
+    float thresh = -80.f;
+
+    if (max == 0.f) max = 1.f;
+    if (max == min) min = max - 0.0001f;
 
     switch (m_colourScale) {
 	
     default:
     case LinearColourScale:
-	value = int
-	    (input * (m_normalizeColumns ? 1.0 : 50.0) * 255.0) + 1;
+//	value = int
+//	    (input * (m_normalizeColumns ? 1.0 : 50.0) * 255.0) + 1;
+        value = int(((input - min) / (max - min)) * 255.f) + 1;
 	break;
 	
     case MeterColourScale:
-	value = AudioLevel::multiplier_to_preview
-	    (input * (m_normalizeColumns ? 1.0 : 50.0), 255) + 1;
+//	value = AudioLevel::multiplier_to_preview
+//	    (input * (m_normalizeColumns ? 1.0 : 50.0), 255) + 1;
+        value = AudioLevel::multiplier_to_preview((input - min) / (max - min), 255) + 1;
 	break;
 	
     case dBColourScale:
-	input = 20.0 * log10(input);
-	input = (input + 80.0) / 80.0;
-	if (input < 0.0) input = 0.0;
-	if (input > 1.0) input = 1.0;
-	value = int(input * 255.0) + 1;
+        //!!! experiment with normalizing the visible area this way.
+        //In any case, we need to have some indication of what the dB
+        //scale is relative to.
+        input = 10.f * log10f(input / max);
+        if (min > 0.f) {
+            thresh = 10.f * log10f(min);
+            if (thresh < -80.f) thresh = -80.f;
+        }
+	input = (input - thresh) / (-thresh);
+	if (input < 0.f) input = 0.f;
+	if (input > 1.f) input = 1.f;
+	value = int(input * 255.f) + 1;
+	break;
+
+    case OtherColourScale:
+        //!!! the "Other" scale is just where our current experiments go
+        //!!! power rather than v
+        input = 10.f * log10f((input * input) / (max * max));
+        if (min > 0.f) {
+            thresh = 10.f * log10f(min * min);
+            if (thresh < -80.f) thresh = -80.f;
+        }
+	input = (input - thresh) / (-thresh);
+	if (input < 0.f) input = 0.f;
+	if (input > 1.f) input = 1.f;
+	value = int(input * 255.f) + 1;
+	break;
+        
+/*!!!
+	input = 10.f * log10f(input * input);
+        input = 1.f / (1.f + expf(- (input + 20.f) / 10.f));
+
+	if (input < 0.f) input = 0.f;
+	if (input > 1.f) input = 1.f;
+	value = int(input * 255.f) + 1;
+*/
 	break;
 	
     case PhaseColourScale:
@@ -1110,6 +1157,13 @@ SpectrogramLayer::getInputForDisplayValue(unsigned char uc) const
 	break;
 
     case dBColourScale:
+	input = float(value - 1) / 255.0;
+	input = (input * 80.0) - 80.0;
+	input = powf(10.0, input) / 20.0;
+	value = int(input);
+	break;
+
+    case OtherColourScale:
 	input = float(value - 1) / 255.0;
 	input = (input * 80.0) - 80.0;
 	input = powf(10.0, input) / 20.0;
@@ -1476,6 +1530,49 @@ SpectrogramLayer::invalidateFFTAdapters()
 }
 
 void
+SpectrogramLayer::invalidateMagnitudes()
+{
+    m_viewMags.clear();
+    for (std::vector<MagnitudeRange>::iterator i = m_columnMags.begin();
+         i != m_columnMags.end(); ++i) {
+        *i = MagnitudeRange();
+    }
+}
+
+bool
+SpectrogramLayer::updateViewMagnitudes(View *v) const
+{
+    MagnitudeRange mag;
+
+    int x0 = 0, x1 = v->width();
+    float s00 = 0, s01 = 0, s10 = 0, s11 = 0;
+    
+    getXBinRange(v, x0, s00, s01);
+    getXBinRange(v, x1, s10, s11);
+
+    int s0 = int(std::min(s00, s10) + 0.0001);
+    int s1 = int(std::max(s01, s11));
+
+    if (m_columnMags.size() <= s1) {
+        m_columnMags.resize(s1 + 1);
+    }
+
+    for (int s = s0; s <= s1; ++s) {
+        if (m_columnMags[s].isSet()) {
+            mag.sample(m_columnMags[s]);
+        }
+    }
+
+    std::cerr << "SpectrogramLayer::updateViewMagnitudes returning from cols "
+              << s0 << " -> " << s1 << " inclusive" << std::endl;
+
+    if (!mag.isSet()) return false;
+    if (mag == m_viewMags[v]) return false;
+    m_viewMags[v] = mag;
+    return true;
+}
+
+void
 SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (m_colourScheme == BlackOnWhite) {
@@ -1661,6 +1758,12 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         x1 = v->width();
     }
 
+    if (updateViewMagnitudes(v)) {
+        std::cerr << "SpectrogramLayer: magnitude range changed to [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
+    } else {
+        std::cerr << "No change in magnitude range [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
+    }
+
     int paintBlockWidth = (300000 / zoomLevel);
     if (paintBlockWidth < 20) paintBlockWidth = 20;
 
@@ -1750,6 +1853,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         yval[q] = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
     }
 
+    MagnitudeRange overallMag = m_viewMags[v];
+    bool overallMagChanged = false;
+
     for (int x = 0; x < w; ++x) {
 
 	for (int y = 0; y < h; ++y) {
@@ -1778,6 +1884,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         for (int s = s0i; s <= s1i; ++s) {
 
             if (!fft->isColumnReady(s)) continue;
+            MagnitudeRange mag;
 
             for (size_t q = minbin; q < bins; ++q) {
 
@@ -1822,9 +1929,13 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 if (m_colourScale == PhaseColourScale) {
                     value = fft->getPhaseAt(s, q);
                 } else if (m_normalizeColumns) {
-                    value = fft->getNormalizedMagnitudeAt(s, q) * m_gain;
+                    value = fft->getNormalizedMagnitudeAt(s, q);
+                    mag.sample(value);
+                    value *= m_gain;
                 } else {
-                    value = fft->getMagnitudeAt(s, q) * m_gain;
+                    value = fft->getMagnitudeAt(s, q);
+                    mag.sample(value);
+                    value *= m_gain;
                 }
 
 		for (int y = y0i; y <= y1i; ++y) {
@@ -1838,6 +1949,17 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    ydiv[y] += yprop;
 		}
 	    }
+
+            if (mag.isSet()) {
+
+                m_columnMags[s].sample(mag);
+
+                if (overallMag.sample(mag)) {
+                    //!!! scaling would change here
+                    overallMagChanged = true;
+                    std::cerr << "Overall mag changed (again?) at column " << s << ", to [" << overallMag.getMin() << "->" << overallMag.getMax() << "]" << std::endl;
+                }
+            }
 	}
 
 	for (int y = 0; y < h; ++y) {
@@ -1847,7 +1969,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		unsigned char pixel = 0;
 
 		float avg = ymag[y] / ydiv[y];
-		pixel = getDisplayValue(avg);
+		pixel = getDisplayValue(v, avg);
 
 		assert(x <= m_drawBuffer.width());
 		QColor c = m_colourMap.getColour(pixel);
@@ -1855,6 +1977,13 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                                       qRgb(c.red(), c.green(), c.blue()));
 	    }
 	}
+    }
+
+    if (overallMagChanged) {
+        m_viewMags[v] = overallMag;
+        std::cerr << "Overall mag is now [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "] - will be updating" << std::endl;
+    } else {
+        std::cerr << "Overall mag unchanged at [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
     }
 
     paint.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
@@ -1866,32 +1995,39 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     QPainter cachePainter(&cache.pixmap);
     cachePainter.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
     cachePainter.end();
+
+    if (!overallMagChanged) {
     
-    cache.startFrame = startFrame;
-    cache.zoomLevel = zoomLevel;
+        cache.startFrame = startFrame;
+        cache.zoomLevel = zoomLevel;
 
-    if (cache.validArea.x() > 0) {
+        if (cache.validArea.x() > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        std::cerr << "SpectrogramLayer::paint() updating left" << std::endl;
+            std::cerr << "SpectrogramLayer::paint() updating left" << std::endl;
 #endif
-        v->update(0, 0, cache.validArea.x(), v->height());
-    }
-
-    if (cache.validArea.x() + cache.validArea.width() <
-        cache.pixmap.width()) {
+            v->update(0, 0, cache.validArea.x(), v->height());
+        }
+        
+        if (cache.validArea.x() + cache.validArea.width() <
+            cache.pixmap.width()) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        std::cerr << "SpectrogramLayer::paint() updating right ("
-                  << cache.validArea.x() + cache.validArea.width()
-                  << ", "
-                  << cache.pixmap.width() - (cache.validArea.x() +
-                                             cache.validArea.width())
-                  << ")" << std::endl;
+            std::cerr << "SpectrogramLayer::paint() updating right ("
+                      << cache.validArea.x() + cache.validArea.width()
+                      << ", "
+                      << cache.pixmap.width() - (cache.validArea.x() +
+                                                 cache.validArea.width())
+                      << ")" << std::endl;
 #endif
-        v->update(cache.validArea.x() + cache.validArea.width(),
-                  0,
-                  cache.pixmap.width() - (cache.validArea.x() +
-                                          cache.validArea.width()),
-                  v->height());
+            v->update(cache.validArea.x() + cache.validArea.width(),
+                      0,
+                      cache.pixmap.width() - (cache.validArea.x() +
+                                              cache.validArea.width()),
+                      v->height());
+        }
+    } else {
+        // overallMagChanged
+        cache.validArea = QRect();
+        v->update();
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2140,6 +2276,9 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 {
     int cw;
 
+    cw = paint.fontMetrics().width("-80dB");
+
+/*!!!
     switch (m_colourScale) {
     default:
     case LinearColourScale:
@@ -2148,6 +2287,7 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 
     case MeterColourScale:
     case dBColourScale:
+    case OtherColourScale:
 	cw = std::max(paint.fontMetrics().width(tr("-Inf")),
 		      paint.fontMetrics().width(tr("-90")));
 	break;
@@ -2156,6 +2296,8 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 	cw = paint.fontMetrics().width(QString("-") + QChar(0x3c0));
 	break;
     }
+*/
+
 
     return cw;
 }
@@ -2201,18 +2343,23 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
     }
 
     int cw = getColourScaleWidth(paint);
+    int cbw = paint.fontMetrics().width("dB");
 
     int py = -1;
     int textHeight = paint.fontMetrics().height();
     int toff = -textHeight + paint.fontMetrics().ascent() + 2;
 
-    if (h > textHeight * 2 + 10) {
+    if (h > textHeight * 3 + 10) {
 
-	int ch = h - textHeight * 2 - 8;
-	paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
+        int topLines = 2;
+        if (m_colourScale == PhaseColourScale) topLines = 1;
+
+	int ch = h - textHeight * (topLines + 1) - 8;
+//	paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
+	paint.drawRect(4 + cw - cbw, textHeight * topLines + 4, cbw - 1, ch + 1);
 
 	QString top, bottom;
-
+/*!!!
 	switch (m_colourScale) {
 	default:
 	case LinearColourScale:
@@ -2229,6 +2376,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	    break;
 
 	case dBColourScale:
+	case OtherColourScale:
 	    top = "0";
 	    bottom = "-80";
 	    break;
@@ -2238,20 +2386,81 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	    bottom = "-" + top;
 	    break;
 	}
+*/
+        float min = m_viewMags[v].getMin();
+        float max = m_viewMags[v].getMax();
 
-	paint.drawText((cw + 6 - paint.fontMetrics().width(top)) / 2,
-		       2 + textHeight + toff, top);
+        float dBmin = AudioLevel::multiplier_to_dB(min);
+        float dBmax = AudioLevel::multiplier_to_dB(max);
 
-	paint.drawText((cw + 6 - paint.fontMetrics().width(bottom)) / 2,
-		       h + toff - 3, bottom);
+        if (dBmin < -80.f) dBmin = -80.f;
+        bottom = QString("%1").arg(lrintf(dBmin));
+
+        if (dBmax < -80.f) dBmax = -80.f;
+        else top = QString("%1").arg(lrintf(dBmax));
+
+        //!!! & phase etc
+
+        if (m_colourScale != PhaseColourScale) {
+            paint.drawText((cw + 6 - paint.fontMetrics().width("dBFS")) / 2,
+                           2 + textHeight + toff, "dBFS");
+        }
+
+//	paint.drawText((cw + 6 - paint.fontMetrics().width(top)) / 2,
+	paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
+		       2 + textHeight * topLines + toff + textHeight/2, top);
+
+	paint.drawText(3 + cw - cbw - paint.fontMetrics().width(bottom),
+		       h + toff - 3 - textHeight/2, bottom);
 
 	paint.save();
 	paint.setBrush(Qt::NoBrush);
+
+        int lasty = 0;
+        int lastdb = 0;
+
 	for (int i = 0; i < ch; ++i) {
-	    int v = (i * 255) / ch + 1;
-	    paint.setPen(m_colourMap.getColour(v));
-	    paint.drawLine(5, 4 + textHeight + ch - i,
-			   cw + 2, 4 + textHeight + ch - i);
+
+            float dBval = dBmin + (((dBmax - dBmin) * i) / (ch - 1));
+            int idb = int(dBval);
+
+            float value = AudioLevel::dB_to_multiplier(dBval);
+            int colour = getDisplayValue(v, value * m_gain);
+/*
+            float value = min + (((max - min) * i) / (ch - 1));
+            if (value < m_threshold) value = 0.f;
+            int colour = getDisplayValue(v, value * m_gain);
+*/
+/*
+	    int colour = (i * 255) / ch + 1;
+*/
+	    paint.setPen(m_colourMap.getColour(colour));
+
+            int y = textHeight * topLines + 4 + ch - i;
+
+            paint.drawLine(5 + cw - cbw, y, cw + 2, y);
+
+//	    paint.drawLine(5, 4 + textHeight + ch - i,
+//			   cw + 2, 4 + textHeight + ch - i);
+
+
+            if (i == 0) {
+                lasty = y;
+                lastdb = idb;
+            } else if (i < ch - paint.fontMetrics().ascent() &&
+                       ((abs(y - lasty) > textHeight && 
+                         idb % 10 == 0) ||
+                        (abs(y - lasty) > paint.fontMetrics().ascent() && 
+                         idb % 5 == 0))) {
+                paint.setPen(Qt::black);
+                QString text = QString("%1").arg(idb);
+                paint.drawText(3 + cw - cbw - paint.fontMetrics().width(text),
+                               y + toff + textHeight/2, text);
+                paint.setPen(Qt::white);
+                paint.drawLine(5 + cw - cbw, y, 8 + cw - cbw, y);
+                lasty = y;
+                lastdb = idb;
+            }
 	}
 	paint.restore();
     }
