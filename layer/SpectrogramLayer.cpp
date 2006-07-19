@@ -56,6 +56,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_frequencyScale(LinearFrequencyScale),
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
+    m_normalizeVisibleArea(false),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
     m_exiting(false)
@@ -125,6 +126,7 @@ SpectrogramLayer::getProperties() const
     list.push_back("Window Size");
     list.push_back("Window Increment");
     list.push_back("Normalize Columns");
+    list.push_back("Normalize Visible Area");
     list.push_back("Bin Display");
     list.push_back("Threshold");
     list.push_back("Gain");
@@ -145,6 +147,7 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Window Size") return tr("Window Size");
     if (name == "Window Increment") return tr("Window Overlap");
     if (name == "Normalize Columns") return tr("Normalize Columns");
+    if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
     if (name == "Bin Display") return tr("Bin Display");
     if (name == "Threshold") return tr("Threshold");
     if (name == "Gain") return tr("Gain");
@@ -162,6 +165,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
     if (name == "Gain") return RangeProperty;
     if (name == "Colour Rotation") return RangeProperty;
     if (name == "Normalize Columns") return ToggleProperty;
+    if (name == "Normalize Visible Area") return ToggleProperty;
     if (name == "Threshold") return RangeProperty;
     if (name == "Zero Padding") return ToggleProperty;
     return ValueProperty;
@@ -179,6 +183,7 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 	name == "Threshold" ||
 	name == "Colour Rotation") return tr("Colour");
     if (name == "Normalize Columns" ||
+        name == "Normalize Visible Area" ||
 	name == "Bin Display" ||
 	name == "Colour Scale") return tr("Scale");
     if (name == "Max Frequency" ||
@@ -318,6 +323,10 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Normalize Columns") {
 	
 	deft = (m_normalizeColumns ? 1 : 0);
+
+    } else if (name == "Normalize Visible Area") {
+	
+	deft = (m_normalizeVisibleArea ? 1 : 0);
 
     } else {
 	deft = Layer::getPropertyRangeAndValue(name, min, max);
@@ -511,6 +520,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	}
     } else if (name == "Normalize Columns") {
 	setNormalizeColumns(value ? true : false);
+    } else if (name == "Normalize Visible Area") {
+	setNormalizeVisibleArea(value ? true : false);
     }
 }
 
@@ -823,6 +834,24 @@ SpectrogramLayer::getNormalizeColumns() const
 }
 
 void
+SpectrogramLayer::setNormalizeVisibleArea(bool n)
+{
+    if (m_normalizeVisibleArea == n) return;
+
+    invalidatePixmapCaches();
+    invalidateMagnitudes();
+    m_normalizeVisibleArea = n;
+
+    emit layerParametersChanged();
+}
+
+bool
+SpectrogramLayer::getNormalizeVisibleArea() const
+{
+    return m_normalizeVisibleArea;
+}
+
+void
 SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 {
     if (dormant == m_dormancy[v]) return;
@@ -1066,9 +1095,19 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
 {
     int value;
 
-    //!!! for the moment we're always normalizing visible area
-    float min = m_viewMags[v].getMin();
-    float max = m_viewMags[v].getMax();
+    float min = 0.f;
+    float max = 1.f;
+
+    if (m_normalizeVisibleArea) {
+        min = m_viewMags[v].getMin();
+        max = m_viewMags[v].getMax();
+    } else if (!m_normalizeColumns) {
+        if (m_colourScale == LinearColourScale ||
+            m_colourScale == MeterColourScale) {
+            max = 0.1f;
+        }
+    }
+
     float thresh = -80.f;
 
     if (max == 0.f) max = 1.f;
@@ -1144,6 +1183,8 @@ SpectrogramLayer::getInputForDisplayValue(unsigned char uc) const
     int value = uc;
     float input;
 
+    //!!! incorrect for normalizing visible area (and also out of date)
+    
     switch (m_colourScale) {
 	
     default:
@@ -1996,7 +2037,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     cachePainter.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
     cachePainter.end();
 
-    if (!overallMagChanged) {
+    if (!m_normalizeVisibleArea || !overallMagChanged) {
     
         cache.startFrame = startFrame;
         cache.zoomLevel = zoomLevel;
@@ -2028,6 +2069,38 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         // overallMagChanged
         cache.validArea = QRect();
         v->update();
+    }
+
+    QPoint localPos;
+
+    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
+
+        std::cerr << "SpectrogramLayer: shouldIlluminateLocalFeatures("
+                  << localPos.x() << "," << localPos.y() << ")" << std::endl;
+
+        float s0, s1;
+        float q0, q1;
+
+        if (getXBinRange(v, localPos.x(), s0, s1) &&
+            getYBinRange(v, localPos.y(), q0, q1)) {
+
+            int s0i = int(s0 + 0.001);
+            int s1i = int(s1);
+
+            int q0i = int(q0 + 0.001);
+            int q1i = int(q1);
+            
+            int x0 = v->getXForFrame(s0i * getWindowIncrement());
+            int x1 = v->getXForFrame(s1i * getWindowIncrement() + 1);
+            int y1 = yval[q0i];
+            int y0 = yval[q1i + 1];
+
+            std::cerr << "SpectrogramLayer::paint: illuminate "
+                      << x0 << "," << y1 << " -> " << x1 << "," << y0 << std::endl;
+            
+            paint.setPen(Qt::white);
+            paint.drawRect(x0, y1, x1 - x0 + 1, y0 - y1 + 1);
+        }
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2082,6 +2155,29 @@ SpectrogramLayer::getDisplayExtents(float &min, float &max) const
     max = getEffectiveMaxFrequency();
     return true;
 }    
+
+bool
+SpectrogramLayer::setDisplayExtents(float min, float max)
+{
+    if (!m_model) return false;
+    if (min < 0) min = 0;
+    if (max > m_model->getSampleRate()/2) max = m_model->getSampleRate()/2;
+    
+    size_t minf = lrintf(min);
+    size_t maxf = lrintf(max);
+
+    if (m_minFrequency == minf && m_maxFrequency == maxf) return true;
+
+    invalidatePixmapCaches();
+    invalidateMagnitudes();
+
+    m_minFrequency = minf;
+    m_maxFrequency = maxf;
+    
+    emit layerParametersChanged();
+
+    return true;
+}
 
 bool
 SpectrogramLayer::snapToFeatureFrame(View *v, int &frame,
@@ -2329,6 +2425,8 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
+    //!!! cache this?
+
     int h = rect.height(), w = rect.width();
 
     int tickw = (m_frequencyScale == LogFrequencyScale ? 10 : 4);
@@ -2393,11 +2491,11 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
         float dBmin = AudioLevel::multiplier_to_dB(min);
         float dBmax = AudioLevel::multiplier_to_dB(max);
 
-        if (dBmin < -80.f) dBmin = -80.f;
-        bottom = QString("%1").arg(lrintf(dBmin));
-
-        if (dBmax < -80.f) dBmax = -80.f;
+        if (dBmax < -60.f) dBmax = -60.f;
         else top = QString("%1").arg(lrintf(dBmax));
+
+        if (dBmin < dBmax - 60.f) dBmin = dBmax - 60.f;
+        bottom = QString("%1").arg(lrintf(dBmin));
 
         //!!! & phase etc
 
@@ -2448,6 +2546,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
                 lasty = y;
                 lastdb = idb;
             } else if (i < ch - paint.fontMetrics().ascent() &&
+                       idb != lastdb &&
                        ((abs(y - lasty) > textHeight && 
                          idb % 10 == 0) ||
                         (abs(y - lasty) > paint.fontMetrics().ascent() && 

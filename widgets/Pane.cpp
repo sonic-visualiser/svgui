@@ -604,6 +604,10 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	    int x0 = std::min(m_clickPos.x(), m_mousePos.x());
 	    int x1 = std::max(m_clickPos.x(), m_mousePos.x());
 	    int w = x1 - x0;
+
+	    int y0 = std::min(m_clickPos.y(), m_mousePos.y());
+	    int y1 = std::max(m_clickPos.y(), m_mousePos.y());
+//	    int h = y1 - y0;
 	    
 	    long newStartFrame = getFrameForX(x0);
 	    
@@ -625,6 +629,38 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	    setZoomLevel(getZoomConstraintBlockSize(newZoomLevel));
 	    setStartFrame(newStartFrame);
 
+            //!!! lots of faff, shouldn't be here
+
+            QString unit;
+            float min, max;
+            bool log;
+            Layer *layer = 0;
+            for (LayerList::const_iterator i = m_layers.begin();
+                 i != m_layers.end(); ++i) { 
+                if ((*i)->getValueExtents(min, max, log, unit) &&
+                    (*i)->getDisplayExtents(min, max)) {
+                    layer = *i;
+                    break;
+                }
+            }
+            
+            if (layer) {
+                if (log) {
+                    min = (min < 0.0) ? -log10f(-min) : (min == 0.0) ? 0.0 : log10f(min);
+                    max = (max < 0.0) ? -log10f(-max) : (max == 0.0) ? 0.0 : log10f(max);
+                }
+                float rmin = min + ((max - min) * (height() - y1)) / height();
+                float rmax = min + ((max - min) * (height() - y0)) / height();
+                std::cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << std::endl;
+                if (log) {
+                    rmin = powf(10, rmin);
+                    rmax = powf(10, rmax);
+                }
+                std::cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit.toStdString() << std::endl;
+
+                layer->setDisplayExtents(rmin, rmax);
+            }
+                
 	    //cerr << "mouseReleaseEvent: start frame now " << m_startFrame << endl;
 //	update();
 	}

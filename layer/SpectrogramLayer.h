@@ -166,6 +166,9 @@ public:
     void setNormalizeColumns(bool n);
     bool getNormalizeColumns() const;
 
+    void setNormalizeVisibleArea(bool n);
+    bool getNormalizeVisibleArea() const;
+
     enum ColourScheme { DefaultColours, WhiteOnBlack, BlackOnWhite,
 			RedOnBlue, YellowOnBlack, BlueOnBlack, Rainbow };
 
@@ -193,6 +196,8 @@ public:
                                  bool &logarithmic, QString &unit) const;
 
     virtual bool getDisplayExtents(float &min, float &max) const;
+
+    virtual bool setDisplayExtents(float min, float max);
 
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
@@ -229,6 +234,7 @@ protected:
     FrequencyScale      m_frequencyScale;
     BinDisplay          m_binDisplay;
     bool                m_normalizeColumns;
+    bool                m_normalizeVisibleArea;
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 
