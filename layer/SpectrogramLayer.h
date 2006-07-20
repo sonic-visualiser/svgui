@@ -289,6 +289,8 @@ protected:
 
     int getColourScaleWidth(QPainter &) const;
 
+    void illuminateLocalFeatures(View *v, QPainter &painter) const;
+
     float getEffectiveMinFrequency() const;
     float getEffectiveMaxFrequency() const;
 

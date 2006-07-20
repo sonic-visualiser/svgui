@@ -1339,9 +1339,8 @@ const
     //!!! wrong for smoothing -- wrong fft size for fft adapter
 
     for (int q = q0i; q <= q1i; ++q) {
-	int binfreq = (sr * q) / m_fftSize;
-	if (q == q0i) freqMin = binfreq;
-	if (q == q1i) freqMax = binfreq;
+	if (q == q0i) freqMin = (sr * q) / m_fftSize;
+	if (q == q1i) freqMax = (sr * (q+1)) / m_fftSize;
     }
     return true;
 }
@@ -1544,7 +1543,7 @@ SpectrogramLayer::getFFTAdapter(const View *v) const
                                  m_windowType,
                                  m_windowSize,
                                  getWindowIncrement(),
-                                 getFFTSize(v),
+                                 fftSize,
                                  true,
                                  m_candidateFillStartFrame),
              0);
@@ -1697,6 +1696,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 #endif
 
 		paint.drawPixmap(rect, cache.pixmap, rect);
+                illuminateLocalFeatures(v, paint);
 		return;
 
 	    } else {
@@ -1883,7 +1883,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     float ymag[h];
     float ydiv[h];
-    float yval[bins + 1];
+    float yval[bins + 1]; //!!! cache this
 
     size_t increment = getWindowIncrement();
     
@@ -2071,41 +2071,45 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         v->update();
     }
 
-    QPoint localPos;
-
-    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
-
-        std::cerr << "SpectrogramLayer: shouldIlluminateLocalFeatures("
-                  << localPos.x() << "," << localPos.y() << ")" << std::endl;
-
-        float s0, s1;
-        float q0, q1;
-
-        if (getXBinRange(v, localPos.x(), s0, s1) &&
-            getYBinRange(v, localPos.y(), q0, q1)) {
-
-            int s0i = int(s0 + 0.001);
-            int s1i = int(s1);
-
-            int q0i = int(q0 + 0.001);
-            int q1i = int(q1);
-            
-            int x0 = v->getXForFrame(s0i * getWindowIncrement());
-            int x1 = v->getXForFrame(s1i * getWindowIncrement() + 1);
-            int y1 = yval[q0i];
-            int y0 = yval[q1i + 1];
-
-            std::cerr << "SpectrogramLayer::paint: illuminate "
-                      << x0 << "," << y1 << " -> " << x1 << "," << y0 << std::endl;
-            
-            paint.setPen(Qt::white);
-            paint.drawRect(x0, y1, x1 - x0 + 1, y0 - y1 + 1);
-        }
-    }
+    illuminateLocalFeatures(v, paint);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint() returning" << std::endl;
 #endif
+}
+
+void
+SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
+{
+    QPoint localPos;
+    if (!v->shouldIlluminateLocalFeatures(this, localPos) || !m_model) {
+        return;
+    }
+
+    std::cerr << "SpectrogramLayer: illuminateLocalFeatures("
+              << localPos.x() << "," << localPos.y() << ")" << std::endl;
+
+    float s0, s1;
+    float f0, f1;
+
+    if (getXBinRange(v, localPos.x(), s0, s1) &&
+        getYBinSourceRange(v, localPos.y(), f0, f1)) {
+        
+        int s0i = int(s0 + 0.001);
+        int s1i = int(s1);
+        
+        int x0 = v->getXForFrame(s0i * getWindowIncrement());
+        int x1 = v->getXForFrame((s1i + 1) * getWindowIncrement());
+
+        int y1 = getYForFrequency(v, f1);
+        int y0 = getYForFrequency(v, f0);
+        
+        std::cerr << "SpectrogramLayer: illuminate "
+                  << x0 << "," << y1 << " -> " << x1 << "," << y0 << std::endl;
+        
+        paint.setPen(Qt::white);
+        paint.drawRect(x0, y1, x1 - x0 + 1, y0 - y1 + 1);
+    }
 }
 
 float
