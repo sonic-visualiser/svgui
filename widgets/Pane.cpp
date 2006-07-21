@@ -109,6 +109,8 @@ Pane::setCentreLineVisible(bool visible)
 void
 Pane::paintEvent(QPaintEvent *e)
 {
+    Profiler profiler("Pane::paintEvent", true);
+
     QPainter paint;
 
     QRect r(rect());

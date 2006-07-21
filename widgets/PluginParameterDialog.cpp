@@ -38,6 +38,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     m_channel(defaultChannel),
     m_parameterBox(0)
 {
+    setWindowTitle(tr("Plugin Parameters"));
+
     QGridLayout *grid = new QGridLayout;
     setLayout(grid);
 
