@@ -20,6 +20,7 @@
 #include "base/Window.h"
 #include "base/RealTime.h"
 #include "base/Thread.h"
+#include "base/PropertyContainer.h"
 #include "model/PowerOfSqrtTwoZoomConstraint.h"
 #include "model/DenseTimeValueModel.h"
 
@@ -211,6 +212,8 @@ public:
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);
+    
+    void preferenceChanged(PropertyContainer::PropertyName name);
 
     void fillTimerTimedOut();
 

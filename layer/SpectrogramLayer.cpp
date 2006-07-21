@@ -79,6 +79,11 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setNormalizeColumns(true);
     }
 
+    Preferences *prefs = Preferences::getInstance();
+    connect(prefs, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
+            this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
+    setWindowType(prefs->getWindowType());
+
     setColourmap();
 }
 
@@ -545,6 +550,25 @@ SpectrogramLayer::invalidatePixmapCaches(size_t startFrame, size_t endFrame)
         if (startFrame < v->getEndFrame() && int(endFrame) >= v->getStartFrame()) {
             i->second.validArea = QRect();
         }
+    }
+}
+
+void
+SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
+{
+    std::cerr << "SpectrogramLayer::preferenceChanged(" << name.toStdString() << ")" << std::endl;
+
+    if (name == "Window Type") {
+        setWindowType(Preferences::getInstance()->getWindowType());
+        return;
+    }
+    if (name == "Smooth Spectrogram") {
+        invalidatePixmapCaches();
+        invalidateMagnitudes();
+        emit layerParametersChanged();
+    }
+    if (name == "Tuning Frequency") {
+        emit layerParametersChanged();
     }
 }
 
@@ -1336,8 +1360,6 @@ const
 
     int sr = m_model->getSampleRate();
 
-    //!!! wrong for smoothing -- wrong fft size for fft adapter
-
     for (int q = q0i; q <= q1i; ++q) {
 	if (q == q0i) freqMin = (sr * q) / m_fftSize;
 	if (q == q1i) freqMax = (sr * (q+1)) / m_fftSize;
@@ -1436,6 +1458,10 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
     int s1i = int(s1);
 
     bool rv = false;
+
+    size_t zp = getZeroPadLevel(v);
+    q0i *= zp + 1;
+    q1i *= zp + 1;
 
     FFTFuzzyAdapter *fft = getFFTAdapter(v);
 
@@ -1864,6 +1890,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     m_drawBuffer.fill(m_colourMap.getColour(0).rgb());
 
     int sr = m_model->getSampleRate();
+
+    // Set minFreq and maxFreq to the frequency extents of the possibly
+    // zero-padded visible bin range, and displayMinFreq and displayMaxFreq
+    // to the actual scale frequency extents (presumably not zero padded).
     
     size_t bins = fftSize / 2;
     if (m_maxFrequency > 0) {
@@ -1881,9 +1911,17 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     float minFreq = (float(minbin) * sr) / fftSize;
     float maxFreq = (float(bins) * sr) / fftSize;
 
+    float displayMinFreq = minFreq;
+    float displayMaxFreq = maxFreq;
+
+    if (fftSize != m_fftSize) {
+        displayMinFreq = getEffectiveMinFrequency();
+        displayMaxFreq = getEffectiveMaxFrequency();
+    }
+
     float ymag[h];
     float ydiv[h];
-    float yval[bins + 1]; //!!! cache this
+    float yval[bins + 1]; //!!! cache this?
 
     size_t increment = getWindowIncrement();
     
@@ -1891,7 +1929,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     for (size_t q = minbin; q <= bins; ++q) {
         float f0 = (float(q) * sr) / fftSize;
-        yval[q] = v->getYForFrequency(f0, minFreq, maxFreq, logarithmic);
+        yval[q] = v->getYForFrequency(f0, displayMinFreq, displayMaxFreq,
+                                      logarithmic);
+//        std::cerr << "min: " << minFreq << ", max: " << maxFreq << ", yval[" << q << "]: " << yval[q] << std::endl;
     }
 
     MagnitudeRange overallMag = m_viewMags[v];
@@ -1959,7 +1999,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 						 steady);
 
 		    y0 = y1 = v->getYForFrequency
-			(f, minFreq, maxFreq, logarithmic);
+			(f, displayMinFreq, displayMaxFreq, logarithmic);
 		}
 		
 		int y0i = int(y0 + 0.001);
@@ -2429,6 +2469,8 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
+    Profiler profiler("SpectrogramLayer::paintVerticalScale", true);
+
     //!!! cache this?
 
     int h = rect.height(), w = rect.width();
@@ -2615,14 +2657,34 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	float minf = getEffectiveMinFrequency();
 	float maxf = getEffectiveMaxFrequency();
 
-	int py = h;
+	int py = h, ppy = h;
 	paint.setBrush(paint.pen().color());
 
 	for (int i = 0; i < 128; ++i) {
 
 	    float f = Pitch::getFrequencyForPitch(i);
 	    int y = lrintf(v->getYForFrequency(f, minf, maxf, true));
+
+            if (y < -2) break;
+            if (y > h + 2) {
+                continue;
+            }
+
 	    int n = (i % 12);
+
+            if (n == 1) {
+                // C# -- fill the C from here
+                if (ppy - y > 2) {
+                    paint.fillRect(w - pkw,
+//                                   y - (py - y) / 2 - (py - y) / 4, 
+                                   y,
+                                   pkw,
+                                   (py + ppy) / 2 - y,
+//                                   py - y + 1,
+                                   Qt::gray);
+                }
+            }
+
 	    if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
 		// black notes
 		paint.drawLine(w - pkw, y, w, y);
@@ -2630,12 +2692,13 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 		if (rh < 2) rh = 2;
 		paint.drawRect(w - pkw, y - (py-y)/4, pkw/2, rh);
 	    } else if (n == 0 || n == 5) {
-		// C, A
+		// C, F
 		if (py < h) {
 		    paint.drawLine(w - pkw, (y + py) / 2, w, (y + py) / 2);
 		}
 	    }
 
+            ppy = py;
 	    py = y;
 	}
     }
