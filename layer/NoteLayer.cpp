@@ -634,7 +634,7 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
 	}
 	
-	paint.drawRect(x, y - h, w, h);
+	paint.drawRect(x, y - h/2, w, h);
 
 ///	if (p.label != "") {
 ///	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
