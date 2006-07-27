@@ -23,12 +23,14 @@
 #include "model/SparseTimeValueModel.h"
 
 #include "widgets/ItemEditDialog.h"
+#include "widgets/ListInputDialog.h"
 
 #include "SpectrogramLayer.h" // for optional frequency alignment
 
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
+#include <QRegExp>
 
 #include <iostream>
 #include <cmath>
@@ -1131,15 +1133,142 @@ TimeValueLayer::copy(Selection s, Clipboard &to)
     }
 }
 
-void
-TimeValueLayer::paste(const Clipboard &from, int frameOffset)
+bool
+TimeValueLayer::paste(const Clipboard &from, int frameOffset,
+                      bool interactive)
 {
-    if (!m_model) return;
+    if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
 
     SparseTimeValueModel::EditCommand *command =
 	new SparseTimeValueModel::EditCommand(m_model, tr("Paste"));
+
+    enum ValueAvailability {
+        UnknownAvailability,
+        NoValues,
+        SomeValues,
+        AllValues
+    };
+    enum ValueGeneration {
+        GenerateNone,
+        GenerateFromCounter,
+        GenerateFromFrameNumber,
+        GenerateFromRealTime,
+        GenerateFromRealTimeDifference,
+        GenerateFromTempo,
+        GenerateFromExistingNeighbour,
+        GenerateFromLabels
+    };
+
+    ValueGeneration generation = GenerateNone;
+
+    bool haveUsableLabels = false;
+    bool haveExistingItems = !(m_model->isEmpty());
+
+    if (interactive) {
+
+        ValueAvailability availability = UnknownAvailability;
+
+        for (Clipboard::PointList::const_iterator i = points.begin();
+             i != points.end(); ++i) {
+        
+            if (!i->haveFrame()) continue;
+
+            if (availability == UnknownAvailability) {
+                if (i->haveValue()) availability = AllValues;
+                else availability = NoValues;
+                continue;
+            }
+
+            if (i->haveValue()) {
+                if (availability == NoValues) {
+                    availability = SomeValues;
+                }
+            } else {
+                if (availability == AllValues) {
+                    availability = SomeValues;
+                }
+            }
+
+            if (!haveUsableLabels) {
+                if (i->haveLabel()) {
+                    if (i->getLabel().contains(QRegExp("[0-9]"))) {
+                        haveUsableLabels = true;
+                    }
+                }
+            }
+
+            if (availability == SomeValues && haveUsableLabels) break;
+        }
+
+        if (availability == NoValues || availability == SomeValues) {
+            
+            QString text;
+            if (availability == NoValues) {
+                text = tr("The items you are pasting do not have values.\nWhat values do you want to use for these items?");
+            } else {
+                text = tr("Some of the items you are pasting do not have values.\nWhat values do you want to use for these items?");
+            }
+
+            QStringList options;
+            std::vector<int> genopts;
+
+            options << tr("Zero for all items");
+            genopts.push_back(int(GenerateNone));
+
+            options << tr("Whole numbers counting from 1");
+            genopts.push_back(int(GenerateFromCounter));
+
+            options << tr("Item's audio sample frame number");
+            genopts.push_back(int(GenerateFromFrameNumber));
+
+            options << tr("Item's time in seconds");
+            genopts.push_back(int(GenerateFromRealTime));
+
+            options << tr("Duration from the item to the following item");
+            genopts.push_back(int(GenerateFromRealTimeDifference));
+
+            options << tr("Tempo in bpm derived from the duration");
+            genopts.push_back(int(GenerateFromTempo));
+
+            if (haveExistingItems) {
+                options << tr("Value of the nearest existing item");
+                genopts.push_back(int(GenerateFromExistingNeighbour));
+            }
+
+            if (haveUsableLabels) {
+                options << tr("Value extracted from the item's label (where possible)");
+                genopts.push_back(int(GenerateFromLabels));
+            }
+
+
+            static int prevSelection = 0;
+
+            bool ok = false;
+            QString selected = ListInputDialog::getItem
+                (0, tr("Choose value calculation"),
+                 text, options, prevSelection, &ok);
+
+            if (!ok) return false;
+            int selection = 0;
+            generation = GenerateNone;
+
+            for (QStringList::const_iterator i = options.begin();
+                 i != options.end(); ++i) {
+                if (selected == *i) {
+                    generation = ValueGeneration(genopts[selection]);
+                    break;
+                }
+                ++selection;
+            }
+
+            prevSelection = selection;
+        }
+    }
+
+    int counter = 1;
+    float prevBpm = 120.f;
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1151,15 +1280,91 @@ TimeValueLayer::paste(const Clipboard &from, int frameOffset)
         }
         SparseTimeValueModel::Point newPoint(frame);
   
-        if (i->haveLabel()) newPoint.label = i->getLabel();
-        if (i->haveValue()) newPoint.value = i->getValue();
-        else newPoint.value = (m_model->getValueMinimum() +
-                               m_model->getValueMaximum()) / 2;
+        if (i->haveLabel()) {
+            newPoint.label = i->getLabel();
+        } else if (i->haveValue()) {
+            newPoint.label = QString("%1").arg(i->getValue());
+        }
+
+        if (i->haveValue()) {
+            newPoint.value = i->getValue();
+        } else {
+            
+            switch (generation) {
+
+            case GenerateNone:
+                newPoint.value = 0;
+                break;
+
+            case GenerateFromCounter:
+                newPoint.value = counter;
+                break;
+
+            case GenerateFromFrameNumber:
+                newPoint.value = frame;
+                break;
+
+            case GenerateFromRealTime: 
+                newPoint.value = float(frame) / float(m_model->getSampleRate());
+                break;
+
+            case GenerateFromRealTimeDifference:
+            case GenerateFromTempo:
+            {
+                size_t nextFrame = frame;
+                Clipboard::PointList::const_iterator j = i;
+                for (; j != points.end(); ++j) {
+                    if (!j->haveFrame()) continue;
+                    if (j != i) break;
+                }
+                if (j != points.end()) {
+                    nextFrame = j->getFrame();
+                }
+                if (generation == GenerateFromRealTimeDifference) {
+                    newPoint.value = float(nextFrame - frame) /
+                        float(m_model->getSampleRate());
+                } else {
+                    float bpm = prevBpm;
+                    if (nextFrame > frame) {
+                        bpm = (60.f * m_model->getSampleRate()) /
+                            (nextFrame - frame);
+                    }
+                    newPoint.value = bpm;
+                    prevBpm = bpm;
+                }
+                break;
+            }
+
+            case GenerateFromExistingNeighbour:
+            {
+                SparseTimeValueModel::PointList points = 
+                    m_model->getPoints(frame);
+                if (points.empty()) points = m_model->getPreviousPoints(frame);
+                if (points.empty()) points = m_model->getNextPoints(frame);
+                if (points.empty()) {
+                    newPoint.value = 0.f;
+                } else {
+                    newPoint.value = points.begin()->value;
+                }
+            }
+
+            case GenerateFromLabels:
+                if (i->haveLabel()) {
+                    // more forgiving than QString::toFloat()
+                    newPoint.value = atof(i->getLabel().toLocal8Bit());
+                } else {
+                    newPoint.value = 0.f;
+                }
+            }
+        }
         
         command->addPoint(newPoint);
+        
+        ++counter;
     }
 
     command->finish();
+    return true;
 }
 
 QString

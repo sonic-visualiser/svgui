@@ -45,7 +45,7 @@ public:
 	UnknownLayer = 255
     };
 
-    static LayerFactory *instance();
+    static LayerFactory *getInstance();
     
     virtual ~LayerFactory();
 

@@ -705,15 +705,25 @@ TextLayer::copy(Selection s, Clipboard &to)
     }
 }
 
-void
-TextLayer::paste(const Clipboard &from, int frameOffset)
+bool
+TextLayer::paste(const Clipboard &from, int frameOffset, bool interactive)
 {
-    if (!m_model) return;
+    if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
 
     TextModel::EditCommand *command =
 	new TextModel::EditCommand(m_model, tr("Paste"));
+
+    float valueMin = 0.0, valueMax = 1.0;
+    for (Clipboard::PointList::const_iterator i = points.begin();
+         i != points.end(); ++i) {
+        if (i->haveValue()) {
+            if (i->getValue() < valueMin) valueMin = i->getValue();
+            if (i->getValue() > valueMax) valueMax = i->getValue();
+        }
+    }
+    if (valueMax < valueMin + 1.0) valueMax = valueMin + 1.0;
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -724,14 +734,26 @@ TextLayer::paste(const Clipboard &from, int frameOffset)
             frame = i->getFrame() + frameOffset;
         }
         TextModel::Point newPoint(frame);
-        if (i->haveValue()) newPoint.height = i->haveValue();
-        if (i->haveLabel()) newPoint.label = i->getLabel();
-        else newPoint.label = tr("New Point");
+
+        if (i->haveValue()) {
+            newPoint.height = (i->getValue() - valueMin) / (valueMax - valueMin);
+        } else {
+            newPoint.height = 0.5;
+        }
+
+        if (i->haveLabel()) {
+            newPoint.label = i->getLabel();
+        } else if (i->haveValue()) {
+            newPoint.label = QString("%1").arg(i->getValue());
+        } else {
+            newPoint.label = tr("New Point");
+        }
         
         command->addPoint(newPoint);
     }
 
     command->finish();
+    return true;
 }
 
 QString

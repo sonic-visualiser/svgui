@@ -721,10 +721,10 @@ TimeInstantLayer::copy(Selection s, Clipboard &to)
     }
 }
 
-void
-TimeInstantLayer::paste(const Clipboard &from, int frameOffset)
+bool
+TimeInstantLayer::paste(const Clipboard &from, int frameOffset, bool interactive)
 {
-    if (!m_model) return;
+    if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
 
@@ -740,12 +740,17 @@ TimeInstantLayer::paste(const Clipboard &from, int frameOffset)
             frame = i->getFrame() + frameOffset;
         }
         SparseOneDimensionalModel::Point newPoint(frame);
-        if (i->haveLabel()) newPoint.label = i->getLabel();
+        if (i->haveLabel()) {
+            newPoint.label = i->getLabel();
+        } else if (i->haveValue()) {
+            newPoint.label = QString("%1").arg(i->getValue());
+        }
         
         command->addPoint(newPoint);
     }
 
     command->finish();
+    return true;
 }
 
 QString

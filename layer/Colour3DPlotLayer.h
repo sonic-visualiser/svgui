@@ -77,7 +77,7 @@ public:
     virtual void setProperty(const PropertyName &, int value);
 */
 
-    void setProperties(const QXmlAttributes &attributes) { }
+    void setProperties(const QXmlAttributes &) { }
     
 protected slots:
     void cacheInvalid();

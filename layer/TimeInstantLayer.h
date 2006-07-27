@@ -55,7 +55,8 @@ public:
     virtual void deleteSelection(Selection s);
 
     virtual void copy(Selection s, Clipboard &to);
-    virtual void paste(const Clipboard &from, int frameOffset);
+    virtual bool paste(const Clipboard &from, int frameOffset,
+                       bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(SparseOneDimensionalModel *model);
@@ -88,8 +89,7 @@ public:
 
     virtual bool needsTextLabelHeight() const { return m_model->hasTextLabels(); }
 
-    virtual bool getValueExtents(float &min, float &max,
-                                 bool &log, QString &unit) const {
+    virtual bool getValueExtents(float &, float &, bool &, QString &) const {
         return false;
     }
 
