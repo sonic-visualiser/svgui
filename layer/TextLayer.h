@@ -53,7 +53,8 @@ public:
     virtual void deleteSelection(Selection s);
 
     virtual void copy(Selection s, Clipboard &to);
-    virtual void paste(const Clipboard &from, int frameOffset);
+    virtual bool paste(const Clipboard &from, int frameOffset,
+                       bool interactive);
 
     virtual void editOpen(View *, QMouseEvent *); // on double-click
 

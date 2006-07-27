@@ -36,7 +36,7 @@ LayerFactory *
 LayerFactory::m_instance = new LayerFactory;
 
 LayerFactory *
-LayerFactory::instance()
+LayerFactory::getInstance()
 {
     return m_instance;
 }

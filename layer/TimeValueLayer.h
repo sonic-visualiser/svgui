@@ -58,7 +58,8 @@ public:
     virtual void deleteSelection(Selection s);
 
     virtual void copy(Selection s, Clipboard &to);
-    virtual void paste(const Clipboard &from, int frameOffset);
+    virtual bool paste(const Clipboard &from, int frameOffset,
+                       bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(SparseTimeValueModel *model);

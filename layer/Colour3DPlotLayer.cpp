@@ -26,6 +26,8 @@
 
 #include <cassert>
 
+//#define DEBUG_COLOUR_3D_PLOT_LAYER_PAINT 1
+
 
 Colour3DPlotLayer::Colour3DPlotLayer() :
     Layer(),
@@ -170,7 +172,9 @@ void
 Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
 //    Profiler profiler("Colour3DPlotLayer::paint");
-//    std::cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << std::endl;
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+    std::cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << std::endl;
+#endif
 
     //!!! This doesn't yet accommodate the fact that the model may
     //have a different sample rate from an underlying model.  At the
@@ -272,10 +276,10 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     int sw = sx1 - sx0;
     int sh = m_model->getYBinCount();
 
-/*
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     std::cerr << "Colour3DPlotLayer::paint: w " << w << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sw << ", sh " << sh << std::endl;
     std::cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", window size " << m_model->getWindowSize() << std::endl;
-*/
+#endif
 
     QPoint illuminatePos;
     bool illuminate = v->shouldIlluminateLocalFeatures(this, illuminatePos);
@@ -321,8 +325,10 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 		}
 	    }
             
-//            std::cout << "rect " << rx0 << "," << (ry0 - h / sh - 1) << " "
-//                      << w << "x" << (h / sh + 1) << std::endl;
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+            std::cerr << "rect " << rx0 << "," << (ry0 - h / sh - 1) << " "
+                      << w << "x" << (h / sh + 1) << std::endl;
+#endif
 
 	    paint.drawRect(r);
 

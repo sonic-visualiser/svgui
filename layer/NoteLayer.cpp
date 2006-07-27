@@ -924,10 +924,10 @@ NoteLayer::copy(Selection s, Clipboard &to)
     }
 }
 
-void
-NoteLayer::paste(const Clipboard &from, int frameOffset)
+bool
+NoteLayer::paste(const Clipboard &from, int frameOffset, bool interactive)
 {
-    if (!m_model) return;
+    if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
 
@@ -949,12 +949,28 @@ NoteLayer::paste(const Clipboard &from, int frameOffset)
         else newPoint.value = (m_model->getValueMinimum() +
                                m_model->getValueMaximum()) / 2;
         if (i->haveDuration()) newPoint.duration = i->getDuration();
-        else newPoint.duration = m_model->getResolution(); //!!!
+        else {
+            size_t nextFrame = frame;
+            Clipboard::PointList::const_iterator j = i;
+            for (; j != points.end(); ++j) {
+                if (!j->haveFrame()) continue;
+                if (j != i) break;
+            }
+            if (j != points.end()) {
+                nextFrame = j->getFrame();
+            }
+            if (nextFrame == frame) {
+                newPoint.duration = m_model->getResolution();
+            } else {
+                newPoint.duration = nextFrame - frame;
+            }
+        }
         
         command->addPoint(newPoint);
     }
 
     command->finish();
+    return true;
 }
 
 QString
