@@ -16,9 +16,9 @@
 #ifndef _COLOUR_3D_PLOT_H_
 #define _COLOUR_3D_PLOT_H_
 
-#include "base/Layer.h"
+#include "Layer.h"
 
-#include "model/DenseThreeDimensionalModel.h"
+#include "data/model/DenseThreeDimensionalModel.h"
 
 class View;
 class QPainter;

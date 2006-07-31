@@ -16,15 +16,15 @@
 #ifndef _SPECTROGRAM_LAYER_H_
 #define _SPECTROGRAM_LAYER_H_
 
-#include "base/Layer.h"
+#include "Layer.h"
 #include "base/Window.h"
 #include "base/RealTime.h"
 #include "base/Thread.h"
 #include "base/PropertyContainer.h"
-#include "model/PowerOfSqrtTwoZoomConstraint.h"
-#include "model/DenseTimeValueModel.h"
+#include "data/model/PowerOfSqrtTwoZoomConstraint.h"
+#include "data/model/DenseTimeValueModel.h"
 
-#include "fileio/FFTFuzzyAdapter.h"
+#include "data/fft/FFTFuzzyAdapter.h"
 
 #include <QMutex>
 #include <QWaitCondition>

@@ -15,12 +15,12 @@
 
 #include "TextLayer.h"
 
-#include "base/Model.h"
+#include "data/model/Model.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
-#include "base/View.h"
+#include "view/View.h"
 
-#include "model/TextModel.h"
+#include "data/model/TextModel.h"
 
 #include <QPainter>
 #include <QMouseEvent>

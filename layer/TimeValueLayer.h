@@ -16,8 +16,8 @@
 #ifndef _TIME_VALUE_LAYER_H_
 #define _TIME_VALUE_LAYER_H_
 
-#include "base/Layer.h"
-#include "model/SparseTimeValueModel.h"
+#include "Layer.h"
+#include "data/model/SparseTimeValueModel.h"
 
 #include <QObject>
 #include <QColor>

@@ -16,8 +16,8 @@
 #ifndef _TEXT_LAYER_H_
 #define _TEXT_LAYER_H_
 
-#include "base/Layer.h"
-#include "model/TextModel.h"
+#include "Layer.h"
+#include "data/model/TextModel.h"
 
 #include <QObject>
 #include <QColor>

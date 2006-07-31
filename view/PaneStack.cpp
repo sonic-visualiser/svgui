@@ -16,10 +16,10 @@
 
 #include "PaneStack.h"
 
-#include "widgets/Pane.h"
+#include "Pane.h"
 #include "widgets/PropertyStack.h"
-#include "base/Layer.h"
-#include "base/ViewManager.h"
+#include "layer/Layer.h"
+#include "ViewManager.h"
 
 #include <QApplication>
 #include <QHBoxLayout>

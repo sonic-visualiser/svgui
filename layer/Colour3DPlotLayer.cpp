@@ -15,7 +15,7 @@
 
 #include "Colour3DPlotLayer.h"
 
-#include "base/View.h"
+#include "view/View.h"
 #include "base/Profiler.h"
 
 #include <QPainter>

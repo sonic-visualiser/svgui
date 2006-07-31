@@ -16,8 +16,8 @@
 #ifndef _TIME_INSTANT_LAYER_H_
 #define _TIME_INSTANT_LAYER_H_
 
-#include "base/Layer.h"
-#include "model/SparseOneDimensionalModel.h"
+#include "Layer.h"
+#include "data/model/SparseOneDimensionalModel.h"
 
 #include <QObject>
 #include <QColor>

@@ -16,7 +16,7 @@
 #include "WaveformLayer.h"
 
 #include "base/AudioLevel.h"
-#include "base/View.h"
+#include "view/View.h"
 #include "base/Profiler.h"
 
 #include <QPainter>

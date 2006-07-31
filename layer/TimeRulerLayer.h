@@ -16,7 +16,7 @@
 #ifndef _TIME_RULER_H_
 #define _TIME_RULER_H_
 
-#include "base/Layer.h"
+#include "Layer.h"
 
 #include <QRect>
 #include <QColor>

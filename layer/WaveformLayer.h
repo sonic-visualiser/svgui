@@ -19,9 +19,9 @@
 #include <QRect>
 #include <QColor>
 
-#include "base/Layer.h"
+#include "Layer.h"
 
-#include "model/RangeSummarisableTimeValueModel.h"
+#include "data/model/RangeSummarisableTimeValueModel.h"
 
 class View;
 class QPainter;
