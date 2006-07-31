@@ -15,13 +15,13 @@
 
 #include "NoteLayer.h"
 
-#include "base/Model.h"
+#include "data/model/Model.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/Pitch.h"
-#include "base/View.h"
+#include "view/View.h"
 
-#include "model/NoteModel.h"
+#include "data/model/NoteModel.h"
 
 #include "widgets/ItemEditDialog.h"
 

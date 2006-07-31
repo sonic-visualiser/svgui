@@ -16,8 +16,8 @@
 #include "PropertyStack.h"
 #include "PropertyBox.h"
 #include "base/PropertyContainer.h"
-#include "base/View.h"
-#include "base/Layer.h"
+#include "view/View.h"
+#include "layer/Layer.h"
 
 #include <QIcon>
 #include <QTabWidget>

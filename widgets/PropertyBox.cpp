@@ -18,7 +18,7 @@
 
 #include "base/PropertyContainer.h"
 #include "base/PlayParameters.h"
-#include "base/Layer.h"
+#include "layer/Layer.h"
 #include "base/UnitDatabase.h"
 
 #include "plugin/RealTimePluginFactory.h"

@@ -21,9 +21,9 @@
 
 #include <map>
 
-#include "Selection.h"
-#include "Command.h"
-#include "Clipboard.h"
+#include "base/Selection.h"
+#include "base/Command.h"
+#include "base/Clipboard.h"
 
 class AudioPlaySource;
 class Model;

@@ -13,14 +13,14 @@
     COPYING included with this distribution for more information.
 */
 
-#include "base/View.h"
-#include "base/Layer.h"
-#include "base/Model.h"
+#include "View.h"
+#include "layer/Layer.h"
+#include "data/model/Model.h"
 #include "base/ZoomConstraint.h"
 #include "base/Profiler.h"
 
 #include "layer/TimeRulerLayer.h" //!!! damn, shouldn't be including that here
-#include "model/PowerOfSqrtTwoZoomConstraint.h" //!!! likewise
+#include "data/model/PowerOfSqrtTwoZoomConstraint.h" //!!! likewise
 
 #include <QPainter>
 #include <QPaintEvent>

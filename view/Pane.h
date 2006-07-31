@@ -21,7 +21,7 @@
 #include <QPoint>
 
 #include "base/ZoomConstraint.h"
-#include "base/View.h"
+#include "View.h"
 #include "base/Selection.h"
 
 class QWidget;

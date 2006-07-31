@@ -15,9 +15,9 @@
 
 #include "TimeRulerLayer.h"
 
-#include "base/Model.h"
+#include "data/model/Model.h"
 #include "base/RealTime.h"
-#include "base/View.h"
+#include "view/View.h"
 
 #include <QPainter>
 

@@ -16,8 +16,8 @@
 #ifndef _NOTE_LAYER_H_
 #define _NOTE_LAYER_H_
 
-#include "base/Layer.h"
-#include "model/NoteModel.h"
+#include "Layer.h"
+#include "data/model/NoteModel.h"
 
 #include <QObject>
 #include <QColor>

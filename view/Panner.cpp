@@ -14,8 +14,8 @@
 */
 
 #include "Panner.h"
-#include "base/Layer.h"
-#include "base/Model.h"
+#include "layer/Layer.h"
+#include "data/model/Model.h"
 #include "base/ZoomConstraint.h"
 
 #include <QPaintEvent>

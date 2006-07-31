@@ -24,13 +24,13 @@
 #include "TextLayer.h"
 #include "Colour3DPlotLayer.h"
 
-#include "model/RangeSummarisableTimeValueModel.h"
-#include "model/DenseTimeValueModel.h"
-#include "model/SparseOneDimensionalModel.h"
-#include "model/SparseTimeValueModel.h"
-#include "model/NoteModel.h"
-#include "model/TextModel.h"
-#include "model/DenseThreeDimensionalModel.h"
+#include "data/model/RangeSummarisableTimeValueModel.h"
+#include "data/model/DenseTimeValueModel.h"
+#include "data/model/SparseOneDimensionalModel.h"
+#include "data/model/SparseTimeValueModel.h"
+#include "data/model/NoteModel.h"
+#include "data/model/TextModel.h"
+#include "data/model/DenseThreeDimensionalModel.h"
 
 LayerFactory *
 LayerFactory::m_instance = new LayerFactory;

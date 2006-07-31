@@ -14,9 +14,9 @@
 */
 
 #include "ViewManager.h"
-#include "AudioPlaySource.h"
-#include "Model.h"
-#include "CommandHistory.h"
+#include "base/AudioPlaySource.h"
+#include "data/model/Model.h"
+#include "base/CommandHistory.h"
 
 #include <iostream>
 

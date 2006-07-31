@@ -15,11 +15,11 @@
 */
 
 #include "LayerTree.h"
-#include "PaneStack.h"
+#include "view/PaneStack.h"
 
-#include "widgets/Pane.h"
-#include "base/Layer.h"
-#include "base/Model.h"
+#include "view/Pane.h"
+#include "layer/Layer.h"
+#include "data/model/Model.h"
 
 #include <iostream>
 

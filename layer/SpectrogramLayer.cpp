@@ -15,13 +15,13 @@
 
 #include "SpectrogramLayer.h"
 
-#include "base/View.h"
+#include "view/View.h"
 #include "base/Profiler.h"
 #include "base/AudioLevel.h"
 #include "base/Window.h"
 #include "base/Pitch.h"
 #include "base/Preferences.h"
-#include "fileio/FFTDataServer.h"
+#include "data/fft/FFTDataServer.h"
 
 #include <QPainter>
 #include <QImage>

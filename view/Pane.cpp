@@ -13,13 +13,13 @@
     COPYING included with this distribution for more information.
 */
 
-#include "widgets/Pane.h"
-#include "base/Layer.h"
-#include "base/Model.h"
+#include "Pane.h"
+#include "layer/Layer.h"
+#include "data/model/Model.h"
 #include "base/ZoomConstraint.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
-#include "base/ViewManager.h"
+#include "ViewManager.h"
 #include "base/CommandHistory.h"
 #include "layer/WaveformLayer.h"
 

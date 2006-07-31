@@ -17,9 +17,9 @@
 #ifndef _LAYER_H_
 #define _LAYER_H_
 
-#include "PropertyContainer.h"
-#include "XmlExportable.h"
-#include "Selection.h"
+#include "base/PropertyContainer.h"
+#include "base/XmlExportable.h"
+#include "base/Selection.h"
 
 #include <QObject>
 #include <QRect>

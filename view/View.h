@@ -21,7 +21,7 @@
 
 #include "base/ZoomConstraint.h"
 #include "base/PropertyContainer.h"
-#include "base/ViewManager.h"
+#include "ViewManager.h"
 #include "base/XmlExportable.h"
 
 // #define DEBUG_VIEW_WIDGET_PAINT 1

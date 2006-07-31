@@ -16,7 +16,7 @@
 #ifndef _PAN_WIDGET_H_
 #define _PAN_WIDGET_H_
 
-#include "base/View.h"
+#include "View.h"
 
 #include <QPoint>
 

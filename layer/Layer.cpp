@@ -14,13 +14,13 @@
 */
 
 #include "Layer.h"
-#include "View.h"
-#include "Model.h"
+#include "view/View.h"
+#include "data/model/Model.h"
 
 #include <iostream>
 
-#include "layer/LayerFactory.h" //!!! shouldn't be including this here -- does that suggest we need to move this into layer/ ?
-#include "PlayParameterRepository.h"
+#include "LayerFactory.h" //!!! shouldn't be including this here -- does that suggest we need to move this into layer/ ?
+#include "base/PlayParameterRepository.h"
 
 Layer::Layer()
 {
