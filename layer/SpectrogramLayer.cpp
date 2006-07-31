@@ -92,7 +92,7 @@ SpectrogramLayer::~SpectrogramLayer()
     delete m_updateTimer;
     m_updateTimer = 0;
     
-    invalidateFFTAdapters();
+    invalidateFFTModels();
 }
 
 void
@@ -103,7 +103,7 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     if (model == m_model) return;
 
     m_model = model;
-    invalidateFFTAdapters();
+    invalidateFFTModels();
 
     if (!m_model || !m_model->isOK()) return;
 
@@ -579,7 +579,7 @@ SpectrogramLayer::setChannel(int ch)
 
     invalidatePixmapCaches();
     m_channel = ch;
-    invalidateFFTAdapters();
+    invalidateFFTModels();
 
     emit layerParametersChanged();
 }
@@ -600,7 +600,7 @@ SpectrogramLayer::setWindowSize(size_t ws)
     m_windowSize = ws;
     m_fftSize = ws * (m_zeroPadLevel + 1);
     
-    invalidateFFTAdapters();
+    invalidateFFTModels();
 
     emit layerParametersChanged();
 }
@@ -620,7 +620,7 @@ SpectrogramLayer::setWindowHopLevel(size_t v)
     
     m_windowHopLevel = v;
     
-    invalidateFFTAdapters();
+    invalidateFFTModels();
 
     emit layerParametersChanged();
 
@@ -643,7 +643,7 @@ SpectrogramLayer::setZeroPadLevel(size_t v)
     m_zeroPadLevel = v;
     m_fftSize = m_windowSize * (v + 1);
 
-    invalidateFFTAdapters();
+    invalidateFFTModels();
 
     emit layerParametersChanged();
 }
@@ -663,7 +663,7 @@ SpectrogramLayer::setWindowType(WindowType w)
     
     m_windowType = w;
 
-    invalidateFFTAdapters();
+    invalidateFFTModels();
 
     emit layerParametersChanged();
 }
@@ -887,9 +887,9 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 	invalidatePixmapCaches();
         m_pixmapCaches.erase(v);
 
-        if (m_fftAdapters.find(v) != m_fftAdapters.end()) {
-            delete m_fftAdapters[v].first;
-            m_fftAdapters.erase(v);
+        if (m_fftModels.find(v) != m_fftModels.end()) {
+            delete m_fftModels[v].first;
+            m_fftModels.erase(v);
         }
 	
     } else {
@@ -919,19 +919,19 @@ SpectrogramLayer::fillTimerTimedOut()
 
     bool allDone = true;
 
-    for (ViewFFTMap::iterator i = m_fftAdapters.begin();
-         i != m_fftAdapters.end(); ++i) {
+    for (ViewFFTMap::iterator i = m_fftModels.begin();
+         i != m_fftModels.end(); ++i) {
 
         const View *v = i->first;
-        const FFTFuzzyAdapter *adapter = i->second.first;
+        const FFTModel *model = i->second.first;
         size_t lastFill = i->second.second;
 
-        if (adapter) {
+        if (model) {
 
-            size_t fill = adapter->getFillExtent();
+            size_t fill = model->getFillExtent();
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            std::cerr << "SpectrogramLayer::fillTimerTimedOut: extent for " << adapter << ": " << fill << ", last " << lastFill << ", total " << m_model->getEndFrame() << std::endl;
+            std::cerr << "SpectrogramLayer::fillTimerTimedOut: extent for " << model << ": " << fill << ", last " << lastFill << ", total " << m_model->getEndFrame() << std::endl;
 #endif
 
             if (fill >= lastFill) {
@@ -1285,7 +1285,7 @@ SpectrogramLayer::getYBinRange(View *v, int y, float &q0, float &q1) const
 
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
-    //!!! wrong for smoothing -- wrong fft size for fft adapter
+    //!!! wrong for smoothing -- wrong fft size for fft model
 
     q0 = v->getFrequencyForY(y, minf, maxf, logarithmic);
     q1 = v->getFrequencyForY(y - 1, minf, maxf, logarithmic);
@@ -1373,7 +1373,7 @@ SpectrogramLayer::getAdjustedYBinSourceRange(View *v, int x, int y,
 					     float &adjFreqMin, float &adjFreqMax)
 const
 {
-    FFTFuzzyAdapter *fft = getFFTAdapter(v);
+    FFTModel *fft = getFFTModel(v);
     if (!fft) return false;
 
     float s0 = 0, s1 = 0;
@@ -1463,7 +1463,7 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
     q0i *= zp + 1;
     q1i *= zp + 1;
 
-    FFTFuzzyAdapter *fft = getFFTAdapter(v);
+    FFTModel *fft = getFFTModel(v);
 
     if (fft) {
 
@@ -1548,23 +1548,23 @@ SpectrogramLayer::getFFTSize(const View *v) const
     return m_fftSize * (getZeroPadLevel(v) + 1);
 }
 	
-FFTFuzzyAdapter *
-SpectrogramLayer::getFFTAdapter(const View *v) const
+FFTModel *
+SpectrogramLayer::getFFTModel(const View *v) const
 {
     if (!m_model) return 0;
 
     size_t fftSize = getFFTSize(v);
 
-    if (m_fftAdapters.find(v) != m_fftAdapters.end()) {
-        if (m_fftAdapters[v].first->getHeight() != fftSize / 2) {
-            delete m_fftAdapters[v].first;
-            m_fftAdapters.erase(v);
+    if (m_fftModels.find(v) != m_fftModels.end()) {
+        if (m_fftModels[v].first->getHeight() != fftSize / 2) {
+            delete m_fftModels[v].first;
+            m_fftModels.erase(v);
         }
     }
 
-    if (m_fftAdapters.find(v) == m_fftAdapters.end()) {
-        m_fftAdapters[v] = FFTFillPair
-            (new FFTFuzzyAdapter(m_model,
+    if (m_fftModels.find(v) == m_fftModels.end()) {
+        m_fftModels[v] = FFTFillPair
+            (new FFTModel(m_model,
                                  m_channel,
                                  m_windowType,
                                  m_windowSize,
@@ -1581,18 +1581,18 @@ SpectrogramLayer::getFFTAdapter(const View *v) const
         m_updateTimer->start(200);
     }
 
-    return m_fftAdapters[v].first;
+    return m_fftModels[v].first;
 }
 
 void
-SpectrogramLayer::invalidateFFTAdapters()
+SpectrogramLayer::invalidateFFTModels()
 {
-    for (ViewFFTMap::iterator i = m_fftAdapters.begin();
-         i != m_fftAdapters.end(); ++i) {
+    for (ViewFFTMap::iterator i = m_fftModels.begin();
+         i != m_fftModels.end(); ++i) {
         delete i->second.first;
     }
     
-    m_fftAdapters.clear();
+    m_fftModels.clear();
 }
 
 void
@@ -1673,9 +1673,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     m_dormancy[v] = false;
 
     size_t fftSize = getFFTSize(v);
-    FFTFuzzyAdapter *fft = getFFTAdapter(v);
+    FFTModel *fft = getFFTModel(v);
     if (!fft) {
-	std::cerr << "ERROR: SpectrogramLayer::paint(): No FFT adapter, returning" << std::endl;
+	std::cerr << "ERROR: SpectrogramLayer::paint(): No FFT model, returning" << std::endl;
 	return;
     }
 
@@ -2174,9 +2174,9 @@ int
 SpectrogramLayer::getCompletion(View *v) const
 {
     if (m_updateTimer == 0) return 100;
-    if (m_fftAdapters.find(v) == m_fftAdapters.end()) return 100;
+    if (m_fftModels.find(v) == m_fftModels.end()) return 100;
 
-    size_t completion = m_fftAdapters[v].first->getFillCompletion();
+    size_t completion = m_fftModels[v].first->getCompletion();
     std::cerr << "SpectrogramLayer::getCompletion: completion = " << completion << std::endl;
     return completion;
 }

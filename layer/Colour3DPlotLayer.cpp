@@ -90,11 +90,11 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
     int y = pos.y();
 
     size_t modelStart = m_model->getStartFrame();
-    size_t modelWindow = m_model->getWindowSize();
+    size_t modelResolution = m_model->getResolution();
 
-    int sx0 = modelWindow *
-	int((v->getFrameForX(x) - long(modelStart)) / long(modelWindow));
-    int sx1 = sx0 + modelWindow;
+    int sx0 = modelResolution *
+	int((v->getFrameForX(x) - long(modelStart)) / long(modelResolution));
+    int sx1 = sx0 + modelResolution;
 
     float binHeight = float(v->height()) / m_model->getYBinCount();
     int sy = (v->height() - y) / binHeight;
@@ -198,9 +198,9 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     size_t modelStart = m_model->getStartFrame();
     size_t modelEnd = m_model->getEndFrame();
-    size_t modelWindow = m_model->getWindowSize();
+    size_t modelResolution = m_model->getResolution();
 
-    size_t cacheWidth = (modelEnd - modelStart) / modelWindow + 1;
+    size_t cacheWidth = (modelEnd - modelStart) / modelResolution + 1;
     size_t cacheHeight = m_model->getYBinCount();
 
     if (m_cache &&
@@ -231,7 +231,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	m_cache->fill(min);
 
-	for (size_t f = modelStart; f <= modelEnd; f += modelWindow) {
+	for (size_t f = modelStart; f <= modelEnd; f += modelResolution) {
 	
 	    values.clear();
 	    m_model->getBinValues(f, values);
@@ -245,7 +245,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
                 if (pixel < 0) pixel = 0;
 		if (pixel > 255) pixel = 255;
 
-		m_cache->setPixel(f / modelWindow, y, pixel);
+		m_cache->setPixel(f / modelResolution, y, pixel);
 	    }
 	}
     }
@@ -271,14 +271,14 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     //direction.  This one is only really appropriate for models with
     //far fewer bins in both directions.
 
-    int sx0 = int((v->getFrameForX(x0) - long(modelStart)) / long(modelWindow));
-    int sx1 = int((v->getFrameForX(x1) - long(modelStart)) / long(modelWindow));
+    int sx0 = int((v->getFrameForX(x0) - long(modelStart)) / long(modelResolution));
+    int sx1 = int((v->getFrameForX(x1) - long(modelStart)) / long(modelResolution));
     int sw = sx1 - sx0;
     int sh = m_model->getYBinCount();
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     std::cerr << "Colour3DPlotLayer::paint: w " << w << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sw << ", sh " << sh << std::endl;
-    std::cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", window size " << m_model->getWindowSize() << std::endl;
+    std::cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", resolution " << m_model->getResolution() << std::endl;
 #endif
 
     QPoint illuminatePos;
@@ -287,13 +287,13 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     for (int sx = sx0 - 1; sx <= sx1; ++sx) {
 
-	int fx = sx * int(modelWindow);
+	int fx = sx * int(modelResolution);
 
-	if (fx + modelWindow < int(modelStart) ||
+	if (fx + modelResolution < int(modelStart) ||
 	    fx > int(modelEnd)) continue;
 
 	int rx0 = v->getXForFrame(fx + int(modelStart));
-	int rx1 = v->getXForFrame(fx + int(modelStart) + int(modelWindow));
+	int rx1 = v->getXForFrame(fx + int(modelStart) + int(modelResolution));
 
 	int w = rx1 - rx0;
 	if (w < 1) w = 1;
@@ -356,7 +356,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     size_t modelStart = m_model->getStartFrame();
     size_t modelEnd = m_model->getEndFrame();
-    size_t modelWindow = m_model->getWindowSize();
+    size_t modelResolution = m_model->getResolution();
 
     int x0 = rect.left();
     int x1 = rect.right() + 1;
@@ -377,8 +377,8 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             continue;
         }
 
-        float sx0 = (float(xf) - modelStart) / modelWindow;
-        float sx1 = (float(v->getFrameForX(x+1)) - modelStart) / modelWindow;
+        float sx0 = (float(xf) - modelStart) / modelResolution;
+        float sx1 = (float(v->getFrameForX(x+1)) - modelStart) / modelResolution;
             
         int sx0i = int(sx0 + 0.001);
         int sx1i = int(sx1);
@@ -432,7 +432,7 @@ Colour3DPlotLayer::snapToFeatureFrame(View *v, int &frame,
 	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
-    resolution = m_model->getWindowSize();
+    resolution = m_model->getResolution();
     int left = (frame / resolution) * resolution;
     int right = left + resolution;
 
