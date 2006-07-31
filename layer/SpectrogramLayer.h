@@ -23,8 +23,7 @@
 #include "base/PropertyContainer.h"
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h"
 #include "data/model/DenseTimeValueModel.h"
-
-#include "data/fft/FFTFuzzyAdapter.h"
+#include "data/model/FFTModel.h"
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -36,7 +35,7 @@ class QPainter;
 class QImage;
 class QPixmap;
 class QTimer;
-class FFTFuzzyAdapter;
+class FFTModel;
 
 
 /**
@@ -322,13 +321,13 @@ protected:
 
     size_t getZeroPadLevel(const View *v) const;
     size_t getFFTSize(const View *v) const;
-    FFTFuzzyAdapter *getFFTAdapter(const View *v) const;
-    void invalidateFFTAdapters();
+    FFTModel *getFFTModel(const View *v) const;
+    void invalidateFFTModels();
 
-    typedef std::pair<FFTFuzzyAdapter *, int> FFTFillPair; // adapter, last fill
+    typedef std::pair<FFTModel *, int> FFTFillPair; // model, last fill
     typedef std::map<const View *, FFTFillPair> ViewFFTMap;
     typedef std::vector<float> FloatVector;
-    mutable ViewFFTMap m_fftAdapters;
+    mutable ViewFFTMap m_fftModels;
 
     class MagnitudeRange {
     public:
