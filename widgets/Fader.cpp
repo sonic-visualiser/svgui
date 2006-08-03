@@ -121,6 +121,13 @@ Fader::mouseMoveEvent(QMouseEvent *ev)
 
 
 void
+Fader::mouseReleaseEvent(QMouseEvent *ev)
+{
+    mouseMoveEvent(ev);
+}
+
+
+void
 Fader::mouseDoubleClickEvent(QMouseEvent *)
 {
     setValue(1.0);
