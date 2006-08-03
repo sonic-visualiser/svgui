@@ -544,6 +544,7 @@ SpectrogramLayer::invalidatePixmapCaches(size_t startFrame, size_t endFrame)
 {
     for (ViewPixmapCache::iterator i = m_pixmapCaches.begin();
          i != m_pixmapCaches.end(); ++i) {
+
         //!!! when are views removed from the map? on setLayerDormant?
         const View *v = i->first;
 
@@ -878,11 +879,13 @@ SpectrogramLayer::getNormalizeVisibleArea() const
 void
 SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 {
-    if (dormant == m_dormancy[v]) return;
-
     if (dormant) {
 
-	m_dormancy[v] = true;
+        if (isLayerDormant(v)) {
+            return;
+        }
+
+        Layer::setLayerDormant(v, true);
 
 	invalidatePixmapCaches();
         m_pixmapCaches.erase(v);
@@ -894,7 +897,7 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 	
     } else {
 
-	m_dormancy[v] = false;
+        Layer::setLayerDormant(v, false);
     }
 }
 
@@ -1647,7 +1650,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	v->setLightBackground(false);
     }
 
-//    Profiler profiler("SpectrogramLayer::paint", true);
+    Profiler profiler("SpectrogramLayer::paint", true);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << std::endl;
     
@@ -1670,7 +1673,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     // is not in the dormancy map at all -- we need it to be present
     // and accountable for when determining whether we need the cache
     // in the cache-fill thread above.
-    m_dormancy[v] = false;
+    //!!! no longer use cache-fill thread
+    const_cast<SpectrogramLayer *>(this)->Layer::setLayerDormant(v, false);
 
     size_t fftSize = getFFTSize(v);
     FFTModel *fft = getFFTModel(v);
@@ -1937,6 +1941,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     MagnitudeRange overallMag = m_viewMags[v];
     bool overallMagChanged = false;
 
+    fft->suspend();
+
     for (int x = 0; x < w; ++x) {
 
 	for (int y = 0; y < h; ++y) {
@@ -2116,6 +2122,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint() returning" << std::endl;
 #endif
+
+    fft->resume();
 }
 
 void

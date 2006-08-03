@@ -19,7 +19,9 @@
 
 #include <iostream>
 
-#include "LayerFactory.h" //!!! shouldn't be including this here -- does that suggest we need to move this into layer/ ?
+#include <QMutexLocker>
+
+#include "LayerFactory.h"
 #include "base/PlayParameterRepository.h"
 
 Layer::Layer()
@@ -89,6 +91,23 @@ Layer::getPlayParameters()
 	return PlayParameterRepository::getInstance()->getPlayParameters(model);
     }
     return 0;
+}
+
+void
+Layer::setLayerDormant(const View *v, bool dormant)
+{
+    const void *vv = (const void *)v;
+    QMutexLocker locker(&m_dormancyMutex);
+    m_dormancy[vv] = dormant;
+}
+
+bool
+Layer::isLayerDormant(const View *v) const
+{
+    const void *vv = (const void *)v;
+    QMutexLocker locker(&m_dormancyMutex);
+    if (m_dormancy.find(vv) == m_dormancy.end()) return false;
+    return m_dormancy.find(vv)->second;
 }
 
 void

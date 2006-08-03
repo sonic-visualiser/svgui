@@ -923,6 +923,10 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
     bool metUnscrollable = false;
 
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+        std::cerr << "View::getScrollableBackLayers: calling isLayerDormant on layer " << *i << std::endl;
+        std::cerr << "(name is " << (*i)->objectName().toStdString() << ")"
+                  << std::endl;
+        std::cerr << "View::getScrollableBackLayers: I am " << this << std::endl;
 	if ((*i)->isLayerDormant(this)) continue;
 	if ((*i)->isLayerOpaque()) {
 	    // You can't see anything behind an opaque layer!
