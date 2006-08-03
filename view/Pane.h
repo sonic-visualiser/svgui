@@ -55,6 +55,9 @@ signals:
 public slots:
     virtual void toolModeChanged();
 
+    virtual void horizontalThumbwheelMoved(int value);
+    virtual void verticalThumbwheelMoved(int value);
+
 protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void mousePressEvent(QMouseEvent *e);

@@ -22,6 +22,7 @@
 #include "ViewManager.h"
 #include "base/CommandHistory.h"
 #include "layer/WaveformLayer.h"
+#include "widgets/Thumbwheel.h"
 
 #include <QPaintEvent>
 #include <QPainter>
@@ -43,6 +44,29 @@ Pane::Pane(QWidget *w) :
 {
     setObjectName("Pane");
     setMouseTracking(true);
+/*
+    int count = 0;
+    int currentLevel = 1;
+    int level = 1;
+    while (true) {
+        if (getZoomLevel() == level) currentLevel = count;
+        int newLevel = getZoomConstraintBlockSize(level + 1,
+                                                  ZoomConstraint::RoundUp);
+        if (newLevel == level) break;
+        if (newLevel == 131072) break; //!!! just because
+        level = newLevel;
+        ++count;
+    }
+
+    std::cerr << "Have " << count+1 << " zoom levels" << std::endl;
+*/
+/*
+    Thumbwheel *thumbwheel = new Thumbwheel(0, 40, 5,
+                                            Qt::Vertical, this);
+    thumbwheel->move(10, 10);
+    connect(thumbwheel, SIGNAL(valueChanged(int)), this,
+            SLOT(horizontalThumbwheelMoved(int)));
+*/
 }
 
 bool
@@ -968,6 +992,29 @@ Pane::wheelEvent(QWheelEvent *e)
 
     emit paneInteractedWith();
 }
+
+void
+Pane::horizontalThumbwheelMoved(int value)
+{
+    int count = 0;
+    int level = 1;
+    while (true) {
+        if (value == count) break;
+        int newLevel = getZoomConstraintBlockSize(level + 1,
+                                                  ZoomConstraint::RoundUp);
+        if (newLevel == level) break;
+        level = newLevel;
+        ++count;
+    }
+
+    std::cerr << "new level is " << level << std::endl;
+    setZoomLevel(level);
+}    
+
+void
+Pane::verticalThumbwheelMoved(int value)
+{
+}    
 
 bool
 Pane::editSelectionStart(QMouseEvent *e)

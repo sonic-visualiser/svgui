@@ -1941,7 +1941,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     MagnitudeRange overallMag = m_viewMags[v];
     bool overallMagChanged = false;
 
-    fft->suspend();
+    fft->suspendWrites();
 
     for (int x = 0; x < w; ++x) {
 

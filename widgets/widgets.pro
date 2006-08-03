@@ -23,7 +23,8 @@ HEADERS += AudioDial.h \
            PluginParameterBox.h \
            PluginParameterDialog.h \
            PropertyBox.h \
-           PropertyStack.h
+           PropertyStack.h \
+           Thumbwheel.h
 SOURCES += AudioDial.cpp \
            Fader.cpp \
            ItemEditDialog.cpp \
@@ -33,4 +34,5 @@ SOURCES += AudioDial.cpp \
            PluginParameterBox.cpp \
            PluginParameterDialog.cpp \
            PropertyBox.cpp \
-           PropertyStack.cpp
+           PropertyStack.cpp \
+           Thumbwheel.cpp
