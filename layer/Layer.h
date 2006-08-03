@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QRect>
 #include <QXmlAttributes>
+#include <QMutex>
 
 #include <map>
 
@@ -226,19 +227,17 @@ public:
      * it).  The layer may respond by (for example) freeing any cache
      * memory it is using, until next time its paint method is called,
      * when it should set itself un-dormant again.
+     *
+     * A layer class that overrides this function must also call this
+     * class's implementation.
      */
-    virtual void setLayerDormant(const View *v, bool dormant) {
-	m_dormancy[v] = dormant;
-    }
+    virtual void setLayerDormant(const View *v, bool dormant);
 
     /**
      * Return whether the layer is dormant (i.e. hidden) in the given
      * view.
      */
-    virtual bool isLayerDormant(const View *v) const {
-	if (m_dormancy.find(v) == m_dormancy.end()) return false;
-	return m_dormancy.find(v)->second;
-    }
+    virtual bool isLayerDormant(const View *v) const;
 
     virtual PlayParameters *getPlayParameters();
 
@@ -293,7 +292,8 @@ signals:
     void layerParametersChanged();
     void layerNameChanged();
 
-protected:
+private:
+    mutable QMutex m_dormancyMutex;
     mutable std::map<const void *, bool> m_dormancy;
 };
 
