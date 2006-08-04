@@ -23,6 +23,7 @@
 #include "NoteLayer.h"
 #include "TextLayer.h"
 #include "Colour3DPlotLayer.h"
+#include "SpectrumLayer.h"
 
 #include "data/model/RangeSummarisableTimeValueModel.h"
 #include "data/model/DenseTimeValueModel.h"
@@ -57,6 +58,7 @@ LayerFactory::getLayerPresentationName(LayerType type)
     case Notes:        return Layer::tr("Notes");
     case Text:         return Layer::tr("Text");
     case Colour3DPlot: return Layer::tr("Colour 3D Plot");
+    case Spectrum:     return Layer::tr("Spectrum");
 
     case MelodicRangeSpectrogram:
 	// The user can change all the parameters of this after the
@@ -109,6 +111,10 @@ LayerFactory::getValidLayerTypes(Model *model)
 	types.insert(Text);
     }
 
+    if (dynamic_cast<DenseTimeValueModel *>(model)) {
+        types.insert(Spectrum);
+    }
+
     // We don't count TimeRuler here as it doesn't actually display
     // the data, although it can be backed by any model
 
@@ -138,6 +144,7 @@ LayerFactory::getLayerType(const Layer *layer)
     if (dynamic_cast<const NoteLayer *>(layer)) return Notes;
     if (dynamic_cast<const TextLayer *>(layer)) return Text;
     if (dynamic_cast<const Colour3DPlotLayer *>(layer)) return Colour3DPlot;
+    if (dynamic_cast<const SpectrumLayer *>(layer)) return Spectrum;
     return UnknownLayer;
 }
 
@@ -153,6 +160,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case Notes: return "notes";
     case Text: return "text";
     case Colour3DPlot: return "colour3d";
+    case Spectrum: return "spectrum";
     default: return "unknown";
     }
 }
@@ -169,6 +177,7 @@ LayerFactory::getLayerTypeName(LayerType type)
     case Notes: return "notes";
     case Text: return "text";
     case Colour3DPlot: return "colour3dplot";
+    case Spectrum: return "spectrum";
     default: return "unknown";
     }
 }
@@ -184,6 +193,7 @@ LayerFactory::getLayerTypeForName(QString name)
     if (name == "notes") return Notes;
     if (name == "text") return Text;
     if (name == "colour3dplot") return Colour3DPlot;
+    if (name == "spectrum") return Spectrum;
     return UnknownLayer;
 }
 
@@ -216,6 +226,9 @@ LayerFactory::setModel(Layer *layer, Model *model)
 
     if (trySetModel<SpectrogramLayer, DenseTimeValueModel>(layer, model))
 	return;
+
+    if (trySetModel<SpectrumLayer, DenseTimeValueModel>(layer, model)) 
+        return;
 }
 
 Model *
@@ -299,6 +312,10 @@ LayerFactory::createLayer(LayerType type)
     case Colour3DPlot:
 	layer = new Colour3DPlotLayer;
 	break;
+
+    case Spectrum:
+        layer = new SpectrumLayer;
+        break;
 
     case MelodicRangeSpectrogram: 
 	layer = new SpectrogramLayer(SpectrogramLayer::MelodicRange);

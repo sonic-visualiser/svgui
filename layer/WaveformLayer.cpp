@@ -262,6 +262,7 @@ WaveformLayer::setGain(float gain)
     m_gain = gain;
     m_cacheValid = false;
     emit layerParametersChanged();
+    emit verticalZoomChanged();
 }
 
 void
@@ -1194,7 +1195,25 @@ WaveformLayer::setProperties(const QXmlAttributes &attributes)
     setAutoNormalize(autoNormalize);
 }
 
-#ifdef INCLUDE_MOCFILES
-#include "WaveformLayer.moc.cpp"
-#endif
+int
+WaveformLayer::getVerticalZoomSteps(int &defaultStep) const
+{
+    defaultStep = 50;
+    return 100;
+}
+
+int
+WaveformLayer::getCurrentVerticalZoomStep() const
+{
+    int val = lrint(log10(m_gain) * 20.0) + 50;
+    if (val < 0) val = 0;
+    if (val > 100) val = 100;
+    return val;
+}
+
+void
+WaveformLayer::setVerticalZoomStep(int step)
+{
+    setGain(pow(10, float(step - 50) / 20.0));
+}
 

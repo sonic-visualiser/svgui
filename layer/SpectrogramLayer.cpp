@@ -35,7 +35,7 @@
 #include <cassert>
 #include <cmath>
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     Layer(),
@@ -57,6 +57,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
+    m_lastEmittedZoomStep(-1),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
     m_exiting(false)
@@ -487,6 +488,11 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 8: setMinFrequency(4000); break;
 	case 9: setMinFrequency(10000); break;
 	}
+        int vs = getCurrentVerticalZoomStep();
+        if (vs != m_lastEmittedZoomStep) {
+            emit verticalZoomChanged();
+            m_lastEmittedZoomStep = vs;
+        }
     } else if (name == "Max Frequency") {
 	switch (value) {
 	case 0: setMaxFrequency(500); break;
@@ -501,6 +507,11 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	default:
 	case 9: setMaxFrequency(0); break;
 	}
+        int vs = getCurrentVerticalZoomStep();
+        if (vs != m_lastEmittedZoomStep) {
+            emit verticalZoomChanged();
+            m_lastEmittedZoomStep = vs;
+        }
     } else if (name == "Colour Scale") {
 	switch (value) {
 	default:
@@ -1159,7 +1170,12 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
         //!!! experiment with normalizing the visible area this way.
         //In any case, we need to have some indication of what the dB
         //scale is relative to.
-        input = 10.f * log10f(input / max);
+        input = input / max;
+        if (input > 0.f) {
+            input = 10.f * log10f(input);
+        } else {
+            input = thresh;
+        }
         if (min > 0.f) {
             thresh = 10.f * log10f(min);
             if (thresh < -80.f) thresh = -80.f;
@@ -1173,7 +1189,12 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
     case OtherColourScale:
         //!!! the "Other" scale is just where our current experiments go
         //!!! power rather than v
-        input = 10.f * log10f((input * input) / (max * max));
+        input = (input * input) / (max * max);
+        if (input > 0.f) {
+            input = 10.f * log10f(input);
+        } else {
+            input = thresh;
+        }
         if (min > 0.f) {
             thresh = 10.f * log10f(min * min);
             if (thresh < -80.f) thresh = -80.f;
@@ -1657,9 +1678,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     std::cerr << "rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << std::endl;
 #endif
 
-    long sf = v->getStartFrame();
-    if (sf < 0) m_candidateFillStartFrame = 0;
-    else m_candidateFillStartFrame = sf;
+    long startFrame = v->getStartFrame();
+    if (startFrame < 0) m_candidateFillStartFrame = 0;
+    else m_candidateFillStartFrame = startFrame;
 
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
 	return;
@@ -1695,7 +1716,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     std::cerr << "SpectrogramLayer::paint(): Still cacheing = " << stillCacheing << std::endl;
 #endif
 
-    long startFrame = v->getStartFrame();
     int zoomLevel = v->getZoomLevel();
 
     int x0 = 0;
@@ -1824,15 +1844,16 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     }
 */
 
+    if (updateViewMagnitudes(v)) {
+        std::cerr << "SpectrogramLayer: magnitude range changed to [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
+        recreateWholePixmapCache = true;
+    } else {
+        std::cerr << "No change in magnitude range [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
+    }
+
     if (recreateWholePixmapCache) {
         x0 = 0;
         x1 = v->width();
-    }
-
-    if (updateViewMagnitudes(v)) {
-        std::cerr << "SpectrogramLayer: magnitude range changed to [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
-    } else {
-        std::cerr << "No change in magnitude range [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
     }
 
     int paintBlockWidth = (300000 / zoomLevel);
@@ -1875,7 +1896,16 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
             
     } else {
         if (x1 > x0 + paintBlockWidth) {
-            x1 = x0 + paintBlockWidth;
+            int sfx = x1;
+            if (startFrame < 0) sfx = v->getXForFrame(0);
+            if (sfx >= x0 && sfx + paintBlockWidth <= x1) {
+                x0 = sfx;
+                x1 = x0 + paintBlockWidth;
+            } else {
+                int mid = (x1 + x0) / 2;
+                x0 = mid - paintBlockWidth/2;
+                x1 = x0 + paintBlockWidth;
+            }
         }
         cache.validArea = QRect(x0, 0, x1 - x0, v->height());
     }
@@ -2156,6 +2186,9 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
                   << x0 << "," << y1 << " -> " << x1 << "," << y0 << std::endl;
         
         paint.setPen(Qt::white);
+
+        //!!! should we be using paintCrosshairs for this?
+
         paint.drawRect(x0, y1, x1 - x0 + 1, y0 - y1 + 1);
     }
 }
@@ -2193,8 +2226,16 @@ bool
 SpectrogramLayer::getValueExtents(float &min, float &max,
                                   bool &logarithmic, QString &unit) const
 {
-    min = getEffectiveMinFrequency();
-    max = getEffectiveMaxFrequency();
+//!!!
+//    min = getEffectiveMinFrequency();
+//    max = getEffectiveMaxFrequency();
+
+    if (!m_model) return false;
+
+    int sr = m_model->getSampleRate();
+    min = float(sr) / m_fftSize;
+    max = float(sr) / 2;
+    
     logarithmic = (m_frequencyScale == LogFrequencyScale);
     unit = "Hz";
     return true;
@@ -2227,6 +2268,12 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
     m_maxFrequency = maxf;
     
     emit layerParametersChanged();
+
+    int vs = getCurrentVerticalZoomStep();
+    if (vs != m_lastEmittedZoomStep) {
+        emit verticalZoomChanged();
+        m_lastEmittedZoomStep = vs;
+    }
 
     return true;
 }
@@ -2712,6 +2759,72 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
     }
 }
 
+int
+SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
+{
+    defaultStep = 0;
+    return 20; //!!!
+}
+
+int
+SpectrogramLayer::getCurrentVerticalZoomStep() const
+{
+    if (!m_model) return 0;
+
+    float dmin, dmax;
+    getDisplayExtents(dmin, dmax);
+    
+    float mmin, mmax;
+    int sr = m_model->getSampleRate();
+    mmin = float(sr) / m_fftSize;
+    mmax = float(sr) / 2;
+    
+    float mdist = mmax - mmin;
+    float ddist = dmax - dmin;
+    
+    int n = 0;
+    float s2 = sqrtf(2);
+    while (mdist > ddist) {
+        if (++n > 20) break;
+        mdist /= s2;
+    }
+
+    return n;
+}
+
+void
+SpectrogramLayer::setVerticalZoomStep(int step)
+{
+    //!!! does not do the right thing for log scale
+
+    float dmin, dmax;
+    getDisplayExtents(dmin, dmax);
+    
+    float mmin, mmax;
+    int sr = m_model->getSampleRate();
+    mmin = float(sr) / m_fftSize;
+    mmax = float(sr) / 2;
+    
+    float ddist = mmax - mmin;
+    
+    int n = 0;
+    float s2 = sqrtf(2);
+    while (n < step) {
+        ddist /= s2;
+        ++n;
+    }
+
+    float dmid = (dmax + dmin) / 2;
+    float newmin = dmid - ddist / 2;
+    float newmax = dmid + ddist / 2;
+    
+    if (newmin < mmin) newmin = mmin;
+    if (newmax > mmax) newmax = mmax;
+    
+    setMinFrequency(newmin);
+    setMaxFrequency(newmax);
+}
+
 QString
 SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 {
@@ -2815,8 +2928,3 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     setNormalizeColumns(normalizeColumns);
 }
     
-
-#ifdef INCLUDE_MOCFILES
-#include "SpectrogramLayer.moc.cpp"
-#endif
-

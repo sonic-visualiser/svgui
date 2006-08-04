@@ -18,6 +18,8 @@
 #include "data/model/Model.h"
 #include "base/CommandHistory.h"
 
+#include <QSettings>
+
 #include <iostream>
 
 // #define DEBUG_VIEW_MANAGER 1
@@ -34,8 +36,17 @@ ViewManager::ViewManager() :
     m_toolMode(NavigateMode),
     m_playLoopMode(false),
     m_playSelectionMode(false),
-    m_overlayMode(BasicOverlays)
+    m_overlayMode(BasicOverlays),
+    m_zoomWheelsEnabled(true)
 {
+    QSettings settings;
+    settings.beginGroup("MainWindow");
+    m_overlayMode = OverlayMode
+        (settings.value("overlay-mode", int(m_overlayMode)).toInt());
+    m_zoomWheelsEnabled =
+        settings.value("zoom-wheels-enabled", m_zoomWheelsEnabled).toBool();
+    settings.endGroup();
+
     connect(this, 
 	    SIGNAL(centreFrameChanged(void *, unsigned long, bool)),
 	    SLOT(considerSeek(void *, unsigned long, bool)));
@@ -337,6 +348,8 @@ ViewManager::considerSeek(void *p, unsigned long f, bool locked)
 void
 ViewManager::considerZoomChange(void *p, unsigned long z, bool locked)
 {
+    emit zoomLevelChanged();
+    
     if (locked) {
 	m_globalZoom = z;
     }
@@ -353,9 +366,24 @@ ViewManager::setOverlayMode(OverlayMode mode)
         m_overlayMode = mode;
         emit overlayModeChanged();
     }
+
+    QSettings settings;
+    settings.beginGroup("MainWindow");
+    settings.setValue("overlay-mode", int(m_overlayMode));
+    settings.endGroup();
 }
 
-#ifdef INCLUDE_MOCFILES
-#include "ViewManager.moc.cpp"
-#endif
+void
+ViewManager::setZoomWheelsEnabled(bool enabled)
+{
+    if (m_zoomWheelsEnabled != enabled) {
+        m_zoomWheelsEnabled = enabled;
+        emit zoomWheelsEnabledChanged();
+    }
+
+    QSettings settings;
+    settings.beginGroup("MainWindow");
+    settings.setValue("zoom-wheels-enabled", m_zoomWheelsEnabled);
+    settings.endGroup();
+}
 
