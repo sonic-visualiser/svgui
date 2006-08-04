@@ -22,12 +22,17 @@
 #include "ViewManager.h"
 #include "base/CommandHistory.h"
 #include "layer/WaveformLayer.h"
-#include "widgets/Thumbwheel.h"
 
 #include <QPaintEvent>
 #include <QPainter>
 #include <iostream>
 #include <cmath>
+
+//!!! for HUD -- pull out into a separate class
+#include <QFrame>
+#include <QGridLayout>
+#include <QPushButton>
+#include "widgets/Thumbwheel.h"
 
 using std::cerr;
 using std::endl;
@@ -40,10 +45,18 @@ Pane::Pane(QWidget *w) :
     m_ctrlPressed(false),
     m_navigating(false),
     m_resizing(false),
-    m_centreLineVisible(true)
+    m_centreLineVisible(true),
+    m_headsUpDisplay(0)
 {
     setObjectName("Pane");
     setMouseTracking(true);
+    
+    updateHeadsUpDisplay();
+}
+
+void
+Pane::updateHeadsUpDisplay()
+{
 /*
     int count = 0;
     int currentLevel = 1;
@@ -60,13 +73,102 @@ Pane::Pane(QWidget *w) :
 
     std::cerr << "Have " << count+1 << " zoom levels" << std::endl;
 */
-/*
-    Thumbwheel *thumbwheel = new Thumbwheel(0, 40, 5,
-                                            Qt::Vertical, this);
-    thumbwheel->move(10, 10);
-    connect(thumbwheel, SIGNAL(valueChanged(int)), this,
-            SLOT(horizontalThumbwheelMoved(int)));
-*/
+
+    if (!m_headsUpDisplay) {
+
+        m_headsUpDisplay = new QFrame(this);
+
+        QGridLayout *layout = new QGridLayout;
+        layout->setMargin(0);
+        layout->setSpacing(0);
+        m_headsUpDisplay->setLayout(layout);
+        
+        m_hthumb = new Thumbwheel(Qt::Horizontal);
+        layout->addWidget(m_hthumb, 1, 0);
+        m_hthumb->setFixedWidth(70);
+        m_hthumb->setFixedHeight(16);
+        m_hthumb->setDefaultValue(0);
+        connect(m_hthumb, SIGNAL(valueChanged(int)), this, 
+                SLOT(horizontalThumbwheelMoved(int)));
+        
+        m_vthumb = new Thumbwheel(Qt::Vertical);
+        layout->addWidget(m_vthumb, 0, 1);
+        m_vthumb->setFixedWidth(16);
+        m_vthumb->setFixedHeight(70);
+        connect(m_vthumb, SIGNAL(valueChanged(int)), this, 
+                SLOT(verticalThumbwheelMoved(int)));
+
+        QPushButton *reset = new QPushButton;
+        reset->setFixedHeight(16);
+        reset->setFixedWidth(16);
+        layout->addWidget(reset, 1, 1);
+        connect(reset, SIGNAL(clicked()), m_hthumb, SLOT(resetToDefault()));
+        connect(reset, SIGNAL(clicked()), m_vthumb, SLOT(resetToDefault()));
+    }
+
+    int count = 0;
+    int current = 0;
+    int level = 1;
+
+    while (true) {
+        if (getZoomLevel() == level) current = count;
+        int newLevel = getZoomConstraintBlockSize(level + 1,
+                                                  ZoomConstraint::RoundUp);
+        if (newLevel == level) break;
+        level = newLevel;
+        if (++count == 50) break;
+    }
+
+//    std::cerr << "Have " << count << " zoom levels" << std::endl;
+
+    m_hthumb->setMinimumValue(0);
+    m_hthumb->setMaximumValue(count);
+    m_hthumb->setValue(count - current);
+
+//    std::cerr << "set value to " << count-current << std::endl;
+
+//    std::cerr << "default value is " << m_hthumb->getDefaultValue() << std::endl;
+
+    if (count != 50 && m_hthumb->getDefaultValue() == 0) {
+        m_hthumb->setDefaultValue(count - current);
+//        std::cerr << "set default value to " << m_hthumb->getDefaultValue() << std::endl;
+    }
+
+    Layer *layer = 0;
+    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    if (layer) {
+        int defaultStep = 0;
+        int max = layer->getVerticalZoomSteps(defaultStep);
+        if (max == 0) {
+            m_vthumb->hide();
+        } else {
+            m_vthumb->show();
+            m_vthumb->setMinimumValue(0);
+            m_vthumb->setMaximumValue(max);
+            m_vthumb->setDefaultValue(defaultStep);
+            m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
+        }
+    }
+
+    if (m_manager && m_manager->getZoomWheelsEnabled() &&
+        width() > 120 && height() > 100) {
+        if (m_vthumb->isVisible()) {
+            m_headsUpDisplay->move(width() - 86, height() - 86);
+        } else {
+            m_headsUpDisplay->move(width() - 86, height() - 51);
+        }
+        if (!m_headsUpDisplay->isVisible()) {
+            m_headsUpDisplay->show();
+            connect(m_manager, SIGNAL(zoomLevelChanged()),
+                    this, SLOT(zoomLevelChanged()));
+        }
+    } else {
+        m_headsUpDisplay->hide();
+        if (m_manager) {
+            disconnect(m_manager, SIGNAL(zoomLevelChanged()),
+                       this, SLOT(zoomLevelChanged()));
+        }
+    }
 }
 
 bool
@@ -409,8 +511,14 @@ Pane::paintEvent(QPaintEvent *e)
 	}
     
 	int lly = height() - 6;
+        int llx = width() - maxTextWidth - 5;
 
-	if (r.x() + r.width() >= width() - maxTextWidth - 5) {
+        if (m_manager->getZoomWheelsEnabled()) {
+            lly -= 20;
+            llx -= 20;
+        }
+
+	if (r.x() + r.width() >= llx) {
 	    
 	    for (int i = 0; i < texts.size(); ++i) {
 
@@ -418,7 +526,7 @@ Pane::paintEvent(QPaintEvent *e)
 		    paint.setPen(Qt::black);
 		}
 		
-		drawVisibleText(paint, width() - maxTextWidth - 5,
+		drawVisibleText(paint, llx,
 				lly - fontHeight + fontAscent,
 				texts[i], OutlinedText);
 		
@@ -930,6 +1038,12 @@ Pane::leaveEvent(QEvent *)
 }
 
 void
+Pane::resizeEvent(QResizeEvent *)
+{
+    updateHeadsUpDisplay();
+}
+
+void
 Pane::wheelEvent(QWheelEvent *e)
 {
     //std::cerr << "wheelEvent, delta " << e->delta() << std::endl;
@@ -999,7 +1113,7 @@ Pane::horizontalThumbwheelMoved(int value)
     int count = 0;
     int level = 1;
     while (true) {
-        if (value == count) break;
+        if (m_hthumb->getMaximumValue() - value == count) break;
         int newLevel = getZoomConstraintBlockSize(level + 1,
                                                   ZoomConstraint::RoundUp);
         if (newLevel == level) break;
@@ -1007,13 +1121,27 @@ Pane::horizontalThumbwheelMoved(int value)
         ++count;
     }
 
-    std::cerr << "new level is " << level << std::endl;
+//    std::cerr << "new level is " << level << std::endl;
     setZoomLevel(level);
 }    
 
 void
 Pane::verticalThumbwheelMoved(int value)
 {
+    Layer *layer = 0;
+    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    if (layer) {
+        int defaultStep = 0;
+        int max = layer->getVerticalZoomSteps(defaultStep);
+        if (max == 0) {
+            updateHeadsUpDisplay();
+            return;
+        }
+        if (value > max) {
+            value = max;
+        }
+        layer->setVerticalZoomStep(value);
+    }
 }    
 
 bool
@@ -1123,6 +1251,57 @@ Pane::toolModeChanged()
 	setCursor(Qt::IBeamCursor);
 	break;
 */
+    }
+}
+
+void
+Pane::zoomWheelsEnabledChanged()
+{
+    updateHeadsUpDisplay();
+    update();
+}
+
+void
+Pane::zoomLevelChanged()
+{
+    if (m_manager && m_manager->getZoomWheelsEnabled()) {
+        updateHeadsUpDisplay();
+    }
+}
+
+void
+Pane::propertyContainerSelected(View *v, PropertyContainer *pc)
+{
+    Layer *layer = 0;
+
+    if (getLayerCount() > 0) {
+        layer = getLayer(getLayerCount() - 1);
+        disconnect(layer, SIGNAL(verticalZoomChanged()),
+                   this, SLOT(verticalZoomChanged()));
+    }
+
+    View::propertyContainerSelected(v, pc);
+    updateHeadsUpDisplay();
+
+    if (getLayerCount() > 0) {
+        layer = getLayer(getLayerCount() - 1);
+        connect(layer, SIGNAL(verticalZoomChanged()),
+                this, SLOT(verticalZoomChanged()));
+    }
+}
+
+void
+Pane::verticalZoomChanged()
+{
+    Layer *layer = 0;
+
+    if (getLayerCount() > 0) {
+
+        layer = getLayer(getLayerCount() - 1);
+
+        if (m_vthumb && m_vthumb->isVisible()) {
+            m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
+        }
     }
 }
 

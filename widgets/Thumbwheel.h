@@ -23,20 +23,15 @@ class Thumbwheel : public QWidget
     Q_OBJECT
 
 public:
-    Thumbwheel(int min, int max, int defaultValue,
-               Qt::Orientation orientation, QWidget *parent = 0);
+    Thumbwheel(Qt::Orientation orientation, QWidget *parent = 0);
     virtual ~Thumbwheel();
 
-    void setSpeed(float speed);
+    int getMinimumValue() const;
+    int getMaximumValue() const;
+    int getDefaultValue() const;
     float getSpeed() const;
-
-    void setTracking(bool tracking);
     bool getTracking() const;
-
-    void setShowScale(bool show);
     bool getShowScale() const;
-
-    void setValue(int value);
     int getValue() const;
 
     virtual void mousePressEvent(QMouseEvent *e);
@@ -51,6 +46,16 @@ public:
 signals:
     void valueChanged(int);
 
+public slots:
+    void setMinimumValue(int min);
+    void setMaximumValue(int max);
+    void setDefaultValue(int deft);
+    void setSpeed(float speed);
+    void setTracking(bool tracking);
+    void setShowScale(bool show);
+    void setValue(int value);
+    void resetToDefault();
+
 private:
     int m_min;
     int m_max;
@@ -61,6 +66,7 @@ private:
     bool m_tracking;
     bool m_showScale;
     bool m_clicked;
+    bool m_atDefault;
     QPoint m_clickPos;
     int m_clickValue;
 };

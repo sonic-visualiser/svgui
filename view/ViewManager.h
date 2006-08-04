@@ -105,12 +105,18 @@ public:
     void setOverlayMode(OverlayMode mode);
     OverlayMode getOverlayMode() const { return m_overlayMode; }
 
+    void setZoomWheelsEnabled(bool enable);
+    bool getZoomWheelsEnabled() const { return m_zoomWheelsEnabled; }
+
 signals:
     /** Emitted when a widget pans.  The originator identifies the widget. */
     void centreFrameChanged(void *originator, unsigned long frame, bool locked);
 
     /** Emitted when a widget zooms.  The originator identifies the widget. */
     void zoomLevelChanged(void *originator, unsigned long zoom, bool locked);
+
+    /** Emitted when a widget zooms. */
+    void zoomLevelChanged();
 
     /** Emitted when the playback frame changes. */
     void playbackFrameChanged(unsigned long frame);
@@ -135,6 +141,9 @@ signals:
 
     /** Emitted when the overlay mode has been changed. */
     void overlayModeChanged();
+
+    /** Emitted when the zoom wheels have been toggled. */
+    void zoomWheelsEnabledChanged();
 
 protected slots:
     void checkPlayStatus();
@@ -182,6 +191,7 @@ protected:
     };
 
     OverlayMode m_overlayMode;
+    bool m_zoomWheelsEnabled;
 };
 
 #endif

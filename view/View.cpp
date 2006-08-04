@@ -262,6 +262,18 @@ View::toolModeChanged()
 //    std::cerr << "View::toolModeChanged(" << m_manager->getToolMode() << ")" << std::endl;
 }
 
+void
+View::overlayModeChanged()
+{
+    update();
+}
+
+void
+View::zoomWheelsEnabledChanged()
+{
+    // subclass might override this
+}
+
 long
 View::getStartFrame() const
 {
@@ -525,7 +537,9 @@ View::setViewManager(ViewManager *manager)
     connect(m_manager, SIGNAL(inProgressSelectionChanged()),
 	    this, SLOT(selectionChanged()));
     connect(m_manager, SIGNAL(overlayModeChanged()),
-            this, SLOT(update()));
+            this, SLOT(overlayModeChanged()));
+    connect(m_manager, SIGNAL(zoomWheelsEnabledChanged()),
+            this, SLOT(zoomWheelsEnabledChanged()));
 
     connect(this, SIGNAL(centreFrameChanged(void *, unsigned long, bool)),
 	    m_manager, SIGNAL(centreFrameChanged(void *, unsigned long, bool)));

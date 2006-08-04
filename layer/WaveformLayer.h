@@ -181,6 +181,10 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    virtual int getVerticalZoomSteps(int &defaultStep) const;
+    virtual int getCurrentVerticalZoomStep() const;
+    virtual void setVerticalZoomStep(int);
+
 protected:
     int dBscale(float sample, int m) const;
 

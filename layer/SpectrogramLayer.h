@@ -208,6 +208,10 @@ public:
 
     virtual bool isLayerScrollable(const View *v) const { return false; }
 
+    virtual int getVerticalZoomSteps(int &defaultStep) const;
+    virtual int getCurrentVerticalZoomStep() const;
+    virtual void setVerticalZoomStep(int);
+
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);
@@ -237,6 +241,7 @@ protected:
     BinDisplay          m_binDisplay;
     bool                m_normalizeColumns;
     bool                m_normalizeVisibleArea;
+    int                 m_lastEmittedZoomStep;
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 

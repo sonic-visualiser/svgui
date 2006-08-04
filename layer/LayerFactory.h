@@ -36,6 +36,7 @@ public:
 	Notes,
 	Text,
 	Colour3DPlot,
+        Spectrum,
 
 	// Layers with different initial parameters
 	MelodicRangeSpectrogram,

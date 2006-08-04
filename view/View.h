@@ -258,6 +258,8 @@ public slots:
 
     virtual void selectionChanged();
     virtual void toolModeChanged();
+    virtual void overlayModeChanged();
+    virtual void zoomWheelsEnabledChanged();
 
 protected:
     View(QWidget *, bool showProgress);

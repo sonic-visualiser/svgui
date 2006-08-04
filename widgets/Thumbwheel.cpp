@@ -23,22 +23,21 @@
 #include <cmath>
 #include <iostream>
 
-Thumbwheel::Thumbwheel(int min, int max, int defaultValue,
-                       Qt::Orientation orientation,
+Thumbwheel::Thumbwheel(Qt::Orientation orientation,
 		       QWidget *parent) :
     QWidget(parent),
-    m_min(min),
-    m_max(max),
-    m_default(defaultValue),
-    m_value((min + max) / 2),
+    m_min(0),
+    m_max(100),
+    m_default(50),
+    m_value(50),
     m_orientation(orientation),
+    m_speed(0.25),
     m_tracking(true),
     m_showScale(true),
     m_clicked(false),
+    m_atDefault(true),
     m_clickValue(m_value)
 {
-    if (max <= min) max = min + 1;
-    m_speed = float(max - min) / 300.f;
 }
 
 Thumbwheel::~Thumbwheel()
@@ -46,12 +45,76 @@ Thumbwheel::~Thumbwheel()
 }
 
 void
+Thumbwheel::setMinimumValue(int min)
+{
+    if (m_min == min) return;
+
+    m_min = min;
+    if (m_max <= m_min) m_max = m_min + 1;
+    if (m_value < m_min) m_value = m_min;
+    if (m_value > m_max) m_value = m_max;
+}
+
+int
+Thumbwheel::getMinimumValue() const
+{
+    return m_min;
+}
+
+void
+Thumbwheel::setMaximumValue(int max)
+{
+    if (m_max == max) return;
+
+    m_max = max;
+    if (m_min >= m_max) m_min = m_max - 1;
+    if (m_value < m_min) m_value = m_min;
+    if (m_value > m_max) m_value = m_max;
+}
+
+int
+Thumbwheel::getMaximumValue() const
+{
+    return m_max;
+}
+
+void
+Thumbwheel::setDefaultValue(int deft)
+{
+    if (m_default == deft) return;
+
+    m_default = deft;
+    if (m_atDefault) {
+        setValue(m_default);
+        emit valueChanged(getValue());
+    }
+}
+
+int
+Thumbwheel::getDefaultValue() const
+{
+    return m_default;
+}
+
+void
 Thumbwheel::setValue(int value)
 {
+    if (m_value == value) return;
+    m_atDefault = false;
+
     if (value < m_min) value = m_min;
     if (value > m_max) value = m_max;
     m_value = value;
     update();
+}
+
+void
+Thumbwheel::resetToDefault()
+{
+    if (m_default == m_value) return;
+    setValue(m_default);
+    m_atDefault = true;
+    emit valueChanged(getValue());
 }
 
 int
@@ -99,21 +162,25 @@ Thumbwheel::getShowScale() const
 void
 Thumbwheel::mousePressEvent(QMouseEvent *e)
 {
-    m_clicked = true;
-    m_clickPos = e->pos();
-    m_clickValue = m_value;
+    if (e->button() == Qt::LeftButton) {
+        m_clicked = true;
+        m_clickPos = e->pos();
+        m_clickValue = m_value;
+    } else if (e->button() == Qt::MidButton) {
+        resetToDefault();
+    }
 }
 
 void
 Thumbwheel::mouseDoubleClickEvent(QMouseEvent *)
 {
-    setValue(m_default);
-    emit valueChanged(getValue());
+    resetToDefault();
 }
 
 void
 Thumbwheel::mouseMoveEvent(QMouseEvent *e)
 {
+    if (!m_clicked) return;
     int dist = 0;
     if (m_orientation == Qt::Horizontal) {
         dist = e->x() - m_clickPos.x();
@@ -132,10 +199,12 @@ Thumbwheel::mouseMoveEvent(QMouseEvent *e)
 void
 Thumbwheel::mouseReleaseEvent(QMouseEvent *e)
 {
+    if (!m_clicked) return;
     bool reallyTracking = m_tracking;
     m_tracking = true;
     mouseMoveEvent(e);
     m_tracking = reallyTracking;
+    m_clicked = false;
 }
 
 void
@@ -156,12 +225,27 @@ Thumbwheel::wheelEvent(QWheelEvent *e)
 void
 Thumbwheel::paintEvent(QPaintEvent *)
 {
+    QPainter paint(this);
+    paint.fillRect(rect(), palette().background().color());
+    paint.setRenderHint(QPainter::Antialiasing, false);
+
+    int bw = 3;
+
+    for (int i = 0; i < bw; ++i) {
+        int grey = (i + 1) * (256 / (bw + 1));
+        QColor fc = QColor(grey, grey, grey);
+        paint.setPen(fc);
+        paint.drawRect(i, i, width() - i*2 - 1, height() - i*2 - 1);
+    }
+
+    paint.setClipRect(QRect(bw, bw, width() - bw*2, height() - bw*2));
+
     float distance = float(m_value - m_min) / float(m_max - m_min);
     float rotation = distance * 1.5f * M_PI;
 
 //    std::cerr << "value = " << m_value << ", min = " << m_min << ", max = " << m_max << ", rotation = " << rotation << std::endl;
 
-    int w = (m_orientation == Qt::Horizontal ? width() : height());
+    int w = (m_orientation == Qt::Horizontal ? width() : height()) - bw*2;
 
     // total number of notches on the entire wheel
     int notches = 25;
@@ -169,8 +253,6 @@ Thumbwheel::paintEvent(QPaintEvent *)
     // radius of the wheel including invisible part
     int radius = w / 2 + 2;
 
-    QPainter paint(this);
-    paint.fillRect(rect(), palette().background().color());
     paint.setRenderHint(QPainter::Antialiasing, true);
 
     for (int i = 0; i < notches; ++i) {
@@ -190,6 +272,10 @@ Thumbwheel::paintEvent(QPaintEvent *)
         if (x0 < 0) x0 = 0;
         if (x2 > w) x2 = w;
 
+        x0 += bw;
+        x1 += bw;
+        x2 += bw;
+
         int grey = lrintf(255 * depth);
         QColor fc = QColor(grey, grey, grey);
         QColor oc = palette().dark().color();
@@ -198,9 +284,9 @@ Thumbwheel::paintEvent(QPaintEvent *)
         paint.setBrush(fc);
 
         if (m_orientation == Qt::Horizontal) {
-            paint.drawRect(QRectF(x1, 0, x2 - x1, height()));
+            paint.drawRect(QRectF(x1, bw, x2 - x1, height() - bw*2));
         } else {
-            paint.drawRect(QRectF(0, x1, width(), x2 - x1));
+            paint.drawRect(QRectF(bw, x1, width() - bw*2, x2 - x1));
         }
 
         if (m_showScale) {
@@ -216,10 +302,10 @@ Thumbwheel::paintEvent(QPaintEvent *)
             }
             
             if (m_orientation == Qt::Horizontal) {
-                paint.drawRect(QRectF(x1, height() - height() * prop,
+                paint.drawRect(QRectF(x1, height() - (height() - bw*2) * prop - bw,
                                       x2 - x1, height() * prop));
             } else {
-                paint.drawRect(QRectF(0, x1, width() * prop, x2 - x1));
+                paint.drawRect(QRectF(bw, x1, (width() - bw*2) * prop, x2 - x1));
             }
         }
 
@@ -227,9 +313,9 @@ Thumbwheel::paintEvent(QPaintEvent *)
         paint.setBrush(palette().background().color());
 
         if (m_orientation == Qt::Horizontal) {
-            paint.drawRect(QRectF(x0, 0, x1 - x0, height()));
+            paint.drawRect(QRectF(x0, bw, x1 - x0, height() - bw*2));
         } else {
-            paint.drawRect(QRectF(0, x0, width(), x1 - x0));
+            paint.drawRect(QRectF(bw, x0, width() - bw*2, x1 - x0));
         }
     }
 }

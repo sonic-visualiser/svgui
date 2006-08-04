@@ -27,6 +27,7 @@
 class QWidget;
 class QPaintEvent;
 class Layer;
+class Thumbwheel;
 
 class Pane : public View
 {
@@ -54,9 +55,14 @@ signals:
 
 public slots:
     virtual void toolModeChanged();
+    virtual void zoomWheelsEnabledChanged();
+    virtual void zoomLevelChanged();
 
     virtual void horizontalThumbwheelMoved(int value);
     virtual void verticalThumbwheelMoved(int value);
+    virtual void verticalZoomChanged();
+
+    virtual void propertyContainerSelected(View *, PropertyContainer *pc);
 
 protected:
     virtual void paintEvent(QPaintEvent *e);
@@ -66,6 +72,7 @@ protected:
     virtual void mouseDoubleClickEvent(QMouseEvent *e);
     virtual void leaveEvent(QEvent *e);
     virtual void wheelEvent(QWheelEvent *e);
+    virtual void resizeEvent(QResizeEvent *e);
 
     Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight) const;
 
@@ -73,6 +80,8 @@ protected:
     bool editSelectionDrag(QMouseEvent *e);
     bool editSelectionEnd(QMouseEvent *e);
     bool selectionIsBeingEdited() const;
+
+    void updateHeadsUpDisplay();
 
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
@@ -88,6 +97,10 @@ protected:
     size_t m_selectionStartFrame;
     Selection m_editingSelection;
     int m_editingSelectionEdge;
+
+    QWidget *m_headsUpDisplay;
+    Thumbwheel *m_hthumb;
+    Thumbwheel *m_vthumb;
 };
 
 #endif

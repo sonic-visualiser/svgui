@@ -280,6 +280,34 @@ public:
         return false;
     }
 
+    /**
+     * Get the number of vertical zoom steps available for this layer.
+     * If vertical zooming is not available, return 0.  The meaning of
+     * "zooming" is entirely up to the layer -- changing the zoom
+     * level may cause the layer to reset its display extents or
+     * change another property such as display gain.
+     * Layers that provide this facility should also emit the
+     * verticalZoomChanged signal if their vertical zoom changes
+     * due to factors other than setVerticalZoomStep being called.
+     */
+    virtual int getVerticalZoomSteps(int &defaultStep) const { return 0; }
+
+    /**
+     * Get the current vertical zoom step.  A layer may support finer
+     * control over ranges etc than is available through the integer
+     * zoom step mechanism; if this one does, it should just return
+     * the nearest of the available zoom steps to the current settings.
+     */
+    virtual int getCurrentVerticalZoomStep() const { return 0; }
+
+    /**
+     * Set the vertical zoom step.  The meaning of "zooming" is
+     * entirely up to the layer -- changing the zoom level may cause
+     * the layer to reset its display extents or change another
+     * property such as display gain.
+     */
+    virtual void setVerticalZoomStep(int) { }
+
 public slots:
     void showLayer(View *, bool show);
 
@@ -291,6 +319,8 @@ signals:
 
     void layerParametersChanged();
     void layerNameChanged();
+
+    void verticalZoomChanged();
 
 private:
     mutable QMutex m_dormancyMutex;

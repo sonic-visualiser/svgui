@@ -19,6 +19,7 @@ HEADERS += Colour3DPlotLayer.h \
            LayerFactory.h \
            NoteLayer.h \
            SpectrogramLayer.h \
+           SpectrumLayer.h \
            TextLayer.h \
            TimeInstantLayer.h \
            TimeRulerLayer.h \
@@ -29,6 +30,7 @@ SOURCES += Colour3DPlotLayer.cpp \
            LayerFactory.cpp \
            NoteLayer.cpp \
            SpectrogramLayer.cpp \
+           SpectrumLayer.cpp \
            TextLayer.cpp \
            TimeInstantLayer.cpp \
            TimeRulerLayer.cpp \
