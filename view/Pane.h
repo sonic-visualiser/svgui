@@ -93,6 +93,7 @@ protected:
     bool m_navigating;
     bool m_resizing;
     size_t m_dragCentreFrame;
+    float m_dragStartMinValue;
     bool m_centreLineVisible;
     size_t m_selectionStartFrame;
     Selection m_editingSelection;

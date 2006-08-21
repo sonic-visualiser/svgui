@@ -2787,10 +2787,12 @@ SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
 
     int n = 0;
     defaultStep = 0;
+    bool haveDefault = false;
     float s2 = sqrtf(sqrtf(2));
     while (dist > min) {
-        if (max >= m_initialMaxFrequency) {
+        if (!haveDefault && max <= m_initialMaxFrequency) {
             defaultStep = n;
+            haveDefault = true;
         }
         ++n;
         dist /= s2;
