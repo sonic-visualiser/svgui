@@ -234,6 +234,7 @@ protected:
     int                 m_colourRotation;
     size_t              m_minFrequency;
     size_t              m_maxFrequency;
+    size_t              m_initialMaxFrequency;
     ColourScale         m_colourScale;
     ColourScheme        m_colourScheme;
     QColor              m_crosshairColour;

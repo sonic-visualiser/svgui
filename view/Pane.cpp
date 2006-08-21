@@ -147,6 +147,11 @@ Pane::updateHeadsUpDisplay()
             m_vthumb->setMaximumValue(max);
             m_vthumb->setDefaultValue(defaultStep);
             m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
+
+            std::cerr << "Vertical thumbwheel: min 0, max " << max
+                      << ", default " << defaultStep << ", value "
+                      << m_vthumb->getValue() << std::endl;
+
         }
     }
 
