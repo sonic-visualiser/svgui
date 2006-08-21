@@ -652,6 +652,20 @@ Pane::mousePressEvent(QMouseEvent *e)
 	m_navigating = true;
 	m_dragCentreFrame = m_centreFrame;
 
+        //!!! pull out into function to go with mouse move code
+
+        m_dragStartMinValue = 0;
+
+        Layer *layer = 0;
+        if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+
+        if (layer) {
+            float min = 0.f, max = 0.f;
+            if (layer->getDisplayExtents(min, max)) {
+                m_dragStartMinValue = min;
+            }
+        }
+
     } else if (mode == ViewManager::SelectMode) {
 
 	bool closeToLeft = false, closeToRight = false;
@@ -926,6 +940,52 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	    if (getXForFrame(m_centreFrame) != getXForFrame(newCentreFrame)) {
 		setCentreFrame(newCentreFrame);
 	    }
+
+            //!!! For drag up/down, we need to: call getValueExtents
+            //and getDisplayExtents and see whether both return true
+            //(we can only drag up/down if they do); and check whether
+            //the ranges returned differ (likewise).  Then, we know
+            //the height of the layer, so...
+
+            //!!! this should have its own function
+
+            Layer *layer = 0;
+            if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+
+            if (layer) {
+
+                float vmin = 0.f, vmax = 0.f;
+                bool vlog = false;
+                QString vunit;
+
+                float dmin = 0.f, dmax = 0.f;
+
+                if (layer->getValueExtents(vmin, vmax, vlog, vunit) &&
+                    layer->getDisplayExtents(dmin, dmax) &&
+                    (dmin > vmin || dmax < vmax)) {
+
+                    int ydiff = e->y() - m_clickPos.y();
+                    std::cerr << "ydiff = " << ydiff << std::endl;
+
+                    float perpix = (dmax - dmin) / height();
+                    float valdiff = ydiff * perpix;
+                    std::cerr << "valdiff = " << valdiff << std::endl;
+
+                    float newmin = m_dragStartMinValue + valdiff;
+                    float newmax = m_dragStartMinValue + (dmax - dmin) + valdiff;
+                    if (newmin < vmin) {
+                        newmax += vmin - newmin;
+                        newmin += vmin - newmin;
+                    }
+                    if (newmax > vmax) {
+                        newmin -= newmax - vmax;
+                        newmax -= newmax - vmax;
+                    }
+                    std::cerr << "(" << dmin << ", " << dmax << ") -> ("
+                              << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << std::endl;
+                    layer->setDisplayExtents(newmin, newmax);
+                }
+            }
 	}
 
     } else if (mode == ViewManager::SelectMode) {
