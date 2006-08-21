@@ -51,6 +51,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_colourRotation(0),
     m_minFrequency(10),
     m_maxFrequency(8000),
+    m_initialMaxFrequency(8000),
     m_colourScale(dBColourScale),
     m_colourScheme(DefaultColours),
     m_frequencyScale(LinearFrequencyScale),
@@ -66,12 +67,14 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setWindowSize(8192);
 	setWindowHopLevel(4);
 //	setWindowType(ParzenWindow);
+        m_initialMaxFrequency = 1000;
 	setMaxFrequency(1000);
 	setColourScale(LinearColourScale);
     } else if (config == MelodicPeaks) {
 	setWindowSize(4096);
 	setWindowHopLevel(5);
 //	setWindowType(BlackmanWindow);
+        m_initialMaxFrequency = 2000;
 	setMaxFrequency(2000);
 	setMinFrequency(40);
 	setFrequencyScale(LogFrequencyScale);
@@ -2768,8 +2771,33 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 int
 SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
 {
+    // Vertical zoom step 0 shows the entire range from DC -> Nyquist
+    // frequency.  Step 1 shows 2^(1/4) of the range of step 0, and so
+    // on until the visible range is smaller than the frequency step
+    // between bins at the current fft size.
+
+    if (!m_model) return 0;
+    
+    float min, max;
+    int sr = m_model->getSampleRate();
+    min = float(sr) / m_fftSize;
+    max = float(sr) / 2;
+    
+    float dist = max - min;
+
+    int n = 0;
     defaultStep = 0;
-    return 20; //!!!
+    float s2 = sqrtf(sqrtf(2));
+    while (dist > min) {
+        if (max >= m_initialMaxFrequency) {
+            defaultStep = n;
+        }
+        ++n;
+        dist /= s2;
+        max = min + dist;
+    }
+
+    return n;
 }
 
 int
@@ -2789,9 +2817,11 @@ SpectrogramLayer::getCurrentVerticalZoomStep() const
     float ddist = dmax - dmin;
     
     int n = 0;
-    float s2 = sqrtf(2);
+    int discard = 0;
+    int m = getVerticalZoomSteps(discard);
+    float s2 = sqrtf(sqrtf(2));
     while (mdist > ddist) {
-        if (++n > 20) break;
+        if (++n > m) break;
         mdist /= s2;
     }
 
@@ -2814,7 +2844,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
     float ddist = mmax - mmin;
     
     int n = 0;
-    float s2 = sqrtf(2);
+    float s2 = sqrtf(sqrtf(2));
     while (n < step) {
         ddist /= s2;
         ++n;
