@@ -55,7 +55,23 @@ public:
 	return const_cast<Model *>(const_cast<const Layer *>(this)->getModel());
     }
 
+    /**
+     * Return a zoom constraint object defining the supported zoom
+     * levels for this layer.  If this returns zero, the layer will
+     * support any integer zoom level.
+     */
     virtual const ZoomConstraint *getZoomConstraint() const { return 0; }
+
+    /**
+     * Return true if this layer can handle zoom levels other than
+     * those supported by its zoom constraint (presumably less
+     * efficiently or accurately than the officially supported zoom
+     * levels).  If true, the layer will unenthusistically accept any
+     * integer zoom level from 1 to the maximum returned by its zoom
+     * constraint.
+     */
+    virtual bool supportsOtherZoomLevels() const { return true; }
+
     virtual void paint(View *, QPainter &, QRect) const = 0;   
 
     enum VerticalPosition {

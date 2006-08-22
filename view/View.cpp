@@ -1114,8 +1114,13 @@ View::paintEvent(QPaintEvent *e)
     }
 
     // ensure our constraints are met
+
+/*!!! Should we do this only if we have layers that can't support other
+  zoom levels?
+
     m_zoomLevel = getZoomConstraintBlockSize(m_zoomLevel,
 					     ZoomConstraint::RoundUp);
+*/
 
     QPainter paint;
     bool repaintCache = false;
