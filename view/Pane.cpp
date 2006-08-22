@@ -110,13 +110,44 @@ Pane::updateHeadsUpDisplay()
     int current = 0;
     int level = 1;
 
-    while (true) {
-        if (getZoomLevel() == level) current = count;
-        int newLevel = getZoomConstraintBlockSize(level + 1,
-                                                  ZoomConstraint::RoundUp);
-        if (newLevel == level) break;
-        level = newLevel;
-        if (++count == 50) break;
+    //!!! pull out into function (presumably in View)
+    bool haveConstraint = false;
+    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end();
+         ++i) {
+        if ((*i)->getZoomConstraint() && !(*i)->supportsOtherZoomLevels()) {
+            haveConstraint = true;
+            break;
+        }
+    }
+
+    if (haveConstraint) {
+        while (true) {
+            if (getZoomLevel() == level) current = count;
+            int newLevel = getZoomConstraintBlockSize(level + 1,
+                                                      ZoomConstraint::RoundUp);
+            if (newLevel == level) break;
+            level = newLevel;
+            if (++count == 50) break;
+        }
+    } else {
+        // if we have no particular constraints, we can really spread out
+        while (true) {
+            if (getZoomLevel() >= level) current = count;
+            int step = level / 10;
+            int pwr = 0;
+            while (step > 0) {
+                ++pwr;
+                step /= 2;
+            }
+            step = 1;
+            while (pwr > 0) {
+                step *= 2;
+                --pwr;
+            }
+            std::cerr << level << std::endl;
+            level += step;
+            if (++count == 100 || level > 262144) break;
+        }
     }
 
 //    std::cerr << "Have " << count << " zoom levels" << std::endl;
@@ -1175,18 +1206,52 @@ Pane::wheelEvent(QWheelEvent *e)
 void
 Pane::horizontalThumbwheelMoved(int value)
 {
+    //!!! dupe with updateHeadsUpDisplay
+
     int count = 0;
     int level = 1;
-    while (true) {
-        if (m_hthumb->getMaximumValue() - value == count) break;
-        int newLevel = getZoomConstraintBlockSize(level + 1,
-                                                  ZoomConstraint::RoundUp);
-        if (newLevel == level) break;
-        level = newLevel;
-        ++count;
+
+
+    //!!! pull out into function (presumably in View)
+    bool haveConstraint = false;
+    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end();
+         ++i) {
+        if ((*i)->getZoomConstraint() && !(*i)->supportsOtherZoomLevels()) {
+            haveConstraint = true;
+            break;
+        }
     }
 
-//    std::cerr << "new level is " << level << std::endl;
+    if (haveConstraint) {
+        while (true) {
+            if (m_hthumb->getMaximumValue() - value == count) break;
+            int newLevel = getZoomConstraintBlockSize(level + 1,
+                                                      ZoomConstraint::RoundUp);
+            if (newLevel == level) break;
+            level = newLevel;
+            if (++count == 50) break;
+        }
+    } else {
+        while (true) {
+            if (m_hthumb->getMaximumValue() - value == count) break;
+            int step = level / 10;
+            int pwr = 0;
+            while (step > 0) {
+                ++pwr;
+                step /= 2;
+            }
+            step = 1;
+            while (pwr > 0) {
+                step *= 2;
+                --pwr;
+            }
+//            std::cerr << level << std::endl;
+            level += step;
+            if (++count == 100 || level > 262144) break;
+        }
+    }
+        
+    std::cerr << "new level is " << level << std::endl;
     setZoomLevel(level);
 }    
 

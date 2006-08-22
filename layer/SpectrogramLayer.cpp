@@ -1979,6 +1979,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     fft->suspendWrites();
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    std::cerr << (float(v->getFrameForX(1) - v->getFrameForX(0)) / increment) << " bins per pixel" << std::endl;
+#endif
+
     for (int x = 0; x < w; ++x) {
 
 	for (int y = 0; y < h; ++y) {
@@ -2111,6 +2115,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     } else {
         std::cerr << "Overall mag unchanged at [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
     }
+
+    Profiler profiler2("SpectrogramLayer::paint: draw image", true);
 
     paint.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
 
