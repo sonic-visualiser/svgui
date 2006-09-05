@@ -2098,8 +2098,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		unsigned char pixel = 0;
 
 		float avg = ymag[y] / ydiv[y];
-//!!!		pixel = getDisplayValue(v, avg);
-		pixel = getDisplayValue(v, ypeak[y]);
+		pixel = getDisplayValue(v, avg);
+//!!!		pixel = getDisplayValue(v, ypeak[y]);
 
 		assert(x <= m_drawBuffer.width());
 		QColor c = m_colourMap.getColour(pixel);
