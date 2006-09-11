@@ -39,6 +39,8 @@ public:
                           int targetChannels,
                           int defaultChannel,
                           QString output = "",
+                          bool showWindowSize = false,
+                          bool showFrequencyDomainOptions = false,
                           QWidget *parent = 0);
     ~PluginParameterDialog();
 
