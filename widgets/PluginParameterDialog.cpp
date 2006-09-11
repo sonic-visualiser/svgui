@@ -16,6 +16,7 @@
 #include "PluginParameterDialog.h"
 
 #include "PluginParameterBox.h"
+#include "WindowTypeSelector.h"
 
 #include "vamp-sdk/Plugin.h"
 
@@ -32,6 +33,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                                              int targetChannels,
                                              int defaultChannel,
                                              QString output,
+                                             bool showWindowSize,
+                                             bool showFrequencyDomainOptions,
 					     QWidget *parent) :
     QDialog(parent),
     m_plugin(plugin),
@@ -179,8 +182,66 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         }
     }
 
+    if (showWindowSize) {
+
+        Vamp::Plugin *fePlugin = dynamic_cast<Vamp::Plugin *>(plugin);
+        int size = 1024;
+        int increment = 1024;
+        if (fePlugin) {
+            size = fePlugin->getPreferredBlockSize();
+            if (size == 0) size = 1024;
+            increment = fePlugin->getPreferredStepSize();
+            if (increment == 0) increment = size;
+        }
+
+        QGroupBox *windowBox = new QGroupBox;
+        windowBox->setTitle(tr("Processing"));
+        grid->addWidget(windowBox, 3, 0);
+
+        QGridLayout *windowLayout = new QGridLayout;
+        windowBox->setLayout(windowLayout);
+
+        if (showFrequencyDomainOptions) {
+            windowLayout->addWidget(new QLabel(tr("Window size:")), 0, 0);
+        } else {
+            windowLayout->addWidget(new QLabel(tr("Audio frames per block:")), 0, 0);
+        }
+
+        QComboBox *blockSizeCombo = new QComboBox;
+        blockSizeCombo->setEditable(true);
+        //!!! integer validator
+        for (int i = 0; i < 12; ++i) {
+            int val = pow(2, i + 3);
+            blockSizeCombo->addItem(QString("%1").arg(val));
+            if (val == size) blockSizeCombo->setCurrentIndex(i);
+        }
+        windowLayout->addWidget(blockSizeCombo, 0, 1);
+
+        if (showFrequencyDomainOptions) {
+
+            windowLayout->addWidget(new QLabel(tr("Window increment:")), 1, 0);
+        
+            QComboBox *incrementCombo = new QComboBox;
+            incrementCombo->setEditable(true);
+            //!!! integer validator
+            for (int i = 0; i < 12; ++i) {
+                int val = pow(2, i + 3);
+                incrementCombo->addItem(QString("%1").arg(val));
+                if (val == increment) blockSizeCombo->setCurrentIndex(i);
+            }
+            windowLayout->addWidget(incrementCombo, 1, 1);
+            
+            windowLayout->addWidget(new QLabel(tr("Window shape:")), 2, 0);
+            WindowTypeSelector *windowTypeSelector = new WindowTypeSelector;
+            windowLayout->addWidget(windowTypeSelector, 2, 1);
+        }
+    }
+
+    //!!! We lack a comfortable way of passing around the channel and
+    //blocksize data
+
     QHBoxLayout *hbox = new QHBoxLayout;
-    grid->addLayout(hbox, 3, 0);
+    grid->addLayout(hbox, 4, 0);
     
     QPushButton *ok = new QPushButton(tr("OK"));
     QPushButton *cancel = new QPushButton(tr("Cancel"));
