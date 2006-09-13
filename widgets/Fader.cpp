@@ -98,6 +98,10 @@ Fader::~Fader()
 void
 Fader::mouseMoveEvent(QMouseEvent *ev)
 {
+    if (ev->button() == Qt::MidButton) {
+        return;
+    }
+
     int x = ev->x() - 6;
     const int max_x = 116 - 12;
 
