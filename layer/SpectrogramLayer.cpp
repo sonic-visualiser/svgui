@@ -1114,7 +1114,7 @@ SpectrogramLayer::calculateFrequency(size_t bin,
 
     float phaseError = princargf(newPhase - expectedPhase);
 	    
-    if (fabs(phaseError) < (1.1 * (windowIncrement * M_PI) / windowSize)) {
+    if (fabsf(phaseError) < (1.1f * (windowIncrement * M_PI) / windowSize)) {
 
 	// The new frequency estimate based on the phase error
 	// resulting from assuming the "native" frequency of this bin
