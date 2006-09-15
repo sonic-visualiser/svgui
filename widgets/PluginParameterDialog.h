@@ -20,6 +20,8 @@
 
 namespace Vamp { class PluginBase; }
 class PluginParameterBox;
+class QWidget;
+class QPushButton;
 
 /**
  * A dialog for editing the parameters of a given plugin, using a
@@ -53,11 +55,14 @@ signals:
 
 protected slots:
     void channelComboChanged(int);
+    void advancedToggled();
 
 protected:
     Vamp::PluginBase *m_plugin;
     int m_channel;
     PluginParameterBox *m_parameterBox;
+    QPushButton *m_advancedButton;
+    QWidget *m_advanced;
 };
 
 #endif
