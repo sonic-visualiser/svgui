@@ -24,9 +24,11 @@
 #include <QLabel>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QPushButton>
 #include <QMessageBox>
 #include <QComboBox>
+#include <QSettings>
 
 PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                                              int sourceChannels,
@@ -133,6 +135,14 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
             this,  SIGNAL(pluginConfigurationChanged(QString)));
     paramLayout->addWidget(m_parameterBox);
 
+    m_advanced = new QFrame;
+    QVBoxLayout *advancedLayout = new QVBoxLayout;
+    advancedLayout->setMargin(0);
+    m_advanced->setLayout(advancedLayout);
+    grid->addWidget(m_advanced, 2, 0);
+
+    bool haveAdvanced = false;
+
     if (sourceChannels != targetChannels) {
 
         // At the moment we can only cope with the case where
@@ -151,7 +161,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
             QGroupBox *channelBox = new QGroupBox;
             channelBox->setTitle(tr("Channels"));
-            grid->addWidget(channelBox, 2, 0);
+            advancedLayout->addWidget(channelBox);
+            haveAdvanced = true;
             
             QVBoxLayout *channelLayout = new QVBoxLayout;
             channelBox->setLayout(channelLayout);
@@ -196,7 +207,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
         QGroupBox *windowBox = new QGroupBox;
         windowBox->setTitle(tr("Processing"));
-        grid->addWidget(windowBox, 3, 0);
+        advancedLayout->addWidget(windowBox);
+        haveAdvanced = true;
 
         QGridLayout *windowLayout = new QGridLayout;
         windowBox->setLayout(windowLayout);
@@ -207,14 +219,16 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
             windowLayout->addWidget(new QLabel(tr("Audio frames per block:")), 0, 0);
         }
 
+        std::cerr << "size: " << size << ", increment: " << increment << std::endl;
+
         QComboBox *blockSizeCombo = new QComboBox;
         blockSizeCombo->setEditable(true);
-        //!!! integer validator
-        for (int i = 0; i < 12; ++i) {
+        for (int i = 0; i < 14; ++i) {
             int val = pow(2, i + 3);
             blockSizeCombo->addItem(QString("%1").arg(val));
             if (val == size) blockSizeCombo->setCurrentIndex(i);
         }
+        blockSizeCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
         windowLayout->addWidget(blockSizeCombo, 0, 1);
 
         if (showFrequencyDomainOptions) {
@@ -223,12 +237,12 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         
             QComboBox *incrementCombo = new QComboBox;
             incrementCombo->setEditable(true);
-            //!!! integer validator
-            for (int i = 0; i < 12; ++i) {
+            for (int i = 0; i < 14; ++i) {
                 int val = pow(2, i + 3);
                 incrementCombo->addItem(QString("%1").arg(val));
-                if (val == increment) blockSizeCombo->setCurrentIndex(i);
+                if (val == increment) incrementCombo->setCurrentIndex(i);
             }
+            incrementCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
             windowLayout->addWidget(incrementCombo, 1, 1);
             
             windowLayout->addWidget(new QLabel(tr("Window shape:")), 2, 0);
@@ -242,7 +256,25 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     QHBoxLayout *hbox = new QHBoxLayout;
     grid->addLayout(hbox, 4, 0);
-    
+
+    bool advancedVisible = false;
+
+    if (haveAdvanced) {
+
+        m_advancedButton = new QPushButton(tr("Advanced >>"));
+        m_advancedButton->setCheckable(true);
+        connect(m_advancedButton, SIGNAL(clicked()), this, SLOT(advancedToggled()));
+        
+        QSettings settings;
+        settings.beginGroup("PluginParameterDialog");
+        advancedVisible = settings.value("advancedvisible", false).toBool();
+        settings.endGroup();
+
+        m_advanced->setVisible(false);
+
+        hbox->addWidget(m_advancedButton);
+    }
+
     QPushButton *ok = new QPushButton(tr("OK"));
     QPushButton *cancel = new QPushButton(tr("Cancel"));
     hbox->addStretch(10);
@@ -250,10 +282,35 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     hbox->addWidget(cancel);
     connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
     connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
+
+    if (advancedVisible) {
+        m_advancedButton->setChecked(true);
+        advancedToggled();
+    }
 }
 
 PluginParameterDialog::~PluginParameterDialog()
 {
+}
+
+void
+PluginParameterDialog::advancedToggled()
+{
+    bool visible = !m_advanced->isVisible();
+
+    m_advanced->setVisible(visible);
+
+    if (visible) m_advancedButton->setText(tr("Advanced <<"));
+    else m_advancedButton->setText(tr("Advanced >>"));
+
+    QSettings settings;
+    settings.beginGroup("PluginParameterDialog");
+    settings.setValue("advancedvisible", visible);
+    settings.endGroup();
+
+    std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
+
+    setMaximumSize(sizeHint());
 }
 
 void
