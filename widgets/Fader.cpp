@@ -99,6 +99,7 @@ void
 Fader::mouseMoveEvent(QMouseEvent *ev)
 {
     if (ev->button() == Qt::MidButton) {
+        ev->accept();
         return;
     }
 
