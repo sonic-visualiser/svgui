@@ -18,6 +18,8 @@
 
 #include <QDialog>
 
+#include "base/Window.h"
+
 namespace Vamp { class PluginBase; }
 class PluginParameterBox;
 class QWidget;
@@ -50,16 +52,26 @@ public:
 
     int getChannel() const { return m_channel; }
 
+    void getProcessingParameters(size_t &blockSize) const;
+    void getProcessingParameters(size_t &stepSize, size_t &blockSize,
+                                 WindowType &windowType) const;
+
 signals:
     void pluginConfigurationChanged(QString);
 
 protected slots:
     void channelComboChanged(int);
+    void blockSizeComboChanged(QString);
+    void incrementComboChanged(QString);
+    void windowTypeChanged(WindowType type);
     void advancedToggled();
 
 protected:
     Vamp::PluginBase *m_plugin;
     int m_channel;
+    size_t m_stepSize;
+    size_t m_blockSize;
+    WindowType m_windowType;
     PluginParameterBox *m_parameterBox;
     QPushButton *m_advancedButton;
     QWidget *m_advanced;
