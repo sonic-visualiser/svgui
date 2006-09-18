@@ -41,6 +41,9 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QDialog(parent),
     m_plugin(plugin),
     m_channel(defaultChannel),
+    m_stepSize(0),
+    m_blockSize(0),
+    m_windowType(HanningWindow),
     m_parameterBox(0)
 {
     setWindowTitle(tr("Plugin Parameters"));
@@ -221,6 +224,9 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
         std::cerr << "size: " << size << ", increment: " << increment << std::endl;
 
+        //!!! deal with block and step sizes (coming from the plugin's
+        // preferences) that don't fit into the default list
+
         QComboBox *blockSizeCombo = new QComboBox;
         blockSizeCombo->setEditable(true);
         for (int i = 0; i < 14; ++i) {
@@ -229,6 +235,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
             if (val == size) blockSizeCombo->setCurrentIndex(i);
         }
         blockSizeCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
+        connect(blockSizeCombo, SIGNAL(valueChanged(QString)),
+                this, SLOT(blockSizeComboChanged(QString)));
         windowLayout->addWidget(blockSizeCombo, 0, 1);
 
         if (showFrequencyDomainOptions) {
@@ -243,16 +251,17 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                 if (val == increment) incrementCombo->setCurrentIndex(i);
             }
             incrementCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
+            connect(incrementCombo, SIGNAL(valueChanged(QString)),
+                    this, SLOT(incrementComboChanged(QString)));
             windowLayout->addWidget(incrementCombo, 1, 1);
             
             windowLayout->addWidget(new QLabel(tr("Window shape:")), 2, 0);
             WindowTypeSelector *windowTypeSelector = new WindowTypeSelector;
+            connect(windowTypeSelector, SIGNAL(windowTypeChanged(WindowType type)),
+                    this, SLOT(windowTypeChanged(type)));
             windowLayout->addWidget(windowTypeSelector, 2, 1);
         }
     }
-
-    //!!! We lack a comfortable way of passing around the channel and
-    //blocksize data
 
     QHBoxLayout *hbox = new QHBoxLayout;
     grid->addLayout(hbox, 4, 0);
@@ -291,6 +300,41 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
 PluginParameterDialog::~PluginParameterDialog()
 {
+}
+
+void
+PluginParameterDialog::getProcessingParameters(size_t &blockSize) const
+{
+    blockSize = m_blockSize;
+    return;
+}
+
+void
+PluginParameterDialog::getProcessingParameters(size_t &stepSize,
+                                               size_t &blockSize,
+                                               WindowType &windowType) const
+{
+    stepSize = m_stepSize;
+    blockSize = m_blockSize;
+    windowType = m_windowType;
+}
+
+void
+PluginParameterDialog::blockSizeComboChanged(QString text)
+{
+    m_blockSize = text.toInt();
+}
+
+void
+PluginParameterDialog::incrementComboChanged(QString text)
+{
+    m_stepSize = text.toInt();
+}
+
+void
+PluginParameterDialog::windowTypeChanged(WindowType type)
+{
+    m_windowType = type;
 }
 
 void

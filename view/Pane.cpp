@@ -980,6 +980,23 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             //!!! this should have its own function
 
+            //!!! want to do some cleverness to avoid dragging left/right
+            // at the same time as up/down when the user moves the mouse
+            // diagonally.
+            // e.g. have horizontal and vertical thresholds and a series
+            // of states: unknown, constrained, free
+            //
+            // -> when the mouse first moves we're in unknown state:
+            // what then? the thing we really want to avoid is moving
+            // a tiny amount in the wrong direction, because usually
+            // the problem is that to move at all is expensive -- so what
+            // do we do?
+            //
+            // -> when it's moved more than say 10px in h or v
+            // direction we lock into h or v constrained mode.  If it
+            // moves more than say 20px in the other direction
+            // subsequently, then we switch into free mode.
+
             Layer *layer = 0;
             if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
 
