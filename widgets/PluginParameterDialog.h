@@ -52,6 +52,8 @@ public:
 
     int getChannel() const { return m_channel; }
 
+    //!!! merge with PluginTransform::ExecutionContext
+
     void getProcessingParameters(size_t &blockSize) const;
     void getProcessingParameters(size_t &stepSize, size_t &blockSize,
                                  WindowType &windowType) const;
