@@ -65,9 +65,11 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     font.setBold(true);
 
     QLabel *nameLabel = new QLabel(plugin->getDescription().c_str());
+    nameLabel->setWordWrap(true);
     nameLabel->setFont(font);
 
     QLabel *makerLabel = new QLabel(plugin->getMaker().c_str());
+    makerLabel->setWordWrap(true);
 
     QLabel *outputLabel = 0;
 
@@ -85,19 +87,25 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                 for (size_t i = 0; i < od.size(); ++i) {
                     if (od[i].name == output.toStdString()) {
                         outputLabel = new QLabel(od[i].description.c_str());
+                        outputLabel->setWordWrap(true);
                         break;
                     }
                 }
             }
+        } else {
+            std::cerr << "Plugin " << plugin << " is not a feature extraction plugin" << std::endl;//!!!
         }
     }
 
     QLabel *versionLabel = new QLabel(QString("%1")
                                       .arg(plugin->getPluginVersion()));
+    versionLabel->setWordWrap(true);
 
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
+    copyrightLabel->setWordWrap(true);
 
     QLabel *typeLabel = new QLabel(plugin->getType().c_str());
+    typeLabel->setWordWrap(true);
     typeLabel->setFont(font);
 
     subgrid->addWidget(new QLabel(tr("Name:")), 0, 0);
@@ -203,9 +211,18 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         int increment = 1024;
         if (fePlugin) {
             size = fePlugin->getPreferredBlockSize();
+            std::cerr << "Feature extraction plugin \"" << fePlugin->getDescription() << "\" reports preferred block size as " << size << std::endl;
             if (size == 0) size = 1024;
             increment = fePlugin->getPreferredStepSize();
-            if (increment == 0) increment = size;
+            if (increment == 0) {
+                if (fePlugin->getInputDomain() == Vamp::Plugin::TimeDomain) {
+                    increment = size;
+                } else {
+                    increment = size/2;
+                }
+            }
+        } else {
+            std::cerr << "Plugin " << plugin << " is not a feature extraction plugin" << std::endl;//!!!
         }
 
         QGroupBox *windowBox = new QGroupBox;
@@ -235,7 +252,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
             if (val == size) blockSizeCombo->setCurrentIndex(i);
         }
         blockSizeCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
-        connect(blockSizeCombo, SIGNAL(valueChanged(QString)),
+        connect(blockSizeCombo, SIGNAL(textChanged(QString)),
                 this, SLOT(blockSizeComboChanged(QString)));
         windowLayout->addWidget(blockSizeCombo, 0, 1);
 
@@ -251,7 +268,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                 if (val == increment) incrementCombo->setCurrentIndex(i);
             }
             incrementCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
-            connect(incrementCombo, SIGNAL(valueChanged(QString)),
+            connect(incrementCombo, SIGNAL(textChanged(QString)),
                     this, SLOT(incrementComboChanged(QString)));
             windowLayout->addWidget(incrementCombo, 1, 1);
             
@@ -317,18 +334,22 @@ PluginParameterDialog::getProcessingParameters(size_t &stepSize,
     stepSize = m_stepSize;
     blockSize = m_blockSize;
     windowType = m_windowType;
+    return;
 }
 
 void
 PluginParameterDialog::blockSizeComboChanged(QString text)
 {
     m_blockSize = text.toInt();
+    std::cerr << "Block size changed to " << m_blockSize << std::endl;
 }
 
 void
 PluginParameterDialog::incrementComboChanged(QString text)
 {
     m_stepSize = text.toInt();
+    //!!! rename increment to step size throughout
+    std::cerr << "Increment changed to " << m_blockSize << std::endl;
 }
 
 void
