@@ -19,6 +19,7 @@
 #include "WindowTypeSelector.h"
 
 #include "vamp-sdk/Plugin.h"
+#include "vamp-sdk/PluginHostAdapter.h"
 
 #include <QGridLayout>
 #include <QLabel>
@@ -75,7 +76,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     if (output != "") {
 
-        Vamp::Plugin *fePlugin = dynamic_cast<Vamp::Plugin *>(plugin);
+        Vamp::PluginHostAdapter *fePlugin = dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
 
         if (fePlugin) {
 
@@ -92,8 +93,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                     }
                 }
             }
-        } else {
-            std::cerr << "Plugin " << plugin << " is not a feature extraction plugin" << std::endl;//!!!
         }
     }
 
@@ -108,26 +107,38 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     typeLabel->setWordWrap(true);
     typeLabel->setFont(font);
 
-    subgrid->addWidget(new QLabel(tr("Name:")), 0, 0);
+    QLabel *label = new QLabel(tr("Name:"));
+    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    subgrid->addWidget(label, 0, 0);
     subgrid->addWidget(nameLabel, 0, 1);
 
-    subgrid->addWidget(new QLabel(tr("Type:")), 1, 0);
+    label = new QLabel(tr("Type:"));
+    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    subgrid->addWidget(label, 1, 0);
     subgrid->addWidget(typeLabel, 1, 1);
 
     int outputOffset = 0;
     if (outputLabel) {
-        subgrid->addWidget(new QLabel(tr("Output:")), 2, 0);
+        label = new QLabel(tr("Output:"));
+        label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+        subgrid->addWidget(label, 2, 0);
         subgrid->addWidget(outputLabel, 2, 1);
         outputOffset = 1;
     }
 
-    subgrid->addWidget(new QLabel(tr("Maker:")), 2 + outputOffset, 0);
+    label = new QLabel(tr("Maker:"));
+    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    subgrid->addWidget(label, 2 + outputOffset, 0);
     subgrid->addWidget(makerLabel, 2 + outputOffset, 1);
 
-    subgrid->addWidget(new QLabel(tr("Copyright:  ")), 3 + outputOffset, 0);
+    label = new QLabel(tr("Copyright:  "));
+    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    subgrid->addWidget(label, 3 + outputOffset, 0);
     subgrid->addWidget(copyrightLabel, 3 + outputOffset, 1);
 
-    subgrid->addWidget(new QLabel(tr("Version:")), 4 + outputOffset, 0);
+    label = new QLabel(tr("Version:"));
+    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    subgrid->addWidget(label, 4 + outputOffset, 0);
     subgrid->addWidget(versionLabel, 4 + outputOffset, 1);
 
     subgrid->setColumnStretch(1, 2);
@@ -206,7 +217,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     if (showWindowSize) {
 
-        Vamp::Plugin *fePlugin = dynamic_cast<Vamp::Plugin *>(plugin);
+        Vamp::PluginHostAdapter *fePlugin = dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
         int size = 1024;
         int increment = 1024;
         if (fePlugin) {
@@ -222,7 +233,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                 }
             }
         } else {
-            std::cerr << "Plugin " << plugin << " is not a feature extraction plugin" << std::endl;//!!!
+            std::cerr << "Plugin " << plugin << " is not a feature extraction plugin (it's a " << typeid(*plugin).name() << ")" << std::endl;//!!!
         }
 
         QGroupBox *windowBox = new QGroupBox;
@@ -246,10 +257,18 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
         QComboBox *blockSizeCombo = new QComboBox;
         blockSizeCombo->setEditable(true);
+        bool found = false;
         for (int i = 0; i < 14; ++i) {
             int val = pow(2, i + 3);
             blockSizeCombo->addItem(QString("%1").arg(val));
-            if (val == size) blockSizeCombo->setCurrentIndex(i);
+            if (val == size) {
+                blockSizeCombo->setCurrentIndex(i);
+                found = true;
+            }
+        }
+        if (!found) {
+            blockSizeCombo->addItem(QString("%1").arg(size));
+            blockSizeCombo->setCurrentIndex(blockSizeCombo->count() - 1);
         }
         blockSizeCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
         connect(blockSizeCombo, SIGNAL(textChanged(QString)),
@@ -262,10 +281,18 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         
             QComboBox *incrementCombo = new QComboBox;
             incrementCombo->setEditable(true);
+            found = false;
             for (int i = 0; i < 14; ++i) {
                 int val = pow(2, i + 3);
                 incrementCombo->addItem(QString("%1").arg(val));
-                if (val == increment) incrementCombo->setCurrentIndex(i);
+                if (val == increment) {
+                    incrementCombo->setCurrentIndex(i);
+                    found = true;
+                }
+            }
+            if (!found) {
+                incrementCombo->addItem(QString("%1").arg(increment));
+                incrementCombo->setCurrentIndex(incrementCombo->count() - 1);
             }
             incrementCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
             connect(incrementCombo, SIGNAL(textChanged(QString)),
@@ -349,7 +376,7 @@ PluginParameterDialog::incrementComboChanged(QString text)
 {
     m_stepSize = text.toInt();
     //!!! rename increment to step size throughout
-    std::cerr << "Increment changed to " << m_blockSize << std::endl;
+    std::cerr << "Increment changed to " << m_stepSize << std::endl;
 }
 
 void
