@@ -275,29 +275,29 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                 this, SLOT(blockSizeComboChanged(QString)));
         windowLayout->addWidget(blockSizeCombo, 0, 1);
 
-        if (showFrequencyDomainOptions) {
-
-            windowLayout->addWidget(new QLabel(tr("Window increment:")), 1, 0);
+        windowLayout->addWidget(new QLabel(tr("Window increment:")), 1, 0);
         
-            QComboBox *incrementCombo = new QComboBox;
-            incrementCombo->setEditable(true);
-            found = false;
-            for (int i = 0; i < 14; ++i) {
-                int val = pow(2, i + 3);
-                incrementCombo->addItem(QString("%1").arg(val));
-                if (val == increment) {
-                    incrementCombo->setCurrentIndex(i);
-                    found = true;
-                }
+        QComboBox *incrementCombo = new QComboBox;
+        incrementCombo->setEditable(true);
+        found = false;
+        for (int i = 0; i < 14; ++i) {
+            int val = pow(2, i + 3);
+            incrementCombo->addItem(QString("%1").arg(val));
+            if (val == increment) {
+                incrementCombo->setCurrentIndex(i);
+                found = true;
             }
-            if (!found) {
-                incrementCombo->addItem(QString("%1").arg(increment));
-                incrementCombo->setCurrentIndex(incrementCombo->count() - 1);
-            }
-            incrementCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
-            connect(incrementCombo, SIGNAL(textChanged(QString)),
-                    this, SLOT(incrementComboChanged(QString)));
-            windowLayout->addWidget(incrementCombo, 1, 1);
+        }
+        if (!found) {
+            incrementCombo->addItem(QString("%1").arg(increment));
+            incrementCombo->setCurrentIndex(incrementCombo->count() - 1);
+        }
+        incrementCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
+        connect(incrementCombo, SIGNAL(textChanged(QString)),
+                this, SLOT(incrementComboChanged(QString)));
+        windowLayout->addWidget(incrementCombo, 1, 1);
+        
+        if (showFrequencyDomainOptions) {
             
             windowLayout->addWidget(new QLabel(tr("Window shape:")), 2, 0);
             WindowTypeSelector *windowTypeSelector = new WindowTypeSelector;
