@@ -26,6 +26,7 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QScrollArea>
 #include <QPushButton>
 #include <QMessageBox>
 #include <QComboBox>
@@ -152,10 +153,16 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     paramLayout->setMargin(0);
     paramBox->setLayout(paramLayout);
 
+    QScrollArea *scroll = new QScrollArea;
+    scroll->setWidgetResizable(true);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scroll->setFrameShape(QFrame::NoFrame);
+    paramLayout->addWidget(scroll);
+
     m_parameterBox = new PluginParameterBox(m_plugin);
     connect(m_parameterBox, SIGNAL(pluginConfigurationChanged(QString)),
             this,  SIGNAL(pluginConfigurationChanged(QString)));
-    paramLayout->addWidget(m_parameterBox);
+    scroll->setWidget(m_parameterBox);
 
     m_advanced = new QFrame;
     QVBoxLayout *advancedLayout = new QVBoxLayout;
@@ -402,7 +409,8 @@ PluginParameterDialog::advancedToggled()
 
     std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
 
-    setMaximumSize(sizeHint());
+    setMinimumHeight(sizeHint().height());
+    if (visible) setMaximumHeight(sizeHint().height());
 }
 
 void
