@@ -99,6 +99,14 @@ protected:
     Selection m_editingSelection;
     int m_editingSelectionEdge;
 
+    enum DragMode {
+        UnresolvedDrag,
+        VerticalDrag,
+        HorizontalDrag,
+        FreeDrag
+    };
+    DragMode m_dragMode;
+
     QWidget *m_headsUpDisplay;
     Thumbwheel *m_hthumb;
     Thumbwheel *m_vthumb;
