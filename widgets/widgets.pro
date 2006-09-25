@@ -24,6 +24,7 @@ HEADERS += AudioDial.h \
            PluginParameterDialog.h \
            PropertyBox.h \
            PropertyStack.h \
+           SubdividingMenu.h \
            Thumbwheel.h \
            WindowShapePreview.h \
            WindowTypeSelector.h
@@ -37,6 +38,7 @@ SOURCES += AudioDial.cpp \
            PluginParameterDialog.cpp \
            PropertyBox.cpp \
            PropertyStack.cpp \
+           SubdividingMenu.cpp \
            Thumbwheel.cpp \
            WindowShapePreview.cpp \
            WindowTypeSelector.cpp
