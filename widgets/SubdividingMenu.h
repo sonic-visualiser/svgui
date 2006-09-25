@@ -29,17 +29,21 @@
  * The menu needs to be told, before any of the actions are added,
  * what the set of entry strings will be, so it can determine a
  * reasonable categorisation.  Do this by calling the setEntries()
- * method.
+ * method.  If it isn't practical to do this in advance, then add the
+ * entries and call entriesAdded() afterwards instead. 
  */
 
 class SubdividingMenu : public QMenu
 {
 public:
-    SubdividingMenu(QWidget *parent = 0);
-    SubdividingMenu(const QString &title, QWidget *parent = 0);
+    SubdividingMenu(size_t lowerLimit = 0, size_t upperLimit = 0,
+                    QWidget *parent = 0);
+    SubdividingMenu(const QString &title, size_t lowerLimit = 0,
+                    size_t upperLimit = 0, QWidget *parent = 0);
     virtual ~SubdividingMenu();
 
     void setEntries(const std::set<QString> &entries);
+    void entriesAdded();
 
     // Action names and strings passed to addAction and addMenu must
     // appear in the set previously given to setEntries.  If you want
@@ -57,6 +61,12 @@ public:
 
 protected:
     std::map<QString, QMenu *> m_nameToChunkMenuMap;
+
+    size_t m_lowerLimit;
+    size_t m_upperLimit;
+
+    bool m_entriesSet;
+    std::map<QString, QObject *> m_pendingEntries;
 };
 
 #endif
