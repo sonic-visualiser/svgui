@@ -131,7 +131,6 @@ SpectrogramLayer::getProperties() const
     PropertyList list;
     list.push_back("Colour");
     list.push_back("Colour Scale");
-//    list.push_back("Window Type");
     list.push_back("Window Size");
     list.push_back("Window Increment");
     list.push_back("Normalize Columns");
@@ -140,10 +139,10 @@ SpectrogramLayer::getProperties() const
     list.push_back("Threshold");
     list.push_back("Gain");
     list.push_back("Colour Rotation");
-    list.push_back("Min Frequency");
-    list.push_back("Max Frequency");
+//    list.push_back("Min Frequency");
+//    list.push_back("Max Frequency");
     list.push_back("Frequency Scale");
-//    list.push_back("Zero Padding");
+////    list.push_back("Zero Padding");
     return list;
 }
 
@@ -152,7 +151,6 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Colour") return tr("Colour");
     if (name == "Colour Scale") return tr("Colour Scale");
-    if (name == "Window Type") return tr("Window Type");
     if (name == "Window Size") return tr("Window Size");
     if (name == "Window Increment") return tr("Window Overlap");
     if (name == "Normalize Columns") return tr("Normalize Columns");
@@ -183,22 +181,24 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
 QString
 SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 {
+    if (name == "Bin Display" ||
+        name == "Frequency Scale") return tr("Bins");
     if (name == "Window Size" ||
-	name == "Window Type" ||
 	name == "Window Increment" ||
         name == "Zero Padding") return tr("Window");
     if (name == "Colour" ||
-	name == "Gain" ||
+//	name == "Gain" ||
 	name == "Threshold" ||
 	name == "Colour Rotation") return tr("Colour");
     if (name == "Normalize Columns" ||
         name == "Normalize Visible Area" ||
-	name == "Bin Display" ||
+//	name == "Bin Display" ||
+        name == "Gain" ||
 	name == "Colour Scale") return tr("Scale");
-    if (name == "Max Frequency" ||
-	name == "Min Frequency" ||
-	name == "Frequency Scale" ||
-	name == "Frequency Adjustment") return tr("Range");
+//    if (name == "Max Frequency" ||
+//	name == "Min Frequency" ||
+//	name == "Frequency Scale" ||
+//	name == "Frequency Adjustment") return tr("Range");
     return QString();
 }
 
@@ -250,13 +250,6 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 6;
 
 	deft = (int)m_colourScheme;
-
-    } else if (name == "Window Type") {
-
-	*min = 0;
-	*max = 6;
-
-	deft = (int)m_windowType;
 
     } else if (name == "Window Size") {
 
@@ -370,18 +363,6 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 4: return tr("Phase");
 	}
     }
-    if (name == "Window Type") {
-	switch ((WindowType)value) {
-	default:
-	case RectangularWindow: return tr("Rectangle");
-	case BartlettWindow: return tr("Bartlett");
-	case HammingWindow: return tr("Hamming");
-	case HanningWindow: return tr("Hanning");
-	case BlackmanWindow: return tr("Blackman");
-	case GaussianWindow: return tr("Gaussian");
-	case ParzenWindow: return tr("Parzen");
-	}
-    }
     if (name == "Window Size") {
 	return QString("%1").arg(32 << value);
     }
@@ -469,8 +450,6 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 5: setColourScheme(BlueOnBlack); break;
 	case 6: setColourScheme(Rainbow); break;
 	}
-    } else if (name == "Window Type") {
-	setWindowType(WindowType(value));
     } else if (name == "Window Size") {
 	setWindowSize(32 << value);
     } else if (name == "Window Increment") {
@@ -1231,6 +1210,8 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
 float
 SpectrogramLayer::getInputForDisplayValue(unsigned char uc) const
 {
+    //!!! unused
+
     int value = uc;
     float input;
 
@@ -1592,13 +1573,13 @@ SpectrogramLayer::getFFTModel(const View *v) const
     if (m_fftModels.find(v) == m_fftModels.end()) {
         m_fftModels[v] = FFTFillPair
             (new FFTModel(m_model,
-                                 m_channel,
-                                 m_windowType,
-                                 m_windowSize,
-                                 getWindowIncrement(),
-                                 fftSize,
-                                 true,
-                                 m_candidateFillStartFrame),
+                          m_channel,
+                          m_windowType,
+                          m_windowSize,
+                          getWindowIncrement(),
+                          fftSize,
+                          true,
+                          m_candidateFillStartFrame),
              0);
         
         delete m_updateTimer;
@@ -2876,13 +2857,11 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
     
     s += QString("channel=\"%1\" "
 		 "windowSize=\"%2\" "
-		 "windowType=\"%3\" "
-		 "windowHopLevel=\"%4\" "
-		 "gain=\"%5\" "
-		 "threshold=\"%6\" ")
+		 "windowHopLevel=\"%3\" "
+		 "gain=\"%4\" "
+		 "threshold=\"%5\" ")
 	.arg(m_channel)
 	.arg(m_windowSize)
-	.arg(m_windowType)
 	.arg(m_windowHopLevel)
 	.arg(m_gain)
 	.arg(m_threshold);
@@ -2894,7 +2873,8 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 		 "colourRotation=\"%5\" "
 		 "frequencyScale=\"%6\" "
 		 "binDisplay=\"%7\" "
-		 "normalizeColumns=\"%8\"")
+		 "normalizeColumns=\"%8\" "
+                 "normalizeVisibleArea=\"%9\"")
 	.arg(m_minFrequency)
 	.arg(m_maxFrequency)
 	.arg(m_colourScale)
@@ -2902,7 +2882,8 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 	.arg(m_colourRotation)
 	.arg(m_frequencyScale)
 	.arg(m_binDisplay)
-	.arg(m_normalizeColumns ? "true" : "false");
+	.arg(m_normalizeColumns ? "true" : "false")
+        .arg(m_normalizeVisibleArea ? "true" : "false");
 
     return Layer::toXmlString(indent, extraAttributes + " " + s);
 }
@@ -2917,10 +2898,6 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 
     size_t windowSize = attributes.value("windowSize").toUInt(&ok);
     if (ok) setWindowSize(windowSize);
-
-    WindowType windowType = (WindowType)
-	attributes.value("windowType").toInt(&ok);
-    if (ok) setWindowType(windowType);
 
     size_t windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
     if (ok) setWindowHopLevel(windowHopLevel);
@@ -2970,5 +2947,9 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     bool normalizeColumns =
 	(attributes.value("normalizeColumns").trimmed() == "true");
     setNormalizeColumns(normalizeColumns);
+
+    bool normalizeVisibleArea =
+	(attributes.value("normalizeVisibleArea").trimmed() == "true");
+    setNormalizeVisibleArea(normalizeVisibleArea);
 }
     

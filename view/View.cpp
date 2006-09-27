@@ -43,6 +43,7 @@ View::View(QWidget *w, bool showProgress) :
     m_followPan(true),
     m_followZoom(true),
     m_followPlay(PlaybackScrollPage),
+    m_playPointerFrame(0),
     m_lightBackground(true),
     m_showProgress(showProgress),
     m_cache(0),
