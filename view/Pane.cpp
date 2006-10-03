@@ -144,7 +144,7 @@ Pane::updateHeadsUpDisplay()
                 step *= 2;
                 --pwr;
             }
-            std::cerr << level << std::endl;
+//            std::cerr << level << std::endl;
             level += step;
             if (++count == 100 || level > 262144) break;
         }
