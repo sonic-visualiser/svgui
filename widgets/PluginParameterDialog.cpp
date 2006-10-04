@@ -278,8 +278,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
             blockSizeCombo->setCurrentIndex(blockSizeCombo->count() - 1);
         }
         blockSizeCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
-        connect(blockSizeCombo, SIGNAL(textChanged(QString)),
-                this, SLOT(blockSizeComboChanged(QString)));
+        connect(blockSizeCombo, SIGNAL(editTextChanged(const QString &)),
+                this, SLOT(blockSizeComboChanged(const QString &)));
         windowLayout->addWidget(blockSizeCombo, 0, 1);
 
         windowLayout->addWidget(new QLabel(tr("Window increment:")), 1, 0);
@@ -300,8 +300,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
             incrementCombo->setCurrentIndex(incrementCombo->count() - 1);
         }
         incrementCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
-        connect(incrementCombo, SIGNAL(textChanged(QString)),
-                this, SLOT(incrementComboChanged(QString)));
+        connect(incrementCombo, SIGNAL(editTextChanged(const QString &)),
+                this, SLOT(incrementComboChanged(const QString &)));
         windowLayout->addWidget(incrementCombo, 1, 1);
         
         if (showFrequencyDomainOptions) {
@@ -372,14 +372,14 @@ PluginParameterDialog::getProcessingParameters(size_t &stepSize,
 }
 
 void
-PluginParameterDialog::blockSizeComboChanged(QString text)
+PluginParameterDialog::blockSizeComboChanged(const QString &text)
 {
     m_blockSize = text.toInt();
     std::cerr << "Block size changed to " << m_blockSize << std::endl;
 }
 
 void
-PluginParameterDialog::incrementComboChanged(QString text)
+PluginParameterDialog::incrementComboChanged(const QString &text)
 {
     m_stepSize = text.toInt();
     //!!! rename increment to step size throughout
