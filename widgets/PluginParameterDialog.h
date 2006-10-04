@@ -63,8 +63,8 @@ signals:
 
 protected slots:
     void channelComboChanged(int);
-    void blockSizeComboChanged(QString);
-    void incrementComboChanged(QString);
+    void blockSizeComboChanged(const QString &);
+    void incrementComboChanged(const QString &);
     void windowTypeChanged(WindowType type);
     void advancedToggled();
 
