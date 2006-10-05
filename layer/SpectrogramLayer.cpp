@@ -1655,7 +1655,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	v->setLightBackground(false);
     }
 
-    Profiler profiler("SpectrogramLayer::paint", true);
+//    Profiler profiler("SpectrogramLayer::paint", true);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << std::endl;
     
@@ -2097,7 +2097,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         std::cerr << "Overall mag unchanged at [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
     }
 
-    Profiler profiler2("SpectrogramLayer::paint: draw image", true);
+//    Profiler profiler2("SpectrogramLayer::paint: draw image", true);
 
     paint.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
 
@@ -2116,7 +2116,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         if (cache.validArea.x() > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            std::cerr << "SpectrogramLayer::paint() updating left" << std::endl;
+            std::cerr << "SpectrogramLayer::paint() updating left (0, "
+                      << cache.validArea.x() << ")" << std::endl;
 #endif
             v->update(0, 0, cache.validArea.x(), v->height());
         }
@@ -2520,7 +2521,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
-    Profiler profiler("SpectrogramLayer::paintVerticalScale", true);
+//    Profiler profiler("SpectrogramLayer::paintVerticalScale", true);
 
     //!!! cache this?
 
