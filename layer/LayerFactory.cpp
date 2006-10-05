@@ -32,6 +32,8 @@
 #include "data/model/NoteModel.h"
 #include "data/model/TextModel.h"
 #include "data/model/DenseThreeDimensionalModel.h"
+#include "data/model/WaveFileModel.h"
+#include "data/model/WritableWaveFileModel.h"
 
 LayerFactory *
 LayerFactory::m_instance = new LayerFactory;
@@ -200,7 +202,13 @@ LayerFactory::getLayerTypeForName(QString name)
 void
 LayerFactory::setModel(Layer *layer, Model *model)
 {
-    if (trySetModel<WaveformLayer, RangeSummarisableTimeValueModel>(layer, model))
+//    if (trySetModel<WaveformLayer, RangeSummarisableTimeValueModel>(layer, model))
+//	return;
+
+    if (trySetModel<WaveformLayer, WaveFileModel>(layer, model))
+	return;
+
+    if (trySetModel<WaveformLayer, WritableWaveFileModel>(layer, model))
 	return;
 
     if (trySetModel<SpectrogramLayer, DenseTimeValueModel>(layer, model))
