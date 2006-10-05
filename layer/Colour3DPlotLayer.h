@@ -45,7 +45,9 @@ public:
     Colour3DPlotLayer();
     ~Colour3DPlotLayer();
 
-    virtual const ZoomConstraint *getZoomConstraint() const { return m_model; }
+    virtual const ZoomConstraint *getZoomConstraint() const {
+        return m_model ? m_model->getZoomConstraint() : 0;
+    }
     virtual const Model *getModel() const { return m_model; }
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
