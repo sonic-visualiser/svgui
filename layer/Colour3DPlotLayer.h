@@ -68,19 +68,24 @@ public:
 
     virtual bool getValueExtents(float &, float &, bool &, QString &) const { return false; }
 
-    virtual QString getPropertyLabel(const PropertyName &) const { return ""; }
-/*
     virtual PropertyList getProperties() const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
+    virtual QString getPropertyLabel(const PropertyName &) const;
+    virtual QString getPropertyGroupName(const PropertyName &) const;
     virtual int getPropertyRangeAndValue(const PropertyName &,
-					   int *min, int *max) const;
+                                         int *min, int *max) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
-*/
 
     void setProperties(const QXmlAttributes &) { }
     
+    //!!! harmonize with spectrogram
+    enum ColourScale { LinearScale, AbsoluteScale, MeterScale, dBScale };
+
+    void setColourScale(ColourScale);
+    ColourScale getColourScale() const { return m_colourScale; }
+
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);
@@ -90,6 +95,9 @@ protected:
     
     mutable QImage *m_cache;
 
+    ColourScale m_colourScale;
+
+    virtual int getColourScaleWidth(QPainter &) const;
     virtual void paintDense(View *v, QPainter &paint, QRect rect) const;
 };
 

@@ -908,6 +908,8 @@ View::getModelsSampleRate() const
     // multiple samplerates, we'd probably want to do frame/time
     // conversion in the model
 
+    //!!! nah, this wants to always return the sr of the main model!
+
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
 	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 	    return (*i)->getModel()->getSampleRate();

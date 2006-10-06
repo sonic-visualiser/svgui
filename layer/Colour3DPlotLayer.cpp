@@ -32,7 +32,8 @@
 Colour3DPlotLayer::Colour3DPlotLayer() :
     Layer(),
     m_model(0),
-    m_cache(0)
+    m_cache(0),
+    m_colourScale(LinearScale)
 {
     
 }
@@ -74,6 +75,96 @@ Colour3DPlotLayer::cacheInvalid(size_t, size_t)
     cacheInvalid();
 }
 
+Layer::PropertyList
+Colour3DPlotLayer::getProperties() const
+{
+    PropertyList list;
+    list.push_back("Colour Scale");
+    return list;
+}
+
+QString
+Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
+{
+    if (name == "Colour Scale") return tr("Colour Scale");
+    return "";
+}
+
+Layer::PropertyType
+Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
+{
+    return ValueProperty;
+}
+
+QString
+Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
+{
+    return QString();
+}
+
+int
+Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
+                                        int *min, int *max) const
+{
+    int deft = 0;
+
+    int garbage0, garbage1;
+    if (!min) min = &garbage0;
+    if (!max) max = &garbage1;
+
+    if (name == "Colour Scale") {
+
+	*min = 0;
+	*max = 3;
+
+	deft = (int)m_colourScale;
+
+    } else {
+	deft = Layer::getPropertyRangeAndValue(name, min, max);
+    }
+
+    return deft;
+}
+
+QString
+Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
+				    int value) const
+{
+    if (name == "Colour Scale") {
+	switch (value) {
+	default:
+	case 0: return tr("Linear");
+	case 1: return tr("Absolute");
+	case 2: return tr("Meter");
+	case 3: return tr("dB");
+	}
+    }
+    return tr("<unknown>");
+}
+
+void
+Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
+{
+    if (name == "Colour Scale") {
+	switch (value) {
+	default:
+	case 0: setColourScale(LinearScale); break;
+	case 1: setColourScale(AbsoluteScale); break;
+	case 2: setColourScale(MeterScale); break;
+	case 3: setColourScale(dBScale); break;
+	}
+    }
+}
+
+void
+Colour3DPlotLayer::setColourScale(ColourScale scale)
+{
+    if (m_colourScale == scale) return;
+    m_colourScale = scale;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
 bool
 Colour3DPlotLayer::isLayerScrollable(const View *v) const
 {
@@ -92,14 +183,20 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
     size_t modelStart = m_model->getStartFrame();
     size_t modelResolution = m_model->getResolution();
 
+    float srRatio =
+        float(v->getViewManager()->getMainModelSampleRate()) /
+        float(m_model->getSampleRate());
+
     int sx0 = modelResolution *
-	int((v->getFrameForX(x) - long(modelStart)) / long(modelResolution));
+	int((v->getFrameForX(x) / srRatio - long(modelStart)) / long(modelResolution));
     int sx1 = sx0 + modelResolution;
 
     float binHeight = float(v->height()) / m_model->getYBinCount();
     int sy = (v->height() - y) / binHeight;
 
     float value = m_model->getBinValue(sx0, sy);
+
+//    std::cerr << "bin value (" << sx0 << "," << sy << ") is " << value << std::endl;
     
     QString binName = m_model->getBinName(sy);
     if (binName == "") binName = QString("[%1]").arg(sy + 1);
@@ -114,6 +211,13 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
 	.arg(value);
 
     return text;
+}
+
+int
+Colour3DPlotLayer::getColourScaleWidth(QPainter &paint) const
+{
+    int cw = 20;
+    return cw;
 }
 
 int
@@ -135,7 +239,7 @@ Colour3DPlotLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 	tw = std::max(tw, paint.fontMetrics().width(sampleText));
     }
 
-    return tw + 13;
+    return tw + 13 + getColourScaleWidth(paint);
 }
 
 void
@@ -145,6 +249,24 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
     int h = rect.height(), w = rect.width();
     float binHeight = float(v->height()) / m_model->getYBinCount();
+
+    int cw = getColourScaleWidth(paint);
+    
+    int ch = h - 20;
+    if (ch > 20 && m_cache) {
+
+        paint.setPen(Qt::black);
+        paint.drawRect(4, 10, cw - 8, ch - 19);
+
+        for (int y = 0; y < ch - 20; ++y) {
+            QRgb c = m_cache->color(((ch - 20 - y) * 255) / (ch - 20));
+//            std::cerr << "y = " << y << ": rgb " << qRed(c) << "," << qGreen(c) << "," << qBlue(c) << std::endl;
+            paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
+            paint.drawLine(5, 11 + y, cw - 5, 11 + y);
+        }
+    }
+
+    paint.setPen(Qt::black);
 
     int count = v->height() / paint.fontMetrics().height();
     int step = m_model->getYBinCount() / count;
@@ -159,12 +281,12 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 	QString text = m_model->getBinName(i);
 	if (text == "") text = QString("[%1]").arg(i + 1);
 
-	paint.drawLine(0, y0, w, y0);
+	paint.drawLine(cw, y0, w, y0);
 
 	int cy = y0 - (step * binHeight)/2;
 	int ty = cy + paint.fontMetrics().ascent()/2;
 
-	paint.drawText(10, ty, text);
+	paint.drawText(cw + 5, ty, text);
     }
 }
 
@@ -175,17 +297,6 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     std::cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << std::endl;
 #endif
-
-    //!!! This doesn't yet accommodate the fact that the model may
-    //have a different sample rate from an underlying model.  At the
-    //moment our paint mechanism assumes all models have the same
-    //sample rate.  If that isn't the case, they won't align and the
-    //time ruler will match whichever model was used to construct it.
-    //Obviously it is not going to be the case in general that models
-    //will have the same samplerate, so we need a pane samplerate as
-    //well which we trivially realign to.  (We can probably require
-    //the waveform and spectrogram layers to display at the pane
-    //samplerate.)
 
     int completion = 0;
     if (!m_model || !m_model->isOK() || !m_model->isReady(&completion)) {
@@ -211,9 +322,11 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	m_cache = 0;
     }
 
-    if (!m_cache) {
+    if (!m_cache) { 
 
 	m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
+
+        std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << std::endl;
 
 	m_cache->setNumColors(256);
 	DenseThreeDimensionalModel::BinValueSet values;
@@ -223,13 +336,43 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (max == min) max = min + 1.0;
 
-	for (int value = 0; value < 256; ++value) {
-	    int hue = 256 - value;
-	    QColor colour = QColor::fromHsv(hue, value/2 + 128, value);
-	    m_cache->setColor(value, qRgba(colour.red(), colour.green(), colour.blue(), 80));
+        int zeroIndex = 0;
+        if (min < 0.f) {
+            if (m_colourScale == LinearScale) {
+                zeroIndex = int(((-min) * 256) / (max - min));
+            } else {
+                max = std::max(-min, max);
+                min = 0;
+            }
+        }
+        if (zeroIndex < 0) zeroIndex = 0;
+        if (zeroIndex > 255) zeroIndex = 255;
+
+        //!!! want this and spectrogram to share a colour mapping unit
+
+	for (int index = 0; index < 256; ++index) {
+            int effective = abs(((index - zeroIndex) * 255) /
+                                std::max(255 - zeroIndex, zeroIndex));
+	    int hue = 256 - effective;
+            if (zeroIndex > 0) {
+                if (index <= zeroIndex) hue = 255;
+                else hue = 0;
+            }
+            while (hue < 0) hue += 255;
+            while (hue > 255) hue -= 255;
+            int saturation = effective / 2 + 128;
+            if (saturation < 0) saturation = -saturation;
+            if (saturation > 255) saturation = 255;
+            int value = effective;
+            if (value < 0) value = -value;
+            if (value > 255) value = 255;
+//            std::cerr << "min: " << min << ", max: " << max << ", zi " << zeroIndex << ", index " << index << ": " << hue << ", " << saturation << ", " << value << std::endl;
+	    QColor colour = QColor::fromHsv(hue, saturation, value);
+//            std::cerr << "rgb: " << colour.red() << "," << colour.green() << "," << colour.blue() << std::endl;
+	    m_cache->setColor(index, qRgb(colour.red(), colour.green(), colour.blue()));
 	}
 
-	m_cache->fill(min);
+	m_cache->fill(zeroIndex);
 
 	for (size_t f = modelStart; f <= modelEnd; f += modelResolution) {
 	
@@ -239,7 +382,12 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    for (size_t y = 0; y < m_model->getYBinCount(); ++y) {
 
 		float value = min;
-		if (y < values.size()) value = values[y];
+		if (y < values.size()) {
+                    value = values[y];
+                    if (m_colourScale != LinearScale) {
+                        value = fabs(value);
+                    }
+                }
 
 		int pixel = int(((value - min) * 256) / (max - min));
                 if (pixel < 0) pixel = 0;
@@ -250,7 +398,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
     }
 
-    if (m_model->getYBinCount() >= v->height()) {
+    if (m_model->getYBinCount() >= v->height() ||
+        modelResolution < v->getZoomLevel() / 2) {
         paintDense(v, paint, rect);
         return;
     }
@@ -258,7 +407,6 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     int x0 = rect.left();
     int x1 = rect.right() + 1;
 
-    int w = x1 - x0;
     int h = v->height();
 
     // The cache is from the model's start frame to the model's end
@@ -271,9 +419,12 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     //direction.  This one is only really appropriate for models with
     //far fewer bins in both directions.
 
-    int sx0 = int((v->getFrameForX(x0) - long(modelStart)) / long(modelResolution));
-    int sx1 = int((v->getFrameForX(x1) - long(modelStart)) / long(modelResolution));
-    int sw = sx1 - sx0;
+    float srRatio =
+        float(v->getViewManager()->getMainModelSampleRate()) /
+        float(m_model->getSampleRate());
+
+    int sx0 = int((v->getFrameForX(x0) / srRatio - long(modelStart)) / long(modelResolution));
+    int sx1 = int((v->getFrameForX(x1) / srRatio - long(modelStart)) / long(modelResolution));
     int sh = m_model->getYBinCount();
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
@@ -292,14 +443,14 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	if (fx + modelResolution < int(modelStart) ||
 	    fx > int(modelEnd)) continue;
 
-	int rx0 = v->getXForFrame(fx + int(modelStart));
-	int rx1 = v->getXForFrame(fx + int(modelStart) + int(modelResolution));
+	int rx0 = v->getXForFrame((fx + int(modelStart)) * srRatio);
+	int rx1 = v->getXForFrame((fx + int(modelStart) + int(modelResolution) + 1) * srRatio);
 
-	int w = rx1 - rx0;
-	if (w < 1) w = 1;
+	int rw = rx1 - rx0;
+	if (rw < 1) rw = 1;
 
-	bool showLabel = (w > 10 &&
-			  paint.fontMetrics().width("0.000000") < w - 3 &&
+	bool showLabel = (rw > 10 &&
+			  paint.fontMetrics().width("0.000000") < rw - 3 &&
 			  paint.fontMetrics().height() < (h / sh));
         
 	for (int sy = 0; sy < sh; ++sy) {
@@ -311,13 +462,24 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 		pixel = m_cache->pixel(sx, sy);
 	    }
 
+	    QRect r(rx0, ry0 - h / sh - 1, rw, h / sh + 1);
+
+            if (rw == 1) {
+                paint.setPen(pixel);
+                paint.setBrush(Qt::NoBrush);
+                paint.drawLine(r.x(), r.y(), r.x(), r.y() + r.height() - 1);
+                continue;
+            }
+
 	    QColor pen(255, 255, 255, 80);
 	    QColor brush(pixel);
-	    brush.setAlpha(160);
+
+            if (rw > 3 && r.height() > 3) {
+                brush.setAlpha(160);
+            }
+
 	    paint.setPen(Qt::NoPen);
 	    paint.setBrush(brush);
-
-	    QRect r(rx0, ry0 - h / sh - 1, w, h / sh + 1);
 
 	    if (illuminate) {
 		if (r.contains(illuminatePos)) {
@@ -326,8 +488,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
             
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-            std::cerr << "rect " << rx0 << "," << (ry0 - h / sh - 1) << " "
-                      << w << "x" << (h / sh + 1) << std::endl;
+            std::cerr << "rect " << r.x() << "," << r.y() << " "
+                      << r.width() << "x" << r.height() << std::endl;
 #endif
 
 	    paint.drawRect(r);
@@ -358,6 +520,10 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     size_t modelEnd = m_model->getEndFrame();
     size_t modelResolution = m_model->getResolution();
 
+    float srRatio =
+        float(v->getViewManager()->getMainModelSampleRate()) /
+        float(m_model->getSampleRate());
+
     int x0 = rect.left();
     int x1 = rect.right() + 1;
 
@@ -369,7 +535,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     for (int x = x0; x < x1; ++x) {
 
-        long xf = v->getFrameForX(x);
+        long xf = v->getFrameForX(x) / srRatio;
         if (xf < 0) {
             for (int y = 0; y < h; ++y) {
                 img.setPixel(x - x0, y, m_cache->color(0));
@@ -378,7 +544,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
         }
 
         float sx0 = (float(xf) - modelStart) / modelResolution;
-        float sx1 = (float(v->getFrameForX(x+1)) - modelStart) / modelResolution;
+        float sx1 = (float(v->getFrameForX(x+1) / srRatio) - modelStart) / modelResolution;
             
         int sx0i = int(sx0 + 0.001);
         int sx1i = int(sx1);
@@ -392,6 +558,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             int sy1i = int(sy1);
 
             float mag = 0.0, div = 0.0;
+            int max = 0;
 
             for (int sx = sx0i; sx <= sx1i; ++sx) {
 
@@ -408,6 +575,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
                     if (sy == sy1i) prop *= sy1 - sy;
 
                     mag += prop * m_cache->pixelIndex(sx, sy);
+                    max = std::max(max, m_cache->pixelIndex(sx, sy));
                     div += prop;
                 }
             }
@@ -415,8 +583,11 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             if (div != 0) mag /= div;
             if (mag < 0) mag = 0;
             if (mag > 255) mag = 255;
+            if (max < 0) max = 0;
+            if (max > 255) max = 255;
 
             img.setPixel(x - x0, y, m_cache->color(int(mag + 0.001)));
+//            img.setPixel(x - x0, y, m_cache->color(max));
         }
     }
 
