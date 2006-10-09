@@ -21,7 +21,6 @@
 #include "base/Window.h"
 #include "base/Pitch.h"
 #include "base/Preferences.h"
-#include "data/fft/FFTDataServer.h"
 
 #include <QPainter>
 #include <QImage>
@@ -1410,7 +1409,7 @@ const
 
 	for (int s = s0i; s <= s1i; ++s) {
 
-            if (!fft->isColumnReady(s)) continue;
+            if (!fft->isColumnAvailable(s)) continue;
 
 	    float binfreq = (sr * q) / m_windowSize;
 	    if (q == q0i) freqMin = binfreq;
@@ -1488,7 +1487,7 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
             for (int s = s0i; s <= s1i; ++s) {
                 if (s >= 0 && q >= 0 && s < cw && q < ch) {
 
-                    if (!fft->isColumnReady(s)) continue;
+                    if (!fft->isColumnAvailable(s)) continue;
                     
                     float value;
 
@@ -1992,7 +1991,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         for (int s = s0i; s <= s1i; ++s) {
 
-            if (!fft->isColumnReady(s)) continue;
+            if (!fft->isColumnAvailable(s)) continue;
             MagnitudeRange mag;
 
             for (size_t q = minbin; q < bins; ++q) {
