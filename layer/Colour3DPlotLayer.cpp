@@ -187,14 +187,16 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
         float(v->getViewManager()->getMainModelSampleRate()) /
         float(m_model->getSampleRate());
 
-    int sx0 = modelResolution *
-	int((v->getFrameForX(x) / srRatio - long(modelStart)) / long(modelResolution));
-    int sx1 = sx0 + modelResolution;
+    int sx0 = int((v->getFrameForX(x) / srRatio - long(modelStart)) /
+                  long(modelResolution));
 
-    float binHeight = float(v->height()) / m_model->getYBinCount();
+    int f0 = sx0 * modelResolution;
+    int f1 =  f0 + modelResolution;
+
+    float binHeight = float(v->height()) / m_model->getHeight();
     int sy = (v->height() - y) / binHeight;
 
-    float value = m_model->getBinValue(sx0, sy);
+    float value = m_model->getValueAt(sx0, sy);
 
 //    std::cerr << "bin value (" << sx0 << "," << sy << ") is " << value << std::endl;
     
@@ -203,9 +205,9 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
     else binName = QString("%1 [%2]").arg(binName).arg(sy + 1);
 
     QString text = tr("Time:\t%1 - %2\nBin:\t%3\nValue:\t%4")
-	.arg(RealTime::frame2RealTime(sx0, m_model->getSampleRate())
+	.arg(RealTime::frame2RealTime(f0, m_model->getSampleRate())
 	     .toText(true).c_str())
-	.arg(RealTime::frame2RealTime(sx1, m_model->getSampleRate())
+	.arg(RealTime::frame2RealTime(f1, m_model->getSampleRate())
 	     .toText(true).c_str())
 	.arg(binName)
 	.arg(value);
@@ -225,11 +227,11 @@ Colour3DPlotLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 {
     if (!m_model) return 0;
 
-    QString sampleText = QString("[%1]").arg(m_model->getYBinCount());
+    QString sampleText = QString("[%1]").arg(m_model->getHeight());
     int tw = paint.fontMetrics().width(sampleText);
     bool another = false;
 
-    for (size_t i = 0; i < m_model->getYBinCount(); ++i) {
+    for (size_t i = 0; i < m_model->getHeight(); ++i) {
 	if (m_model->getBinName(i).length() > sampleText.length()) {
 	    sampleText = m_model->getBinName(i);
             another = true;
@@ -248,7 +250,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     if (!m_model) return;
 
     int h = rect.height(), w = rect.width();
-    float binHeight = float(v->height()) / m_model->getYBinCount();
+    float binHeight = float(v->height()) / m_model->getHeight();
 
     int cw = getColourScaleWidth(paint);
     
@@ -269,10 +271,10 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     paint.setPen(Qt::black);
 
     int count = v->height() / paint.fontMetrics().height();
-    int step = m_model->getYBinCount() / count;
+    int step = m_model->getHeight() / count;
     if (step == 0) step = 1;
 
-    for (size_t i = 0; i < m_model->getYBinCount(); ++i) {
+    for (size_t i = 0; i < m_model->getHeight(); ++i) {
 
         if ((i % step) != 0) continue;
 
@@ -312,7 +314,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     size_t modelResolution = m_model->getResolution();
 
     size_t cacheWidth = (modelEnd - modelStart) / modelResolution + 1;
-    size_t cacheHeight = m_model->getYBinCount();
+    size_t cacheHeight = m_model->getHeight();
 
     if (m_cache &&
 	(m_cache->width() != cacheWidth ||
@@ -329,7 +331,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
         std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << std::endl;
 
 	m_cache->setNumColors(256);
-	DenseThreeDimensionalModel::BinValueSet values;
+	DenseThreeDimensionalModel::Column values;
 
 	float min = m_model->getMinimumLevel();
 	float max = m_model->getMaximumLevel();
@@ -377,9 +379,9 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	for (size_t f = modelStart; f <= modelEnd; f += modelResolution) {
 	
 	    values.clear();
-	    m_model->getBinValues(f, values);
+	    m_model->getColumn(f / modelResolution, values);
 	    
-	    for (size_t y = 0; y < m_model->getYBinCount(); ++y) {
+	    for (size_t y = 0; y < m_model->getHeight(); ++y) {
 
 		float value = min;
 		if (y < values.size()) {
@@ -398,7 +400,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
     }
 
-    if (m_model->getYBinCount() >= v->height() ||
+    if (m_model->getHeight() >= v->height() ||
         modelResolution < v->getZoomLevel() / 2) {
         paintDense(v, paint, rect);
         return;
@@ -425,7 +427,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int sx0 = int((v->getFrameForX(x0) / srRatio - long(modelStart)) / long(modelResolution));
     int sx1 = int((v->getFrameForX(x1) / srRatio - long(modelStart)) / long(modelResolution));
-    int sh = m_model->getYBinCount();
+    int sh = m_model->getHeight();
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     std::cerr << "Colour3DPlotLayer::paint: w " << w << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sw << ", sh " << sh << std::endl;
@@ -497,7 +499,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    if (showLabel) {
 		if (sx >= 0 && sx < m_cache->width() &&
 		    sy >= 0 && sy < m_cache->height()) {
-		    float value = m_model->getBinValue(fx, sy);
+		    float value = m_model->getValueAt(sx, sy);
 		    sprintf(labelbuf, "%06f", value);
 		    QString text(labelbuf);
 		    paint.setPen(Qt::white);
@@ -529,7 +531,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     int w = x1 - x0;
     int h = v->height();
-    int sh = m_model->getYBinCount();
+    int sh = m_model->getHeight();
 
     QImage img(w, h, QImage::Format_RGB32);
 
