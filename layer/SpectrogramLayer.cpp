@@ -34,7 +34,7 @@
 #include <cassert>
 #include <cmath>
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     Layer(),
@@ -1654,7 +1654,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	v->setLightBackground(false);
     }
 
-//    Profiler profiler("SpectrogramLayer::paint", true);
+    Profiler profiler("SpectrogramLayer::paint", true);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << std::endl;
     
@@ -2096,7 +2096,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         std::cerr << "Overall mag unchanged at [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
     }
 
-//    Profiler profiler2("SpectrogramLayer::paint: draw image", true);
+    Profiler profiler2("SpectrogramLayer::paint: draw image", true);
 
     paint.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
 
@@ -2520,7 +2520,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
-//    Profiler profiler("SpectrogramLayer::paintVerticalScale", true);
+    Profiler profiler("SpectrogramLayer::paintVerticalScale", true);
 
     //!!! cache this?
 
