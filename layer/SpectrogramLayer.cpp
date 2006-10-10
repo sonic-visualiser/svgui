@@ -1957,7 +1957,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     MagnitudeRange overallMag = m_viewMags[v];
     bool overallMagChanged = false;
 
-    fft->suspendWrites();
+    bool fftSuspended = false;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << (float(v->getFrameForX(1) - v->getFrameForX(0)) / increment) << " bins per pixel" << std::endl;
@@ -1992,6 +1992,12 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         for (int s = s0i; s <= s1i; ++s) {
 
             if (!fft->isColumnAvailable(s)) continue;
+            
+            if (!fftSuspended) {
+                fft->suspendWrites();
+                fftSuspended = true;
+            }
+
             MagnitudeRange mag;
 
             for (size_t q = minbin; q < bins; ++q) {
@@ -2149,7 +2155,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     std::cerr << "SpectrogramLayer::paint() returning" << std::endl;
 #endif
 
-    fft->resume();
+    if (fftSuspended) fft->resume();
 }
 
 void
