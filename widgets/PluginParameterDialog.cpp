@@ -33,16 +33,10 @@
 #include <QSettings>
 
 PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
-                                             int sourceChannels,
-                                             int targetChannels,
-                                             int defaultChannel,
-                                             QString output,
-                                             bool showWindowSize,
-                                             bool showFrequencyDomainOptions,
 					     QWidget *parent) :
     QDialog(parent),
     m_plugin(plugin),
-    m_channel(defaultChannel),
+    m_channel(-1),
     m_stepSize(0),
     m_blockSize(0),
     m_windowType(HanningWindow),
@@ -73,30 +67,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QLabel *makerLabel = new QLabel(plugin->getMaker().c_str());
     makerLabel->setWordWrap(true);
 
-    QLabel *outputLabel = 0;
-
-    if (output != "") {
-
-        Vamp::PluginHostAdapter *fePlugin = dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
-
-        if (fePlugin) {
-
-            std::vector<Vamp::Plugin::OutputDescriptor> od =
-                fePlugin->getOutputDescriptors();
-
-            if (od.size() > 1) {
-
-                for (size_t i = 0; i < od.size(); ++i) {
-                    if (od[i].name == output.toStdString()) {
-                        outputLabel = new QLabel(od[i].description.c_str());
-                        outputLabel->setWordWrap(true);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     QLabel *versionLabel = new QLabel(QString("%1")
                                       .arg(plugin->getPluginVersion()));
     versionLabel->setWordWrap(true);
@@ -108,39 +78,46 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     typeLabel->setWordWrap(true);
     typeLabel->setFont(font);
 
+    int row = 0;
+
     QLabel *label = new QLabel(tr("Name:"));
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    subgrid->addWidget(label, 0, 0);
-    subgrid->addWidget(nameLabel, 0, 1);
+    subgrid->addWidget(label, row, 0);
+    subgrid->addWidget(nameLabel, row, 1);
+    row++;
 
     label = new QLabel(tr("Type:"));
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    subgrid->addWidget(label, 1, 0);
-    subgrid->addWidget(typeLabel, 1, 1);
+    subgrid->addWidget(label, row, 0);
+    subgrid->addWidget(typeLabel, row, 1);
+    row++;
 
-    int outputOffset = 0;
-    if (outputLabel) {
-        label = new QLabel(tr("Output:"));
-        label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-        subgrid->addWidget(label, 2, 0);
-        subgrid->addWidget(outputLabel, 2, 1);
-        outputOffset = 1;
-    }
+    m_outputLabel = new QLabel(tr("Output:"));
+    m_outputLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    subgrid->addWidget(m_outputLabel, row, 0);
+    m_outputValue = new QLabel;
+    subgrid->addWidget(m_outputValue, row, 1);
+    m_outputLabel->hide();
+    m_outputValue->hide();
+    row++;
 
     label = new QLabel(tr("Maker:"));
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    subgrid->addWidget(label, 2 + outputOffset, 0);
-    subgrid->addWidget(makerLabel, 2 + outputOffset, 1);
+    subgrid->addWidget(label, row, 0);
+    subgrid->addWidget(makerLabel, row, 1);
+    row++;
 
     label = new QLabel(tr("Copyright:  "));
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    subgrid->addWidget(label, 3 + outputOffset, 0);
-    subgrid->addWidget(copyrightLabel, 3 + outputOffset, 1);
+    subgrid->addWidget(label, row, 0);
+    subgrid->addWidget(copyrightLabel, row, 1);
+    row++;
 
     label = new QLabel(tr("Version:"));
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    subgrid->addWidget(label, 4 + outputOffset, 0);
-    subgrid->addWidget(versionLabel, 4 + outputOffset, 1);
+    subgrid->addWidget(label, row, 0);
+    subgrid->addWidget(versionLabel, row, 1);
+    row++;
 
     subgrid->setColumnStretch(1, 2);
 
@@ -172,6 +149,99 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     bool haveAdvanced = false;
 
+    m_channelBox = new QGroupBox;
+    m_channelBox->setTitle(tr("Channels"));
+    advancedLayout->addWidget(m_channelBox);
+    m_channelBox->setVisible(false);
+    m_haveChannelBoxData = false;
+
+    m_windowBox = new QGroupBox;
+    m_windowBox->setTitle(tr("Processing"));
+    advancedLayout->addWidget(m_windowBox);
+    m_windowBox->setVisible(false);
+    m_haveWindowBoxData = false;
+
+    QHBoxLayout *hbox = new QHBoxLayout;
+    grid->addLayout(hbox, 4, 0);
+
+    m_advancedVisible = false;
+
+    m_advancedButton = new QPushButton(tr("Advanced >>"));
+    m_advancedButton->setCheckable(true);
+    connect(m_advancedButton, SIGNAL(clicked()), this, SLOT(advancedToggled()));
+        
+    QSettings settings;
+    settings.beginGroup("PluginParameterDialog");
+    m_advancedVisible = settings.value("advancedvisible", false).toBool();
+    settings.endGroup();
+    
+    m_advanced->setVisible(false);
+
+    hbox->addWidget(m_advancedButton);
+    m_advancedButton->hide();
+
+    QPushButton *ok = new QPushButton(tr("OK"));
+    QPushButton *cancel = new QPushButton(tr("Cancel"));
+    hbox->addStretch(10);
+    hbox->addWidget(ok);
+    hbox->addWidget(cancel);
+    connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
+    connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
+
+    setAdvancedVisible(m_advancedVisible);
+}
+
+PluginParameterDialog::~PluginParameterDialog()
+{
+}
+
+
+void
+PluginParameterDialog::setOutputLabel(QString text)
+{
+    if (text == "") {
+        m_outputLabel->hide();
+        m_outputValue->hide();
+    } else {
+        m_outputValue->setText(text);
+        m_outputValue->setWordWrap(true);
+        m_outputLabel->show();
+        m_outputValue->show();
+    }
+/*
+    QLabel *outputLabel = 0;
+
+    if (output != "") {
+
+        Vamp::PluginHostAdapter *fePlugin = dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
+
+        if (fePlugin) {
+
+            std::vector<Vamp::Plugin::OutputDescriptor> od =
+                fePlugin->getOutputDescriptors();
+
+            if (od.size() > 1) {
+
+                for (size_t i = 0; i < od.size(); ++i) {
+                    if (od[i].name == output.toStdString()) {
+                        outputLabel = new QLabel(od[i].description.c_str());
+                        outputLabel->setWordWrap(true);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+*/
+}
+
+void
+PluginParameterDialog::setChannelArrangement(int sourceChannels,
+                                             int targetChannels,
+                                             int defaultChannel)
+{
+    m_channel = defaultChannel;
+
     if (sourceChannels != targetChannels) {
 
         // At the moment we can only cope with the case where
@@ -180,7 +250,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         if (sourceChannels < targetChannels) {
 
             QMessageBox::warning
-                (parent,
+                (parentWidget(),
                  tr("Channel mismatch"),
                  tr("This plugin requires at least %1 input channels, but only %2 %3 available.  The plugin probably will not work correctly.").arg(targetChannels).arg(sourceChannels).arg(sourceChannels != 1 ? tr("are") : tr("is")),
                  QMessageBox::Ok,
@@ -188,13 +258,13 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
         } else {
 
-            QGroupBox *channelBox = new QGroupBox;
-            channelBox->setTitle(tr("Channels"));
-            advancedLayout->addWidget(channelBox);
-            haveAdvanced = true;
+            if (m_haveChannelBoxData) {
+                std::cerr << "WARNING: PluginParameterDialog::setChannelArrangement: Calling more than once on same dialog is not currently implemented" << std::endl;
+                return;
+            }
             
             QVBoxLayout *channelLayout = new QVBoxLayout;
-            channelBox->setLayout(channelLayout);
+            m_channelBox->setLayout(channelLayout);
 
             if (targetChannels != 1) {
 
@@ -219,7 +289,23 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
                 channelLayout->addWidget(channelCombo);
             }
+
+            m_channelBox->setVisible(true);
+            m_haveChannelBoxData = true;
+            m_advancedButton->show();
         }
+    }
+
+    setAdvancedVisible(m_advancedVisible);
+}
+
+void
+PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
+                                                bool showFrequencyDomainOptions)
+{
+    if (m_haveWindowBoxData) {
+        std::cerr << "WARNING: PluginParameterDialog::setShowProcessingOptions: Calling more than once on same dialog is not currently implemented" << std::endl;
+        return;
     }
 
     if (showWindowSize) {
@@ -239,17 +325,10 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                     increment = size/2;
                 }
             }
-        } else {
-            std::cerr << "Plugin " << plugin << " is not a feature extraction plugin (it's a " << typeid(*plugin).name() << ")" << std::endl;//!!!
         }
 
-        QGroupBox *windowBox = new QGroupBox;
-        windowBox->setTitle(tr("Processing"));
-        advancedLayout->addWidget(windowBox);
-        haveAdvanced = true;
-
         QGridLayout *windowLayout = new QGridLayout;
-        windowBox->setLayout(windowLayout);
+        m_windowBox->setLayout(windowLayout);
 
         if (showFrequencyDomainOptions) {
             windowLayout->addWidget(new QLabel(tr("Window size:")), 0, 0);
@@ -258,9 +337,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         }
 
         std::cerr << "size: " << size << ", increment: " << increment << std::endl;
-
-        //!!! deal with block and step sizes (coming from the plugin's
-        // preferences) that don't fit into the default list
 
         QComboBox *blockSizeCombo = new QComboBox;
         blockSizeCombo->setEditable(true);
@@ -312,45 +388,13 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
                     this, SLOT(windowTypeChanged(type)));
             windowLayout->addWidget(windowTypeSelector, 2, 1);
         }
+
+        m_windowBox->setVisible(true);
+        m_haveWindowBoxData = true;
+        m_advancedButton->show();
     }
 
-    QHBoxLayout *hbox = new QHBoxLayout;
-    grid->addLayout(hbox, 4, 0);
-
-    bool advancedVisible = false;
-
-    if (haveAdvanced) {
-
-        m_advancedButton = new QPushButton(tr("Advanced >>"));
-        m_advancedButton->setCheckable(true);
-        connect(m_advancedButton, SIGNAL(clicked()), this, SLOT(advancedToggled()));
-        
-        QSettings settings;
-        settings.beginGroup("PluginParameterDialog");
-        advancedVisible = settings.value("advancedvisible", false).toBool();
-        settings.endGroup();
-
-        m_advanced->setVisible(false);
-
-        hbox->addWidget(m_advancedButton);
-    }
-
-    QPushButton *ok = new QPushButton(tr("OK"));
-    QPushButton *cancel = new QPushButton(tr("Cancel"));
-    hbox->addStretch(10);
-    hbox->addWidget(ok);
-    hbox->addWidget(cancel);
-    connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
-    connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
-
-    if (advancedVisible) {
-        m_advancedButton->setChecked(true);
-        advancedToggled();
-    }
-}
-
-PluginParameterDialog::~PluginParameterDialog()
-{
+    setAdvancedVisible(m_advancedVisible);
 }
 
 void
@@ -395,12 +439,21 @@ PluginParameterDialog::windowTypeChanged(WindowType type)
 void
 PluginParameterDialog::advancedToggled()
 {
-    bool visible = !m_advanced->isVisible();
+    setAdvancedVisible(!m_advancedVisible);
+}
 
+void
+PluginParameterDialog::setAdvancedVisible(bool visible)
+{
     m_advanced->setVisible(visible);
 
-    if (visible) m_advancedButton->setText(tr("Advanced <<"));
-    else m_advancedButton->setText(tr("Advanced >>"));
+    if (visible) {
+        m_advancedButton->setText(tr("Advanced <<"));
+        m_advancedButton->setChecked(true);
+    } else {
+        m_advancedButton->setText(tr("Advanced >>"));
+        m_advancedButton->setChecked(false);
+    }
 
     QSettings settings;
     settings.beginGroup("PluginParameterDialog");
@@ -410,7 +463,12 @@ PluginParameterDialog::advancedToggled()
     std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
 
     setMinimumHeight(sizeHint().height());
-    if (visible) setMaximumHeight(sizeHint().height());
+    adjustSize();
+
+    m_advancedVisible = visible;
+
+//    if (visible) setMaximumHeight(sizeHint().height());
+//    adjustSize();
 }
 
 void

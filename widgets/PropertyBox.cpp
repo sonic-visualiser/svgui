@@ -543,7 +543,7 @@ PropertyBox::editPlugin()
 
     PluginXml(instance).setParametersFromXml(configurationXml);
 
-    PluginParameterDialog *dialog = new PluginParameterDialog(instance, -1, -1, -1);
+    PluginParameterDialog *dialog = new PluginParameterDialog(instance);
     connect(dialog, SIGNAL(pluginConfigurationChanged(QString)),
             this, SLOT(pluginConfigurationChanged(QString)));
 
