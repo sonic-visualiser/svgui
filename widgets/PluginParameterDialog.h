@@ -24,6 +24,8 @@ namespace Vamp { class PluginBase; }
 class PluginParameterBox;
 class QWidget;
 class QPushButton;
+class QLabel;
+class QGroupBox;
 
 /**
  * A dialog for editing the parameters of a given plugin, using a
@@ -38,15 +40,17 @@ class PluginParameterDialog : public QDialog
     Q_OBJECT
     
 public:
-    PluginParameterDialog(Vamp::PluginBase *,
-                          int sourceChannels,
-                          int targetChannels,
-                          int defaultChannel,
-                          QString output = "",
-                          bool showWindowSize = false,
-                          bool showFrequencyDomainOptions = false,
-                          QWidget *parent = 0);
+    PluginParameterDialog(Vamp::PluginBase *, QWidget *parent = 0);
     ~PluginParameterDialog();
+
+    void setChannelArrangement(int sourceChannels,
+                               int targetChannels,
+                               int defaultChannel);
+
+    void setOutputLabel(QString output);
+
+    void setShowProcessingOptions(bool showWindowSize,
+                                  bool showFrequencyDomainOptions);
 
     Vamp::PluginBase *getPlugin() { return m_plugin; }
 
@@ -67,16 +71,28 @@ protected slots:
     void incrementComboChanged(const QString &);
     void windowTypeChanged(WindowType type);
     void advancedToggled();
+    void setAdvancedVisible(bool);
 
 protected:
     Vamp::PluginBase *m_plugin;
+
     int m_channel;
     size_t m_stepSize;
     size_t m_blockSize;
+
     WindowType m_windowType;
     PluginParameterBox *m_parameterBox;
+
+    QLabel *m_outputLabel;
+    QLabel *m_outputValue;
+    QGroupBox *m_channelBox;
+    bool m_haveChannelBoxData;
+    QGroupBox *m_windowBox;
+    bool m_haveWindowBoxData;
+
     QPushButton *m_advancedButton;
     QWidget *m_advanced;
+    bool m_advancedVisible;
 };
 
 #endif
