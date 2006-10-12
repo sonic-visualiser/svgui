@@ -30,13 +30,14 @@ Thumbwheel::Thumbwheel(Qt::Orientation orientation,
     m_max(100),
     m_default(50),
     m_value(50),
+    m_rotation(0.5),
     m_orientation(orientation),
-    m_speed(0.25),
+    m_speed(1.0),
     m_tracking(true),
     m_showScale(true),
     m_clicked(false),
     m_atDefault(true),
-    m_clickValue(m_value)
+    m_clickRotation(m_rotation)
 {
 }
 
@@ -53,6 +54,9 @@ Thumbwheel::setMinimumValue(int min)
     if (m_max <= m_min) m_max = m_min + 1;
     if (m_value < m_min) m_value = m_min;
     if (m_value > m_max) m_value = m_max;
+
+    m_rotation = float(m_value - m_min) / float(m_max - m_min);
+    update();
 }
 
 int
@@ -70,6 +74,9 @@ Thumbwheel::setMaximumValue(int max)
     if (m_min >= m_max) m_min = m_max - 1;
     if (m_value < m_min) m_value = m_min;
     if (m_value > m_max) m_value = m_max;
+
+    m_rotation = float(m_value - m_min) / float(m_max - m_min);
+    update();
 }
 
 int
@@ -86,6 +93,7 @@ Thumbwheel::setDefaultValue(int deft)
     m_default = deft;
     if (m_atDefault) {
         setValue(m_default);
+        m_atDefault = true; // setValue unsets this
         emit valueChanged(getValue());
     }
 }
@@ -99,12 +107,19 @@ Thumbwheel::getDefaultValue() const
 void
 Thumbwheel::setValue(int value)
 {
-    if (m_value == value) return;
-    m_atDefault = false;
+//    std::cerr << "Thumbwheel::setValue(" << value << ") (from " << m_value
+//              << ", rotation " << m_rotation << ")" << std::endl;
 
-    if (value < m_min) value = m_min;
-    if (value > m_max) value = m_max;
-    m_value = value;
+    if (m_value != value) {
+
+        m_atDefault = false;
+
+        if (value < m_min) value = m_min;
+        if (value > m_max) value = m_max;
+        m_value = value;
+    }
+
+    m_rotation = float(m_value - m_min) / float(m_max - m_min);
     update();
 }
 
@@ -165,7 +180,7 @@ Thumbwheel::mousePressEvent(QMouseEvent *e)
     if (e->button() == Qt::LeftButton) {
         m_clicked = true;
         m_clickPos = e->pos();
-        m_clickValue = m_value;
+        m_clickRotation = m_rotation;
     } else if (e->button() == Qt::MidButton) {
         resetToDefault();
     }
@@ -187,13 +202,19 @@ Thumbwheel::mouseMoveEvent(QMouseEvent *e)
     } else {
         dist = e->y() - m_clickPos.y();
     }
-    int value = m_clickValue + lrintf(m_speed * dist);
-    if (value < m_min) value = m_min;
-    if (value > m_max) value = m_max;
+
+    float rotation = m_clickRotation + (m_speed * dist) / 100;
+    if (rotation < 0.f) rotation = 0.f;
+    if (rotation > 1.f) rotation = 1.f;
+    int value = lrintf(m_min + (m_max - m_min) * m_rotation);
     if (value != m_value) {
         setValue(value);
         if (m_tracking) emit valueChanged(getValue());
-    }        
+        m_rotation = rotation;
+    } else if (fabsf(rotation - m_rotation) > 0.001) {
+        m_rotation = rotation;
+        repaint();
+    }
 }
 
 void
@@ -240,8 +261,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
     paint.setClipRect(QRect(bw, bw, width() - bw*2, height() - bw*2));
 
-    float distance = float(m_value - m_min) / float(m_max - m_min);
-    float rotation = distance * 1.5f * M_PI;
+    float radians = m_rotation * 1.5f * M_PI;
 
 //    std::cerr << "value = " << m_value << ", min = " << m_min << ", max = " << m_max << ", rotation = " << rotation << std::endl;
 
@@ -257,9 +277,9 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
     for (int i = 0; i < notches; ++i) {
 
-        float a0 = (2.f * M_PI * i) / notches + rotation;
+        float a0 = (2.f * M_PI * i) / notches + radians;
         float a1 = a0 + M_PI / (notches * 2);
-        float a2 = (2.f * M_PI * (i + 1)) / notches + rotation;
+        float a2 = (2.f * M_PI * (i + 1)) / notches + radians;
 
         float depth = cosf((a0 + a2) / 2);
         if (depth < 0) continue;

@@ -61,6 +61,7 @@ private:
     int m_max;
     int m_default;
     int m_value;
+    float m_rotation;
     Qt::Orientation m_orientation;
     float m_speed;
     bool m_tracking;
@@ -68,7 +69,7 @@ private:
     bool m_clicked;
     bool m_atDefault;
     QPoint m_clickPos;
-    int m_clickValue;
+    float m_clickRotation;
 };
 
 #endif

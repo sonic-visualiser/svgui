@@ -88,6 +88,7 @@ Pane::updateHeadsUpDisplay()
         m_hthumb->setFixedWidth(70);
         m_hthumb->setFixedHeight(16);
         m_hthumb->setDefaultValue(0);
+        m_hthumb->setSpeed(0.6);
         connect(m_hthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(horizontalThumbwheelMoved(int)));
         
@@ -188,15 +189,15 @@ Pane::updateHeadsUpDisplay()
 
     if (m_manager && m_manager->getZoomWheelsEnabled() &&
         width() > 120 && height() > 100) {
-        if (m_vthumb->isVisible()) {
-            m_headsUpDisplay->move(width() - 86, height() - 86);
-        } else {
-            m_headsUpDisplay->move(width() - 86, height() - 51);
-        }
         if (!m_headsUpDisplay->isVisible()) {
             m_headsUpDisplay->show();
             connect(m_manager, SIGNAL(zoomLevelChanged()),
                     this, SLOT(zoomLevelChanged()));
+        }
+        if (m_vthumb->isVisible()) {
+            m_headsUpDisplay->move(width() - 86, height() - 86);
+        } else {
+            m_headsUpDisplay->move(width() - 86, height() - 51);
         }
     } else {
         m_headsUpDisplay->hide();
