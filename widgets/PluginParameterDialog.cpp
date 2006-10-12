@@ -91,7 +91,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     subgrid->addWidget(label, row, 0);
     subgrid->addWidget(typeLabel, row, 1);
     row++;
-
+    
     m_outputLabel = new QLabel(tr("Output:"));
     m_outputLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     subgrid->addWidget(m_outputLabel, row, 0);
@@ -121,10 +121,20 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     subgrid->setColumnStretch(1, 2);
 
+    m_inputModelBox = new QGroupBox;
+    m_inputModelBox->setTitle(tr("Input Source"));
+    grid->addWidget(m_inputModelBox, 1, 0);
+    
+    m_inputModels = new QComboBox;
+    QHBoxLayout *inputLayout = new QHBoxLayout;
+    m_inputModelBox->setLayout(inputLayout);
+    inputLayout->addWidget(m_inputModels);
+    m_inputModelBox->hide();
+
     QGroupBox *paramBox = new QGroupBox;
     paramBox->setTitle(tr("Plugin Parameters"));
-    grid->addWidget(paramBox, 1, 0);
-    grid->setRowStretch(1, 10);
+    grid->addWidget(paramBox, 2, 0);
+    grid->setRowStretch(2, 10);
 
     QHBoxLayout *paramLayout = new QHBoxLayout;
     paramLayout->setMargin(0);
@@ -145,7 +155,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QVBoxLayout *advancedLayout = new QVBoxLayout;
     advancedLayout->setMargin(0);
     m_advanced->setLayout(advancedLayout);
-    grid->addWidget(m_advanced, 2, 0);
+    grid->addWidget(m_advanced, 3, 0);
 
     bool haveAdvanced = false;
 
@@ -208,31 +218,6 @@ PluginParameterDialog::setOutputLabel(QString text)
         m_outputLabel->show();
         m_outputValue->show();
     }
-/*
-    QLabel *outputLabel = 0;
-
-    if (output != "") {
-
-        Vamp::PluginHostAdapter *fePlugin = dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
-
-        if (fePlugin) {
-
-            std::vector<Vamp::Plugin::OutputDescriptor> od =
-                fePlugin->getOutputDescriptors();
-
-            if (od.size() > 1) {
-
-                for (size_t i = 0; i < od.size(); ++i) {
-                    if (od[i].name == output.toStdString()) {
-                        outputLabel = new QLabel(od[i].description.c_str());
-                        outputLabel->setWordWrap(true);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-*/
 }
 
 void
@@ -395,6 +380,22 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
     }
 
     setAdvancedVisible(m_advancedVisible);
+}
+
+void
+PluginParameterDialog::setCandidateInputModels(const QStringList &models)
+{
+    m_inputModels->clear();
+    m_inputModels->insertItems(0, models);
+    connect(m_inputModels, SIGNAL(activated(const QString &)),
+            this, SIGNAL(inputModelChanged(QString)));
+    m_inputModelBox->show();
+}
+
+QString
+PluginParameterDialog::getInputModel() const
+{
+    return m_inputModels->currentText();
 }
 
 void

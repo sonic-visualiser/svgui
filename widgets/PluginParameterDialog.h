@@ -26,6 +26,7 @@ class QWidget;
 class QPushButton;
 class QLabel;
 class QGroupBox;
+class QComboBox;
 
 /**
  * A dialog for editing the parameters of a given plugin, using a
@@ -52,9 +53,13 @@ public:
     void setShowProcessingOptions(bool showWindowSize,
                                   bool showFrequencyDomainOptions);
 
+    void setCandidateInputModels(const QStringList &names);
+
     Vamp::PluginBase *getPlugin() { return m_plugin; }
 
     int getChannel() const { return m_channel; }
+
+    QString getInputModel() const;
 
     //!!! merge with PluginTransform::ExecutionContext
 
@@ -64,6 +69,7 @@ public:
 
 signals:
     void pluginConfigurationChanged(QString);
+    void inputModelChanged(QString);
 
 protected slots:
     void channelComboChanged(int);
@@ -85,10 +91,15 @@ protected:
 
     QLabel *m_outputLabel;
     QLabel *m_outputValue;
+
     QGroupBox *m_channelBox;
     bool m_haveChannelBoxData;
+
     QGroupBox *m_windowBox;
     bool m_haveWindowBoxData;
+
+    QGroupBox *m_inputModelBox;
+    QComboBox *m_inputModels;
 
     QPushButton *m_advancedButton;
     QWidget *m_advanced;
