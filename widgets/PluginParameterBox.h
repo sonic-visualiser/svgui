@@ -61,6 +61,7 @@ protected:
     };
 
     std::map<QString, ParamRec> m_params;
+    std::map<QString, QString> m_descriptionMap;
 };
 
 #endif
