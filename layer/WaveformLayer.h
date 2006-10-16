@@ -56,6 +56,7 @@ public:
 					   int *min, int *max) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
+    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
     virtual void setProperty(const PropertyName &, int value);
 
     /**

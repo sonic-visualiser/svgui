@@ -21,6 +21,7 @@
 #include "base/Window.h"
 #include "base/Pitch.h"
 #include "base/Preferences.h"
+#include "base/RangeMapper.h"
 
 #include <QPainter>
 #include <QImage>
@@ -426,6 +427,18 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	}
     }
     return tr("<unknown>");
+}
+
+RangeMapper *
+SpectrogramLayer::getNewPropertyRangeMapper(const PropertyName &name) const
+{
+    if (name == "Gain") {
+        return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
+    }
+    if (name == "Threshold") {
+        return new LinearRangeMapper(-50, 0, -50, 0, tr("dB"));
+    }
+    return 0;
 }
 
 void

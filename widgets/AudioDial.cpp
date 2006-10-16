@@ -37,6 +37,8 @@
 
 #include "AudioDial.h"
 
+#include "base/RangeMapper.h"
+
 #include <cmath>
 #include <iostream>
 
@@ -68,7 +70,8 @@ using std::cerr;
 AudioDial::AudioDial(QWidget *parent) :
     QDial(parent),
     m_knobColor(Qt::black), m_meterColor(Qt::white),
-    m_defaultValue(0)
+    m_defaultValue(0),
+    m_rangeMapper(0)
 {
     m_mouseDial = false;
     m_mousePressed = false;
@@ -78,6 +81,14 @@ AudioDial::AudioDial(QWidget *parent) :
 // Destructor.
 AudioDial::~AudioDial (void)
 {
+    delete m_rangeMapper;
+}
+
+
+void AudioDial::setRangeMapper(RangeMapper *mapper)
+{
+    delete m_rangeMapper;
+    m_rangeMapper = mapper;
 }
 
 
@@ -306,6 +317,13 @@ void AudioDial::setDefaultValue(int defaultValue)
 }
 
 
+float AudioDial::mappedValue() const
+{
+    if (m_rangeMapper) return m_rangeMapper->getValueForPosition(value());
+    else return value();
+}
+
+
 // Alternate mouse behavior event handlers.
 void AudioDial::mousePressEvent(QMouseEvent *mouseEvent)
 {
@@ -328,7 +346,67 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
     if (m_mouseDial) {
 	QDial::mouseDoubleClickEvent(mouseEvent);
     } else if (mouseEvent->button() == Qt::LeftButton) {
+
 	bool ok = false;
+
+        int newPosition = value();
+
+        if (m_rangeMapper) {
+
+            float min = m_rangeMapper->getValueForPosition(minimum());
+            float max = m_rangeMapper->getValueForPosition(maximum());
+
+            QString unit = m_rangeMapper->getUnit();
+
+            QString text;
+            if (objectName() != "") {
+                if (unit != "") {
+                    text = tr("New value for %1, from %2 to %3 %4:")
+                        .arg(objectName()).arg(min).arg(max).arg(unit);
+                } else {
+                    text = tr("New value for %1, from %2 to %3:")
+                        .arg(objectName()).arg(min).arg(max);
+                }
+            } else {
+                if (unit != "") {
+                    text = tr("Enter a new value from %1 to %2 %3:")
+                        .arg(min).arg(max).arg(unit);
+                } else {
+                    text = tr("Enter a new value from %1 to %2:")
+                        .arg(min).arg(max);
+                }
+            }
+
+            float newValue = QInputDialog::getDouble
+                (this,
+                 tr("Enter new value"),
+                 text,
+                 m_rangeMapper->getValueForPosition(value()),
+                 min,
+                 max,
+                 5, 
+                 &ok);
+
+            //!!! need to avoid this rounding by storing the float value
+
+            newPosition = m_rangeMapper->getPositionForValue(newValue);
+
+        } else {
+
+            newPosition = QInputDialog::getInteger
+                (this,
+                 tr("Enter new value"),
+                 tr("Enter a new value from %1 to %2:")
+                 .arg(minimum()).arg(maximum()),
+                 value(), minimum(), maximum(), pageStep(), &ok);
+        }
+
+        if (ok) {
+            setValue(newPosition);
+        }
+
+
+/*!!!
 	int newValue = QInputDialog::getInteger
 	    (this,
 	     tr("Enter new value"),
@@ -338,6 +416,7 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
 	if (ok) {
 	    setValue(newValue);
 	}
+*/
     }
 }
 

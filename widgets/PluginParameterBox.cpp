@@ -19,6 +19,8 @@
 
 #include "plugin/PluginXml.h"
 
+#include "base/RangeMapper.h"
+
 #include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QComboBox>
@@ -150,7 +152,7 @@ PluginParameterBox::populate()
         } else {
             
             AudioDial *dial = new AudioDial;
-            dial->setObjectName(name);
+            dial->setObjectName(description);
             dial->setMinimum(imin);
             dial->setMaximum(imax);
             dial->setPageStep(1);
@@ -159,6 +161,8 @@ PluginParameterBox::populate()
             dial->setValue(lrintf((value - min) / qtz));
             dial->setFixedWidth(32);
             dial->setFixedHeight(32);
+            dial->setRangeMapper(new LinearRangeMapper
+                                 (imin, imax, min, max, unit));
             connect(dial, SIGNAL(valueChanged(int)),
                     this, SLOT(dialChanged(int)));
             m_layout->addWidget(dial, i + offset, 1);
@@ -179,6 +183,7 @@ PluginParameterBox::populate()
         }
 
         m_params[name] = rec;
+        m_descriptionMap[description] = name;
     }
 }
 
@@ -187,6 +192,11 @@ PluginParameterBox::dialChanged(int ival)
 {
     QObject *obj = sender();
     QString name = obj->objectName();
+
+    if (m_params.find(name) == m_params.end() &&
+        m_descriptionMap.find(name) != m_descriptionMap.end()) {
+        name = m_descriptionMap[name];
+    }
 
     if (m_params.find(name) == m_params.end()) {
         std::cerr << "WARNING: PluginParameterBox::dialChanged: Unknown parameter \"" << name.toStdString() << "\"" << std::endl;
@@ -225,6 +235,11 @@ PluginParameterBox::checkBoxChanged(int state)
     QObject *obj = sender();
     QString name = obj->objectName();
 
+    if (m_params.find(name) == m_params.end() &&
+        m_descriptionMap.find(name) != m_descriptionMap.end()) {
+        name = m_descriptionMap[name];
+    }
+
     if (m_params.find(name) == m_params.end()) {
         std::cerr << "WARNING: PluginParameterBox::checkBoxChanged: Unknown parameter \"" << name.toStdString() << "\"" << std::endl;
         return;
@@ -243,6 +258,11 @@ PluginParameterBox::spinBoxChanged(double value)
 {
     QObject *obj = sender();
     QString name = obj->objectName();
+
+    if (m_params.find(name) == m_params.end() &&
+        m_descriptionMap.find(name) != m_descriptionMap.end()) {
+        name = m_descriptionMap[name];
+    }
 
     if (m_params.find(name) == m_params.end()) {
         std::cerr << "WARNING: PluginParameterBox::spinBoxChanged: Unknown parameter \"" << name.toStdString() << "\"" << std::endl;

@@ -18,6 +18,7 @@
 #include "base/AudioLevel.h"
 #include "view/View.h"
 #include "base/Profiler.h"
+#include "base/RangeMapper.h"
 
 #include <QPainter>
 #include <QPixmap>
@@ -222,6 +223,15 @@ WaveformLayer::getPropertyValueLabel(const PropertyName &name,
         }
     }
     return tr("<unknown>");
+}
+
+RangeMapper *
+WaveformLayer::getNewPropertyRangeMapper(const PropertyName &name) const
+{
+    if (name == "Gain") {
+        return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
+    }
+    return 0;
 }
 
 void

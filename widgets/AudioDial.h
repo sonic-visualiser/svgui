@@ -41,6 +41,8 @@
 #include <QDial>
 #include <map>
 
+class RangeMapper;
+
 /**
  * AudioDial is a nicer-looking QDial that by default reacts to mouse
  * movement on horizontal and vertical axes instead of in a radial
@@ -68,6 +70,10 @@ public:
     const QColor& getKnobColor()  const { return m_knobColor;  }
     const QColor& getMeterColor() const { return m_meterColor; }
     bool getMouseDial() const { return m_mouseDial; }
+
+    void setRangeMapper(RangeMapper *mapper); // I take ownership, will delete
+
+    float mappedValue() const;
 
 public slots:
     /**
@@ -111,6 +117,8 @@ private:
     bool m_mouseDial;
     bool m_mousePressed;
     QPoint m_posMouse;
+
+    RangeMapper *m_rangeMapper;
 };
 
 

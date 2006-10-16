@@ -20,6 +20,7 @@
 #include "base/PlayParameters.h"
 #include "layer/Layer.h"
 #include "base/UnitDatabase.h"
+#include "base/RangeMapper.h"
 
 #include "plugin/RealTimePluginFactory.h"
 #include "plugin/RealTimePluginInstance.h"
@@ -182,6 +183,9 @@ PropertyBox::populateViewPlayFrame()
 	gainDial->setNotchesVisible(false);
 	gainDial->setToolTip(tr("Playback Level"));
 	gainDial->setDefaultValue(0);
+        gainDial->setObjectName(tr("Playback Level"));
+        gainDial->setRangeMapper(new LinearRangeMapper
+                                 (-50, 50, -25, 25, tr("dB")));
 	connect(gainDial, SIGNAL(valueChanged(int)),
 		this, SLOT(playGainDialChanged(int)));
 	connect(params, SIGNAL(playGainChanged(float)),
@@ -203,6 +207,7 @@ PropertyBox::populateViewPlayFrame()
 	panDial->setNotchesVisible(false);
 	panDial->setToolTip(tr("Playback Pan / Balance"));
 	panDial->setDefaultValue(0);
+        gainDial->setObjectName(tr("Playback Pan / Balance"));
 	connect(panDial, SIGNAL(valueChanged(int)),
 		this, SLOT(playPanDialChanged(int)));
 	connect(params, SIGNAL(playPanChanged(float)),
@@ -318,6 +323,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    dial->setPageStep(1);
 	    dial->setNotchesVisible((max - min) <= 12);
 	    dial->setDefaultValue(value);
+            dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
 	    connect(dial, SIGNAL(valueChanged(int)),
 		    this, SLOT(propertyControllerChanged(int)));
 
