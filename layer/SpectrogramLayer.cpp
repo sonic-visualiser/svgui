@@ -1936,11 +1936,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         displayMaxFreq = getEffectiveMaxFrequency();
     }
 
-    //!!! we will probably only want one of "ymag+ydiv" and "ypeak",
-    //but we leave them both calculated here for test purposes
     float ymag[h];
     float ydiv[h];
-    float ypeak[h];
     float yval[bins + 1]; //!!! cache this?
 
     size_t increment = getWindowIncrement();
@@ -1968,7 +1965,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	for (int y = 0; y < h; ++y) {
 	    ymag[y] = 0.f;
 	    ydiv[y] = 0.f;
-            ypeak[y] = 0.f;
 	}
 
 	float s0 = 0, s1 = 0;
@@ -2061,7 +2057,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    if (y == y1i) yprop *= y1 - y;
 		    ymag[y] += yprop * value;
 		    ydiv[y] += yprop;
-                    if (value > ypeak[y]) ypeak[y] = value;
 		}
 	    }
 
@@ -2085,7 +2080,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 		float avg = ymag[y] / ydiv[y];
 		pixel = getDisplayValue(v, avg);
-//!!!		pixel = getDisplayValue(v, ypeak[y]);
 
 		assert(x <= m_drawBuffer.width());
 		QColor c = m_colourMap.getColour(pixel);
