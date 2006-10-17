@@ -69,7 +69,8 @@ using std::cerr;
 // Constructor.
 AudioDial::AudioDial(QWidget *parent) :
     QDial(parent),
-    m_knobColor(Qt::black), m_meterColor(Qt::white),
+    m_knobColor(Qt::black),
+    m_meterColor(Qt::white),
     m_defaultValue(0),
     m_mappedValue(0),
     m_noMappedUpdate(false),
@@ -90,13 +91,19 @@ AudioDial::~AudioDial (void)
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
-    if (!m_rangeMapper) {
+    if (!m_rangeMapper && mapper) {
         connect(this, SIGNAL(valueChanged(int)),
                 this, SLOT(updateMappedValue(int)));
     }
+
     delete m_rangeMapper;
     m_rangeMapper = mapper;
-    m_mappedValue = m_rangeMapper->getValueForPosition(value());
+
+    if (m_rangeMapper) {
+        m_mappedValue = m_rangeMapper->getValueForPosition(value());
+    } else {
+        m_mappedValue = value();
+    }
 }
 
 
@@ -346,9 +353,11 @@ float AudioDial::mappedValue() const
 
 void AudioDial::updateMappedValue(int value)
 {
-    if (m_rangeMapper) {
-        if (!m_noMappedUpdate) {
+    if (!m_noMappedUpdate) {
+        if (m_rangeMapper) {
             m_mappedValue = m_rangeMapper->getValueForPosition(value);
+        } else {
+            m_mappedValue = value;
         }
     }
 
