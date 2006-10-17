@@ -369,8 +369,8 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
             
             windowLayout->addWidget(new QLabel(tr("Window shape:")), 2, 0);
             WindowTypeSelector *windowTypeSelector = new WindowTypeSelector;
-            connect(windowTypeSelector, SIGNAL(windowTypeChanged(WindowType type)),
-                    this, SLOT(windowTypeChanged(type)));
+            connect(windowTypeSelector, SIGNAL(windowTypeChanged(WindowType)),
+                    this, SLOT(windowTypeChanged(WindowType)));
             windowLayout->addWidget(windowTypeSelector, 2, 1);
         }
 
