@@ -1087,8 +1087,6 @@ View::checkProgress(void *object)
 
 		i->second->setText(i->first->getPropertyContainerName());
 
-//                std::cerr << this << "::checkProgress: completion " << completion << std::endl;
-
 		i->second->setValue(completion);
 		i->second->move(0, ph - i->second->height());
 

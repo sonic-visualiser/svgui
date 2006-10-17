@@ -1583,16 +1583,19 @@ SpectrogramLayer::getFFTModel(const View *v) const
     }
 
     if (m_fftModels.find(v) == m_fftModels.end()) {
-        m_fftModels[v] = FFTFillPair
-            (new FFTModel(m_model,
-                          m_channel,
-                          m_windowType,
-                          m_windowSize,
-                          getWindowIncrement(),
-                          fftSize,
-                          true,
-                          m_candidateFillStartFrame),
-             0);
+
+        FFTModel *model = new FFTModel(m_model,
+                                       m_channel,
+                                       m_windowType,
+                                       m_windowSize,
+                                       getWindowIncrement(),
+                                       fftSize,
+                                       true,
+                                       m_candidateFillStartFrame);
+
+        m_fftModels[v] = FFTFillPair(model, 0);
+
+        model->resume();
         
         delete m_updateTimer;
         m_updateTimer = new QTimer((SpectrogramLayer *)this);
