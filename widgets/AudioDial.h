@@ -72,8 +72,10 @@ public:
     bool getMouseDial() const { return m_mouseDial; }
 
     void setRangeMapper(RangeMapper *mapper); // I take ownership, will delete
-
+    const RangeMapper *rangeMapper() const { return m_rangeMapper; }
     float mappedValue() const;
+
+    void setShowToolTip(bool show);
 
 public slots:
     /**
@@ -107,16 +109,23 @@ protected:
     virtual void mouseReleaseEvent(QMouseEvent *pMouseEvent);
     virtual void mouseDoubleClickEvent(QMouseEvent *pMouseEvent);
 
+protected slots:
+    void updateMappedValue(int value);
+
 private:
     QColor m_knobColor;
     QColor m_meterColor;
     
     int m_defaultValue;
+    float m_mappedValue;
+    bool m_noMappedUpdate;
 
     // Alternate mouse behavior tracking.
     bool m_mouseDial;
     bool m_mousePressed;
     QPoint m_posMouse;
+
+    bool m_showTooltip;
 
     RangeMapper *m_rangeMapper;
 };

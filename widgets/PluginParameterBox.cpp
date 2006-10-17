@@ -163,6 +163,7 @@ PluginParameterBox::populate()
             dial->setFixedHeight(32);
             dial->setRangeMapper(new LinearRangeMapper
                                  (imin, imax, min, max, unit));
+            dial->setShowToolTip(true);
             connect(dial, SIGNAL(valueChanged(int)),
                     this, SLOT(dialChanged(int)));
             m_layout->addWidget(dial, i + offset, 1);
@@ -208,14 +209,29 @@ PluginParameterBox::dialChanged(int ival)
     float min = params.minValue;
     float max = params.maxValue;
 
+    float newValue;
+
     float qtz = 0.0;
     if (params.isQuantized) qtz = params.quantizeStep;
-    
-    if (qtz == 0.0) {
-        qtz = (max - min) / 100.0;
-    }
 
-    float newValue = min + ival * qtz;
+    AudioDial *ad = dynamic_cast<AudioDial *>(obj);
+    
+    if (ad && ad->rangeMapper()) {
+        
+        newValue = ad->mappedValue();
+        if (newValue < min) newValue = min;
+        if (newValue > max) newValue = max;
+        if (qtz != 0.0) {
+            ival = lrintf((newValue - min) / qtz);
+            newValue = min + ival * qtz;
+        }
+
+    } else {
+        if (qtz == 0.0) {
+            qtz = (max - min) / 100.0;
+        }
+        newValue = min + ival * qtz;
+    }
 
     QDoubleSpinBox *spin = m_params[name].spin;
     if (spin) {

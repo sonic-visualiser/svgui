@@ -25,7 +25,7 @@
  * 
  * Ported to Qt4 by Chris Cannam.
  *
- * This file copyright 2003-2005 Chris Cannam, copyright 2005 Pedro
+ * This file copyright 2003-2006 Chris Cannam, copyright 2005 Pedro
  * Lopez-Cabanillas.
  *
  * This program is free software; you can redistribute it and/or
@@ -71,6 +71,9 @@ AudioDial::AudioDial(QWidget *parent) :
     QDial(parent),
     m_knobColor(Qt::black), m_meterColor(Qt::white),
     m_defaultValue(0),
+    m_mappedValue(0),
+    m_noMappedUpdate(false),
+    m_showTooltip(false),
     m_rangeMapper(0)
 {
     m_mouseDial = false;
@@ -87,8 +90,13 @@ AudioDial::~AudioDial (void)
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
+    if (!m_rangeMapper) {
+        connect(this, SIGNAL(valueChanged(int)),
+                this, SLOT(updateMappedValue(int)));
+    }
     delete m_rangeMapper;
     m_rangeMapper = mapper;
+    m_mappedValue = m_rangeMapper->getValueForPosition(value());
 }
 
 
@@ -317,10 +325,45 @@ void AudioDial::setDefaultValue(int defaultValue)
 }
 
 
+void AudioDial::setShowToolTip(bool show)
+{
+    m_showTooltip = show;
+    m_noMappedUpdate = true;
+    updateMappedValue(value());
+    m_noMappedUpdate = false;
+}
+
+
 float AudioDial::mappedValue() const
 {
-    if (m_rangeMapper) return m_rangeMapper->getValueForPosition(value());
-    else return value();
+    if (m_rangeMapper) {
+        std::cerr << "AudioDial::mappedValue(): value = " << value() << ", mappedValue = " << m_mappedValue << std::endl;
+        return m_mappedValue;
+    }
+    return value();
+}
+
+
+void AudioDial::updateMappedValue(int value)
+{
+    if (m_rangeMapper) {
+        if (!m_noMappedUpdate) {
+            m_mappedValue = m_rangeMapper->getValueForPosition(value);
+        }
+    }
+
+    if (m_showTooltip) {
+        QString name = objectName();
+        QString unit = "";
+        QString text;
+        if (m_rangeMapper) unit = m_rangeMapper->getUnit();
+        if (name != "") {
+            text = tr("%1: %2%3").arg(name).arg(m_mappedValue).arg(unit);
+        } else {
+            text = tr("%2%3").arg(m_mappedValue).arg(unit);
+        }
+        setToolTip(text);
+    }
 }
 
 
@@ -381,15 +424,24 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
                 (this,
                  tr("Enter new value"),
                  text,
-                 m_rangeMapper->getValueForPosition(value()),
+                 m_mappedValue,
                  min,
                  max,
-                 5, 
+                 4, 
                  &ok);
 
-            //!!! need to avoid this rounding by storing the float value
-
             newPosition = m_rangeMapper->getPositionForValue(newValue);
+
+            if (ok) {
+                m_mappedValue = newValue;
+                m_noMappedUpdate = true;
+                if (newPosition != value()) {
+                    setValue(newPosition);
+                } else {
+                    emit valueChanged(newPosition);
+                }
+                m_noMappedUpdate = false;
+            }
 
         } else {
 
@@ -399,24 +451,11 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
                  tr("Enter a new value from %1 to %2:")
                  .arg(minimum()).arg(maximum()),
                  value(), minimum(), maximum(), pageStep(), &ok);
+
+            if (ok) {
+                setValue(newPosition);
+            }
         }
-
-        if (ok) {
-            setValue(newPosition);
-        }
-
-
-/*!!!
-	int newValue = QInputDialog::getInteger
-	    (this,
-	     tr("Enter new value"),
-	     tr("Select a new value in the range %1 to %2:")
-	     .arg(minimum()).arg(maximum()),
-	     value(), minimum(), maximum(), pageStep(), &ok);
-	if (ok) {
-	    setValue(newValue);
-	}
-*/
     }
 }
 
