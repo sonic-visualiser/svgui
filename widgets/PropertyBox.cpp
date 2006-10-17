@@ -181,7 +181,6 @@ PropertyBox::populateViewPlayFrame()
 	gainDial->setFixedWidth(24);
 	gainDial->setFixedHeight(24);
 	gainDial->setNotchesVisible(false);
-//!!!	gainDial->setToolTip(tr("Playback Level"));
 	gainDial->setDefaultValue(0);
         gainDial->setObjectName(tr("Playback Gain"));
         gainDial->setRangeMapper(new LinearRangeMapper
@@ -333,7 +332,6 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    if (inGroup) {
 		dial->setFixedWidth(24);
 		dial->setFixedHeight(24);
-//!!!		dial->setToolTip(propertyLabel);
 		m_groupLayouts[groupName]->addWidget(dial);
 	    } else {
 		dial->setFixedWidth(32);
