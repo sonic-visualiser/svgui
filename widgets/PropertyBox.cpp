@@ -181,11 +181,12 @@ PropertyBox::populateViewPlayFrame()
 	gainDial->setFixedWidth(24);
 	gainDial->setFixedHeight(24);
 	gainDial->setNotchesVisible(false);
-	gainDial->setToolTip(tr("Playback Level"));
+//!!!	gainDial->setToolTip(tr("Playback Level"));
 	gainDial->setDefaultValue(0);
-        gainDial->setObjectName(tr("Playback Level"));
+        gainDial->setObjectName(tr("Playback Gain"));
         gainDial->setRangeMapper(new LinearRangeMapper
                                  (-50, 50, -25, 25, tr("dB")));
+        gainDial->setShowToolTip(true);
 	connect(gainDial, SIGNAL(valueChanged(int)),
 		this, SLOT(playGainDialChanged(int)));
 	connect(params, SIGNAL(playGainChanged(float)),
@@ -207,7 +208,8 @@ PropertyBox::populateViewPlayFrame()
 	panDial->setNotchesVisible(false);
 	panDial->setToolTip(tr("Playback Pan / Balance"));
 	panDial->setDefaultValue(0);
-        gainDial->setObjectName(tr("Playback Pan / Balance"));
+        panDial->setObjectName(tr("Playback Pan / Balance"));
+        panDial->setShowToolTip(true);
 	connect(panDial, SIGNAL(valueChanged(int)),
 		this, SLOT(playPanDialChanged(int)));
 	connect(params, SIGNAL(playPanChanged(float)),
@@ -324,13 +326,14 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    dial->setNotchesVisible((max - min) <= 12);
 	    dial->setDefaultValue(value);
             dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
+            dial->setShowToolTip(true);
 	    connect(dial, SIGNAL(valueChanged(int)),
 		    this, SLOT(propertyControllerChanged(int)));
 
 	    if (inGroup) {
 		dial->setFixedWidth(24);
 		dial->setFixedHeight(24);
-		dial->setToolTip(propertyLabel);
+//!!!		dial->setToolTip(propertyLabel);
 		m_groupLayouts[groupName]->addWidget(dial);
 	    } else {
 		dial->setFixedWidth(32);
@@ -485,13 +488,13 @@ PropertyBox::propertyControllerChanged(int value)
 	m_container->setPropertyWithCommand(name, value);
     }
 
-    if (type == PropertyContainer::RangeProperty) {
-	AudioDial *dial = dynamic_cast<AudioDial *>(m_propertyControllers[name]);
-	if (dial) {
-	    dial->setToolTip(QString("%1: %2").arg(name).arg(value));
-	    //!!! unfortunately this doesn't update an already-visible tooltip
-	}
-    }
+//    if (type == PropertyContainer::RangeProperty) {
+//	AudioDial *dial = dynamic_cast<AudioDial *>(m_propertyControllers[name]);
+//!!!	if (dial) {
+//	    dial->setToolTip(QString("%1: %2").arg(name).arg(value));
+//	    //!!! unfortunately this doesn't update an already-visible tooltip
+//	}
+//    }
 }
     
 void
