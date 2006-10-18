@@ -33,6 +33,7 @@
 #include <QGridLayout>
 #include <QPushButton>
 #include "widgets/Thumbwheel.h"
+#include "widgets/Panner.h"
 
 using std::cerr;
 using std::endl;
@@ -84,16 +85,21 @@ Pane::updateHeadsUpDisplay()
         m_headsUpDisplay->setLayout(layout);
         
         m_hthumb = new Thumbwheel(Qt::Horizontal);
-        layout->addWidget(m_hthumb, 1, 0);
+        layout->addWidget(m_hthumb, 1, 0, 2, 1);
         m_hthumb->setFixedWidth(70);
         m_hthumb->setFixedHeight(16);
         m_hthumb->setDefaultValue(0);
         m_hthumb->setSpeed(0.6);
         connect(m_hthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(horizontalThumbwheelMoved(int)));
-        
+
+        m_vpan = new Panner;
+        layout->addWidget(m_vpan, 0, 1);
+        m_vpan->setFixedWidth(16);
+        m_vpan->setFixedHeight(70);
+
         m_vthumb = new Thumbwheel(Qt::Vertical);
-        layout->addWidget(m_vthumb, 0, 1);
+        layout->addWidget(m_vthumb, 0, 2);
         m_vthumb->setFixedWidth(16);
         m_vthumb->setFixedHeight(70);
         connect(m_vthumb, SIGNAL(valueChanged(int)), this, 
@@ -102,7 +108,7 @@ Pane::updateHeadsUpDisplay()
         QPushButton *reset = new QPushButton;
         reset->setFixedHeight(16);
         reset->setFixedWidth(16);
-        layout->addWidget(reset, 1, 1);
+        layout->addWidget(reset, 1, 2);
         connect(reset, SIGNAL(clicked()), m_hthumb, SLOT(resetToDefault()));
         connect(reset, SIGNAL(clicked()), m_vthumb, SLOT(resetToDefault()));
     }

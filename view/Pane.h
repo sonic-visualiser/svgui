@@ -28,6 +28,7 @@ class QWidget;
 class QPaintEvent;
 class Layer;
 class Thumbwheel;
+class Panner;
 
 class Pane : public View
 {
@@ -108,6 +109,7 @@ protected:
     DragMode m_dragMode;
 
     QWidget *m_headsUpDisplay;
+    Panner *m_vpan;
     Thumbwheel *m_hthumb;
     Thumbwheel *m_vthumb;
 };

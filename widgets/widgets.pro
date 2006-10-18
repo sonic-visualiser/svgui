@@ -20,6 +20,7 @@ HEADERS += AudioDial.h \
            LayerTree.h \
            LEDButton.h \
            ListInputDialog.h \
+           Panner.h \
            PluginParameterBox.h \
            PluginParameterDialog.h \
            PropertyBox.h \
@@ -34,6 +35,7 @@ SOURCES += AudioDial.cpp \
            LayerTree.cpp \
            LEDButton.cpp \
            ListInputDialog.cpp \
+           Panner.cpp \
            PluginParameterBox.cpp \
            PluginParameterDialog.cpp \
            PropertyBox.cpp \
