@@ -97,7 +97,9 @@ Pane::updateHeadsUpDisplay()
         layout->addWidget(m_vpan, 0, 1);
         m_vpan->setFixedWidth(12);
         m_vpan->setFixedHeight(70);
-//        m_vpan->setRectExtents(0.1, 0.1, 0.4, 0.4);
+        m_vpan->setAlpha(80, 130);
+        connect(m_vpan, SIGNAL(rectExtentsChanged(float, float, float, float)),
+                this, SLOT(verticalPannerMoved(float, float, float, float)));
 
         m_vthumb = new Thumbwheel(Qt::Vertical);
         layout->addWidget(m_vthumb, 0, 2);
@@ -194,6 +196,8 @@ Pane::updateHeadsUpDisplay()
         }
     }
 
+    updateVerticalPanner();
+
     if (m_manager && m_manager->getZoomWheelsEnabled() &&
         width() > 120 && height() > 100) {
         if (!m_headsUpDisplay->isVisible()) {
@@ -212,6 +216,24 @@ Pane::updateHeadsUpDisplay()
             disconnect(m_manager, SIGNAL(zoomLevelChanged()),
                        this, SLOT(zoomLevelChanged()));
         }
+    }
+}
+
+void
+Pane::updateVerticalPanner()
+{
+    if (!m_vpan || !m_manager || !m_manager->getZoomWheelsEnabled()) return;
+
+    float vmin, vmax, dmin, dmax;
+    if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax) && vmax != vmin) {
+        float y0 = (dmin - vmin) / (vmax - vmin);
+        float y1 = (dmax - vmin) / (vmax - vmin);
+        m_vpan->blockSignals(true);
+        m_vpan->setRectExtents(0, 1.0 - y1, 1, y1 - y0);
+        m_vpan->blockSignals(false);
+        m_vpan->show();
+    } else {
+        m_vpan->hide();
     }
 }
 
@@ -663,6 +685,37 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
     return selection;
 }
 
+bool
+Pane::canTopLayerMoveVertical()
+{
+    float vmin, vmax, dmin, dmax;
+    if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) return false;
+    if (dmin <= vmin && dmax >= vmax) return false;
+    return true;
+}
+
+bool
+Pane::getTopLayerDisplayExtents(float &vmin, float &vmax,
+                                float &dmin, float &dmax) 
+{
+    Layer *layer = 0;
+    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    if (!layer) return false;
+    bool vlog;
+    QString vunit;
+    return (layer->getValueExtents(vmin, vmax, vlog, vunit) &&
+            layer->getDisplayExtents(dmin, dmax));
+}
+
+bool
+Pane::setTopLayerDisplayExtents(float dmin, float dmax)
+{
+    Layer *layer = 0;
+    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    if (!layer) return false;
+    return layer->setDisplayExtents(dmin, dmax);
+}
+
 void
 Pane::mousePressEvent(QMouseEvent *e)
 {
@@ -692,19 +745,11 @@ Pane::mousePressEvent(QMouseEvent *e)
 
 	m_navigating = true;
 	m_dragCentreFrame = m_centreFrame;
-
-        //!!! pull out into function to go with mouse move code
-
         m_dragStartMinValue = 0;
-
-        Layer *layer = 0;
-        if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
-
-        if (layer) {
-            float min = 0.f, max = 0.f;
-            if (layer->getDisplayExtents(min, max)) {
-                m_dragStartMinValue = min;
-            }
+        
+        float vmin, vmax, dmin, dmax;
+        if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
+            m_dragStartMinValue = dmin;
         }
 
     } else if (mode == ViewManager::SelectMode) {
@@ -797,66 +842,11 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
 	    int x0 = std::min(m_clickPos.x(), m_mousePos.x());
 	    int x1 = std::max(m_clickPos.x(), m_mousePos.x());
-	    int w = x1 - x0;
 
 	    int y0 = std::min(m_clickPos.y(), m_mousePos.y());
 	    int y1 = std::max(m_clickPos.y(), m_mousePos.y());
-//	    int h = y1 - y0;
-	    
-	    long newStartFrame = getFrameForX(x0);
-	    
-	    long visibleFrames = getEndFrame() - getStartFrame();
-	    if (newStartFrame <= -visibleFrames) {
-		newStartFrame  = -visibleFrames + 1;
-	    }
-	    
-	    if (newStartFrame >= long(getModelsEndFrame())) {
-		newStartFrame  = getModelsEndFrame() - 1;
-	    }
-	    
-	    float ratio = float(w) / float(width());
-//	std::cerr << "ratio: " << ratio << std::endl;
-	    size_t newZoomLevel = (size_t)nearbyint(m_zoomLevel * ratio);
-	    if (newZoomLevel < 1) newZoomLevel = 1;
 
-//	std::cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << std::endl;
-	    setZoomLevel(getZoomConstraintBlockSize(newZoomLevel));
-	    setStartFrame(newStartFrame);
-
-            //!!! lots of faff, shouldn't be here
-
-            QString unit;
-            float min, max;
-            bool log;
-            Layer *layer = 0;
-            for (LayerList::const_iterator i = m_layers.begin();
-                 i != m_layers.end(); ++i) { 
-                if ((*i)->getValueExtents(min, max, log, unit) &&
-                    (*i)->getDisplayExtents(min, max)) {
-                    layer = *i;
-                    break;
-                }
-            }
-            
-            if (layer) {
-                if (log) {
-                    min = (min < 0.0) ? -log10f(-min) : (min == 0.0) ? 0.0 : log10f(min);
-                    max = (max < 0.0) ? -log10f(-max) : (max == 0.0) ? 0.0 : log10f(max);
-                }
-                float rmin = min + ((max - min) * (height() - y1)) / height();
-                float rmax = min + ((max - min) * (height() - y0)) / height();
-                std::cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << std::endl;
-                if (log) {
-                    rmin = powf(10, rmin);
-                    rmax = powf(10, rmax);
-                }
-                std::cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit.toStdString() << std::endl;
-
-                layer->setDisplayExtents(rmin, rmax);
-            }
-                
-	    //cerr << "mouseReleaseEvent: start frame now " << m_startFrame << endl;
-//	update();
+            zoomToRegion(x0, y0, x1, y1);
 	}
 
     } else if (mode == ViewManager::SelectMode) {
@@ -930,24 +920,19 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	    }
 	}
 
-//!!!	if (mode != ViewManager::DrawMode) {
-
         if (!m_manager->isPlaying()) {
 
-	if (getSelectedLayer()) {
+            if (getSelectedLayer()) {
 
-	    bool previouslyIdentifying = m_identifyFeatures;
-	    m_identifyFeatures = true;
-	    
-	    if (m_identifyFeatures != previouslyIdentifying ||
-		m_identifyPoint != prevPoint) {
-		update();
-	    }
-	}
-
+                bool previouslyIdentifying = m_identifyFeatures;
+                m_identifyFeatures = true;
+                
+                if (m_identifyFeatures != previouslyIdentifying ||
+                    m_identifyPoint != prevPoint) {
+                    update();
+                }
+            }
         }
-
-//	}
 
 	return;
     }
@@ -961,199 +946,12 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
 	} else {
 
-            //!!! want to do some cleverness to avoid dragging left/right
-            // at the same time as up/down when the user moves the mouse
-            // diagonally.
-            // e.g. have horizontal and vertical thresholds and a series
-            // of states: unknown, constrained, free
-            //
-            // -> when the mouse first moves we're in unknown state:
-            // what then? the thing we really want to avoid is moving
-            // a tiny amount in the wrong direction, because usually
-            // the problem is that to move at all is expensive -- so what
-            // do we do?
-            //
-            // -> when it's moved more than say 10px in h or v
-            // direction we lock into h or v constrained mode.  If it
-            // moves more than say 20px in the other direction
-            // subsequently, then we switch into free mode.
-
-            int xdiff = e->x() - m_clickPos.x();
-            int ydiff = e->y() - m_clickPos.y();
-            int smallThreshold = 10, bigThreshold = 50;
-
-            bool canMoveVertical = true;
-            bool canMoveHorizontal = true;
-
-            //!!! need to test whether the layer is actually draggable
-            // vertically before we do any of this
-
-            if (m_dragMode == UnresolvedDrag) {
-
-                if (abs(ydiff) > smallThreshold &&
-                    abs(ydiff) > abs(xdiff) * 2) {
-                    m_dragMode = VerticalDrag;
-                } else if (abs(xdiff) > smallThreshold &&
-                           abs(xdiff) > abs(ydiff) * 2) {
-                    m_dragMode = HorizontalDrag;
-                } else if (abs(xdiff) > smallThreshold &&
-                           abs(ydiff) > smallThreshold) {
-                    m_dragMode = FreeDrag;
-                } else {
-                    // When playing, we don't want to disturb the play
-                    // position too easily; when not playing, we don't
-                    // want to move up/down too easily
-                    if (m_manager && m_manager->isPlaying()) {
-                        canMoveHorizontal = false;
-                    } else {
-                        canMoveVertical = false;
-                    }
-                }
-            }
-
-            if (m_dragMode == VerticalDrag) {
-                if (abs(xdiff) > bigThreshold) m_dragMode = FreeDrag;
-                else canMoveHorizontal = false;
-            }
-
-            if (m_dragMode == HorizontalDrag) {
-                if (abs(ydiff) > bigThreshold) m_dragMode = FreeDrag;
-                else canMoveVertical = false;
-            }
-
-            if (canMoveHorizontal) {
-
-                long frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
-
-                size_t newCentreFrame = m_dragCentreFrame;
-	    
-                if (frameOff < 0) {
-                    newCentreFrame -= frameOff;
-                } else if (newCentreFrame >= size_t(frameOff)) {
-                    newCentreFrame -= frameOff;
-                } else {
-                    newCentreFrame = 0;
-                }
-	    
-                if (newCentreFrame >= getModelsEndFrame()) {
-                    newCentreFrame = getModelsEndFrame();
-                    if (newCentreFrame > 0) --newCentreFrame;
-                }
-                
-                if (getXForFrame(m_centreFrame) != getXForFrame(newCentreFrame)) {
-                    setCentreFrame(newCentreFrame);
-                }
-            }
-
-            //!!! For drag up/down, we need to: call getValueExtents
-            //and getDisplayExtents and see whether both return true
-            //(we can only drag up/down if they do); and check whether
-            //the ranges returned differ (likewise).  Then, we know
-            //the height of the layer, so...
-
-            //!!! this should have its own function
-
-            if (canMoveVertical) {
-
-                Layer *layer = 0;
-                if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
-
-                if (layer) {
-                    
-                    float vmin = 0.f, vmax = 0.f;
-                    bool vlog = false;
-                    QString vunit;
-
-                    float dmin = 0.f, dmax = 0.f;
-
-                    if (layer->getValueExtents(vmin, vmax, vlog, vunit) &&
-                        layer->getDisplayExtents(dmin, dmax) &&
-                        (dmin > vmin || dmax < vmax)) {
-
-                        std::cerr << "ydiff = " << ydiff << std::endl;
-
-                        float perpix = (dmax - dmin) / height();
-                        float valdiff = ydiff * perpix;
-                        std::cerr << "valdiff = " << valdiff << std::endl;
-
-                        float newmin = m_dragStartMinValue + valdiff;
-                        float newmax = m_dragStartMinValue + (dmax - dmin) + valdiff;
-                        if (newmin < vmin) {
-                            newmax += vmin - newmin;
-                            newmin += vmin - newmin;
-                        }
-                        if (newmax > vmax) {
-                            newmin -= newmax - vmax;
-                            newmax -= newmax - vmax;
-                        }
-                        std::cerr << "(" << dmin << ", " << dmax << ") -> ("
-                                  << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << std::endl;
-                        layer->setDisplayExtents(newmin, newmax);
-                    }
-                }
-            }
+            dragTopLayer(e);
         }
 
     } else if (mode == ViewManager::SelectMode) {
 
-	int mouseFrame = getFrameForX(e->x());
-	size_t resolution = 1;
-	int snapFrameLeft = mouseFrame;
-	int snapFrameRight = mouseFrame;
-	
-	Layer *layer = getSelectedLayer();
-	if (layer && !m_shiftPressed) {
-	    layer->snapToFeatureFrame(this, snapFrameLeft,
-				      resolution, Layer::SnapLeft);
-	    layer->snapToFeatureFrame(this, snapFrameRight,
-				      resolution, Layer::SnapRight);
-	}
-	
-//	std::cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << std::endl;
-
-	if (snapFrameLeft < 0) snapFrameLeft = 0;
-	if (snapFrameRight < 0) snapFrameRight = 0;
-	
-	size_t min, max;
-	
-	if (m_selectionStartFrame > snapFrameLeft) {
-	    min = snapFrameLeft;
-	    max = m_selectionStartFrame;
-	} else if (snapFrameRight > m_selectionStartFrame) {
-	    min = m_selectionStartFrame;
-	    max = snapFrameRight;
-	} else {
-	    min = snapFrameLeft;
-	    max = snapFrameRight;
-	}
-
-	if (m_manager) {
-	    m_manager->setInProgressSelection(Selection(min, max),
-					      !m_resizing && !m_ctrlPressed);
-	}
-
-	bool doScroll = false;
-	if (!m_manager) doScroll = true;
-	if (!m_manager->isPlaying()) doScroll = true;
-	if (m_followPlay != PlaybackScrollContinuous) doScroll = true;
-
-	if (doScroll) {
-	    int offset = mouseFrame - getStartFrame();
-	    int available = getEndFrame() - getStartFrame();
-	    if (offset >= available * 0.95) {
-		int move = int(offset - available * 0.95) + 1;
-		setCentreFrame(m_centreFrame + move);
-	    } else if (offset <= available * 0.10) {
-		int move = int(available * 0.10 - offset) + 1;
-		if (m_centreFrame > move) {
-		    setCentreFrame(m_centreFrame - move);
-		} else {
-		    setCentreFrame(0);
-		}
-	    }
-	}
-
-	update();
+        dragExtendSelection(e);
 
     } else if (mode == ViewManager::DrawMode) {
 
@@ -1171,6 +969,254 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	    }
 	}
     }
+}
+
+void
+Pane::zoomToRegion(int x0, int y0, int x1, int y1)
+{
+    int w = x1 - x0;
+	    
+    long newStartFrame = getFrameForX(x0);
+	    
+    long visibleFrames = getEndFrame() - getStartFrame();
+    if (newStartFrame <= -visibleFrames) {
+        newStartFrame  = -visibleFrames + 1;
+    }
+	    
+    if (newStartFrame >= long(getModelsEndFrame())) {
+        newStartFrame  = getModelsEndFrame() - 1;
+    }
+	    
+    float ratio = float(w) / float(width());
+//	std::cerr << "ratio: " << ratio << std::endl;
+    size_t newZoomLevel = (size_t)nearbyint(m_zoomLevel * ratio);
+    if (newZoomLevel < 1) newZoomLevel = 1;
+
+//	std::cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << std::endl;
+    setZoomLevel(getZoomConstraintBlockSize(newZoomLevel));
+    setStartFrame(newStartFrame);
+
+    QString unit;
+    float min, max;
+    bool log;
+    Layer *layer = 0;
+    for (LayerList::const_iterator i = m_layers.begin();
+         i != m_layers.end(); ++i) { 
+        if ((*i)->getValueExtents(min, max, log, unit) &&
+            (*i)->getDisplayExtents(min, max)) {
+            layer = *i;
+            break;
+        }
+    }
+            
+    if (layer) {
+        if (log) {
+            min = (min < 0.0) ? -log10f(-min) : (min == 0.0) ? 0.0 : log10f(min);
+            max = (max < 0.0) ? -log10f(-max) : (max == 0.0) ? 0.0 : log10f(max);
+        }
+        float rmin = min + ((max - min) * (height() - y1)) / height();
+        float rmax = min + ((max - min) * (height() - y0)) / height();
+        std::cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << std::endl;
+        if (log) {
+            rmin = powf(10, rmin);
+            rmax = powf(10, rmax);
+        }
+        std::cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit.toStdString() << std::endl;
+
+        layer->setDisplayExtents(rmin, rmax);
+        updateVerticalPanner();
+    }
+}
+
+void
+Pane::dragTopLayer(QMouseEvent *e)
+{
+    // We need to avoid making it too easy to drag both
+    // horizontally and vertically, in the case where the
+    // mouse is moved "mostly" in horizontal or vertical axis
+    // with only a small variation in the other axis.  This is
+    // particularly important during playback (when we want to
+    // avoid small horizontal motions) or in slow refresh
+    // layers like spectrogram (when we want to avoid small
+    // vertical motions).
+    // 
+    // To this end we have horizontal and vertical thresholds
+    // and a series of states: unresolved, horizontally or
+    // vertically constrained, free.
+    //
+    // When the mouse first moves, we're unresolved: we
+    // restrict ourselves to whichever direction seems safest,
+    // until the mouse has passed a small threshold distance
+    // from the click point.  Then we lock in to one of the
+    // constrained modes, based on which axis that distance
+    // was measured in first.  Finally, if it turns out we've
+    // also moved more than a certain larger distance in the
+    // other direction as well, we may switch into free mode.
+    // 
+    // If the top layer is incapable of being dragged
+    // vertically, the logic is short circuited.
+
+    int xdiff = e->x() - m_clickPos.x();
+    int ydiff = e->y() - m_clickPos.y();
+    int smallThreshold = 10, bigThreshold = 50;
+
+    bool canMoveVertical = canTopLayerMoveVertical();
+    bool canMoveHorizontal = true;
+
+    if (!canMoveHorizontal) {
+        m_dragMode = HorizontalDrag;
+    }
+
+    if (m_dragMode == UnresolvedDrag) {
+
+        if (abs(ydiff) > smallThreshold &&
+            abs(ydiff) > abs(xdiff) * 2) {
+            m_dragMode = VerticalDrag;
+        } else if (abs(xdiff) > smallThreshold &&
+                   abs(xdiff) > abs(ydiff) * 2) {
+            m_dragMode = HorizontalDrag;
+        } else if (abs(xdiff) > smallThreshold &&
+                   abs(ydiff) > smallThreshold) {
+            m_dragMode = FreeDrag;
+        } else {
+            // When playing, we don't want to disturb the play
+            // position too easily; when not playing, we don't
+            // want to move up/down too easily
+            if (m_manager && m_manager->isPlaying()) {
+                canMoveHorizontal = false;
+            } else {
+                canMoveVertical = false;
+            }
+        }
+    }
+
+    if (m_dragMode == VerticalDrag) {
+        if (abs(xdiff) > bigThreshold) m_dragMode = FreeDrag;
+        else canMoveHorizontal = false;
+    }
+
+    if (m_dragMode == HorizontalDrag && canMoveVertical) {
+        if (abs(ydiff) > bigThreshold) m_dragMode = FreeDrag;
+        else canMoveVertical = false;
+    }
+
+    if (canMoveHorizontal) {
+
+        long frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
+
+        size_t newCentreFrame = m_dragCentreFrame;
+	    
+        if (frameOff < 0) {
+            newCentreFrame -= frameOff;
+        } else if (newCentreFrame >= size_t(frameOff)) {
+            newCentreFrame -= frameOff;
+        } else {
+            newCentreFrame = 0;
+        }
+	    
+        if (newCentreFrame >= getModelsEndFrame()) {
+            newCentreFrame = getModelsEndFrame();
+            if (newCentreFrame > 0) --newCentreFrame;
+        }
+                
+        if (getXForFrame(m_centreFrame) != getXForFrame(newCentreFrame)) {
+            setCentreFrame(newCentreFrame);
+        }
+    }
+
+    if (canMoveVertical) {
+
+        float vmin = 0.f, vmax = 0.f;
+        float dmin = 0.f, dmax = 0.f;
+
+        if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
+
+            std::cerr << "ydiff = " << ydiff << std::endl;
+
+            float perpix = (dmax - dmin) / height();
+            float valdiff = ydiff * perpix;
+            std::cerr << "valdiff = " << valdiff << std::endl;
+
+            float newmin = m_dragStartMinValue + valdiff;
+            float newmax = m_dragStartMinValue + (dmax - dmin) + valdiff;
+            if (newmin < vmin) {
+                newmax += vmin - newmin;
+                newmin += vmin - newmin;
+            }
+            if (newmax > vmax) {
+                newmin -= newmax - vmax;
+                newmax -= newmax - vmax;
+            }
+            std::cerr << "(" << dmin << ", " << dmax << ") -> ("
+                      << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << std::endl;
+
+            setTopLayerDisplayExtents(newmin, newmax);
+            updateVerticalPanner();
+        }
+    }
+}
+
+void
+Pane::dragExtendSelection(QMouseEvent *e)
+{
+    int mouseFrame = getFrameForX(e->x());
+    size_t resolution = 1;
+    int snapFrameLeft = mouseFrame;
+    int snapFrameRight = mouseFrame;
+	
+    Layer *layer = getSelectedLayer();
+    if (layer && !m_shiftPressed) {
+        layer->snapToFeatureFrame(this, snapFrameLeft,
+                                  resolution, Layer::SnapLeft);
+        layer->snapToFeatureFrame(this, snapFrameRight,
+                                  resolution, Layer::SnapRight);
+    }
+	
+//	std::cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << std::endl;
+
+    if (snapFrameLeft < 0) snapFrameLeft = 0;
+    if (snapFrameRight < 0) snapFrameRight = 0;
+	
+    size_t min, max;
+	
+    if (m_selectionStartFrame > snapFrameLeft) {
+        min = snapFrameLeft;
+        max = m_selectionStartFrame;
+    } else if (snapFrameRight > m_selectionStartFrame) {
+        min = m_selectionStartFrame;
+        max = snapFrameRight;
+    } else {
+        min = snapFrameLeft;
+        max = snapFrameRight;
+    }
+
+    if (m_manager) {
+        m_manager->setInProgressSelection(Selection(min, max),
+                                          !m_resizing && !m_ctrlPressed);
+    }
+
+    bool doScroll = false;
+    if (!m_manager) doScroll = true;
+    if (!m_manager->isPlaying()) doScroll = true;
+    if (m_followPlay != PlaybackScrollContinuous) doScroll = true;
+
+    if (doScroll) {
+        int offset = mouseFrame - getStartFrame();
+        int available = getEndFrame() - getStartFrame();
+        if (offset >= available * 0.95) {
+            int move = int(offset - available * 0.95) + 1;
+            setCentreFrame(m_centreFrame + move);
+        } else if (offset <= available * 0.10) {
+            int move = int(available * 0.10 - offset) + 1;
+            if (m_centreFrame > move) {
+                setCentreFrame(m_centreFrame - move);
+            } else {
+                setCentreFrame(0);
+            }
+        }
+    }
+
+    update();
 }
 
 void
@@ -1346,8 +1392,22 @@ Pane::verticalThumbwheelMoved(int value)
             value = max;
         }
         layer->setVerticalZoomStep(value);
+        updateVerticalPanner();
     }
 }    
+
+void
+Pane::verticalPannerMoved(float x0, float y0, float w, float h)
+{
+    float vmin, vmax, dmin, dmax;
+    if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) return;
+    float y1 = y0 + h;
+    float newmax = vmin + ((1.0 - y0) * (vmax - vmin));
+    float newmin = vmin + ((1.0 - y1) * (vmax - vmin));
+    std::cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
+              << "," << h << ") -> (" << newmin << "," << newmax << ")" << std::endl;
+    setTopLayerDisplayExtents(newmin, newmax);
+}
 
 bool
 Pane::editSelectionStart(QMouseEvent *e)

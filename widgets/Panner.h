@@ -28,6 +28,9 @@ public:
 
     void setDefaultRectCentre(float, float);
 
+    void setThumbColour(QColor colour);
+    void setAlpha(int backgroundAlpha, int thumbAlpha);
+
     virtual void mousePressEvent(QMouseEvent *e);
     virtual void mouseDoubleClickEvent(QMouseEvent *e);
     virtual void mouseMoveEvent(QMouseEvent *e);
@@ -101,6 +104,10 @@ protected:
     float m_defaultCentreX;
     float m_defaultCentreY;
     bool m_defaultsSet;
+
+    QColor m_thumbColour;
+    int m_backgroundAlpha;
+    int m_thumbAlpha;
 
     float centreX() const { return m_rectX + m_rectWidth/2; }
     float centreY() const { return m_rectY + m_rectHeight/2; }
