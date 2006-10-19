@@ -26,6 +26,8 @@ public:
     Panner(QWidget *parent = 0);
     virtual ~Panner();
 
+    void setDefaultRectCentre(float, float);
+
     virtual void mousePressEvent(QMouseEvent *e);
     virtual void mouseDoubleClickEvent(QMouseEvent *e);
     virtual void mouseMoveEvent(QMouseEvent *e);
@@ -89,11 +91,24 @@ public slots:
 protected:
     void normalise();
     void emitAndUpdate();
+    void resetToDefault();
 
     float m_rectX;
     float m_rectY;
     float m_rectWidth;
     float m_rectHeight;
+
+    float m_defaultCentreX;
+    float m_defaultCentreY;
+    bool m_defaultsSet;
+
+    float centreX() const { return m_rectX + m_rectWidth/2; }
+    float centreY() const { return m_rectY + m_rectHeight/2; }
+
+    bool m_clicked;
+    QPoint m_clickPos;
+    float m_dragStartX;
+    float m_dragStartY;
 };
 
 #endif

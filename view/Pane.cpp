@@ -85,7 +85,7 @@ Pane::updateHeadsUpDisplay()
         m_headsUpDisplay->setLayout(layout);
         
         m_hthumb = new Thumbwheel(Qt::Horizontal);
-        layout->addWidget(m_hthumb, 1, 0, 2, 1);
+        layout->addWidget(m_hthumb, 1, 0, 1, 2);
         m_hthumb->setFixedWidth(70);
         m_hthumb->setFixedHeight(16);
         m_hthumb->setDefaultValue(0);
@@ -95,8 +95,9 @@ Pane::updateHeadsUpDisplay()
 
         m_vpan = new Panner;
         layout->addWidget(m_vpan, 0, 1);
-        m_vpan->setFixedWidth(16);
+        m_vpan->setFixedWidth(12);
         m_vpan->setFixedHeight(70);
+//        m_vpan->setRectExtents(0.1, 0.1, 0.4, 0.4);
 
         m_vthumb = new Thumbwheel(Qt::Vertical);
         layout->addWidget(m_vthumb, 0, 2);
@@ -559,7 +560,7 @@ Pane::paintEvent(QPaintEvent *e)
 
         if (m_manager->getZoomWheelsEnabled()) {
             lly -= 20;
-            llx -= 20;
+            llx -= 36;
         }
 
 	if (r.x() + r.width() >= llx) {
