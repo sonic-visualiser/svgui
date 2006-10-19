@@ -31,12 +31,22 @@ Panner::Panner(QWidget *parent) :
     m_defaultCentreX(0),
     m_defaultCentreY(0),
     m_defaultsSet(false),
+    m_thumbColour(palette().highlightedText().color()),
+    m_backgroundAlpha(255),
+    m_thumbAlpha(255),
     m_clicked(false)
 {
 }
 
 Panner::~Panner()
 {
+}
+
+void
+Panner::setAlpha(int backgroundAlpha, int thumbAlpha)
+{
+    m_backgroundAlpha = backgroundAlpha;
+    m_thumbAlpha = thumbAlpha;
 }
 
 void
@@ -70,7 +80,9 @@ Panner::mouseMoveEvent(QMouseEvent *e)
     m_rectY = m_dragStartY + dy;
     
     normalise();
-    emitAndUpdate();
+    repaint();
+    emit rectExtentsChanged(m_rectX, m_rectY, m_rectWidth, m_rectHeight);
+    emit rectCentreMoved(centreX(), centreY());
 }
 
 void
@@ -102,14 +114,14 @@ Panner::paintEvent(QPaintEvent *e)
     paint.setRenderHint(QPainter::Antialiasing, false);
 
     QColor bg(palette().background().color());
-    bg.setAlpha(80);
+    bg.setAlpha(m_backgroundAlpha);
 
     paint.setPen(palette().dark().color());
     paint.setBrush(bg);
     paint.drawRect(0, 0, width(), height());
 
-    QColor hl(palette().highlight().color());
-    hl.setAlpha(80);
+    QColor hl(m_thumbColour);
+    hl.setAlpha(m_thumbAlpha);
 
     paint.setBrush(hl);
 
@@ -147,6 +159,9 @@ Panner::emitAndUpdate()
 void
 Panner::setRectExtents(float x0, float y0, float width, float height)
 {
+    std::cerr << "Panner::setRectExtents(" << x0 << ", " << y0 << ", "
+              << width << ", " << height << ")" << std::endl;
+
     if (m_rectX == x0 &&
         m_rectY == y0 &&
         m_rectWidth == width &&
