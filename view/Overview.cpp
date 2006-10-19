@@ -13,7 +13,7 @@
     COPYING included with this distribution for more information.
 */
 
-#include "Panner.h"
+#include "Overview.h"
 #include "layer/Layer.h"
 #include "data/model/Model.h"
 #include "base/ZoomConstraint.h"
@@ -25,45 +25,45 @@
 using std::cerr;
 using std::endl;
 
-Panner::Panner(QWidget *w) :
+Overview::Overview(QWidget *w) :
     View(w, false),
     m_clickedInRange(false)
 {
-    setObjectName(tr("Panner"));
+    setObjectName(tr("Overview"));
     m_followPan = false;
     m_followZoom = false;
 }
 
 void
-Panner::modelChanged(size_t startFrame, size_t endFrame)
+Overview::modelChanged(size_t startFrame, size_t endFrame)
 {
     View::modelChanged(startFrame, endFrame);
 }
 
 void
-Panner::modelReplaced()
+Overview::modelReplaced()
 {
     View::modelReplaced();
 }
 
 void
-Panner::registerView(View *widget)
+Overview::registerView(View *widget)
 {
     m_widgets.insert(widget);
     update(); 
 }
 
 void
-Panner::unregisterView(View *widget)
+Overview::unregisterView(View *widget)
 {
     m_widgets.erase(widget);
     update();
 }
 
 void
-Panner::viewManagerCentreFrameChanged(void *p, unsigned long f, bool)
+Overview::viewManagerCentreFrameChanged(void *p, unsigned long f, bool)
 {
-//    std::cerr << "Panner[" << this << "]::viewManagerCentreFrameChanged(" 
+//    std::cerr << "Overview[" << this << "]::viewManagerCentreFrameChanged(" 
 //	      << p << ", " << f << ")" << std::endl;
 
     if (p == this) return;
@@ -73,7 +73,7 @@ Panner::viewManagerCentreFrameChanged(void *p, unsigned long f, bool)
 }
 
 void
-Panner::viewManagerZoomLevelChanged(void *p, unsigned long z, bool)
+Overview::viewManagerZoomLevelChanged(void *p, unsigned long z, bool)
 {
     if (p == this) return;
     if (m_widgets.find(p) != m_widgets.end()) {
@@ -82,7 +82,7 @@ Panner::viewManagerZoomLevelChanged(void *p, unsigned long z, bool)
 }
 
 void
-Panner::viewManagerPlaybackFrameChanged(unsigned long f)
+Overview::viewManagerPlaybackFrameChanged(unsigned long f)
 {
     bool changed = false;
 
@@ -93,7 +93,7 @@ Panner::viewManagerPlaybackFrameChanged(unsigned long f)
 }
 
 void
-Panner::paintEvent(QPaintEvent *e)
+Overview::paintEvent(QPaintEvent *e)
 {
     // Recalculate zoom in case the size of the widget has changed.
 
@@ -161,7 +161,7 @@ Panner::paintEvent(QPaintEvent *e)
 }
 
 void
-Panner::mousePressEvent(QMouseEvent *e)
+Overview::mousePressEvent(QMouseEvent *e)
 {
     m_clickPos = e->pos();
     for (WidgetSet::iterator i = m_widgets.begin(); i != m_widgets.end(); ++i) {
@@ -174,7 +174,7 @@ Panner::mousePressEvent(QMouseEvent *e)
 }
 
 void
-Panner::mouseReleaseEvent(QMouseEvent *e)
+Overview::mouseReleaseEvent(QMouseEvent *e)
 {
     if (m_clickedInRange) {
 	mouseMoveEvent(e);
@@ -183,7 +183,7 @@ Panner::mouseReleaseEvent(QMouseEvent *e)
 }
 
 void
-Panner::mouseMoveEvent(QMouseEvent *e)
+Overview::mouseMoveEvent(QMouseEvent *e)
 {
     if (!m_clickedInRange) return;
 
@@ -210,7 +210,4 @@ Panner::mouseMoveEvent(QMouseEvent *e)
     }
 }
 
-#ifdef INCLUDE_MOCFILES
-#include "Panner.moc.cpp"
-#endif
 

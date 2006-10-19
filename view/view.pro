@@ -14,5 +14,13 @@ OBJECTS_DIR = tmp_obj
 MOC_DIR = tmp_moc
 
 # Input
-HEADERS += Pane.h PaneStack.h Panner.h View.h ViewManager.h
-SOURCES += Pane.cpp PaneStack.cpp Panner.cpp View.cpp ViewManager.cpp
+HEADERS += Overview.h \
+           Pane.h \
+           PaneStack.h \
+           View.h \
+           ViewManager.h
+SOURCES += Overview.cpp \
+           Pane.cpp \
+           PaneStack.cpp \
+           View.cpp \
+           ViewManager.cpp

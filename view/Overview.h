@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PAN_WIDGET_H_
-#define _PAN_WIDGET_H_
+#ifndef _OVERVIEW_H_
+#define _OVERVIEW_H_
 
 #include "View.h"
 
@@ -27,12 +27,12 @@ class View;
 
 #include <map>
 
-class Panner : public View
+class Overview : public View
 {
     Q_OBJECT
 
 public:
-    Panner(QWidget *parent = 0);
+    Overview(QWidget *parent = 0);
 
     void registerView(View *widget);
     void unregisterView(View *widget);
