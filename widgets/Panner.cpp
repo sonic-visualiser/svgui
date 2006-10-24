@@ -22,6 +22,8 @@
 
 #include <iostream>
 
+#include <math.h>
+
 Panner::Panner(QWidget *parent) :
     QWidget(parent),
     m_rectX(0),
