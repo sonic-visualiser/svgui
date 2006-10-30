@@ -240,7 +240,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Colour Scale") {
 
 	*min = 0;
-	*max = 3;
+	*max = 4;
 
 	deft = (int)m_colourScale;
 
@@ -359,7 +359,7 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 0: return tr("Linear");
 	case 1: return tr("Meter");
 	case 2: return tr("dB");
-	case 3: return tr("Other");
+	case 3: return tr("dB^2");
 	case 4: return tr("Phase");
 	}
     }
