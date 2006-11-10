@@ -99,6 +99,8 @@ public slots:
 
     void setDefaultValue(int defaultValue);
 
+    void setMappedValue(float mappedValue);
+
 protected:
     void drawTick(QPainter &paint, float angle, int size, bool internal);
     virtual void paintEvent(QPaintEvent *);

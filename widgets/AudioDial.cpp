@@ -332,6 +332,25 @@ void AudioDial::setDefaultValue(int defaultValue)
 }
 
 
+void AudioDial::setMappedValue(float mappedValue)
+{
+    if (m_rangeMapper) {
+        int newPosition = m_rangeMapper->getPositionForValue(mappedValue);
+        m_mappedValue = mappedValue;
+        m_noMappedUpdate = true;
+        std::cerr << "AudioDial::setMappedValue(" << mappedValue << "): new position is " << newPosition << std::endl;
+        if (newPosition != value()) {
+            setValue(newPosition);
+        } else {
+            emit valueChanged(newPosition);
+        }
+        m_noMappedUpdate = false;
+    } else {
+        setValue(mappedValue);
+    }
+}
+
+
 void AudioDial::setShowToolTip(bool show)
 {
     m_showTooltip = show;
@@ -401,8 +420,6 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
 
 	bool ok = false;
 
-        int newPosition = value();
-
         if (m_rangeMapper) {
 
             float min = m_rangeMapper->getValueForPosition(minimum());
@@ -439,22 +456,13 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
                  4, 
                  &ok);
 
-            newPosition = m_rangeMapper->getPositionForValue(newValue);
-
             if (ok) {
-                m_mappedValue = newValue;
-                m_noMappedUpdate = true;
-                if (newPosition != value()) {
-                    setValue(newPosition);
-                } else {
-                    emit valueChanged(newPosition);
-                }
-                m_noMappedUpdate = false;
+                setMappedValue(newValue);
             }
 
         } else {
 
-            newPosition = QInputDialog::getInteger
+            int newPosition = QInputDialog::getInteger
                 (this,
                  tr("Enter new value"),
                  tr("Enter a new value from %1 to %2:")
