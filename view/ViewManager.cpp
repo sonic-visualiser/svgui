@@ -234,17 +234,25 @@ ViewManager::setToolMode(ToolMode mode)
 void
 ViewManager::setPlayLoopMode(bool mode)
 {
-    m_playLoopMode = mode;
+    if (m_playLoopMode != mode) {
 
-    emit playLoopModeChanged();
+        m_playLoopMode = mode;
+
+        emit playLoopModeChanged();
+        emit playLoopModeChanged(mode);
+    }
 }
 
 void
 ViewManager::setPlaySelectionMode(bool mode)
 {
-    m_playSelectionMode = mode;
+    if (m_playSelectionMode != mode) {
 
-    emit playSelectionModeChanged();
+        m_playSelectionMode = mode;
+
+        emit playSelectionModeChanged();
+        emit playSelectionModeChanged(mode);
+    }
 }
 
 size_t

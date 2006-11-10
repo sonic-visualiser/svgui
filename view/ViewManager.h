@@ -135,9 +135,11 @@ signals:
 
     /** Emitted when the play loop mode has been changed. */
     void playLoopModeChanged();
+    void playLoopModeChanged(bool);
 
     /** Emitted when the play selection mode has been changed. */
     void playSelectionModeChanged();
+    void playSelectionModeChanged(bool);
 
     /** Emitted when the overlay mode has been changed. */
     void overlayModeChanged();
