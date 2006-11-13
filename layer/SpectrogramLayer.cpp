@@ -29,6 +29,7 @@
 #include <QRect>
 #include <QTimer>
 #include <QApplication>
+#include <QMessageBox>
 
 #include <iostream>
 
@@ -1576,6 +1577,7 @@ SpectrogramLayer::getFFTModel(const View *v) const
     size_t fftSize = getFFTSize(v);
 
     if (m_fftModels.find(v) != m_fftModels.end()) {
+        if (m_fftModels[v].first == 0) return 0;
         if (m_fftModels[v].first->getHeight() != fftSize / 2) {
             delete m_fftModels[v].first;
             m_fftModels.erase(v);
@@ -1592,6 +1594,16 @@ SpectrogramLayer::getFFTModel(const View *v) const
                                        fftSize,
                                        true,
                                        m_candidateFillStartFrame);
+
+        if (!model->isOK()) {
+            QMessageBox::critical
+                (0, tr("FFT cache failed"),
+                 tr("Failed to create the FFT model for this spectrogram.\n"
+                    "There may be insufficient memory or disc space to continue."));
+            delete model;
+            m_fftModels[v] = FFTFillPair(0, 0);
+            return 0;
+        }
 
         m_fftModels[v] = FFTFillPair(model, 0);
 
