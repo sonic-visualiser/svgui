@@ -55,6 +55,7 @@ public:
     Pane *getCurrentPane();
 
     enum LayoutStyle {
+        NoPropertyStacks = 0,
         SinglePropertyStackLayout = 1,
         PropertyStackPerPaneLayout = 2
     };

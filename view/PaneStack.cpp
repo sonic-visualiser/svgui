@@ -126,6 +126,7 @@ PaneStack::setLayoutStyle(LayoutStyle style)
 
     switch (style) {
 
+    case NoPropertyStacks:
     case SinglePropertyStackLayout:
         
         for (i = m_panes.begin(); i != m_panes.end(); ++i) {
@@ -133,7 +134,7 @@ PaneStack::setLayoutStyle(LayoutStyle style)
             i->propertyStack->setParent(m_propertyStackStack);
             m_propertyStackStack->addWidget(i->propertyStack);
         }
-        m_propertyStackStack->show();
+        m_propertyStackStack->setVisible(style != NoPropertyStacks);
         break;
 
     case PropertyStackPerPaneLayout:
@@ -288,7 +289,7 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
     while (i != m_panes.end()) {
 	if (i->pane == pane) {
 	    i->currentIndicator->setPixmap(selectedMap);
-            if (m_layoutStyle == SinglePropertyStackLayout) {
+            if (m_layoutStyle != PropertyStackPerPaneLayout) {
                 m_propertyStackStack->setCurrentWidget(i->propertyStack);
             }
 	    found = true;
