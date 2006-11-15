@@ -771,7 +771,7 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
 
     case PlaybackScrollContinuous:
 	if (QApplication::mouseButtons() == Qt::NoButton) {
-	    setCentreFrame(f, false);
+	    setCentreFrame(f, true); //!!!
 	}
 	break;
 
@@ -1451,7 +1451,7 @@ View::drawSelections(QPainter &paint)
 	}
 
 	if (sampleRate && shouldLabelSelections() && m_manager &&
-            m_manager->getOverlayMode() != ViewManager::NoOverlays) {
+            m_manager->getOverlayMode() == ViewManager::AllOverlays) {
 	    
 	    QString startText = QString("%1 / %2")
 		.arg(QString::fromStdString

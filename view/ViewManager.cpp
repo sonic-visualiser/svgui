@@ -22,7 +22,7 @@
 
 #include <iostream>
 
-// #define DEBUG_VIEW_MANAGER 1
+//#define DEBUG_VIEW_MANAGER 1
 
 ViewManager::ViewManager() :
     m_playSource(0),
@@ -67,6 +67,15 @@ ViewManager::getGlobalCentreFrame() const
     std::cout << "ViewManager::getGlobalCentreFrame: returning " << m_globalCentreFrame << std::endl;
 #endif
     return m_globalCentreFrame;
+}
+
+void
+ViewManager::setGlobalCentreFrame(unsigned long f)
+{
+#ifdef DEBUG_VIEW_MANAGER
+    std::cout << "ViewManager::setGlobalCentreFrame to " << f << std::endl;
+#endif
+    m_globalCentreFrame = f;
 }
 
 unsigned long

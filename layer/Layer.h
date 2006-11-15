@@ -127,9 +127,9 @@ public:
      * calls to editStart etc.
      *
      * Return true if a suitable feature was found and frame adjusted
-     * accordingly.  Return false if no suitable feature was
-     * available.  Also return the resolution of the model in this
-     * layer in sample frames.
+     * accordingly.  Return false if no suitable feature was available
+     * (and leave frame unmodified).  Also return the resolution of
+     * the model in this layer in sample frames.
      */
     virtual bool snapToFeatureFrame(View *   /* v */,
 				    int &    /* frame */,
@@ -301,7 +301,11 @@ public:
      * If vertical zooming is not available, return 0.  The meaning of
      * "zooming" is entirely up to the layer -- changing the zoom
      * level may cause the layer to reset its display extents or
-     * change another property such as display gain.
+     * change another property such as display gain.  However, layers
+     * are advised for consistency to treat smaller zoom steps as
+     * "more distant" or "zoomed out" and larger ones as "closer" or
+     * "zoomed in".
+     * 
      * Layers that provide this facility should also emit the
      * verticalZoomChanged signal if their vertical zoom changes
      * due to factors other than setVerticalZoomStep being called.

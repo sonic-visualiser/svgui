@@ -2188,8 +2188,8 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
         return;
     }
 
-    std::cerr << "SpectrogramLayer: illuminateLocalFeatures("
-              << localPos.x() << "," << localPos.y() << ")" << std::endl;
+//    std::cerr << "SpectrogramLayer: illuminateLocalFeatures("
+//              << localPos.x() << "," << localPos.y() << ")" << std::endl;
 
     float s0, s1;
     float f0, f1;
@@ -2206,8 +2206,8 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
         int y1 = getYForFrequency(v, f1);
         int y0 = getYForFrequency(v, f0);
         
-        std::cerr << "SpectrogramLayer: illuminate "
-                  << x0 << "," << y1 << " -> " << x1 << "," << y0 << std::endl;
+//        std::cerr << "SpectrogramLayer: illuminate "
+//                  << x0 << "," << y1 << " -> " << x1 << "," << y0 << std::endl;
         
         paint.setPen(Qt::white);
 

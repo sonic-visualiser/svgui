@@ -67,6 +67,7 @@ signals:
     void currentPaneChanged(Pane *pane);
     void currentLayerChanged(Pane *pane, Layer *layer);
     void rightButtonMenuRequested(Pane *pane, QPoint position);
+    void propertyStacksResized();
 
 public slots:
     void propertyContainerAdded(PropertyContainer *);

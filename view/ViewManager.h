@@ -50,6 +50,7 @@ public:
     bool isPlaying() const;
 
     unsigned long getGlobalCentreFrame() const;
+    void setGlobalCentreFrame(unsigned long);
     unsigned long getGlobalZoom() const;
 
     unsigned long getPlaybackFrame() const;
