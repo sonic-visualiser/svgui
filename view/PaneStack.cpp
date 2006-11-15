@@ -426,6 +426,8 @@ PaneStack::sizePropertyStacks()
 	if (!m_panes[i].propertyStack) continue;
 	m_panes[i].propertyStack->setMinimumWidth(setWidth);
     }
+
+    emit propertyStacksResized();
 }
     
 
