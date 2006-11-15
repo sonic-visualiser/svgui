@@ -21,8 +21,7 @@
 #include <QPainter>
 
 #include <iostream>
-
-#include <math.h>
+#include <cmath>
 
 Panner::Panner(QWidget *parent) :
     QWidget(parent),
