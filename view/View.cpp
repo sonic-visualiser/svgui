@@ -1027,6 +1027,16 @@ View::getZoomConstraintBlockSize(size_t blockSize,
     return candidate;
 }
 
+bool
+View::areLayerColoursSignificant() const
+{
+    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+	if ((*i)->isLayerColourSignificant()) return true;
+        if ((*i)->isLayerOpaque()) break;
+    }
+    return false;
+}
+
 void
 View::zoom(bool in)
 {
@@ -1396,7 +1406,14 @@ View::drawSelections(QPainter &paint)
     }
 
     paint.save();
-    paint.setBrush(QColor(150, 150, 255, 80));
+
+    bool translucent = !areLayerColoursSignificant();
+
+    if (translucent) {
+        paint.setBrush(QColor(150, 150, 255, 80));
+    } else {
+        paint.setBrush(Qt::NoBrush);
+    }
 
     int sampleRate = getModelsSampleRate();
 
@@ -1426,7 +1443,16 @@ View::drawSelections(QPainter &paint)
 	    (illuminateFrame >= 0 && i->contains(illuminateFrame));
 
 	paint.setPen(QColor(150, 150, 255));
-	paint.drawRect(p0, -1, p1 - p0, height() + 1);
+
+        if (translucent && shouldLabelSelections()) {
+            paint.drawRect(p0, -1, p1 - p0, height() + 1);
+        } else {
+            // Make the top & bottom lines of the box visible if we
+            // are lacking some of the other visual cues.  There's no
+            // particular logic to this, it's just a question of what
+            // I happen to think looks nice.
+            paint.drawRect(p0, 0, p1 - p0, height() - 1);
+        }
 
 	if (illuminateThis) {
 	    paint.save();

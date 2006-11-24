@@ -187,6 +187,7 @@ public:
     }
 
     virtual bool isLayerOpaque() const { return true; }
+    virtual bool isLayerColourSignificant() const { return true; }
 
     float getYForFrequency(View *v, float frequency) const;
     float getFrequencyForY(View *v, int y) const;

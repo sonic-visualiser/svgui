@@ -201,6 +201,16 @@ public:
     virtual bool isLayerOpaque() const { return false; }
 
     /**
+     * This should return true if the layer uses colours to indicate
+     * meaningful information (as opposed to just using a single
+     * colour of the user's choice).  If this is the case, the view
+     * will show selections using unfilled rectangles instead of
+     * translucent filled rectangles, so as not to disturb the colours
+     * underneath.
+     */
+    virtual bool isLayerColourSignificant() const { return false; }
+
+    /**
      * This should return true if the layer can be edited by the user.
      * If this is the case, the appropriate edit tools may be made
      * available by the application and the layer's drawStart/Drag/End

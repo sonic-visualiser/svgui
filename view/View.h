@@ -277,6 +277,11 @@ protected:
 				      ZoomConstraint::RoundingDirection dir =
 				      ZoomConstraint::RoundNearest) const;
 
+    // True if the top layer(s) use colours for meaningful things.  If
+    // this is the case, selections will be shown using unfilled boxes
+    // rather than with a translucent fill.
+    bool areLayerColoursSignificant() const;
+
     bool setCentreFrame(size_t f, bool doEmit);
 
     void checkProgress(void *object);
