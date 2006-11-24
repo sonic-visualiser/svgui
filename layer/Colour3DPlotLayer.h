@@ -62,6 +62,8 @@ public:
 
     virtual bool isLayerScrollable(const View *v) const;
 
+    virtual bool isLayerColourSignificant() const { return true; }
+
     void setModel(const DenseThreeDimensionalModel *model);
 
     virtual int getCompletion(View *) const { return m_model->getCompletion(); }
