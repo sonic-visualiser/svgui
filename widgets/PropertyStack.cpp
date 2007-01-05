@@ -79,6 +79,11 @@ PropertyStack::repopulate()
 
 	connect(box, SIGNAL(showLayer(bool)), this, SLOT(showLayer(bool)));
 
+        Layer *layer = dynamic_cast<Layer *>(container);
+        if (layer) {
+            box->layerVisibilityChanged(!layer->isLayerDormant(m_client));
+        }
+
 	QIcon icon(QString(":/icons/%1.png").arg(iconName));
 	if (icon.isNull()) {
 	    addTab(box, name);

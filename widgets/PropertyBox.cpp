@@ -45,7 +45,8 @@
 //#define DEBUG_PROPERTY_BOX 1
 
 PropertyBox::PropertyBox(PropertyContainer *container) :
-    m_container(container)
+    m_container(container),
+    m_showButton(0)
 {
 #ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox[" << this << "(\"" <<
@@ -140,11 +141,11 @@ PropertyBox::populateViewPlayFrame()
 	layout->addWidget(showLabel);
 	layout->setAlignment(showLabel, Qt::AlignVCenter);
 
-	LEDButton *showButton = new LEDButton(Qt::blue);
-	layout->addWidget(showButton);
-	connect(showButton, SIGNAL(stateChanged(bool)),
+	m_showButton = new LEDButton(Qt::blue);
+	layout->addWidget(m_showButton);
+	connect(m_showButton, SIGNAL(stateChanged(bool)),
 		this, SIGNAL(showLayer(bool)));
-	layout->setAlignment(showButton, Qt::AlignVCenter);
+	layout->setAlignment(m_showButton, Qt::AlignVCenter);
     }
     
     if (params) {
@@ -154,6 +155,7 @@ PropertyBox::populateViewPlayFrame()
 	layout->setAlignment(playLabel, Qt::AlignVCenter);
 
 	LEDButton *playButton = new LEDButton(Qt::darkGreen);
+        playButton->setState(!params->isPlayMuted());
 	layout->addWidget(playButton);
 	connect(playButton, SIGNAL(stateChanged(bool)),
 		params, SLOT(setPlayAudible(bool)));
@@ -574,7 +576,12 @@ PropertyBox::pluginConfigurationChanged(QString configurationXml)
 
     params->setPlayPluginConfiguration(configurationXml);
 }    
-    
+
+void
+PropertyBox::layerVisibilityChanged(bool visible)
+{
+    if (m_showButton) m_showButton->setState(visible);
+}
     
 
 #ifdef INCLUDE_MOCFILES

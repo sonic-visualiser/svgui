@@ -26,6 +26,7 @@ class QWidget;
 class QGridLayout;
 class QVBoxLayout;
 class QLabel;
+class LEDButton;
 
 class PropertyBox : public QFrame
 {
@@ -47,6 +48,7 @@ signals:
 public slots:
     void propertyContainerPropertyChanged(PropertyContainer *);
     void pluginConfigurationChanged(QString);
+    void layerVisibilityChanged(bool);
 
 protected slots:
     void propertyControllerChanged(int);
@@ -71,6 +73,7 @@ protected:
     PropertyContainer *m_container;
     QFrame *m_viewPlayFrame;
     QVBoxLayout *m_mainBox;
+    LEDButton *m_showButton;
     std::map<QString, QLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };
