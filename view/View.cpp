@@ -1556,7 +1556,10 @@ View::toXmlString(QString indent, QString extraAttributes) const
 	.arg(extraAttributes);
 
     for (size_t i = 0; i < m_layers.size(); ++i) {
-	s += m_layers[i]->toXmlString(indent + "  ");
+        bool visible = !m_layers[i]->isLayerDormant(this);
+	s += m_layers[i]->toXmlString(indent + "  ",
+                                      QString("visible=\"%1\"")
+                                      .arg(visible ? "true" : "false"));
     }
 
     s += indent + "</view>\n";
