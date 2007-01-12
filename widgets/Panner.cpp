@@ -53,20 +53,26 @@ Panner::setAlpha(int backgroundAlpha, int thumbAlpha)
 void
 Panner::mousePressEvent(QMouseEvent *e)
 {
-    if (e->button() == Qt::LeftButton) {
+    if (e->button() == Qt::MidButton ||
+        ((e->button() == Qt::LeftButton) &&
+         (e->modifiers() & Qt::ControlModifier))) {
+        resetToDefault();
+    } else if (e->button() == Qt::LeftButton) {
         m_clicked = true;
         m_clickPos = e->pos();
         m_dragStartX = m_rectX;
         m_dragStartY = m_rectY;
-    } else if (e->button() == Qt::MidButton) {
-        resetToDefault();
     }
 }
 
 void
 Panner::mouseDoubleClickEvent(QMouseEvent *e)
 {
-    resetToDefault();
+    if (e->button() != Qt::LeftButton) {
+        return;
+    }
+
+    emit doubleClicked();
 }
 
 void
@@ -156,6 +162,15 @@ Panner::emitAndUpdate()
     emit rectCentreMoved(centreX(), centreY());
     update();
 }  
+
+void
+Panner::getRectExtents(float &x0, float &y0, float &width, float &height)
+{
+    x0 = m_rectX;
+    y0 = m_rectY;
+    width = m_rectWidth;
+    height = m_rectHeight;
+}
 
 void
 Panner::setRectExtents(float x0, float y0, float width, float height)

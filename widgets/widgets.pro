@@ -25,6 +25,7 @@ HEADERS += AudioDial.h \
            PluginParameterDialog.h \
            PropertyBox.h \
            PropertyStack.h \
+           RangeInputDialog.h \
            SubdividingMenu.h \
            Thumbwheel.h \
            WindowShapePreview.h \
@@ -40,6 +41,7 @@ SOURCES += AudioDial.cpp \
            PluginParameterDialog.cpp \
            PropertyBox.cpp \
            PropertyStack.cpp \
+           RangeInputDialog.cpp \
            SubdividingMenu.cpp \
            Thumbwheel.cpp \
            WindowShapePreview.cpp \

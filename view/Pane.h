@@ -63,6 +63,7 @@ public slots:
     virtual void verticalThumbwheelMoved(int value);
     virtual void verticalZoomChanged();
     virtual void verticalPannerMoved(float x, float y, float w, float h);
+    virtual void editVerticalPannerExtents();
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
 
@@ -88,7 +89,8 @@ protected:
 
     bool canTopLayerMoveVertical();
     bool getTopLayerDisplayExtents(float &valueMin, float &valueMax,
-                                   float &displayMin, float &displayMax);
+                                   float &displayMin, float &displayMax,
+                                   QString *unit = 0);
     bool setTopLayerDisplayExtents(float displayMin, float displayMax);
 
     void dragTopLayer(QMouseEvent *e);
