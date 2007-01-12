@@ -18,6 +18,8 @@
 
 #include <QWidget>
 
+class RangeMapper;
+
 class Thumbwheel : public QWidget
 {
     Q_OBJECT
@@ -41,6 +43,12 @@ public:
     virtual void wheelEvent(QWheelEvent *e);
     virtual void paintEvent(QPaintEvent *e);
 
+    void setRangeMapper(RangeMapper *mapper); // I take ownership, will delete
+    const RangeMapper *getRangeMapper() const { return m_rangeMapper; }
+    float getMappedValue() const;
+
+    void setShowToolTip(bool show);
+
     QSize sizeHint() const;
 
 signals:
@@ -54,13 +62,19 @@ public slots:
     void setTracking(bool tracking);
     void setShowScale(bool show);
     void setValue(int value);
+    void setMappedValue(float mappedValue);
     void resetToDefault();
+
+protected slots:
+    void updateMappedValue(int value);
 
 private:
     int m_min;
     int m_max;
     int m_default;
     int m_value;
+    float m_mappedValue;
+    bool m_noMappedUpdate;
     float m_rotation;
     Qt::Orientation m_orientation;
     float m_speed;
@@ -70,6 +84,8 @@ private:
     bool m_atDefault;
     QPoint m_clickPos;
     float m_clickRotation;
+    bool m_showTooltip;
+    RangeMapper *m_rangeMapper;
 };
 
 #endif

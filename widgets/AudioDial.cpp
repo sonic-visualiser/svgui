@@ -74,7 +74,7 @@ AudioDial::AudioDial(QWidget *parent) :
     m_defaultValue(0),
     m_mappedValue(0),
     m_noMappedUpdate(false),
-    m_showTooltip(false),
+    m_showTooltip(true),
     m_rangeMapper(0)
 {
     m_mouseDial = false;
@@ -91,6 +91,8 @@ AudioDial::~AudioDial (void)
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
+    if (m_rangeMapper == mapper) return;
+
     if (!m_rangeMapper && mapper) {
         connect(this, SIGNAL(valueChanged(int)),
                 this, SLOT(updateMappedValue(int)));
@@ -99,11 +101,7 @@ void AudioDial::setRangeMapper(RangeMapper *mapper)
     delete m_rangeMapper;
     m_rangeMapper = mapper;
 
-    if (m_rangeMapper) {
-        m_mappedValue = m_rangeMapper->getValueForPosition(value());
-    } else {
-        m_mappedValue = value();
-    }
+    updateMappedValue(value());
 }
 
 
@@ -346,7 +344,7 @@ void AudioDial::setMappedValue(float mappedValue)
         }
         m_noMappedUpdate = false;
     } else {
-        setValue(mappedValue);
+        setValue(int(mappedValue));
     }
 }
 
@@ -400,78 +398,89 @@ void AudioDial::mousePressEvent(QMouseEvent *mouseEvent)
 {
     if (m_mouseDial) {
 	QDial::mousePressEvent(mouseEvent);
-    } else if (mouseEvent->button() == Qt::LeftButton) {
-	m_mousePressed = true;
-	m_posMouse = mouseEvent->pos();
-    } else if (mouseEvent->button() == Qt::MidButton) {
+    } else if (mouseEvent->button() == Qt::MidButton ||
+               ((mouseEvent->button() == Qt::LeftButton) &&
+                (mouseEvent->modifiers() & Qt::ControlModifier))) {
 	int dv = m_defaultValue;
 	if (dv < minimum()) dv = minimum();
 	if (dv > maximum()) dv = maximum();
 	setValue(m_defaultValue);
+    } else if (mouseEvent->button() == Qt::LeftButton) {
+	m_mousePressed = true;
+	m_posMouse = mouseEvent->pos();
     }
 }
 
 
 void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
 {
+    //!!! needs a common base class with Thumbwheel
+
     if (m_mouseDial) {
 	QDial::mouseDoubleClickEvent(mouseEvent);
-    } else if (mouseEvent->button() == Qt::LeftButton) {
+    } else if (mouseEvent->button() != Qt::LeftButton) {
+        return;
+    }
 
-	bool ok = false;
+    bool ok = false;
 
-        if (m_rangeMapper) {
+    if (m_rangeMapper) {
+        
+        float min = m_rangeMapper->getValueForPosition(minimum());
+        float max = m_rangeMapper->getValueForPosition(maximum());
+        
+        if (min > max) { 
+            float tmp = min;
+            min = max;
+            max = tmp;
+        }
 
-            float min = m_rangeMapper->getValueForPosition(minimum());
-            float max = m_rangeMapper->getValueForPosition(maximum());
-
-            QString unit = m_rangeMapper->getUnit();
-
-            QString text;
-            if (objectName() != "") {
-                if (unit != "") {
-                    text = tr("New value for %1, from %2 to %3 %4:")
-                        .arg(objectName()).arg(min).arg(max).arg(unit);
-                } else {
-                    text = tr("New value for %1, from %2 to %3:")
-                        .arg(objectName()).arg(min).arg(max);
-                }
+        QString unit = m_rangeMapper->getUnit();
+        
+        QString text;
+        if (objectName() != "") {
+            if (unit != "") {
+                text = tr("New value for %1, from %2 to %3 %4:")
+                    .arg(objectName()).arg(min).arg(max).arg(unit);
             } else {
-                if (unit != "") {
-                    text = tr("Enter a new value from %1 to %2 %3:")
-                        .arg(min).arg(max).arg(unit);
-                } else {
-                    text = tr("Enter a new value from %1 to %2:")
-                        .arg(min).arg(max);
-                }
+                text = tr("New value for %1, from %2 to %3:")
+                    .arg(objectName()).arg(min).arg(max);
             }
-
-            float newValue = QInputDialog::getDouble
-                (this,
-                 tr("Enter new value"),
-                 text,
-                 m_mappedValue,
-                 min,
-                 max,
-                 4, 
-                 &ok);
-
-            if (ok) {
-                setMappedValue(newValue);
-            }
-
         } else {
-
-            int newPosition = QInputDialog::getInteger
-                (this,
-                 tr("Enter new value"),
-                 tr("Enter a new value from %1 to %2:")
-                 .arg(minimum()).arg(maximum()),
-                 value(), minimum(), maximum(), pageStep(), &ok);
-
-            if (ok) {
-                setValue(newPosition);
+            if (unit != "") {
+                text = tr("Enter a new value from %1 to %2 %3:")
+                    .arg(min).arg(max).arg(unit);
+            } else {
+                text = tr("Enter a new value from %1 to %2:")
+                    .arg(min).arg(max);
             }
+        }
+        
+        float newValue = QInputDialog::getDouble
+            (this,
+             tr("Enter new value"),
+             text,
+             m_mappedValue,
+             min,
+             max,
+             4, 
+             &ok);
+        
+        if (ok) {
+            setMappedValue(newValue);
+        }
+        
+    } else {
+        
+        int newPosition = QInputDialog::getInteger
+            (this,
+             tr("Enter new value"),
+             tr("Enter a new value from %1 to %2:")
+             .arg(minimum()).arg(maximum()),
+             value(), minimum(), maximum(), pageStep(), &ok);
+        
+        if (ok) {
+            setValue(newPosition);
         }
     }
 }

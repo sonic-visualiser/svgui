@@ -213,6 +213,7 @@ public:
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
     virtual void setVerticalZoomStep(int);
+    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
 protected slots:
     void cacheInvalid();
