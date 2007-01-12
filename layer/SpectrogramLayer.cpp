@@ -1894,6 +1894,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         x1 = v->width();
     }
 
+    //!!! This width should really depend on how fast the machine is
+    //at redrawing the spectrogram.  We could fairly easily time that,
+    //in this function, and adjust accordingly.  The following is
+    //probably about as small as the block width should go.
     int paintBlockWidth = (300000 / zoomLevel);
     if (paintBlockWidth < 20) paintBlockWidth = 20;
 

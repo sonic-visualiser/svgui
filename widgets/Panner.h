@@ -31,6 +31,8 @@ public:
     void setThumbColour(QColor colour);
     void setAlpha(int backgroundAlpha, int thumbAlpha);
 
+    void getRectExtents(float &x0, float &y0, float &width, float &height);
+
     virtual void mousePressEvent(QMouseEvent *e);
     virtual void mouseDoubleClickEvent(QMouseEvent *e);
     virtual void mouseMoveEvent(QMouseEvent *e);
@@ -56,6 +58,12 @@ signals:
      * width and height of the whole widget.
      */
     void rectCentreMoved(float, float);
+
+    /**
+     * Emitted when the panner is double-clicked (for the "customer"
+     * code to pop up a value editing dialog, for example).
+     */
+    void doubleClicked();
 
 public slots:
     /** 
@@ -91,10 +99,11 @@ public slots:
      */
     void setRectCentreY(float y);
 
+    void resetToDefault();
+
 protected:
     void normalise();
     void emitAndUpdate();
-    void resetToDefault();
 
     float m_rectX;
     float m_rectY;

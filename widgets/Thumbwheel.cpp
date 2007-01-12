@@ -278,7 +278,7 @@ Thumbwheel::mousePressEvent(QMouseEvent *e)
 void
 Thumbwheel::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
 {
-    //!!! needs a common base class with AudioDial
+    //!!! needs a common base class with AudioDial (and Panner?)
 
     if (mouseEvent->button() != Qt::LeftButton) {
         return;

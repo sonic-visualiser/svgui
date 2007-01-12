@@ -34,6 +34,7 @@
 #include <QPushButton>
 #include "widgets/Thumbwheel.h"
 #include "widgets/Panner.h"
+#include "widgets/RangeInputDialog.h"
 
 using std::cerr;
 using std::endl;
@@ -77,6 +78,9 @@ Pane::updateHeadsUpDisplay()
     std::cerr << "Have " << count+1 << " zoom levels" << std::endl;
 */
 
+    Layer *layer = 0;
+    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+
     if (!m_headsUpDisplay) {
 
         m_headsUpDisplay = new QFrame(this);
@@ -103,6 +107,8 @@ Pane::updateHeadsUpDisplay()
         m_vpan->setAlpha(80, 130);
         connect(m_vpan, SIGNAL(rectExtentsChanged(float, float, float, float)),
                 this, SLOT(verticalPannerMoved(float, float, float, float)));
+        connect(m_vpan, SIGNAL(doubleClicked()),
+                this, SLOT(editVerticalPannerExtents()));
 
         m_vthumb = new Thumbwheel(Qt::Vertical);
         m_vthumb->setObjectName(tr("Vertical Zoom"));
@@ -112,12 +118,18 @@ Pane::updateHeadsUpDisplay()
         connect(m_vthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(verticalThumbwheelMoved(int)));
 
+        if (layer) {
+            RangeMapper *rm = layer->getNewVerticalZoomRangeMapper();
+            if (rm) m_vthumb->setRangeMapper(rm);
+        }
+
         QPushButton *reset = new QPushButton;
         reset->setFixedHeight(16);
         reset->setFixedWidth(16);
         layout->addWidget(reset, 1, 2);
         connect(reset, SIGNAL(clicked()), m_hthumb, SLOT(resetToDefault()));
         connect(reset, SIGNAL(clicked()), m_vthumb, SLOT(resetToDefault()));
+        connect(reset, SIGNAL(clicked()), m_vpan, SLOT(resetToDefault()));
     }
 
     int count = 0;
@@ -179,8 +191,6 @@ Pane::updateHeadsUpDisplay()
 //        std::cerr << "set default value to " << m_hthumb->getDefaultValue() << std::endl;
     }
 
-    Layer *layer = 0;
-    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
     if (layer) {
         int defaultStep = 0;
         int max = layer->getVerticalZoomSteps(defaultStep);
@@ -702,15 +712,18 @@ Pane::canTopLayerMoveVertical()
 
 bool
 Pane::getTopLayerDisplayExtents(float &vmin, float &vmax,
-                                float &dmin, float &dmax) 
+                                float &dmin, float &dmax,
+                                QString *unit) 
 {
     Layer *layer = 0;
     if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
     if (!layer) return false;
     bool vlog;
     QString vunit;
-    return (layer->getValueExtents(vmin, vmax, vlog, vunit) &&
-            layer->getDisplayExtents(dmin, dmax));
+    bool rv = (layer->getValueExtents(vmin, vmax, vlog, vunit) &&
+               layer->getDisplayExtents(dmin, dmax));
+    if (unit) *unit = vunit;
+    return rv;
 }
 
 bool
@@ -1413,6 +1426,31 @@ Pane::verticalPannerMoved(float x0, float y0, float w, float h)
     std::cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
               << "," << h << ") -> (" << newmin << "," << newmax << ")" << std::endl;
     setTopLayerDisplayExtents(newmin, newmax);
+}
+
+void
+Pane::editVerticalPannerExtents()
+{
+    if (!m_vpan || !m_manager || !m_manager->getZoomWheelsEnabled()) return;
+
+    float vmin, vmax, dmin, dmax;
+    QString unit;
+    if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax, &unit)
+        || vmax == vmin) {
+        return;
+    }
+
+    RangeInputDialog dialog(tr("Enter new range"),
+                            tr("New vertical display range, from %1 to %2 %4:")
+                            .arg(vmin).arg(vmax).arg(unit),
+                            unit, vmin, vmax, this);
+    dialog.setRange(dmin, dmax);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        dialog.getRange(dmin, dmax);
+        setTopLayerDisplayExtents(dmin, dmax);
+        updateVerticalPanner();
+    }
 }
 
 bool
