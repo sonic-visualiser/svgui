@@ -15,9 +15,12 @@
 
 #include "Thumbwheel.h"
 
+#include "base/RangeMapper.h"
+
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QWheelEvent>
+#include <QInputDialog>
 #include <QPainter>
 
 #include <cmath>
@@ -30,6 +33,8 @@ Thumbwheel::Thumbwheel(Qt::Orientation orientation,
     m_max(100),
     m_default(50),
     m_value(50),
+    m_mappedValue(50),
+    m_noMappedUpdate(false),
     m_rotation(0.5),
     m_orientation(orientation),
     m_speed(1.0),
@@ -37,12 +42,40 @@ Thumbwheel::Thumbwheel(Qt::Orientation orientation,
     m_showScale(true),
     m_clicked(false),
     m_atDefault(true),
-    m_clickRotation(m_rotation)
+    m_clickRotation(m_rotation),
+    m_showTooltip(true),
+    m_rangeMapper(0)
 {
 }
 
 Thumbwheel::~Thumbwheel()
 {
+    delete m_rangeMapper;
+}
+
+void
+Thumbwheel::setRangeMapper(RangeMapper *mapper)
+{
+    if (m_rangeMapper == mapper) return;
+
+    if (!m_rangeMapper && mapper) {
+        connect(this, SIGNAL(valueChanged(int)),
+                this, SLOT(updateMappedValue(int)));
+    }
+
+    delete m_rangeMapper;
+    m_rangeMapper = mapper;
+
+    updateMappedValue(getValue());
+}
+
+void
+Thumbwheel::setShowToolTip(bool show)
+{
+    m_showTooltip = show;
+    m_noMappedUpdate = true;
+    updateMappedValue(getValue());
+    m_noMappedUpdate = false;
 }
 
 void
@@ -98,6 +131,25 @@ Thumbwheel::setDefaultValue(int deft)
     }
 }
 
+void
+Thumbwheel::setMappedValue(float mappedValue)
+{
+    if (m_rangeMapper) {
+        int newValue = m_rangeMapper->getPositionForValue(mappedValue);
+        m_mappedValue = mappedValue;
+        m_noMappedUpdate = true;
+        std::cerr << "Thumbwheel::setMappedValue(" << mappedValue << "): new value is " << newValue << std::endl;
+        if (newValue != getValue()) {
+            setValue(newValue);
+        }
+        emit valueChanged(newValue);
+        m_noMappedUpdate = false;
+    } else {
+        setValue(int(mappedValue));
+        emit valueChanged(int(mappedValue));
+    }
+}
+
 int
 Thumbwheel::getDefaultValue() const
 {
@@ -107,8 +159,8 @@ Thumbwheel::getDefaultValue() const
 void
 Thumbwheel::setValue(int value)
 {
-//    std::cerr << "Thumbwheel::setValue(" << value << ") (from " << m_value
-//              << ", rotation " << m_rotation << ")" << std::endl;
+    std::cerr << "Thumbwheel::setValue(" << value << ") (from " << m_value
+              << ", rotation " << m_rotation << ")" << std::endl;
 
     if (m_value != value) {
 
@@ -136,6 +188,41 @@ int
 Thumbwheel::getValue() const
 {
     return m_value;
+}
+
+float
+Thumbwheel::getMappedValue() const
+{
+    if (m_rangeMapper) {
+        std::cerr << "Thumbwheel::getMappedValue(): value = " << getValue() << ", mappedValue = " << m_mappedValue << std::endl;
+        return m_mappedValue;
+    }
+    return getValue();
+}
+
+void
+Thumbwheel::updateMappedValue(int value)
+{
+    if (!m_noMappedUpdate) {
+        if (m_rangeMapper) {
+            m_mappedValue = m_rangeMapper->getValueForPosition(value);
+        } else {
+            m_mappedValue = value;
+        }
+    }
+
+    if (m_showTooltip) {
+        QString name = objectName();
+        QString unit = "";
+        QString text;
+        if (m_rangeMapper) unit = m_rangeMapper->getUnit();
+        if (name != "") {
+            text = tr("%1: %2%3").arg(name).arg(m_mappedValue).arg(unit);
+        } else {
+            text = tr("%2%3").arg(m_mappedValue).arg(unit);
+        }
+        setToolTip(text);
+    }
 }
 
 void
@@ -177,20 +264,89 @@ Thumbwheel::getShowScale() const
 void
 Thumbwheel::mousePressEvent(QMouseEvent *e)
 {
-    if (e->button() == Qt::LeftButton) {
+    if (e->button() == Qt::MidButton ||
+        ((e->button() == Qt::LeftButton) &&
+         (e->modifiers() & Qt::ControlModifier))) {
+        resetToDefault();
+    } else if (e->button() == Qt::LeftButton) {
         m_clicked = true;
         m_clickPos = e->pos();
         m_clickRotation = m_rotation;
-    } else if (e->button() == Qt::MidButton) {
-        resetToDefault();
     }
 }
 
 void
-Thumbwheel::mouseDoubleClickEvent(QMouseEvent *)
+Thumbwheel::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
 {
-    resetToDefault();
+    //!!! needs a common base class with AudioDial
+
+    if (mouseEvent->button() != Qt::LeftButton) {
+        return;
+    }
+
+    bool ok = false;
+
+    if (m_rangeMapper) {
+        
+        float min = m_rangeMapper->getValueForPosition(m_min);
+        float max = m_rangeMapper->getValueForPosition(m_max);
+                
+        if (min > max) { 
+            float tmp = min;
+            min = max;
+            max = tmp;
+        }
+
+        QString unit = m_rangeMapper->getUnit();
+        
+        QString text;
+        if (objectName() != "") {
+            if (unit != "") {
+                text = tr("New value for %1, from %2 to %3 %4:")
+                    .arg(objectName()).arg(min).arg(max).arg(unit);
+            } else {
+                text = tr("New value for %1, from %2 to %3:")
+                    .arg(objectName()).arg(min).arg(max);
+            }
+        } else {
+            if (unit != "") {
+                text = tr("Enter a new value from %1 to %2 %3:")
+                    .arg(min).arg(max).arg(unit);
+            } else {
+                text = tr("Enter a new value from %1 to %2:")
+                    .arg(min).arg(max);
+            }
+        }
+        
+        float newValue = QInputDialog::getDouble
+            (this,
+             tr("Enter new value"),
+             text,
+             m_mappedValue,
+             min,
+             max,
+             4, 
+             &ok);
+        
+        if (ok) {
+            setMappedValue(newValue);
+        }
+        
+    } else {
+        
+        int newValue = QInputDialog::getInteger
+            (this,
+             tr("Enter new value"),
+             tr("Enter a new value from %1 to %2:")
+             .arg(m_min).arg(m_max),
+             getValue(), m_min, m_max, 1, &ok);
+        
+        if (ok) {
+            setValue(newValue);
+        }
+    }
 }
+
 
 void
 Thumbwheel::mouseMoveEvent(QMouseEvent *e)

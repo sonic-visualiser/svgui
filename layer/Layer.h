@@ -34,6 +34,7 @@ class QPainter;
 class View;
 class QMouseEvent;
 class Clipboard;
+class RangeMapper;
 
 /**
  * The base class for visual representations of the data found in a
@@ -337,6 +338,14 @@ public:
      * property such as display gain.
      */
     virtual void setVerticalZoomStep(int) { }
+
+    /**
+     * Create and return a range mapper for vertical zoom step values.
+     * See the RangeMapper documentation for more details.  The
+     * returned value is allocated on the heap and will be deleted by
+     * the caller.
+     */
+    virtual RangeMapper *getNewVerticalZoomRangeMapper() const { return 0; }
 
 public slots:
     void showLayer(View *, bool show);

@@ -58,6 +58,8 @@ Pane::Pane(QWidget *w) :
 void
 Pane::updateHeadsUpDisplay()
 {
+    Profiler profiler("Pane::updateHeadsUpDisplay", true);
+
 /*
     int count = 0;
     int currentLevel = 1;
@@ -85,6 +87,7 @@ Pane::updateHeadsUpDisplay()
         m_headsUpDisplay->setLayout(layout);
         
         m_hthumb = new Thumbwheel(Qt::Horizontal);
+        m_hthumb->setObjectName(tr("Horizontal Zoom"));
         layout->addWidget(m_hthumb, 1, 0, 1, 2);
         m_hthumb->setFixedWidth(70);
         m_hthumb->setFixedHeight(16);
@@ -102,6 +105,7 @@ Pane::updateHeadsUpDisplay()
                 this, SLOT(verticalPannerMoved(float, float, float, float)));
 
         m_vthumb = new Thumbwheel(Qt::Vertical);
+        m_vthumb->setObjectName(tr("Vertical Zoom"));
         layout->addWidget(m_vthumb, 0, 2);
         m_vthumb->setFixedWidth(16);
         m_vthumb->setFixedHeight(70);
@@ -184,10 +188,12 @@ Pane::updateHeadsUpDisplay()
             m_vthumb->hide();
         } else {
             m_vthumb->show();
+            m_vthumb->blockSignals(true);
             m_vthumb->setMinimumValue(0);
             m_vthumb->setMaximumValue(max);
             m_vthumb->setDefaultValue(defaultStep);
             m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
+            m_vthumb->blockSignals(false);
 
             std::cerr << "Vertical thumbwheel: min 0, max " << max
                       << ", default " << defaultStep << ", value "
@@ -1547,6 +1553,12 @@ Pane::propertyContainerSelected(View *v, PropertyContainer *pc)
 
     View::propertyContainerSelected(v, pc);
     updateHeadsUpDisplay();
+
+    if (m_vthumb) {
+        RangeMapper *rm = 0;
+        if (layer) rm = layer->getNewVerticalZoomRangeMapper();
+        if (rm) m_vthumb->setRangeMapper(rm);
+    }
 
     if (getLayerCount() > 0) {
         layer = getLayer(getLayerCount() - 1);

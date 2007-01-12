@@ -79,10 +79,16 @@ signals:
     void valueChanged(float); // 0.0 -> 1.0
 
 private:
+    int getMaxX() const;
+
     bool m_withoutKnob;
     float m_value;
     float m_peakLeft;
     float m_peakRight;
+
+    bool m_mousePressed;
+    int m_mousePressX;
+    float m_mousePressValue;
 
     QPixmap m_back;
     QPixmap m_leds;

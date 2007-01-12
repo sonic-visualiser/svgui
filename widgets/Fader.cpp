@@ -53,13 +53,17 @@
 #include <QWheelEvent>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QInputDialog>
+
+#include <iostream>
 
 Fader::Fader(QWidget *parent, bool withoutKnob) :
     QWidget(parent),
     m_withoutKnob(withoutKnob),
     m_value(1.0),
     m_peakLeft(0.0),
-    m_peakRight(0.0)
+    m_peakRight(0.0),
+    m_mousePressed(false)
 {
     setMinimumSize(116, 23);
     setMaximumSize(116, 23);
@@ -99,75 +103,84 @@ void
 Fader::mouseMoveEvent(QMouseEvent *ev)
 {
     if (ev->button() == Qt::MidButton) {
+        setValue(1.0);
+        emit valueChanged(1.0);
+        update();
         ev->accept();
         return;
     }
+    if (!m_mousePressed) return;
 
-    int x = ev->x() - 6;
-    const int max_x = 116 - 12;
+    int x = ev->x();
+    int diff = x - m_mousePressX;
+    if (diff == 0) return;
 
-    int value = x;
+    int vx = AudioLevel::multiplier_to_fader
+        (m_mousePressValue, getMaxX(), AudioLevel::LongFader);
 
-    if (value > max_x) {
-	value = max_x;
-    } else if (value < 0) {
-	value = 0;
-    }
+    vx += diff;
 
-//    float fval = float(value) / float(max_x);
+    if (vx > getMaxX()) vx = getMaxX();
+    if (vx < 0) vx = 0;
+
     float fval = AudioLevel::fader_to_multiplier
-	(value, max_x, AudioLevel::LongFader);
+	(vx, getMaxX(), AudioLevel::LongFader);
 
     setValue(fval);
     emit valueChanged(fval);
-
-    update();
+    ev->accept();
 }
 
 
 void
 Fader::mouseReleaseEvent(QMouseEvent *ev)
 {
-    mouseMoveEvent(ev);
+    if (m_mousePressed) {
+        mouseMoveEvent(ev);
+        m_mousePressed = false;
+    }
 }
-
 
 void
 Fader::mouseDoubleClickEvent(QMouseEvent *)
 {
-    setValue(1.0);
-    emit valueChanged(1.0);
-    update();
+    bool ok = false;
+    float min = AudioLevel::fader_to_dB
+        (0, getMaxX(), AudioLevel::LongFader);
+    float max = AudioLevel::fader_to_dB
+        (getMaxX(), getMaxX(), AudioLevel::LongFader);
+    float deft = AudioLevel::multiplier_to_dB(m_value);
+
+    float dB = QInputDialog::getDouble
+        (this,
+         tr("Enter new fader level"),
+         tr("New fader level, from %1 to %2 dBFS:").arg(min).arg(max),
+         deft, min, max, 3, &ok);
+
+    if (ok) {
+        float value = AudioLevel::dB_to_multiplier(dB);
+        setValue(value);
+        emit valueChanged(value);
+        update();
+    }
 }
 
 void
 Fader::mousePressEvent(QMouseEvent *ev)
 {
-    if (ev->button() == Qt::MidButton) {
+    if (ev->button() == Qt::MidButton ||
+        ((ev->button() == Qt::LeftButton) &&
+         (ev->modifiers() & Qt::ControlModifier))) {
         setValue(1.0);
         emit valueChanged(1.0);
         update();
         return;
     }
 
-    int x = ev->x() - 6;
-    const int max_x = 116 - 12;
-
-    int value = x;
-
-    if (value > max_x) {
-	value = max_x;
-    } else if (value < 0) {
-	value = 0;
-    }
-
-    float fval = AudioLevel::fader_to_multiplier
-	(value, max_x, AudioLevel::LongFader);
-
-    setValue(fval);
-    emit valueChanged(fval);
-
-    update();
+    if (ev->button() != Qt::LeftButton) return;
+    m_mousePressed = true;
+    m_mousePressX = ev->x();
+    m_mousePressValue = getValue();
 }
 
 
@@ -203,15 +216,18 @@ Fader::setValue(float v)
     if (m_value != v) {
 	m_value = v;
 	float db = AudioLevel::multiplier_to_dB(m_value);
+        QString text;
 	if (db <= AudioLevel::DB_FLOOR) {
-	    setToolTip(tr("Level: Off"));
+            text = tr("Level: Off");
 	} else {
-	    setToolTip(tr("Level: %1%2.%3%4 dB")
-		       .arg(db < 0.0 ? "-" : "")
-		       .arg(abs(int(db)))
-		       .arg(abs(int(db * 10.0) % 10))
-		       .arg(abs(int(db * 100.0) % 10)));
+            text = tr("Level: %1%2.%3%4 dB")
+                .arg(db < 0.0 ? "-" : "")
+                .arg(abs(int(db)))
+                .arg(abs(int(db * 10.0) % 10))
+                .arg(abs(int(db * 100.0) % 10));
 	}
+        std::cerr << "Fader: setting tooltip to \"" << text.toStdString() << "\"" << std::endl;
+        QWidget::setToolTip(text);
 	update();
     }
 }
@@ -281,4 +297,8 @@ Fader::paintEvent(QPaintEvent *)
     }
 }
 
-
+int
+Fader::getMaxX() const
+{
+    return 116 - 12;
+}
