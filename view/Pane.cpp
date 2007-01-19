@@ -35,6 +35,7 @@
 #include "widgets/Thumbwheel.h"
 #include "widgets/Panner.h"
 #include "widgets/RangeInputDialog.h"
+#include "widgets/NotifyingPushButton.h"
 
 using std::cerr;
 using std::endl;
@@ -99,6 +100,8 @@ Pane::updateHeadsUpDisplay()
         m_hthumb->setSpeed(0.6);
         connect(m_hthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(horizontalThumbwheelMoved(int)));
+        connect(m_hthumb, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
+        connect(m_hthumb, SIGNAL(mouseLeft()), this, SLOT(mouseLeftWidget()));
 
         m_vpan = new Panner;
         layout->addWidget(m_vpan, 0, 1);
@@ -109,6 +112,8 @@ Pane::updateHeadsUpDisplay()
                 this, SLOT(verticalPannerMoved(float, float, float, float)));
         connect(m_vpan, SIGNAL(doubleClicked()),
                 this, SLOT(editVerticalPannerExtents()));
+        connect(m_vpan, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
+        connect(m_vpan, SIGNAL(mouseLeft()), this, SLOT(mouseLeftWidget()));
 
         m_vthumb = new Thumbwheel(Qt::Vertical);
         m_vthumb->setObjectName(tr("Vertical Zoom"));
@@ -117,19 +122,23 @@ Pane::updateHeadsUpDisplay()
         m_vthumb->setFixedHeight(70);
         connect(m_vthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(verticalThumbwheelMoved(int)));
+        connect(m_vthumb, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
+        connect(m_vthumb, SIGNAL(mouseLeft()), this, SLOT(mouseLeftWidget()));
 
         if (layer) {
             RangeMapper *rm = layer->getNewVerticalZoomRangeMapper();
             if (rm) m_vthumb->setRangeMapper(rm);
         }
 
-        QPushButton *reset = new QPushButton;
-        reset->setFixedHeight(16);
-        reset->setFixedWidth(16);
-        layout->addWidget(reset, 1, 2);
-        connect(reset, SIGNAL(clicked()), m_hthumb, SLOT(resetToDefault()));
-        connect(reset, SIGNAL(clicked()), m_vthumb, SLOT(resetToDefault()));
-        connect(reset, SIGNAL(clicked()), m_vpan, SLOT(resetToDefault()));
+        m_reset = new NotifyingPushButton;
+        m_reset->setFixedHeight(16);
+        m_reset->setFixedWidth(16);
+        layout->addWidget(m_reset, 1, 2);
+        connect(m_reset, SIGNAL(clicked()), m_hthumb, SLOT(resetToDefault()));
+        connect(m_reset, SIGNAL(clicked()), m_vthumb, SLOT(resetToDefault()));
+        connect(m_reset, SIGNAL(clicked()), m_vpan, SLOT(resetToDefault()));
+        connect(m_reset, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
+        connect(m_reset, SIGNAL(mouseLeft()), this, SLOT(mouseLeftWidget()));
     }
 
     int count = 0;
@@ -381,8 +390,7 @@ Pane::paintEvent(QPaintEvent *e)
             waveformModel = (*vi)->getModel();
         }
 
-        if (!m_manager ||
-            m_manager->getOverlayMode() == ViewManager::NoOverlays) {
+        if (!m_manager || !m_manager->shouldShowVerticalScale()) {
             break;
         }
 
@@ -464,14 +472,21 @@ Pane::paintEvent(QPaintEvent *e)
     int sampleRate = getModelsSampleRate();
     paint.setBrush(Qt::NoBrush);
 
-    if (m_centreLineVisible) {
+    if (m_centreLineVisible &&
+        m_manager &&
+        m_manager->shouldShowCentreLine()) {
 
-	if (hasLightBackground()) {
-	    paint.setPen(QColor(50, 50, 50));
-	} else {
-	    paint.setPen(QColor(200, 200, 200));
-	}	
-	paint.drawLine(width() / 2, 0, width() / 2, height() - 1);
+        QColor c = QColor(0, 0, 0);
+        if (!hasLightBackground()) {
+            c = QColor(240, 240, 240);
+        }
+        paint.setPen(c);
+        int x = width() / 2 + 1;
+	paint.drawLine(x, 0, x, height() - 1);
+        paint.drawLine(x-1, 1, x+1, 1);
+        paint.drawLine(x-2, 0, x+2, 0);
+        paint.drawLine(x-1, height() - 2, x+1, height() - 2);
+        paint.drawLine(x-2, height() - 1, x+2, height() - 1);
 
 	paint.setPen(QColor(50, 50, 50));
 
@@ -499,8 +514,7 @@ Pane::paintEvent(QPaintEvent *e)
 	    }
 	}
 
-        if (m_manager &&
-            m_manager->getOverlayMode() != ViewManager::NoOverlays) {
+        if (m_manager && m_manager->shouldShowFrameCount()) {
 
             if (sampleRate) {
 
@@ -529,7 +543,7 @@ Pane::paintEvent(QPaintEvent *e)
 
     if (waveformModel &&
         m_manager &&
-        m_manager->getOverlayMode() != ViewManager::NoOverlays &&
+        m_manager->shouldShowDuration() &&
 	r.y() + r.height() >= height() - fontHeight - 6) {
 
         size_t modelRate = waveformModel->getSampleRate();
@@ -565,7 +579,7 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     if (m_manager &&
-        m_manager->getOverlayMode() == ViewManager::AllOverlays &&
+        m_manager->shouldShowLayerNames() &&
         r.y() + r.height() >= height() - m_layers.size() * fontHeight - 6) {
 
 	std::vector<QString> texts;
@@ -739,6 +753,7 @@ void
 Pane::mousePressEvent(QMouseEvent *e)
 {
     if (e->buttons() & Qt::RightButton) {
+        emit contextHelpChanged("");
         emit rightButtonMenuRequested(mapToGlobal(e->pos()));
         return;
     }
@@ -920,6 +935,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     if (e->buttons() & Qt::RightButton) {
         return;
     }
+
+    updateContextHelp(&e->pos());
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
@@ -1271,6 +1288,7 @@ Pane::leaveEvent(QEvent *)
     bool previouslyIdentifying = m_identifyFeatures;
     m_identifyFeatures = false;
     if (previouslyIdentifying) update();
+    emit contextHelpChanged("");
 }
 
 void
@@ -1618,6 +1636,104 @@ Pane::verticalZoomChanged()
             m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
         }
     }
+}
+
+void
+Pane::updateContextHelp(const QPoint *pos)
+{
+    QString help = "";
+
+    if (m_clickedInRange) {
+        emit contextHelpChanged("");
+        return;
+    }
+
+    ViewManager::ToolMode mode = ViewManager::NavigateMode;
+    if (m_manager) mode = m_manager->getToolMode();
+
+    bool editable = false;
+    Layer *layer = getSelectedLayer();
+    if (layer && layer->isLayerEditable()) {
+        editable = true;
+    }
+        
+    if (mode == ViewManager::NavigateMode) {
+
+        help = tr("Click and drag to navigate");
+        
+    } else if (mode == ViewManager::SelectMode) {
+
+        bool haveSelection = (m_manager && !m_manager->getSelections().empty());
+
+        if (haveSelection) {
+            if (editable) {
+                help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; hold Ctrl for multi-select; middle-click and drag to navigate");
+            } else {
+                help = tr("Click and drag to select a range; hold Ctrl for multi-select; middle-click and drag to navigate");
+            }                
+
+            if (pos) {
+                bool closeToLeft = false, closeToRight = false;
+                Selection selection = getSelectionAt(pos->x(), closeToLeft, closeToRight);
+                if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
+                    
+                    help = tr("Click and drag to move the selection boundary");
+                }
+            }
+        } else {
+            if (editable) {
+                help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; middle-click to navigate");
+            } else {
+                help = tr("Click and drag to select a range; middle-click and drag to navigate");
+            }
+        }
+
+    } else if (mode == ViewManager::DrawMode) {
+        
+        //!!! could call through to a layer function to find out exact meaning
+	if (editable) {
+            help = tr("Click to add a new item in the active layer");
+        }
+        
+    } else if (mode == ViewManager::EditMode) {
+        
+        //!!! could call through to layer
+	if (editable) {
+            help = tr("Click and drag an item in the active layer to move it");
+            if (pos) {
+                bool closeToLeft = false, closeToRight = false;
+                Selection selection = getSelectionAt(pos->x(), closeToLeft, closeToRight);
+                if (!selection.isEmpty()) {
+                    help = tr("Click and drag to move all items in the selected range");
+                }
+            }
+        }
+    }
+
+    emit contextHelpChanged(help);
+}
+
+void
+Pane::mouseEnteredWidget()
+{
+    QWidget *w = dynamic_cast<QWidget *>(sender());
+    if (!w) return;
+
+    if (w == m_vpan) {
+        emit contextHelpChanged(tr("Click and drag to adjust the visible range of the vertical scale"));
+    } else if (w == m_vthumb) {
+        emit contextHelpChanged(tr("Click and drag to adjust the vertical zoom level"));
+    } else if (w == m_hthumb) {
+        emit contextHelpChanged(tr("Click and drag to adjust the horizontal zoom level"));
+    } else if (w == m_reset) {
+        emit contextHelpChanged(tr("Reset horizontal and vertical zoom levels to their defaults"));
+    }
+}
+
+void
+Pane::mouseLeftWidget()
+{
+    emit contextHelpChanged("");
 }
 
 QString

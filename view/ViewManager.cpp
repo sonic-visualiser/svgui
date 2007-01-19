@@ -36,7 +36,7 @@ ViewManager::ViewManager() :
     m_toolMode(NavigateMode),
     m_playLoopMode(false),
     m_playSelectionMode(false),
-    m_overlayMode(BasicOverlays),
+    m_overlayMode(StandardOverlays),
     m_zoomWheelsEnabled(true)
 {
     QSettings settings;

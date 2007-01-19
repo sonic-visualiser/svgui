@@ -37,6 +37,7 @@ WaveformLayer::WaveformLayer() :
     m_gain(1.0f),
     m_autoNormalize(false),
     m_colour(Qt::black),
+//    m_colour(QColor(84, 177, 248)),
     m_showMeans(true),
     m_greyscale(true),
     m_channelMode(SeparateChannels),
@@ -164,7 +165,8 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 	if (m_colour == Qt::black) deft = 0;
 	else if (m_colour == Qt::darkRed) deft = 1;
-	else if (m_colour == Qt::darkBlue) deft = 2;
+	else if (m_colour == Qt::darkBlue ||
+                 m_colour == QColor(84, 177, 248)) deft = 2;
 	else if (m_colour == Qt::darkGreen) deft = 3;
 	else if (m_colour == QColor(200, 50, 255)) deft = 4;
 	else if (m_colour == QColor(255, 150, 50)) deft = 5;
@@ -246,6 +248,7 @@ WaveformLayer::setProperty(const PropertyName &name, int value)
 	default:
 	case 0:	setBaseColour(Qt::black); break;
 	case 1: setBaseColour(Qt::darkRed); break;
+//	case 2: setBaseColour(QColor(84, 177, 248)); break;
 	case 2: setBaseColour(Qt::darkBlue); break;
 	case 3: setBaseColour(Qt::darkGreen); break;
 	case 4: setBaseColour(QColor(200, 50, 255)); break;

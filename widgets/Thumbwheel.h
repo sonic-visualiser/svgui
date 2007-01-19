@@ -36,13 +36,6 @@ public:
     bool getShowScale() const;
     int getValue() const;
 
-    virtual void mousePressEvent(QMouseEvent *e);
-    virtual void mouseDoubleClickEvent(QMouseEvent *e);
-    virtual void mouseMoveEvent(QMouseEvent *e);
-    virtual void mouseReleaseEvent(QMouseEvent *e);
-    virtual void wheelEvent(QWheelEvent *e);
-    virtual void paintEvent(QPaintEvent *e);
-
     void setRangeMapper(RangeMapper *mapper); // I take ownership, will delete
     const RangeMapper *getRangeMapper() const { return m_rangeMapper; }
     float getMappedValue() const;
@@ -53,6 +46,9 @@ public:
 
 signals:
     void valueChanged(int);
+
+    void mouseEntered();
+    void mouseLeft();
 
 public slots:
     void setMinimumValue(int min);
@@ -68,7 +64,16 @@ public slots:
 protected slots:
     void updateMappedValue(int value);
 
-private:
+protected:
+    virtual void mousePressEvent(QMouseEvent *e);
+    virtual void mouseDoubleClickEvent(QMouseEvent *e);
+    virtual void mouseMoveEvent(QMouseEvent *e);
+    virtual void mouseReleaseEvent(QMouseEvent *e);
+    virtual void wheelEvent(QWheelEvent *e);
+    virtual void paintEvent(QPaintEvent *e);
+    virtual void enterEvent(QEvent *);
+    virtual void leaveEvent(QEvent *);
+
     int m_min;
     int m_max;
     int m_default;

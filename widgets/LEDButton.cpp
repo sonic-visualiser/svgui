@@ -105,6 +105,18 @@ LEDButton::mousePressEvent(QMouseEvent *e)
 }
 
 void
+LEDButton::enterEvent(QEvent *)
+{
+    emit mouseEntered();
+}
+
+void
+LEDButton::leaveEvent(QEvent *)
+{
+    emit mouseLeft();
+}
+
+void
 LEDButton::paintEvent(QPaintEvent *)
 {
     QPainter paint;

@@ -242,6 +242,8 @@ signals:
     void centreFrameChanged(void *, unsigned long, bool);
     void zoomLevelChanged(void *, unsigned long, bool);
 
+    void contextHelpChanged(const QString &);
+
 public slots:
     virtual void modelChanged();
     virtual void modelChanged(size_t startFrame, size_t endFrame);

@@ -54,6 +54,9 @@ public:
 signals:
     void stateChanged(bool);
 
+    void mouseEntered();
+    void mouseLeft();
+
 public slots:
     void toggle();
     void on();
@@ -67,12 +70,12 @@ public slots:
 protected:
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *);
+    void enterEvent(QEvent *);
+    void leaveEvent(QEvent *);
 
-private:
     bool led_state;
     QColor led_color;
 
-private:
     class LEDButtonPrivate;
     LEDButtonPrivate *d;
 };

@@ -201,6 +201,17 @@ Fader::wheelEvent(QWheelEvent *ev)
     emit valueChanged(getValue());
 }
 
+void
+Fader::enterEvent(QEvent *)
+{
+    emit mouseEntered();
+}
+
+void
+Fader::leaveEvent(QEvent *)
+{
+    emit mouseLeft();
+}
 
 void
 Fader::setValue(float v)

@@ -44,6 +44,7 @@ signals:
     void changePlayPan(float);
     void changePlayPanDial(int);
     void showLayer(bool);
+    void contextHelpChanged(const QString &);
 
 public slots:
     void propertyContainerPropertyChanged(PropertyContainer *);
@@ -64,6 +65,9 @@ protected slots:
 
     void editPlugin();
 
+    void mouseEnteredWidget();
+    void mouseLeftWidget();
+
 protected:
     void updatePropertyEditor(PropertyContainer::PropertyName);
 
@@ -74,6 +78,7 @@ protected:
     QFrame *m_viewPlayFrame;
     QVBoxLayout *m_mainBox;
     LEDButton *m_showButton;
+    LEDButton *m_playButton;
     std::map<QString, QLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };

@@ -38,6 +38,7 @@ public:
 
 signals:
     void propertyContainerSelected(View *client, PropertyContainer *container);
+    void contextHelpChanged(const QString &);
 
 public slots:
     void propertyContainerAdded(PropertyContainer *);
