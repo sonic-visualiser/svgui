@@ -52,6 +52,9 @@ protected:
     virtual void mousePressEvent(QMouseEvent *e);
     virtual void mouseReleaseEvent(QMouseEvent *e);
     virtual void mouseMoveEvent(QMouseEvent *e);
+    virtual void mouseDoubleClickEvent(QMouseEvent *e);
+    virtual void enterEvent(QEvent *);
+    virtual void leaveEvent(QEvent *);
     virtual bool shouldLabelSelections() const { return false; }
 
     QPoint m_clickPos;

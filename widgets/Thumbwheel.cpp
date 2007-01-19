@@ -262,6 +262,18 @@ Thumbwheel::getShowScale() const
 }
 
 void
+Thumbwheel::enterEvent(QEvent *)
+{
+    emit mouseEntered();
+}
+
+void
+Thumbwheel::leaveEvent(QEvent *)
+{
+    emit mouseLeft();
+}
+
+void
 Thumbwheel::mousePressEvent(QMouseEvent *e)
 {
     if (e->button() == Qt::MidButton ||

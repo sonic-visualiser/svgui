@@ -68,17 +68,22 @@ public:
     void setPeakRight(float);
     float getPeakRight() { return m_peakRight; }
 
+signals:
+    void valueChanged(float); // 0.0 -> 1.0
+
+    void mouseEntered();
+    void mouseLeft();
+
+protected:
     virtual void mousePressEvent(QMouseEvent *ev);
     virtual void mouseDoubleClickEvent(QMouseEvent *ev);
     virtual void mouseMoveEvent(QMouseEvent *ev);
     virtual void mouseReleaseEvent(QMouseEvent *ev);
     virtual void wheelEvent( QWheelEvent *ev );
     virtual void paintEvent(QPaintEvent *ev);
+    virtual void enterEvent(QEvent *);
+    virtual void leaveEvent(QEvent *);
 
-signals:
-    void valueChanged(float); // 0.0 -> 1.0
-
-private:
     int getMaxX() const;
 
     bool m_withoutKnob;

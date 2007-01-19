@@ -1477,7 +1477,7 @@ View::drawSelections(QPainter &paint)
 	}
 
 	if (sampleRate && shouldLabelSelections() && m_manager &&
-            m_manager->getOverlayMode() == ViewManager::AllOverlays) {
+            m_manager->shouldShowSelectionExtents()) {
 	    
 	    QString startText = QString("%1 / %2")
 		.arg(QString::fromStdString

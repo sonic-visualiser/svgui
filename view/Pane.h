@@ -29,6 +29,7 @@ class QPaintEvent;
 class Layer;
 class Thumbwheel;
 class Panner;
+class NotifyingPushButton;
 
 class Pane : public View
 {
@@ -67,6 +68,9 @@ public slots:
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
 
+    void mouseEnteredWidget();
+    void mouseLeftWidget();
+
 protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void mousePressEvent(QMouseEvent *e);
@@ -96,6 +100,7 @@ protected:
     void dragTopLayer(QMouseEvent *e);
     void dragExtendSelection(QMouseEvent *e);
     void zoomToRegion(int x0, int y0, int x1, int y1);
+    void updateContextHelp(const QPoint *pos);
 
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
@@ -125,6 +130,7 @@ protected:
     Panner *m_vpan;
     Thumbwheel *m_hthumb;
     Thumbwheel *m_vthumb;
+    NotifyingPushButton *m_reset;
 };
 
 #endif

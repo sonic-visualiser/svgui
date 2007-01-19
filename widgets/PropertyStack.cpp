@@ -78,6 +78,8 @@ PropertyStack::repopulate()
 	PropertyBox *box = new PropertyBox(container);
 
 	connect(box, SIGNAL(showLayer(bool)), this, SLOT(showLayer(bool)));
+        connect(box, SIGNAL(contextHelpChanged(const QString &)),
+                this, SIGNAL(contextHelpChanged(const QString &)));
 
         Layer *layer = dynamic_cast<Layer *>(container);
         if (layer) {

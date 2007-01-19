@@ -66,6 +66,9 @@ using std::cerr;
 #define AUDIO_DIAL_RANGE (AUDIO_DIAL_MAX - AUDIO_DIAL_MIN)
 
 
+static int dialsExtant = 0;
+
+
 // Constructor.
 AudioDial::AudioDial(QWidget *parent) :
     QDial(parent),
@@ -79,6 +82,7 @@ AudioDial::AudioDial(QWidget *parent) :
 {
     m_mouseDial = false;
     m_mousePressed = false;
+    ++dialsExtant;
 }
 
 
@@ -86,11 +90,14 @@ AudioDial::AudioDial(QWidget *parent) :
 AudioDial::~AudioDial (void)
 {
     delete m_rangeMapper;
+    --dialsExtant;
 }
 
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
+    std::cerr << "AudioDial[" << this << "][\"" << objectName().toStdString() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << std::endl;
+
     if (m_rangeMapper == mapper) return;
 
     if (!m_rangeMapper && mapper) {
@@ -513,6 +520,20 @@ void AudioDial::mouseReleaseEvent(QMouseEvent *mouseEvent)
     } else if (m_mousePressed) {
 	m_mousePressed = false;
     }
+}
+
+void
+AudioDial::enterEvent(QEvent *e)
+{
+    QDial::enterEvent(e);
+    emit mouseEntered();
+}
+
+void
+AudioDial::leaveEvent(QEvent *e)
+{
+    QDial::enterEvent(e);
+    emit mouseLeft();
 }
 
 #ifdef INCLUDE_MOCFILES

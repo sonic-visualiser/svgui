@@ -29,11 +29,12 @@
 #include "AudioDial.h"
 #include "LEDButton.h"
 
+#include "NotifyingCheckBox.h"
+#include "NotifyingComboBox.h"
+
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QCheckBox>
-#include <QComboBox>
 #include <QPushButton>
 #include <QLabel>
 #include <QFrame>
@@ -46,7 +47,8 @@
 
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
-    m_showButton(0)
+    m_showButton(0),
+    m_playButton(0)
 {
 #ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox[" << this << "(\"" <<
@@ -145,6 +147,10 @@ PropertyBox::populateViewPlayFrame()
 	layout->addWidget(m_showButton);
 	connect(m_showButton, SIGNAL(stateChanged(bool)),
 		this, SIGNAL(showLayer(bool)));
+        connect(m_showButton, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(m_showButton, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
 	layout->setAlignment(m_showButton, Qt::AlignVCenter);
     }
     
@@ -154,14 +160,18 @@ PropertyBox::populateViewPlayFrame()
 	layout->addWidget(playLabel);
 	layout->setAlignment(playLabel, Qt::AlignVCenter);
 
-	LEDButton *playButton = new LEDButton(Qt::darkGreen);
-        playButton->setState(!params->isPlayMuted());
-	layout->addWidget(playButton);
-	connect(playButton, SIGNAL(stateChanged(bool)),
+	m_playButton = new LEDButton(Qt::darkGreen);
+        m_playButton->setState(!params->isPlayMuted());
+	layout->addWidget(m_playButton);
+	connect(m_playButton, SIGNAL(stateChanged(bool)),
 		params, SLOT(setPlayAudible(bool)));
+        connect(m_playButton, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(m_playButton, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
 	connect(params, SIGNAL(playAudibleChanged(bool)),
-		playButton, SLOT(setState(bool)));
-	layout->setAlignment(playButton, Qt::AlignVCenter);
+		m_playButton, SLOT(setState(bool)));
+	layout->setAlignment(m_playButton, Qt::AlignVCenter);
 
 	layout->insertStretch(-1, 10);
 
@@ -196,6 +206,10 @@ PropertyBox::populateViewPlayFrame()
 		params, SLOT(setPlayGain(float)));
 	connect(this, SIGNAL(changePlayGainDial(int)),
 		gainDial, SLOT(setValue(int)));
+        connect(gainDial, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(gainDial, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
 	layout->setAlignment(gainDial, Qt::AlignVCenter);
 
 	AudioDial *panDial = new AudioDial;
@@ -219,6 +233,10 @@ PropertyBox::populateViewPlayFrame()
 		params, SLOT(setPlayPan(float)));
 	connect(this, SIGNAL(changePlayPanDial(int)),
 		panDial, SLOT(setValue(int)));
+        connect(panDial, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(panDial, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
 	layout->setAlignment(panDial, Qt::AlignVCenter);
 
     } else {
@@ -278,19 +296,23 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 
     case PropertyContainer::ToggleProperty:
     {
-	QCheckBox *cb;
+        NotifyingCheckBox *cb;
 
 	if (have) {
-	    cb = dynamic_cast<QCheckBox *>(m_propertyControllers[name]);
+	    cb = dynamic_cast<NotifyingCheckBox *>(m_propertyControllers[name]);
 	    assert(cb);
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
 	    std::cerr << "PropertyBox: creating new checkbox" << std::endl;
 #endif
-	    cb = new QCheckBox();
+	    cb = new NotifyingCheckBox();
 	    cb->setObjectName(name);
 	    connect(cb, SIGNAL(stateChanged(int)),
 		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(cb, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
 	    if (inGroup) {
 		cb->setToolTip(propertyLabel);
 		m_groupLayouts[groupName]->addWidget(cb);
@@ -330,6 +352,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
             dial->setShowToolTip(true);
 	    connect(dial, SIGNAL(valueChanged(int)),
 		    this, SLOT(propertyControllerChanged(int)));
+            connect(dial, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(dial, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
 
 	    if (inGroup) {
 		dial->setFixedWidth(24);
@@ -360,17 +386,17 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
     case PropertyContainer::ValueProperty:
     case PropertyContainer::UnitsProperty:
     {
-	QComboBox *cb;
+	NotifyingComboBox *cb;
 
 	if (have) {
-	    cb = dynamic_cast<QComboBox *>(m_propertyControllers[name]);
+	    cb = dynamic_cast<NotifyingComboBox *>(m_propertyControllers[name]);
 	    assert(cb);
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
 	    std::cerr << "PropertyBox: creating new combobox" << std::endl;
 #endif
 
-	    cb = new QComboBox();
+	    cb = new NotifyingComboBox();
 	    cb->setObjectName(name);
             cb->setDuplicatesEnabled(false);
 
@@ -389,6 +415,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 
 	    connect(cb, SIGNAL(activated(int)),
 		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(cb, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
 
 	    if (inGroup) {
 		cb->setToolTip(propertyLabel);
@@ -478,7 +508,7 @@ PropertyBox::propertyControllerChanged(int value)
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
 
     if (type == PropertyContainer::UnitsProperty) {
-        QComboBox *cb = dynamic_cast<QComboBox *>(obj);
+        NotifyingComboBox *cb = dynamic_cast<NotifyingComboBox *>(obj);
         if (cb) {
             QString unit = cb->currentText();
             m_container->setPropertyWithCommand
@@ -487,14 +517,6 @@ PropertyBox::propertyControllerChanged(int value)
     } else if (type != PropertyContainer::InvalidProperty) {
 	m_container->setPropertyWithCommand(name, value);
     }
-
-//    if (type == PropertyContainer::RangeProperty) {
-//	AudioDial *dial = dynamic_cast<AudioDial *>(m_propertyControllers[name]);
-//!!!	if (dial) {
-//	    dial->setToolTip(QString("%1: %2").arg(name).arg(value));
-//	    //!!! unfortunately this doesn't update an already-visible tooltip
-//	}
-//    }
 }
     
 void
@@ -582,7 +604,40 @@ PropertyBox::layerVisibilityChanged(bool visible)
 {
     if (m_showButton) m_showButton->setState(visible);
 }
+
+void
+PropertyBox::mouseEnteredWidget()
+{
+    QWidget *w = dynamic_cast<QWidget *>(sender());
+    if (!w) return;
     
+    if (!m_container) return;
+    QString cname = m_container->objectName();
+    if (cname == "") return;
+
+    QString wname = w->objectName();
+
+    if (w == m_showButton) {
+        emit contextHelpChanged(tr("Toggle Visibility of %1 layer").arg(cname));
+    } else if (w == m_playButton) {
+        emit contextHelpChanged(tr("Toggle Playback of %1 layer").arg(cname));
+    } else if (wname == "") {
+        return;
+    } else if (dynamic_cast<NotifyingCheckBox *>(w)) {
+        emit contextHelpChanged(tr("Toggle %1 property of %2 layer")
+                                .arg(wname).arg(cname));
+    } else {
+        emit contextHelpChanged(tr("Adjust %1 property of %2 layer")
+                                .arg(wname).arg(cname));
+    }
+}
+
+void
+PropertyBox::mouseLeftWidget()
+{
+    emit contextHelpChanged("");
+}
+
 
 #ifdef INCLUDE_MOCFILES
 #include "PropertyBox.moc.cpp"

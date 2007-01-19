@@ -115,6 +115,18 @@ Panner::wheelEvent(QWheelEvent *e)
 }
 
 void
+Panner::enterEvent(QEvent *)
+{
+    emit mouseEntered();
+}
+
+void
+Panner::leaveEvent(QEvent *)
+{
+    emit mouseLeft();
+}
+
+void
 Panner::paintEvent(QPaintEvent *e)
 {
     QPainter paint(this);

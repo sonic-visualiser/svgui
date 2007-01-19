@@ -100,11 +100,31 @@ public:
 
     enum OverlayMode {
         NoOverlays,
-        BasicOverlays,
+        MinimalOverlays,
+        StandardOverlays,
         AllOverlays
     };
     void setOverlayMode(OverlayMode mode);
     OverlayMode getOverlayMode() const { return m_overlayMode; }
+
+    bool shouldShowCentreLine() const {
+        return m_overlayMode != NoOverlays;
+    }
+    bool shouldShowFrameCount() const {
+        return m_overlayMode != NoOverlays;
+    }
+    bool shouldShowDuration() const {
+        return m_overlayMode > MinimalOverlays;
+    }
+    bool shouldShowVerticalScale() const {
+        return m_overlayMode > MinimalOverlays;
+    }
+    bool shouldShowSelectionExtents() const {
+        return m_overlayMode > MinimalOverlays;
+    }
+    bool shouldShowLayerNames() const {
+        return m_overlayMode == AllOverlays;
+    }
 
     void setZoomWheelsEnabled(bool enable);
     bool getZoomWheelsEnabled() const { return m_zoomWheelsEnabled; }

@@ -210,4 +210,23 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     }
 }
 
+void
+Overview::mouseDoubleClickEvent(QMouseEvent *e)
+{
+    long frame = getFrameForX(e->x());
+    emit centreFrameChanged(this, frame, true);
+}
+
+void
+Overview::enterEvent(QEvent *)
+{
+    emit contextHelpChanged(tr("Click and drag to navigate; double-click to jump"));
+}
+
+void
+Overview::leaveEvent(QEvent *)
+{
+    emit contextHelpChanged("");
+}
+
 

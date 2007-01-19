@@ -80,6 +80,8 @@ PaneStack::addPane(bool suppressPropertyBox)
 	properties = new PropertyStack(frame, pane);
 	connect(properties, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
 		this, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
+        connect(properties, SIGNAL(contextHelpChanged(const QString &)),
+                this, SIGNAL(contextHelpChanged(const QString &)));
     }
     if (m_layoutStyle == PropertyStackPerPaneLayout) {
         layout->addWidget(properties);

@@ -77,6 +77,10 @@ public:
 
     void setShowToolTip(bool show);
 
+signals:
+    void mouseEntered();
+    void mouseLeft();
+
 public slots:
     /**
      * Set the colour of the knob.  The default is to inherit the
@@ -110,6 +114,8 @@ protected:
     virtual void mouseMoveEvent(QMouseEvent *pMouseEvent);
     virtual void mouseReleaseEvent(QMouseEvent *pMouseEvent);
     virtual void mouseDoubleClickEvent(QMouseEvent *pMouseEvent);
+    virtual void enterEvent(QEvent *);
+    virtual void leaveEvent(QEvent *);
 
 protected slots:
     void updateMappedValue(int value);
