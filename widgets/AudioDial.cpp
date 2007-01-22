@@ -341,12 +341,13 @@ void AudioDial::setMappedValue(float mappedValue)
 {
     if (m_rangeMapper) {
         int newPosition = m_rangeMapper->getPositionForValue(mappedValue);
+        bool changed = (m_mappedValue != mappedValue);
         m_mappedValue = mappedValue;
         m_noMappedUpdate = true;
         std::cerr << "AudioDial::setMappedValue(" << mappedValue << "): new position is " << newPosition << std::endl;
         if (newPosition != value()) {
             setValue(newPosition);
-        } else {
+        } else if (changed) {
             emit valueChanged(newPosition);
         }
         m_noMappedUpdate = false;

@@ -612,22 +612,22 @@ PropertyBox::mouseEnteredWidget()
     if (!w) return;
     
     if (!m_container) return;
-    QString cname = m_container->objectName();
+    QString cname = m_container->getPropertyContainerName();
     if (cname == "") return;
 
     QString wname = w->objectName();
 
     if (w == m_showButton) {
-        emit contextHelpChanged(tr("Toggle Visibility of %1 layer").arg(cname));
+        emit contextHelpChanged(tr("Toggle Visibility of %1").arg(cname));
     } else if (w == m_playButton) {
-        emit contextHelpChanged(tr("Toggle Playback of %1 layer").arg(cname));
+        emit contextHelpChanged(tr("Toggle Playback of %1").arg(cname));
     } else if (wname == "") {
         return;
     } else if (dynamic_cast<NotifyingCheckBox *>(w)) {
-        emit contextHelpChanged(tr("Toggle %1 property of %2 layer")
+        emit contextHelpChanged(tr("Toggle %1 property of %2")
                                 .arg(wname).arg(cname));
     } else {
-        emit contextHelpChanged(tr("Adjust %1 property of %2 layer")
+        emit contextHelpChanged(tr("Adjust %1 property of %2")
                                 .arg(wname).arg(cname));
     }
 }

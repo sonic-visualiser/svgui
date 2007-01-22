@@ -80,6 +80,8 @@ PaneStack::addPane(bool suppressPropertyBox)
 	properties = new PropertyStack(frame, pane);
 	connect(properties, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
 		this, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
+        connect(properties, SIGNAL(viewSelected(View  *)),
+                this, SLOT(viewSelected(View *)));
         connect(properties, SIGNAL(contextHelpChanged(const QString &)),
                 this, SIGNAL(contextHelpChanged(const QString &)));
     }
@@ -378,6 +380,13 @@ PaneStack::propertyContainerSelected(View *client, PropertyContainer *pc)
     Layer *layer = dynamic_cast<Layer *>(pc);
     if (layer) emit currentLayerChanged(m_currentPane, layer);
     else emit currentLayerChanged(m_currentPane, 0);
+}
+
+void
+PaneStack::viewSelected(View *v)
+{
+    Pane *p = dynamic_cast<Pane *>(v);
+    if (p) setCurrentPane(p);
 }
 
 void
