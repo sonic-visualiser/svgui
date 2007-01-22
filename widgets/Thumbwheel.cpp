@@ -423,12 +423,19 @@ Thumbwheel::paintEvent(QPaintEvent *)
 {
     Profiler profiler("Thumbwheel::paintEvent", true);
 
+    int bw = 3;
+
+    QRect subclip;
+    if (m_orientation == Qt::Horizontal) {
+        subclip = QRect(bw, bw+1, width() - bw*2, height() - bw*2 - 2);
+    } else {
+        subclip = QRect(bw+1, bw, width() - bw*2 - 2, height() - bw*2);
+    }
+
     QPainter paint(this);
-    paint.fillRect(rect(), palette().background().color());
+    paint.fillRect(subclip, palette().background().color());
 
     paint.setRenderHint(QPainter::Antialiasing, true);
-
-    int bw = 3;
 
     float w  = width();
     float w0 = 0.5;
@@ -464,12 +471,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
         paint.drawPath(path);
     }
 
-
-    if (m_orientation == Qt::Horizontal) {
-        paint.setClipRect(QRect(bw, bw+1, width() - bw*2, height() - bw*2 - 2));
-    } else {
-        paint.setClipRect(QRect(bw+1, bw, width() - bw*2 - 2, height() - bw*2));
-    }
+    paint.setClipRect(subclip);
 
     float radians = m_rotation * 1.5f * M_PI;
 
