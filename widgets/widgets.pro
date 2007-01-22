@@ -23,6 +23,7 @@ HEADERS += AudioDial.h \
            NotifyingCheckBox.h \
            NotifyingComboBox.h \
            NotifyingPushButton.h \
+           NotifyingTabBar.h \
            Panner.h \
            PluginParameterBox.h \
            PluginParameterDialog.h \
@@ -42,6 +43,7 @@ SOURCES += AudioDial.cpp \
            NotifyingCheckBox.cpp \
            NotifyingComboBox.cpp \
            NotifyingPushButton.cpp \
+           NotifyingTabBar.cpp \
            Panner.cpp \
            PluginParameterBox.cpp \
            PluginParameterDialog.cpp \

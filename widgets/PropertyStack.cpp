@@ -18,6 +18,7 @@
 #include "base/PropertyContainer.h"
 #include "view/View.h"
 #include "layer/Layer.h"
+#include "widgets/NotifyingTabBar.h"
 
 #include <QIcon>
 #include <QTabWidget>
@@ -30,6 +31,15 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
     QTabWidget(parent),
     m_client(client)
 {
+    NotifyingTabBar *bar = new NotifyingTabBar();
+    bar->setDrawBase(false);
+
+    connect(bar, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredTabBar()));
+    connect(bar, SIGNAL(mouseLeft()), this, SLOT(mouseLeftTabBar()));
+    connect(bar, SIGNAL(activeTabClicked()), this, SLOT(activeTabClicked()));
+
+    setTabBar(bar);
+
     repopulate();
 
     connect(this, SIGNAL(currentChanged(int)),
@@ -174,6 +184,24 @@ PropertyStack::selectedContainerChanged(int n)
 {
     if (n >= int(m_boxes.size())) return;
     emit propertyContainerSelected(m_client, m_boxes[n]->getContainer());
+}
+
+void
+PropertyStack::mouseEnteredTabBar()
+{
+    emit contextHelpChanged(tr("Click to change the current active layer"));
+}
+
+void
+PropertyStack::mouseLeftTabBar()
+{
+    emit contextHelpChanged("");
+}
+
+void
+PropertyStack::activeTabClicked()
+{
+    emit viewSelected(m_client);
 }
 
 #ifdef INCLUDE_MOCFILES

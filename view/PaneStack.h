@@ -74,6 +74,7 @@ public slots:
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);
     void propertyContainerSelected(View *client, PropertyContainer *);
+    void viewSelected(View *v);
     void paneInteractedWith();
     void rightButtonMenuRequested(QPoint);
 

@@ -37,6 +37,7 @@ public:
     int getContainerIndex(PropertyContainer *container) const;
 
 signals:
+    void viewSelected(View *client);
     void propertyContainerSelected(View *client, PropertyContainer *container);
     void contextHelpChanged(const QString &);
 
@@ -47,6 +48,10 @@ public slots:
     void propertyContainerNameChanged(PropertyContainer *);
 
     void showLayer(bool);
+
+    void mouseEnteredTabBar();
+    void mouseLeftTabBar();
+    void activeTabClicked();
 
 protected slots:
     void selectedContainerChanged(int);

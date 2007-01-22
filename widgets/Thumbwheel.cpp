@@ -16,12 +16,14 @@
 #include "Thumbwheel.h"
 
 #include "base/RangeMapper.h"
+#include "base/Profiler.h"
 
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QWheelEvent>
 #include <QInputDialog>
 #include <QPainter>
+#include <QPainterPath>
 
 #include <cmath>
 #include <iostream>
@@ -136,17 +138,22 @@ Thumbwheel::setMappedValue(float mappedValue)
 {
     if (m_rangeMapper) {
         int newValue = m_rangeMapper->getPositionForValue(mappedValue);
+        bool changed = (m_mappedValue != mappedValue);
         m_mappedValue = mappedValue;
         m_noMappedUpdate = true;
         std::cerr << "Thumbwheel::setMappedValue(" << mappedValue << "): new value is " << newValue << std::endl;
         if (newValue != getValue()) {
             setValue(newValue);
+            changed = true;
         }
-        emit valueChanged(newValue);
+        if (changed) emit valueChanged(newValue);
         m_noMappedUpdate = false;
     } else {
-        setValue(int(mappedValue));
-        emit valueChanged(int(mappedValue));
+        int v = int(mappedValue);
+        if (v != getValue()) {
+            setValue(v);
+            emit valueChanged(v);
+        }
     }
 }
 
@@ -414,34 +421,67 @@ Thumbwheel::wheelEvent(QWheelEvent *e)
 void
 Thumbwheel::paintEvent(QPaintEvent *)
 {
+    Profiler profiler("Thumbwheel::paintEvent", true);
+
     QPainter paint(this);
     paint.fillRect(rect(), palette().background().color());
-    paint.setRenderHint(QPainter::Antialiasing, false);
+
+    paint.setRenderHint(QPainter::Antialiasing, true);
 
     int bw = 3;
 
-    for (int i = 0; i < bw; ++i) {
+    float w  = width();
+    float w0 = 0.5;
+    float w1 = w - 0.5;
+
+    float h  = height();
+    float h0 = 0.5;
+    float h1 = h - 0.5;
+
+    for (int i = bw-1; i >= 0; --i) {
+//    for (int i = 0; i < 1; ++i) {
+
         int grey = (i + 1) * (256 / (bw + 1));
         QColor fc = QColor(grey, grey, grey);
         paint.setPen(fc);
-        paint.drawRect(i, i, width() - i*2 - 1, height() - i*2 - 1);
+
+        QPainterPath path;
+
+        if (m_orientation == Qt::Horizontal) {
+            path.moveTo(w0 + i, h0 + i + 2);
+            path.quadTo(w/2, i * 1.25, w1 - i, h0 + i + 2);
+            path.lineTo(w1 - i, h1 - i - 2);
+            path.quadTo(w/2, h - i * 1.25, w0 + i, h1 - i - 2);
+            path.closeSubpath();
+        } else {
+            path.moveTo(w0 + i + 2, h0 + i);
+            path.quadTo(i * 1.25, h/2, w0 + i + 2, h1 - i);
+            path.lineTo(w1 - i - 2, h1 - i);
+            path.quadTo(w - i * 1.25, h/2, w1 - i - 2, h0 + i);
+            path.closeSubpath();
+        }
+
+        paint.drawPath(path);
     }
 
-    paint.setClipRect(QRect(bw, bw, width() - bw*2, height() - bw*2));
+
+    if (m_orientation == Qt::Horizontal) {
+        paint.setClipRect(QRect(bw, bw+1, width() - bw*2, height() - bw*2 - 2));
+    } else {
+        paint.setClipRect(QRect(bw+1, bw, width() - bw*2 - 2, height() - bw*2));
+    }
 
     float radians = m_rotation * 1.5f * M_PI;
 
 //    std::cerr << "value = " << m_value << ", min = " << m_min << ", max = " << m_max << ", rotation = " << rotation << std::endl;
 
-    int w = (m_orientation == Qt::Horizontal ? width() : height()) - bw*2;
+    w = (m_orientation == Qt::Horizontal ? width() : height()) - bw*2;
 
     // total number of notches on the entire wheel
     int notches = 25;
     
     // radius of the wheel including invisible part
     int radius = w / 2 + 2;
-
-    paint.setRenderHint(QPainter::Antialiasing, true);
 
     for (int i = 0; i < notches; ++i) {
 
