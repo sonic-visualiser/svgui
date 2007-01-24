@@ -141,7 +141,7 @@ Thumbwheel::setMappedValue(float mappedValue)
         bool changed = (m_mappedValue != mappedValue);
         m_mappedValue = mappedValue;
         m_noMappedUpdate = true;
-        std::cerr << "Thumbwheel::setMappedValue(" << mappedValue << "): new value is " << newValue << std::endl;
+        std::cerr << "Thumbwheel::setMappedValue(" << mappedValue << "): new value is " << newValue << " (visible " << isVisible() << ")" << std::endl;
         if (newValue != getValue()) {
             setValue(newValue);
             changed = true;
@@ -167,7 +167,7 @@ void
 Thumbwheel::setValue(int value)
 {
     std::cerr << "Thumbwheel::setValue(" << value << ") (from " << m_value
-              << ", rotation " << m_rotation << ")" << std::endl;
+              << ", rotation " << m_rotation << ")" << " (visible " << isVisible() << ")" << std::endl;
 
     if (m_value != value) {
 
@@ -179,7 +179,7 @@ Thumbwheel::setValue(int value)
     }
 
     m_rotation = float(m_value - m_min) / float(m_max - m_min);
-    update();
+    if (isVisible()) update();
 }
 
 void

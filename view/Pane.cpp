@@ -62,6 +62,8 @@ Pane::updateHeadsUpDisplay()
 {
     Profiler profiler("Pane::updateHeadsUpDisplay", true);
 
+    if (!isVisible()) return;
+
 /*
     int count = 0;
     int currentLevel = 1;
@@ -1591,6 +1593,9 @@ Pane::zoomWheelsEnabledChanged()
 void
 Pane::zoomLevelChanged()
 {
+    std::cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
+              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << std::endl;
+
     if (m_manager && m_manager->getZoomWheelsEnabled()) {
         updateHeadsUpDisplay();
     }
