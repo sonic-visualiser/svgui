@@ -16,7 +16,7 @@
 #ifndef _COLOUR_3D_PLOT_H_
 #define _COLOUR_3D_PLOT_H_
 
-#include "Layer.h"
+#include "SliceableLayer.h"
 
 #include "data/model/DenseThreeDimensionalModel.h"
 
@@ -37,7 +37,7 @@ class QImage;
  * ever actually used.
  */
 
-class Colour3DPlotLayer : public Layer
+class Colour3DPlotLayer : public SliceableLayer
 {
     Q_OBJECT
 
@@ -87,6 +87,8 @@ public:
 
     void setColourScale(ColourScale);
     ColourScale getColourScale() const { return m_colourScale; }
+
+    virtual const Model *getSliceableModel() const { return m_model; }
 
 protected slots:
     void cacheInvalid();

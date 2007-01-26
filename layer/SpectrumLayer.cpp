@@ -22,18 +22,10 @@
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
 
-#include <QPainter>
-#include <QPainterPath>
-
 SpectrumLayer::SpectrumLayer() :
-    m_model(0),
-    m_channelMode(MixChannels),
+    m_originModel(0),
     m_channel(-1),
     m_channelSet(false),
-    m_colour(Qt::darkBlue),
-    m_energyScale(dBScale),
-    m_normalize(false),
-    m_gain(1.0),
     m_windowSize(1024),
     m_windowType(HanningWindow),
     m_windowHopLevel(2)
@@ -46,45 +38,40 @@ SpectrumLayer::SpectrumLayer() :
 
 SpectrumLayer::~SpectrumLayer()
 {
-    for (size_t i = 0; i < m_fft.size(); ++i) delete m_fft[i];
+    //!!! delete parent's model
+//    for (size_t i = 0; i < m_fft.size(); ++i) delete m_fft[i];
 }
 
 void
 SpectrumLayer::setModel(DenseTimeValueModel *model)
 {
-    m_model = model;
-    setupFFTs();
+    if (m_originModel == model) return;
+    m_originModel = model;
+    setupFFT();
 }
 
 void
-SpectrumLayer::setupFFTs()
+SpectrumLayer::setupFFT()
 {
-    for (size_t i = 0; i < m_fft.size(); ++i) delete m_fft[i];
-    m_fft.clear();
-
-    int minChannel = m_channel, maxChannel = m_channel;
+    FFTModel *oldFFT = dynamic_cast<FFTModel *>
+        (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
     
-    if (m_channel == -1 &&
-        m_channelMode != MixChannels) {
-        minChannel = 0;
-        maxChannel = 0;
-        if (m_model->getChannelCount() > 1) {
-            maxChannel = m_model->getChannelCount() - 1;
-        }
+    if (oldFFT) {
+        setSliceableModel(0);
+        delete oldFFT;
     }
 
-    for (int c = minChannel; c <= maxChannel; ++c) {
-        
-        m_fft.push_back(new FFTModel(m_model,
-                                     c,
-                                     HanningWindow,
-                                     m_windowSize,
-                                     getWindowIncrement(),
-                                     m_windowSize,
-                                     true));
+    FFTModel *newFFT = new FFTModel(m_originModel,
+                                    m_channel,
+                                    m_windowType,
+                                    m_windowSize,
+                                    getWindowIncrement(),
+                                    m_windowSize,
+                                    true);
 
-        if (m_channelSet) m_fft[m_fft.size()-1]->resume();
-    }
+    setSliceableModel(newFFT);
+
+    newFFT->resume();
 }
 
 void
@@ -92,133 +79,44 @@ SpectrumLayer::setChannel(int channel)
 {
     m_channelSet = true;
 
+    FFTModel *fft = dynamic_cast<FFTModel *>
+        (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
+
     if (m_channel == channel) {
-        for (size_t i = 0; i < m_fft.size(); ++i) {
-            m_fft[i]->resume();
-        }
+        if (fft) fft->resume();
         return;
     }
 
     m_channel = channel;
 
-    if (!m_fft.empty()) setupFFTs();
+    if (!fft) setupFFT();
 
     emit layerParametersChanged();
-}
-
-void
-SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
-{
-    if (m_fft.empty()) return;
-    if (!m_channelSet) {
-        for (size_t i = 0; i < m_fft.size(); ++i) {
-            m_fft[i]->resume();
-        }
-    }
-
-    FFTModel *fft = m_fft[0]; //!!! for now
-
-    int windowIncrement = getWindowIncrement();
-
-    size_t f = v->getCentreFrame();
-
-    int w = (v->width() * 2) / 3;
-    int xorigin = (v->width() / 2) - (w / 2);
-    
-    int h = (v->height() * 2) / 3;
-    int yorigin = (v->height() / 2) + (h / 2);
-
-    size_t column = f / windowIncrement;
-
-    paint.save();
-    paint.setPen(m_colour);
-    paint.setRenderHint(QPainter::Antialiasing, false);
-    
-    QPainterPath path;
-    float thresh = -80.f;
-
-    for (size_t bin = 0; bin < fft->getHeight(); ++bin) {
-
-        float x = xorigin + (float(w) * bin) / fft->getHeight();
-        float mag;
-        if (m_normalize) {
-            mag = fft->getNormalizedMagnitudeAt(column, bin);
-        } else {
-            mag = fft->getMagnitudeAt(column, bin);
-        }
-        mag *= m_gain;
-        float y = 0.f;
- 
-        switch (m_energyScale) {
-
-        case dBScale:
-        {
-            float db = thresh;
-            if (mag > 0.f) db = 10.f * log10f(mag);
-            if (db < thresh) db = thresh;
-            float val = (db - thresh) / -thresh;
-            y = yorigin - (float(h) * val);
-            break;
-        }
-
-        case MeterScale:
-            y = yorigin - AudioLevel::multiplier_to_preview(mag, h);
-            break;
-
-        default:
-            y = yorigin - (float(h) * mag);
-            break;
-        }
-
-        if (bin == 0) {
-            path.moveTo(x, y);
-        } else {
-            path.lineTo(x, y);
-        }
-    }
-
-    paint.drawPath(path);
-    paint.restore();
-
 }
 
 Layer::PropertyList
 SpectrumLayer::getProperties() const
 {
-    PropertyList list;
-    list.push_back("Colour");
-    list.push_back("Scale");
-    list.push_back("Normalize");
-    list.push_back("Gain");
+    PropertyList list = SliceLayer::getProperties();
     list.push_back("Window Size");
     list.push_back("Window Increment");
-
-    if (m_model && m_model->getChannelCount() > 1 && m_channel == -1) {
-        list.push_back("Channels");
-    }
-
     return list;
 }
 
 QString
 SpectrumLayer::getPropertyLabel(const PropertyName &name) const
 {
-    if (name == "Colour") return tr("Colour");
-    if (name == "Energy Scale") return tr("Scale");
-    if (name == "Channels") return tr("Channels");
     if (name == "Window Size") return tr("Window Size");
     if (name == "Window Increment") return tr("Window Overlap");
-    if (name == "Normalize") return tr("Normalize");
-    if (name == "Gain") return tr("Gain");
-    return "";
+    return SliceLayer::getPropertyLabel(name);
 }
 
 Layer::PropertyType
 SpectrumLayer::getPropertyType(const PropertyName &name) const
 {
-    if (name == "Gain") return RangeProperty;
-    if (name == "Normalize") return ToggleProperty;
-    return ValueProperty;
+    if (name == "Window Size") return ValueProperty;
+    if (name == "Window Increment") return ValueProperty;
+    return SliceLayer::getPropertyType(name);
 }
 
 QString
@@ -226,10 +124,7 @@ SpectrumLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Window Size" ||
 	name == "Window Increment") return tr("Window");
-    if (name == "Scale" ||
-        name == "Normalize" ||
-        name == "Gain") return tr("Energy Scale");
-    return QString();
+    return SliceLayer::getPropertyGroupName(name);
 }
 
 int
@@ -242,47 +137,7 @@ SpectrumLayer::getPropertyRangeAndValue(const PropertyName &name,
     if (!min) min = &garbage0;
     if (!max) max = &garbage1;
 
-    if (name == "Gain") {
-
-	*min = -50;
-	*max = 50;
-
-	deft = lrint(log10(m_gain) * 20.0);
-	if (deft < *min) deft = *min;
-	if (deft > *max) deft = *max;
-
-    } else if (name == "Normalize") {
-	
-	deft = (m_normalize ? 1 : 0);
-
-    } else if (name == "Colour") {
-
-	*min = 0;
-	*max = 5;
-
-	if (m_colour == Qt::black) deft = 0;
-	else if (m_colour == Qt::darkRed) deft = 1;
-	else if (m_colour == Qt::darkBlue) deft = 2;
-	else if (m_colour == Qt::darkGreen) deft = 3;
-	else if (m_colour == QColor(200, 50, 255)) deft = 4;
-	else if (m_colour == QColor(255, 150, 50)) deft = 5;
-
-    } else if (name == "Channels") {
-
-        *min = 0;
-        *max = 2;
-        if (m_channelMode == MixChannels) deft = 1;
-        else if (m_channelMode == OverlayChannels) deft = 2;
-        else deft = 0;
-
-    } else if (name == "Scale") {
-
-	*min = 0;
-	*max = 2;
-
-	deft = (int)m_energyScale;
-
-    } else if (name == "Window Size") {
+    if (name == "Window Size") {
 
 	*min = 0;
 	*max = 10;
@@ -299,7 +154,8 @@ SpectrumLayer::getPropertyRangeAndValue(const PropertyName &name,
         deft = m_windowHopLevel;
     
     } else {
-	deft = Layer::getPropertyRangeAndValue(name, min, max);
+
+        deft = SliceLayer::getPropertyRangeAndValue(name, min, max);
     }
 
     return deft;
@@ -309,33 +165,6 @@ QString
 SpectrumLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
-    if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0: return tr("Black");
-	case 1: return tr("Red");
-	case 2: return tr("Blue");
-	case 3: return tr("Green");
-	case 4: return tr("Purple");
-	case 5: return tr("Orange");
-	}
-    }
-    if (name == "Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Meter");
-	case 2: return tr("dB");
-	}
-    }
-    if (name == "Channels") {
-        switch (value) {
-        default:
-        case 0: return tr("Separate");
-        case 1: return tr("Mean");
-        case 2: return tr("Overlay");
-        }
-    }
     if (name == "Window Size") {
 	return QString("%1").arg(32 << value);
     }
@@ -350,75 +179,25 @@ SpectrumLayer::getPropertyValueLabel(const PropertyName &name,
 	case 5: return tr("93.75 %");
 	}
     }
-    return tr("<unknown>");
+    return SliceLayer::getPropertyValueLabel(name, value);
 }
 
 RangeMapper *
 SpectrumLayer::getNewPropertyRangeMapper(const PropertyName &name) const
 {
-    if (name == "Gain") {
-        return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
-    }
-    return 0;
+    return SliceLayer::getNewPropertyRangeMapper(name);
 }
 
 void
 SpectrumLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == "Gain") {
-	setGain(pow(10, float(value)/20.0));
-    } else if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0:	setBaseColour(Qt::black); break;
-	case 1: setBaseColour(Qt::darkRed); break;
-	case 2: setBaseColour(Qt::darkBlue); break;
-	case 3: setBaseColour(Qt::darkGreen); break;
-	case 4: setBaseColour(QColor(200, 50, 255)); break;
-	case 5: setBaseColour(QColor(255, 150, 50)); break;
-	}
-    } else if (name == "Channels") {
-        if (value == 1) setChannelMode(MixChannels);
-        else if (value == 2) setChannelMode(OverlayChannels);
-        else setChannelMode(SeparateChannels);
-    } else if (name == "Scale") {
-	switch (value) {
-	default:
-	case 0: setEnergyScale(LinearScale); break;
-	case 1: setEnergyScale(MeterScale); break;
-	case 2: setEnergyScale(dBScale); break;
-	}
-    } else if (name == "Window Size") {
+    if (name == "Window Size") {
 	setWindowSize(32 << value);
     } else if (name == "Window Increment") {
         setWindowHopLevel(value);
-    } else if (name == "Normalize") {
-	setNormalize(value ? true : false);
+    } else {
+        SliceLayer::setProperty(name, value);
     }
-}
-
-void
-SpectrumLayer::setBaseColour(QColor colour)
-{
-    if (m_colour == colour) return;
-    m_colour = colour;
-    emit layerParametersChanged();
-}
-
-void
-SpectrumLayer::setChannelMode(ChannelMode channelMode)
-{
-    if (m_channelMode == channelMode) return;
-    m_channelMode = channelMode;
-    emit layerParametersChanged();
-}
-
-void
-SpectrumLayer::setEnergyScale(EnergyScale scale)
-{
-    if (m_energyScale == scale) return;
-    m_energyScale = scale;
-    emit layerParametersChanged();
 }
 
 void
@@ -426,7 +205,7 @@ SpectrumLayer::setWindowSize(size_t ws)
 {
     if (m_windowSize == ws) return;
     m_windowSize = ws;
-    setupFFTs();
+    setupFFT();
     emit layerParametersChanged();
 }
 
@@ -435,7 +214,7 @@ SpectrumLayer::setWindowHopLevel(size_t v)
 {
     if (m_windowHopLevel == v) return;
     m_windowHopLevel = v;
-    setupFFTs();
+    setupFFT();
     emit layerParametersChanged();
 }
 
@@ -444,23 +223,7 @@ SpectrumLayer::setWindowType(WindowType w)
 {
     if (m_windowType == w) return;
     m_windowType = w;
-    setupFFTs();
-    emit layerParametersChanged();
-}
-
-void
-SpectrumLayer::setNormalize(bool n)
-{
-    if (m_normalize == n) return;
-    m_normalize = n;
-    emit layerParametersChanged();
-}
-
-void
-SpectrumLayer::setGain(float gain)
-{
-    if (m_gain == gain) return;
-    m_gain = gain;
+    setupFFT();
     emit layerParametersChanged();
 }
 
@@ -478,24 +241,12 @@ SpectrumLayer::toXmlString(QString indent, QString extraAttributes) const
 {
     QString s;
     
-    s += QString("colour=\"%1\" "
-		 "channelMode=\"%2\" "
-		 "channel=\"%3\" "
-		 "energyScale=\"%4\" "
-		 "windowSize=\"%5\" "
-		 "windowHopLevel=\"%6\" "
-                 "gain=\"%7\" "
-                 "normalize=\"%8\"")
-	.arg(encodeColour(m_colour))
-	.arg(m_channelMode)
-	.arg(m_channel)
-	.arg(m_energyScale)
+    s += QString("windowSize=\"%1\" "
+		 "windowHopLevel=\"%2\"")
         .arg(m_windowSize)
-        .arg(m_windowHopLevel)
-        .arg(m_gain)
-        .arg(m_normalize ? "true" : "false");
+        .arg(m_windowHopLevel);
 
-    return Layer::toXmlString(indent, extraAttributes + " " + s);
+    return SliceLayer::toXmlString(indent, extraAttributes + " " + s);
 }
 
 void
@@ -503,36 +254,11 @@ SpectrumLayer::setProperties(const QXmlAttributes &attributes)
 {
     bool ok = false;
 
-    QString colourSpec = attributes.value("colour");
-    if (colourSpec != "") {
-	QColor colour(colourSpec);
-	if (colour.isValid()) {
-	    setBaseColour(QColor(colourSpec));
-	}
-    }
-
-    ChannelMode channelMode = (ChannelMode)
-	attributes.value("channelMode").toInt(&ok);
-    if (ok) setChannelMode(channelMode);
-
-    int channel = attributes.value("channel").toInt(&ok);
-    if (ok) setChannel(channel);
-
-    EnergyScale scale = (EnergyScale)
-	attributes.value("energyScale").toInt(&ok);
-    if (ok) setEnergyScale(scale);
-
     size_t windowSize = attributes.value("windowSize").toUInt(&ok);
     if (ok) setWindowSize(windowSize);
 
     size_t windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
     if (ok) setWindowHopLevel(windowHopLevel);
-
-    float gain = attributes.value("gain").toFloat(&ok);
-    if (ok) setGain(gain);
-
-    bool normalize = (attributes.value("normalize").trimmed() == "true");
-    setNormalize(normalize);
 }
 
 bool

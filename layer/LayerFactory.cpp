@@ -24,6 +24,8 @@
 #include "TextLayer.h"
 #include "Colour3DPlotLayer.h"
 #include "SpectrumLayer.h"
+#include "SliceLayer.h"
+#include "SliceableLayer.h"
 
 #include "data/model/RangeSummarisableTimeValueModel.h"
 #include "data/model/DenseTimeValueModel.h"
@@ -61,6 +63,7 @@ LayerFactory::getLayerPresentationName(LayerType type)
     case Text:         return Layer::tr("Text");
     case Colour3DPlot: return Layer::tr("Colour 3D Plot");
     case Spectrum:     return Layer::tr("Spectrum");
+    case Slice:        return Layer::tr("Time Slice");
 
     case MelodicRangeSpectrogram:
 	// The user can change all the parameters of this after the
@@ -78,6 +81,39 @@ LayerFactory::getLayerPresentationName(LayerType type)
     return Layer::tr("Layer");
 }
 
+bool
+LayerFactory::isLayerSliceable(const Layer *layer)
+{
+    if (dynamic_cast<const SliceableLayer *>(layer)) {
+        if (dynamic_cast<const SpectrogramLayer *>(layer)) {
+
+            //!!! We can create slices of spectrograms, but there's a
+            // problem managing the models.  The source model for the
+            // slice layer has to be one of the spectrogram's FFT
+            // models -- that's fine, except that we can't store &
+            // recall the slice layer with a reference to that model
+            // because the model is internal to the spectrogram layer
+            // and the document has no record of it.  We would need
+            // some other way of managing models that are used in this
+            // way.  For the moment we just don't allow slices of
+            // spectrograms -- and provide a spectrum layer for this
+            // instead.
+            //
+            // This business needs a bit more thought -- either come
+            // up with a sensible way to deal with that stuff, or
+            // simplify the existing slice layer logic so that it
+            // doesn't have to deal with models disappearing on it at
+            // all (and use the normal Document setModel mechanism to
+            // set its sliceable model instead of the fancy pants
+            // nonsense it's doing at the moment).
+
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 LayerFactory::LayerTypeSet
 LayerFactory::getValidLayerTypes(Model *model)
 {
@@ -85,16 +121,17 @@ LayerFactory::getValidLayerTypes(Model *model)
 
     if (dynamic_cast<DenseThreeDimensionalModel *>(model)) {
 	types.insert(Colour3DPlot);
+        types.insert(Slice);
+    }
+
+    if (dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
+	types.insert(Waveform);
     }
 
     if (dynamic_cast<DenseTimeValueModel *>(model)) {
 	types.insert(Spectrogram);
 	types.insert(MelodicRangeSpectrogram);
 	types.insert(PeakFrequencySpectrogram);
-    }
-
-    if (dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
-	types.insert(Waveform);
     }
 
     if (dynamic_cast<SparseOneDimensionalModel *>(model)) {
@@ -147,6 +184,7 @@ LayerFactory::getLayerType(const Layer *layer)
     if (dynamic_cast<const TextLayer *>(layer)) return Text;
     if (dynamic_cast<const Colour3DPlotLayer *>(layer)) return Colour3DPlot;
     if (dynamic_cast<const SpectrumLayer *>(layer)) return Spectrum;
+    if (dynamic_cast<const SliceLayer *>(layer)) return Slice;
     return UnknownLayer;
 }
 
@@ -163,6 +201,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case Text: return "text";
     case Colour3DPlot: return "colour3d";
     case Spectrum: return "spectrum";
+    case Slice: return "spectrum";
     default: return "unknown";
     }
 }
@@ -180,6 +219,7 @@ LayerFactory::getLayerTypeName(LayerType type)
     case Text: return "text";
     case Colour3DPlot: return "colour3dplot";
     case Spectrum: return "spectrum";
+    case Slice: return "slice";
     default: return "unknown";
     }
 }
@@ -196,6 +236,7 @@ LayerFactory::getLayerTypeForName(QString name)
     if (name == "text") return Text;
     if (name == "colour3dplot") return Colour3DPlot;
     if (name == "spectrum") return Spectrum;
+    if (name == "slice") return Slice;
     return UnknownLayer;
 }
 
@@ -237,6 +278,9 @@ LayerFactory::setModel(Layer *layer, Model *model)
 
     if (trySetModel<SpectrumLayer, DenseTimeValueModel>(layer, model)) 
         return;
+
+//    if (trySetModel<SliceLayer, DenseThreeDimensionalModel>(layer, model)) 
+//        return;
 }
 
 Model *
@@ -323,6 +367,10 @@ LayerFactory::createLayer(LayerType type)
 
     case Spectrum:
         layer = new SpectrumLayer;
+        break;
+
+    case Slice:
+        layer = new SliceLayer;
         break;
 
     case MelodicRangeSpectrogram: 

@@ -118,6 +118,8 @@ PropertyBox::populateViewPlayFrame()
 
     Layer *layer = dynamic_cast<Layer *>(m_container);
     if (layer) {
+	disconnect(layer, SIGNAL(modelReplaced()),
+                   this, SLOT(populateViewPlayFrame()));
 	connect(layer, SIGNAL(modelReplaced()),
 		this, SLOT(populateViewPlayFrame()));
     }

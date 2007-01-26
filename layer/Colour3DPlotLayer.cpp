@@ -30,7 +30,6 @@
 
 
 Colour3DPlotLayer::Colour3DPlotLayer() :
-    Layer(),
     m_model(0),
     m_cache(0),
     m_colourScale(LinearScale)
@@ -45,6 +44,8 @@ Colour3DPlotLayer::~Colour3DPlotLayer()
 void
 Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 {
+    if (m_model == model) return;
+    const DenseThreeDimensionalModel *oldModel = m_model;
     m_model = model;
     if (!m_model || !m_model->isOK()) return;
 
@@ -60,6 +61,7 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 	    this, SLOT(cacheInvalid(size_t, size_t)));
 
     emit modelReplaced();
+    emit sliceableModelReplaced(oldModel, model);
 }
 
 void

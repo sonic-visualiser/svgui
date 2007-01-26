@@ -17,7 +17,7 @@
 #ifndef _SPECTRUM_LAYER_H_
 #define _SPECTRUM_LAYER_H_
 
-#include "Layer.h"
+#include "SliceLayer.h"
 
 #include "base/Window.h"
 
@@ -27,7 +27,7 @@
 
 class FFTModel;
 
-class SpectrumLayer : public Layer
+class SpectrumLayer : public SliceLayer
 {
     Q_OBJECT
 
@@ -36,8 +36,7 @@ public:
     ~SpectrumLayer();
     
     void setModel(DenseTimeValueModel *model);
-    virtual const Model *getModel() const { return m_model; }
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual const Model *getModel() const { return m_originModel; }
 
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
@@ -56,21 +55,8 @@ public:
 
     virtual bool isLayerScrollable(const View *v) const { return false; }
 
-    enum ChannelMode { SeparateChannels, MixChannels, OverlayChannels };
-
-    void setChannelMode(ChannelMode);
-    ChannelMode getChannelCount() const { return m_channelMode; }
-
     void setChannel(int);
     int getChannel() const { return m_channel; }
-
-    enum EnergyScale { LinearScale, MeterScale, dBScale };
-
-    void setBaseColour(QColor);
-    QColor getBaseColour() const { return m_colour; }
-
-    void setEnergyScale(EnergyScale);
-    EnergyScale getEnergyScale() const { return m_energyScale; }
 
     void setWindowSize(size_t);
     size_t getWindowSize() const { return m_windowSize; }
@@ -81,12 +67,6 @@ public:
     void setWindowType(WindowType type);
     WindowType getWindowType() const { return m_windowType; }
 
-    void setGain(float gain);
-    float getGain() const;
-
-    void setNormalize(bool n);
-    bool getNormalize() const;
-
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
@@ -94,20 +74,19 @@ protected slots:
     void preferenceChanged(PropertyContainer::PropertyName name);
 
 protected:
-    DenseTimeValueModel    *m_model;
-    std::vector<FFTModel *> m_fft;
-    ChannelMode             m_channelMode;
+    // make this SliceLayer method unavailable to the general public
+//    virtual void setModel(DenseThreeDimensionalModel *model) {
+//        SliceLayer::setModel(model);
+//    }
+
+    DenseTimeValueModel    *m_originModel;
     int                     m_channel;
     bool                    m_channelSet;
-    QColor                  m_colour;
-    EnergyScale             m_energyScale;
-    bool                    m_normalize;
-    float                   m_gain;
     size_t                  m_windowSize;
     WindowType              m_windowType;
     size_t                  m_windowHopLevel;
 
-    void setupFFTs();
+    void setupFFT();
 
     size_t getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;

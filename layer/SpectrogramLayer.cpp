@@ -39,7 +39,6 @@
 //#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
-    Layer(),
     m_model(0),
     m_channel(0),
     m_windowSize(1024),
@@ -62,7 +61,8 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_lastEmittedZoomStep(-1),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
-    m_exiting(false)
+    m_exiting(false),
+    m_sliceableModel(0)
 {
     if (config == MelodicRange) {
 	setWindowSize(8192);
@@ -901,6 +901,20 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
         m_pixmapCaches.erase(v);
 
         if (m_fftModels.find(v) != m_fftModels.end()) {
+
+            if (m_sliceableModel == m_fftModels[v].first) {
+                bool replaced = false;
+                for (ViewFFTMap::iterator i = m_fftModels.begin();
+                     i != m_fftModels.end(); ++i) {
+                    if (i->second.first != m_sliceableModel) {
+                        emit sliceableModelReplaced(m_sliceableModel, i->second.first);
+                        replaced = true;
+                        break;
+                    }
+                }
+                if (!replaced) emit sliceableModelReplaced(m_sliceableModel, 0);
+            }
+
             delete m_fftModels[v].first;
             m_fftModels.erase(v);
         }
@@ -1626,6 +1640,12 @@ SpectrogramLayer::getFFTModel(const View *v) const
             return 0;
         }
 
+        if (!m_sliceableModel) {
+            std::cerr << "SpectrogramLayer: emitting sliceableModelReplaced(0, " << model << ")" << std::endl;
+            ((SpectrogramLayer *)this)->sliceableModelReplaced(0, model);
+            m_sliceableModel = model;
+        }
+
         m_fftModels[v] = FFTFillPair(model, 0);
 
         model->resume();
@@ -1640,6 +1660,15 @@ SpectrogramLayer::getFFTModel(const View *v) const
     return m_fftModels[v].first;
 }
 
+const Model *
+SpectrogramLayer::getSliceableModel() const
+{
+    if (m_sliceableModel) return m_sliceableModel;
+    if (m_fftModels.empty()) return 0;
+    m_sliceableModel = m_fftModels.begin()->second.first;
+    return m_sliceableModel;
+}
+
 void
 SpectrogramLayer::invalidateFFTModels()
 {
@@ -1649,6 +1678,12 @@ SpectrogramLayer::invalidateFFTModels()
     }
     
     m_fftModels.clear();
+
+    if (m_sliceableModel) {
+        std::cerr << "SpectrogramLayer: emitting sliceableModelReplaced(" << m_sliceableModel << ", 0)" << std::endl;
+        emit sliceableModelReplaced(m_sliceableModel, 0);
+        m_sliceableModel = 0;
+    }
 }
 
 void
