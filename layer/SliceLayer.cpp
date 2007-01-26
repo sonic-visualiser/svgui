@@ -31,7 +31,7 @@ SliceLayer::SliceLayer() :
     m_plotStyle(PlotLines),
     m_binScale(LinearBins),
     m_normalize(false),
-    m_bias(false);
+    m_bias(false),
     m_gain(1.0)
 {
 }
