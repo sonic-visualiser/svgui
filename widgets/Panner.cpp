@@ -104,7 +104,7 @@ Panner::mouseReleaseEvent(QMouseEvent *e)
 void
 Panner::wheelEvent(QWheelEvent *e)
 {
-    if (e->delta() > 0) {
+    if (e->delta() < 0) {
         m_rectY += 0.1;
     } else {
         m_rectY -= 0.1;

@@ -16,7 +16,7 @@
 #ifndef _SPECTROGRAM_LAYER_H_
 #define _SPECTROGRAM_LAYER_H_
 
-#include "Layer.h"
+#include "SliceableLayer.h"
 #include "base/Window.h"
 #include "base/RealTime.h"
 #include "base/Thread.h"
@@ -43,7 +43,7 @@ class FFTModel;
  * DenseTimeValueModel) in spectrogram form.
  */
 
-class SpectrogramLayer : public Layer,
+class SpectrogramLayer : public SliceableLayer,
 			 public PowerOfSqrtTwoZoomConstraint
 {
     Q_OBJECT
@@ -215,6 +215,8 @@ public:
     virtual void setVerticalZoomStep(int);
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
+    virtual const Model *getSliceableModel() const;
+
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);
@@ -337,6 +339,7 @@ protected:
     typedef std::map<const View *, FFTFillPair> ViewFFTMap;
     typedef std::vector<float> FloatVector;
     mutable ViewFFTMap m_fftModels;
+    mutable Model *m_sliceableModel;
 
     class MagnitudeRange {
     public:

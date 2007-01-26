@@ -37,6 +37,7 @@ public:
 	Text,
 	Colour3DPlot,
         Spectrum,
+        Slice,
 
 	// Layers with different initial parameters
 	MelodicRangeSpectrogram,
@@ -59,6 +60,8 @@ public:
     Layer *createLayer(LayerType type);
 
     QString getLayerPresentationName(LayerType type);
+
+    bool isLayerSliceable(const Layer *);
 
     void setModel(Layer *layer, Model *model);
     Model *createEmptyModel(LayerType type, Model *baseModel);
