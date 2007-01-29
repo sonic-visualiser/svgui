@@ -5,7 +5,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006 QMUL.
+    This file copyright 2006-2007 QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -34,6 +34,8 @@ SpectrumLayer::SpectrumLayer() :
     connect(prefs, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
             this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
     setWindowType(prefs->getWindowType());
+
+    setBinScale(LogBins);
 }
 
 SpectrumLayer::~SpectrumLayer()

@@ -592,7 +592,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
         int n = 10;
         int py = -1;
         
-        if (v->hasLightBackground()) {
+        if (v->hasLightBackground() &&
+            v->getViewManager() &&
+            v->getViewManager()->shouldShowScaleGuides()) {
 
             paint->setPen(QColor(240, 240, 240));
 
