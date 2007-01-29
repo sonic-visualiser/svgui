@@ -41,6 +41,9 @@ public:
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
+    virtual int getVerticalScaleWidth(View *v, QPainter &) const;
+    virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
+
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
@@ -104,6 +107,7 @@ protected:
     bool                              m_normalize;
     bool                              m_bias;
     float                             m_gain;
+    mutable std::vector<int>          m_scalePoints;
 };
 
 #endif

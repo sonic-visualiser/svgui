@@ -5,7 +5,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006 QMUL.
+    This file copyright 2006-2007 QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -19,6 +19,9 @@
 #include "view/View.h"
 #include "base/AudioLevel.h"
 #include "base/RangeMapper.h"
+#include "base/RealTime.h"
+
+#include "PaintAssistant.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -28,7 +31,7 @@ SliceLayer::SliceLayer() :
     m_colour(Qt::darkBlue),
     m_energyScale(dBScale),
     m_samplingMode(SamplePeak),
-    m_plotStyle(PlotLines),
+    m_plotStyle(PlotSteps),
     m_binScale(LinearBins),
     m_normalize(false),
     m_bias(false),
@@ -94,15 +97,30 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_sliceableModel) return;
 
-    int w = (v->width() * 2) / 3;
-    int xorigin = (v->width() / 2) - (w / 2);
-    
-    int h = (v->height() * 2) / 3;
-    int yorigin = (v->height() / 2) + (h / 2);
-
     paint.save();
-    paint.setPen(m_colour);
     paint.setRenderHint(QPainter::Antialiasing, false);
+
+    if (v->getViewManager() && v->getViewManager()->shouldShowScaleGuides()) {
+        if (!m_scalePoints.empty()) {
+            paint.setPen(QColor(240, 240, 240)); //!!! and dark background?
+            for (size_t i = 0; i < m_scalePoints.size(); ++i) {
+                paint.drawLine(0, m_scalePoints[i], rect.width(), m_scalePoints[i]);
+            }
+        }
+    }
+
+    paint.setPen(m_colour);
+
+//    int w = (v->width() * 2) / 3;
+    int xorigin = getVerticalScaleWidth(v, paint) + 1; //!!! (v->width() / 2) - (w / 2);
+    int w = v->width() - xorigin - 1;
+    
+    int yorigin = v->height() - 20 - paint.fontMetrics().height() - 7;
+    int h = yorigin - paint.fontMetrics().height() - 8;
+    if (h < 0) return;
+
+//    int h = (v->height() * 3) / 4;
+//    int yorigin = (v->height() / 2) + (h / 2);
     
     QPainterPath path;
     float thresh = -80.f;
@@ -118,16 +136,19 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     size_t f0 = v->getCentreFrame();
     int f0x = v->getXForFrame(f0);
+    f0 = v->getFrameForX(f0x);
     size_t f1 = v->getFrameForX(f0x + 1);
+    if (f1 > f0) --f1;
 
     size_t col0 = f0 / m_sliceableModel->getResolution();
     size_t col1 = col0;
     if (m_samplingMode != NearestSample) {
         col1 = f1 / m_sliceableModel->getResolution();
     }
-    if (col1 <= col0) col1 = col0 + 1;
+    f0 = col0 * m_sliceableModel->getResolution();
+    f1 = (col1 + 1) * m_sliceableModel->getResolution() - 1;
 
-    for (size_t col = col0; col < col1; ++col) {
+    for (size_t col = col0; col <= col1; ++col) {
         for (size_t bin = 0; bin < mh; ++bin) {
             float value = m_sliceableModel->getValueAt(col, bin);
             if (m_bias) value *= bin + 1;
@@ -236,6 +257,107 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.drawPath(path);
     paint.restore();
 
+    if (v->getViewManager() && v->getViewManager()->shouldShowFrameCount()) {
+
+        int sampleRate = m_sliceableModel->getSampleRate();
+
+        QString startText = QString("%1 / %2")
+            .arg(QString::fromStdString
+                 (RealTime::frame2RealTime
+                  (f0, sampleRate).toText(true)))
+            .arg(f0);
+
+        QString endText = QString(" %1 / %2")
+            .arg(QString::fromStdString
+                 (RealTime::frame2RealTime
+                  (f1, sampleRate).toText(true)))
+            .arg(f1);
+
+        QString durationText = QString("(%1 / %2) ")
+            .arg(QString::fromStdString
+                 (RealTime::frame2RealTime
+                  (f1 - f0 + 1, sampleRate).toText(true)))
+            .arg(f1 - f0 + 1);
+
+        v->drawVisibleText
+            (paint, xorigin + 5,
+             paint.fontMetrics().ascent() + 5,
+             startText, View::OutlinedText);
+        
+        v->drawVisibleText
+            (paint, xorigin + 5,
+             paint.fontMetrics().ascent() + paint.fontMetrics().height() + 10,
+             endText, View::OutlinedText);
+        
+        v->drawVisibleText
+            (paint, xorigin + 5,
+             paint.fontMetrics().ascent() + 2*paint.fontMetrics().height() + 15,
+             durationText, View::OutlinedText);
+    }
+    
+/*
+
+    QString frameRange;
+    if (f1 != f0) {
+        frameRange = QString("%1 - %2").arg(f0).arg(f1);
+    } else {
+        frameRange = QString("%1").arg(f0);
+    }
+
+    QString colRange;
+    if (col1 != col0) {
+        colRange = tr("%1 hops").arg(col1 - col0 + 1);
+    } else {
+        colRange = tr("1 hop");
+    }
+
+    if (v->getViewManager() && v->getViewManager()->shouldShowFrameCount()) {
+
+        v->drawVisibleText
+            (paint, xorigin + 5,
+             paint.fontMetrics().ascent() + 5,
+             frameRange, View::OutlinedText);
+        
+        v->drawVisibleText
+            (paint, xorigin + 5,
+             paint.fontMetrics().ascent() + paint.fontMetrics().height() + 10,
+             colRange, View::OutlinedText);
+    }
+*/
+}
+
+int
+SliceLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
+{
+    if (m_energyScale == LinearScale) {
+	return paint.fontMetrics().width("0.0") + 13;
+    } else {
+	return std::max(paint.fontMetrics().width(tr("0dB")),
+			paint.fontMetrics().width(tr("-Inf"))) + 13;
+    }
+}
+
+void
+SliceLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
+{
+    float thresh = 0;
+    if (m_energyScale != LinearScale) {
+        thresh = AudioLevel::dB_to_multiplier(-80); //!!! thresh
+    }
+    
+//    int h = (rect.height() * 3) / 4;
+//    int y = (rect.height() / 2) - (h / 2);
+    
+    int yorigin = v->height() - 20 - paint.fontMetrics().height() - 6;
+    int h = yorigin - paint.fontMetrics().height() - 8;
+    if (h < 0) return;
+
+    QRect actual(rect.x(), rect.y() + yorigin - h, rect.width(), h);
+
+    PaintAssistant::paintVerticalLevelScale
+        (paint, actual, thresh, 1.0 / m_gain,
+         PaintAssistant::Scale(m_energyScale),
+         const_cast<std::vector<int> *>(&m_scalePoints));
 }
 
 Layer::PropertyList

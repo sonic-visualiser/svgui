@@ -125,6 +125,9 @@ public:
     bool shouldShowLayerNames() const {
         return m_overlayMode == AllOverlays;
     }
+    bool shouldShowScaleGuides() const {
+        return m_overlayMode != NoOverlays;
+    }
 
     void setZoomWheelsEnabled(bool enable);
     bool getZoomWheelsEnabled() const { return m_zoomWheelsEnabled; }
