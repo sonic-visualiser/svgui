@@ -170,11 +170,8 @@ public:
     void setNormalizeVisibleArea(bool n);
     bool getNormalizeVisibleArea() const;
 
-    enum ColourScheme { DefaultColours, WhiteOnBlack, BlackOnWhite,
-			RedOnBlue, YellowOnBlack, BlueOnBlack, Rainbow };
-
-    void setColourScheme(ColourScheme scheme);
-    ColourScheme getColourScheme() const;
+    void setColourScheme(int scheme);
+    int getColourScheme() const;
 
     /**
      * Specify the colourmap rotation for the colour scale.
@@ -241,7 +238,7 @@ protected:
     size_t              m_maxFrequency;
     size_t              m_initialMaxFrequency;
     ColourScale         m_colourScale;
-    ColourScheme        m_colourScheme;
+    int                 m_colourScheme;
     QColor              m_crosshairColour;
     FrequencyScale      m_frequencyScale;
     BinDisplay          m_binDisplay;

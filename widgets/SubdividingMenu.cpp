@@ -57,6 +57,7 @@ SubdividingMenu::setEntries(const std::set<QString> &entries)
 
     size_t count = 0;
     QMenu *chunkMenu = new QMenu();
+    chunkMenu->setTearOffEnabled(isTearOffEnabled());
 
     QString firstNameInChunk;
     QChar firstInitialInChunk;
@@ -120,6 +121,7 @@ SubdividingMenu::setEntries(const std::set<QString> &entries)
             QMenu::addMenu(chunkMenu);
             
             chunkMenu = new QMenu();
+            chunkMenu->setTearOffEnabled(isTearOffEnabled());
             
             count = 0;
         }
@@ -244,6 +246,7 @@ SubdividingMenu::addMenu(const QString &name)
 {
     if (!m_entriesSet) {
         QMenu *menu = new QMenu(name, this);
+        menu->setTearOffEnabled(isTearOffEnabled());
         m_pendingEntries[name] = menu;
         return menu;
     }

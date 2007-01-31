@@ -22,6 +22,7 @@
 #include "base/Pitch.h"
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
+#include "ColourMapper.h"
 
 #include <QPainter>
 #include <QImage>
@@ -53,7 +54,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_maxFrequency(8000),
     m_initialMaxFrequency(8000),
     m_colourScale(dBColourScale),
-    m_colourScheme(DefaultColours),
+    m_colourScheme(0),
     m_frequencyScale(LinearFrequencyScale),
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
@@ -248,9 +249,9 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Colour") {
 
 	*min = 0;
-	*max = 6;
+	*max = ColourMapper::getColourMapCount() - 1;
 
-	deft = (int)m_colourScheme;
+	deft = m_colourScheme;
 
     } else if (name == "Window Size") {
 
@@ -343,16 +344,7 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 					int value) const
 {
     if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0: return tr("Default");
-	case 1: return tr("White on Black");
-	case 2: return tr("Black on White");
-	case 3: return tr("Red on Blue");
-	case 4: return tr("Yellow on Black");
-	case 5: return tr("Blue on Black");
-	case 6: return tr("Fruit Salad");
-	}
+        return ColourMapper::getColourMapName(value);
     }
     if (name == "Colour Scale") {
 	switch (value) {
@@ -453,16 +445,7 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Colour Rotation") {
 	setColourRotation(value);
     } else if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0:	setColourScheme(DefaultColours); break;
-	case 1: setColourScheme(WhiteOnBlack); break;
-	case 2: setColourScheme(BlackOnWhite); break;
-	case 3: setColourScheme(RedOnBlue); break;
-	case 4: setColourScheme(YellowOnBlack); break;
-	case 5: setColourScheme(BlueOnBlack); break;
-	case 6: setColourScheme(Rainbow); break;
-	}
+        setColourScheme(value);
     } else if (name == "Window Size") {
 	setWindowSize(32 << value);
     } else if (name == "Window Increment") {
@@ -798,7 +781,7 @@ SpectrogramLayer::getColourScale() const
 }
 
 void
-SpectrogramLayer::setColourScheme(ColourScheme scheme)
+SpectrogramLayer::setColourScheme(int scheme)
 {
     if (m_colourScheme == scheme) return;
 
@@ -810,7 +793,7 @@ SpectrogramLayer::setColourScheme(ColourScheme scheme)
     emit layerParametersChanged();
 }
 
-SpectrogramLayer::ColourScheme
+int
 SpectrogramLayer::getColourScheme() const
 {
     return m_colourScheme;
@@ -1013,71 +996,20 @@ SpectrogramLayer::setColourmap()
 {
     int formerRotation = m_colourRotation;
 
-    if (m_colourScheme == BlackOnWhite) {
+    if (m_colourScheme == (int)ColourMapper::BlackOnWhite) {
 	m_colourMap.setColour(NO_VALUE, Qt::white);
     } else {
 	m_colourMap.setColour(NO_VALUE, Qt::black);
     }
 
+    ColourMapper mapper(m_colourScheme, 1.f, 256.f);
+    
     for (int pixel = 1; pixel < 256; ++pixel) {
 
-	QColor colour;
-	int hue, px;
-
-	switch (m_colourScheme) {
-
-	default:
-	case DefaultColours:
-	    hue = 256 - pixel;
-	    colour = QColor::fromHsv(hue, pixel/2 + 128, pixel);
-            m_crosshairColour = QColor(255, 150, 50);
-//            m_crosshairColour = QColor::fromHsv(240, 160, 255);
-	    break;
-
-	case WhiteOnBlack:
-	    colour = QColor(pixel, pixel, pixel);
-            m_crosshairColour = Qt::red;
-	    break;
-
-	case BlackOnWhite:
-	    colour = QColor(256-pixel, 256-pixel, 256-pixel);
-            m_crosshairColour = Qt::darkGreen;
-	    break;
-
-	case RedOnBlue:
-	    colour = QColor(pixel > 128 ? (pixel - 128) * 2 : 0, 0,
-			    pixel < 128 ? pixel : (256 - pixel));
-            m_crosshairColour = Qt::green;
-	    break;
-
-	case YellowOnBlack:
-	    px = 256 - pixel;
-	    colour = QColor(px < 64 ? 255 - px/2 :
-			    px < 128 ? 224 - (px - 64) :
-			    px < 192 ? 160 - (px - 128) * 3 / 2 :
-			    256 - px,
-			    pixel,
-			    pixel / 4);
-            m_crosshairColour = QColor::fromHsv(240, 255, 255);
-	    break;
-
-        case BlueOnBlack:
-            colour = QColor::fromHsv
-                (240, pixel > 226 ? 256 - (pixel - 226) * 8 : 255,
-                 (pixel * pixel) / 255);
-            m_crosshairColour = Qt::red;
-            break;
-
-	case Rainbow:
-	    hue = 250 - pixel;
-	    if (hue < 0) hue += 256;
-	    colour = QColor::fromHsv(pixel, 255, 255);
-            m_crosshairColour = Qt::white;
-	    break;
-	}
-
-	m_colourMap.setColour(pixel, colour);
+        m_colourMap.setColour(pixel, mapper.map(pixel));
     }
+
+    m_crosshairColour = mapper.getContrastingColour();
 
     m_colourRotation = 0;
     rotateColourmap(m_colourRotation - formerRotation);
@@ -1734,7 +1666,7 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
 void
 SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
-    if (m_colourScheme == BlackOnWhite) {
+    if (m_colourScheme == (int)ColourMapper::BlackOnWhite) {
 	v->setLightBackground(true);
     } else {
 	v->setLightBackground(false);
@@ -3064,8 +2996,7 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 	attributes.value("colourScale").toInt(&ok);
     if (ok) setColourScale(colourScale);
 
-    ColourScheme colourScheme = (ColourScheme)
-	attributes.value("colourScheme").toInt(&ok);
+    int colourScheme = attributes.value("colourScheme").toInt(&ok);
     if (ok) setColourScheme(colourScheme);
 
     int colourRotation = attributes.value("colourRotation").toInt(&ok);
