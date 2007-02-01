@@ -76,6 +76,9 @@ public:
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
 
+    void setFillColourMap(int);
+    int getFillColourMap() const { return m_colourMap; }
+
     enum PlotStyle {
 	PlotPoints,
 	PlotStems,
@@ -132,6 +135,7 @@ protected:
     SparseTimeValueModel::Point m_editingPoint;
     SparseTimeValueModel::EditCommand *m_editingCommand;
     QColor m_colour;
+    int m_colourMap;
     PlotStyle m_plotStyle;
     VerticalScale m_verticalScale;
 };

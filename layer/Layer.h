@@ -357,6 +357,7 @@ signals:
     void modelReplaced();
 
     void layerParametersChanged();
+    void layerParameterRangesChanged();
     void layerNameChanged();
 
     void verticalZoomChanged();

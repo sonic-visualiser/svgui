@@ -18,6 +18,7 @@
 #include "data/model/Model.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
+#include "base/LogRange.h"
 #include "view/View.h"
 
 #include "data/model/SparseTimeValueModel.h"
@@ -26,6 +27,7 @@
 #include "widgets/ListInputDialog.h"
 
 #include "SpectrogramLayer.h" // for optional frequency alignment
+#include "ColourMapper.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -43,6 +45,7 @@ TimeValueLayer::TimeValueLayer() :
     m_editingPoint(0, 0.0, tr("New Point")),
     m_editingCommand(0),
     m_colour(Qt::darkGreen),
+    m_colourMap(0),
     m_plotStyle(PlotConnectedPoints),
     m_verticalScale(AutoAlignScale)
 {
@@ -105,15 +108,25 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     if (name == "Colour") {
 
-	if (min) *min = 0;
-	if (max) *max = 5;
+        if (m_plotStyle == PlotSegmentation) {
+            
+            if (min) *min = 0;
+            if (max) *max = ColourMapper::getColourMapCount() - 1;
 
-	if (m_colour == Qt::black) deft = 0;
-	else if (m_colour == Qt::darkRed) deft = 1;
-	else if (m_colour == Qt::darkBlue) deft = 2;
-	else if (m_colour == Qt::darkGreen) deft = 3;
-	else if (m_colour == QColor(200, 50, 255)) deft = 4;
-	else if (m_colour == QColor(255, 150, 50)) deft = 5;
+            deft = m_colourMap;
+        
+        } else {
+
+            if (min) *min = 0;
+            if (max) *max = 5;
+
+            if (m_colour == Qt::black) deft = 0;
+            else if (m_colour == Qt::darkRed) deft = 1;
+            else if (m_colour == Qt::darkBlue) deft = 2;
+            else if (m_colour == Qt::darkGreen) deft = 3;
+            else if (m_colour == QColor(200, 50, 255)) deft = 4;
+            else if (m_colour == QColor(255, 150, 50)) deft = 5;
+        }
 
     } else if (name == "Plot Type") {
 	
@@ -149,15 +162,19 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
     if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0: return tr("Black");
-	case 1: return tr("Red");
-	case 2: return tr("Blue");
-	case 3: return tr("Green");
-	case 4: return tr("Purple");
-	case 5: return tr("Orange");
-	}
+        if (m_plotStyle == PlotSegmentation) {
+            return ColourMapper::getColourMapName(value);
+        } else {
+            switch (value) {
+            default:
+            case 0: return tr("Black");
+            case 1: return tr("Red");
+            case 2: return tr("Blue");
+            case 3: return tr("Green");
+            case 4: return tr("Purple");
+            case 5: return tr("Orange");
+            }
+        }
     } else if (name == "Plot Type") {
 	switch (value) {
 	default:
@@ -184,15 +201,19 @@ void
 TimeValueLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0:	setBaseColour(Qt::black); break;
-	case 1: setBaseColour(Qt::darkRed); break;
-	case 2: setBaseColour(Qt::darkBlue); break;
-	case 3: setBaseColour(Qt::darkGreen); break;
-	case 4: setBaseColour(QColor(200, 50, 255)); break;
-	case 5: setBaseColour(QColor(255, 150, 50)); break;
-	}
+        if (m_plotStyle == PlotSegmentation) {
+            setFillColourMap(value);
+        } else {
+            switch (value) {
+            default:
+            case 0:	setBaseColour(Qt::black); break;
+            case 1: setBaseColour(Qt::darkRed); break;
+            case 2: setBaseColour(Qt::darkBlue); break;
+            case 3: setBaseColour(Qt::darkGreen); break;
+            case 4: setBaseColour(QColor(200, 50, 255)); break;
+            case 5: setBaseColour(QColor(255, 150, 50)); break;
+            }
+        }
     } else if (name == "Plot Type") {
 	setPlotStyle(PlotStyle(value));
     } else if (name == "Vertical Scale") {
@@ -215,10 +236,23 @@ TimeValueLayer::setBaseColour(QColor colour)
 }
 
 void
+TimeValueLayer::setFillColourMap(int map)
+{
+    if (m_colourMap == map) return;
+    m_colourMap = map;
+    emit layerParametersChanged();
+}
+
+void
 TimeValueLayer::setPlotStyle(PlotStyle style)
 {
     if (m_plotStyle == style) return;
+    bool colourTypeChanged = (style == PlotSegmentation ||
+                              m_plotStyle == PlotSegmentation);
     m_plotStyle = style;
+    if (colourTypeChanged) {
+        emit layerParameterRangesChanged();
+    }
     emit layerParametersChanged();
 }
 
@@ -436,8 +470,7 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
             min = m_model->getValueMinimum();
             max = m_model->getValueMaximum();
         } else if (log) {
-            min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
-            max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+            LogRange::mapRange(min, max);
         }
 
     } else if (m_verticalScale == PlusMinusOneScale) {
@@ -451,8 +484,7 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
         max = m_model->getValueMaximum();
 
         if (m_verticalScale == LogScale) {
-            min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
-            max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+            LogRange::mapRange(min, max);
             log = true;
         }
     }
@@ -473,7 +505,7 @@ TimeValueLayer::getYForValue(View *v, float val) const
 //              << max << ", log " << logarithmic << std::endl;
 
     if (logarithmic) {
-        val = (val < 0.0) ? -log10(-val) : (val == 0.0) ? 0.0 : log10(val);
+        val = LogRange::map(val);
     }
 
     return int(h - ((val - min) * h) / (max - min));
@@ -491,7 +523,7 @@ TimeValueLayer::getValueForY(View *v, int y) const
     float val = min + (float(h - y) * float(max - min)) / h;
 
     if (logarithmic) {
-        val = pow(10, val);
+        val = powf(10.f, val);
     }
 
     return val;
@@ -504,14 +536,21 @@ TimeValueLayer::getColourForValue(View *v, float val) const
     bool log;
     getScaleExtents(v, min, max, log);
 
+    float logthresh = -80;
+
+    if (min > max) std::swap(min, max);
+    if (max == min) max = min + 1;
+
     if (log) {
-        val = (val < 0.0) ? -log10(-val) : (val == 0.0) ? 0.0 : log10(val);
+        LogRange::mapRange(min, max);
+        val = LogRange::map(val);
     }
 
-    int iv = ((val - min) / (max - min)) * 255.999;
+//    std::cerr << "TimeValueLayer::getColourForValue: min " << min << ", max "
+//              << max << ", log " << log << ", value " << val << std::endl;
 
-    QColor colour = QColor::fromHsv(256 - iv, iv / 2 + 128, iv);
-    return QColor(colour.red(), colour.green(), colour.blue(), 120);
+    QColor solid = ColourMapper(m_colourMap, min, max).map(val);
+    return QColor(solid.red(), solid.green(), solid.blue(), 120);
 }
 
 void
@@ -608,6 +647,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	paint.setPen(m_colour);
 
 	if (m_plotStyle == PlotSegmentation) {
+            paint.setPen(Qt::black);
             paint.setBrush(getColourForValue(v, p.value));
 	    labelY = v->height();
 	} else if (m_plotStyle == PlotLines ||

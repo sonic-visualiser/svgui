@@ -54,6 +54,9 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
     connect(m_client, SIGNAL(propertyContainerPropertyChanged(PropertyContainer *)),
 	    this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
 
+    connect(m_client, SIGNAL(propertyContainerPropertyRangeChanged(PropertyContainer *)),
+	    this, SLOT(propertyContainerPropertyRangeChanged(PropertyContainer *)));
+
     connect(m_client, SIGNAL(propertyContainerNameChanged(PropertyContainer *)),
 	    this, SLOT(propertyContainerNameChanged(PropertyContainer *)));
 
@@ -152,6 +155,16 @@ PropertyStack::propertyContainerPropertyChanged(PropertyContainer *pc)
     for (unsigned int i = 0; i < m_boxes.size(); ++i) {
 	if (pc == m_boxes[i]->getContainer()) {
 	    m_boxes[i]->propertyContainerPropertyChanged(pc);
+	}
+    }
+}
+
+void
+PropertyStack::propertyContainerPropertyRangeChanged(PropertyContainer *pc)
+{
+    for (unsigned int i = 0; i < m_boxes.size(); ++i) {
+	if (pc == m_boxes[i]->getContainer()) {
+	    m_boxes[i]->propertyContainerPropertyRangeChanged(pc);
 	}
     }
 }

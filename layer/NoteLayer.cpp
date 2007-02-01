@@ -19,6 +19,7 @@
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/Pitch.h"
+#include "base/LogRange.h"
 #include "view/View.h"
 
 #include "data/model/NoteModel.h"
@@ -485,8 +486,7 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 
         } else if (log) {
 
-            min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
-            max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+            LogRange::mapRange(min, max);
 
             std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
 
@@ -506,8 +506,7 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
         }
 
         if (m_verticalScale == LogScale || m_verticalScale == MIDIRangeScale) {
-            min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
-            max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+            LogRange::mapRange(min, max);
             log = true;
         }
     }
@@ -533,7 +532,7 @@ NoteLayer::getYForValue(View *v, float val) const
     }
 
     if (logarithmic) {
-        val = (val < 0.0) ? -log10(-val) : (val == 0.0) ? 0.0 : log10(val);
+        val = LogRange::map(val);
 //        std::cerr << "logarithmic true, val now = " << val << std::endl;
     }
 
@@ -554,7 +553,7 @@ NoteLayer::getValueForY(View *v, int y) const
     float val = min + (float(h - y) * float(max - min)) / h;
 
     if (logarithmic) {
-        val = pow(10, val);
+        val = powf(10.f, val);
     }
 
     if (shouldConvertMIDIToHz()) {

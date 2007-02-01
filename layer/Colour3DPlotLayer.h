@@ -79,16 +79,26 @@ public:
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
-
-    void setProperties(const QXmlAttributes &) { }
+    virtual void setProperties(const QXmlAttributes &);
     
-    //!!! harmonize with spectrogram
-    enum ColourScale { LinearScale, AbsoluteScale, MeterScale, dBScale };
+    enum ColourScale { LinearScale, LogScale, PlusMinusOneScale };
 
     void setColourScale(ColourScale);
     ColourScale getColourScale() const { return m_colourScale; }
 
+    void setColourMap(int map);
+    int getColourMap() const;
+
+    void setNormalizeColumns(bool n);
+    bool getNormalizeColumns() const;
+
+    void setNormalizeVisibleArea(bool n);
+    bool getNormalizeVisibleArea() const;
+
     virtual const Model *getSliceableModel() const { return m_model; }
+
+    virtual QString toXmlString(QString indent = "",
+				QString extraAttributes = "") const;
 
 protected slots:
     void cacheInvalid();
@@ -98,10 +108,17 @@ protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this
     
     mutable QImage *m_cache;
+    mutable size_t m_cacheStart;
 
     ColourScale m_colourScale;
+    int         m_colourMap;
+    bool        m_normalizeColumns;
+    bool        m_normalizeVisibleArea;
+
+    void getColumn(size_t col, DenseThreeDimensionalModel::Column &) const;
 
     virtual int getColourScaleWidth(QPainter &) const;
+    virtual void fillCache(size_t firstBin, size_t lastBin) const;
     virtual void paintDense(View *v, QPainter &paint, QRect rect) const;
 };
 

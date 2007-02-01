@@ -236,6 +236,7 @@ signals:
     void propertyContainerAdded(PropertyContainer *pc);
     void propertyContainerRemoved(PropertyContainer *pc);
     void propertyContainerPropertyChanged(PropertyContainer *pc);
+    void propertyContainerPropertyRangeChanged(PropertyContainer *pc);
     void propertyContainerNameChanged(PropertyContainer *pc);
     void propertyChanged(PropertyContainer::PropertyName);
 
@@ -250,6 +251,7 @@ public slots:
     virtual void modelCompletionChanged();
     virtual void modelReplaced();
     virtual void layerParametersChanged();
+    virtual void layerParameterRangesChanged();
     virtual void layerNameChanged();
 
     virtual void viewManagerCentreFrameChanged(void *, unsigned long, bool);

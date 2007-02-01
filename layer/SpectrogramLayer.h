@@ -170,8 +170,8 @@ public:
     void setNormalizeVisibleArea(bool n);
     bool getNormalizeVisibleArea() const;
 
-    void setColourScheme(int scheme);
-    int getColourScheme() const;
+    void setColourMap(int map);
+    int getColourMap() const;
 
     /**
      * Specify the colourmap rotation for the colour scale.
@@ -238,7 +238,7 @@ protected:
     size_t              m_maxFrequency;
     size_t              m_initialMaxFrequency;
     ColourScale         m_colourScale;
-    int                 m_colourScheme;
+    int                 m_colourMap;
     QColor              m_crosshairColour;
     FrequencyScale      m_frequencyScale;
     BinDisplay          m_binDisplay;
@@ -248,7 +248,7 @@ protected:
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 
-    class ColourMap
+    class Palette
     {
     public:
         QColor getColour(unsigned char index) const {
@@ -263,7 +263,7 @@ protected:
         QColor m_colours[256];
     };
 
-    ColourMap m_colourMap;
+    Palette m_palette;
 
     struct PixmapCache
     {
@@ -283,8 +283,8 @@ protected:
     mutable size_t m_candidateFillStartFrame;
     bool m_exiting;
 
-    void setColourmap();
-    void rotateColourmap(int distance);
+    void initialisePalette();
+    void rotatePalette(int distance);
 
     static float calculateFrequency(size_t bin,
 				    size_t windowSize,

@@ -450,6 +450,8 @@ View::addLayer(Layer *layer)
     
     connect(layer, SIGNAL(layerParametersChanged()),
 	    this,    SLOT(layerParametersChanged()));
+    connect(layer, SIGNAL(layerParameterRangesChanged()),
+	    this,    SLOT(layerParameterRangesChanged()));
     connect(layer, SIGNAL(layerNameChanged()),
 	    this,    SLOT(layerNameChanged()));
     connect(layer, SIGNAL(modelChanged()),
@@ -487,6 +489,21 @@ View::removeLayer(Layer *layer)
 	}
     }
     
+    disconnect(layer, SIGNAL(layerParametersChanged()),
+               this,    SLOT(layerParametersChanged()));
+    disconnect(layer, SIGNAL(layerParameterRangesChanged()),
+               this,    SLOT(layerParameterRangesChanged()));
+    disconnect(layer, SIGNAL(layerNameChanged()),
+               this,    SLOT(layerNameChanged()));
+    disconnect(layer, SIGNAL(modelChanged()),
+               this,    SLOT(modelChanged()));
+    disconnect(layer, SIGNAL(modelCompletionChanged()),
+               this,    SLOT(modelCompletionChanged()));
+    disconnect(layer, SIGNAL(modelChanged(size_t, size_t)),
+               this,    SLOT(modelChanged(size_t, size_t)));
+    disconnect(layer, SIGNAL(modelReplaced()),
+               this,    SLOT(modelReplaced()));
+
     update();
 
     emit propertyContainerRemoved(layer);
@@ -731,6 +748,13 @@ View::layerParametersChanged()
     if (layer) {
 	emit propertyContainerPropertyChanged(layer);
     }
+}
+
+void
+View::layerParameterRangesChanged()
+{
+    Layer *layer = dynamic_cast<Layer *>(sender());
+    if (layer) emit propertyContainerPropertyRangeChanged(layer);
 }
 
 void

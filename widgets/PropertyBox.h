@@ -48,6 +48,7 @@ signals:
 
 public slots:
     void propertyContainerPropertyChanged(PropertyContainer *);
+    void propertyContainerPropertyRangeChanged(PropertyContainer *);
     void pluginConfigurationChanged(QString);
     void layerVisibilityChanged(bool);
 
@@ -69,7 +70,8 @@ protected slots:
     void mouseLeftWidget();
 
 protected:
-    void updatePropertyEditor(PropertyContainer::PropertyName);
+    void updatePropertyEditor(PropertyContainer::PropertyName,
+                              bool rangeChanged = false);
 
     QLabel *m_nameWidget;
     QWidget *m_mainWidget;

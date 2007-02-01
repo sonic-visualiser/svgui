@@ -21,6 +21,7 @@
 #include "base/RangeMapper.h"
 #include "base/RealTime.h"
 
+#include "ColourMapper.h"
 #include "PaintAssistant.h"
 
 #include <QPainter>
@@ -29,6 +30,7 @@
 SliceLayer::SliceLayer() :
     m_sliceableModel(0),
     m_colour(Qt::darkBlue),
+    m_colourMap(0),
     m_energyScale(dBScale),
     m_samplingMode(SamplePeak),
     m_plotStyle(PlotSteps),
@@ -175,6 +177,8 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     float py = 0;
     float nx = xorigin;
 
+    ColourMapper mapper(m_colourMap, 0, 1);
+
     for (size_t bin = 0; bin < mh; ++bin) {
 
         float x;
@@ -202,6 +206,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
         float value = values[bin];
 
         value *= m_gain;
+        float norm = 0.f;
         float y = 0.f;
  
         switch (m_energyScale) {
@@ -211,16 +216,19 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
             float db = thresh;
             if (value > 0.f) db = 10.f * log10f(value);
             if (db < thresh) db = thresh;
-            float val = (db - thresh) / -thresh;
-            y = yorigin - (float(h) * val);
+            norm = (db - thresh) / -thresh;
+            y = yorigin - (float(h) * norm);
             break;
         }
 
         case MeterScale:
-            y = yorigin - AudioLevel::multiplier_to_preview(value, h);
+            y = AudioLevel::multiplier_to_preview(value, h);
+            norm = float(y) / float(h);
+            y = yorigin - y;
             break;
 
         default:
+            norm = value;
             y = yorigin - (float(h) * value);
             break;
         }
@@ -249,15 +257,24 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
             path.lineTo(nx, y);
             path.lineTo(nx, yorigin);
             path.lineTo(x, yorigin);
+
+        } else if (m_plotStyle == PlotFilledBlocks) {
+
+            paint.fillRect(QRectF(x, y, nx - x, yorigin - y), mapper.map(norm));
         }
 
         py = y;
     }
 
-    paint.drawPath(path);
+    if (m_plotStyle != PlotFilledBlocks) {
+        paint.drawPath(path);
+    }
     paint.restore();
 
-    if (v->getViewManager() && v->getViewManager()->shouldShowFrameCount()) {
+    QPoint discard;
+
+    if (v->getViewManager() && v->getViewManager()->shouldShowFrameCount() &&
+        v->shouldIlluminateLocalFeatures(this, discard)) {
 
         int sampleRate = m_sliceableModel->getSampleRate();
 
@@ -435,15 +452,25 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == "Colour") {
 
-	*min = 0;
-	*max = 5;
+        if (m_plotStyle == PlotFilledBlocks) {
+            
+            *min = 0;
+            *max = ColourMapper::getColourMapCount() - 1;
 
-	if (m_colour == Qt::black) deft = 0;
-	else if (m_colour == Qt::darkRed) deft = 1;
-	else if (m_colour == Qt::darkBlue) deft = 2;
-	else if (m_colour == Qt::darkGreen) deft = 3;
-	else if (m_colour == QColor(200, 50, 255)) deft = 4;
-	else if (m_colour == QColor(255, 150, 50)) deft = 5;
+            deft = m_colourMap;
+
+        } else {
+
+            *min = 0;
+            *max = 5;
+
+            if (m_colour == Qt::black) deft = 0;
+            else if (m_colour == Qt::darkRed) deft = 1;
+            else if (m_colour == Qt::darkBlue) deft = 2;
+            else if (m_colour == Qt::darkGreen) deft = 3;
+            else if (m_colour == QColor(200, 50, 255)) deft = 4;
+            else if (m_colour == QColor(255, 150, 50)) deft = 5;
+        }
 
     } else if (name == "Scale") {
 
@@ -462,14 +489,15 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Plot Type") {
         
         *min = 0;
-        *max = 2;
+        *max = 3;
 
         deft = (int)m_plotStyle;
 
     } else if (name == "Bin Scale") {
         
         *min = 0;
-        *max = 2;
+//        *max = 2;
+        *max = 1; // I don't think we really do want to offer inverted log
 
         deft = (int)m_binScale;
 
@@ -485,14 +513,18 @@ SliceLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
     if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0: return tr("Black");
-	case 1: return tr("Red");
-	case 2: return tr("Blue");
-	case 3: return tr("Green");
-	case 4: return tr("Purple");
-	case 5: return tr("Orange");
+        if (m_plotStyle == PlotFilledBlocks) {
+            return ColourMapper::getColourMapName(value);
+        } else {
+            switch (value) {
+            default:
+            case 0: return tr("Black");
+            case 1: return tr("Red");
+            case 2: return tr("Blue");
+            case 3: return tr("Green");
+            case 4: return tr("Purple");
+            case 5: return tr("Orange");
+            }
 	}
     }
     if (name == "Scale") {
@@ -517,6 +549,7 @@ SliceLayer::getPropertyValueLabel(const PropertyName &name,
 	case 0: return tr("Lines");
 	case 1: return tr("Steps");
 	case 2: return tr("Blocks");
+	case 3: return tr("Colours");
 	}
     }
     if (name == "Bin Scale") {
@@ -545,14 +578,18 @@ SliceLayer::setProperty(const PropertyName &name, int value)
     if (name == "Gain") {
 	setGain(pow(10, float(value)/20.0));
     } else if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0:	setBaseColour(Qt::black); break;
-	case 1: setBaseColour(Qt::darkRed); break;
-	case 2: setBaseColour(Qt::darkBlue); break;
-	case 3: setBaseColour(Qt::darkGreen); break;
-	case 4: setBaseColour(QColor(200, 50, 255)); break;
-	case 5: setBaseColour(QColor(255, 150, 50)); break;
+        if (m_plotStyle == PlotFilledBlocks) {
+            setFillColourMap(value);
+        } else {
+            switch (value) {
+            default:
+            case 0: setBaseColour(Qt::black); break;
+            case 1: setBaseColour(Qt::darkRed); break;
+            case 2: setBaseColour(Qt::darkBlue); break;
+            case 3: setBaseColour(Qt::darkGreen); break;
+            case 4: setBaseColour(QColor(200, 50, 255)); break;
+            case 5: setBaseColour(QColor(255, 150, 50)); break;
+            }
 	}
     } else if (name == "Scale") {
 	switch (value) {
@@ -591,6 +628,14 @@ SliceLayer::setBaseColour(QColor colour)
 }
 
 void
+SliceLayer::setFillColourMap(int map)
+{
+    if (m_colourMap == map) return;
+    m_colourMap = map;
+    emit layerParametersChanged();
+}
+
+void
 SliceLayer::setEnergyScale(EnergyScale scale)
 {
     if (m_energyScale == scale) return;
@@ -610,7 +655,12 @@ void
 SliceLayer::setPlotStyle(PlotStyle style)
 {
     if (m_plotStyle == style) return;
+    bool colourTypeChanged = (style == PlotFilledBlocks ||
+                              m_plotStyle == PlotFilledBlocks);
     m_plotStyle = style;
+    if (colourTypeChanged) {
+        emit layerParameterRangesChanged();
+    }
     emit layerParametersChanged();
 }
 
@@ -644,11 +694,13 @@ SliceLayer::toXmlString(QString indent, QString extraAttributes) const
     QString s;
     
     s += QString("colour=\"%1\" "
-		 "energyScale=\"%2\" "
-                 "samplingMode=\"%3\" "
-                 "gain=\"%4\" "
-                 "normalize=\"%5\"")
+                 "colourScheme=\"%2\" "
+		 "energyScale=\"%3\" "
+                 "samplingMode=\"%4\" "
+                 "gain=\"%5\" "
+                 "normalize=\"%6\"")
 	.arg(encodeColour(m_colour))
+        .arg(m_colourMap)
 	.arg(m_energyScale)
         .arg(m_samplingMode)
         .arg(m_gain)
@@ -677,6 +729,9 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
     SamplingMode mode = (SamplingMode)
 	attributes.value("samplingMode").toInt(&ok);
     if (ok) setSamplingMode(mode);
+
+    int colourMap = attributes.value("colourScheme").toInt(&ok);
+    if (ok) setFillColourMap(colourMap);
 
     float gain = attributes.value("gain").toFloat(&ok);
     if (ok) setGain(gain);
