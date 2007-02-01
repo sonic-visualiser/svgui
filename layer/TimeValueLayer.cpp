@@ -98,6 +98,15 @@ TimeValueLayer::getPropertyType(const PropertyName &name) const
     else return ValueProperty;
 }
 
+QString
+TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
+{
+    if (name == "Vertical Scale" || name == "Scale Units") {
+        return tr("Scale");
+    }
+    return QString();
+}
+
 int
 TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 					 int *min, int *max) const
@@ -189,9 +198,9 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	switch (value) {
 	default:
 	case 0: return tr("Auto-Align");
-	case 1: return tr("Linear Scale");
-	case 2: return tr("Log Scale");
-	case 3: return tr("+/-1 Scale");
+	case 1: return tr("Linear");
+	case 2: return tr("Log");
+	case 3: return tr("+/-1");
 	}
     }
     return tr("<unknown>");

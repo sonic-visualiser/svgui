@@ -41,6 +41,8 @@ public:
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
+    virtual QString getFeatureDescription(View *v, QPoint &) const;
+
     virtual int getVerticalScaleWidth(View *v, QPainter &) const;
     virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
 
@@ -101,6 +103,9 @@ public slots:
     void modelAboutToBeDeleted(Model *);
 
 protected:
+    float getXForBin(int bin, int totalBins, float w) const;
+    int getBinForX(float x, int totalBins, float w) const;
+    
     const DenseThreeDimensionalModel *m_sliceableModel;
     QColor                            m_colour;
     int                               m_colourMap;
@@ -112,6 +117,10 @@ protected:
     bool                              m_bias;
     float                             m_gain;
     mutable std::vector<int>          m_scalePoints;
+    mutable std::map<View *, int>     m_xorigins;
+    mutable size_t                    m_currentf0;
+    mutable size_t                    m_currentf1;
+    mutable std::vector<float>        m_values;
 };
 
 #endif
