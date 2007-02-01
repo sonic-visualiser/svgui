@@ -65,12 +65,15 @@ public:
 
     enum SamplingMode { NearestSample, SampleMean, SamplePeak };
 
-    enum PlotStyle { PlotLines, PlotSteps, PlotBlocks };
+    enum PlotStyle { PlotLines, PlotSteps, PlotBlocks, PlotFilledBlocks };
 
     enum BinScale { LinearBins, LogBins, InvertedLogBins };
 
     void setBaseColour(QColor);
     QColor getBaseColour() const { return m_colour; }
+
+    void setFillColourMap(int);
+    int getFillColourMap() const { return m_colourMap; }
 
     void setEnergyScale(EnergyScale);
     EnergyScale getEnergyScale() const { return m_energyScale; }
@@ -100,6 +103,7 @@ public slots:
 protected:
     const DenseThreeDimensionalModel *m_sliceableModel;
     QColor                            m_colour;
+    int                               m_colourMap;
     EnergyScale                       m_energyScale;
     SamplingMode                      m_samplingMode;
     PlotStyle                         m_plotStyle;

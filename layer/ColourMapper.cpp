@@ -15,12 +15,19 @@
 
 #include "ColourMapper.h"
 
+#include <iostream>
+
 ColourMapper::ColourMapper(int map, float min, float max) :
     QObject(),
     m_map(map),
     m_min(min),
     m_max(max)
 {
+    if (m_min == m_max) {
+        std::cerr << "WARNING: ColourMapper: min == max (== " << m_min
+                  << "), adjusting" << std::endl;
+        m_max = m_min + 1;
+    }
 }
 
 ColourMapper::~ColourMapper()
@@ -30,13 +37,13 @@ ColourMapper::~ColourMapper()
 int
 ColourMapper::getColourMapCount()
 {
-    return 8;
+    return 10;
 }
 
 QString
 ColourMapper::getColourMapName(int n)
 {
-    if (n >= 8) return tr("<unknown>");
+    if (n >= getColourMapCount()) return tr("<unknown>");
     StandardMap map = (StandardMap)n;
 
     switch (map) {
@@ -48,6 +55,8 @@ ColourMapper::getColourMapName(int n)
     case BlueOnBlack:      return tr("Blue on Black");
     case Sunset:           return tr("Sunset");
     case FruitSalad:       return tr("Fruit Salad");
+    case Banded:           return tr("Banded");
+    case Highlight:        return tr("Highlight");
     }
 
     return tr("<unknown>");
@@ -65,7 +74,7 @@ ColourMapper::map(float value) const
 
     float red = 0.f, green = 0.3333f, blue = 0.6666f, pieslice = 0.3333f;
 
-    if (m_map >= 8) return Qt::black;
+    if (m_map >= getColourMapCount()) return Qt::black;
     StandardMap map = (StandardMap)m_map;
 
     switch (map) {
@@ -99,12 +108,14 @@ ColourMapper::map(float value) const
         break;
 
     case BlueOnBlack:
-        h = blue / 1.f;
+        h = blue;
         s = 1.f;
         v = norm * 2.f;
-        if (v > 1) {
+        if (v > 1.f) {
             v = 1.f;
-            s = 1.f - (sqrtf(norm) - 0.707f) * 3.414f;
+            s = 1.f - (sqrtf(norm) - 0.707f) * 3.413f;
+            if (s < 0.f) s = 0.f;
+            if (s > 1.f) s = 1.f;
         }
         break;
 
@@ -123,11 +134,26 @@ ColourMapper::map(float value) const
         break;
 
     case FruitSalad:
-        h = blue + (pieslice/2.f) - norm;
+        h = blue + (pieslice/6.f) - norm;
         if (h < 0.f) h += 1.f;
         s = 1.f;
         v = 1.f;
         break;
+
+    case Banded:
+        if      (norm < 0.125) return Qt::darkGreen;
+        else if (norm < 0.25)  return Qt::green;
+        else if (norm < 0.375) return Qt::darkBlue;
+        else if (norm < 0.5)   return Qt::blue;
+        else if (norm < 0.625) return Qt::darkYellow;
+        else if (norm < 0.75)  return Qt::yellow;
+        else if (norm < 0.875) return Qt::darkRed;
+        else                   return Qt::red;
+        break;
+
+    case Highlight:
+        if (norm > 0.99) return Qt::white;
+        else return Qt::darkBlue;
     }
 
     if (hsv) {
@@ -140,7 +166,7 @@ ColourMapper::map(float value) const
 QColor
 ColourMapper::getContrastingColour() const
 {
-    if (m_map >= 8) return Qt::white;
+    if (m_map >= getColourMapCount()) return Qt::white;
     StandardMap map = (StandardMap)m_map;
 
     switch (map) {
@@ -168,6 +194,12 @@ ColourMapper::getContrastingColour() const
 
     case FruitSalad:
         return Qt::white;
+
+    case Banded:
+        return Qt::cyan;
+
+    case Highlight:
+        return Qt::red;
     }
 
     return Qt::white;

@@ -17,6 +17,8 @@
 
 #include "view/View.h"
 #include "base/Profiler.h"
+#include "base/LogRange.h"
+#include "ColourMapper.h"
 
 #include <QPainter>
 #include <QImage>
@@ -32,7 +34,11 @@
 Colour3DPlotLayer::Colour3DPlotLayer() :
     m_model(0),
     m_cache(0),
-    m_colourScale(LinearScale)
+    m_cacheStart(0),
+    m_colourScale(LinearScale),
+    m_colourMap(0),
+    m_normalizeColumns(false),
+    m_normalizeVisibleArea(false)
 {
     
 }
@@ -81,26 +87,37 @@ Layer::PropertyList
 Colour3DPlotLayer::getProperties() const
 {
     PropertyList list;
+    list.push_back("Colour");
     list.push_back("Colour Scale");
+    list.push_back("Normalize Columns");
+    list.push_back("Normalize Visible Area");
     return list;
 }
 
 QString
 Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
 {
-    if (name == "Colour Scale") return tr("Colour Scale");
+    if (name == "Colour") return tr("Colour");
+    if (name == "Colour Scale") return tr("Scale");
+    if (name == "Normalize Columns") return tr("Normalize Columns");
+    if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
     return "";
 }
 
 Layer::PropertyType
 Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
 {
+    if (name == "Normalize Columns") return ToggleProperty;
+    if (name == "Normalize Visible Area") return ToggleProperty;
     return ValueProperty;
 }
 
 QString
 Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
 {
+    if (name == "Normalize Columns" ||
+        name == "Normalize Visible Area" ||
+	name == "Colour Scale") return tr("Scale");
     return QString();
 }
 
@@ -117,9 +134,24 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
     if (name == "Colour Scale") {
 
 	*min = 0;
-	*max = 3;
+	*max = 2;
 
 	deft = (int)m_colourScale;
+
+    } else if (name == "Colour") {
+
+	*min = 0;
+	*max = ColourMapper::getColourMapCount() - 1;
+
+	deft = m_colourMap;
+
+    } else if (name == "Normalize Columns") {
+	
+	deft = (m_normalizeColumns ? 1 : 0);
+
+    } else if (name == "Normalize Visible Area") {
+	
+	deft = (m_normalizeVisibleArea ? 1 : 0);
 
     } else {
 	deft = Layer::getPropertyRangeAndValue(name, min, max);
@@ -132,13 +164,15 @@ QString
 Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
+    if (name == "Colour") {
+        return ColourMapper::getColourMapName(value);
+    }
     if (name == "Colour Scale") {
 	switch (value) {
 	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Absolute");
-	case 2: return tr("Meter");
-	case 3: return tr("dB");
+	case 0: return tr("Linear Scale");
+	case 1: return tr("Log Scale");
+	case 2: return tr("+/-1 Scale");
 	}
     }
     return tr("<unknown>");
@@ -151,10 +185,15 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	switch (value) {
 	default:
 	case 0: setColourScale(LinearScale); break;
-	case 1: setColourScale(AbsoluteScale); break;
-	case 2: setColourScale(MeterScale); break;
-	case 3: setColourScale(dBScale); break;
+	case 1: setColourScale(LogScale); break;
+	case 2: setColourScale(PlusMinusOneScale); break;
 	}
+    } else if (name == "Colour") {
+        setColourMap(value);
+    } else if (name == "Normalize Columns") {
+	setNormalizeColumns(value ? true : false);
+    } else if (name == "Normalize Visible Area") {
+	setNormalizeVisibleArea(value ? true : false);
     }
 }
 
@@ -167,9 +206,49 @@ Colour3DPlotLayer::setColourScale(ColourScale scale)
     emit layerParametersChanged();
 }
 
+void
+Colour3DPlotLayer::setColourMap(int map)
+{
+    if (m_colourMap == map) return;
+    m_colourMap = map;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
+void
+Colour3DPlotLayer::setNormalizeColumns(bool n)
+{
+    if (m_normalizeColumns == n) return;
+    m_normalizeColumns = n;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
+bool
+Colour3DPlotLayer::getNormalizeColumns() const
+{
+    return m_normalizeColumns;
+}
+
+void
+Colour3DPlotLayer::setNormalizeVisibleArea(bool n)
+{
+    if (m_normalizeVisibleArea == n) return;
+    m_normalizeVisibleArea = n;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
+bool
+Colour3DPlotLayer::getNormalizeVisibleArea() const
+{
+    return m_normalizeVisibleArea;
+}
+
 bool
 Colour3DPlotLayer::isLayerScrollable(const View *v) const
 {
+    if (m_normalizeVisibleArea) return false;
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
@@ -295,6 +374,155 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 }
 
 void
+Colour3DPlotLayer::getColumn(size_t col,
+                             DenseThreeDimensionalModel::Column &values) const
+{
+    m_model->getColumn(col, values);
+
+    float colMax = 0.f;
+
+    float min = 0.f, max = 0.f;
+    if (m_normalizeColumns) {
+        min = m_model->getMinimumLevel();
+        max = m_model->getMaximumLevel();
+    }
+
+    if (m_normalizeColumns) {
+        for (size_t y = 0; y < values.size(); ++y) {
+            if (values[y] > colMax || y == 0) colMax = values[y];
+        }
+        if (m_colourScale == LogScale) {
+            colMax = LogRange::map(colMax);
+        }
+    }
+    
+    for (size_t y = 0; y < values.size(); ++y) {
+        
+        float value = min;
+
+        value = values[y];
+        if (m_colourScale == LogScale) {
+            value = LogRange::map(value);
+        }
+
+        if (m_normalizeColumns) {
+            if (colMax != 0) {
+                value = max * (value / colMax);
+            } else {
+                value = 0;
+            }
+        }
+
+        values[y] = value;
+    }    
+}
+    
+void
+Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
+{
+    size_t modelStart = m_model->getStartFrame();
+    size_t modelEnd = m_model->getEndFrame();
+    size_t modelResolution = m_model->getResolution();
+
+    std::cerr << "Colour3DPlotLayer::fillCache: " << firstBin << " -> " << lastBin << std::endl;
+
+    if (!m_normalizeVisibleArea || m_normalizeColumns) {
+        firstBin = modelStart / modelResolution;
+        lastBin = modelEnd / modelResolution;
+    }
+
+    size_t cacheWidth = lastBin - firstBin + 1;
+    size_t cacheHeight = m_model->getHeight();
+
+    if (m_cache &&
+	(m_cacheStart != firstBin ||
+         m_cache->width() != cacheWidth ||
+	 m_cache->height() != cacheHeight)) {
+
+	delete m_cache;
+	m_cache = 0;
+    }
+
+    if (m_cache) return;
+
+    m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
+    m_cacheStart = firstBin;
+
+    std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " starting " << m_cacheStart << std::endl;
+
+    m_cache->setNumColors(256);
+    DenseThreeDimensionalModel::Column values;
+
+    float min = m_model->getMinimumLevel();
+    float max = m_model->getMaximumLevel();
+
+    if (m_colourScale == LogScale) {
+        LogRange::mapRange(min, max);
+    } else if (m_colourScale == PlusMinusOneScale) {
+        min = -1.f;
+        max = 1.f;
+    }
+    
+    if (max == min) max = min + 1.0;
+    
+    ColourMapper mapper(m_colourMap, 0.f, 255.f);
+    
+    for (int index = 0; index < 256; ++index) {
+        
+        QColor colour = mapper.map(index);
+        m_cache->setColor(index, qRgb(colour.red(), colour.green(), colour.blue()));
+    }
+    
+    m_cache->fill(0);
+
+    float visibleMax = 0.f;
+
+    if (m_normalizeVisibleArea && !m_normalizeColumns) {
+        
+        for (size_t c = firstBin; c <= lastBin; ++c) {
+	
+            values.clear();
+            getColumn(c, values);
+
+            float colMax = 0.f;
+
+            for (size_t y = 0; y < m_model->getHeight(); ++y) {
+                if (y >= values.size()) break;
+                if (y == 0 || values[y] > colMax) colMax = values[y];
+            }
+
+            if (c == firstBin || colMax > visibleMax) visibleMax = colMax;
+        }
+    }
+    
+    for (size_t c = firstBin; c <= lastBin; ++c) {
+	
+        values.clear();
+        getColumn(c, values);
+
+        for (size_t y = 0; y < m_model->getHeight(); ++y) {
+
+            float value = min;
+            if (y < values.size()) {
+                value = values[y];
+            }
+            
+            if (m_normalizeVisibleArea && !m_normalizeColumns) {
+                if (visibleMax != 0) {
+                    value = max * (value / visibleMax);
+                }
+            }
+
+            int pixel = int(((value - min) * 256) / (max - min));
+            if (pixel < 0) pixel = 0;
+            if (pixel > 255) pixel = 255;
+
+            m_cache->setPixel(c - firstBin, y, pixel);
+        }
+    }
+}
+
+void
 Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
 //    Profiler profiler("Colour3DPlotLayer::paint");
@@ -311,125 +539,45 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
+    if (m_normalizeVisibleArea && !m_normalizeColumns) rect = v->rect();
+
     size_t modelStart = m_model->getStartFrame();
     size_t modelEnd = m_model->getEndFrame();
     size_t modelResolution = m_model->getResolution();
-
-    size_t cacheWidth = (modelEnd - modelStart) / modelResolution + 1;
-    size_t cacheHeight = m_model->getHeight();
-
-    if (m_cache &&
-	(m_cache->width() != cacheWidth ||
-	 m_cache->height() != cacheHeight)) {
-
-	delete m_cache;
-	m_cache = 0;
-    }
-
-    if (!m_cache) { 
-
-	m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
-
-        std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << std::endl;
-
-	m_cache->setNumColors(256);
-	DenseThreeDimensionalModel::Column values;
-
-	float min = m_model->getMinimumLevel();
-	float max = m_model->getMaximumLevel();
-
-	if (max == min) max = min + 1.0;
-
-        int zeroIndex = 0;
-        if (min < 0.f) {
-            if (m_colourScale == LinearScale) {
-                zeroIndex = int(((-min) * 256) / (max - min));
-            } else {
-                max = std::max(-min, max);
-                min = 0;
-            }
-        }
-        if (zeroIndex < 0) zeroIndex = 0;
-        if (zeroIndex > 255) zeroIndex = 255;
-
-        //!!! want this and spectrogram to share a colour mapping unit
-
-	for (int index = 0; index < 256; ++index) {
-            int effective = abs(((index - zeroIndex) * 255) /
-                                std::max(255 - zeroIndex, zeroIndex));
-	    int hue = 256 - effective;
-            if (zeroIndex > 0) {
-                if (index <= zeroIndex) hue = 255;
-                else hue = 0;
-            }
-            while (hue < 0) hue += 255;
-            while (hue > 255) hue -= 255;
-            int saturation = effective / 2 + 128;
-            if (saturation < 0) saturation = -saturation;
-            if (saturation > 255) saturation = 255;
-            int value = effective;
-            if (value < 0) value = -value;
-            if (value > 255) value = 255;
-//            std::cerr << "min: " << min << ", max: " << max << ", zi " << zeroIndex << ", index " << index << ": " << hue << ", " << saturation << ", " << value << std::endl;
-	    QColor colour = QColor::fromHsv(hue, saturation, value);
-//            std::cerr << "rgb: " << colour.red() << "," << colour.green() << "," << colour.blue() << std::endl;
-	    m_cache->setColor(index, qRgb(colour.red(), colour.green(), colour.blue()));
-	}
-
-	m_cache->fill(zeroIndex);
-
-	for (size_t f = modelStart; f <= modelEnd; f += modelResolution) {
-	
-	    values.clear();
-	    m_model->getColumn(f / modelResolution, values);
-	    
-	    for (size_t y = 0; y < m_model->getHeight(); ++y) {
-
-		float value = min;
-		if (y < values.size()) {
-                    value = values[y];
-                    if (m_colourScale != LinearScale) {
-                        value = fabs(value);
-                    }
-                }
-
-		int pixel = int(((value - min) * 256) / (max - min));
-                if (pixel < 0) pixel = 0;
-		if (pixel > 255) pixel = 255;
-
-		m_cache->setPixel(f / modelResolution, y, pixel);
-	    }
-	}
-    }
-
-    if (m_model->getHeight() >= v->height() ||
-        modelResolution < v->getZoomLevel() / 2) {
-        paintDense(v, paint, rect);
-        return;
-    }
-
-    int x0 = rect.left();
-    int x1 = rect.right() + 1;
-
-    int h = v->height();
 
     // The cache is from the model's start frame to the model's end
     // frame at the model's window increment frames per pixel.  We
     // want to draw from our start frame + x0 * zoomLevel to our start
     // frame + x1 * zoomLevel at zoomLevel frames per pixel.
 
-    //!!! Strictly speaking we want quite different paint mechanisms
-    //for models that have more than one bin per pixel in either
-    //direction.  This one is only really appropriate for models with
-    //far fewer bins in both directions.
+    //  We have quite different paint mechanisms for rendering "large"
+    //  bins (more than one bin per pixel in both directions) and
+    //  "small".  This is "large"; see paintDense below for "small".
+
+    int x0 = rect.left();
+    int x1 = rect.right() + 1;
+
+    int h = v->height();
 
     float srRatio =
         float(v->getViewManager()->getMainModelSampleRate()) /
         float(m_model->getSampleRate());
 
-    int sx0 = int((v->getFrameForX(x0) / srRatio - long(modelStart)) / long(modelResolution));
-    int sx1 = int((v->getFrameForX(x1) / srRatio - long(modelStart)) / long(modelResolution));
+    int sx0 = int((v->getFrameForX(x0) / srRatio - long(modelStart))
+                  / long(modelResolution));
+    int sx1 = int((v->getFrameForX(x1) / srRatio - long(modelStart))
+                  / long(modelResolution));
     int sh = m_model->getHeight();
+
+    if (sx0 > 0) --sx0;
+    fillCache(sx0 < 0 ? 0 : sx0,
+              sx1 < 0 ? 0 : sx1);
+
+    if (m_model->getHeight() >= v->height() ||
+        modelResolution < v->getZoomLevel() / 2) {
+        paintDense(v, paint, rect);
+        return;
+    }
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     std::cerr << "Colour3DPlotLayer::paint: w " << w << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sw << ", sh " << sh << std::endl;
@@ -440,8 +588,11 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     bool illuminate = v->shouldIlluminateLocalFeatures(this, illuminatePos);
     char labelbuf[10];
 
-    for (int sx = sx0 - 1; sx <= sx1; ++sx) {
+    for (int sx = sx0; sx <= sx1; ++sx) {
 
+        int scx = 0;
+        if (sx > m_cacheStart) scx = sx - m_cacheStart;
+        
 	int fx = sx * int(modelResolution);
 
 	if (fx + modelResolution < int(modelStart) ||
@@ -461,9 +612,9 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	    int ry0 = h - (sy * h) / sh - 1;
 	    QRgb pixel = qRgb(255, 255, 255);
-	    if (sx >= 0 && sx < m_cache->width() &&
+	    if (scx >= 0 && scx < m_cache->width() &&
 		sy >= 0 && sy < m_cache->height()) {
-		pixel = m_cache->pixel(sx, sy);
+		pixel = m_cache->pixel(scx, sy);
 	    }
 
 	    QRect r(rx0, ry0 - h / sh - 1, rw, h / sh + 1);
@@ -499,9 +650,9 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    paint.drawRect(r);
 
 	    if (showLabel) {
-		if (sx >= 0 && sx < m_cache->width() &&
+		if (scx >= 0 && scx < m_cache->width() &&
 		    sy >= 0 && sy < m_cache->height()) {
-		    float value = m_model->getValueAt(sx, sy);
+		    float value = m_model->getValueAt(scx, sy);
 		    sprintf(labelbuf, "%06f", value);
 		    QString text(labelbuf);
 		    paint.setPen(Qt::white);
@@ -566,7 +717,10 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
             for (int sx = sx0i; sx <= sx1i; ++sx) {
 
-                if (sx < 0 || sx >= m_cache->width()) continue;
+                int scx = 0;
+                if (sx > m_cacheStart) scx = sx - m_cacheStart;
+        
+                if (scx < 0 || scx >= m_cache->width()) continue;
 
                 for (int sy = sy0i; sy <= sy1i; ++sy) {
 
@@ -578,8 +732,8 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
                     if (sy == sy0i) prop *= (sy + 1) - sy0;
                     if (sy == sy1i) prop *= sy1 - sy;
 
-                    mag += prop * m_cache->pixelIndex(sx, sy);
-                    max = std::max(max, m_cache->pixelIndex(sx, sy));
+                    mag += prop * m_cache->pixelIndex(scx, sy);
+                    max = std::max(max, m_cache->pixelIndex(scx, sy));
                     div += prop;
                 }
             }
@@ -622,6 +776,43 @@ Colour3DPlotLayer::snapToFeatureFrame(View *v, int &frame,
     }
     
     return true;
+}
+
+QString
+Colour3DPlotLayer::toXmlString(QString indent, QString extraAttributes) const
+{
+    QString s;
+    
+    s += QString("scale=\"%1\" "
+                 "colourScheme=\"%2\" "
+		 "normalizeColumns=\"%3\" "
+                 "normalizeVisibleArea=\"%4\"")
+	.arg((int)m_colourScale)
+        .arg(m_colourMap)
+        .arg(m_normalizeColumns ? "true" : "false")
+        .arg(m_normalizeVisibleArea ? "true" : "false");
+
+    return Layer::toXmlString(indent, extraAttributes + " " + s);
+}
+
+void
+Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
+{
+    bool ok = false;
+
+    ColourScale scale = (ColourScale)attributes.value("scale").toInt(&ok);
+    if (ok) setColourScale(scale);
+
+    int colourMap = attributes.value("colourScheme").toInt(&ok);
+    if (ok) setColourMap(colourMap);
+
+    bool normalizeColumns =
+        (attributes.value("normalizeColumns").trimmed() == "true");
+    setNormalizeColumns(normalizeColumns);
+
+    bool normalizeVisibleArea =
+        (attributes.value("normalizeVisibleArea").trimmed() == "true");
+    setNormalizeVisibleArea(normalizeVisibleArea);
 }
 
 #ifdef INCLUDE_MOCFILES

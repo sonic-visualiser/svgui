@@ -248,7 +248,8 @@ PropertyBox::populateViewPlayFrame()
 }
 
 void
-PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
+PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
+                                  bool rangeChanged)
 {
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
     int row = m_layout->rowCount();
@@ -339,6 +340,14 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	if (have) {
 	    dial = dynamic_cast<AudioDial *>(m_propertyControllers[name]);
 	    assert(dial);
+            if (rangeChanged) {
+                dial->blockSignals(true);
+                dial->setMinimum(min);
+                dial->setMaximum(max);
+                dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
+                dial->blockSignals(false);
+            }
+                
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
 	    std::cerr << "PropertyBox: creating new dial" << std::endl;
@@ -401,7 +410,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
 	    cb = new NotifyingComboBox();
 	    cb->setObjectName(name);
             cb->setDuplicatesEnabled(false);
+        }
 
+        if (!have || rangeChanged) {
+            cb->blockSignals(true);
+            cb->clear();
             if (type == PropertyContainer::ValueProperty) {
                 for (int i = min; i <= max; ++i) {
                     cb->addItem(m_container->getPropertyValueLabel(name, i));
@@ -414,7 +427,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name)
                 }
                 cb->setEditable(true);
             }
+            cb->blockSignals(false);
+        }
 
+        if (!have) {
 	    connect(cb, SIGNAL(activated(int)),
 		    this, SLOT(propertyControllerChanged(int)));
             connect(cb, SIGNAL(mouseEntered()),
@@ -482,6 +498,19 @@ PropertyBox::propertyContainerPropertyChanged(PropertyContainer *pc)
 
     blockSignals(false);
 }
+
+void
+PropertyBox::propertyContainerPropertyRangeChanged(PropertyContainer *pc)
+{
+    blockSignals(true);
+
+    PropertyContainer::PropertyList properties = m_container->getProperties();
+    for (size_t i = 0; i < properties.size(); ++i) {
+	updatePropertyEditor(properties[i], true);
+    }
+
+    blockSignals(false);
+}    
 
 void
 PropertyBox::unitDatabaseChanged()

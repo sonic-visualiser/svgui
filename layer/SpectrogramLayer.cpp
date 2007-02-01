@@ -54,7 +54,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_maxFrequency(8000),
     m_initialMaxFrequency(8000),
     m_colourScale(dBColourScale),
-    m_colourScheme(0),
+    m_colourMap(0),
     m_frequencyScale(LinearFrequencyScale),
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
@@ -90,7 +90,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
             this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
     setWindowType(prefs->getWindowType());
 
-    setColourmap();
+    initialisePalette();
 }
 
 SpectrogramLayer::~SpectrogramLayer()
@@ -189,18 +189,12 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 	name == "Window Increment" ||
         name == "Zero Padding") return tr("Window");
     if (name == "Colour" ||
-//	name == "Gain" ||
 	name == "Threshold" ||
 	name == "Colour Rotation") return tr("Colour");
     if (name == "Normalize Columns" ||
         name == "Normalize Visible Area" ||
-//	name == "Bin Display" ||
         name == "Gain" ||
 	name == "Colour Scale") return tr("Scale");
-//    if (name == "Max Frequency" ||
-//	name == "Min Frequency" ||
-//	name == "Frequency Scale" ||
-//	name == "Frequency Adjustment") return tr("Range");
     return QString();
 }
 
@@ -251,7 +245,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = 0;
 	*max = ColourMapper::getColourMapCount() - 1;
 
-	deft = m_colourScheme;
+	deft = m_colourMap;
 
     } else if (name == "Window Size") {
 
@@ -445,7 +439,7 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Colour Rotation") {
 	setColourRotation(value);
     } else if (name == "Colour") {
-        setColourScheme(value);
+        setColourMap(value);
     } else if (name == "Window Size") {
 	setWindowSize(32 << value);
     } else if (name == "Window Increment") {
@@ -755,7 +749,7 @@ SpectrogramLayer::setColourRotation(int r)
     int distance = r - m_colourRotation;
 
     if (distance != 0) {
-	rotateColourmap(-distance);
+	rotatePalette(-distance);
 	m_colourRotation = r;
     }
     
@@ -781,22 +775,22 @@ SpectrogramLayer::getColourScale() const
 }
 
 void
-SpectrogramLayer::setColourScheme(int scheme)
+SpectrogramLayer::setColourMap(int map)
 {
-    if (m_colourScheme == scheme) return;
+    if (m_colourMap == map) return;
 
     invalidatePixmapCaches();
     
-    m_colourScheme = scheme;
-    setColourmap();
+    m_colourMap = map;
+    initialisePalette();
 
     emit layerParametersChanged();
 }
 
 int
-SpectrogramLayer::getColourScheme() const
+SpectrogramLayer::getColourMap() const
 {
-    return m_colourScheme;
+    return m_colourMap;
 }
 
 void
@@ -992,46 +986,45 @@ SpectrogramLayer::fillTimerTimedOut()
 }
 
 void
-SpectrogramLayer::setColourmap()
+SpectrogramLayer::initialisePalette()
 {
     int formerRotation = m_colourRotation;
 
-    if (m_colourScheme == (int)ColourMapper::BlackOnWhite) {
-	m_colourMap.setColour(NO_VALUE, Qt::white);
+    if (m_colourMap == (int)ColourMapper::BlackOnWhite) {
+	m_palette.setColour(NO_VALUE, Qt::white);
     } else {
-	m_colourMap.setColour(NO_VALUE, Qt::black);
+	m_palette.setColour(NO_VALUE, Qt::black);
     }
 
-    ColourMapper mapper(m_colourScheme, 1.f, 256.f);
+    ColourMapper mapper(m_colourMap, 1.f, 255.f);
     
     for (int pixel = 1; pixel < 256; ++pixel) {
-
-        m_colourMap.setColour(pixel, mapper.map(pixel));
+        m_palette.setColour(pixel, mapper.map(pixel));
     }
 
     m_crosshairColour = mapper.getContrastingColour();
 
     m_colourRotation = 0;
-    rotateColourmap(m_colourRotation - formerRotation);
+    rotatePalette(m_colourRotation - formerRotation);
     m_colourRotation = formerRotation;
 }
 
 void
-SpectrogramLayer::rotateColourmap(int distance)
+SpectrogramLayer::rotatePalette(int distance)
 {
     QColor newPixels[256];
 
-    newPixels[NO_VALUE] = m_colourMap.getColour(NO_VALUE);
+    newPixels[NO_VALUE] = m_palette.getColour(NO_VALUE);
 
     for (int pixel = 1; pixel < 256; ++pixel) {
 	int target = pixel + distance;
 	while (target < 1) target += 255;
 	while (target > 255) target -= 255;
-	newPixels[target] = m_colourMap.getColour(pixel);
+	newPixels[target] = m_palette.getColour(pixel);
     }
 
     for (int pixel = 0; pixel < 256; ++pixel) {
-	m_colourMap.setColour(pixel, newPixels[pixel]);
+	m_palette.setColour(pixel, newPixels[pixel]);
     }
 }
 
@@ -1666,7 +1659,7 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
 void
 SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
-    if (m_colourScheme == (int)ColourMapper::BlackOnWhite) {
+    if (m_colourMap == (int)ColourMapper::BlackOnWhite) {
 	v->setLightBackground(true);
     } else {
 	v->setLightBackground(false);
@@ -1930,7 +1923,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         m_drawBuffer = QImage(w, h, QImage::Format_RGB32);
     }
 
-    m_drawBuffer.fill(m_colourMap.getColour(0).rgb());
+    m_drawBuffer.fill(m_palette.getColour(0).rgb());
 
     int sr = m_model->getSampleRate();
 
@@ -2108,7 +2101,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		pixel = getDisplayValue(v, avg);
 
 		assert(x <= m_drawBuffer.width());
-		QColor c = m_colourMap.getColour(pixel);
+		QColor c = m_palette.getColour(pixel);
 		m_drawBuffer.setPixel(x, y,
                                       qRgb(c.red(), c.green(), c.blue()));
 	    }
@@ -2659,7 +2652,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 /*
 	    int colour = (i * 255) / ch + 1;
 */
-	    paint.setPen(m_colourMap.getColour(colour));
+	    paint.setPen(m_palette.getColour(colour));
 
             int y = textHeight * topLines + 4 + ch - i;
 
@@ -2939,7 +2932,7 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 	.arg(m_minFrequency)
 	.arg(m_maxFrequency)
 	.arg(m_colourScale)
-	.arg(m_colourScheme)
+	.arg(m_colourMap)
 	.arg(m_colourRotation)
 	.arg(m_frequencyScale)
 	.arg(m_binDisplay)
@@ -2996,8 +2989,8 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 	attributes.value("colourScale").toInt(&ok);
     if (ok) setColourScale(colourScale);
 
-    int colourScheme = attributes.value("colourScheme").toInt(&ok);
-    if (ok) setColourScheme(colourScheme);
+    int colourMap = attributes.value("colourScheme").toInt(&ok);
+    if (ok) setColourMap(colourMap);
 
     int colourRotation = attributes.value("colourRotation").toInt(&ok);
     if (ok) setColourRotation(colourRotation);

@@ -38,7 +38,9 @@ public:
         RedOnBlue,
         YellowOnBlack,
         BlueOnBlack,
-        FruitSalad
+        FruitSalad,
+        Banded,
+        Highlight
     };
 
     int getMap() const { return m_map; }

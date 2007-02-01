@@ -45,6 +45,7 @@ public slots:
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);
     void propertyContainerPropertyChanged(PropertyContainer *);
+    void propertyContainerPropertyRangeChanged(PropertyContainer *);
     void propertyContainerNameChanged(PropertyContainer *);
 
     void showLayer(bool);
