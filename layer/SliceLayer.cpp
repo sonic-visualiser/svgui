@@ -32,12 +32,14 @@ SliceLayer::SliceLayer() :
     m_colour(Qt::darkBlue),
     m_colourMap(0),
     m_energyScale(dBScale),
-    m_samplingMode(SamplePeak),
+    m_samplingMode(SampleMean),
     m_plotStyle(PlotSteps),
     m_binScale(LinearBins),
     m_normalize(false),
     m_bias(false),
-    m_gain(1.0)
+    m_gain(1.0),
+    m_currentf0(0),
+    m_currentf1(0)
 {
 }
 
@@ -94,6 +96,90 @@ SliceLayer::modelAboutToBeDeleted(Model *m)
     }
 }
 
+QString
+SliceLayer::getFeatureDescription(View *v, QPoint &p) const
+{
+    if (!m_sliceableModel) return "";
+
+    int xorigin = m_xorigins[v];
+    int w = v->width() - xorigin - 1;
+    
+    int mh = m_sliceableModel->getHeight();
+    int bin = getBinForX(p.x() - xorigin, mh, w);
+    if (bin >= mh) bin = mh - 1;
+    if (bin < 0) bin = 0;
+    
+    int sampleRate = m_sliceableModel->getSampleRate();
+
+    size_t f0 = m_currentf0;
+    size_t f1 = m_currentf1;
+
+    RealTime rt0 = RealTime::frame2RealTime(f0, sampleRate);
+    RealTime rt1 = RealTime::frame2RealTime(f1, sampleRate);
+    
+    size_t range = f1 - f0 + 1;
+
+    float value = 0.f;
+    if (bin < m_values.size()) value = m_values[bin];
+
+    QString description = tr("Time:\t%1 - %2\nRange:\t%3 samples\nBin:\t%4\n%5 value:\t%6")
+        .arg(QString::fromStdString(rt0.toText(true)))
+        .arg(QString::fromStdString(rt1.toText(true)))
+        .arg(range)
+        .arg(bin + 1)
+        .arg(m_samplingMode == NearestSample ? tr("First") :
+             m_samplingMode == SampleMean ? tr("Mean") : tr("Peak"))
+        .arg(value);
+
+    return description;
+}
+
+float
+SliceLayer::getXForBin(int bin, int count, float w) const
+{
+    float x = 0;
+
+    switch (m_binScale) {
+
+    case LinearBins:
+        x = (float(w) * bin) / count;
+        break;
+        
+    case LogBins:
+        x = (float(w) * log10f(bin + 1)) / log10f(count + 1);
+        break;
+        
+    case InvertedLogBins:
+        x = w - (float(w) * log10f(count - bin - 1)) / log10f(count);
+        break;
+    }
+
+    return x;
+}
+
+int
+SliceLayer::getBinForX(float x, int count, float w) const
+{
+    int bin = 0;
+
+    switch (m_binScale) {
+
+    case LinearBins:
+        bin = int((x * count) / w + 0.0001);
+        break;
+        
+    case LogBins:
+        bin = int(powf(10.f, (x * log10f(count + 1)) / w) - 1 + 0.0001);
+        break;
+
+    case InvertedLogBins:
+        bin = count + 1 - int(powf(10.f, (log10f(count) * (w - x)) / float(w)) + 0.0001);
+        break;
+    }
+
+    return bin;
+}
+
 void
 SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
@@ -116,6 +202,8 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    int w = (v->width() * 2) / 3;
     int xorigin = getVerticalScaleWidth(v, paint) + 1; //!!! (v->width() / 2) - (w / 2);
     int w = v->width() - xorigin - 1;
+
+    m_xorigins[v] = xorigin; // for use in getFeatureDescription
     
     int yorigin = v->height() - 20 - paint.fontMetrics().height() - 7;
     int h = yorigin - paint.fontMetrics().height() - 8;
@@ -129,11 +217,11 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int mh = m_sliceableModel->getHeight();
 
-    float *values = new float[mh];
     int divisor = 0;
 
+    m_values.clear();
     for (size_t bin = 0; bin < mh; ++bin) {
-        values[bin] = 0.f;
+        m_values.push_back(0.f);
     }
 
     size_t f0 = v->getCentreFrame();
@@ -150,14 +238,17 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     f0 = col0 * m_sliceableModel->getResolution();
     f1 = (col1 + 1) * m_sliceableModel->getResolution() - 1;
 
+    m_currentf0 = f0;
+    m_currentf1 = f1;
+
     for (size_t col = col0; col <= col1; ++col) {
         for (size_t bin = 0; bin < mh; ++bin) {
             float value = m_sliceableModel->getValueAt(col, bin);
             if (m_bias) value *= bin + 1;
             if (m_samplingMode == SamplePeak) {
-                if (value > values[bin]) values[bin] = value;
+                if (value > m_values[bin]) m_values[bin] = value;
             } else {
-                values[bin] += value;
+                m_values[bin] += value;
             }
         }
         ++divisor;
@@ -165,12 +256,12 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     float max = 0.f;
     for (size_t bin = 0; bin < mh; ++bin) {
-        if (m_samplingMode == SampleMean) values[bin] /= divisor;
-        if (values[bin] > max) max = values[bin];
+        if (m_samplingMode == SampleMean) m_values[bin] /= divisor;
+        if (m_values[bin] > max) max = m_values[bin];
     }
     if (max != 0.f && m_normalize) {
         for (size_t bin = 0; bin < mh; ++bin) {
-            values[bin] /= max;
+            m_values[bin] /= max;
         }
     }
 
@@ -181,29 +272,10 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     for (size_t bin = 0; bin < mh; ++bin) {
 
-        float x;
+        float x = nx;
+        nx = xorigin + getXForBin(bin + 1, mh, w);
 
-        switch (m_binScale) {
-
-        case LinearBins:
-            x = nx;
-            nx = xorigin + (float(w) * (bin + 1)) / mh;
-            break;
-
-        case LogBins:
-            x = nx;
-            nx = xorigin + (float(w) * (log10f(bin + 2) - log10f(1))) /
-                (log10f(mh + 1) - log10f(1));
-            break;
-
-        case InvertedLogBins:
-            x = nx;
-            nx = xorigin + w - (float(w) * (log10f(mh - bin) - log10f(1))) /
-                (log10f(mh) - log10f(1));
-            break;
-        }
-
-        float value = values[bin];
+        float value = m_values[bin];
 
         value *= m_gain;
         float norm = 0.f;
@@ -270,7 +342,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
         paint.drawPath(path);
     }
     paint.restore();
-
+/*
     QPoint discard;
 
     if (v->getViewManager() && v->getViewManager()->shouldShowFrameCount() &&
@@ -310,35 +382,6 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
             (paint, xorigin + 5,
              paint.fontMetrics().ascent() + 2*paint.fontMetrics().height() + 15,
              durationText, View::OutlinedText);
-    }
-    
-/*
-
-    QString frameRange;
-    if (f1 != f0) {
-        frameRange = QString("%1 - %2").arg(f0).arg(f1);
-    } else {
-        frameRange = QString("%1").arg(f0);
-    }
-
-    QString colRange;
-    if (col1 != col0) {
-        colRange = tr("%1 hops").arg(col1 - col0 + 1);
-    } else {
-        colRange = tr("1 hop");
-    }
-
-    if (v->getViewManager() && v->getViewManager()->shouldShowFrameCount()) {
-
-        v->drawVisibleText
-            (paint, xorigin + 5,
-             paint.fontMetrics().ascent() + 5,
-             frameRange, View::OutlinedText);
-        
-        v->drawVisibleText
-            (paint, xorigin + 5,
-             paint.fontMetrics().ascent() + paint.fontMetrics().height() + 10,
-             colRange, View::OutlinedText);
     }
 */
 }
@@ -383,7 +426,7 @@ SliceLayer::getProperties() const
     PropertyList list;
     list.push_back("Colour");
     list.push_back("Plot Type");
-    list.push_back("Sampling Mode");
+//    list.push_back("Sampling Mode");
     list.push_back("Scale");
     list.push_back("Normalize");
     list.push_back("Gain");
@@ -496,8 +539,8 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Bin Scale") {
         
         *min = 0;
-//        *max = 2;
-        *max = 1; // I don't think we really do want to offer inverted log
+        *max = 2;
+//        *max = 1; // I don't think we really do want to offer inverted log
 
         deft = (int)m_binScale;
 
@@ -555,9 +598,9 @@ SliceLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == "Bin Scale") {
 	switch (value) {
 	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Log");
-	case 2: return tr("Rev Log");
+	case 0: return tr("Linear Bins");
+	case 1: return tr("Log Bins");
+	case 2: return tr("Rev Log Bins");
 	}
     }
     return tr("<unknown>");

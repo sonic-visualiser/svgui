@@ -170,9 +170,9 @@ Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == "Colour Scale") {
 	switch (value) {
 	default:
-	case 0: return tr("Linear Scale");
-	case 1: return tr("Log Scale");
-	case 2: return tr("+/-1 Scale");
+	case 0: return tr("Linear");
+	case 1: return tr("Log");
+	case 2: return tr("+/-1");
 	}
     }
     return tr("<unknown>");

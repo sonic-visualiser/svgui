@@ -92,6 +92,15 @@ NoteLayer::getPropertyType(const PropertyName &name) const
     return ValueProperty;
 }
 
+QString
+NoteLayer::getPropertyGroupName(const PropertyName &name) const
+{
+    if (name == "Vertical Scale" || name == "Scale Units") {
+        return tr("Scale");
+    }
+    return QString();
+}
+
 int
 NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 					 int *min, int *max) const
@@ -152,9 +161,9 @@ NoteLayer::getPropertyValueLabel(const PropertyName &name,
 	switch (value) {
 	default:
 	case 0: return tr("Auto-Align");
-	case 1: return tr("Linear Scale");
-	case 2: return tr("Log Scale");
-	case 3: return tr("MIDI Note Range");
+	case 1: return tr("Linear");
+	case 2: return tr("Log");
+	case 3: return tr("MIDI Notes");
 	}
     }
     return tr("<unknown>");

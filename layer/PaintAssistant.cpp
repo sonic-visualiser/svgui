@@ -20,6 +20,8 @@
 #include <QPaintDevice>
 #include <QPainter>
 
+#include <iostream>
+
 void
 PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 					float minVal, float maxVal,
@@ -79,12 +81,15 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 
         if (val < minVal || val > maxVal) continue;
 
-        int y = getYForValue(scale, val, minVal, maxVal, rect.y(), rect.height());
+        int y = getYForValue(scale, val, minVal, maxVal, rect.y(), h);
             
         int ny = y;
         if (nval != 0.0) {
-            ny = getYForValue(scale, nval, minVal, maxVal, rect.y(), rect.height());
+            ny = getYForValue(scale, nval, minVal, maxVal, rect.y(), h);
         }
+
+//        std::cerr << "PaintAssistant::paintVerticalLevelScale: val = "
+//                  << val << ", y = " << y << ", h = " << h << std::endl;
 
         bool spaceForLabel = (i == 0 ||
                               abs(y - lastLabelledY) >= textHeight - 1);
@@ -97,13 +102,15 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             }
             
             int ty = y;
+
             if (ty < paint.fontMetrics().ascent()) {
                 ty = paint.fontMetrics().ascent();
-            } else if (ty > h - paint.fontMetrics().descent()) {
-                ty = h - paint.fontMetrics().descent();
+//            } else if (ty > rect.y() + h - paint.fontMetrics().descent()) {
+//                ty = rect.y() + h - paint.fontMetrics().descent();
             } else {
                 ty += toff;
             }
+
             paint.drawText(tx, ty, text);
             
             lastLabelledY = ty - toff;
