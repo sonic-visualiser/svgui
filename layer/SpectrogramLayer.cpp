@@ -2471,9 +2471,9 @@ SpectrogramLayer::getFeatureDescription(View *v, QPoint &pos) const
 	    dbMaxString = QString("%1").arg(lrintf(dbMax));
 	}
 	if (lrintf(dbMin) != lrintf(dbMax)) {
-	    text += tr("dB:\t%1 - %2").arg(lrintf(dbMin)).arg(lrintf(dbMax));
+	    text += tr("dB:\t%1 - %2").arg(dbMinString).arg(dbMaxString);
 	} else {
-	    text += tr("dB:\t%1").arg(lrintf(dbMin));
+	    text += tr("dB:\t%1").arg(dbMinString);
 	}
 	if (phaseMin != phaseMax) {
 	    text += tr("\nPhase:\t%1 - %2").arg(phaseMin).arg(phaseMax);
