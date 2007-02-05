@@ -38,6 +38,8 @@ public:
     void setModel(DenseTimeValueModel *model);
     virtual const Model *getModel() const { return m_originModel; }
 
+    virtual QString getFeatureDescription(View *v, QPoint &) const;
+
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;

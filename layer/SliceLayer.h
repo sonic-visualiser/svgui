@@ -106,6 +106,11 @@ protected:
     float getXForBin(int bin, int totalBins, float w) const;
     int getBinForX(float x, int totalBins, float w) const;
     
+    virtual QString getFeatureDescription(View *v, QPoint &,
+                                          bool includeBinDescription,
+                                          int &minbin, int &maxbin,
+                                          int &range) const;
+
     const DenseThreeDimensionalModel *m_sliceableModel;
     QColor                            m_colour;
     int                               m_colourMap;

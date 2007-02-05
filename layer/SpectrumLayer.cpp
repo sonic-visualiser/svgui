@@ -270,3 +270,94 @@ SpectrumLayer::getValueExtents(float &min, float &max, bool &logarithmic,
     return false;
 }
 
+QString
+SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
+{
+    if (!m_sliceableModel) return "";
+
+    int minbin = 0, maxbin = 0, range = 0;
+    QString genericDesc = SliceLayer::getFeatureDescription
+        (v, p, false, minbin, maxbin, range);
+
+    if (genericDesc == "") return "";
+
+    float minvalue = 0.f;
+    if (minbin < m_values.size()) minvalue = m_values[minbin];
+
+    float maxvalue = minvalue;
+    if (maxbin < m_values.size()) maxvalue = m_values[maxbin];
+        
+    if (minvalue > maxvalue) std::swap(minvalue, maxvalue);
+    
+    QString binstr;
+    QString hzstr;
+    int minfreq = lrintf((minbin * m_sliceableModel->getSampleRate()) /
+                         m_windowSize);
+    int maxfreq = lrintf((std::max(maxbin, minbin+1)
+                           * m_sliceableModel->getSampleRate()) /
+                          m_windowSize);
+
+    if (maxbin != minbin) {
+        binstr = tr("%1 - %2").arg(minbin+1).arg(maxbin+1);
+    } else {
+        binstr = QString("%1").arg(minbin+1);
+    }
+    if (minfreq != maxfreq) {
+        hzstr = tr("%1 - %2 Hz").arg(minfreq).arg(maxfreq);
+    } else {
+        hzstr = tr("%1 Hz").arg(minfreq);
+    }
+    
+    QString valuestr;
+    if (maxvalue != minvalue) {
+        valuestr = tr("%1 - %2").arg(minvalue).arg(maxvalue);
+    } else {
+        valuestr = QString("%1").arg(minvalue);
+    }
+    
+    QString dbstr;
+    float mindb = AudioLevel::multiplier_to_dB(minvalue);
+    float maxdb = AudioLevel::multiplier_to_dB(maxvalue);
+    QString mindbstr;
+    QString maxdbstr;
+    if (mindb == AudioLevel::DB_FLOOR) {
+        mindbstr = tr("-Inf");
+    } else {
+        mindbstr = QString("%1").arg(lrintf(mindb));
+    }
+    if (maxdb == AudioLevel::DB_FLOOR) {
+        maxdbstr = tr("-Inf");
+    } else {
+        maxdbstr = QString("%1").arg(lrintf(maxdb));
+    }
+    if (lrintf(mindb) != lrintf(maxdb)) {
+        dbstr = tr("%1 - %2").arg(mindbstr).arg(maxdbstr);
+    } else {
+        dbstr = tr("%1").arg(mindbstr);
+    }
+
+    QString description;
+
+    if (range > m_sliceableModel->getResolution()) {
+        description = tr("%1\nBin:\t%2 (%3)\n%4 value:\t%5\ndB:\t%6")
+            .arg(genericDesc)
+            .arg(binstr)
+            .arg(hzstr)
+            .arg(m_samplingMode == NearestSample ? tr("First") :
+                 m_samplingMode == SampleMean ? tr("Mean") : tr("Peak"))
+            .arg(valuestr)
+            .arg(dbstr);
+    } else {
+        description = tr("%1\nBin:\t%2 (%3)\nValue:\t%4\ndB:\t%5")
+            .arg(genericDesc)
+            .arg(binstr)
+            .arg(hzstr)
+            .arg(valuestr)
+            .arg(dbstr);
+    }
+    
+    return description;
+}
+
+
+    

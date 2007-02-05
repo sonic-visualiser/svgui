@@ -99,15 +99,30 @@ SliceLayer::modelAboutToBeDeleted(Model *m)
 QString
 SliceLayer::getFeatureDescription(View *v, QPoint &p) const
 {
+    int minbin, maxbin, range;
+    return getFeatureDescription(v, p, true, minbin, maxbin, range);
+}
+
+QString
+SliceLayer::getFeatureDescription(View *v, QPoint &p,
+                                  bool includeBinDescription,
+                                  int &minbin, int &maxbin, int &range) const
+{
+    minbin = 0;
+    maxbin = 0;
     if (!m_sliceableModel) return "";
 
     int xorigin = m_xorigins[v];
     int w = v->width() - xorigin - 1;
     
     int mh = m_sliceableModel->getHeight();
-    int bin = getBinForX(p.x() - xorigin, mh, w);
-    if (bin >= mh) bin = mh - 1;
-    if (bin < 0) bin = 0;
+    minbin = getBinForX(p.x() - xorigin, mh, w);
+    maxbin = getBinForX(p.x() - xorigin + 1, mh, w);
+
+    if (minbin >= mh) minbin = mh - 1;
+    if (maxbin >= mh) maxbin = mh - 1;
+    if (minbin < 0) minbin = 0;
+    if (maxbin < 0) maxbin = 0;
     
     int sampleRate = m_sliceableModel->getSampleRate();
 
@@ -117,21 +132,52 @@ SliceLayer::getFeatureDescription(View *v, QPoint &p) const
     RealTime rt0 = RealTime::frame2RealTime(f0, sampleRate);
     RealTime rt1 = RealTime::frame2RealTime(f1, sampleRate);
     
-    size_t range = f1 - f0 + 1;
+    range = f1 - f0 + 1;
 
-    float value = 0.f;
-    if (bin < m_values.size()) value = m_values[bin];
+    if (includeBinDescription) {
 
-    QString description = tr("Time:\t%1 - %2\nRange:\t%3 samples\nBin:\t%4\n%5 value:\t%6")
-        .arg(QString::fromStdString(rt0.toText(true)))
-        .arg(QString::fromStdString(rt1.toText(true)))
-        .arg(range)
-        .arg(bin + 1)
-        .arg(m_samplingMode == NearestSample ? tr("First") :
-             m_samplingMode == SampleMean ? tr("Mean") : tr("Peak"))
-        .arg(value);
+        float minvalue = 0.f;
+        if (minbin < m_values.size()) minvalue = m_values[minbin];
 
-    return description;
+        float maxvalue = minvalue;
+        if (maxbin < m_values.size()) maxvalue = m_values[maxbin];
+        
+        if (minvalue > maxvalue) std::swap(minvalue, maxvalue);
+        
+        QString binstr;
+        if (maxbin != minbin) {
+            binstr = tr("%1 - %2").arg(minbin+1).arg(maxbin+1);
+        } else {
+            binstr = QString("%1").arg(minbin+1);
+        }
+
+        QString valuestr;
+        if (maxvalue != minvalue) {
+            valuestr = tr("%1 - %2").arg(minvalue).arg(maxvalue);
+        } else {
+            valuestr = QString("%1").arg(minvalue);
+        }
+
+        QString description = tr("Time:\t%1 - %2\nRange:\t%3 samples\nBin:\t%4\n%5 value:\t%6")
+            .arg(QString::fromStdString(rt0.toText(true)))
+            .arg(QString::fromStdString(rt1.toText(true)))
+            .arg(range)
+            .arg(binstr)
+            .arg(m_samplingMode == NearestSample ? tr("First") :
+                 m_samplingMode == SampleMean ? tr("Mean") : tr("Peak"))
+            .arg(valuestr);
+        
+        return description;
+    
+    } else {
+
+        QString description = tr("Time:\t%1 - %2\nRange:\t%3 samples")
+            .arg(QString::fromStdString(rt0.toText(true)))
+            .arg(QString::fromStdString(rt1.toText(true)))
+            .arg(range);
+        
+        return description;
+    }
 }
 
 float
