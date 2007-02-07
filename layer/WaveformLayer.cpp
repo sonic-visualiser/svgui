@@ -513,8 +513,10 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     std::cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << ")" <<  std::endl;
 #endif
 
-    RangeSummarisableTimeValueModel::RangeBlock ranges;
-    RangeSummarisableTimeValueModel::RangeBlock otherChannelRanges;
+    RangeSummarisableTimeValueModel::RangeBlock *ranges = 
+        new RangeSummarisableTimeValueModel::RangeBlock;
+
+    RangeSummarisableTimeValueModel::RangeBlock *otherChannelRanges = 0;
     RangeSummarisableTimeValueModel::Range range;
     
     QColor greys[3];
@@ -641,14 +643,20 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	size_t modelZoomLevel = zoomLevel;
 
-	ranges = m_model->getRanges
-	    (ch, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
+	m_model->getRanges
+	    (ch, frame0 < 0 ? 0 : frame0, frame1, *ranges, modelZoomLevel);
         
 	if (mergingChannels || mixingChannels) {
             if (m_model->getChannelCount() > 1) {
-                otherChannelRanges = m_model->getRanges
-                    (1, frame0 < 0 ? 0 : frame0, frame1, modelZoomLevel);
+                if (!otherChannelRanges) {
+                    otherChannelRanges =
+                        new RangeSummarisableTimeValueModel::RangeBlock;
+                }
+                m_model->getRanges
+                    (1, frame0 < 0 ? 0 : frame0, frame1, *otherChannelRanges,
+                     modelZoomLevel);
             } else {
+                if (otherChannelRanges != ranges) delete otherChannelRanges;
                 otherChannelRanges = ranges;
             }
 	}
@@ -683,15 +691,15 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 		}
 	    }
 
-	    if (index < ranges.size()) {
+	    if (ranges && index < ranges->size()) {
 
-		range = ranges[index];
+		range = (*ranges)[index];
 
-		if (maxIndex > index && maxIndex < ranges.size()) {
-		    range.max = std::max(range.max, ranges[maxIndex].max);
-		    range.min = std::min(range.min, ranges[maxIndex].min);
+		if (maxIndex > index && maxIndex < ranges->size()) {
+		    range.max = std::max(range.max, (*ranges)[maxIndex].max);
+		    range.min = std::min(range.min, (*ranges)[maxIndex].min);
 		    range.absmean = (range.absmean +
-				     ranges[maxIndex].absmean) / 2;
+				     (*ranges)[maxIndex].absmean) / 2;
 		}
 
 	    } else {
@@ -702,28 +710,28 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	    if (mergingChannels) {
 
-		if (index < otherChannelRanges.size()) {
+		if (otherChannelRanges && index < otherChannelRanges->size()) {
 
 		    range.max = fabsf(range.max);
-		    range.min = -fabsf(otherChannelRanges[index].max);
+		    range.min = -fabsf((*otherChannelRanges)[index].max);
 		    range.absmean = (range.absmean +
-				     otherChannelRanges[index].absmean) / 2;
+				     (*otherChannelRanges)[index].absmean) / 2;
 
-		    if (maxIndex > index && maxIndex < ranges.size()) {
+		    if (maxIndex > index && maxIndex < otherChannelRanges->size()) {
 			// let's not concern ourselves about the mean
 			range.min = std::min
 			    (range.min,
-			     -fabsf(otherChannelRanges[maxIndex].max));
+			     -fabsf((*otherChannelRanges)[maxIndex].max));
 		    }
 		}
 
 	    } else if (mixingChannels) {
 
-		if (index < otherChannelRanges.size()) {
+		if (otherChannelRanges && index < otherChannelRanges->size()) {
 
-                    range.max = (range.max + otherChannelRanges[index].max) / 2;
-                    range.min = (range.min + otherChannelRanges[index].min) / 2;
-                    range.absmean = (range.absmean + otherChannelRanges[index].absmean) / 2;
+                    range.max = (range.max + (*otherChannelRanges)[index].max) / 2;
+                    range.min = (range.min + (*otherChannelRanges)[index].min) / 2;
+                    range.absmean = (range.absmean + (*otherChannelRanges)[index].absmean) / 2;
                 }
             }
 
@@ -884,6 +892,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	delete paint;
 	viewPainter.drawPixmap(rect, *m_cache, rect);
     }
+
+    if (otherChannelRanges != ranges) delete otherChannelRanges;
+    delete ranges;
 }
 
 QString
@@ -923,8 +934,8 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
     for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
 
 	size_t blockSize = v->getZoomLevel();
-	RangeSummarisableTimeValueModel::RangeBlock ranges =
-	    m_model->getRanges(ch, f0, f1, blockSize);
+	RangeSummarisableTimeValueModel::RangeBlock ranges;
+        m_model->getRanges(ch, f0, f1, ranges, blockSize);
 
 	if (ranges.empty()) continue;
 	
