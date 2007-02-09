@@ -22,7 +22,7 @@
 #include <QFont>
 #include <QString>
 
-#include <fftw3.h>
+#include "data/fft/FFTapi.h"
 
 #include <iostream>
 
@@ -121,18 +121,18 @@ WindowShapePreview::updateLabels()
 
     int fftsize = 512;
 
-    float *input = (float *)fftwf_malloc(fftsize * sizeof(float));
-    fftwf_complex *output =
-        (fftwf_complex *)fftwf_malloc(fftsize * sizeof(fftwf_complex));
-    fftwf_plan plan = fftwf_plan_dft_r2c_1d(fftsize, input, output,
+    float *input = (float *)fftf_malloc(fftsize * sizeof(float));
+    fftf_complex *output =
+        (fftf_complex *)fftf_malloc(fftsize * sizeof(fftf_complex));
+    fftf_plan plan = fftf_plan_dft_r2c_1d(fftsize, input, output,
                                             FFTW_ESTIMATE);
     for (int i = 0; i < fftsize; ++i) input[i] = 0.f;
     for (int i = 0; i < step * 2; ++i) {
         input[fftsize/2 - step + i] = windower.getValue(i);
     }
     
-    fftwf_execute(plan);
-    fftwf_destroy_plan(plan);
+    fftf_execute(plan);
+    fftf_destroy_plan(plan);
 
     float maxdb = 0.f;
     float mindb = 0.f;
@@ -186,8 +186,8 @@ WindowShapePreview::updateLabels()
     path.addRect(0, 0, fw, h + 1);
     freqPainter.drawPath(path);
 
-    fftwf_free(input);
-    fftwf_free(output);
+    fftf_free(input);
+    fftf_free(output);
 
     freqPainter.setFont(font);
     label = tr("dB / freq");
