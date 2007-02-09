@@ -1,6 +1,6 @@
 TEMPLATE = lib
 
-SV_UNIT_PACKAGES = vamp-sdk
+SV_UNIT_PACKAGES = vamp-sdk fftw3f
 load(../sv.prf)
 
 CONFIG += sv staticlib qt thread warn_on stl rtti exceptions
