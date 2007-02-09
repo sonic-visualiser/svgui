@@ -17,6 +17,8 @@
 
 #include <iostream>
 
+#include <cmath>
+
 ColourMapper::ColourMapper(int map, float min, float max) :
     QObject(),
     m_map(map),
