@@ -43,7 +43,12 @@ Layer::getPropertyContainerIconName() const
 QString
 Layer::getLayerPresentationName() const
 {
-    QString layerName = objectName();
+//    QString layerName = objectName();
+
+    LayerFactory *factory = LayerFactory::getInstance();
+    QString layerName = factory->getLayerPresentationName
+        (factory->getLayerType(this));
+
     QString modelName;
     if (getModel()) modelName = getModel()->objectName();
 	    

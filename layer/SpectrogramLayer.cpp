@@ -1629,11 +1629,18 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
     int x0 = 0, x1 = v->width();
     float s00 = 0, s01 = 0, s10 = 0, s11 = 0;
     
-    getXBinRange(v, x0, s00, s01);
-    getXBinRange(v, x1, s10, s11);
+    if (!getXBinRange(v, x0, s00, s01)) {
+        s00 = s01 = m_model->getStartFrame() / getWindowIncrement();
+    }
+
+    if (!getXBinRange(v, x1, s10, s11)) {
+        s10 = s11 = m_model->getEndFrame() / getWindowIncrement();
+    }
 
     int s0 = int(std::min(s00, s10) + 0.0001);
-    int s1 = int(std::max(s01, s11));
+    int s1 = int(std::max(s01, s11) + 0.0001);
+
+//    std::cerr << "SpectrogramLayer::updateViewMagnitudes: x0 = " << x0 << ", x1 = " << x1 << ", s00 = " << s00 << ", s11 = " << s11 << " s0 = " << s0 << ", s1 = " << s1 << std::endl;
 
     if (m_columnMags.size() <= s1) {
         m_columnMags.resize(s1 + 1);
@@ -2080,6 +2087,12 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
 
             if (mag.isSet()) {
+
+
+                if (s >= m_columnMags.size()) {
+                    std::cerr << "INTERNAL ERROR: " << s << " >= "
+                              << m_columnMags.size() << " at SpectrogramLayer.cpp:2087" << std::endl;
+                }
 
                 m_columnMags[s].sample(mag);
 
