@@ -87,14 +87,14 @@ PluginParameterBox::populate()
 
     for (size_t i = 0; i < params.size(); ++i) {
 
+        QString identifier = params[i].identifier.c_str();
         QString name = params[i].name.c_str();
-        QString description = params[i].description.c_str();
         QString unit = params[i].unit.c_str();
 
         float min = params[i].minValue;
         float max = params[i].maxValue;
         float deft = params[i].defaultValue;
-        float value = m_plugin->getParameter(params[i].name);
+        float value = m_plugin->getParameter(params[i].identifier);
 
         float qtz = 0.0;
         if (params[i].isQuantized) qtz = params[i].quantizeStep;
@@ -114,7 +114,7 @@ PluginParameterBox::populate()
         //!!! would be nice to ensure the default value corresponds to
         // an integer!
 
-        QLabel *label = new QLabel(description);
+        QLabel *label = new QLabel(name);
         m_layout->addWidget(label, i + offset, 0);
 
         ParamRec rec;
@@ -127,7 +127,7 @@ PluginParameterBox::populate()
         if (params[i].isQuantized && !valueNames.empty()) {
             
             QComboBox *combobox = new QComboBox;
-            combobox->setObjectName(name);
+            combobox->setObjectName(identifier);
             for (unsigned int j = 0; j < valueNames.size(); ++j) {
                 combobox->addItem(valueNames[j].c_str());
                 if (lrintf((value - min) / qtz) == j) {
@@ -142,7 +142,7 @@ PluginParameterBox::populate()
         } else if (min == 0.0 && max == 1.0 && qtz == 1.0) {
             
             QCheckBox *checkbox = new QCheckBox;
-            checkbox->setObjectName(name);
+            checkbox->setObjectName(identifier);
             checkbox->setCheckState(value == 0.0 ? Qt::Unchecked : Qt::Checked);
             connect(checkbox, SIGNAL(stateChanged(int)),
                     this, SLOT(checkBoxChanged(int)));
@@ -152,7 +152,7 @@ PluginParameterBox::populate()
         } else {
             
             AudioDial *dial = new AudioDial;
-            dial->setObjectName(description);
+            dial->setObjectName(name);
             dial->setMinimum(imin);
             dial->setMaximum(imax);
             dial->setPageStep(1);
@@ -169,7 +169,7 @@ PluginParameterBox::populate()
             m_layout->addWidget(dial, i + offset, 1);
 
             QDoubleSpinBox *spinbox = new QDoubleSpinBox;
-            spinbox->setObjectName(name);
+            spinbox->setObjectName(identifier);
             spinbox->setMinimum(min);
             spinbox->setMaximum(max);
             spinbox->setSuffix(QString(" %1").arg(unit));
@@ -183,8 +183,8 @@ PluginParameterBox::populate()
             rec.spin = spinbox;
         }
 
-        m_params[name] = rec;
-        m_descriptionMap[description] = name;
+        m_params[identifier] = rec;
+        m_nameMap[name] = identifier;
     }
 }
 
@@ -192,19 +192,19 @@ void
 PluginParameterBox::dialChanged(int ival)
 {
     QObject *obj = sender();
-    QString name = obj->objectName();
+    QString identifier = obj->objectName();
 
-    if (m_params.find(name) == m_params.end() &&
-        m_descriptionMap.find(name) != m_descriptionMap.end()) {
-        name = m_descriptionMap[name];
+    if (m_params.find(identifier) == m_params.end() &&
+        m_nameMap.find(identifier) != m_nameMap.end()) {
+        identifier = m_nameMap[identifier];
     }
 
-    if (m_params.find(name) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::dialChanged: Unknown parameter \"" << name.toStdString() << "\"" << std::endl;
+    if (m_params.find(identifier) == m_params.end()) {
+        std::cerr << "WARNING: PluginParameterBox::dialChanged: Unknown parameter \"" << identifier.toStdString() << "\"" << std::endl;
         return;
     }
 
-    Vamp::PluginBase::ParameterDescriptor params = m_params[name].param;
+    Vamp::PluginBase::ParameterDescriptor params = m_params[identifier].param;
 
     float min = params.minValue;
     float max = params.maxValue;
@@ -233,14 +233,14 @@ PluginParameterBox::dialChanged(int ival)
         newValue = min + ival * qtz;
     }
 
-    QDoubleSpinBox *spin = m_params[name].spin;
+    QDoubleSpinBox *spin = m_params[identifier].spin;
     if (spin) {
         spin->blockSignals(true);
         spin->setValue(newValue);
         spin->blockSignals(false);
     }
 
-    m_plugin->setParameter(name.toStdString(), newValue);
+    m_plugin->setParameter(identifier.toStdString(), newValue);
 
     emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
@@ -249,22 +249,22 @@ void
 PluginParameterBox::checkBoxChanged(int state)
 {
     QObject *obj = sender();
-    QString name = obj->objectName();
+    QString identifier = obj->objectName();
 
-    if (m_params.find(name) == m_params.end() &&
-        m_descriptionMap.find(name) != m_descriptionMap.end()) {
-        name = m_descriptionMap[name];
+    if (m_params.find(identifier) == m_params.end() &&
+        m_nameMap.find(identifier) != m_nameMap.end()) {
+        identifier = m_nameMap[identifier];
     }
 
-    if (m_params.find(name) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::checkBoxChanged: Unknown parameter \"" << name.toStdString() << "\"" << std::endl;
+    if (m_params.find(identifier) == m_params.end()) {
+        std::cerr << "WARNING: PluginParameterBox::checkBoxChanged: Unknown parameter \"" << identifier.toStdString() << "\"" << std::endl;
         return;
     }
 
-    Vamp::PluginBase::ParameterDescriptor params = m_params[name].param;
+    Vamp::PluginBase::ParameterDescriptor params = m_params[identifier].param;
 
-    if (state) m_plugin->setParameter(name.toStdString(), 1.0);
-    else m_plugin->setParameter(name.toStdString(), 0.0);
+    if (state) m_plugin->setParameter(identifier.toStdString(), 1.0);
+    else m_plugin->setParameter(identifier.toStdString(), 0.0);
 
     emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
@@ -273,19 +273,19 @@ void
 PluginParameterBox::spinBoxChanged(double value)
 {
     QObject *obj = sender();
-    QString name = obj->objectName();
+    QString identifier = obj->objectName();
 
-    if (m_params.find(name) == m_params.end() &&
-        m_descriptionMap.find(name) != m_descriptionMap.end()) {
-        name = m_descriptionMap[name];
+    if (m_params.find(identifier) == m_params.end() &&
+        m_nameMap.find(identifier) != m_nameMap.end()) {
+        identifier = m_nameMap[identifier];
     }
 
-    if (m_params.find(name) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::spinBoxChanged: Unknown parameter \"" << name.toStdString() << "\"" << std::endl;
+    if (m_params.find(identifier) == m_params.end()) {
+        std::cerr << "WARNING: PluginParameterBox::spinBoxChanged: Unknown parameter \"" << identifier.toStdString() << "\"" << std::endl;
         return;
     }
 
-    Vamp::PluginBase::ParameterDescriptor params = m_params[name].param;
+    Vamp::PluginBase::ParameterDescriptor params = m_params[identifier].param;
 
     float min = params.minValue;
     float max = params.maxValue;
@@ -308,14 +308,14 @@ PluginParameterBox::spinBoxChanged(double value)
 
     int ival = (value - min) / qtz;
 
-    AudioDial *dial = m_params[name].dial;
+    AudioDial *dial = m_params[identifier].dial;
     if (dial) {
         dial->blockSignals(true);
         dial->setValue(ival);
         dial->blockSignals(false);
     }
 
-    m_plugin->setParameter(name.toStdString(), value);
+    m_plugin->setParameter(identifier.toStdString(), value);
 
     emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
@@ -329,7 +329,7 @@ PluginParameterBox::programComboChanged(const QString &newProgram)
          i != m_params.end(); ++i) {
 
         Vamp::PluginBase::ParameterDescriptor &param = i->second.param;
-        float value = m_plugin->getParameter(param.name);
+        float value = m_plugin->getParameter(param.identifier);
 
         if (i->second.spin) {
             i->second.spin->blockSignals(true);
