@@ -217,7 +217,3 @@ PropertyStack::activeTabClicked()
     emit viewSelected(m_client);
 }
 
-#ifdef INCLUDE_MOCFILES
-#include "PropertyStack.moc.cpp"
-#endif
-

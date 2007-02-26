@@ -537,7 +537,3 @@ AudioDial::leaveEvent(QEvent *e)
     emit mouseLeft();
 }
 
-#ifdef INCLUDE_MOCFILES
-#include "AudioDial.moc.cpp"
-#endif
-

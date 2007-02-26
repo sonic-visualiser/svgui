@@ -1598,7 +1598,3 @@ ViewPropertyContainer::ViewPropertyContainer(View *v) :
 	    this, SIGNAL(propertyChanged(PropertyContainer::PropertyName)));
 }
 
-#ifdef INCLUDE_MOCFILES
-#include "View.moc.cpp"
-#endif
-

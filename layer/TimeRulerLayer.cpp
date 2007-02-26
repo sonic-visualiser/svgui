@@ -309,8 +309,3 @@ TimeRulerLayer::setProperties(const QXmlAttributes &attributes)
     }
 }
 
-
-#ifdef INCLUDE_MOCFILES
-#include "TimeRulerLayer.moc.cpp"
-#endif
-

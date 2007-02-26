@@ -778,7 +778,3 @@ TimeInstantLayer::setProperties(const QXmlAttributes &attributes)
     if (ok) setPlotStyle(style);
 }
 
-#ifdef INCLUDE_MOCFILES
-#include "TimeInstantLayer.moc.cpp"
-#endif
-

@@ -122,8 +122,3 @@ Layer::showLayer(View *view, bool show)
     emit layerParametersChanged();
 }
 
-
-#ifdef INCLUDE_MOCFILES
-#include "Layer.moc.cpp"
-#endif
-
