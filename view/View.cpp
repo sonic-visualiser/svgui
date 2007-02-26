@@ -266,6 +266,8 @@ View::toolModeChanged()
 void
 View::overlayModeChanged()
 {
+    delete m_cache;
+    m_cache = 0;
     update();
 }
 
