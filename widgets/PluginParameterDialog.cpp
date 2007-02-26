@@ -60,7 +60,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QFont font(pluginBox->font());
     font.setBold(true);
 
-    QLabel *nameLabel = new QLabel(plugin->getDescription().c_str());
+    QLabel *nameLabel = new QLabel(plugin->getName().c_str());
     nameLabel->setWordWrap(true);
     nameLabel->setFont(font);
 
@@ -300,7 +300,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
         int increment = 1024;
         if (fePlugin) {
             size = fePlugin->getPreferredBlockSize();
-            std::cerr << "Feature extraction plugin \"" << fePlugin->getDescription() << "\" reports preferred block size as " << size << std::endl;
+            std::cerr << "Feature extraction plugin \"" << fePlugin->getName() << "\" reports preferred block size as " << size << std::endl;
             if (size == 0) size = 1024;
             increment = fePlugin->getPreferredStepSize();
             if (increment == 0) {
