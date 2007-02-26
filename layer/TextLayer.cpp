@@ -776,8 +776,3 @@ TextLayer::setProperties(const QXmlAttributes &attributes)
     }
 }
 
-
-#ifdef INCLUDE_MOCFILES
-#include "TextLayer.moc.cpp"
-#endif
-

@@ -1441,8 +1441,3 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
     if (ok) setPlotStyle(style);
 }
 
-
-#ifdef INCLUDE_MOCFILES
-#include "TimeValueLayer.moc.cpp"
-#endif
-

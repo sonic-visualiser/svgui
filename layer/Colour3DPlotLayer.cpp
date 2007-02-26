@@ -815,8 +815,3 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
     setNormalizeVisibleArea(normalizeVisibleArea);
 }
 
-#ifdef INCLUDE_MOCFILES
-#include "Colour3DPlotLayer.moc.cpp"
-#endif
-
-

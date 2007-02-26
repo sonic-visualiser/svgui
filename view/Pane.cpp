@@ -219,9 +219,9 @@ Pane::updateHeadsUpDisplay()
             m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
             m_vthumb->blockSignals(false);
 
-            std::cerr << "Vertical thumbwheel: min 0, max " << max
-                      << ", default " << defaultStep << ", value "
-                      << m_vthumb->getValue() << std::endl;
+//            std::cerr << "Vertical thumbwheel: min 0, max " << max
+//                      << ", default " << defaultStep << ", value "
+//                      << m_vthumb->getValue() << std::endl;
 
         }
     }
@@ -236,11 +236,9 @@ Pane::updateHeadsUpDisplay()
                     this, SLOT(zoomLevelChanged()));
         }
         if (haveVThumb) {
-            std::cerr << "vthumb is visible, moving to " << height() -86 << std::endl;
             m_headsUpDisplay->setFixedHeight(m_vthumb->height() + m_hthumb->height());
             m_headsUpDisplay->move(width() - 86, height() - 86);
         } else {
-            std::cerr << "vthumb is invisible, moving to " << height() -51 << std::endl;
             m_headsUpDisplay->setFixedHeight(m_hthumb->height());
             m_headsUpDisplay->move(width() - 86, height() - 16);
         }
@@ -1757,8 +1755,4 @@ Pane::toXmlString(QString indent, QString extraAttributes) const
 	 .arg(m_centreLineVisible).arg(height()).arg(extraAttributes));
 }
 
-
-#ifdef INCLUDE_MOCFILES
-#include "Pane.moc.cpp"
-#endif
 

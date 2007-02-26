@@ -670,7 +670,3 @@ PropertyBox::mouseLeftWidget()
 }
 
 
-#ifdef INCLUDE_MOCFILES
-#include "PropertyBox.moc.cpp"
-#endif
-

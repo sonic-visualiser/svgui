@@ -442,7 +442,3 @@ PaneStack::sizePropertyStacks()
 }
     
 
-#ifdef INCLUDE_MOCFILES
-#include "PaneStack.moc.cpp"
-#endif
-
