@@ -202,12 +202,15 @@ Pane::updateHeadsUpDisplay()
 //        std::cerr << "set default value to " << m_hthumb->getDefaultValue() << std::endl;
     }
 
+    bool haveVThumb = false;
+
     if (layer) {
         int defaultStep = 0;
         int max = layer->getVerticalZoomSteps(defaultStep);
         if (max == 0) {
             m_vthumb->hide();
         } else {
+            haveVThumb = true;
             m_vthumb->show();
             m_vthumb->blockSignals(true);
             m_vthumb->setMinimumValue(0);
@@ -232,10 +235,14 @@ Pane::updateHeadsUpDisplay()
             connect(m_manager, SIGNAL(zoomLevelChanged()),
                     this, SLOT(zoomLevelChanged()));
         }
-        if (m_vthumb->isVisible()) {
+        if (haveVThumb) {
+            std::cerr << "vthumb is visible, moving to " << height() -86 << std::endl;
+            m_headsUpDisplay->setFixedHeight(m_vthumb->height() + m_hthumb->height());
             m_headsUpDisplay->move(width() - 86, height() - 86);
         } else {
-            m_headsUpDisplay->move(width() - 86, height() - 51);
+            std::cerr << "vthumb is invisible, moving to " << height() -51 << std::endl;
+            m_headsUpDisplay->setFixedHeight(m_hthumb->height());
+            m_headsUpDisplay->move(width() - 86, height() - 16);
         }
     } else {
         m_headsUpDisplay->hide();
