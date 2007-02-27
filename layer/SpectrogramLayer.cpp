@@ -2099,7 +2099,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 if (overallMag.sample(mag)) {
                     //!!! scaling would change here
                     overallMagChanged = true;
+#ifdef DEBUG_SPECTROGRAM_REPAINT
                     std::cerr << "Overall mag changed (again?) at column " << s << ", to [" << overallMag.getMin() << "->" << overallMag.getMax() << "]" << std::endl;
+#endif
                 }
             }
 	}
@@ -2123,9 +2125,13 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     if (overallMagChanged) {
         m_viewMags[v] = overallMag;
+#ifdef DEBUG_SPECTROGRAM_REPAINT
         std::cerr << "Overall mag is now [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "] - will be updating" << std::endl;
+#endif
     } else {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
         std::cerr << "Overall mag unchanged at [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << std::endl;
+#endif
     }
 
     Profiler profiler2("SpectrogramLayer::paint: draw image", true);
