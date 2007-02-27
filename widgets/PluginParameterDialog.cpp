@@ -48,7 +48,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     setLayout(grid);
 
     QGroupBox *pluginBox = new QGroupBox;
-    pluginBox->setTitle(tr("Plugin"));
+    pluginBox->setTitle(plugin->getType().c_str());
     grid->addWidget(pluginBox, 0, 0);
 
     QGridLayout *subgrid = new QGridLayout;
@@ -57,12 +57,15 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     subgrid->setSpacing(0);
     subgrid->setMargin(10);
 
-    QFont font(pluginBox->font());
-    font.setBold(true);
+    QFont boldFont(pluginBox->font());
+    boldFont.setBold(true);
+
+    QFont italicFont(pluginBox->font());
+    italicFont.setItalic(true);
 
     QLabel *nameLabel = new QLabel(plugin->getName().c_str());
     nameLabel->setWordWrap(true);
-    nameLabel->setFont(font);
+    nameLabel->setFont(boldFont);
 
     QLabel *makerLabel = new QLabel(plugin->getMaker().c_str());
     makerLabel->setWordWrap(true);
@@ -74,9 +77,16 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
     copyrightLabel->setWordWrap(true);
 
-    QLabel *typeLabel = new QLabel(plugin->getType().c_str());
-    typeLabel->setWordWrap(true);
-    typeLabel->setFont(font);
+//    QLabel *typeLabel = new QLabel(plugin->getType().c_str());
+//    typeLabel->setWordWrap(true);
+//    typeLabel->setFont(boldFont);
+
+    QLabel *descriptionLabel = 0;
+    if (plugin->getDescription() != "") {
+        descriptionLabel = new QLabel(plugin->getDescription().c_str());
+        descriptionLabel->setWordWrap(true);
+        descriptionLabel->setFont(italicFont);
+    }
 
     int row = 0;
 
@@ -86,20 +96,30 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     subgrid->addWidget(nameLabel, row, 1);
     row++;
 
-    label = new QLabel(tr("Type:"));
-    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    subgrid->addWidget(label, row, 0);
-    subgrid->addWidget(typeLabel, row, 1);
-    row++;
-    
-    m_outputLabel = new QLabel(tr("Output:"));
-    m_outputLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    subgrid->addWidget(m_outputLabel, row, 0);
-    m_outputValue = new QLabel;
-    subgrid->addWidget(m_outputValue, row, 1);
-    m_outputLabel->hide();
-    m_outputValue->hide();
-    row++;
+    if (descriptionLabel) {
+//        label = new QLabel(tr("Description:"));
+//        label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+//        subgrid->addWidget(label, row, 0);
+        subgrid->addWidget(descriptionLabel, row, 1);
+        row++;
+    }
+
+    Vamp::PluginHostAdapter *fePlugin =
+        dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
+
+    if (fePlugin) {
+        label = new QLabel(tr("Version:"));
+        label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+        subgrid->addWidget(label, row, 0);
+        subgrid->addWidget(versionLabel, row, 1);
+        row++;
+    }
+
+//    label = new QLabel(tr("Type:"));
+//    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+//    subgrid->addWidget(label, row, 0);
+//    subgrid->addWidget(typeLabel, row, 1);
+//    row++;
 
     label = new QLabel(tr("Maker:"));
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -112,11 +132,27 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     subgrid->addWidget(label, row, 0);
     subgrid->addWidget(copyrightLabel, row, 1);
     row++;
+    
+    m_outputSpacer = new QLabel;
+    subgrid->addWidget(m_outputSpacer, row, 0);
+    m_outputSpacer->setFixedHeight(7);
+    m_outputSpacer->hide();
+    row++;
 
-    label = new QLabel(tr("Version:"));
-    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    subgrid->addWidget(label, row, 0);
-    subgrid->addWidget(versionLabel, row, 1);
+    m_outputLabel = new QLabel(tr("Output:"));
+    m_outputLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    subgrid->addWidget(m_outputLabel, row, 0);
+    m_outputValue = new QLabel;
+    m_outputValue->setFont(boldFont);
+    subgrid->addWidget(m_outputValue, row, 1);
+    m_outputLabel->hide();
+    m_outputValue->hide();
+    row++;
+
+    m_outputDescription = new QLabel;
+    m_outputDescription->setFont(italicFont);
+    subgrid->addWidget(m_outputDescription, row, 1);
+    m_outputDescription->hide();
     row++;
 
     subgrid->setColumnStretch(1, 2);
@@ -207,16 +243,26 @@ PluginParameterDialog::~PluginParameterDialog()
 
 
 void
-PluginParameterDialog::setOutputLabel(QString text)
+PluginParameterDialog::setOutputLabel(QString text,
+                                      QString description)
 {
     if (text == "") {
+        m_outputSpacer->hide();
         m_outputLabel->hide();
         m_outputValue->hide();
+        m_outputDescription->hide();
     } else {
+        m_outputSpacer->show();
         m_outputValue->setText(text);
         m_outputValue->setWordWrap(true);
+        m_outputDescription->setText(description);
         m_outputLabel->show();
         m_outputValue->show();
+        if (description != "") {
+            m_outputDescription->show();
+        } else {
+            m_outputDescription->hide();
+        }
     }
 }
 

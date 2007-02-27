@@ -256,6 +256,23 @@ Pane::updateVerticalPanner()
 {
     if (!m_vpan || !m_manager || !m_manager->getZoomWheelsEnabled()) return;
 
+    // In principle we should show or hide the panner on the basis of
+    // whether the top layer has adjustable display extents, and we do
+    // that below.  However, we have no basis for layout of the panner
+    // if the vertical scroll wheel is not also present.  So if we
+    // have no vertical scroll wheel, we should remove the panner as
+    // well.  Ideally any layer that implements display extents should
+    // implement vertical zoom steps as well, but they don't all at
+    // the moment.
+
+    Layer *layer = 0;
+    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    int discard;
+    if (layer && layer->getVerticalZoomSteps(discard) == 0) {
+        m_vpan->hide();
+        return;
+    }
+
     float vmin, vmax, dmin, dmax;
     if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax) && vmax != vmin) {
         float y0 = (dmin - vmin) / (vmax - vmin);
