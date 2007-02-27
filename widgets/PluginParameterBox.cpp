@@ -115,6 +115,9 @@ PluginParameterBox::populate()
         // an integer!
 
         QLabel *label = new QLabel(name);
+        if (params[i].description != "") {
+            label->setToolTip(params[i].description.c_str());
+        }
         m_layout->addWidget(label, i + offset, 0);
 
         ParamRec rec;

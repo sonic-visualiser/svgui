@@ -48,7 +48,7 @@ public:
                                int targetChannels,
                                int defaultChannel);
 
-    void setOutputLabel(QString output);
+    void setOutputLabel(QString output, QString description);
 
     void setShowProcessingOptions(bool showWindowSize,
                                   bool showFrequencyDomainOptions);
@@ -91,6 +91,8 @@ protected:
 
     QLabel *m_outputLabel;
     QLabel *m_outputValue;
+    QLabel *m_outputDescription;
+    QLabel *m_outputSpacer;
 
     QGroupBox *m_channelBox;
     bool m_haveChannelBoxData;
