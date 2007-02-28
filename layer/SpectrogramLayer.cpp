@@ -490,7 +490,7 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 0: setColourScale(LinearColourScale); break;
 	case 1: setColourScale(MeterColourScale); break;
 	case 2: setColourScale(dBColourScale); break;
-	case 3: setColourScale(OtherColourScale); break;
+	case 3: setColourScale(dBSquaredColourScale); break;
 	case 4: setColourScale(PhaseColourScale); break;
 	}
     } else if (name == "Frequency Scale") {
@@ -1097,15 +1097,12 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
 	
     default:
     case LinearColourScale:
-//	value = int
-//	    (input * (m_normalizeColumns ? 1.0 : 50.0) * 255.0) + 1;
         value = int(((input - min) / (max - min)) * 255.f) + 1;
 	break;
 	
     case MeterColourScale:
-//	value = AudioLevel::multiplier_to_preview
-//	    (input * (m_normalizeColumns ? 1.0 : 50.0), 255) + 1;
-        value = AudioLevel::multiplier_to_preview((input - min) / (max - min), 255) + 1;
+        value = AudioLevel::multiplier_to_preview
+            ((input - min) / (max - min), 254) + 1;
 	break;
 	
     case dBColourScale:
@@ -1128,9 +1125,7 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
 	value = int(input * 255.f) + 1;
 	break;
 
-    case OtherColourScale:
-        //!!! the "Other" scale is just where our current experiments go
-        //!!! power rather than v
+    case dBSquaredColourScale:
         input = (input * input) / (max * max);
         if (input > 0.f) {
             input = 10.f * log10f(input);
@@ -1146,22 +1141,12 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
 	if (input > 1.f) input = 1.f;
 	value = int(input * 255.f) + 1;
 	break;
-        
-/*!!!
-	input = 10.f * log10f(input * input);
-        input = 1.f / (1.f + expf(- (input + 20.f) / 10.f));
-
-	if (input < 0.f) input = 0.f;
-	if (input > 1.f) input = 1.f;
-	value = int(input * 255.f) + 1;
-*/
-	break;
 	
     case PhaseColourScale:
 	value = int((input * 127.0 / M_PI) + 128);
 	break;
     }
-    
+
     if (value > UCHAR_MAX) value = UCHAR_MAX;
     if (value < 0) value = 0;
     return value;
@@ -1196,7 +1181,7 @@ SpectrogramLayer::getInputForDisplayValue(unsigned char uc) const
 	value = int(input);
 	break;
 
-    case OtherColourScale:
+    case dBSquaredColourScale:
 	input = float(value - 1) / 255.0;
 	input = (input * 80.0) - 80.0;
 	input = powf(10.0, input) / 20.0;
@@ -2260,10 +2245,6 @@ bool
 SpectrogramLayer::getValueExtents(float &min, float &max,
                                   bool &logarithmic, QString &unit) const
 {
-//!!!
-//    min = getEffectiveMinFrequency();
-//    max = getEffectiveMaxFrequency();
-
     if (!m_model) return false;
 
     int sr = m_model->getSampleRate();
@@ -2511,27 +2492,6 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 
     cw = paint.fontMetrics().width("-80dB");
 
-/*!!!
-    switch (m_colourScale) {
-    default:
-    case LinearColourScale:
-	cw = paint.fontMetrics().width(QString("0.00"));
-	break;
-
-    case MeterColourScale:
-    case dBColourScale:
-    case OtherColourScale:
-	cw = std::max(paint.fontMetrics().width(tr("-Inf")),
-		      paint.fontMetrics().width(tr("-90")));
-	break;
-
-    case PhaseColourScale:
-	cw = paint.fontMetrics().width(QString("-") + QChar(0x3c0));
-	break;
-    }
-*/
-
-
     return cw;
 }
 
@@ -2596,34 +2556,6 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	paint.drawRect(4 + cw - cbw, textHeight * topLines + 4, cbw - 1, ch + 1);
 
 	QString top, bottom;
-/*!!!
-	switch (m_colourScale) {
-	default:
-	case LinearColourScale:
-	    top = (m_normalizeColumns ? "1.0" : "0.02");
-	    bottom = (m_normalizeColumns ? "0.0" : "0.00");
-	    break;
-
-	case MeterColourScale:
-	    top = (m_normalizeColumns ? QString("0") :
-		   QString("%1").arg(int(AudioLevel::multiplier_to_dB(0.02))));
-	    bottom = QString("%1").
-		arg(int(AudioLevel::multiplier_to_dB
-			(AudioLevel::preview_to_multiplier(0, 255))));
-	    break;
-
-	case dBColourScale:
-	case OtherColourScale:
-	    top = "0";
-	    bottom = "-80";
-	    break;
-
-	case PhaseColourScale:
-	    top = QChar(0x3c0);
-	    bottom = "-" + top;
-	    break;
-	}
-*/
         float min = m_viewMags[v].getMin();
         float max = m_viewMags[v].getMax();
 
@@ -2663,23 +2595,12 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
             float value = AudioLevel::dB_to_multiplier(dBval);
             int colour = getDisplayValue(v, value * m_gain);
-/*
-            float value = min + (((max - min) * i) / (ch - 1));
-            if (value < m_threshold) value = 0.f;
-            int colour = getDisplayValue(v, value * m_gain);
-*/
-/*
-	    int colour = (i * 255) / ch + 1;
-*/
+
 	    paint.setPen(m_palette.getColour(colour));
 
             int y = textHeight * topLines + 4 + ch - i;
 
             paint.drawLine(5 + cw - cbw, y, cw + 2, y);
-
-//	    paint.drawLine(5, 4 + textHeight + ch - i,
-//			   cw + 2, 4 + textHeight + ch - i);
-
 
             if (i == 0) {
                 lasty = y;
@@ -2801,7 +2722,6 @@ class SpectrogramRangeMapper : public RangeMapper
 {
 public:
     SpectrogramRangeMapper(int sr, int fftsize) :
-//        m_dist((float(sr) / 2) - (float(sr) / fftsize)),
         m_dist(float(sr) / 2),
         m_s2(sqrtf(sqrtf(2))) { }
     ~SpectrogramRangeMapper() { }

@@ -130,7 +130,7 @@ public:
 	LinearColourScale,
 	MeterColourScale,
 	dBColourScale,
-        OtherColourScale,
+        dBSquaredColourScale,
 	PhaseColourScale
     };
 
