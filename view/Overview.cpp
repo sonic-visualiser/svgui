@@ -101,6 +101,8 @@ Overview::paintEvent(QPaintEvent *e)
 {
     // Recalculate zoom in case the size of the widget has changed.
 
+//    std::cerr << "Overview::paintEvent: width is " << width() << ", centre frame " << m_centreFrame << std::endl;
+
     size_t startFrame = getModelsStartFrame();
     size_t frameCount = getModelsEndFrame() - getModelsStartFrame();
     int zoomLevel = frameCount / width();
@@ -116,7 +118,10 @@ Overview::paintEvent(QPaintEvent *e)
 	centreFrame = (startFrame + getModelsEndFrame())/2;
     }
     if (centreFrame != m_centreFrame) {
+//        std::cerr << "Overview::paintEvent: Centre frame changed from "
+//                  << m_centreFrame << " to " << centreFrame << " and thus start frame from " << getStartFrame();
 	m_centreFrame = centreFrame;
+//        std::cerr << " to " << getStartFrame() << std::endl;
 	emit centreFrameChanged(m_centreFrame, false, PlaybackIgnore);
     }
 
