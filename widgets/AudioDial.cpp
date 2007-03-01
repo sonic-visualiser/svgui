@@ -66,7 +66,7 @@ using std::cerr;
 #define AUDIO_DIAL_RANGE (AUDIO_DIAL_MAX - AUDIO_DIAL_MIN)
 
 
-static int dialsExtant = 0;
+//static int dialsExtant = 0;
 
 
 // Constructor.
@@ -82,7 +82,7 @@ AudioDial::AudioDial(QWidget *parent) :
 {
     m_mouseDial = false;
     m_mousePressed = false;
-    ++dialsExtant;
+//    ++dialsExtant;
 }
 
 
@@ -90,13 +90,13 @@ AudioDial::AudioDial(QWidget *parent) :
 AudioDial::~AudioDial (void)
 {
     delete m_rangeMapper;
-    --dialsExtant;
+//    --dialsExtant;
 }
 
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
-    std::cerr << "AudioDial[" << this << "][\"" << objectName().toStdString() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << std::endl;
+//    std::cerr << "AudioDial[" << this << "][\"" << objectName().toStdString() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << std::endl;
 
     if (m_rangeMapper == mapper) return;
 
