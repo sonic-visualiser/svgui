@@ -466,18 +466,28 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
     if (m_aggressive) {
 
+#ifdef DEBUG_WAVEFORM_PAINT
+        std::cerr << "WaveformLayer::paint: aggressive is true" << std::endl;
+#endif
+
 	if (m_cacheValid && (zoomLevel != m_cacheZoomLevel)) {
 	    m_cacheValid = false;
+	}
+
+	if (!m_cache || m_cache->width() != w || m_cache->height() != h) {
+#ifdef DEBUG_WAVEFORM_PAINT
+            if (m_cache) {
+                std::cerr << "WaveformLayer::paint: cache size " << m_cache->width() << "x" << m_cache->height() << " differs from view size " << w << "x" << h << ": regenerating aggressive cache" << std::endl;
+            }
+#endif
+	    delete m_cache;
+	    m_cache = new QPixmap(w, h);
+            m_cacheValid = false;
 	}
 
 	if (m_cacheValid) {
 	    viewPainter.drawPixmap(rect, *m_cache, rect);
 	    return;
-	}
-
-	if (!m_cache || m_cache->width() != w || m_cache->height() != h) {
-	    delete m_cache;
-	    m_cache = new QPixmap(w, h);
 	}
 
 	paint = new QPainter(m_cache);
