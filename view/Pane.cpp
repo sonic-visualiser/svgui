@@ -1615,8 +1615,8 @@ Pane::zoomWheelsEnabledChanged()
 void
 Pane::zoomLevelChanged()
 {
-    std::cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
-              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << std::endl;
+//    std::cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
+//              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << std::endl;
 
     if (m_manager && m_manager->getZoomWheelsEnabled()) {
         updateHeadsUpDisplay();
