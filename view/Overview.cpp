@@ -32,6 +32,7 @@ Overview::Overview(QWidget *w) :
     setObjectName(tr("Overview"));
     m_followPan = false;
     m_followZoom = false;
+    setPlaybackFollow(PlaybackIgnore);
 }
 
 void
@@ -47,36 +48,39 @@ Overview::modelReplaced()
 }
 
 void
-Overview::registerView(View *widget)
+Overview::registerView(View *view)
 {
-    m_widgets.insert(widget);
+    m_views.insert(view);
     update(); 
 }
 
 void
-Overview::unregisterView(View *widget)
+Overview::unregisterView(View *view)
 {
-    m_widgets.erase(widget);
+    m_views.erase(view);
     update();
 }
 
 void
-Overview::viewManagerCentreFrameChanged(void *p, unsigned long f, bool)
+Overview::globalCentreFrameChanged(unsigned long f)
 {
-//    std::cerr << "Overview[" << this << "]::viewManagerCentreFrameChanged(" 
-//	      << p << ", " << f << ")" << std::endl;
+    update();
+}
 
-    if (p == this) return;
-    if (m_widgets.find(p) != m_widgets.end()) {
+void
+Overview::viewCentreFrameChanged(View *v, unsigned long f)
+{
+    if (m_views.find(v) != m_views.end()) {
 	update();
     }
-}
+}    
 
 void
 Overview::viewManagerZoomLevelChanged(void *p, unsigned long z, bool)
 {
     if (p == this) return;
-    if (m_widgets.find(p) != m_widgets.end()) {
+    View *v = (View *)p;
+    if (m_views.find(v) != m_views.end()) {
 	update();
     }
 }
@@ -113,7 +117,7 @@ Overview::paintEvent(QPaintEvent *e)
     }
     if (centreFrame != m_centreFrame) {
 	m_centreFrame = centreFrame;
-	emit centreFrameChanged(this, m_centreFrame, false);
+	emit centreFrameChanged(m_centreFrame, false, PlaybackIgnore);
     }
 
     View::paintEvent(e);
@@ -135,7 +139,7 @@ Overview::paintEvent(QPaintEvent *e)
     int prevx0 = -10;
     int prevx1 = -10;
 
-    for (WidgetSet::iterator i = m_widgets.begin(); i != m_widgets.end(); ++i) {
+    for (ViewSet::iterator i = m_views.begin(); i != m_views.end(); ++i) {
 	if (!*i) continue;
 
 	View *w = (View *)*i;
@@ -164,7 +168,7 @@ void
 Overview::mousePressEvent(QMouseEvent *e)
 {
     m_clickPos = e->pos();
-    for (WidgetSet::iterator i = m_widgets.begin(); i != m_widgets.end(); ++i) {
+    for (ViewSet::iterator i = m_views.begin(); i != m_views.end(); ++i) {
 	if (*i) {
 	    m_clickedInRange = true;
 	    m_dragCentreFrame = ((View *)*i)->getCentreFrame();
@@ -206,7 +210,7 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     
     if (std::max(m_centreFrame, newCentreFrame) -
 	std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
-	emit centreFrameChanged(this, newCentreFrame, true);
+	emit centreFrameChanged(newCentreFrame, true, PlaybackIgnore);
     }
 }
 
@@ -214,7 +218,7 @@ void
 Overview::mouseDoubleClickEvent(QMouseEvent *e)
 {
     long frame = getFrameForX(e->x());
-    emit centreFrameChanged(this, frame, true);
+    emit centreFrameChanged(frame, true, PlaybackIgnore);
 }
 
 void

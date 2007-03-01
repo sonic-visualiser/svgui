@@ -28,6 +28,14 @@
 class AudioPlaySource;
 class Model;
 
+enum PlaybackFollowMode {
+    PlaybackScrollContinuous,
+    PlaybackScrollPage,
+    PlaybackIgnore
+};
+
+class View;
+
 /**
  * The ViewManager manages properties that may need to be synchronised
  * between separate Views.  For example, it handles signals associated
@@ -133,13 +141,16 @@ public:
     bool getZoomWheelsEnabled() const { return m_zoomWheelsEnabled; }
 
 signals:
-    /** Emitted when a widget pans.  The originator identifies the widget. */
-    void centreFrameChanged(void *originator, unsigned long frame, bool locked);
+    /** Emitted when user causes the global centre frame to change. */
+    void globalCentreFrameChanged(unsigned long frame);
 
-    /** Emitted when a widget zooms.  The originator identifies the widget. */
+    /** Emitted when user scrolls a view, but doesn't affect global centre. */
+    void viewCentreFrameChanged(View *v, unsigned long frame);
+
+    /** Emitted when a view zooms.  The originator identifies the view. */
     void zoomLevelChanged(void *originator, unsigned long zoom, bool locked);
 
-    /** Emitted when a widget zooms. */
+    /** Emitted when a view zooms. */
     void zoomLevelChanged();
 
     /** Emitted when the playback frame changes. */
@@ -171,10 +182,13 @@ signals:
     /** Emitted when the zoom wheels have been toggled. */
     void zoomWheelsEnabledChanged();
 
+public slots:
+    void viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode);
+
 protected slots:
     void checkPlayStatus();
     void playStatusChanged(bool playing);
-    void considerSeek(void *, unsigned long, bool);
+    void seek(unsigned long);
     void considerZoomChange(void *, unsigned long, bool);
 
 protected:

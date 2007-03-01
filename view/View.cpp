@@ -327,7 +327,7 @@ View::setCentreFrame(size_t f, bool e)
 	    changeVisible = true;
 	}
 
-	if (e) emit centreFrameChanged(this, f, m_followPan);
+	if (e) emit centreFrameChanged(f, m_followPan, m_followPlay);
     }
 
     return changeVisible;
@@ -531,25 +531,32 @@ void
 View::setViewManager(ViewManager *manager)
 {
     if (m_manager) {
-	m_manager->disconnect(this, SLOT(viewManagerCentreFrameChanged(void *, unsigned long, bool)));
+	m_manager->disconnect(this, SLOT(globalCentreFrameChanged(unsigned long)));
+	m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, unsigned long)));
+	m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(unsigned long)));
 	m_manager->disconnect(this, SLOT(viewManagerZoomLevelChanged(void *, unsigned long, bool)));
-	disconnect(m_manager, SIGNAL(centreFrameChanged(void *, unsigned long, bool)));
+        m_manager->disconnect(this, SLOT(toolModeChanged()));
+        m_manager->disconnect(this, SLOT(selectionChanged()));
+        m_manager->disconnect(this, SLOT(overlayModeChanged()));
+        m_manager->disconnect(this, SLOT(zoomWheelsEnabledChanged()));
+        disconnect(m_manager, SIGNAL(viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode)));
 	disconnect(m_manager, SIGNAL(zoomLevelChanged(void *, unsigned long, bool)));
-	disconnect(m_manager, SIGNAL(toolModeChanged()));
-	disconnect(m_manager, SIGNAL(selectionChanged()));
-	disconnect(m_manager, SIGNAL(inProgressSelectionChanged()));
     }
 
     m_manager = manager;
     if (m_followPan) setCentreFrame(m_manager->getGlobalCentreFrame(), false);
     if (m_followZoom) setZoomLevel(m_manager->getGlobalZoom());
 
-    connect(m_manager, SIGNAL(centreFrameChanged(void *, unsigned long, bool)),
-	    this, SLOT(viewManagerCentreFrameChanged(void *, unsigned long, bool)));
+    connect(m_manager, SIGNAL(globalCentreFrameChanged(unsigned long)),
+	    this, SLOT(globalCentreFrameChanged(unsigned long)));
+    connect(m_manager, SIGNAL(viewCentreFrameChanged(unsigned long)),
+	    this, SLOT(viewCentreFrameChanged(View *, unsigned long)));
     connect(m_manager, SIGNAL(playbackFrameChanged(unsigned long)),
 	    this, SLOT(viewManagerPlaybackFrameChanged(unsigned long)));
+
     connect(m_manager, SIGNAL(zoomLevelChanged(void *, unsigned long, bool)),
 	    this, SLOT(viewManagerZoomLevelChanged(void *, unsigned long, bool)));
+
     connect(m_manager, SIGNAL(toolModeChanged()),
 	    this, SLOT(toolModeChanged()));
     connect(m_manager, SIGNAL(selectionChanged()),
@@ -561,8 +568,11 @@ View::setViewManager(ViewManager *manager)
     connect(m_manager, SIGNAL(zoomWheelsEnabledChanged()),
             this, SLOT(zoomWheelsEnabledChanged()));
 
-    connect(this, SIGNAL(centreFrameChanged(void *, unsigned long, bool)),
-	    m_manager, SIGNAL(centreFrameChanged(void *, unsigned long, bool)));
+    connect(this, SIGNAL(centreFrameChanged(unsigned long, bool,
+                                            PlaybackFollowMode)),
+            m_manager, SLOT(viewCentreFrameChanged(unsigned long, bool,
+                                                   PlaybackFollowMode)));
+
     connect(this, SIGNAL(zoomLevelChanged(void *, unsigned long, bool)),
 	    m_manager, SIGNAL(zoomLevelChanged(void *, unsigned long, bool)));
 
@@ -705,14 +715,9 @@ View::modelChanged(size_t startFrame, size_t endFrame)
     if (long(startFrame) < myStartFrame) startFrame = myStartFrame;
     if (endFrame > myEndFrame) endFrame = myEndFrame;
 
-    int x0 = getXForFrame(startFrame);
-    int x1 = getXForFrame(endFrame + 1);
-    if (x1 < x0) x1 = x0;
-
     checkProgress(obj);
 
     update();
-//!!!    update(x0, 0, x1 - x0 + 1, height());
 }    
 
 void
@@ -767,17 +772,17 @@ View::layerNameChanged()
 }
 
 void
-View::viewManagerCentreFrameChanged(void *p, unsigned long f, bool locked)
+View::globalCentreFrameChanged(unsigned long f)
 {
-    if (m_followPan && p != this && locked) {
-	if (m_manager && (sender() == m_manager)) {
-#ifdef DEBUG_VIEW_WIDGET_PAINT
-	    std::cerr << this << ": manager frame changed " << f << " from " << p << std::endl;
-#endif
-	    setCentreFrame(f);
-	    if (p == this) repaint();
-	}
+    if (m_followPan) {
+        setCentreFrame(f, false);
     }
+}
+
+void
+View::viewCentreFrameChanged(View *v, unsigned long f)
+{
+    // We do nothing with this, but a subclass might
 }
 
 void
@@ -797,7 +802,7 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
 
     case PlaybackScrollContinuous:
 	if (QApplication::mouseButtons() == Qt::NoButton) {
-	    setCentreFrame(f, true); //!!!
+	    setCentreFrame(f, false);
 	}
 	break;
 
@@ -1391,23 +1396,32 @@ View::paintEvent(QPaintEvent *e)
     }
     paint.end();
 
-    if (m_followPlay != PlaybackScrollContinuous) {
+    bool showPlayPointer = true;
+    if (m_followPlay == PlaybackScrollContinuous) {
+        showPlayPointer = false;
+    } else if (long(m_playPointerFrame) <= getStartFrame() ||
+               m_playPointerFrame >= getEndFrame()) {
+        showPlayPointer = false;
+    } else if (m_manager && !m_manager->isPlaying()) {
+        if (m_playPointerFrame == getCentreFrame() &&
+            m_followPlay != PlaybackIgnore) {
+            showPlayPointer = false;
+        }
+    }
+
+    if (showPlayPointer) {
 
 	paint.begin(this);
 
-	if (long(m_playPointerFrame) > getStartFrame() &&
-	    m_playPointerFrame < getEndFrame()) {
-
-	    int playx = getXForFrame(m_playPointerFrame);
-
-	    paint.setPen(Qt::black);
-	    paint.drawLine(playx - 1, 0, playx - 1, height() - 1);
-	    paint.drawLine(playx + 1, 0, playx + 1, height() - 1);
-	    paint.drawPoint(playx, 0);
-	    paint.drawPoint(playx, height() - 1);
-	    paint.setPen(Qt::white);
-	    paint.drawLine(playx, 1, playx, height() - 2);
-	}
+        int playx = getXForFrame(m_playPointerFrame);
+        
+        paint.setPen(Qt::black);
+        paint.drawLine(playx - 1, 0, playx - 1, height() - 1);
+        paint.drawLine(playx + 1, 0, playx + 1, height() - 1);
+        paint.drawPoint(playx, 0);
+        paint.drawPoint(playx, height() - 1);
+        paint.setPen(Qt::white);
+        paint.drawLine(playx, 1, playx, height() - 2);
 
 	paint.end();
     }
