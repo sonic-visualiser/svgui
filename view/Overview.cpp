@@ -210,7 +210,7 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     
     if (std::max(m_centreFrame, newCentreFrame) -
 	std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
-	emit centreFrameChanged(newCentreFrame, true, PlaybackIgnore);
+	emit centreFrameChanged(newCentreFrame, true, PlaybackScrollContinuous);
     }
 }
 
@@ -218,7 +218,7 @@ void
 Overview::mouseDoubleClickEvent(QMouseEvent *e)
 {
     long frame = getFrameForX(e->x());
-    emit centreFrameChanged(frame, true, PlaybackIgnore);
+    emit centreFrameChanged(frame, true, PlaybackScrollContinuous);
 }
 
 void

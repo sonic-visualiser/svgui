@@ -549,7 +549,7 @@ View::setViewManager(ViewManager *manager)
 
     connect(m_manager, SIGNAL(globalCentreFrameChanged(unsigned long)),
 	    this, SLOT(globalCentreFrameChanged(unsigned long)));
-    connect(m_manager, SIGNAL(viewCentreFrameChanged(unsigned long)),
+    connect(m_manager, SIGNAL(viewCentreFrameChanged(View *, unsigned long)),
 	    this, SLOT(viewCentreFrameChanged(View *, unsigned long)));
     connect(m_manager, SIGNAL(playbackFrameChanged(unsigned long)),
 	    this, SLOT(viewManagerPlaybackFrameChanged(unsigned long)));

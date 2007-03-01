@@ -507,7 +507,7 @@ PluginParameterDialog::setAdvancedVisible(bool visible)
     settings.setValue("advancedvisible", visible);
     settings.endGroup();
 
-    std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
+//    std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
 
     setMinimumHeight(sizeHint().height());
     adjustSize();
