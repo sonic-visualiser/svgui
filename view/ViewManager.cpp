@@ -17,6 +17,7 @@
 #include "base/AudioPlaySource.h"
 #include "data/model/Model.h"
 #include "base/CommandHistory.h"
+#include "View.h"
 
 #include <QSettings>
 
@@ -48,10 +49,6 @@ ViewManager::ViewManager() :
     settings.endGroup();
 
     connect(this, 
-	    SIGNAL(centreFrameChanged(void *, unsigned long, bool)),
-	    SLOT(considerSeek(void *, unsigned long, bool)));
-
-    connect(this, 
 	    SIGNAL(zoomLevelChanged(void *, unsigned long, bool)),
 	    SLOT(considerZoomChange(void *, unsigned long, bool)));
 }
@@ -76,6 +73,7 @@ ViewManager::setGlobalCentreFrame(unsigned long f)
     std::cout << "ViewManager::setGlobalCentreFrame to " << f << std::endl;
 #endif
     m_globalCentreFrame = f;
+    emit globalCentreFrameChanged(f);
 }
 
 unsigned long
@@ -335,17 +333,31 @@ ViewManager::isPlaying() const
 }
 
 void
-ViewManager::considerSeek(void *p, unsigned long f, bool locked)
+ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
+                                    PlaybackFollowMode mode)
 {
+    View *v = dynamic_cast<View *>(sender());
+
     if (locked) {
-	m_globalCentreFrame = f;
+        m_globalCentreFrame = f;
+        emit globalCentreFrameChanged(f);
+    } else {
+        if (v) emit viewCentreFrameChanged(v, f);
     }
 
-#ifdef DEBUG_VIEW_MANAGER 
-    std::cout << "ViewManager::considerSeek(" << p << ", " << f << ", " << locked << ")" << std::endl;
-#endif
+    if (mode == PlaybackIgnore) {
+        return;
+    }
 
-    if (p == this || !locked) return;
+    seek(f);
+}
+
+void
+ViewManager::seek(unsigned long f)
+{
+#ifdef DEBUG_VIEW_MANAGER 
+    std::cout << "ViewManager::seek(" << f << ")" << std::endl;
+#endif
 
     if (m_playSource && m_playSource->isPlaying()) {
 	unsigned long playFrame = m_playSource->getCurrentPlayingFrame();
@@ -356,9 +368,13 @@ ViewManager::considerSeek(void *p, unsigned long f, bool locked)
 #ifdef DEBUG_VIEW_MANAGER 
 	    std::cout << "ViewManager::considerSeek: reseeking from " << playFrame << " to " << f << std::endl;
 #endif
+            emit playbackFrameChanged(f);
 	}
     } else {
-	m_playbackFrame = f; //!!! only if that view is in scroll mode?
+        if (m_playbackFrame != f) {
+            m_playbackFrame = f;
+            emit playbackFrameChanged(f);
+        }
     }
 }
 

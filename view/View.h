@@ -189,11 +189,6 @@ public:
 	return false;
     }
 
-    enum PlaybackFollowMode {
-	PlaybackScrollContinuous,
-	PlaybackScrollPage,
-	PlaybackIgnore
-    };
     virtual void setPlaybackFollow(PlaybackFollowMode m);
     virtual PlaybackFollowMode getPlaybackFollow() const { return m_followPlay; }
 
@@ -240,7 +235,10 @@ signals:
     void propertyContainerNameChanged(PropertyContainer *pc);
     void propertyChanged(PropertyContainer::PropertyName);
 
-    void centreFrameChanged(void *, unsigned long, bool);
+    void centreFrameChanged(unsigned long frame,
+                            bool globalScroll,
+                            PlaybackFollowMode followMode);
+
     void zoomLevelChanged(void *, unsigned long, bool);
 
     void contextHelpChanged(const QString &);
@@ -254,7 +252,8 @@ public slots:
     virtual void layerParameterRangesChanged();
     virtual void layerNameChanged();
 
-    virtual void viewManagerCentreFrameChanged(void *, unsigned long, bool);
+    virtual void globalCentreFrameChanged(unsigned long);
+    virtual void viewCentreFrameChanged(View *, unsigned long);
     virtual void viewManagerPlaybackFrameChanged(unsigned long);
     virtual void viewManagerZoomLevelChanged(void *, unsigned long, bool);
 

@@ -34,8 +34,8 @@ class Overview : public View
 public:
     Overview(QWidget *parent = 0);
 
-    void registerView(View *widget);
-    void unregisterView(View *widget);
+    void registerView(View *view);
+    void unregisterView(View *view);
 
     virtual QString getPropertyContainerIconName() const { return "panner"; }
 
@@ -43,7 +43,8 @@ public slots:
     virtual void modelChanged(size_t startFrame, size_t endFrame);
     virtual void modelReplaced();
 
-    virtual void viewManagerCentreFrameChanged(void *, unsigned long, bool);
+    virtual void globalCentreFrameChanged(unsigned long);
+    virtual void viewCentreFrameChanged(View *, unsigned long);
     virtual void viewManagerZoomLevelChanged(void *, unsigned long, bool);
     virtual void viewManagerPlaybackFrameChanged(unsigned long);
 
@@ -62,8 +63,8 @@ protected:
     bool m_clickedInRange;
     size_t m_dragCentreFrame;
     
-    typedef std::set<void *> WidgetSet;
-    WidgetSet m_widgets;
+    typedef std::set<View *> ViewSet;
+    ViewSet m_views;
 };
 
 #endif
