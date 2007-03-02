@@ -109,11 +109,11 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
 
 int
 TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
-					 int *min, int *max) const
+					 int *min, int *max, int *deflt) const
 {
     //!!! factor this colour handling stuff out into a colour manager class
 
-    int deft = 0;
+    int val = 0;
 
     if (name == "Colour") {
 
@@ -121,49 +121,54 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
             
             if (min) *min = 0;
             if (max) *max = ColourMapper::getColourMapCount() - 1;
+            if (deflt) *deflt = 0;
 
-            deft = m_colourMap;
+            val = m_colourMap;
         
         } else {
 
             if (min) *min = 0;
             if (max) *max = 5;
+            if (deflt) *deflt = 0;
 
-            if (m_colour == Qt::black) deft = 0;
-            else if (m_colour == Qt::darkRed) deft = 1;
-            else if (m_colour == Qt::darkBlue) deft = 2;
-            else if (m_colour == Qt::darkGreen) deft = 3;
-            else if (m_colour == QColor(200, 50, 255)) deft = 4;
-            else if (m_colour == QColor(255, 150, 50)) deft = 5;
+            if (m_colour == Qt::black) val = 0;
+            else if (m_colour == Qt::darkRed) val = 1;
+            else if (m_colour == Qt::darkBlue) val = 2;
+            else if (m_colour == Qt::darkGreen) val = 3;
+            else if (m_colour == QColor(200, 50, 255)) val = 4;
+            else if (m_colour == QColor(255, 150, 50)) val = 5;
         }
 
     } else if (name == "Plot Type") {
 	
 	if (min) *min = 0;
 	if (max) *max = 5;
+        if (deflt) *deflt = int(PlotConnectedPoints);
 	
-	deft = int(m_plotStyle);
+	val = int(m_plotStyle);
 
     } else if (name == "Vertical Scale") {
 	
 	if (min) *min = 0;
 	if (max) *max = 3;
+        if (deflt) *deflt = int(AutoAlignScale);
 	
-	deft = int(m_verticalScale);
+	val = int(m_verticalScale);
 
     } else if (name == "Scale Units") {
 
+        if (deflt) *deflt = 0;
         if (m_model) {
-            deft = UnitDatabase::getInstance()->getUnitId
+            val = UnitDatabase::getInstance()->getUnitId
                 (m_model->getScaleUnits());
         }
 
     } else {
 	
-	deft = Layer::getPropertyRangeAndValue(name, min, max);
+	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
-    return deft;
+    return val;
 }
 
 QString

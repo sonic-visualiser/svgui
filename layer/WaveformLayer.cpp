@@ -137,60 +137,66 @@ WaveformLayer::getPropertyGroupName(const PropertyName &name) const
 
 int
 WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
-                                        int *min, int *max) const
+                                        int *min, int *max, int *deflt) const
 {
-    int deft = 0;
+    int val = 0;
 
-    int garbage0, garbage1;
+    int garbage0, garbage1, garbage2;
     if (!min) min = &garbage0;
     if (!max) max = &garbage1;
+    if (!deflt) deflt = &garbage2;
 
     if (name == "Gain") {
 
 	*min = -50;
 	*max = 50;
+        *deflt = 0;
 
-	deft = lrint(log10(m_gain) * 20.0);
-	if (deft < *min) deft = *min;
-	if (deft > *max) deft = *max;
+	val = lrint(log10(m_gain) * 20.0);
+	if (val < *min) val = *min;
+	if (val > *max) val = *max;
 
     } else if (name == "Normalize Visible Area") {
 
-        deft = (m_autoNormalize ? 1 : 0);
+        val = (m_autoNormalize ? 1 : 0);
+        *deflt = 0;
 
     } else if (name == "Colour") {
 
 	*min = 0;
 	*max = 5;
+        *deflt = 0;
 
-	if (m_colour == Qt::black) deft = 0;
-	else if (m_colour == Qt::darkRed) deft = 1;
+	if (m_colour == Qt::black) val = 0;
+	else if (m_colour == Qt::darkRed) val = 1;
 	else if (m_colour == Qt::darkBlue ||
-                 m_colour == QColor(84, 177, 248)) deft = 2;
-	else if (m_colour == Qt::darkGreen) deft = 3;
-	else if (m_colour == QColor(200, 50, 255)) deft = 4;
-	else if (m_colour == QColor(255, 150, 50)) deft = 5;
+                 m_colour == QColor(84, 177, 248)) val = 2;
+	else if (m_colour == Qt::darkGreen) val = 3;
+	else if (m_colour == QColor(200, 50, 255)) val = 4;
+	else if (m_colour == QColor(255, 150, 50)) val = 5;
 
     } else if (name == "Channels") {
 
         *min = 0;
         *max = 2;
-        if (m_channelMode == MixChannels) deft = 1;
-        else if (m_channelMode == MergeChannels) deft = 2;
-        else deft = 0;
+        *deflt = 0;
+        if (m_channelMode == MixChannels) val = 1;
+        else if (m_channelMode == MergeChannels) val = 2;
+        else val = 0;
 
     } else if (name == "Scale") {
 
 	*min = 0;
 	*max = 2;
+        *deflt = 0;
 
-	deft = (int)m_scale;
+	val = (int)m_scale;
 
     } else {
-	deft = Layer::getPropertyRangeAndValue(name, min, max);
+	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
-    return deft;
+    return val;
 }
 
 QString

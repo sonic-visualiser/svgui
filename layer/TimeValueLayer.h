@@ -69,7 +69,7 @@ public:
     virtual PropertyType getPropertyType(const PropertyName &) const;
     virtual QString getPropertyGroupName(const PropertyName &) const;
     virtual int getPropertyRangeAndValue(const PropertyName &,
-					   int *min, int *max) const;
+                                         int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);

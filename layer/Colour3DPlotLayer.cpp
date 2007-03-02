@@ -123,41 +123,46 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
 
 int
 Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
-                                        int *min, int *max) const
+                                            int *min, int *max, int *deflt) const
 {
-    int deft = 0;
+    int val = 0;
 
-    int garbage0, garbage1;
+    int garbage0, garbage1, garbage2;
     if (!min) min = &garbage0;
     if (!max) max = &garbage1;
+    if (!deflt) deflt = &garbage2;
 
     if (name == "Colour Scale") {
 
 	*min = 0;
 	*max = 2;
+        *deflt = (int)LinearScale;
 
-	deft = (int)m_colourScale;
+	val = (int)m_colourScale;
 
     } else if (name == "Colour") {
 
 	*min = 0;
 	*max = ColourMapper::getColourMapCount() - 1;
+        *deflt = 0;
 
-	deft = m_colourMap;
+	val = m_colourMap;
 
     } else if (name == "Normalize Columns") {
 	
-	deft = (m_normalizeColumns ? 1 : 0);
+        *deflt = 0;
+	val = (m_normalizeColumns ? 1 : 0);
 
     } else if (name == "Normalize Visible Area") {
 	
-	deft = (m_normalizeVisibleArea ? 1 : 0);
+        *deflt = 0;
+	val = (m_normalizeVisibleArea ? 1 : 0);
 
     } else {
-	deft = Layer::getPropertyRangeAndValue(name, min, max);
+	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
-    return deft;
+    return val;
 }
 
 QString

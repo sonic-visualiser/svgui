@@ -254,8 +254,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
     int row = m_layout->rowCount();
 
-    int min = 0, max = 0, value = 0;
-    value = m_container->getPropertyRangeAndValue(name, &min, &max);
+    int min = 0, max = 0, value = 0, deflt = 0;
+    value = m_container->getPropertyRangeAndValue(name, &min, &max, &deflt);
 
     bool have = (m_propertyControllers.find(name) !=
 		 m_propertyControllers.end());
@@ -358,7 +358,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	    dial->setMaximum(max);
 	    dial->setPageStep(1);
 	    dial->setNotchesVisible((max - min) <= 12);
-	    dial->setDefaultValue(value);
+	    dial->setDefaultValue(deflt);
             dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
             dial->setShowToolTip(true);
 	    connect(dial, SIGNAL(valueChanged(int)),

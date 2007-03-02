@@ -81,7 +81,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setColourScale(LinearColourScale);
         setColourMap(ColourMapper::Sunset);
         setFrequencyScale(LogFrequencyScale);
-        m_initialGain = 20;
         setGain(20);
     } else if (config == MelodicPeaks) {
 	setWindowSize(4096);
@@ -210,137 +209,158 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
 
 int
 SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
-					   int *min, int *max) const
+					   int *min, int *max, int *deflt) const
 {
-    int deft = 0;
+    int val = 0;
 
-    int garbage0, garbage1;
+    int garbage0, garbage1, garbage2;
     if (!min) min = &garbage0;
     if (!max) max = &garbage1;
+    if (!deflt) deflt = &garbage2;
 
     if (name == "Gain") {
 
 	*min = -50;
 	*max = 50;
 
-	deft = lrintf(log10(m_initialGain) * 20.0);
-	if (deft < *min) deft = *min;
-	if (deft > *max) deft = *max;
+        *deflt = lrintf(log10(m_initialGain) * 20.0);;
+	if (*deflt < *min) *deflt = *min;
+	if (*deflt > *max) *deflt = *max;
+
+	val = lrintf(log10(m_gain) * 20.0);
+	if (val < *min) val = *min;
+	if (val > *max) val = *max;
 
     } else if (name == "Threshold") {
 
 	*min = -50;
 	*max = 0;
 
-	deft = lrintf(AudioLevel::multiplier_to_dB(m_initialThreshold));
-	if (deft < *min) deft = *min;
-	if (deft > *max) deft = *max;
+        *deflt = lrintf(AudioLevel::multiplier_to_dB(m_initialThreshold));
+	if (*deflt < *min) *deflt = *min;
+	if (*deflt > *max) *deflt = *max;
+
+	val = lrintf(AudioLevel::multiplier_to_dB(m_threshold));
+	if (val < *min) val = *min;
+	if (val > *max) val = *max;
 
     } else if (name == "Colour Rotation") {
 
 	*min = 0;
 	*max = 256;
+        *deflt = m_initialRotation;
 
-	deft = m_initialRotation;
+	val = m_colourRotation;
 
     } else if (name == "Colour Scale") {
 
 	*min = 0;
 	*max = 4;
+        *deflt = int(dBColourScale);
 
-	deft = (int)m_colourScale;
+	val = (int)m_colourScale;
 
     } else if (name == "Colour") {
 
 	*min = 0;
 	*max = ColourMapper::getColourMapCount() - 1;
+        *deflt = 0;
 
-	deft = m_colourMap;
+	val = m_colourMap;
 
     } else if (name == "Window Size") {
 
 	*min = 0;
 	*max = 10;
+        *deflt = 5;
 	
-	deft = 0;
+	val = 0;
 	int ws = m_windowSize;
-	while (ws > 32) { ws >>= 1; deft ++; }
+	while (ws > 32) { ws >>= 1; val ++; }
 
     } else if (name == "Window Increment") {
 	
 	*min = 0;
 	*max = 5;
-	
-        deft = m_windowHopLevel;
+        *deflt = 2;
+
+        val = m_windowHopLevel;
     
     } else if (name == "Zero Padding") {
 	
 	*min = 0;
 	*max = 1;
+        *deflt = 0;
 	
-        deft = m_zeroPadLevel > 0 ? 1 : 0;
+        val = m_zeroPadLevel > 0 ? 1 : 0;
     
     } else if (name == "Min Frequency") {
 
 	*min = 0;
 	*max = 9;
+        *deflt = 1;
 
 	switch (m_minFrequency) {
-	case 0: default: deft = 0; break;
-	case 10: deft = 1; break;
-	case 20: deft = 2; break;
-	case 40: deft = 3; break;
-	case 100: deft = 4; break;
-	case 250: deft = 5; break;
-	case 500: deft = 6; break;
-	case 1000: deft = 7; break;
-	case 4000: deft = 8; break;
-	case 10000: deft = 9; break;
+	case 0: default: val = 0; break;
+	case 10: val = 1; break;
+	case 20: val = 2; break;
+	case 40: val = 3; break;
+	case 100: val = 4; break;
+	case 250: val = 5; break;
+	case 500: val = 6; break;
+	case 1000: val = 7; break;
+	case 4000: val = 8; break;
+	case 10000: val = 9; break;
 	}
     
     } else if (name == "Max Frequency") {
 
 	*min = 0;
 	*max = 9;
+        *deflt = 6;
 
 	switch (m_maxFrequency) {
-	case 500: deft = 0; break;
-	case 1000: deft = 1; break;
-	case 1500: deft = 2; break;
-	case 2000: deft = 3; break;
-	case 4000: deft = 4; break;
-	case 6000: deft = 5; break;
-	case 8000: deft = 6; break;
-	case 12000: deft = 7; break;
-	case 16000: deft = 8; break;
-	default: deft = 9; break;
+	case 500: val = 0; break;
+	case 1000: val = 1; break;
+	case 1500: val = 2; break;
+	case 2000: val = 3; break;
+	case 4000: val = 4; break;
+	case 6000: val = 5; break;
+	case 8000: val = 6; break;
+	case 12000: val = 7; break;
+	case 16000: val = 8; break;
+	default: val = 9; break;
 	}
 
     } else if (name == "Frequency Scale") {
 
 	*min = 0;
 	*max = 1;
-	deft = (int)m_frequencyScale;
+        *deflt = int(LinearFrequencyScale);
+	val = (int)m_frequencyScale;
 
     } else if (name == "Bin Display") {
 
 	*min = 0;
 	*max = 2;
-	deft = (int)m_binDisplay;
+        *deflt = int(AllBins);
+	val = (int)m_binDisplay;
 
     } else if (name == "Normalize Columns") {
 	
-	deft = (m_normalizeColumns ? 1 : 0);
+        *deflt = 0;
+	val = (m_normalizeColumns ? 1 : 0);
 
     } else if (name == "Normalize Visible Area") {
 	
-	deft = (m_normalizeVisibleArea ? 1 : 0);
+        *deflt = 0;
+	val = (m_normalizeVisibleArea ? 1 : 0);
 
     } else {
-	deft = Layer::getPropertyRangeAndValue(name, min, max);
+	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
-    return deft;
+    return val;
 }
 
 QString
