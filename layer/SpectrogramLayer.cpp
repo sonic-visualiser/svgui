@@ -48,8 +48,11 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_zeroPadLevel(0),
     m_fftSize(1024),
     m_gain(1.0),
+    m_initialGain(1.0),
     m_threshold(0.0),
+    m_initialThreshold(0.0),
     m_colourRotation(0),
+    m_initialRotation(0),
     m_minFrequency(10),
     m_maxFrequency(8000),
     m_initialMaxFrequency(8000),
@@ -60,27 +63,34 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
     m_lastEmittedZoomStep(-1),
+    m_lastPaintBlockWidth(0),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
     m_exiting(false),
     m_sliceableModel(0)
 {
-    if (config == MelodicRange) {
+    if (config == FullRangeDb) {
+        m_initialMaxFrequency = 0;
+        setMaxFrequency(0);
+    } else if (config == MelodicRange) {
 	setWindowSize(8192);
 	setWindowHopLevel(4);
-//	setWindowType(ParzenWindow);
-        m_initialMaxFrequency = 1000;
-	setMaxFrequency(1000);
+        m_initialMaxFrequency = 1500;
+	setMaxFrequency(1500);
+        setMinFrequency(40);
 	setColourScale(LinearColourScale);
+        setColourMap(ColourMapper::Sunset);
+        setFrequencyScale(LogFrequencyScale);
+        m_initialGain = 20;
+        setGain(20);
     } else if (config == MelodicPeaks) {
 	setWindowSize(4096);
 	setWindowHopLevel(5);
-//	setWindowType(BlackmanWindow);
         m_initialMaxFrequency = 2000;
 	setMaxFrequency(2000);
 	setMinFrequency(40);
 	setFrequencyScale(LogFrequencyScale);
-	setColourScale(MeterColourScale);
+	setColourScale(LinearColourScale);
 	setBinDisplay(PeakFrequencies);
 	setNormalizeColumns(true);
     }
@@ -213,7 +223,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = -50;
 	*max = 50;
 
-	deft = lrint(log10(m_gain) * 20.0);
+	deft = lrintf(log10(m_initialGain) * 20.0);
 	if (deft < *min) deft = *min;
 	if (deft > *max) deft = *max;
 
@@ -222,7 +232,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = -50;
 	*max = 0;
 
-	deft = lrintf(AudioLevel::multiplier_to_dB(m_threshold));
+	deft = lrintf(AudioLevel::multiplier_to_dB(m_initialThreshold));
 	if (deft < *min) deft = *min;
 	if (deft > *max) deft = *max;
 
@@ -231,7 +241,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = 0;
 	*max = 256;
 
-	deft = m_colourRotation;
+	deft = m_initialRotation;
 
     } else if (name == "Colour Scale") {
 
@@ -345,8 +355,8 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	default:
 	case 0: return tr("Linear");
 	case 1: return tr("Meter");
-	case 2: return tr("dB");
-	case 3: return tr("dB^2");
+	case 2: return tr("dBV^2");
+	case 3: return tr("dBV");
 	case 4: return tr("Phase");
 	}
     }
@@ -489,8 +499,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	default:
 	case 0: setColourScale(LinearColourScale); break;
 	case 1: setColourScale(MeterColourScale); break;
-	case 2: setColourScale(dBColourScale); break;
-	case 3: setColourScale(dBSquaredColourScale); break;
+	case 2: setColourScale(dBSquaredColourScale); break;
+	case 3: setColourScale(dBColourScale); break;
 	case 4: setColourScale(PhaseColourScale); break;
 	}
     } else if (name == "Frequency Scale") {
@@ -1084,7 +1094,7 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
     } else if (!m_normalizeColumns) {
         if (m_colourScale == LinearColourScale ||
             m_colourScale == MeterColourScale) {
-            max = 0.1f;
+//            max = 0.1f;
         }
     }
 
@@ -1104,29 +1114,9 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
         value = AudioLevel::multiplier_to_preview
             ((input - min) / (max - min), 254) + 1;
 	break;
-	
-    case dBColourScale:
-        //!!! experiment with normalizing the visible area this way.
-        //In any case, we need to have some indication of what the dB
-        //scale is relative to.
-        input = input / max;
-        if (input > 0.f) {
-            input = 10.f * log10f(input);
-        } else {
-            input = thresh;
-        }
-        if (min > 0.f) {
-            thresh = 10.f * log10f(min);
-            if (thresh < -80.f) thresh = -80.f;
-        }
-	input = (input - thresh) / (-thresh);
-	if (input < 0.f) input = 0.f;
-	if (input > 1.f) input = 1.f;
-	value = int(input * 255.f) + 1;
-	break;
 
     case dBSquaredColourScale:
-        input = (input * input) / (max * max);
+        input = ((input - min) * (input - min)) / ((max - min) * (max - min));
         if (input > 0.f) {
             input = 10.f * log10f(input);
         } else {
@@ -1134,6 +1124,26 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
         }
         if (min > 0.f) {
             thresh = 10.f * log10f(min * min);
+            if (thresh < -80.f) thresh = -80.f;
+        }
+	input = (input - thresh) / (-thresh);
+	if (input < 0.f) input = 0.f;
+	if (input > 1.f) input = 1.f;
+	value = int(input * 255.f) + 1;
+	break;
+	
+    case dBColourScale:
+        //!!! experiment with normalizing the visible area this way.
+        //In any case, we need to have some indication of what the dB
+        //scale is relative to.
+        input = (input - min) / (max - min);
+        if (input > 0.f) {
+            input = 10.f * log10f(input);
+        } else {
+            input = thresh;
+        }
+        if (min > 0.f) {
+            thresh = 10.f * log10f(min);
             if (thresh < -80.f) thresh = -80.f;
         }
 	input = (input - thresh) / (-thresh);
@@ -1174,14 +1184,14 @@ SpectrogramLayer::getInputForDisplayValue(unsigned char uc) const
 	    / (m_normalizeColumns ? 1.0 : 50.0);
 	break;
 
-    case dBColourScale:
+    case dBSquaredColourScale:
 	input = float(value - 1) / 255.0;
 	input = (input * 80.0) - 80.0;
 	input = powf(10.0, input) / 20.0;
 	value = int(input);
 	break;
 
-    case dBSquaredColourScale:
+    case dBColourScale:
 	input = float(value - 1) / 255.0;
 	input = (input * 80.0) - 80.0;
 	input = powf(10.0, input) / 20.0;
@@ -1846,12 +1856,31 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         x1 = v->width();
     }
 
-    //!!! This width should really depend on how fast the machine is
-    //at redrawing the spectrogram.  We could fairly easily time that,
-    //in this function, and adjust accordingly.  The following is
-    //probably about as small as the block width should go.
-    int paintBlockWidth = (300000 / zoomLevel);
+    struct timeval tv;
+    (void)gettimeofday(&tv, 0);
+    RealTime mainPaintStart = RealTime::fromTimeval(tv);
+
+    int paintBlockWidth = m_lastPaintBlockWidth;
+
+    if (paintBlockWidth == 0) {
+        paintBlockWidth = (300000 / zoomLevel);
+    } else {
+        RealTime lastTime = m_lastPaintTime;
+        while (lastTime > RealTime::fromMilliseconds(200) &&
+               paintBlockWidth > 50) {
+            paintBlockWidth /= 2;
+            lastTime = lastTime / 2;
+        }
+        while (lastTime < RealTime::fromMilliseconds(90) &&
+               paintBlockWidth < 1500) {
+            paintBlockWidth *= 2;
+            lastTime = lastTime * 2;
+        }
+    }
+
     if (paintBlockWidth < 20) paintBlockWidth = 20;
+
+    std::cerr << "[" << this << "]: last paint width: " << m_lastPaintBlockWidth << ", last paint time: " << m_lastPaintTime << ", new paint width: " << paintBlockWidth << std::endl;
 
     if (cache.validArea.width() > 0) {
 
@@ -2171,6 +2200,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint() returning" << std::endl;
 #endif
+
+    m_lastPaintBlockWidth = paintBlockWidth;
+    (void)gettimeofday(&tv, 0);
+    m_lastPaintTime = RealTime::fromTimeval(tv) - mainPaintStart;
 
     if (fftSuspended) fft->resume();
 }

@@ -129,8 +129,8 @@ public:
     enum ColourScale {
 	LinearColourScale,
 	MeterColourScale,
-	dBColourScale,
         dBSquaredColourScale,
+	dBColourScale,
 	PhaseColourScale
     };
 
@@ -232,8 +232,11 @@ protected:
     size_t              m_zeroPadLevel;
     size_t              m_fftSize;
     float               m_gain;
+    float               m_initialGain;
     float               m_threshold;
+    float               m_initialThreshold;
     int                 m_colourRotation;
+    int                 m_initialRotation;
     size_t              m_minFrequency;
     size_t              m_maxFrequency;
     size_t              m_initialMaxFrequency;
@@ -245,6 +248,9 @@ protected:
     bool                m_normalizeColumns;
     bool                m_normalizeVisibleArea;
     int                 m_lastEmittedZoomStep;
+
+    mutable int         m_lastPaintBlockWidth;
+    mutable RealTime    m_lastPaintTime;
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 
