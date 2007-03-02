@@ -202,7 +202,7 @@ public:
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyContainer::PropertyType getPropertyType(const PropertyName &) const;
     virtual int getPropertyRangeAndValue(const PropertyName &,
-					 int *min, int *max) const;
+					 int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
@@ -346,8 +346,9 @@ public:
     PropertyType getPropertyType(const PropertyName &n) const {
 	return m_v->getPropertyType(n);
     }
-    int getPropertyRangeAndValue(const PropertyName &n, int *min, int *max) const {
-	return m_v->getPropertyRangeAndValue(n, min, max);
+    int getPropertyRangeAndValue(const PropertyName &n, int *min, int *max,
+                                 int *deflt) const {
+	return m_v->getPropertyRangeAndValue(n, min, max, deflt);
     }
     QString getPropertyValueLabel(const PropertyName &n, int value) const {
 	return m_v->getPropertyValueLabel(n, value);

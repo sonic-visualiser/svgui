@@ -86,35 +86,37 @@ TimeInstantLayer::getPropertyType(const PropertyName &) const
 
 int
 TimeInstantLayer::getPropertyRangeAndValue(const PropertyName &name,
-					 int *min, int *max) const
+                                           int *min, int *max, int *deflt) const
 {
-    int deft = 0;
+    int val = 0;
 
     if (name == "Colour") {
 
 	if (min) *min = 0;
 	if (max) *max = 5;
+        if (deflt) *deflt = 0;
 
-	if (m_colour == Qt::black) deft = 0;
-	else if (m_colour == Qt::darkRed) deft = 1;
-	else if (m_colour == Qt::darkBlue) deft = 2;
-	else if (m_colour == Qt::darkGreen) deft = 3;
-	else if (m_colour == QColor(200, 50, 255)) deft = 4;
-	else if (m_colour == QColor(255, 150, 50)) deft = 5;
+	if (m_colour == Qt::black) val = 0;
+	else if (m_colour == Qt::darkRed) val = 1;
+	else if (m_colour == Qt::darkBlue) val = 2;
+	else if (m_colour == Qt::darkGreen) val = 3;
+	else if (m_colour == QColor(200, 50, 255)) val = 4;
+	else if (m_colour == QColor(255, 150, 50)) val = 5;
 
     } else if (name == "Plot Type") {
 	
 	if (min) *min = 0;
 	if (max) *max = 1;
+        if (deflt) *deflt = 0;
 	
-	deft = int(m_plotStyle);
+	val = int(m_plotStyle);
 
     } else {
 	
-	deft = Layer::getPropertyRangeAndValue(name, min, max);
+	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
-    return deft;
+    return val;
 }
 
 QString

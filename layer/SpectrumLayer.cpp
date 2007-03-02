@@ -131,36 +131,39 @@ SpectrumLayer::getPropertyGroupName(const PropertyName &name) const
 
 int
 SpectrumLayer::getPropertyRangeAndValue(const PropertyName &name,
-                                        int *min, int *max) const
+                                        int *min, int *max, int *deflt) const
 {
-    int deft = 0;
+    int val = 0;
 
-    int garbage0, garbage1;
+    int garbage0, garbage1, garbage2;
     if (!min) min = &garbage0;
     if (!max) max = &garbage1;
+    if (!deflt) deflt = &garbage2;
 
     if (name == "Window Size") {
 
 	*min = 0;
 	*max = 10;
+        *deflt = 5;
 	
-	deft = 0;
+	val = 0;
 	int ws = m_windowSize;
-	while (ws > 32) { ws >>= 1; deft ++; }
+	while (ws > 32) { ws >>= 1; val ++; }
 
     } else if (name == "Window Increment") {
 	
 	*min = 0;
 	*max = 5;
+        *deflt = 2;
 	
-        deft = m_windowHopLevel;
+        val = m_windowHopLevel;
     
     } else {
 
-        deft = SliceLayer::getPropertyRangeAndValue(name, min, max);
+        val = SliceLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
-    return deft;
+    return val;
 }
 
 QString

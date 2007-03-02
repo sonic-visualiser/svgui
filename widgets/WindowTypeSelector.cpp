@@ -48,10 +48,11 @@ WindowTypeSelector::WindowTypeSelector(WindowType defaultType, QWidget *parent) 
     m_windowShape = new WindowShapePreview;
 
     m_windowCombo = new QComboBox;
-    int min = 0, max = 0, i = 0;
+    int min = 0, max = 0, deflt = 0, i = 0;
     int window = int(defaultType);
     if (window == 999) {
-        window = prefs->getPropertyRangeAndValue("Window Type", &min, &max);
+        window = prefs->getPropertyRangeAndValue("Window Type", &min, &max,
+                                                 &deflt);
     }
     int index = 0;
     

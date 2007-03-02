@@ -96,17 +96,20 @@ View::getPropertyType(const PropertyContainer::PropertyName &name) const
 
 int
 View::getPropertyRangeAndValue(const PropertyContainer::PropertyName &name,
-			       int *min, int *max) const
+			       int *min, int *max, int *deflt) const
 {
+    if (deflt) *deflt = 1;
     if (name == "Global Scroll") return m_followPan;
     if (name == "Global Zoom") return m_followZoom;
     if (name == "Follow Playback") {
 	if (min) *min = 0;
 	if (max) *max = 2;
+        if (deflt) *deflt = int(PlaybackScrollPage);
 	return int(m_followPlay);
     }
     if (min) *min = 0;
     if (max) *max = 0;
+    if (deflt) *deflt = 0;
     return 0;
 }
 
