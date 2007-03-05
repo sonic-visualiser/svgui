@@ -576,7 +576,7 @@ SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
         setWindowType(Preferences::getInstance()->getWindowType());
         return;
     }
-    if (name == "Smooth Spectrogram") {
+    if (name == "Spectrogram Smoothing") {
         invalidatePixmapCaches();
         invalidateMagnitudes();
         emit layerParametersChanged();
@@ -1494,7 +1494,13 @@ SpectrogramLayer::getZeroPadLevel(const View *v) const
     //!!! tidy all this stuff
 
     if (m_binDisplay != AllBins) return 0;
-    if (!Preferences::getInstance()->getSmoothSpectrogram()) return 0;
+
+    Preferences::SpectrogramSmoothing smoothing = 
+        Preferences::getInstance()->getSpectrogramSmoothing();
+    
+    if (smoothing == Preferences::NoSpectrogramSmoothing ||
+        smoothing == Preferences::SpectrogramInterpolated) return 0;
+
     if (m_frequencyScale == LogFrequencyScale) return 3;
 
     int sr = m_model->getSampleRate();
@@ -2016,6 +2022,15 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     bool fftSuspended = false;
 
+    bool interpolate = false;
+    Preferences::SpectrogramSmoothing smoothing = 
+        Preferences::getInstance()->getSpectrogramSmoothing();
+    if (smoothing == Preferences::SpectrogramInterpolated ||
+        smoothing == Preferences::SpectrogramZeroPaddedAndInterpolated) {
+        interpolate = true;
+    }
+
+
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << (float(v->getFrameForX(1) - v->getFrameForX(0)) / increment) << " bins per pixel" << std::endl;
 #endif
@@ -2108,20 +2123,68 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                     value *= m_gain;
                 }
 
-		for (int y = y0i; y <= y1i; ++y) {
-		    
-		    if (y < 0 || y >= h) continue;
+                if (interpolate) {
+                    
+                    int ypi = y0i;
+                    if (q < maxbin - 1) ypi = int(yval[q + 2]);
 
-		    float yprop = sprop;
-		    if (y == y0i) yprop *= (y + 1) - y0;
-		    if (y == y1i) yprop *= y1 - y;
-		    ymag[y] += yprop * value;
-		    ydiv[y] += yprop;
-		}
+                    for (int y = ypi; y <= y1i; ++y) {
+                    
+                        if (y < 0 || y >= h) continue;
+                    
+                        float yprop = sprop;
+                        float iprop = yprop;
+
+                        if (ypi < y0i && y <= y0i) {
+
+                            float half = float(y0i - ypi) / 2;
+                            float dist = y - (ypi + half);
+
+                            if (dist >= 0) {
+                                iprop = (iprop * dist) / half;
+                                ymag[y] += iprop * value;
+                            }
+                        } else {
+                            if (y1i > y0i) {
+
+                                float half = float(y1i - y0i) / 2;
+                                float dist = y - (y0i + half);
+                                
+                                if (dist >= 0) {
+                                    iprop = (iprop * (half - dist)) / half;
+                                }
+                            }
+
+                            ymag[y] += iprop * value;
+                            ydiv[y] += yprop;
+                        }
+                    }
+
+                } else {
+
+                    for (int y = y0i; y <= y1i; ++y) {
+                    
+                        if (y < 0 || y >= h) continue;
+                    
+                        float yprop = sprop;
+                        if (y == y0i) yprop *= (y + 1) - y0;
+                        if (y == y1i) yprop *= y1 - y;
+
+                        for (int y = y0i; y <= y1i; ++y) {
+		    
+                            if (y < 0 || y >= h) continue;
+
+                            float yprop = sprop;
+                            if (y == y0i) yprop *= (y + 1) - y0;
+                            if (y == y1i) yprop *= y1 - y;
+                            ymag[y] += yprop * value;
+                            ydiv[y] += yprop;
+                        }
+                    }
+                }
 	    }
 
             if (mag.isSet()) {
-
 
                 if (s >= m_columnMags.size()) {
                     std::cerr << "INTERNAL ERROR: " << s << " >= "
