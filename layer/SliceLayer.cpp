@@ -436,7 +436,8 @@ int
 SliceLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 {
     if (m_energyScale == LinearScale) {
-	return paint.fontMetrics().width("0.0") + 13;
+	return std::max(paint.fontMetrics().width("0.0") + 13,
+                        paint.fontMetrics().width("x10-10"));
     } else {
 	return std::max(paint.fontMetrics().width(tr("0dB")),
 			paint.fontMetrics().width(tr("-Inf"))) + 13;
@@ -460,10 +461,22 @@ SliceLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
     QRect actual(rect.x(), rect.y() + yorigin - h, rect.width(), h);
 
+    int mult = 1;
+
     PaintAssistant::paintVerticalLevelScale
         (paint, actual, thresh, 1.0 / m_gain,
          PaintAssistant::Scale(m_energyScale),
+         mult,
          const_cast<std::vector<int> *>(&m_scalePoints));
+
+    if (mult != 1 && mult != 0) {
+        int log = lrintf(log10f(mult));
+        QString a = tr("x10");
+        QString b = QString("%1").arg(-log);
+        paint.drawText(3, 8 + paint.fontMetrics().ascent(), a);
+        paint.drawText(3 + paint.fontMetrics().width(a),
+                       3 + paint.fontMetrics().ascent(), b);
+    }
 }
 
 Layer::PropertyList
@@ -840,7 +853,7 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
 
 bool
 SliceLayer::getValueExtents(float &min, float &max, bool &logarithmic,
-                               QString &units) const
+                            QString &units) const
 {
     return false;
 }

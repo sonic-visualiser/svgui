@@ -25,7 +25,8 @@
 void
 PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 					float minVal, float maxVal,
-                                        Scale scale, std::vector<int> *vy)
+                                        Scale scale, int &mult,
+                                        std::vector<int> *vy)
 {
     static float meterdbs[] = { -40, -30, -20, -15, -10,
                                 -5, -3, -2, -1, -0.5, 0 };
@@ -39,6 +40,27 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
     int n = 10;
     if (vy) vy->clear();
 
+    float step = 0;
+    mult = 1;
+    if (scale == LinearScale) {
+        step = (maxVal - minVal) / n;
+        int round = 0, limit = 10000000;
+        do {
+            round = int(minVal + step * mult);
+            mult *= 10;
+        } while (!round && mult < limit);
+        if (round) {
+            mult /= 10;
+//            std::cerr << "\n\nstep goes from " << step;
+            step = float(round) / mult;
+            n = lrintf((maxVal - minVal) / step);
+            if (mult > 1) {
+                mult /= 10;
+            }
+//            std::cerr << " to " << step << " (n = " << n << ")" << std::endl;
+        }
+    }
+
     for (int i = 0; i <= n; ++i) {
         
         float val = 0.0, nval = 0.0;
@@ -47,15 +69,8 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         switch (scale) {
                 
         case LinearScale:
-            val = minVal + ((maxVal - minVal) * i) / n;
-            text = QString("%1").arg(val);//float(i) / n); // ... val
-/*
-            if (i == 0) text = "0.0";
-            else {
-                nval = -val;
-                if (i == n) text = "1.0";
-            }
-*/
+            val = (minVal + (i * step));
+            text = QString("%1").arg(mult * val);
             break;
             
         case MeterScale: // ... min, max
@@ -97,7 +112,8 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         if (spaceForLabel) {
             
             int tx = 3;
-            if (scale != LinearScale) {
+//            if (scale != LinearScale) {
+            if (paint.fontMetrics().width(text) < w - 10) {
                 tx = w - 10 - paint.fontMetrics().width(text);
             }
             
