@@ -38,6 +38,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QFrame>
+#include <QApplication>
 
 #include <cassert>
 #include <iostream>
@@ -548,6 +549,8 @@ PropertyBox::propertyControllerChanged(int value)
     } else if (type != PropertyContainer::InvalidProperty) {
 	m_container->setPropertyWithCommand(name, value);
     }
+    
+    updateContextHelp(obj);
 }
     
 void
@@ -562,8 +565,10 @@ PropertyBox::playGainChanged(float gain)
 void
 PropertyBox::playGainDialChanged(int dialValue)
 {
+    QObject *obj = sender();
     float gain = pow(10, float(dialValue) / 20.0);
     emit changePlayGain(gain);
+    updateContextHelp(obj);
 }
     
 void
@@ -578,10 +583,12 @@ PropertyBox::playPanChanged(float pan)
 void
 PropertyBox::playPanDialChanged(int dialValue)
 {
+    QObject *obj = sender();
     float pan = float(dialValue) / 50.0;
     if (pan < -1.0) pan = -1.0;
     if (pan >  1.0) pan =  1.0;
     emit changePlayPan(pan);
+    updateContextHelp(obj);
 }
 
 void
@@ -639,14 +646,33 @@ PropertyBox::layerVisibilityChanged(bool visible)
 void
 PropertyBox::mouseEnteredWidget()
 {
-    QWidget *w = dynamic_cast<QWidget *>(sender());
+    updateContextHelp(sender());
+}
+
+void
+PropertyBox::updateContextHelp(QObject *o)
+{
+    QWidget *w = dynamic_cast<QWidget *>(o);
     if (!w) return;
-    
+
     if (!m_container) return;
     QString cname = m_container->getPropertyContainerName();
     if (cname == "") return;
 
     QString wname = w->objectName();
+
+    QString extraText;
+    AudioDial *dial = dynamic_cast<AudioDial *>(w);
+    if (dial) {
+        float mv = dial->mappedValue();
+        QString unit = "";
+        if (dial->rangeMapper()) unit = dial->rangeMapper()->getUnit();
+        if (unit != "") {
+            extraText = tr(" (current value: %1%2)").arg(mv).arg(unit);
+        } else {
+            extraText = tr(" (current value: %1)").arg(mv);
+        }
+    }
 
     if (w == m_showButton) {
         emit contextHelpChanged(tr("Toggle Visibility of %1").arg(cname));
@@ -658,15 +684,17 @@ PropertyBox::mouseEnteredWidget()
         emit contextHelpChanged(tr("Toggle %1 property of %2")
                                 .arg(wname).arg(cname));
     } else {
-        emit contextHelpChanged(tr("Adjust %1 property of %2")
-                                .arg(wname).arg(cname));
+        emit contextHelpChanged(tr("Adjust %1 property of %2%3")
+                                .arg(wname).arg(cname).arg(extraText));
     }
 }
 
 void
 PropertyBox::mouseLeftWidget()
 {
-    emit contextHelpChanged("");
+    if (!(QApplication::mouseButtons() & Qt::LeftButton)) {
+        emit contextHelpChanged("");
+    }
 }
 
 

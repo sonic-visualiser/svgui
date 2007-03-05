@@ -72,6 +72,7 @@ protected slots:
 protected:
     void updatePropertyEditor(PropertyContainer::PropertyName,
                               bool rangeChanged = false);
+    void updateContextHelp(QObject *o);
 
     QLabel *m_nameWidget;
     QWidget *m_mainWidget;
