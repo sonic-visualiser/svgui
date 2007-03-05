@@ -103,6 +103,8 @@ public slots:
 
     void setDefaultValue(int defaultValue);
 
+    void setValue(int value);
+
     void setMappedValue(float mappedValue);
 
 protected:
