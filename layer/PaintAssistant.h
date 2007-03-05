@@ -28,7 +28,7 @@ public:
 
     static void paintVerticalLevelScale(QPainter &p, QRect rect,
                                         float minVal, float maxVal,
-                                        Scale scale,
+                                        Scale scale, int &multRtn,
                                         std::vector<int> *markCoordRtns = 0);
 
     static int getYForValue(Scale scale, float value,

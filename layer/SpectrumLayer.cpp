@@ -241,31 +241,6 @@ SpectrumLayer::preferenceChanged(PropertyContainer::PropertyName name)
     }
 }
 
-QString
-SpectrumLayer::toXmlString(QString indent, QString extraAttributes) const
-{
-    QString s;
-    
-    s += QString("windowSize=\"%1\" "
-		 "windowHopLevel=\"%2\"")
-        .arg(m_windowSize)
-        .arg(m_windowHopLevel);
-
-    return SliceLayer::toXmlString(indent, extraAttributes + " " + s);
-}
-
-void
-SpectrumLayer::setProperties(const QXmlAttributes &attributes)
-{
-    bool ok = false;
-
-    size_t windowSize = attributes.value("windowSize").toUInt(&ok);
-    if (ok) setWindowSize(windowSize);
-
-    size_t windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
-    if (ok) setWindowHopLevel(windowHopLevel);
-}
-
 bool
 SpectrumLayer::getValueExtents(float &min, float &max, bool &logarithmic,
                                QString &units) const
@@ -362,5 +337,32 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
     return description;
 }
 
+
+QString
+SpectrumLayer::toXmlString(QString indent, QString extraAttributes) const
+{
+    QString s;
+    
+    s += QString("windowSize=\"%1\" "
+		 "windowHopLevel=\"%2\"")
+        .arg(m_windowSize)
+        .arg(m_windowHopLevel);
+
+    return SliceLayer::toXmlString(indent, extraAttributes + " " + s);
+}
+
+void
+SpectrumLayer::setProperties(const QXmlAttributes &attributes)
+{
+    SliceLayer::setProperties(attributes);
+
+    bool ok = false;
+
+    size_t windowSize = attributes.value("windowSize").toUInt(&ok);
+    if (ok) setWindowSize(windowSize);
+
+    size_t windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
+    if (ok) setWindowHopLevel(windowHopLevel);
+}
 
     
