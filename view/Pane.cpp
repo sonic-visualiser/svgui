@@ -812,6 +812,8 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::SelectMode) {
 
+        if (!hasTopLayerTimeXAxis()) return;
+
 	bool closeToLeft = false, closeToRight = false;
 	Selection selection = getSelectionAt(e->x(), closeToLeft, closeToRight);
 
@@ -909,6 +911,8 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::SelectMode) {
 
+        if (!hasTopLayerTimeXAxis()) return;
+
 	if (m_manager && m_manager->haveInProgressSelection()) {
 
 	    bool exclusive;
@@ -970,7 +974,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     if (!m_clickedInRange) {
 	
-	if (mode == ViewManager::SelectMode) {
+	if (mode == ViewManager::SelectMode && hasTopLayerTimeXAxis()) {
 	    bool closeToLeft = false, closeToRight = false;
 	    getSelectionAt(e->x(), closeToLeft, closeToRight);
 	    if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
@@ -1010,6 +1014,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         }
 
     } else if (mode == ViewManager::SelectMode) {
+
+        if (!hasTopLayerTimeXAxis()) return;
 
         dragExtendSelection(e);
 
@@ -1689,6 +1695,8 @@ Pane::updateContextHelp(const QPoint *pos)
         help = tr("Click and drag to navigate");
         
     } else if (mode == ViewManager::SelectMode) {
+
+        if (!hasTopLayerTimeXAxis()) return;
 
         bool haveSelection = (m_manager && !m_manager->getSelections().empty());
 

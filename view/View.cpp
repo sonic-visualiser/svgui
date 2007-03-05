@@ -1071,6 +1071,15 @@ View::areLayerColoursSignificant() const
     return false;
 }
 
+bool
+View::hasTopLayerTimeXAxis() const
+{
+    LayerList::const_iterator i = m_layers.end();
+    if (i == m_layers.begin()) return false;
+    --i;
+    return (*i)->hasTimeXAxis();
+}
+
 void
 View::zoom(bool in)
 {
@@ -1435,6 +1444,8 @@ View::paintEvent(QPaintEvent *e)
 void
 View::drawSelections(QPainter &paint)
 {
+    if (!hasTopLayerTimeXAxis()) return;
+
     MultiSelection::SelectionList selections;
 
     if (m_manager) {

@@ -61,6 +61,8 @@ public:
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;
 
+    virtual bool hasTimeXAxis() const { return false; }
+
     virtual bool isLayerScrollable(const View *v) const { return false; }
 
     enum EnergyScale { LinearScale, MeterScale, dBScale };
