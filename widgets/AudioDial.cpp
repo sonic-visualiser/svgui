@@ -337,6 +337,13 @@ void AudioDial::setDefaultValue(int defaultValue)
 }
 
 
+void AudioDial::setValue(int value)
+{
+    QDial::setValue(value);
+    updateMappedValue(value);
+}
+
+
 void AudioDial::setMappedValue(float mappedValue)
 {
     if (m_rangeMapper) {
