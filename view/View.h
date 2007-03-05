@@ -285,6 +285,12 @@ protected:
     // rather than with a translucent fill.
     bool areLayerColoursSignificant() const;
 
+    // True if the top layer has a time axis on the x coordinate (this
+    // is generally the case except for spectrum/slice layers).  It
+    // will not be possible to make or display selections if this is
+    // false.
+    bool hasTopLayerTimeXAxis() const;
+
     bool setCentreFrame(size_t f, bool doEmit);
 
     void checkProgress(void *object);

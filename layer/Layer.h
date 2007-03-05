@@ -270,6 +270,8 @@ public:
 
     virtual bool needsTextLabelHeight() const { return false; }
 
+    virtual bool hasTimeXAxis() const { return true; }
+
     /**
      * Return the minimum and maximum values for the y axis of the
      * model in this layer, as well as whether the layer is configured
