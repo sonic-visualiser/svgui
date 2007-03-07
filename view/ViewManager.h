@@ -147,11 +147,8 @@ signals:
     /** Emitted when user scrolls a view, but doesn't affect global centre. */
     void viewCentreFrameChanged(View *v, unsigned long frame);
 
-    /** Emitted when a view zooms.  The originator identifies the view. */
-    void zoomLevelChanged(void *originator, unsigned long zoom, bool locked);
-
     /** Emitted when a view zooms. */
-    void zoomLevelChanged();
+    void viewZoomLevelChanged(View *v, unsigned long zoom, bool locked);
 
     /** Emitted when the playback frame changes. */
     void playbackFrameChanged(unsigned long frame);
@@ -184,12 +181,13 @@ signals:
 
 public slots:
     void viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode);
+    void viewZoomLevelChanged(unsigned long, bool);
 
 protected slots:
     void checkPlayStatus();
     void playStatusChanged(bool playing);
     void seek(unsigned long);
-    void considerZoomChange(void *, unsigned long, bool);
+//!!!    void considerZoomChange(void *, unsigned long, bool);
 
 protected:
     AudioPlaySource *m_playSource;

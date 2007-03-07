@@ -49,6 +49,7 @@ Pane::Pane(QWidget *w) :
     m_navigating(false),
     m_resizing(false),
     m_centreLineVisible(true),
+    m_scaleWidth(0),
     m_headsUpDisplay(0)
 {
     setObjectName("Pane");
@@ -232,8 +233,8 @@ Pane::updateHeadsUpDisplay()
         width() > 120 && height() > 100) {
         if (!m_headsUpDisplay->isVisible()) {
             m_headsUpDisplay->show();
-            connect(m_manager, SIGNAL(zoomLevelChanged()),
-                    this, SLOT(zoomLevelChanged()));
+            connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, unsigned long, bool)),
+                    this, SLOT(viewZoomLevelChanged(View *, unsigned long, bool)));
         }
         if (haveVThumb) {
             m_headsUpDisplay->setFixedHeight(m_vthumb->height() + m_hthumb->height());
@@ -245,8 +246,8 @@ Pane::updateHeadsUpDisplay()
     } else {
         m_headsUpDisplay->hide();
         if (m_manager) {
-            disconnect(m_manager, SIGNAL(zoomLevelChanged()),
-                       this, SLOT(zoomLevelChanged()));
+            disconnect(m_manager, SIGNAL(viewZoomLevelChanged(View *, unsigned long, bool)),
+                       this, SLOT(viewZoomLevelChanged(View *, unsigned long, bool)));
         }
     }
 }
@@ -418,9 +419,9 @@ Pane::paintEvent(QPaintEvent *e)
             break;
         }
 
-        verticalScaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
+        m_scaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
 
-        if (verticalScaleWidth > 0 && r.left() < verticalScaleWidth) {
+        if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
 
 //	    Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
@@ -429,11 +430,11 @@ Pane::paintEvent(QPaintEvent *e)
             
             paint.setPen(Qt::black);
             paint.setBrush(Qt::white);
-            paint.drawRect(0, -1, verticalScaleWidth, height()+1);
+            paint.drawRect(0, -1, m_scaleWidth, height()+1);
             
             paint.setBrush(Qt::NoBrush);
             (*vi)->paintVerticalScale
-                (this, paint, QRect(0, 0, verticalScaleWidth, height()));
+                (this, paint, QRect(0, 0, m_scaleWidth, height()));
             
             paint.restore();
         }
@@ -704,6 +705,15 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     paint.end();
+}
+
+size_t
+Pane::getFirstVisibleFrame() const
+{
+    long f0 = getFrameForX(m_scaleWidth);
+    size_t f = View::getFirstVisibleFrame();
+    if (f0 < 0 || f0 < long(f)) return f;
+    return f0;
 }
 
 Selection
@@ -1619,10 +1629,14 @@ Pane::zoomWheelsEnabledChanged()
 }
 
 void
-Pane::zoomLevelChanged()
+Pane::viewZoomLevelChanged(View *v, unsigned long, bool locked)
 {
 //    std::cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
 //              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << std::endl;
+
+    if (v != this) {
+        if (!locked || !m_followZoom) return;
+    }
 
     if (m_manager && m_manager->getZoomWheelsEnabled()) {
         updateHeadsUpDisplay();

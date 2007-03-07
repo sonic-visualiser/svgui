@@ -26,6 +26,8 @@
 
 class ColourMapper : public QObject
 {
+    Q_OBJECT
+
 public:
     ColourMapper(int map, float minValue, float maxValue);
     virtual ~ColourMapper();

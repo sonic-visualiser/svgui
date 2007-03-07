@@ -47,10 +47,11 @@ ViewManager::ViewManager() :
     m_zoomWheelsEnabled =
         settings.value("zoom-wheels-enabled", m_zoomWheelsEnabled).toBool();
     settings.endGroup();
-
+/*!!!
     connect(this, 
 	    SIGNAL(zoomLevelChanged(void *, unsigned long, bool)),
 	    SLOT(considerZoomChange(void *, unsigned long, bool)));
+*/
 }
 
 ViewManager::~ViewManager()
@@ -379,17 +380,26 @@ ViewManager::seek(unsigned long f)
 }
 
 void
-ViewManager::considerZoomChange(void *p, unsigned long z, bool locked)
+ViewManager::viewZoomLevelChanged(unsigned long z, bool locked)
 {
-    emit zoomLevelChanged();
+    View *v = dynamic_cast<View *>(sender());
+
+    if (!v) {
+        std::cerr << "ViewManager::viewZoomLevelChanged: WARNING: sender is not a view" << std::endl;
+        return;
+    }
+
+//!!!    emit zoomLevelChanged();
     
     if (locked) {
 	m_globalZoom = z;
     }
 
 #ifdef DEBUG_VIEW_MANAGER 
-    std::cout << "ViewManager::considerZoomChange(" << p << ", " << z << ", " << locked << ")" << std::endl;
+    std::cout << "ViewManager::viewZoomLevelChanged(" << v << ", " << z << ", " << locked << ")" << std::endl;
 #endif
+
+    emit viewZoomLevelChanged(v, z, locked);
 }
 
 void

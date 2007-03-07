@@ -45,7 +45,7 @@ public slots:
 
     virtual void globalCentreFrameChanged(unsigned long);
     virtual void viewCentreFrameChanged(View *, unsigned long);
-    virtual void viewManagerZoomLevelChanged(void *, unsigned long, bool);
+    virtual void viewZoomLevelChanged(View *, unsigned long, bool);
     virtual void viewManagerPlaybackFrameChanged(unsigned long);
 
 protected:

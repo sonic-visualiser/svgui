@@ -76,10 +76,9 @@ Overview::viewCentreFrameChanged(View *v, unsigned long f)
 }    
 
 void
-Overview::viewManagerZoomLevelChanged(void *p, unsigned long z, bool)
+Overview::viewZoomLevelChanged(View *v, unsigned long z, bool)
 {
-    if (p == this) return;
-    View *v = (View *)p;
+    if (v == this) return;
     if (m_views.find(v) != m_views.end()) {
 	update();
     }
@@ -111,7 +110,7 @@ Overview::paintEvent(QPaintEvent *e)
 					   ZoomConstraint::RoundUp);
     if (zoomLevel != m_zoomLevel) {
 	m_zoomLevel = zoomLevel;
-	emit zoomLevelChanged(this, m_zoomLevel, m_followZoom);
+	emit zoomLevelChanged(m_zoomLevel, m_followZoom);
     }
     size_t centreFrame = startFrame + m_zoomLevel * (width() / 2);
     if (centreFrame > (startFrame + getModelsEndFrame())/2) {

@@ -426,7 +426,7 @@ View::setZoomLevel(size_t z)
 {
     if (m_zoomLevel != int(z)) {
 	m_zoomLevel = z;
-	emit zoomLevelChanged(this, z, m_followZoom);
+	emit zoomLevelChanged(z, m_followZoom);
 	update();
     }
 }
@@ -537,13 +537,13 @@ View::setViewManager(ViewManager *manager)
 	m_manager->disconnect(this, SLOT(globalCentreFrameChanged(unsigned long)));
 	m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, unsigned long)));
 	m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(unsigned long)));
-	m_manager->disconnect(this, SLOT(viewManagerZoomLevelChanged(void *, unsigned long, bool)));
+	m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, unsigned long, bool)));
         m_manager->disconnect(this, SLOT(toolModeChanged()));
         m_manager->disconnect(this, SLOT(selectionChanged()));
         m_manager->disconnect(this, SLOT(overlayModeChanged()));
         m_manager->disconnect(this, SLOT(zoomWheelsEnabledChanged()));
-        disconnect(m_manager, SIGNAL(viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode)));
-	disconnect(m_manager, SIGNAL(zoomLevelChanged(void *, unsigned long, bool)));
+        disconnect(m_manager, SLOT(viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode)));
+	disconnect(m_manager, SLOT(zoomLevelChanged(unsigned long, bool)));
     }
 
     m_manager = manager;
@@ -557,8 +557,8 @@ View::setViewManager(ViewManager *manager)
     connect(m_manager, SIGNAL(playbackFrameChanged(unsigned long)),
 	    this, SLOT(viewManagerPlaybackFrameChanged(unsigned long)));
 
-    connect(m_manager, SIGNAL(zoomLevelChanged(void *, unsigned long, bool)),
-	    this, SLOT(viewManagerZoomLevelChanged(void *, unsigned long, bool)));
+    connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, unsigned long, bool)),
+	    this, SLOT(viewZoomLevelChanged(View *, unsigned long, bool)));
 
     connect(m_manager, SIGNAL(toolModeChanged()),
 	    this, SLOT(toolModeChanged()));
@@ -576,8 +576,8 @@ View::setViewManager(ViewManager *manager)
             m_manager, SLOT(viewCentreFrameChanged(unsigned long, bool,
                                                    PlaybackFollowMode)));
 
-    connect(this, SIGNAL(zoomLevelChanged(void *, unsigned long, bool)),
-	    m_manager, SIGNAL(zoomLevelChanged(void *, unsigned long, bool)));
+    connect(this, SIGNAL(zoomLevelChanged(unsigned long, bool)),
+	    m_manager, SLOT(viewZoomLevelChanged(unsigned long, bool)));
 
     toolModeChanged();
 }
@@ -870,13 +870,10 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
 }
 
 void
-View::viewManagerZoomLevelChanged(void *p, unsigned long z, bool locked)
+View::viewZoomLevelChanged(View *p, unsigned long z, bool locked)
 {
     if (m_followZoom && p != this && locked) {
-	if (m_manager && (sender() == m_manager)) {
-	    setZoomLevel(z);
-	    if (p == this) repaint();
-	}
+        setZoomLevel(z);
     }
 }
 
@@ -889,6 +886,24 @@ View::selectionChanged()
 	m_selectionCached = false;
     }
     update();
+}
+
+size_t
+View::getFirstVisibleFrame() const
+{
+    long f0 = getStartFrame();
+    size_t f = getModelsStartFrame();
+    if (f0 < 0 || f0 < long(f)) return f;
+    return f0;
+}
+
+size_t 
+View::getLastVisibleFrame() const
+{
+    size_t f0 = getEndFrame();
+    size_t f = getModelsEndFrame();
+    if (f0 > f) return f;
+    return f0;
 }
 
 size_t

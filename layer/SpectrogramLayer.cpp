@@ -2027,7 +2027,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         Preferences::getInstance()->getSpectrogramSmoothing();
     if (smoothing == Preferences::SpectrogramInterpolated ||
         smoothing == Preferences::SpectrogramZeroPaddedAndInterpolated) {
-        interpolate = true;
+        if (m_binDisplay != PeakBins &&
+            m_binDisplay != PeakFrequencies) {
+            interpolate = true;
+        }
     }
 
 

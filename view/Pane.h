@@ -48,6 +48,8 @@ public:
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
 
+    virtual size_t getFirstVisibleFrame() const;
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
@@ -58,7 +60,7 @@ signals:
 public slots:
     virtual void toolModeChanged();
     virtual void zoomWheelsEnabledChanged();
-    virtual void zoomLevelChanged();
+    virtual void viewZoomLevelChanged(View *v, unsigned long z, bool locked);
 
     virtual void horizontalThumbwheelMoved(int value);
     virtual void verticalThumbwheelMoved(int value);
@@ -117,6 +119,7 @@ protected:
     size_t m_selectionStartFrame;
     Selection m_editingSelection;
     int m_editingSelectionEdge;
+    mutable int m_scaleWidth;
 
     enum DragMode {
         UnresolvedDrag,
