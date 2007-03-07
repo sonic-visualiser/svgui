@@ -36,6 +36,8 @@
 
 class SubdividingMenu : public QMenu
 {
+    Q_OBJECT
+
 public:
     SubdividingMenu(size_t lowerLimit = 0, size_t upperLimit = 0,
                     QWidget *parent = 0);

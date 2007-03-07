@@ -30,6 +30,8 @@ class QRadioButton;
 
 class ListInputDialog : public QDialog
 {
+    Q_OBJECT
+
 public:
     virtual ~ListInputDialog();
 

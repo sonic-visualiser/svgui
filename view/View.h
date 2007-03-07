@@ -224,6 +224,10 @@ public:
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
+    // First frame actually in model, to right of scale, if present
+    virtual size_t getFirstVisibleFrame() const;
+    virtual size_t getLastVisibleFrame() const;
+
     size_t getModelsStartFrame() const;
     size_t getModelsEndFrame() const;
 
@@ -239,7 +243,7 @@ signals:
                             bool globalScroll,
                             PlaybackFollowMode followMode);
 
-    void zoomLevelChanged(void *, unsigned long, bool);
+    void zoomLevelChanged(unsigned long, bool);
 
     void contextHelpChanged(const QString &);
 
@@ -255,7 +259,7 @@ public slots:
     virtual void globalCentreFrameChanged(unsigned long);
     virtual void viewCentreFrameChanged(View *, unsigned long);
     virtual void viewManagerPlaybackFrameChanged(unsigned long);
-    virtual void viewManagerZoomLevelChanged(void *, unsigned long, bool);
+    virtual void viewZoomLevelChanged(View *, unsigned long, bool);
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
 
