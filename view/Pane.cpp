@@ -384,7 +384,6 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     const Model *waveformModel = 0; // just for reporting purposes
-    int verticalScaleWidth = 0;
     
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
@@ -596,8 +595,8 @@ Pane::paintEvent(QPaintEvent *e)
 	    .arg(modelRate)
 	    .arg(srNote);
 
-	if (r.x() < verticalScaleWidth + 5 + paint.fontMetrics().width(desc)) {
-	    drawVisibleText(paint, verticalScaleWidth + 5,
+	if (r.x() < m_scaleWidth + 5 + paint.fontMetrics().width(desc)) {
+	    drawVisibleText(paint, m_scaleWidth + 5,
 			    height() - fontHeight + fontAscent - 6,
 			    desc, OutlinedText);
 	}
