@@ -81,7 +81,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setColourScale(LinearColourScale);
         setColourMap(ColourMapper::Sunset);
         setFrequencyScale(LogFrequencyScale);
-        setGain(20);
+//        setGain(20);
     } else if (config == MelodicPeaks) {
 	setWindowSize(4096);
 	setWindowHopLevel(5);
@@ -1015,6 +1015,12 @@ SpectrogramLayer::fillTimerTimedOut()
     }
 }
 
+bool
+SpectrogramLayer::hasLightBackground() const 
+{
+    return (m_colourMap == (int)ColourMapper::BlackOnWhite);
+}
+
 void
 SpectrogramLayer::initialisePalette()
 {
@@ -1112,9 +1118,10 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
         min = m_viewMags[v].getMin();
         max = m_viewMags[v].getMax();
     } else if (!m_normalizeColumns) {
-        if (m_colourScale == LinearColourScale ||
-            m_colourScale == MeterColourScale) {
-//            max = 0.1f;
+        if (m_colourScale == LinearColourScale //||
+//            m_colourScale == MeterColourScale) {
+            ) {
+            max = 0.1f;
         }
     }
 
@@ -1687,12 +1694,6 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
 void
 SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
-    if (m_colourMap == (int)ColourMapper::BlackOnWhite) {
-	v->setLightBackground(true);
-    } else {
-	v->setLightBackground(false);
-    }
-
     Profiler profiler("SpectrogramLayer::paint", true);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << std::endl;
@@ -1742,15 +1743,11 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int x0 = 0;
     int x1 = v->width();
-    int y0 = 0;
-    int y1 = v->height();
 
     bool recreateWholePixmapCache = true;
 
     x0 = rect.left();
     x1 = rect.right() + 1;
-    y0 = rect.top();
-    y1 = rect.bottom() + 1;
 
     if (cache.validArea.width() > 0) {
 
@@ -1852,19 +1849,22 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	} else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
 	    std::cerr << "SpectrogramLayer: pixmap cache useless" << std::endl;
+            if (int(cache.zoomLevel) != zoomLevel) {
+                std::cerr << "(cache zoomLevel " << cache.zoomLevel
+                          << " != " << zoomLevel << ")" << std::endl;
+            }
+            if (cache.pixmap.width() != v->width()) {
+                std::cerr << "(cache width " << cache.pixmap.width()
+                          << " != " << v->width();
+            }
+            if (cache.pixmap.height() != v->height()) {
+                std::cerr << "(cache height " << cache.pixmap.height()
+                          << " != " << v->height();
+            }
 #endif
             cache.validArea = QRect();
 	}
     }
-
-/*
-    if (stillCacheing) {
-	x0 = rect.left();
-	x1 = rect.right() + 1;
-	y0 = rect.top();
-	y1 = rect.bottom() + 1;
-    }
-*/
 
     if (updateViewMagnitudes(v)) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -1906,7 +1906,17 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     if (paintBlockWidth < 20) paintBlockWidth = 20;
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "[" << this << "]: last paint width: " << m_lastPaintBlockWidth << ", last paint time: " << m_lastPaintTime << ", new paint width: " << paintBlockWidth << std::endl;
+#endif
+
+    // We always paint the full height when refreshing the cache.
+    // Smaller heights can be used when painting direct from cache
+    // (further up in this function), but we want to ensure the cache
+    // is coherent without having to worry about vertical matching of
+    // required and valid areas as well as horizontal.
+
+    int h = v->height();
 
     if (cache.validArea.width() > 0) {
 
@@ -1956,11 +1966,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 x1 = x0 + paintBlockWidth;
             }
         }
-        cache.validArea = QRect(x0, 0, x1 - x0, v->height());
+        cache.validArea = QRect(x0, 0, x1 - x0, h);
     }
 
     int w = x1 - x0;
-    int h = y1 - y0;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "x0 " << x0 << ", x1 " << x1 << ", w " << w << ", h " << h << std::endl;
@@ -2033,12 +2042,15 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
     }
 
-
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    std::cerr << (float(v->getFrameForX(1) - v->getFrameForX(0)) / increment) << " bins per pixel" << std::endl;
+    std::cerr << ((float(v->getFrameForX(1) - v->getFrameForX(0))) / increment) << " bin(s) per pixel" << std::endl;
 #endif
 
+    bool runOutOfData = false;
+
     for (int x = 0; x < w; ++x) {
+
+        if (runOutOfData) break;
 
 	for (int y = 0; y < h; ++y) {
 	    ymag[y] = 0.f;
@@ -2065,7 +2077,14 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         for (int s = s0i; s <= s1i; ++s) {
 
-            if (!fft->isColumnAvailable(s)) continue;
+            if (!fft->isColumnAvailable(s)) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                std::cerr << "Met unavailable column at col " << s << std::endl;
+#endif
+//                continue;
+                runOutOfData = true;
+                break;
+            }
             
             if (!fftSuspended) {
                 fft->suspendWrites();
@@ -2236,14 +2255,26 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     Profiler profiler2("SpectrogramLayer::paint: draw image", true);
 
-    paint.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    std::cerr << "Painting " << w << "x" << rect.height()
+              << " from draw buffer at " << 0 << "," << rect.y()
+              << " to window at " << x0 << "," << rect.y() << std::endl;
+#endif
+
+    paint.drawImage(x0, rect.y(), m_drawBuffer, 0, rect.y(), w, rect.height());
 
     if (recreateWholePixmapCache) {
-	cache.pixmap = QPixmap(v->width(), v->height());
+	cache.pixmap = QPixmap(v->width(), h);
     }
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    std::cerr << "Painting " << w << "x" << h
+              << " from draw buffer at " << 0 << "," << 0
+              << " to cache at " << x0 << "," << 0 << std::endl;
+#endif
+
     QPainter cachePainter(&cache.pixmap);
-    cachePainter.drawImage(x0, y0, m_drawBuffer, 0, 0, w, h);
+    cachePainter.drawImage(x0, 0, m_drawBuffer, 0, 0, w, h);
     cachePainter.end();
 
     if (!m_normalizeVisibleArea || !overallMagChanged) {
@@ -2256,7 +2287,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
             std::cerr << "SpectrogramLayer::paint() updating left (0, "
                       << cache.validArea.x() << ")" << std::endl;
 #endif
-            v->update(0, 0, cache.validArea.x(), v->height());
+            v->update(0, 0, cache.validArea.x(), h);
         }
         
         if (cache.validArea.x() + cache.validArea.width() <
@@ -2273,7 +2304,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                       0,
                       cache.pixmap.width() - (cache.validArea.x() +
                                               cache.validArea.width()),
-                      v->height());
+                      h);
         }
     } else {
         // overallMagChanged
@@ -2356,7 +2387,9 @@ SpectrogramLayer::getCompletion(View *v) const
     if (m_fftModels.find(v) == m_fftModels.end()) return 100;
 
     size_t completion = m_fftModels[v].first->getCompletion();
+#ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::getCompletion: completion = " << completion << std::endl;
+#endif
     return completion;
 }
 

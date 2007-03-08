@@ -263,8 +263,17 @@ ViewManager::setPlaySelectionMode(bool mode)
     }
 }
 
-size_t
+size_t 
 ViewManager::getPlaybackSampleRate() const
+{
+    if (m_playSource) {
+        return m_playSource->getSourceSampleRate();
+    }
+    return 0;
+}
+
+size_t
+ViewManager::getOutputSampleRate() const
 {
     if (m_playSource) {
 	return m_playSource->getTargetSampleRate();

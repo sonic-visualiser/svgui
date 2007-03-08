@@ -233,8 +233,6 @@ Pane::updateHeadsUpDisplay()
         width() > 120 && height() > 100) {
         if (!m_headsUpDisplay->isVisible()) {
             m_headsUpDisplay->show();
-            connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, unsigned long, bool)),
-                    this, SLOT(viewZoomLevelChanged(View *, unsigned long, bool)));
         }
         if (haveVThumb) {
             m_headsUpDisplay->setFixedHeight(m_vthumb->height() + m_hthumb->height());
@@ -245,10 +243,6 @@ Pane::updateHeadsUpDisplay()
         }
     } else {
         m_headsUpDisplay->hide();
-        if (m_manager) {
-            disconnect(m_manager, SIGNAL(viewZoomLevelChanged(View *, unsigned long, bool)),
-                       this, SLOT(viewZoomLevelChanged(View *, unsigned long, bool)));
-        }
     }
 }
 
@@ -571,22 +565,24 @@ Pane::paintEvent(QPaintEvent *e)
 	r.y() + r.height() >= height() - fontHeight - 6) {
 
         size_t modelRate = waveformModel->getSampleRate();
-	size_t mainModelRate = m_manager->getMainModelSampleRate();
 	size_t playbackRate = m_manager->getPlaybackSampleRate();
-	    
+        size_t outputRate = m_manager->getOutputSampleRate();
+        
 	QString srNote = "";
 
 	// Show (R) for waveform models that will be resampled on
 	// playback, and (X) for waveform models that will be played
-	// at the wrong rate because their rate differs from that of
-	// the main model.
+	// at the wrong rate because their rate differs from the
+	// current playback rate (which is not necessarily that of the
+	// main model).
 
-	if (modelRate == mainModelRate) {
-	    if (modelRate != playbackRate) srNote = " " + tr("(R)");
-	} else {
-//	    std::cerr << "Sample rate = " << modelRate << ", main model rate = " << mainModelRate << std::endl;
-	    srNote = " " + tr("(X)");
-	}
+        if (playbackRate != 0) {
+            if (modelRate == playbackRate) {
+                if (modelRate != outputRate) srNote = " " + tr("(R)");
+            } else {
+                srNote = " " + tr("(X)");
+            }
+        }
 
 	QString desc = tr("%1 / %2Hz%3")
 	    .arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
@@ -1628,10 +1624,14 @@ Pane::zoomWheelsEnabledChanged()
 }
 
 void
-Pane::viewZoomLevelChanged(View *v, unsigned long, bool locked)
+Pane::viewZoomLevelChanged(View *v, unsigned long z, bool locked)
 {
 //    std::cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
 //              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << std::endl;
+
+    View::viewZoomLevelChanged(v, z, locked);
+
+    if (!m_vthumb->isVisible()) return;
 
     if (v != this) {
         if (!locked || !m_followZoom) return;
