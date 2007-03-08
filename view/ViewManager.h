@@ -102,8 +102,28 @@ public:
     bool getPlaySelectionMode() const { return m_playSelectionMode; }
     void setPlaySelectionMode(bool on);
 
+    /**
+     * The sample rate that is used for playback.  This is usually the
+     * rate of the main model, but not always.  Models whose rates
+     * differ from this will play back at the wrong speed -- there is
+     * no per-model resampler.
+     */
     size_t getPlaybackSampleRate() const;
+
+    /**
+     * The sample rate of the audio output device.  If the playback
+     * sample rate differs from this, everything will be resampled at
+     * the output stage.
+     */
+    size_t getOutputSampleRate() const;
+
+    /**
+     * The sample rate of the current main model.  This may in theory
+     * differ from the playback sample rate, in which case even the
+     * main model will play at the wrong speed.
+     */
     size_t getMainModelSampleRate() const { return m_mainModelSampleRate; }
+
     void setMainModelSampleRate(size_t sr) { m_mainModelSampleRate = sr; }
 
     enum OverlayMode {

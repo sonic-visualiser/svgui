@@ -384,7 +384,7 @@ Colour3DPlotLayer::getColumn(size_t col,
 {
     m_model->getColumn(col, values);
 
-    float colMax = 0.f;
+    float colMax = 0.f, colMin = 0.f;
 
     float min = 0.f, max = 0.f;
     if (m_normalizeColumns) {
@@ -394,11 +394,10 @@ Colour3DPlotLayer::getColumn(size_t col,
 
     if (m_normalizeColumns) {
         for (size_t y = 0; y < values.size(); ++y) {
-            if (values[y] > colMax || y == 0) colMax = values[y];
+            if (y == 0 || values[y] > colMax) colMax = values[y];
+            if (y == 0 || values[y] < colMin) colMin = values[y];
         }
-        if (m_colourScale == LogScale) {
-            colMax = LogRange::map(colMax);
-        }
+        if (colMin == colMax) colMax = colMin + 1;
     }
     
     for (size_t y = 0; y < values.size(); ++y) {
@@ -406,16 +405,10 @@ Colour3DPlotLayer::getColumn(size_t col,
         float value = min;
 
         value = values[y];
-        if (m_colourScale == LogScale) {
-            value = LogRange::map(value);
-        }
 
         if (m_normalizeColumns) {
-            if (colMax != 0) {
-                value = max * (value / colMax);
-            } else {
-                value = 0;
-            }
+            float norm = (value - colMin) / (colMax - colMin);
+            value = min + (max - min) * norm;
         }
 
         values[y] = value;
@@ -429,7 +422,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     size_t modelEnd = m_model->getEndFrame();
     size_t modelResolution = m_model->getResolution();
 
-    std::cerr << "Colour3DPlotLayer::fillCache: " << firstBin << " -> " << lastBin << std::endl;
+//    std::cerr << "Colour3DPlotLayer::fillCache: " << firstBin << " -> " << lastBin << std::endl;
 
     if (!m_normalizeVisibleArea || m_normalizeColumns) {
         firstBin = modelStart / modelResolution;
@@ -453,7 +446,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
     m_cacheStart = firstBin;
 
-    std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " starting " << m_cacheStart << std::endl;
+//    std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " starting " << m_cacheStart << std::endl;
 
     m_cache->setNumColors(256);
     DenseThreeDimensionalModel::Column values;
@@ -480,7 +473,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     
     m_cache->fill(0);
 
-    float visibleMax = 0.f;
+    float visibleMax = 0.f, visibleMin = 0.f;
 
     if (m_normalizeVisibleArea && !m_normalizeColumns) {
         
@@ -489,17 +482,21 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             values.clear();
             getColumn(c, values);
 
-            float colMax = 0.f;
+            float colMax = 0.f, colMin = 0.f;
 
             for (size_t y = 0; y < m_model->getHeight(); ++y) {
                 if (y >= values.size()) break;
                 if (y == 0 || values[y] > colMax) colMax = values[y];
+                if (y == 0 || values[y] < colMin) colMin = values[y];
             }
 
             if (c == firstBin || colMax > visibleMax) visibleMax = colMax;
+            if (c == firstBin || colMin < visibleMin) visibleMin = colMin;
         }
     }
     
+    if (visibleMin == visibleMax) visibleMax = visibleMin + 1;
+
     for (size_t c = firstBin; c <= lastBin; ++c) {
 	
         values.clear();
@@ -513,9 +510,12 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             }
             
             if (m_normalizeVisibleArea && !m_normalizeColumns) {
-                if (visibleMax != 0) {
-                    value = max * (value / visibleMax);
-                }
+                float norm = (value - visibleMin) / (visibleMax - visibleMin);
+                value = min + (max - min) * norm;
+            }
+
+            if (m_colourScale == LogScale) {
+                value = LogRange::map(value);
             }
 
             int pixel = int(((value - min) * 256) / (max - min));

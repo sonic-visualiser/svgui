@@ -84,6 +84,9 @@ public:
     virtual VerticalPosition getPreferredFrameCountPosition() const {
 	return PositionBottom;
     }
+    virtual bool hasLightBackground() const {
+        return true;
+    }
 
     virtual QString getPropertyContainerIconName() const;
 

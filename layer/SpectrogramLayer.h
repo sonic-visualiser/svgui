@@ -71,6 +71,8 @@ public:
 				    size_t &resolution,
 				    SnapType snap) const;
 
+    virtual bool hasLightBackground() const;
+
     void setModel(const DenseTimeValueModel *model);
 
     virtual PropertyList getProperties() const;

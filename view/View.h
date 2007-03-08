@@ -171,8 +171,7 @@ public:
     virtual void setFollowGlobalZoom(bool f);
     virtual bool getFollowGlobalZoom() const { return m_followZoom; }
 
-    virtual void setLightBackground(bool lb) { m_lightBackground = lb; }
-    virtual bool hasLightBackground() const { return m_lightBackground; }
+    virtual bool hasLightBackground() const;
 
     enum TextStyle {
 	BoxedText,

@@ -44,7 +44,6 @@ View::View(QWidget *w, bool showProgress) :
     m_followZoom(true),
     m_followPlay(PlaybackScrollPage),
     m_playPointerFrame(0),
-    m_lightBackground(true),
     m_showProgress(showProgress),
     m_cache(0),
     m_cacheCentreFrame(0),
@@ -429,6 +428,16 @@ View::setZoomLevel(size_t z)
 	emit zoomLevelChanged(z, m_followZoom);
 	update();
     }
+}
+
+bool
+View::hasLightBackground() const
+{
+    for (LayerList::const_iterator i = m_layers.begin();
+         i != m_layers.end(); ++i) {
+        if (!(*i)->hasLightBackground()) return false;
+    }
+    return true;
 }
 
 View::LayerProgressBar::LayerProgressBar(QWidget *parent) :
@@ -1614,14 +1623,13 @@ View::toXmlString(QString indent, QString extraAttributes) const
 		 "followPan=\"%3\" "
 		 "followZoom=\"%4\" "
 		 "tracking=\"%5\" "
-		 "light=\"%6\" %7>\n")
+		 " %6>\n")
 	.arg(m_centreFrame)
 	.arg(m_zoomLevel)
 	.arg(m_followPan)
 	.arg(m_followZoom)
 	.arg(m_followPlay == PlaybackScrollContinuous ? "scroll" :
 	     m_followPlay == PlaybackScrollPage ? "page" : "ignore")
-	.arg(m_lightBackground)
 	.arg(extraAttributes);
 
     for (size_t i = 0; i < m_layers.size(); ++i) {
