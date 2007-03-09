@@ -32,6 +32,7 @@ HEADERS += AudioDial.h \
            RangeInputDialog.h \
            SubdividingMenu.h \
            Thumbwheel.h \
+           TipDialog.h \
            WindowShapePreview.h \
            WindowTypeSelector.h
 SOURCES += AudioDial.cpp \
@@ -52,5 +53,6 @@ SOURCES += AudioDial.cpp \
            RangeInputDialog.cpp \
            SubdividingMenu.cpp \
            Thumbwheel.cpp \
+           TipDialog.cpp \
            WindowShapePreview.cpp \
            WindowTypeSelector.cpp
