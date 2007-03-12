@@ -409,10 +409,10 @@ Pane::paintEvent(QPaintEvent *e)
         }
 
         if (!m_manager || !m_manager->shouldShowVerticalScale()) {
-            break;
+            m_scaleWidth = 0;
+        } else {
+            m_scaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
         }
-
-        m_scaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
 
         if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
 
@@ -700,6 +700,79 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     paint.end();
+}
+
+bool
+Pane::render(QPainter &paint, QRect rect)
+{
+    if (!View::render(paint, QRect(rect.x() + m_scaleWidth, rect.y(),
+                                   rect.width() - m_scaleWidth, rect.height()))) {
+        return false;
+    }
+
+    if (m_scaleWidth > 0) {
+
+        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+            --vi;
+            
+            paint.save();
+            
+            paint.setPen(Qt::black);
+            paint.setBrush(Qt::white);
+            paint.drawRect(0, -1, m_scaleWidth, height()+1);
+            
+            paint.setBrush(Qt::NoBrush);
+            (*vi)->paintVerticalScale
+                (this, paint, QRect(0, 0, m_scaleWidth, height()));
+            
+            paint.restore();
+            break;
+        }
+    }
+
+    return true;
+}
+
+QImage *
+Pane::toNewImage()
+{
+    size_t f0 = getModelsStartFrame();
+    size_t f1 = getModelsEndFrame();
+
+    size_t x0 = f0 / getZoomLevel();
+    size_t x1 = f1 / getZoomLevel();
+
+    QImage *image = new QImage(x1 - x0 + m_scaleWidth,
+                               height(), QImage::Format_RGB32);
+
+    int formerScaleWidth = m_scaleWidth;
+            
+    if (m_manager && m_manager->shouldShowVerticalScale()) {
+        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+            --vi;
+            QPainter paint(image);
+            m_scaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
+            break;
+        }
+    } else {
+        m_scaleWidth = 0;
+    }
+
+    if (m_scaleWidth != formerScaleWidth) {
+        delete image;
+        image = new QImage(x1 - x0 + m_scaleWidth,
+                           height(), QImage::Format_RGB32);
+    }        
+
+    QPainter *paint = new QPainter(image);
+    if (!render(*paint, image->rect())) {
+        delete paint;
+        delete image;
+        return 0;
+    } else {
+        delete paint;
+        return image;
+    }
 }
 
 size_t
