@@ -50,6 +50,9 @@ public:
 
     virtual size_t getFirstVisibleFrame() const;
 
+    virtual bool render(QPainter &paint, QRect rect);
+    virtual QImage *toNewImage();
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
