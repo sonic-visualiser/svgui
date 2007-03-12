@@ -226,7 +226,7 @@ public:
      * Return the proportion of background work complete in drawing
      * this view, as a percentage -- in most cases this will be the
      * value returned by pointer from a call to the underlying model's
-     * isReady(int *) call.  The widget may choose to show a progress
+     * isReady(int *) call.  The view may choose to show a progress
      * meter if it finds that this returns < 100 at any given moment.
      */
     virtual int getCompletion(View *) const { return 100; }
