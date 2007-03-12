@@ -26,6 +26,7 @@
 #include <QPaintEvent>
 #include <QRect>
 #include <QApplication>
+#include <QProgressDialog>
 
 #include <iostream>
 #include <cassert>
@@ -1463,6 +1464,135 @@ View::paintEvent(QPaintEvent *e)
     }
 
     QFrame::paintEvent(e);
+}
+
+bool
+View::render(QPainter &paint, QRect rect)
+{
+    size_t f0 = getModelsStartFrame();
+    size_t f1 = getModelsEndFrame();
+
+    size_t x0 = f0 / m_zoomLevel;
+    size_t x1 = f1 / m_zoomLevel;
+
+    size_t w = x1 - x0;
+
+    size_t origCentreFrame = m_centreFrame;
+
+    bool someLayersIncomplete = false;
+
+    for (LayerList::iterator i = m_layers.begin();
+         i != m_layers.end(); ++i) {
+
+        int c = (*i)->getCompletion(this);
+        if (c < 100) {
+            someLayersIncomplete = true;
+            break;
+        }
+    }
+
+    if (someLayersIncomplete) {
+
+        QProgressDialog progress(tr("Waiting for layers to be ready..."),
+                                 tr("Cancel"), 0, 100, this);
+        
+        int layerCompletion = 0;
+
+        while (layerCompletion < 100) {
+
+            for (LayerList::iterator i = m_layers.begin();
+                 i != m_layers.end(); ++i) {
+
+                int c = (*i)->getCompletion(this);
+                if (i == m_layers.begin() || c < layerCompletion) {
+                    layerCompletion = c;
+                }
+            }
+
+            if (layerCompletion >= 100) break;
+
+            progress.setValue(layerCompletion);
+            qApp->processEvents();
+            if (progress.wasCanceled()) {
+                update();
+                return false;
+            }
+
+            usleep(50000);
+        }
+    }
+
+    QProgressDialog progress(tr("Rendering image..."),
+                             tr("Cancel"), 0, w / width(), this);
+
+    for (size_t x = 0; x < w; x += width()) {
+
+        progress.setValue(x / width());
+        qApp->processEvents();
+        if (progress.wasCanceled()) {
+            m_centreFrame = origCentreFrame;
+            update();
+            return false;
+        }
+
+        m_centreFrame = (x + width()/2) * m_zoomLevel;
+        
+        QRect chunk(0, 0, width(), height());
+
+	if (hasLightBackground()) {
+	    paint.setPen(Qt::white);
+	    paint.setBrush(Qt::white);
+	} else {
+	    paint.setPen(Qt::black);
+	    paint.setBrush(Qt::black);
+	}
+
+	paint.drawRect(QRect(rect.x() + x, rect.y(), width(), height()));
+
+	paint.setPen(Qt::black);
+	paint.setBrush(Qt::NoBrush);
+
+	for (LayerList::iterator i = m_layers.begin();
+             i != m_layers.end(); ++i) {
+
+	    paint.setRenderHint(QPainter::Antialiasing, false);
+
+	    paint.save();
+            paint.translate(rect.x() + x, rect.y());
+
+//            std::cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() << ", " << chunk.width() << std::endl;
+
+	    (*i)->paint(this, paint, chunk);
+
+	    paint.restore();
+	}
+    }
+
+    m_centreFrame = origCentreFrame;
+    update();
+    return true;
+}
+
+QImage *
+View::toNewImage()
+{
+    size_t f0 = getModelsStartFrame();
+    size_t f1 = getModelsEndFrame();
+
+    size_t x0 = f0 / getZoomLevel();
+    size_t x1 = f1 / getZoomLevel();
+    
+    QImage *image = new QImage(x1 - x0, height(), QImage::Format_RGB32);
+
+    QPainter *paint = new QPainter(image);
+    if (!render(*paint, image->rect())) {
+        delete paint;
+        delete image;
+        return 0;
+    } else {
+        delete paint;
+        return image;
+    }
 }
 
 void

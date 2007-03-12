@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _CANVAS_H_
-#define _CANVAS_H_
+#ifndef _VIEW_H_
+#define _VIEW_H_
 
 #include <QFrame>
 #include <QProgressBar>
@@ -214,6 +214,10 @@ public:
 
     virtual const PropertyContainer *getPropertyContainer(size_t i) const;
     virtual PropertyContainer *getPropertyContainer(size_t i);
+
+    // Render the entire contents on a wide canvas
+    virtual bool render(QPainter &paint, QRect rect);
+    virtual QImage *toNewImage();
 
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
 
