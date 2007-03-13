@@ -24,6 +24,7 @@
 #include <QFileInfo>
 #include <QGridLayout>
 #include <QGroupBox>
+#include <QCheckBox>
 
 #include <iostream>
 
@@ -48,7 +49,7 @@ TipDialog::TipDialog(QWidget *parent, Qt::WFlags flags) :
     setLayout(grid);
     
     QGroupBox *groupBox = new QGroupBox;
-    groupBox->setTitle(m_caption);
+//    groupBox->setTitle(m_caption);
     grid->addWidget(groupBox, 0, 0);
     
     QGridLayout *subgrid = new QGridLayout;
@@ -56,15 +57,30 @@ TipDialog::TipDialog(QWidget *parent, Qt::WFlags flags) :
 
     m_label = new QLabel;
     subgrid->addWidget(m_label, 0, 0);
+    m_label->setWordWrap(true);
 
     QHBoxLayout *hbox = new QHBoxLayout;
     grid->addLayout(hbox, 1, 0);
+
+    QCheckBox *show = new QCheckBox(tr("Show tips on startup"));
+    hbox->addWidget(show);
+
+    hbox->addStretch(10);
+    
+    QPushButton *prev = new QPushButton(tr("<< Previous"));
+    hbox->addWidget(prev);
+    connect(prev, SIGNAL(clicked()), this, SLOT(previous()));
+    
+    QPushButton *next = new QPushButton(tr("Next >>"));
+    hbox->addWidget(next);
+    connect(next, SIGNAL(clicked()), this, SLOT(next()));
     
     QPushButton *close = new QPushButton(tr("Close"));
-    hbox->addStretch(10);
     hbox->addWidget(close);
     connect(close, SIGNAL(clicked()), this, SLOT(accept()));
     
+    close->setDefault(true);
+
     showTip();
 }
 
@@ -146,7 +162,8 @@ TipDialog::showTip()
 TipDialog::TipFileParser::TipFileParser(TipDialog *dialog) :
     m_dialog(dialog),
     m_inTip(false),
-    m_inText(false)
+    m_inText(false),
+    m_inHtml(false)
 {
 }
 
@@ -189,6 +206,21 @@ TipDialog::TipFileParser::startElement(const QString &, const QString &,
         } else {
             std::cerr << "WARNING: TipFileParser: <text> outside <tip> element" << std::endl;
         }
+    } else if (name == "html") {
+        if (m_inTip) {
+            m_inHtml = true;
+            std::cerr << "TipFileParser: adding new tip" << std::endl;
+            m_dialog->m_tips.push_back("");
+        } else {
+            std::cerr << "WARNING: TipFileParser: <html> outside <tip> element" << std::endl;
+        }
+    } else if (m_inHtml) {
+        m_dialog->m_tips[m_dialog->m_tips.size()-1] += "<" + qName;
+        for (int i = 0; i < attributes.count(); ++i) {
+            m_dialog->m_tips[m_dialog->m_tips.size()-1] += 
+                " " + attributes.qName(i) + "=\"" + attributes.value(i) + "\"";
+        }
+        m_dialog->m_tips[m_dialog->m_tips.size()-1] += ">";
     }
     
     std::cerr << "TipFileParser::startElement done" << std::endl;
@@ -202,17 +234,26 @@ TipDialog::TipFileParser::endElement(const QString &, const QString &,
     QString name = qName.toLower();
 
     if (name == "text") {
-        if (m_inText) {
+        if (!m_inText) {
             std::cerr << "WARNING: TipFileParser: </text> without <text>" << std::endl;
         }
         m_inText = false;
+    } else if (name == "html") {
+        if (!m_inHtml) {
+            std::cerr << "WARNING: TipFileParser: </html> without <html>" << std::endl;
+        }
+        m_inHtml = false;
     } else if (name == "tip") {
         if (m_inText) {
             std::cerr << "WARNING: TipFileParser: <text> without </text>" << std::endl;
+        } else if (m_inHtml) {
+            std::cerr << "WARNING: TipFileParser: <html> without </html>" << std::endl;
         } else if (!m_inTip) {
             std::cerr << "WARNING: TipFileParser: </tip> without <tip>" << std::endl;
         }
         m_inTip = false;
+    } else if (m_inHtml) {
+        m_dialog->m_tips[m_dialog->m_tips.size()-1] += "</" + qName + ">";
     }
 
     return true;
@@ -223,7 +264,7 @@ TipDialog::TipFileParser::characters(const QString &text)
 {
     std::cerr << "TipFileParser::characters(" << text.toStdString() << ")" << std::endl;
 
-    if (m_inText) {
+    if (m_inText || m_inHtml) {
         m_dialog->m_tips[m_dialog->m_tips.size()-1] += text;
     }
 
