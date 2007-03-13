@@ -76,6 +76,7 @@ protected:
 
         bool m_inTip;
         bool m_inText;
+        bool m_inHtml;
     };
 };
 
