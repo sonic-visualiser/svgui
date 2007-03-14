@@ -215,9 +215,11 @@ public:
     virtual const PropertyContainer *getPropertyContainer(size_t i) const;
     virtual PropertyContainer *getPropertyContainer(size_t i);
 
-    // Render the entire contents on a wide canvas
-    virtual bool render(QPainter &paint, QRect rect);
+    // Render the contents on a wide canvas
+    virtual QImage *toNewImage(size_t f0, size_t f1);
     virtual QImage *toNewImage();
+    virtual QSize getImageSize(size_t f0, size_t f1);
+    virtual QSize getImageSize();
 
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
 
@@ -276,6 +278,7 @@ protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
+    virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
 
     typedef std::vector<Layer *> LayerList;
 

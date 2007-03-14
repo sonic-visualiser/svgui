@@ -1612,11 +1612,8 @@ View::drawSelections(QPainter &paint)
 }
 
 bool
-View::render(QPainter &paint, QRect rect)
+View::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
 {
-    size_t f0 = getModelsStartFrame();
-    size_t f1 = getModelsEndFrame();
-
     size_t x0 = f0 / m_zoomLevel;
     size_t x1 = f1 / m_zoomLevel;
 
@@ -1680,7 +1677,7 @@ View::render(QPainter &paint, QRect rect)
             return false;
         }
 
-        m_centreFrame = (x + width()/2) * m_zoomLevel;
+        m_centreFrame = f0 + (x + width()/2) * m_zoomLevel;
         
         QRect chunk(0, 0, width(), height());
 
@@ -1692,7 +1689,7 @@ View::render(QPainter &paint, QRect rect)
 	    paint.setBrush(Qt::black);
 	}
 
-	paint.drawRect(QRect(rect.x() + x, rect.y(), width(), height()));
+	paint.drawRect(QRect(xorigin + x, 0, width(), height()));
 
 	paint.setPen(Qt::black);
 	paint.setBrush(Qt::NoBrush);
@@ -1703,9 +1700,9 @@ View::render(QPainter &paint, QRect rect)
 	    paint.setRenderHint(QPainter::Antialiasing, false);
 
 	    paint.save();
-            paint.translate(rect.x() + x, rect.y());
+            paint.translate(xorigin + x, 0);
 
-//            std::cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() << ", " << chunk.width() << std::endl;
+            std::cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << std::endl;
 
 	    (*i)->paint(this, paint, chunk);
 
@@ -1724,13 +1721,19 @@ View::toNewImage()
     size_t f0 = getModelsStartFrame();
     size_t f1 = getModelsEndFrame();
 
+    return toNewImage(f0, f1);
+}
+
+QImage *
+View::toNewImage(size_t f0, size_t f1)
+{
     size_t x0 = f0 / getZoomLevel();
     size_t x1 = f1 / getZoomLevel();
     
     QImage *image = new QImage(x1 - x0, height(), QImage::Format_RGB32);
 
     QPainter *paint = new QPainter(image);
-    if (!render(*paint, image->rect())) {
+    if (!render(*paint, 0, f0, f1)) {
         delete paint;
         delete image;
         return 0;
@@ -1738,6 +1741,24 @@ View::toNewImage()
         delete paint;
         return image;
     }
+}
+
+QSize
+View::getImageSize()
+{
+    size_t f0 = getModelsStartFrame();
+    size_t f1 = getModelsEndFrame();
+
+    return getImageSize(f0, f1);
+}
+    
+QSize
+View::getImageSize(size_t f0, size_t f1)
+{
+    size_t x0 = f0 / getZoomLevel();
+    size_t x1 = f1 / getZoomLevel();
+
+    return QSize(x1 - x0, height());
 }
 
 QString

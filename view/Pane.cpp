@@ -703,10 +703,9 @@ Pane::paintEvent(QPaintEvent *e)
 }
 
 bool
-Pane::render(QPainter &paint, QRect rect)
+Pane::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
 {
-    if (!View::render(paint, QRect(rect.x() + m_scaleWidth, rect.y(),
-                                   rect.width() - m_scaleWidth, rect.height()))) {
+    if (!View::render(paint, xorigin + m_scaleWidth, f0, f1)) {
         return false;
     }
 
@@ -719,11 +718,11 @@ Pane::render(QPainter &paint, QRect rect)
             
             paint.setPen(Qt::black);
             paint.setBrush(Qt::white);
-            paint.drawRect(0, -1, m_scaleWidth, height()+1);
+            paint.drawRect(xorigin, -1, m_scaleWidth, height()+1);
             
             paint.setBrush(Qt::NoBrush);
             (*vi)->paintVerticalScale
-                (this, paint, QRect(0, 0, m_scaleWidth, height()));
+                (this, paint, QRect(xorigin, 0, m_scaleWidth, height()));
             
             paint.restore();
             break;
@@ -734,11 +733,8 @@ Pane::render(QPainter &paint, QRect rect)
 }
 
 QImage *
-Pane::toNewImage()
+Pane::toNewImage(size_t f0, size_t f1)
 {
-    size_t f0 = getModelsStartFrame();
-    size_t f1 = getModelsEndFrame();
-
     size_t x0 = f0 / getZoomLevel();
     size_t x1 = f1 / getZoomLevel();
 
@@ -765,7 +761,7 @@ Pane::toNewImage()
     }        
 
     QPainter *paint = new QPainter(image);
-    if (!render(*paint, image->rect())) {
+    if (!render(*paint, 0, f0, f1)) {
         delete paint;
         delete image;
         return 0;
@@ -773,6 +769,26 @@ Pane::toNewImage()
         delete paint;
         return image;
     }
+}
+
+QSize
+Pane::getImageSize(size_t f0, size_t f1)
+{
+    QSize s = View::getImageSize(f0, f1);
+    QImage *image = new QImage(100, 100, QImage::Format_RGB32);
+    QPainter paint(image);
+
+    int sw = 0;
+    if (m_manager && m_manager->shouldShowVerticalScale()) {
+        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+            --vi;
+            QPainter paint(image);
+            sw = (*vi)->getVerticalScaleWidth(this, paint);
+            break;
+        }
+    }
+    
+    return QSize(sw + s.width(), s.height());
 }
 
 size_t

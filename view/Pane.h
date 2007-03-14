@@ -50,8 +50,10 @@ public:
 
     virtual size_t getFirstVisibleFrame() const;
 
-    virtual bool render(QPainter &paint, QRect rect);
-    virtual QImage *toNewImage();
+    virtual QImage *toNewImage(size_t f0, size_t f1);
+    virtual QImage *toNewImage() { return View::toNewImage(); }
+    virtual QSize getImageSize(size_t f0, size_t f1);
+    virtual QSize getImageSize() { return View::getImageSize(); }
 
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
@@ -85,6 +87,8 @@ protected:
     virtual void leaveEvent(QEvent *e);
     virtual void wheelEvent(QWheelEvent *e);
     virtual void resizeEvent(QResizeEvent *e);
+
+    virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
 
     Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight) const;
 
