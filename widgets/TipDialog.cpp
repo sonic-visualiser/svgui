@@ -62,9 +62,10 @@ TipDialog::TipDialog(QWidget *parent, Qt::WFlags flags) :
     QHBoxLayout *hbox = new QHBoxLayout;
     grid->addLayout(hbox, 1, 0);
 
-    QCheckBox *show = new QCheckBox(tr("Show tips on startup"));
+    QCheckBox *show = new QCheckBox(tr("Show tip on startup"));
     hbox->addWidget(show);
 
+    hbox->addSpacing(20);
     hbox->addStretch(10);
     
     QPushButton *prev = new QPushButton(tr("<< Previous"));
