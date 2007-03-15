@@ -23,6 +23,7 @@
 #include <vector>
 
 class QRadioButton;
+class QLabel;
 
 /**
  * Like QInputDialog::getItem(), except that it offers the items as a
@@ -34,21 +35,24 @@ class ListInputDialog : public QDialog
     Q_OBJECT
 
 public:
+    ListInputDialog(QWidget *parent, const QString &title,
+                    const QString &label, const QStringList &list,
+                    int current = 0, Qt::WFlags f = 0);
     virtual ~ListInputDialog();
 
+    void setItemAvailability(int item, bool available);
+    void setFootnote(QString footnote);
+
+    QString getCurrentString() const;
+    
     static QString getItem(QWidget *parent, const QString &title,
                            const QString &label, const QStringList &list,
                            int current = 0, bool *ok = 0, Qt::WFlags f = 0);
 
 protected:
-    ListInputDialog(QWidget *parent, const QString &title,
-                    const QString &label, const QStringList &list,
-                    int current = 0, Qt::WFlags f = 0);
-
-    QString getCurrentString() const;
-    
     QStringList m_strings;
     std::vector<QRadioButton *> m_radioButtons;
+    QLabel *m_footnote;
 };
 
 #endif

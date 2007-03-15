@@ -46,6 +46,10 @@ ListInputDialog::ListInputDialog(QWidget *parent, const QString &title,
 
     vbox->addStretch(1);
 
+    m_footnote = new QLabel;
+    vbox->addWidget(m_footnote);
+    m_footnote->hide();
+
     QHBoxLayout *hbox = new QHBoxLayout;
     vbox->addLayout(hbox, Qt::AlignRight);
 
@@ -79,6 +83,19 @@ ListInputDialog::getCurrentString() const
         }
     }
     return "";
+}
+
+void
+ListInputDialog::setItemAvailability(int item, bool available)
+{
+    m_radioButtons[item]->setEnabled(available);
+}
+
+void
+ListInputDialog::setFootnote(QString footnote)
+{
+    m_footnote->setText(footnote);
+    m_footnote->show();
 }
 
 QString
