@@ -21,6 +21,7 @@
 #include <QPainter>
 
 #include <iostream>
+#include <cmath>
 
 void
 PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
