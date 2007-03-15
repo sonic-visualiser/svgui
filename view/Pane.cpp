@@ -1720,7 +1720,7 @@ Pane::viewZoomLevelChanged(View *v, unsigned long z, bool locked)
 
     View::viewZoomLevelChanged(v, z, locked);
 
-    if (!m_vthumb->isVisible()) return;
+    if (m_hthumb && !m_hthumb->isVisible()) return;
 
     if (v != this) {
         if (!locked || !m_followZoom) return;
