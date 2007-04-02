@@ -365,17 +365,17 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
         int mnote = lrintf(note.value);
         int cents = lrintf((note.value - mnote) * 100);
         float freq = Pitch::getFrequencyForPitch(mnote, cents);
-        pitchText = QString("%1 (%2 Hz)")
+        pitchText = tr("%1 (%2 Hz)")
             .arg(Pitch::getPitchLabel(mnote, cents)).arg(freq);
 
     } else if (m_model->getScaleUnits() == "Hz") {
 
-        pitchText = QString("%1 Hz (%2)")
+        pitchText = tr("%1 Hz (%2)")
             .arg(note.value)
             .arg(Pitch::getPitchLabelForFrequency(note.value));
 
     } else {
-        pitchText = QString("%1 %2")
+        pitchText = tr("%1 %2")
             .arg(note.value).arg(m_model->getScaleUnits());
     }
 

@@ -2659,7 +2659,7 @@ SpectrogramLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 					  m_maxFrequency - 1 :
 					  m_model->getSampleRate() / 2));
 
-    int fw = paint.fontMetrics().width(QString("43Hz"));
+    int fw = paint.fontMetrics().width(tr("43Hz"));
     if (tw < fw) tw = fw;
 
     int tickw = (m_frequencyScale == LogFrequencyScale ? 10 : 4);
@@ -2804,7 +2804,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	}
 
 	QString text = QString("%1").arg(freq);
-	if (bin == 1) text = QString("%1Hz").arg(freq); // bin 0 is DC
+	if (bin == 1) text = tr("%1Hz").arg(freq); // bin 0 is DC
 	paint.drawLine(cw + 7, h - vy, w - pkw - 1, h - vy);
 
 	if (h - vy - textHeight >= -2) {
