@@ -556,12 +556,6 @@ View::setViewManager(ViewManager *manager)
     }
 
     m_manager = manager;
-    if (m_followPlay != PlaybackIgnore) {
-        setCentreFrame(m_manager->getPlaybackFrame(), false);
-    } else if (m_followPan) {
-        setCentreFrame(m_manager->getGlobalCentreFrame(), false);
-    }
-    if (m_followZoom) setZoomLevel(m_manager->getGlobalZoom());
 
     connect(m_manager, SIGNAL(globalCentreFrameChanged(unsigned long)),
 	    this, SLOT(globalCentreFrameChanged(unsigned long)));
@@ -591,6 +585,15 @@ View::setViewManager(ViewManager *manager)
 
     connect(this, SIGNAL(zoomLevelChanged(unsigned long, bool)),
 	    m_manager, SLOT(viewZoomLevelChanged(unsigned long, bool)));
+
+    if (m_followPlay != PlaybackIgnore) {
+//        std::cerr << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << std::endl;
+        setCentreFrame(m_manager->getPlaybackFrame(), false);
+    } else if (m_followPan) {
+//        std::cerr << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
+        setCentreFrame(m_manager->getGlobalCentreFrame(), false);
+    }
+    if (m_followZoom) setZoomLevel(m_manager->getGlobalZoom());
 
     toolModeChanged();
 }
@@ -1188,7 +1191,7 @@ void
 View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
-//    std::cerr << "View::paintEvent" << std::endl;
+//    std::cerr << "View::paintEvent: centre frame is " << m_centreFrame << std::endl;
 
     if (m_layers.empty()) {
 	QFrame::paintEvent(e);
