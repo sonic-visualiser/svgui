@@ -55,7 +55,6 @@ View::View(QWidget *w, bool showProgress) :
     m_manager(0),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
-//    QWidget::setAttribute(Qt::WA_PaintOnScreen);
 }
 
 View::~View()
@@ -557,7 +556,11 @@ View::setViewManager(ViewManager *manager)
     }
 
     m_manager = manager;
-    if (m_followPan) setCentreFrame(m_manager->getGlobalCentreFrame(), false);
+    if (m_followPlay != PlaybackIgnore) {
+        setCentreFrame(m_manager->getPlaybackFrame(), false);
+    } else if (m_followPan) {
+        setCentreFrame(m_manager->getGlobalCentreFrame(), false);
+    }
     if (m_followZoom) setZoomLevel(m_manager->getGlobalZoom());
 
     connect(m_manager, SIGNAL(globalCentreFrameChanged(unsigned long)),

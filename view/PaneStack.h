@@ -63,6 +63,8 @@ public:
     LayoutStyle getLayoutStyle() const { return m_layoutStyle; }
     void setLayoutStyle(LayoutStyle style);
 
+    void setPropertyStackMinWidth(int mw);
+
 signals:
     void currentPaneChanged(Pane *pane);
     void currentLayerChanged(Pane *pane, Layer *layer);
@@ -97,6 +99,7 @@ protected:
     QStackedWidget *m_propertyStackStack;
 
     ViewManager *m_viewManager; // I don't own this
+    int m_propertyStackMinWidth;
     void sizePropertyStacks();
 
     LayoutStyle m_layoutStyle;
