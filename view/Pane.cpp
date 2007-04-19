@@ -50,7 +50,11 @@ Pane::Pane(QWidget *w) :
     m_resizing(false),
     m_centreLineVisible(true),
     m_scaleWidth(0),
-    m_headsUpDisplay(0)
+    m_headsUpDisplay(0),
+    m_vpan(0),
+    m_hthumb(0),
+    m_vthumb(0),
+    m_reset(0)
 {
     setObjectName("Pane");
     setMouseTracking(true);
