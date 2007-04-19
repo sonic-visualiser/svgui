@@ -435,15 +435,15 @@ PaneStack::sizePropertyStacks()
 
 //    std::cerr << "PaneStack::sizePropertyStacks: max min width " << maxMinWidth << std::endl;
 
-#ifdef Q_WS_MAC
+//#ifdef Q_WS_MAC
     // This is necessary to compensate for cb->setMinimumSize(10, 10)
     // in PropertyBox in the Mac version (to avoid a mysterious crash)
 
     //!!! is this still necessary with qt4.2?
-    int setWidth = maxMinWidth * 3 / 2;
-#else
+//    int setWidth = maxMinWidth * 3 / 2;
+//#else
     int setWidth = maxMinWidth;
-#endif
+//#endif
 
     m_propertyStackStack->setMaximumWidth(setWidth + 10);
 
