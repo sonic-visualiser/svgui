@@ -18,6 +18,7 @@
 #include "base/PropertyContainer.h"
 #include "view/View.h"
 #include "layer/Layer.h"
+#include "layer/LayerFactory.h"
 #include "widgets/NotifyingTabBar.h"
 
 #include <QIcon>
@@ -40,9 +41,11 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
 
     setTabBar(bar);
 
-//    setElideMode(Qt::ElideRight); 
+#if (QT_VERSION >= 0x0402)
+    setElideMode(Qt::ElideNone); 
     tabBar()->setUsesScrollButtons(true); 
     tabBar()->setIconSize(QSize(16, 16));
+#endif
     
     repopulate();
 
@@ -90,8 +93,6 @@ PropertyStack::repopulate()
 	PropertyContainer *container = m_client->getPropertyContainer(i);
 	QString name = container->getPropertyContainerName();
 	
-	QString iconName = container->getPropertyContainerIconName();
-
 	PropertyBox *box = new PropertyBox(container);
 
 	connect(box, SIGNAL(showLayer(bool)), this, SLOT(showLayer(bool)));
@@ -103,14 +104,37 @@ PropertyStack::repopulate()
             box->layerVisibilityChanged(!layer->isLayerDormant(m_client));
         }
 
+        QString shortName = name;
+
+        if (layer) {
+            shortName = LayerFactory::getInstance()->getLayerPresentationName
+                (LayerFactory::getInstance()->getLayerType(layer));
+        }
+
+        shortName = QString("&%1 %2").arg(i + 1).arg(shortName);
+
+#ifdef Q_WS_MAC
+
+        // Qt 4.2 on OS/X doesn't show the icons in the tab bar, and
+        // I'm not sure why -- use labels instead
+
+        addTab(box, shortName);
+        
+#else
+
+        // Icons on other platforms
+
+	QString iconName = container->getPropertyContainerIconName();
+
 	QIcon icon(QString(":/icons/%1.png").arg(iconName));
 	if (icon.isNull()) {
-	    addTab(box, name);
+	    addTab(box, shortName);
 	} else {
 	    addTab(box, icon, QString("&%1").arg(i + 1));
-	    tabBar()->setTabToolTip(count() - 1, name);
-            tabBar()->setTabIcon(count() - 1, icon);
+	    setTabToolTip(i, name);
 	}
+
+#endif
 
 	m_boxes.push_back(box);
     }    
