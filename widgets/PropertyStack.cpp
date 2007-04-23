@@ -40,6 +40,10 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
 
     setTabBar(bar);
 
+//    setElideMode(Qt::ElideRight); 
+    setUsesScrollButtons(true); 
+    setIconSize(QSize(16, 16));
+    
     repopulate();
 
     connect(this, SIGNAL(currentChanged(int)),
