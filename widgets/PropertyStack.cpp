@@ -109,6 +109,7 @@ PropertyStack::repopulate()
 	} else {
 	    addTab(box, icon, QString("&%1").arg(i + 1));
 	    setTabToolTip(count() - 1, name);
+            setTabIcon(count() - 1, icon);
 	}
 
 	m_boxes.push_back(box);
