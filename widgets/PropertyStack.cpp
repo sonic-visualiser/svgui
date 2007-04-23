@@ -41,8 +41,8 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
     setTabBar(bar);
 
 //    setElideMode(Qt::ElideRight); 
-    setUsesScrollButtons(true); 
-    setIconSize(QSize(16, 16));
+    tabBar()->setUsesScrollButtons(true); 
+    tabBar()->setIconSize(QSize(16, 16));
     
     repopulate();
 
@@ -108,8 +108,8 @@ PropertyStack::repopulate()
 	    addTab(box, name);
 	} else {
 	    addTab(box, icon, QString("&%1").arg(i + 1));
-	    setTabToolTip(count() - 1, name);
-            setTabIcon(count() - 1, icon);
+	    tabBar()->setTabToolTip(count() - 1, name);
+            tabBar()->setTabIcon(count() - 1, icon);
 	}
 
 	m_boxes.push_back(box);
