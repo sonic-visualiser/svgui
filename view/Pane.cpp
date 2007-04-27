@@ -1537,7 +1537,7 @@ Pane::horizontalThumbwheelMoved(int value)
         }
     }
         
-    std::cerr << "new level is " << level << std::endl;
+//    std::cerr << "new level is " << level << std::endl;
     setZoomLevel(level);
 }    
 

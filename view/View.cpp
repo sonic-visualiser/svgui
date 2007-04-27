@@ -415,7 +415,7 @@ int
 View::getZoomLevel() const
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	std::cout << "zoom level: " << m_zoomLevel << std::endl;
+//	std::cout << "zoom level: " << m_zoomLevel << std::endl;
 #endif
     return m_zoomLevel;
 }
@@ -888,6 +888,9 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
 void
 View::viewZoomLevelChanged(View *p, unsigned long z, bool locked)
 {
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+    std::cerr  << "View[" << this << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << std::endl;
+#endif
     if (m_followZoom && p != this && locked) {
         setZoomLevel(z);
     }
@@ -1272,6 +1275,12 @@ View::paintEvent(QPaintEvent *e)
     }
 
     if (!scrollables.empty()) {
+
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+        std::cerr << "View(" << this << "): cache " << m_cache << ", cache zoom "
+                  << m_cacheZoomLevel << ", zoom " << m_zoomLevel << std::endl;
+#endif
+
 	if (!m_cache ||
 	    m_cacheZoomLevel != m_zoomLevel ||
 	    width() != m_cache->width() ||
@@ -1280,6 +1289,8 @@ View::paintEvent(QPaintEvent *e)
 	    // cache is not valid
 
 	    if (cacheRect.width() < width()/10) {
+		delete m_cache;
+                m_cache = 0;
 #ifdef DEBUG_VIEW_WIDGET_PAINT
 		std::cerr << "View(" << this << ")::paintEvent: small repaint, not bothering to recreate cache" << std::endl;
 #endif
