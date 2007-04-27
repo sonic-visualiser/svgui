@@ -289,11 +289,9 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
     if (layerType == TimeInstants) {
 	return new SparseOneDimensionalModel(baseModel->getSampleRate(), 1);
     } else if (layerType == TimeValues) {
-	return new SparseTimeValueModel(baseModel->getSampleRate(), 1,
-					0.0, 0.0, true);
+	return new SparseTimeValueModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Notes) {
-	return new NoteModel(baseModel->getSampleRate(), 1,
-			     0.0, 0.0, true);
+	return new NoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Text) {
 	return new TextModel(baseModel->getSampleRate(), 1, true);
     } else {
