@@ -429,8 +429,8 @@ PaneStack::sizePropertyStacks()
                   << m_panes[i].propertyStack->sizeHint().width() << ", current "
 		  << m_panes[i].propertyStack->width() << std::endl;
 
-	if (m_panes[i].propertyStack->minimumSizeHint().width() > maxMinWidth) {
-	    maxMinWidth = m_panes[i].propertyStack->minimumSizeHint().width();
+	if (m_panes[i].propertyStack->sizeHint().width() > maxMinWidth) {
+	    maxMinWidth = m_panes[i].propertyStack->sizeHint().width();
 	}
     }
 
