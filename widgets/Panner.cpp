@@ -127,7 +127,7 @@ Panner::leaveEvent(QEvent *)
 }
 
 void
-Panner::paintEvent(QPaintEvent *e)
+Panner::paintEvent(QPaintEvent *)
 {
     QPainter paint(this);
     paint.setRenderHint(QPainter::Antialiasing, false);
@@ -187,8 +187,8 @@ Panner::getRectExtents(float &x0, float &y0, float &width, float &height)
 void
 Panner::setRectExtents(float x0, float y0, float width, float height)
 {
-    std::cerr << "Panner::setRectExtents(" << x0 << ", " << y0 << ", "
-              << width << ", " << height << ")" << std::endl;
+//    std::cerr << "Panner::setRectExtents(" << x0 << ", " << y0 << ", "
+//              << width << ", " << height << ")" << std::endl;
 
     if (m_rectX == x0 &&
         m_rectY == y0 &&

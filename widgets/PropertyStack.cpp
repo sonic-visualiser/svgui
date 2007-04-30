@@ -199,7 +199,7 @@ PropertyStack::propertyContainerPropertyRangeChanged(PropertyContainer *pc)
 }
 
 void
-PropertyStack::propertyContainerNameChanged(PropertyContainer *pc)
+PropertyStack::propertyContainerNameChanged(PropertyContainer *)
 {
     if (sender() != m_client) return;
     repopulate();

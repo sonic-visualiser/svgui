@@ -137,7 +137,7 @@ void AudioDial::paintEvent(QPaintEvent *)
 
     int m_size = width() < height() ? width() : height();
     int scale = 1;
-    int width = m_size - 2*scale, height = m_size - 2*scale;
+    int width = m_size - 2*scale;
 
     paint.begin(this);
     paint.setRenderHint(QPainter::Antialiasing, true);

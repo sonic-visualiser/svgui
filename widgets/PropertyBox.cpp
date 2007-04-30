@@ -501,7 +501,7 @@ PropertyBox::propertyContainerPropertyChanged(PropertyContainer *pc)
 }
 
 void
-PropertyBox::propertyContainerPropertyRangeChanged(PropertyContainer *pc)
+PropertyBox::propertyContainerPropertyRangeChanged(PropertyContainer *)
 {
     blockSignals(true);
 

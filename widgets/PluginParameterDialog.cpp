@@ -193,8 +193,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     m_advanced->setLayout(advancedLayout);
     grid->addWidget(m_advanced, 3, 0);
 
-    bool haveAdvanced = false;
-
     m_channelBox = new QGroupBox;
     m_channelBox->setTitle(tr("Channels"));
     advancedLayout->addWidget(m_channelBox);
@@ -373,7 +371,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
         blockSizeCombo->setEditable(true);
         bool found = false;
         for (int i = 0; i < 14; ++i) {
-            int val = pow(2, i + 3);
+            int val = 1 << (i + 3);
             blockSizeCombo->addItem(QString("%1").arg(val));
             if (val == size) {
                 blockSizeCombo->setCurrentIndex(i);
@@ -395,7 +393,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
         incrementCombo->setEditable(true);
         found = false;
         for (int i = 0; i < 14; ++i) {
-            int val = pow(2, i + 3);
+            int val = 1 << (i + 3);
             incrementCombo->addItem(QString("%1").arg(val));
             if (val == increment) {
                 incrementCombo->setCurrentIndex(i);

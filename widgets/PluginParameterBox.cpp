@@ -69,7 +69,7 @@ PluginParameterBox::populate()
         QComboBox *programCombo = new QComboBox;
         programCombo->setMaxVisibleItems(20);
 
-        for (int i = 0; i < programs.size(); ++i) {
+        for (size_t i = 0; i < programs.size(); ++i) {
             programCombo->addItem(programs[i].c_str());
             if (programs[i] == currentProgram) {
                 programCombo->setCurrentIndex(i);
@@ -133,7 +133,7 @@ PluginParameterBox::populate()
             combobox->setObjectName(identifier);
             for (unsigned int j = 0; j < valueNames.size(); ++j) {
                 combobox->addItem(valueNames[j].c_str());
-                if (lrintf((value - min) / qtz) == j) {
+                if ((unsigned int)(lrintf(fabsf((value - min) / qtz))) == j) {
                     combobox->setCurrentIndex(j);
                 }
             }
@@ -301,7 +301,7 @@ PluginParameterBox::spinBoxChanged(double value)
         value = min + step * qtz;
     }
 
-    int imin = 0, imax = 100;
+    int imax = 100;
     
     if (qtz > 0.0) {
         imax = int((max - min) / qtz);
@@ -309,7 +309,7 @@ PluginParameterBox::spinBoxChanged(double value)
         qtz = (max - min) / 100.0;
     }
 
-    int ival = (value - min) / qtz;
+    int ival = lrintf((value - min) / qtz);
 
     AudioDial *dial = m_params[identifier].dial;
     if (dial) {
@@ -359,7 +359,7 @@ PluginParameterBox::programComboChanged(const QString &newProgram)
 
         if (i->second.combo) {
             i->second.combo->blockSignals(true);
-            i->second.combo->setCurrentIndex(value);
+            i->second.combo->setCurrentIndex(lrintf(value));
             i->second.combo->blockSignals(false);
         }
     }

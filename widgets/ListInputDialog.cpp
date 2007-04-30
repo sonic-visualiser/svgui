@@ -77,7 +77,7 @@ ListInputDialog::~ListInputDialog()
 QString
 ListInputDialog::getCurrentString() const
 {
-    for (int i = 0; i < m_radioButtons.size(); ++i) {
+    for (size_t i = 0; i < m_radioButtons.size(); ++i) {
         if (m_radioButtons[i]->isChecked()) {
             return m_strings[i];
         }
