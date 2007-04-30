@@ -31,6 +31,8 @@
 
 #include <iostream>
 
+//#define DEBUG_PANE_STACK 1
+
 PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     QFrame(parent),
     m_currentPane(0),
@@ -424,23 +426,26 @@ PaneStack::sizePropertyStacks()
 
     for (size_t i = 0; i < m_panes.size(); ++i) {
 	if (!m_panes[i].propertyStack) continue;
+#ifdef DEBUG_PANE_STACK
 	std::cerr << "PaneStack::sizePropertyStacks: " << i << ": min " 
 		  << m_panes[i].propertyStack->minimumSizeHint().width() << ", hint "
                   << m_panes[i].propertyStack->sizeHint().width() << ", current "
 		  << m_panes[i].propertyStack->width() << std::endl;
+#endif
 
 	if (m_panes[i].propertyStack->sizeHint().width() > maxMinWidth) {
 	    maxMinWidth = m_panes[i].propertyStack->sizeHint().width();
 	}
     }
 
-//    std::cerr << "PaneStack::sizePropertyStacks: max min width " << maxMinWidth << std::endl;
+#ifdef DEBUG_PANE_STACK
+    std::cerr << "PaneStack::sizePropertyStacks: max min width " << maxMinWidth << std::endl;
+#endif
 
 //#ifdef Q_WS_MAC
     // This is necessary to compensate for cb->setMinimumSize(10, 10)
     // in PropertyBox in the Mac version (to avoid a mysterious crash)
-
-    //!!! is this still necessary with qt4.2?
+    // ... no longer necessary with qt4.2
 //    int setWidth = maxMinWidth * 3 / 2;
 //#else
     int setWidth = maxMinWidth;
