@@ -483,7 +483,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
     int notches = 25;
     
     // radius of the wheel including invisible part
-    int radius = w / 2 + 2;
+    int radius = int(w / 2 + 2);
 
     for (int i = 0; i < notches; ++i) {
 
