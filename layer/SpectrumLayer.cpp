@@ -242,8 +242,7 @@ SpectrumLayer::preferenceChanged(PropertyContainer::PropertyName name)
 }
 
 bool
-SpectrumLayer::getValueExtents(float &min, float &max, bool &logarithmic,
-                               QString &units) const
+SpectrumLayer::getValueExtents(float &, float &, bool &, QString &) const
 {
     return false;
 }
@@ -260,10 +259,10 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
     if (genericDesc == "") return "";
 
     float minvalue = 0.f;
-    if (minbin < m_values.size()) minvalue = m_values[minbin];
+    if (minbin < int(m_values.size())) minvalue = m_values[minbin];
 
     float maxvalue = minvalue;
-    if (maxbin < m_values.size()) maxvalue = m_values[maxbin];
+    if (maxbin < int(m_values.size())) maxvalue = m_values[maxbin];
         
     if (minvalue > maxvalue) std::swap(minvalue, maxvalue);
     
@@ -316,7 +315,7 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
 
     QString description;
 
-    if (range > m_sliceableModel->getResolution()) {
+    if (range > int(m_sliceableModel->getResolution())) {
         description = tr("%1\nBin:\t%2 (%3)\n%4 value:\t%5\ndB:\t%6")
             .arg(genericDesc)
             .arg(binstr)

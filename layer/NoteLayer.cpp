@@ -295,11 +295,11 @@ NoteLayer::getLocalPoints(View *v, int x) const
 
     if (prevPoints.empty()) {
 	usePoints = nextPoints;
-    } else if (prevPoints.begin()->frame < v->getStartFrame() &&
+    } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
 	       !(nextPoints.begin()->frame > v->getEndFrame())) {
 	usePoints = nextPoints;
-    } else if (nextPoints.begin()->frame - frame <
-	       frame - prevPoints.begin()->frame) {
+    } else if (long(nextPoints.begin()->frame) - frame <
+	       frame - long(prevPoints.begin()->frame)) {
 	usePoints = nextPoints;
     }
 
@@ -604,9 +604,6 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     float max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
-    int origin = int(nearbyint(v->height() -
-			       (-min * v->height()) / (max - min)));
-
     QPoint localPos;
     long illuminateFrame = -1;
 
@@ -709,7 +706,7 @@ NoteLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::drawEnd(View *v, QMouseEvent *e)
+NoteLayer::drawEnd(View *, QMouseEvent *)
 {
 //    std::cerr << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -764,7 +761,7 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::editEnd(View *v, QMouseEvent *e)
+NoteLayer::editEnd(View *, QMouseEvent *)
 {
 //    std::cerr << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -936,7 +933,7 @@ NoteLayer::copy(Selection s, Clipboard &to)
 }
 
 bool
-NoteLayer::paste(const Clipboard &from, int frameOffset, bool interactive)
+NoteLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 

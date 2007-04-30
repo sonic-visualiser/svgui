@@ -280,7 +280,7 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
     int f1 =  f0 + modelResolution;
 
     float binHeight = float(v->height()) / m_model->getHeight();
-    int sy = (v->height() - y) / binHeight;
+    int sy = int((v->height() - y) / binHeight);
 
     float value = m_model->getValueAt(sx0, sy);
 
@@ -302,14 +302,14 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 int
-Colour3DPlotLayer::getColourScaleWidth(QPainter &paint) const
+Colour3DPlotLayer::getColourScaleWidth(QPainter &) const
 {
     int cw = 20;
     return cw;
 }
 
 int
-Colour3DPlotLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
+Colour3DPlotLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 {
     if (!m_model) return 0;
 
@@ -364,14 +364,14 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
         if ((i % step) != 0) continue;
 
-	int y0 = v->height() - (i * binHeight) - 1;
+	int y0 = int(v->height() - (i * binHeight) - 1);
 	
 	QString text = m_model->getBinName(i);
 	if (text == "") text = QString("[%1]").arg(i + 1);
 
 	paint.drawLine(cw, y0, w, y0);
 
-	int cy = y0 - (step * binHeight)/2;
+	int cy = int(y0 - (step * binHeight)/2);
 	int ty = cy + paint.fontMetrics().ascent()/2;
 
 	paint.drawText(cw + 5, ty, text);
@@ -434,8 +434,8 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 
     if (m_cache &&
 	(m_cacheStart != firstBin ||
-         m_cache->width() != cacheWidth ||
-	 m_cache->height() != cacheHeight)) {
+         m_cache->width() != int(cacheWidth) ||
+	 m_cache->height() != int(cacheHeight))) {
 
 	delete m_cache;
 	m_cache = 0;
@@ -578,8 +578,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     fillCache(sx0 < 0 ? 0 : sx0,
               sx1 < 0 ? 0 : sx1);
 
-    if (m_model->getHeight() >= v->height() ||
-        modelResolution < v->getZoomLevel() / 2) {
+    if (int(m_model->getHeight()) >= v->height() ||
+        int(modelResolution) < v->getZoomLevel() / 2) {
         paintDense(v, paint, rect);
         return;
     }
@@ -596,15 +596,15 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     for (int sx = sx0; sx <= sx1; ++sx) {
 
         int scx = 0;
-        if (sx > m_cacheStart) scx = sx - m_cacheStart;
+        if (sx > int(m_cacheStart)) scx = sx - m_cacheStart;
         
 	int fx = sx * int(modelResolution);
 
-	if (fx + modelResolution < int(modelStart) ||
+	if (fx + int(modelResolution) < int(modelStart) ||
 	    fx > int(modelEnd)) continue;
 
-	int rx0 = v->getXForFrame((fx + int(modelStart)) * srRatio);
-	int rx1 = v->getXForFrame((fx + int(modelStart) + int(modelResolution) + 1) * srRatio);
+        int rx0 = v->getXForFrame(int((fx + int(modelStart)) * srRatio));
+	int rx1 = v->getXForFrame(int((fx + int(modelStart) + int(modelResolution) + 1) * srRatio));
 
 	int rw = rx1 - rx0;
 	if (rw < 1) rw = 1;
@@ -673,11 +673,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 void
 Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 {
-    long startFrame = v->getStartFrame();
-    int zoomLevel = v->getZoomLevel();
-
     size_t modelStart = m_model->getStartFrame();
-    size_t modelEnd = m_model->getEndFrame();
     size_t modelResolution = m_model->getResolution();
 
     float srRatio =
@@ -695,7 +691,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     for (int x = x0; x < x1; ++x) {
 
-        long xf = v->getFrameForX(x) / srRatio;
+        long xf = long(v->getFrameForX(x) / srRatio);
         if (xf < 0) {
             for (int y = 0; y < h; ++y) {
                 img.setPixel(x - x0, y, m_cache->color(0));
@@ -723,7 +719,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             for (int sx = sx0i; sx <= sx1i; ++sx) {
 
                 int scx = 0;
-                if (sx > m_cacheStart) scx = sx - m_cacheStart;
+                if (sx > int(m_cacheStart)) scx = sx - int(m_cacheStart);
         
                 if (scx < 0 || scx >= m_cache->width()) continue;
 

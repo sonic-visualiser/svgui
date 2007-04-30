@@ -207,7 +207,7 @@ public:
 
     virtual void setLayerDormant(const View *v, bool dormant);
 
-    virtual bool isLayerScrollable(const View *v) const { return false; }
+    virtual bool isLayerScrollable(const View *) const { return false; }
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;

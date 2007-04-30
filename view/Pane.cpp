@@ -552,7 +552,6 @@ Pane::paintEvent(QPaintEvent *e)
             
             QString text = QString("%1").arg(m_centreFrame);
             
-            int tw = paint.fontMetrics().width(text);
             int x = width()/2 + 4;
             
             drawVisibleText(paint, x, y, text, OutlinedText);
@@ -604,7 +603,7 @@ Pane::paintEvent(QPaintEvent *e)
 
     if (m_manager &&
         m_manager->shouldShowLayerNames() &&
-        r.y() + r.height() >= height() - m_layers.size() * fontHeight - 6) {
+        r.y() + r.height() >= height() - int(m_layers.size()) * fontHeight - 6) {
 
 	std::vector<QString> texts;
 	int maxTextWidth = 0;
@@ -641,9 +640,9 @@ Pane::paintEvent(QPaintEvent *e)
 
 	if (r.x() + r.width() >= llx) {
 	    
-	    for (int i = 0; i < texts.size(); ++i) {
+	    for (size_t i = 0; i < texts.size(); ++i) {
 
-		if (i == texts.size() - 1) {
+		if (i + 1 == texts.size()) {
 		    paint.setPen(Qt::black);
 		}
 		
@@ -1295,11 +1294,11 @@ Pane::dragTopLayer(QMouseEvent *e)
 
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
 
-            std::cerr << "ydiff = " << ydiff << std::endl;
+//            std::cerr << "ydiff = " << ydiff << std::endl;
 
             float perpix = (dmax - dmin) / height();
             float valdiff = ydiff * perpix;
-            std::cerr << "valdiff = " << valdiff << std::endl;
+//            std::cerr << "valdiff = " << valdiff << std::endl;
 
             float newmin = m_dragStartMinValue + valdiff;
             float newmax = m_dragStartMinValue + (dmax - dmin) + valdiff;
@@ -1311,8 +1310,8 @@ Pane::dragTopLayer(QMouseEvent *e)
                 newmin -= newmax - vmax;
                 newmax -= newmax - vmax;
             }
-            std::cerr << "(" << dmin << ", " << dmax << ") -> ("
-                      << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << std::endl;
+//            std::cerr << "(" << dmin << ", " << dmax << ") -> ("
+//                      << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << std::endl;
 
             setTopLayerDisplayExtents(newmin, newmax);
             updateVerticalPanner();
@@ -1343,10 +1342,10 @@ Pane::dragExtendSelection(QMouseEvent *e)
 	
     size_t min, max;
 	
-    if (m_selectionStartFrame > snapFrameLeft) {
+    if (m_selectionStartFrame > size_t(snapFrameLeft)) {
         min = snapFrameLeft;
         max = m_selectionStartFrame;
-    } else if (snapFrameRight > m_selectionStartFrame) {
+    } else if (size_t(snapFrameRight) > m_selectionStartFrame) {
         min = m_selectionStartFrame;
         max = snapFrameRight;
     } else {
@@ -1372,7 +1371,9 @@ Pane::dragExtendSelection(QMouseEvent *e)
             setCentreFrame(m_centreFrame + move);
         } else if (offset <= available * 0.10) {
             int move = int(available * 0.10 - offset) + 1;
-            if (m_centreFrame > move) {
+            if (move < 0) {
+                setCentreFrame(m_centreFrame + (-move));
+            } else if (m_centreFrame > move) {
                 setCentreFrame(m_centreFrame - move);
             } else {
                 setCentreFrame(0);
@@ -1627,7 +1628,7 @@ Pane::editSelectionDrag(QMouseEvent *e)
 }
 
 bool
-Pane::editSelectionEnd(QMouseEvent *e)
+Pane::editSelectionEnd(QMouseEvent *)
 {
     if (m_editingSelection.isEmpty()) return false;
 

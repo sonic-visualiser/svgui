@@ -63,7 +63,7 @@ public:
 
     virtual bool hasTimeXAxis() const { return false; }
 
-    virtual bool isLayerScrollable(const View *v) const { return false; }
+    virtual bool isLayerScrollable(const View *) const { return false; }
 
     enum EnergyScale { LinearScale, MeterScale, dBScale };
 

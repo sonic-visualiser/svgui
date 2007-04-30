@@ -336,7 +336,7 @@ TimeValueLayer::getLocalPoints(View *v, int x) const
 
     if (prevPoints.empty()) {
 	usePoints = nextPoints;
-    } else if (prevPoints.begin()->frame < v->getStartFrame() &&
+    } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
 	       !(nextPoints.begin()->frame > v->getEndFrame())) {
 	usePoints = nextPoints;
     } else if (nextPoints.begin()->frame - frame <
@@ -549,8 +549,6 @@ TimeValueLayer::getColourForValue(View *v, float val) const
     float min, max;
     bool log;
     getScaleExtents(v, min, max, log);
-
-    float logthresh = -80;
 
     if (min > max) std::swap(min, max);
     if (max == min) max = min + 1;
@@ -783,7 +781,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-TimeValueLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
+TimeValueLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 {
     int w = paint.fontMetrics().width("-000.000");
     if (m_plotStyle == PlotSegmentation) return w + 20;
@@ -791,7 +789,7 @@ TimeValueLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
 }
 
 void
-TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
+TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
 {
     if (!m_model) return;
 
@@ -966,7 +964,7 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::drawEnd(View *v, QMouseEvent *e)
+TimeValueLayer::drawEnd(View *, QMouseEvent *)
 {
 //    std::cerr << "TimeValueLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -1021,7 +1019,7 @@ TimeValueLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::editEnd(View *v, QMouseEvent *e)
+TimeValueLayer::editEnd(View *, QMouseEvent *)
 {
 //    std::cerr << "TimeValueLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;

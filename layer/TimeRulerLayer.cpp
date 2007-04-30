@@ -67,7 +67,7 @@ TimeRulerLayer::getPropertyLabel(const PropertyName &name) const
 }
 
 Layer::PropertyType
-TimeRulerLayer::getPropertyType(const PropertyName &name) const
+TimeRulerLayer::getPropertyType(const PropertyName &) const
 {
     return ValueProperty;
 }

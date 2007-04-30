@@ -326,7 +326,7 @@ public:
      * verticalZoomChanged signal if their vertical zoom changes
      * due to factors other than setVerticalZoomStep being called.
      */
-    virtual int getVerticalZoomSteps(int &defaultStep) const { return 0; }
+    virtual int getVerticalZoomSteps(int & /* defaultStep */) const { return 0; }
 
     /**
      * Get the current vertical zoom step.  A layer may support finer

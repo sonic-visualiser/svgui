@@ -137,10 +137,10 @@ SliceLayer::getFeatureDescription(View *v, QPoint &p,
     if (includeBinDescription) {
 
         float minvalue = 0.f;
-        if (minbin < m_values.size()) minvalue = m_values[minbin];
+        if (minbin < int(m_values.size())) minvalue = m_values[minbin];
 
         float maxvalue = minvalue;
-        if (maxbin < m_values.size()) maxvalue = m_values[maxbin];
+        if (maxbin < int(m_values.size())) maxvalue = m_values[maxbin];
         
         if (minvalue > maxvalue) std::swap(minvalue, maxvalue);
         
@@ -261,7 +261,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     QPainterPath path;
     float thresh = -80.f;
 
-    int mh = m_sliceableModel->getHeight();
+    size_t mh = m_sliceableModel->getHeight();
 
     int divisor = 0;
 
@@ -433,7 +433,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-SliceLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
+SliceLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 {
     if (m_energyScale == LinearScale) {
 	return std::max(paint.fontMetrics().width("0.0") + 13,
@@ -536,7 +536,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
     int garbage0, garbage1, garbage2;
     if (!min) min = &garbage0;
     if (!max) max = &garbage1;
-    if (!deflt) deflt = &garbage1;
+    if (!deflt) deflt = &garbage2;
 
     if (name == "Gain") {
 
@@ -852,8 +852,7 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
 }
 
 bool
-SliceLayer::getValueExtents(float &min, float &max, bool &logarithmic,
-                            QString &units) const
+SliceLayer::getValueExtents(float &, float &, bool &, QString &) const
 {
     return false;
 }

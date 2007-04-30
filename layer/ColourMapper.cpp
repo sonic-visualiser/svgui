@@ -74,7 +74,8 @@ ColourMapper::map(float value) const
     float h = 0.f, s = 0.f, v = 0.f, r = 0.f, g = 0.f, b = 0.f;
     bool hsv = true;
 
-    float red = 0.f, green = 0.3333f, blue = 0.6666f, pieslice = 0.3333f;
+//    float red = 0.f, green = 0.3333f;
+    float blue = 0.6666f, pieslice = 0.3333f;
 
     if (m_map >= getColourMapCount()) return Qt::black;
     StandardMap map = (StandardMap)m_map;

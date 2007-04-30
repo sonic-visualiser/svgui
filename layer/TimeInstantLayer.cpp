@@ -211,7 +211,7 @@ TimeInstantLayer::getLocalPoints(View *v, int x) const
 
     if (prevPoints.empty()) {
 	usePoints = nextPoints;
-    } else if (prevPoints.begin()->frame < v->getStartFrame() &&
+    } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
 	       !(nextPoints.begin()->frame > v->getEndFrame())) {
 	usePoints = nextPoints;
     } else if (nextPoints.begin()->frame - frame <
@@ -519,7 +519,7 @@ TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::drawEnd(View *v, QMouseEvent *e)
+TimeInstantLayer::drawEnd(View *, QMouseEvent *e)
 {
     std::cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -575,7 +575,7 @@ TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::editEnd(View *v, QMouseEvent *e)
+TimeInstantLayer::editEnd(View *, QMouseEvent *e)
 {
     std::cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -724,7 +724,7 @@ TimeInstantLayer::copy(Selection s, Clipboard &to)
 }
 
 bool
-TimeInstantLayer::paste(const Clipboard &from, int frameOffset, bool interactive)
+TimeInstantLayer::paste(const Clipboard &from, int frameOffset, bool)
 {
     if (!m_model) return false;
 
