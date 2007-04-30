@@ -55,7 +55,7 @@ public:
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;
 
-    virtual bool isLayerScrollable(const View *v) const { return false; }
+    virtual bool isLayerScrollable(const View *) const { return false; }
 
     void setChannel(int);
     int getChannel() const { return m_channel; }

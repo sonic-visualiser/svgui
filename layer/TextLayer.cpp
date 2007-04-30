@@ -75,7 +75,7 @@ TextLayer::getPropertyLabel(const PropertyName &name) const
 }
 
 Layer::PropertyType
-TextLayer::getPropertyType(const PropertyName &name) const
+TextLayer::getPropertyType(const PropertyName &) const
 {
     return ValueProperty;
 }
@@ -144,8 +144,7 @@ TextLayer::setProperty(const PropertyName &name, int value)
 }
 
 bool
-TextLayer::getValueExtents(float &min, float &max,
-                           bool &logarithmic, QString &unit) const
+TextLayer::getValueExtents(float &, float &, bool &, QString &) const
 {
     return false;
 }
@@ -490,7 +489,7 @@ TextLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::drawEnd(View *v, QMouseEvent *e)
+TextLayer::drawEnd(View *v, QMouseEvent *)
 {
 //    std::cerr << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -561,7 +560,7 @@ TextLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::editEnd(View *v, QMouseEvent *e)
+TextLayer::editEnd(View *, QMouseEvent *)
 {
 //    std::cerr << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
@@ -707,7 +706,7 @@ TextLayer::copy(Selection s, Clipboard &to)
 }
 
 bool
-TextLayer::paste(const Clipboard &from, int frameOffset, bool interactive)
+TextLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 

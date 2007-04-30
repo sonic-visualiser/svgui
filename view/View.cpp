@@ -799,7 +799,7 @@ View::globalCentreFrameChanged(unsigned long f)
 }
 
 void
-View::viewCentreFrameChanged(View *v, unsigned long f)
+View::viewCentreFrameChanged(View *, unsigned long )
 {
     // We do nothing with this, but a subclass might
 }

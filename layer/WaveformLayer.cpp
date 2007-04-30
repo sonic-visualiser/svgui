@@ -369,7 +369,7 @@ WaveformLayer::getCompletion(View *) const
 
 bool
 WaveformLayer::getValueExtents(float &min, float &max,
-                               bool &log, QString &unit) const
+                               bool &, QString &unit) const
 {
     if (m_scale == LinearScale) {
         min = 0.0;
@@ -1001,7 +1001,6 @@ WaveformLayer::getYForValue(View *v, Scale scale, float value, size_t channel,
 {
     if (maxChannel < minChannel || channel < minChannel) return 0;
 
-    int w = v->width();
     int h = v->height();
 
     int channels = maxChannel - minChannel + 1;
@@ -1035,7 +1034,7 @@ WaveformLayer::getYForValue(View *v, Scale scale, float value, size_t channel,
 }
 
 int
-WaveformLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
+WaveformLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 {
     if (m_scale == LinearScale) {
 	return paint.fontMetrics().width("0.0") + 13;

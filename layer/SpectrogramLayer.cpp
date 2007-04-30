@@ -732,7 +732,7 @@ SpectrogramLayer::setMinFrequency(size_t mf)
 {
     if (m_minFrequency == mf) return;
 
-    std::cerr << "SpectrogramLayer::setMinFrequency: " << mf << std::endl;
+//    std::cerr << "SpectrogramLayer::setMinFrequency: " << mf << std::endl;
 
     invalidatePixmapCaches();
     invalidateMagnitudes();
@@ -753,7 +753,7 @@ SpectrogramLayer::setMaxFrequency(size_t mf)
 {
     if (m_maxFrequency == mf) return;
 
-    std::cerr << "SpectrogramLayer::setMaxFrequency: " << mf << std::endl;
+//    std::cerr << "SpectrogramLayer::setMaxFrequency: " << mf << std::endl;
 
     invalidatePixmapCaches();
     invalidateMagnitudes();
@@ -960,7 +960,6 @@ SpectrogramLayer::fillTimerTimedOut()
     for (ViewFFTMap::iterator i = m_fftModels.begin();
          i != m_fftModels.end(); ++i) {
 
-        const View *v = i->first;
         const FFTModel *model = i->second.first;
         size_t lastFill = i->second.second;
 
@@ -1594,7 +1593,9 @@ SpectrogramLayer::getFFTModel(const View *v) const
         }
 
         if (!m_sliceableModel) {
+#ifdef DEBUG_SPECTROGRAM
             std::cerr << "SpectrogramLayer: emitting sliceableModelReplaced(0, " << model << ")" << std::endl;
+#endif
             ((SpectrogramLayer *)this)->sliceableModelReplaced(0, model);
             m_sliceableModel = model;
         }
@@ -1670,7 +1671,7 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
 
 //    std::cerr << "SpectrogramLayer::updateViewMagnitudes: x0 = " << x0 << ", x1 = " << x1 << ", s00 = " << s00 << ", s11 = " << s11 << " s0 = " << s0 << ", s1 = " << s1 << std::endl;
 
-    if (m_columnMags.size() <= s1) {
+    if (int(m_columnMags.size()) <= s1) {
         m_columnMags.resize(s1 + 1);
     }
 
@@ -1733,9 +1734,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     std::cerr << "SpectrogramLayer::paint(): pixmap cache valid area " << cache.validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() << "x" << cache.validArea.height() << std::endl;
 #endif
 
-    bool stillCacheing = (m_updateTimer != 0);
-
 #ifdef DEBUG_SPECTROGRAM_REPAINT
+    bool stillCacheing = (m_updateTimer != 0);
     std::cerr << "SpectrogramLayer::paint(): Still cacheing = " << stillCacheing << std::endl;
 #endif
 
@@ -2067,8 +2067,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int s0i = int(s0 + 0.001);
 	int s1i = int(s1);
 
-	if (s1i >= fft->getWidth()) {
-	    if (s0i >= fft->getWidth()) {
+	if (s1i >= int(fft->getWidth())) {
+	    if (s0i >= int(fft->getWidth())) {
 		continue;
 	    } else {
 		s1i = s0i;
@@ -2208,7 +2208,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
             if (mag.isSet()) {
 
-                if (s >= m_columnMags.size()) {
+                if (s >= int(m_columnMags.size())) {
                     std::cerr << "INTERNAL ERROR: " << s << " >= "
                               << m_columnMags.size() << " at SpectrogramLayer.cpp:2087" << std::endl;
                 }
@@ -2348,8 +2348,8 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
         int x0 = v->getXForFrame(s0i * getWindowIncrement());
         int x1 = v->getXForFrame((s1i + 1) * getWindowIncrement());
 
-        int y1 = getYForFrequency(v, f1);
-        int y0 = getYForFrequency(v, f0);
+        int y1 = int(getYForFrequency(v, f1));
+        int y0 = int(getYForFrequency(v, f0));
         
 //        std::cerr << "SpectrogramLayer: illuminate "
 //                  << x0 << "," << y1 << " -> " << x1 << "," << y0 << std::endl;
@@ -2413,7 +2413,7 @@ SpectrogramLayer::getDisplayExtents(float &min, float &max) const
 {
     min = getEffectiveMinFrequency();
     max = getEffectiveMaxFrequency();
-    std::cerr << "SpectrogramLayer::getDisplayExtents: " << min << "->" << max << std::endl;
+//    std::cerr << "SpectrogramLayer::getDisplayExtents: " << min << "->" << max << std::endl;
     return true;
 }    
 
@@ -2450,7 +2450,7 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
 }
 
 bool
-SpectrogramLayer::snapToFeatureFrame(View *v, int &frame,
+SpectrogramLayer::snapToFeatureFrame(View *, int &frame,
 				     size_t &resolution,
 				     SnapType snap) const
 {
@@ -2472,7 +2472,7 @@ SpectrogramLayer::snapToFeatureFrame(View *v, int &frame,
 } 
 
 bool
-SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
+SpectrogramLayer::getCrosshairExtents(View *v, QPainter &,
                                       QPoint cursorPos,
                                       std::vector<QRect> &extents) const
 {
@@ -2515,9 +2515,9 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
         }
 
         paint.drawLine(cursorPos.x() - len,
-                       hy,
+                       int(hy),
                        cursorPos.x(),
-                       hy);
+                       int(hy));
 
         ++harmonic;
     }
@@ -2648,7 +2648,7 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 }
 
 int
-SpectrogramLayer::getVerticalScaleWidth(View *v, QPainter &paint) const
+SpectrogramLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 {
     if (!m_model || !m_model->isOK()) return 0;
 
@@ -2819,7 +2819,6 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
 	paint.drawLine(w - pkw - 1, 0, w - pkw - 1, h);
 
-	int sr = m_model->getSampleRate();
 	float minf = getEffectiveMinFrequency();
 	float maxf = getEffectiveMaxFrequency();
 
@@ -2873,7 +2872,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 class SpectrogramRangeMapper : public RangeMapper
 {
 public:
-    SpectrogramRangeMapper(int sr, int fftsize) :
+    SpectrogramRangeMapper(int sr, int /* fftsize */) :
         m_dist(float(sr) / 2),
         m_s2(sqrtf(sqrtf(2))) { }
     ~SpectrogramRangeMapper() { }
@@ -2883,7 +2882,6 @@ public:
         float dist = m_dist;
     
         int n = 0;
-        int discard = 0;
 
         while (dist > (value + 0.00001) && dist > 0.1f) {
             dist /= m_s2;
@@ -2933,7 +2931,7 @@ SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
     
     defaultStep = mapper.getPositionForValue(m_initialMaxFrequency) - minStep;
 
-    std::cerr << "SpectrogramLayer::getVerticalZoomSteps: " << maxStep - minStep << " (" << maxStep <<"-" << minStep << "), default is " << defaultStep << " (from initial max freq " << m_initialMaxFrequency << ")" << std::endl;
+//    std::cerr << "SpectrogramLayer::getVerticalZoomSteps: " << maxStep - minStep << " (" << maxStep <<"-" << minStep << "), default is " << defaultStep << " (from initial max freq " << m_initialMaxFrequency << ")" << std::endl;
 
     return maxStep - minStep;
 }
@@ -2948,7 +2946,7 @@ SpectrogramLayer::getCurrentVerticalZoomStep() const
     
     SpectrogramRangeMapper mapper(m_model->getSampleRate(), m_fftSize);
     int n = mapper.getPositionForValue(dmax - dmin);
-    std::cerr << "SpectrogramLayer::getCurrentVerticalZoomStep: " << n << std::endl;
+//    std::cerr << "SpectrogramLayer::getCurrentVerticalZoomStep: " << n << std::endl;
     return n;
 }
 
@@ -2982,7 +2980,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
         newmax = mmax;
     }
     
-    std::cerr << "SpectrogramLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << ddist << ")" << std::endl;
+//    std::cerr << "SpectrogramLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << ddist << ")" << std::endl;
 
     setMinFrequency(int(newmin));
     setMaxFrequency(int(newmax));

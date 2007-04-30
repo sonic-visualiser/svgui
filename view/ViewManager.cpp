@@ -291,7 +291,7 @@ ViewManager::setAudioPlaySource(AudioPlaySource *source)
 }
 
 void
-ViewManager::playStatusChanged(bool playing)
+ViewManager::playStatusChanged(bool /* playing */)
 {
     checkPlayStatus();
 }

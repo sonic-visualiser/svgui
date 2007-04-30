@@ -62,13 +62,13 @@ Overview::unregisterView(View *view)
 }
 
 void
-Overview::globalCentreFrameChanged(unsigned long f)
+Overview::globalCentreFrameChanged(unsigned long)
 {
     update();
 }
 
 void
-Overview::viewCentreFrameChanged(View *v, unsigned long f)
+Overview::viewCentreFrameChanged(View *v, unsigned long)
 {
     if (m_views.find(v) != m_views.end()) {
 	update();
@@ -76,7 +76,7 @@ Overview::viewCentreFrameChanged(View *v, unsigned long f)
 }    
 
 void
-Overview::viewZoomLevelChanged(View *v, unsigned long z, bool)
+Overview::viewZoomLevelChanged(View *v, unsigned long, bool)
 {
     if (v == this) return;
     if (m_views.find(v) != m_views.end()) {
