@@ -2928,10 +2928,13 @@ SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
 //    int maxStep = mapper.getPositionForValue((float(sr) / m_fftSize) + 0.001);
     int maxStep = mapper.getPositionForValue(0);
     int minStep = mapper.getPositionForValue(float(sr) / 2);
-    
-    defaultStep = mapper.getPositionForValue(m_initialMaxFrequency) - minStep;
 
-//    std::cerr << "SpectrogramLayer::getVerticalZoomSteps: " << maxStep - minStep << " (" << maxStep <<"-" << minStep << "), default is " << defaultStep << " (from initial max freq " << m_initialMaxFrequency << ")" << std::endl;
+    size_t initialMax = m_initialMaxFrequency;
+    if (initialMax == 0) initialMax = sr / 2;
+
+    defaultStep = mapper.getPositionForValue(initialMax) - minStep;
+
+//    std::cerr << "SpectrogramLayer::getVerticalZoomSteps: " << maxStep - minStep << " (" << maxStep <<"-" << minStep << "), default is " << defaultStep << " (from initial max freq " << initialMax << ")" << std::endl;
 
     return maxStep - minStep;
 }
