@@ -226,6 +226,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     QPushButton *ok = new QPushButton(tr("OK"));
     QPushButton *cancel = new QPushButton(tr("Cancel"));
+    ok->setDefault(true);
     hbox->addStretch(10);
     hbox->addWidget(ok);
     hbox->addWidget(cancel);
