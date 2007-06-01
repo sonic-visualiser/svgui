@@ -1477,7 +1477,7 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
                     if (!have || value < phaseMin) { phaseMin = value; }
                     if (!have || value > phaseMax) { phaseMax = value; }
 
-                    value = fft->getMagnitudeAt(s, q);
+                    value = fft->getMagnitudeAt(s, q) / (m_fftSize/2);
                     if (!have || value < min) { min = value; }
                     if (!have || value > max) { max = value; }
                     
@@ -2140,7 +2140,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                     mag.sample(value);
                     value *= m_gain;
                 } else {
-                    value = fft->getMagnitudeAt(s, q);
+                    value = fft->getMagnitudeAt(s, q) / (m_fftSize/2);
                     mag.sample(value);
                     value *= m_gain;
                 }

@@ -376,7 +376,7 @@ void AudioDial::setShowToolTip(bool show)
 float AudioDial::mappedValue() const
 {
     if (m_rangeMapper) {
-        std::cerr << "AudioDial::mappedValue(): value = " << value() << ", mappedValue = " << m_mappedValue << std::endl;
+//        std::cerr << "AudioDial::mappedValue(): value = " << value() << ", mappedValue = " << m_mappedValue << std::endl;
         return m_mappedValue;
     }
     return value();
