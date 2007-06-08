@@ -38,6 +38,28 @@ Overview::Overview(QWidget *w) :
 void
 Overview::modelChanged(size_t startFrame, size_t endFrame)
 {
+    bool zoomChanged = false;
+
+    size_t frameCount = getModelsEndFrame() - getModelsStartFrame();
+    int zoomLevel = frameCount / width();
+    if (zoomLevel < 1) zoomLevel = 1;
+    zoomLevel = getZoomConstraintBlockSize(zoomLevel,
+					   ZoomConstraint::RoundUp);
+    if (zoomLevel != m_zoomLevel) {
+        zoomChanged = true;
+    }
+
+    if (!zoomChanged) {
+        for (LayerList::const_iterator i = m_layers.begin();
+             i != m_layers.end(); ++i) {
+            if ((*i)->getModel() &&
+                !(*i)->getModel()->isOK() ||
+                !(*i)->getModel()->isReady()) {
+                return;
+            }
+        }
+    }
+
     View::modelChanged(startFrame, endFrame);
 }
 
@@ -112,6 +134,7 @@ Overview::paintEvent(QPaintEvent *e)
 	m_zoomLevel = zoomLevel;
 	emit zoomLevelChanged(m_zoomLevel, m_followZoom);
     }
+
     size_t centreFrame = startFrame + m_zoomLevel * (width() / 2);
     if (centreFrame > (startFrame + getModelsEndFrame())/2) {
 	centreFrame = (startFrame + getModelsEndFrame())/2;
