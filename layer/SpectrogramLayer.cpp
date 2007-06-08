@@ -22,6 +22,7 @@
 #include "base/Pitch.h"
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
+#include "base/LogRange.h"
 #include "ColourMapper.h"
 
 #include <QPainter>
@@ -1399,7 +1400,7 @@ const
 
 	    if (peaksOnly && !fft->isLocalPeak(s, q)) continue;
 
-	    if (!fft->isOverThreshold(s, q, m_threshold)) continue;
+	    if (!fft->isOverThreshold(s, q, m_threshold * (m_fftSize/2))) continue;
 
 	    float freq = binfreq;
 	    bool steady = false;
@@ -1695,6 +1696,9 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
 void
 SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
+    // What a lovely, old-fashioned function this is.
+    // It's practically FORTRAN 77 in its clarity and linearity.
+
     Profiler profiler("SpectrogramLayer::paint", true);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << std::endl;
@@ -1986,19 +1990,31 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     // Set minFreq and maxFreq to the frequency extents of the possibly
     // zero-padded visible bin range, and displayMinFreq and displayMaxFreq
     // to the actual scale frequency extents (presumably not zero padded).
+
+    // If we are zero padding, we want to use the zero-padded
+    // equivalents of the bins that we would be using if not zero
+    // padded, to avoid spaces at the top and bottom of the display.
+
+    // Note fftSize is the actual zero-padded fft size, m_fftSize the
+    // nominal fft size.
     
-    size_t maxbin = fftSize / 2;
+    size_t maxbin = m_fftSize / 2;
     if (m_maxFrequency > 0) {
-	maxbin = int((double(m_maxFrequency) * fftSize) / sr + 0.1);
-	if (maxbin > fftSize / 2) maxbin = fftSize / 2;
+	maxbin = int((double(m_maxFrequency) * m_fftSize) / sr + 0.001);
+	if (maxbin > m_fftSize / 2) maxbin = m_fftSize / 2;
     }
 
     size_t minbin = 1;
     if (m_minFrequency > 0) {
-	minbin = int((double(m_minFrequency) * fftSize) / sr + 0.1);
+	minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.001);
+//        std::cerr << "m_minFrequency = " << m_minFrequency << " -> minbin = " << minbin << std::endl;
 	if (minbin < 1) minbin = 1;
 	if (minbin >= maxbin) minbin = maxbin - 1;
     }
+
+    int zpl = getZeroPadLevel(v) + 1;
+    minbin = minbin * zpl;
+    maxbin = (maxbin + 1) * zpl - 1;
 
     float minFreq = (float(minbin) * sr) / fftSize;
     float maxFreq = (float(maxbin) * sr) / fftSize;
@@ -2010,6 +2026,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         displayMinFreq = getEffectiveMinFrequency();
         displayMaxFreq = getEffectiveMaxFrequency();
     }
+
+//    std::cerr << "(giving actual minFreq " << minFreq << " and display minFreq " << displayMinFreq << ")" << std::endl;
 
     float ymag[h];
     float ydiv[h];
@@ -2104,7 +2122,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		}
 
                 if (m_threshold != 0.f &&
-                    !fft->isOverThreshold(s, q, m_threshold)) {
+                    !fft->isOverThreshold(s, q, m_threshold * (m_fftSize/2))) {
                     continue;
                 }
 
@@ -2413,6 +2431,7 @@ SpectrogramLayer::getDisplayExtents(float &min, float &max) const
 {
     min = getEffectiveMinFrequency();
     max = getEffectiveMaxFrequency();
+
 //    std::cerr << "SpectrogramLayer::getDisplayExtents: " << min << "->" << max << std::endl;
     return true;
 }    
@@ -2422,7 +2441,7 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
 {
     if (!m_model) return false;
 
-    std::cerr << "SpectrogramLayer::setDisplayExtents: " << min << "->" << max << std::endl;
+//    std::cerr << "SpectrogramLayer::setDisplayExtents: " << min << "->" << max << std::endl;
 
     if (min < 0) min = 0;
     if (max > m_model->getSampleRate()/2) max = m_model->getSampleRate()/2;
@@ -2956,20 +2975,52 @@ SpectrogramLayer::getCurrentVerticalZoomStep() const
 void
 SpectrogramLayer::setVerticalZoomStep(int step)
 {
-    //!!! does not do the right thing for log scale
-
     if (!m_model) return;
 
-    float dmin, dmax;
-    getDisplayExtents(dmin, dmax);
+    float dmin = m_minFrequency, dmax = m_maxFrequency;
+//    getDisplayExtents(dmin, dmax);
+
+//    std::cerr << "current range " << dmin << " -> " << dmax << ", range " << dmax-dmin << ", mid " << (dmax + dmin)/2 << std::endl;
     
     int sr = m_model->getSampleRate();
     SpectrogramRangeMapper mapper(sr, m_fftSize);
-    float ddist = mapper.getValueForPosition(step);
+    float newdist = mapper.getValueForPosition(step);
 
-    float dmid = (dmax + dmin) / 2;
-    float newmin = dmid - ddist / 2;
-    float newmax = dmid + ddist / 2;
+    float newmin, newmax;
+
+    if (m_frequencyScale == LogFrequencyScale) {
+
+        // need to pick newmin and newmax such that
+        //
+        // (log(newmin) + log(newmax)) / 2 == logmid
+        // and
+        // newmax - newmin = newdist
+        //
+        // so log(newmax - newdist) + log(newmax) == 2logmid
+        // log(newmax(newmax - newdist)) == 2logmid
+        // newmax.newmax - newmax.newdist == exp(2logmid)
+        // newmax^2 + (-newdist)newmax + -exp(2logmid) == 0
+        // quadratic with a = 1, b = -newdist, c = -exp(2logmid), all known
+        // 
+        // positive root
+        // newmax = (newdist + sqrt(newdist^2 + 4exp(2logmid))) / 2
+        //
+        // but logmid = (log(dmin) + log(dmax)) / 2
+        // so exp(2logmid) = exp(log(dmin) + log(dmax))
+        // = exp(log(dmin.dmax))
+        // = dmin.dmax
+        // so newmax = (newdist + sqrtf(newdist^2 + 4dmin.dmax)) / 2
+
+        newmax = (newdist + sqrtf(newdist*newdist + 4*dmin*dmax)) / 2;
+        newmin = newmax - newdist;
+
+//        std::cerr << "newmin = " << newmin << ", newmax = " << newmax << std::endl;
+
+    } else {
+        float dmid = (dmax + dmin) / 2;
+        newmin = dmid - newdist / 2;
+        newmax = dmid + newdist / 2;
+    }
 
     float mmin, mmax;
     mmin = 0;
@@ -2983,10 +3034,10 @@ SpectrogramLayer::setVerticalZoomStep(int step)
         newmax = mmax;
     }
     
-//    std::cerr << "SpectrogramLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << ddist << ")" << std::endl;
+//    std::cerr << "SpectrogramLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
 
-    setMinFrequency(int(newmin));
-    setMaxFrequency(int(newmax));
+    setMinFrequency(lrintf(newmin));
+    setMaxFrequency(lrintf(newmax));
 }
 
 RangeMapper *
