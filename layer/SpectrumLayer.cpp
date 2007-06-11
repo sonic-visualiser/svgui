@@ -21,6 +21,9 @@
 #include "base/AudioLevel.h"
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
+#include "ColourMapper.h"
+
+#include <QPainter>
 
 SpectrumLayer::SpectrumLayer() :
     m_originModel(0),
@@ -72,6 +75,11 @@ SpectrumLayer::setupFFT()
                                     true);
 
     setSliceableModel(newFFT);
+
+    m_biasCurve.clear();
+    for (size_t i = 0; i < m_windowSize; ++i) {
+        m_biasCurve.push_back(1.f / (float(m_windowSize)/2.f));
+    }
 
     newFFT->resume();
 }
@@ -143,7 +151,7 @@ SpectrumLayer::getPropertyRangeAndValue(const PropertyName &name,
     if (name == "Window Size") {
 
 	*min = 0;
-	*max = 10;
+	*max = 15;
         *deflt = 5;
 	
 	val = 0;
@@ -247,6 +255,121 @@ SpectrumLayer::getValueExtents(float &, float &, bool &, QString &) const
     return false;
 }
 
+bool
+SpectrumLayer::getCrosshairExtents(View *v, QPainter &,
+                                   QPoint cursorPos,
+                                   std::vector<QRect> &extents) const
+{
+    QRect vertical(cursorPos.x(), cursorPos.y(), 1, v->height() - cursorPos.y());
+    extents.push_back(vertical);
+
+    QRect horizontal(0, cursorPos.y(), v->width(), 12);
+    extents.push_back(horizontal);
+
+    return true;
+}
+
+float
+SpectrumLayer::getFrequencyForX(float x, float w) const
+{
+    float freq = 0;
+
+    int sampleRate = m_sliceableModel->getSampleRate();
+
+    float maxfreq = float(sampleRate) / 2;
+
+    switch (m_binScale) {
+
+    case LinearBins:
+        freq = ((x * maxfreq) / w);
+        break;
+        
+    case LogBins:
+        freq = powf(10.f, (x * log10f(maxfreq)) / w);
+        break;
+
+    case InvertedLogBins:
+        freq = maxfreq - powf(10.f, ((w - x) * log10f(maxfreq)) / w);
+        break;
+    }
+
+    return freq;
+}
+
+float
+SpectrumLayer::getXForFrequency(float freq, float w) const
+{
+    float x = 0;
+
+    int sampleRate = m_sliceableModel->getSampleRate();
+
+    float maxfreq = float(sampleRate) / 2;
+
+    switch (m_binScale) {
+
+    case LinearBins:
+        x = (freq * w) / maxfreq;
+        break;
+        
+    case LogBins:
+        x = (log10f(freq) * w) / log10f(maxfreq);
+        break;
+
+    case InvertedLogBins:
+        x = (w - log10f(maxfreq - freq) * w) / log10f(maxfreq);
+        break;
+    }
+
+    return x;
+}
+
+void
+SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
+                               QPoint cursorPos) const
+{
+    paint.save();
+
+    ColourMapper mapper(m_colourMap, 0, 1);
+    paint.setPen(mapper.getContrastingColour());
+
+    int xorigin = m_xorigins[v];
+    int w = v->width() - xorigin - 1;
+    
+    paint.drawLine(xorigin, cursorPos.y(), v->width(), cursorPos.y());
+    paint.drawLine(cursorPos.x(), cursorPos.y(), cursorPos.x(), v->height());
+    
+    float fundamental = getFrequencyForX(cursorPos.x() - xorigin, w);
+
+    int harmonic = 2;
+
+    while (harmonic < 100) {
+
+        float hx = lrintf(getXForFrequency(fundamental * harmonic, w));
+        hx += xorigin;
+
+        if (hx < xorigin || hx > v->width()) break;
+        
+        int len = 7;
+
+        if (harmonic % 2 == 0) {
+            if (harmonic % 4 == 0) {
+                len = 12;
+            } else {
+                len = 10;
+            }
+        }
+
+        paint.drawLine(int(hx),
+                       cursorPos.y(),
+                       int(hx),
+                       cursorPos.y() + len);
+
+        ++harmonic;
+    }
+
+    paint.restore();
+}
+
 QString
 SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
 {
@@ -336,6 +459,11 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
     return description;
 }
 
+void
+SpectrumLayer::getBiasCurve(BiasCurve &curve) const
+{
+    curve = m_biasCurve;
+}
 
 QString
 SpectrumLayer::toXmlString(QString indent, QString extraAttributes) const

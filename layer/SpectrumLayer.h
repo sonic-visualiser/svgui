@@ -38,6 +38,10 @@ public:
     void setModel(DenseTimeValueModel *model);
     virtual const Model *getModel() const { return m_originModel; }
 
+    virtual bool getCrosshairExtents(View *, QPainter &, QPoint cursorPos,
+                                     std::vector<QRect> &extents) const;
+    virtual void paintCrosshairs(View *, QPainter &, QPoint) const;
+
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
     virtual PropertyList getProperties() const;
@@ -89,6 +93,12 @@ protected:
     size_t                  m_windowHopLevel;
 
     void setupFFT();
+
+    virtual void getBiasCurve(BiasCurve &) const;
+    BiasCurve m_biasCurve;
+
+    float getFrequencyForX(float x, float w) const;
+    float getXForFrequency(float freq, float w) const;
 
     size_t getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;

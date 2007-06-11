@@ -36,7 +36,6 @@ SliceLayer::SliceLayer() :
     m_plotStyle(PlotSteps),
     m_binScale(LinearBins),
     m_normalize(false),
-    m_bias(false),
     m_gain(1.0),
     m_currentf0(0),
     m_currentf1(0)
@@ -229,7 +228,8 @@ SliceLayer::getBinForX(float x, int count, float w) const
 void
 SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
-    if (!m_sliceableModel) return;
+    if (!m_sliceableModel || !m_sliceableModel->isOK() ||
+        !m_sliceableModel->isReady()) return;
 
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
@@ -287,10 +287,14 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     m_currentf0 = f0;
     m_currentf1 = f1;
 
+    BiasCurve curve;
+    getBiasCurve(curve);
+    size_t cs = curve.size();
+
     for (size_t col = col0; col <= col1; ++col) {
         for (size_t bin = 0; bin < mh; ++bin) {
             float value = m_sliceableModel->getValueAt(col, bin);
-            if (m_bias) value *= bin + 1;
+            if (bin < cs) value *= curve[bin];
             if (m_samplingMode == SamplePeak) {
                 if (value > m_values[bin]) m_values[bin] = value;
             } else {
