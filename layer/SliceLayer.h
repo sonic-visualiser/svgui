@@ -113,6 +113,12 @@ protected:
                                           int &minbin, int &maxbin,
                                           int &range) const;
 
+    // This curve may, of course, be flat -- the spectrum uses it for
+    // normalizing the fft results by the fft size (with 1/(fftsize/2)
+    // in each bin).
+    typedef std::vector<float> BiasCurve;
+    virtual void getBiasCurve(BiasCurve &) const { return; }
+
     const DenseThreeDimensionalModel *m_sliceableModel;
     QColor                            m_colour;
     int                               m_colourMap;
@@ -121,7 +127,6 @@ protected:
     PlotStyle                         m_plotStyle;
     BinScale                          m_binScale;
     bool                              m_normalize;
-    bool                              m_bias;
     float                             m_gain;
     mutable std::vector<int>          m_scalePoints;
     mutable std::map<View *, int>     m_xorigins;
