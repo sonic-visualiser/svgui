@@ -156,7 +156,12 @@ public:
     virtual void editDrag(View *, QMouseEvent *) { }
     virtual void editEnd(View *, QMouseEvent *) { }
 
-    virtual void editOpen(View *, QMouseEvent *) { } // on double-click
+    /**
+     * Open an editor on the item under the mouse (e.g. on
+     * double-click).  If there is no item or editing is not
+     * supported, return false.
+     */
+    virtual bool editOpen(View *, QMouseEvent *) { return false; }
 
     virtual void moveSelection(Selection, size_t /* newStartFrame */) { }
     virtual void resizeSelection(Selection, Selection /* newSize */) { }

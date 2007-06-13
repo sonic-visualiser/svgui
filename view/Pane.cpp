@@ -1401,13 +1401,32 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
 
+    bool relocate = (mode == ViewManager::NavigateMode ||
+                     (e->buttons() & Qt::MidButton));
+
     if (mode == ViewManager::NavigateMode ||
         mode == ViewManager::EditMode) {
 
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
-	    layer->editOpen(this, e);
+	    if (layer->editOpen(this, e)) relocate = false;
 	}
+    }
+
+    if (relocate) {
+
+        long f = getFrameForX(e->x());
+
+        setCentreFrame(f);
+
+        m_dragCentreFrame = f;
+        m_dragStartMinValue = 0;
+        m_dragMode = UnresolvedDrag;
+
+        float vmin, vmax, dmin, dmax;
+        if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
+            m_dragStartMinValue = dmin;
+        }
     }
 }
 

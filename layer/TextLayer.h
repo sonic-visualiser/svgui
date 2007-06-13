@@ -56,7 +56,7 @@ public:
     virtual bool paste(const Clipboard &from, int frameOffset,
                        bool interactive);
 
-    virtual void editOpen(View *, QMouseEvent *); // on double-click
+    virtual bool editOpen(View *, QMouseEvent *); // on double-click
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(TextModel *model);

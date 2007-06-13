@@ -587,15 +587,13 @@ TextLayer::editEnd(View *, QMouseEvent *)
     m_editing = false;
 }
 
-void
+bool
 TextLayer::editOpen(View *v, QMouseEvent *e)
 {
-    std::cerr << "TextLayer::editOpen" << std::endl;
-
-    if (!m_model) return;
+    if (!m_model) return false;
 
     TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
-    if (points.empty()) return;
+    if (points.empty()) return false;
 
     QString label = points.begin()->label;
 
@@ -608,6 +606,8 @@ TextLayer::editOpen(View *v, QMouseEvent *e)
 	    new TextModel::RelabelCommand(m_model, *points.begin(), label);
 	CommandHistory::getInstance()->addCommand(command);
     }
+
+    return true;
 }    
 
 void
