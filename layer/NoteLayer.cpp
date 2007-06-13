@@ -788,13 +788,13 @@ NoteLayer::editEnd(View *, QMouseEvent *)
     m_editing = false;
 }
 
-void
+bool
 NoteLayer::editOpen(View *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    if (!m_model) return false;
 
     NoteModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return;
+    if (points.empty()) return false;
 
     NoteModel::Point note = *points.begin();
 
@@ -827,6 +827,7 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
     }
 
     delete dialog;
+    return true;
 }
 
 void

@@ -1046,13 +1046,13 @@ TimeValueLayer::editEnd(View *, QMouseEvent *)
     m_editing = false;
 }
 
-void
+bool
 TimeValueLayer::editOpen(View *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    if (!m_model) return false;
 
     SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return;
+    if (points.empty()) return false;
 
     SparseTimeValueModel::Point point = *points.begin();
 
@@ -1082,6 +1082,7 @@ TimeValueLayer::editOpen(View *v, QMouseEvent *e)
     }
 
     delete dialog;
+    return true;
 }
 
 void

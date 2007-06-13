@@ -591,13 +591,13 @@ TimeInstantLayer::editEnd(View *, QMouseEvent *e)
     m_editing = false;
 }
 
-void
+bool
 TimeInstantLayer::editOpen(View *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    if (!m_model) return false;
 
     SparseOneDimensionalModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return;
+    if (points.empty()) return false;
 
     SparseOneDimensionalModel::Point point = *points.begin();
 
@@ -623,6 +623,7 @@ TimeInstantLayer::editOpen(View *v, QMouseEvent *e)
     }
 
     delete dialog;
+    return true;
 }
 
 void
