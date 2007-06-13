@@ -1479,6 +1479,22 @@ Pane::wheelEvent(QWheelEvent *e)
 	    setCentreFrame(m_centreFrame - delta);
 	}
 
+    } else if (e->modifiers() & Qt::ShiftModifier) {
+
+        // Zoom vertically
+
+        if (m_vpan) {
+            m_vpan->scroll(e->delta() > 0);
+        }
+
+    } else if (e->modifiers() & Qt::AltModifier) {
+
+        // Zoom vertically
+
+        if (m_vthumb) {
+            m_vthumb->scroll(e->delta() > 0);
+        }
+
     } else {
 
 	// Zoom in or out

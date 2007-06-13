@@ -59,6 +59,7 @@ public slots:
     void setShowScale(bool show);
     void setValue(int value);
     void setMappedValue(float mappedValue);
+    void scroll(bool up);
     void resetToDefault();
 
 protected slots:

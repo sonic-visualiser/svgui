@@ -31,6 +31,14 @@ public:
     void setThumbColour(QColor colour);
     void setAlpha(int backgroundAlpha, int thumbAlpha);
 
+    /**
+     * Set the amount the scroll() function or mouse wheel movement
+     * makes the panner rectangle move by.  The default value of 0
+     * means to select a value automatically based on the dimensions
+     * of the panner rectangle.
+     */
+    void setScrollUnit(float unit);
+
     void getRectExtents(float &x0, float &y0, float &width, float &height);
 
     virtual QSize sizeHint() const;
@@ -95,6 +103,12 @@ public slots:
      */
     void setRectCentreY(float y);
 
+    /**
+     * Move up (if up is true) or down a bit.  This is basically the
+     * same action as rolling the mouse wheel one notch.
+     */
+    void scroll(bool up);
+
     void resetToDefault();
 
 protected:
@@ -114,6 +128,7 @@ protected:
     float m_rectY;
     float m_rectWidth;
     float m_rectHeight;
+    float m_scrollUnit;
 
     float m_defaultCentreX;
     float m_defaultCentreY;

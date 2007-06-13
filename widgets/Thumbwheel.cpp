@@ -233,6 +233,21 @@ Thumbwheel::updateMappedValue(int value)
 }
 
 void
+Thumbwheel::scroll(bool up)
+{
+    int step = lrintf(m_speed);
+    if (step == 0) step = 1;
+
+    if (up) {
+	setValue(m_value + step);
+    } else {
+	setValue(m_value - step);
+    }
+    
+    emit valueChanged(getValue());
+}
+
+void
 Thumbwheel::setSpeed(float speed)
 {
     m_speed = speed;
