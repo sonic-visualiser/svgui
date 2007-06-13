@@ -383,8 +383,6 @@ Pane::paintEvent(QPaintEvent *e)
 	paint.setClipRect(r);
     }
 
-    const Model *waveformModel = 0; // just for reporting purposes
-    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
@@ -407,90 +405,167 @@ Pane::paintEvent(QPaintEvent *e)
         }
     }
 
+    Layer *topLayer = 0;
+    const Model *waveformModel = 0; // just for reporting purposes
     for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
         --vi;
-            
+        if (!topLayer) topLayer = *vi;
         if (dynamic_cast<WaveformLayer *>(*vi)) {
             waveformModel = (*vi)->getModel();
+            break;
         }
+    }
 
-        if (!m_manager || !m_manager->shouldShowVerticalScale()) {
-            m_scaleWidth = 0;
+    Layer *scaleLayer = 0;
+
+    if (m_manager && m_manager->shouldShowVerticalScale() && topLayer) {
+
+        float min, max;
+        bool log;
+        QString unit;
+
+        // If the top layer has no scale and reports no display
+        // extents, but does report a unit, then the scale should be
+        // drawn from any underlying layer with a scale and that unit.
+        // If the top layer has no scale and no value extents at all,
+        // then the scale should be drawn from any underlying layer
+        // with a scale regardless of unit.
+
+        int sw = topLayer->getVerticalScaleWidth(this, paint);
+
+        if (sw > 0) {
+            scaleLayer = topLayer;
+            m_scaleWidth = sw;
+
         } else {
-            m_scaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
-        }
 
-        if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
+            bool hasDisplayExtents = topLayer->getDisplayExtents(min, max);
+            bool hasValueExtents = topLayer->getValueExtents(min, max, log, unit);
+            
+            if (!hasDisplayExtents) {
+
+                if (!hasValueExtents) {
+
+                    for (LayerList::iterator vi = m_layers.end();
+                         vi != m_layers.begin(); ) {
+                        
+                        --vi;
+                        
+                        if ((*vi) == topLayer) continue;
+                        
+                        sw = (*vi)->getVerticalScaleWidth(this, paint);
+                        
+                        if (sw > 0) {
+                            scaleLayer = *vi;
+                            m_scaleWidth = sw;
+                            break;
+                        }
+                    }
+                } else if (unit != "") { // && hasValueExtents && !hasDisplayExtents
+
+                    QString requireUnit = unit;
+
+                    for (LayerList::iterator vi = m_layers.end();
+                         vi != m_layers.begin(); ) {
+                        
+                        --vi;
+                        
+                        if ((*vi) == topLayer) continue;
+                        
+                        if ((*vi)->getDisplayExtents(min, max)) {
+                            
+                            // search no further than this: if the
+                            // scale from this layer isn't suitable,
+                            // we'll have to draw no scale (else we'd
+                            // risk ending up with the wrong scale)
+                            
+                            if ((*vi)->getValueExtents(min, max, log, unit) &&
+                                unit == requireUnit) {
+
+                                sw = (*vi)->getVerticalScaleWidth(this, paint);
+                                if (sw > 0) {
+                                    scaleLayer = *vi;
+                                    m_scaleWidth = sw;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!scaleLayer) m_scaleWidth = 0;
+        
+    if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
 
 //	    Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
 //	    std::cerr << "Pane::paintEvent: calling paint.save() in vertical scale block" << std::endl;
+        paint.save();
+            
+        paint.setPen(Qt::black);
+        paint.setBrush(Qt::white);
+        paint.drawRect(0, -1, m_scaleWidth, height()+1);
+        
+        paint.setBrush(Qt::NoBrush);
+        scaleLayer->paintVerticalScale
+            (this, paint, QRect(0, 0, m_scaleWidth, height()));
+        
+        paint.restore();
+    }
+
+    if (m_identifyFeatures && topLayer) {
+            
+        QPoint pos = m_identifyPoint;
+        QString desc = topLayer->getFeatureDescription(this, pos);
+	    
+        if (desc != "") {
+            
             paint.save();
             
-            paint.setPen(Qt::black);
-            paint.setBrush(Qt::white);
-            paint.drawRect(0, -1, m_scaleWidth, height()+1);
+            int tabStop =
+                paint.fontMetrics().width(tr("Some lengthy prefix:"));
             
-            paint.setBrush(Qt::NoBrush);
-            (*vi)->paintVerticalScale
-                (this, paint, QRect(0, 0, m_scaleWidth, height()));
+            QRect boundingRect = 
+                paint.fontMetrics().boundingRect
+                (rect(),
+                 Qt::AlignRight | Qt::AlignTop | Qt::TextExpandTabs,
+                 desc, tabStop);
+            
+            if (hasLightBackground()) {
+                paint.setPen(Qt::NoPen);
+                paint.setBrush(QColor(250, 250, 250, 200));
+            } else {
+                paint.setPen(Qt::NoPen);
+                paint.setBrush(QColor(50, 50, 50, 200));
+            }
+            
+            int extra = paint.fontMetrics().descent();
+            paint.drawRect(width() - boundingRect.width() - 10 - extra,
+                           10 - extra,
+                           boundingRect.width() + 2 * extra,
+                           boundingRect.height() + extra);
+            
+            if (hasLightBackground()) {
+                paint.setPen(QColor(150, 20, 0));
+            } else {
+                paint.setPen(QColor(255, 150, 100));
+            }
+            
+            QTextOption option;
+            option.setWrapMode(QTextOption::NoWrap);
+            option.setAlignment(Qt::AlignRight | Qt::AlignTop);
+            option.setTabStop(tabStop);
+            paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
+                                  boundingRect.width(),
+                                  boundingRect.height()),
+                           desc,
+                           option);
             
             paint.restore();
         }
-	
-        if (m_identifyFeatures) {
-            
-            QPoint pos = m_identifyPoint;
-            QString desc = (*vi)->getFeatureDescription(this, pos);
-	    
-            if (desc != "") {
-                
-                paint.save();
-                
-                int tabStop =
-                    paint.fontMetrics().width(tr("Some lengthy prefix:"));
-                
-                QRect boundingRect = 
-                    paint.fontMetrics().boundingRect
-                    (rect(),
-                     Qt::AlignRight | Qt::AlignTop | Qt::TextExpandTabs,
-                     desc, tabStop);
-
-                if (hasLightBackground()) {
-                    paint.setPen(Qt::NoPen);
-                    paint.setBrush(QColor(250, 250, 250, 200));
-                } else {
-                    paint.setPen(Qt::NoPen);
-                    paint.setBrush(QColor(50, 50, 50, 200));
-                }
-
-                int extra = paint.fontMetrics().descent();
-                paint.drawRect(width() - boundingRect.width() - 10 - extra,
-                               10 - extra,
-                               boundingRect.width() + 2 * extra,
-                               boundingRect.height() + extra);
-
-                if (hasLightBackground()) {
-                    paint.setPen(QColor(150, 20, 0));
-                } else {
-                    paint.setPen(QColor(255, 150, 100));
-                }
-		
-                QTextOption option;
-                option.setWrapMode(QTextOption::NoWrap);
-                option.setAlignment(Qt::AlignRight | Qt::AlignTop);
-                option.setTabStop(tabStop);
-                paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
-                                      boundingRect.width(),
-                                      boundingRect.height()),
-                               desc,
-                               option);
-
-                paint.restore();
-            }
-        }
-
-        break;
     }
     
     int sampleRate = getModelsSampleRate();
@@ -1375,7 +1450,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
             int move = int(available * 0.10 - offset) + 1;
             if (move < 0) {
                 setCentreFrame(m_centreFrame + (-move));
-            } else if (m_centreFrame > move) {
+            } else if (m_centreFrame > size_t(move)) {
                 setCentreFrame(m_centreFrame - move);
             } else {
                 setCentreFrame(0);
