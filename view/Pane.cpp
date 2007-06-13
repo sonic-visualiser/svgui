@@ -25,6 +25,8 @@
 
 #include <QPaintEvent>
 #include <QPainter>
+#include <QBitmap>
+#include <QCursor>
 #include <iostream>
 #include <cmath>
 
@@ -1720,6 +1722,16 @@ Pane::toolModeChanged()
     ViewManager::ToolMode mode = m_manager->getToolMode();
 //    std::cerr << "Pane::toolModeChanged(" << mode << ")" << std::endl;
 
+    static QCursor measureCursor;
+    static bool measureCursorCreated = false;
+
+    if (!measureCursorCreated) {
+        measureCursor = QCursor(QBitmap(":/icons/measure1cursor.xbm"),
+                                QBitmap(":/icons/measure1mask.xbm"),
+                                15, 14);
+        measureCursorCreated = true;
+    }
+
     switch (mode) {
 
     case ViewManager::NavigateMode:
@@ -1737,6 +1749,11 @@ Pane::toolModeChanged()
     case ViewManager::DrawMode:
 	setCursor(Qt::CrossCursor);
 	break;
+
+    case ViewManager::MeasureMode:
+	setCursor(measureCursor);
+	break;
+
 /*	
     case ViewManager::TextMode:
 	setCursor(Qt::IBeamCursor);
