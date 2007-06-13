@@ -386,9 +386,11 @@ Pane::paintEvent(QPaintEvent *e)
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
+    ViewManager::ToolMode toolMode = m_manager->getToolMode();
+
     if (m_manager &&
         !m_manager->isPlaying() &&
-        m_manager->getToolMode() == ViewManager::SelectMode) {
+        toolMode == ViewManager::MeasureMode) {
 
         for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
             --vi;
@@ -732,11 +734,14 @@ Pane::paintEvent(QPaintEvent *e)
 	}
     }
 
-    if (m_clickedInRange && m_shiftPressed) {
-	if (m_manager && (m_manager->getToolMode() == ViewManager::NavigateMode)) {
+    if (m_clickedInRange && m_manager) {
+        if ((m_shiftPressed && toolMode == ViewManager::NavigateMode) ||
+            toolMode == ViewManager::MeasureMode) {
 	    //!!! be nice if this looked a bit more in keeping with the
 	    //selection block
-	    paint.setPen(Qt::blue);
+	    paint.setPen(toolMode == ViewManager::MeasureMode ? Qt::green :
+                         Qt::blue);
+            //!!! shouldn't use clickPos -- needs to use a clicked frame
 	    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
 			   m_mousePos.x() - m_clickPos.x(),
 			   m_mousePos.y() - m_clickPos.y());
@@ -1208,6 +1213,12 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 		layer->editDrag(this, e);
 	    }
 	}
+
+    } else if (mode == ViewManager::MeasureMode) {
+
+        m_mousePos = e->pos();
+        edgeScrollMaybe(e->x());
+        update();
     }
 }
 
@@ -1435,6 +1446,16 @@ Pane::dragExtendSelection(QMouseEvent *e)
                                           !m_resizing && !m_ctrlPressed);
     }
 
+    edgeScrollMaybe(e->x());
+
+    update();
+}
+
+void
+Pane::edgeScrollMaybe(int x)
+{
+    int mouseFrame = getFrameForX(x);
+
     bool doScroll = false;
     if (!m_manager) doScroll = true;
     if (!m_manager->isPlaying()) doScroll = true;
@@ -1443,22 +1464,18 @@ Pane::dragExtendSelection(QMouseEvent *e)
     if (doScroll) {
         int offset = mouseFrame - getStartFrame();
         int available = getEndFrame() - getStartFrame();
+        int move = 0;
         if (offset >= available * 0.95) {
-            int move = int(offset - available * 0.95) + 1;
-            setCentreFrame(m_centreFrame + move);
+            move = int(offset - available * 0.95) + 1;
         } else if (offset <= available * 0.10) {
-            int move = int(available * 0.10 - offset) + 1;
-            if (move < 0) {
-                setCentreFrame(m_centreFrame + (-move));
-            } else if (m_centreFrame > size_t(move)) {
-                setCentreFrame(m_centreFrame - move);
-            } else {
-                setCentreFrame(0);
-            }
+             move = int(available * 0.10 - offset) + 1;
+             move = -move;
+        }
+        if (move != 0) {
+            setCentreFrame(m_centreFrame + move);
+            update();
         }
     }
-
-    update();
 }
 
 void

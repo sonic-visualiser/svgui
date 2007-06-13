@@ -110,6 +110,7 @@ protected:
     void dragExtendSelection(QMouseEvent *e);
     void zoomToRegion(int x0, int y0, int x1, int y1);
     void updateContextHelp(const QPoint *pos);
+    void edgeScrollMaybe(int x);
 
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
