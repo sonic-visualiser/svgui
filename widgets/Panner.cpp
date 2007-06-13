@@ -29,6 +29,7 @@ Panner::Panner(QWidget *parent) :
     m_rectY(0),
     m_rectWidth(1),
     m_rectHeight(1),
+    m_scrollUnit(0),
     m_defaultCentreX(0),
     m_defaultCentreY(0),
     m_defaultsSet(false),
@@ -48,6 +49,31 @@ Panner::setAlpha(int backgroundAlpha, int thumbAlpha)
 {
     m_backgroundAlpha = backgroundAlpha;
     m_thumbAlpha = thumbAlpha;
+}
+
+void
+Panner::setScrollUnit(float unit)
+{
+    m_scrollUnit = unit;
+}
+
+void
+Panner::scroll(bool up)
+{
+    float unit = m_scrollUnit;
+    if (unit == 0.f) {
+        unit = float(m_rectHeight) / (6 * float(height()));
+        if (unit < 0.01) unit = 0.01;
+    }
+
+    if (!up) {
+        m_rectY += unit;
+    } else {
+        m_rectY -= unit;
+    }
+
+    normalise();
+    emitAndUpdate();
 }
 
 void
@@ -104,14 +130,7 @@ Panner::mouseReleaseEvent(QMouseEvent *e)
 void
 Panner::wheelEvent(QWheelEvent *e)
 {
-    if (e->delta() < 0) {
-        m_rectY += 0.1;
-    } else {
-        m_rectY -= 0.1;
-    }
-
-    normalise();
-    emitAndUpdate();
+    scroll(e->delta() > 0);
 }
 
 void
