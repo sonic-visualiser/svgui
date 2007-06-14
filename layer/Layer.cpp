@@ -122,3 +122,16 @@ Layer::showLayer(View *view, bool show)
     emit layerParametersChanged();
 }
 
+bool
+Layer::getXScaleValue(View *v, int x, float &value, QString &unit) const
+{
+    if (!hasTimeXAxis()) return false;
+
+    const Model *m = getModel();
+    if (!m) return false;
+
+    value = float(v->getFrameForX(x)) / m->getSampleRate();
+    unit = "s";
+    return true;
+}
+

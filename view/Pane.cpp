@@ -102,6 +102,7 @@ Pane::updateHeadsUpDisplay()
         
         m_hthumb = new Thumbwheel(Qt::Horizontal);
         m_hthumb->setObjectName(tr("Horizontal Zoom"));
+        m_hthumb->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_hthumb, 1, 0, 1, 2);
         m_hthumb->setFixedWidth(70);
         m_hthumb->setFixedHeight(16);
@@ -113,6 +114,7 @@ Pane::updateHeadsUpDisplay()
         connect(m_hthumb, SIGNAL(mouseLeft()), this, SLOT(mouseLeftWidget()));
 
         m_vpan = new Panner;
+        m_vpan->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_vpan, 0, 1);
         m_vpan->setFixedWidth(12);
         m_vpan->setFixedHeight(70);
@@ -126,6 +128,7 @@ Pane::updateHeadsUpDisplay()
 
         m_vthumb = new Thumbwheel(Qt::Vertical);
         m_vthumb->setObjectName(tr("Vertical Zoom"));
+        m_vthumb->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_vthumb, 0, 2);
         m_vthumb->setFixedWidth(16);
         m_vthumb->setFixedHeight(70);
@@ -140,6 +143,7 @@ Pane::updateHeadsUpDisplay()
         }
 
         m_reset = new NotifyingPushButton;
+        m_reset->setCursor(Qt::ArrowCursor);
         m_reset->setFixedHeight(16);
         m_reset->setFixedWidth(16);
         layout->addWidget(m_reset, 1, 2);
@@ -735,12 +739,44 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     if (m_clickedInRange && m_manager) {
-        if ((m_shiftPressed && toolMode == ViewManager::NavigateMode) ||
-            toolMode == ViewManager::MeasureMode) {
-	    //!!! be nice if this looked a bit more in keeping with the
-	    //selection block
-	    paint.setPen(toolMode == ViewManager::MeasureMode ? Qt::green :
-                         Qt::blue);
+
+        //!!! be nice if this looked a bit more in keeping with the
+        //selection block
+
+        if (m_shiftPressed && toolMode == ViewManager::NavigateMode) {
+
+	    paint.setPen(Qt::blue);
+            //!!! shouldn't use clickPos -- needs to use a clicked frame
+	    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
+			   m_mousePos.x() - m_clickPos.x(),
+			   m_mousePos.y() - m_clickPos.y());
+
+        } else if (toolMode == ViewManager::MeasureMode && topLayer) {
+
+            float v0, v1;
+            QString u0, u1;
+            bool b0, b1;
+
+            if ((b0 = topLayer->getXScaleValue(this, m_clickPos.x(), v0, u0))) {
+                drawVisibleText(paint,
+                                m_clickPos.x() + 2,
+                                m_clickPos.y() + fontAscent + 2,
+                                QString("%1 %2").arg(v0).arg(u0),
+                                OutlinedText);
+
+                if ((b1 = topLayer->getXScaleValue(this, m_mousePos.x(), v1, u1))
+                    && u1 == u0) {
+                    QString t = QString("%1 %2").arg(v1 - v0).arg(u1);
+                    drawVisibleText(paint,
+                                    m_mousePos.x() - paint.fontMetrics().width(t) - 2,
+                                    m_mousePos.y() - 2,
+                                    t,
+                                    OutlinedText);
+                }
+            }
+
+	    paint.setPen(Qt::green);
+
             //!!! shouldn't use clickPos -- needs to use a clicked frame
 	    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
 			   m_mousePos.x() - m_clickPos.x(),

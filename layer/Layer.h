@@ -318,6 +318,24 @@ public:
     }
 
     /**
+     * Return the value and unit at the given x coordinate in the
+     * given view.  This is for descriptive purposes using the
+     * measurement tool.  The default implementation works correctly
+     * if the layer hasTimeXAxis().
+     */
+    virtual bool getXScaleValue(View *v, int x,
+                                float &value, QString &unit) const;
+
+    /** 
+     * Return the value and unit at the given y coordinate in the
+     * given view.
+     */
+    virtual bool getYScaleValue(View *, int /* y */,
+                                float &/* value */, QString &/* unit */) const {
+        return false;
+    }
+
+    /**
      * Get the number of vertical zoom steps available for this layer.
      * If vertical zooming is not available, return 0.  The meaning of
      * "zooming" is entirely up to the layer -- changing the zoom
