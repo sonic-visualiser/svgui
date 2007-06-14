@@ -388,7 +388,6 @@ WaveformLayer::getValueExtents(float &min, float &max,
 int
 WaveformLayer::dBscale(float sample, int m) const
 {
-//!!!    if (sample < 0.0) return -dBscale(-sample, m);
     if (sample < 0.0) return dBscale(-sample, m);
     float dB = AudioLevel::multiplier_to_dB(sample);
     if (dB < -50.0) return 0;
@@ -1031,6 +1030,75 @@ WaveformLayer::getYForValue(View *v, Scale scale, float value, size_t channel,
     }
 
     return my - vy;
+}
+
+float
+WaveformLayer::getValueForY(View *v, Scale scale, int y,
+                            size_t minChannel, size_t maxChannel) const
+{
+    if (maxChannel < minChannel) return 0;
+
+    int h = v->height();
+
+    int channels = maxChannel - minChannel + 1;
+    int m = (h / channels) / 2;
+
+    if ((m_scale == dBScale || m_scale == MeterScale) &&
+        m_channelMode != MergeChannels) {
+        m = (h / channels);
+    }
+    
+    int channel = minChannel;
+    int mind = 0;
+
+    for (int c = minChannel; c <= maxChannel; ++c) {
+        int my = m + (((c - minChannel) * h) / channels);
+        int d = y - my;
+        if (d < 0) d = -d;
+        if (c == minChannel || d < mind) {
+            mind = d;
+            channel = c;
+        }
+    }
+	
+    int my = m + (((channel - minChannel) * h) / channels);
+
+    int vy = y - my;
+    float value = 0;
+
+    switch (scale) {
+
+    case LinearScale:
+        value = float(vy) / m;
+        break;
+
+    case MeterScale:
+        value = AudioLevel::preview_to_multiplier(vy, m);
+        break;
+
+    case dBScale:
+        value = AudioLevel::dB_to_multiplier((50 * float(vy)) / m - 50);
+        break;
+    }
+
+    return value;
+}
+
+bool
+WaveformLayer::getYScaleValue(View *v, int y,
+                              float &value, QString &unit) const
+{
+    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    bool mergingChannels = false, mixingChannels = false;
+
+    channels = getChannelArrangement(minChannel, maxChannel,
+                                     mergingChannels, mixingChannels);
+
+    if (channels == 0) return false;
+
+    value = getValueForY(v, m_scale, y, minChannel, maxChannel);
+    unit = "V";
+    return true;
 }
 
 int

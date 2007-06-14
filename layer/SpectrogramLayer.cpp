@@ -2469,6 +2469,15 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
 }
 
 bool
+SpectrogramLayer::getYScaleValue(View *v, int y,
+                                 float &value, QString &unit) const
+{
+    value = getFrequencyForY(v, y);
+    unit = "Hz";
+    return true;
+}
+
+bool
 SpectrogramLayer::snapToFeatureFrame(View *, int &frame,
 				     size_t &resolution,
 				     SnapType snap) const

@@ -88,6 +88,14 @@ protected:
     virtual void wheelEvent(QWheelEvent *e);
     virtual void resizeEvent(QResizeEvent *e);
 
+    void drawVerticalScale(QRect r, Layer *, QPainter &);
+    void drawFeatureDescription(Layer *, QPainter &);
+    void drawCentreLine(int, QPainter &);
+    void drawDurationAndRate(QRect, const Model *, int, QPainter &);
+    void drawLayerNames(QRect, QPainter &);
+    void drawMeasurementRect(Layer *, QPainter &);
+    void drawEditingSelection(QPainter &);
+
     virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
 
     Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight) const;
