@@ -42,6 +42,10 @@
 using std::cerr;
 using std::endl;
 
+QCursor Pane::m_measureCursor1;
+QCursor Pane::m_measureCursor2;
+bool Pane::m_measureCursorsCreated = false;
+
 Pane::Pane(QWidget *w) :
     View(w, true),
     m_identifyFeatures(false),
@@ -297,6 +301,10 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
     QPoint discard;
     bool b0, b1;
 
+    if (m_manager && m_manager->getToolMode() == ViewManager::MeasureMode) {
+        return false;
+    }
+
     if (layer == getSelectedLayer() &&
 	!shouldIlluminateLocalSelection(discard, b0, b1)) {
 
@@ -432,23 +440,27 @@ Pane::paintEvent(QPaintEvent *e)
         drawLayerNames(r, paint);
     }
 
-    if (m_clickedInRange && m_manager) {
+    if (m_shiftPressed && m_clickedInRange &&
+        toolMode == ViewManager::NavigateMode) {
 
         //!!! be nice if this looked a bit more in keeping with the
         //selection block
+        
+        paint.setPen(Qt::blue);
+        //!!! shouldn't use clickPos -- needs to use a clicked frame
+        paint.drawRect(m_clickPos.x(), m_clickPos.y(),
+                       m_mousePos.x() - m_clickPos.x(),
+                       m_mousePos.y() - m_clickPos.y());
 
-        if (m_shiftPressed && toolMode == ViewManager::NavigateMode) {
+    }
 
-	    paint.setPen(Qt::blue);
-            //!!! shouldn't use clickPos -- needs to use a clicked frame
-	    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
-			   m_mousePos.x() - m_clickPos.x(),
-			   m_mousePos.y() - m_clickPos.y());
-
-        } else if (toolMode == ViewManager::MeasureMode && topLayer) {
-
+    if (toolMode == ViewManager::MeasureMode && topLayer &&
+        m_haveMeasureRect) {
+        if (m_measureCentreFrame != m_centreFrame) {
+            m_haveMeasureRect = false;
+        } else {
             drawMeasurementRect(topLayer, paint);
-	}
+        }
     }
     
     if (selectionIsBeingEdited()) {
@@ -745,36 +757,43 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
 
     float v0, v1;
     QString u0, u1;
-    bool b0, b1;
+    bool b0 = false, b1 = false;
 
     QString axs, ays, bxs, bys, dxs, dys;
     
-    if ((b0 = topLayer->getXScaleValue(this, m_clickPos.x(), v0, u0))) {
+    if ((b0 = topLayer->getXScaleValue(this, m_measureStart.x(), v0, u0))) {
         axs = QString("%1 %2").arg(v0).arg(u0);
     }
     
-    if ((b1 = topLayer->getXScaleValue(this, m_mousePos.x(), v1, u1))) {
-        bxs = QString("%1 %2").arg(v1).arg(u1);
+    if (m_measureStart != m_measureEnd) {
+        if ((b1 = topLayer->getXScaleValue(this, m_measureEnd.x(), v1, u1))) {
+            bxs = QString("%1 %2").arg(v1).arg(u1);
+        }
     }
     
     if (b0 && b1 && u0 == u1) {
         dxs = QString("(%1 %2)").arg(v1 - v0).arg(u1);
     }
     
-    if ((b0 = topLayer->getYScaleValue(this, m_clickPos.y(), v0, u0))) {
+    b0 = false;
+    b1 = false;
+
+    if ((b0 = topLayer->getYScaleValue(this, m_measureStart.y(), v0, u0))) {
         ays = QString("%1 %2").arg(v0).arg(u0);
     }
-    
-    if ((b1 = topLayer->getYScaleValue(this, m_mousePos.y(), v1, u1))) {
-        bys = QString("%1 %2").arg(v1).arg(u1);
+
+    if (m_measureStart != m_measureEnd) {
+        if ((b1 = topLayer->getYScaleValue(this, m_measureEnd.y(), v1, u1))) {
+            bys = QString("%1 %2").arg(v1).arg(u1);
+        }
     }
     
     if (b0 && b1 && u0 == u1) {
         dys = QString("(%1 %2)").arg(v1 - v0).arg(u1);
     }
     
-    int x = m_clickPos.x() + 2;
-    int y = m_clickPos.y() + fontAscent + 2;
+    int x = m_measureStart.x() + 2;
+    int y = m_measureStart.y() + fontAscent + 2;
     
     if (axs != "") {
         drawVisibleText(paint, x, y, axs, OutlinedText);
@@ -786,8 +805,8 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
         y += fontHeight;
     }
 
-    x = m_mousePos.x() - paint.fontMetrics().width(bxs) - 2;
-    y = m_mousePos.y() - 2;
+    x = m_measureEnd.x() - paint.fontMetrics().width(bxs) - 2;
+    y = m_measureEnd.y() - 2;
 
     if (bys != "" && bxs != "") y -= fontHeight;
     
@@ -796,22 +815,25 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
         y += fontHeight;
     }
 
-    x = m_mousePos.x() - paint.fontMetrics().width(bys) - 2;
+    x = m_measureEnd.x() - paint.fontMetrics().width(bys) - 2;
 
     if (bys != "") {
         drawVisibleText(paint, x, y, bys, OutlinedText);
         y += fontHeight;
     }
 
-    paint.save();
-    
-    paint.setPen(Qt::green);
+    if (m_measureStart != m_measureEnd) {
 
-    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
-                   m_mousePos.x() - m_clickPos.x(),
-                   m_mousePos.y() - m_clickPos.y());
-
-    paint.restore();
+        paint.save();
+        
+        paint.setPen(Qt::green);
+        
+        paint.drawRect(m_measureStart.x(), m_measureStart.y(),
+                       m_measureEnd.x() - m_measureStart.x(),
+                       m_measureEnd.y() - m_measureStart.y());
+        
+        paint.restore();
+    }
 }
 
 void
@@ -1069,6 +1091,7 @@ Pane::mousePressEvent(QMouseEvent *e)
     }
 
     m_clickPos = e->pos();
+    m_mousePos = m_clickPos;
     m_clickedInRange = true;
     m_editingSelection = Selection();
     m_editingSelectionEdge = 0;
@@ -1156,6 +1179,14 @@ Pane::mousePressEvent(QMouseEvent *e)
 		layer->editStart(this, e);
 	    }
 	}
+
+    } else if (mode == ViewManager::MeasureMode) {
+
+        m_measureStart = m_clickPos;
+        m_measureEnd = m_clickPos;
+        m_haveMeasureRect = true;
+        m_measureCentreFrame = m_centreFrame;
+        update();
     }
 
     emit paneInteractedWith();
@@ -1236,6 +1267,10 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 		update();
 	    }
 	}
+
+    } else if (mode == ViewManager::MeasureMode) {
+
+        setCursor(m_measureCursor1);
     }
 
     m_clickedInRange = false;
@@ -1323,8 +1358,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::MeasureMode) {
 
-        m_mousePos = e->pos();
-        edgeScrollMaybe(e->x());
+        setCursor(m_measureCursor2);
+        m_measureEnd = e->pos();
         update();
     }
 }
@@ -1921,14 +1956,14 @@ Pane::toolModeChanged()
     ViewManager::ToolMode mode = m_manager->getToolMode();
 //    std::cerr << "Pane::toolModeChanged(" << mode << ")" << std::endl;
 
-    static QCursor measureCursor;
-    static bool measureCursorCreated = false;
-
-    if (!measureCursorCreated) {
-        measureCursor = QCursor(QBitmap(":/icons/measure1cursor.xbm"),
-                                QBitmap(":/icons/measure1mask.xbm"),
-                                15, 14);
-        measureCursorCreated = true;
+    if (!m_measureCursorsCreated) {
+        m_measureCursor1 = QCursor(QBitmap(":/icons/measure1cursor.xbm"),
+                                   QBitmap(":/icons/measure1mask.xbm"),
+                                   15, 14);
+        m_measureCursor2 = QCursor(QBitmap(":/icons/measure2cursor.xbm"),
+                                   QBitmap(":/icons/measure2mask.xbm"),
+                                   16, 17);
+        m_measureCursorsCreated = true;
     }
 
     switch (mode) {
@@ -1950,7 +1985,7 @@ Pane::toolModeChanged()
 	break;
 
     case ViewManager::MeasureMode:
-	setCursor(measureCursor);
+	setCursor(m_measureCursor1);
 	break;
 
 /*	
