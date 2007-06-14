@@ -179,6 +179,9 @@ public:
     virtual bool getValueExtents(float &min, float &max,
                                  bool &log, QString &unit) const;
 
+    virtual bool getYScaleValue(View *v, int y,
+                                float &value, QString &unit) const;
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
@@ -199,6 +202,9 @@ protected:
 
     int getYForValue(View *v, Scale scale, float value, size_t channel,
                      size_t minChannel, size_t maxChannel) const;
+
+    float getValueForY(View *v, Scale scale, int y,
+                       size_t minChannel, size_t maxChannel) const;
 
     float        m_gain;
     bool         m_autoNormalize;

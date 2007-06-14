@@ -200,6 +200,8 @@ public:
 
     virtual bool setDisplayExtents(float min, float max);
 
+    virtual bool getYScaleValue(View *, int, float &, QString &) const;
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 

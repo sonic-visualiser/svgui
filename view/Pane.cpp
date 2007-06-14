@@ -360,35 +360,13 @@ Pane::paintEvent(QPaintEvent *e)
     QPainter paint;
 
     QRect r(rect());
+    if (e) r = e->rect();
 
-    if (e) {
-	r = e->rect();
-    }
-/*
-    paint.begin(this);
-    paint.setClipRect(r);
-
-    if (hasLightBackground()) {
-	paint.setPen(Qt::white);
-	paint.setBrush(Qt::white);
-    } else {
-	paint.setPen(Qt::black);
-	paint.setBrush(Qt::black);
-    }
-    paint.drawRect(r);
-
-    paint.end();
-*/
     View::paintEvent(e);
 
     paint.begin(this);
 
-    if (e) {
-	paint.setClipRect(r);
-    }
-
-    int fontHeight = paint.fontMetrics().height();
-    int fontAscent = paint.fontMetrics().ascent();
+    if (e) paint.setClipRect(r);
 
     ViewManager::ToolMode toolMode = m_manager->getToolMode();
 
@@ -422,80 +400,138 @@ Pane::paintEvent(QPaintEvent *e)
         }
     }
 
-    Layer *scaleLayer = 0;
+    m_scaleWidth = 0;
 
     if (m_manager && m_manager->shouldShowVerticalScale() && topLayer) {
+        drawVerticalScale(r, topLayer, paint);
+    }
 
-        float min, max;
-        bool log;
-        QString unit;
+    if (m_identifyFeatures && topLayer) {
+        drawFeatureDescription(topLayer, paint);
+    }
+    
+    int sampleRate = getModelsSampleRate();
+    paint.setBrush(Qt::NoBrush);
 
-        // If the top layer has no scale and reports no display
-        // extents, but does report a unit, then the scale should be
-        // drawn from any underlying layer with a scale and that unit.
-        // If the top layer has no scale and no value extents at all,
-        // then the scale should be drawn from any underlying layer
-        // with a scale regardless of unit.
+    if (m_centreLineVisible &&
+        m_manager &&
+        m_manager->shouldShowCentreLine()) {
+        drawCentreLine(sampleRate, paint);
+    }
+    
+    paint.setPen(QColor(50, 50, 50));
 
-        int sw = topLayer->getVerticalScaleWidth(this, paint);
+    if (waveformModel &&
+        m_manager &&
+        m_manager->shouldShowDuration()) {
+        drawDurationAndRate(r, waveformModel, sampleRate, paint);
+    }
 
-        if (sw > 0) {
-            scaleLayer = topLayer;
-            m_scaleWidth = sw;
+    if (m_manager &&
+        m_manager->shouldShowLayerNames()) {
+        drawLayerNames(r, paint);
+    }
 
-        } else {
+    if (m_clickedInRange && m_manager) {
 
-            bool hasDisplayExtents = topLayer->getDisplayExtents(min, max);
-            bool hasValueExtents = topLayer->getValueExtents(min, max, log, unit);
+        //!!! be nice if this looked a bit more in keeping with the
+        //selection block
+
+        if (m_shiftPressed && toolMode == ViewManager::NavigateMode) {
+
+	    paint.setPen(Qt::blue);
+            //!!! shouldn't use clickPos -- needs to use a clicked frame
+	    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
+			   m_mousePos.x() - m_clickPos.x(),
+			   m_mousePos.y() - m_clickPos.y());
+
+        } else if (toolMode == ViewManager::MeasureMode && topLayer) {
+
+            drawMeasurementRect(topLayer, paint);
+	}
+    }
+    
+    if (selectionIsBeingEdited()) {
+        drawEditingSelection(paint);
+    }
+
+    paint.end();
+}
+
+void
+Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
+{
+    Layer *scaleLayer = 0;
+
+    float min, max;
+    bool log;
+    QString unit;
+
+    // If the top layer has no scale and reports no display
+    // extents, but does report a unit, then the scale should be
+    // drawn from any underlying layer with a scale and that unit.
+    // If the top layer has no scale and no value extents at all,
+    // then the scale should be drawn from any underlying layer
+    // with a scale regardless of unit.
+
+    int sw = topLayer->getVerticalScaleWidth(this, paint);
+
+    if (sw > 0) {
+        scaleLayer = topLayer;
+        m_scaleWidth = sw;
+
+    } else {
+
+        bool hasDisplayExtents = topLayer->getDisplayExtents(min, max);
+        bool hasValueExtents = topLayer->getValueExtents(min, max, log, unit);
             
-            if (!hasDisplayExtents) {
+        if (!hasDisplayExtents) {
 
-                if (!hasValueExtents) {
+            if (!hasValueExtents) {
 
-                    for (LayerList::iterator vi = m_layers.end();
-                         vi != m_layers.begin(); ) {
+                for (LayerList::iterator vi = m_layers.end();
+                     vi != m_layers.begin(); ) {
                         
-                        --vi;
+                    --vi;
                         
-                        if ((*vi) == topLayer) continue;
+                    if ((*vi) == topLayer) continue;
                         
-                        sw = (*vi)->getVerticalScaleWidth(this, paint);
+                    sw = (*vi)->getVerticalScaleWidth(this, paint);
                         
-                        if (sw > 0) {
-                            scaleLayer = *vi;
-                            m_scaleWidth = sw;
-                            break;
-                        }
+                    if (sw > 0) {
+                        scaleLayer = *vi;
+                        m_scaleWidth = sw;
+                        break;
                     }
-                } else if (unit != "") { // && hasValueExtents && !hasDisplayExtents
+                }
+            } else if (unit != "") { // && hasValueExtents && !hasDisplayExtents
 
-                    QString requireUnit = unit;
+                QString requireUnit = unit;
 
-                    for (LayerList::iterator vi = m_layers.end();
-                         vi != m_layers.begin(); ) {
+                for (LayerList::iterator vi = m_layers.end();
+                     vi != m_layers.begin(); ) {
                         
-                        --vi;
+                    --vi;
                         
-                        if ((*vi) == topLayer) continue;
+                    if ((*vi) == topLayer) continue;
                         
-                        if ((*vi)->getDisplayExtents(min, max)) {
+                    if ((*vi)->getDisplayExtents(min, max)) {
                             
-                            // search no further than this: if the
-                            // scale from this layer isn't suitable,
-                            // we'll have to draw no scale (else we'd
-                            // risk ending up with the wrong scale)
+                        // search no further than this: if the
+                        // scale from this layer isn't suitable,
+                        // we'll have to draw no scale (else we'd
+                        // risk ending up with the wrong scale)
                             
-                            if ((*vi)->getValueExtents(min, max, log, unit) &&
-                                unit == requireUnit) {
+                        if ((*vi)->getValueExtents(min, max, log, unit) &&
+                            unit == requireUnit) {
 
-                                sw = (*vi)->getVerticalScaleWidth(this, paint);
-                                if (sw > 0) {
-                                    scaleLayer = *vi;
-                                    m_scaleWidth = sw;
-                                }
+                            sw = (*vi)->getVerticalScaleWidth(this, paint);
+                            if (sw > 0) {
+                                scaleLayer = *vi;
+                                m_scaleWidth = sw;
                             }
-                            break;
                         }
+                        break;
                     }
                 }
             }
@@ -521,306 +557,341 @@ Pane::paintEvent(QPaintEvent *e)
         
         paint.restore();
     }
-
-    if (m_identifyFeatures && topLayer) {
+}
             
-        QPoint pos = m_identifyPoint;
-        QString desc = topLayer->getFeatureDescription(this, pos);
+void
+Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
+{
+    QPoint pos = m_identifyPoint;
+    QString desc = topLayer->getFeatureDescription(this, pos);
 	    
-        if (desc != "") {
+    if (desc != "") {
+        
+        paint.save();
+        
+        int tabStop =
+            paint.fontMetrics().width(tr("Some lengthy prefix:"));
+        
+        QRect boundingRect = 
+            paint.fontMetrics().boundingRect
+            (rect(),
+             Qt::AlignRight | Qt::AlignTop | Qt::TextExpandTabs,
+             desc, tabStop);
+        
+        if (hasLightBackground()) {
+            paint.setPen(Qt::NoPen);
+            paint.setBrush(QColor(250, 250, 250, 200));
+        } else {
+            paint.setPen(Qt::NoPen);
+            paint.setBrush(QColor(50, 50, 50, 200));
+        }
+        
+        int extra = paint.fontMetrics().descent();
+        paint.drawRect(width() - boundingRect.width() - 10 - extra,
+                       10 - extra,
+                       boundingRect.width() + 2 * extra,
+                       boundingRect.height() + extra);
+        
+        if (hasLightBackground()) {
+            paint.setPen(QColor(150, 20, 0));
+        } else {
+            paint.setPen(QColor(255, 150, 100));
+        }
+        
+        QTextOption option;
+        option.setWrapMode(QTextOption::NoWrap);
+        option.setAlignment(Qt::AlignRight | Qt::AlignTop);
+        option.setTabStop(tabStop);
+        paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
+                              boundingRect.width(),
+                              boundingRect.height()),
+                       desc,
+                       option);
+        
+        paint.restore();
+    }
+}
+
+void
+Pane::drawCentreLine(int sampleRate, QPainter &paint)
+{
+    int fontHeight = paint.fontMetrics().height();
+    int fontAscent = paint.fontMetrics().ascent();
+
+    QColor c = QColor(0, 0, 0);
+    if (!hasLightBackground()) {
+        c = QColor(240, 240, 240);
+    }
+    paint.setPen(c);
+    int x = width() / 2 + 1;
+    paint.drawLine(x, 0, x, height() - 1);
+    paint.drawLine(x-1, 1, x+1, 1);
+    paint.drawLine(x-2, 0, x+2, 0);
+    paint.drawLine(x-1, height() - 2, x+1, height() - 2);
+    paint.drawLine(x-2, height() - 1, x+2, height() - 1);
+    
+    paint.setPen(QColor(50, 50, 50));
+    
+    int y = height() - fontHeight + fontAscent - 6;
+    
+    LayerList::iterator vi = m_layers.end();
+    
+    if (vi != m_layers.begin()) {
+	    
+        switch ((*--vi)->getPreferredFrameCountPosition()) {
             
-            paint.save();
+        case Layer::PositionTop:
+            y = fontAscent + 6;
+            break;
             
-            int tabStop =
-                paint.fontMetrics().width(tr("Some lengthy prefix:"));
+        case Layer::PositionMiddle:
+            y = (height() - fontHeight) / 2
+                + fontAscent;
+            break;
             
-            QRect boundingRect = 
-                paint.fontMetrics().boundingRect
-                (rect(),
-                 Qt::AlignRight | Qt::AlignTop | Qt::TextExpandTabs,
-                 desc, tabStop);
-            
-            if (hasLightBackground()) {
-                paint.setPen(Qt::NoPen);
-                paint.setBrush(QColor(250, 250, 250, 200));
-            } else {
-                paint.setPen(Qt::NoPen);
-                paint.setBrush(QColor(50, 50, 50, 200));
-            }
-            
-            int extra = paint.fontMetrics().descent();
-            paint.drawRect(width() - boundingRect.width() - 10 - extra,
-                           10 - extra,
-                           boundingRect.width() + 2 * extra,
-                           boundingRect.height() + extra);
-            
-            if (hasLightBackground()) {
-                paint.setPen(QColor(150, 20, 0));
-            } else {
-                paint.setPen(QColor(255, 150, 100));
-            }
-            
-            QTextOption option;
-            option.setWrapMode(QTextOption::NoWrap);
-            option.setAlignment(Qt::AlignRight | Qt::AlignTop);
-            option.setTabStop(tabStop);
-            paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
-                                  boundingRect.width(),
-                                  boundingRect.height()),
-                           desc,
-                           option);
-            
-            paint.restore();
+        case Layer::PositionBottom:
+            // y already set correctly
+            break;
         }
     }
     
-    int sampleRate = getModelsSampleRate();
-    paint.setBrush(Qt::NoBrush);
+    if (m_manager && m_manager->shouldShowFrameCount()) {
+        
+        if (sampleRate) {
 
-    if (m_centreLineVisible &&
-        m_manager &&
-        m_manager->shouldShowCentreLine()) {
-
-        QColor c = QColor(0, 0, 0);
-        if (!hasLightBackground()) {
-            c = QColor(240, 240, 240);
-        }
-        paint.setPen(c);
-        int x = width() / 2 + 1;
-	paint.drawLine(x, 0, x, height() - 1);
-        paint.drawLine(x-1, 1, x+1, 1);
-        paint.drawLine(x-2, 0, x+2, 0);
-        paint.drawLine(x-1, height() - 2, x+1, height() - 2);
-        paint.drawLine(x-2, height() - 1, x+2, height() - 1);
-
-	paint.setPen(QColor(50, 50, 50));
-
-	int y = height() - fontHeight
-	    + fontAscent - 6;
-	
-	LayerList::iterator vi = m_layers.end();
-	
-	if (vi != m_layers.begin()) {
-	    
-	    switch ((*--vi)->getPreferredFrameCountPosition()) {
-		
-	    case Layer::PositionTop:
-		y = fontAscent + 6;
-		break;
-		
-	    case Layer::PositionMiddle:
-		y = (height() - fontHeight) / 2
-		    + fontAscent;
-		break;
-
-	    case Layer::PositionBottom:
-		// y already set correctly
-		break;
-	    }
-	}
-
-        if (m_manager && m_manager->shouldShowFrameCount()) {
-
-            if (sampleRate) {
-
-                QString text(QString::fromStdString
-                             (RealTime::frame2RealTime
-                              (m_centreFrame, sampleRate).toText(true)));
-                
-                int tw = paint.fontMetrics().width(text);
-                int x = width()/2 - 4 - tw;
-                
-                drawVisibleText(paint, x, y, text, OutlinedText);
-            }
+            QString text(QString::fromStdString
+                         (RealTime::frame2RealTime
+                          (m_centreFrame, sampleRate).toText(true)));
             
-            QString text = QString("%1").arg(m_centreFrame);
-            
-            int x = width()/2 + 4;
+            int tw = paint.fontMetrics().width(text);
+            int x = width()/2 - 4 - tw;
             
             drawVisibleText(paint, x, y, text, OutlinedText);
         }
-
-    } else {
-
-	paint.setPen(QColor(50, 50, 50));
-    }
-
-    if (waveformModel &&
-        m_manager &&
-        m_manager->shouldShowDuration() &&
-	r.y() + r.height() >= height() - fontHeight - 6) {
-
-        size_t modelRate = waveformModel->getSampleRate();
-	size_t playbackRate = m_manager->getPlaybackSampleRate();
-        size_t outputRate = m_manager->getOutputSampleRate();
         
-	QString srNote = "";
+        QString text = QString("%1").arg(m_centreFrame);
+        
+        int x = width()/2 + 4;
+        
+        drawVisibleText(paint, x, y, text, OutlinedText);
+    }
+}
 
-	// Show (R) for waveform models that will be resampled on
-	// playback, and (X) for waveform models that will be played
-	// at the wrong rate because their rate differs from the
-	// current playback rate (which is not necessarily that of the
-	// main model).
+void
+Pane::drawLayerNames(QRect r, QPainter &paint)
+{
+    int fontHeight = paint.fontMetrics().height();
+    int fontAscent = paint.fontMetrics().ascent();
 
-        if (playbackRate != 0) {
-            if (modelRate == playbackRate) {
-                if (modelRate != outputRate) srNote = " " + tr("(R)");
-            } else {
-                srNote = " " + tr("(X)");
-            }
-        }
-
-	QString desc = tr("%1 / %2Hz%3")
-	    .arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
-					  sampleRate)
-		 .toText(false).c_str())
-	    .arg(modelRate)
-	    .arg(srNote);
-
-	if (r.x() < m_scaleWidth + 5 + paint.fontMetrics().width(desc)) {
-	    drawVisibleText(paint, m_scaleWidth + 5,
-			    height() - fontHeight + fontAscent - 6,
-			    desc, OutlinedText);
-	}
+    if (r.y() + r.height() < height() - int(m_layers.size()) * fontHeight - 6) {
+        return;
     }
 
-    if (m_manager &&
-        m_manager->shouldShowLayerNames() &&
-        r.y() + r.height() >= height() - int(m_layers.size()) * fontHeight - 6) {
+    std::vector<QString> texts;
+    int maxTextWidth = 0;
 
-	std::vector<QString> texts;
-	int maxTextWidth = 0;
-
-	for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
-
-	    QString text = (*i)->getLayerPresentationName();
-	    int tw = paint.fontMetrics().width(text);
-            bool reduced = false;
-            while (tw > width() / 3 && text.length() > 4) {
-                if (!reduced && text.length() > 8) {
-                    text = text.left(text.length() - 4);
-                } else {
-                    text = text.left(text.length() - 2);
-                }
-                reduced = true;
-                tw = paint.fontMetrics().width(text + "...");
-            }
-            if (reduced) {
-                texts.push_back(text + "...");
+    for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+        
+        QString text = (*i)->getLayerPresentationName();
+        int tw = paint.fontMetrics().width(text);
+        bool reduced = false;
+        while (tw > width() / 3 && text.length() > 4) {
+            if (!reduced && text.length() > 8) {
+                text = text.left(text.length() - 4);
             } else {
-                texts.push_back(text);
+                text = text.left(text.length() - 2);
             }
-	    if (tw > maxTextWidth) maxTextWidth = tw;
-	}
-    
-	int lly = height() - 6;
-        int llx = width() - maxTextWidth - 5;
-
-        if (m_manager->getZoomWheelsEnabled()) {
-            lly -= 20;
-            llx -= 36;
+            reduced = true;
+            tw = paint.fontMetrics().width(text + "...");
         }
-
-	if (r.x() + r.width() >= llx) {
-	    
-	    for (size_t i = 0; i < texts.size(); ++i) {
-
-		if (i + 1 == texts.size()) {
-		    paint.setPen(Qt::black);
-		}
-		
-		drawVisibleText(paint, llx,
-				lly - fontHeight + fontAscent,
-				texts[i], OutlinedText);
-		
-		lly -= fontHeight;
-	    }
-	}
-    }
-
-    if (m_clickedInRange && m_manager) {
-
-        //!!! be nice if this looked a bit more in keeping with the
-        //selection block
-
-        if (m_shiftPressed && toolMode == ViewManager::NavigateMode) {
-
-	    paint.setPen(Qt::blue);
-            //!!! shouldn't use clickPos -- needs to use a clicked frame
-	    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
-			   m_mousePos.x() - m_clickPos.x(),
-			   m_mousePos.y() - m_clickPos.y());
-
-        } else if (toolMode == ViewManager::MeasureMode && topLayer) {
-
-            float v0, v1;
-            QString u0, u1;
-            bool b0, b1;
-
-            if ((b0 = topLayer->getXScaleValue(this, m_clickPos.x(), v0, u0))) {
-                drawVisibleText(paint,
-                                m_clickPos.x() + 2,
-                                m_clickPos.y() + fontAscent + 2,
-                                QString("%1 %2").arg(v0).arg(u0),
-                                OutlinedText);
-
-                if ((b1 = topLayer->getXScaleValue(this, m_mousePos.x(), v1, u1))
-                    && u1 == u0) {
-                    QString t = QString("%1 %2").arg(v1 - v0).arg(u1);
-                    drawVisibleText(paint,
-                                    m_mousePos.x() - paint.fontMetrics().width(t) - 2,
-                                    m_mousePos.y() - 2,
-                                    t,
-                                    OutlinedText);
-                }
-            }
-
-	    paint.setPen(Qt::green);
-
-            //!!! shouldn't use clickPos -- needs to use a clicked frame
-	    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
-			   m_mousePos.x() - m_clickPos.x(),
-			   m_mousePos.y() - m_clickPos.y());
-	}
+        if (reduced) {
+            texts.push_back(text + "...");
+        } else {
+            texts.push_back(text);
+        }
+        if (tw > maxTextWidth) maxTextWidth = tw;
     }
     
-    if (selectionIsBeingEdited()) {
+    int lly = height() - 6;
+    int llx = width() - maxTextWidth - 5;
+    
+    if (m_manager->getZoomWheelsEnabled()) {
+        lly -= 20;
+        llx -= 36;
+    }
+    
+    if (r.x() + r.width() >= llx) {
+	
+        for (size_t i = 0; i < texts.size(); ++i) {
+            
+            if (i + 1 == texts.size()) {
+                paint.setPen(Qt::black);
+            }
+            
+            drawVisibleText(paint, llx,
+                            lly - fontHeight + fontAscent,
+                            texts[i], OutlinedText);
+            
+            lly -= fontHeight;
+        }
+    }
+}
 
-	int offset = m_mousePos.x() - m_clickPos.x();
-	int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
-	int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
+void
+Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
+{
+    int fontHeight = paint.fontMetrics().height();
+    int fontAscent = paint.fontMetrics().ascent();
 
-	if (m_editingSelectionEdge < 0) {
-	    p1 = getXForFrame(m_editingSelection.getEndFrame());
-	} else if (m_editingSelectionEdge > 0) {
-	    p0 = getXForFrame(m_editingSelection.getStartFrame());
-	}
+    float v0, v1;
+    QString u0, u1;
+    bool b0, b1;
 
-	paint.save();
-	if (hasLightBackground()) {
-	    paint.setPen(QPen(Qt::black, 2));
-	} else {
-	    paint.setPen(QPen(Qt::white, 2));
-	}
-
-	//!!! duplicating display policy with View::drawSelections
-
-	if (m_editingSelectionEdge < 0) {
-	    paint.drawLine(p0, 1, p1, 1);
-	    paint.drawLine(p0, 0, p0, height());
-	    paint.drawLine(p0, height() - 1, p1, height() - 1);
-	} else if (m_editingSelectionEdge > 0) {
-	    paint.drawLine(p0, 1, p1, 1);
-	    paint.drawLine(p1, 0, p1, height());
-	    paint.drawLine(p0, height() - 1, p1, height() - 1);
-	} else {
-	    paint.setBrush(Qt::NoBrush);
-	    paint.drawRect(p0, 1, p1 - p0, height() - 2);
-	}
-	paint.restore();
+    QString axs, ays, bxs, bys, dxs, dys;
+    
+    if ((b0 = topLayer->getXScaleValue(this, m_clickPos.x(), v0, u0))) {
+        axs = QString("%1 %2").arg(v0).arg(u0);
+    }
+    
+    if ((b1 = topLayer->getXScaleValue(this, m_mousePos.x(), v1, u1))) {
+        bxs = QString("%1 %2").arg(v1).arg(u1);
+    }
+    
+    if (b0 && b1 && u0 == u1) {
+        dxs = QString("(%1 %2)").arg(v1 - v0).arg(u1);
+    }
+    
+    if ((b0 = topLayer->getYScaleValue(this, m_clickPos.y(), v0, u0))) {
+        ays = QString("%1 %2").arg(v0).arg(u0);
+    }
+    
+    if ((b1 = topLayer->getYScaleValue(this, m_mousePos.y(), v1, u1))) {
+        bys = QString("%1 %2").arg(v1).arg(u1);
+    }
+    
+    if (b0 && b1 && u0 == u1) {
+        dys = QString("(%1 %2)").arg(v1 - v0).arg(u1);
+    }
+    
+    int x = m_clickPos.x() + 2;
+    int y = m_clickPos.y() + fontAscent + 2;
+    
+    if (axs != "") {
+        drawVisibleText(paint, x, y, axs, OutlinedText);
+        y += fontHeight;
+    }
+    
+    if (ays != "") {
+        drawVisibleText(paint, x, y, ays, OutlinedText);
+        y += fontHeight;
     }
 
-    paint.end();
+    x = m_mousePos.x() - paint.fontMetrics().width(bxs) - 2;
+    y = m_mousePos.y() - 2;
+
+    if (bys != "" && bxs != "") y -= fontHeight;
+    
+    if (bxs != "") {
+        drawVisibleText(paint, x, y, bxs, OutlinedText);
+        y += fontHeight;
+    }
+
+    x = m_mousePos.x() - paint.fontMetrics().width(bys) - 2;
+
+    if (bys != "") {
+        drawVisibleText(paint, x, y, bys, OutlinedText);
+        y += fontHeight;
+    }
+
+    paint.save();
+    
+    paint.setPen(Qt::green);
+
+    paint.drawRect(m_clickPos.x(), m_clickPos.y(),
+                   m_mousePos.x() - m_clickPos.x(),
+                   m_mousePos.y() - m_clickPos.y());
+
+    paint.restore();
+}
+
+void
+Pane::drawEditingSelection(QPainter &paint)
+{
+    int offset = m_mousePos.x() - m_clickPos.x();
+    int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
+    int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
+    
+    if (m_editingSelectionEdge < 0) {
+        p1 = getXForFrame(m_editingSelection.getEndFrame());
+    } else if (m_editingSelectionEdge > 0) {
+        p0 = getXForFrame(m_editingSelection.getStartFrame());
+    }
+    
+    paint.save();
+    if (hasLightBackground()) {
+        paint.setPen(QPen(Qt::black, 2));
+    } else {
+        paint.setPen(QPen(Qt::white, 2));
+    }
+    
+    //!!! duplicating display policy with View::drawSelections
+    
+    if (m_editingSelectionEdge < 0) {
+        paint.drawLine(p0, 1, p1, 1);
+        paint.drawLine(p0, 0, p0, height());
+        paint.drawLine(p0, height() - 1, p1, height() - 1);
+    } else if (m_editingSelectionEdge > 0) {
+        paint.drawLine(p0, 1, p1, 1);
+        paint.drawLine(p1, 0, p1, height());
+        paint.drawLine(p0, height() - 1, p1, height() - 1);
+    } else {
+        paint.setBrush(Qt::NoBrush);
+        paint.drawRect(p0, 1, p1 - p0, height() - 2);
+    }
+    paint.restore();
+}
+
+void
+Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
+                          int sampleRate, QPainter &paint)
+{
+    int fontHeight = paint.fontMetrics().height();
+    int fontAscent = paint.fontMetrics().ascent();
+
+    if (r.y() + r.height() < height() - fontHeight - 6) return;
+
+    size_t modelRate = waveformModel->getSampleRate();
+    size_t playbackRate = m_manager->getPlaybackSampleRate();
+    size_t outputRate = m_manager->getOutputSampleRate();
+        
+    QString srNote = "";
+
+    // Show (R) for waveform models that will be resampled on
+    // playback, and (X) for waveform models that will be played
+    // at the wrong rate because their rate differs from the
+    // current playback rate (which is not necessarily that of the
+    // main model).
+
+    if (playbackRate != 0) {
+        if (modelRate == playbackRate) {
+            if (modelRate != outputRate) srNote = " " + tr("(R)");
+        } else {
+            srNote = " " + tr("(X)");
+        }
+    }
+
+    QString desc = tr("%1 / %2Hz%3")
+        .arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
+                                      sampleRate)
+             .toText(false).c_str())
+        .arg(modelRate)
+        .arg(srNote);
+
+    if (r.x() < m_scaleWidth + 5 + paint.fontMetrics().width(desc)) {
+        drawVisibleText(paint, m_scaleWidth + 5,
+                        height() - fontHeight + fontAscent - 6,
+                        desc, OutlinedText);
+    }
 }
 
 bool
