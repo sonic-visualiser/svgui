@@ -323,6 +323,15 @@ SpectrumLayer::getXForFrequency(float freq, float w) const
     return x;
 }
 
+bool
+SpectrumLayer::getXScaleValue(View *v, int x, 
+                              float &value, QString &unit) const
+{
+    value = getFrequencyForX(x, v->width() - m_xorigins[v]);
+    unit = "Hz";
+    return true;
+}
+
 void
 SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
                                QPoint cursorPos) const
