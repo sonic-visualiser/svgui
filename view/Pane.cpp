@@ -1956,7 +1956,7 @@ Pane::toolModeChanged()
     ViewManager::ToolMode mode = m_manager->getToolMode();
 //    std::cerr << "Pane::toolModeChanged(" << mode << ")" << std::endl;
 
-    if (!m_measureCursorsCreated) {
+    if (mode == ViewManager::MeasureMode && !m_measureCursorsCreated) {
         m_measureCursor1 = QCursor(QBitmap(":/icons/measure1cursor.xbm"),
                                    QBitmap(":/icons/measure1mask.xbm"),
                                    15, 14);
