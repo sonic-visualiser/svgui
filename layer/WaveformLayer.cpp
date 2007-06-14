@@ -1063,7 +1063,7 @@ WaveformLayer::getValueForY(View *v, Scale scale, int y,
 	
     int my = m + (((channel - minChannel) * h) / channels);
 
-    int vy = y - my;
+    int vy = my - y;
     float value = 0;
 
     switch (scale) {

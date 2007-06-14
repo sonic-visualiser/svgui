@@ -124,9 +124,13 @@ protected:
     QPoint m_identifyPoint;
     QPoint m_clickPos;
     QPoint m_mousePos;
+    QPoint m_measureStart;
+    QPoint m_measureEnd;
     bool m_clickedInRange;
     bool m_shiftPressed;
     bool m_ctrlPressed;
+    bool m_haveMeasureRect;
+    size_t m_measureCentreFrame;
     bool m_navigating;
     bool m_resizing;
     size_t m_dragCentreFrame;
@@ -150,6 +154,10 @@ protected:
     Thumbwheel *m_hthumb;
     Thumbwheel *m_vthumb;
     NotifyingPushButton *m_reset;
+
+    static QCursor m_measureCursor1;
+    static QCursor m_measureCursor2;
+    static bool m_measureCursorsCreated;
 };
 
 #endif
