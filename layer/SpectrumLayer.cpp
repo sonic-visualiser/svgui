@@ -256,6 +256,28 @@ SpectrumLayer::getValueExtents(float &, float &, bool &, QString &) const
 }
 
 float
+SpectrumLayer::getXForBin(int bin, int totalBins, float w) const
+{
+    if (!m_sliceableModel) return SliceLayer::getXForBin(bin, totalBins, w);
+
+    float sampleRate = m_sliceableModel->getSampleRate();
+    float binfreq = (sampleRate * bin) / (totalBins * 2);
+    
+    return getXForFrequency(binfreq, w);
+}
+
+int
+SpectrumLayer::getBinForX(float x, int totalBins, float w) const
+{
+    if (!m_sliceableModel) return SliceLayer::getBinForX(x, totalBins, w);
+
+    float sampleRate = m_sliceableModel->getSampleRate();
+    float binfreq = getFrequencyForX(x, w);
+
+    return int((binfreq * totalBins * 2) / sampleRate);
+}
+
+float
 SpectrumLayer::getFrequencyForX(float x, float w) const
 {
     float freq = 0;

@@ -105,8 +105,8 @@ public slots:
     void modelAboutToBeDeleted(Model *);
 
 protected:
-    float getXForBin(int bin, int totalBins, float w) const;
-    int getBinForX(float x, int totalBins, float w) const;
+    virtual float getXForBin(int bin, int totalBins, float w) const;
+    virtual int getBinForX(float x, int totalBins, float w) const;
     
     virtual QString getFeatureDescription(View *v, QPoint &,
                                           bool includeBinDescription,
