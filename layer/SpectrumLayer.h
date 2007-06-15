@@ -100,6 +100,9 @@ protected:
     virtual void getBiasCurve(BiasCurve &) const;
     BiasCurve m_biasCurve;
 
+    virtual float getXForBin(int bin, int totalBins, float w) const;
+    virtual int getBinForX(float x, int totalBins, float w) const;
+
     float getFrequencyForX(float x, float w) const;
     float getXForFrequency(float freq, float w) const;
 
