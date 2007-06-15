@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006 Chris Cannam and QMUL.
+    This file copyright 2006-2007 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -760,19 +760,28 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
     bool b0 = false, b1 = false;
 
     QString axs, ays, bxs, bys, dxs, dys;
+
+    int axx, axy, bxx, bxy, dxx, dxy;
+    int aw = 0, bw = 0, dw = 0;
     
+    int labelCount = 0;
+
     if ((b0 = topLayer->getXScaleValue(this, m_measureStart.x(), v0, u0))) {
         axs = QString("%1 %2").arg(v0).arg(u0);
+        aw = paint.fontMetrics().width(axs);
+        ++labelCount;
     }
     
     if (m_measureStart != m_measureEnd) {
         if ((b1 = topLayer->getXScaleValue(this, m_measureEnd.x(), v1, u1))) {
             bxs = QString("%1 %2").arg(v1).arg(u1);
+            bw = paint.fontMetrics().width(bxs);
         }
     }
     
     if (b0 && b1 && u0 == u1) {
-        dxs = QString("(%1 %2)").arg(v1 - v0).arg(u1);
+        dxs = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
+        dw = paint.fontMetrics().width(dxs);
     }
     
     b0 = false;
@@ -780,46 +789,109 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
 
     if ((b0 = topLayer->getYScaleValue(this, m_measureStart.y(), v0, u0))) {
         ays = QString("%1 %2").arg(v0).arg(u0);
+        aw = std::max(aw, paint.fontMetrics().width(ays));
+        ++labelCount;
     }
 
     if (m_measureStart != m_measureEnd) {
         if ((b1 = topLayer->getYScaleValue(this, m_measureEnd.y(), v1, u1))) {
             bys = QString("%1 %2").arg(v1).arg(u1);
+            bw = std::max(bw, paint.fontMetrics().width(bys));
         }
     }
     
     if (b0 && b1 && u0 == u1) {
-        dys = QString("(%1 %2)").arg(v1 - v0).arg(u1);
+        dys = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
+        dw = std::max(dw, paint.fontMetrics().width(dys));
+    }
+
+    int mw = abs(m_measureEnd.x() - m_measureStart.x());
+    int mh = abs(m_measureEnd.y() - m_measureStart.y());
+
+    bool edgeLabelsInside = false;
+    bool sizeLabelsInside = false;
+
+    if (mw < std::max(aw, std::max(bw, dw)) + 4) {
+        // defaults stand
+    } else if (mw < aw + bw + 4) {
+        if (mh > fontHeight * labelCount * 3 + 4) {
+            edgeLabelsInside = true;
+            sizeLabelsInside = true;
+        } else if (mh > fontHeight * labelCount * 2 + 4) {
+            edgeLabelsInside = true;
+        }
+    } else if (mw < aw + bw + dw + 4) {
+        if (mh > fontHeight * labelCount * 3 + 4) {
+            edgeLabelsInside = true;
+            sizeLabelsInside = true;
+        } else if (mh > fontHeight * labelCount + 4) {
+            edgeLabelsInside = true;
+        }
+    } else {
+        if (mh > fontHeight * labelCount + 4) {
+            edgeLabelsInside = true;
+            sizeLabelsInside = true;
+        }
+    }
+
+    if (edgeLabelsInside) {
+
+        axx = m_measureStart.x() + 2;
+        axy = m_measureStart.y() + fontAscent + 2;
+
+        bxx = m_measureEnd.x() - bw - 2;
+        bxy = m_measureEnd.y() - (labelCount-1) * fontHeight - 2;
+
+    } else {
+
+        axx = m_measureStart.x() - aw - 2;
+        axy = m_measureStart.y() + fontAscent;
+        
+        bxx = m_measureEnd.x() + 2;
+        bxy = m_measureEnd.y() - (labelCount-1) * fontHeight;
+    }
+
+    dxx = (m_measureEnd.x() - m_measureStart.x())
+        / 2 + m_measureStart.x() - dw/2;
+
+    if (sizeLabelsInside) {
+
+        dxy = (m_measureEnd.y() - m_measureStart.y())
+            / 2 + m_measureStart.y() - (labelCount * fontHeight)/2 + fontAscent;
+
+    } else {
+
+        dxy = std::max(m_measureEnd.y(), m_measureStart.y()) + fontAscent + 2;
     }
     
-    int x = m_measureStart.x() + 2;
-    int y = m_measureStart.y() + fontAscent + 2;
-    
     if (axs != "") {
-        drawVisibleText(paint, x, y, axs, OutlinedText);
-        y += fontHeight;
+        drawVisibleText(paint, axx, axy, axs, OutlinedText);
+        axy += fontHeight;
     }
     
     if (ays != "") {
-        drawVisibleText(paint, x, y, ays, OutlinedText);
-        y += fontHeight;
+        drawVisibleText(paint, axx, axy, ays, OutlinedText);
+        axy += fontHeight;
     }
 
-    x = m_measureEnd.x() - paint.fontMetrics().width(bxs) - 2;
-    y = m_measureEnd.y() - 2;
-
-    if (bys != "" && bxs != "") y -= fontHeight;
-    
     if (bxs != "") {
-        drawVisibleText(paint, x, y, bxs, OutlinedText);
-        y += fontHeight;
+        drawVisibleText(paint, bxx, bxy, bxs, OutlinedText);
+        bxy += fontHeight;
     }
-
-    x = m_measureEnd.x() - paint.fontMetrics().width(bys) - 2;
 
     if (bys != "") {
-        drawVisibleText(paint, x, y, bys, OutlinedText);
-        y += fontHeight;
+        drawVisibleText(paint, bxx, bxy, bys, OutlinedText);
+        bxy += fontHeight;
+    }
+
+    if (dxs != "") {
+        drawVisibleText(paint, dxx, dxy, dxs, OutlinedText);
+        dxy += fontHeight;
+    }
+
+    if (dys != "") {
+        drawVisibleText(paint, dxx, dxy, dys, OutlinedText);
+        dxy += fontHeight;
     }
 
     if (m_measureStart != m_measureEnd) {
