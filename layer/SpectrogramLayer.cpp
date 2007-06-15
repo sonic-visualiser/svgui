@@ -2500,7 +2500,7 @@ SpectrogramLayer::snapToFeatureFrame(View *, int &frame,
 } 
 
 bool
-SpectrogramLayer::getCrosshairExtents(View *v, QPainter &,
+SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
                                       QPoint cursorPos,
                                       std::vector<QRect> &extents) const
 {
@@ -2509,6 +2509,13 @@ SpectrogramLayer::getCrosshairExtents(View *v, QPainter &,
 
     QRect horizontal(0, cursorPos.y(), cursorPos.x(), 1);
     extents.push_back(horizontal);
+
+    int sw = getVerticalScaleWidth(v, paint);
+
+    QRect label(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
+                paint.fontMetrics().width("123456 Hz") + sw + 2,
+                paint.fontMetrics().height());
+    extents.push_back(label);
 
     return true;
 }
@@ -2524,6 +2531,9 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
     paint.drawLine(cursorPos.x(), 0, cursorPos.x(), v->height());
     
     float fundamental = getFrequencyForY(v, cursorPos.y());
+
+    int sw = getVerticalScaleWidth(v, paint);
+    paint.drawText(sw + 2, cursorPos.y() - 2, QString("%1 Hz").arg(fundamental));
 
     int harmonic = 2;
 

@@ -255,20 +255,6 @@ SpectrumLayer::getValueExtents(float &, float &, bool &, QString &) const
     return false;
 }
 
-bool
-SpectrumLayer::getCrosshairExtents(View *v, QPainter &,
-                                   QPoint cursorPos,
-                                   std::vector<QRect> &extents) const
-{
-    QRect vertical(cursorPos.x(), cursorPos.y(), 1, v->height() - cursorPos.y());
-    extents.push_back(vertical);
-
-    QRect horizontal(0, cursorPos.y(), v->width(), 12);
-    extents.push_back(horizontal);
-
-    return true;
-}
-
 float
 SpectrumLayer::getFrequencyForX(float x, float w) const
 {
@@ -327,8 +313,27 @@ bool
 SpectrumLayer::getXScaleValue(View *v, int x, 
                               float &value, QString &unit) const
 {
-    value = getFrequencyForX(x, v->width() - m_xorigins[v]);
+    value = getFrequencyForX(x - m_xorigins[v], v->width() - m_xorigins[v] - 1);
     unit = "Hz";
+    return true;
+}
+
+bool
+SpectrumLayer::getCrosshairExtents(View *v, QPainter &paint,
+                                   QPoint cursorPos,
+                                   std::vector<QRect> &extents) const
+{
+    QRect vertical(cursorPos.x(), cursorPos.y(), 1, v->height() - cursorPos.y());
+    extents.push_back(vertical);
+
+    QRect horizontal(0, cursorPos.y(), v->width(), 12);
+    extents.push_back(horizontal);
+
+    QRect label(cursorPos.x(), v->height() - paint.fontMetrics().height(),
+                paint.fontMetrics().width("123456 Hz") + 2,
+                paint.fontMetrics().height());
+    extents.push_back(label);
+
     return true;
 }
 
@@ -348,6 +353,9 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
     paint.drawLine(cursorPos.x(), cursorPos.y(), cursorPos.x(), v->height());
     
     float fundamental = getFrequencyForX(cursorPos.x() - xorigin, w);
+
+    paint.drawText(cursorPos.x() + 2, v->height() - 2,
+                   QString("%1 Hz").arg(fundamental));
 
     int harmonic = 2;
 
