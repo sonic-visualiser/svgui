@@ -2381,7 +2381,7 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
 }
 
 float
-SpectrogramLayer::getYForFrequency(View *v, float frequency) const
+SpectrogramLayer::getYForFrequency(const View *v, float frequency) const
 {
     return v->getYForFrequency(frequency,
 			       getEffectiveMinFrequency(),
@@ -2390,7 +2390,7 @@ SpectrogramLayer::getYForFrequency(View *v, float frequency) const
 }
 
 float
-SpectrogramLayer::getFrequencyForY(View *v, int y) const
+SpectrogramLayer::getFrequencyForY(const View *v, int y) const
 {
     return v->getFrequencyForY(y,
 			       getEffectiveMinFrequency(),
@@ -2469,7 +2469,7 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
 }
 
 bool
-SpectrogramLayer::getYScaleValue(View *v, int y,
+SpectrogramLayer::getYScaleValue(const View *v, int y,
                                  float &value, QString &unit) const
 {
     value = getFrequencyForY(v, y);

@@ -332,10 +332,12 @@ SpectrumLayer::getXForFrequency(float freq, float w) const
 }
 
 bool
-SpectrumLayer::getXScaleValue(View *v, int x, 
+SpectrumLayer::getXScaleValue(const View *v, int x, 
                               float &value, QString &unit) const
 {
-    value = getFrequencyForX(x - m_xorigins[v], v->width() - m_xorigins[v] - 1);
+    if (m_xorigins.find(v) == m_xorigins.end()) return false;
+    int xorigin = m_xorigins.find(v)->second;
+    value = getFrequencyForX(x - xorigin, v->width() - xorigin - 1);
     unit = "Hz";
     return true;
 }

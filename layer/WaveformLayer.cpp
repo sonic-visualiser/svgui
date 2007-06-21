@@ -995,7 +995,7 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 int
-WaveformLayer::getYForValue(View *v, Scale scale, float value, size_t channel,
+WaveformLayer::getYForValue(const View *v, Scale scale, float value, size_t channel,
                             size_t minChannel, size_t maxChannel) const
 {
     if (maxChannel < minChannel || channel < minChannel) return 0;
@@ -1033,7 +1033,7 @@ WaveformLayer::getYForValue(View *v, Scale scale, float value, size_t channel,
 }
 
 float
-WaveformLayer::getValueForY(View *v, Scale scale, int y,
+WaveformLayer::getValueForY(const View *v, Scale scale, int y,
                             size_t minChannel, size_t maxChannel) const
 {
     if (maxChannel < minChannel) return 0;
@@ -1085,7 +1085,7 @@ WaveformLayer::getValueForY(View *v, Scale scale, int y,
 }
 
 bool
-WaveformLayer::getYScaleValue(View *v, int y,
+WaveformLayer::getYScaleValue(const View *v, int y,
                               float &value, QString &unit) const
 {
     size_t channels = 0, minChannel = 0, maxChannel = 0;

@@ -613,7 +613,7 @@ View::setFollowGlobalZoom(bool f)
 }
 
 void
-View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle style)
+View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle style) const
 {
     if (style == OutlinedText) {
 
@@ -1626,6 +1626,159 @@ View::drawSelections(QPainter &paint)
     }
 
     paint.restore();
+}
+
+void
+View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r) const
+{
+    if (r.x() + r.width() < 0 || r.x() >= width()) return;
+
+    int fontHeight = paint.fontMetrics().height();
+    int fontAscent = paint.fontMetrics().ascent();
+
+    float v0, v1;
+    QString u0, u1;
+    bool b0 = false, b1 = false;
+
+    QString axs, ays, bxs, bys, dxs, dys;
+
+    int axx, axy, bxx, bxy, dxx, dxy;
+    int aw = 0, bw = 0, dw = 0;
+    
+    int labelCount = 0;
+
+    if ((b0 = topLayer->getXScaleValue(this, r.x(), v0, u0))) {
+        axs = QString("%1 %2").arg(v0).arg(u0);
+        aw = paint.fontMetrics().width(axs);
+        ++labelCount;
+    }
+        
+    if (r.width() > 0) {
+        if ((b1 = topLayer->getXScaleValue(this, r.x() + r.width(), v1, u1))) {
+            bxs = QString("%1 %2").arg(v1).arg(u1);
+            bw = paint.fontMetrics().width(bxs);
+        }
+    }
+        
+    if (b0 && b1 && u0 == u1) {
+        dxs = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
+        dw = paint.fontMetrics().width(dxs);
+    }
+    
+    b0 = false;
+    b1 = false;
+
+    if ((b0 = topLayer->getYScaleValue(this, r.y(), v0, u0))) {
+        ays = QString("%1 %2").arg(v0).arg(u0);
+        aw = std::max(aw, paint.fontMetrics().width(ays));
+        ++labelCount;
+    }
+
+    if (r.height() > 0) {
+        if ((b1 = topLayer->getYScaleValue(this, r.y() + r.height(), v1, u1))) {
+            bys = QString("%1 %2").arg(v1).arg(u1);
+            bw = std::max(bw, paint.fontMetrics().width(bys));
+        }
+    }
+    
+    if (b0 && b1 && u0 == u1) {
+        dys = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
+        dw = std::max(dw, paint.fontMetrics().width(dys));
+    }
+
+    int mw = r.width();
+    int mh = r.height();
+
+    bool edgeLabelsInside = false;
+    bool sizeLabelsInside = false;
+
+    if (mw < std::max(aw, std::max(bw, dw)) + 4) {
+        // defaults stand
+    } else if (mw < aw + bw + 4) {
+        if (mh > fontHeight * labelCount * 3 + 4) {
+            edgeLabelsInside = true;
+            sizeLabelsInside = true;
+        } else if (mh > fontHeight * labelCount * 2 + 4) {
+            edgeLabelsInside = true;
+        }
+    } else if (mw < aw + bw + dw + 4) {
+        if (mh > fontHeight * labelCount * 3 + 4) {
+            edgeLabelsInside = true;
+            sizeLabelsInside = true;
+        } else if (mh > fontHeight * labelCount + 4) {
+            edgeLabelsInside = true;
+        }
+    } else {
+        if (mh > fontHeight * labelCount + 4) {
+            edgeLabelsInside = true;
+            sizeLabelsInside = true;
+        }
+    }
+
+    if (edgeLabelsInside) {
+
+        axx = r.x() + 2;
+        axy = r.y() + fontAscent + 2;
+
+        bxx = r.x() + r.width() - bw - 2;
+        bxy = r.y() + r.height() - (labelCount-1) * fontHeight - 2;
+
+    } else {
+
+        axx = r.x() - aw - 2;
+        axy = r.y() + fontAscent;
+        
+        bxx = r.x() + r.width() + 2;
+        bxy = r.y() + r.height() - (labelCount-1) * fontHeight;
+    }
+
+    dxx = r.width()/2 + r.x() - dw/2;
+
+    if (sizeLabelsInside) {
+
+        dxy = r.height()/2 + r.y() - (labelCount * fontHeight)/2 + fontAscent;
+
+    } else {
+
+        dxy = r.y() + r.height() + fontAscent + 2;
+    }
+    
+    if (axs != "") {
+        drawVisibleText(paint, axx, axy, axs, OutlinedText);
+        axy += fontHeight;
+    }
+    
+    if (ays != "") {
+        drawVisibleText(paint, axx, axy, ays, OutlinedText);
+        axy += fontHeight;
+    }
+
+    if (bxs != "") {
+        drawVisibleText(paint, bxx, bxy, bxs, OutlinedText);
+        bxy += fontHeight;
+    }
+
+    if (bys != "") {
+        drawVisibleText(paint, bxx, bxy, bys, OutlinedText);
+        bxy += fontHeight;
+    }
+
+    if (dxs != "") {
+        drawVisibleText(paint, dxx, dxy, dxs, OutlinedText);
+        dxy += fontHeight;
+    }
+
+    if (dys != "") {
+        drawVisibleText(paint, dxx, dxy, dys, OutlinedText);
+        dxy += fontHeight;
+    }
+
+    if (r.width() != 0 || r.height() != 0) {
+        paint.save();
+        paint.setPen(Qt::green);
+        paint.drawRect(r);
+        paint.restore();
+    }
 }
 
 bool

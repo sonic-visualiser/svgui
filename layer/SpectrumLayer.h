@@ -59,7 +59,7 @@ public:
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;
 
-    virtual bool getXScaleValue(View *v, int x,
+    virtual bool getXScaleValue(const View *v, int x,
                                 float &value, QString &unit) const;
 
     virtual bool isLayerScrollable(const View *) const { return false; }
