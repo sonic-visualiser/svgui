@@ -129,7 +129,7 @@ protected:
     bool                              m_normalize;
     float                             m_gain;
     mutable std::vector<int>          m_scalePoints;
-    mutable std::map<View *, int>     m_xorigins;
+    mutable std::map<const View *, int> m_xorigins;
     mutable size_t                    m_currentf0;
     mutable size_t                    m_currentf1;
     mutable std::vector<float>        m_values;

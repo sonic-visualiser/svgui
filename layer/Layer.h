@@ -105,6 +105,8 @@ public:
     }
     virtual void paintCrosshairs(View *, QPainter &, QPoint) const { }
 
+    virtual void paintMeasurementRects(View *, QPainter &) const;
+
     virtual QString getFeatureDescription(View *, QPoint &) const {
 	return "";
     }
@@ -155,6 +157,14 @@ public:
     virtual void editStart(View *, QMouseEvent *) { }
     virtual void editDrag(View *, QMouseEvent *) { }
     virtual void editEnd(View *, QMouseEvent *) { }
+
+    // Measurement rectangle (or equivalent).  Unlike draw and edit,
+    // the base Layer class can provide working implementations of
+    // these for most situations.
+    //
+    virtual void measureStart(View *, QMouseEvent *);
+    virtual void measureDrag(View *, QMouseEvent *);
+    virtual void measureEnd(View *, QMouseEvent *);
 
     /**
      * Open an editor on the item under the mouse (e.g. on
@@ -323,14 +333,14 @@ public:
      * measurement tool.  The default implementation works correctly
      * if the layer hasTimeXAxis().
      */
-    virtual bool getXScaleValue(View *v, int x,
+    virtual bool getXScaleValue(const View *v, int x,
                                 float &value, QString &unit) const;
 
     /** 
      * Return the value and unit at the given y coordinate in the
      * given view.
      */
-    virtual bool getYScaleValue(View *, int /* y */,
+    virtual bool getYScaleValue(const View *, int /* y */,
                                 float &/* value */, QString &/* unit */) const {
         return false;
     }
@@ -389,6 +399,18 @@ signals:
     void layerNameChanged();
 
     void verticalZoomChanged();
+
+protected:
+    struct MeasureRect {
+        mutable QRect pixrect;
+        long startFrame; // only valid for a layer that hasTimeXAxis
+        long endFrame;   // ditto
+    };
+
+    typedef std::vector<MeasureRect> MeasureRectList; // should be x-ordered
+    MeasureRectList m_measureRectList;
+    MeasureRect m_draggingRect;
+    bool m_haveDraggingRect;
 
 private:
     mutable QMutex m_dormancyMutex;

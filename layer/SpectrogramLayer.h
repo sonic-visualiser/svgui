@@ -188,8 +188,8 @@ public:
     virtual bool isLayerOpaque() const { return true; }
     virtual bool isLayerColourSignificant() const { return true; }
 
-    float getYForFrequency(View *v, float frequency) const;
-    float getFrequencyForY(View *v, int y) const;
+    float getYForFrequency(const View *v, float frequency) const;
+    float getFrequencyForY(const View *v, int y) const;
 
     virtual int getCompletion(View *v) const;
 
@@ -200,7 +200,7 @@ public:
 
     virtual bool setDisplayExtents(float min, float max);
 
-    virtual bool getYScaleValue(View *, int, float &, QString &) const;
+    virtual bool getYScaleValue(const View *, int, float &, QString &) const;
 
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;

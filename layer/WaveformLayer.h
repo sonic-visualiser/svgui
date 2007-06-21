@@ -179,7 +179,7 @@ public:
     virtual bool getValueExtents(float &min, float &max,
                                  bool &log, QString &unit) const;
 
-    virtual bool getYScaleValue(View *v, int y,
+    virtual bool getYScaleValue(const View *v, int y,
                                 float &value, QString &unit) const;
 
     virtual QString toXmlString(QString indent = "",
@@ -200,10 +200,10 @@ protected:
     size_t getChannelArrangement(size_t &min, size_t &max,
                                  bool &merging, bool &mixing) const;
 
-    int getYForValue(View *v, Scale scale, float value, size_t channel,
+    int getYForValue(const View *v, Scale scale, float value, size_t channel,
                      size_t minChannel, size_t maxChannel) const;
 
-    float getValueForY(View *v, Scale scale, int y,
+    float getValueForY(const View *v, Scale scale, int y,
                        size_t minChannel, size_t maxChannel) const;
 
     float        m_gain;

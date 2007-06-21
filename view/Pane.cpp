@@ -42,9 +42,8 @@
 using std::cerr;
 using std::endl;
 
-QCursor Pane::m_measureCursor1;
-QCursor Pane::m_measureCursor2;
-bool Pane::m_measureCursorsCreated = false;
+QCursor *Pane::m_measureCursor1 = 0;
+QCursor *Pane::m_measureCursor2 = 0;
 
 Pane::Pane(QWidget *w) :
     View(w, true),
@@ -52,7 +51,6 @@ Pane::Pane(QWidget *w) :
     m_clickedInRange(false),
     m_shiftPressed(false),
     m_ctrlPressed(false),
-    m_haveDraggingRect(false),
     m_navigating(false),
     m_resizing(false),
     m_centreLineVisible(true),
@@ -456,7 +454,7 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     if (toolMode == ViewManager::MeasureMode && topLayer) {
-        drawMeasurementRects(topLayer, paint);
+        topLayer->paintMeasurementRects(this, paint);
     }
     
     if (selectionIsBeingEdited()) {
@@ -742,192 +740,6 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
             
             lly -= fontHeight;
         }
-    }
-}
-
-void
-Pane::drawMeasurementRects(Layer *topLayer, QPainter &paint)
-{
-    if (m_haveDraggingRect) {
-        drawMeasurementRect(topLayer, m_draggingRect, paint);
-    }
-
-    if (m_measureRects.find(topLayer) == m_measureRects.end() ||
-        m_measureRects[topLayer].empty()) return;
-
-    MeasureRectList &rects = m_measureRects[topLayer];
-
-    for (MeasureRectList::iterator i = rects.begin(); 
-         i != rects.end(); ++i) {
-        drawMeasurementRect(topLayer, *i, paint);
-    }
-}
-
-void
-Pane::drawMeasurementRect(Layer *topLayer, MeasureRect &r, QPainter &paint)
-{
-    if (topLayer->hasTimeXAxis()) {
-        r.start.rx() = getXForFrame(r.startFrame);
-        r.end.rx() = getXForFrame(r.endFrame);
-    }
-
-    int lx = std::min(r.start.x(), r.end.x());
-    int rx = std::max(r.start.x(), r.end.x());
-    if (rx < 0 || lx >= width()) return;
-
-    int fontHeight = paint.fontMetrics().height();
-    int fontAscent = paint.fontMetrics().ascent();
-
-    float v0, v1;
-    QString u0, u1;
-    bool b0 = false, b1 = false;
-
-    QString axs, ays, bxs, bys, dxs, dys;
-
-    int axx, axy, bxx, bxy, dxx, dxy;
-    int aw = 0, bw = 0, dw = 0;
-    
-    int labelCount = 0;
-
-    if ((b0 = topLayer->getXScaleValue(this, r.start.x(), v0, u0))) {
-        axs = QString("%1 %2").arg(v0).arg(u0);
-        aw = paint.fontMetrics().width(axs);
-        ++labelCount;
-    }
-        
-    if (r.start != r.end) {
-        if ((b1 = topLayer->getXScaleValue(this, r.end.x(), v1, u1))) {
-            bxs = QString("%1 %2").arg(v1).arg(u1);
-            bw = paint.fontMetrics().width(bxs);
-        }
-    }
-        
-    if (b0 && b1 && u0 == u1) {
-        dxs = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
-        dw = paint.fontMetrics().width(dxs);
-    }
-    
-    b0 = false;
-    b1 = false;
-
-    if ((b0 = topLayer->getYScaleValue(this, r.start.y(), v0, u0))) {
-        ays = QString("%1 %2").arg(v0).arg(u0);
-        aw = std::max(aw, paint.fontMetrics().width(ays));
-        ++labelCount;
-    }
-
-    if (r.start != r.end) {
-        if ((b1 = topLayer->getYScaleValue(this, r.end.y(), v1, u1))) {
-            bys = QString("%1 %2").arg(v1).arg(u1);
-            bw = std::max(bw, paint.fontMetrics().width(bys));
-        }
-    }
-    
-    if (b0 && b1 && u0 == u1) {
-        dys = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
-        dw = std::max(dw, paint.fontMetrics().width(dys));
-    }
-
-    int mw = abs(r.end.x() - r.start.x());
-    int mh = abs(r.end.y() - r.start.y());
-
-    bool edgeLabelsInside = false;
-    bool sizeLabelsInside = false;
-
-    if (mw < std::max(aw, std::max(bw, dw)) + 4) {
-        // defaults stand
-    } else if (mw < aw + bw + 4) {
-        if (mh > fontHeight * labelCount * 3 + 4) {
-            edgeLabelsInside = true;
-            sizeLabelsInside = true;
-        } else if (mh > fontHeight * labelCount * 2 + 4) {
-            edgeLabelsInside = true;
-        }
-    } else if (mw < aw + bw + dw + 4) {
-        if (mh > fontHeight * labelCount * 3 + 4) {
-            edgeLabelsInside = true;
-            sizeLabelsInside = true;
-        } else if (mh > fontHeight * labelCount + 4) {
-            edgeLabelsInside = true;
-        }
-    } else {
-        if (mh > fontHeight * labelCount + 4) {
-            edgeLabelsInside = true;
-            sizeLabelsInside = true;
-        }
-    }
-
-    if (edgeLabelsInside) {
-
-        axx = r.start.x() + 2;
-        axy = r.start.y() + fontAscent + 2;
-
-        bxx = r.end.x() - bw - 2;
-        bxy = r.end.y() - (labelCount-1) * fontHeight - 2;
-
-    } else {
-
-        axx = r.start.x() - aw - 2;
-        axy = r.start.y() + fontAscent;
-        
-        bxx = r.end.x() + 2;
-        bxy = r.end.y() - (labelCount-1) * fontHeight;
-    }
-
-    dxx = (r.end.x() - r.start.x())
-        / 2 + r.start.x() - dw/2;
-
-    if (sizeLabelsInside) {
-
-        dxy = (r.end.y() - r.start.y())
-            / 2 + r.start.y() - (labelCount * fontHeight)/2 + fontAscent;
-
-    } else {
-
-        dxy = std::max(r.end.y(), r.start.y()) + fontAscent + 2;
-    }
-    
-    if (axs != "") {
-        drawVisibleText(paint, axx, axy, axs, OutlinedText);
-        axy += fontHeight;
-    }
-    
-    if (ays != "") {
-        drawVisibleText(paint, axx, axy, ays, OutlinedText);
-        axy += fontHeight;
-    }
-
-    if (bxs != "") {
-        drawVisibleText(paint, bxx, bxy, bxs, OutlinedText);
-        bxy += fontHeight;
-    }
-
-    if (bys != "") {
-        drawVisibleText(paint, bxx, bxy, bys, OutlinedText);
-        bxy += fontHeight;
-    }
-
-    if (dxs != "") {
-        drawVisibleText(paint, dxx, dxy, dxs, OutlinedText);
-        dxy += fontHeight;
-    }
-
-    if (dys != "") {
-        drawVisibleText(paint, dxx, dxy, dys, OutlinedText);
-        dxy += fontHeight;
-    }
-
-    if (r.start != r.end) {
-
-        paint.save();
-        
-        paint.setPen(Qt::green);
-        
-        paint.drawRect(r.start.x(), r.start.y(),
-                       r.end.x() - r.start.x(),
-                       r.end.y() - r.start.y());
-        
-        paint.restore();
     }
 }
 
@@ -1277,29 +1089,8 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::MeasureMode) {
 
-        //!!! command
-
-        MeasureRect rect;
-
-        rect.start = m_clickPos;
-        rect.end = rect.start;
-
-        rect.startFrame = getFrameForX(rect.start.x());
-        rect.endFrame = rect.startFrame;
-
-        m_draggingRect = rect;
-        m_haveDraggingRect = true;
-
-        
-/*!!!
-        m_measureStart = m_clickPos;
-        m_measureEnd = m_measureStart;
-
-        m_measureStartFrame = getFrameForX(m_clickPos.x());
-        m_measureEndFrame = m_measureStartFrame;
-
-        m_haveMeasureRect = true;
-*/
+        Layer *layer = getSelectedLayer();
+        if (layer) layer->measureStart(this, e);
         update();
     }
 
@@ -1384,18 +1175,10 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::MeasureMode) {
 
-        if (m_haveDraggingRect) {
-
-            LayerList::iterator vi = m_layers.end();
-            if (vi != m_layers.begin()) {
-                Layer *topLayer = *(--vi);
-                m_measureRects[topLayer].push_back(m_draggingRect);
-            }
-
-            m_haveDraggingRect = false;
-        }
-
-        setCursor(m_measureCursor1);
+        Layer *layer = getSelectedLayer();
+        if (layer) layer->measureEnd(this, e);
+        if (m_measureCursor1) setCursor(*m_measureCursor1);
+        update();
     }
 
     m_clickedInRange = false;
@@ -1483,16 +1266,16 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::MeasureMode) {
 
-        setCursor(m_measureCursor2);
+        if (m_measureCursor2) setCursor(*m_measureCursor2);
 
-        if (m_haveDraggingRect) {
-            m_draggingRect.end = e->pos();
-            if (hasTopLayerTimeXAxis()) {
-                m_draggingRect.endFrame = getFrameForX(m_draggingRect.end.x());
-                edgeScrollMaybe(e->x());
-            }
-            update();
+        Layer *layer = getSelectedLayer();
+        if (layer) layer->measureDrag(this, e);
+
+        if (hasTopLayerTimeXAxis()) {
+            edgeScrollMaybe(e->x());
         }
+
+        update();
     }
 }
 
@@ -2088,14 +1871,13 @@ Pane::toolModeChanged()
     ViewManager::ToolMode mode = m_manager->getToolMode();
 //    std::cerr << "Pane::toolModeChanged(" << mode << ")" << std::endl;
 
-    if (mode == ViewManager::MeasureMode && !m_measureCursorsCreated) {
-        m_measureCursor1 = QCursor(QBitmap(":/icons/measure1cursor.xbm"),
-                                   QBitmap(":/icons/measure1mask.xbm"),
-                                   15, 14);
-        m_measureCursor2 = QCursor(QBitmap(":/icons/measure2cursor.xbm"),
-                                   QBitmap(":/icons/measure2mask.xbm"),
-                                   16, 17);
-        m_measureCursorsCreated = true;
+    if (mode == ViewManager::MeasureMode && !m_measureCursor1) {
+        m_measureCursor1 = new QCursor(QBitmap(":/icons/measure1cursor.xbm"),
+                                       QBitmap(":/icons/measure1mask.xbm"),
+                                       15, 14);
+        m_measureCursor2 = new QCursor(QBitmap(":/icons/measure2cursor.xbm"),
+                                       QBitmap(":/icons/measure2mask.xbm"),
+                                       16, 17);
     }
 
     switch (mode) {
@@ -2117,7 +1899,7 @@ Pane::toolModeChanged()
 	break;
 
     case ViewManager::MeasureMode:
-	setCursor(m_measureCursor1);
+        if (m_measureCursor1) setCursor(*m_measureCursor1);
 	break;
 
 /*	

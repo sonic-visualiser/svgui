@@ -20,11 +20,13 @@
 #include <iostream>
 
 #include <QMutexLocker>
+#include <QMouseEvent>
 
 #include "LayerFactory.h"
 #include "base/PlayParameterRepository.h"
 
-Layer::Layer()
+Layer::Layer() :
+    m_haveDraggingRect(false)
 {
 }
 
@@ -123,7 +125,7 @@ Layer::showLayer(View *view, bool show)
 }
 
 bool
-Layer::getXScaleValue(View *v, int x, float &value, QString &unit) const
+Layer::getXScaleValue(const View *v, int x, float &value, QString &unit) const
 {
     if (!hasTimeXAxis()) return false;
 
@@ -133,5 +135,62 @@ Layer::getXScaleValue(View *v, int x, float &value, QString &unit) const
     value = float(v->getFrameForX(x)) / m->getSampleRate();
     unit = "s";
     return true;
+}
+
+void
+Layer::measureStart(View *v, QMouseEvent *e)
+{
+    m_draggingRect.pixrect = QRect(e->x(), e->y(), 0, 0);
+    if (hasTimeXAxis()) {
+        m_draggingRect.startFrame = v->getFrameForX(e->x());
+        m_draggingRect.endFrame = m_draggingRect.startFrame;
+    }
+    m_haveDraggingRect = true;
+}
+
+void
+Layer::measureDrag(View *v, QMouseEvent *e)
+{
+    if (!m_haveDraggingRect) return;
+    m_draggingRect.pixrect = QRect(m_draggingRect.pixrect.x(),
+                                   m_draggingRect.pixrect.y(),
+                                   e->x() - m_draggingRect.pixrect.x(),
+                                   e->y() - m_draggingRect.pixrect.y());
+    if (hasTimeXAxis()) {
+        m_draggingRect.endFrame = v->getFrameForX(e->x());
+    }
+}
+
+void
+Layer::measureEnd(View *v, QMouseEvent *e)
+{
+    //!!! command
+    if (!m_haveDraggingRect) return;
+    measureDrag(v, e);
+    m_measureRectList.push_back(m_draggingRect);
+    m_haveDraggingRect = false;
+}
+
+void
+Layer::paintMeasurementRects(View *v, QPainter &paint) const
+{
+    if (m_haveDraggingRect) {
+        v->drawMeasurementRect(paint, this, m_draggingRect.pixrect);
+    }
+
+    bool timex = hasTimeXAxis();
+
+    for (MeasureRectList::const_iterator i = m_measureRectList.begin(); 
+         i != m_measureRectList.end(); ++i) {
+    
+        if (timex) {
+            int x0 = v->getXForFrame(i->startFrame);
+            int x1 = v->getXForFrame(i->endFrame);
+            QRect pr = QRect(x0, i->pixrect.y(), x1 - x0, i->pixrect.height());
+            i->pixrect = pr;
+        }
+
+        v->drawMeasurementRect(paint, this, i->pixrect);
+    }
 }
 
