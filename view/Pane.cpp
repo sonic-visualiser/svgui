@@ -52,6 +52,7 @@ Pane::Pane(QWidget *w) :
     m_clickedInRange(false),
     m_shiftPressed(false),
     m_ctrlPressed(false),
+    m_haveDraggingRect(false),
     m_navigating(false),
     m_resizing(false),
     m_centreLineVisible(true),
@@ -454,13 +455,8 @@ Pane::paintEvent(QPaintEvent *e)
 
     }
 
-    if (toolMode == ViewManager::MeasureMode && topLayer &&
-        m_haveMeasureRect) {
-        if (m_measureCentreFrame != m_centreFrame) {
-            m_haveMeasureRect = false;
-        } else {
-            drawMeasurementRect(topLayer, paint);
-        }
+    if (toolMode == ViewManager::MeasureMode && topLayer) {
+        drawMeasurementRects(topLayer, paint);
     }
     
     if (selectionIsBeingEdited()) {
@@ -750,8 +746,35 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 }
 
 void
-Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
+Pane::drawMeasurementRects(Layer *topLayer, QPainter &paint)
 {
+    if (m_haveDraggingRect) {
+        drawMeasurementRect(topLayer, m_draggingRect, paint);
+    }
+
+    if (m_measureRects.find(topLayer) == m_measureRects.end() ||
+        m_measureRects[topLayer].empty()) return;
+
+    MeasureRectList &rects = m_measureRects[topLayer];
+
+    for (MeasureRectList::iterator i = rects.begin(); 
+         i != rects.end(); ++i) {
+        drawMeasurementRect(topLayer, *i, paint);
+    }
+}
+
+void
+Pane::drawMeasurementRect(Layer *topLayer, MeasureRect &r, QPainter &paint)
+{
+    if (topLayer->hasTimeXAxis()) {
+        r.start.rx() = getXForFrame(r.startFrame);
+        r.end.rx() = getXForFrame(r.endFrame);
+    }
+
+    int lx = std::min(r.start.x(), r.end.x());
+    int rx = std::max(r.start.x(), r.end.x());
+    if (rx < 0 || lx >= width()) return;
+
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
@@ -766,19 +789,19 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
     
     int labelCount = 0;
 
-    if ((b0 = topLayer->getXScaleValue(this, m_measureStart.x(), v0, u0))) {
+    if ((b0 = topLayer->getXScaleValue(this, r.start.x(), v0, u0))) {
         axs = QString("%1 %2").arg(v0).arg(u0);
         aw = paint.fontMetrics().width(axs);
         ++labelCount;
     }
-    
-    if (m_measureStart != m_measureEnd) {
-        if ((b1 = topLayer->getXScaleValue(this, m_measureEnd.x(), v1, u1))) {
+        
+    if (r.start != r.end) {
+        if ((b1 = topLayer->getXScaleValue(this, r.end.x(), v1, u1))) {
             bxs = QString("%1 %2").arg(v1).arg(u1);
             bw = paint.fontMetrics().width(bxs);
         }
     }
-    
+        
     if (b0 && b1 && u0 == u1) {
         dxs = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
         dw = paint.fontMetrics().width(dxs);
@@ -787,14 +810,14 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
     b0 = false;
     b1 = false;
 
-    if ((b0 = topLayer->getYScaleValue(this, m_measureStart.y(), v0, u0))) {
+    if ((b0 = topLayer->getYScaleValue(this, r.start.y(), v0, u0))) {
         ays = QString("%1 %2").arg(v0).arg(u0);
         aw = std::max(aw, paint.fontMetrics().width(ays));
         ++labelCount;
     }
 
-    if (m_measureStart != m_measureEnd) {
-        if ((b1 = topLayer->getYScaleValue(this, m_measureEnd.y(), v1, u1))) {
+    if (r.start != r.end) {
+        if ((b1 = topLayer->getYScaleValue(this, r.end.y(), v1, u1))) {
             bys = QString("%1 %2").arg(v1).arg(u1);
             bw = std::max(bw, paint.fontMetrics().width(bys));
         }
@@ -805,8 +828,8 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
         dw = std::max(dw, paint.fontMetrics().width(dys));
     }
 
-    int mw = abs(m_measureEnd.x() - m_measureStart.x());
-    int mh = abs(m_measureEnd.y() - m_measureStart.y());
+    int mw = abs(r.end.x() - r.start.x());
+    int mh = abs(r.end.y() - r.start.y());
 
     bool edgeLabelsInside = false;
     bool sizeLabelsInside = false;
@@ -836,32 +859,32 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
 
     if (edgeLabelsInside) {
 
-        axx = m_measureStart.x() + 2;
-        axy = m_measureStart.y() + fontAscent + 2;
+        axx = r.start.x() + 2;
+        axy = r.start.y() + fontAscent + 2;
 
-        bxx = m_measureEnd.x() - bw - 2;
-        bxy = m_measureEnd.y() - (labelCount-1) * fontHeight - 2;
+        bxx = r.end.x() - bw - 2;
+        bxy = r.end.y() - (labelCount-1) * fontHeight - 2;
 
     } else {
 
-        axx = m_measureStart.x() - aw - 2;
-        axy = m_measureStart.y() + fontAscent;
+        axx = r.start.x() - aw - 2;
+        axy = r.start.y() + fontAscent;
         
-        bxx = m_measureEnd.x() + 2;
-        bxy = m_measureEnd.y() - (labelCount-1) * fontHeight;
+        bxx = r.end.x() + 2;
+        bxy = r.end.y() - (labelCount-1) * fontHeight;
     }
 
-    dxx = (m_measureEnd.x() - m_measureStart.x())
-        / 2 + m_measureStart.x() - dw/2;
+    dxx = (r.end.x() - r.start.x())
+        / 2 + r.start.x() - dw/2;
 
     if (sizeLabelsInside) {
 
-        dxy = (m_measureEnd.y() - m_measureStart.y())
-            / 2 + m_measureStart.y() - (labelCount * fontHeight)/2 + fontAscent;
+        dxy = (r.end.y() - r.start.y())
+            / 2 + r.start.y() - (labelCount * fontHeight)/2 + fontAscent;
 
     } else {
 
-        dxy = std::max(m_measureEnd.y(), m_measureStart.y()) + fontAscent + 2;
+        dxy = std::max(r.end.y(), r.start.y()) + fontAscent + 2;
     }
     
     if (axs != "") {
@@ -894,15 +917,15 @@ Pane::drawMeasurementRect(Layer *topLayer, QPainter &paint)
         dxy += fontHeight;
     }
 
-    if (m_measureStart != m_measureEnd) {
+    if (r.start != r.end) {
 
         paint.save();
         
         paint.setPen(Qt::green);
         
-        paint.drawRect(m_measureStart.x(), m_measureStart.y(),
-                       m_measureEnd.x() - m_measureStart.x(),
-                       m_measureEnd.y() - m_measureStart.y());
+        paint.drawRect(r.start.x(), r.start.y(),
+                       r.end.x() - r.start.x(),
+                       r.end.y() - r.start.y());
         
         paint.restore();
     }
@@ -1254,10 +1277,29 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::MeasureMode) {
 
+        //!!! command
+
+        MeasureRect rect;
+
+        rect.start = m_clickPos;
+        rect.end = rect.start;
+
+        rect.startFrame = getFrameForX(rect.start.x());
+        rect.endFrame = rect.startFrame;
+
+        m_draggingRect = rect;
+        m_haveDraggingRect = true;
+
+        
+/*!!!
         m_measureStart = m_clickPos;
-        m_measureEnd = m_clickPos;
+        m_measureEnd = m_measureStart;
+
+        m_measureStartFrame = getFrameForX(m_clickPos.x());
+        m_measureEndFrame = m_measureStartFrame;
+
         m_haveMeasureRect = true;
-        m_measureCentreFrame = m_centreFrame;
+*/
         update();
     }
 
@@ -1341,6 +1383,17 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	}
 
     } else if (mode == ViewManager::MeasureMode) {
+
+        if (m_haveDraggingRect) {
+
+            LayerList::iterator vi = m_layers.end();
+            if (vi != m_layers.begin()) {
+                Layer *topLayer = *(--vi);
+                m_measureRects[topLayer].push_back(m_draggingRect);
+            }
+
+            m_haveDraggingRect = false;
+        }
 
         setCursor(m_measureCursor1);
     }
@@ -1431,8 +1484,15 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     } else if (mode == ViewManager::MeasureMode) {
 
         setCursor(m_measureCursor2);
-        m_measureEnd = e->pos();
-        update();
+
+        if (m_haveDraggingRect) {
+            m_draggingRect.end = e->pos();
+            if (hasTopLayerTimeXAxis()) {
+                m_draggingRect.endFrame = getFrameForX(m_draggingRect.end.x());
+                edgeScrollMaybe(e->x());
+            }
+            update();
+        }
     }
 }
 

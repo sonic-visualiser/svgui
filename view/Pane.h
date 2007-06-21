@@ -88,12 +88,25 @@ protected:
     virtual void wheelEvent(QWheelEvent *e);
     virtual void resizeEvent(QResizeEvent *e);
 
+    // pull this out into another class at some point
+
+    struct MeasureRect {
+        QPoint start;
+        QPoint end;
+        long startFrame; // only valid for a layer that hasTimeXAxis
+        long endFrame;   // ditto
+    };
+
+    typedef std::vector<MeasureRect> MeasureRectList; // should be x-ordered
+    typedef std::map<Layer *, MeasureRectList> MeasureRectMap;
+
     void drawVerticalScale(QRect r, Layer *, QPainter &);
     void drawFeatureDescription(Layer *, QPainter &);
     void drawCentreLine(int, QPainter &);
     void drawDurationAndRate(QRect, const Model *, int, QPainter &);
     void drawLayerNames(QRect, QPainter &);
-    void drawMeasurementRect(Layer *, QPainter &);
+    void drawMeasurementRects(Layer *, QPainter &);
+    void drawMeasurementRect(Layer *, MeasureRect &, QPainter &);
     void drawEditingSelection(QPainter &);
 
     virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
@@ -124,13 +137,14 @@ protected:
     QPoint m_identifyPoint;
     QPoint m_clickPos;
     QPoint m_mousePos;
-    QPoint m_measureStart;
-    QPoint m_measureEnd;
     bool m_clickedInRange;
     bool m_shiftPressed;
     bool m_ctrlPressed;
-    bool m_haveMeasureRect;
-    size_t m_measureCentreFrame;
+
+    MeasureRectMap m_measureRects;
+    MeasureRect m_draggingRect;
+    bool m_haveDraggingRect;
+
     bool m_navigating;
     bool m_resizing;
     size_t m_dragCentreFrame;
