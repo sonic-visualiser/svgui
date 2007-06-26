@@ -151,6 +151,49 @@ Layer::MeasureRect::operator<(const MeasureRect &mr) const
 }
 
 QString
+Layer::MeasureRect::toXmlString(QString indent) const
+{
+    QString s;
+
+    s += indent;
+    s += QString("<measurement ");
+
+    if (haveFrames) {
+        s += QString("startFrame=\"%1\" endFrame=\"%2\" ")
+            .arg(startFrame).arg(endFrame);
+    } else {
+        s += QString("startX=\"%1\" endX=\"%2\" ")
+            .arg(pixrect.x()).arg(pixrect.x() + pixrect.width());
+    }
+
+    s += QString("startY=\"%1\" endY=\"%2\"/>\n")
+        .arg(pixrect.y()).arg(pixrect.y() + pixrect.height());
+
+    return s;
+}
+
+void
+Layer::addMeasurementRect(const QXmlAttributes &attributes)
+{
+    MeasureRect rect;
+    QString fs = attributes.value("startFrame");
+    int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    if (fs != "") {
+        rect.startFrame = fs.toLong();
+        rect.endFrame = attributes.value("endFrame").toLong();
+        rect.haveFrames = true;
+    } else {
+        x0 = attributes.value("startX").toInt();
+        x1 = attributes.value("endX").toInt();
+        rect.haveFrames = false;
+    }
+    y0 = attributes.value("startY").toInt();
+    y1 = attributes.value("endY").toInt();
+    rect.pixrect = QRect(x0, y0, x1 - x0, y1 - y0);
+    addMeasureRectToSet(rect);
+}
+
+QString
 Layer::AddMeasurementRectCommand::getName() const
 {
     return tr("Make Measurement");
@@ -159,13 +202,13 @@ Layer::AddMeasurementRectCommand::getName() const
 void
 Layer::AddMeasurementRectCommand::execute()
 {
-    m_layer->addMeasureRect(m_rect);
+    m_layer->addMeasureRectToSet(m_rect);
 }
 
 void
 Layer::AddMeasurementRectCommand::unexecute()
 {
-    m_layer->deleteMeasureRect(m_rect);
+    m_layer->deleteMeasureRectFromSet(m_rect);
 }
 
 void
@@ -224,7 +267,7 @@ Layer::paintMeasurementRects(View *v, QPainter &paint) const
 }
 
 void
-Layer::paintMeasurementRect(View *v, QPainter &paint, MeasureRect &r)
+Layer::paintMeasurementRect(View *v, QPainter &paint, const MeasureRect &r) const
 {
     if (r.haveFrames) {
         
@@ -254,7 +297,7 @@ Layer::toXmlString(QString indent, QString extraAttributes) const
     
     s += indent;
 
-    s += QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
+    s += QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5")
 	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
                             (LayerFactory::getInstance()->getLayerType(this))))
 	.arg(getObjectExportId(this))
@@ -262,5 +305,38 @@ Layer::toXmlString(QString indent, QString extraAttributes) const
 	.arg(getObjectExportId(getModel()))
 	.arg(extraAttributes);
 
+    if (m_measureRects.empty()) {
+        s += QString("/>\n");
+        return s;
+    }
+
+    s += QString(">\n");
+
+    for (MeasureRectSet::const_iterator i = m_measureRects.begin();
+         i != m_measureRects.end(); ++i) {
+        s += i->toXmlString(indent + "  ");
+    }
+
+    s += QString("</layer>\n");
+
     return s;
 }
+
+QString
+Layer::toBriefXmlString(QString indent, QString extraAttributes) const
+{
+    QString s;
+    
+    s += indent;
+
+    s += QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
+	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
+                            (LayerFactory::getInstance()->getLayerType(this))))
+	.arg(getObjectExportId(this))
+	.arg(encodeEntities(objectName()))
+	.arg(getObjectExportId(getModel()))
+        .arg(extraAttributes);
+
+    return s;
+}
+
