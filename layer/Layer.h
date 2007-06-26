@@ -27,6 +27,7 @@
 #include <QMutex>
 
 #include <map>
+#include <set>
 
 class ZoomConstraint;
 class Model;
@@ -396,21 +397,53 @@ signals:
 
     void layerParametersChanged();
     void layerParameterRangesChanged();
+    void layerMeasurementRectsChanged();
     void layerNameChanged();
 
     void verticalZoomChanged();
 
 protected:
     struct MeasureRect {
+
         mutable QRect pixrect;
-        long startFrame; // only valid for a layer that hasTimeXAxis
+        bool haveFrames;
+        long startFrame; // only valid if haveFrames
         long endFrame;   // ditto
+
+        bool operator<(const MeasureRect &mr) const;
     };
 
-    typedef std::vector<MeasureRect> MeasureRectList; // should be x-ordered
-    MeasureRectList m_measureRectList;
+    class AddMeasurementRectCommand : public Command
+    {
+    public:
+        AddMeasurementRectCommand(Layer *layer, MeasureRect rect) :
+            m_layer(layer), m_rect(rect) { }
+
+        virtual QString getName() const;
+        virtual void execute();
+        virtual void unexecute();
+
+    private:
+        Layer *m_layer;
+        MeasureRect m_rect;
+    };
+
+    void addMeasureRect(const MeasureRect &r) {
+        m_measureRects.insert(r);
+        emit layerMeasurementRectsChanged();
+    }
+
+    void deleteMeasureRect(const MeasureRect &r) {
+        m_measureRects.erase(r); 
+        emit layerMeasurementRectsChanged();
+    }
+
+    typedef std::set<MeasureRect> MeasureRectSet;
+    MeasureRectSet m_measureRects;
     MeasureRect m_draggingRect;
     bool m_haveDraggingRect;
+
+    void paintMeasurementRect(View *v, QPainter &paint, MeasureRect &r);
 
 private:
     mutable QMutex m_dormancyMutex;

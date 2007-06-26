@@ -396,11 +396,11 @@ Pane::paintEvent(QPaintEvent *e)
         }
     }
 
-    Layer *topLayer = 0;
+    Layer *topLayer = getTopLayer();
+
     const Model *waveformModel = 0; // just for reporting purposes
     for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
         --vi;
-        if (!topLayer) topLayer = *vi;
         if (dynamic_cast<WaveformLayer *>(*vi)) {
             waveformModel = (*vi)->getModel();
             break;
@@ -968,8 +968,7 @@ Pane::getTopLayerDisplayExtents(float &vmin, float &vmax,
                                 float &dmin, float &dmax,
                                 QString *unit) 
 {
-    Layer *layer = 0;
-    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    Layer *layer = getTopLayer();
     if (!layer) return false;
     bool vlog;
     QString vunit;
@@ -982,8 +981,7 @@ Pane::getTopLayerDisplayExtents(float &vmin, float &vmax,
 bool
 Pane::setTopLayerDisplayExtents(float dmin, float dmax)
 {
-    Layer *layer = 0;
-    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    Layer *layer = getTopLayer();
     if (!layer) return false;
     return layer->setDisplayExtents(dmin, dmax);
 }
@@ -1089,7 +1087,7 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::MeasureMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getTopLayer();
         if (layer) layer->measureStart(this, e);
         update();
     }
@@ -1175,7 +1173,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::MeasureMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getTopLayer();
         if (layer) layer->measureEnd(this, e);
         if (m_measureCursor1) setCursor(*m_measureCursor1);
         update();
@@ -1268,7 +1266,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
         if (m_measureCursor2) setCursor(*m_measureCursor2);
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getTopLayer();
         if (layer) layer->measureDrag(this, e);
 
         if (hasTopLayerTimeXAxis()) {
