@@ -1268,10 +1268,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
         Layer *layer = getTopLayer();
         if (layer) layer->measureDrag(this, e);
-
-        if (hasTopLayerTimeXAxis()) {
-            edgeScrollMaybe(e->x());
-        }
+        if (layer->hasTimeXAxis()) edgeScrollMaybe(e->x());
 
         update();
     }

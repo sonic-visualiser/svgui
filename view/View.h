@@ -190,7 +190,8 @@ public:
     virtual void drawVisibleText(QPainter &p, int x, int y,
 				 QString text, TextStyle style) const;
 
-    virtual void drawMeasurementRect(QPainter &p, const Layer *, QRect rect) const;
+    virtual void drawMeasurementRect(QPainter &p, const Layer *,
+                                     QRect rect, bool focus) const;
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const {
 	return false;
