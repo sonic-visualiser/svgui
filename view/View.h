@@ -153,6 +153,15 @@ public:
     virtual Layer *getLayer(int n) { return m_layers[n]; }
 
     /**
+     * Return the top layer.  This is the same as
+     * getLayer(getLayerCount()-1) if there is at least one layer, and
+     * 0 otherwise.
+     */
+    virtual Layer *getTopLayer() {
+        return m_layers.empty() ? 0 : m_layers[m_layers.size()-1];
+    }
+
+    /**
      * Return the layer last selected by the user.  This is normally
      * the top layer, the same as getLayer(getLayerCount()-1).
      * However, if the user has selected the pane itself more recently
@@ -261,6 +270,7 @@ public slots:
     virtual void modelReplaced();
     virtual void layerParametersChanged();
     virtual void layerParameterRangesChanged();
+    virtual void layerMeasurementRectsChanged();
     virtual void layerNameChanged();
 
     virtual void globalCentreFrameChanged(unsigned long);

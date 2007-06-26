@@ -16,6 +16,7 @@
 #include "Layer.h"
 #include "view/View.h"
 #include "data/model/Model.h"
+#include "base/CommandHistory.h"
 
 #include <iostream>
 
@@ -71,24 +72,6 @@ Layer::setObjectName(const QString &name)
     emit layerNameChanged();
 }
 
-QString
-Layer::toXmlString(QString indent, QString extraAttributes) const
-{
-    QString s;
-    
-    s += indent;
-
-    s += QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
-	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
-                            (LayerFactory::getInstance()->getLayerType(this))))
-	.arg(getObjectExportId(this))
-	.arg(encodeEntities(objectName()))
-	.arg(getObjectExportId(getModel()))
-	.arg(extraAttributes);
-
-    return s;
-}
-
 PlayParameters *
 Layer::getPlayParameters() 
 {
@@ -137,13 +120,64 @@ Layer::getXScaleValue(const View *v, int x, float &value, QString &unit) const
     return true;
 }
 
+bool
+Layer::MeasureRect::operator<(const MeasureRect &mr) const
+{
+    if (haveFrames) {
+        if (startFrame == mr.startFrame) {
+            if (endFrame != mr.endFrame) {
+                return endFrame < mr.endFrame;
+            }
+        } else {
+            return startFrame < mr.startFrame;
+        }
+    } else {
+        if (pixrect.x() == mr.pixrect.x()) {
+            if (pixrect.width() != mr.pixrect.width()) {
+                return pixrect.width() < mr.pixrect.width();
+            }
+        } else {
+            return pixrect.x() < mr.pixrect.x();
+        }
+    }
+
+    // the two rects are equal in x and width
+
+    if (pixrect.y() == mr.pixrect.y()) {
+        return pixrect.height() < mr.pixrect.height();
+    } else {
+        return pixrect.y() < mr.pixrect.y();
+    }
+}
+
+QString
+Layer::AddMeasurementRectCommand::getName() const
+{
+    return tr("Make Measurement");
+}
+
+void
+Layer::AddMeasurementRectCommand::execute()
+{
+    m_layer->addMeasureRect(m_rect);
+}
+
+void
+Layer::AddMeasurementRectCommand::unexecute()
+{
+    m_layer->deleteMeasureRect(m_rect);
+}
+
 void
 Layer::measureStart(View *v, QMouseEvent *e)
 {
     m_draggingRect.pixrect = QRect(e->x(), e->y(), 0, 0);
     if (hasTimeXAxis()) {
+        m_draggingRect.haveFrames = true;
         m_draggingRect.startFrame = v->getFrameForX(e->x());
         m_draggingRect.endFrame = m_draggingRect.startFrame;
+    } else {
+        m_draggingRect.haveFrames = false;
     }
     m_haveDraggingRect = true;
 }
@@ -152,10 +186,13 @@ void
 Layer::measureDrag(View *v, QMouseEvent *e)
 {
     if (!m_haveDraggingRect) return;
+
     m_draggingRect.pixrect = QRect(m_draggingRect.pixrect.x(),
                                    m_draggingRect.pixrect.y(),
                                    e->x() - m_draggingRect.pixrect.x(),
-                                   e->y() - m_draggingRect.pixrect.y());
+                                   e->y() - m_draggingRect.pixrect.y())
+        .normalized();
+
     if (hasTimeXAxis()) {
         m_draggingRect.endFrame = v->getFrameForX(e->x());
     }
@@ -164,10 +201,12 @@ Layer::measureDrag(View *v, QMouseEvent *e)
 void
 Layer::measureEnd(View *v, QMouseEvent *e)
 {
-    //!!! command
     if (!m_haveDraggingRect) return;
     measureDrag(v, e);
-    m_measureRectList.push_back(m_draggingRect);
+    
+    CommandHistory::getInstance()->addCommand
+        (new AddMeasurementRectCommand(this, m_draggingRect));
+
     m_haveDraggingRect = false;
 }
 
@@ -175,22 +214,53 @@ void
 Layer::paintMeasurementRects(View *v, QPainter &paint) const
 {
     if (m_haveDraggingRect) {
-        v->drawMeasurementRect(paint, this, m_draggingRect.pixrect);
+        paintMeasurementRect(v, paint, m_draggingRect);
     }
 
-    bool timex = hasTimeXAxis();
-
-    for (MeasureRectList::const_iterator i = m_measureRectList.begin(); 
-         i != m_measureRectList.end(); ++i) {
-    
-        if (timex) {
-            int x0 = v->getXForFrame(i->startFrame);
-            int x1 = v->getXForFrame(i->endFrame);
-            QRect pr = QRect(x0, i->pixrect.y(), x1 - x0, i->pixrect.height());
-            i->pixrect = pr;
-        }
-
-        v->drawMeasurementRect(paint, this, i->pixrect);
+    for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
+         i != m_measureRects.end(); ++i) {
+        paintMeasurementRect(v, paint, *i);
     }
 }
 
+void
+Layer::paintMeasurementRect(View *v, QPainter &paint, MeasureRect &r)
+{
+    if (r.haveFrames) {
+        
+        int x0 = -1;
+        int x1 = v->width() + 1;
+        
+        if (r.startFrame >= v->getStartFrame()) {
+            x0 = v->getXForFrame(r.startFrame);
+        }
+        if (r.endFrame <= v->getEndFrame()) {
+            x1 = v->getXForFrame(r.endFrame);
+        }
+        
+        QRect pr = QRect(x0, r.pixrect.y(),
+                         x1 - x0, r.pixrect.height());
+        
+        r.pixrect = pr;
+    }
+    
+    v->drawMeasurementRect(paint, this, r.pixrect);
+}
+
+QString
+Layer::toXmlString(QString indent, QString extraAttributes) const
+{
+    QString s;
+    
+    s += indent;
+
+    s += QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
+	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
+                            (LayerFactory::getInstance()->getLayerType(this))))
+	.arg(getObjectExportId(this))
+	.arg(encodeEntities(objectName()))
+	.arg(getObjectExportId(getModel()))
+	.arg(extraAttributes);
+
+    return s;
+}

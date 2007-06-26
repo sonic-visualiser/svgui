@@ -466,6 +466,8 @@ View::addLayer(Layer *layer)
 	    this,    SLOT(layerParametersChanged()));
     connect(layer, SIGNAL(layerParameterRangesChanged()),
 	    this,    SLOT(layerParameterRangesChanged()));
+    connect(layer, SIGNAL(layerMeasurementRectsChanged()),
+	    this,    SLOT(layerMeasurementRectsChanged()));
     connect(layer, SIGNAL(layerNameChanged()),
 	    this,    SLOT(layerNameChanged()));
     connect(layer, SIGNAL(modelChanged()),
@@ -781,6 +783,13 @@ View::layerParameterRangesChanged()
 {
     Layer *layer = dynamic_cast<Layer *>(sender());
     if (layer) emit propertyContainerPropertyRangeChanged(layer);
+}
+
+void
+View::layerMeasurementRectsChanged()
+{
+    Layer *layer = dynamic_cast<Layer *>(sender());
+    if (layer) update();
 }
 
 void
@@ -1631,6 +1640,9 @@ View::drawSelections(QPainter &paint)
 void
 View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r) const
 {
+//    std::cerr << "View::drawMeasurementRect(" << r.x() << "," << r.y() << " "
+//              << r.width() << "x" << r.height() << ")" << std::endl;
+
     if (r.x() + r.width() < 0 || r.x() >= width()) return;
 
     int fontHeight = paint.fontMetrics().height();
