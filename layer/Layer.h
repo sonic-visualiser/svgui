@@ -267,6 +267,22 @@ public:
     virtual void setProperties(const QXmlAttributes &) = 0;
 
     /**
+     * Produce an XML string containing the layer's ID and type.  This
+     * is used to refer to the layer in the display section of the SV
+     * session file, for a layer that has already been described in
+     * the data section.
+     */
+    virtual QString toBriefXmlString(QString indent = "",
+                                     QString extraAttributes = "") const;
+
+    /**
+     * Add a measurement rectangle from the given XML attributes
+     * (presumably taken from a measurement element).
+     * Does not use a command.
+     */
+    virtual void addMeasurementRect(const QXmlAttributes &);
+
+    /**
      * Indicate that a layer is not currently visible in the given
      * view and is not expected to become visible in the near future
      * (for example because the user has explicitly removed or hidden
@@ -411,6 +427,7 @@ protected:
         long endFrame;   // ditto
 
         bool operator<(const MeasureRect &mr) const;
+        QString toXmlString(QString indent) const;
     };
 
     class AddMeasurementRectCommand : public Command
@@ -428,12 +445,12 @@ protected:
         MeasureRect m_rect;
     };
 
-    void addMeasureRect(const MeasureRect &r) {
+    void addMeasureRectToSet(const MeasureRect &r) {
         m_measureRects.insert(r);
         emit layerMeasurementRectsChanged();
     }
 
-    void deleteMeasureRect(const MeasureRect &r) {
+    void deleteMeasureRectFromSet(const MeasureRect &r) {
         m_measureRects.erase(r); 
         emit layerMeasurementRectsChanged();
     }
@@ -443,7 +460,8 @@ protected:
     MeasureRect m_draggingRect;
     bool m_haveDraggingRect;
 
-    void paintMeasurementRect(View *v, QPainter &paint, MeasureRect &r);
+    void paintMeasurementRect(View *v, QPainter &paint,
+                              const MeasureRect &r) const;
 
 private:
     mutable QMutex m_dormancyMutex;
