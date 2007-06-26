@@ -1638,12 +1638,46 @@ View::drawSelections(QPainter &paint)
 }
 
 void
-View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r) const
+View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
+                          bool focus) const
 {
 //    std::cerr << "View::drawMeasurementRect(" << r.x() << "," << r.y() << " "
 //              << r.width() << "x" << r.height() << ")" << std::endl;
 
     if (r.x() + r.width() < 0 || r.x() >= width()) return;
+
+    if (r.width() != 0 || r.height() != 0) {
+        paint.save();
+        if (focus) {
+            paint.setPen(Qt::NoPen);
+            QColor brushColour(Qt::green);
+            brushColour.setAlpha(30);
+            paint.setBrush(brushColour);
+            if (r.x() > 0) {
+                paint.drawRect(0, 0, r.x(), height());
+            }
+            if (r.x() + r.width() < width()) {
+                paint.drawRect(r.x() + r.width(), 0, width()-r.x()-r.width(), height());
+            }
+            if (r.y() > 0) {
+                paint.drawRect(r.x(), 0, r.width(), r.y());
+            }
+            if (r.y() + r.height() < height()) {
+                paint.drawRect(r.x(), r.y() + r.height(), r.width(), height()-r.y()-r.height());
+            }
+            paint.setBrush(Qt::NoBrush);
+        }
+        paint.setPen(Qt::green);
+        paint.drawRect(r);
+        paint.restore();
+    } else {
+        paint.save();
+        paint.setPen(Qt::green);
+        paint.drawPoint(r.x(), r.y());
+        paint.restore();
+    }
+
+    if (!focus) return;
 
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
@@ -1783,13 +1817,6 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r) const
     if (dys != "") {
         drawVisibleText(paint, dxx, dxy, dys, OutlinedText);
         dxy += fontHeight;
-    }
-
-    if (r.width() != 0 || r.height() != 0) {
-        paint.save();
-        paint.setPen(Qt::green);
-        paint.drawRect(r);
-        paint.restore();
     }
 }
 

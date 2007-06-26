@@ -461,7 +461,7 @@ protected:
     bool m_haveDraggingRect;
 
     void paintMeasurementRect(View *v, QPainter &paint,
-                              const MeasureRect &r) const;
+                              const MeasureRect &r, bool focus) const;
 
 private:
     mutable QMutex m_dormancyMutex;

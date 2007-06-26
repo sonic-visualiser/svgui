@@ -257,17 +257,18 @@ void
 Layer::paintMeasurementRects(View *v, QPainter &paint) const
 {
     if (m_haveDraggingRect) {
-        paintMeasurementRect(v, paint, m_draggingRect);
+        paintMeasurementRect(v, paint, m_draggingRect, true);
     }
 
     for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
          i != m_measureRects.end(); ++i) {
-        paintMeasurementRect(v, paint, *i);
+        paintMeasurementRect(v, paint, *i, true);
     }
 }
 
 void
-Layer::paintMeasurementRect(View *v, QPainter &paint, const MeasureRect &r) const
+Layer::paintMeasurementRect(View *v, QPainter &paint,
+                            const MeasureRect &r, bool focus) const
 {
     if (r.haveFrames) {
         
@@ -287,7 +288,7 @@ Layer::paintMeasurementRect(View *v, QPainter &paint, const MeasureRect &r) cons
         r.pixrect = pr;
     }
     
-    v->drawMeasurementRect(paint, this, r.pixrect);
+    v->drawMeasurementRect(paint, this, r.pixrect, focus);
 }
 
 QString
