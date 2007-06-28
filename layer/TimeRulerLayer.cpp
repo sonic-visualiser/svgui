@@ -22,6 +22,7 @@
 #include <QPainter>
 
 #include <iostream>
+#include <cmath>
 
 using std::cerr;
 using std::endl;
@@ -133,6 +134,143 @@ TimeRulerLayer::setProperty(const PropertyName &name, int value)
     }
 }
 
+bool
+TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
+                                   size_t &resolution, SnapType snap) const
+{
+    if (!m_model) {
+        resolution = 1;
+        return false;
+    }
+
+    bool q;
+    int tick = getMajorTickSpacing(v, q);
+    RealTime rtick = RealTime::fromMilliseconds(tick);
+    int rate = m_model->getSampleRate();
+    
+    RealTime rt = RealTime::frame2RealTime(frame, rate);
+    double ratio = rt / rtick;
+
+    int rounded = lrint(ratio);
+    RealTime rdrt = rtick * rounded;
+
+    int left = RealTime::realTime2Frame(rdrt, rate);
+    resolution = RealTime::realTime2Frame(rtick, rate);
+    int right = left + resolution;
+
+    switch (snap) {
+
+    case SnapLeft:
+        frame = left;
+        break;
+
+    case SnapRight:
+        frame = right;
+        break;
+        
+    case SnapNearest:
+    {
+        if (abs(frame - left) > abs(right - frame)) {
+            frame = right;
+        } else {
+            frame = left;
+        }
+        break;
+    }
+
+    case SnapNeighbouring:
+    {
+        int dl = -1, dr = -1;
+        int x = v->getXForFrame(frame);
+
+        if (left > v->getStartFrame() &&
+            left < v->getEndFrame()) {
+            dl = abs(v->getXForFrame(left) - x);
+        }
+
+        if (right > v->getStartFrame() &&
+            right < v->getEndFrame()) {
+            dr = abs(v->getXForFrame(right) - x);
+        }
+
+        int fuzz = 2;
+
+        if (dl >= 0 && dr >= 0) {
+            if (dl < dr) {
+                if (dl <= fuzz) {
+                    frame = left;
+                }
+            } else {
+                if (dr < fuzz) {
+                    frame = right;
+                }
+            }
+        } else if (dl >= 0) {
+            if (dl <= fuzz) {
+                frame = left;
+            }
+        } else if (dr >= 0) {
+            if (dr <= fuzz) {
+                frame = right;
+            }
+        }
+    }
+    }
+
+    return true;
+}
+
+int
+TimeRulerLayer::getMajorTickSpacing(View *v, bool &quarterTicks) const
+{
+    // return value is in milliseconds
+
+    if (!m_model || !v) return 1000;
+
+    int sampleRate = m_model->getSampleRate();
+    if (!sampleRate) return 1000;
+
+    long startFrame = v->getStartFrame();
+    long endFrame = v->getEndFrame();
+
+    int minPixelSpacing = 50;
+
+    RealTime rtStart = RealTime::frame2RealTime(startFrame, sampleRate);
+    RealTime rtEnd = RealTime::frame2RealTime(endFrame, sampleRate);
+
+    int count = v->width() / minPixelSpacing;
+    if (count < 1) count = 1;
+    RealTime rtGap = (rtEnd - rtStart) / count;
+
+    int incms;
+    quarterTicks = false;
+
+    if (rtGap.sec > 0) {
+	incms = 1000;
+	int s = rtGap.sec;
+	if (s > 0) { incms *= 5; s /= 5; }
+	if (s > 0) { incms *= 2; s /= 2; }
+	if (s > 0) { incms *= 6; s /= 6; quarterTicks = true; }
+	if (s > 0) { incms *= 5; s /= 5; quarterTicks = false; }
+	if (s > 0) { incms *= 2; s /= 2; }
+	if (s > 0) { incms *= 6; s /= 6; quarterTicks = true; }
+	while (s > 0) {
+	    incms *= 10;
+	    s /= 10;
+	    quarterTicks = false;
+	}
+    } else {
+	incms = 1;
+	int ms = rtGap.msec();
+	if (ms > 0) { incms *= 10; ms /= 10; }
+	if (ms > 0) { incms *= 10; ms /= 10; }
+	if (ms > 0) { incms *= 5; ms /= 5; }
+	if (ms > 0) { incms *= 2; ms /= 2; }
+    }
+
+    return incms;
+}
+
 void
 TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
@@ -151,8 +289,6 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     long rectStart = startFrame + (rect.x() - 100) * zoomLevel;
     long rectEnd = startFrame + (rect.x() + rect.width() + 100) * zoomLevel;
-//    if (rectStart < startFrame) rectStart = startFrame;
-//    if (rectEnd > endFrame) rectEnd = endFrame;
 
 //    std::cerr << "TimeRulerLayer::paint: calling paint.save()" << std::endl;
     paint.save();
@@ -160,40 +296,8 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int minPixelSpacing = 50;
 
-    RealTime rtStart = RealTime::frame2RealTime(startFrame, sampleRate);
-    RealTime rtEnd = RealTime::frame2RealTime(endFrame, sampleRate);
-//    cerr << "startFrame " << startFrame << ", endFrame " << v->getEndFrame() << ", rtStart " << rtStart << ", rtEnd " << rtEnd << endl;
-    int count = v->width() / minPixelSpacing;
-    if (count < 1) count = 1;
-    RealTime rtGap = (rtEnd - rtStart) / count;
-//    cerr << "rtGap is " << rtGap << endl;
-
-    int incms;
     bool quarter = false;
-
-    if (rtGap.sec > 0) {
-	incms = 1000;
-	int s = rtGap.sec;
-	if (s > 0) { incms *= 5; s /= 5; }
-	if (s > 0) { incms *= 2; s /= 2; }
-	if (s > 0) { incms *= 6; s /= 6; quarter = true; }
-	if (s > 0) { incms *= 5; s /= 5; quarter = false; }
-	if (s > 0) { incms *= 2; s /= 2; }
-	if (s > 0) { incms *= 6; s /= 6; quarter = true; }
-	while (s > 0) {
-	    incms *= 10;
-	    s /= 10;
-	    quarter = false;
-	}
-    } else {
-	incms = 1;
-	int ms = rtGap.msec();
-	if (ms > 0) { incms *= 10; ms /= 10; }
-	if (ms > 0) { incms *= 10; ms /= 10; }
-	if (ms > 0) { incms *= 5; ms /= 5; }
-	if (ms > 0) { incms *= 2; ms /= 2; }
-    }
-//    cerr << "incms is " << incms << endl;
+    int incms = getMajorTickSpacing(v, quarter);
 
     RealTime rt = RealTime::frame2RealTime(rectStart, sampleRate);
     long ms = rt.sec * 1000 + rt.msec();

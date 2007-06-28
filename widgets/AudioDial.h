@@ -75,6 +75,8 @@ public:
     const RangeMapper *rangeMapper() const { return m_rangeMapper; }
     float mappedValue() const;
 
+    int defaultValue() const { return m_defaultValue; }
+
     void setShowToolTip(bool show);
 
 signals:

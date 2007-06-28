@@ -76,6 +76,7 @@ public:
     void addSelection(const Selection &selection);
     void removeSelection(const Selection &selection);
     void clearSelections();
+    size_t constrainFrameToSelection(size_t frame) const;
 
     /**
      * Return the selection that contains a given frame.
