@@ -27,9 +27,11 @@
 class ViewObjectAssoc : public QObject
 {
 public:
-    ViewObjectAssoc(QObject *parent, View *v, QObject *o) :
-	QObject(parent), view(v), object(o) {
+    ViewObjectAssoc(View *v, QObject *o) :
+	QObject(0), view(v), object(o) {
 	++extantCount;
+	std::cerr << "ViewObjectAssoc (now " << extantCount << " extant)"
+		  << std::endl;
     }
 
     virtual ~ViewObjectAssoc() {
@@ -50,6 +52,8 @@ LayerTreeModel::LayerTreeModel(PaneStack *stack, QObject *parent) :
     QAbstractItemModel(parent),
     m_stack(stack)
 {
+    connect(stack, SIGNAL(paneAdded()), this, SIGNAL(layoutChanged()));
+    connect(stack, SIGNAL(paneDeleted()), this, SIGNAL(layoutChanged()));
 }
 
 LayerTreeModel::~LayerTreeModel()
@@ -156,12 +160,14 @@ LayerTreeModel::index(int row, int column, const QModelIndex &parent) const
 	    if (column == 0) {
 		std::cerr << "parent is pane, returning layer" << std::endl;
 		ViewObjectAssoc *assoc = new ViewObjectAssoc
-		    (const_cast<LayerTreeModel *>(this), pane, layer);
+//		    (const_cast<LayerTreeModel *>(this), pane, layer);
+		    (pane, layer);
 		return createIndex(row, column, assoc);
 	    } else {
 		std::cerr << "parent is pane, column != 0, returning model" << std::endl;
 		ViewObjectAssoc *assoc = new ViewObjectAssoc
-		    (const_cast<LayerTreeModel *>(this), pane, layer->getModel());
+//		    (const_cast<LayerTreeModel *>(this), pane, layer->getModel());
+		    (pane, layer->getModel());
 		return createIndex(row, column, assoc);
 	    }		
 	}

@@ -188,6 +188,26 @@ ViewManager::setSelections(const MultiSelection &ms)
     CommandHistory::getInstance()->addCommand(command);
 }
 
+size_t
+ViewManager::constrainFrameToSelection(size_t frame) const
+{
+    MultiSelection::SelectionList sl = getSelections();
+    if (sl.empty()) return frame;
+
+    size_t selectionStartFrame = sl.begin()->getStartFrame();
+    if (frame < selectionStartFrame) {
+        frame = selectionStartFrame;
+        return frame;
+    }
+
+    MultiSelection::SelectionList::iterator i = sl.end();
+    --i;
+    size_t selectionEndFrame = i->getEndFrame();
+    if (frame > selectionEndFrame) frame = selectionEndFrame;
+
+    return frame;
+}
+
 void
 ViewManager::signalSelectionChange()
 {

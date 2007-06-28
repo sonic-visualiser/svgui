@@ -115,6 +115,9 @@ PaneStack::addPane(bool suppressPropertyBox)
     connect(pane, SIGNAL(rightButtonMenuRequested(QPoint)),
             this, SLOT(rightButtonMenuRequested(QPoint)));
 
+    emit paneAdded(pane);
+    emit paneAdded();
+
     if (!m_currentPane) {
 	setCurrentPane(pane);
     }
@@ -208,6 +211,8 @@ PaneStack::deletePane(Pane *pane)
 	}
     }
 
+    emit paneAboutToBeDeleted(pane);
+
     delete pane->parent();
 
     if (m_currentPane == pane) {
@@ -217,6 +222,8 @@ PaneStack::deletePane(Pane *pane)
 	    setCurrentPane(0);
 	}
     }
+
+    emit paneDeleted();
 }
 
 int

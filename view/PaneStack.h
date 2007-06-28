@@ -72,6 +72,11 @@ signals:
     void propertyStacksResized();
     void contextHelpChanged(const QString &);
 
+    void paneAdded(Pane *pane);
+    void paneAdded();
+    void paneAboutToBeDeleted(Pane *pane);
+    void paneDeleted();
+
 public slots:
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);

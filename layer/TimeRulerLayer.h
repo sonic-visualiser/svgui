@@ -44,6 +44,8 @@ public:
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
+    virtual bool snapToFeatureFrame(View *, int &, size_t &, SnapType) const;
+
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
@@ -66,6 +68,8 @@ protected:
     Model *m_model;
     QColor m_colour;
     LabelHeight m_labelHeight;
+
+    int getMajorTickSpacing(View *, bool &quarterTicks) const;
 };
 
 #endif
