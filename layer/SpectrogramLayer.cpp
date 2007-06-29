@@ -3066,6 +3066,33 @@ SpectrogramLayer::getNewVerticalZoomRangeMapper() const
     return new SpectrogramRangeMapper(m_model->getSampleRate(), m_fftSize);
 }
 
+void
+SpectrogramLayer::updateMeasureRectYCoords(View *v, const MeasureRect &r) const
+{
+    int y0 = 0;
+    if (r.startY > 0.0) y0 = getYForFrequency(v, r.startY);
+    
+    int y1 = y0;
+    if (r.endY > 0.0) y1 = getYForFrequency(v, r.endY);
+
+//    std::cerr << "SpectrogramLayer::updateMeasureRectYCoords: start " << r.startY << " -> " << y0 << ", end " << r.endY << " -> " << y1 << std::endl;
+
+    r.pixrect = QRect(r.pixrect.x(), y0, r.pixrect.width(), y1 - y0);
+}
+
+void
+SpectrogramLayer::setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const
+{
+    if (start) {
+        r.startY = getFrequencyForY(v, y);
+        r.endY = r.startY;
+    } else {
+        r.endY = getFrequencyForY(v, y);
+    }
+//    std::cerr << "SpectrogramLayer::setMeasureRectYCoord: start " << r.startY << " <- " << y << ", end " << r.endY << " <- " << y << std::endl;
+
+}
+
 QString
 SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 {

@@ -401,6 +401,9 @@ protected:
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(View *v) const;
+
+    virtual void updateMeasureRectYCoords(View *v, const MeasureRect &r) const;
+    virtual void setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const;
 };
 
 #endif
