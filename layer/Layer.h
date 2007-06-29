@@ -429,6 +429,8 @@ protected:
         bool haveFrames;
         long startFrame; // only valid if haveFrames
         long endFrame;   // ditto
+        double startY;
+        double endY;
 
         bool operator<(const MeasureRect &mr) const;
         QString toXmlString(QString indent) const;
@@ -467,7 +469,10 @@ protected:
     // Note that pixrects are only correct for a single view.
     // So we should update them at the start of the paint procedure
     // (painting is single threaded) and only use them after that.
-    void updateMeasurementPixrects(View *v) const;
+    void updateMeasurePixrects(View *v) const;
+
+    virtual void updateMeasureRectYCoords(View *v, const MeasureRect &r) const;
+    virtual void setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const;
 
     // This assumes updateMeasurementPixrects has been called
     MeasureRectSet::const_iterator findFocusedMeasureRect(QPoint) const;

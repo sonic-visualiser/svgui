@@ -169,7 +169,7 @@ Layer::MeasureRect::toXmlString(QString indent) const
     }
 
     s += QString("startY=\"%1\" endY=\"%2\"/>\n")
-        .arg(pixrect.y()).arg(pixrect.y() + pixrect.height());
+        .arg(startY).arg(endY);
 
     return s;
 }
@@ -179,7 +179,7 @@ Layer::addMeasurementRect(const QXmlAttributes &attributes)
 {
     MeasureRect rect;
     QString fs = attributes.value("startFrame");
-    int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+    int x0 = 0, x1 = 0;
     if (fs != "") {
         rect.startFrame = fs.toLong();
         rect.endFrame = attributes.value("endFrame").toLong();
@@ -189,9 +189,9 @@ Layer::addMeasurementRect(const QXmlAttributes &attributes)
         x1 = attributes.value("endX").toInt();
         rect.haveFrames = false;
     }
-    y0 = attributes.value("startY").toInt();
-    y1 = attributes.value("endY").toInt();
-    rect.pixrect = QRect(x0, y0, x1 - x0, y1 - y0);
+    rect.startY = attributes.value("startY").toDouble();
+    rect.endY = attributes.value("endY").toDouble();
+    rect.pixrect = QRect(x0, 0, x1 - x0, 0);
     addMeasureRectToSet(rect);
 }
 
@@ -224,6 +224,7 @@ Layer::measureStart(View *v, QMouseEvent *e)
     } else {
         m_draggingRect.haveFrames = false;
     }
+    setMeasureRectYCoord(v, m_draggingRect, true, e->y());
     m_haveDraggingRect = true;
 }
 
@@ -238,6 +239,8 @@ Layer::measureDrag(View *v, QMouseEvent *e)
                                    e->y() - m_draggingRect.pixrect.y())
         .normalized();
 
+    setMeasureRectYCoord(v, m_draggingRect, false, e->y());
+    
     if (hasTimeXAxis()) {
         m_draggingRect.endFrame = v->getFrameForX(e->x());
     }
@@ -259,7 +262,7 @@ void
 Layer::paintMeasurementRects(View *v, QPainter &paint,
                              bool showFocus, QPoint focusPoint) const
 {
-    updateMeasurementPixrects(v);
+    updateMeasurePixrects(v);
 
     MeasureRectSet::const_iterator focusRectItr = m_measureRects.end();
 
@@ -281,7 +284,7 @@ Layer::paintMeasurementRects(View *v, QPainter &paint,
 bool
 Layer::nearestMeasurementRectChanged(View *v, QPoint prev, QPoint now) const
 {
-    updateMeasurementPixrects(v);
+    updateMeasurePixrects(v);
     
     MeasureRectSet::const_iterator i0 = findFocusedMeasureRect(prev);
     MeasureRectSet::const_iterator i1 = findFocusedMeasureRect(now);
@@ -290,7 +293,7 @@ Layer::nearestMeasurementRectChanged(View *v, QPoint prev, QPoint now) const
 }
 
 void
-Layer::updateMeasurementPixrects(View *v) const
+Layer::updateMeasurePixrects(View *v) const
 {
     long sf = v->getStartFrame();
     long ef = v->getEndFrame();
@@ -298,24 +301,54 @@ Layer::updateMeasurementPixrects(View *v) const
     for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
          i != m_measureRects.end(); ++i) {
 
-        if (!i->haveFrames) continue;
+        // This logic depends on the fact that if one measure rect in
+        // a layer has frame values, they all will.  That is in fact
+        // the case, because haveFrames is based on whether the layer
+        // hasTimeXAxis() or not.  Measure rect ordering in the rect
+        // set wouldn't work correctly either, if haveFrames could
+        // vary.
 
-        if (i->startFrame >= ef) break;
-        if (i->endFrame <= sf) continue;
+        if (i->haveFrames) {
+            if (i->startFrame >= ef) break;
+            if (i->endFrame <= sf) continue;
+        }
 
-        int x0 = -1;
-        int x1 = v->width() + 1;
-        
-        if (i->startFrame >= v->getStartFrame()) {
-            x0 = v->getXForFrame(i->startFrame);
+        int x0 = i->pixrect.x();
+        int x1 = x0 + i->pixrect.width();
+
+        if (i->haveFrames) {
+            if (i->startFrame >= v->getStartFrame()) {
+                x0 = v->getXForFrame(i->startFrame);
+            }
+            if (i->endFrame <= long(v->getEndFrame())) {
+                x1 = v->getXForFrame(i->endFrame);
+            }
         }
-        if (i->endFrame <= long(v->getEndFrame())) {
-            x1 = v->getXForFrame(i->endFrame);
-        }
         
-        QRect pr = QRect(x0, i->pixrect.y(), x1 - x0, i->pixrect.height());
+        i->pixrect = QRect(x0, i->pixrect.y(), x1 - x0, i->pixrect.height());
+
+        updateMeasureRectYCoords(v, *i);
         
-        i->pixrect = pr;
+        i->pixrect = i->pixrect.normalized();
+    }
+}
+
+void
+Layer::updateMeasureRectYCoords(View *v, const MeasureRect &r) const
+{
+    int y0 = lrint(r.startY * v->height());
+    int y1 = lrint(r.endY * v->height());
+    r.pixrect = QRect(r.pixrect.x(), y0, r.pixrect.width(), y1 - y0);
+}
+
+void
+Layer::setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const
+{
+    if (start) {
+        r.startY = double(y) / double(v->height());
+        r.endY = r.startY;
+    } else {
+        r.endY = double(y) / double(v->height());
     }
 }
 
