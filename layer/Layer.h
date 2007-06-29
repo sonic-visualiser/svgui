@@ -106,7 +106,11 @@ public:
     }
     virtual void paintCrosshairs(View *, QPainter &, QPoint) const { }
 
-    virtual void paintMeasurementRects(View *, QPainter &) const;
+    virtual void paintMeasurementRects(View *, QPainter &,
+                                       bool showFocus, QPoint focusPoint) const;
+
+    virtual bool nearestMeasurementRectChanged(View *, QPoint prev,
+                                               QPoint now) const;
 
     virtual QString getFeatureDescription(View *, QPoint &) const {
 	return "";
@@ -459,6 +463,14 @@ protected:
     MeasureRectSet m_measureRects;
     MeasureRect m_draggingRect;
     bool m_haveDraggingRect;
+   
+    // Note that pixrects are only correct for a single view.
+    // So we should update them at the start of the paint procedure
+    // (painting is single threaded) and only use them after that.
+    void updateMeasurementPixrects(View *v) const;
+
+    // This assumes updateMeasurementPixrects has been called
+    MeasureRectSet::const_iterator findFocusedMeasureRect(QPoint) const;
 
     void paintMeasurementRect(View *v, QPainter &paint,
                               const MeasureRect &r, bool focus) const;

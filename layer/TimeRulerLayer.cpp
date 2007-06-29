@@ -151,12 +151,16 @@ TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
     RealTime rt = RealTime::frame2RealTime(frame, rate);
     double ratio = rt / rtick;
 
-    int rounded = lrint(ratio);
+    int rounded = int(ratio);
     RealTime rdrt = rtick * rounded;
 
     int left = RealTime::realTime2Frame(rdrt, rate);
     resolution = RealTime::realTime2Frame(rtick, rate);
     int right = left + resolution;
+
+//    std::cerr << "TimeRulerLayer::snapToFeatureFrame: type "
+//              << int(snap) << ", frame " << frame << " (time "
+//              << rt << ", tick " << rtick << ", rounded " << rdrt << ") ";
 
     switch (snap) {
 
@@ -216,6 +220,8 @@ TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
         }
     }
     }
+
+//    std::cerr << " -> " << frame << " (resolution = " << resolution << ")" << std::endl;
 
     return true;
 }
