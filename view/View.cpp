@@ -1650,8 +1650,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         paint.save();
         if (focus) {
             paint.setPen(Qt::NoPen);
-            QColor brushColour(Qt::green);
-            brushColour.setAlpha(30);
+            QColor brushColour(Qt::black);
+            brushColour.setAlpha(hasLightBackground() ? 15 : 40);
             paint.setBrush(brushColour);
             if (r.x() > 0) {
                 paint.drawRect(0, 0, r.x(), height());

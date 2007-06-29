@@ -454,7 +454,9 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     if (toolMode == ViewManager::MeasureMode && topLayer) {
-        topLayer->paintMeasurementRects(this, paint);
+        bool showFocus = false;
+        if (!m_manager || !m_manager->isPlaying()) showFocus = true;
+        topLayer->paintMeasurementRects(this, paint, showFocus, m_identifyPoint);
     }
     
     if (selectionIsBeingEdited()) {
@@ -1213,6 +1215,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
         if (!m_manager->isPlaying()) {
 
+            bool updating = false;
+
             if (getSelectedLayer()) {
 
                 bool previouslyIdentifying = m_identifyFeatures;
@@ -1220,6 +1224,17 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                 
                 if (m_identifyFeatures != previouslyIdentifying ||
                     m_identifyPoint != prevPoint) {
+                    update();
+                    updating = true;
+                }
+            }
+
+            if (!updating && mode == ViewManager::MeasureMode &&
+                m_manager && !m_manager->isPlaying()) {
+
+                Layer *layer = getTopLayer();
+                if (layer && layer->nearestMeasurementRectChanged
+                    (this, prevPoint, m_identifyPoint)) {
                     update();
                 }
             }

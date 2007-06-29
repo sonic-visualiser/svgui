@@ -26,6 +26,8 @@
 #include "LayerFactory.h"
 #include "base/PlayParameterRepository.h"
 
+#include <cmath>
+
 Layer::Layer() :
     m_haveDraggingRect(false)
 {
@@ -254,16 +256,94 @@ Layer::measureEnd(View *v, QMouseEvent *e)
 }
 
 void
-Layer::paintMeasurementRects(View *v, QPainter &paint) const
+Layer::paintMeasurementRects(View *v, QPainter &paint,
+                             bool showFocus, QPoint focusPoint) const
 {
+    updateMeasurementPixrects(v);
+
+    MeasureRectSet::const_iterator focusRectItr = m_measureRects.end();
+
     if (m_haveDraggingRect) {
+
         paintMeasurementRect(v, paint, m_draggingRect, true);
+
+    } else if (showFocus) {
+
+        focusRectItr = findFocusedMeasureRect(focusPoint);
     }
 
     for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
          i != m_measureRects.end(); ++i) {
-        paintMeasurementRect(v, paint, *i, true);
+        paintMeasurementRect(v, paint, *i, i == focusRectItr);
     }
+}
+
+bool
+Layer::nearestMeasurementRectChanged(View *v, QPoint prev, QPoint now) const
+{
+    updateMeasurementPixrects(v);
+    
+    MeasureRectSet::const_iterator i0 = findFocusedMeasureRect(prev);
+    MeasureRectSet::const_iterator i1 = findFocusedMeasureRect(now);
+
+    return (i0 != i1);
+}
+
+void
+Layer::updateMeasurementPixrects(View *v) const
+{
+    long sf = v->getStartFrame();
+    long ef = v->getEndFrame();
+
+    for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
+         i != m_measureRects.end(); ++i) {
+
+        if (!i->haveFrames) continue;
+
+        if (i->startFrame >= ef) break;
+        if (i->endFrame <= sf) continue;
+
+        int x0 = -1;
+        int x1 = v->width() + 1;
+        
+        if (i->startFrame >= v->getStartFrame()) {
+            x0 = v->getXForFrame(i->startFrame);
+        }
+        if (i->endFrame <= long(v->getEndFrame())) {
+            x1 = v->getXForFrame(i->endFrame);
+        }
+        
+        QRect pr = QRect(x0, i->pixrect.y(), x1 - x0, i->pixrect.height());
+        
+        i->pixrect = pr;
+    }
+}
+
+Layer::MeasureRectSet::const_iterator
+Layer::findFocusedMeasureRect(QPoint focusPoint) const
+{
+    float frDist = 0;
+    MeasureRectSet::const_iterator focusRectItr = m_measureRects.end();
+
+    for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
+         i != m_measureRects.end(); ++i) {
+
+        if (!i->pixrect.adjusted(-2, -2, 2, 2).contains(focusPoint)) continue;
+
+        int cx = i->pixrect.x() + i->pixrect.width()/2;
+        int cy = i->pixrect.y() + i->pixrect.height()/2;
+        int xd = focusPoint.x() - cx;
+        int yd = focusPoint.y() - cy;
+        
+        float d = sqrt(xd * xd + yd * yd);
+        
+        if (focusRectItr == m_measureRects.end() || d < frDist) {
+            focusRectItr = i;
+            frDist = d;
+        }
+    }
+
+    return focusRectItr;
 }
 
 void
@@ -278,12 +358,11 @@ Layer::paintMeasurementRect(View *v, QPainter &paint,
         if (r.startFrame >= v->getStartFrame()) {
             x0 = v->getXForFrame(r.startFrame);
         }
-        if (r.endFrame <= v->getEndFrame()) {
+        if (r.endFrame <= long(v->getEndFrame())) {
             x1 = v->getXForFrame(r.endFrame);
         }
         
-        QRect pr = QRect(x0, r.pixrect.y(),
-                         x1 - x0, r.pixrect.height());
+        QRect pr = QRect(x0, r.pixrect.y(), x1 - x0, r.pixrect.height());
         
         r.pixrect = pr;
     }
