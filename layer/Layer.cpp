@@ -123,6 +123,20 @@ Layer::getXScaleValue(const View *v, int x, float &value, QString &unit) const
 }
 
 bool
+Layer::getYScaleDifference(const View *v, int y0, int y1,
+                           float &diff, QString &unit) const
+{
+    float v0, v1;
+    if (!getYScaleValue(v, y0, v0, unit) ||
+        !getYScaleValue(v, y1, v1, unit)) {
+        diff = 0.f;
+        return false;
+    }
+    diff = fabsf(v1 - v0);
+    return true;
+}
+
+bool
 Layer::MeasureRect::operator<(const MeasureRect &mr) const
 {
     if (haveFrames) {
@@ -236,8 +250,7 @@ Layer::measureDrag(View *v, QMouseEvent *e)
     m_draggingRect.pixrect = QRect(m_draggingRect.pixrect.x(),
                                    m_draggingRect.pixrect.y(),
                                    e->x() - m_draggingRect.pixrect.x(),
-                                   e->y() - m_draggingRect.pixrect.y())
-        .normalized();
+                                   e->y() - m_draggingRect.pixrect.y());
 
     setMeasureRectYCoord(v, m_draggingRect, false, e->y());
     
@@ -328,8 +341,6 @@ Layer::updateMeasurePixrects(View *v) const
         i->pixrect = QRect(x0, i->pixrect.y(), x1 - x0, i->pixrect.height());
 
         updateMeasureRectYCoords(v, *i);
-        
-        i->pixrect = i->pixrect.normalized();
     }
 }
 
@@ -396,11 +407,10 @@ Layer::paintMeasurementRect(View *v, QPainter &paint,
         }
         
         QRect pr = QRect(x0, r.pixrect.y(), x1 - x0, r.pixrect.height());
-        
         r.pixrect = pr;
     }
-    
-    v->drawMeasurementRect(paint, this, r.pixrect, focus);
+
+    v->drawMeasurementRect(paint, this, r.pixrect.normalized(), focus);
 }
 
 QString

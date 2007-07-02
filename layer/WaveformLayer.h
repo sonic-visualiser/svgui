@@ -181,6 +181,9 @@ public:
 
     virtual bool getYScaleValue(const View *v, int y,
                                 float &value, QString &unit) const;
+    
+    virtual bool getYScaleDifference(const View *v, int y0, int y1,
+                                     float &diff, QString &unit) const;
 
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
@@ -200,11 +203,9 @@ protected:
     size_t getChannelArrangement(size_t &min, size_t &max,
                                  bool &merging, bool &mixing) const;
 
-    int getYForValue(const View *v, Scale scale, float value, size_t channel,
-                     size_t minChannel, size_t maxChannel) const;
+    int getYForValue(const View *v, float value, size_t channel) const;
 
-    float getValueForY(const View *v, Scale scale, int y,
-                       size_t minChannel, size_t maxChannel) const;
+    float getValueForY(const View *v, int y, size_t &channel) const;
 
     float        m_gain;
     bool         m_autoNormalize;

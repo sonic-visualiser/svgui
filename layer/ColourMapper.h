@@ -42,7 +42,8 @@ public:
         BlueOnBlack,
         FruitSalad,
         Banded,
-        Highlight
+        Highlight,
+        Printer
     };
 
     int getMap() const { return m_map; }

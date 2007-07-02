@@ -367,6 +367,15 @@ public:
     }
 
     /**
+     * Return the difference between the values at the given y
+     * coordinates in the given view, and the unit of the difference.
+     * The default implementation just calls getYScaleValue twice and
+     * returns the difference, with the same unit.
+     */
+    virtual bool getYScaleDifference(const View *v, int y0, int y1,
+                                     float &diff, QString &unit) const;
+        
+    /**
      * Get the number of vertical zoom steps available for this layer.
      * If vertical zooming is not available, return 0.  The meaning of
      * "zooming" is entirely up to the layer -- changing the zoom

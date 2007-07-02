@@ -637,14 +637,14 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
                 if (val < -1.0 || val > 1.0) continue;
 
-                int y = getYForValue(v, m_scale, val, ch, minChannel, maxChannel);
+                int y = getYForValue(v, val, ch);
 
                 if (py >= 0 && abs(y - py) < 10) continue;
                 else py = y;
 
                 int ny = y;
                 if (nval != 0.0) {
-                    ny = getYForValue(v, m_scale, nval, ch, minChannel, maxChannel);
+                    ny = getYForValue(v, nval, ch);
                 }
 
                 paint->drawLine(x0, y, x1, y);
@@ -995,26 +995,29 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 int
-WaveformLayer::getYForValue(const View *v, Scale scale, float value, size_t channel,
-                            size_t minChannel, size_t maxChannel) const
+WaveformLayer::getYForValue(const View *v, float value, size_t channel) const
 {
+    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    bool mergingChannels = false, mixingChannels = false;
+
+    channels = getChannelArrangement(minChannel, maxChannel,
+                                     mergingChannels, mixingChannels);
+
     if (maxChannel < minChannel || channel < minChannel) return 0;
 
     int h = v->height();
-
-    int channels = maxChannel - minChannel + 1;
     int m = (h / channels) / 2;
-    int my = m + (((channel - minChannel) * h) / channels);
 	
     if ((m_scale == dBScale || m_scale == MeterScale) &&
         m_channelMode != MergeChannels) {
         m = (h / channels);
-        my = m + (((channel - minChannel) * h) / channels);
     }
+
+    int my = m + (((channel - minChannel) * h) / channels);
 
     int vy = 0;
 
-    switch (scale) {
+    switch (m_scale) {
 
     case LinearScale:
         vy = int(m * value);
@@ -1033,40 +1036,33 @@ WaveformLayer::getYForValue(const View *v, Scale scale, float value, size_t chan
 }
 
 float
-WaveformLayer::getValueForY(const View *v, Scale scale, int y,
-                            size_t minChannel, size_t maxChannel) const
+WaveformLayer::getValueForY(const View *v, int y, size_t &channel) const
 {
+    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    bool mergingChannels = false, mixingChannels = false;
+
+    channels = getChannelArrangement(minChannel, maxChannel,
+                                     mergingChannels, mixingChannels);
+
     if (maxChannel < minChannel) return 0;
 
     int h = v->height();
-
-    int channels = maxChannel - minChannel + 1;
     int m = (h / channels) / 2;
 
     if ((m_scale == dBScale || m_scale == MeterScale) &&
         m_channelMode != MergeChannels) {
         m = (h / channels);
     }
-    
-    int channel = minChannel;
-    int mind = 0;
+  
+    channel = (y * channels) / h + minChannel;
 
-    for (int c = minChannel; c <= maxChannel; ++c) {
-        int my = m + (((c - minChannel) * h) / channels);
-        int d = y - my;
-        if (d < 0) d = -d;
-        if (c == minChannel || d < mind) {
-            mind = d;
-            channel = c;
-        }
-    }
-	
     int my = m + (((channel - minChannel) * h) / channels);
 
     int vy = my - y;
     float value = 0;
+    float thresh = -50.f;
 
-    switch (scale) {
+    switch (m_scale) {
 
     case LinearScale:
         value = float(vy) / m;
@@ -1077,27 +1073,75 @@ WaveformLayer::getValueForY(const View *v, Scale scale, int y,
         break;
 
     case dBScale:
-        value = AudioLevel::dB_to_multiplier((50 * float(vy)) / m - 50);
+        value = (-thresh * float(vy)) / m + thresh;
+        value = AudioLevel::dB_to_multiplier(value);
         break;
     }
 
-    return value;
+    return value / m_gain;
 }
 
 bool
 WaveformLayer::getYScaleValue(const View *v, int y,
                               float &value, QString &unit) const
 {
-    size_t channels = 0, minChannel = 0, maxChannel = 0;
-    bool mergingChannels = false, mixingChannels = false;
+    size_t channel;
 
-    channels = getChannelArrangement(minChannel, maxChannel,
-                                     mergingChannels, mixingChannels);
+    value = getValueForY(v, y, channel);
 
-    if (channels == 0) return false;
+    if (m_scale == dBScale || m_scale == MeterScale) {
 
-    value = getValueForY(v, m_scale, y, minChannel, maxChannel);
-    unit = "V";
+        float thresh = -50.f;
+        
+        if (value > 0.f) {
+            value = 10.f * log10f(value);
+            if (value < thresh) value = thresh;
+        } else value = thresh;
+
+        unit = "dBV";
+
+    } else {
+        unit = "V";
+    }
+
+    return true;
+}
+
+bool
+WaveformLayer::getYScaleDifference(const View *v, int y0, int y1,
+                                   float &diff, QString &unit) const
+{
+    size_t c0, c1;
+    float v0 = getValueForY(v, y0, c0);
+    float v1 = getValueForY(v, y1, c1);
+
+    if (c0 != c1) {
+        // different channels, not comparable
+        diff = 0.f;
+        unit = "";
+        return false;
+    }
+
+    if (m_scale == dBScale || m_scale == MeterScale) {
+
+        float thresh = -50.f;
+
+        if (v1 == v0) diff = thresh;
+        else {
+            if (v1 > v0) diff = v0 / v1;
+            else diff = v1 / v0;
+
+            diff = 10.f * log10f(diff);
+            if (diff < thresh) diff = thresh;
+        }
+
+        unit = "dBV";
+
+    } else {
+        diff = fabsf(v1 - v0);
+        unit = "V";
+    }
+
     return true;
 }
 
@@ -1180,11 +1224,11 @@ WaveformLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
             if (val < -1.0 || val > 1.0) continue;
 
-            int y = getYForValue(v, m_scale, val, ch, minChannel, maxChannel);
+            int y = getYForValue(v, val, ch);
 
             int ny = y;
             if (nval != 0.0) {
-                ny = getYForValue(v, m_scale, nval, ch, minChannel, maxChannel);
+                ny = getYForValue(v, nval, ch);
             }
 
             bool spaceForLabel = (i == 0 ||
