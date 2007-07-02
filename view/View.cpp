@@ -1726,9 +1726,18 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
             bw = std::max(bw, paint.fontMetrics().width(bys));
         }
     }
-    
-    if (b0 && b1 && u0 == u1) {
-        dys = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
+
+    bool bd = false;
+    float dy = 0.f;
+    QString du;
+
+    if ((bd = topLayer->getYScaleDifference(this, r.y(), r.y() + r.height(),
+                                            dy, du))) {
+        if (du != "") {
+            dys = QString("(%1 %2)").arg(dy).arg(du);
+        } else {
+            dys = QString("(%1)").arg(dy);
+        }
         dw = std::max(dw, paint.fontMetrics().width(dys));
     }
 

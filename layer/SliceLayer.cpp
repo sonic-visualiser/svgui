@@ -225,6 +225,85 @@ SliceLayer::getBinForX(float x, int count, float w) const
     return bin;
 }
 
+float
+SliceLayer::getYForValue(float value, const View *v, float &norm) const
+{
+    norm = 0.f;
+
+    if (m_yorigins.find(v) == m_yorigins.end()) return 0;
+
+    value *= m_gain;
+
+    int yorigin = m_yorigins[v];
+    int h = m_heights[v];
+    float thresh = -80.f;
+
+    float y = 0.f;
+
+    if (h <= 0) return y;
+
+    switch (m_energyScale) {
+
+    case dBScale:
+    {
+        float db = thresh;
+        if (value > 0.f) db = 10.f * log10f(value);
+        if (db < thresh) db = thresh;
+        norm = (db - thresh) / -thresh;
+        y = yorigin - (float(h) * norm);
+        break;
+    }
+    
+    case MeterScale:
+        y = AudioLevel::multiplier_to_preview(value, h);
+        norm = float(y) / float(h);
+        y = yorigin - y;
+        break;
+        
+    default:
+        norm = value;
+        y = yorigin - (float(h) * value);
+        break;
+    }
+    
+    return y;
+}
+
+float
+SliceLayer::getValueForY(float y, const View *v) const
+{
+    float value = 0.f;
+
+    if (m_yorigins.find(v) == m_yorigins.end()) return value;
+
+    int yorigin = m_yorigins[v];
+    int h = m_heights[v];
+    float thresh = -80.f;
+
+    if (h <= 0) return value;
+
+    y = yorigin - y;
+
+    switch (m_energyScale) {
+
+    case dBScale:
+    {
+        float db = ((y / h) * -thresh) + thresh;
+        value = powf(10.f, db/10.f);
+        break;
+    }
+
+    case MeterScale:
+        value = AudioLevel::preview_to_multiplier(lrintf(y), h);
+        break;
+
+    default:
+        value = y / h;
+    }
+
+    return value / m_gain;
+}
+
 void
 SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
@@ -245,21 +324,20 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     paint.setPen(m_colour);
 
-//    int w = (v->width() * 2) / 3;
-    int xorigin = getVerticalScaleWidth(v, paint) + 1; //!!! (v->width() / 2) - (w / 2);
+    int xorigin = getVerticalScaleWidth(v, paint) + 1;
     int w = v->width() - xorigin - 1;
 
     m_xorigins[v] = xorigin; // for use in getFeatureDescription
     
     int yorigin = v->height() - 20 - paint.fontMetrics().height() - 7;
     int h = yorigin - paint.fontMetrics().height() - 8;
-    if (h < 0) return;
 
-//    int h = (v->height() * 3) / 4;
-//    int yorigin = (v->height() / 2) + (h / 2);
-    
+    m_yorigins[v] = yorigin; // for getYForValue etc
+    m_heights[v] = h;
+
+    if (h <= 0) return;
+
     QPainterPath path;
-    float thresh = -80.f;
 
     size_t mh = m_sliceableModel->getHeight();
 
@@ -276,13 +354,16 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     size_t f1 = v->getFrameForX(f0x + 1);
     if (f1 > f0) --f1;
 
-    size_t col0 = f0 / m_sliceableModel->getResolution();
+    std::cerr << "centre frame " << v->getCentreFrame() << ", x " << f0x << ", f0 " << f0 << ", f1 " << f1 << std::endl;
+
+    size_t res = m_sliceableModel->getResolution();
+    size_t col0 = f0 / res;
     size_t col1 = col0;
-    if (m_samplingMode != NearestSample) {
-        col1 = f1 / m_sliceableModel->getResolution();
-    }
-    f0 = col0 * m_sliceableModel->getResolution();
-    f1 = (col1 + 1) * m_sliceableModel->getResolution() - 1;
+    if (m_samplingMode != NearestSample) col1 = f1 / res;
+    f0 = col0 * res;
+    f1 = (col1 + 1) * res - 1;
+
+    std::cerr << "resolution " << res << ", col0 " << col0 << ", col1 " << col1 << ", f0 " << f0 << ", f1 " << f1 << std::endl;
 
     m_currentf0 = f0;
     m_currentf1 = f1;
@@ -326,34 +407,8 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
         nx = xorigin + getXForBin(bin + 1, mh, w);
 
         float value = m_values[bin];
-
-        value *= m_gain;
         float norm = 0.f;
-        float y = 0.f;
- 
-        switch (m_energyScale) {
-
-        case dBScale:
-        {
-            float db = thresh;
-            if (value > 0.f) db = 10.f * log10f(value);
-            if (db < thresh) db = thresh;
-            norm = (db - thresh) / -thresh;
-            y = yorigin - (float(h) * norm);
-            break;
-        }
-
-        case MeterScale:
-            y = AudioLevel::multiplier_to_preview(value, h);
-            norm = float(y) / float(h);
-            y = yorigin - y;
-            break;
-
-        default:
-            norm = value;
-            y = yorigin - (float(h) * value);
-            break;
-        }
+        float y = getYForValue(value, v, norm);
 
         if (m_plotStyle == PlotLines) {
 

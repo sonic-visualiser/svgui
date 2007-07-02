@@ -20,10 +20,10 @@ HEADERS += Colour3DPlotLayer.h \
            LayerFactory.h \
            NoteLayer.h \
            PaintAssistant.h \
+           SliceableLayer.h \
+           SliceLayer.h \
            SpectrogramLayer.h \
            SpectrumLayer.h \
-           SliceLayer.h \
-           SliceableLayer.h \
            TextLayer.h \
            TimeInstantLayer.h \
            TimeRulerLayer.h \
@@ -35,9 +35,9 @@ SOURCES += Colour3DPlotLayer.cpp \
            LayerFactory.cpp \
            NoteLayer.cpp \
            PaintAssistant.cpp \
+           SliceLayer.cpp \
            SpectrogramLayer.cpp \
            SpectrumLayer.cpp \
-           SliceLayer.cpp \
            TextLayer.cpp \
            TimeInstantLayer.cpp \
            TimeRulerLayer.cpp \

@@ -62,6 +62,12 @@ public:
     virtual bool getXScaleValue(const View *v, int x,
                                 float &value, QString &unit) const;
 
+    virtual bool getYScaleValue(const View *, int y,
+                                float &value, QString &unit) const;
+
+    virtual bool getYScaleDifference(const View *, int y0, int y1,
+                                     float &diff, QString &unit) const;
+
     virtual bool isLayerScrollable(const View *) const { return false; }
 
     void setChannel(int);

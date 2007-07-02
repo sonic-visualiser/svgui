@@ -107,6 +107,9 @@ public slots:
 protected:
     virtual float getXForBin(int bin, int totalBins, float w) const;
     virtual int getBinForX(float x, int totalBins, float w) const;
+
+    virtual float getYForValue(float value, const View *v, float &norm) const;
+    virtual float getValueForY(float y, const View *v) const;
     
     virtual QString getFeatureDescription(View *v, QPoint &,
                                           bool includeBinDescription,
@@ -130,6 +133,8 @@ protected:
     float                             m_gain;
     mutable std::vector<int>          m_scalePoints;
     mutable std::map<const View *, int> m_xorigins;
+    mutable std::map<const View *, int> m_yorigins;
+    mutable std::map<const View *, int> m_heights;
     mutable size_t                    m_currentf0;
     mutable size_t                    m_currentf1;
     mutable std::vector<float>        m_values;

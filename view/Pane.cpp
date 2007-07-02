@@ -631,7 +631,7 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint)
         c = QColor(240, 240, 240);
     }
     paint.setPen(c);
-    int x = width() / 2 + 1;
+    int x = width() / 2;
     paint.drawLine(x, 0, x, height() - 1);
     paint.drawLine(x-1, 1, x+1, 1);
     paint.drawLine(x-2, 0, x+2, 0);

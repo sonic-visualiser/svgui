@@ -33,6 +33,7 @@ Overview::Overview(QWidget *w) :
     m_followPan = false;
     m_followZoom = false;
     setPlaybackFollow(PlaybackIgnore);
+    m_modelTestTime.start();
 }
 
 void
@@ -50,13 +51,17 @@ Overview::modelChanged(size_t startFrame, size_t endFrame)
     }
 
     if (!zoomChanged) {
-        for (LayerList::const_iterator i = m_layers.begin();
-             i != m_layers.end(); ++i) {
-            if ((*i)->getModel() &&
-                !(*i)->getModel()->isOK() ||
-                !(*i)->getModel()->isReady()) {
-                return;
+        if (m_modelTestTime.elapsed() < 1000) {
+            for (LayerList::const_iterator i = m_layers.begin();
+                 i != m_layers.end(); ++i) {
+                if ((*i)->getModel() &&
+                    !(*i)->getModel()->isOK() ||
+                    !(*i)->getModel()->isReady()) {
+                    return;
+                }
             }
+        } else {
+            m_modelTestTime.restart();
         }
     }
 

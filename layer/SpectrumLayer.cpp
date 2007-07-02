@@ -324,7 +324,8 @@ SpectrumLayer::getXForFrequency(float freq, float w) const
         break;
 
     case InvertedLogBins:
-        x = (w - log10f(maxfreq - freq) * w) / log10f(maxfreq);
+        if (maxfreq == freq) x = w;
+        else x = w - (log10f(maxfreq - freq) * w) / log10f(maxfreq);
         break;
     }
 
@@ -341,6 +342,40 @@ SpectrumLayer::getXScaleValue(const View *v, int x,
     unit = "Hz";
     return true;
 }
+
+bool
+SpectrumLayer::getYScaleValue(const View *v, int y,
+                              float &value, QString &unit) const
+{
+    value = getValueForY(y, v);
+
+    if (m_energyScale == dBScale || m_energyScale == MeterScale) {
+
+        float thresh = -80.f;
+
+        if (value > 0.f) {
+            value = 10.f * log10f(value);
+            if (value < thresh) value = thresh;
+        } else value = thresh;
+
+        unit = "dBV";
+
+    } else {
+        unit = "V";
+    }
+
+    return true;
+}
+
+bool
+SpectrumLayer::getYScaleDifference(const View *v, int y0, int y1,
+                                   float &diff, QString &unit) const
+{
+    bool rv = SliceLayer::getYScaleDifference(v, y0, y1, diff, unit);
+    if (rv && (unit == "dBV")) unit = "dB";
+    return rv;
+}
+
 
 bool
 SpectrumLayer::getCrosshairExtents(View *v, QPainter &paint,

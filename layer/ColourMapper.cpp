@@ -39,7 +39,7 @@ ColourMapper::~ColourMapper()
 int
 ColourMapper::getColourMapCount()
 {
-    return 10;
+    return 11;
 }
 
 QString
@@ -59,6 +59,7 @@ ColourMapper::getColourMapName(int n)
     case FruitSalad:       return tr("Fruit Salad");
     case Banded:           return tr("Banded");
     case Highlight:        return tr("Highlight");
+    case Printer:          return tr("Printer");
     }
 
     return tr("<unknown>");
@@ -157,6 +158,28 @@ ColourMapper::map(float value) const
     case Highlight:
         if (norm > 0.99) return Qt::white;
         else return Qt::darkBlue;
+
+    case Printer:
+        if (norm > 0.8) {
+            r = 1.f;
+        } else if (norm > 0.7) {
+            r = 0.9f;
+        } else if (norm > 0.6) {
+            r = 0.8f;
+        } else if (norm > 0.5) {
+            r = 0.7f;
+        } else if (norm > 0.4) {
+            r = 0.6f;
+        } else if (norm > 0.3) {
+            r = 0.5f;
+        } else if (norm > 0.2) {
+            r = 0.4f;
+        } else {
+            r = 0.f;
+        }
+        r = g = b = 1.f - r;
+        hsv = false;
+        break;
     }
 
     if (hsv) {
@@ -202,6 +225,9 @@ ColourMapper::getContrastingColour() const
         return Qt::cyan;
 
     case Highlight:
+        return Qt::red;
+
+    case Printer:
         return Qt::red;
     }
 
