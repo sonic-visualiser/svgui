@@ -466,6 +466,13 @@ Pane::paintEvent(QPaintEvent *e)
     paint.end();
 }
 
+size_t
+Pane::getVerticalScaleWidth() const
+{
+    if (m_scaleWidth > 0) return m_scaleWidth;
+    else return 0;
+}
+
 void
 Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 {
