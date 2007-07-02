@@ -31,7 +31,8 @@ SpectrumLayer::SpectrumLayer() :
     m_channelSet(false),
     m_windowSize(1024),
     m_windowType(HanningWindow),
-    m_windowHopLevel(2)
+    m_windowHopLevel(2),
+    m_newFFTNeeded(true)
 {
     Preferences *prefs = Preferences::getInstance();
     connect(prefs, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
@@ -52,7 +53,7 @@ SpectrumLayer::setModel(DenseTimeValueModel *model)
 {
     if (m_originModel == model) return;
     m_originModel = model;
-    setupFFT();
+//!!!    setupFFT();
 }
 
 void
@@ -99,7 +100,7 @@ SpectrumLayer::setChannel(int channel)
 
     m_channel = channel;
 
-    if (!fft) setupFFT();
+//!!!    if (!fft) setupFFT();
 
     emit layerParametersChanged();
 }
@@ -218,7 +219,8 @@ SpectrumLayer::setWindowSize(size_t ws)
 {
     if (m_windowSize == ws) return;
     m_windowSize = ws;
-    setupFFT();
+//!!!    setupFFT();
+    m_newFFTNeeded = true;
     emit layerParametersChanged();
 }
 
@@ -227,7 +229,8 @@ SpectrumLayer::setWindowHopLevel(size_t v)
 {
     if (m_windowHopLevel == v) return;
     m_windowHopLevel = v;
-    setupFFT();
+//!!!    setupFFT();
+    m_newFFTNeeded = true;
     emit layerParametersChanged();
 }
 
@@ -236,7 +239,8 @@ SpectrumLayer::setWindowType(WindowType w)
 {
     if (m_windowType == w) return;
     m_windowType = w;
-    setupFFT();
+//!!!    setupFFT();
+    m_newFFTNeeded = true;
     emit layerParametersChanged();
 }
 
@@ -533,6 +537,20 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
     }
     
     return description;
+}
+
+void
+SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
+{
+    if (!m_originModel || !m_originModel->isOK() ||
+        !m_originModel->isReady()) return;
+
+    if (m_newFFTNeeded) {
+        const_cast<SpectrumLayer *>(this)->setupFFT(); //ugh
+        m_newFFTNeeded = false;
+    }
+    
+    SliceLayer::paint(v, paint, rect);
 }
 
 void

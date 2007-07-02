@@ -44,6 +44,8 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
+    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
@@ -100,6 +102,7 @@ protected:
     size_t                  m_windowSize;
     WindowType              m_windowType;
     size_t                  m_windowHopLevel;
+    mutable bool            m_newFFTNeeded;
 
     void setupFFT();
 
