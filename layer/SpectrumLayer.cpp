@@ -401,10 +401,21 @@ SpectrumLayer::getCrosshairExtents(View *v, QPainter &paint,
     QRect horizontal(0, cursorPos.y(), v->width(), 12);
     extents.push_back(horizontal);
 
-    QRect label(cursorPos.x(), v->height() - paint.fontMetrics().height(),
+    int hoffset = 1;
+    if (m_binScale == LogBins) hoffset = 12;
+
+    QRect label(cursorPos.x(),
+                v->height() - paint.fontMetrics().height() - hoffset,
                 paint.fontMetrics().width("123456 Hz") + 2,
                 paint.fontMetrics().height());
     extents.push_back(label);
+
+    int w(paint.fontMetrics().width("C#10+50c") + 2);
+    QRect pitch(cursorPos.x() - w,
+                v->height() - paint.fontMetrics().height() - hoffset,
+                w,
+                paint.fontMetrics().height());
+    extents.push_back(pitch);
 
     return true;
 }
@@ -426,8 +437,23 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
     
     float fundamental = getFrequencyForX(cursorPos.x() - xorigin, w);
 
-    paint.drawText(cursorPos.x() + 2, v->height() - 2,
-                   QString("%1 Hz").arg(fundamental));
+    int hoffset = 1;
+    if (m_binScale == LogBins) hoffset = 12;
+
+    v->drawVisibleText(paint,
+                       cursorPos.x() + 2,
+                       v->height() - 2 - hoffset,
+                       QString("%1 Hz").arg(fundamental),
+                       View::OutlinedText);
+
+    if (Pitch::isFrequencyInMidiRange(fundamental)) {
+        QString pitchLabel = Pitch::getPitchLabelForFrequency(fundamental);
+        v->drawVisibleText(paint,
+                           cursorPos.x() - paint.fontMetrics().width(pitchLabel) - 2,
+                           v->height() - 2 - hoffset,
+                           pitchLabel,
+                           View::OutlinedText);
+    }
 
     int harmonic = 2;
 
@@ -567,6 +593,9 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
     int xorigin = getVerticalScaleWidth(v, paint) + 1;
     int w = v->width() - xorigin - 1;
 
+    int pkh = 0;
+    if (m_binScale == LogBins) pkh = 10;
+
     if (fft) {
 
         // draw peak lines
@@ -601,13 +630,22 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
             float y = getYForValue(value, v, norm); // don't need y, need norm
 
             paint.setPen(mapper.map(norm));
-            paint.drawLine(xorigin + x, 0, xorigin + x, v->height());
+            paint.drawLine(xorigin + x, 0, xorigin + x, v->height() - pkh - 1);
         }
 
         paint.restore();
     }
     
     SliceLayer::paint(v, paint, rect);
+
+    //!!! All of this stuff relating to depicting frequencies
+    //(keyboard, crosshairs etc) should be applicable to any slice
+    //layer whose model has a vertical scale unit of Hz.  However, the
+    //dense 3d model at the moment doesn't record its vertical scale
+    //unit -- we need to fix that and hoist this code as appropriate.
+    //Same really goes for any code in SpectrogramLayer that could be
+    //relevant to Colour3DPlotLayer with unit Hz, but that's a bigger
+    //proposition.
 
     if (m_binScale == LogBins) {
 
@@ -616,32 +654,45 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         // piano keyboard
         //!!! should be in a new paintHorizontalScale()?
+        // nice to have a piano keyboard class, of course
 
-	paint.drawLine(xorigin, h - pkh - 1, w, h - pkh - 1);
+	paint.drawLine(xorigin, h - pkh - 1, w + xorigin, h - pkh - 1);
 
 	int px = xorigin, ppx = xorigin;
-//	paint.setBrush(paint.pen().color());
+	paint.setBrush(paint.pen().color());
 
 	for (int i = 0; i < 128; ++i) {
 
 	    float f = Pitch::getFrequencyForPitch(i);
 	    int x = lrintf(getXForFrequency(f, w));
-
-            if (x < 0) break;
-            if (x + xorigin > w) {
-                continue;
-            }
                            
             x += xorigin;
+
+            if (i == 0) {
+                px = ppx = x;
+            }
+            if (i == 1) {
+                ppx = px - (x - px);
+            }
+
+            if (x < xorigin) {
+                ppx = px;
+                px = x;
+                continue;
+            }
+                
+            if (x > w) {
+                break;
+            }
 
 	    int n = (i % 12);
 
             if (n == 1) {
                 // C# -- fill the C from here
                 if (x - ppx > 2) {
-                    paint.fillRect(x,
+                    paint.fillRect((px + ppx) / 2 + 1,
                                    h - pkh,
-                                   x - (px + ppx) / 2,
+                                   x - (px + ppx) / 2 - 1,
                                    pkh,
                                    Qt::gray);
                 }
@@ -650,9 +701,9 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
 		// black notes
 		paint.drawLine(x, h - pkh, x, h);
-		int rw = ((px - x) / 4) * 2;
+		int rw = lrintf(float(x - px) / 4) * 2;
 		if (rw < 2) rw = 2;
-		paint.drawRect(x - (px-x)/4, h - pkh, rw, pkh/2);
+		paint.drawRect(x - rw/2, h - pkh, rw, pkh/2);
 	    } else if (n == 0 || n == 5) {
 		// C, F
 		if (px < w) {

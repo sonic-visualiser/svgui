@@ -18,6 +18,7 @@
 #include "data/model/Model.h"
 #include "base/ZoomConstraint.h"
 #include "base/Profiler.h"
+#include "base/Pitch.h"
 
 #include "layer/TimeRulerLayer.h" //!!! damn, shouldn't be including that here
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h" //!!! likewise
@@ -1679,6 +1680,13 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 
     if (!focus) return;
 
+    paint.save();
+    QFont fn = paint.font();
+    if (fn.pointSize() > 8) {
+        fn.setPointSize(fn.pointSize() - 1);
+        paint.setFont(fn);
+    }
+
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
@@ -1695,6 +1703,10 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 
     if ((b0 = topLayer->getXScaleValue(this, r.x(), v0, u0))) {
         axs = QString("%1 %2").arg(v0).arg(u0);
+        if (u0 == "Hz" && Pitch::isFrequencyInMidiRange(v0)) {
+            axs = QString("%1 (%2)").arg(axs)
+                .arg(Pitch::getPitchLabelForFrequency(v0));
+        }
         aw = paint.fontMetrics().width(axs);
         ++labelCount;
     }
@@ -1702,6 +1714,10 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     if (r.width() > 0) {
         if ((b1 = topLayer->getXScaleValue(this, r.x() + r.width(), v1, u1))) {
             bxs = QString("%1 %2").arg(v1).arg(u1);
+            if (u1 == "Hz" && Pitch::isFrequencyInMidiRange(v1)) {
+                bxs = QString("%1 (%2)").arg(bxs)
+                    .arg(Pitch::getPitchLabelForFrequency(v1));
+            }
             bw = paint.fontMetrics().width(bxs);
         }
     }
@@ -1716,6 +1732,10 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 
     if ((b0 = topLayer->getYScaleValue(this, r.y(), v0, u0))) {
         ays = QString("%1 %2").arg(v0).arg(u0);
+        if (u0 == "Hz" && Pitch::isFrequencyInMidiRange(v0)) {
+            ays = QString("%1 (%2)").arg(ays)
+                .arg(Pitch::getPitchLabelForFrequency(v0));
+        }
         aw = std::max(aw, paint.fontMetrics().width(ays));
         ++labelCount;
     }
@@ -1723,6 +1743,10 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     if (r.height() > 0) {
         if ((b1 = topLayer->getYScaleValue(this, r.y() + r.height(), v1, u1))) {
             bys = QString("%1 %2").arg(v1).arg(u1);
+            if (u1 == "Hz" && Pitch::isFrequencyInMidiRange(v1)) {
+                bys = QString("%1 (%2)").arg(bys)
+                    .arg(Pitch::getPitchLabelForFrequency(v1));
+            }
             bw = std::max(bw, paint.fontMetrics().width(bys));
         }
     }
@@ -1827,6 +1851,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         drawVisibleText(paint, dxx, dxy, dys, OutlinedText);
         dxy += fontHeight;
     }
+
+    paint.restore();
 }
 
 bool
