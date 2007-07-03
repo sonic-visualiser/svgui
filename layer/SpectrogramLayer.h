@@ -296,14 +296,6 @@ protected:
     void initialisePalette();
     void rotatePalette(int distance);
 
-    static float calculateFrequency(size_t bin,
-				    size_t windowSize,
-				    size_t windowIncrement,
-				    size_t sampleRate,
-				    float previousPhase,
-				    float currentPhase,
-				    bool &steadyState);
-
     unsigned char getDisplayValue(View *v, float input) const;
     float getInputForDisplayValue(unsigned char uc) const;
 

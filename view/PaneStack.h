@@ -43,6 +43,7 @@ public:
 
     int getPaneCount() const; // Returns only count of visible panes
     Pane *getPane(int n); // Of visible panes; I own the returned value
+    int getPaneIndex(Pane *pane); // so getPane(index)==pane; -1 if absent
 
     void hidePane(Pane *pane); // Also removes pane from getPane/getPaneCount
     void showPane(Pane *pane); // Returns pane to getPane/getPaneCount

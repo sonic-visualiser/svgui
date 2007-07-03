@@ -92,7 +92,7 @@ protected:
 
     void drawVerticalScale(QRect r, Layer *, QPainter &);
     void drawFeatureDescription(Layer *, QPainter &);
-    void drawCentreLine(int, QPainter &);
+    void drawCentreLine(int, QPainter &, bool omitLine);
     void drawDurationAndRate(QRect, const Model *, int, QPainter &);
     void drawLayerNames(QRect, QPainter &);
     void drawEditingSelection(QPainter &);
