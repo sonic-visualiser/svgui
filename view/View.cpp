@@ -620,6 +620,19 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
 {
     if (style == OutlinedText) {
 
+        paint.save();
+
+        QColor penColour, surroundColour;
+
+        if (hasLightBackground()) {
+            penColour = Qt::black;
+            surroundColour = Qt::white;
+        } else {
+            penColour = Qt::white;
+            surroundColour = Qt::black;
+        }            
+
+/*
 	QColor origPenColour = paint.pen().color();
 	QColor penColour = origPenColour;
 	QColor surroundColour = Qt::white;  //palette().background().color();
@@ -630,7 +643,7 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
 	    penColour = QColor::fromHsv(h, s, 255 - v);
 	    surroundColour = Qt::black;
 	}
-
+*/
 	paint.setPen(surroundColour);
 
 	for (int dx = -1; dx <= 1; ++dx) {
@@ -643,8 +656,10 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
 	paint.setPen(penColour);
 
 	paint.drawText(x, y, text);
-
+/*
 	paint.setPen(origPenColour);
+*/
+        paint.restore();
 
     } else {
 
