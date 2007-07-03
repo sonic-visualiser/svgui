@@ -2487,7 +2487,13 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
     float fundamental = getFrequencyForY(v, cursorPos.y());
 
     int sw = getVerticalScaleWidth(v, paint);
-    paint.drawText(sw + 2, cursorPos.y() - 2, QString("%1 Hz").arg(fundamental));
+    v->drawVisibleText(paint,
+                       sw + 2,
+                       cursorPos.y() - 2,
+                       QString("%1 Hz").arg(fundamental),
+                       View::OutlinedText);
+
+    //!!! and pitch label
 
     int harmonic = 2;
 
