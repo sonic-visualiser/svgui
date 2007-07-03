@@ -2467,9 +2467,14 @@ SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
     int sw = getVerticalScaleWidth(v, paint);
 
     QRect label(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
-                paint.fontMetrics().width("123456 Hz") + sw + 2,
+                paint.fontMetrics().width("123456 Hz") + 2,
                 paint.fontMetrics().height());
     extents.push_back(label);
+
+    QRect pitch(sw, cursorPos.y() + 2,
+                paint.fontMetrics().width("C#10+50c") + 2,
+                paint.fontMetrics().height());
+    extents.push_back(pitch);
 
     return true;
 }
@@ -2493,7 +2498,21 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
                        QString("%1 Hz").arg(fundamental),
                        View::OutlinedText);
 
-    //!!! and pitch label
+    if (Pitch::isFrequencyInMidiRange(fundamental)) {
+        QString pitchLabel = Pitch::getPitchLabelForFrequency(fundamental);
+        v->drawVisibleText(paint,
+                           sw + 2,
+                           cursorPos.y() + paint.fontMetrics().ascent() + 2,
+                           pitchLabel,
+                           View::OutlinedText);
+    }
+
+    /*!!!
+    long frame = getFrameForX(cursorPos.x());
+    RealTime rt = RealTime::frame2RealTime(frame, m_model->getSampleRate());
+    QString timeLabel = rt.toText(true).c_str();
+    ...
+    */
 
     int harmonic = 2;
 
