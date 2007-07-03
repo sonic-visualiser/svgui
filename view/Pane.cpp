@@ -397,14 +397,18 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     Layer *topLayer = getTopLayer();
+    bool haveSomeTimeXAxis = false;
 
     const Model *waveformModel = 0; // just for reporting purposes
     for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
         --vi;
+        if (!haveSomeTimeXAxis && (*vi)->hasTimeXAxis()) {
+            haveSomeTimeXAxis = true;
+        }
         if (dynamic_cast<WaveformLayer *>(*vi)) {
             waveformModel = (*vi)->getModel();
-            break;
         }
+        if (waveformModel && haveSomeTimeXAxis) break;
     }
 
     m_scaleWidth = 0;
@@ -423,7 +427,7 @@ Pane::paintEvent(QPaintEvent *e)
     if (m_centreLineVisible &&
         m_manager &&
         m_manager->shouldShowCentreLine()) {
-        drawCentreLine(sampleRate, paint);
+        drawCentreLine(sampleRate, paint, !haveSomeTimeXAxis);
     }
     
     paint.setPen(QColor(50, 50, 50));
@@ -628,7 +632,7 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
 }
 
 void
-Pane::drawCentreLine(int sampleRate, QPainter &paint)
+Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
 {
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
@@ -637,13 +641,17 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint)
     if (!hasLightBackground()) {
         c = QColor(240, 240, 240);
     }
+
     paint.setPen(c);
     int x = width() / 2;
-    paint.drawLine(x, 0, x, height() - 1);
-    paint.drawLine(x-1, 1, x+1, 1);
-    paint.drawLine(x-2, 0, x+2, 0);
-    paint.drawLine(x-1, height() - 2, x+1, height() - 2);
-    paint.drawLine(x-2, height() - 1, x+2, height() - 1);
+
+    if (!omitLine) {
+        paint.drawLine(x, 0, x, height() - 1);
+        paint.drawLine(x-1, 1, x+1, 1);
+        paint.drawLine(x-2, 0, x+2, 0);
+        paint.drawLine(x-1, height() - 2, x+1, height() - 2);
+        paint.drawLine(x-2, height() - 1, x+2, height() - 1);
+    }
     
     paint.setPen(QColor(50, 50, 50));
     

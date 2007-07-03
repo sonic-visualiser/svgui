@@ -21,6 +21,7 @@
 #include "base/AudioLevel.h"
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
+#include "base/Pitch.h"
 #include "ColourMapper.h"
 
 #include <QPainter>
@@ -53,6 +54,14 @@ SpectrumLayer::setModel(DenseTimeValueModel *model)
 {
     if (m_originModel == model) return;
     m_originModel = model;
+
+    if (m_sliceableModel) {
+        const Model *oldModel = m_sliceableModel;
+        setSliceableModel(0);
+        // surprised I'm allowed to delete a const pointer -- may be a
+        // source of future compiler rejection?
+        delete oldModel;
+    }
 //!!!    setupFFT();
 }
 
@@ -549,8 +558,112 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
         const_cast<SpectrumLayer *>(this)->setupFFT(); //ugh
         m_newFFTNeeded = false;
     }
+
+    FFTModel *fft = dynamic_cast<FFTModel *>
+        (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
+
+    float thresh = powf(10, -8) / m_gain; // -80dB
+
+    int xorigin = getVerticalScaleWidth(v, paint) + 1;
+    int w = v->width() - xorigin - 1;
+
+    if (fft) {
+
+        // draw peak lines
+        //!!! should be optional
+
+        size_t col = v->getCentreFrame() / fft->getResolution();
+
+        paint.save();
+        paint.setRenderHint(QPainter::Antialiasing, false);
+        paint.setPen(QColor(160, 160, 160)); //!!!
+
+        ColourMapper mapper(m_colourMap, 0, 1);
+
+        BiasCurve curve;
+        getBiasCurve(curve);
+        size_t cs = curve.size();
+        
+        for (size_t bin = 0; bin < fft->getHeight(); ++bin) {
+            
+            if (!fft->isLocalPeak(col, bin)) continue;
+            if (!fft->isOverThreshold(col, bin, thresh)) continue;
+            
+            float freq = 0;
+            bool haveFreq = fft->estimateStableFrequency(col, bin, freq);
+            if (!haveFreq) continue;
+            
+            int x = lrintf(getXForFrequency(freq, w));
+
+            float value = m_sliceableModel->getValueAt(col, bin);
+            if (bin < cs) value *= curve[bin];
+            float norm = 0.f;
+            float y = getYForValue(value, v, norm); // don't need y, need norm
+
+            paint.setPen(mapper.map(norm));
+            paint.drawLine(xorigin + x, 0, xorigin + x, v->height());
+        }
+
+        paint.restore();
+    }
     
     SliceLayer::paint(v, paint, rect);
+
+    if (m_binScale == LogBins) {
+
+        int pkh = 10;
+        int h = v->height();
+
+        // piano keyboard
+        //!!! should be in a new paintHorizontalScale()?
+
+	paint.drawLine(xorigin, h - pkh - 1, w, h - pkh - 1);
+
+	int px = xorigin, ppx = xorigin;
+//	paint.setBrush(paint.pen().color());
+
+	for (int i = 0; i < 128; ++i) {
+
+	    float f = Pitch::getFrequencyForPitch(i);
+	    int x = lrintf(getXForFrequency(f, w));
+
+            if (x < 0) break;
+            if (x + xorigin > w) {
+                continue;
+            }
+                           
+            x += xorigin;
+
+	    int n = (i % 12);
+
+            if (n == 1) {
+                // C# -- fill the C from here
+                if (x - ppx > 2) {
+                    paint.fillRect(x,
+                                   h - pkh,
+                                   x - (px + ppx) / 2,
+                                   pkh,
+                                   Qt::gray);
+                }
+            }
+
+	    if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
+		// black notes
+		paint.drawLine(x, h - pkh, x, h);
+		int rw = ((px - x) / 4) * 2;
+		if (rw < 2) rw = 2;
+		paint.drawRect(x - (px-x)/4, h - pkh, rw, pkh/2);
+	    } else if (n == 0 || n == 5) {
+		// C, F
+		if (px < w) {
+		    paint.drawLine((x + px) / 2, h - pkh, (x + px) / 2, h);
+		}
+	    }
+
+            ppx = px;
+	    px = x;
+	}
+    }
 }
 
 void

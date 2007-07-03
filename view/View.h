@@ -150,7 +150,9 @@ public:
      * Return a layer, counted in stacking order.  That is, layer 0 is
      * the bottom layer and layer "getLayerCount()-1" is the top one.
      */
-    virtual Layer *getLayer(int n) { return m_layers[n]; }
+    virtual Layer *getLayer(int n) {
+        if (n < m_layers.size()) return m_layers[n]; else return 0;
+    }
 
     /**
      * Return the top layer.  This is the same as

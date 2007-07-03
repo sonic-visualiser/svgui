@@ -46,6 +46,10 @@ public:
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
+    virtual VerticalPosition getPreferredFrameCountPosition() const {
+	return PositionTop;
+    }
+
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;

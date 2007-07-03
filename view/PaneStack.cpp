@@ -172,7 +172,22 @@ PaneStack::setLayoutStyle(LayoutStyle style)
 Pane *
 PaneStack::getPane(int n)
 {
-    return m_panes[n].pane;
+    if (n < m_panes.size()) {
+        return m_panes[n].pane;
+    } else {
+        return 0;
+    }
+}
+
+int
+PaneStack::getPaneIndex(Pane *pane)
+{
+    for (int i = 0; i < getPaneCount(); ++i) {
+        if (pane == getPane(i)) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 Pane *

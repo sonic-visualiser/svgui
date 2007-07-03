@@ -1064,48 +1064,6 @@ SpectrogramLayer::rotatePalette(int distance)
     }
 }
 
-float
-SpectrogramLayer::calculateFrequency(size_t bin,
-				     size_t windowSize,
-				     size_t windowIncrement,
-				     size_t sampleRate,
-				     float oldPhase,
-				     float newPhase,
-				     bool &steadyState)
-{
-    // At frequency f, phase shift of 2pi (one cycle) happens in 1/f sec.
-    // At hopsize h and sample rate sr, one hop happens in h/sr sec.
-    // At window size w, for bin b, f is b*sr/w.
-    // thus 2pi phase shift happens in w/(b*sr) sec.
-    // We need to know what phase shift we expect from h/sr sec.
-    // -> 2pi * ((h/sr) / (w/(b*sr)))
-    //  = 2pi * ((h * b * sr) / (w * sr))
-    //  = 2pi * (h * b) / w.
-
-    float frequency = (float(bin) * sampleRate) / windowSize;
-
-    float expectedPhase =
-	oldPhase + (2.0 * M_PI * bin * windowIncrement) / windowSize;
-
-    float phaseError = princargf(newPhase - expectedPhase);
-	    
-    if (fabsf(phaseError) < (1.1f * (windowIncrement * M_PI) / windowSize)) {
-
-	// The new frequency estimate based on the phase error
-	// resulting from assuming the "native" frequency of this bin
-
-	float newFrequency =
-	    (sampleRate * (expectedPhase + phaseError - oldPhase)) /
-	    (2 * M_PI * windowIncrement);
-
-	steadyState = true;
-	return newFrequency;
-    }
-
-    steadyState = false;
-    return frequency;
-}
-
 unsigned char
 SpectrogramLayer::getDisplayValue(View *v, float input) const
 {
@@ -1363,6 +1321,10 @@ SpectrogramLayer::getAdjustedYBinSourceRange(View *v, int x, int y,
 					     float &adjFreqMin, float &adjFreqMax)
 const
 {
+    if (!m_model || !m_model->isOK() || !m_model->isReady()) {
+	return false;
+    }
+
     FFTModel *fft = getFFTModel(v);
     if (!fft) return false;
 
@@ -1407,13 +1369,7 @@ const
 	    
 	    if (s < int(fft->getWidth()) - 1) {
 
-		freq = calculateFrequency(q, 
-					  windowSize,
-					  windowIncrement,
-					  sr, 
-					  fft->getPhaseAt(s, q),
-					  fft->getPhaseAt(s+1, q),
-					  steady);
+                fft->estimateStableFrequency(s, q, freq);
 	    
 		if (!haveAdj || freq < adjFreqMin) adjFreqMin = freq;
 		if (!haveAdj || freq > adjFreqMax) adjFreqMax = freq;
@@ -1435,6 +1391,10 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 				      float &min, float &max,
 				      float &phaseMin, float &phaseMax) const
 {
+    if (!m_model || !m_model->isOK() || !m_model->isReady()) {
+	return false;
+    }
+
     float q0 = 0, q1 = 0;
     if (!getYBinRange(v, y, q0, q1)) return false;
 
@@ -2133,14 +2093,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		if (m_binDisplay == PeakFrequencies &&
 		    s < int(fft->getWidth()) - 1) {
 
-		    bool steady = false;
-                    float f = calculateFrequency(q,
-						 m_windowSize,
-						 increment,
-						 sr,
-						 fft->getPhaseAt(s, q),
-						 fft->getPhaseAt(s+1, q),
-						 steady);
+                    float f = 0;
+                    fft->estimateStableFrequency(s, q, f);
 
 		    y0 = y1 = v->getYForFrequency
 			(f, displayMinFreq, displayMaxFreq, logarithmic);
@@ -2855,6 +2809,8 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
     if (m_frequencyScale == LogFrequencyScale) {
 
+        // piano keyboard
+
 	paint.drawLine(w - pkw - 1, 0, w - pkw - 1, h);
 
 	float minf = getEffectiveMinFrequency();
@@ -2879,11 +2835,9 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
                 // C# -- fill the C from here
                 if (ppy - y > 2) {
                     paint.fillRect(w - pkw,
-//                                   y - (py - y) / 2 - (py - y) / 4, 
                                    y,
                                    pkw,
                                    (py + ppy) / 2 - y,
-//                                   py - y + 1,
                                    Qt::gray);
                 }
             }
