@@ -1,4 +1,3 @@
-
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 
 /*
@@ -294,6 +293,7 @@ float
 SpectrumLayer::getFrequencyForX(float x, float w) const
 {
     float freq = 0;
+    if (!m_sliceableModel) return 0;
 
     int sampleRate = m_sliceableModel->getSampleRate();
 
@@ -321,6 +321,7 @@ float
 SpectrumLayer::getXForFrequency(float freq, float w) const
 {
     float x = 0;
+    if (!m_sliceableModel) return x;
 
     int sampleRate = m_sliceableModel->getSampleRate();
 
@@ -401,14 +402,26 @@ SpectrumLayer::getCrosshairExtents(View *v, QPainter &paint,
     QRect horizontal(0, cursorPos.y(), v->width(), 12);
     extents.push_back(horizontal);
 
-    int hoffset = 1;
-    if (m_binScale == LogBins) hoffset = 12;
+    int hoffset = 2;
+    if (m_binScale == LogBins) hoffset = 13;
 
-    QRect label(cursorPos.x(),
-                v->height() - paint.fontMetrics().height() - hoffset,
-                paint.fontMetrics().width("123456 Hz") + 2,
+    int sw = getVerticalScaleWidth(v, paint);
+
+    QRect value(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
+                paint.fontMetrics().width("0.0000001 V") + 2,
                 paint.fontMetrics().height());
-    extents.push_back(label);
+    extents.push_back(value);
+
+    QRect log(sw, cursorPos.y() + 2,
+              paint.fontMetrics().width("-80.000 dBV") + 2,
+              paint.fontMetrics().height());
+    extents.push_back(log);
+
+    QRect freq(cursorPos.x(),
+               v->height() - paint.fontMetrics().height() - hoffset,
+               paint.fontMetrics().width("123456 Hz") + 2,
+               paint.fontMetrics().height());
+    extents.push_back(freq);
 
     int w(paint.fontMetrics().width("C#10+50c") + 2);
     QRect pitch(cursorPos.x() - w,
@@ -424,6 +437,8 @@ void
 SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
                                QPoint cursorPos) const
 {
+    if (!m_sliceableModel) return;
+
     paint.save();
 
     ColourMapper mapper(m_colourMap, 0, 1);
@@ -437,8 +452,8 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
     
     float fundamental = getFrequencyForX(cursorPos.x() - xorigin, w);
 
-    int hoffset = 1;
-    if (m_binScale == LogBins) hoffset = 12;
+    int hoffset = 2;
+    if (m_binScale == LogBins) hoffset = 13;
 
     v->drawVisibleText(paint,
                        cursorPos.x() + 2,
@@ -455,6 +470,24 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
                            View::OutlinedText);
     }
 
+    float value = getValueForY(cursorPos.y(), v);
+    float thresh = -80.f;
+    float db = thresh;
+    if (value > 0.f) db = 10.f * log10f(value);
+    if (db < thresh) db = thresh;
+
+    v->drawVisibleText(paint,
+                       xorigin + 2,
+                       cursorPos.y() - 2,
+                       QString("%1 V").arg(value),
+                       View::OutlinedText);
+
+    v->drawVisibleText(paint,
+                       xorigin + 2,
+                       cursorPos.y() + 2 + paint.fontMetrics().ascent(),
+                       QString("%1 dBV").arg(db),
+                       View::OutlinedText);
+    
     int harmonic = 2;
 
     while (harmonic < 100) {
@@ -588,7 +621,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
     FFTModel *fft = dynamic_cast<FFTModel *>
         (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
 
-    float thresh = powf(10, -8) / m_gain; // -80dB
+    float thresh = (powf(10, -6) / m_gain) * (m_windowSize / 2.f); // -60dB adj
 
     int xorigin = getVerticalScaleWidth(v, paint) + 1;
     int w = v->width() - xorigin - 1;
@@ -607,27 +640,38 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
         paint.setRenderHint(QPainter::Antialiasing, false);
         paint.setPen(QColor(160, 160, 160)); //!!!
 
-        ColourMapper mapper(m_colourMap, 0, 1);
+        FFTModel::PeakSet peaks = fft->getPeakFrequencies
+            (FFTModel::MajorPitchAdaptivePeaks, col);
+
+        ColourMapper mapper(ColourMapper::BlackOnWhite, 0, 1);
 
         BiasCurve curve;
         getBiasCurve(curve);
         size_t cs = curve.size();
+
+        std::vector<float> values;
         
         for (size_t bin = 0; bin < fft->getHeight(); ++bin) {
-            
-            if (!fft->isLocalPeak(col, bin)) continue;
-            if (!fft->isOverThreshold(col, bin, thresh)) continue;
-            
-            float freq = 0;
-            bool haveFreq = fft->estimateStableFrequency(col, bin, freq);
-            if (!haveFreq) continue;
-            
-            int x = lrintf(getXForFrequency(freq, w));
-
             float value = m_sliceableModel->getValueAt(col, bin);
             if (bin < cs) value *= curve[bin];
+            values.push_back(value);
+        }
+
+        for (FFTModel::PeakSet::iterator i = peaks.begin();
+             i != peaks.end(); ++i) {
+
+            size_t bin = i->first;
+            
+//            std::cerr << "bin = " << bin << ", thresh = " << thresh << ", value = " << fft->getMagnitudeAt(col, bin) << std::endl;
+
+            if (!fft->isOverThreshold(col, bin, thresh)) continue;
+            
+            float freq = i->second;
+          
+            int x = lrintf(getXForFrequency(freq, w));
+
             float norm = 0.f;
-            float y = getYForValue(value, v, norm); // don't need y, need norm
+            float y = getYForValue(values[bin], v, norm); // don't need y, need norm
 
             paint.setPen(mapper.map(norm));
             paint.drawLine(xorigin + x, 0, xorigin + x, v->height() - pkh - 1);

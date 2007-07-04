@@ -272,6 +272,12 @@ Layer::measureEnd(View *v, QMouseEvent *e)
 }
 
 void
+Layer::measureDoubleClick(View *v, QMouseEvent *e)
+{
+    // nothing
+}
+
+void
 Layer::paintMeasurementRects(View *v, QPainter &paint,
                              bool showFocus, QPoint focusPoint) const
 {

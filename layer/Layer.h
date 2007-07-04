@@ -170,6 +170,7 @@ public:
     virtual void measureStart(View *, QMouseEvent *);
     virtual void measureDrag(View *, QMouseEvent *);
     virtual void measureEnd(View *, QMouseEvent *);
+    virtual void measureDoubleClick(View *, QMouseEvent *);
 
     /**
      * Open an editor on the item under the mouse (e.g. on

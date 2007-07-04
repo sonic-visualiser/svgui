@@ -133,6 +133,8 @@ SliceLayer::getFeatureDescription(View *v, QPoint &p,
     
     range = f1 - f0 + 1;
 
+    QString rtrangestr = QString("%1 s").arg((rt1 - rt0).toText().c_str());
+
     if (includeBinDescription) {
 
         float minvalue = 0.f;
@@ -157,10 +159,11 @@ SliceLayer::getFeatureDescription(View *v, QPoint &p,
             valuestr = QString("%1").arg(minvalue);
         }
 
-        QString description = tr("Time:\t%1 - %2\nRange:\t%3 samples\nBin:\t%4\n%5 value:\t%6")
+        QString description = tr("Time:\t%1 - %2\nRange:\t%3 samples (%4)\nBin:\t%5\n%6 value:\t%7")
             .arg(QString::fromStdString(rt0.toText(true)))
             .arg(QString::fromStdString(rt1.toText(true)))
             .arg(range)
+            .arg(rtrangestr)
             .arg(binstr)
             .arg(m_samplingMode == NearestSample ? tr("First") :
                  m_samplingMode == SampleMean ? tr("Mean") : tr("Peak"))
@@ -170,10 +173,11 @@ SliceLayer::getFeatureDescription(View *v, QPoint &p,
     
     } else {
 
-        QString description = tr("Time:\t%1 - %2\nRange:\t%3 samples")
+        QString description = tr("Time:\t%1 - %2\nRange:\t%3 samples (%4)")
             .arg(QString::fromStdString(rt0.toText(true)))
             .arg(QString::fromStdString(rt1.toText(true)))
-            .arg(range);
+            .arg(range)
+            .arg(rtrangestr);
         
         return description;
     }
