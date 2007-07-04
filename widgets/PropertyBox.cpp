@@ -429,6 +429,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 cb->setEditable(true);
             }
             cb->blockSignals(false);
+            if (cb->count() < 20 && cb->count() > cb->maxVisibleItems()) {
+                cb->setMaxVisibleItems(cb->count());
+            }
         }
 
         if (!have) {

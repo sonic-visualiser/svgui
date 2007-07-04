@@ -2071,15 +2071,25 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
             MagnitudeRange mag;
 
+            FFTModel::PeakSet peaks;
+            if (m_binDisplay == PeakFrequencies &&
+                s < int(fft->getWidth()) - 1) {
+                peaks = fft->getPeakFrequencies(FFTModel::AllPeaks,
+                                                s,
+                                                minbin, maxbin - 1);
+            }
+
             for (size_t q = minbin; q < maxbin; ++q) {
 
                 float y0 = yval[q + 1];
                 float y1 = yval[q];
 
-		if (m_binDisplay == PeakBins ||
-		    m_binDisplay == PeakFrequencies) {
+		if (m_binDisplay == PeakBins) {
 		    if (!fft->isLocalPeak(s, q)) continue;
 		}
+                if (m_binDisplay == PeakFrequencies) {
+                    if (peaks.find(q) == peaks.end()) continue;
+                }
 
                 if (m_threshold != 0.f &&
                     !fft->isOverThreshold(s, q, m_threshold * (m_fftSize/2))) {
@@ -2090,14 +2100,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 		if (s == s0i) sprop *= (s + 1) - s0;
 		if (s == s1i) sprop *= s1 - s;
  
-		if (m_binDisplay == PeakFrequencies &&
-		    s < int(fft->getWidth()) - 1) {
-
-                    float f = 0;
-                    fft->estimateStableFrequency(s, q, f);
-
+		if (m_binDisplay == PeakFrequencies) {
 		    y0 = y1 = v->getYForFrequency
-			(f, displayMinFreq, displayMaxFreq, logarithmic);
+			(peaks[q], displayMinFreq, displayMaxFreq, logarithmic);
 		}
 		
 		int y0i = int(y0 + 0.001);
@@ -2466,15 +2471,28 @@ SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
 
     int sw = getVerticalScaleWidth(v, paint);
 
-    QRect label(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
-                paint.fontMetrics().width("123456 Hz") + 2,
-                paint.fontMetrics().height());
-    extents.push_back(label);
+    QRect freq(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
+               paint.fontMetrics().width("123456 Hz") + 2,
+               paint.fontMetrics().height());
+    extents.push_back(freq);
 
     QRect pitch(sw, cursorPos.y() + 2,
                 paint.fontMetrics().width("C#10+50c") + 2,
                 paint.fontMetrics().height());
     extents.push_back(pitch);
+
+    QRect rt(cursorPos.x(),
+             v->height() - paint.fontMetrics().height() - 2,
+             paint.fontMetrics().width("1234.567 s"),
+             paint.fontMetrics().height());
+    extents.push_back(rt);
+
+    int w(paint.fontMetrics().width("1234567890") + 2);
+    QRect frame(cursorPos.x() - w - 2,
+                v->height() - paint.fontMetrics().height() - 2,
+                w,
+                paint.fontMetrics().height());
+    extents.push_back(frame);
 
     return true;
 }
@@ -2507,12 +2525,20 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
                            View::OutlinedText);
     }
 
-    /*!!!
-    long frame = getFrameForX(cursorPos.x());
+    long frame = v->getFrameForX(cursorPos.x());
     RealTime rt = RealTime::frame2RealTime(frame, m_model->getSampleRate());
-    QString timeLabel = rt.toText(true).c_str();
-    ...
-    */
+    QString rtLabel = QString("%1 s").arg(rt.toText(true).c_str());
+    QString frameLabel = QString("%1").arg(frame);
+    v->drawVisibleText(paint,
+                       cursorPos.x() - paint.fontMetrics().width(frameLabel) - 2,
+                       v->height() - 2,
+                       frameLabel,
+                       View::OutlinedText);
+    v->drawVisibleText(paint,
+                       cursorPos.x() + 2,
+                       v->height() - 2,
+                       rtLabel,
+                       View::OutlinedText);
 
     int harmonic = 2;
 

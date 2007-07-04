@@ -1587,6 +1587,12 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 	if (layer && layer->isLayerEditable()) {
 	    if (layer->editOpen(this, e)) relocate = false;
 	}
+
+    } else if (mode == ViewManager::MeasureMode) {
+
+        Layer *layer = getTopLayer();
+        if (layer) layer->measureDoubleClick(this, e);
+        update();
     }
 
     if (relocate) {

@@ -21,6 +21,7 @@
 #include "layer/Layer.h"
 #include "data/model/Model.h"
 
+#include <QIcon>
 #include <iostream>
 
 
