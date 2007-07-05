@@ -21,6 +21,7 @@
 #include <QStringList>
 #include <QRadioButton>
 #include <QPushButton>
+#include <QDialogButtonBox>
 
 ListInputDialog::ListInputDialog(QWidget *parent, const QString &title,
 				 const QString &labelText, const QStringList &list,
@@ -49,25 +50,12 @@ ListInputDialog::ListInputDialog(QWidget *parent, const QString &title,
     m_footnote = new QLabel;
     vbox->addWidget(m_footnote);
     m_footnote->hide();
-
-    QHBoxLayout *hbox = new QHBoxLayout;
-    vbox->addLayout(hbox, Qt::AlignRight);
-
-    QPushButton *ok = new QPushButton(tr("OK"), this);
-    ok->setDefault(true);
-
-    QPushButton *cancel = new QPushButton(tr("Cancel"), this);
-
-    QSize bs = ok->sizeHint().expandedTo(cancel->sizeHint());
-    ok->setFixedSize(bs);
-    cancel->setFixedSize(bs);
-
-    hbox->addStretch();
-    hbox->addWidget(ok);
-    hbox->addWidget(cancel);
-
-    QObject::connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
-    QObject::connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
+    
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                                QDialogButtonBox::Cancel);
+    vbox->addWidget(bb);
+    connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 ListInputDialog::~ListInputDialog()

@@ -17,15 +17,20 @@
 
 #include <QAction>
 #include <QTextEdit>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QDialogButtonBox>
+#include <QApplication>
+#include <QDesktopWidget>
 
 KeyReference::KeyReference() :
-    m_text(0)
+    m_dialog(0)
 {
 }
 
 KeyReference::~KeyReference()
 {
-    delete m_text;
+    delete m_dialog;
 }
 
 void
@@ -33,9 +38,9 @@ KeyReference::setCategory(QString category)
 {
     if (m_map.find(category) == m_map.end()) {
         m_categoryOrder.push_back(category);
+        m_map[category] = KeyList();
     }
     m_currentCategory = category;
-    m_map[category] = KeyList();
 }
 
 void
@@ -53,6 +58,8 @@ KeyReference::registerShortcut(QAction *action, QString overrideName)
 void
 KeyReference::registerShortcut(QString name, QString shortcut, QString tip)
 {
+    name.replace(tr("&"), "");
+            
     KeyList &list = m_map[m_currentCategory];
 
     for (KeyList::iterator i = list.begin(); i != list.end(); ++i) {
@@ -82,6 +89,8 @@ KeyReference::registerAlternativeShortcut(QAction *action, QString alternative)
 void
 KeyReference::registerAlternativeShortcut(QString name, QString alternative)
 {
+    name.replace(tr("&"), "");
+
     KeyList &list = m_map[m_currentCategory];
 
     for (KeyList::iterator i = list.begin(); i != list.end(); ++i) {
@@ -95,9 +104,9 @@ KeyReference::registerAlternativeShortcut(QString name, QString alternative)
 void
 KeyReference::show()
 {
-    if (m_text) {
-        m_text->show();
-        m_text->raise();
+    if (m_dialog) {
+        m_dialog->show();
+        m_dialog->raise();
         return;
     }
 
@@ -111,12 +120,14 @@ KeyReference::show()
         QString category = *i;
         KeyList &list = m_map[category];
 
-        text += QString("<tr><td bgcolor=\"#d0d0d0\" colspan=3><br>&nbsp;<b>%1</b><br></td></tr>\n").arg(category);
+        text += QString("<tr><td bgcolor=\"#d0d0d0\" colspan=3 align=\"center\"><br><b>%1</b><br></td></tr>\n").arg(category);
 
         for (KeyList::iterator j = list.begin(); j != list.end(); ++j) {
 
             QString actionName = j->actionName;
-            actionName.replace(tr("&"), "");
+
+            QString shortcut = j->shortcut;
+            shortcut.replace(" ", "&nbsp;");
 
             QString tip = j->tip;
             if (tip != "") tip = QString("<i>%1</i>").arg(tip);
@@ -125,13 +136,15 @@ KeyReference::show()
             if (!j->alternatives.empty()) {
                 for (std::vector<QString>::iterator k = j->alternatives.begin();
                      k != j->alternatives.end(); ++k) {
-                    altdesc += tr("<i>or</i>&nbsp;<b>%1</b>").arg(*k);
+                    QString alt = *k;
+                    alt.replace(" ", "&nbsp;");
+                    altdesc += tr("<i>or</i>&nbsp;<b>%1</b>").arg(alt);
                 }
                 altdesc = tr("</b>&nbsp;(%1)<b>").arg(altdesc);
             }
 
             text += QString("<tr><td>&nbsp;<b>%1%2</b></td><td>&nbsp;%3</td><td>%4</td></tr>\n")
-                .arg(j->shortcut).arg(altdesc).arg(actionName).arg(tip);
+                .arg(shortcut).arg(altdesc).arg(actionName).arg(tip);
         }
     }
 
@@ -140,9 +153,40 @@ KeyReference::show()
     m_text = new QTextEdit;
     m_text->setHtml(text);
     m_text->setReadOnly(true);
-    m_text->setObjectName(tr("Key Reference"));
-    m_text->show();
-    m_text->resize(600, 450);
-    m_text->raise();
+
+    m_dialog = new QDialog;
+    m_dialog->setWindowTitle(tr("Sonic Visualiser: Key and Mouse Reference"));
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    m_dialog->setLayout(layout);
+    layout->addWidget(m_text);
+
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
+    connect(bb, SIGNAL(clicked(QAbstractButton *)), this, SLOT(dialogButtonClicked(QAbstractButton *)));
+    layout->addWidget(bb);
+
+    m_dialog->show();
+    
+    QDesktopWidget *desktop = QApplication::desktop();
+    QRect available = desktop->availableGeometry();
+
+    int width = available.width() * 3 / 5;
+    int height = available.height() * 2 / 3;
+    if (height < 450) {
+        if (available.height() > 500) height = 450;
+    }
+    if (width < 600) {
+        if (available.width() > 650) width = 600;
+    }
+
+    m_dialog->resize(width, height);
+    m_dialog->raise();
+}
+
+void
+KeyReference::dialogButtonClicked(QAbstractButton *)
+{
+    // only button is Close
+    m_dialog->hide();
 }
 

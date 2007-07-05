@@ -23,6 +23,8 @@
 
 class QAction;
 class QTextEdit;
+class QDialog;
+class QAbstractButton;
 
 class KeyReference : public QObject
 {
@@ -42,6 +44,9 @@ public:
 
     void show();
 
+protected slots:
+    void dialogButtonClicked(QAbstractButton *);
+
 protected:
     struct KeyDetails {
         QString actionName;
@@ -59,6 +64,7 @@ protected:
     CategoryList m_categoryOrder;
 
     QTextEdit *m_text;
+    QDialog *m_dialog;
 };
 
 #endif

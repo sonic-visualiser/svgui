@@ -23,6 +23,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QGroupBox>
+#include <QDialogButtonBox>
 
 #include <float.h> // for FLT_MIN/MAX
 
@@ -172,18 +173,16 @@ ItemEditDialog::ItemEditDialog(size_t sampleRate, int options,
     } else if (options & ShowValue) {
         m_valueSpinBox->setFocus(Qt::OtherFocusReason);
     }
-
-    QHBoxLayout *hbox = new QHBoxLayout;
-    grid->addLayout(hbox, row, 0, 1, 2);
+    
+    QDialogButtonBox *bb = new QDialogButtonBox(Qt::Horizontal);
+    grid->addWidget(bb, row, 0, 1, 2);
     
     QPushButton *ok = new QPushButton(tr("OK"));
     m_resetButton = new QPushButton(tr("Reset"));
     QPushButton *cancel = new QPushButton(tr("Cancel"));
-    hbox->addStretch(10);
-    hbox->addWidget(ok);
-    hbox->addWidget(m_resetButton);
-    hbox->addWidget(cancel);
-    ok->setDefault(true);
+    bb->addButton(ok, QDialogButtonBox::AcceptRole);
+    bb->addButton(m_resetButton, QDialogButtonBox::ResetRole);
+    bb->addButton(cancel, QDialogButtonBox::RejectRole);
     connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
     connect(m_resetButton, SIGNAL(clicked()), this, SLOT(reset()));
     connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));

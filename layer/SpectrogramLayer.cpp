@@ -2502,6 +2502,11 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
                                   QPoint cursorPos) const
 {
     paint.save();
+    QFont fn = paint.font();
+    if (fn.pointSize() > 8) {
+        fn.setPointSize(fn.pointSize() - 1);
+        paint.setFont(fn);
+    }
     paint.setPen(m_crosshairColour);
 
     paint.drawLine(0, cursorPos.y(), cursorPos.x() - 1, cursorPos.y());

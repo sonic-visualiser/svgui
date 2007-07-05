@@ -30,6 +30,7 @@ class Layer;
 class Thumbwheel;
 class Panner;
 class NotifyingPushButton;
+class KeyReference;
 
 class Pane : public View
 {
@@ -59,6 +60,8 @@ public:
 
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
+
+    static void registerShortcuts(KeyReference &kr);
 
 signals:
     void paneInteractedWith();
