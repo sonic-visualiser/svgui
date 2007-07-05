@@ -29,7 +29,8 @@
 #include <cmath>
 
 Layer::Layer() :
-    m_haveDraggingRect(false)
+    m_haveDraggingRect(false),
+    m_haveCurrentMeasureRect(false)
 {
 }
 
@@ -227,18 +228,29 @@ Layer::AddMeasurementRectCommand::unexecute()
     m_layer->deleteMeasureRectFromSet(m_rect);
 }
 
+QString
+Layer::DeleteMeasurementRectCommand::getName() const
+{
+    return tr("Delete Measurement");
+}
+
+void
+Layer::DeleteMeasurementRectCommand::execute()
+{
+    m_layer->deleteMeasureRectFromSet(m_rect);
+}
+
+void
+Layer::DeleteMeasurementRectCommand::unexecute()
+{
+    m_layer->addMeasureRectToSet(m_rect);
+}
+
 void
 Layer::measureStart(View *v, QMouseEvent *e)
 {
-    m_draggingRect.pixrect = QRect(e->x(), e->y(), 0, 0);
-    if (hasTimeXAxis()) {
-        m_draggingRect.haveFrames = true;
-        m_draggingRect.startFrame = v->getFrameForX(e->x());
-        m_draggingRect.endFrame = m_draggingRect.startFrame;
-    } else {
-        m_draggingRect.haveFrames = false;
-    }
-    setMeasureRectYCoord(v, m_draggingRect, true, e->y());
+    setMeasureRectFromPixrect(v, m_draggingRect,
+                              QRect(e->x(), e->y(), 0, 0));
     m_haveDraggingRect = true;
 }
 
@@ -247,16 +259,11 @@ Layer::measureDrag(View *v, QMouseEvent *e)
 {
     if (!m_haveDraggingRect) return;
 
-    m_draggingRect.pixrect = QRect(m_draggingRect.pixrect.x(),
-                                   m_draggingRect.pixrect.y(),
-                                   e->x() - m_draggingRect.pixrect.x(),
-                                   e->y() - m_draggingRect.pixrect.y());
-
-    setMeasureRectYCoord(v, m_draggingRect, false, e->y());
-    
-    if (hasTimeXAxis()) {
-        m_draggingRect.endFrame = v->getFrameForX(e->x());
-    }
+    setMeasureRectFromPixrect(v, m_draggingRect,
+                              QRect(m_draggingRect.pixrect.x(),
+                                    m_draggingRect.pixrect.y(),
+                                    e->x() - m_draggingRect.pixrect.x(),
+                                    e->y() - m_draggingRect.pixrect.y()));
 }
 
 void
@@ -264,9 +271,11 @@ Layer::measureEnd(View *v, QMouseEvent *e)
 {
     if (!m_haveDraggingRect) return;
     measureDrag(v, e);
-    
-    CommandHistory::getInstance()->addCommand
-        (new AddMeasurementRectCommand(this, m_draggingRect));
+
+    if (!m_draggingRect.pixrect.isNull()) {
+        CommandHistory::getInstance()->addCommand
+            (new AddMeasurementRectCommand(this, m_draggingRect));
+    }
 
     m_haveDraggingRect = false;
 }
@@ -274,7 +283,21 @@ Layer::measureEnd(View *v, QMouseEvent *e)
 void
 Layer::measureDoubleClick(View *v, QMouseEvent *e)
 {
-    // nothing
+    // nothing, in the base class
+}
+
+void
+Layer::deleteCurrentMeasureRect()
+{
+    if (!m_haveCurrentMeasureRect) return;
+    
+    MeasureRectSet::const_iterator focusRectItr =
+        findFocusedMeasureRect(m_currentMeasureRectPoint);
+
+    if (focusRectItr == m_measureRects.end()) return;
+
+    CommandHistory::getInstance()->addCommand
+        (new DeleteMeasurementRectCommand(this, *focusRectItr));
 }
 
 void
@@ -294,9 +317,18 @@ Layer::paintMeasurementRects(View *v, QPainter &paint,
         focusRectItr = findFocusedMeasureRect(focusPoint);
     }
 
+    m_haveCurrentMeasureRect = false;
+
     for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
          i != m_measureRects.end(); ++i) {
-        paintMeasurementRect(v, paint, *i, i == focusRectItr);
+
+        bool focused = (i == focusRectItr);
+        paintMeasurementRect(v, paint, *i, focused);
+
+        if (focused) {
+            m_haveCurrentMeasureRect = true;
+            m_currentMeasureRectPoint = focusPoint;
+        }
     }
 }
 
@@ -367,6 +399,19 @@ Layer::setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const
     } else {
         r.endY = double(y) / double(v->height());
     }
+}
+
+void
+Layer::setMeasureRectFromPixrect(View *v, MeasureRect &r, QRect pixrect) const
+{
+    r.pixrect = pixrect;
+    r.haveFrames = hasTimeXAxis();
+    if (r.haveFrames) {
+        r.startFrame = v->getFrameForX(pixrect.x());
+        r.endFrame = v->getFrameForX(pixrect.x() + pixrect.width());
+    }
+    setMeasureRectYCoord(v, r, true, pixrect.y());
+    setMeasureRectYCoord(v, r, false, pixrect.y() + pixrect.height());
 }
 
 Layer::MeasureRectSet::const_iterator

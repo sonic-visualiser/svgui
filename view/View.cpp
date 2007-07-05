@@ -1737,7 +1737,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         }
     }
         
-    if (b0 && b1 && u0 == u1) {
+    if (b0 && b1 && v1 != v0 && u0 == u1) {
         dxs = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
         dw = paint.fontMetrics().width(dxs);
     }
@@ -1771,7 +1771,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     QString du;
 
     if ((bd = topLayer->getYScaleDifference(this, r.y(), r.y() + r.height(),
-                                            dy, du))) {
+                                            dy, du)) &&
+        dy != 0) {
         if (du != "") {
             dys = QString("(%1 %2)").arg(dy).arg(du);
         } else {

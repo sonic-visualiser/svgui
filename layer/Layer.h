@@ -1,4 +1,3 @@
-
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 
 /*
@@ -171,6 +170,11 @@ public:
     virtual void measureDrag(View *, QMouseEvent *);
     virtual void measureEnd(View *, QMouseEvent *);
     virtual void measureDoubleClick(View *, QMouseEvent *);
+
+    virtual bool haveCurrentMeasureRect() const {
+        return m_haveCurrentMeasureRect;
+    }
+    virtual void deleteCurrentMeasureRect(); // using a command
 
     /**
      * Open an editor on the item under the mouse (e.g. on
@@ -461,6 +465,21 @@ protected:
         MeasureRect m_rect;
     };
 
+    class DeleteMeasurementRectCommand : public Command
+    {
+    public:
+        DeleteMeasurementRectCommand(Layer *layer, MeasureRect rect) :
+            m_layer(layer), m_rect(rect) { }
+
+        virtual QString getName() const;
+        virtual void execute();
+        virtual void unexecute();
+
+    private:
+        Layer *m_layer;
+        MeasureRect m_rect;
+    };
+
     void addMeasureRectToSet(const MeasureRect &r) {
         m_measureRects.insert(r);
         emit layerMeasurementRectsChanged();
@@ -475,6 +494,8 @@ protected:
     MeasureRectSet m_measureRects;
     MeasureRect m_draggingRect;
     bool m_haveDraggingRect;
+    mutable bool m_haveCurrentMeasureRect;
+    mutable QPoint m_currentMeasureRectPoint;
    
     // Note that pixrects are only correct for a single view.
     // So we should update them at the start of the paint procedure
@@ -483,6 +504,7 @@ protected:
 
     virtual void updateMeasureRectYCoords(View *v, const MeasureRect &r) const;
     virtual void setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const;
+    virtual void setMeasureRectFromPixrect(View *v, MeasureRect &r, QRect pixrect) const;
 
     // This assumes updateMeasurementPixrects has been called
     MeasureRectSet::const_iterator findFocusedMeasureRect(QPoint) const;
