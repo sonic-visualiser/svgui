@@ -39,6 +39,8 @@
 #include "widgets/RangeInputDialog.h"
 #include "widgets/NotifyingPushButton.h"
 
+#include "widgets/KeyReference.h" //!!! should probably split KeyReference into a data class in base and another that shows the widget
+
 using std::cerr;
 using std::endl;
 
@@ -1001,6 +1003,64 @@ Pane::setTopLayerDisplayExtents(float dmin, float dmax)
     Layer *layer = getTopLayer();
     if (!layer) return false;
     return layer->setDisplayExtents(dmin, dmax);
+}
+
+void
+Pane::registerShortcuts(KeyReference &kr)
+{
+    kr.setCategory(tr("Zoom"));
+    kr.registerAlternativeShortcut(tr("Zoom In"), tr("Wheel Up"));
+    kr.registerAlternativeShortcut(tr("Zoom Out"), tr("Wheel Down"));
+
+    kr.setCategory(tr("General Pane Mouse Actions"));
+    
+    kr.registerShortcut(tr("Zoom"), tr("Wheel"),
+                        tr("Zoom in or out in time axis"));
+    kr.registerShortcut(tr("Ctrl+Wheel"), tr("Scroll"),
+                        tr("Scroll rapidly left or right in time axis"));
+    kr.registerShortcut(tr("Zoom Vertically"), tr("Shift+Wheel"), 
+                        tr("Zoom in or out in the vertical axis"));
+    kr.registerShortcut(tr("Scroll Vertically"), tr("Alt+Wheel"), 
+                        tr("Scroll up or down in the vertical axis"));
+    kr.registerShortcut(tr("Navigate"), tr("Middle"), 
+                        tr("Click middle button and drag to navigate with any tool"));
+    kr.registerShortcut(tr("Relocate"), tr("Double-Click Middle"), 
+                        tr("Double-click middle button to relocate with any tool"));
+    kr.registerShortcut(tr("Menu"), tr("Right"),
+                        tr("Show pane context menu"));
+    
+    kr.setCategory(tr("Navigate Tool Mouse Actions"));
+    
+    kr.registerShortcut(tr("Navigate"), tr("Left"), 
+                        tr("Click left button and drag to move around"));
+    kr.registerShortcut(tr("Zoom to Area"), tr("Shift+Left"), 
+                        tr("Shift-click left button and drag to zoom to a rectangular area"));
+    kr.registerShortcut(tr("Relocate"), tr("Double-Click Left"), 
+                        tr("Double-click left button to jump to clicked location"));
+    kr.registerShortcut(tr("Edit"), tr("Double-Click Left"), 
+                        tr("Double-click left button on an item to edit it"));
+        
+    kr.setCategory(tr("Select Tool Mouse Actions"));
+    kr.registerShortcut(tr("Select"), tr("Left"), 
+                        tr("Click left button and drag to select region; drag region edge to resize"));
+    kr.registerShortcut(tr("Multi Select"), tr("Ctrl+Left"), 
+                        tr("Ctrl-click left button and drag to select an additional region"));
+    
+    kr.setCategory(tr("Edit Tool Mouse Actions"));
+    kr.registerShortcut(tr("Move"), tr("Left"), 
+                        tr("Click left button on an item or selected region and drag to move"));
+    kr.registerShortcut(tr("Edit"), tr("Double-Click Left"), 
+                        tr("Double-click left button on an item to edit it"));
+    
+    kr.setCategory(tr("Draw Tool Mouse Actions"));
+    kr.registerShortcut(tr("Draw"), tr("Left"), 
+                        tr("Click left button and drag to create new item"));
+
+    kr.setCategory(tr("Measure Tool Mouse Actions"));
+    kr.registerShortcut(tr("Measure Area"), tr("Left"), 
+                        tr("Click left button and drag to measure a rectangular area"));
+    kr.registerShortcut(tr("Measure Item"), tr("Double-Click Left"), 
+                        tr("Click left button and drag to measure extents of an item or shape"));
 }
 
 void

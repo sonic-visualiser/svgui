@@ -440,6 +440,11 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
     if (!m_sliceableModel) return;
 
     paint.save();
+    QFont fn = paint.font();
+    if (fn.pointSize() > 8) {
+        fn.setPointSize(fn.pointSize() - 1);
+        paint.setFont(fn);
+    }
 
     ColourMapper mapper(m_colourMap, 0, 1);
     paint.setPen(mapper.getContrastingColour());

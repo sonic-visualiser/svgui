@@ -19,6 +19,7 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QHBoxLayout>
+#include <QDialogButtonBox>
 #include <QPushButton>
 
 RangeInputDialog::RangeInputDialog(QString title, QString message,
@@ -55,24 +56,11 @@ RangeInputDialog::RangeInputDialog(QString title, QString message,
     connect(m_rangeEnd, SIGNAL(valueChanged(double)),
             this, SLOT(rangeEndChanged(double)));
 
-    QHBoxLayout *hbox = new QHBoxLayout;
-    grid->addLayout(hbox, 2, 0, 1, 5);
-
-    QPushButton *ok = new QPushButton(tr("OK"), this);
-    ok->setDefault(true);
-
-    QPushButton *cancel = new QPushButton(tr("Cancel"), this);
-
-    QSize bs = ok->sizeHint().expandedTo(cancel->sizeHint());
-    ok->setFixedSize(bs);
-    cancel->setFixedSize(bs);
-
-    hbox->addStretch();
-    hbox->addWidget(ok);
-    hbox->addWidget(cancel);
-
-    QObject::connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
-    QObject::connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                                QDialogButtonBox::Cancel);
+    grid->addWidget(bb, 2, 0, 1, 5);
+    connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 RangeInputDialog::~RangeInputDialog()

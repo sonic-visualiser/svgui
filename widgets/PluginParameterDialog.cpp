@@ -31,6 +31,7 @@
 #include <QMessageBox>
 #include <QComboBox>
 #include <QSettings>
+#include <QDialogButtonBox>
 
 PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 					     QWidget *parent) :
@@ -224,14 +225,11 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     hbox->addWidget(m_advancedButton);
     m_advancedButton->hide();
 
-    QPushButton *ok = new QPushButton(tr("OK"));
-    QPushButton *cancel = new QPushButton(tr("Cancel"));
-    ok->setDefault(true);
-    hbox->addStretch(10);
-    hbox->addWidget(ok);
-    hbox->addWidget(cancel);
-    connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
-    connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                                QDialogButtonBox::Cancel);
+    hbox->addWidget(bb);
+    connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
 
     setAdvancedVisible(m_advancedVisible);
 }
@@ -383,7 +381,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
             blockSizeCombo->addItem(QString("%1").arg(size));
             blockSizeCombo->setCurrentIndex(blockSizeCombo->count() - 1);
         }
-        blockSizeCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
+        blockSizeCombo->setValidator(new QIntValidator(1, int(pow(2, 18)), this));
         connect(blockSizeCombo, SIGNAL(editTextChanged(const QString &)),
                 this, SLOT(blockSizeComboChanged(const QString &)));
         windowLayout->addWidget(blockSizeCombo, 0, 1);
@@ -405,7 +403,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
             incrementCombo->addItem(QString("%1").arg(increment));
             incrementCombo->setCurrentIndex(incrementCombo->count() - 1);
         }
-        incrementCombo->setValidator(new QIntValidator(1, pow(2, 18), this));
+        incrementCombo->setValidator(new QIntValidator(1, int(pow(2, 18)), this));
         connect(incrementCombo, SIGNAL(editTextChanged(const QString &)),
                 this, SLOT(incrementComboChanged(const QString &)));
         windowLayout->addWidget(incrementCombo, 1, 1);
