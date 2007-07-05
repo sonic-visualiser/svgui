@@ -446,7 +446,7 @@ Pane::paintEvent(QPaintEvent *e)
     }
 
     if (m_shiftPressed && m_clickedInRange &&
-        toolMode == ViewManager::NavigateMode) {
+        (toolMode == ViewManager::NavigateMode || m_navigating)) {
 
         //!!! be nice if this looked a bit more in keeping with the
         //selection block
@@ -1045,6 +1045,8 @@ Pane::registerShortcuts(KeyReference &kr)
                         tr("Click left button and drag to select region; drag region edge to resize"));
     kr.registerShortcut(tr("Multi Select"), tr("Ctrl+Left"), 
                         tr("Ctrl-click left button and drag to select an additional region"));
+    kr.registerShortcut(tr("Fine Select"), tr("Shift+Left"), 
+                        tr("Shift-click left button and drag to select without snapping to items or grid"));
     
     kr.setCategory(tr("Edit Tool Mouse Actions"));
     kr.registerShortcut(tr("Move"), tr("Left"), 
@@ -1061,6 +1063,8 @@ Pane::registerShortcuts(KeyReference &kr)
                         tr("Click left button and drag to measure a rectangular area"));
     kr.registerShortcut(tr("Measure Item"), tr("Double-Click Left"), 
                         tr("Click left button and drag to measure extents of an item or shape"));
+    kr.registerShortcut(tr("Zoom to Area"), tr("Shift+Left"), 
+                        tr("Shift-click left button and drag to zoom to a rectangular area"));
 }
 
 void
@@ -1086,7 +1090,10 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     m_navigating = false;
 
-    if (mode == ViewManager::NavigateMode || (e->buttons() & Qt::MidButton)) {
+    if (mode == ViewManager::NavigateMode ||
+        (e->buttons() & Qt::MidButton) ||
+        (mode == ViewManager::MeasureMode &&
+         (e->buttons() & Qt::LeftButton) && m_shiftPressed)) {
 
 	if (mode != ViewManager::NavigateMode) {
 	    setCursor(Qt::PointingHandCursor);

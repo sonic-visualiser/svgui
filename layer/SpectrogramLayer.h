@@ -71,6 +71,8 @@ public:
 				    size_t &resolution,
 				    SnapType snap) const;
 
+    virtual void measureDoubleClick(View *, QMouseEvent *);
+
     virtual bool hasLightBackground() const;
 
     void setModel(const DenseTimeValueModel *model);

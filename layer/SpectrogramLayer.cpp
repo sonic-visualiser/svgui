@@ -23,7 +23,9 @@
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
 #include "base/LogRange.h"
+#include "base/CommandHistory.h"
 #include "ColourMapper.h"
+#include "ImageRegionFinder.h"
 
 #include <QPainter>
 #include <QImage>
@@ -32,6 +34,7 @@
 #include <QTimer>
 #include <QApplication>
 #include <QMessageBox>
+#include <QMouseEvent>
 
 #include <iostream>
 
@@ -2458,6 +2461,26 @@ SpectrogramLayer::snapToFeatureFrame(View *, int &frame,
     return true;
 } 
 
+void
+SpectrogramLayer::measureDoubleClick(View *v, QMouseEvent *e)
+{
+    PixmapCache &cache = m_pixmapCaches[v];
+
+    std::cerr << "cache width: " << cache.pixmap.width() << ", height: "
+              << cache.pixmap.height() << std::endl;
+
+    QImage image = cache.pixmap.toImage();
+
+    ImageRegionFinder finder;
+    QRect rect = finder.findRegionExtents(&image, e->pos());
+    if (rect.isValid()) {
+        MeasureRect mr;
+        setMeasureRectFromPixrect(v, mr, rect);
+        CommandHistory::getInstance()->addCommand
+            (new AddMeasurementRectCommand(this, mr));
+    }
+}
+
 bool
 SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
                                       QPoint cursorPos,
@@ -2502,6 +2525,9 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
                                   QPoint cursorPos) const
 {
     paint.save();
+
+    int sw = getVerticalScaleWidth(v, paint);
+
     QFont fn = paint.font();
     if (fn.pointSize() > 8) {
         fn.setPointSize(fn.pointSize() - 1);
@@ -2514,7 +2540,6 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
     
     float fundamental = getFrequencyForY(v, cursorPos.y());
 
-    int sw = getVerticalScaleWidth(v, paint);
     v->drawVisibleText(paint,
                        sw + 2,
                        cursorPos.y() - 2,
