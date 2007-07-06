@@ -91,6 +91,9 @@ public:
     void setBinScale(BinScale scale);
     BinScale getBinScale() const { return m_binScale; }
 
+    void setThreshold(float);
+    int getThreshold() const { return m_threshold; }
+
     void setGain(float gain);
     float getGain() const;
 
@@ -122,6 +125,8 @@ protected:
     typedef std::vector<float> BiasCurve;
     virtual void getBiasCurve(BiasCurve &) const { return; }
 
+    virtual float getThresholdDb() const;
+
     const DenseThreeDimensionalModel *m_sliceableModel;
     QColor                            m_colour;
     int                               m_colourMap;
@@ -130,6 +135,8 @@ protected:
     PlotStyle                         m_plotStyle;
     BinScale                          m_binScale;
     bool                              m_normalize;
+    float                             m_threshold;
+    float                             m_initialThreshold;
     float                             m_gain;
     mutable std::vector<int>          m_scalePoints;
     mutable std::map<const View *, int> m_xorigins;

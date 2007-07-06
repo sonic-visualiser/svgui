@@ -2914,12 +2914,17 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
             if (n == 1) {
                 // C# -- fill the C from here
+                QColor col = Qt::gray;
+                if (i == 61) { // filling middle C
+                    col = Qt::blue;
+                    col = col.light(150);
+                }
                 if (ppy - y > 2) {
                     paint.fillRect(w - pkw,
                                    y,
                                    pkw,
                                    (py + ppy) / 2 - y,
-                                   Qt::gray);
+                                   col);
                 }
             }
 

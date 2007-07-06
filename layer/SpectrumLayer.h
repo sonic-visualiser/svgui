@@ -88,6 +88,9 @@ public:
     void setWindowType(WindowType type);
     WindowType getWindowType() const { return m_windowType; }
 
+    void setShowPeaks(bool);
+    bool getShowPeaks() const { return m_showPeaks; }
+
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
@@ -106,6 +109,7 @@ protected:
     size_t                  m_windowSize;
     WindowType              m_windowType;
     size_t                  m_windowHopLevel;
+    bool                    m_showPeaks;
     mutable bool            m_newFFTNeeded;
 
     void setupFFT();
