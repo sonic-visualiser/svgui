@@ -32,6 +32,7 @@ SpectrumLayer::SpectrumLayer() :
     m_windowSize(1024),
     m_windowType(HanningWindow),
     m_windowHopLevel(2),
+    m_showPeaks(false),
     m_newFFTNeeded(true)
 {
     Preferences *prefs = Preferences::getInstance();
@@ -108,8 +109,6 @@ SpectrumLayer::setChannel(int channel)
 
     m_channel = channel;
 
-//!!!    if (!fft) setupFFT();
-
     emit layerParametersChanged();
 }
 
@@ -119,6 +118,7 @@ SpectrumLayer::getProperties() const
     PropertyList list = SliceLayer::getProperties();
     list.push_back("Window Size");
     list.push_back("Window Increment");
+    list.push_back("Show Peak Frequencies");
     return list;
 }
 
@@ -127,6 +127,7 @@ SpectrumLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Window Size") return tr("Window Size");
     if (name == "Window Increment") return tr("Window Overlap");
+    if (name == "Show Peak Frequencies") return tr("Show Peak Frequencies");
     return SliceLayer::getPropertyLabel(name);
 }
 
@@ -135,6 +136,7 @@ SpectrumLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Window Size") return ValueProperty;
     if (name == "Window Increment") return ValueProperty;
+    if (name == "Show Peak Frequencies") return ToggleProperty;
     return SliceLayer::getPropertyType(name);
 }
 
@@ -143,6 +145,7 @@ SpectrumLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Window Size" ||
 	name == "Window Increment") return tr("Window");
+    if (name == "Show Peak Frequencies") return tr("Plot Type");
     return SliceLayer::getPropertyGroupName(name);
 }
 
@@ -175,6 +178,10 @@ SpectrumLayer::getPropertyRangeAndValue(const PropertyName &name,
 	
         val = m_windowHopLevel;
     
+    } else if (name == "Show Peak Frequencies") {
+
+        return m_showPeaks ? 1 : 0;
+
     } else {
 
         val = SliceLayer::getPropertyRangeAndValue(name, min, max, deflt);
@@ -217,6 +224,8 @@ SpectrumLayer::setProperty(const PropertyName &name, int value)
 	setWindowSize(32 << value);
     } else if (name == "Window Increment") {
         setWindowHopLevel(value);
+    } else if (name == "Show Peak Frequencies") {
+        setShowPeaks(value ? true : false);
     } else {
         SliceLayer::setProperty(name, value);
     }
@@ -227,7 +236,6 @@ SpectrumLayer::setWindowSize(size_t ws)
 {
     if (m_windowSize == ws) return;
     m_windowSize = ws;
-//!!!    setupFFT();
     m_newFFTNeeded = true;
     emit layerParametersChanged();
 }
@@ -237,7 +245,6 @@ SpectrumLayer::setWindowHopLevel(size_t v)
 {
     if (m_windowHopLevel == v) return;
     m_windowHopLevel = v;
-//!!!    setupFFT();
     m_newFFTNeeded = true;
     emit layerParametersChanged();
 }
@@ -247,8 +254,15 @@ SpectrumLayer::setWindowType(WindowType w)
 {
     if (m_windowType == w) return;
     m_windowType = w;
-//!!!    setupFFT();
     m_newFFTNeeded = true;
+    emit layerParametersChanged();
+}
+
+void
+SpectrumLayer::setShowPeaks(bool show)
+{
+    if (m_showPeaks == show) return;
+    m_showPeaks = show;
     emit layerParametersChanged();
 }
 
@@ -365,12 +379,10 @@ SpectrumLayer::getYScaleValue(const View *v, int y,
 
     if (m_energyScale == dBScale || m_energyScale == MeterScale) {
 
-        float thresh = -80.f;
-
         if (value > 0.f) {
             value = 10.f * log10f(value);
-            if (value < thresh) value = thresh;
-        } else value = thresh;
+            if (value < m_threshold) value = m_threshold;
+        } else value = m_threshold;
 
         unit = "dBV";
 
@@ -476,7 +488,7 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
     }
 
     float value = getValueForY(cursorPos.y(), v);
-    float thresh = -80.f;
+    float thresh = m_threshold;
     float db = thresh;
     if (value > 0.f) db = 10.f * log10f(value);
     if (db < thresh) db = thresh;
@@ -634,10 +646,9 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
     int pkh = 0;
     if (m_binScale == LogBins) pkh = 10;
 
-    if (fft) {
+    if (fft && m_showPeaks) {
 
         // draw peak lines
-        //!!! should be optional
 
         size_t col = v->getCentreFrame() / fft->getResolution();
 
@@ -738,12 +749,17 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
             if (n == 1) {
                 // C# -- fill the C from here
+                QColor col = Qt::gray;
+                if (i == 61) { // filling middle C
+                    col = Qt::blue;
+                    col = col.light(150);
+                }
                 if (x - ppx > 2) {
                     paint.fillRect((px + ppx) / 2 + 1,
                                    h - pkh,
                                    x - (px + ppx) / 2 - 1,
                                    pkh,
-                                   Qt::gray);
+                                   col);
                 }
             }
 

@@ -36,6 +36,8 @@ SliceLayer::SliceLayer() :
     m_plotStyle(PlotSteps),
     m_binScale(LinearBins),
     m_normalize(false),
+    m_threshold(0.0),
+    m_initialThreshold(0.0),
     m_gain(1.0),
     m_currentf0(0),
     m_currentf1(0)
@@ -240,7 +242,7 @@ SliceLayer::getYForValue(float value, const View *v, float &norm) const
 
     int yorigin = m_yorigins[v];
     int h = m_heights[v];
-    float thresh = -80.f;
+    float thresh = getThresholdDb();
 
     float y = 0.f;
 
@@ -265,8 +267,10 @@ SliceLayer::getYForValue(float value, const View *v, float &norm) const
         break;
         
     default:
-        norm = value;
-        y = yorigin - (float(h) * value);
+        std::cerr << "thresh = " << m_threshold << std::endl;
+        norm = (fabsf(value) - m_threshold);
+        if (norm < 0) norm = 0;
+        y = yorigin - (float(h) * norm);
         break;
     }
     
@@ -282,7 +286,7 @@ SliceLayer::getValueForY(float y, const View *v) const
 
     int yorigin = m_yorigins[v];
     int h = m_heights[v];
-    float thresh = -80.f;
+    float thresh = getThresholdDb();
 
     if (h <= 0) return value;
 
@@ -302,7 +306,7 @@ SliceLayer::getValueForY(float y, const View *v) const
         break;
 
     default:
-        value = y / h;
+        value = y / h + m_threshold;
     }
 
     return value / m_gain;
@@ -358,7 +362,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     size_t f1 = v->getFrameForX(f0x + 1);
     if (f1 > f0) --f1;
 
-    std::cerr << "centre frame " << v->getCentreFrame() << ", x " << f0x << ", f0 " << f0 << ", f1 " << f1 << std::endl;
+//    std::cerr << "centre frame " << v->getCentreFrame() << ", x " << f0x << ", f0 " << f0 << ", f1 " << f1 << std::endl;
 
     size_t res = m_sliceableModel->getResolution();
     size_t col0 = f0 / res;
@@ -367,7 +371,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     f0 = col0 * res;
     f1 = (col1 + 1) * res - 1;
 
-    std::cerr << "resolution " << res << ", col0 " << col0 << ", col1 " << col1 << ", f0 " << f0 << ", f1 " << f1 << std::endl;
+//    std::cerr << "resolution " << res << ", col0 " << col0 << ", col1 " << col1 << ", f0 " << f0 << ", f1 " << f1 << std::endl;
 
     m_currentf0 = f0;
     m_currentf1 = f1;
@@ -510,9 +514,9 @@ SliceLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 void
 SliceLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 {
-    float thresh = 0;
+    float thresh = m_threshold;
     if (m_energyScale != LinearScale) {
-        thresh = AudioLevel::dB_to_multiplier(-80); //!!! thresh
+        thresh = AudioLevel::dB_to_multiplier(getThresholdDb());
     }
     
 //    int h = (rect.height() * 3) / 4;
@@ -551,6 +555,7 @@ SliceLayer::getProperties() const
 //    list.push_back("Sampling Mode");
     list.push_back("Scale");
     list.push_back("Normalize");
+    list.push_back("Threshold");
     list.push_back("Gain");
     list.push_back("Bin Scale");
 
@@ -564,6 +569,7 @@ SliceLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Plot Type") return tr("Plot Type");
     if (name == "Energy Scale") return tr("Scale");
     if (name == "Normalize") return tr("Normalize");
+    if (name == "Threshold") return tr("Threshold");
     if (name == "Gain") return tr("Gain");
     if (name == "Sampling Mode") return tr("Sampling Mode");
     if (name == "Bin Scale") return tr("Plot X Scale");
@@ -575,6 +581,7 @@ SliceLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Gain") return RangeProperty;
     if (name == "Normalize") return ToggleProperty;
+    if (name == "Threshold") return RangeProperty;
     return ValueProperty;
 }
 
@@ -584,6 +591,7 @@ SliceLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Scale" ||
         name == "Normalize" ||
         name == "Sampling Mode" ||
+        name == "Threshold" ||
         name == "Gain") return tr("Scale");
     if (name == "Plot Type" ||
         name == "Bin Scale") return tr("Plot Type");
@@ -610,6 +618,19 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
         std::cerr << "gain is " << m_gain << ", mode is " << m_samplingMode << std::endl;
 
 	val = lrint(log10(m_gain) * 20.0);
+	if (val < *min) val = *min;
+	if (val > *max) val = *max;
+
+    } else if (name == "Threshold") {
+        
+	*min = -80;
+	*max = 0;
+
+        *deflt = lrintf(AudioLevel::multiplier_to_dB(m_initialThreshold));
+	if (*deflt < *min) *deflt = *min;
+	if (*deflt > *max) *deflt = *max;
+
+	val = lrintf(AudioLevel::multiplier_to_dB(m_threshold));
 	if (val < *min) val = *min;
 	if (val > *max) val = *max;
 
@@ -743,6 +764,9 @@ SliceLayer::getNewPropertyRangeMapper(const PropertyName &name) const
     if (name == "Gain") {
         return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
     }
+    if (name == "Threshold") {
+        return new LinearRangeMapper(-80, 0, -80, 0, tr("dB"));
+    }
     return 0;
 }
 
@@ -751,6 +775,9 @@ SliceLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
 	setGain(pow(10, float(value)/20.0));
+    } else if (name == "Threshold") {
+	if (value == -80) setThreshold(0.0);
+	else setThreshold(AudioLevel::dB_to_multiplier(value));
     } else if (name == "Colour") {
         if (m_plotStyle == PlotFilledBlocks) {
             setFillColourMap(value);
@@ -855,11 +882,27 @@ SliceLayer::setNormalize(bool n)
 }
 
 void
+SliceLayer::setThreshold(float thresh)
+{
+    if (m_threshold == thresh) return;
+    m_threshold = thresh;
+    emit layerParametersChanged();
+}
+
+void
 SliceLayer::setGain(float gain)
 {
     if (m_gain == gain) return;
     m_gain = gain;
     emit layerParametersChanged();
+}
+
+float
+SliceLayer::getThresholdDb() const
+{
+    if (m_threshold == 0.0) return -80.f;
+    float db = AudioLevel::multiplier_to_dB(m_threshold);
+    return db;
 }
 
 QString
