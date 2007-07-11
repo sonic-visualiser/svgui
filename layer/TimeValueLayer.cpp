@@ -27,7 +27,7 @@
 #include "widgets/ListInputDialog.h"
 
 #include "SpectrogramLayer.h" // for optional frequency alignment
-#include "ColourMapper.h"
+#include "base/ColourMapper.h"
 
 #include <QPainter>
 #include <QPainterPath>

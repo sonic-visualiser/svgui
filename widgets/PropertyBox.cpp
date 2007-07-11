@@ -20,6 +20,7 @@
 #include "base/PlayParameters.h"
 #include "layer/Layer.h"
 #include "base/UnitDatabase.h"
+#include "base/ColourDatabase.h"
 #include "base/RangeMapper.h"
 
 #include "plugin/RealTimePluginFactory.h"
@@ -31,6 +32,7 @@
 
 #include "NotifyingCheckBox.h"
 #include "NotifyingComboBox.h"
+#include "ColourNameDialog.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -39,12 +41,14 @@
 #include <QLabel>
 #include <QFrame>
 #include <QApplication>
+#include <QColorDialog>
+#include <QInputDialog>
 
 #include <cassert>
 #include <iostream>
 #include <cmath>
 
-//#define DEBUG_PROPERTY_BOX 1
+#define DEBUG_PROPERTY_BOX 1
 
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
@@ -90,6 +94,9 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 
     connect(UnitDatabase::getInstance(), SIGNAL(unitDatabaseChanged()),
             this, SLOT(unitDatabaseChanged()));
+
+    connect(ColourDatabase::getInstance(), SIGNAL(colourDatabaseChanged()),
+            this, SLOT(colourDatabaseChanged()));
 
 #ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox[" << this << "]::PropertyBox returning" << std::endl;
@@ -397,6 +404,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
     case PropertyContainer::ValueProperty:
     case PropertyContainer::UnitsProperty:
+    case PropertyContainer::ColourProperty:
     {
 	NotifyingComboBox *cb;
 
@@ -414,20 +422,39 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         }
 
         if (!have || rangeChanged) {
+
             cb->blockSignals(true);
             cb->clear();
+            cb->setEditable(false);
+
             if (type == PropertyContainer::ValueProperty) {
+
                 for (int i = min; i <= max; ++i) {
                     cb->addItem(m_container->getPropertyValueLabel(name, i));
                 }
-                cb->setEditable(false);
-            } else {
+
+            } else if (type == PropertyContainer::UnitsProperty) {
+
                 QStringList units = UnitDatabase::getInstance()->getKnownUnits();
                 for (int i = 0; i < units.size(); ++i) {
                     cb->addItem(units[i]);
                 }
+
                 cb->setEditable(true);
-            }
+
+            } else { // ColourProperty
+                
+                ColourDatabase *db = ColourDatabase::getInstance();
+                for (size_t i = 0; i < db->getColourCount(); ++i) {
+                    QString name = db->getColourName(i);
+                    QColor colour = db->getColour(i);
+                    QPixmap pmap(12, 12);
+                    pmap.fill(colour);
+                    cb->addItem(pmap, name);
+                }
+                cb->addItem(tr("Add New Colour..."));
+            }                
+                
             cb->blockSignals(false);
             if (cb->count() < 20 && cb->count() > cb->maxVisibleItems()) {
                 cb->setMaxVisibleItems(cb->count());
@@ -452,7 +479,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	}
 
         cb->blockSignals(true);
-        if (type == PropertyContainer::ValueProperty) {
+        if (type == PropertyContainer::ValueProperty ||
+            type == PropertyContainer::ColourProperty) {
             if (cb->currentIndex() != value) {
                 cb->setCurrentIndex(value);
             }
@@ -523,7 +551,26 @@ PropertyBox::unitDatabaseChanged()
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
     for (size_t i = 0; i < properties.size(); ++i) {
-	updatePropertyEditor(properties[i]);
+        if (m_container->getPropertyType(properties[i]) ==
+            PropertyContainer::UnitsProperty) {
+            updatePropertyEditor(properties[i]);
+        }
+    }
+
+    blockSignals(false);
+}    
+
+void
+PropertyBox::colourDatabaseChanged()
+{
+    blockSignals(true);
+
+    PropertyContainer::PropertyList properties = m_container->getProperties();
+    for (size_t i = 0; i < properties.size(); ++i) {
+        if (m_container->getPropertyType(properties[i]) ==
+            PropertyContainer::ColourProperty) {
+            updatePropertyEditor(properties[i], true);
+        }
     }
 
     blockSignals(false);
@@ -543,17 +590,49 @@ PropertyBox::propertyControllerChanged(int value)
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
 
     if (type == PropertyContainer::UnitsProperty) {
+
         NotifyingComboBox *cb = dynamic_cast<NotifyingComboBox *>(obj);
         if (cb) {
             QString unit = cb->currentText();
             m_container->setPropertyWithCommand
                 (name, UnitDatabase::getInstance()->getUnitId(unit));
         }
+
+    } else if (type == PropertyContainer::ColourProperty) {
+
+        if (value == int(ColourDatabase::getInstance()->getColourCount())) {
+            addNewColour();
+            if (value == int(ColourDatabase::getInstance()->getColourCount())) {
+                propertyContainerPropertyChanged(m_container);
+                return;
+            }
+        }
+        m_container->setPropertyWithCommand(name, value);
+
     } else if (type != PropertyContainer::InvalidProperty) {
+
 	m_container->setPropertyWithCommand(name, value);
     }
     
     updateContextHelp(obj);
+}
+
+void
+PropertyBox::addNewColour()
+{
+    QColor newColour = QColorDialog::getColor();
+    if (!newColour.isValid()) return;
+
+    ColourNameDialog dialog(tr("Name New Colour"),
+                            tr("Enter name for the new colour:"),
+                            newColour, "", this);
+    dialog.showDarkBackgroundCheckbox(tr("Prefer black background for this colour"));
+    if (dialog.exec() == QDialog::Accepted) {
+        //!!! command
+        ColourDatabase *db = ColourDatabase::getInstance();
+        int index = db->addColour(newColour, dialog.getColourName());
+        db->setUseDarkBackground(index, dialog.isDarkBackgroundChecked());
+    }
 }
     
 void

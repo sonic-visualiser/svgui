@@ -63,6 +63,7 @@ protected slots:
     void populateViewPlayFrame();
 
     void unitDatabaseChanged();
+    void colourDatabaseChanged();
 
     void editPlugin();
 
@@ -73,6 +74,7 @@ protected:
     void updatePropertyEditor(PropertyContainer::PropertyName,
                               bool rangeChanged = false);
     void updateContextHelp(QObject *o);
+    void addNewColour();
 
     QLabel *m_nameWidget;
     QWidget *m_mainWidget;

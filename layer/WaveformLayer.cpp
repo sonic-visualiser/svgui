@@ -19,6 +19,7 @@
 #include "view/View.h"
 #include "base/Profiler.h"
 #include "base/RangeMapper.h"
+#include "base/ColourDatabase.h"
 
 #include <QPainter>
 #include <QPixmap>
@@ -36,7 +37,8 @@ WaveformLayer::WaveformLayer() :
     m_model(0),
     m_gain(1.0f),
     m_autoNormalize(false),
-    m_colour(Qt::black),
+//!!!    m_colour(Qt::black),
+    m_colour(0),
 //    m_colour(QColor(84, 177, 248)),
     m_showMeans(true),
     m_greyscale(true),
@@ -88,6 +90,13 @@ WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
     if (channelsChanged) emit layerParametersChanged();
 }
 
+bool
+WaveformLayer::hasLightBackground() const
+{
+    bool dark = ColourDatabase::getInstance()->useDarkBackground(m_colour);
+    return !dark;
+}
+
 Layer::PropertyList
 WaveformLayer::getProperties() const
 {
@@ -120,7 +129,7 @@ WaveformLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Gain") return RangeProperty;
     if (name == "Normalize Visible Area") return ToggleProperty;
-    if (name == "Colour") return ValueProperty;
+    if (name == "Colour") return ColourProperty;
     if (name == "Channels") return ValueProperty;
     if (name == "Scale") return ValueProperty;
     return InvalidProperty;
@@ -163,10 +172,14 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == "Colour") {
 
-	*min = 0;
-	*max = 5;
+        ColourDatabase::getInstance()->getColourPropertyRange(min, max);
+//!!!	*min = 0;
+//	*max = 5;
         *deflt = 0;
 
+        val = m_colour;
+
+/*!!!
 	if (m_colour == Qt::black) val = 0;
 	else if (m_colour == Qt::darkRed) val = 1;
 	else if (m_colour == Qt::darkBlue ||
@@ -174,7 +187,7 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 	else if (m_colour == Qt::darkGreen) val = 3;
 	else if (m_colour == QColor(200, 50, 255)) val = 4;
 	else if (m_colour == QColor(255, 150, 50)) val = 5;
-
+*/
     } else if (name == "Channels") {
 
         *min = 0;
@@ -204,15 +217,7 @@ WaveformLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
     if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0: return tr("Black");
-	case 1: return tr("Red");
-	case 2: return tr("Blue");
-	case 3: return tr("Green");
-	case 4: return tr("Purple");
-	case 5: return tr("Orange");
-	}
+        return Layer::getPropertyValueLabel(name, value);
     }
     if (name == "Scale") {
 	switch (value) {
@@ -250,16 +255,7 @@ WaveformLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Normalize Visible Area") {
         setAutoNormalize(value ? true : false);
     } else if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0:	setBaseColour(Qt::black); break;
-	case 1: setBaseColour(Qt::darkRed); break;
-//	case 2: setBaseColour(QColor(84, 177, 248)); break;
-	case 2: setBaseColour(Qt::darkBlue); break;
-	case 3: setBaseColour(Qt::darkGreen); break;
-	case 4: setBaseColour(QColor(200, 50, 255)); break;
-	case 5: setBaseColour(QColor(255, 150, 50)); break;
-	}
+        setBaseColour(value);
     } else if (name == "Channels") {
         if (value == 1) setChannelMode(MixChannels);
         else if (value == 2) setChannelMode(MergeChannels);
@@ -294,7 +290,7 @@ WaveformLayer::setAutoNormalize(bool autoNormalize)
 }
 
 void
-WaveformLayer::setBaseColour(QColor colour)
+WaveformLayer::setBaseColour(int colour)
 {
     if (m_colour == colour) return;
     m_colour = colour;
@@ -535,14 +531,15 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     RangeSummarisableTimeValueModel::Range range;
     
     QColor greys[3];
-    if (m_colour == Qt::black) {
+    QColor baseColour = ColourDatabase::getInstance()->getColour(m_colour);
+    if (baseColour == Qt::black) {
 	for (int i = 0; i < 3; ++i) { // 0 lightest, 2 darkest
 	    int level = 192 - 64 * i;
 	    greys[i] = QColor(level, level, level);
 	}
     } else {
 	int hue, sat, val;
-	m_colour.getHsv(&hue, &sat, &val);
+	baseColour.getHsv(&hue, &sat, &val);
 	for (int i = 0; i < 3; ++i) { // 0 lightest, 2 darkest
 	    if (v->hasLightBackground()) {
 		greys[i] = QColor::fromHsv(hue, sat * (i + 1) / 4, val);
@@ -552,7 +549,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	}
     }
         
-    QColor midColour = m_colour;
+    QColor midColour = baseColour;
     if (midColour == Qt::black) {
 	midColour = Qt::gray;
     } else if (v->hasLightBackground()) {
@@ -568,7 +565,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
 
 	int prevRangeBottom = -1, prevRangeTop = -1;
-	QColor prevRangeBottomColour = m_colour, prevRangeTopColour = m_colour;
+	QColor prevRangeBottomColour = baseColour, prevRangeTopColour = baseColour;
 
         m_effectiveGains[ch] = m_gain;
 
@@ -837,14 +834,14 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 		if (prevRangeBottom > rangeBottom &&
 		    prevRangeTop    > rangeBottom) {
 //		    paint->setPen(midColour);
-		    paint->setPen(m_colour);
+		    paint->setPen(baseColour);
 		    paint->drawLine(x-1, prevRangeTop, x, rangeBottom);
 		    paint->setPen(prevRangeTopColour);
 		    paint->drawPoint(x-1, prevRangeTop);
 		} else if (prevRangeBottom < rangeTop &&
 			   prevRangeTop    < rangeTop) {
 //		    paint->setPen(midColour);
-		    paint->setPen(m_colour);
+		    paint->setPen(baseColour);
 		    paint->drawLine(x-1, prevRangeBottom, x, rangeTop);
 		    paint->setPen(prevRangeBottomColour);
 		    paint->drawPoint(x-1, prevRangeBottom);
@@ -855,9 +852,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 		if (clipped /*!!! ||
 		    range.min * gain <= -1.0 ||
 		    range.max * gain >=  1.0 */) {
-		    paint->setPen(Qt::red);
+		    paint->setPen(Qt::red); //!!! getContrastingColour
 		} else {
-		    paint->setPen(m_colour);
+		    paint->setPen(baseColour);
 		}
 	    } else {
 		paint->setPen(midColour);
@@ -865,8 +862,8 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	    paint->drawLine(x, rangeBottom, x, rangeTop);
 
-	    prevRangeTopColour = m_colour;
-	    prevRangeBottomColour = m_colour;
+	    prevRangeTopColour = baseColour;
+	    prevRangeBottomColour = baseColour;
 
 	    if (m_greyscale && (m_scale == LinearScale) && ready) {
 		if (!clipped) {
@@ -1282,21 +1279,30 @@ WaveformLayer::toXmlString(QString indent, QString extraAttributes) const
 {
     QString s;
     
+    QString colourName, colourSpec, darkbg;
+    ColourDatabase::getInstance()->getStringValues
+        (m_colour, colourName, colourSpec, darkbg);
+
     s += QString("gain=\"%1\" "
-		 "colour=\"%2\" "
-		 "showMeans=\"%3\" "
-		 "greyscale=\"%4\" "
-		 "channelMode=\"%5\" "
-		 "channel=\"%6\" "
-		 "scale=\"%7\" "
-		 "aggressive=\"%8\" "
-                 "autoNormalize=\"%9\"")
+		 "colourName=\"%2\" "
+                 "colour=\"%3\" "
+                 "darkBackground=\"%4\" "
+		 "showMeans=\"%5\" "
+		 "greyscale=\"%6\" "
+		 "channelMode=\"%7\" "
+		 "channel=\"%8\" ")
 	.arg(m_gain)
-	.arg(encodeColour(m_colour))
+	.arg(colourName)
+        .arg(colourSpec)
+        .arg(darkbg)
 	.arg(m_showMeans)
 	.arg(m_greyscale)
 	.arg(m_channelMode)
-	.arg(m_channel)
+	.arg(m_channel);
+
+    s += QString("scale=\"%1\" "
+		 "aggressive=\"%2\" "
+                 "autoNormalize=\"%3\"")
 	.arg(m_scale)
 	.arg(m_aggressive)
         .arg(m_autoNormalize);
@@ -1312,13 +1318,11 @@ WaveformLayer::setProperties(const QXmlAttributes &attributes)
     float gain = attributes.value("gain").toFloat(&ok);
     if (ok) setGain(gain);
 
+    QString colourName = attributes.value("colourName");
     QString colourSpec = attributes.value("colour");
-    if (colourSpec != "") {
-	QColor colour(colourSpec);
-	if (colour.isValid()) {
-	    setBaseColour(QColor(colourSpec));
-	}
-    }
+    QString darkbg = attributes.value("darkBackground");
+    m_colour = ColourDatabase::getInstance()->putStringValues
+        (colourName, colourSpec, darkbg);
 
     bool showMeans = (attributes.value("showMeans") == "1" ||
 		      attributes.value("showMeans") == "true");

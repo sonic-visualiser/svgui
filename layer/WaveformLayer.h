@@ -46,6 +46,8 @@ public:
     virtual int getVerticalScaleWidth(View *v, QPainter &) const;
     virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
 
+    virtual bool hasLightBackground() const;
+
     void setModel(const RangeSummarisableTimeValueModel *model);
 
     virtual PropertyList getProperties() const;
@@ -74,13 +76,14 @@ public:
     bool getAutoNormalize() const { return m_autoNormalize; }
 
     /**
-     * Set the basic display colour for waveforms.
+     * Set the basic display colour for waveforms.  The parameter is
+     * a ColourDatabase index.
      *
-     * The default is black.
+     * The default is the first colour in the database.
      *!!! NB should default to white if the associated View !hasLightBackground()
      */
-    void setBaseColour(QColor);
-    QColor getBaseColour() const { return m_colour; }
+    void setBaseColour(int);
+    int getBaseColour() const;
 
     /**
      * Set whether to display mean values as a lighter-coloured area
@@ -209,7 +212,7 @@ protected:
 
     float        m_gain;
     bool         m_autoNormalize;
-    QColor       m_colour;
+    int          m_colour;
     bool         m_showMeans;
     bool         m_greyscale;
     ChannelMode  m_channelMode;
