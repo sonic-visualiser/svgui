@@ -15,6 +15,7 @@ MOC_DIR = tmp_moc
 
 # Input
 HEADERS += AudioDial.h \
+           ColourNameDialog.h \
            Fader.h \
            ItemEditDialog.h \
            KeyReference.h \
@@ -37,6 +38,7 @@ HEADERS += AudioDial.h \
            WindowShapePreview.h \
            WindowTypeSelector.h
 SOURCES += AudioDial.cpp \
+           ColourNameDialog.cpp \
            Fader.cpp \
            ItemEditDialog.cpp \
            KeyReference.cpp \

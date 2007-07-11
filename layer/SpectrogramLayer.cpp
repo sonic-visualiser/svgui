@@ -24,7 +24,7 @@
 #include "base/RangeMapper.h"
 #include "base/LogRange.h"
 #include "base/CommandHistory.h"
-#include "ColourMapper.h"
+#include "base/ColourMapper.h"
 #include "ImageRegionFinder.h"
 
 #include <QPainter>
