@@ -1424,8 +1424,9 @@ QString
 TimeValueLayer::toXmlString(QString indent, QString extraAttributes) const
 {
     return Layer::toXmlString(indent, extraAttributes +
-			      QString(" colour=\"%1\" plotStyle=\"%2\"")
-			      .arg(encodeColour(m_colour)).arg(m_plotStyle));
+			      QString(" colour=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\"")
+			      .arg(encodeColour(m_colour)).arg(m_plotStyle)
+                              .arg(m_verticalScale));
 }
 
 void
@@ -1443,5 +1444,9 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
     PlotStyle style = (PlotStyle)
 	attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
+
+    VerticalScale scale = (VerticalScale)
+	attributes.value("verticalScale").toInt(&ok);
+    if (ok) setVerticalScale(scale);
 }
 
