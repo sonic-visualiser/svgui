@@ -17,9 +17,8 @@
 #define _WAVEFORM_LAYER_H_
 
 #include <QRect>
-#include <QColor>
 
-#include "Layer.h"
+#include "SingleColourLayer.h"
 
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
@@ -27,7 +26,7 @@ class View;
 class QPainter;
 class QPixmap;
 
-class WaveformLayer : public Layer
+class WaveformLayer : public SingleColourLayer
 {
     Q_OBJECT
 
@@ -43,10 +42,12 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
+    virtual ColourSignificance getLayerColourSignificance() const {
+        return ColourAndBackgroundSignificant;
+    }
+
     virtual int getVerticalScaleWidth(View *v, QPainter &) const;
     virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
-
-    virtual bool hasLightBackground() const;
 
     void setModel(const RangeSummarisableTimeValueModel *model);
 
@@ -74,16 +75,6 @@ public:
      */
     void setAutoNormalize(bool);
     bool getAutoNormalize() const { return m_autoNormalize; }
-
-    /**
-     * Set the basic display colour for waveforms.  The parameter is
-     * a ColourDatabase index.
-     *
-     * The default is the first colour in the database.
-     *!!! NB should default to white if the associated View !hasLightBackground()
-     */
-    void setBaseColour(int);
-    int getBaseColour() const;
 
     /**
      * Set whether to display mean values as a lighter-coloured area
@@ -191,7 +182,7 @@ public:
     virtual QString toXmlString(QString indent = "",
 				QString extraAttributes = "") const;
 
-    void setProperties(const QXmlAttributes &attributes);
+    virtual void setProperties(const QXmlAttributes &attributes);
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
@@ -210,9 +201,10 @@ protected:
 
     float getValueForY(const View *v, int y, size_t &channel) const;
 
+    virtual void flagBaseColourChanged() { m_cacheValid = false; }
+
     float        m_gain;
     bool         m_autoNormalize;
-    int          m_colour;
     bool         m_showMeans;
     bool         m_greyscale;
     ChannelMode  m_channelMode;

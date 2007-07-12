@@ -1021,7 +1021,7 @@ SpectrogramLayer::fillTimerTimedOut()
 bool
 SpectrogramLayer::hasLightBackground() const 
 {
-    return (m_colourMap == (int)ColourMapper::BlackOnWhite);
+    return ColourMapper(m_colourMap, 1.f, 255.f).hasLightBackground();
 }
 
 void
@@ -2334,7 +2334,7 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
 //        std::cerr << "SpectrogramLayer: illuminate "
 //                  << x0 << "," << y1 << " -> " << x1 << "," << y0 << std::endl;
         
-        paint.setPen(Qt::white);
+        paint.setPen(v->getForeground());
 
         //!!! should we be using paintCrosshairs for this?
 
@@ -2836,11 +2836,11 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
                          idb % 10 == 0) ||
                         (abs(y - lasty) > paint.fontMetrics().ascent() && 
                          idb % 5 == 0))) {
-                paint.setPen(Qt::black);
+                paint.setPen(v->getBackground());
                 QString text = QString("%1").arg(idb);
                 paint.drawText(3 + cw - cbw - paint.fontMetrics().width(text),
                                y + toff + textHeight/2, text);
-                paint.setPen(Qt::white);
+                paint.setPen(v->getForeground());
                 paint.drawLine(5 + cw - cbw, y, 8 + cw - cbw, y);
                 lasty = y;
                 lastdb = idb;

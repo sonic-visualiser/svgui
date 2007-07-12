@@ -20,6 +20,7 @@
 #include "base/Profiler.h"
 #include "base/Pitch.h"
 #include "base/LogRange.h"
+#include "base/ColourDatabase.h"
 #include "view/View.h"
 
 #include "data/model/NoteModel.h"
@@ -36,13 +37,12 @@
 #include <cmath>
 
 NoteLayer::NoteLayer() :
-    Layer(),
+    SingleColourLayer(),
     m_model(0),
     m_editing(false),
     m_originalPoint(0, 0.0, 0, tr("New Point")),
     m_editingPoint(0, 0.0, 0, tr("New Point")),
     m_editingCommand(0),
-    m_colour(Qt::black),
     m_verticalScale(AutoAlignScale)
 {
     
@@ -69,8 +69,7 @@ NoteLayer::setModel(NoteModel *model)
 Layer::PropertyList
 NoteLayer::getProperties() const
 {
-    PropertyList list;
-    list.push_back("Colour");
+    PropertyList list = SingleColourLayer::getProperties();
     list.push_back("Vertical Scale");
     list.push_back("Scale Units");
     return list;
@@ -79,17 +78,17 @@ NoteLayer::getProperties() const
 QString
 NoteLayer::getPropertyLabel(const PropertyName &name) const
 {
-    if (name == "Colour") return tr("Colour");
     if (name == "Vertical Scale") return tr("Vertical Scale");
     if (name == "Scale Units") return tr("Scale Units");
-    return "";
+    return SingleColourLayer::getPropertyLabel(name);
 }
 
 Layer::PropertyType
 NoteLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Scale Units") return UnitsProperty;
-    return ValueProperty;
+    if (name == "Vertical Scale") return ValueProperty;
+    return SingleColourLayer::getPropertyType(name);
 }
 
 QString
@@ -98,31 +97,16 @@ NoteLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Vertical Scale" || name == "Scale Units") {
         return tr("Scale");
     }
-    return QString();
+    return SingleColourLayer::getPropertyGroupName(name);
 }
 
 int
 NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
                                     int *min, int *max, int *deflt) const
 {
-    //!!! factor this colour handling stuff out into a colour manager class
-
     int val = 0;
 
-    if (name == "Colour") {
-
-	if (min) *min = 0;
-	if (max) *max = 5;
-        if (deflt) *deflt = 0;
-
-	if (m_colour == Qt::black) val = 0;
-	else if (m_colour == Qt::darkRed) val = 1;
-	else if (m_colour == Qt::darkBlue) val = 2;
-	else if (m_colour == Qt::darkGreen) val = 3;
-	else if (m_colour == QColor(200, 50, 255)) val = 4;
-	else if (m_colour == QColor(255, 150, 50)) val = 5;
-
-    } else if (name == "Vertical Scale") {
+    if (name == "Vertical Scale") {
 	
 	if (min) *min = 0;
 	if (max) *max = 3;
@@ -140,7 +124,7 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else {
 
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
+	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -148,19 +132,9 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 NoteLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
+                                 int value) const
 {
-    if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0: return tr("Black");
-	case 1: return tr("Red");
-	case 2: return tr("Blue");
-	case 3: return tr("Green");
-	case 4: return tr("Purple");
-	case 5: return tr("Orange");
-	}
-    } else if (name == "Vertical Scale") {
+    if (name == "Vertical Scale") {
 	switch (value) {
 	default:
 	case 0: return tr("Auto-Align");
@@ -169,23 +143,13 @@ NoteLayer::getPropertyValueLabel(const PropertyName &name,
 	case 3: return tr("MIDI Notes");
 	}
     }
-    return tr("<unknown>");
+    return SingleColourLayer::getPropertyValueLabel(name, value);
 }
 
 void
 NoteLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0:	setBaseColour(Qt::black); break;
-	case 1: setBaseColour(Qt::darkRed); break;
-	case 2: setBaseColour(Qt::darkBlue); break;
-	case 3: setBaseColour(Qt::darkGreen); break;
-	case 4: setBaseColour(QColor(200, 50, 255)); break;
-	case 5: setBaseColour(QColor(255, 150, 50)); break;
-	}
-    } else if (name == "Vertical Scale") {
+    if (name == "Vertical Scale") {
 	setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
         if (m_model) {
@@ -193,15 +157,9 @@ NoteLayer::setProperty(const PropertyName &name, int value)
                 (UnitDatabase::getInstance()->getUnitById(value));
             emit modelChanged();
         }
+    } else {
+        return SingleColourLayer::setProperty(name, value);
     }
-}
-
-void
-NoteLayer::setBaseColour(QColor colour)
-{
-    if (m_colour == colour) return;
-    m_colour = colour;
-    emit layerParametersChanged();
 }
 
 void
@@ -592,9 +550,9 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     NoteModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
 
-    paint.setPen(m_colour);
+    paint.setPen(getBaseQColor());
 
-    QColor brushColour(m_colour);
+    QColor brushColour(getBaseQColor());
     brushColour.setAlpha(80);
 
 //    std::cerr << "NoteLayer::paint: resolution is "
@@ -632,13 +590,13 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
 
 	if (w < 1) w = 1;
-	paint.setPen(m_colour);
+	paint.setPen(getBaseQColor());
 	paint.setBrush(brushColour);
 
 	if (illuminateFrame == p.frame) {
 	    if (localPos.y() >= y - h && localPos.y() < y) {
-		paint.setPen(Qt::black);//!!!
-		paint.setBrush(Qt::black);//!!!
+		paint.setPen(v->getForeground());
+		paint.setBrush(v->getForeground());
 	    }
 	}
 	
@@ -982,24 +940,26 @@ NoteLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
     return true;
 }
 
+int
+NoteLayer::getDefaultColourHint(bool darkbg, bool &impose)
+{
+    impose = false;
+    return ColourDatabase::getInstance()->getColourIndex
+        (QString(darkbg ? "White" : "Black"));
+}
+
 QString
 NoteLayer::toXmlString(QString indent, QString extraAttributes) const
 {
-    return Layer::toXmlString(indent, extraAttributes +
-			      QString(" colour=\"%1\" verticalScale=\"%2\"")
-			      .arg(encodeColour(m_colour)).arg(m_verticalScale));
+    return SingleColourLayer::toXmlString(indent, extraAttributes +
+                                          QString(" verticalScale=\"%1\"")
+                                          .arg(m_verticalScale));
 }
 
 void
 NoteLayer::setProperties(const QXmlAttributes &attributes)
 {
-    QString colourSpec = attributes.value("colour");
-    if (colourSpec != "") {
-	QColor colour(colourSpec);
-	if (colour.isValid()) {
-	    setBaseColour(QColor(colourSpec));
-	}
-    }
+    SingleColourLayer::setProperties(attributes);
 
     bool ok;
     VerticalScale scale = (VerticalScale)

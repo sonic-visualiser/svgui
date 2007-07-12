@@ -21,6 +21,7 @@
 #include "base/Pitch.h"
 
 #include "layer/TimeRulerLayer.h" //!!! damn, shouldn't be including that here
+#include "layer/SingleColourLayer.h"
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h" //!!! likewise
 
 #include <QPainter>
@@ -434,11 +435,63 @@ View::setZoomLevel(size_t z)
 bool
 View::hasLightBackground() const
 {
+    bool darkPalette = false;
+
+    QColor windowBg = palette().color(QPalette::Window);
+    if (windowBg.red() + windowBg.green() + windowBg.blue() < 384) {
+        darkPalette = true;
+    }
+
+    Layer::ColourSignificance maxSignificance = Layer::ColourAbsent;
+    bool mostSignificantHasDarkBackground = false;
+    
     for (LayerList::const_iterator i = m_layers.begin();
          i != m_layers.end(); ++i) {
-        if (!(*i)->hasLightBackground()) return false;
+
+        Layer::ColourSignificance s = (*i)->getLayerColourSignificance();
+        bool light = (*i)->hasLightBackground();
+
+        if (int(s) > int(maxSignificance)) {
+            maxSignificance = s;
+            mostSignificantHasDarkBackground = !light;
+        } else if (s == maxSignificance && !light) {
+            mostSignificantHasDarkBackground = true;
+        }
     }
-    return true;
+
+    if (int(maxSignificance) >= int(Layer::ColourAndBackgroundSignificant)) {
+        return !mostSignificantHasDarkBackground;
+    } else {
+        return !darkPalette;
+    }
+}
+
+QColor
+View::getBackground() const
+{
+    bool light = hasLightBackground();
+
+    QColor widgetbg = palette().window().color();
+    bool widgetLight =
+        (widgetbg.red() + widgetbg.green() + widgetbg.blue()) > 384;
+
+    if (widgetLight == light) return widgetbg;
+    else if (light) return Qt::white;
+    else return Qt::black;
+}
+
+QColor
+View::getForeground() const
+{
+    bool light = hasLightBackground();
+
+    QColor widgetfg = palette().text().color();
+    bool widgetLight =
+        (widgetfg.red() + widgetfg.green() + widgetfg.blue()) > 384;
+
+    if (widgetLight != light) return widgetfg;
+    else if (light) return Qt::black;
+    else return Qt::white;
 }
 
 View::LayerProgressBar::LayerProgressBar(QWidget *parent) :
@@ -454,6 +507,9 @@ View::addLayer(Layer *layer)
 {
     delete m_cache;
     m_cache = 0;
+
+    SingleColourLayer *scl = dynamic_cast<SingleColourLayer *>(layer);
+    if (scl) scl->setDefaultColourFor(this);
 
     m_layers.push_back(layer);
 
@@ -624,26 +680,9 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
 
         QColor penColour, surroundColour;
 
-        if (hasLightBackground()) {
-            penColour = Qt::black;
-            surroundColour = Qt::white;
-        } else {
-            penColour = Qt::white;
-            surroundColour = Qt::black;
-        }            
+        penColour = getForeground();
+        surroundColour = getBackground();
 
-/*
-	QColor origPenColour = paint.pen().color();
-	QColor penColour = origPenColour;
-	QColor surroundColour = Qt::white;  //palette().background().color();
-
-	if (!hasLightBackground()) {
-	    int h, s, v;
-	    penColour.getHsv(&h, &s, &v);
-	    penColour = QColor::fromHsv(h, s, 255 - v);
-	    surroundColour = Qt::black;
-	}
-*/
 	paint.setPen(surroundColour);
 
 	for (int dx = -1; dx <= 1; ++dx) {
@@ -656,9 +695,7 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
 	paint.setPen(penColour);
 
 	paint.drawText(x, y, text);
-/*
-	paint.setPen(origPenColour);
-*/
+
         paint.restore();
 
     } else {
@@ -1124,7 +1161,8 @@ bool
 View::areLayerColoursSignificant() const
 {
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
-	if ((*i)->isLayerColourSignificant()) return true;
+	if ((*i)->getLayerColourSignificance() ==
+            Layer::ColourHasMeaningfulValue) return true;
         if ((*i)->isLayerOpaque()) break;
     }
     return false;
@@ -1402,17 +1440,12 @@ View::paintEvent(QPaintEvent *e)
 	else paint.begin(this);
 
 	paint.setClipRect(cacheRect);
-	
-	if (hasLightBackground()) {
-	    paint.setPen(Qt::white);
-	    paint.setBrush(Qt::white);
-	} else {
-	    paint.setPen(Qt::black);
-	    paint.setBrush(Qt::black);
-	}
+
+        paint.setPen(getBackground());
+        paint.setBrush(getBackground());
 	paint.drawRect(cacheRect);
 
-	paint.setPen(Qt::black);
+	paint.setPen(getForeground());
 	paint.setBrush(Qt::NoBrush);
 	
 	for (LayerList::iterator i = scrollables.begin(); i != scrollables.end(); ++i) {
@@ -1448,17 +1481,12 @@ View::paintEvent(QPaintEvent *e)
     paint.setClipRect(nonCacheRect);
 
     if (scrollables.empty()) {
-	if (hasLightBackground()) {
-	    paint.setPen(Qt::white);
-	    paint.setBrush(Qt::white);
-	} else {
-	    paint.setPen(Qt::black);
-	    paint.setBrush(Qt::black);
-	}
+        paint.setPen(getBackground());
+        paint.setBrush(getBackground());
 	paint.drawRect(nonCacheRect);
     }
 	
-    paint.setPen(Qt::black);
+    paint.setPen(getForeground());
     paint.setBrush(Qt::NoBrush);
 	
     for (LayerList::iterator i = nonScrollables.begin(); i != nonScrollables.end(); ++i) {
@@ -1494,12 +1522,12 @@ View::paintEvent(QPaintEvent *e)
 
         int playx = getXForFrame(m_playPointerFrame);
         
-        paint.setPen(Qt::black);
+        paint.setPen(getForeground());
         paint.drawLine(playx - 1, 0, playx - 1, height() - 1);
         paint.drawLine(playx + 1, 0, playx + 1, height() - 1);
         paint.drawPoint(playx, 0);
         paint.drawPoint(playx, height() - 1);
-        paint.setPen(Qt::white);
+        paint.setPen(getBackground());
         paint.drawLine(playx, 1, playx, height() - 2);
 
 	paint.end();
@@ -1577,11 +1605,7 @@ View::drawSelections(QPainter &paint)
 
 	if (illuminateThis) {
 	    paint.save();
-	    if (hasLightBackground()) {
-		paint.setPen(QPen(Qt::black, 2));
-	    } else {
-		paint.setPen(QPen(Qt::white, 2));
-	    }
+            paint.setPen(QPen(getForeground(), 2));
 	    if (closeToLeft) {
 		paint.drawLine(p0, 1, p1, 1);
 		paint.drawLine(p0, 0, p0, height());
@@ -1941,17 +1965,12 @@ View::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
         
         QRect chunk(0, 0, width(), height());
 
-	if (hasLightBackground()) {
-	    paint.setPen(Qt::white);
-	    paint.setBrush(Qt::white);
-	} else {
-	    paint.setPen(Qt::black);
-	    paint.setBrush(Qt::black);
-	}
+        paint.setPen(getBackground());
+        paint.setBrush(getBackground());
 
 	paint.drawRect(QRect(xorigin + x, 0, width(), height()));
 
-	paint.setPen(Qt::black);
+	paint.setPen(getForeground());
 	paint.setBrush(Qt::NoBrush);
 
 	for (LayerList::iterator i = m_layers.begin();

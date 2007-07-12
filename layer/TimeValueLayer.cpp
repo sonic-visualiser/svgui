@@ -19,6 +19,7 @@
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/LogRange.h"
+#include "base/ColourDatabase.h"
 #include "view/View.h"
 
 #include "data/model/SparseTimeValueModel.h"
@@ -38,13 +39,12 @@
 #include <cmath>
 
 TimeValueLayer::TimeValueLayer() :
-    Layer(),
+    SingleColourLayer(),
     m_model(0),
     m_editing(false),
     m_originalPoint(0, 0.0, tr("New Point")),
     m_editingPoint(0, 0.0, tr("New Point")),
     m_editingCommand(0),
-    m_colour(Qt::darkGreen),
     m_colourMap(0),
     m_plotStyle(PlotConnectedPoints),
     m_verticalScale(AutoAlignScale)
@@ -73,8 +73,7 @@ TimeValueLayer::setModel(SparseTimeValueModel *model)
 Layer::PropertyList
 TimeValueLayer::getProperties() const
 {
-    PropertyList list;
-    list.push_back("Colour");
+    PropertyList list = SingleColourLayer::getProperties();
     list.push_back("Plot Type");
     list.push_back("Vertical Scale");
     list.push_back("Scale Units");
@@ -84,18 +83,20 @@ TimeValueLayer::getProperties() const
 QString
 TimeValueLayer::getPropertyLabel(const PropertyName &name) const
 {
-    if (name == "Colour") return tr("Colour");
     if (name == "Plot Type") return tr("Plot Type");
     if (name == "Vertical Scale") return tr("Vertical Scale");
     if (name == "Scale Units") return tr("Scale Units");
-    return "";
+    return SingleColourLayer::getPropertyLabel(name);
 }
 
 Layer::PropertyType
 TimeValueLayer::getPropertyType(const PropertyName &name) const
 {
+    if (name == "Plot Type") return ValueProperty;
+    if (name == "Vertical Scale") return ValueProperty;
     if (name == "Scale Units") return UnitsProperty;
-    else return ValueProperty;
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ValueProperty;
+    return SingleColourLayer::getPropertyType(name);
 }
 
 QString
@@ -104,40 +105,22 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Vertical Scale" || name == "Scale Units") {
         return tr("Scale");
     }
-    return QString();
+    return SingleColourLayer::getPropertyGroupName(name);
 }
 
 int
 TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 					 int *min, int *max, int *deflt) const
 {
-    //!!! factor this colour handling stuff out into a colour manager class
-
     int val = 0;
 
-    if (name == "Colour") {
-
-        if (m_plotStyle == PlotSegmentation) {
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) {
             
-            if (min) *min = 0;
-            if (max) *max = ColourMapper::getColourMapCount() - 1;
-            if (deflt) *deflt = 0;
-
-            val = m_colourMap;
+        if (min) *min = 0;
+        if (max) *max = ColourMapper::getColourMapCount() - 1;
+        if (deflt) *deflt = 0;
         
-        } else {
-
-            if (min) *min = 0;
-            if (max) *max = 5;
-            if (deflt) *deflt = 0;
-
-            if (m_colour == Qt::black) val = 0;
-            else if (m_colour == Qt::darkRed) val = 1;
-            else if (m_colour == Qt::darkBlue) val = 2;
-            else if (m_colour == Qt::darkGreen) val = 3;
-            else if (m_colour == QColor(200, 50, 255)) val = 4;
-            else if (m_colour == QColor(255, 150, 50)) val = 5;
-        }
+        val = m_colourMap;
 
     } else if (name == "Plot Type") {
 	
@@ -165,7 +148,7 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else {
 	
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
+	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -175,20 +158,8 @@ QString
 TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
-    if (name == "Colour") {
-        if (m_plotStyle == PlotSegmentation) {
-            return ColourMapper::getColourMapName(value);
-        } else {
-            switch (value) {
-            default:
-            case 0: return tr("Black");
-            case 1: return tr("Red");
-            case 2: return tr("Blue");
-            case 3: return tr("Green");
-            case 4: return tr("Purple");
-            case 5: return tr("Orange");
-            }
-        }
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) {
+        return ColourMapper::getColourMapName(value);
     } else if (name == "Plot Type") {
 	switch (value) {
 	default:
@@ -208,26 +179,14 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	case 3: return tr("+/-1");
 	}
     }
-    return tr("<unknown>");
+    return SingleColourLayer::getPropertyValueLabel(name, value);
 }
 
 void
 TimeValueLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == "Colour") {
-        if (m_plotStyle == PlotSegmentation) {
-            setFillColourMap(value);
-        } else {
-            switch (value) {
-            default:
-            case 0:	setBaseColour(Qt::black); break;
-            case 1: setBaseColour(Qt::darkRed); break;
-            case 2: setBaseColour(Qt::darkBlue); break;
-            case 3: setBaseColour(Qt::darkGreen); break;
-            case 4: setBaseColour(QColor(200, 50, 255)); break;
-            case 5: setBaseColour(QColor(255, 150, 50)); break;
-            }
-        }
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) {
+        setFillColourMap(value);
     } else if (name == "Plot Type") {
 	setPlotStyle(PlotStyle(value));
     } else if (name == "Vertical Scale") {
@@ -238,15 +197,9 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
                 (UnitDatabase::getInstance()->getUnitById(value));
             emit modelChanged();
         }
+    } else {
+        SingleColourLayer::setProperty(name, value);
     }
-}
-
-void
-TimeValueLayer::setBaseColour(QColor colour)
-{
-    if (m_colour == colour) return;
-    m_colour = colour;
-    emit layerParametersChanged();
 }
 
 void
@@ -565,6 +518,14 @@ TimeValueLayer::getColourForValue(View *v, float val) const
     return QColor(solid.red(), solid.green(), solid.blue(), 120);
 }
 
+int
+TimeValueLayer::getDefaultColourHint(bool darkbg, bool &impose)
+{
+    impose = false;
+    return ColourDatabase::getInstance()->getColourIndex
+        (QString(darkbg ? "Bright Green" : "Green"));
+}
+
 void
 TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
@@ -583,9 +544,9 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 					   (frame0, frame1));
     if (points.empty()) return;
 
-    paint.setPen(m_colour);
+    paint.setPen(getBaseQColor());
 
-    QColor brushColour(m_colour);
+    QColor brushColour(getBaseQColor());
     brushColour.setAlpha(80);
     paint.setBrush(brushColour);
 
@@ -656,10 +617,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int labelY = y;
 
 	if (w < 1) w = 1;
-	paint.setPen(m_colour);
+	paint.setPen(getBaseQColor());
 
 	if (m_plotStyle == PlotSegmentation) {
-            paint.setPen(Qt::black);
+            paint.setPen(getForegroundQColor(v));
             paint.setBrush(getColourForValue(v, p.value));
 	    labelY = v->height();
 	} else if (m_plotStyle == PlotLines ||
@@ -676,7 +637,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    } else if (y > origin + 1) {
 		paint.drawRect(x + w/2, origin, 1, y - origin - 1);
 	    }
-	    paint.setPen(m_colour);
+	    paint.setPen(getBaseQColor());
 	}
 
 	if (illuminateFrame == p.frame) {
@@ -690,10 +651,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	    if (m_plotStyle != PlotCurve &&
 		m_plotStyle != PlotLines) {
-		paint.setPen(Qt::black);//!!!
-		if (m_plotStyle != PlotSegmentation) {
-		    paint.setBrush(Qt::black);//!!!
-		}
+		paint.setPen(getForegroundQColor(v));
 	    }	    
 	}
 
@@ -1423,24 +1381,23 @@ TimeValueLayer::paste(const Clipboard &from, int frameOffset,
 QString
 TimeValueLayer::toXmlString(QString indent, QString extraAttributes) const
 {
-    return Layer::toXmlString(indent, extraAttributes +
-			      QString(" colour=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\"")
-			      .arg(encodeColour(m_colour)).arg(m_plotStyle)
-                              .arg(m_verticalScale));
+    return SingleColourLayer::toXmlString(indent, extraAttributes +
+                                          QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\"")
+                                          .arg(m_colourMap)
+                                          .arg(m_plotStyle)
+                                          .arg(m_verticalScale));
 }
 
 void
 TimeValueLayer::setProperties(const QXmlAttributes &attributes)
 {
-    QString colourSpec = attributes.value("colour");
-    if (colourSpec != "") {
-	QColor colour(colourSpec);
-	if (colour.isValid()) {
-	    setBaseColour(QColor(colourSpec));
-	}
-    }
+    SingleColourLayer::setProperties(attributes);
 
     bool ok;
+
+    int cmap = attributes.value("colourMap").toInt(&ok);
+    if (ok) setFillColourMap(cmap);
+
     PlotStyle style = (PlotStyle)
 	attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);

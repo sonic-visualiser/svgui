@@ -16,7 +16,7 @@
 #ifndef _TIME_RULER_H_
 #define _TIME_RULER_H_
 
-#include "Layer.h"
+#include "SingleColourLayer.h"
 
 #include <QRect>
 #include <QColor>
@@ -25,7 +25,7 @@ class View;
 class Model;
 class QPainter;
 
-class TimeRulerLayer : public Layer
+class TimeRulerLayer : public SingleColourLayer
 {
     Q_OBJECT
 
@@ -37,23 +37,15 @@ public:
     void setModel(Model *);
     virtual const Model *getModel() const { return m_model; }
 
-    void setBaseColour(QColor);
-    QColor getBaseColour() const { return m_colour; }
-
     enum LabelHeight { LabelTop, LabelMiddle, LabelBottom };
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
     virtual bool snapToFeatureFrame(View *, int &, size_t &, SnapType) const;
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
-    virtual void setProperty(const PropertyName &, int value);
+    virtual ColourSignificance getLayerColourSignificance() const {
+        return ColourIrrelevant;
+    }
 
     virtual bool getValueExtents(float &, float &, bool &, QString &) const {
         return false;
@@ -66,8 +58,9 @@ public:
 
 protected:
     Model *m_model;
-    QColor m_colour;
     LabelHeight m_labelHeight;
+
+    virtual int getDefaultColourHint(bool dark, bool &impose);
 
     int getMajorTickSpacing(View *, bool &quarterTicks) const;
 };

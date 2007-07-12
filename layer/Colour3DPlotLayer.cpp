@@ -343,7 +343,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     int ch = h - 20;
     if (ch > 20 && m_cache) {
 
-        paint.setPen(Qt::black);
+        paint.setPen(v->getForeground());
         paint.drawRect(4, 10, cw - 8, ch - 19);
 
         for (int y = 0; y < ch - 20; ++y) {
@@ -354,7 +354,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
         }
     }
 
-    paint.setPen(Qt::black);
+    paint.setPen(v->getForeground());
 
     int count = v->height() / paint.fontMetrics().height();
     int step = m_model->getHeight() / count;
@@ -643,7 +643,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	    if (illuminate) {
 		if (r.contains(illuminatePos)) {
-		    paint.setPen(Qt::black);//!!!
+		    paint.setPen(v->getForeground());
 		}
 	    }
             
@@ -660,7 +660,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    float value = m_model->getValueAt(scx, sy);
 		    sprintf(labelbuf, "%06f", value);
 		    QString text(labelbuf);
-		    paint.setPen(Qt::white);
+		    paint.setPen(v->getBackground());
 		    paint.drawText(rx0 + 2,
 				   ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
 				   text);

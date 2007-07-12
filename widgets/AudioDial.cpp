@@ -127,7 +127,7 @@ void AudioDial::paintEvent(QPaintEvent *)
 	
     QColor knobColor(m_knobColor);
     if (knobColor == Qt::black)
-	knobColor = palette().background().color();
+	knobColor = palette().window().color();
 
     QColor meterColor(m_meterColor);
     if (!isEnabled())

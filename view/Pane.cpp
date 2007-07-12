@@ -568,8 +568,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 //	    std::cerr << "Pane::paintEvent: calling paint.save() in vertical scale block" << std::endl;
         paint.save();
             
-        paint.setPen(Qt::black);
-        paint.setBrush(Qt::white);
+        paint.setPen(getForeground());
+        paint.setBrush(getBackground());
         paint.drawRect(0, -1, m_scaleWidth, height()+1);
         
         paint.setBrush(Qt::NoBrush);
@@ -750,7 +750,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
         for (size_t i = 0; i < texts.size(); ++i) {
             
             if (i + 1 == texts.size()) {
-                paint.setPen(Qt::black);
+                paint.setPen(getForeground());
             }
             
             drawVisibleText(paint, llx,
@@ -776,11 +776,7 @@ Pane::drawEditingSelection(QPainter &paint)
     }
     
     paint.save();
-    if (hasLightBackground()) {
-        paint.setPen(QPen(Qt::black, 2));
-    } else {
-        paint.setPen(QPen(Qt::white, 2));
-    }
+    paint.setPen(QPen(getForeground(), 2));
     
     //!!! duplicating display policy with View::drawSelections
     
@@ -856,8 +852,8 @@ Pane::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
             
             paint.save();
             
-            paint.setPen(Qt::black);
-            paint.setBrush(Qt::white);
+            paint.setPen(getForeground());
+            paint.setBrush(getBackground());
             paint.drawRect(xorigin, -1, m_scaleWidth, height()+1);
             
             paint.setBrush(Qt::NoBrush);

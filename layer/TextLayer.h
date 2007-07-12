@@ -16,7 +16,7 @@
 #ifndef _TEXT_LAYER_H_
 #define _TEXT_LAYER_H_
 
-#include "Layer.h"
+#include "SingleColourLayer.h"
 #include "data/model/TextModel.h"
 
 #include <QObject>
@@ -25,7 +25,7 @@
 class View;
 class QPainter;
 
-class TextLayer : public Layer
+class TextLayer : public SingleColourLayer
 {
     Q_OBJECT
 
@@ -70,9 +70,6 @@ public:
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
-    void setBaseColour(QColor);
-    QColor getBaseColour() const { return m_colour; }
-
     virtual bool isLayerScrollable(const View *v) const;
 
     virtual bool isLayerEditable() const { return true; }
@@ -91,6 +88,8 @@ protected:
     int getYForHeight(View *v, float height) const;
     float getHeightForY(View *v, int y) const;
 
+    virtual int getDefaultColourHint(bool dark, bool &impose);
+
     TextModel::PointList getLocalPoints(View *v, int x, int y) const;
 
     TextModel *m_model;
@@ -99,7 +98,6 @@ protected:
     TextModel::Point m_originalPoint;
     TextModel::Point m_editingPoint;
     TextModel::EditCommand *m_editingCommand;
-    QColor m_colour;
 };
 
 #endif

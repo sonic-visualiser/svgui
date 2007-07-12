@@ -16,7 +16,7 @@
 #ifndef _TIME_INSTANT_LAYER_H_
 #define _TIME_INSTANT_LAYER_H_
 
-#include "Layer.h"
+#include "SingleColourLayer.h"
 #include "data/model/SparseOneDimensionalModel.h"
 
 #include <QObject>
@@ -25,7 +25,7 @@
 class View;
 class QPainter;
 
-class TimeInstantLayer : public Layer
+class TimeInstantLayer : public SingleColourLayer
 {
     Q_OBJECT
 
@@ -70,9 +70,6 @@ public:
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
-    void setBaseColour(QColor);
-    QColor getBaseColour() const { return m_colour; }
-
     enum PlotStyle {
 	PlotInstants,
 	PlotSegmentation
@@ -101,11 +98,12 @@ public:
 protected:
     SparseOneDimensionalModel::PointList getLocalPoints(View *v, int) const;
 
+    virtual int getDefaultColourHint(bool dark, bool &impose);
+
     SparseOneDimensionalModel *m_model;
     bool m_editing;
     SparseOneDimensionalModel::Point m_editingPoint;
     SparseOneDimensionalModel::EditCommand *m_editingCommand;
-    QColor m_colour;
     PlotStyle m_plotStyle;
 };
 

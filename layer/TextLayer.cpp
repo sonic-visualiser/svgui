@@ -18,6 +18,7 @@
 #include "data/model/Model.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
+#include "base/ColourDatabase.h"
 #include "view/View.h"
 
 #include "data/model/TextModel.h"
@@ -30,13 +31,12 @@
 #include <cmath>
 
 TextLayer::TextLayer() :
-    Layer(),
+    SingleColourLayer(),
     m_model(0),
     m_editing(false),
     m_originalPoint(0, 0.0, tr("Empty Label")),
     m_editingPoint(0, 0.0, tr("Empty Label")),
-    m_editingCommand(0),
-    m_colour(255, 150, 50) // orange
+    m_editingCommand(0)
 {
     
 }
@@ -62,99 +62,46 @@ TextLayer::setModel(TextModel *model)
 Layer::PropertyList
 TextLayer::getProperties() const
 {
-    PropertyList list;
-    list.push_back("Colour");
+    PropertyList list = SingleColourLayer::getProperties();
     return list;
 }
 
 QString
 TextLayer::getPropertyLabel(const PropertyName &name) const
 {
-    if (name == "Colour") return tr("Colour");
-    return "";
+    return SingleColourLayer::getPropertyLabel(name);
 }
 
 Layer::PropertyType
-TextLayer::getPropertyType(const PropertyName &) const
+TextLayer::getPropertyType(const PropertyName &name) const
 {
-    return ValueProperty;
+    return SingleColourLayer::getPropertyType(name);
 }
 
 int
 TextLayer::getPropertyRangeAndValue(const PropertyName &name,
 				    int *min, int *max, int *deflt) const
 {
-    //!!! factor this colour handling stuff out into a colour manager class
-
-    int val = 0;
-
-    if (name == "Colour") {
-
-	if (min) *min = 0;
-	if (max) *max = 5;
-        if (deflt) *deflt = 0;
-
-	if (m_colour == Qt::black) val = 0;
-	else if (m_colour == Qt::darkRed) val = 1;
-	else if (m_colour == Qt::darkBlue) val = 2;
-	else if (m_colour == Qt::darkGreen) val = 3;
-	else if (m_colour == QColor(200, 50, 255)) val = 4;
-	else if (m_colour == QColor(255, 150, 50)) val = 5;
-
-    } else {
-	
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
-    }
-
-    return val;
+    return SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
 }
 
 QString
 TextLayer::getPropertyValueLabel(const PropertyName &name,
 				 int value) const
 {
-    if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0: return tr("Black");
-	case 1: return tr("Red");
-	case 2: return tr("Blue");
-	case 3: return tr("Green");
-	case 4: return tr("Purple");
-	case 5: return tr("Orange");
-	}
-    }
-    return tr("<unknown>");
+    return SingleColourLayer::getPropertyValueLabel(name, value);
 }
 
 void
 TextLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0:	setBaseColour(Qt::black); break;
-	case 1: setBaseColour(Qt::darkRed); break;
-	case 2: setBaseColour(Qt::darkBlue); break;
-	case 3: setBaseColour(Qt::darkGreen); break;
-	case 4: setBaseColour(QColor(200, 50, 255)); break;
-	case 5: setBaseColour(QColor(255, 150, 50)); break;
-	}
-    }
+    SingleColourLayer::setProperty(name, value);
 }
 
 bool
 TextLayer::getValueExtents(float &, float &, bool &, QString &) const
 {
     return false;
-}
-
-void
-TextLayer::setBaseColour(QColor colour)
-{
-    if (m_colour == colour) return;
-    m_colour = colour;
-    emit layerParametersChanged();
 }
 
 bool
@@ -350,18 +297,14 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
     TextModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
 
-    QColor brushColour(m_colour);
+    QColor brushColour(getBaseQColor());
 
     int h, s, val;
     brushColour.getHsv(&h, &s, &val);
     brushColour.setHsv(h, s, 255, 100);
 
     QColor penColour;
-    if (v->hasLightBackground()) {
-	penColour = Qt::black;
-    } else {
-	penColour = Qt::white;
-    }
+    penColour = v->getForeground();
 
 //    std::cerr << "TextLayer::paint: resolution is "
 //	      << m_model->getResolution() << " frames" << std::endl;
@@ -391,11 +334,7 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (illuminateFrame == p.frame) {
 	    paint.setBrush(penColour);
-	    if (v->hasLightBackground()) {
-		paint.setPen(Qt::white);
-	    } else {
-		paint.setPen(Qt::black);
-	    }
+            paint.setPen(v->getBackground());
 	} else {
 	    paint.setPen(penColour);
 	    paint.setBrush(brushColour);
@@ -756,23 +695,23 @@ TextLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
     return true;
 }
 
+int
+TextLayer::getDefaultColourHint(bool darkbg, bool &impose)
+{
+    impose = false;
+    return ColourDatabase::getInstance()->getColourIndex
+        (QString(darkbg ? "Bright Orange" : "Orange"));
+}
+
 QString
 TextLayer::toXmlString(QString indent, QString extraAttributes) const
 {
-    return Layer::toXmlString(indent, extraAttributes +
-			      QString(" colour=\"%1\"")
-			      .arg(encodeColour(m_colour)));
+    return SingleColourLayer::toXmlString(indent, extraAttributes);
 }
 
 void
 TextLayer::setProperties(const QXmlAttributes &attributes)
 {
-    QString colourSpec = attributes.value("colour");
-    if (colourSpec != "") {
-	QColor colour(colourSpec);
-	if (colour.isValid()) {
-	    setBaseColour(QColor(colourSpec));
-	}
-    }
+    SingleColourLayer::setProperties(attributes);
 }
 

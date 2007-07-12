@@ -21,6 +21,7 @@
 #include "base/RangeMapper.h"
 #include "base/RealTime.h"
 #include "base/ColourMapper.h"
+#include "base/ColourDatabase.h"
 
 #include "PaintAssistant.h"
 
@@ -29,7 +30,6 @@
 
 SliceLayer::SliceLayer() :
     m_sliceableModel(0),
-    m_colour(Qt::darkBlue),
     m_colourMap(0),
     m_energyScale(dBScale),
     m_samplingMode(SampleMean),
@@ -330,7 +330,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
     }
 
-    paint.setPen(m_colour);
+    paint.setPen(getBaseQColor());
 
     int xorigin = getVerticalScaleWidth(v, paint) + 1;
     int w = v->width() - xorigin - 1;
@@ -549,8 +549,7 @@ SliceLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 Layer::PropertyList
 SliceLayer::getProperties() const
 {
-    PropertyList list;
-    list.push_back("Colour");
+    PropertyList list = SingleColourLayer::getProperties();
     list.push_back("Plot Type");
 //    list.push_back("Sampling Mode");
     list.push_back("Scale");
@@ -565,7 +564,6 @@ SliceLayer::getProperties() const
 QString
 SliceLayer::getPropertyLabel(const PropertyName &name) const
 {
-    if (name == "Colour") return tr("Colour");
     if (name == "Plot Type") return tr("Plot Type");
     if (name == "Energy Scale") return tr("Scale");
     if (name == "Normalize") return tr("Normalize");
@@ -573,7 +571,7 @@ SliceLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Gain") return tr("Gain");
     if (name == "Sampling Mode") return tr("Sampling Mode");
     if (name == "Bin Scale") return tr("Plot X Scale");
-    return "";
+    return SingleColourLayer::getPropertyLabel(name);
 }
 
 Layer::PropertyType
@@ -582,7 +580,12 @@ SliceLayer::getPropertyType(const PropertyName &name) const
     if (name == "Gain") return RangeProperty;
     if (name == "Normalize") return ToggleProperty;
     if (name == "Threshold") return RangeProperty;
-    return ValueProperty;
+    if (name == "Plot Type") return ValueProperty;
+    if (name == "Energy Scale") return ValueProperty;
+    if (name == "Sampling Mode") return ValueProperty;
+    if (name == "Bin Scale") return ValueProperty;
+    if (name == "Colour" && m_plotStyle == PlotFilledBlocks) return ValueProperty;
+    return SingleColourLayer::getPropertyType(name);
 }
 
 QString
@@ -595,7 +598,7 @@ SliceLayer::getPropertyGroupName(const PropertyName &name) const
         name == "Gain") return tr("Scale");
     if (name == "Plot Type" ||
         name == "Bin Scale") return tr("Plot Type");
-    return QString();
+    return SingleColourLayer::getPropertyGroupName(name);
 }
 
 int
@@ -639,29 +642,13 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 	val = (m_normalize ? 1 : 0);
         *deflt = 0;
 
-    } else if (name == "Colour") {
-
-        if (m_plotStyle == PlotFilledBlocks) {
+    } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
             
-            *min = 0;
-            *max = ColourMapper::getColourMapCount() - 1;
-            *deflt = 0;
-
-            val = m_colourMap;
-
-        } else {
-
-            *min = 0;
-            *max = 5;
-            *deflt = 0;
-
-            if (m_colour == Qt::black) val = 0;
-            else if (m_colour == Qt::darkRed) val = 1;
-            else if (m_colour == Qt::darkBlue) val = 2;
-            else if (m_colour == Qt::darkGreen) val = 3;
-            else if (m_colour == QColor(200, 50, 255)) val = 4;
-            else if (m_colour == QColor(255, 150, 50)) val = 5;
-        }
+        *min = 0;
+        *max = ColourMapper::getColourMapCount() - 1;
+        *deflt = 0;
+        
+        val = m_colourMap;
 
     } else if (name == "Scale") {
 
@@ -697,7 +684,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = (int)m_binScale;
 
     } else {
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
+	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -707,20 +694,8 @@ QString
 SliceLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
-    if (name == "Colour") {
-        if (m_plotStyle == PlotFilledBlocks) {
-            return ColourMapper::getColourMapName(value);
-        } else {
-            switch (value) {
-            default:
-            case 0: return tr("Black");
-            case 1: return tr("Red");
-            case 2: return tr("Blue");
-            case 3: return tr("Green");
-            case 4: return tr("Purple");
-            case 5: return tr("Orange");
-            }
-	}
+    if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
+        return ColourMapper::getColourMapName(value);
     }
     if (name == "Scale") {
 	switch (value) {
@@ -755,7 +730,7 @@ SliceLayer::getPropertyValueLabel(const PropertyName &name,
 	case 2: return tr("Rev Log Bins");
 	}
     }
-    return tr("<unknown>");
+    return SingleColourLayer::getPropertyValueLabel(name, value);
 }
 
 RangeMapper *
@@ -767,7 +742,7 @@ SliceLayer::getNewPropertyRangeMapper(const PropertyName &name) const
     if (name == "Threshold") {
         return new LinearRangeMapper(-80, 0, -80, 0, tr("dB"));
     }
-    return 0;
+    return SingleColourLayer::getNewPropertyRangeMapper(name);
 }
 
 void
@@ -778,20 +753,8 @@ SliceLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Threshold") {
 	if (value == -80) setThreshold(0.0);
 	else setThreshold(AudioLevel::dB_to_multiplier(value));
-    } else if (name == "Colour") {
-        if (m_plotStyle == PlotFilledBlocks) {
-            setFillColourMap(value);
-        } else {
-            switch (value) {
-            default:
-            case 0: setBaseColour(Qt::black); break;
-            case 1: setBaseColour(Qt::darkRed); break;
-            case 2: setBaseColour(Qt::darkBlue); break;
-            case 3: setBaseColour(Qt::darkGreen); break;
-            case 4: setBaseColour(QColor(200, 50, 255)); break;
-            case 5: setBaseColour(QColor(255, 150, 50)); break;
-            }
-	}
+    } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
+        setFillColourMap(value);
     } else if (name == "Scale") {
 	switch (value) {
 	default:
@@ -817,15 +780,9 @@ SliceLayer::setProperty(const PropertyName &name, int value)
 	}
     } else if (name == "Normalize") {
 	setNormalize(value ? true : false);
+    } else {
+        SingleColourLayer::setProperty(name, value);
     }
-}
-
-void
-SliceLayer::setBaseColour(QColor colour)
-{
-    if (m_colour == colour) return;
-    m_colour = colour;
-    emit layerParametersChanged();
 }
 
 void
@@ -905,25 +862,31 @@ SliceLayer::getThresholdDb() const
     return db;
 }
 
+int
+SliceLayer::getDefaultColourHint(bool darkbg, bool &impose)
+{
+    impose = false;
+    return ColourDatabase::getInstance()->getColourIndex
+        (QString(darkbg ? "Bright Blue" : "Blue"));
+}
+
 QString
 SliceLayer::toXmlString(QString indent, QString extraAttributes) const
 {
     QString s;
     
-    s += QString("colour=\"%1\" "
-                 "colourScheme=\"%2\" "
-		 "energyScale=\"%3\" "
-                 "samplingMode=\"%4\" "
-                 "gain=\"%5\" "
-                 "normalize=\"%6\"")
-	.arg(encodeColour(m_colour))
+    s += QString("colourScheme=\"%1\" "
+		 "energyScale=\"%2\" "
+                 "samplingMode=\"%3\" "
+                 "gain=\"%4\" "
+                 "normalize=\"%5\"")
         .arg(m_colourMap)
 	.arg(m_energyScale)
         .arg(m_samplingMode)
         .arg(m_gain)
         .arg(m_normalize ? "true" : "false");
 
-    return Layer::toXmlString(indent, extraAttributes + " " + s);
+    return SingleColourLayer::toXmlString(indent, extraAttributes + " " + s);
 }
 
 void
@@ -931,13 +894,7 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
 {
     bool ok = false;
 
-    QString colourSpec = attributes.value("colour");
-    if (colourSpec != "") {
-	QColor colour(colourSpec);
-	if (colour.isValid()) {
-	    setBaseColour(QColor(colourSpec));
-	}
-    }
+    SingleColourLayer::setProperties(attributes);
 
     EnergyScale scale = (EnergyScale)
 	attributes.value("energyScale").toInt(&ok);

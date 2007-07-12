@@ -16,7 +16,7 @@
 #ifndef _NOTE_LAYER_H_
 #define _NOTE_LAYER_H_
 
-#include "Layer.h"
+#include "SingleColourLayer.h"
 #include "data/model/NoteModel.h"
 
 #include <QObject>
@@ -25,7 +25,7 @@
 class View;
 class QPainter;
 
-class NoteLayer : public Layer
+class NoteLayer : public SingleColourLayer
 {
     Q_OBJECT
 
@@ -71,9 +71,6 @@ public:
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
-    void setBaseColour(QColor);
-    QColor getBaseColour() const { return m_colour; }
-
     enum VerticalScale {
         AutoAlignScale,
         LinearScale,
@@ -106,6 +103,8 @@ protected:
     float getValueForY(View *v, int y) const;
     bool shouldConvertMIDIToHz() const;
 
+    virtual int getDefaultColourHint(bool dark, bool &impose);
+
     NoteModel::PointList getLocalPoints(View *v, int) const;
 
     NoteModel *m_model;
@@ -113,7 +112,6 @@ protected:
     NoteModel::Point m_originalPoint;
     NoteModel::Point m_editingPoint;
     NoteModel::EditCommand *m_editingCommand;
-    QColor m_colour;
     VerticalScale m_verticalScale;
 };
 
