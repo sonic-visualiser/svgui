@@ -33,13 +33,10 @@ using std::cerr;
 using std::endl;
 
 WaveformLayer::WaveformLayer() :
-    Layer(),
+    SingleColourLayer(),
     m_model(0),
     m_gain(1.0f),
     m_autoNormalize(false),
-//!!!    m_colour(Qt::black),
-    m_colour(0),
-//    m_colour(QColor(84, 177, 248)),
     m_showMeans(true),
     m_greyscale(true),
     m_channelMode(SeparateChannels),
@@ -90,18 +87,10 @@ WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
     if (channelsChanged) emit layerParametersChanged();
 }
 
-bool
-WaveformLayer::hasLightBackground() const
-{
-    bool dark = ColourDatabase::getInstance()->useDarkBackground(m_colour);
-    return !dark;
-}
-
 Layer::PropertyList
 WaveformLayer::getProperties() const
 {
-    PropertyList list;
-    list.push_back("Colour");
+    PropertyList list = SingleColourLayer::getProperties();
     list.push_back("Scale");
     list.push_back("Gain");
     list.push_back("Normalize Visible Area");
@@ -116,12 +105,11 @@ WaveformLayer::getProperties() const
 QString
 WaveformLayer::getPropertyLabel(const PropertyName &name) const
 {
-    if (name == "Colour") return tr("Colour");
     if (name == "Scale") return tr("Scale");
     if (name == "Gain") return tr("Gain");
     if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
     if (name == "Channels") return tr("Channels");
-    return "";
+    return SingleColourLayer::getPropertyLabel(name);
 }
 
 Layer::PropertyType
@@ -129,10 +117,9 @@ WaveformLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Gain") return RangeProperty;
     if (name == "Normalize Visible Area") return ToggleProperty;
-    if (name == "Colour") return ColourProperty;
     if (name == "Channels") return ValueProperty;
     if (name == "Scale") return ValueProperty;
-    return InvalidProperty;
+    return SingleColourLayer::getPropertyType(name);
 }
 
 QString
@@ -170,24 +157,6 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = (m_autoNormalize ? 1 : 0);
         *deflt = 0;
 
-    } else if (name == "Colour") {
-
-        ColourDatabase::getInstance()->getColourPropertyRange(min, max);
-//!!!	*min = 0;
-//	*max = 5;
-        *deflt = 0;
-
-        val = m_colour;
-
-/*!!!
-	if (m_colour == Qt::black) val = 0;
-	else if (m_colour == Qt::darkRed) val = 1;
-	else if (m_colour == Qt::darkBlue ||
-                 m_colour == QColor(84, 177, 248)) val = 2;
-	else if (m_colour == Qt::darkGreen) val = 3;
-	else if (m_colour == QColor(200, 50, 255)) val = 4;
-	else if (m_colour == QColor(255, 150, 50)) val = 5;
-*/
     } else if (name == "Channels") {
 
         *min = 0;
@@ -206,7 +175,7 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 	val = (int)m_scale;
 
     } else {
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
+	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -216,9 +185,6 @@ QString
 WaveformLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
-    if (name == "Colour") {
-        return Layer::getPropertyValueLabel(name, value);
-    }
     if (name == "Scale") {
 	switch (value) {
 	default:
@@ -235,7 +201,7 @@ WaveformLayer::getPropertyValueLabel(const PropertyName &name,
         case 2: return tr("Butterfly");
         }
     }
-    return tr("<unknown>");
+    return SingleColourLayer::getPropertyValueLabel(name, value);
 }
 
 RangeMapper *
@@ -254,8 +220,6 @@ WaveformLayer::setProperty(const PropertyName &name, int value)
 	setGain(pow(10, float(value)/20.0));
     } else if (name == "Normalize Visible Area") {
         setAutoNormalize(value ? true : false);
-    } else if (name == "Colour") {
-        setBaseColour(value);
     } else if (name == "Channels") {
         if (value == 1) setChannelMode(MixChannels);
         else if (value == 2) setChannelMode(MergeChannels);
@@ -267,6 +231,8 @@ WaveformLayer::setProperty(const PropertyName &name, int value)
 	case 1: setScale(MeterScale); break;
 	case 2: setScale(dBScale); break;
 	}
+    } else {
+        SingleColourLayer::setProperty(name, value);
     }
 }
 
@@ -285,15 +251,6 @@ WaveformLayer::setAutoNormalize(bool autoNormalize)
 {
     if (m_autoNormalize == autoNormalize) return;
     m_autoNormalize = autoNormalize;
-    m_cacheValid = false;
-    emit layerParametersChanged();
-}
-
-void
-WaveformLayer::setBaseColour(int colour)
-{
-    if (m_colour == colour) return;
-    m_colour = colour;
     m_cacheValid = false;
     emit layerParametersChanged();
 }
@@ -494,10 +451,10 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	paint = new QPainter(m_cache);
 
 	paint->setPen(Qt::NoPen);
-	paint->setBrush(v->palette().background());
+	paint->setBrush(getBackgroundQColor(v));
 	paint->drawRect(rect);
 
-	paint->setPen(Qt::black);
+	paint->setPen(getForegroundQColor(v));
 	paint->setBrush(Qt::NoBrush);
 
     } else {
@@ -529,25 +486,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
     RangeSummarisableTimeValueModel::RangeBlock *otherChannelRanges = 0;
     RangeSummarisableTimeValueModel::Range range;
-    
-    QColor greys[3];
-    QColor baseColour = ColourDatabase::getInstance()->getColour(m_colour);
-    if (baseColour == Qt::black) {
-	for (int i = 0; i < 3; ++i) { // 0 lightest, 2 darkest
-	    int level = 192 - 64 * i;
-	    greys[i] = QColor(level, level, level);
-	}
-    } else {
-	int hue, sat, val;
-	baseColour.getHsv(&hue, &sat, &val);
-	for (int i = 0; i < 3; ++i) { // 0 lightest, 2 darkest
-	    if (v->hasLightBackground()) {
-		greys[i] = QColor::fromHsv(hue, sat * (i + 1) / 4, val);
-	    } else {
-		greys[i] = QColor::fromHsv(hue, sat * (3 - i) / 4, val);
-	    }
-	}
-    }
+
+    QColor baseColour = getBaseQColor();
+    std::vector<QColor> greys = getPartialShades(v);
         
     QColor midColour = baseColour;
     if (midColour == Qt::black) {
@@ -1284,30 +1225,23 @@ WaveformLayer::toXmlString(QString indent, QString extraAttributes) const
         (m_colour, colourName, colourSpec, darkbg);
 
     s += QString("gain=\"%1\" "
-		 "colourName=\"%2\" "
-                 "colour=\"%3\" "
-                 "darkBackground=\"%4\" "
-		 "showMeans=\"%5\" "
-		 "greyscale=\"%6\" "
-		 "channelMode=\"%7\" "
-		 "channel=\"%8\" ")
+		 "showMeans=\"%2\" "
+		 "greyscale=\"%3\" "
+		 "channelMode=\"%4\" "
+		 "channel=\"%5\" "
+                 "scale=\"%6\" "
+		 "aggressive=\"%7\" "
+                 "autoNormalize=\"%8\"")
 	.arg(m_gain)
-	.arg(colourName)
-        .arg(colourSpec)
-        .arg(darkbg)
 	.arg(m_showMeans)
 	.arg(m_greyscale)
 	.arg(m_channelMode)
-	.arg(m_channel);
-
-    s += QString("scale=\"%1\" "
-		 "aggressive=\"%2\" "
-                 "autoNormalize=\"%3\"")
+	.arg(m_channel)
 	.arg(m_scale)
 	.arg(m_aggressive)
         .arg(m_autoNormalize);
 
-    return Layer::toXmlString(indent, extraAttributes + " " + s);
+    return SingleColourLayer::toXmlString(indent, extraAttributes + " " + s);
 }
 
 void
@@ -1315,14 +1249,10 @@ WaveformLayer::setProperties(const QXmlAttributes &attributes)
 {
     bool ok = false;
 
+    SingleColourLayer::setProperties(attributes);
+
     float gain = attributes.value("gain").toFloat(&ok);
     if (ok) setGain(gain);
-
-    QString colourName = attributes.value("colourName");
-    QString colourSpec = attributes.value("colour");
-    QString darkbg = attributes.value("darkBackground");
-    m_colour = ColourDatabase::getInstance()->putStringValues
-        (colourName, colourSpec, darkbg);
 
     bool showMeans = (attributes.value("showMeans") == "1" ||
 		      attributes.value("showMeans") == "true");

@@ -16,7 +16,7 @@
 #ifndef _TIME_VALUE_LAYER_H_
 #define _TIME_VALUE_LAYER_H_
 
-#include "Layer.h"
+#include "SingleColourLayer.h"
 #include "data/model/SparseTimeValueModel.h"
 
 #include <QObject>
@@ -25,7 +25,7 @@
 class View;
 class QPainter;
 
-class TimeValueLayer : public Layer
+class TimeValueLayer : public SingleColourLayer
 {
     Q_OBJECT
 
@@ -73,9 +73,6 @@ public:
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
-
-    void setBaseColour(QColor);
-    QColor getBaseColour() const { return m_colour; }
 
     void setFillColourMap(int);
     int getFillColourMap() const { return m_colourMap; }
@@ -130,12 +127,13 @@ protected:
 
     SparseTimeValueModel::PointList getLocalPoints(View *v, int) const;
 
+    virtual int getDefaultColourHint(bool dark, bool &impose);
+
     SparseTimeValueModel *m_model;
     bool m_editing;
     SparseTimeValueModel::Point m_originalPoint;
     SparseTimeValueModel::Point m_editingPoint;
     SparseTimeValueModel::EditCommand *m_editingCommand;
-    QColor m_colour;
     int m_colourMap;
     PlotStyle m_plotStyle;
     VerticalScale m_verticalScale;

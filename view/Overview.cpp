@@ -164,7 +164,7 @@ Overview::paintEvent(QPaintEvent *e)
 	paint.setClipRect(r);
     }
 
-    paint.setPen(Qt::black);
+    paint.setPen(getForeground());
 
     int y = 0;
 

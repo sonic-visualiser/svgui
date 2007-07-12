@@ -17,7 +17,7 @@
 #ifndef _SLICE_LAYER_H_
 #define _SLICE_LAYER_H_
 
-#include "Layer.h"
+#include "SingleColourLayer.h"
 
 #include "base/Window.h"
 
@@ -25,7 +25,7 @@
 
 #include <QColor>
 
-class SliceLayer : public Layer
+class SliceLayer : public SingleColourLayer
 {
     Q_OBJECT
 
@@ -45,6 +45,10 @@ public:
 
     virtual int getVerticalScaleWidth(View *v, QPainter &) const;
     virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
+
+    virtual ColourSignificance getLayerColourSignificance() const {
+        return ColourAndBackgroundSignificant;
+    }
 
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
@@ -72,9 +76,6 @@ public:
     enum PlotStyle { PlotLines, PlotSteps, PlotBlocks, PlotFilledBlocks };
 
     enum BinScale { LinearBins, LogBins, InvertedLogBins };
-
-    void setBaseColour(QColor);
-    QColor getBaseColour() const { return m_colour; }
 
     void setFillColourMap(int);
     int getFillColourMap() const { return m_colourMap; }
@@ -127,8 +128,9 @@ protected:
 
     virtual float getThresholdDb() const;
 
+    virtual int getDefaultColourHint(bool dark, bool &impose);
+
     const DenseThreeDimensionalModel *m_sliceableModel;
-    QColor                            m_colour;
     int                               m_colourMap;
     EnergyScale                       m_energyScale;
     SamplingMode                      m_samplingMode;

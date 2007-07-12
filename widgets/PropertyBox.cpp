@@ -48,7 +48,7 @@
 #include <iostream>
 #include <cmath>
 
-#define DEBUG_PROPERTY_BOX 1
+//#define DEBUG_PROPERTY_BOX 1
 
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
@@ -447,10 +447,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 ColourDatabase *db = ColourDatabase::getInstance();
                 for (size_t i = 0; i < db->getColourCount(); ++i) {
                     QString name = db->getColourName(i);
-                    QColor colour = db->getColour(i);
-                    QPixmap pmap(12, 12);
-                    pmap.fill(colour);
-                    cb->addItem(pmap, name);
+                    cb->addItem(db->getExamplePixmap(i, QSize(12, 12)), name);
                 }
                 cb->addItem(tr("Add New Colour..."));
             }                

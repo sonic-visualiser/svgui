@@ -17,6 +17,7 @@
 
 #include "data/model/Model.h"
 #include "base/RealTime.h"
+#include "base/ColourDatabase.h"
 #include "view/View.h"
 
 #include <QPainter>
@@ -28,9 +29,8 @@ using std::cerr;
 using std::endl;
 
 TimeRulerLayer::TimeRulerLayer() :
-    Layer(),
+    SingleColourLayer(),
     m_model(0),
-    m_colour(Qt::black),
     m_labelHeight(LabelTop)
 {
     
@@ -42,96 +42,6 @@ TimeRulerLayer::setModel(Model *model)
     if (m_model == model) return;
     m_model = model;
     emit modelReplaced();
-}
-
-void
-TimeRulerLayer::setBaseColour(QColor colour)
-{
-    if (m_colour == colour) return;
-    m_colour = colour;
-    emit layerParametersChanged();
-}
-
-Layer::PropertyList
-TimeRulerLayer::getProperties() const
-{
-    PropertyList list;
-    list.push_back("Colour");
-    return list;
-}
-
-QString
-TimeRulerLayer::getPropertyLabel(const PropertyName &name) const
-{
-    if (name == "Colour") return tr("Colour");
-    return "";
-}
-
-Layer::PropertyType
-TimeRulerLayer::getPropertyType(const PropertyName &) const
-{
-    return ValueProperty;
-}
-
-int
-TimeRulerLayer::getPropertyRangeAndValue(const PropertyName &name,
-					 int *min, int *max, int *deflt) const
-{
-    int val = 0;
-
-    if (name == "Colour") {
-
-	if (min) *min = 0;
-	if (max) *max = 5;
-        if (deflt) *deflt = 0;
-
-	if (m_colour == Qt::black) val = 0;
-	else if (m_colour == Qt::darkRed) val = 1;
-	else if (m_colour == Qt::darkBlue) val = 2;
-	else if (m_colour == Qt::darkGreen) val = 3;
-	else if (m_colour == QColor(200, 50, 255)) val = 4;
-	else if (m_colour == QColor(255, 150, 50)) val = 5;
-
-    } else {
-	
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
-    }
-
-    return val;
-}
-
-QString
-TimeRulerLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
-{
-    if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0: return tr("Black");
-	case 1: return tr("Red");
-	case 2: return tr("Blue");
-	case 3: return tr("Green");
-	case 4: return tr("Purple");
-	case 5: return tr("Orange");
-	}
-    }
-    return tr("<unknown>");
-}
-
-void
-TimeRulerLayer::setProperty(const PropertyName &name, int value)
-{
-    if (name == "Colour") {
-	switch (value) {
-	default:
-	case 0:	setBaseColour(Qt::black); break;
-	case 1: setBaseColour(Qt::darkRed); break;
-	case 2: setBaseColour(Qt::darkBlue); break;
-	case 3: setBaseColour(Qt::darkGreen); break;
-	case 4: setBaseColour(QColor(200, 50, 255)); break;
-	case 5: setBaseColour(QColor(255, 150, 50)); break;
-	}
-    }
 }
 
 bool
@@ -323,12 +233,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.setClipRect(newClipRect);
     paint.setClipRect(rect);
 
-    QColor greyColour(m_colour);
-    if (m_colour == Qt::black) {
-	greyColour = QColor(200,200,200);
-    } else {
-	greyColour = m_colour.light(150);
-    }
+    QColor greyColour = getPartialShades(v)[1];
 
     while (1) {
 
@@ -344,7 +249,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 	paint.setPen(greyColour);
 	paint.drawLine(x, 0, x, v->height());
 
-	paint.setPen(m_colour);
+	paint.setPen(getBaseQColor());
 	paint.drawLine(x, 0, x, 5);
 	paint.drawLine(x, v->height() - 6, x, v->height() - 1);
 
@@ -400,23 +305,24 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     paint.restore();
 }
-    
+
+int
+TimeRulerLayer::getDefaultColourHint(bool darkbg, bool &impose)
+{
+    impose = true;
+    return ColourDatabase::getInstance()->getColourIndex
+        (QString(darkbg ? "White" : "Black"));
+}
+
 QString
 TimeRulerLayer::toXmlString(QString indent, QString extraAttributes) const
 {
-    return Layer::toXmlString(indent, extraAttributes +
-			      QString(" colour=\"%1\"").arg(encodeColour(m_colour)));
+    return SingleColourLayer::toXmlString(indent, extraAttributes);
 }
 
 void
 TimeRulerLayer::setProperties(const QXmlAttributes &attributes)
 {
-    QString colourSpec = attributes.value("colour");
-    if (colourSpec != "") {
-	QColor colour(colourSpec);
-	if (colour.isValid()) {
-	    setBaseColour(QColor(colourSpec));
-	}
-    }
+    SingleColourLayer::setProperties(attributes);
 }
 

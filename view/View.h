@@ -183,6 +183,8 @@ public:
     virtual bool getFollowGlobalZoom() const { return m_followZoom; }
 
     virtual bool hasLightBackground() const;
+    virtual QColor getForeground() const;
+    virtual QColor getBackground() const;
 
     enum TextStyle {
 	BoxedText,

@@ -62,7 +62,9 @@ public:
 
     virtual bool isLayerScrollable(const View *v) const;
 
-    virtual bool isLayerColourSignificant() const { return true; }
+    virtual ColourSignificance getLayerColourSignificance() const {
+        return ColourHasMeaningfulValue;
+    }
 
     void setModel(const DenseThreeDimensionalModel *model);
 

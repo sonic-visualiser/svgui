@@ -644,7 +644,9 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
     int w = v->width() - xorigin - 1;
 
     int pkh = 0;
-    if (m_binScale == LogBins) pkh = 10;
+//!!!    if (m_binScale == LogBins) {
+        pkh = 10;
+//!!!    }
 
     if (fft && m_showPeaks) {
 
@@ -707,9 +709,9 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
     //relevant to Colour3DPlotLayer with unit Hz, but that's a bigger
     //proposition.
 
-    if (m_binScale == LogBins) {
+//    if (m_binScale == LogBins) {
 
-        int pkh = 10;
+//        int pkh = 10;
         int h = v->height();
 
         // piano keyboard
@@ -779,7 +781,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
             ppx = px;
 	    px = x;
 	}
-    }
+//    }
 }
 
 void

@@ -229,15 +229,33 @@ public:
      */
     virtual bool isLayerOpaque() const { return false; }
 
+    enum ColourSignificance {
+        ColourAbsent,
+        ColourIrrelevant,
+        ColourDistinguishes,
+        ColourAndBackgroundSignificant,
+        ColourHasMeaningfulValue
+    };
+
     /**
-     * This should return true if the layer uses colours to indicate
-     * meaningful information (as opposed to just using a single
-     * colour of the user's choice).  If this is the case, the view
-     * will show selections using unfilled rectangles instead of
-     * translucent filled rectangles, so as not to disturb the colours
-     * underneath.
+     * This should return the degree of meaning associated with colour
+     * in this layer.
+     *
+     * If ColourAbsent, the layer does not use colour.  If
+     * ColourIrrelevant, the layer is coloured and the colour may be
+     * set by the user, but it doesn't really matter what the colour
+     * is (for example, in a time ruler layer).  If
+     * ColourDistinguishes, then the colour is used to distinguish
+     * this layer from other similar layers (e.g. for data layers).
+     * If ColourAndBackgroundSignificant, then the layer should be
+     * given greater weight than ColourDistinguishes layers when
+     * choosing a background colour (e.g. for waveforms).  If
+     * ColourHasMeaningfulValue, colours are actually meaningful --
+     * the view will then show selections using unfilled rectangles
+     * instead of translucent filled rectangles, so as not to disturb
+     * the colours underneath.
      */
-    virtual bool isLayerColourSignificant() const { return false; }
+    virtual ColourSignificance getLayerColourSignificance() const = 0;
 
     /**
      * This should return true if the layer can be edited by the user.
