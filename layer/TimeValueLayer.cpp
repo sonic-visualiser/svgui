@@ -566,6 +566,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
 	SparseTimeValueModel::PointList localPoints =
 	    getLocalPoints(v, localPos.x());
+        std::cerr << "TimeValueLayer: " << localPoints.size() << " local points" << std::endl;
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
 
