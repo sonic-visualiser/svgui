@@ -61,7 +61,8 @@ Pane::Pane(QWidget *w) :
     m_vpan(0),
     m_hthumb(0),
     m_vthumb(0),
-    m_reset(0)
+    m_reset(0),
+    m_mouseInWidget(false)
 {
     setObjectName("Pane");
     setMouseTracking(true);
@@ -380,7 +381,8 @@ Pane::paintEvent(QPaintEvent *e)
     ViewManager::ToolMode toolMode = m_manager->getToolMode();
 
     if (m_manager &&
-        !m_manager->isPlaying() &&
+//        !m_manager->isPlaying() &&
+        m_mouseInWidget &&
         toolMode == ViewManager::MeasureMode) {
 
         for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
@@ -1360,8 +1362,10 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         if (m_measureCursor2) setCursor(*m_measureCursor2);
 
         Layer *layer = getTopLayer();
-        if (layer) layer->measureDrag(this, e);
-        if (layer->hasTimeXAxis()) edgeScrollMaybe(e->x());
+        if (layer) {
+            layer->measureDrag(this, e);
+            if (layer->hasTimeXAxis()) edgeScrollMaybe(e->x());
+        }
 
         update();
     }
@@ -1676,8 +1680,15 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 }
 
 void
+Pane::enterEvent(QEvent *)
+{
+    m_mouseInWidget = true;
+}
+
+void
 Pane::leaveEvent(QEvent *)
 {
+    m_mouseInWidget = false;
     bool previouslyIdentifying = m_identifyFeatures;
     m_identifyFeatures = false;
     if (previouslyIdentifying) update();

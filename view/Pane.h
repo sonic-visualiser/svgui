@@ -89,6 +89,7 @@ protected:
     virtual void mouseReleaseEvent(QMouseEvent *e);
     virtual void mouseMoveEvent(QMouseEvent *e);
     virtual void mouseDoubleClickEvent(QMouseEvent *e);
+    virtual void enterEvent(QEvent *e);
     virtual void leaveEvent(QEvent *e);
     virtual void wheelEvent(QWheelEvent *e);
     virtual void resizeEvent(QResizeEvent *e);
@@ -155,6 +156,8 @@ protected:
     Thumbwheel *m_hthumb;
     Thumbwheel *m_vthumb;
     NotifyingPushButton *m_reset;
+
+    bool m_mouseInWidget;
 
     static QCursor *m_measureCursor1;
     static QCursor *m_measureCursor2;
