@@ -443,6 +443,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 cb->setEditable(true);
 
             } else { // ColourProperty
+
+                //!!! should be a proper colour combobox class that
+                // manages its own Add New Colour entry...
                 
                 ColourDatabase *db = ColourDatabase::getInstance();
                 for (size_t i = 0; i < db->getColourCount(); ++i) {

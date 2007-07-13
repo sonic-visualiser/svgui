@@ -267,7 +267,7 @@ SliceLayer::getYForValue(float value, const View *v, float &norm) const
         break;
         
     default:
-        std::cerr << "thresh = " << m_threshold << std::endl;
+//        std::cerr << "thresh = " << m_threshold << std::endl;
         norm = (fabsf(value) - m_threshold);
         if (norm < 0) norm = 0;
         y = yorigin - (float(h) * norm);
@@ -565,7 +565,7 @@ QString
 SliceLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Plot Type") return tr("Plot Type");
-    if (name == "Energy Scale") return tr("Scale");
+    if (name == "Scale") return tr("Scale");
     if (name == "Normalize") return tr("Normalize");
     if (name == "Threshold") return tr("Threshold");
     if (name == "Gain") return tr("Gain");
@@ -581,7 +581,7 @@ SliceLayer::getPropertyType(const PropertyName &name) const
     if (name == "Normalize") return ToggleProperty;
     if (name == "Threshold") return RangeProperty;
     if (name == "Plot Type") return ValueProperty;
-    if (name == "Energy Scale") return ValueProperty;
+    if (name == "Scale") return ValueProperty;
     if (name == "Sampling Mode") return ValueProperty;
     if (name == "Bin Scale") return ValueProperty;
     if (name == "Colour" && m_plotStyle == PlotFilledBlocks) return ValueProperty;

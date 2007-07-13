@@ -29,9 +29,9 @@ SpectrumLayer::SpectrumLayer() :
     m_originModel(0),
     m_channel(-1),
     m_channelSet(false),
-    m_windowSize(1024),
+    m_windowSize(4096),
     m_windowType(HanningWindow),
-    m_windowHopLevel(2),
+    m_windowHopLevel(3),
     m_showPeaks(false),
     m_newFFTNeeded(true)
 {
@@ -658,8 +658,13 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
         paint.setRenderHint(QPainter::Antialiasing, false);
         paint.setPen(QColor(160, 160, 160)); //!!!
 
+        int peakminbin = 0;
+        int peakmaxbin = fft->getHeight() - 1;
+        float peakmaxfreq = Pitch::getFrequencyForPitch(128);
+        peakmaxbin = ((peakmaxfreq * fft->getHeight() * 2) / fft->getSampleRate());
+        
         FFTModel::PeakSet peaks = fft->getPeakFrequencies
-            (FFTModel::MajorPitchAdaptivePeaks, col);
+            (FFTModel::MajorPitchAdaptivePeaks, col, peakminbin, peakmaxbin);
 
         ColourMapper mapper(ColourMapper::BlackOnWhite, 0, 1);
 
