@@ -20,6 +20,7 @@
 #include "layer/Layer.h"
 #include "layer/LayerFactory.h"
 #include "widgets/NotifyingTabBar.h"
+#include "widgets/IconLoader.h"
 
 #include <QIcon>
 #include <QTabWidget>
@@ -126,7 +127,7 @@ PropertyStack::repopulate()
 
 	QString iconName = container->getPropertyContainerIconName();
 
-	QIcon icon(QString(":/icons/%1.png").arg(iconName));
+        QIcon icon(IconLoader().load(iconName));
 	if (icon.isNull()) {
 	    addTab(box, shortName);
 	} else {
