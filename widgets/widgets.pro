@@ -17,6 +17,7 @@ MOC_DIR = tmp_moc
 HEADERS += AudioDial.h \
            ColourNameDialog.h \
            Fader.h \
+           IconLoader.h \
            ItemEditDialog.h \
            KeyReference.h \
            LayerTree.h \
@@ -40,6 +41,7 @@ HEADERS += AudioDial.h \
 SOURCES += AudioDial.cpp \
            ColourNameDialog.cpp \
            Fader.cpp \
+           IconLoader.cpp \
            ItemEditDialog.cpp \
            KeyReference.cpp \
            LayerTree.cpp \
