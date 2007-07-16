@@ -111,8 +111,12 @@ KeyReference::show()
     }
 
     QString text;
+    
+    QColor bgcolor = QApplication::palette().window().color();
+    bool darkbg = (bgcolor.red() + bgcolor.green() + bgcolor.blue() < 384);
 
-    text += "<center><table bgcolor=\"#e8e8e8\">";
+    text += QString("<center><table bgcolor=\"%1\">")
+        .arg(darkbg ? "#121212" : "#e8e8e8");
         
     for (CategoryList::iterator i = m_categoryOrder.begin();
          i != m_categoryOrder.end(); ++i) {
@@ -120,7 +124,7 @@ KeyReference::show()
         QString category = *i;
         KeyList &list = m_map[category];
 
-        text += QString("<tr><td bgcolor=\"#d0d0d0\" colspan=3 align=\"center\"><br><b>%1</b><br></td></tr>\n").arg(category);
+        text += QString("<tr><td bgcolor=\"%1\" colspan=3 align=\"center\"><br><b>%2</b><br></td></tr>\n").arg(darkbg ? "#303030" : "#d0d0d0").arg(category);
 
         for (KeyList::iterator j = list.begin(); j != list.end(); ++j) {
 
