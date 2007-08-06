@@ -436,11 +436,7 @@ bool
 View::hasLightBackground() const
 {
     bool darkPalette = false;
-
-    QColor windowBg = palette().color(QPalette::Window);
-    if (windowBg.red() + windowBg.green() + windowBg.blue() < 384) {
-        darkPalette = true;
-    }
+    if (m_manager) darkPalette = m_manager->getGlobalDarkBackground();
 
     Layer::ColourSignificance maxSignificance = Layer::ColourAbsent;
     bool mostSignificantHasDarkBackground = false;

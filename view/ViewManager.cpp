@@ -20,6 +20,7 @@
 #include "View.h"
 
 #include <QSettings>
+#include <QApplication>
 
 #include <iostream>
 
@@ -38,7 +39,9 @@ ViewManager::ViewManager() :
     m_playLoopMode(false),
     m_playSelectionMode(false),
     m_overlayMode(StandardOverlays),
-    m_zoomWheelsEnabled(true)
+    m_zoomWheelsEnabled(true),
+    m_lightPalette(QApplication::palette()),
+    m_darkPalette(QApplication::palette())
 {
     QSettings settings;
     settings.beginGroup("MainWindow");
@@ -47,11 +50,12 @@ ViewManager::ViewManager() :
     m_zoomWheelsEnabled =
         settings.value("zoom-wheels-enabled", m_zoomWheelsEnabled).toBool();
     settings.endGroup();
-/*!!!
-    connect(this, 
-	    SIGNAL(zoomLevelChanged(void *, unsigned long, bool)),
-	    SLOT(considerZoomChange(void *, unsigned long, bool)));
-*/
+
+    if (getGlobalDarkBackground()) {
+        m_lightPalette = QPalette(QColor(240, 240, 240));
+    } else {
+        m_darkPalette = QPalette(QColor(16, 16, 16));
+    }
 }
 
 ViewManager::~ViewManager()
@@ -457,5 +461,34 @@ ViewManager::setZoomWheelsEnabled(bool enabled)
     settings.beginGroup("MainWindow");
     settings.setValue("zoom-wheels-enabled", m_zoomWheelsEnabled);
     settings.endGroup();
+}
+
+void
+ViewManager::setGlobalDarkBackground(bool dark)
+{
+    // also save the current palette, in case the user has changed it
+    // since construction
+    if (getGlobalDarkBackground()) {
+        m_darkPalette = QApplication::palette();
+    } else {
+        m_lightPalette = QApplication::palette();
+    }
+
+    if (dark) {
+        QApplication::setPalette(m_darkPalette);
+    } else {
+        QApplication::setPalette(m_lightPalette);
+    }
+}
+
+bool
+ViewManager::getGlobalDarkBackground() const
+{
+    bool dark = false;
+    QColor windowBg = QApplication::palette().color(QPalette::Window);
+    if (windowBg.red() + windowBg.green() + windowBg.blue() < 384) {
+        dark = true;
+    }
+    return dark;
 }
 
