@@ -18,6 +18,7 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QPalette>
 
 #include <map>
 
@@ -162,6 +163,9 @@ public:
     void setZoomWheelsEnabled(bool enable);
     bool getZoomWheelsEnabled() const { return m_zoomWheelsEnabled; }
 
+    void setGlobalDarkBackground(bool dark);
+    bool getGlobalDarkBackground() const;
+
 signals:
     /** Emitted when user causes the global centre frame to change. */
     void globalCentreFrameChanged(unsigned long frame);
@@ -252,6 +256,9 @@ protected:
 
     OverlayMode m_overlayMode;
     bool m_zoomWheelsEnabled;
+
+    QPalette m_lightPalette;
+    QPalette m_darkPalette;
 };
 
 #endif
