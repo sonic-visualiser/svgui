@@ -21,8 +21,8 @@
 
 #include <QApplication>
 
-SingleColourLayer::ColourIndexPool 
-SingleColourLayer::m_usedColourIndices;
+SingleColourLayer::ColourRefCount 
+SingleColourLayer::m_colourRefCount;
 
 SingleColourLayer::SingleColourLayer() :
     m_colour(0)
@@ -119,56 +119,87 @@ SingleColourLayer::setDefaultColourFor(View *v)
 {
     bool dark = false;
     if (v) {
-        ColourIndexPool::iterator i = m_usedColourIndices.find(m_colour);
-        if (i != m_usedColourIndices.end()) m_usedColourIndices.erase(i);
         dark = !v->hasLightBackground();
     } else {
         QColor bg = QApplication::palette().color(QPalette::Window);
         if (bg.red() + bg.green() + bg.blue() < 384) dark = true;
     }
 
-    m_colour = -1;
     ColourDatabase *cdb = ColourDatabase::getInstance();
 
     int hint = -1;
     bool impose = false;
     if (v) {
+        if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
+            m_colourRefCount[m_colour] > 0) {
+            m_colourRefCount[m_colour]--;
+        }
         // We don't want to call this if !v because that probably
         // means we're being called from the constructor, and this is
         // a virtual function
         hint = getDefaultColourHint(dark, impose);
-        std::cerr << "hint = " << hint << ", impose = " << impose << std::endl;
+//        std::cerr << "hint = " << hint << ", impose = " << impose << std::endl;
+    } else {
+//        std::cerr << "(from ctor)" << std::endl;
     }
 
     if (hint >= 0 && impose) {
-        m_colour = hint;
-        m_usedColourIndices.insert(m_colour);
+        setBaseColour(hint);
         return;
     }
 
+    int bestCount = 0, bestColour = -1;
+    
     for (int i = 0; i < cdb->getColourCount(); ++i) {
+
         int index = i;
         if (hint > 0) index = (index + hint) % cdb->getColourCount();
         if (cdb->useDarkBackground(index) != dark) continue;
-        if (m_colour < 0) m_colour = index;
-        if (m_usedColourIndices.find(index) == m_usedColourIndices.end()) {
-            m_colour = index;
-            break;
-        }
-    }
 
-    if (m_colour < 0) m_colour = 0;
-    m_usedColourIndices.insert(m_colour);
+        int count = 0;
+        if (m_colourRefCount.find(index) != m_colourRefCount.end()) {
+            count = m_colourRefCount[index];
+        }
+
+//        std::cerr << "index = " << index << ", count = " << count;
+
+        if (bestColour < 0 || count < bestCount) {
+            bestColour = index;
+            bestCount = count;
+//            std::cerr << " *";
+        }
+
+//        std::cerr << std::endl;
+    }
+    
+    if (bestColour < 0) m_colour = 0;
+    else m_colour = bestColour;
+
+    if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
+        m_colourRefCount[m_colour] = 1;
+    } else {
+        m_colourRefCount[m_colour]++;
+    }
 }
 
 void
 SingleColourLayer::setBaseColour(int colour)
 {
     if (m_colour == colour) return;
-    ColourIndexPool::iterator i = m_usedColourIndices.find(m_colour);
-    if (i != m_usedColourIndices.end()) m_usedColourIndices.erase(i);
+
+    if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
+        m_colourRefCount[m_colour] > 0) {
+        m_colourRefCount[m_colour]--;
+    }
+
     m_colour = colour;
-    m_usedColourIndices.insert(m_colour);
+
+    if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
+        m_colourRefCount[m_colour] = 1;
+    } else {
+        m_colourRefCount[m_colour]++;
+    }
+
     flagBaseColourChanged();
     emit layerParametersChanged();
 }

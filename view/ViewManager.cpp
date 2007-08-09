@@ -52,9 +52,54 @@ ViewManager::ViewManager() :
     settings.endGroup();
 
     if (getGlobalDarkBackground()) {
-        m_lightPalette = QPalette(QColor(240, 240, 240));
+
+        std::cerr << "dark palette:" << std::endl;
+        std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name().toStdString() << std::endl;
+        std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name().toStdString() << std::endl;
+        std::cerr << "base = " << QApplication::palette().color(QPalette::Base).name().toStdString() << std::endl;
+        std::cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name().toStdString() << std::endl;
+        std::cerr << "text = " << QApplication::palette().color(QPalette::Text).name().toStdString() << std::endl;
+        std::cerr << "button = " << QApplication::palette().color(QPalette::Button).name().toStdString() << std::endl;
+        std::cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name().toStdString() << std::endl;
+        std::cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name().toStdString() << std::endl;
+        std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name().toStdString() << std::endl;
+        std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name().toStdString() << std::endl;
+        std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name().toStdString() << std::endl;
+
+        m_lightPalette = QPalette(QColor("#000000"),  // WindowText
+                                  QColor("#dddfe4"),  // Button
+                                  QColor("#ffffff"),  // Light
+                                  QColor("#555555"),  // Dark
+                                  QColor("#c7c7c7"),  // Mid
+                                  QColor("#000000"),  // Text
+                                  QColor("#ffffff"),  // BrightText
+                                  QColor("#ffffff"),  // Base
+                                  QColor("#efefef")); // Window
+                                  
+
     } else {
-        m_darkPalette = QPalette(QColor(16, 16, 16));
+        std::cerr << "light palette:" << std::endl;
+        std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name().toStdString() << std::endl;
+        std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name().toStdString() << std::endl;
+        std::cerr << "base = " << QApplication::palette().color(QPalette::Base).name().toStdString() << std::endl;
+        std::cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name().toStdString() << std::endl;
+        std::cerr << "text = " << QApplication::palette().color(QPalette::Text).name().toStdString() << std::endl;
+        std::cerr << "button = " << QApplication::palette().color(QPalette::Button).name().toStdString() << std::endl;
+        std::cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name().toStdString() << std::endl;
+        std::cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name().toStdString() << std::endl;
+        std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name().toStdString() << std::endl;
+        std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name().toStdString() << std::endl;
+        std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name().toStdString() << std::endl;
+
+        m_darkPalette = QPalette(QColor("#ffffff"),  // WindowText
+                                 QColor("#3e3e3e"),  // Button
+                                 QColor("#808080"),  // Light
+                                 QColor("#1e1e1e"),  // Dark
+                                 QColor("#404040"),  // Mid
+                                 QColor("#ffffff"),  // Text
+                                 QColor("#ffffff"),  // BrightText
+                                 QColor("#000000"),  // Base
+                                 QColor("#202020")); // Window
     }
 }
 

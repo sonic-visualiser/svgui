@@ -35,7 +35,8 @@
 
 PluginParameterBox::PluginParameterBox(Vamp::PluginBase *plugin, QWidget *parent) :
     QFrame(parent),
-    m_plugin(plugin)
+    m_plugin(plugin),
+    m_programCombo(0)
 {
     m_layout = new QGridLayout;
     setLayout(m_layout);
@@ -50,11 +51,11 @@ void
 PluginParameterBox::populate()
 {
     Vamp::PluginBase::ParameterList params = m_plugin->getParameterDescriptors();
-    Vamp::PluginBase::ProgramList programs = m_plugin->getPrograms();
+    m_programs = m_plugin->getPrograms();
 
     m_params.clear();
 
-    if (params.empty() && programs.empty()) {
+    if (params.empty() && m_programs.empty()) {
         m_layout->addWidget
             (new QLabel(tr("This plugin has no adjustable parameters.")),
              0, 0);
@@ -62,24 +63,25 @@ PluginParameterBox::populate()
 
     int offset = 0;
 
-    if (!programs.empty()) {
+    if (!m_programs.empty()) {
 
         std::string currentProgram = m_plugin->getCurrentProgram();
 
-        QComboBox *programCombo = new QComboBox;
-        programCombo->setMaxVisibleItems(20);
+        m_programCombo = new QComboBox;
+        m_programCombo->setMaxVisibleItems
+            (m_programs.size() < 25 ? m_programs.size() : 20);
 
-        for (size_t i = 0; i < programs.size(); ++i) {
-            programCombo->addItem(programs[i].c_str());
-            if (programs[i] == currentProgram) {
-                programCombo->setCurrentIndex(i);
+        for (size_t i = 0; i < m_programs.size(); ++i) {
+            m_programCombo->addItem(m_programs[i].c_str());
+            if (m_programs[i] == currentProgram) {
+                m_programCombo->setCurrentIndex(i);
             }
         }
 
         m_layout->addWidget(new QLabel(tr("Program")), 0, 0);
-        m_layout->addWidget(programCombo, 0, 1, 1, 2);
+        m_layout->addWidget(m_programCombo, 0, 1, 1, 2);
 
-        connect(programCombo, SIGNAL(currentIndexChanged(const QString &)),
+        connect(m_programCombo, SIGNAL(currentIndexChanged(const QString &)),
                 this, SLOT(programComboChanged(const QString &)));
 
         offset = 1;
@@ -146,7 +148,7 @@ PluginParameterBox::populate()
             
             QCheckBox *checkbox = new QCheckBox;
             checkbox->setObjectName(identifier);
-            checkbox->setCheckState(value == 0.0 ? Qt::Unchecked : Qt::Checked);
+            checkbox->setCheckState(value < 0.5 ? Qt::Unchecked : Qt::Checked);
             connect(checkbox, SIGNAL(stateChanged(int)),
                     this, SLOT(checkBoxChanged(int)));
             m_layout->addWidget(checkbox, i + offset, 2);
@@ -245,6 +247,8 @@ PluginParameterBox::dialChanged(int ival)
 
     m_plugin->setParameter(identifier.toStdString(), newValue);
 
+    updateProgramCombo();
+
     emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
 
@@ -268,6 +272,8 @@ PluginParameterBox::checkBoxChanged(int state)
 
     if (state) m_plugin->setParameter(identifier.toStdString(), 1.0);
     else m_plugin->setParameter(identifier.toStdString(), 0.0);
+
+    updateProgramCombo();
 
     emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
@@ -320,6 +326,8 @@ PluginParameterBox::spinBoxChanged(double value)
 
     m_plugin->setParameter(identifier.toStdString(), value);
 
+    updateProgramCombo();
+
     emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
 
@@ -362,8 +370,29 @@ PluginParameterBox::programComboChanged(const QString &newProgram)
             i->second.combo->setCurrentIndex(lrintf(value));
             i->second.combo->blockSignals(false);
         }
+
+        if (i->second.check) {
+            i->second.check->blockSignals(true);
+            i->second.check->setCheckState(value < 0.5 ? Qt::Unchecked : Qt::Checked);
+            i->second.check->blockSignals(false);
+        }            
     }
 
     emit pluginConfigurationChanged(PluginXml(m_plugin).toXmlString());
 }
+
+void
+PluginParameterBox::updateProgramCombo()
+{
+    if (!m_programCombo || m_programs.empty()) return;
+
+    std::string currentProgram = m_plugin->getCurrentProgram();
+
+    for (size_t i = 0; i < m_programs.size(); ++i) {
+        if (m_programs[i] == currentProgram) {
+            m_programCombo->setCurrentIndex(i);
+        }
+    }
+}
+
 
