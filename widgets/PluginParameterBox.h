@@ -48,6 +48,7 @@ protected slots:
 
 protected:
     void populate();
+    void updateProgramCombo();
 
     QGridLayout *m_layout;
     Vamp::PluginBase *m_plugin;
@@ -60,8 +61,11 @@ protected:
         Vamp::PluginBase::ParameterDescriptor param;
     };
 
+    QComboBox *m_programCombo;
+
     std::map<QString, ParamRec> m_params;
     std::map<QString, QString> m_nameMap;
+    Vamp::PluginBase::ProgramList m_programs;
 };
 
 #endif

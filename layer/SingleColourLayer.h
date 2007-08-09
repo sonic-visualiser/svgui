@@ -19,6 +19,7 @@
 #include "Layer.h"
 #include <QColor>
 #include <vector>
+#include <map>
 
 class SingleColourLayer : public Layer
 {
@@ -62,8 +63,8 @@ protected:
     virtual int getDefaultColourHint(bool /* darkBackground */,
                                      bool & /* impose */) { return -1; }
 
-    typedef std::multiset<int> ColourIndexPool;
-    static ColourIndexPool m_usedColourIndices;
+    typedef std::map<int, int> ColourRefCount;
+    static ColourRefCount m_colourRefCount;
 
     int m_colour;
 };
