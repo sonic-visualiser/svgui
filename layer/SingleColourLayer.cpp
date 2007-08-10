@@ -25,7 +25,8 @@ SingleColourLayer::ColourRefCount
 SingleColourLayer::m_colourRefCount;
 
 SingleColourLayer::SingleColourLayer() :
-    m_colour(0)
+    m_colour(0),
+    m_colourExplicitlySet(false)
 {
     setDefaultColourFor(0);
 }
@@ -117,6 +118,8 @@ SingleColourLayer::setProperty(const PropertyName &name, int value)
 void
 SingleColourLayer::setDefaultColourFor(View *v)
 {
+    if (m_colourExplicitlySet) return;
+
     bool dark = false;
     if (v) {
         dark = !v->hasLightBackground();
@@ -185,6 +188,8 @@ SingleColourLayer::setDefaultColourFor(View *v)
 void
 SingleColourLayer::setBaseColour(int colour)
 {
+    m_colourExplicitlySet = true;
+
     if (m_colour == colour) return;
 
     if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
@@ -270,5 +275,12 @@ SingleColourLayer::setProperties(const QXmlAttributes &attributes)
     QString darkbg = attributes.value("darkBackground");
     m_colour = ColourDatabase::getInstance()->putStringValues
         (colourName, colourSpec, darkbg);
+    if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
+        m_colourRefCount[m_colour] = 1;
+    } else {
+        m_colourRefCount[m_colour]++;
+    }
+    m_colourExplicitlySet = true;
+    flagBaseColourChanged();
 }
 

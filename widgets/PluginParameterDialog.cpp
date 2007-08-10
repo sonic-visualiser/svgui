@@ -18,6 +18,8 @@
 #include "PluginParameterBox.h"
 #include "WindowTypeSelector.h"
 
+#include "base/TextAbbrev.h"
+
 #include "vamp-sdk/Plugin.h"
 #include "vamp-sdk/PluginHostAdapter.h"
 
@@ -228,7 +230,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                 QDialogButtonBox::Cancel);
     hbox->addWidget(bb);
-    connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(bb, SIGNAL(accepted()), this, SLOT(dialogAccepted()));
     connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
 
     setAdvancedVisible(m_advancedVisible);
@@ -429,16 +431,36 @@ void
 PluginParameterDialog::setCandidateInputModels(const QStringList &models)
 {
     m_inputModels->clear();
-    m_inputModels->insertItems(0, models);
-    connect(m_inputModels, SIGNAL(activated(const QString &)),
-            this, SIGNAL(inputModelChanged(QString)));
+
+    QSettings settings;
+    settings.beginGroup("PluginParameterDialog");
+    QString lastModel = settings.value("lastinputmodel").toString();
+    settings.endGroup();
+
+    m_inputModelList = models;
+    m_inputModels->addItems(TextAbbrev::abbreviate(models, 80));
+
+    if (lastModel != "") {
+        for (int i = 0; i < models.size(); ++i) {
+            if (lastModel == models[i]) {
+                m_inputModels->setCurrentIndex(i);
+                break;
+            }
+        }
+    }
+
+    connect(m_inputModels, SIGNAL(activated(int)),
+            this, SLOT(inputModelComboChanged(int)));
     m_inputModelBox->show();
 }
 
 QString
 PluginParameterDialog::getInputModel() const
 {
-    return m_inputModels->currentText();
+    if (!m_inputModels || !m_inputModels->isVisible()) return "";
+    int i = m_inputModels->currentIndex();
+    if (i >= m_inputModelList.size()) return "";
+    return m_inputModelList[i];
 }
 
 void
@@ -519,5 +541,28 @@ void
 PluginParameterDialog::channelComboChanged(int index)
 {
     m_channel = index - 1;
+}
+
+void
+PluginParameterDialog::inputModelComboChanged(int index)
+{
+    if (index >= m_inputModelList.size()) return;
+    emit inputModelChanged(m_inputModelList[index]);
+}
+
+void
+PluginParameterDialog::dialogAccepted()
+{
+    if (!m_inputModels || !m_inputModels->isVisible()) {
+        accept();
+        return;
+    }
+  
+    QSettings settings;
+    settings.beginGroup("PluginParameterDialog");
+    settings.setValue("lastinputmodel", getInputModel());
+    settings.endGroup();
+    
+    accept();
 }
 
