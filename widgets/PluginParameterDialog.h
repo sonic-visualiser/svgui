@@ -78,6 +78,8 @@ protected slots:
     void windowTypeChanged(WindowType type);
     void advancedToggled();
     void setAdvancedVisible(bool);
+    void inputModelComboChanged(int);
+    void dialogAccepted();
 
 protected:
     Vamp::PluginBase *m_plugin;
@@ -102,6 +104,7 @@ protected:
 
     QGroupBox *m_inputModelBox;
     QComboBox *m_inputModels;
+    QStringList m_inputModelList;
 
     QPushButton *m_advancedButton;
     QWidget *m_advanced;

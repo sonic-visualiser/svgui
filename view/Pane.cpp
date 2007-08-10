@@ -21,6 +21,7 @@
 #include "base/Profiler.h"
 #include "ViewManager.h"
 #include "base/CommandHistory.h"
+#include "base/TextAbbrev.h"
 #include "layer/WaveformLayer.h"
 
 #include <QPaintEvent>
@@ -714,31 +715,14 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
         return;
     }
 
-    std::vector<QString> texts;
-    int maxTextWidth = 0;
-
+    QStringList texts;
     for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
-        
-        QString text = (*i)->getLayerPresentationName();
-        int tw = paint.fontMetrics().width(text);
-        bool reduced = false;
-        while (tw > width() / 3 && text.length() > 4) {
-            if (!reduced && text.length() > 8) {
-                text = text.left(text.length() - 4);
-            } else {
-                text = text.left(text.length() - 2);
-            }
-            reduced = true;
-            tw = paint.fontMetrics().width(text + "...");
-        }
-        if (reduced) {
-            texts.push_back(text + "...");
-        } else {
-            texts.push_back(text);
-        }
-        if (tw > maxTextWidth) maxTextWidth = tw;
+        texts.push_back((*i)->getLayerPresentationName());
     }
-    
+
+    int maxTextWidth = width() / 3;
+    texts = TextAbbrev::abbreviate(texts, paint.fontMetrics(), maxTextWidth);
+
     int lly = height() - 6;
     int llx = width() - maxTextWidth - 5;
     

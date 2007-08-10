@@ -67,6 +67,7 @@ protected:
     static ColourRefCount m_colourRefCount;
 
     int m_colour;
+    bool m_colourExplicitlySet;
 };
 
 #endif
