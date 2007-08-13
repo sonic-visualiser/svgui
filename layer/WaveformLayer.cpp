@@ -541,7 +541,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
             my = m + (((ch - minChannel) * h) / channels);
         }
 
-	paint->setPen(greys[0]);
+	paint->setPen(greys[1]);
 	paint->drawLine(x0, my, x1, my);
 
         int n = 10;
