@@ -259,7 +259,7 @@ TimeValueLayer::getValueExtents(float &min, float &max,
 bool
 TimeValueLayer::getDisplayExtents(float &min, float &max) const
 {
-    if (!m_model || m_verticalScale == AutoAlignScale) return false;
+    if (!m_model || shouldAutoAlign()) return false;
 
     min = m_model->getValueMinimum();
     max = m_model->getValueMaximum();
@@ -431,7 +431,7 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
     max = 0.0;
     log = false;
 
-    if (m_verticalScale == AutoAlignScale) {
+    if (shouldAutoAlign()) {
 
         if (!v->getValueExtents(m_model->getScaleUnits(), min, max, log)) {
             min = m_model->getValueMinimum();
@@ -494,6 +494,14 @@ TimeValueLayer::getValueForY(View *v, int y) const
     }
 
     return val;
+}
+
+bool
+TimeValueLayer::shouldAutoAlign() const
+{
+    if (!m_model) return false;
+    QString unit = m_model->getScaleUnits();
+    return (m_verticalScale == AutoAlignScale && unit != "");
 }
 
 QColor
@@ -566,7 +574,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
 	SparseTimeValueModel::PointList localPoints =
 	    getLocalPoints(v, localPos.x());
-        std::cerr << "TimeValueLayer: " << localPoints.size() << " local points" << std::endl;
+//        std::cerr << "TimeValueLayer: " << localPoints.size() << " local points" << std::endl;
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
 

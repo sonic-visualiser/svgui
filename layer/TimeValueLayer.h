@@ -124,6 +124,7 @@ protected:
     int getYForValue(View *, float value) const;
     float getValueForY(View *, int y) const;
     QColor getColourForValue(View *v, float value) const;
+    bool shouldAutoAlign() const;
 
     SparseTimeValueModel::PointList getLocalPoints(View *v, int) const;
 
