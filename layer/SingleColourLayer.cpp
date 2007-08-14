@@ -141,9 +141,9 @@ SingleColourLayer::setDefaultColourFor(View *v)
         // means we're being called from the constructor, and this is
         // a virtual function
         hint = getDefaultColourHint(dark, impose);
-//        std::cerr << "hint = " << hint << ", impose = " << impose << std::endl;
+        std::cerr << "hint = " << hint << ", impose = " << impose << std::endl;
     } else {
-//        std::cerr << "(from ctor)" << std::endl;
+        std::cerr << "(from ctor)" << std::endl;
     }
 
     if (hint >= 0 && impose) {
@@ -164,15 +164,15 @@ SingleColourLayer::setDefaultColourFor(View *v)
             count = m_colourRefCount[index];
         }
 
-//        std::cerr << "index = " << index << ", count = " << count;
+        std::cerr << "index = " << index << ", count = " << count;
 
         if (bestColour < 0 || count < bestCount) {
             bestColour = index;
             bestCount = count;
-//            std::cerr << " *";
+            std::cerr << " *";
         }
 
-//        std::cerr << std::endl;
+        std::cerr << std::endl;
     }
     
     if (bestColour < 0) m_colour = 0;
@@ -273,14 +273,30 @@ SingleColourLayer::setProperties(const QXmlAttributes &attributes)
     QString colourName = attributes.value("colourName");
     QString colourSpec = attributes.value("colour");
     QString darkbg = attributes.value("darkBackground");
-    m_colour = ColourDatabase::getInstance()->putStringValues
+
+    int colour = ColourDatabase::getInstance()->putStringValues
         (colourName, colourSpec, darkbg);
-    if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
-        m_colourRefCount[m_colour] = 1;
-    } else {
-        m_colourRefCount[m_colour]++;
-    }
+
     m_colourExplicitlySet = true;
-    flagBaseColourChanged();
+
+    if (m_colour != colour) {
+
+        std::cerr << "SingleColourLayer::setProperties: changing colour from " << m_colour << " to " << colour << std::endl;
+
+        if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
+            m_colourRefCount[m_colour] > 0) {
+            m_colourRefCount[m_colour]--;
+        }
+
+        m_colour = colour;
+
+        if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
+            m_colourRefCount[m_colour] = 1;
+        } else {
+            m_colourRefCount[m_colour]++;
+        }
+
+        flagBaseColourChanged();
+    }
 }
 

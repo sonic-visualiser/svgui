@@ -471,7 +471,13 @@ View::getBackground() const
     bool widgetLight =
         (widgetbg.red() + widgetbg.green() + widgetbg.blue()) > 384;
 
-    if (widgetLight == light) return widgetbg;
+    if (widgetLight == light) {
+        if (widgetLight) {
+            return widgetbg.light();
+        } else {
+            return widgetbg.dark();
+        }
+    }
     else if (light) return Qt::white;
     else return Qt::black;
 }

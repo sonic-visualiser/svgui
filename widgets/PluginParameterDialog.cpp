@@ -439,11 +439,13 @@ PluginParameterDialog::setCandidateInputModels(const QStringList &models)
 
     m_inputModelList = models;
     m_inputModels->addItems(TextAbbrev::abbreviate(models, 80));
+    m_inputModels->setCurrentIndex(0);
 
     if (lastModel != "") {
         for (int i = 0; i < models.size(); ++i) {
             if (lastModel == models[i]) {
                 m_inputModels->setCurrentIndex(i);
+                m_currentInputModel = models[i];
                 break;
             }
         }
@@ -457,10 +459,7 @@ PluginParameterDialog::setCandidateInputModels(const QStringList &models)
 QString
 PluginParameterDialog::getInputModel() const
 {
-    if (!m_inputModels || !m_inputModels->isVisible()) return "";
-    int i = m_inputModels->currentIndex();
-    if (i >= m_inputModelList.size()) return "";
-    return m_inputModelList[i];
+    return m_currentInputModel;
 }
 
 void
@@ -547,7 +546,8 @@ void
 PluginParameterDialog::inputModelComboChanged(int index)
 {
     if (index >= m_inputModelList.size()) return;
-    emit inputModelChanged(m_inputModelList[index]);
+    m_currentInputModel = m_inputModelList[index];
+    emit inputModelChanged(m_currentInputModel);
 }
 
 void

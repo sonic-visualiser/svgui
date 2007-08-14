@@ -105,6 +105,7 @@ protected:
     QGroupBox *m_inputModelBox;
     QComboBox *m_inputModels;
     QStringList m_inputModelList;
+    QString m_currentInputModel;
 
     QPushButton *m_advancedButton;
     QWidget *m_advanced;
