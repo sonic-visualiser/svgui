@@ -259,6 +259,8 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
     } else {
 	m_haveSelectedLayer = false;
     }
+
+    emit propertyContainerSelected(pc);
 }
 
 void

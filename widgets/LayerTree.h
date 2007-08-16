@@ -22,6 +22,7 @@
 class PaneStack;
 class View;
 class Layer;
+class PropertyContainer;
 
 class LayerTreeModel : public QAbstractItemModel
 {
@@ -32,6 +33,8 @@ public:
     virtual ~LayerTreeModel();
 
     QVariant data(const QModelIndex &index, int role) const;
+
+    bool setData(const QModelIndex &index, const QVariant &value, int role);
 
     Qt::ItemFlags flags(const QModelIndex &index) const;
 
@@ -48,6 +51,13 @@ public:
 
 protected:
     PaneStack *m_stack;
+
+protected slots:
+    void propertyContainerAdded(PropertyContainer *);
+    void propertyContainerRemoved(PropertyContainer *);
+    void propertyContainerSelected(PropertyContainer *);
+    void propertyContainerPropertyChanged(PropertyContainer *);
+    void playParametersAudibilityChanged(bool);
 };
 
 #endif
