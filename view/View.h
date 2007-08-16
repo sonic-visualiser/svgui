@@ -258,6 +258,7 @@ signals:
     void propertyContainerPropertyChanged(PropertyContainer *pc);
     void propertyContainerPropertyRangeChanged(PropertyContainer *pc);
     void propertyContainerNameChanged(PropertyContainer *pc);
+    void propertyContainerSelected(PropertyContainer *pc);
     void propertyChanged(PropertyContainer::PropertyName);
 
     void centreFrameChanged(unsigned long frame,

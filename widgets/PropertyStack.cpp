@@ -182,9 +182,14 @@ PropertyStack::propertyContainerRemoved(PropertyContainer *)
 void
 PropertyStack::propertyContainerPropertyChanged(PropertyContainer *pc)
 {
+    Layer *layer = dynamic_cast<Layer *>(pc);
     for (unsigned int i = 0; i < m_boxes.size(); ++i) {
 	if (pc == m_boxes[i]->getContainer()) {
 	    m_boxes[i]->propertyContainerPropertyChanged(pc);
+            if (layer) {
+                m_boxes[i]->layerVisibilityChanged
+                    (!layer->isLayerDormant(m_client));
+            }
 	}
     }
 }

@@ -17,6 +17,7 @@
 #include "LayerTree.h"
 #include "view/PaneStack.h"
 
+#include "base/PlayParameters.h"
 #include "view/Pane.h"
 #include "layer/Layer.h"
 #include "data/model/Model.h"
@@ -31,10 +32,96 @@ LayerTreeModel::LayerTreeModel(PaneStack *stack, QObject *parent) :
 {
     connect(stack, SIGNAL(paneAdded()), this, SIGNAL(layoutChanged()));
     connect(stack, SIGNAL(paneDeleted()), this, SIGNAL(layoutChanged()));
+
+    for (int i = 0; i < stack->getPaneCount(); ++i) {
+        Pane *pane = stack->getPane(i);
+        if (!pane) continue;
+        connect(pane, SIGNAL(propertyContainerAdded(PropertyContainer *)),
+                this, SLOT(propertyContainerAdded(PropertyContainer *)));
+        connect(pane, SIGNAL(propertyContainerRemoved(PropertyContainer *)),
+                this, SLOT(propertyContainerRemoved(PropertyContainer *)));
+        connect(pane, SIGNAL(propertyContainerSelected(PropertyContainer *)),
+                this, SLOT(propertyContainerSelected(PropertyContainer *)));
+        connect(pane, SIGNAL(propertyContainerPropertyChanged(PropertyContainer *)),
+                this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
+        connect(pane, SIGNAL(propertyContainerNameChanged(PropertyContainer *)),
+                this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
+        for (int j = 0; j < pane->getLayerCount(); ++j) {
+            Layer *layer = pane->getLayer(j);
+            if (!layer) continue;
+            PlayParameters *params = layer->getPlayParameters();
+            if (!params) continue;
+            connect(params, SIGNAL(playAudibleChanged(bool)),
+                    this, SLOT(playParametersAudibilityChanged(bool)));
+        }
+    }
 }
 
 LayerTreeModel::~LayerTreeModel()
 {
+}
+
+void
+LayerTreeModel::propertyContainerAdded(PropertyContainer *)
+{
+    emit layoutChanged();
+}
+
+void
+LayerTreeModel::propertyContainerRemoved(PropertyContainer *)
+{
+    emit layoutChanged();
+}
+
+void
+LayerTreeModel::propertyContainerSelected(PropertyContainer *)
+{
+    emit layoutChanged();
+}
+
+void
+LayerTreeModel::propertyContainerPropertyChanged(PropertyContainer *pc)
+{
+    for (int i = 0; i < m_stack->getPaneCount(); ++i) {
+        Pane *pane = m_stack->getPane(i);
+        if (!pane) continue;
+        for (int j = 0; j < pane->getLayerCount(); ++j) {
+            if (pane->getLayer(j) == pc) {
+                emit dataChanged(createIndex(pane->getLayerCount() - j - 1,
+                                             0, pane),
+                                 createIndex(pane->getLayerCount() - j - 1,
+                                             3, pane));
+            }
+        }
+    }
+}
+
+void
+LayerTreeModel::playParametersAudibilityChanged(bool a)
+{
+    PlayParameters *params = dynamic_cast<PlayParameters *>(sender());
+    if (!params) return;
+
+    std::cerr << "LayerTreeModel::playParametersAudibilityChanged("
+              << params << "," << a << ")" << std::endl;
+
+    for (int i = 0; i < m_stack->getPaneCount(); ++i) {
+        Pane *pane = m_stack->getPane(i);
+        if (!pane) continue;
+        for (int j = 0; j < pane->getLayerCount(); ++j) {
+            Layer *layer = pane->getLayer(j);
+            if (!layer) continue;
+            if (layer->getPlayParameters() == params) {
+                std::cerr << "LayerTreeModel::playParametersAudibilityChanged("
+                          << params << "," << a << "): row " << pane->getLayerCount() - j - 1 << ", col " << 2 << std::endl;
+
+                emit dataChanged(createIndex(pane->getLayerCount() - j - 1,
+                                             2, pane),
+                                 createIndex(pane->getLayerCount() - j - 1,
+                                             2, pane));
+            }
+        }
+    }
 }
 
 QVariant
@@ -59,7 +146,7 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
     }
 
     if (pane && pane->getLayerCount() > row) {
-        Layer *layer = pane->getLayer(row);
+        Layer *layer = pane->getLayer(pane->getLayerCount() - row - 1);
         if (layer) {
             if (col == 0) {
                 switch (role) {
@@ -72,6 +159,22 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
                 default: break;
                 }
             } else if (col == 1) {
+                if (role == Qt::CheckStateRole) {
+                    return QVariant(layer->isLayerDormant(pane) ?
+                                    Qt::Unchecked : Qt::Checked);
+                } else if (role == Qt::TextAlignmentRole) {
+                    return QVariant(Qt::AlignHCenter);
+                }
+            } else if (col == 2) {
+                if (role == Qt::CheckStateRole) {
+                    PlayParameters *params = layer->getPlayParameters();
+                    if (params) return QVariant(params->isPlayMuted() ?
+                                                Qt::Unchecked : Qt::Checked);
+                    else return QVariant();
+                } else if (role == Qt::TextAlignmentRole) {
+                    return QVariant(Qt::AlignHCenter);
+                }
+            } else if (col == 3) {
                 Model *model = layer->getModel();
                 if (model && role == Qt::DisplayRole) {
                     return QVariant(model->objectName());
@@ -83,11 +186,53 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+bool
+LayerTreeModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (!index.isValid()) return false;
+
+    QObject *obj = static_cast<QObject *>(index.internalPointer());
+    int row = index.row(), col = index.column();
+
+    Pane *pane = dynamic_cast<Pane *>(obj);
+    if (!pane || pane->getLayerCount() <= row) return false;
+
+    Layer *layer = pane->getLayer(pane->getLayerCount() - row - 1);
+    if (!layer) return false;
+
+    if (col == 1) {
+        if (role == Qt::CheckStateRole) {
+            layer->showLayer(pane, value.toInt() == Qt::Checked);
+            emit dataChanged(index, index);
+            return true;
+        }
+    } else if (col == 2) {
+        if (role == Qt::CheckStateRole) {
+            PlayParameters *params = layer->getPlayParameters();
+            if (params) {
+                params->setPlayMuted(value.toInt() == Qt::Unchecked);
+                emit dataChanged(index, index);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 Qt::ItemFlags
 LayerTreeModel::flags(const QModelIndex &index) const
 {
-    if (!index.isValid()) return Qt::ItemIsEnabled;
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+    Qt::ItemFlags flags = Qt::ItemIsEnabled;
+    if (!index.isValid()) return flags;
+
+    if (index.column() == 1 || index.column() == 2) {
+        flags |= Qt::ItemIsUserCheckable;
+    } else if (index.column() == 0) {
+        flags |= Qt::ItemIsSelectable;
+    }
+
+    return flags;
 }
 
 QVariant
@@ -97,7 +242,9 @@ LayerTreeModel::headerData(int section,
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
 	if (section == 0) return QVariant(tr("Layer"));
-	else if (section == 1) return QVariant(tr("Model"));
+        else if (section == 1) return QVariant(tr("Shown"));
+        else if (section == 2) return QVariant(tr("Played"));
+	else if (section == 3) return QVariant(tr("Model"));
     }
 
     return QVariant();
@@ -161,10 +308,10 @@ LayerTreeModel::rowCount(const QModelIndex &parent) const
 int
 LayerTreeModel::columnCount(const QModelIndex &parent) const
 {
-    if (!parent.isValid()) return 2;
+    if (!parent.isValid()) return 4;
 
     QObject *obj = static_cast<QObject *>(parent.internalPointer());
-    if (obj == m_stack) return 2;
+    if (obj == m_stack) return 4; // row for a layer
 
     return 1;
 }
