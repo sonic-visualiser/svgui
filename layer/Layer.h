@@ -24,6 +24,7 @@
 #include <QRect>
 #include <QXmlAttributes>
 #include <QMutex>
+#include <QPixmap>
 
 #include <map>
 #include <set>
@@ -95,6 +96,7 @@ public:
     }
 
     virtual QString getLayerPresentationName() const;
+    virtual QPixmap getLayerPresentationPixmap(QSize) const { return QPixmap(); }
 
     virtual int getVerticalScaleWidth(View *, QPainter &) const { return 0; }
     virtual void paintVerticalScale(View *, QPainter &, QRect) const { }
