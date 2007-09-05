@@ -716,8 +716,13 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     }
 
     QStringList texts;
+    std::vector<QPixmap> pixmaps;
     for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
         texts.push_back((*i)->getLayerPresentationName());
+//        std::cerr << "Pane " << this << ": Layer presentation name for " << *i << ": "
+//                  << texts[texts.size()-1].toStdString() << std::endl;
+        pixmaps.push_back((*i)->getLayerPresentationPixmap
+                          (QSize(fontAscent, fontAscent)));
     }
 
     int maxTextWidth = width() / 3;
@@ -734,6 +739,8 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     if (r.x() + r.width() >= llx) {
 	
         for (size_t i = 0; i < texts.size(); ++i) {
+
+//            std::cerr << "Pane "<< this << ": text " << i << ": " << texts[i].toStdString() << std::endl;
             
             if (i + 1 == texts.size()) {
                 paint.setPen(getForeground());
@@ -742,6 +749,12 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
             drawVisibleText(paint, llx,
                             lly - fontHeight + fontAscent,
                             texts[i], OutlinedText);
+
+            if (!pixmaps[i].isNull()) {
+                paint.drawPixmap(llx - fontAscent - 3,
+                                 lly - fontHeight + (fontHeight-fontAscent)/2,
+                                 pixmaps[i]);
+            }
             
             lly -= fontHeight;
         }

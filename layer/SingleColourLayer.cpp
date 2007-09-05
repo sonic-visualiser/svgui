@@ -31,6 +31,12 @@ SingleColourLayer::SingleColourLayer() :
     setDefaultColourFor(0);
 }
 
+QPixmap
+SingleColourLayer::getLayerPresentationPixmap(QSize size) const
+{
+    return ColourDatabase::getInstance()->getExamplePixmap(m_colour, size);
+}
+
 bool
 SingleColourLayer::hasLightBackground() const
 {

@@ -33,6 +33,8 @@ public:
         return ColourDistinguishes;
     }
 
+    virtual QPixmap getLayerPresentationPixmap(QSize size) const;
+
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
