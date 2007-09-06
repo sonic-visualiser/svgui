@@ -711,7 +711,12 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
-    if (r.y() + r.height() < height() - int(m_layers.size()) * fontHeight - 6) {
+    int lly = height() - 6;
+    if (m_manager->getZoomWheelsEnabled()) {
+        lly -= 20;
+    }
+
+    if (r.y() + r.height() < lly - int(m_layers.size()) * fontHeight) {
         return;
     }
 
@@ -728,15 +733,12 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     int maxTextWidth = width() / 3;
     texts = TextAbbrev::abbreviate(texts, paint.fontMetrics(), maxTextWidth);
 
-    int lly = height() - 6;
     int llx = width() - maxTextWidth - 5;
-    
     if (m_manager->getZoomWheelsEnabled()) {
-        lly -= 20;
         llx -= 36;
     }
     
-    if (r.x() + r.width() >= llx) {
+    if (r.x() + r.width() >= llx - fontAscent - 3) {
 	
         for (size_t i = 0; i < texts.size(); ++i) {
 
