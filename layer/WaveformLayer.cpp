@@ -82,6 +82,9 @@ WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
     connect(m_model, SIGNAL(completionChanged()),
 	    this, SIGNAL(modelCompletionChanged()));
 
+    connect(model, SIGNAL(alignmentCompletionChanged()),
+            this, SIGNAL(modelCompletionChanged()));
+
     emit modelReplaced();
 
     if (channelsChanged) emit layerParametersChanged();

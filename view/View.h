@@ -252,6 +252,9 @@ public:
     size_t getModelsStartFrame() const;
     size_t getModelsEndFrame() const;
 
+    //!!!
+    int getAlignedPlaybackFrame() const;
+
 signals:
     void propertyContainerAdded(PropertyContainer *pc);
     void propertyContainerRemoved(PropertyContainer *pc);

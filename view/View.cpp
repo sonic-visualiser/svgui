@@ -20,9 +20,10 @@
 #include "base/Profiler.h"
 #include "base/Pitch.h"
 
-#include "layer/TimeRulerLayer.h" //!!! damn, shouldn't be including that here
+#include "layer/TimeRulerLayer.h"
 #include "layer/SingleColourLayer.h"
-#include "data/model/PowerOfSqrtTwoZoomConstraint.h" //!!! likewise
+#include "data/model/PowerOfSqrtTwoZoomConstraint.h"
+#include "data/model/RangeSummarisableTimeValueModel.h"
 
 #include <QPainter>
 #include <QPaintEvent>
@@ -801,6 +802,8 @@ View::modelChanged(size_t startFrame, size_t endFrame)
 void
 View::modelCompletionChanged()
 {
+    std::cerr << "View(" << this << ")::modelCompletionChanged()" << std::endl;
+
     QObject *obj = sender();
     checkProgress(obj);
 }
@@ -876,6 +879,8 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
     if (m_manager) {
 	if (sender() != m_manager) return;
     }
+
+    f = getAlignedPlaybackFrame();
 
     if (m_playPointerFrame == f) return;
     bool visible = (getXForFrame(m_playPointerFrame) != getXForFrame(f));
@@ -1050,6 +1055,51 @@ View::getModelsSampleRate() const
 	}
     }
     return 0;
+}
+
+int
+View::getAlignedPlaybackFrame() const
+{
+    if (!m_manager) return 0;
+    if (!m_manager->getPlaybackModel()) return m_manager->getPlaybackFrame();
+
+    RangeSummarisableTimeValueModel *waveformModel = 0;
+    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+
+        if (!*i) continue;
+        if (dynamic_cast<TimeRulerLayer *>(*i)) continue;
+
+        Model *model = (*i)->getModel();
+        if (!model) continue;
+
+        waveformModel = dynamic_cast<RangeSummarisableTimeValueModel *>(model);
+        if (!waveformModel) {
+            waveformModel = dynamic_cast<RangeSummarisableTimeValueModel *>
+                (model->getSourceModel());
+        }
+
+        if (waveformModel) break;
+    }
+
+    int pf = m_manager->getPlaybackFrame();
+
+    if (!waveformModel) return pf;
+
+    RangeSummarisableTimeValueModel *pm =
+        dynamic_cast<RangeSummarisableTimeValueModel *>
+        (m_manager->getPlaybackModel());
+
+//    std::cerr << "View[" << this << "]::getAlignedPlaybackFrame: pf = " << pf;
+
+    if (pm) {
+        pf = pm->alignFromReference(pf);
+//        std::cerr << " -> " << pf;
+    }
+
+    int af = waveformModel->alignToReference(pf);
+
+//    std::cerr << ", aligned = " << af << std::endl;
+    return af;
 }
 
 bool
@@ -1232,6 +1282,21 @@ View::checkProgress(void *object)
 	if (i->first == object) {
 
 	    int completion = i->first->getCompletion(this);
+            QString text = i->first->getPropertyContainerName();
+
+            if (completion >= 100) {
+
+                //!!!
+                Model *model = i->first->getModel();
+                RangeSummarisableTimeValueModel *wfm = 
+                    dynamic_cast<RangeSummarisableTimeValueModel *>(model);
+                if (wfm) {
+                    completion = wfm->getAlignmentCompletion();
+                    if (completion < 100) {
+                        text = tr("Alignment");
+                    }
+                }
+            }
 
 	    if (completion >= 100) {
 
@@ -1239,7 +1304,7 @@ View::checkProgress(void *object)
 
 	    } else {
 
-		i->second->setText(i->first->getPropertyContainerName());
+		i->second->setText(text);
 
 		i->second->setValue(completion);
 		i->second->move(0, ph - i->second->height());
