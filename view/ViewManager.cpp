@@ -31,6 +31,7 @@ ViewManager::ViewManager() :
     m_globalCentreFrame(0),
     m_globalZoom(1024),
     m_playbackFrame(0),
+    m_playbackModel(0),
     m_mainModelSampleRate(0),
     m_lastLeft(0), 
     m_lastRight(0),
@@ -38,6 +39,7 @@ ViewManager::ViewManager() :
     m_toolMode(NavigateMode),
     m_playLoopMode(false),
     m_playSelectionMode(false),
+    m_playSoloMode(false),
     m_overlayMode(StandardOverlays),
     m_zoomWheelsEnabled(true),
     m_lightPalette(QApplication::palette()),
@@ -154,6 +156,18 @@ ViewManager::setPlaybackFrame(unsigned long f)
 	    m_playSource->play(f);
 	}
     }
+}
+
+Model *
+ViewManager::getPlaybackModel() const
+{
+    return m_playbackModel;
+}
+
+void
+ViewManager::setPlaybackModel(Model *model)
+{
+    m_playbackModel = model;
 }
 
 bool
@@ -329,6 +343,18 @@ ViewManager::setPlaySelectionMode(bool mode)
 
         emit playSelectionModeChanged();
         emit playSelectionModeChanged(mode);
+    }
+}
+
+void
+ViewManager::setPlaySoloMode(bool mode)
+{
+    if (m_playSoloMode != mode) {
+
+        m_playSoloMode = mode;
+
+        emit playSoloModeChanged();
+        emit playSoloModeChanged(mode);
     }
 }
 

@@ -806,20 +806,23 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
     if (r.y() + r.height() < height() - fontHeight - 6) return;
 
     size_t modelRate = waveformModel->getSampleRate();
+    size_t nativeRate = waveformModel->getNativeRate();
     size_t playbackRate = m_manager->getPlaybackSampleRate();
     size_t outputRate = m_manager->getOutputSampleRate();
         
     QString srNote = "";
 
-    // Show (R) for waveform models that will be resampled on
-    // playback, and (X) for waveform models that will be played
-    // at the wrong rate because their rate differs from the
+    // Show (R) for waveform models that have been resampled or will
+    // be resampled on playback, and (X) for waveform models that will
+    // be played at the wrong rate because their rate differs from the
     // current playback rate (which is not necessarily that of the
     // main model).
 
     if (playbackRate != 0) {
         if (modelRate == playbackRate) {
-            if (modelRate != outputRate) srNote = " " + tr("(R)");
+            if (modelRate != outputRate || modelRate != nativeRate) {
+                srNote = " " + tr("(R)");
+            }
         } else {
             srNote = " " + tr("(X)");
         }
@@ -829,7 +832,7 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
         .arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
                                       sampleRate)
              .toText(false).c_str())
-        .arg(modelRate)
+        .arg(nativeRate)
         .arg(srNote);
 
     if (r.x() < m_scaleWidth + 5 + paint.fontMetrics().width(desc)) {

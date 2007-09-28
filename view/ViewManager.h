@@ -65,6 +65,10 @@ public:
     unsigned long getPlaybackFrame() const;
     void setPlaybackFrame(unsigned long frame);
 
+    // Only meaningful in solo mode, and used for optional alignment feature
+    Model *getPlaybackModel() const;
+    void setPlaybackModel(Model *);
+
     bool haveInProgressSelection() const;
     const Selection &getInProgressSelection(bool &exclusive) const;
     void setInProgressSelection(const Selection &selection, bool exclusive);
@@ -104,6 +108,9 @@ public:
 
     bool getPlaySelectionMode() const { return m_playSelectionMode; }
     void setPlaySelectionMode(bool on);
+
+    bool getPlaySoloMode() const { return m_playSoloMode; }
+    void setPlaySoloMode(bool on);
 
     /**
      * The sample rate that is used for playback.  This is usually the
@@ -199,6 +206,10 @@ signals:
     void playSelectionModeChanged();
     void playSelectionModeChanged(bool);
 
+    /** Emitted when the play solo mode has been changed. */
+    void playSoloModeChanged();
+    void playSoloModeChanged(bool);
+
     /** Emitted when the overlay mode has been changed. */
     void overlayModeChanged();
 
@@ -220,6 +231,7 @@ protected:
     unsigned long m_globalCentreFrame;
     unsigned long m_globalZoom;
     mutable unsigned long m_playbackFrame;
+    Model *m_playbackModel; //!!!
     size_t m_mainModelSampleRate;
 
     float m_lastLeft;
@@ -235,6 +247,7 @@ protected:
 
     bool m_playLoopMode;
     bool m_playSelectionMode;
+    bool m_playSoloMode;
 
     void setSelections(const MultiSelection &ms);
     void signalSelectionChange();
