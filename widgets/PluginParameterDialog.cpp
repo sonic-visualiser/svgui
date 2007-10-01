@@ -32,6 +32,7 @@
 #include <QPushButton>
 #include <QMessageBox>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QSettings>
 #include <QDialogButtonBox>
 
@@ -43,7 +44,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     m_stepSize(0),
     m_blockSize(0),
     m_windowType(HanningWindow),
-    m_parameterBox(0)
+    m_parameterBox(0),
+    m_selectionOnly(false)
 {
     setWindowTitle(tr("Plugin Parameters"));
 
@@ -161,13 +163,19 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     subgrid->setColumnStretch(1, 2);
 
     m_inputModelBox = new QGroupBox;
-    m_inputModelBox->setTitle(tr("Input Source"));
+    m_inputModelBox->setTitle(tr("Input Material"));
     grid->addWidget(m_inputModelBox, 1, 0);
     
     m_inputModels = new QComboBox;
-    QHBoxLayout *inputLayout = new QHBoxLayout;
+    QVBoxLayout *inputLayout = new QVBoxLayout;
     m_inputModelBox->setLayout(inputLayout);
     inputLayout->addWidget(m_inputModels);
+    m_inputModels->hide();
+
+    m_selectionOnly = new QCheckBox(tr("Restrict to selection extents"));
+    inputLayout->addWidget(m_selectionOnly);
+    m_selectionOnly->hide();
+
     m_inputModelBox->hide();
 
     QGroupBox *paramBox = new QGroupBox;
@@ -437,6 +445,8 @@ PluginParameterDialog::setCandidateInputModels(const QStringList &models)
     QString lastModel = settings.value("lastinputmodel").toString();
     settings.endGroup();
 
+    m_inputModels->show();
+
     m_inputModelList = models;
     m_inputModels->addItems(TextAbbrev::abbreviate(models, 80));
     m_inputModels->setCurrentIndex(0);
@@ -456,10 +466,39 @@ PluginParameterDialog::setCandidateInputModels(const QStringList &models)
     m_inputModelBox->show();
 }
 
+void
+PluginParameterDialog::setShowSelectionOnlyOption(bool show)
+{
+    if (!show) {
+        m_selectionOnly->hide();
+        if (!m_inputModels->isVisible()) m_inputModelBox->hide();
+        return;
+    }
+
+    QSettings settings;
+    settings.beginGroup("PluginParameterDialog");
+    bool lastSelectionOnly = settings.value("lastselectiononly", false).toBool();
+    settings.endGroup();
+
+    m_selectionOnly->setChecked(lastSelectionOnly);
+
+    connect(m_selectionOnly, SIGNAL(stateChanged(int)),
+            this, SLOT(selectionOnlyChanged(int)));
+
+    m_selectionOnly->show();
+    m_inputModelBox->show();
+}
+
 QString
 PluginParameterDialog::getInputModel() const
 {
     return m_currentInputModel;
+}
+
+bool
+PluginParameterDialog::getSelectionOnly() const
+{
+    return m_selectionOnly;
 }
 
 void
@@ -551,16 +590,29 @@ PluginParameterDialog::inputModelComboChanged(int index)
 }
 
 void
+PluginParameterDialog::selectionOnlyChanged(int state)
+{
+    if (state == Qt::Checked) {
+        m_currentSelectionOnly = true;
+    } else {
+        m_currentSelectionOnly = false;
+    }
+}
+
+void
 PluginParameterDialog::dialogAccepted()
 {
-    if (!m_inputModels || !m_inputModels->isVisible()) {
-        accept();
-        return;
-    }
-  
     QSettings settings;
     settings.beginGroup("PluginParameterDialog");
-    settings.setValue("lastinputmodel", getInputModel());
+
+    if (m_inputModels->isVisible()) {
+        settings.setValue("lastinputmodel", getInputModel());
+    }
+
+    if (m_selectionOnly->isVisible()) {
+        settings.setValue("lastselectiononly", getSelectionOnly());
+    }
+
     settings.endGroup();
     
     accept();
