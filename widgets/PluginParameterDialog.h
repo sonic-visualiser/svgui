@@ -27,6 +27,7 @@ class QPushButton;
 class QLabel;
 class QGroupBox;
 class QComboBox;
+class QCheckBox;
 
 /**
  * A dialog for editing the parameters of a given plugin, using a
@@ -54,12 +55,14 @@ public:
                                   bool showFrequencyDomainOptions);
 
     void setCandidateInputModels(const QStringList &names);
+    void setShowSelectionOnlyOption(bool show);
 
     Vamp::PluginBase *getPlugin() { return m_plugin; }
 
     int getChannel() const { return m_channel; }
 
     QString getInputModel() const;
+    bool getSelectionOnly() const;
 
     //!!! merge with PluginTransform::ExecutionContext
 
@@ -79,6 +82,7 @@ protected slots:
     void advancedToggled();
     void setAdvancedVisible(bool);
     void inputModelComboChanged(int);
+    void selectionOnlyChanged(int);
     void dialogAccepted();
 
 protected:
@@ -104,8 +108,10 @@ protected:
 
     QGroupBox *m_inputModelBox;
     QComboBox *m_inputModels;
+    QCheckBox *m_selectionOnly;
     QStringList m_inputModelList;
     QString m_currentInputModel;
+    bool m_currentSelectionOnly;
 
     QPushButton *m_advancedButton;
     QWidget *m_advanced;
