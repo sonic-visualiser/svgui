@@ -15,6 +15,7 @@ MOC_DIR = tmp_moc
 
 # Input
 HEADERS += Colour3DPlotLayer.h \
+           ImageLayer.h \
            ImageRegionFinder.h \
            Layer.h \
            LayerFactory.h \
@@ -31,6 +32,7 @@ HEADERS += Colour3DPlotLayer.h \
            TimeValueLayer.h \
            WaveformLayer.h
 SOURCES += Colour3DPlotLayer.cpp \
+           ImageLayer.cpp \
            ImageRegionFinder.cpp \
            Layer.cpp \
            LayerFactory.cpp \

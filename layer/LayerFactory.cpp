@@ -22,6 +22,7 @@
 #include "TimeValueLayer.h"
 #include "NoteLayer.h"
 #include "TextLayer.h"
+#include "ImageLayer.h"
 #include "Colour3DPlotLayer.h"
 #include "SpectrumLayer.h"
 #include "SliceLayer.h"
@@ -33,6 +34,7 @@
 #include "data/model/SparseTimeValueModel.h"
 #include "data/model/NoteModel.h"
 #include "data/model/TextModel.h"
+#include "data/model/ImageModel.h"
 #include "data/model/DenseThreeDimensionalModel.h"
 #include "data/model/WaveFileModel.h"
 #include "data/model/WritableWaveFileModel.h"
@@ -61,6 +63,7 @@ LayerFactory::getLayerPresentationName(LayerType type)
     case TimeValues:   return Layer::tr("Time Values");
     case Notes:        return Layer::tr("Notes");
     case Text:         return Layer::tr("Text");
+    case Image:        return Layer::tr("Images");
     case Colour3DPlot: return Layer::tr("Colour 3D Plot");
     case Spectrum:     return Layer::tr("Spectrum");
     case Slice:        return Layer::tr("Time Slice");
@@ -150,6 +153,10 @@ LayerFactory::getValidLayerTypes(Model *model)
 	types.insert(Text);
     }
 
+    if (dynamic_cast<ImageModel *>(model)) {
+	types.insert(Image);
+    }
+
     if (dynamic_cast<DenseTimeValueModel *>(model)) {
         types.insert(Spectrum);
     }
@@ -168,6 +175,7 @@ LayerFactory::getValidEmptyLayerTypes()
     types.insert(TimeValues);
     types.insert(Notes);
     types.insert(Text);
+    types.insert(Image);
     //!!! and in principle Colour3DPlot -- now that's a challenge
     return types;
 }
@@ -182,6 +190,7 @@ LayerFactory::getLayerType(const Layer *layer)
     if (dynamic_cast<const TimeValueLayer *>(layer)) return TimeValues;
     if (dynamic_cast<const NoteLayer *>(layer)) return Notes;
     if (dynamic_cast<const TextLayer *>(layer)) return Text;
+    if (dynamic_cast<const ImageLayer *>(layer)) return Image;
     if (dynamic_cast<const Colour3DPlotLayer *>(layer)) return Colour3DPlot;
     if (dynamic_cast<const SpectrumLayer *>(layer)) return Spectrum;
     if (dynamic_cast<const SliceLayer *>(layer)) return Slice;
@@ -199,6 +208,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case TimeValues: return "values";
     case Notes: return "notes";
     case Text: return "text";
+    case Image: return "image";
     case Colour3DPlot: return "colour3d";
     case Spectrum: return "spectrum";
     case Slice: return "spectrum";
@@ -217,6 +227,7 @@ LayerFactory::getLayerTypeName(LayerType type)
     case TimeValues: return "timevalues";
     case Notes: return "notes";
     case Text: return "text";
+    case Image: return "image";
     case Colour3DPlot: return "colour3dplot";
     case Spectrum: return "spectrum";
     case Slice: return "slice";
@@ -234,6 +245,7 @@ LayerFactory::getLayerTypeForName(QString name)
     if (name == "timevalues") return TimeValues;
     if (name == "notes") return Notes;
     if (name == "text") return Text;
+    if (name == "image") return Image;
     if (name == "colour3dplot") return Colour3DPlot;
     if (name == "spectrum") return Spectrum;
     if (name == "slice") return Slice;
@@ -270,6 +282,9 @@ LayerFactory::setModel(Layer *layer, Model *model)
     if (trySetModel<TextLayer, TextModel>(layer, model))
 	return;
 
+    if (trySetModel<ImageLayer, ImageModel>(layer, model))
+	return;
+
     if (trySetModel<Colour3DPlotLayer, DenseThreeDimensionalModel>(layer, model))
 	return;
 
@@ -294,6 +309,8 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
 	return new NoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Text) {
 	return new TextModel(baseModel->getSampleRate(), 1, true);
+    } else if (layerType == Image) {
+	return new ImageModel(baseModel->getSampleRate(), 1, true);
     } else {
 	return 0;
     }
@@ -357,6 +374,10 @@ LayerFactory::createLayer(LayerType type)
 
     case Text:
 	layer = new TextLayer;
+	break;
+
+    case Image:
+	layer = new ImageLayer;
 	break;
 
     case Colour3DPlot:

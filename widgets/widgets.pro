@@ -18,6 +18,7 @@ HEADERS += AudioDial.h \
            ColourNameDialog.h \
            Fader.h \
            IconLoader.h \
+           ImageDialog.h \
            ItemEditDialog.h \
            KeyReference.h \
            LayerTree.h \
@@ -42,6 +43,7 @@ SOURCES += AudioDial.cpp \
            ColourNameDialog.cpp \
            Fader.cpp \
            IconLoader.cpp \
+           ImageDialog.cpp \
            ItemEditDialog.cpp \
            KeyReference.cpp \
            LayerTree.cpp \
