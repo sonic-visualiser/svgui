@@ -35,6 +35,7 @@ public:
 	TimeValues,
 	Notes,
 	Text,
+        Image,
 	Colour3DPlot,
         Spectrum,
         Slice,
