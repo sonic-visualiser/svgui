@@ -21,6 +21,8 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QGroupBox>
+#include <QDesktopWidget>
+#include <QApplication>
 
 #include "data/fileio/FileFinder.h"
 
@@ -53,8 +55,9 @@ ImageDialog::ImageDialog(QString title,
     subgrid->addWidget(new QLabel(tr("File:")), row, 0);
 
     m_imageEdit = new QLineEdit;
-    m_imageEdit->setReadOnly(true);
     subgrid->addWidget(m_imageEdit, row, 1, 1, 1);
+    connect(m_imageEdit, SIGNAL(textEdited(const QString &)),
+            this, SLOT(imageEditEdited(const QString &)));
 
     QPushButton *browse = new QPushButton(tr("Browse..."));
     connect(browse, SIGNAL(clicked()), this, SLOT(browseClicked()));
@@ -72,6 +75,10 @@ ImageDialog::ImageDialog(QString title,
     subgrid->addWidget(m_imagePreview, 0, 0);
 
     m_imagePreview->setMinimumSize(QSize(100, 100));
+
+    QDesktopWidget *desktop = QApplication::desktop();
+    m_imagePreview->setMaximumSize(QSize((desktop->width() * 2) / 3,
+                                         (desktop->height() * 2) / 3));
 
     grid->addWidget(databox, 0, 0);
     grid->addWidget(previewbox, 1, 0);
@@ -133,11 +140,19 @@ ImageDialog::resizeEvent(QResizeEvent *)
 }
 
 void
+ImageDialog::imageEditEdited(const QString &)
+{
+    updatePreview();
+}
+
+void
 ImageDialog::updatePreview()
 {
     if (!m_imagePreview) return;
 
     QString img = m_imageEdit->text();
+
+    m_okButton->setEnabled(img != "");
 
     if (img != m_loadedImageFile) {
         m_loadedImage = QPixmap(img);
@@ -150,13 +165,11 @@ ImageDialog::updatePreview()
 
     if (m_loadedImage.isNull()) {
         m_imagePreview->setPixmap(QPixmap());
-        m_okButton->setEnabled(false);
     } else {
         m_imagePreview->setPixmap(m_loadedImage.scaled
                                   (sz,
                                    Qt::KeepAspectRatio,
                                    Qt::SmoothTransformation));
-        m_okButton->setEnabled(true);
     }
 }
 

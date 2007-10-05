@@ -49,6 +49,7 @@ public slots:
 
 protected slots:
     void browseClicked();
+    void imageEditEdited(const QString &);
 
 protected:
     void resizeEvent(QResizeEvent *);
