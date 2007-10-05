@@ -915,7 +915,7 @@ ImageLayer::remoteFileReady()
     m_images.erase(img);
     for (ViewImageMap::iterator i = m_scaled.begin(); i != m_scaled.end(); ++i) {
         i->second.erase(img);
-        const_cast<View *>(i->first)->update();
+        emit modelChanged();
     }
 }
 
