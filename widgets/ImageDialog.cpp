@@ -23,15 +23,21 @@
 #include <QGroupBox>
 #include <QDesktopWidget>
 #include <QApplication>
+#include <QUrl>
+#include <QMessageBox>
 
+#include "data/fileio/RemoteFile.h"
 #include "data/fileio/FileFinder.h"
+
+#include <iostream>
 
 ImageDialog::ImageDialog(QString title,
                          QString image,
                          QString label,
                          QWidget *parent) :
     QDialog(parent),
-    m_imagePreview(0)
+    m_imagePreview(0),
+    m_remoteFile(0)
 {
     setWindowTitle(title);
     
@@ -52,12 +58,15 @@ ImageDialog::ImageDialog(QString title,
 
     ++row;
 
-    subgrid->addWidget(new QLabel(tr("File:")), row, 0);
+    subgrid->addWidget(new QLabel(tr("File or URL:")), row, 0);
 
     m_imageEdit = new QLineEdit;
     subgrid->addWidget(m_imageEdit, row, 1, 1, 1);
+
     connect(m_imageEdit, SIGNAL(textEdited(const QString &)),
             this, SLOT(imageEditEdited(const QString &)));
+    connect(m_imageEdit, SIGNAL(editingFinished()),
+            this, SLOT(imageEditEdited()));
 
     QPushButton *browse = new QPushButton(tr("Browse..."));
     connect(browse, SIGNAL(clicked()), this, SLOT(browseClicked()));
@@ -100,6 +109,7 @@ ImageDialog::ImageDialog(QString title,
 
 ImageDialog::~ImageDialog()
 {
+    delete m_remoteFile;
 }
 
 QString
@@ -140,7 +150,16 @@ ImageDialog::resizeEvent(QResizeEvent *)
 }
 
 void
-ImageDialog::imageEditEdited(const QString &)
+ImageDialog::imageEditEdited(const QString &s)
+{
+    if (s.startsWith("http:") || s.startsWith("ftp:")) {
+        return;
+    }
+    updatePreview();
+}
+
+void
+ImageDialog::imageEditEdited()
 {
     updatePreview();
 }
@@ -155,7 +174,35 @@ ImageDialog::updatePreview()
     m_okButton->setEnabled(img != "");
 
     if (img != m_loadedImageFile) {
-        m_loadedImage = QPixmap(img);
+
+        QString fileName = img;
+        delete m_remoteFile;
+        m_remoteFile = 0;
+
+        if (RemoteFile::isRemote(fileName)) {
+            QUrl url(fileName);
+            if (!RemoteFile::canHandleScheme(url)) {
+                QMessageBox::critical(this, tr("Unsupported scheme in URL"),
+                                      tr("The URL scheme \"%1\" is not supported")
+                                      .arg(url.scheme()));
+            } else {
+                m_remoteFile = new RemoteFile(url);
+                m_remoteFile->wait();
+                if (!m_remoteFile->isOK()) {
+                    QMessageBox::critical(this, tr("File download failed"),
+                                          tr("Failed to download URL \"%1\": %2")
+                                          .arg(url.toString()).arg(m_remoteFile->getErrorString()));
+                    delete m_remoteFile;
+                    m_remoteFile = 0;
+                } else {
+                    fileName = m_remoteFile->getLocalFilename();
+                }
+            }
+        }
+        
+//        std::cerr << "image filename: \"" << fileName.toStdString() << "\"" << std::endl;
+
+        m_loadedImage = QPixmap(fileName);
         m_loadedImageFile = img;
     }
 
