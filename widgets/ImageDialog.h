@@ -22,6 +22,7 @@
 class QLineEdit;
 class QLabel;
 class QPushButton;
+class RemoteFile;
 
 class ImageDialog : public QDialog
 {
@@ -50,6 +51,7 @@ public slots:
 protected slots:
     void browseClicked();
     void imageEditEdited(const QString &);
+    void imageEditEdited();
 
 protected:
     void resizeEvent(QResizeEvent *);
@@ -62,6 +64,8 @@ protected:
     QPixmap m_loadedImage;
 
     QPushButton *m_okButton;
+
+    RemoteFile *m_remoteFile;
 };
 
 #endif

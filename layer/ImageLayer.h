@@ -22,11 +22,13 @@
 #include <QObject>
 #include <QColor>
 #include <QImage>
+#include <QMutex>
 
 #include <map>
 
 class View;
 class QPainter;
+class RemoteFile;
 
 class ImageLayer : public Layer
 {
@@ -34,6 +36,7 @@ class ImageLayer : public Layer
 
 public:
     ImageLayer();
+    virtual ~ImageLayer();
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
@@ -93,6 +96,10 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+protected slots:
+    void checkAddRemotes();
+    void remoteFileReady();
+
 protected:
     ImageModel::PointList getLocalPoints(View *v, int x, int y) const;
 
@@ -106,11 +113,15 @@ protected:
 
     typedef std::map<QString, QImage> ImageMap;
     typedef std::map<const View *, ImageMap> ViewImageMap;
-
-
+    typedef std::map<QString, RemoteFile *> RemoteFileMap;
 
     static ImageMap m_images;
+    static QMutex m_imageMapMutex;
     mutable ViewImageMap m_scaled;
+    mutable RemoteFileMap m_remoteFiles;
+
+    QString getLocalFilename(QString img) const;
+    void checkAddRemote(QString img) const;
 
     ImageModel *m_model;
     bool m_editing;

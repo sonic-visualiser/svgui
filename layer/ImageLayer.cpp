@@ -21,18 +21,23 @@
 #include "view/View.h"
 
 #include "data/model/ImageModel.h"
+#include "data/fileio/RemoteFile.h"
 
 #include "widgets/ImageDialog.h"
 
 #include <QPainter>
 #include <QMouseEvent>
 #include <QInputDialog>
+#include <QMutexLocker>
 
 #include <iostream>
 #include <cmath>
 
 ImageLayer::ImageMap
 ImageLayer::m_images;
+
+QMutex
+ImageLayer::m_imageMapMutex;
 
 ImageLayer::ImageLayer() :
     Layer(),
@@ -42,7 +47,14 @@ ImageLayer::ImageLayer() :
     m_editingPoint(0, "", ""),
     m_editingCommand(0)
 {
-    
+}
+
+ImageLayer::~ImageLayer()
+{
+    for (RemoteFileMap::iterator i = m_remoteFiles.begin();
+         i != m_remoteFiles.end(); ++i) {
+        delete i->second;
+    }
 }
 
 void
@@ -51,14 +63,20 @@ ImageLayer::setModel(ImageModel *model)
     if (m_model == model) return;
     m_model = model;
 
-    connect(m_model, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
+    connect(m_model, SIGNAL(modelChanged()),
+            this, SIGNAL(modelChanged()));
     connect(m_model, SIGNAL(modelChanged(size_t, size_t)),
 	    this, SIGNAL(modelChanged(size_t, size_t)));
 
     connect(m_model, SIGNAL(completionChanged()),
 	    this, SIGNAL(modelCompletionChanged()));
 
+//    connect(m_model, SIGNAL(modelChanged()),
+//            this, SLOT(checkAddRemotes()));
+
 //    std::cerr << "ImageLayer::setModel(" << model << ")" << std::endl;
+
+//    checkAddRemotes();
 
     emit modelReplaced();
 }
@@ -147,7 +165,7 @@ ImageLayer::getLocalPoints(View *v, int x, int y) const
         int width = 32;
         if (m_scaled[v].find(p.image) != m_scaled[v].end()) {
             width = m_scaled[v][p.image].width();
-            std::cerr << "scaled width = " << width << std::endl;
+//            std::cerr << "scaled width = " << width << std::endl;
         }
 
         if (x >= px && x < px + width) {
@@ -478,6 +496,7 @@ ImageLayer::setLayerDormant(const View *v, bool dormant)
         // Delete the images named in the view's scaled map from the
         // general image map as well.  They can always be re-loaded
         // if it turns out another view still needs them.
+        QMutexLocker locker(&m_imageMapMutex);
         for (ImageMap::iterator i = m_scaled[v].begin();
              i != m_scaled[v].end(); ++i) {
             m_images.erase(i->first);
@@ -491,10 +510,15 @@ ImageLayer::setLayerDormant(const View *v, bool dormant)
 bool
 ImageLayer::getImageOriginalSize(QString name, QSize &size) const
 {
+//    std::cerr << "getImageOriginalSize: \"" << name.toStdString() << "\"" << std::endl;
+
+    QMutexLocker locker(&m_imageMapMutex);
     if (m_images.find(name) == m_images.end()) {
-        m_images[name] = QImage(name);
+//        std::cerr << "don't have, trying to open local" << std::endl;
+        m_images[name] = QImage(getLocalFilename(name));
     }
     if (m_images[name].isNull()) {
+//        std::cerr << "null image" << std::endl;
         return false;
     } else {
         size = m_images[name].size();
@@ -507,24 +531,26 @@ ImageLayer::getImage(View *v, QString name, QSize maxSize) const
 {
     bool need = false;
 
-    std::cerr << "ImageLayer::getImage(" << v << ", " << name.toStdString() << ", ("
-              << maxSize.width() << "x" << maxSize.height() << "))" << std::endl;
+//    std::cerr << "ImageLayer::getImage(" << v << ", " << name.toStdString() << ", ("
+//              << maxSize.width() << "x" << maxSize.height() << "))" << std::endl;
 
     if (!m_scaled[v][name].isNull()  &&
         ((m_scaled[v][name].width()  == maxSize.width() &&
           m_scaled[v][name].height() <= maxSize.height()) ||
          (m_scaled[v][name].width()  <= maxSize.width() &&
           m_scaled[v][name].height() == maxSize.height()))) {
-        std::cerr << "cache hit" << std::endl;
+//        std::cerr << "cache hit" << std::endl;
         return m_scaled[v][name];
     }
 
+    QMutexLocker locker(&m_imageMapMutex);
+
     if (m_images.find(name) == m_images.end()) {
-        m_images[name] = QImage(name);
+        m_images[name] = QImage(getLocalFilename(name));
     }
 
     if (m_images[name].isNull()) {
-        std::cerr << "null image" << std::endl;
+//        std::cerr << "null image" << std::endl;
         m_scaled[v][name] = QImage();
     } else if (m_images[name].width() <= maxSize.width() &&
                m_images[name].height() <= maxSize.height()) {
@@ -588,7 +614,11 @@ ImageLayer::drawEnd(View *v, QMouseEvent *)
     bool ok = false;
 
     ImageDialog dialog(tr("Select image"), "", tr("<no label>"));
+
     if (dialog.exec() == QDialog::Accepted) {
+
+        checkAddRemote(dialog.getImage());
+
 	ImageModel::ChangeImageCommand *command =
 	    new ImageModel::ChangeImageCommand
             (m_model, m_editingPoint, dialog.getImage(), dialog.getLabel());
@@ -672,9 +702,13 @@ ImageLayer::editOpen(View *v, QMouseEvent *e)
                        label);
 
     if (dialog.exec() == QDialog::Accepted) {
+
+        checkAddRemote(dialog.getImage());
+
 	ImageModel::ChangeImageCommand *command =
 	    new ImageModel::ChangeImageCommand
             (m_model, *points.begin(), dialog.getImage(), dialog.getLabel());
+
         CommandHistory::getInstance()->addCommand(command);
     }
 
@@ -812,6 +846,77 @@ ImageLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */
 
     command->finish();
     return true;
+}
+
+QString
+ImageLayer::getLocalFilename(QString img) const
+{
+    if (m_remoteFiles.find(img) == m_remoteFiles.end()) {
+        checkAddRemote(img);
+        return img;
+    }
+    return m_remoteFiles[img]->getLocalFilename();
+}
+
+void
+ImageLayer::checkAddRemote(QString img) const
+{
+    if (RemoteFile::isRemote(img)) {
+
+        if (m_remoteFiles.find(img) != m_remoteFiles.end()) {
+            return;
+        }
+
+        QUrl url(img);
+        if (RemoteFile::canHandleScheme(url)) {
+            RemoteFile *rf = new RemoteFile(url);
+            if (rf->isOK()) {
+                m_remoteFiles[img] = rf;
+                connect(rf, SIGNAL(ready()), this, SLOT(remoteFileReady()));
+            } else {
+                delete rf;
+            }
+        }
+    }
+}
+
+void
+ImageLayer::checkAddRemotes()
+{
+    const ImageModel::PointList &points(m_model->getPoints());
+
+    for (ImageModel::PointList::const_iterator i = points.begin();
+	 i != points.end(); ++i) {
+        
+        checkAddRemote((*i).image);
+    }
+}
+
+void
+ImageLayer::remoteFileReady()
+{
+//    std::cerr << "ImageLayer::remoteFileReady" << std::endl;
+
+    RemoteFile *rf = dynamic_cast<RemoteFile *>(sender());
+    if (!rf) return;
+
+    QString img;
+    for (RemoteFileMap::const_iterator i = m_remoteFiles.begin();
+         i != m_remoteFiles.end(); ++i) {
+        if (i->second == rf) {
+            img = i->first;
+//            std::cerr << "it's image \"" << img.toStdString() << "\"" << std::endl;
+            break;
+        }
+    }
+    if (img == "") return;
+
+    QMutexLocker locker(&m_imageMapMutex);
+    m_images.erase(img);
+    for (ViewImageMap::iterator i = m_scaled.begin(); i != m_scaled.end(); ++i) {
+        i->second.erase(img);
+        const_cast<View *>(i->first)->update();
+    }
 }
 
 QString
