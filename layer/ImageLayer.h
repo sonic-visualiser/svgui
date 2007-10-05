@@ -96,13 +96,18 @@ public:
 protected:
     ImageModel::PointList getLocalPoints(View *v, int x, int y) const;
 
-    float getImageAspect(QString name) const;
+    bool getImageOriginalSize(QString name, QSize &size) const;
     QImage getImage(View *v, QString name, QSize maxSize) const;
+
+    void drawImage(View *v, QPainter &paint, const ImageModel::Point &p,
+                   int x, int nx) const;
 
     //!!! how to reap no-longer-used images?
 
     typedef std::map<QString, QImage> ImageMap;
     typedef std::map<const View *, ImageMap> ViewImageMap;
+
+
 
     static ImageMap m_images;
     mutable ViewImageMap m_scaled;
