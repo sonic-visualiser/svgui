@@ -442,6 +442,8 @@ TextLayer::drawEnd(View *v, QMouseEvent *)
 	TextModel::RelabelCommand *command =
 	    new TextModel::RelabelCommand(m_model, m_editingPoint, label);
 	m_editingCommand->addCommand(command);
+    } else {
+        m_editingCommand->deletePoint(m_editingPoint);
     }
 
     m_editingCommand->finish();

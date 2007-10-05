@@ -613,7 +613,7 @@ ImageLayer::drawEnd(View *v, QMouseEvent *)
 
     bool ok = false;
 
-    ImageDialog dialog(tr("Select image"), "", tr("<no label>"));
+    ImageDialog dialog(tr("Select image"), "", "");
 
     if (dialog.exec() == QDialog::Accepted) {
 
@@ -623,6 +623,8 @@ ImageLayer::drawEnd(View *v, QMouseEvent *)
 	    new ImageModel::ChangeImageCommand
             (m_model, m_editingPoint, dialog.getImage(), dialog.getLabel());
 	m_editingCommand->addCommand(command);
+    } else {
+        m_editingCommand->deletePoint(m_editingPoint);
     }
 
     m_editingCommand->finish();
