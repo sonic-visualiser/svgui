@@ -40,7 +40,10 @@ TimeInstantLayer::TimeInstantLayer() :
     m_editingCommand(0),
     m_plotStyle(PlotInstants)
 {
-    
+}
+
+TimeInstantLayer::~TimeInstantLayer()
+{
 }
 
 void
