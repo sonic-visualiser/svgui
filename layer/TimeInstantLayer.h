@@ -31,6 +31,7 @@ class TimeInstantLayer : public SingleColourLayer
 
 public:
     TimeInstantLayer();
+    virtual ~TimeInstantLayer();
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
