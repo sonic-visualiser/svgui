@@ -22,6 +22,7 @@
 
 #include "vamp-sdk/Plugin.h"
 #include "vamp-sdk/PluginHostAdapter.h"
+#include "vamp-sdk/hostext/PluginWrapper.h"
 
 #include <QGridLayout>
 #include <QLabel>
@@ -263,6 +264,7 @@ PluginParameterDialog::setOutputLabel(QString text,
         m_outputValue->setText(text);
         m_outputValue->setWordWrap(true);
         m_outputDescription->setText(description);
+        m_outputDescription->setWordWrap(true);
         m_outputLabel->show();
         m_outputValue->show();
         if (description != "") {
@@ -348,7 +350,9 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
 
     if (showWindowSize) {
 
-        Vamp::PluginHostAdapter *fePlugin = dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
+        Vamp::Plugin *fePlugin = dynamic_cast<Vamp::Plugin *>(m_plugin);
+        if (!fePlugin) fePlugin = dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
+        if (!fePlugin) fePlugin = dynamic_cast<Vamp::HostExt::PluginWrapper *>(m_plugin);
         int size = 1024;
         int increment = 1024;
         if (fePlugin) {
@@ -481,6 +485,7 @@ PluginParameterDialog::setShowSelectionOnlyOption(bool show)
     settings.endGroup();
 
     m_selectionOnly->setChecked(lastSelectionOnly);
+    m_currentSelectionOnly = lastSelectionOnly;
 
     connect(m_selectionOnly, SIGNAL(stateChanged(int)),
             this, SLOT(selectionOnlyChanged(int)));
@@ -498,7 +503,7 @@ PluginParameterDialog::getInputModel() const
 bool
 PluginParameterDialog::getSelectionOnly() const
 {
-    return m_selectionOnly;
+    return m_currentSelectionOnly;
 }
 
 void
