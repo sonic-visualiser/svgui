@@ -1164,6 +1164,8 @@ TimeValueLayer::paste(const Clipboard &from, int frameOffset,
     SparseTimeValueModel::EditCommand *command =
 	new SparseTimeValueModel::EditCommand(m_model, tr("Paste"));
 
+    //!!! Replace all this with a use of Labeller
+
     enum ValueAvailability {
         UnknownAvailability,
         NoValues,
