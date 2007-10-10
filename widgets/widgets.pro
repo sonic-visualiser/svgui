@@ -21,6 +21,7 @@ HEADERS += AudioDial.h \
            ImageDialog.h \
            ItemEditDialog.h \
            KeyReference.h \
+           LabelCounterInputDialog.h \
            LayerTree.h \
            LEDButton.h \
            ListInputDialog.h \
@@ -46,6 +47,7 @@ SOURCES += AudioDial.cpp \
            ImageDialog.cpp \
            ItemEditDialog.cpp \
            KeyReference.cpp \
+           LabelCounterInputDialog.cpp \
            LayerTree.cpp \
            LEDButton.cpp \
            ListInputDialog.cpp \
