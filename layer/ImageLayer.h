@@ -96,6 +96,8 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    virtual bool addImage(long frame, QString url); // using a command
+
 protected slots:
     void checkAddRemotes();
     void remoteFileReady();
