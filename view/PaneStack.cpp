@@ -114,6 +114,10 @@ PaneStack::addPane(bool suppressPropertyBox)
 	    this, SLOT(paneInteractedWith()));
     connect(pane, SIGNAL(rightButtonMenuRequested(QPoint)),
             this, SLOT(rightButtonMenuRequested(QPoint)));
+    connect(pane, SIGNAL(dropAccepted(QStringList)),
+            this, SLOT(paneDropAccepted(QStringList)));
+    connect(pane, SIGNAL(dropAccepted(QString)),
+            this, SLOT(paneDropAccepted(QString)));
 
     emit paneAdded(pane);
     emit paneAdded();
@@ -483,4 +487,17 @@ PaneStack::sizePropertyStacks()
     emit propertyStacksResized();
 }
     
+void
+PaneStack::paneDropAccepted(QStringList uriList)
+{
+    Pane *pane = dynamic_cast<Pane *>(sender());
+    emit dropAccepted(pane, uriList);
+}
+    
+void
+PaneStack::paneDropAccepted(QString text)
+{
+    Pane *pane = dynamic_cast<Pane *>(sender());
+    emit dropAccepted(pane, text);
+}
 

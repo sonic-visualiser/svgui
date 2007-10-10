@@ -66,6 +66,8 @@ public:
 signals:
     void paneInteractedWith();
     void rightButtonMenuRequested(QPoint position);
+    void dropAccepted(QStringList uriList);
+    void dropAccepted(QString text);
 
 public slots:
     virtual void toolModeChanged();
@@ -93,6 +95,8 @@ protected:
     virtual void leaveEvent(QEvent *e);
     virtual void wheelEvent(QWheelEvent *e);
     virtual void resizeEvent(QResizeEvent *e);
+    virtual void dragEnterEvent(QDragEnterEvent *e);
+    virtual void dropEvent(QDropEvent *e);
 
     void drawVerticalScale(QRect r, Layer *, QPainter &);
     void drawFeatureDescription(Layer *, QPainter &);

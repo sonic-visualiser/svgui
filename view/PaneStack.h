@@ -78,6 +78,9 @@ signals:
     void paneAboutToBeDeleted(Pane *pane);
     void paneDeleted();
 
+    void dropAccepted(Pane *pane, QStringList uriList);
+    void dropAccepted(Pane *pane, QString text);
+
 public slots:
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);
@@ -85,6 +88,8 @@ public slots:
     void viewSelected(View *v);
     void paneInteractedWith();
     void rightButtonMenuRequested(QPoint);
+    void paneDropAccepted(QStringList);
+    void paneDropAccepted(QString);
 
 protected:
     Pane *m_currentPane;

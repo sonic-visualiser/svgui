@@ -27,6 +27,8 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QBitmap>
+#include <QDragEnterEvent>
+#include <QDropEvent>
 #include <QCursor>
 #include <iostream>
 #include <cmath>
@@ -67,6 +69,7 @@ Pane::Pane(QWidget *w) :
 {
     setObjectName("Pane");
     setMouseTracking(true);
+    setAcceptDrops(true);
     
     updateHeadsUpDisplay();
 }
@@ -1890,6 +1893,55 @@ Pane::editVerticalPannerExtents()
         dialog.getRange(dmin, dmax);
         setTopLayerDisplayExtents(dmin, dmax);
         updateVerticalPanner();
+    }
+}
+
+void
+Pane::dragEnterEvent(QDragEnterEvent *e)
+{
+    QStringList formats(e->mimeData()->formats());
+    std::cerr << "dragEnterEvent: format: "
+              << formats.join(",").toStdString()
+              << ", possibleActions: " << e->possibleActions()
+              << ", proposedAction: " << e->proposedAction() << std::endl;
+    
+    if (e->provides("text/uri-list") || e->provides("text/plain")) {
+
+        if (e->proposedAction() & Qt::CopyAction) {
+            e->acceptProposedAction();
+        } else {
+            e->setDropAction(Qt::CopyAction);
+            e->accept();
+        }
+    }
+}
+
+void
+Pane::dropEvent(QDropEvent *e)
+{
+    std::cerr << "dropEvent: text: \"" << e->mimeData()->text().toStdString()
+              << "\"" << std::endl;
+
+    if (e->provides("text/uri-list") || e->provides("text/plain")) {
+
+        if (e->proposedAction() & Qt::CopyAction) {
+            e->acceptProposedAction();
+        } else {
+            e->setDropAction(Qt::CopyAction);
+            e->accept();
+        }
+
+        if (e->provides("text/uri-list")) {
+
+            std::cerr << "accepting... data is \"" << e->encodedData("text/uri-list").data() << "\"" << std::endl;
+            emit dropAccepted(QString::fromLocal8Bit
+                              (e->encodedData("text/uri-list").data())
+                              .split(QRegExp("[\\r\\n]+"), 
+                                     QString::SkipEmptyParts));
+        } else {
+            emit dropAccepted(QString::fromLocal8Bit
+                              (e->encodedData("text/plain").data()));
+        }
     }
 }
 

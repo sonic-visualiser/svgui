@@ -632,6 +632,24 @@ ImageLayer::drawEnd(View *v, QMouseEvent *)
     m_editing = false;
 }
 
+bool
+ImageLayer::addImage(long frame, QString url)
+{
+    QImage image(getLocalFilename(url));
+    if (image.isNull()) {
+        delete m_remoteFiles[url];
+        m_remoteFiles.erase(url);
+        return false;
+    }
+
+    ImageModel::Point point(frame, url, "");
+    ImageModel::EditCommand *command =
+        new ImageModel::EditCommand(m_model, "Add Image");
+    command->addPoint(point);
+    command->finish();
+    return true;
+}
+
 void
 ImageLayer::editStart(View *v, QMouseEvent *e)
 {
@@ -855,7 +873,9 @@ ImageLayer::getLocalFilename(QString img) const
 {
     if (m_remoteFiles.find(img) == m_remoteFiles.end()) {
         checkAddRemote(img);
-        return img;
+        if (m_remoteFiles.find(img) == m_remoteFiles.end()) {
+            return img;
+        }
     }
     return m_remoteFiles[img]->getLocalFilename();
 }
@@ -865,6 +885,8 @@ ImageLayer::checkAddRemote(QString img) const
 {
     if (RemoteFile::isRemote(img)) {
 
+        std::cerr << "ImageLayer::checkAddRemote(" << img.toStdString() << "): yes, trying..." << std::endl;
+
         if (m_remoteFiles.find(img) != m_remoteFiles.end()) {
             return;
         }
@@ -873,6 +895,7 @@ ImageLayer::checkAddRemote(QString img) const
         if (RemoteFile::canHandleScheme(url)) {
             RemoteFile *rf = new RemoteFile(url);
             if (rf->isOK()) {
+                std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
                 m_remoteFiles[img] = rf;
                 connect(rf, SIGNAL(ready()), this, SLOT(remoteFileReady()));
             } else {
