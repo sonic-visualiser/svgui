@@ -1055,7 +1055,10 @@ int
 View::getAlignedPlaybackFrame() const
 {
     if (!m_manager) return 0;
-    if (!m_manager->getPlaybackModel()) return m_manager->getPlaybackFrame();
+    if (!m_manager->getAlignMode() ||
+        !m_manager->getPlaybackModel()) {
+        return m_manager->getPlaybackFrame();
+    }
 
     RangeSummarisableTimeValueModel *waveformModel = 0;
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {

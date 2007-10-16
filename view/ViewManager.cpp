@@ -40,6 +40,7 @@ ViewManager::ViewManager() :
     m_playLoopMode(false),
     m_playSelectionMode(false),
     m_playSoloMode(false),
+    m_alignMode(false),
     m_overlayMode(StandardOverlays),
     m_zoomWheelsEnabled(true),
     m_lightPalette(QApplication::palette()),
@@ -355,6 +356,18 @@ ViewManager::setPlaySoloMode(bool mode)
 
         emit playSoloModeChanged();
         emit playSoloModeChanged(mode);
+    }
+}
+
+void
+ViewManager::setAlignMode(bool mode)
+{
+    if (m_alignMode != mode) {
+
+        m_alignMode = mode;
+
+        emit alignModeChanged();
+        emit alignModeChanged(mode);
     }
 }
 
