@@ -61,13 +61,13 @@ public:
      * This is a calculated value based on the centre-frame, widget
      * width and zoom level.  The result may be negative.
      */
-    virtual long getStartFrame() const;
+    long getStartFrame() const;
 
     /**
      * Set the widget pan based on the given first visible frame.  The
      * frame value may be negative.
      */
-    virtual void setStartFrame(long);
+    void setStartFrame(long);
 
     /**
      * Return the centre frame of the visible widget.  This is an
@@ -75,19 +75,19 @@ public:
      * frame values (start, end) are calculated from this based on the
      * zoom and other factors.
      */
-    virtual size_t getCentreFrame() const { return m_centreFrame; }
+    size_t getCentreFrame() const { return m_centreFrame; }
 
     /**
      * Set the centre frame of the visible widget.
      */
-    virtual void setCentreFrame(size_t f) { setCentreFrame(f, true); }
+    void setCentreFrame(size_t f) { setCentreFrame(f, true); }
 
     /**
      * Retrieve the last visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
      * width and zoom level.
      */
-    virtual size_t getEndFrame() const;
+    size_t getEndFrame() const;
 
     /**
      * Return the pixel x-coordinate corresponding to a given sample
