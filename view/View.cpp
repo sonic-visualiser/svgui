@@ -287,16 +287,7 @@ View::zoomWheelsEnabledChanged()
 long
 View::getStartFrame() const
 {
-    size_t w2 = (width() / 2) * m_zoomLevel;
-    size_t frame = m_centreFrame;
-    if (frame >= w2) {
-	frame -= w2;
-	return (frame / m_zoomLevel * m_zoomLevel);
-    } else {
-	frame = w2 - frame;
-	frame = frame / m_zoomLevel * m_zoomLevel;
-	return -(long)frame - m_zoomLevel;
-    }
+    return getFrameForX(0);
 }
 
 size_t
@@ -349,7 +340,10 @@ View::getXForFrame(long frame) const
 long
 View::getFrameForX(int x) const
 {
-    return (long(x) * long(m_zoomLevel)) + getStartFrame();
+    long z = (long)m_zoomLevel;
+    long frame = m_centreFrame - (width()/2) * z;
+    frame = (frame / z) * z; // this is start frame
+    return frame + x * z;
 }
 
 float
