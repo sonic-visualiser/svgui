@@ -112,6 +112,9 @@ public:
     bool getPlaySoloMode() const { return m_playSoloMode; }
     void setPlaySoloMode(bool on);
 
+    bool getAlignMode() const { return m_alignMode; }
+    void setAlignMode(bool on);
+
     /**
      * The sample rate that is used for playback.  This is usually the
      * rate of the main model, but not always.  Models whose rates
@@ -210,6 +213,10 @@ signals:
     void playSoloModeChanged();
     void playSoloModeChanged(bool);
 
+    /** Emitted when the alignment mode has been changed. */
+    void alignModeChanged();
+    void alignModeChanged(bool);
+
     /** Emitted when the overlay mode has been changed. */
     void overlayModeChanged();
 
@@ -248,6 +255,7 @@ protected:
     bool m_playLoopMode;
     bool m_playSelectionMode;
     bool m_playSoloMode;
+    bool m_alignMode;
 
     void setSelections(const MultiSelection &ms);
     void signalSelectionChange();
