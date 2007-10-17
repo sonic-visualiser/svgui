@@ -1051,6 +1051,28 @@ View::getModelsSampleRate() const
     return 0;
 }
 
+View::ModelSet
+View::getModels()
+{
+    ModelSet models;
+
+    for (int i = 0; i < getLayerCount(); ++i) {
+
+        Layer *layer = getLayer(i);
+
+        if (dynamic_cast<TimeRulerLayer *>(layer)) {
+            continue;
+        }
+
+        if (layer && layer->getModel()) {
+            Model *model = layer->getModel();
+            models.insert(model);
+        }
+    }
+
+    return models;
+}
+
 int
 View::getAlignedPlaybackFrame() const
 {

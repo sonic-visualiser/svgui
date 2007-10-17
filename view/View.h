@@ -30,6 +30,7 @@ class Layer;
 class ViewPropertyContainer;
 
 #include <map>
+#include <set>
 
 /**
  * View is the base class of widgets that display one or more
@@ -251,6 +252,9 @@ public:
 
     size_t getModelsStartFrame() const;
     size_t getModelsEndFrame() const;
+
+    typedef std::set<Model *> ModelSet;
+    ModelSet getModels();
 
     //!!!
     int getAlignedPlaybackFrame() const;
