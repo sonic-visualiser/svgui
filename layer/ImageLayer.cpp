@@ -29,6 +29,7 @@
 #include <QMouseEvent>
 #include <QInputDialog>
 #include <QMutexLocker>
+#include <QTextStream>
 
 #include <iostream>
 #include <cmath>
@@ -944,10 +945,11 @@ ImageLayer::remoteFileReady()
     }
 }
 
-QString
-ImageLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+ImageLayer::toXml(QTextStream &stream,
+                  QString indent, QString extraAttributes) const
 {
-    return Layer::toXmlString(indent, extraAttributes);
+    Layer::toXml(stream, indent, extraAttributes);
 }
 
 void

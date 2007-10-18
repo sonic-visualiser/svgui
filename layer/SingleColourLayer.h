@@ -46,8 +46,8 @@ public:
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
     virtual void setProperty(const PropertyName &, int value);
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
     virtual void setProperties(const QXmlAttributes &attributes);
 

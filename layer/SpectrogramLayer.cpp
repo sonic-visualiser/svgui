@@ -35,6 +35,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QMouseEvent>
+#include <QTextStream>
 
 #include <iostream>
 
@@ -3133,8 +3134,9 @@ SpectrogramLayer::setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int 
 
 }
 
-QString
-SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+SpectrogramLayer::toXml(QTextStream &stream,
+                        QString indent, QString extraAttributes) const
 {
     QString s;
     
@@ -3168,7 +3170,7 @@ SpectrogramLayer::toXmlString(QString indent, QString extraAttributes) const
 	.arg(m_normalizeColumns ? "true" : "false")
         .arg(m_normalizeVisibleArea ? "true" : "false");
 
-    return Layer::toXmlString(indent, extraAttributes + " " + s);
+    Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void

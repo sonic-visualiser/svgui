@@ -26,6 +26,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QInputDialog>
+#include <QTextStream>
 
 #include <iostream>
 #include <cmath>
@@ -705,10 +706,11 @@ TextLayer::getDefaultColourHint(bool darkbg, bool &impose)
         (QString(darkbg ? "Bright Orange" : "Orange"));
 }
 
-QString
-TextLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+TextLayer::toXml(QTextStream &stream,
+                 QString indent, QString extraAttributes) const
 {
-    return SingleColourLayer::toXmlString(indent, extraAttributes);
+    SingleColourLayer::toXml(stream, indent, extraAttributes);
 }
 
 void

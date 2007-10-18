@@ -99,8 +99,8 @@ public:
 
     virtual const Model *getSliceableModel() const { return m_model; }
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
 protected slots:
     void cacheInvalid();

@@ -314,10 +314,11 @@ TimeRulerLayer::getDefaultColourHint(bool darkbg, bool &impose)
         (QString(darkbg ? "White" : "Black"));
 }
 
-QString
-TimeRulerLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+TimeRulerLayer::toXml(QTextStream &stream,
+                      QString indent, QString extraAttributes) const
 {
-    return SingleColourLayer::toXmlString(indent, extraAttributes);
+    SingleColourLayer::toXml(stream, indent, extraAttributes);
 }
 
 void

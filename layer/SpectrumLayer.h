@@ -91,8 +91,8 @@ public:
     void setShowPeaks(bool);
     bool getShowPeaks() const { return m_showPeaks; }
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
 protected slots:
     void preferenceChanged(PropertyContainer::PropertyName name);

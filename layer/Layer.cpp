@@ -22,6 +22,7 @@
 
 #include <QMutexLocker>
 #include <QMouseEvent>
+#include <QTextStream>
 
 #include "LayerFactory.h"
 #include "base/PlayParameterRepository.h"
@@ -167,26 +168,22 @@ Layer::MeasureRect::operator<(const MeasureRect &mr) const
     }
 }
 
-QString
-Layer::MeasureRect::toXmlString(QString indent) const
+void
+Layer::MeasureRect::toXml(QTextStream &stream, QString indent) const
 {
-    QString s;
-
-    s += indent;
-    s += QString("<measurement ");
+    stream << indent;
+    stream << QString("<measurement ");
 
     if (haveFrames) {
-        s += QString("startFrame=\"%1\" endFrame=\"%2\" ")
+        stream << QString("startFrame=\"%1\" endFrame=\"%2\" ")
             .arg(startFrame).arg(endFrame);
     } else {
-        s += QString("startX=\"%1\" endX=\"%2\" ")
-            .arg(pixrect.x()).arg(pixrect.x() + pixrect.width());
+        stream << QString("startX=\"%1\" endX=\"%2\" ")
+            .arg(pixrect.x()).arg(pixrect.x() << pixrect.width());
     }
 
-    s += QString("startY=\"%1\" endY=\"%2\"/>\n")
+    stream << QString("startY=\"%1\" endY=\"%2\"/>\n")
         .arg(startY).arg(endY);
-
-    return s;
 }
 
 void
@@ -464,14 +461,13 @@ Layer::paintMeasurementRect(View *v, QPainter &paint,
     v->drawMeasurementRect(paint, this, r.pixrect.normalized(), focus);
 }
 
-QString
-Layer::toXmlString(QString indent, QString extraAttributes) const
+void
+Layer::toXml(QTextStream &stream,
+             QString indent, QString extraAttributes) const
 {
-    QString s;
-    
-    s += indent;
+    stream << indent;
 
-    s += QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5")
+    stream << QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5")
 	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
                             (LayerFactory::getInstance()->getLayerType(this))))
 	.arg(getObjectExportId(this))
@@ -480,37 +476,32 @@ Layer::toXmlString(QString indent, QString extraAttributes) const
 	.arg(extraAttributes);
 
     if (m_measureRects.empty()) {
-        s += QString("/>\n");
-        return s;
+        stream << QString("/>\n");
+        return;
     }
 
-    s += QString(">\n");
+    stream << QString(">\n");
 
     for (MeasureRectSet::const_iterator i = m_measureRects.begin();
          i != m_measureRects.end(); ++i) {
-        s += i->toXmlString(indent + "  ");
+        i->toXml(stream, indent + "  ");
     }
 
-    s += QString("</layer>\n");
-
-    return s;
+    stream << QString("</layer>\n");
 }
 
-QString
-Layer::toBriefXmlString(QString indent, QString extraAttributes) const
+void
+Layer::toBriefXml(QTextStream &stream,
+                  QString indent, QString extraAttributes) const
 {
-    QString s;
-    
-    s += indent;
+    stream << indent;
 
-    s += QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
+    stream << QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
 	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
                             (LayerFactory::getInstance()->getLayerType(this))))
 	.arg(getObjectExportId(this))
 	.arg(encodeEntities(objectName()))
 	.arg(getObjectExportId(getModel()))
         .arg(extraAttributes);
-
-    return s;
 }
 

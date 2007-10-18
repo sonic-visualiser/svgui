@@ -34,6 +34,7 @@
 #include <QPainterPath>
 #include <QMouseEvent>
 #include <QRegExp>
+#include <QTextStream>
 
 #include <iostream>
 #include <cmath>
@@ -1389,14 +1390,16 @@ TimeValueLayer::paste(const Clipboard &from, int frameOffset,
     return true;
 }
 
-QString
-TimeValueLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+TimeValueLayer::toXml(QTextStream &stream,
+                      QString indent, QString extraAttributes) const
 {
-    return SingleColourLayer::toXmlString(indent, extraAttributes +
-                                          QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\"")
-                                          .arg(m_colourMap)
-                                          .arg(m_plotStyle)
-                                          .arg(m_verticalScale));
+    SingleColourLayer::toXml(stream, indent,
+                             extraAttributes +
+                             QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\"")
+                             .arg(m_colourMap)
+                             .arg(m_plotStyle)
+                             .arg(m_verticalScale));
 }
 
 void

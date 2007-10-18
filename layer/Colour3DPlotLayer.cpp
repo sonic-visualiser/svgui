@@ -23,6 +23,7 @@
 #include <QPainter>
 #include <QImage>
 #include <QRect>
+#include <QTextStream>
 
 #include <iostream>
 
@@ -779,21 +780,20 @@ Colour3DPlotLayer::snapToFeatureFrame(View *v, int &frame,
     return true;
 }
 
-QString
-Colour3DPlotLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+Colour3DPlotLayer::toXml(QTextStream &stream,
+                         QString indent, QString extraAttributes) const
 {
-    QString s;
-    
-    s += QString("scale=\"%1\" "
-                 "colourScheme=\"%2\" "
-		 "normalizeColumns=\"%3\" "
-                 "normalizeVisibleArea=\"%4\"")
+    QString s = QString("scale=\"%1\" "
+                        "colourScheme=\"%2\" "
+                        "normalizeColumns=\"%3\" "
+                        "normalizeVisibleArea=\"%4\"")
 	.arg((int)m_colourScale)
         .arg(m_colourMap)
         .arg(m_normalizeColumns ? "true" : "false")
         .arg(m_normalizeVisibleArea ? "true" : "false");
 
-    return Layer::toXmlString(indent, extraAttributes + " " + s);
+    Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void

@@ -23,6 +23,7 @@
 
 #include <QPainter>
 #include <QPixmap>
+#include <QTextStream>
 
 #include <iostream>
 #include <cmath>
@@ -1248,8 +1249,9 @@ WaveformLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
     }
 }
 
-QString
-WaveformLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+WaveformLayer::toXml(QTextStream &stream,
+                     QString indent, QString extraAttributes) const
 {
     QString s;
     
@@ -1274,7 +1276,7 @@ WaveformLayer::toXmlString(QString indent, QString extraAttributes) const
 	.arg(m_aggressive)
         .arg(m_autoNormalize);
 
-    return SingleColourLayer::toXmlString(indent, extraAttributes + " " + s);
+    SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void

@@ -58,8 +58,8 @@ public:
     virtual QSize getImageSize(size_t f0, size_t f1);
     virtual QSize getImageSize() { return View::getImageSize(); }
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
     static void registerShortcuts(KeyReference &kr);
 
