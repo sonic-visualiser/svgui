@@ -21,7 +21,7 @@
 #include "view/View.h"
 
 #include "data/model/ImageModel.h"
-#include "data/fileio/RemoteFile.h"
+#include "data/fileio/FileSource.h"
 
 #include "widgets/ImageDialog.h"
 
@@ -52,7 +52,7 @@ ImageLayer::ImageLayer() :
 
 ImageLayer::~ImageLayer()
 {
-    for (RemoteFileMap::iterator i = m_remoteFiles.begin();
+    for (FileSourceMap::iterator i = m_remoteFiles.begin();
          i != m_remoteFiles.end(); ++i) {
         delete i->second;
     }
@@ -884,7 +884,7 @@ ImageLayer::getLocalFilename(QString img) const
 void
 ImageLayer::checkAddRemote(QString img) const
 {
-    if (RemoteFile::isRemote(img)) {
+    if (FileSource::isRemote(img)) {
 
         std::cerr << "ImageLayer::checkAddRemote(" << img.toStdString() << "): yes, trying..." << std::endl;
 
@@ -892,7 +892,7 @@ ImageLayer::checkAddRemote(QString img) const
             return;
         }
 
-        RemoteFile *rf = new RemoteFile(img);
+        FileSource *rf = new FileSource(img);
         if (rf->isOK()) {
             std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
             m_remoteFiles[img] = rf;
@@ -920,11 +920,11 @@ ImageLayer::remoteFileReady()
 {
 //    std::cerr << "ImageLayer::remoteFileReady" << std::endl;
 
-    RemoteFile *rf = dynamic_cast<RemoteFile *>(sender());
+    FileSource *rf = dynamic_cast<FileSource *>(sender());
     if (!rf) return;
 
     QString img;
-    for (RemoteFileMap::const_iterator i = m_remoteFiles.begin();
+    for (FileSourceMap::const_iterator i = m_remoteFiles.begin();
          i != m_remoteFiles.end(); ++i) {
         if (i->second == rf) {
             img = i->first;

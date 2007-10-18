@@ -22,7 +22,7 @@
 class QLineEdit;
 class QLabel;
 class QPushButton;
-class RemoteFile;
+class FileSource;
 
 class ImageDialog : public QDialog
 {
@@ -65,7 +65,7 @@ protected:
 
     QPushButton *m_okButton;
 
-    RemoteFile *m_remoteFile;
+    FileSource *m_remoteFile;
 };
 
 #endif

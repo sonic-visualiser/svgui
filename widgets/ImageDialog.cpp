@@ -26,7 +26,7 @@
 #include <QUrl>
 #include <QMessageBox>
 
-#include "data/fileio/RemoteFile.h"
+#include "data/fileio/FileSource.h"
 #include "data/fileio/FileFinder.h"
 
 #include <iostream>
@@ -179,14 +179,14 @@ ImageDialog::updatePreview()
         delete m_remoteFile;
         m_remoteFile = 0;
 
-        if (RemoteFile::isRemote(fileName)) {
+        if (FileSource::isRemote(fileName)) {
             QUrl url(fileName);
-            if (!RemoteFile::canHandleScheme(url)) {
+            if (!FileSource::canHandleScheme(url)) {
                 QMessageBox::critical(this, tr("Unsupported scheme in URL"),
                                       tr("The URL scheme \"%1\" is not supported")
                                       .arg(url.scheme()));
             } else {
-                m_remoteFile = new RemoteFile(url);
+                m_remoteFile = new FileSource(url);
                 m_remoteFile->waitForData();
                 if (!m_remoteFile->isOK()) {
                     QMessageBox::critical(this, tr("File download failed"),

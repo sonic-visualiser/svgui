@@ -28,7 +28,7 @@
 
 class View;
 class QPainter;
-class RemoteFile;
+class FileSource;
 
 class ImageLayer : public Layer
 {
@@ -115,12 +115,12 @@ protected:
 
     typedef std::map<QString, QImage> ImageMap;
     typedef std::map<const View *, ImageMap> ViewImageMap;
-    typedef std::map<QString, RemoteFile *> RemoteFileMap;
+    typedef std::map<QString, FileSource *> FileSourceMap;
 
     static ImageMap m_images;
     static QMutex m_imageMapMutex;
     mutable ViewImageMap m_scaled;
-    mutable RemoteFileMap m_remoteFiles;
+    mutable FileSourceMap m_remoteFiles;
 
     QString getLocalFilename(QString img) const;
     void checkAddRemote(QString img) const;
