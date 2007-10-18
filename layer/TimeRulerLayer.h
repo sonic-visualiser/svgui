@@ -51,8 +51,8 @@ public:
         return false;
     }
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
     void setProperties(const QXmlAttributes &attributes);
 

@@ -243,8 +243,8 @@ public:
     virtual bool getValueExtents(QString unit, float &min, float &max,
                                  bool &log) const;
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
     // First frame actually in model, to right of scale, if present
     virtual size_t getFirstVisibleFrame() const;

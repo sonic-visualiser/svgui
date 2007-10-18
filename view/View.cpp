@@ -30,6 +30,7 @@
 #include <QRect>
 #include <QApplication>
 #include <QProgressDialog>
+#include <QTextStream>
 
 #include <iostream>
 #include <cassert>
@@ -2128,20 +2129,19 @@ View::getImageSize(size_t f0, size_t f1)
     return QSize(x1 - x0, height());
 }
 
-QString
-View::toXmlString(QString indent, QString extraAttributes) const
+void
+View::toXml(QTextStream &stream,
+            QString indent, QString extraAttributes) const
 {
-    QString s;
+    stream << indent;
 
-    s += indent;
-
-    s += QString("<view "
-		 "centre=\"%1\" "
-		 "zoom=\"%2\" "
-		 "followPan=\"%3\" "
-		 "followZoom=\"%4\" "
-		 "tracking=\"%5\" "
-		 " %6>\n")
+    stream << QString("<view "
+                      "centre=\"%1\" "
+                      "zoom=\"%2\" "
+                      "followPan=\"%3\" "
+                      "followZoom=\"%4\" "
+                      "tracking=\"%5\" "
+                      " %6>\n")
 	.arg(m_centreFrame)
 	.arg(m_zoomLevel)
 	.arg(m_followPan)
@@ -2152,14 +2152,12 @@ View::toXmlString(QString indent, QString extraAttributes) const
 
     for (size_t i = 0; i < m_layers.size(); ++i) {
         bool visible = !m_layers[i]->isLayerDormant(this);
-	s += m_layers[i]->toBriefXmlString(indent + "  ",
-                                           QString("visible=\"%1\"")
-                                           .arg(visible ? "true" : "false"));
+        m_layers[i]->toBriefXml(stream, indent + "  ",
+                                QString("visible=\"%1\"")
+                                .arg(visible ? "true" : "false"));
     }
 
-    s += indent + "</view>\n";
-
-    return s;
+    stream << indent + "</view>\n";
 }
 
 ViewPropertyContainer::ViewPropertyContainer(View *v) :

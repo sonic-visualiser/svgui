@@ -280,29 +280,30 @@ public:
 
     /**
      * Convert the layer's data (though not those of the model it
-     * refers to) into an XML string for file output.  This class
-     * implements the basic name/type/model-id output; subclasses will
-     * typically call this superclass implementation with extra
-     * attributes describing their particular properties.
+     * refers to) into XML for file output.  This class implements the
+     * basic name/type/model-id output; subclasses will typically call
+     * this superclass implementation with extra attributes describing
+     * their particular properties.
      */
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
     /**
      * Set the particular properties of a layer (those specific to the
      * subclass) from a set of XML attributes.  This is the effective
-     * inverse of the toXmlString method.
+     * inverse of the toXml method.
      */
     virtual void setProperties(const QXmlAttributes &) = 0;
 
     /**
-     * Produce an XML string containing the layer's ID and type.  This
-     * is used to refer to the layer in the display section of the SV
-     * session file, for a layer that has already been described in
-     * the data section.
+     * Produce XML containing the layer's ID and type.  This is used
+     * to refer to the layer in the display section of the SV session
+     * file, for a layer that has already been described in the data
+     * section.
      */
-    virtual QString toBriefXmlString(QString indent = "",
-                                     QString extraAttributes = "") const;
+    virtual void toBriefXml(QTextStream &stream,
+                            QString indent = "",
+                            QString extraAttributes = "") const;
 
     /**
      * Add a measurement rectangle from the given XML attributes
@@ -467,7 +468,7 @@ protected:
         double endY;
 
         bool operator<(const MeasureRect &mr) const;
-        QString toXmlString(QString indent) const;
+        void toXml(QTextStream &stream, QString indent) const;
     };
 
     class AddMeasurementRectCommand : public Command

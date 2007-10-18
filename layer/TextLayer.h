@@ -79,8 +79,8 @@ public:
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
     void setProperties(const QXmlAttributes &attributes);
 

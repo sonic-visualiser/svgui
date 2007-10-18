@@ -32,6 +32,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
+#include <QTextStream>
 
 #include <iostream>
 #include <cmath>
@@ -948,12 +949,13 @@ NoteLayer::getDefaultColourHint(bool darkbg, bool &impose)
         (QString(darkbg ? "White" : "Black"));
 }
 
-QString
-NoteLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+NoteLayer::toXml(QTextStream &stream,
+                 QString indent, QString extraAttributes) const
 {
-    return SingleColourLayer::toXmlString(indent, extraAttributes +
-                                          QString(" verticalScale=\"%1\"")
-                                          .arg(m_verticalScale));
+    SingleColourLayer::toXml(stream, indent, extraAttributes +
+                             QString(" verticalScale=\"%1\"")
+                             .arg(m_verticalScale));
 }
 
 void

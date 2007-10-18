@@ -101,8 +101,8 @@ public:
     void setNormalize(bool n);
     bool getNormalize() const;
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
 public slots:
     void sliceableModelReplaced(const Model *, const Model *);

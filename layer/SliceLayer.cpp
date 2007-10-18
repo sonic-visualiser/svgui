@@ -27,6 +27,8 @@
 
 #include <QPainter>
 #include <QPainterPath>
+#include <QTextStream>
+
 
 SliceLayer::SliceLayer() :
     m_sliceableModel(0),
@@ -870,8 +872,9 @@ SliceLayer::getDefaultColourHint(bool darkbg, bool &impose)
         (QString(darkbg ? "Bright Blue" : "Blue"));
 }
 
-QString
-SliceLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+SliceLayer::toXml(QTextStream &stream,
+                  QString indent, QString extraAttributes) const
 {
     QString s;
     
@@ -886,7 +889,7 @@ SliceLayer::toXmlString(QString indent, QString extraAttributes) const
         .arg(m_gain)
         .arg(m_normalize ? "true" : "false");
 
-    return SingleColourLayer::toXmlString(indent, extraAttributes + " " + s);
+    SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void

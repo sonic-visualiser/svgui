@@ -24,6 +24,8 @@
 #include "base/ColourMapper.h"
 
 #include <QPainter>
+#include <QTextStream>
+
 
 SpectrumLayer::SpectrumLayer() :
     m_originModel(0),
@@ -795,17 +797,16 @@ SpectrumLayer::getBiasCurve(BiasCurve &curve) const
     curve = m_biasCurve;
 }
 
-QString
-SpectrumLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+SpectrumLayer::toXml(QTextStream &stream,
+                     QString indent, QString extraAttributes) const
 {
-    QString s;
-    
-    s += QString("windowSize=\"%1\" "
-		 "windowHopLevel=\"%2\"")
+    QString s = QString("windowSize=\"%1\" "
+                        "windowHopLevel=\"%2\"")
         .arg(m_windowSize)
         .arg(m_windowHopLevel);
 
-    return SliceLayer::toXmlString(indent, extraAttributes + " " + s);
+    SliceLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void

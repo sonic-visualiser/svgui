@@ -19,6 +19,7 @@
 
 #include <iostream>
 
+#include <QTextStream>
 #include <QApplication>
 
 SingleColourLayer::ColourRefCount 
@@ -254,8 +255,9 @@ SingleColourLayer::getPartialShades(View *v) const
     return s;
 }
 
-QString
-SingleColourLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+SingleColourLayer::toXml(QTextStream &stream,
+                         QString indent, QString extraAttributes) const
 {
     QString s;
     
@@ -270,7 +272,7 @@ SingleColourLayer::toXmlString(QString indent, QString extraAttributes) const
         .arg(colourSpec)
         .arg(darkbg);
 
-    return Layer::toXmlString(indent, extraAttributes + " " + s);
+    Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void

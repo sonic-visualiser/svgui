@@ -179,8 +179,8 @@ public:
     virtual bool getYScaleDifference(const View *v, int y0, int y1,
                                      float &diff, QString &unit) const;
 
-    virtual QString toXmlString(QString indent = "",
-				QString extraAttributes = "") const;
+    virtual void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const;
 
     virtual void setProperties(const QXmlAttributes &attributes);
 

@@ -30,6 +30,8 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QCursor>
+#include <QTextStream>
+
 #include <iostream>
 #include <cmath>
 
@@ -2237,11 +2239,12 @@ Pane::mouseLeftWidget()
     emit contextHelpChanged("");
 }
 
-QString
-Pane::toXmlString(QString indent, QString extraAttributes) const
+void
+Pane::toXml(QTextStream &stream,
+            QString indent, QString extraAttributes) const
 {
-    return View::toXmlString
-	(indent,
+    View::toXml
+        (stream, indent,
 	 QString("type=\"pane\" centreLineVisible=\"%1\" height=\"%2\" %3")
 	 .arg(m_centreLineVisible).arg(height()).arg(extraAttributes));
 }

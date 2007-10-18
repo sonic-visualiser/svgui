@@ -28,6 +28,7 @@
 
 #include <QPainter>
 #include <QMouseEvent>
+#include <QTextStream>
 
 #include <iostream>
 #include <cmath>
@@ -727,12 +728,14 @@ TimeInstantLayer::getDefaultColourHint(bool darkbg, bool &impose)
         (QString(darkbg ? "Bright Purple" : "Purple"));
 }
 
-QString
-TimeInstantLayer::toXmlString(QString indent, QString extraAttributes) const
+void
+TimeInstantLayer::toXml(QTextStream &stream,
+                        QString indent, QString extraAttributes) const
 {
-    return SingleColourLayer::toXmlString(indent, extraAttributes +
-                                          QString(" plotStyle=\"%1\"")
-                                          .arg(m_plotStyle));
+    SingleColourLayer::toXml(stream, indent,
+                             extraAttributes +
+                             QString(" plotStyle=\"%1\"")
+                             .arg(m_plotStyle));
 }
 
 void
