@@ -892,16 +892,13 @@ ImageLayer::checkAddRemote(QString img) const
             return;
         }
 
-        QUrl url(img);
-        if (RemoteFile::canHandleScheme(url)) {
-            RemoteFile *rf = new RemoteFile(url);
-            if (rf->isOK()) {
-                std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
-                m_remoteFiles[img] = rf;
-                connect(rf, SIGNAL(ready()), this, SLOT(remoteFileReady()));
-            } else {
-                delete rf;
-            }
+        RemoteFile *rf = new RemoteFile(img);
+        if (rf->isOK()) {
+            std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
+            m_remoteFiles[img] = rf;
+            connect(rf, SIGNAL(ready()), this, SLOT(remoteFileReady()));
+        } else {
+            delete rf;
         }
     }
 }

@@ -187,7 +187,7 @@ ImageDialog::updatePreview()
                                       .arg(url.scheme()));
             } else {
                 m_remoteFile = new RemoteFile(url);
-                m_remoteFile->wait();
+                m_remoteFile->waitForData();
                 if (!m_remoteFile->isOK()) {
                     QMessageBox::critical(this, tr("File download failed"),
                                           tr("Failed to download URL \"%1\": %2")
