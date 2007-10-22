@@ -285,6 +285,8 @@ PaneStack::hidePane(Pane *pane)
     }
 
     std::cerr << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << std::endl;
+    emit paneHidden(pane);
+    emit paneHidden();
 }
 
 void

@@ -75,6 +75,8 @@ signals:
 
     void paneAdded(Pane *pane);
     void paneAdded();
+    void paneHidden(Pane *pane);
+    void paneHidden();
     void paneAboutToBeDeleted(Pane *pane);
     void paneDeleted();
 
