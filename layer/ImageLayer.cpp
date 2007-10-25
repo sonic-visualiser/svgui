@@ -64,20 +64,7 @@ ImageLayer::setModel(ImageModel *model)
     if (m_model == model) return;
     m_model = model;
 
-    connect(m_model, SIGNAL(modelChanged()),
-            this, SIGNAL(modelChanged()));
-    connect(m_model, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SIGNAL(modelChanged(size_t, size_t)));
-
-    connect(m_model, SIGNAL(completionChanged()),
-	    this, SIGNAL(modelCompletionChanged()));
-
-//    connect(m_model, SIGNAL(modelChanged()),
-//            this, SLOT(checkAddRemotes()));
-
-//    std::cerr << "ImageLayer::setModel(" << model << ")" << std::endl;
-
-//    checkAddRemotes();
+    connectSignals(m_model);
 
     emit modelReplaced();
 }

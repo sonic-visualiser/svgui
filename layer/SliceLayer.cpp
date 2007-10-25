@@ -66,14 +66,7 @@ SliceLayer::setSliceableModel(const Model *model)
 
     m_sliceableModel = sliceable;
 
-    connect(m_sliceableModel, SIGNAL(modelChanged()),
-            this, SIGNAL(modelChanged()));
-
-    connect(m_sliceableModel, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SIGNAL(modelChanged(size_t, size_t)));
-
-    connect(m_sliceableModel, SIGNAL(completionChanged()),
-	    this, SIGNAL(modelCompletionChanged()));
+    connectSignals(m_sliceableModel);
 
     emit modelReplaced();
 }

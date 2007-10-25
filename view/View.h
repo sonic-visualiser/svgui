@@ -257,6 +257,9 @@ public:
     ModelSet getModels();
 
     //!!!
+    Model *getAligningModel() const;
+    size_t alignFromReference(size_t) const;
+    size_t alignToReference(size_t) const;
     int getAlignedPlaybackFrame() const;
 
 signals:
@@ -280,6 +283,7 @@ public slots:
     virtual void modelChanged();
     virtual void modelChanged(size_t startFrame, size_t endFrame);
     virtual void modelCompletionChanged();
+    virtual void modelAlignmentCompletionChanged();
     virtual void modelReplaced();
     virtual void layerParametersChanged();
     virtual void layerParameterRangesChanged();

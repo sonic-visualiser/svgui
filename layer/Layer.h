@@ -447,6 +447,7 @@ public slots:
 signals:
     void modelChanged();
     void modelCompletionChanged();
+    void modelAlignmentCompletionChanged();
     void modelChanged(size_t startFrame, size_t endFrame);
     void modelReplaced();
 
@@ -458,6 +459,8 @@ signals:
     void verticalZoomChanged();
 
 protected:
+    void connectSignals(const Model *);
+
     struct MeasureRect {
 
         mutable QRect pixrect;

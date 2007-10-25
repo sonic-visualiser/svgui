@@ -66,6 +66,8 @@ public:
 
     void setPropertyStackMinWidth(int mw);
 
+    void sizePanesEqually();
+
 signals:
     void currentPaneChanged(Pane *pane);
     void currentLayerChanged(Pane *pane, Layer *layer);

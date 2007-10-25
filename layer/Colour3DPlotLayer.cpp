@@ -56,12 +56,7 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
     m_model = model;
     if (!m_model || !m_model->isOK()) return;
 
-    connect(m_model, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
-    connect(m_model, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SIGNAL(modelChanged(size_t, size_t)));
-
-    connect(m_model, SIGNAL(completionChanged()),
-	    this, SIGNAL(modelCompletionChanged()));
+    connectSignals(m_model);
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(cacheInvalid()));
     connect(m_model, SIGNAL(modelChanged(size_t, size_t)),

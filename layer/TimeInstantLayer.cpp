@@ -53,12 +53,7 @@ TimeInstantLayer::setModel(SparseOneDimensionalModel *model)
     if (m_model == model) return;
     m_model = model;
 
-    connect(m_model, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
-    connect(m_model, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SIGNAL(modelChanged(size_t, size_t)));
-
-    connect(m_model, SIGNAL(completionChanged()),
-	    this, SIGNAL(modelCompletionChanged()));
+    connectSignals(m_model);
 
     std::cerr << "TimeInstantLayer::setModel(" << model << ")" << std::endl;
 

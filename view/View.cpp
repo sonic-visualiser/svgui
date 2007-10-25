@@ -326,7 +326,8 @@ View::setCentreFrame(size_t f, bool e)
 	    changeVisible = true;
 	}
 
-	if (e) emit centreFrameChanged(f, m_followPan, m_followPlay);
+	if (e) emit centreFrameChanged(alignFromReference(f),
+                                       m_followPan, m_followPlay);
     }
 
     return changeVisible;
@@ -531,6 +532,8 @@ View::addLayer(Layer *layer)
 	    this,    SLOT(modelChanged()));
     connect(layer, SIGNAL(modelCompletionChanged()),
 	    this,    SLOT(modelCompletionChanged()));
+    connect(layer, SIGNAL(modelAlignmentCompletionChanged()),
+	    this,    SLOT(modelAlignmentCompletionChanged()));
     connect(layer, SIGNAL(modelChanged(size_t, size_t)),
 	    this,    SLOT(modelChanged(size_t, size_t)));
     connect(layer, SIGNAL(modelReplaced()),
@@ -572,6 +575,8 @@ View::removeLayer(Layer *layer)
                this,    SLOT(modelChanged()));
     disconnect(layer, SIGNAL(modelCompletionChanged()),
                this,    SLOT(modelCompletionChanged()));
+    disconnect(layer, SIGNAL(modelAlignmentCompletionChanged()),
+               this,    SLOT(modelAlignmentCompletionChanged()));
     disconnect(layer, SIGNAL(modelChanged(size_t, size_t)),
                this,    SLOT(modelChanged(size_t, size_t)));
     disconnect(layer, SIGNAL(modelReplaced()),
@@ -804,6 +809,15 @@ View::modelCompletionChanged()
 }
 
 void
+View::modelAlignmentCompletionChanged()
+{
+    std::cerr << "View(" << this << ")::modelAlignmentCompletionChanged()" << std::endl;
+
+    QObject *obj = sender();
+    checkProgress(obj);
+}
+
+void
 View::modelReplaced()
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -858,7 +872,7 @@ void
 View::globalCentreFrameChanged(unsigned long f)
 {
     if (m_followPan) {
-        setCentreFrame(f, false);
+        setCentreFrame(alignToReference(f), false);
     }
 }
 
@@ -1074,40 +1088,68 @@ View::getModels()
     return models;
 }
 
-int
-View::getAlignedPlaybackFrame() const
+Model *
+View::getAligningModel() const
 {
-    if (!m_manager) return 0;
-    if (!m_manager->getAlignMode() ||
+    if (!m_manager ||
+        !m_manager->getAlignMode() ||
         !m_manager->getPlaybackModel()) {
-        return m_manager->getPlaybackFrame();
+        return 0;
     }
 
-    RangeSummarisableTimeValueModel *waveformModel = 0;
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    Model *anyModel = 0;
+    Model *goodModel = 0;
 
-        if (!*i) continue;
-        if (dynamic_cast<TimeRulerLayer *>(*i)) continue;
+    for (LayerList::const_iterator i = m_layers.begin();
+         i != m_layers.end(); ++i) {
+
+        Layer *layer = *i;
+
+        if (!layer) continue;
+        if (dynamic_cast<TimeRulerLayer *>(layer)) continue;
 
         Model *model = (*i)->getModel();
         if (!model) continue;
 
-        waveformModel = dynamic_cast<RangeSummarisableTimeValueModel *>(model);
-        if (!waveformModel) {
-            waveformModel = dynamic_cast<RangeSummarisableTimeValueModel *>
-                (model->getSourceModel());
+        if (model->getAlignmentReference()) {
+            anyModel = model;
+            if (layer->isLayerOpaque() ||
+                dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
+                goodModel = model;
+            }
         }
-
-        if (waveformModel) break;
     }
+
+    if (goodModel) return goodModel;
+    else return anyModel;
+}
+
+size_t
+View::alignFromReference(size_t f) const
+{
+    Model *aligningModel = getAligningModel();
+    if (!aligningModel) return f;
+    return aligningModel->alignFromReference(f);
+}
+
+size_t
+View::alignToReference(size_t f) const
+{
+    Model *aligningModel = getAligningModel();
+    if (!aligningModel) return f;
+    return aligningModel->alignToReference(f);
+}
+
+int
+View::getAlignedPlaybackFrame() const
+{
+    Model *aligningModel = getAligningModel();
 
     int pf = m_manager->getPlaybackFrame();
 
-    if (!waveformModel) return pf;
+    if (!aligningModel) return pf;
 
-    RangeSummarisableTimeValueModel *pm =
-        dynamic_cast<RangeSummarisableTimeValueModel *>
-        (m_manager->getPlaybackModel());
+    Model *pm = m_manager->getPlaybackModel();
 
 //    std::cerr << "View[" << this << "]::getAlignedPlaybackFrame: pf = " << pf;
 
@@ -1116,7 +1158,7 @@ View::getAlignedPlaybackFrame() const
 //        std::cerr << " -> " << pf;
     }
 
-    int af = waveformModel->alignToReference(pf);
+    int af = aligningModel->alignToReference(pf);
 
 //    std::cerr << ", aligned = " << af << std::endl;
     return af;

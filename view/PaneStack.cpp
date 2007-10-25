@@ -503,3 +503,44 @@ PaneStack::paneDropAccepted(QString text)
     emit dropAccepted(pane, text);
 }
 
+void
+PaneStack::sizePanesEqually()
+{
+    QList<int> sizes = m_splitter->sizes();
+    if (sizes.empty()) return;
+
+    int count = sizes.size();
+
+    int total = 0;
+    for (int i = 0; i < count; ++i) {
+        total += sizes[i];
+    }
+
+    if (total == 0) return;
+
+    sizes.clear();
+
+    int each = total / count;
+    int remaining = total;
+
+    for (int i = 0; i < count; ++i) {
+        if (i == count - 1) {
+            sizes.push_back(remaining);
+        } else {
+            sizes.push_back(each);
+            remaining -= each;
+        }
+    }
+
+/*
+    std::cerr << "sizes: ";
+    for (int i = 0; i < sizes.size(); ++i) {
+        std::cerr << sizes[i] << " ";
+    }
+    std::cerr << std::endl;
+*/
+
+    m_splitter->setSizes(sizes);
+}
+
+

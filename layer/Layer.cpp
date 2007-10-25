@@ -40,6 +40,22 @@ Layer::~Layer()
 //    std::cerr << "Layer::~Layer(" << this << ")" << std::endl;
 }
 
+void
+Layer::connectSignals(const Model *model)
+{
+    connect(model, SIGNAL(modelChanged()),
+            this, SIGNAL(modelChanged()));
+
+    connect(model, SIGNAL(modelChanged(size_t, size_t)),
+	    this, SIGNAL(modelChanged(size_t, size_t)));
+
+    connect(model, SIGNAL(completionChanged()),
+	    this, SIGNAL(modelCompletionChanged()));
+
+    connect(model, SIGNAL(alignmentCompletionChanged()),
+            this, SIGNAL(modelAlignmentCompletionChanged()));
+}
+
 QString
 Layer::getPropertyContainerIconName() const
 {
