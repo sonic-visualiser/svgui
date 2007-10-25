@@ -73,6 +73,7 @@ public slots:
     virtual void toolModeChanged();
     virtual void zoomWheelsEnabledChanged();
     virtual void viewZoomLevelChanged(View *v, unsigned long z, bool locked);
+    virtual void modelAlignmentCompletionChanged();
 
     virtual void horizontalThumbwheelMoved(int value);
     virtual void verticalThumbwheelMoved(int value);
@@ -104,6 +105,7 @@ protected:
     void drawDurationAndRate(QRect, const Model *, int, QPainter &);
     void drawLayerNames(QRect, QPainter &);
     void drawEditingSelection(QPainter &);
+    void drawAlignmentStatus(QRect, QPainter &, const Model *);
 
     virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
 

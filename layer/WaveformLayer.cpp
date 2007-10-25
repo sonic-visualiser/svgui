@@ -76,15 +76,7 @@ WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
     m_cacheValid = false;
     if (!m_model || !m_model->isOK()) return;
 
-    connect(m_model, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
-    connect(m_model, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SIGNAL(modelChanged(size_t, size_t)));
-
-    connect(m_model, SIGNAL(completionChanged()),
-	    this, SIGNAL(modelCompletionChanged()));
-
-    connect(model, SIGNAL(alignmentCompletionChanged()),
-            this, SIGNAL(modelCompletionChanged()));
+    connectSignals(m_model);
 
     emit modelReplaced();
 

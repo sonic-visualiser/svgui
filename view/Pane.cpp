@@ -448,6 +448,12 @@ Pane::paintEvent(QPaintEvent *e)
         drawDurationAndRate(r, waveformModel, sampleRate, paint);
     }
 
+    if (waveformModel &&
+        m_manager &&
+        m_manager->getAlignMode()) {
+        drawAlignmentStatus(r, paint, waveformModel);
+    }
+
     if (m_manager &&
         m_manager->shouldShowLayerNames()) {
         drawLayerNames(r, paint);
@@ -708,6 +714,59 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
         
         drawVisibleText(paint, x, y, text, OutlinedText);
     }
+}
+
+void
+Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model)
+{
+    const Model *reference = model->getAlignmentReference();
+/*
+    if (!reference) {
+        std::cerr << "Pane[" << this << "]::drawAlignmentStatus: No reference" << std::endl;
+    } else if (reference == model) {
+        std::cerr << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << std::endl;
+    } else {
+        std::cerr << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << std::endl;
+    }
+*/
+    QString text;
+    int completion = 100;
+
+    if (reference == model) {
+        text = tr("Reference");
+    } else if (!reference) {
+        text = tr("Unaligned");
+    } else {
+        completion = model->getAlignmentCompletion();
+        if (completion == 0) {
+            text = tr("Unaligned");
+        } else if (completion < 100) {
+            text = tr("Aligning: %1%").arg(completion);
+        } else {
+            text = tr("Aligned");
+        }
+    }
+
+    int w = paint.fontMetrics().width(text), h = paint.fontMetrics().height();
+    if (r.top() > h + 5 || r.left() > w + m_scaleWidth + 5) return;
+
+    paint.save();
+    QFont font(paint.font());
+    font.setBold(true);
+    paint.setFont(font);
+    if (completion < 100) paint.setPen(Qt::red);
+    
+    drawVisibleText(paint, m_scaleWidth + 5,
+                    paint.fontMetrics().ascent() + 5, text, OutlinedText);
+
+    paint.restore();
+}
+
+void
+Pane::modelAlignmentCompletionChanged()
+{
+    View::modelAlignmentCompletionChanged();
+    update(QRect(0, 0, 300, 100));
 }
 
 void
