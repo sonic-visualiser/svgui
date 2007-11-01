@@ -186,7 +186,7 @@ ImageDialog::updatePreview()
                                       tr("The URL scheme \"%1\" is not supported")
                                       .arg(url.scheme()));
             } else {
-                m_remoteFile = new FileSource(url);
+                m_remoteFile = new FileSource(url, true);
                 m_remoteFile->waitForData();
                 if (!m_remoteFile->isOK()) {
                     QMessageBox::critical(this, tr("File download failed"),
