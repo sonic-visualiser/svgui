@@ -18,14 +18,17 @@
 
 #include "Pane.h"
 #include "widgets/PropertyStack.h"
+#include "widgets/IconLoader.h"
 #include "layer/Layer.h"
 #include "ViewManager.h"
 
 #include <QApplication>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QPainter>
 #include <QPalette>
 #include <QLabel>
+#include <QPushButton>
 #include <QSplitter>
 #include <QStackedWidget>
 
@@ -64,16 +67,29 @@ PaneStack::addPane(bool suppressPropertyBox)
     layout->setMargin(0);
     layout->setSpacing(2);
 
+    QVBoxLayout *vlayout = new QVBoxLayout;
+    layout->addLayout(vlayout);
+    layout->setStretchFactor(vlayout, 1);
+
+    QPushButton *xButton = new QPushButton(frame);
+    xButton->setIcon(IconLoader().load("cross"));
+    xButton->setFixedSize(QSize(16, 16));
+    vlayout->addWidget(xButton);
+    vlayout->setStretchFactor(xButton, 1);
+    connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
+
     QLabel *currentIndicator = new QLabel(frame);
-    currentIndicator->setFixedWidth(QPainter(this).fontMetrics().width("x"));
-    layout->addWidget(currentIndicator);
-    layout->setStretchFactor(currentIndicator, 1);
+//    currentIndicator->setFixedWidth(QPainter(this).fontMetrics().width("x"));
+    vlayout->addWidget(currentIndicator);
+    vlayout->setStretchFactor(currentIndicator, 10);
     currentIndicator->setScaledContents(true);
 
     Pane *pane = new Pane(frame);
     pane->setViewManager(m_viewManager);
     layout->addWidget(pane);
     layout->setStretchFactor(pane, 10);
+
+    m_xButtonMap[xButton] = pane;
 
     QWidget *properties = 0;
     if (suppressPropertyBox) {
@@ -231,6 +247,15 @@ PaneStack::deletePane(Pane *pane)
     }
 
     emit paneAboutToBeDeleted(pane);
+
+    for (std::map<QWidget *, Pane *>::iterator i = m_xButtonMap.begin();
+         i != m_xButtonMap.end(); ++i) {
+
+        if (i->second == pane) {
+            m_xButtonMap.erase(i);
+            break;
+        }
+    }
 
     delete pane->parent();
 
@@ -501,6 +526,19 @@ PaneStack::paneDropAccepted(QString text)
 {
     Pane *pane = dynamic_cast<Pane *>(sender());
     emit dropAccepted(pane, text);
+}
+
+void
+PaneStack::paneDeleteButtonClicked()
+{
+    QObject *s = sender();
+    QWidget *w = dynamic_cast<QWidget *>(s);
+    if (w) {
+        if (m_xButtonMap.find(w) != m_xButtonMap.end()) {
+            Pane *p = m_xButtonMap[w];
+            emit paneDeleteButtonClicked(p);
+        }
+    }
 }
 
 void
