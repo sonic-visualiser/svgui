@@ -753,7 +753,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                     else rangeBottom = AudioLevel::multiplier_to_preview(range.absmean * gain, m);
                     meanBottom  = rangeBottom;
                 } else {
-                    rangeBottom =  AudioLevel::multiplier_to_preview(range.min * gain, m * greyLevels);
+                    rangeBottom = -AudioLevel::multiplier_to_preview(range.min * gain, m * greyLevels);
                     rangeTop    =  AudioLevel::multiplier_to_preview(range.max * gain, m * greyLevels);
                     meanBottom  = -AudioLevel::multiplier_to_preview(range.absmean * gain, m);
                     meanTop     =  AudioLevel::multiplier_to_preview(range.absmean * gain, m);
@@ -995,6 +995,8 @@ WaveformLayer::getYForValue(const View *v, float value, size_t channel) const
         vy = dBscale(value, m);
         break;
     }
+
+//    std::cerr << "mergingChannels= " << mergingChannels << ", channel  = " << channel << ", value = " << value << ", vy = " << vy << std::endl;
 
     return my - vy;
 }
