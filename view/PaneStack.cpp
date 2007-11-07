@@ -69,13 +69,13 @@ PaneStack::addPane(bool suppressPropertyBox)
 
     QVBoxLayout *vlayout = new QVBoxLayout;
     layout->addLayout(vlayout);
-    layout->setStretchFactor(vlayout, 1);
+    layout->setStretchFactor(vlayout, 0);
 
     QPushButton *xButton = new QPushButton(frame);
     xButton->setIcon(IconLoader().load("cross"));
     xButton->setFixedSize(QSize(16, 16));
     vlayout->addWidget(xButton);
-    vlayout->setStretchFactor(xButton, 1);
+    vlayout->setStretchFactor(xButton, 0);
     connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
 
     QLabel *currentIndicator = new QLabel(frame);
