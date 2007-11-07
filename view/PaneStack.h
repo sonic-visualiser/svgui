@@ -19,6 +19,8 @@
 
 #include <QFrame>
 
+#include <map>
+
 class QWidget;
 class QLabel;
 class QStackedWidget;
@@ -85,6 +87,8 @@ signals:
     void dropAccepted(Pane *pane, QStringList uriList);
     void dropAccepted(Pane *pane, QString text);
 
+    void paneDeleteButtonClicked(Pane *pane);
+
 public slots:
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);
@@ -94,6 +98,7 @@ public slots:
     void rightButtonMenuRequested(QPoint);
     void paneDropAccepted(QStringList);
     void paneDropAccepted(QString);
+    void paneDeleteButtonClicked();
 
 protected:
     Pane *m_currentPane;
@@ -109,6 +114,8 @@ protected:
 
     std::vector<PaneRec> m_panes;
     std::vector<PaneRec> m_hiddenPanes;
+
+    std::map<QWidget *, Pane *> m_xButtonMap;
 
     QSplitter *m_splitter;
     QStackedWidget *m_propertyStackStack;
