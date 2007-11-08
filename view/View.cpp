@@ -288,13 +288,17 @@ View::zoomWheelsEnabledChanged()
 long
 View::getStartFrame() const
 {
-    return getFrameForX(0);
+    long frame = getFrameForX(0);
+    std::cerr << "View::getStartFrame: " << frame << std::endl;
+    return frame;
 }
 
 size_t
 View::getEndFrame() const
 {
-    return getFrameForX(width()) - 1;
+    long frame = getFrameForX(width()) - 1;
+    std::cerr << "View::getEndFrame: " << frame << std::endl;
+    return frame;
 }
 
 void
@@ -336,16 +340,38 @@ View::setCentreFrame(size_t f, bool e)
 int
 View::getXForFrame(long frame) const
 {
-    return (frame - getStartFrame()) / m_zoomLevel;
+    if (frame >= 0) {
+        frame = alignToReference(frame);
+    }
+    long z = (long)m_zoomLevel;
+    frame = frame - m_centreFrame;
+    frame /= z;
+    return frame + (width()/2);
+
+    //!!! no
+//    return (frame - getStartFrame()) / m_zoomLevel;
 }
 
 long
 View::getFrameForX(int x) const
 {
+    // if we're aligned ->
+    // ask the reference view for the frame that corresponds to x ->
+    // map that back
+    // BUT! we don't have a reference view, only a reference model.
+
+    // hang on -- the reference view would always just use the zoom
+    // level -- that's what we'd do by default anyway
+
+    // so we use the zoom level to work it out and then map that back
+    // from the reference model
+
     long z = (long)m_zoomLevel;
     long frame = m_centreFrame - (width()/2) * z;
     frame = (frame / z) * z; // this is start frame
-    return frame + x * z;
+    frame = frame + x * z;
+    if (frame < 0) return frame;
+    else return alignFromReference(frame);
 }
 
 float
@@ -1127,7 +1153,7 @@ View::getAligningModel() const
 size_t
 View::alignFromReference(size_t f) const
 {
-    if (!m_manager->getAlignMode()) return f;
+    if (!m_manager || !m_manager->getAlignMode()) return f;
     Model *aligningModel = getAligningModel();
     if (!aligningModel) return f;
     return aligningModel->alignFromReference(f);
