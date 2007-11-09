@@ -103,9 +103,10 @@ protected:
     void drawFeatureDescription(Layer *, QPainter &);
     void drawCentreLine(int, QPainter &, bool omitLine);
     void drawDurationAndRate(QRect, const Model *, int, QPainter &);
+    void drawWorkTitle(QRect, QPainter &, const Model *);
     void drawLayerNames(QRect, QPainter &);
     void drawEditingSelection(QPainter &);
-    void drawAlignmentStatus(QRect, QPainter &, const Model *);
+    void drawAlignmentStatus(QRect, QPainter &, const Model *, bool down);
 
     virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
 

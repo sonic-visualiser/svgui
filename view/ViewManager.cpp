@@ -43,6 +43,8 @@ ViewManager::ViewManager() :
     m_alignMode(false),
     m_overlayMode(StandardOverlays),
     m_zoomWheelsEnabled(true),
+    m_illuminateLocalFeatures(true),
+    m_showWorkTitle(false),
     m_lightPalette(QApplication::palette()),
     m_darkPalette(QApplication::palette())
 {

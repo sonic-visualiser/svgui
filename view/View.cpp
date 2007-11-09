@@ -802,7 +802,7 @@ View::modelChanged(size_t startFrame, size_t endFrame)
 void
 View::modelCompletionChanged()
 {
-    std::cerr << "View(" << this << ")::modelCompletionChanged()" << std::endl;
+//    std::cerr << "View(" << this << ")::modelCompletionChanged()" << std::endl;
 
     QObject *obj = sender();
     checkProgress(obj);
@@ -811,7 +811,7 @@ View::modelCompletionChanged()
 void
 View::modelAlignmentCompletionChanged()
 {
-    std::cerr << "View(" << this << ")::modelAlignmentCompletionChanged()" << std::endl;
+//    std::cerr << "View(" << this << ")::modelAlignmentCompletionChanged()" << std::endl;
 
     QObject *obj = sender();
     checkProgress(obj);
@@ -1354,7 +1354,9 @@ View::checkProgress(void *object)
                 Model *model = i->first->getModel();
                 RangeSummarisableTimeValueModel *wfm = 
                     dynamic_cast<RangeSummarisableTimeValueModel *>(model);
-                if (wfm) {
+                if (wfm ||
+                    dynamic_cast<RangeSummarisableTimeValueModel *>
+                    (model->getSourceModel())) {
                     completion = wfm->getAlignmentCompletion();
                     if (completion < 100) {
                         text = tr("Alignment");

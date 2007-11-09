@@ -24,6 +24,11 @@
 #include <QMouseEvent>
 #include <QTextStream>
 
+#include <QDomDocument>
+#include <QDomElement>
+#include <QDomNamedNodeMap>
+#include <QDomAttr>
+
 #include "LayerFactory.h"
 #include "base/PlayParameterRepository.h"
 

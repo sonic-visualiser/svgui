@@ -39,6 +39,13 @@
 #include "data/model/WaveFileModel.h"
 #include "data/model/WritableWaveFileModel.h"
 
+#include <QDomDocument>
+#include <QDomElement>
+#include <QDomNamedNodeMap>
+#include <QDomAttr>
+
+#include <QSettings>
+
 LayerFactory *
 LayerFactory::m_instance = new LayerFactory;
 
@@ -212,6 +219,8 @@ LayerFactory::getLayerIconName(LayerType type)
     case Colour3DPlot: return "colour3d";
     case Spectrum: return "spectrum";
     case Slice: return "spectrum";
+    case MelodicRangeSpectrogram: return "spectrogram";
+    case PeakFrequencySpectrogram: return "spectrogram";
     default: return "unknown";
     }
 }
@@ -231,6 +240,8 @@ LayerFactory::getLayerTypeName(LayerType type)
     case Colour3DPlot: return "colour3dplot";
     case Spectrum: return "spectrum";
     case Slice: return "slice";
+    case MelodicRangeSpectrogram: return "melodicrange";
+    case PeakFrequencySpectrogram: return "peakfrequency";
     default: return "unknown";
     }
 }
@@ -410,8 +421,50 @@ LayerFactory::createLayer(LayerType type)
 //	std::cerr << "LayerFactory::createLayer: Setting object name "
 //		  << getLayerPresentationName(type).toStdString() << " on " << layer << std::endl;
 	layer->setObjectName(getLayerPresentationName(type));
+        setLayerDefaultProperties(type, layer);
     }
 
     return layer;
+}
+
+void
+LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
+{
+    QSettings settings;
+    settings.beginGroup("LayerDefaults");
+    QString defaults = settings.value(getLayerTypeName(type), "").toString();
+    if (defaults == "") return;
+
+    QString xml = layer->toXmlString();
+    QDomDocument docOld, docNew;
+    
+    if (docOld.setContent(xml, false) &&
+        docNew.setContent(defaults, false)) {
+        
+        QXmlAttributes attrs;
+        
+        QDomElement layerElt = docNew.firstChildElement("layer");
+        QDomNamedNodeMap attrNodes = layerElt.attributes();
+        
+        for (unsigned int i = 0; i < attrNodes.length(); ++i) {
+            QDomAttr attr = attrNodes.item(i).toAttr();
+            if (attr.isNull()) continue;
+            attrs.append(attr.name(), "", "", attr.value());
+        }
+        
+        layerElt = docOld.firstChildElement("layer");
+        attrNodes = layerElt.attributes();
+        for (unsigned int i = 0; i < attrNodes.length(); ++i) {
+            QDomAttr attr = attrNodes.item(i).toAttr();
+            if (attr.isNull()) continue;
+            if (attrs.value(attr.name()) == "") {
+                attrs.append(attr.name(), "", "", attr.value());
+            }
+        }
+        
+        layer->setProperties(attrs);
+    }
+
+    settings.endGroup();
 }
 

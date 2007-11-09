@@ -24,6 +24,9 @@
 #include "base/TextAbbrev.h"
 #include "layer/WaveformLayer.h"
 
+//!!! ugh
+#include "data/model/WaveFileModel.h"
+
 #include <QPaintEvent>
 #include <QPainter>
 #include <QBitmap>
@@ -313,6 +316,10 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
         return false;
     }
 
+    if (m_manager && !m_manager->shouldIlluminateLocalFeatures()) {
+        return false;
+    }
+
     if (layer == getSelectedLayer() &&
 	!shouldIlluminateLocalSelection(discard, b0, b1)) {
 
@@ -410,6 +417,8 @@ Pane::paintEvent(QPaintEvent *e)
     bool haveSomeTimeXAxis = false;
 
     const Model *waveformModel = 0; // just for reporting purposes
+    const Model *workModel = 0;
+
     for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
         --vi;
         if (!haveSomeTimeXAxis && (*vi)->hasTimeXAxis()) {
@@ -417,8 +426,17 @@ Pane::paintEvent(QPaintEvent *e)
         }
         if (dynamic_cast<WaveformLayer *>(*vi)) {
             waveformModel = (*vi)->getModel();
+            workModel = waveformModel;
+        } else {
+            Model *m = (*vi)->getModel();
+            if (dynamic_cast<WaveFileModel *>(m)) {
+                workModel = m;
+            } else if (m && dynamic_cast<WaveFileModel *>(m->getSourceModel())) {
+                workModel = m->getSourceModel();
+            }
         }
-        if (waveformModel && haveSomeTimeXAxis) break;
+                
+        if (waveformModel && workModel && haveSomeTimeXAxis) break;
     }
 
     m_scaleWidth = 0;
@@ -427,7 +445,9 @@ Pane::paintEvent(QPaintEvent *e)
         drawVerticalScale(r, topLayer, paint);
     }
 
-    if (m_identifyFeatures && topLayer) {
+    if (m_identifyFeatures &&
+        m_manager && m_manager->shouldIlluminateLocalFeatures() &&
+        topLayer) {
         drawFeatureDescription(topLayer, paint);
     }
     
@@ -448,10 +468,19 @@ Pane::paintEvent(QPaintEvent *e)
         drawDurationAndRate(r, waveformModel, sampleRate, paint);
     }
 
-    if (waveformModel &&
+    bool haveWorkTitle = false;
+
+    if (workModel &&
+        m_manager &&
+        m_manager->shouldShowWorkTitle()) {
+        drawWorkTitle(r, paint, workModel);
+        haveWorkTitle = true;
+    }
+
+    if (workModel &&
         m_manager &&
         m_manager->getAlignMode()) {
-        drawAlignmentStatus(r, paint, waveformModel);
+        drawAlignmentStatus(r, paint, workModel, haveWorkTitle);
     }
 
     if (m_manager &&
@@ -717,7 +746,8 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
 }
 
 void
-Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model)
+Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
+                          bool down)
 {
     const Model *reference = model->getAlignmentReference();
 /*
@@ -747,17 +777,23 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model)
         }
     }
 
-    int w = paint.fontMetrics().width(text), h = paint.fontMetrics().height();
-    if (r.top() > h + 5 || r.left() > w + m_scaleWidth + 5) return;
-
     paint.save();
     QFont font(paint.font());
     font.setBold(true);
     paint.setFont(font);
-    if (completion < 100) paint.setPen(Qt::red);
+    if (completion < 100) paint.setBrush(Qt::red);
+
+    int y = 5;
+    if (down) y += paint.fontMetrics().height();
+    int w = paint.fontMetrics().width(text);
+    int h = paint.fontMetrics().height();
+    if (r.top() > h + y || r.left() > w + m_scaleWidth + 5) {
+        paint.restore();
+        return;
+    }
     
     drawVisibleText(paint, m_scaleWidth + 5,
-                    paint.fontMetrics().ascent() + 5, text, OutlinedText);
+                    paint.fontMetrics().ascent() + y, text, OutlinedText);
 
     paint.restore();
 }
@@ -767,6 +803,37 @@ Pane::modelAlignmentCompletionChanged()
 {
     View::modelAlignmentCompletionChanged();
     update(QRect(0, 0, 300, 100));
+}
+
+void
+Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
+{
+    QString title = model->getTitle();
+    QString maker = model->getMaker();
+    if (title == "") return;
+
+    QString text = title;
+    if (maker != "") {
+        text = tr("%1 - %2").arg(title).arg(maker);
+    }
+    
+    paint.save();
+    QFont font(paint.font());
+    font.setItalic(true);
+    paint.setFont(font);
+
+    int y = 5;
+    int w = paint.fontMetrics().width(text);
+    int h = paint.fontMetrics().height();
+    if (r.top() > h + y || r.left() > w + m_scaleWidth + 5) {
+        paint.restore();
+        return;
+    }
+    
+    drawVisibleText(paint, m_scaleWidth + 5,
+                    paint.fontMetrics().ascent() + y, text, OutlinedText);
+
+    paint.restore();
 }
 
 void
@@ -1363,7 +1430,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             bool updating = false;
 
-            if (getSelectedLayer()) {
+            if (getSelectedLayer() &&
+                m_manager->shouldIlluminateLocalFeatures()) {
 
                 bool previouslyIdentifying = m_identifyFeatures;
                 m_identifyFeatures = true;

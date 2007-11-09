@@ -1539,7 +1539,8 @@ SpectrogramLayer::getFFTModel(const View *v) const
                                        m_windowSize,
                                        getWindowIncrement(),
                                        fftSize,
-                                       true,
+//!!!                                       true,
+                                       false,
                                        m_candidateFillStartFrame);
 
         if (!model->isOK()) {
