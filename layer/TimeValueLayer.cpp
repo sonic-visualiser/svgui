@@ -663,7 +663,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	if (m_plotStyle != PlotLines &&
 	    m_plotStyle != PlotCurve &&
 	    m_plotStyle != PlotSegmentation) {
-	    paint.drawRect(x, y - 1, w, 2);
+            if (m_plotStyle != PlotStems ||
+                w > 1) {
+                paint.drawRect(x, y - 1, w, 2);
+            }
 	}
 
 	if (m_plotStyle == PlotConnectedPoints ||

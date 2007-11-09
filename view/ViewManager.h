@@ -115,6 +115,9 @@ public:
     bool getAlignMode() const { return m_alignMode; }
     void setAlignMode(bool on);
 
+    void setIlluminateLocalFeatures(bool i) { m_illuminateLocalFeatures = i; }
+    void setShowWorkTitle(bool show) { m_showWorkTitle = show; }
+
     /**
      * The sample rate that is used for playback.  This is usually the
      * rate of the main model, but not always.  Models whose rates
@@ -168,6 +171,12 @@ public:
     }
     bool shouldShowScaleGuides() const {
         return m_overlayMode != NoOverlays;
+    }
+    bool shouldShowWorkTitle() const {
+        return m_showWorkTitle;
+    }
+    bool shouldIlluminateLocalFeatures() const {
+        return m_illuminateLocalFeatures;
     }
 
     void setZoomWheelsEnabled(bool enable);
@@ -277,6 +286,8 @@ protected:
 
     OverlayMode m_overlayMode;
     bool m_zoomWheelsEnabled;
+    bool m_illuminateLocalFeatures;
+    bool m_showWorkTitle;
 
     QPalette m_lightPalette;
     QPalette m_darkPalette;

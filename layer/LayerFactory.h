@@ -60,6 +60,8 @@ public:
 
     Layer *createLayer(LayerType type);
 
+    void setLayerDefaultProperties(LayerType type, Layer *layer);
+
     QString getLayerPresentationName(LayerType type);
 
     bool isLayerSliceable(const Layer *);
