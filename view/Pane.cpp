@@ -810,6 +810,8 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
 {
     QString title = model->getTitle();
     QString maker = model->getMaker();
+//std::cerr << "Pane::drawWorkTitle: title=\"" << title.toStdString()
+//<< "\", maker=\"" << maker.toStdString() << "\"" << std::endl;
     if (title == "") return;
 
     QString text = title;

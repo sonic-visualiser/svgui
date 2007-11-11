@@ -878,6 +878,9 @@ SpectrogramLayer::getNormalizeColumns() const
 void
 SpectrogramLayer::setNormalizeVisibleArea(bool n)
 {
+    std::cerr << "SpectrogramLayer::setNormalizeVisibleArea(" << n
+              << ") (from " << m_normalizeVisibleArea << ")" << std::endl;
+
     if (m_normalizeVisibleArea == n) return;
 
     invalidatePixmapCaches();
@@ -1539,8 +1542,8 @@ SpectrogramLayer::getFFTModel(const View *v) const
                                        m_windowSize,
                                        getWindowIncrement(),
                                        fftSize,
-//!!!                                       true,
-                                       false,
+                                       true,
+                                       StorageAdviser::SpeedCritical,
                                        m_candidateFillStartFrame);
 
         if (!model->isOK()) {
