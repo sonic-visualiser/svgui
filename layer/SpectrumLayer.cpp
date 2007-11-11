@@ -84,7 +84,10 @@ SpectrumLayer::setupFFT()
                                     m_windowSize,
                                     getWindowIncrement(),
                                     m_windowSize,
-                                    true);
+                                    false,
+                                    StorageAdviser::Criteria
+                                    (StorageAdviser::SpeedCritical |
+                                     StorageAdviser::FrequentLookupLikely));
 
     setSliceableModel(newFFT);
 
