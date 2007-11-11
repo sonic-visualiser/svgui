@@ -1355,8 +1355,8 @@ View::checkProgress(void *object)
                 RangeSummarisableTimeValueModel *wfm = 
                     dynamic_cast<RangeSummarisableTimeValueModel *>(model);
                 if (wfm ||
-                    dynamic_cast<RangeSummarisableTimeValueModel *>
-                    (model->getSourceModel())) {
+                    (wfm = dynamic_cast<RangeSummarisableTimeValueModel *>
+                     (model->getSourceModel()))) {
                     completion = wfm->getAlignmentCompletion();
                     if (completion < 100) {
                         text = tr("Alignment");
