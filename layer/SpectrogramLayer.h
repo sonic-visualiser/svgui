@@ -32,8 +32,8 @@
 
 class View;
 class QPainter;
-class QImage;
-class QPixmap;
+//class QImage;
+//class QPixmap;
 class QTimer;
 class FFTModel;
 
@@ -282,16 +282,17 @@ protected:
 
     struct PixmapCache
     {
-        QPixmap pixmap;
+        QMutex mutex;
+        QImage pixmap;
         QRect validArea;
         long startFrame;
         size_t zoomLevel;
     };
-    typedef std::map<const View *, PixmapCache> ViewPixmapCache;
+    typedef std::map<const View *, PixmapCache *> ViewPixmapCache;
     void invalidatePixmapCaches();
     void invalidatePixmapCaches(size_t startFrame, size_t endFrame);
     mutable ViewPixmapCache m_pixmapCaches;
-    mutable QImage m_drawBuffer;
+    mutable QMutex m_pixmapCacheMutex;
 
     mutable QTimer *m_updateTimer;
 
@@ -338,6 +339,22 @@ protected:
     size_t getFFTSize(const View *v) const;
     FFTModel *getFFTModel(const View *v) const;
     void invalidateFFTModels();
+
+    class PaintThread : public Thread
+    {
+    public:
+        PaintThread(SpectrogramLayer *layer) :
+            m_layer(layer), m_exiting(false) { }
+        virtual void run();
+        virtual void exiting() { m_exiting = true; }
+        
+    protected:
+        SpectrogramLayer *m_layer;
+        bool m_exiting;
+    };
+
+    PaintThread *m_paintThread;
+    bool paintCache(View *v) const;
 
     typedef std::pair<FFTModel *, int> FFTFillPair; // model, last fill
     typedef std::map<const View *, FFTFillPair> ViewFFTMap;
