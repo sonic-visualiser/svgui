@@ -436,7 +436,7 @@ Thumbwheel::wheelEvent(QWheelEvent *e)
 void
 Thumbwheel::paintEvent(QPaintEvent *)
 {
-    Profiler profiler("Thumbwheel::paintEvent", true);
+    Profiler profiler("Thumbwheel::paintEvent", false);
 
     int bw = 3;
 

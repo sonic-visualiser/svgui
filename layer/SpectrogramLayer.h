@@ -283,10 +283,9 @@ protected:
     struct PixmapCache
     {
         QMutex mutex;
-        QImage pixmap;
+        QImage *pixmap;
         QRect validArea;
         long startFrame;
-        size_t zoomLevel;
     };
     typedef std::map<const View *, PixmapCache *> ViewPixmapCache;
     void invalidatePixmapCaches();
