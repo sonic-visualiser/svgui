@@ -354,6 +354,12 @@ protected:
 
     PaintThread *m_paintThread;
     bool paintCache(View *v) const;
+    bool checkAndScrollCache(PixmapCache &cache, QPainter &paint,
+                             long startFrame, int increment,
+                             int &x0, int &x1) const;
+    void selectPaintStrip(PixmapCache &cache,
+                          int &x0, int &x1,
+                          int paintBlockWidth) const;
 
     typedef std::pair<FFTModel *, int> FFTFillPair; // model, last fill
     typedef std::map<const View *, FFTFillPair> ViewFFTMap;
