@@ -1667,7 +1667,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     // What a lovely, old-fashioned function this is.
     // It's practically FORTRAN 77 in its clarity and linearity.
 
-    Profiler profiler("SpectrogramLayer::paint", true);
+    Profiler profiler("SpectrogramLayer::paint", false);
+
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << std::endl;
     
