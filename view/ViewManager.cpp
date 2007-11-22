@@ -173,6 +173,20 @@ ViewManager::setPlaybackModel(Model *model)
     m_playbackModel = model;
 }
 
+size_t
+ViewManager::alignPlaybackFrameToReference(size_t frame) const
+{
+    if (!m_playbackModel) return frame;
+    else return m_playbackModel->alignToReference(frame);
+}
+
+size_t
+ViewManager::alignReferenceToPlaybackFrame(size_t frame) const
+{
+    if (!m_playbackModel) return frame;
+    else return m_playbackModel->alignFromReference(frame);
+}
+
 bool
 ViewManager::haveInProgressSelection() const
 {

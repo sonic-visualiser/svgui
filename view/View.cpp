@@ -326,8 +326,13 @@ View::setCentreFrame(size_t f, bool e)
 	    changeVisible = true;
 	}
 
-	if (e) emit centreFrameChanged(alignFromReference(f),
-                                       m_followPan, m_followPlay);
+	if (e) {
+            size_t rf = alignToReference(f);
+            std::cerr << "View[" << this << "]::setCentreFrame(" << f
+                      << "): emitting centreFrameChanged("
+                      << rf << ")" << std::endl;
+            emit centreFrameChanged(rf, m_followPan, m_followPlay);
+        }
     }
 
     return changeVisible;
@@ -869,10 +874,13 @@ View::layerNameChanged()
 }
 
 void
-View::globalCentreFrameChanged(unsigned long f)
+View::globalCentreFrameChanged(unsigned long rf)
 {
     if (m_followPan) {
-        setCentreFrame(alignToReference(f), false);
+        size_t f = alignFromReference(rf);
+        std::cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
+                  << "): setting centre frame to " << f << std::endl;
+        setCentreFrame(f, false);
     }
 }
 
@@ -1150,17 +1158,17 @@ View::getAlignedPlaybackFrame() const
 
     Model *aligningModel = getAligningModel();
     if (!aligningModel) return pf;
-
+/*
     Model *pm = m_manager->getPlaybackModel();
 
 //    std::cerr << "View[" << this << "]::getAlignedPlaybackFrame: pf = " << pf;
 
     if (pm) {
-        pf = pm->alignFromReference(pf);
+        pf = pm->alignToReference(pf);
 //        std::cerr << " -> " << pf;
     }
-
-    int af = aligningModel->alignToReference(pf);
+*/
+    int af = aligningModel->alignFromReference(pf);
 
 //    std::cerr << ", aligned = " << af << std::endl;
     return af;
@@ -1714,8 +1722,8 @@ View::drawSelections(QPainter &paint)
     for (MultiSelection::SelectionList::iterator i = selections.begin();
 	 i != selections.end(); ++i) {
 
-	int p0 = getXForFrame(i->getStartFrame());
-	int p1 = getXForFrame(i->getEndFrame());
+	int p0 = getXForFrame(alignFromReference(i->getStartFrame()));
+	int p1 = getXForFrame(alignFromReference(i->getEndFrame()));
 
 	if (p1 < 0 || p0 > width()) continue;
 

@@ -1276,9 +1276,10 @@ Pane::mousePressEvent(QMouseEvent *e)
 	    if (snapFrame < 0) snapFrame = 0;
 	    m_selectionStartFrame = snapFrame;
 	    if (m_manager) {
-		m_manager->setInProgressSelection(Selection(snapFrame,
-							    snapFrame + resolution),
-						  !m_ctrlPressed);
+		m_manager->setInProgressSelection
+                    (Selection(alignToReference(snapFrame),
+                               alignToReference(snapFrame + resolution)),
+                     !m_ctrlPressed);
 	    }
 
 	    m_resizing = false;
@@ -1727,7 +1728,8 @@ Pane::dragExtendSelection(QMouseEvent *e)
     }
 
     if (m_manager) {
-        m_manager->setInProgressSelection(Selection(min, max),
+        m_manager->setInProgressSelection(Selection(alignToReference(min),
+                                                    alignToReference(max)),
                                           !m_resizing && !m_ctrlPressed);
     }
 
