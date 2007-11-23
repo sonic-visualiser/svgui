@@ -108,6 +108,13 @@ WaveformLayer::getPropertyLabel(const PropertyName &name) const
     return SingleColourLayer::getPropertyLabel(name);
 }
 
+QString
+WaveformLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Normalize Visible Area") return "normalise";
+    return "";
+}
+
 Layer::PropertyType
 WaveformLayer::getPropertyType(const PropertyName &name) const
 {

@@ -448,6 +448,51 @@ TextLayer::drawEnd(View *v, QMouseEvent *)
 }
 
 void
+TextLayer::eraseStart(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
+    if (points.empty()) return;
+
+    m_editingPoint = *points.begin();
+
+    if (m_editingCommand) {
+	m_editingCommand->finish();
+	m_editingCommand = 0;
+    }
+
+    m_editing = true;
+}
+
+void
+TextLayer::eraseDrag(View *v, QMouseEvent *e)
+{
+}
+
+void
+TextLayer::eraseEnd(View *v, QMouseEvent *e)
+{
+    if (!m_model || !m_editing) return;
+
+    m_editing = false;
+
+    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
+    if (points.empty()) return;
+    if (points.begin()->frame != m_editingPoint.frame ||
+        points.begin()->height != m_editingPoint.height) return;
+
+    m_editingCommand = new TextModel::EditCommand
+        (m_model, tr("Erase Point"));
+
+    m_editingCommand->deletePoint(m_editingPoint);
+
+    m_editingCommand->finish();
+    m_editingCommand = 0;
+    m_editing = false;
+}
+
+void
 TextLayer::editStart(View *v, QMouseEvent *e)
 {
 //    std::cerr << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
@@ -637,6 +682,7 @@ TextLayer::copy(Selection s, Clipboard &to)
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->height, i->label);
+            point.setReferenceFrame(m_model->alignToReference(i->frame));
             to.addPoint(point);
         }
     }

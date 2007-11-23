@@ -51,6 +51,8 @@ public:
         return false;
     }
 
+    virtual QString getLayerPresentationName() const;
+
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 

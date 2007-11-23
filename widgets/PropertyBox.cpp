@@ -29,9 +29,11 @@
 
 #include "AudioDial.h"
 #include "LEDButton.h"
+#include "IconLoader.h"
 
 #include "NotifyingCheckBox.h"
 #include "NotifyingComboBox.h"
+#include "NotifyingPushButton.h"
 #include "ColourNameDialog.h"
 
 #include <QGridLayout>
@@ -270,6 +272,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
     QString groupName = m_container->getPropertyGroupName(name);
     QString propertyLabel = m_container->getPropertyLabel(name);
+    QString iconName = m_container->getPropertyIconName(name);
 
 #ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox[" << this
@@ -307,36 +310,45 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
     case PropertyContainer::ToggleProperty:
     {
-        NotifyingCheckBox *cb;
+        QAbstractButton *button = 0;
 
 	if (have) {
-	    cb = dynamic_cast<NotifyingCheckBox *>(m_propertyControllers[name]);
-	    assert(cb);
+            button = dynamic_cast<QAbstractButton *>(m_propertyControllers[name]);
+            assert(button);
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
 	    std::cerr << "PropertyBox: creating new checkbox" << std::endl;
 #endif
-	    cb = new NotifyingCheckBox();
-	    cb->setObjectName(name);
-	    connect(cb, SIGNAL(stateChanged(int)),
-		    this, SLOT(propertyControllerChanged(int)));
-            connect(cb, SIGNAL(mouseEntered()),
+            if (iconName != "") {
+                button = new NotifyingPushButton();
+                button->setCheckable(true);
+                QIcon icon(IconLoader().load(iconName));
+                button->setIcon(icon);
+                button->setObjectName(name);
+                button->setFixedSize(QSize(18, 18));
+            } else {
+                button = new NotifyingCheckBox();
+                button->setObjectName(name);
+            }
+	    connect(button, SIGNAL(toggled(bool)),
+		    this, SLOT(propertyControllerChanged(bool)));
+            connect(button, SIGNAL(mouseEntered()),
                     this, SLOT(mouseEnteredWidget()));
-            connect(cb, SIGNAL(mouseLeft()),
+            connect(button, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
 	    if (inGroup) {
-		cb->setToolTip(propertyLabel);
-		m_groupLayouts[groupName]->addWidget(cb);
+		button->setToolTip(propertyLabel);
+		m_groupLayouts[groupName]->addWidget(button);
 	    } else {
-		m_layout->addWidget(cb, row, 1, 1, 2);
+		m_layout->addWidget(button, row, 1, 1, 2);
 	    }
-	    m_propertyControllers[name] = cb;
+	    m_propertyControllers[name] = button;
 	}
 
-	if (cb->isChecked() != (value > 0)) {
-	    cb->blockSignals(true);
-	    cb->setChecked(value > 0);
-	    cb->blockSignals(false);
+        if (button->isChecked() != (value > 0)) {
+	    button->blockSignals(true);
+	    button->setChecked(value > 0);
+	    button->blockSignals(false);
 	}
 	break;
     }
@@ -577,6 +589,12 @@ PropertyBox::colourDatabaseChanged()
 }    
 
 void
+PropertyBox::propertyControllerChanged(bool on)
+{
+    propertyControllerChanged(on ? 1 : 0);
+}
+
+void
 PropertyBox::propertyControllerChanged(int value)
 {
     QObject *obj = sender();
@@ -762,7 +780,7 @@ PropertyBox::updateContextHelp(QObject *o)
         emit contextHelpChanged(tr("Toggle Playback of %1").arg(cname));
     } else if (wname == "") {
         return;
-    } else if (dynamic_cast<NotifyingCheckBox *>(w)) {
+    } else if (dynamic_cast<QAbstractButton *>(w)) {
         emit contextHelpChanged(tr("Toggle %1 property of %2")
                                 .arg(wname).arg(cname));
     } else {

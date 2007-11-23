@@ -54,6 +54,7 @@ public slots:
 
 protected slots:
     void propertyControllerChanged(int);
+    void propertyControllerChanged(bool);
 
     void playGainChanged(float);
     void playGainDialChanged(int);

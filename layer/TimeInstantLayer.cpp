@@ -493,6 +493,50 @@ TimeInstantLayer::drawEnd(View *, QMouseEvent *e)
 }
 
 void
+TimeInstantLayer::eraseStart(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    SparseOneDimensionalModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+
+    m_editingPoint = *points.begin();
+
+    if (m_editingCommand) {
+	m_editingCommand->finish();
+	m_editingCommand = 0;
+    }
+
+    m_editing = true;
+}
+
+void
+TimeInstantLayer::eraseDrag(View *v, QMouseEvent *e)
+{
+}
+
+void
+TimeInstantLayer::eraseEnd(View *v, QMouseEvent *e)
+{
+    if (!m_model || !m_editing) return;
+
+    m_editing = false;
+
+    SparseOneDimensionalModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+    if (points.begin()->frame != m_editingPoint.frame) return;
+
+    m_editingCommand = new SparseOneDimensionalModel::EditCommand
+        (m_model, tr("Erase Point"));
+
+    m_editingCommand->deletePoint(m_editingPoint);
+
+    m_editingCommand->finish();
+    m_editingCommand = 0;
+    m_editing = false;
+}
+
+void
 TimeInstantLayer::editStart(View *v, QMouseEvent *e)
 {
     std::cerr << "TimeInstantLayer::editStart(" << e->x() << ")" << std::endl;
@@ -678,6 +722,7 @@ TimeInstantLayer::copy(Selection s, Clipboard &to)
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->label);
+            point.setReferenceFrame(m_model->alignToReference(i->frame));
             to.addPoint(point);
         }
     }
@@ -692,6 +737,19 @@ TimeInstantLayer::paste(const Clipboard &from, int frameOffset, bool)
 
     SparseOneDimensionalModel::EditCommand *command =
 	new SparseOneDimensionalModel::EditCommand(m_model, tr("Paste"));
+
+    //!!!
+    
+    // Clipboard::haveReferenceFrames() will return true if any of the
+    // items in the clipboard came from an aligned, non-reference model.
+    
+    // We need to know whether these points came from our model or not
+    // -- if they did, we don't want to align them.
+
+    // If they didn't come from our model, and if reference frames are
+    // available, then we want to offer to align them.  If reference
+    // frames are unavailable but they came from the reference model,
+    // we want to offer to align them too.
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {

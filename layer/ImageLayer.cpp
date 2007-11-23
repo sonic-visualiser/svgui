@@ -814,6 +814,7 @@ ImageLayer::copy(Selection s, Clipboard &to)
 	if (s.contains(i->frame)) {
             //!!! inadequate
             Clipboard::Point point(i->frame, i->label);
+            point.setReferenceFrame(m_model->alignToReference(i->frame));
             to.addPoint(point);
         }
     }

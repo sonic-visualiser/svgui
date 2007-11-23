@@ -177,6 +177,14 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     return "";
 }
 
+QString
+SpectrogramLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Normalize Columns") return "normalise-columns";
+    if (name == "Normalize Visible Area") return "normalise";
+    return "";
+}
+
 Layer::PropertyType
 SpectrogramLayer::getPropertyType(const PropertyName &name) const
 {

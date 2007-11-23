@@ -569,6 +569,13 @@ SliceLayer::getPropertyLabel(const PropertyName &name) const
     return SingleColourLayer::getPropertyLabel(name);
 }
 
+QString
+SliceLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Normalize") return "normalise";
+    return "";
+}
+
 Layer::PropertyType
 SliceLayer::getPropertyType(const PropertyName &name) const
 {
