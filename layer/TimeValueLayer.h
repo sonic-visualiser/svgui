@@ -47,6 +47,10 @@ public:
     virtual void drawDrag(View *v, QMouseEvent *);
     virtual void drawEnd(View *v, QMouseEvent *);
 
+    virtual void eraseStart(View *v, QMouseEvent *);
+    virtual void eraseDrag(View *v, QMouseEvent *);
+    virtual void eraseEnd(View *v, QMouseEvent *);
+
     virtual void editStart(View *v, QMouseEvent *);
     virtual void editDrag(View *v, QMouseEvent *);
     virtual void editEnd(View *v, QMouseEvent *);

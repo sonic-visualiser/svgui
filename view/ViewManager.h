@@ -66,18 +66,6 @@ public:
     void setPlaybackFrame(unsigned long frame);
 
     // Only meaningful in solo mode, and used for optional alignment feature
-
-    //!!! We probably don't want to do this.  It's probably better to
-    // always have playback frame aligned against the reference model,
-    // and have the ViewManager know which is the reference model.
-    // That way the ViewManager can assume that all Views report in
-    // reference model timeline, and it can convert the playback frame
-    // received from the play source (which always operates in literal
-    // audio sample frames, i.e. playback model timeline) to the 
-    // reference timeline itself so the view never has to worry about
-    // the difference between playback and reference model.  Of course
-    // that does mean the ViewManager needs to know about both.
-
     Model *getPlaybackModel() const;
     void setPlaybackModel(Model *);
 
@@ -113,6 +101,7 @@ public:
 	SelectMode,
         EditMode,
 	DrawMode,
+	EraseMode,
 	MeasureMode
     };
     ToolMode getToolMode() const { return m_toolMode; }

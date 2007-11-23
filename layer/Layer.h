@@ -151,7 +151,7 @@ public:
 	return false;
     }
 
-    // Draw and edit modes:
+    // Draw, erase, and edit modes:
     //
     // Layer needs to get actual mouse events, I guess.  Draw mode is
     // probably the easier.
@@ -159,6 +159,10 @@ public:
     virtual void drawStart(View *, QMouseEvent *) { }
     virtual void drawDrag(View *, QMouseEvent *) { }
     virtual void drawEnd(View *, QMouseEvent *) { }
+
+    virtual void eraseStart(View *, QMouseEvent *) { }
+    virtual void eraseDrag(View *, QMouseEvent *) { }
+    virtual void eraseEnd(View *, QMouseEvent *) { }
 
     virtual void editStart(View *, QMouseEvent *) { }
     virtual void editDrag(View *, QMouseEvent *) { }

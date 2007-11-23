@@ -15,6 +15,8 @@
 
 #include "TimeRulerLayer.h"
 
+#include "LayerFactory.h"
+
 #include "data/model/Model.h"
 #include "base/RealTime.h"
 #include "base/ColourDatabase.h"
@@ -312,6 +314,14 @@ TimeRulerLayer::getDefaultColourHint(bool darkbg, bool &impose)
     impose = true;
     return ColourDatabase::getInstance()->getColourIndex
         (QString(darkbg ? "White" : "Black"));
+}
+
+QString TimeRulerLayer::getLayerPresentationName() const
+{
+    LayerFactory *factory = LayerFactory::getInstance();
+    QString layerName = factory->getLayerPresentationName
+        (factory->getLayerType(this));
+    return layerName;
 }
 
 void

@@ -940,6 +940,51 @@ TimeValueLayer::drawEnd(View *, QMouseEvent *)
 }
 
 void
+TimeValueLayer::eraseStart(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+
+    m_editingPoint = *points.begin();
+
+    if (m_editingCommand) {
+	m_editingCommand->finish();
+	m_editingCommand = 0;
+    }
+
+    m_editing = true;
+}
+
+void
+TimeValueLayer::eraseDrag(View *v, QMouseEvent *e)
+{
+}
+
+void
+TimeValueLayer::eraseEnd(View *v, QMouseEvent *e)
+{
+    if (!m_model || !m_editing) return;
+
+    m_editing = false;
+
+    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+    if (points.begin()->frame != m_editingPoint.frame ||
+        points.begin()->value != m_editingPoint.value) return;
+
+    m_editingCommand = new SparseTimeValueModel::EditCommand
+        (m_model, tr("Erase Point"));
+
+    m_editingCommand->deletePoint(m_editingPoint);
+
+    m_editingCommand->finish();
+    m_editingCommand = 0;
+    m_editing = false;
+}
+
+void
 TimeValueLayer::editStart(View *v, QMouseEvent *e)
 {
 //    std::cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
@@ -1147,6 +1192,7 @@ TimeValueLayer::copy(Selection s, Clipboard &to)
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->value, i->label);
+            point.setReferenceFrame(m_model->alignToReference(i->frame));
             to.addPoint(point);
         }
     }

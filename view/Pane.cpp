@@ -1294,6 +1294,13 @@ Pane::mousePressEvent(QMouseEvent *e)
 	    layer->drawStart(this, e);
 	}
 
+    } else if (mode == ViewManager::EraseMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer && layer->isLayerEditable()) {
+	    layer->eraseStart(this, e);
+	}
+
     } else if (mode == ViewManager::EditMode) {
 
 	if (!editSelectionStart(e)) {
@@ -1376,6 +1383,14 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
 	    layer->drawEnd(this, e);
+	    update();
+	}
+
+    } else if (mode == ViewManager::EraseMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer && layer->isLayerEditable()) {
+	    layer->eraseEnd(this, e);
 	    update();
 	}
 
@@ -1483,6 +1498,13 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
 	    layer->drawDrag(this, e);
+	}
+
+    } else if (mode == ViewManager::EraseMode) {
+
+	Layer *layer = getSelectedLayer();
+	if (layer && layer->isLayerEditable()) {
+	    layer->eraseDrag(this, e);
 	}
 
     } else if (mode == ViewManager::EditMode) {
@@ -2189,6 +2211,10 @@ Pane::toolModeChanged()
     case ViewManager::DrawMode:
 	setCursor(Qt::CrossCursor);
 	break;
+	
+    case ViewManager::EraseMode:
+	setCursor(Qt::CrossCursor);
+	break;
 
     case ViewManager::MeasureMode:
         if (m_measureCursor1) setCursor(*m_measureCursor1);
@@ -2327,6 +2353,13 @@ Pane::updateContextHelp(const QPoint *pos)
         //!!! could call through to a layer function to find out exact meaning
 	if (editable) {
             help = tr("Click to add a new item in the active layer");
+        }
+
+    } else if (mode == ViewManager::EraseMode) {
+        
+        //!!! could call through to a layer function to find out exact meaning
+	if (editable) {
+            help = tr("Click to erase an item from the active layer");
         }
         
     } else if (mode == ViewManager::EditMode) {

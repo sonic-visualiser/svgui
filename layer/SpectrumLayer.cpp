@@ -136,6 +136,13 @@ SpectrumLayer::getPropertyLabel(const PropertyName &name) const
     return SliceLayer::getPropertyLabel(name);
 }
 
+QString
+SpectrumLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Show Peak Frequencies") return "show-peaks";
+    return SliceLayer::getPropertyIconName(name);
+}
+
 Layer::PropertyType
 SpectrumLayer::getPropertyType(const PropertyName &name) const
 {
