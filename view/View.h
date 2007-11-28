@@ -271,6 +271,8 @@ signals:
     void propertyContainerSelected(PropertyContainer *pc);
     void propertyChanged(PropertyContainer::PropertyName);
 
+    void layerModelChanged();
+
     void centreFrameChanged(unsigned long frame,
                             bool globalScroll,
                             PlaybackFollowMode followMode);

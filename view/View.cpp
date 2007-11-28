@@ -750,6 +750,8 @@ View::modelChanged()
 	m_cache = 0;
     }
 
+    emit layerModelChanged();
+
     checkProgress(obj);
 
     update();
