@@ -21,17 +21,34 @@
 #include "view/Pane.h"
 #include "layer/Layer.h"
 #include "data/model/Model.h"
+#include "data/model/WaveFileModel.h"
 
 #include <QIcon>
 #include <iostream>
 
 
-LayerTreeModel::LayerTreeModel(PaneStack *stack, QObject *parent) :
+ModelDataModel::ModelDataModel(PaneStack *stack, bool waveModelsOnly,
+                               QObject *parent) :
     QAbstractItemModel(parent),
-    m_stack(stack)
+    m_stack(stack),
+    m_waveModelsOnly(waveModelsOnly)
 {
-    connect(stack, SIGNAL(paneAdded()), this, SIGNAL(layoutChanged()));
-    connect(stack, SIGNAL(paneDeleted()), this, SIGNAL(layoutChanged()));
+    if (m_waveModelsOnly) {
+        m_modelTypeColumn = -1;
+        m_modelNameColumn = 0;
+        m_modelMakerColumn = 1;
+        m_modelSourceColumn = 2;
+        m_columnCount = 3;
+    } else {
+        m_modelTypeColumn = 0;
+        m_modelNameColumn = 1;
+        m_modelMakerColumn = 2;
+        m_modelSourceColumn = 3;
+        m_columnCount = 4;
+    }
+
+    connect(stack, SIGNAL(paneAdded()), this, SLOT(paneAdded()));
+    connect(stack, SIGNAL(paneDeleted()), this, SLOT(paneDeleted()));
 
     for (int i = 0; i < stack->getPaneCount(); ++i) {
         Pane *pane = stack->getPane(i);
@@ -46,6 +63,238 @@ LayerTreeModel::LayerTreeModel(PaneStack *stack, QObject *parent) :
                 this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
         connect(pane, SIGNAL(propertyContainerNameChanged(PropertyContainer *)),
                 this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
+        connect(pane, SIGNAL(layerModelChanged()),
+                this, SLOT(paneLayerModelChanged()));
+    }
+
+    rebuildModelSet();
+}
+
+ModelDataModel::~ModelDataModel()
+{
+}
+
+void
+ModelDataModel::rebuildModelSet()
+{
+    std::set<Model *> unfound = m_models;
+
+    for (int i = 0; i < m_stack->getPaneCount(); ++i) {
+
+        Pane *pane = m_stack->getPane(i);
+        if (!pane) continue;
+
+        for (int j = 0; j < pane->getLayerCount(); ++j) {
+
+            Layer *layer = pane->getLayer(j);
+            if (!layer) continue;
+
+            Model *model = layer->getModel();
+            if (!model) continue;
+
+            if (m_waveModelsOnly) {
+                if (!dynamic_cast<WaveFileModel *>(model)) continue;
+            }
+
+            if (m_models.find(model) == m_models.end()) {
+                connect(model, SIGNAL(aboutToBeDeleted()),
+                        this, SLOT(rebuildModelSet()));
+                m_models.insert(model);
+            } else {
+                unfound.erase(model);
+            }
+        }
+    }
+
+    for (std::set<Model *>::iterator i = unfound.begin();
+         i != unfound.end(); ++i) {
+        m_models.erase(*i);
+    }
+
+    std::cerr << "ModelDataModel::rebuildModelSet: " << m_models.size() << " models" << std::endl;
+}
+
+void
+ModelDataModel::paneAdded()
+{
+    rebuildModelSet();
+    emit layoutChanged();
+}
+
+void
+ModelDataModel::paneDeleted()
+{
+    rebuildModelSet();
+    emit layoutChanged();
+}
+
+void
+ModelDataModel::paneLayerModelChanged()
+{
+    rebuildModelSet();
+    emit layoutChanged();
+}
+
+void
+ModelDataModel::propertyContainerAdded(PropertyContainer *)
+{
+    rebuildModelSet();
+    emit layoutChanged();
+}
+
+void
+ModelDataModel::propertyContainerRemoved(PropertyContainer *)
+{
+    rebuildModelSet();
+    emit layoutChanged();
+}
+
+void
+ModelDataModel::propertyContainerSelected(PropertyContainer *)
+{
+}
+
+void
+ModelDataModel::propertyContainerPropertyChanged(PropertyContainer *pc)
+{
+}
+
+void
+ModelDataModel::playParametersAudibilityChanged(bool a)
+{
+}
+
+QVariant
+ModelDataModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid()) return QVariant();
+
+    QObject *obj = static_cast<QObject *>(index.internalPointer());
+    int row = index.row(), col = index.column();
+
+    //!!! not exactly the ideal use of a std::set
+    std::set<Model *>::iterator itr = m_models.begin();
+    for (int i = 0; i < row && itr != m_models.end(); ++i, ++itr);
+    if (itr == m_models.end()) return QVariant();
+
+    Model *model = *itr;
+
+    if (role != Qt::DisplayRole) {
+        if (m_waveModelsOnly && col == m_modelNameColumn &&
+            role == Qt::DecorationRole) {
+            // There is no meaningful icon for a model, in general --
+            // the icons we have represent layer types and it would be
+            // misleading to use them for models.  However, if we're
+            // only showing wave models, we use the waveform icon just
+            // for decorative purposes.
+            return QVariant(QIcon(QString(":/icons/waveform.png")));
+        }
+        return QVariant();
+    }
+    
+    if (col == m_modelTypeColumn) {
+        return QVariant(model->getTypeName());
+    } else if (col == m_modelNameColumn) {
+        return QVariant(model->objectName());
+    } else if (col == m_modelMakerColumn) {
+        return QVariant(model->getMaker());
+    } else if (col == m_modelSourceColumn) {
+        return QVariant(model->getLocation());
+    }        
+    
+    return QVariant();
+}
+
+bool
+ModelDataModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    return false;
+}
+
+Qt::ItemFlags
+ModelDataModel::flags(const QModelIndex &index) const
+{
+    Qt::ItemFlags flags = Qt::ItemIsEnabled;
+    return flags;
+}
+
+QVariant
+ModelDataModel::headerData(int section,
+			   Qt::Orientation orientation,
+			   int role) const
+{
+    if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
+	if (section == m_modelTypeColumn) return QVariant(tr("Type"));
+	else if (section == m_modelNameColumn) return QVariant(tr("Name"));
+	else if (section == m_modelMakerColumn) return QVariant(tr("Maker"));
+	else if (section == m_modelSourceColumn) return QVariant(tr("Source"));
+    }
+
+    return QVariant();
+}
+
+QModelIndex
+ModelDataModel::index(int row, int column, const QModelIndex &parent) const
+{
+    if (!parent.isValid()) {
+        if (row >= m_models.size()) return QModelIndex();
+	return createIndex(row, column, 0);
+    }
+
+    return QModelIndex();
+}
+
+QModelIndex
+ModelDataModel::parent(const QModelIndex &index) const
+{
+    return QModelIndex();
+}
+
+int
+ModelDataModel::rowCount(const QModelIndex &parent) const
+{
+    if (!parent.isValid()) return m_models.size();
+    return 0;
+}
+
+int
+ModelDataModel::columnCount(const QModelIndex &parent) const
+{
+    return m_columnCount;
+}
+
+
+
+LayerTreeModel::LayerTreeModel(PaneStack *stack, QObject *parent) :
+    QAbstractItemModel(parent),
+    m_stack(stack)
+{
+    m_layerNameColumn = 0;
+    m_layerVisibleColumn = 1;
+    m_layerPlayedColumn = 2;
+    m_modelNameColumn = 3;
+    m_columnCount = 4;
+
+    connect(stack, SIGNAL(paneAdded()), this, SLOT(paneAdded()));
+    connect(stack, SIGNAL(paneAboutToBeDeleted(Pane *)),
+            this, SLOT(paneAboutToBeDeleted(Pane *)));
+
+    for (int i = 0; i < stack->getPaneCount(); ++i) {
+        Pane *pane = stack->getPane(i);
+        if (!pane) continue;
+        connect(pane, SIGNAL(propertyContainerAdded(PropertyContainer *)),
+                this, SLOT(propertyContainerAdded(PropertyContainer *)));
+        connect(pane, SIGNAL(propertyContainerRemoved(PropertyContainer *)),
+                this, SLOT(propertyContainerRemoved(PropertyContainer *)));
+        connect(pane, SIGNAL(propertyContainerSelected(PropertyContainer *)),
+                this, SLOT(propertyContainerSelected(PropertyContainer *)));
+        connect(pane, SIGNAL(propertyContainerPropertyChanged(PropertyContainer *)),
+                this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
+        connect(pane, SIGNAL(propertyContainerNameChanged(PropertyContainer *)),
+                this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
+        connect(pane, SIGNAL(layerModelChanged()),
+                this, SLOT(paneLayerModelChanged()));
+
         for (int j = 0; j < pane->getLayerCount(); ++j) {
             Layer *layer = pane->getLayer(j);
             if (!layer) continue;
@@ -59,6 +308,20 @@ LayerTreeModel::LayerTreeModel(PaneStack *stack, QObject *parent) :
 
 LayerTreeModel::~LayerTreeModel()
 {
+}
+
+void
+LayerTreeModel::paneAdded()
+{
+    emit layoutChanged();
+}
+
+void
+LayerTreeModel::paneAboutToBeDeleted(Pane *pane)
+{
+    std::cerr << "paneDeleted: " << pane << std::endl;
+    m_deletedPanes.insert(pane);
+    emit layoutChanged();
 }
 
 void
@@ -80,6 +343,12 @@ LayerTreeModel::propertyContainerSelected(PropertyContainer *)
 }
 
 void
+LayerTreeModel::paneLayerModelChanged()
+{
+    emit layoutChanged();
+}
+
+void
 LayerTreeModel::propertyContainerPropertyChanged(PropertyContainer *pc)
 {
     for (int i = 0; i < m_stack->getPaneCount(); ++i) {
@@ -88,9 +357,9 @@ LayerTreeModel::propertyContainerPropertyChanged(PropertyContainer *pc)
         for (int j = 0; j < pane->getLayerCount(); ++j) {
             if (pane->getLayer(j) == pc) {
                 emit dataChanged(createIndex(pane->getLayerCount() - j - 1,
-                                             0, pane),
+                                             m_layerNameColumn, pane),
                                  createIndex(pane->getLayerCount() - j - 1,
-                                             3, pane));
+                                             m_modelNameColumn, pane));
             }
         }
     }
@@ -116,9 +385,9 @@ LayerTreeModel::playParametersAudibilityChanged(bool a)
                           << params << "," << a << "): row " << pane->getLayerCount() - j - 1 << ", col " << 2 << std::endl;
 
                 emit dataChanged(createIndex(pane->getLayerCount() - j - 1,
-                                             2, pane),
+                                             m_layerPlayedColumn, pane),
                                  createIndex(pane->getLayerCount() - j - 1,
-                                             2, pane));
+                                             m_layerPlayedColumn, pane));
             }
         }
     }
@@ -148,7 +417,7 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
     if (pane && pane->getLayerCount() > row) {
         Layer *layer = pane->getLayer(pane->getLayerCount() - row - 1);
         if (layer) {
-            if (col == 0) {
+            if (col == m_layerNameColumn) {
                 switch (role) {
                 case Qt::DisplayRole:
                     return QVariant(layer->objectName());
@@ -158,14 +427,14 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
                                .arg(layer->getPropertyContainerIconName())));
                 default: break;
                 }
-            } else if (col == 1) {
+            } else if (col == m_layerVisibleColumn) {
                 if (role == Qt::CheckStateRole) {
                     return QVariant(layer->isLayerDormant(pane) ?
                                     Qt::Unchecked : Qt::Checked);
                 } else if (role == Qt::TextAlignmentRole) {
                     return QVariant(Qt::AlignHCenter);
                 }
-            } else if (col == 2) {
+            } else if (col == m_layerPlayedColumn) {
                 if (role == Qt::CheckStateRole) {
                     PlayParameters *params = layer->getPlayParameters();
                     if (params) return QVariant(params->isPlayMuted() ?
@@ -174,7 +443,7 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
                 } else if (role == Qt::TextAlignmentRole) {
                     return QVariant(Qt::AlignHCenter);
                 }
-            } else if (col == 3) {
+            } else if (col == m_modelNameColumn) {
                 Model *model = layer->getModel();
                 if (model && role == Qt::DisplayRole) {
                     return QVariant(model->objectName());
@@ -200,13 +469,13 @@ LayerTreeModel::setData(const QModelIndex &index, const QVariant &value, int rol
     Layer *layer = pane->getLayer(pane->getLayerCount() - row - 1);
     if (!layer) return false;
 
-    if (col == 1) {
+    if (col == m_layerVisibleColumn) {
         if (role == Qt::CheckStateRole) {
             layer->showLayer(pane, value.toInt() == Qt::Checked);
             emit dataChanged(index, index);
             return true;
         }
-    } else if (col == 2) {
+    } else if (col == m_layerPlayedColumn) {
         if (role == Qt::CheckStateRole) {
             PlayParameters *params = layer->getPlayParameters();
             if (params) {
@@ -226,7 +495,8 @@ LayerTreeModel::flags(const QModelIndex &index) const
     Qt::ItemFlags flags = Qt::ItemIsEnabled;
     if (!index.isValid()) return flags;
 
-    if (index.column() == 1 || index.column() == 2) {
+    if (index.column() == m_layerVisibleColumn ||
+        index.column() == m_layerPlayedColumn) {
         flags |= Qt::ItemIsUserCheckable;
     } else if (index.column() == 0) {
         flags |= Qt::ItemIsSelectable;
@@ -241,10 +511,10 @@ LayerTreeModel::headerData(int section,
 			   int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
-	if (section == 0) return QVariant(tr("Layer"));
-        else if (section == 1) return QVariant(tr("Shown"));
-        else if (section == 2) return QVariant(tr("Played"));
-	else if (section == 3) return QVariant(tr("Model"));
+	if (section == m_layerNameColumn) return QVariant(tr("Layer"));
+        else if (section == m_layerVisibleColumn) return QVariant(tr("Shown"));
+        else if (section == m_layerPlayedColumn) return QVariant(tr("Played"));
+	else if (section == m_modelNameColumn) return QVariant(tr("Model"));
     }
 
     return QVariant();
@@ -280,6 +550,11 @@ LayerTreeModel::parent(const QModelIndex &index) const
 {
     QObject *obj = static_cast<QObject *>(index.internalPointer());
 
+    if (m_deletedPanes.find(obj) != m_deletedPanes.end()) {
+//        m_deletedPanes.erase(obj);
+        return QModelIndex();
+    }
+
     Pane *pane = dynamic_cast<Pane *>(obj);
     if (pane) {
         int index = m_stack->getPaneIndex(pane);
@@ -308,10 +583,10 @@ LayerTreeModel::rowCount(const QModelIndex &parent) const
 int
 LayerTreeModel::columnCount(const QModelIndex &parent) const
 {
-    if (!parent.isValid()) return 4;
+    if (!parent.isValid()) return m_columnCount;
 
     QObject *obj = static_cast<QObject *>(parent.internalPointer());
-    if (obj == m_stack) return 4; // row for a layer
+    if (obj == m_stack) return m_columnCount; // row for a layer
 
     return 1;
 }

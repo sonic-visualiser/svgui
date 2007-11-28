@@ -23,6 +23,7 @@ HEADERS += AudioDial.h \
            KeyReference.h \
            LabelCounterInputDialog.h \
            LayerTree.h \
+           LayerTreeDialog.h \
            LEDButton.h \
            ListInputDialog.h \
            NotifyingCheckBox.h \
@@ -49,6 +50,7 @@ SOURCES += AudioDial.cpp \
            KeyReference.cpp \
            LabelCounterInputDialog.cpp \
            LayerTree.cpp \
+           LayerTreeDialog.cpp \
            LEDButton.cpp \
            ListInputDialog.cpp \
            NotifyingCheckBox.cpp \
