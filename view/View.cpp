@@ -19,6 +19,7 @@
 #include "base/ZoomConstraint.h"
 #include "base/Profiler.h"
 #include "base/Pitch.h"
+#include "base/Preferences.h"
 
 #include "layer/TimeRulerLayer.h"
 #include "layer/SingleColourLayer.h"
@@ -31,6 +32,7 @@
 #include <QApplication>
 #include <QProgressDialog>
 #include <QTextStream>
+#include <QFont>
 
 #include <iostream>
 #include <cassert>
@@ -503,9 +505,6 @@ View::getForeground() const
 View::LayerProgressBar::LayerProgressBar(QWidget *parent) :
     QProgressBar(parent)
 {
-    QFont f(font());
-    f.setPointSize(f.pointSize() * 8 / 10);
-    setFont(f);
 }
 
 void
@@ -523,6 +522,9 @@ View::addLayer(Layer *layer)
     m_progressBars[layer]->setMinimum(0);
     m_progressBars[layer]->setMaximum(100);
     m_progressBars[layer]->setMinimumWidth(80);
+    QFont f(m_progressBars[layer]->font());
+    f.setPointSize(Preferences::getInstance()->getViewFontSize());
+    m_progressBars[layer]->setFont(f);
     m_progressBars[layer]->hide();
     
     connect(layer, SIGNAL(layerParametersChanged()),
@@ -1584,6 +1586,10 @@ View::paintEvent(QPaintEvent *e)
 	if (repaintCache) paint.begin(m_cache);
 	else paint.begin(this);
 
+        QFont font(paint.font());
+        font.setPointSize(Preferences::getInstance()->getViewFontSize());
+        paint.setFont(font);
+
 	paint.setClipRect(cacheRect);
 
         paint.setPen(getBackground());
@@ -1624,6 +1630,10 @@ View::paintEvent(QPaintEvent *e)
 
     paint.begin(this);
     paint.setClipRect(nonCacheRect);
+
+    QFont font(paint.font());
+    font.setPointSize(Preferences::getInstance()->getViewFontSize());
+    paint.setFont(font);
 
     if (scrollables.empty()) {
         paint.setPen(getBackground());

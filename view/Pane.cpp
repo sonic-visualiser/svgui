@@ -22,6 +22,7 @@
 #include "ViewManager.h"
 #include "base/CommandHistory.h"
 #include "base/TextAbbrev.h"
+#include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 
 //!!! ugh
@@ -388,6 +389,10 @@ Pane::paintEvent(QPaintEvent *e)
     View::paintEvent(e);
 
     paint.begin(this);
+
+    QFont font(paint.font());
+    font.setPointSize(Preferences::getInstance()->getViewFontSize());
+    paint.setFont(font);
 
     if (e) paint.setClipRect(r);
 
