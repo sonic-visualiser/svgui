@@ -522,8 +522,11 @@ View::addLayer(Layer *layer)
     m_progressBars[layer]->setMinimum(0);
     m_progressBars[layer]->setMaximum(100);
     m_progressBars[layer]->setMinimumWidth(80);
+
     QFont f(m_progressBars[layer]->font());
-    f.setPointSize(Preferences::getInstance()->getViewFontSize());
+    int fs = Preferences::getInstance()->getViewFontSize();
+    f.setPointSize(std::min(fs, int(ceil(fs * 0.85))));
+
     m_progressBars[layer]->setFont(f);
     m_progressBars[layer]->hide();
     
@@ -1401,6 +1404,14 @@ View::checkProgress(void *object)
 }
 
 void
+View::setPaintFont(QPainter &paint)
+{
+    QFont font(paint.font());
+    font.setPointSize(Preferences::getInstance()->getViewFontSize());
+    paint.setFont(font);
+}
+
+void
 View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
@@ -1585,11 +1596,7 @@ View::paintEvent(QPaintEvent *e)
 
 	if (repaintCache) paint.begin(m_cache);
 	else paint.begin(this);
-
-        QFont font(paint.font());
-        font.setPointSize(Preferences::getInstance()->getViewFontSize());
-        paint.setFont(font);
-
+        setPaintFont(paint);
 	paint.setClipRect(cacheRect);
 
         paint.setPen(getBackground());
@@ -1630,11 +1637,7 @@ View::paintEvent(QPaintEvent *e)
 
     paint.begin(this);
     paint.setClipRect(nonCacheRect);
-
-    QFont font(paint.font());
-    font.setPointSize(Preferences::getInstance()->getViewFontSize());
-    paint.setFont(font);
-
+    setPaintFont(paint);
     if (scrollables.empty()) {
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
@@ -1652,6 +1655,7 @@ View::paintEvent(QPaintEvent *e)
     paint.end();
 
     paint.begin(this);
+    setPaintFont(paint);
     if (e) paint.setClipRect(e->rect());
     if (!m_selectionCached) {
 	drawSelections(paint);

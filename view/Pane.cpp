@@ -389,10 +389,7 @@ Pane::paintEvent(QPaintEvent *e)
     View::paintEvent(e);
 
     paint.begin(this);
-
-    QFont font(paint.font());
-    font.setPointSize(Preferences::getInstance()->getViewFontSize());
-    paint.setFont(font);
+    setPaintFont(paint);
 
     if (e) paint.setClipRect(r);
 
@@ -1678,6 +1675,9 @@ Pane::dragTopLayer(QMouseEvent *e)
             newCentreFrame = 0;
         }
 	    
+        std::cerr << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame <<
+            ", models end frame = " << getModelsEndFrame() << std::endl;
+
         if (newCentreFrame >= getModelsEndFrame()) {
             newCentreFrame = getModelsEndFrame();
             if (newCentreFrame > 0) --newCentreFrame;
