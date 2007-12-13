@@ -23,6 +23,7 @@
 #include "view/View.h"
 
 #include "data/model/SparseTimeValueModel.h"
+#include "data/model/Labeller.h"
 
 #include "widgets/ItemEditDialog.h"
 #include "widgets/ListInputDialog.h"
@@ -35,6 +36,7 @@
 #include <QMouseEvent>
 #include <QRegExp>
 #include <QTextStream>
+#include <QInputDialog>
 
 #include <iostream>
 #include <cmath>
@@ -1209,29 +1211,19 @@ TimeValueLayer::paste(const Clipboard &from, int frameOffset,
     SparseTimeValueModel::EditCommand *command =
 	new SparseTimeValueModel::EditCommand(m_model, tr("Paste"));
 
-    //!!! Replace all this with a use of Labeller
-
     enum ValueAvailability {
         UnknownAvailability,
         NoValues,
         SomeValues,
         AllValues
     };
-    enum ValueGeneration {
-        GenerateNone,
-        GenerateFromCounter,
-        GenerateFromFrameNumber,
-        GenerateFromRealTime,
-        GenerateFromRealTimeDifference,
-        GenerateFromTempo,
-        GenerateFromExistingNeighbour,
-        GenerateFromLabels
-    };
 
-    ValueGeneration generation = GenerateNone;
+    Labeller::ValueType generation = Labeller::ValueNone;
 
     bool haveUsableLabels = false;
     bool haveExistingItems = !(m_model->isEmpty());
+    Labeller labeller;
+    labeller.setSampleRate(m_model->getSampleRate());
 
     if (interactive) {
 
@@ -1278,37 +1270,17 @@ TimeValueLayer::paste(const Clipboard &from, int frameOffset,
                 text = tr("Some of the items you are pasting do not have values.\nWhat values do you want to use for these items?");
             }
 
+            Labeller::TypeNameMap names = labeller.getTypeNames();
+
             QStringList options;
-            std::vector<int> genopts;
+            std::vector<Labeller::ValueType> genopts;
 
-            options << tr("Zero for all items");
-            genopts.push_back(int(GenerateNone));
-
-            options << tr("Whole numbers counting from 1");
-            genopts.push_back(int(GenerateFromCounter));
-
-            options << tr("Item's audio sample frame number");
-            genopts.push_back(int(GenerateFromFrameNumber));
-
-            options << tr("Item's time in seconds");
-            genopts.push_back(int(GenerateFromRealTime));
-
-            options << tr("Duration from the item to the following item");
-            genopts.push_back(int(GenerateFromRealTimeDifference));
-
-            options << tr("Tempo in bpm derived from the duration");
-            genopts.push_back(int(GenerateFromTempo));
-
-            if (haveExistingItems) {
-                options << tr("Value of the nearest existing item");
-                genopts.push_back(int(GenerateFromExistingNeighbour));
+            for (Labeller::TypeNameMap::const_iterator i = names.begin();
+                 i != names.end(); ++i) {
+                if (i->first == Labeller::ValueNone) options << tr("Zero for all items");
+                else options << i->second;
+                genopts.push_back(i->first);
             }
-
-            if (haveUsableLabels) {
-                options << tr("Value extracted from the item's label (where possible)");
-                genopts.push_back(int(GenerateFromLabels));
-            }
-
 
             static int prevSelection = 0;
 
@@ -1319,23 +1291,32 @@ TimeValueLayer::paste(const Clipboard &from, int frameOffset,
 
             if (!ok) return false;
             int selection = 0;
-            generation = GenerateNone;
+            generation = Labeller::ValueNone;
 
             for (QStringList::const_iterator i = options.begin();
                  i != options.end(); ++i) {
                 if (selected == *i) {
-                    generation = ValueGeneration(genopts[selection]);
+                    generation = genopts[selection];
                     break;
                 }
                 ++selection;
+            }
+            
+            labeller.setType(generation);
+
+            if (generation == Labeller::ValueFromCyclicalCounter ||
+                generation == Labeller::ValueFromTwoLevelCounter) {
+                int cycleSize = QInputDialog::getInteger
+                    (0, tr("Select cycle size"),
+                     tr("Cycle size:"), 4, 2, 16, 1);
+                labeller.setCounterCycleSize(cycleSize);
             }
 
             prevSelection = selection;
         }
     }
 
-    int counter = 1;
-    float prevBpm = 120.f;
+    static SparseTimeValueModel::Point prevPoint(0);
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1356,83 +1337,17 @@ TimeValueLayer::paste(const Clipboard &from, int frameOffset,
         if (i->haveValue()) {
             newPoint.value = i->getValue();
         } else {
-            
-            switch (generation) {
-
-            case GenerateNone:
-                newPoint.value = 0;
-                break;
-
-            case GenerateFromCounter:
-                newPoint.value = counter;
-                break;
-
-            case GenerateFromFrameNumber:
-                newPoint.value = frame;
-                break;
-
-            case GenerateFromRealTime: 
-                newPoint.value = float(frame) / float(m_model->getSampleRate());
-                break;
-
-            case GenerateFromRealTimeDifference:
-            case GenerateFromTempo:
-            {
-                size_t nextFrame = frame;
-                Clipboard::PointList::const_iterator j = i;
-                for (; j != points.end(); ++j) {
-                    if (!j->haveFrame()) continue;
-                    if (j != i) break;
-                }
-                if (j != points.end()) {
-                    nextFrame = j->getFrame();
-                }
-                if (generation == GenerateFromRealTimeDifference) {
-                    newPoint.value = float(nextFrame - frame) /
-                        float(m_model->getSampleRate());
-                } else {
-                    float bpm = prevBpm;
-                    if (nextFrame > frame) {
-                        bpm = (60.f * m_model->getSampleRate()) /
-                            (nextFrame - frame);
-                    }
-                    newPoint.value = bpm;
-                    prevBpm = bpm;
-                }
-                break;
-            }
-
-            case GenerateFromExistingNeighbour:
-            {
-                SparseTimeValueModel::PointList points = 
-                    m_model->getPoints(frame);
-                if (points.empty()) points = m_model->getPreviousPoints(frame);
-                if (points.empty()) points = m_model->getNextPoints(frame);
-                if (points.empty()) {
-                    newPoint.value = 0.f;
-                } else {
-                    newPoint.value = points.begin()->value;
-                }
-            }
-
-            case GenerateFromLabels:
-                if (i->haveLabel()) {
-                    // more forgiving than QString::toFloat()
-                    newPoint.value = atof(i->getLabel().toLocal8Bit());
-                } else {
-                    newPoint.value = 0.f;
-                }
-            }
+            labeller.setValue<SparseTimeValueModel::Point>
+                (newPoint, i == points.begin() ? 0 : &prevPoint);
         }
-        
+
+        prevPoint = newPoint;
         command->addPoint(newPoint);
-        
-        ++counter;
     }
 
     command->finish();
     return true;
-}
+    }
 
 void
 TimeValueLayer::toXml(QTextStream &stream,
