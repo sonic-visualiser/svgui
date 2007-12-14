@@ -1211,6 +1211,26 @@ Pane::mousePressEvent(QMouseEvent *e)
         return;
     }
 
+    std::cerr << "mousePressEvent" << std::endl;
+
+    
+    //!!! need to avoid spurious mouse events when e.g. double-clicking.
+
+    // when double clicking, we get:
+    // mousePressEvent
+    // mouseReleaseEvent
+    // mouseMoveEvent <- called from mouseReleaseEvent
+    // mouseDoubleClickEvent
+    // mouseReleaseEvent
+    // mouseMoveEvent <- called from mouseReleaseEvent
+
+    // so we set a timer on the first press, if we're in a mode in
+    // which moving the mouse will do something
+
+    // the move method doesn't do anything unless that timer has
+    // elapsed
+    
+
     m_clickPos = e->pos();
     m_mousePos = m_clickPos;
     m_clickedInRange = true;
@@ -1329,6 +1349,8 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         return;
     }
 
+    std::cerr << "mouseReleaseEvent" << std::endl;
+
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
 
@@ -1425,6 +1447,13 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     if (e->buttons() & Qt::RightButton) {
         return;
     }
+
+    std::cerr << "mouseMoveEvent" << std::endl;
+
+    //!!! if no buttons pressed, and not called from
+    //mouseReleaseEvent, we want to reset clicked-ness (to avoid
+    //annoying continual drags when we moved the mouse outside the
+    //window after pressing button first time).
 
     updateContextHelp(&e->pos());
 
@@ -1799,7 +1828,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         return;
     }
 
-//    std::cerr << "mouseDoubleClickEvent" << std::endl;
+    std::cerr << "mouseDoubleClickEvent" << std::endl;
 
     m_clickPos = e->pos();
     m_clickedInRange = true;
