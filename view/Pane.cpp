@@ -64,6 +64,8 @@ Pane::Pane(QWidget *w) :
     m_ctrlPressed(false),
     m_navigating(false),
     m_resizing(false),
+    m_editing(false),
+    m_releasing(false),
     m_centreLineVisible(true),
     m_scaleWidth(0),
     m_headsUpDisplay(0),
@@ -1211,25 +1213,7 @@ Pane::mousePressEvent(QMouseEvent *e)
         return;
     }
 
-    std::cerr << "mousePressEvent" << std::endl;
-
-    
-    //!!! need to avoid spurious mouse events when e.g. double-clicking.
-
-    // when double clicking, we get:
-    // mousePressEvent
-    // mouseReleaseEvent
-    // mouseMoveEvent <- called from mouseReleaseEvent
-    // mouseDoubleClickEvent
-    // mouseReleaseEvent
-    // mouseMoveEvent <- called from mouseReleaseEvent
-
-    // so we set a timer on the first press, if we're in a mode in
-    // which moving the mouse will do something
-
-    // the move method doesn't do anything unless that timer has
-    // elapsed
-    
+//    std::cerr << "mousePressEvent" << std::endl;
 
     m_clickPos = e->pos();
     m_mousePos = m_clickPos;
@@ -1244,6 +1228,9 @@ Pane::mousePressEvent(QMouseEvent *e)
     if (m_manager) mode = m_manager->getToolMode();
 
     m_navigating = false;
+    m_resizing = false;
+    m_editing = false;
+    m_releasing = false;
 
     if (mode == ViewManager::NavigateMode ||
         (e->buttons() & Qt::MidButton) ||
@@ -1325,12 +1312,8 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
 
-	if (!editSelectionStart(e)) {
-	    Layer *layer = getSelectedLayer();
-	    if (layer && layer->isLayerEditable()) {
-		layer->editStart(this, e);
-	    }
-	}
+        // Do nothing here -- we'll do it in mouseMoveEvent when the
+        // drag threshold has been passed
 
     } else if (mode == ViewManager::MeasureMode) {
 
@@ -1349,10 +1332,12 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         return;
     }
 
-    std::cerr << "mouseReleaseEvent" << std::endl;
+//    std::cerr << "mouseReleaseEvent" << std::endl;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
+
+    m_releasing = true;
 
     if (m_clickedInRange) {
 	mouseMoveEvent(e);
@@ -1380,7 +1365,10 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::SelectMode) {
 
-        if (!hasTopLayerTimeXAxis()) return;
+        if (!hasTopLayerTimeXAxis()) {
+            m_releasing = false;
+            return;
+        }
 
 	if (m_manager && m_manager->haveInProgressSelection()) {
 
@@ -1420,13 +1408,15 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
 
-	if (!editSelectionEnd(e)) {
-	    Layer *layer = getSelectedLayer();
-	    if (layer && layer->isLayerEditable()) {
-		layer->editEnd(this, e);
-		update();
-	    }
-	}
+        if (m_editing) {
+            if (!editSelectionEnd(e)) {
+                Layer *layer = getSelectedLayer();
+                if (layer && layer->isLayerEditable()) {
+                    layer->editEnd(this, e);
+                    update();
+                }
+            }
+        }
 
     } else if (mode == ViewManager::MeasureMode) {
 
@@ -1437,6 +1427,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     }
 
     m_clickedInRange = false;
+    m_releasing = false;
 
     emit paneInteractedWith();
 }
@@ -1448,14 +1439,23 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         return;
     }
 
-    std::cerr << "mouseMoveEvent" << std::endl;
-
-    //!!! if no buttons pressed, and not called from
-    //mouseReleaseEvent, we want to reset clicked-ness (to avoid
-    //annoying continual drags when we moved the mouse outside the
-    //window after pressing button first time).
+//    std::cerr << "mouseMoveEvent" << std::endl;
 
     updateContextHelp(&e->pos());
+
+    if (m_navigating && m_clickedInRange && !m_releasing) {
+
+        // if no buttons pressed, and not called from
+        // mouseReleaseEvent, we want to reset clicked-ness (to avoid
+        // annoying continual drags when we moved the mouse outside
+        // the window after pressing button first time).
+
+        if (!(e->buttons() & Qt::LeftButton) &&
+            !(e->buttons() & Qt::MidButton)) {
+            m_clickedInRange = false;
+            return;
+        }
+    }
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
@@ -1540,12 +1540,44 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
 
-	if (!editSelectionDrag(e)) {
-	    Layer *layer = getSelectedLayer();
-	    if (layer && layer->isLayerEditable()) {
-		layer->editDrag(this, e);
-	    }
-	}
+        if (m_editing) {
+            if (!editSelectionDrag(e)) {
+                Layer *layer = getSelectedLayer();
+                if (layer && layer->isLayerEditable()) {
+                    layer->editDrag(this, e);
+                }
+            }
+        }
+
+        if (!m_editing) {
+
+            DragMode newDragMode = updateDragMode
+                (m_dragMode,
+                 m_clickPos,
+                 e->pos(),
+                 true,  // can move horiz
+                 true,  // can move vert
+                 true,  // resist horiz
+                 true); // resist vert
+
+            if (newDragMode != UnresolvedDrag) {
+
+                m_editing = true;
+
+                QMouseEvent clickEvent(QEvent::MouseButtonPress,
+                                       m_clickPos,
+                                       Qt::NoButton,
+                                       e->buttons(),
+                                       e->modifiers());
+
+                if (!editSelectionStart(&clickEvent)) {
+                    Layer *layer = getSelectedLayer();
+                    if (layer && layer->isLayerEditable()) {
+                        layer->editStart(this, &clickEvent);
+                    }
+                }
+            }
+        }
 
     } else if (mode == ViewManager::MeasureMode) {
 
@@ -1646,51 +1678,17 @@ Pane::dragTopLayer(QMouseEvent *e)
     // If the top layer is incapable of being dragged
     // vertically, the logic is short circuited.
 
-    int xdiff = e->x() - m_clickPos.x();
-    int ydiff = e->y() - m_clickPos.y();
-    int smallThreshold = 10, bigThreshold = 50;
+    m_dragMode = updateDragMode
+        (m_dragMode,
+         m_clickPos,
+         e->pos(),
+         true, // can move horiz
+         canTopLayerMoveVertical(), // can move vert
+         canTopLayerMoveVertical() || (m_manager && m_manager->isPlaying()), // resist horiz
+         !(m_manager && m_manager->isPlaying())); // resist vert
 
-    bool canMoveVertical = canTopLayerMoveVertical();
-    bool canMoveHorizontal = true;
-
-    if (!canMoveHorizontal) {
-        m_dragMode = HorizontalDrag;
-    }
-
-    if (m_dragMode == UnresolvedDrag) {
-
-        if (abs(ydiff) > smallThreshold &&
-            abs(ydiff) > abs(xdiff) * 2) {
-            m_dragMode = VerticalDrag;
-        } else if (abs(xdiff) > smallThreshold &&
-                   abs(xdiff) > abs(ydiff) * 2) {
-            m_dragMode = HorizontalDrag;
-        } else if (abs(xdiff) > smallThreshold &&
-                   abs(ydiff) > smallThreshold) {
-            m_dragMode = FreeDrag;
-        } else {
-            // When playing, we don't want to disturb the play
-            // position too easily; when not playing, we don't
-            // want to move up/down too easily
-            if (m_manager && m_manager->isPlaying()) {
-                canMoveHorizontal = false;
-            } else {
-                canMoveVertical = false;
-            }
-        }
-    }
-
-    if (m_dragMode == VerticalDrag) {
-        if (abs(xdiff) > bigThreshold) m_dragMode = FreeDrag;
-        else canMoveHorizontal = false;
-    }
-
-    if (m_dragMode == HorizontalDrag && canMoveVertical) {
-        if (abs(ydiff) > bigThreshold) m_dragMode = FreeDrag;
-        else canMoveVertical = false;
-    }
-
-    if (canMoveHorizontal) {
+    if (m_dragMode == HorizontalDrag ||
+        m_dragMode == FreeDrag) {
 
         long frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
 
@@ -1717,7 +1715,8 @@ Pane::dragTopLayer(QMouseEvent *e)
         }
     }
 
-    if (canMoveVertical) {
+    if (m_dragMode == VerticalDrag ||
+        m_dragMode == FreeDrag) {
 
         float vmin = 0.f, vmax = 0.f;
         float dmin = 0.f, dmax = 0.f;
@@ -1726,9 +1725,14 @@ Pane::dragTopLayer(QMouseEvent *e)
 
 //            std::cerr << "ydiff = " << ydiff << std::endl;
 
+            int ydiff = e->y() - m_clickPos.y();
             float perpix = (dmax - dmin) / height();
             float valdiff = ydiff * perpix;
 //            std::cerr << "valdiff = " << valdiff << std::endl;
+
+            if (m_dragMode == UnresolvedDrag && ydiff != 0) {
+                m_dragMode = VerticalDrag;
+            }
 
             float newmin = m_dragStartMinValue + valdiff;
             float newmax = m_dragStartMinValue + (dmax - dmin) + valdiff;
@@ -1747,6 +1751,65 @@ Pane::dragTopLayer(QMouseEvent *e)
             updateVerticalPanner();
         }
     }
+}
+
+Pane::DragMode
+Pane::updateDragMode(DragMode dragMode,
+                     QPoint origin,
+                     QPoint point,
+                     bool canMoveHorizontal,
+                     bool canMoveVertical,
+                     bool resistHorizontal,
+                     bool resistVertical)
+{
+    int xdiff = point.x() - origin.x();
+    int ydiff = point.y() - origin.y();
+
+    int smallThreshold = 10, bigThreshold = 80;
+
+//    std::cerr << "Pane::updateDragMode: xdiff = " << xdiff << ", ydiff = "
+//              << ydiff << ", canMoveVertical = " << canMoveVertical << ", drag mode = " << m_dragMode << std::endl;
+
+    if (dragMode == UnresolvedDrag) {
+
+        if (abs(ydiff) > smallThreshold &&
+            abs(ydiff) > abs(xdiff) * 2 &&
+            canMoveVertical) {
+//            std::cerr << "Pane::updateDragMode: passed vertical threshold" << std::endl;
+            dragMode = VerticalDrag;
+        } else if (abs(xdiff) > smallThreshold &&
+                   abs(xdiff) > abs(ydiff) * 2 &&
+                   canMoveHorizontal) {
+//            std::cerr << "Pane::updateDragMode: passed horizontal threshold" << std::endl;
+            dragMode = HorizontalDrag;
+        } else if (abs(xdiff) > smallThreshold &&
+                   abs(ydiff) > smallThreshold &&
+                   canMoveVertical &&
+                   canMoveHorizontal) {
+//            std::cerr << "Pane::updateDragMode: passed both thresholds" << std::endl;
+            dragMode = FreeDrag;
+        }
+    }
+
+    if (dragMode == VerticalDrag && canMoveHorizontal) {
+        if (abs(xdiff) > bigThreshold) dragMode = FreeDrag;
+    }
+
+    if (dragMode == HorizontalDrag && canMoveVertical) {
+        if (abs(ydiff) > bigThreshold) dragMode = FreeDrag;
+    }
+
+    if (dragMode == UnresolvedDrag) {
+        if (!resistHorizontal && xdiff != 0) {
+            dragMode = HorizontalDrag;
+        }
+        if (!resistVertical && ydiff != 0) {
+            if (dragMode == HorizontalDrag) dragMode = FreeDrag;
+            else dragMode = VerticalDrag;
+        }
+    }
+    
+    return dragMode;
 }
 
 void
@@ -1828,7 +1891,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         return;
     }
 
-    std::cerr << "mouseDoubleClickEvent" << std::endl;
+//    std::cerr << "mouseDoubleClickEvent" << std::endl;
 
     m_clickPos = e->pos();
     m_clickedInRange = true;

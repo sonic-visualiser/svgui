@@ -57,7 +57,7 @@ ViewManager::ViewManager() :
     settings.endGroup();
 
     if (getGlobalDarkBackground()) {
-
+/*
         std::cerr << "dark palette:" << std::endl;
         std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name().toStdString() << std::endl;
         std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name().toStdString() << std::endl;
@@ -70,7 +70,7 @@ ViewManager::ViewManager() :
         std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name().toStdString() << std::endl;
         std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name().toStdString() << std::endl;
         std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name().toStdString() << std::endl;
-
+*/
         m_lightPalette = QPalette(QColor("#000000"),  // WindowText
                                   QColor("#dddfe4"),  // Button
                                   QColor("#ffffff"),  // Light
@@ -83,6 +83,7 @@ ViewManager::ViewManager() :
                                   
 
     } else {
+/*
         std::cerr << "light palette:" << std::endl;
         std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name().toStdString() << std::endl;
         std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name().toStdString() << std::endl;
@@ -95,7 +96,7 @@ ViewManager::ViewManager() :
         std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name().toStdString() << std::endl;
         std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name().toStdString() << std::endl;
         std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name().toStdString() << std::endl;
-
+*/
         m_darkPalette = QPalette(QColor("#ffffff"),  // WindowText
                                  QColor("#3e3e3e"),  // Button
                                  QColor("#808080"),  // Light
