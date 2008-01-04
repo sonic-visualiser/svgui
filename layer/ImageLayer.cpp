@@ -880,7 +880,7 @@ ImageLayer::checkAddRemote(QString img) const
             return;
         }
 
-        FileSource *rf = new FileSource(img, true);
+        FileSource *rf = new FileSource(img, FileSource::ProgressDialog);
         if (rf->isOK()) {
             std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
             m_remoteFiles[img] = rf;

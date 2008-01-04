@@ -75,6 +75,7 @@ AudioDial::AudioDial(QWidget *parent) :
     m_knobColor(Qt::black),
     m_meterColor(Qt::white),
     m_defaultValue(0),
+    m_defaultMappedValue(0),
     m_mappedValue(0),
     m_noMappedUpdate(false),
     m_showTooltip(true),
@@ -334,8 +335,10 @@ void AudioDial::setMouseDial(bool mouseDial)
 void AudioDial::setDefaultValue(int defaultValue)
 {
     m_defaultValue = defaultValue;
+    if (m_rangeMapper) {
+        m_defaultMappedValue = m_rangeMapper->getValueForPosition(defaultValue);
+    }
 }
-
 
 void AudioDial::setValue(int value)
 {
@@ -343,6 +346,13 @@ void AudioDial::setValue(int value)
     updateMappedValue(value);
 }
 
+void AudioDial::setDefaultMappedValue(float value)
+{
+    m_defaultMappedValue = value;
+    if (m_rangeMapper) {
+        m_defaultValue = m_rangeMapper->getPositionForValue(value);
+    }
+}
 
 void AudioDial::setMappedValue(float mappedValue)
 {
@@ -407,6 +417,18 @@ void AudioDial::updateMappedValue(int value)
     }
 }
 
+void
+AudioDial::setToDefault()
+{
+    if (m_rangeMapper) {
+        setMappedValue(m_defaultMappedValue);
+        return;
+    }
+    int dv = m_defaultValue;
+    if (dv < minimum()) dv = minimum();
+    if (dv > maximum()) dv = maximum();
+    setValue(m_defaultValue);
+}
 
 // Alternate mouse behavior event handlers.
 void AudioDial::mousePressEvent(QMouseEvent *mouseEvent)
@@ -416,10 +438,7 @@ void AudioDial::mousePressEvent(QMouseEvent *mouseEvent)
     } else if (mouseEvent->button() == Qt::MidButton ||
                ((mouseEvent->button() == Qt::LeftButton) &&
                 (mouseEvent->modifiers() & Qt::ControlModifier))) {
-	int dv = m_defaultValue;
-	if (dv < minimum()) dv = minimum();
-	if (dv > maximum()) dv = maximum();
-	setValue(m_defaultValue);
+        setToDefault();
     } else if (mouseEvent->button() == Qt::LeftButton) {
 	m_mousePressed = true;
 	m_posMouse = mouseEvent->pos();

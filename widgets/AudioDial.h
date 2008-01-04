@@ -107,7 +107,11 @@ public slots:
 
     void setValue(int value);
 
+    void setDefaultMappedValue(float mappedValue);
+
     void setMappedValue(float mappedValue);
+
+    void setToDefault();
 
 protected:
     void drawTick(QPainter &paint, float angle, int size, bool internal);
@@ -129,6 +133,7 @@ private:
     QColor m_meterColor;
     
     int m_defaultValue;
+    float m_defaultMappedValue;
     float m_mappedValue;
     bool m_noMappedUpdate;
 
