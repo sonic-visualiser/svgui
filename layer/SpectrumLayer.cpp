@@ -54,6 +54,8 @@ SpectrumLayer::~SpectrumLayer()
 void
 SpectrumLayer::setModel(DenseTimeValueModel *model)
 {
+    std::cerr << "SpectrumLayer::setModel(" << model << ") from " << m_originModel << std::endl;
+    
     if (m_originModel == model) return;
     m_originModel = model;
 
@@ -660,6 +662,8 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
         pkh = 10;
 //!!!    }
 
+    paint.save();
+
     if (fft && m_showPeaks) {
 
         // draw peak lines
@@ -799,6 +803,8 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    px = x;
 	}
 //    }
+
+    paint.restore();
 }
 
 void
