@@ -100,6 +100,14 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     return "";
 }
 
+QString
+Colour3DPlotLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Normalize Columns") return "normalise-columns";
+    if (name == "Normalize Visible Area") return "normalise";
+    return "";
+}
+
 Layer::PropertyType
 Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
 {
