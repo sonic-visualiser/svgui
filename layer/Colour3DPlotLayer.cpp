@@ -584,12 +584,15 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     if (int(m_model->getHeight()) >= v->height() ||
         int(modelResolution) < v->getZoomLevel() / 2) {
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+        std::cerr << "Colour3DPlotLayer::paint: height = "<< m_model->getHeight() << ", resolution = " << modelResolution << ", model rate = " << m_model->getSampleRate() << ", calling paintDense" << std::endl;
+#endif
         paintDense(v, paint, rect);
         return;
     }
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    std::cerr << "Colour3DPlotLayer::paint: w " << w << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sw << ", sh " << sh << std::endl;
+    std::cerr << "Colour3DPlotLayer::paint: w " << x1-x0 << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sx1-sx0 << ", sh " << sh << std::endl;
     std::cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", resolution " << m_model->getResolution() << std::endl;
 #endif
 
@@ -695,13 +698,15 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     for (int x = x0; x < x1; ++x) {
 
-        long xf = long(v->getFrameForX(x) / srRatio);
+        long xf = long(v->getFrameForX(x));
         if (xf < 0) {
             for (int y = 0; y < h; ++y) {
                 img.setPixel(x - x0, y, m_cache->color(0));
             }
             continue;
         }
+
+        xf /= srRatio;
 
         float sx0 = (float(xf) - modelStart) / modelResolution;
         float sx1 = (float(v->getFrameForX(x+1) / srRatio) - modelStart) / modelResolution;
