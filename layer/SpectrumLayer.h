@@ -24,6 +24,7 @@
 #include "data/model/DenseTimeValueModel.h"
 
 #include <QColor>
+#include <QMutex>
 
 class FFTModel;
 
@@ -112,6 +113,8 @@ protected:
     size_t                  m_windowHopLevel;
     bool                    m_showPeaks;
     mutable bool            m_newFFTNeeded;
+
+    mutable QMutex m_fftMutex;
 
     void setupFFT();
 

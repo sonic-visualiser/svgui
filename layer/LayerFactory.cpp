@@ -350,6 +350,10 @@ LayerFactory::setChannel(Layer *layer, int channel)
 	dynamic_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	return;
     }
+    if (dynamic_cast<SpectrumLayer *>(layer)) {
+	dynamic_cast<SpectrumLayer *>(layer)->setChannel(channel);
+	return;
+    }
 }
 
 Layer *
