@@ -583,7 +583,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
               sx1 < 0 ? 0 : sx1);
 
     if (int(m_model->getHeight()) >= v->height() ||
-        int(modelResolution) < v->getZoomLevel() / 2) {
+        int(modelResolution * m_model->getSampleRate()) < v->getZoomLevel() / 2) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
         std::cerr << "Colour3DPlotLayer::paint: height = "<< m_model->getHeight() << ", resolution = " << modelResolution << ", model rate = " << m_model->getSampleRate() << ", calling paintDense" << std::endl;
 #endif
