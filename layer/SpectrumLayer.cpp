@@ -63,6 +63,14 @@ SpectrumLayer::setModel(DenseTimeValueModel *model)
 
     m_originModel = model;
 
+    if (m_sliceableModel) {
+        Model *m = const_cast<Model *>
+            (static_cast<const Model *>(m_sliceableModel));
+        m->aboutToDelete();
+        setSliceableModel(0);
+        delete m;
+    }
+
     m_newFFTNeeded = true;
 
     emit layerParametersChanged();
@@ -646,7 +654,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_originModel || !m_originModel->isOK() ||
         !m_originModel->isReady()) {
-        std::cerr << "SpectrumLayer::paint: no origin model" << std::endl;
+        std::cerr << "SpectrumLayer::paint: no origin model, or origin model not OK or not ready" << std::endl;
         return;
     }
 
