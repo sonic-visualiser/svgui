@@ -114,13 +114,14 @@ PropertyStack::repopulate()
 
         shortName = QString("&%1 %2").arg(i + 1).arg(shortName);
 
-#ifdef Q_WS_MAC
+//!!! We'll comment this out until it's been tested with Qt 4.3.3
+#ifdef Q_WS_MAC___NOT_DEFINED
 
         // Qt 4.2 on OS/X doesn't show the icons in the tab bar, and
         // I'm not sure why -- use labels instead
 
         addTab(box, shortName);
-        
+
 #else
 
         // Icons on other platforms
