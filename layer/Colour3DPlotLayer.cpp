@@ -29,7 +29,7 @@
 
 #include <cassert>
 
-#define DEBUG_COLOUR_3D_PLOT_LAYER_PAINT 1
+//#define DEBUG_COLOUR_3D_PLOT_LAYER_PAINT 1
 
 
 Colour3DPlotLayer::Colour3DPlotLayer() :

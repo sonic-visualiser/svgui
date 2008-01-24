@@ -540,6 +540,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     int sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
+    paint.setRenderHint(QPainter::Antialiasing, false);
+
 //    Profiler profiler("TimeValueLayer::paint", true);
 
     int x0 = rect.left(), x1 = rect.right();
