@@ -351,6 +351,9 @@ View::getFrameForX(int x) const
 {
     long z = (long)m_zoomLevel;
     long frame = m_centreFrame - (width()/2) * z;
+
+    std::cerr << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << std::endl;
+
     frame = (frame / z) * z; // this is start frame
     return frame + x * z;
 }
