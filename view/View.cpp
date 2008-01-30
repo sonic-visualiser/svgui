@@ -330,9 +330,11 @@ View::setCentreFrame(size_t f, bool e)
 
 	if (e) {
             size_t rf = alignToReference(f);
+#ifdef DEBUG_VIEW_WIDGET_PAINT
             std::cerr << "View[" << this << "]::setCentreFrame(" << f
                       << "): emitting centreFrameChanged("
                       << rf << ")" << std::endl;
+#endif
             emit centreFrameChanged(rf, m_followPan, m_followPlay);
         }
     }
@@ -352,7 +354,9 @@ View::getFrameForX(int x) const
     long z = (long)m_zoomLevel;
     long frame = m_centreFrame - (width()/2) * z;
 
+#ifdef DEBUG_VIEW_WIDGET_PAINT
     std::cerr << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << std::endl;
+#endif
 
     frame = (frame / z) * z; // this is start frame
     return frame + x * z;
