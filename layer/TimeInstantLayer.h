@@ -105,6 +105,8 @@ protected:
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
+    bool clipboardAlignmentDiffers(const Clipboard &) const;
+
     SparseOneDimensionalModel *m_model;
     bool m_editing;
     SparseOneDimensionalModel::Point m_editingPoint;
