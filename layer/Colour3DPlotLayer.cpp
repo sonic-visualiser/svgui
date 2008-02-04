@@ -39,7 +39,8 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_colourScale(LinearScale),
     m_colourMap(0),
     m_normalizeColumns(false),
-    m_normalizeVisibleArea(false)
+    m_normalizeVisibleArea(false),
+    m_invertVertical(false)
 {
     
 }
@@ -87,6 +88,7 @@ Colour3DPlotLayer::getProperties() const
     list.push_back("Colour Scale");
     list.push_back("Normalize Columns");
     list.push_back("Normalize Visible Area");
+    list.push_back("Invert Vertical Scale");
     return list;
 }
 
@@ -97,6 +99,7 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Colour Scale") return tr("Scale");
     if (name == "Normalize Columns") return tr("Normalize Columns");
     if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
+    if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
     return "";
 }
 
@@ -105,6 +108,7 @@ Colour3DPlotLayer::getPropertyIconName(const PropertyName &name) const
 {
     if (name == "Normalize Columns") return "normalise-columns";
     if (name == "Normalize Visible Area") return "normalise";
+    if (name == "Invert Vertical Scale") return "invert-vertical";
     return "";
 }
 
@@ -113,6 +117,7 @@ Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Normalize Columns") return ToggleProperty;
     if (name == "Normalize Visible Area") return ToggleProperty;
+    if (name == "Invert Vertical Scale") return ToggleProperty;
     return ValueProperty;
 }
 
@@ -121,6 +126,7 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Normalize Columns" ||
         name == "Normalize Visible Area" ||
+        name == "Invert Vertical Scale" ||
 	name == "Colour Scale") return tr("Scale");
     return QString();
 }
@@ -161,6 +167,11 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 	
         *deflt = 0;
 	val = (m_normalizeVisibleArea ? 1 : 0);
+
+    } else if (name == "Invert Vertical Scale") {
+	
+        *deflt = 0;
+	val = (m_invertVertical ? 1 : 0);
 
     } else {
 	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
@@ -203,6 +214,8 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	setNormalizeColumns(value ? true : false);
     } else if (name == "Normalize Visible Area") {
 	setNormalizeVisibleArea(value ? true : false);
+    } else if (name == "Invert Vertical Scale") {
+	setInvertVertical(value ? true : false);
     }
 }
 
@@ -254,6 +267,21 @@ Colour3DPlotLayer::getNormalizeVisibleArea() const
     return m_normalizeVisibleArea;
 }
 
+void
+Colour3DPlotLayer::setInvertVertical(bool n)
+{
+    if (m_invertVertical == n) return;
+    m_invertVertical = n;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
+bool
+Colour3DPlotLayer::getInvertVertical() const
+{
+    return m_invertVertical;
+}
+
 bool
 Colour3DPlotLayer::isLayerScrollable(const View *v) const
 {
@@ -285,6 +313,8 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     float binHeight = float(v->height()) / m_model->getHeight();
     int sy = int((v->height() - y) / binHeight);
+
+    if (m_invertVertical) sy = m_model->getHeight() - sy - 1;
 
     float value = m_model->getValueAt(sx0, sy);
 
@@ -366,12 +396,15 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
     for (size_t i = 0; i < m_model->getHeight(); ++i) {
 
-        if ((i % step) != 0) continue;
+        size_t idx = i;
+        if (m_invertVertical) idx = m_model->getHeight() - idx - 1;
+
+        if ((idx % step) != 0) continue;
 
 	int y0 = int(v->height() - (i * binHeight) - 1);
 	
-	QString text = m_model->getBinName(i);
-	if (text == "") text = QString("[%1]").arg(i + 1);
+	QString text = m_model->getBinName(idx);
+	if (text == "") text = QString("[%1]").arg(idx + 1);
 
 	paint.drawLine(cw, y0, w, y0);
 
@@ -526,7 +559,12 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             if (pixel < 0) pixel = 0;
             if (pixel > 255) pixel = 255;
 
-            m_cache->setPixel(c - firstBin, y, pixel);
+            if (m_invertVertical) {
+                m_cache->setPixel(c - firstBin, m_model->getHeight() - y - 1,
+                                  pixel);
+            } else {
+                m_cache->setPixel(c - firstBin, y, pixel);
+            }
         }
     }
 }
