@@ -98,6 +98,9 @@ public:
     void setNormalizeVisibleArea(bool n);
     bool getNormalizeVisibleArea() const;
 
+    void setInvertVertical(bool i);
+    bool getInvertVertical() const;
+
     virtual const Model *getSliceableModel() const { return m_model; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
@@ -117,6 +120,7 @@ protected:
     int         m_colourMap;
     bool        m_normalizeColumns;
     bool        m_normalizeVisibleArea;
+    bool        m_invertVertical;
 
     void getColumn(size_t col, DenseThreeDimensionalModel::Column &) const;
 
