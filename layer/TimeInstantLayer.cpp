@@ -751,6 +751,47 @@ TimeInstantLayer::paste(const Clipboard &from, int frameOffset, bool)
     // frames are unavailable but they came from the reference model,
     // we want to offer to align them too.
 
+
+    //!!!
+
+    // Each point may have a reference frame that may differ from the
+    // point's given frame (in its source model).  If it has no
+    // reference frame, we have to assume the source model was not
+    // aligned or was the reference model: when cutting or copying
+    // points from a layer, we must always set their reference frame
+    // correctly if we are aligned.
+    // 
+    // When pasting:
+    // - if point's reference and aligned frames differ:
+    //   - if this layer is aligned:
+    //     - if point's aligned frame matches this layer's aligned version
+    //       of point's reference frame:
+    //       - we can paste at reference frame or our frame
+    //     - else
+    //       - we can paste at reference frame, result of aligning reference
+    //         frame in our model, or literal source frame
+    //   - else
+    //     - we can paste at reference (our) frame, or literal source frame
+    // - else
+    //   - if this layer is aligned:
+    //     - we can paste at reference (point's only available) frame,
+    //       or result of aligning reference frame in our model
+    //   - else
+    //     - we can only paste at reference frame
+    // 
+    // Which of these alternatives are useful?
+    //
+    // Example: we paste between two tracks that are aligned to the
+    // same reference, and the points are at 10s and 20s in the source
+    // track, corresponding to 5s and 10s in the reference but 20s and
+    // 30s in the target track.
+    // 
+    // The obvious default is to paste at 20s and 30s; if we aren't
+    // doing that, would it be better to paste at 5s and 10s or at 10s
+    // and 20s?  We probably don't ever want to do the former, do we?
+    // We either want to be literal all the way through, or aligned
+    // all the way through.
+
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
         
