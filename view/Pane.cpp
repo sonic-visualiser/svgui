@@ -50,6 +50,8 @@
 
 #include "widgets/KeyReference.h" //!!! should probably split KeyReference into a data class in base and another that shows the widget
 
+//#define DEBUG_PANE
+
 using std::cerr;
 using std::endl;
 
@@ -1701,9 +1703,11 @@ Pane::dragTopLayer(QMouseEvent *e)
         } else {
             newCentreFrame = 0;
         }
-	    
+
+#ifdef DEBUG_PANE	    
         std::cerr << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame <<
             ", models end frame = " << getModelsEndFrame() << std::endl;
+#endif
 
         if (newCentreFrame >= getModelsEndFrame()) {
             newCentreFrame = getModelsEndFrame();

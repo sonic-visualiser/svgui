@@ -892,8 +892,10 @@ View::globalCentreFrameChanged(unsigned long rf)
 {
     if (m_followPan) {
         size_t f = alignFromReference(rf);
+#ifdef DEBUG_VIEW_WIDGET_PAINT
         std::cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
                   << "): setting centre frame to " << f << std::endl;
+#endif
         setCentreFrame(f, false);
     }
 }
