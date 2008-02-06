@@ -1120,6 +1120,7 @@ View::getAligningModel() const
     }
 
     Model *anyModel = 0;
+    Model *alignedModel = 0;
     Model *goodModel = 0;
 
     for (LayerList::const_iterator i = m_layers.begin();
@@ -1133,8 +1134,10 @@ View::getAligningModel() const
         Model *model = (*i)->getModel();
         if (!model) continue;
 
+        anyModel = model;
+
         if (model->getAlignmentReference()) {
-            anyModel = model;
+            alignedModel = model;
             if (layer->isLayerOpaque() ||
                 dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
                 goodModel = model;
@@ -1143,6 +1146,7 @@ View::getAligningModel() const
     }
 
     if (goodModel) return goodModel;
+    else if (alignedModel) return alignedModel;
     else return anyModel;
 }
 

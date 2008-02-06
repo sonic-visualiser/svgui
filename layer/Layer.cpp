@@ -159,6 +159,30 @@ Layer::getYScaleDifference(const View *v, int y0, int y1,
     return true;
 }
 
+size_t
+Layer::alignToReference(View *v, size_t frame) const
+{
+    const Model *m = getModel();
+    std::cerr << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << std::endl;
+    if (m && m->getAlignmentReference()) {
+        return m->alignToReference(frame);
+    } else {
+        return v->alignToReference(frame);
+    }
+}
+
+size_t
+Layer::alignFromReference(View *v, size_t frame) const
+{
+    const Model *m = getModel();
+    std::cerr << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << std::endl;
+    if (m && m->getAlignmentReference()) {
+        return m->alignFromReference(frame);
+    } else {
+        return v->alignFromReference(frame);
+    }
+}
+
 bool
 Layer::MeasureRect::operator<(const MeasureRect &mr) const
 {

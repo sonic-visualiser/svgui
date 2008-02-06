@@ -1185,7 +1185,7 @@ TimeValueLayer::deleteSelection(Selection s)
 }    
 
 void
-TimeValueLayer::copy(Selection s, Clipboard &to)
+TimeValueLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -1203,7 +1203,7 @@ TimeValueLayer::copy(Selection s, Clipboard &to)
 }
 
 bool
-TimeValueLayer::paste(const Clipboard &from, int frameOffset,
+TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
                       bool interactive)
 {
     if (!m_model) return false;

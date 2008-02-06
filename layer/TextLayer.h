@@ -56,8 +56,8 @@ public:
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
-    virtual void copy(Selection s, Clipboard &to);
-    virtual bool paste(const Clipboard &from, int frameOffset,
+    virtual void copy(View *v, Selection s, Clipboard &to);
+    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
                        bool interactive);
 
     virtual bool editOpen(View *, QMouseEvent *); // on double-click
