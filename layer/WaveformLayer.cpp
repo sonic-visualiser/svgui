@@ -664,7 +664,12 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
             
 	    if (int(modelZoomLevel) != zoomLevel) {
 
+                std::cerr << "WaveformLayer::paint: zoom level " << zoomLevel << " differs from model zoom level " << modelZoomLevel << std::endl;
+                std::cerr << "index from " << index;
+
 		index = size_t((double(index) * zoomLevel) / modelZoomLevel);
+
+                std::cerr << " to " << index << std::endl;
 
 		if (int(modelZoomLevel) < zoomLevel) {
 		    // Peaks may be missed!  The model should avoid
@@ -675,6 +680,8 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 		    maxIndex = size_t((double(index + 1) * zoomLevel)
 				      / modelZoomLevel) - 1;
 		}
+
+                std::cerr << "maxIndex = " << maxIndex << std::endl;
 	    }
 
 	    if (ranges && index < ranges->size()) {

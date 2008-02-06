@@ -1910,6 +1910,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     
     int labelCount = 0;
 
+    // top-left point, x-coord
+
     if ((b0 = topLayer->getXScaleValue(this, r.x(), v0, u0))) {
         axs = QString("%1 %2").arg(v0).arg(u0);
         if (u0 == "Hz" && Pitch::isFrequencyInMidiRange(v0)) {
@@ -1919,6 +1921,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         aw = paint.fontMetrics().width(axs);
         ++labelCount;
     }
+
+    // bottom-right point, x-coord
         
     if (r.width() > 0) {
         if ((b1 = topLayer->getXScaleValue(this, r.x() + r.width(), v1, u1))) {
@@ -1930,14 +1934,18 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
             bw = paint.fontMetrics().width(bxs);
         }
     }
+
+    // dimension, width
         
     if (b0 && b1 && v1 != v0 && u0 == u1) {
-        dxs = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
+        dxs = QString("[%1 %2]").arg(fabs(v1 - v0)).arg(u1);
         dw = paint.fontMetrics().width(dxs);
     }
     
     b0 = false;
     b1 = false;
+
+    // top-left point, y-coord
 
     if ((b0 = topLayer->getYScaleValue(this, r.y(), v0, u0))) {
         ays = QString("%1 %2").arg(v0).arg(u0);
@@ -1948,6 +1956,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         aw = std::max(aw, paint.fontMetrics().width(ays));
         ++labelCount;
     }
+
+    // bottom-right point, y-coord
 
     if (r.height() > 0) {
         if ((b1 = topLayer->getYScaleValue(this, r.y() + r.height(), v1, u1))) {
@@ -1964,13 +1974,24 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     float dy = 0.f;
     QString du;
 
+    // dimension, height
+        
     if ((bd = topLayer->getYScaleDifference(this, r.y(), r.y() + r.height(),
                                             dy, du)) &&
         dy != 0) {
         if (du != "") {
-            dys = QString("(%1 %2)").arg(dy).arg(du);
+            if (du == "Hz") {
+                int semis;
+                float cents;
+                semis = Pitch::getPitchForFrequencyDifference(v0, v1, &cents);
+                dys = QString("[%1 %2 (%3)]")
+                    .arg(dy).arg(du)
+                    .arg(Pitch::getLabelForPitchRange(semis, cents));
+            } else {
+                dys = QString("[%1 %2]").arg(dy).arg(du);
+            }
         } else {
-            dys = QString("(%1)").arg(dy);
+            dys = QString("[%1]").arg(dy);
         }
         dw = std::max(dw, paint.fontMetrics().width(dys));
     }
