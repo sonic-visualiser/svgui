@@ -21,6 +21,7 @@
 
 class Layer;
 class Model;
+class Clipboard;
 
 class LayerFactory
 {
@@ -75,6 +76,8 @@ public:
     QString getLayerIconName(LayerType);
     QString getLayerTypeName(LayerType);
     LayerType getLayerTypeForName(QString);
+
+    LayerType getLayerTypeForClipboardContents(const Clipboard &);
 
 protected:
     template <typename LayerClass, typename ModelClass>

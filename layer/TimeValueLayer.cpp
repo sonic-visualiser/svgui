@@ -36,6 +36,7 @@
 #include <QMouseEvent>
 #include <QRegExp>
 #include <QTextStream>
+#include <QMessageBox>
 #include <QInputDialog>
 
 #include <iostream>
@@ -1196,7 +1197,7 @@ TimeValueLayer::copy(View *v, Selection s, Clipboard &to)
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->value, i->label);
-            point.setReferenceFrame(m_model->alignToReference(i->frame));
+            point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
         }
     }
@@ -1209,6 +1210,25 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
     if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
+
+    bool realign = false;
+
+    if (clipboardHasDifferentAlignment(v, from)) {
+
+        QMessageBox::StandardButton button =
+            QMessageBox::question(v, tr("Re-align pasted items?"),
+                                  tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+                                  QMessageBox::Yes);
+
+        if (button == QMessageBox::Cancel) {
+            return false;
+        }
+
+        if (button == QMessageBox::Yes) {
+            realign = true;
+        }
+    }
 
     SparseTimeValueModel::EditCommand *command =
 	new SparseTimeValueModel::EditCommand(m_model, tr("Paste"));
@@ -1324,10 +1344,23 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
+
         size_t frame = 0;
-        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
-            frame = i->getFrame() + frameOffset;
+
+        if (!realign) {
+            
+            frame = i->getFrame();
+
+        } else {
+
+            if (i->haveReferenceFrame()) {
+                frame = i->getReferenceFrame();
+                frame = alignFromReference(v, frame);
+            } else {
+                frame = i->getFrame();
+            }
         }
+
         SparseTimeValueModel::Point newPoint(frame);
   
         if (i->haveLabel()) {
@@ -1349,7 +1382,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
 
     command->finish();
     return true;
-    }
+}
 
 void
 TimeValueLayer::toXml(QTextStream &stream,

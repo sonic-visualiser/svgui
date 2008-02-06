@@ -468,6 +468,7 @@ protected:
 
     virtual size_t alignToReference(View *v, size_t frame) const;
     virtual size_t alignFromReference(View *v, size_t frame) const;
+    bool clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const;
 
     struct MeasureRect {
 
