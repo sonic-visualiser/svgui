@@ -642,8 +642,8 @@ PropertyBox::addNewColour()
     if (!newColour.isValid()) return;
 
     ColourNameDialog dialog(tr("Name New Colour"),
-                            tr("Enter name for the new colour:"),
-                            newColour, "", this);
+                            tr("Enter a name for the new colour:"),
+                            newColour, newColour.name(), this);
     dialog.showDarkBackgroundCheckbox(tr("Prefer black background for this colour"));
     if (dialog.exec() == QDialog::Accepted) {
         //!!! command
