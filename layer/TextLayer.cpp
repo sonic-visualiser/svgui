@@ -671,7 +671,7 @@ TextLayer::deleteSelection(Selection s)
 }
 
 void
-TextLayer::copy(Selection s, Clipboard &to)
+TextLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -689,7 +689,7 @@ TextLayer::copy(Selection s, Clipboard &to)
 }
 
 bool
-TextLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
+TextLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 

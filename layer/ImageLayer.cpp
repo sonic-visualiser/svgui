@@ -802,7 +802,7 @@ ImageLayer::deleteSelection(Selection s)
 }
 
 void
-ImageLayer::copy(Selection s, Clipboard &to)
+ImageLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -821,7 +821,7 @@ ImageLayer::copy(Selection s, Clipboard &to)
 }
 
 bool
-ImageLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
+ImageLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 

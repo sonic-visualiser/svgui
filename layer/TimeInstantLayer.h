@@ -59,8 +59,8 @@ public:
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
-    virtual void copy(Selection s, Clipboard &to);
-    virtual bool paste(const Clipboard &from, int frameOffset,
+    virtual void copy(View *v, Selection s, Clipboard &to);
+    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
                        bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
@@ -105,7 +105,7 @@ protected:
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    bool clipboardAlignmentDiffers(const Clipboard &) const;
+    bool clipboardAlignmentDiffers(View *v, const Clipboard &) const;
 
     SparseOneDimensionalModel *m_model;
     bool m_editing;

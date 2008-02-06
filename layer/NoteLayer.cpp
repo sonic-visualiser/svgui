@@ -916,7 +916,7 @@ NoteLayer::deleteSelection(Selection s)
 }    
 
 void
-NoteLayer::copy(Selection s, Clipboard &to)
+NoteLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -934,7 +934,7 @@ NoteLayer::copy(Selection s, Clipboard &to)
 }
 
 bool
-NoteLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
+NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 
