@@ -184,6 +184,82 @@ Layer::alignFromReference(View *v, size_t frame) const
 }
 
 bool
+Layer::clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const
+{
+    // Notes on pasting to an aligned layer:
+    // 
+    // Each point may have a reference frame that may differ from the
+    // point's given frame (in its source model).  If it has no
+    // reference frame, we have to assume the source model was not
+    // aligned or was the reference model: when cutting or copying
+    // points from a layer, we must always set their reference frame
+    // correctly if we are aligned.
+    // 
+    // When pasting:
+    // - if point's reference and aligned frames differ:
+    //   - if this layer is aligned:
+    //     - if point's aligned frame matches this layer's aligned version
+    //       of point's reference frame:
+    //       - we can paste at reference frame or our frame
+    //     - else
+    //       - we can paste at reference frame, result of aligning reference
+    //         frame in our model, or literal source frame
+    //   - else
+    //     - we can paste at reference (our) frame, or literal source frame
+    // - else
+    //   - if this layer is aligned:
+    //     - we can paste at reference (point's only available) frame,
+    //       or result of aligning reference frame in our model
+    //   - else
+    //     - we can only paste at reference frame
+    // 
+    // Which of these alternatives are useful?
+    //
+    // Example: we paste between two tracks that are aligned to the
+    // same reference, and the points are at 10s and 20s in the source
+    // track, corresponding to 5s and 10s in the reference but 20s and
+    // 30s in the target track.
+    // 
+    // The obvious default is to paste at 20s and 30s; if we aren't
+    // doing that, would it be better to paste at 5s and 10s or at 10s
+    // and 20s?  We probably don't ever want to do the former, do we?
+    // We either want to be literal all the way through, or aligned
+    // all the way through.
+
+    for (Clipboard::PointList::const_iterator i = clip.getPoints().begin();
+         i != clip.getPoints().end(); ++i) {
+
+        // In principle, we want to know whether the aligned version
+        // of the reference frame in our layer is the same as the
+        // source frame contained in the clipboard point.  However,
+        // because of rounding during alignment, that won't
+        // necessarily be the case even if the clipboard point came
+        // from our layer!  What we need to check is whether, if we
+        // aligned the clipboard point's frame back to the reference
+        // using this layer's alignment, we would obtain the same
+        // reference frame as that for the clipboard point.
+
+        // What if the clipboard point has no reference frame?  Then
+        // we have to treat it as having its own frame as the
+        // reference (i.e. having been copied from the reference
+        // model).
+        
+        long sourceFrame = i->getFrame();
+        long referenceFrame = sourceFrame;
+        if (i->haveReferenceFrame()) {
+            referenceFrame = i->getReferenceFrame();
+        }
+        long myMappedFrame = alignToReference(v, sourceFrame);
+
+//        std::cerr << "sourceFrame = " << sourceFrame << ", referenceFrame = " << referenceFrame << " (have = " << i->haveReferenceFrame() << "), myMappedFrame = " << myMappedFrame << std::endl;
+
+        if (myMappedFrame != referenceFrame) return true;
+    }
+
+    return false;
+}
+
+bool
 Layer::MeasureRect::operator<(const MeasureRect &mr) const
 {
     if (haveFrames) {

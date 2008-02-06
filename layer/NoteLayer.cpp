@@ -33,6 +33,7 @@
 #include <QPainterPath>
 #include <QMouseEvent>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include <iostream>
 #include <cmath>
@@ -927,7 +928,7 @@ NoteLayer::copy(View *v, Selection s, Clipboard &to)
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->value, i->duration, i->level, i->label);
-            point.setReferenceFrame(m_model->alignToReference(i->frame));
+            point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
         }
     }
@@ -940,6 +941,25 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
 
     const Clipboard::PointList &points = from.getPoints();
 
+    bool realign = false;
+
+    if (clipboardHasDifferentAlignment(v, from)) {
+
+        QMessageBox::StandardButton button =
+            QMessageBox::question(v, tr("Re-align pasted items?"),
+                                  tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+                                  QMessageBox::Yes);
+
+        if (button == QMessageBox::Cancel) {
+            return false;
+        }
+
+        if (button == QMessageBox::Yes) {
+            realign = true;
+        }
+    }
+
     NoteModel::EditCommand *command =
 	new NoteModel::EditCommand(m_model, tr("Paste"));
 
@@ -948,9 +968,21 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
         
         if (!i->haveFrame()) continue;
         size_t frame = 0;
-        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
-            frame = i->getFrame() + frameOffset;
+
+        if (!realign) {
+            
+            frame = i->getFrame();
+
+        } else {
+
+            if (i->haveReferenceFrame()) {
+                frame = i->getReferenceFrame();
+                frame = alignFromReference(v, frame);
+            } else {
+                frame = i->getFrame();
+            }
         }
+
         NoteModel::Point newPoint(frame);
   
         if (i->haveLabel()) newPoint.label = i->getLabel();
