@@ -92,8 +92,11 @@ public:
     virtual QString getPropertyContainerIconName() const;
 
     virtual QString getPropertyContainerName() const {
-	return objectName();
+        if (m_presentationName != "") return m_presentationName;
+	else return objectName();
     }
+
+    virtual void setPresentationName(QString name);
 
     virtual QString getLayerPresentationName() const;
     virtual QPixmap getLayerPresentationPixmap(QSize) const { return QPixmap(); }
@@ -544,6 +547,8 @@ protected:
 
     void paintMeasurementRect(View *v, QPainter &paint,
                               const MeasureRect &r, bool focus) const;
+
+    QString m_presentationName;
 
 private:
     mutable QMutex m_dormancyMutex;

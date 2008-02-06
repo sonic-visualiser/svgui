@@ -68,10 +68,16 @@ Layer::getPropertyContainerIconName() const
 	(LayerFactory::getInstance()->getLayerType(this));
 }
 
+void
+Layer::setPresentationName(QString name)
+{
+    m_presentationName = name;
+}
+
 QString
 Layer::getLayerPresentationName() const
 {
-//    QString layerName = objectName();
+    if (m_presentationName != "") return m_presentationName;
 
     LayerFactory *factory = LayerFactory::getInstance();
     QString layerName = factory->getLayerPresentationName
@@ -588,6 +594,11 @@ Layer::toXml(QTextStream &stream,
 {
     stream << indent;
 
+    if (m_presentationName != "") {
+        extraAttributes = QString("%1 presentationName=\"%2\"")
+            .arg(extraAttributes).arg(encodeEntities(m_presentationName));
+    }
+
     stream << QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5")
 	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
                             (LayerFactory::getInstance()->getLayerType(this))))
@@ -616,6 +627,11 @@ Layer::toBriefXml(QTextStream &stream,
                   QString indent, QString extraAttributes) const
 {
     stream << indent;
+
+    if (m_presentationName != "") {
+        extraAttributes = QString("%1 presentationName=\"%2\"")
+            .arg(extraAttributes).arg(encodeEntities(m_presentationName));
+    }
 
     stream << QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
 	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
