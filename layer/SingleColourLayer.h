@@ -70,6 +70,7 @@ protected:
 
     int m_colour;
     bool m_colourExplicitlySet;
+    bool m_defaultColourSet;
 };
 
 #endif

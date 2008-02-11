@@ -27,7 +27,8 @@ SingleColourLayer::m_colourRefCount;
 
 SingleColourLayer::SingleColourLayer() :
     m_colour(0),
-    m_colourExplicitlySet(false)
+    m_colourExplicitlySet(false),
+    m_defaultColourSet(false)
 {
     setDefaultColourFor(0);
 }
@@ -125,7 +126,9 @@ SingleColourLayer::setProperty(const PropertyName &name, int value)
 void
 SingleColourLayer::setDefaultColourFor(View *v)
 {
-    if (m_colourExplicitlySet) return;
+    std::cerr << "SingleColourLayer::setDefaultColourFor: m_colourExplicitlySet = " << m_colourExplicitlySet << ", m_defaultColourSet " << m_defaultColourSet << std::endl;
+
+    if (m_colourExplicitlySet || m_defaultColourSet) return;
 
     bool dark = false;
     if (v) {
@@ -155,6 +158,7 @@ SingleColourLayer::setDefaultColourFor(View *v)
 
     if (hint >= 0 && impose) {
         setBaseColour(hint);
+        m_defaultColourSet = true;
         return;
     }
 
@@ -190,6 +194,8 @@ SingleColourLayer::setDefaultColourFor(View *v)
     } else {
         m_colourRefCount[m_colour]++;
     }
+
+    m_defaultColourSet = true;
 }
 
 void
