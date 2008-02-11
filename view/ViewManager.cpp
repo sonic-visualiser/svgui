@@ -275,18 +275,19 @@ ViewManager::constrainFrameToSelection(size_t frame) const
     MultiSelection::SelectionList sl = getSelections();
     if (sl.empty()) return frame;
 
-    size_t selectionStartFrame = sl.begin()->getStartFrame();
-    if (frame < selectionStartFrame) {
-        frame = selectionStartFrame;
-        return frame;
+    for (MultiSelection::SelectionList::const_iterator i = sl.begin();
+         i != sl.end(); ++i) {
+
+        if (frame < i->getEndFrame()) {
+            if (frame < i->getStartFrame()) {
+                return i->getStartFrame();
+            } else {
+                return frame;
+            }
+        }
     }
 
-    MultiSelection::SelectionList::iterator i = sl.end();
-    --i;
-    size_t selectionEndFrame = i->getEndFrame();
-    if (frame > selectionEndFrame) frame = selectionEndFrame;
-
-    return frame;
+    return sl.begin()->getStartFrame();
 }
 
 void
