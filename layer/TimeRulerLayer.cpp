@@ -27,6 +27,8 @@
 #include <iostream>
 #include <cmath>
 
+//#define DEBUG_TIME_RULER_LAYER 1
+
 using std::cerr;
 using std::endl;
 
@@ -192,104 +194,150 @@ TimeRulerLayer::getMajorTickSpacing(View *v, bool &quarterTicks) const
 void
 TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
-//    std::cerr << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
-//	      << ") [" << rect.width() << "x" << rect.height() << "]" << std::endl;
+#ifdef DEBUG_TIME_RULER_LAYER
+    std::cerr << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
+	      << ") [" << rect.width() << "x" << rect.height() << "]" << std::endl;
+#endif
     
     if (!m_model || !m_model->isOK()) return;
 
     int sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
-    long startFrame = v->getStartFrame();
-    long endFrame = v->getEndFrame();
+    long startFrame = v->getFrameForX(rect.x() - 50);
 
-    int zoomLevel = v->getZoomLevel();
-
-    long rectStart = startFrame + (rect.x() - 100) * zoomLevel;
-    long rectEnd = startFrame + (rect.x() + rect.width() + 100) * zoomLevel;
-
-//    std::cerr << "TimeRulerLayer::paint: calling paint.save()" << std::endl;
-    paint.save();
-//!!!    paint.setClipRect(v->rect());
-
-    int minPixelSpacing = 50;
+#ifdef DEBUG_TIME_RULER_LAYER
+    std::cerr << "start frame = " << startFrame << std::endl;
+#endif
 
     bool quarter = false;
     int incms = getMajorTickSpacing(v, quarter);
 
-    RealTime rt = RealTime::frame2RealTime(rectStart, sampleRate);
-    long ms = rt.sec * 1000 + rt.msec();
+    int ms = lrint(1000.0 * (double(startFrame) / double(sampleRate)));
     ms = (ms / incms) * incms - incms;
 
-    RealTime incRt = RealTime::fromMilliseconds(incms);
-    long incFrame = RealTime::realTime2Frame(incRt, sampleRate);
-    int incX = incFrame / zoomLevel;
+#ifdef DEBUG_TIME_RULER_LAYER
+    std::cerr << "start ms = " << ms << " at step " << incms << std::endl;
+#endif
+
+    // Calculate the number of ticks per increment -- approximate
+    // values for x and frame counts here will do, no rounding issue.
+    // We always use the exact incms in our calculations for where to
+    // draw the actual ticks or lines.
+
+    int minPixelSpacing = 50;
+    long incFrame = (incms * sampleRate) / 1000;
+    int incX = incFrame / v->getZoomLevel();
     int ticks = 10;
     if (incX < minPixelSpacing * 2) {
 	ticks = quarter ? 4 : 5;
     }
 
-    QRect oldClipRect = rect;
-    QRect newClipRect(oldClipRect.x() - 25, oldClipRect.y(),
-		      oldClipRect.width() + 50, oldClipRect.height());
-    paint.setClipRect(newClipRect);
-    paint.setClipRect(rect);
-
     QColor greyColour = getPartialShades(v)[1];
+
+    paint.save();
 
     while (1) {
 
-	rt = RealTime::fromMilliseconds(ms);
+        // frame is used to determine where to draw the lines, so it
+        // needs to correspond to an exact pixel (so that we don't get
+        // a different pixel when scrolling a small amount and
+        // re-drawing with a different start frame).
+
+        double dms = ms;
+        long frame = lrint((dms * sampleRate) / 1000.0);
+        frame /= v->getZoomLevel();
+        frame *= v->getZoomLevel(); // so frame corresponds to an exact pixel
+
 	ms += incms;
 
-	long frame = RealTime::realTime2Frame(rt, sampleRate);
-	if (frame >= rectEnd) break;
+        int x = v->getXForFrame(frame);
 
-	int x = (frame - startFrame) / zoomLevel;
-	if (x < rect.x() || x >= rect.x() + rect.width()) continue;
+#ifdef DEBUG_TIME_RULER_LAYER
+        std::cerr << "Considering frame = " << frame << ", x = " << x << std::endl;
+#endif
 
-	paint.setPen(greyColour);
-	paint.drawLine(x, 0, x, v->height());
+        if (x >= rect.x() + rect.width() + 50) {
+#ifdef DEBUG_TIME_RULER_LAYER
+            std::cerr << "X well out of range, ending here" << std::endl;
+#endif
+            break;
+        }
 
-	paint.setPen(getBaseQColor());
-	paint.drawLine(x, 0, x, 5);
-	paint.drawLine(x, v->height() - 6, x, v->height() - 1);
+	if (x >= rect.x() - 50) {
 
-	QString text(QString::fromStdString(rt.toText()));
+#ifdef DEBUG_TIME_RULER_LAYER
+            std::cerr << "X in range, drawing line here" << std::endl;
+#endif
 
-	int y;
-	QFontMetrics metrics = paint.fontMetrics();
-	switch (m_labelHeight) {
-	default:
-	case LabelTop:
-	    y = 6 + metrics.ascent();
-	    break;
-	case LabelMiddle:
-	    y = v->height() / 2 - metrics.height() / 2 + metrics.ascent();
-	    break;
-	case LabelBottom:
-	    y = v->height() - metrics.height() + metrics.ascent() - 6;
-	}
+            RealTime rt = RealTime::fromMilliseconds(ms);
 
-	int tw = metrics.width(text);
+            QString text(QString::fromStdString(rt.toText()));
+            QFontMetrics metrics = paint.fontMetrics();
+            int tw = metrics.width(text);
 
-        if (v->getViewManager() && v->getViewManager()->getOverlayMode() !=
-            ViewManager::NoOverlays) {
+            if (tw < 50 &&
+                (x < rect.x() - tw/2 ||
+                 x >= rect.x() + rect.width() + tw/2)) {
+#ifdef DEBUG_TIME_RULER_LAYER
+                std::cerr << "hm, maybe X isn't in range after all (x = " << x << ", tw = " << tw << ", rect.x() = " << rect.x() << ", rect.width() = " << rect.width() << ")" << std::endl;
+#endif
+            }
 
-            if (v->getLayer(0) == this) {
-                // backmost layer, don't worry about outlining the text
-                paint.drawText(x+2 - tw/2, y, text);
-            } else {
-                v->drawVisibleText(paint, x+2 - tw/2, y, text, View::OutlinedText);
+            paint.setPen(greyColour);
+            paint.drawLine(x, 0, x, v->height());
+
+            paint.setPen(getBaseQColor());
+            paint.drawLine(x, 0, x, 5);
+            paint.drawLine(x, v->height() - 6, x, v->height() - 1);
+
+            int y;
+            switch (m_labelHeight) {
+            default:
+            case LabelTop:
+                y = 6 + metrics.ascent();
+                break;
+            case LabelMiddle:
+                y = v->height() / 2 - metrics.height() / 2 + metrics.ascent();
+                break;
+            case LabelBottom:
+                y = v->height() - metrics.height() + metrics.ascent() - 6;
+            }
+
+            if (v->getViewManager() && v->getViewManager()->getOverlayMode() !=
+                ViewManager::NoOverlays) {
+
+                if (v->getLayer(0) == this) {
+                    // backmost layer, don't worry about outlining the text
+                    paint.drawText(x+2 - tw/2, y, text);
+                } else {
+                    v->drawVisibleText(paint, x+2 - tw/2, y, text, View::OutlinedText);
+                }
             }
         }
 
 	paint.setPen(greyColour);
 
 	for (int i = 1; i < ticks; ++i) {
-	    rt = rt + (incRt / ticks);
-	    frame = RealTime::realTime2Frame(rt, sampleRate);
-	    x = (frame - startFrame) / zoomLevel;
+
+            dms = ms - incms + (i * double(incms)) / ticks;
+            frame = lrint((dms * sampleRate) / 1000.0);
+            frame /= v->getZoomLevel();
+            frame *= v->getZoomLevel(); // exact pixel as above
+
+            x = v->getXForFrame(frame);
+
+            if (x < rect.x() || x >= rect.x() + rect.width()) {
+#ifdef DEBUG_TIME_RULER_LAYER
+//                std::cerr << "tick " << i << ": X out of range, going on to next tick" << std::endl;
+#endif
+                continue;
+            }
+
+#ifdef DEBUG_TIME_RULER_LAYER
+            std::cerr << "tick " << i << " in range, drawing at " << x << std::endl;
+#endif
+
 	    int sz = 5;
 	    if (ticks == 10) {
 		if ((i % 2) == 1) {
