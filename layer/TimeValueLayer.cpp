@@ -604,6 +604,9 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         if (m_plotStyle != PlotSegmentation) {
             textY = y - paint.fontMetrics().height()
                       + paint.fontMetrics().ascent();
+            if (textY < paint.fontMetrics().ascent() + 1) {
+                textY = paint.fontMetrics().ascent() + 1;
+            }
         }
 
 	bool haveNext = false;
@@ -1338,7 +1341,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
         }
     }
 
-    SparseTimeValueModel::Point prevPoint = 0;
+    SparseTimeValueModel::Point prevPoint(0);
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1369,11 +1372,29 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
             newPoint.label = QString("%1").arg(i->getValue());
         }
 
+        bool usePrev = false;
+        SparseTimeValueModel::Point formerPrevPoint = prevPoint;
+
         if (i->haveValue()) {
             newPoint.value = i->getValue();
         } else {
+//            std::cerr << "Setting value on point at " << newPoint.frame << " from labeller";
+//            if (i == points.begin()) {
+//                std::cerr << ", no prev point" << std::endl;
+//            } else {
+//                std::cerr << ", prev point is at " << prevPoint.frame << std::endl;
+//            }
             labeller.setValue<SparseTimeValueModel::Point>
                 (newPoint, (i == points.begin()) ? 0 : &prevPoint);
+//            std::cerr << "New point value = " << newPoint.value << std::endl;
+            if (labeller.actingOnPrevPoint() && i != points.begin()) {
+                usePrev = true;
+            }
+        }
+
+        if (usePrev) {
+            command->deletePoint(formerPrevPoint);
+            command->addPoint(prevPoint);
         }
 
         prevPoint = newPoint;
