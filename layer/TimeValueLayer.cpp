@@ -1338,7 +1338,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
         }
     }
 
-    static SparseTimeValueModel::Point prevPoint(0);
+    SparseTimeValueModel::Point prevPoint = 0;
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1373,7 +1373,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
             newPoint.value = i->getValue();
         } else {
             labeller.setValue<SparseTimeValueModel::Point>
-                (newPoint, i == points.begin() ? 0 : &prevPoint);
+                (newPoint, (i == points.begin()) ? 0 : &prevPoint);
         }
 
         prevPoint = newPoint;
