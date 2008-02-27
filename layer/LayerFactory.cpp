@@ -28,6 +28,8 @@
 #include "SliceLayer.h"
 #include "SliceableLayer.h"
 
+#include "base/Clipboard.h"
+
 #include "data/model/RangeSummarisableTimeValueModel.h"
 #include "data/model/DenseTimeValueModel.h"
 #include "data/model/SparseOneDimensionalModel.h"
@@ -350,6 +352,10 @@ LayerFactory::setChannel(Layer *layer, int channel)
 	dynamic_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	return;
     }
+    if (dynamic_cast<SpectrumLayer *>(layer)) {
+	dynamic_cast<SpectrumLayer *>(layer)->setChannel(channel);
+	return;
+    }
 }
 
 Layer *
@@ -478,3 +484,24 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
     settings.endGroup();
 }
 
+LayerFactory::LayerType
+LayerFactory::getLayerTypeForClipboardContents(const Clipboard &clip)
+{
+    const Clipboard::PointList &contents = clip.getPoints();
+
+    bool haveFrame = false;
+    bool haveValue = false;
+    bool haveDuration = false;
+
+    for (Clipboard::PointList::const_iterator i = contents.begin();
+         i != contents.end(); ++i) {
+        if (i->haveFrame()) haveFrame = true;
+        if (i->haveValue()) haveValue = true;
+        if (i->haveDuration()) haveDuration = true;
+    }
+
+    if (haveFrame && haveValue && haveDuration) return Notes;
+    if (haveFrame && haveValue) return TimeValues;
+    return TimeInstants;
+}
+    

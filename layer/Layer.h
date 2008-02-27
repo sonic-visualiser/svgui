@@ -92,8 +92,11 @@ public:
     virtual QString getPropertyContainerIconName() const;
 
     virtual QString getPropertyContainerName() const {
-	return objectName();
+        if (m_presentationName != "") return m_presentationName;
+	else return objectName();
     }
+
+    virtual void setPresentationName(QString name);
 
     virtual QString getLayerPresentationName() const;
     virtual QPixmap getLayerPresentationPixmap(QSize) const { return QPixmap(); }
@@ -193,7 +196,7 @@ public:
     virtual void resizeSelection(Selection, Selection /* newSize */) { }
     virtual void deleteSelection(Selection) { }
 
-    virtual void copy(Selection, Clipboard & /* to */) { }
+    virtual void copy(View *, Selection, Clipboard & /* to */) { }
 
     /**
      * Paste from the given clipboard onto the layer at the given
@@ -202,7 +205,8 @@ public:
      * return false if the user cancelled the paste operation.  This
      * function should return true if a paste actually occurred.
      */
-    virtual bool paste(const Clipboard & /* from */,
+    virtual bool paste(View *,
+                       const Clipboard & /* from */,
                        int /* frameOffset */,
                        bool /* interactive */) { return false; }
 
@@ -465,6 +469,10 @@ signals:
 protected:
     void connectSignals(const Model *);
 
+    virtual size_t alignToReference(View *v, size_t frame) const;
+    virtual size_t alignFromReference(View *v, size_t frame) const;
+    bool clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const;
+
     struct MeasureRect {
 
         mutable QRect pixrect;
@@ -539,6 +547,8 @@ protected:
 
     void paintMeasurementRect(View *v, QPainter &paint,
                               const MeasureRect &r, bool focus) const;
+
+    QString m_presentationName;
 
 private:
     mutable QMutex m_dormancyMutex;

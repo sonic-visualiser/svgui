@@ -142,6 +142,8 @@ protected:
 
     bool m_navigating;
     bool m_resizing;
+    bool m_editing;
+    bool m_releasing;
     size_t m_dragCentreFrame;
     float m_dragStartMinValue;
     bool m_centreLineVisible;
@@ -157,6 +159,14 @@ protected:
         FreeDrag
     };
     DragMode m_dragMode;
+
+    DragMode updateDragMode(DragMode currentMode,
+                            QPoint origin,
+                            QPoint currentPoint,
+                            bool canMoveHorizontal,
+                            bool canMoveVertical,
+                            bool resistHorizontal,
+                            bool resistVertical);
 
     QWidget *m_headsUpDisplay;
     Panner *m_vpan;

@@ -39,7 +39,8 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_colourScale(LinearScale),
     m_colourMap(0),
     m_normalizeColumns(false),
-    m_normalizeVisibleArea(false)
+    m_normalizeVisibleArea(false),
+    m_invertVertical(false)
 {
     
 }
@@ -87,6 +88,7 @@ Colour3DPlotLayer::getProperties() const
     list.push_back("Colour Scale");
     list.push_back("Normalize Columns");
     list.push_back("Normalize Visible Area");
+    list.push_back("Invert Vertical Scale");
     return list;
 }
 
@@ -97,6 +99,16 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Colour Scale") return tr("Scale");
     if (name == "Normalize Columns") return tr("Normalize Columns");
     if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
+    if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
+    return "";
+}
+
+QString
+Colour3DPlotLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Normalize Columns") return "normalise-columns";
+    if (name == "Normalize Visible Area") return "normalise";
+    if (name == "Invert Vertical Scale") return "invert-vertical";
     return "";
 }
 
@@ -105,6 +117,7 @@ Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Normalize Columns") return ToggleProperty;
     if (name == "Normalize Visible Area") return ToggleProperty;
+    if (name == "Invert Vertical Scale") return ToggleProperty;
     return ValueProperty;
 }
 
@@ -113,6 +126,7 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Normalize Columns" ||
         name == "Normalize Visible Area" ||
+        name == "Invert Vertical Scale" ||
 	name == "Colour Scale") return tr("Scale");
     return QString();
 }
@@ -153,6 +167,11 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 	
         *deflt = 0;
 	val = (m_normalizeVisibleArea ? 1 : 0);
+
+    } else if (name == "Invert Vertical Scale") {
+	
+        *deflt = 0;
+	val = (m_invertVertical ? 1 : 0);
 
     } else {
 	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
@@ -195,6 +214,8 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	setNormalizeColumns(value ? true : false);
     } else if (name == "Normalize Visible Area") {
 	setNormalizeVisibleArea(value ? true : false);
+    } else if (name == "Invert Vertical Scale") {
+	setInvertVertical(value ? true : false);
     }
 }
 
@@ -246,6 +267,21 @@ Colour3DPlotLayer::getNormalizeVisibleArea() const
     return m_normalizeVisibleArea;
 }
 
+void
+Colour3DPlotLayer::setInvertVertical(bool n)
+{
+    if (m_invertVertical == n) return;
+    m_invertVertical = n;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
+bool
+Colour3DPlotLayer::getInvertVertical() const
+{
+    return m_invertVertical;
+}
+
 bool
 Colour3DPlotLayer::isLayerScrollable(const View *v) const
 {
@@ -277,6 +313,8 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     float binHeight = float(v->height()) / m_model->getHeight();
     int sy = int((v->height() - y) / binHeight);
+
+    if (m_invertVertical) sy = m_model->getHeight() - sy - 1;
 
     float value = m_model->getValueAt(sx0, sy);
 
@@ -358,12 +396,15 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
     for (size_t i = 0; i < m_model->getHeight(); ++i) {
 
-        if ((i % step) != 0) continue;
+        size_t idx = i;
+        if (m_invertVertical) idx = m_model->getHeight() - idx - 1;
+
+        if ((idx % step) != 0) continue;
 
 	int y0 = int(v->height() - (i * binHeight) - 1);
 	
-	QString text = m_model->getBinName(i);
-	if (text == "") text = QString("[%1]").arg(i + 1);
+	QString text = m_model->getBinName(idx);
+	if (text == "") text = QString("[%1]").arg(idx + 1);
 
 	paint.drawLine(cw, y0, w, y0);
 
@@ -518,7 +559,12 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             if (pixel < 0) pixel = 0;
             if (pixel > 255) pixel = 255;
 
-            m_cache->setPixel(c - firstBin, y, pixel);
+            if (m_invertVertical) {
+                m_cache->setPixel(c - firstBin, m_model->getHeight() - y - 1,
+                                  pixel);
+            } else {
+                m_cache->setPixel(c - firstBin, y, pixel);
+            }
         }
     }
 }
@@ -574,14 +620,21 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     fillCache(sx0 < 0 ? 0 : sx0,
               sx1 < 0 ? 0 : sx1);
 
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+    std::cerr << "Colour3DPlotLayer::paint: height = "<< m_model->getHeight() << ", modelStart = " << modelStart << ", resolution = " << modelResolution << ", model rate = " << m_model->getSampleRate() << std::endl;
+#endif
+
     if (int(m_model->getHeight()) >= v->height() ||
-        int(modelResolution) < v->getZoomLevel() / 2) {
+        int(modelResolution * m_model->getSampleRate()) < v->getZoomLevel() / 2) {
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+        std::cerr << "calling paintDense" << std::endl;
+#endif
         paintDense(v, paint, rect);
         return;
     }
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    std::cerr << "Colour3DPlotLayer::paint: w " << w << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sw << ", sh " << sh << std::endl;
+    std::cerr << "Colour3DPlotLayer::paint: w " << x1-x0 << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sx1-sx0 << ", sh " << sh << std::endl;
     std::cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", resolution " << m_model->getResolution() << std::endl;
 #endif
 
@@ -596,7 +649,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
         
 	int fx = sx * int(modelResolution);
 
-	if (fx + int(modelResolution) < int(modelStart) ||
+	if (fx + int(modelResolution) <= int(modelStart) ||
 	    fx > int(modelEnd)) continue;
 
         int rx0 = v->getXForFrame(int((fx + int(modelStart)) * srRatio));
@@ -687,13 +740,15 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     for (int x = x0; x < x1; ++x) {
 
-        long xf = long(v->getFrameForX(x) / srRatio);
+        long xf = long(v->getFrameForX(x));
         if (xf < 0) {
             for (int y = 0; y < h; ++y) {
                 img.setPixel(x - x0, y, m_cache->color(0));
             }
             continue;
         }
+
+        xf /= srRatio;
 
         float sx0 = (float(xf) - modelStart) / modelResolution;
         float sx1 = (float(v->getFrameForX(x+1) / srRatio) - modelStart) / modelResolution;

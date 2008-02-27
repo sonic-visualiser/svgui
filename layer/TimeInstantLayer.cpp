@@ -25,10 +25,12 @@
 #include "data/model/SparseOneDimensionalModel.h"
 
 #include "widgets/ItemEditDialog.h"
+#include "widgets/ListInputDialog.h"
 
 #include <QPainter>
 #include <QMouseEvent>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include <iostream>
 #include <cmath>
@@ -711,7 +713,7 @@ TimeInstantLayer::deleteSelection(Selection s)
 }
 
 void
-TimeInstantLayer::copy(Selection s, Clipboard &to)
+TimeInstantLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -722,43 +724,68 @@ TimeInstantLayer::copy(Selection s, Clipboard &to)
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->label);
-            point.setReferenceFrame(m_model->alignToReference(i->frame));
+            point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
         }
     }
 }
 
 bool
-TimeInstantLayer::paste(const Clipboard &from, int frameOffset, bool)
+TimeInstantLayer::paste(View *v, const Clipboard &from, int frameOffset, bool)
 {
     if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
 
+    bool realign = false;
+
+    if (clipboardHasDifferentAlignment(v, from)) {
+
+        QMessageBox::StandardButton button =
+            QMessageBox::question(v, tr("Re-align pasted instants?"),
+                                  tr("The instants you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+                                  QMessageBox::Yes);
+
+        if (button == QMessageBox::Cancel) {
+            return false;
+        }
+
+        if (button == QMessageBox::Yes) {
+            realign = true;
+        }
+    }
+
     SparseOneDimensionalModel::EditCommand *command =
 	new SparseOneDimensionalModel::EditCommand(m_model, tr("Paste"));
-
-    //!!!
-    
-    // Clipboard::haveReferenceFrames() will return true if any of the
-    // items in the clipboard came from an aligned, non-reference model.
-    
-    // We need to know whether these points came from our model or not
-    // -- if they did, we don't want to align them.
-
-    // If they didn't come from our model, and if reference frames are
-    // available, then we want to offer to align them.  If reference
-    // frames are unavailable but they came from the reference model,
-    // we want to offer to align them too.
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
+
         size_t frame = 0;
-        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
-            frame = i->getFrame() + frameOffset;
+
+        if (!realign) {
+            
+            frame = i->getFrame();
+
+        } else {
+
+            if (i->haveReferenceFrame()) {
+                frame = i->getReferenceFrame();
+                frame = alignFromReference(v, frame);
+            } else {
+                frame = i->getFrame();
+            }
         }
+
+        if (frameOffset > 0) frame += frameOffset;
+        else if (frameOffset < 0) {
+            if (frame > -frameOffset) frame += frameOffset;
+            else frame = 0;
+        }
+
         SparseOneDimensionalModel::Point newPoint(frame);
         if (i->haveLabel()) {
             newPoint.label = i->getLabel();

@@ -37,7 +37,7 @@ LabelCounterInputDialog::LabelCounterInputDialog(Labeller *labeller,
     layout->addWidget(label, 0, 0);
 
     QSpinBox *counter = new QSpinBox;
-    counter->setMinimum(1);
+    counter->setMinimum(-10);
     counter->setMaximum(10000);
     counter->setSingleStep(1);
     m_origSecondCounter = m_labeller->getSecondLevelCounterValue();
@@ -47,7 +47,7 @@ LabelCounterInputDialog::LabelCounterInputDialog(Labeller *labeller,
     layout->addWidget(counter, 0, 1);
 
     counter = new QSpinBox;
-    counter->setMinimum(1);
+    counter->setMinimum(-10);
     counter->setMaximum(10000);
     counter->setSingleStep(1);
     m_origCounter = m_labeller->getCounterValue();

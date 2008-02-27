@@ -71,6 +71,7 @@ Overview::modelChanged(size_t startFrame, size_t endFrame)
 void
 Overview::modelReplaced()
 {
+    m_playPointerFrame = getAlignedPlaybackFrame();
     View::modelReplaced();
 }
 
@@ -115,6 +116,8 @@ void
 Overview::viewManagerPlaybackFrameChanged(unsigned long f)
 {
     bool changed = false;
+
+    f = getAlignedPlaybackFrame();
 
     if (getXForFrame(m_playPointerFrame) != getXForFrame(f)) changed = true;
     m_playPointerFrame = f;
@@ -179,6 +182,15 @@ Overview::paintEvent(QPaintEvent *e)
 	long f0 = w->getFrameForX(0);
 	long f1 = w->getFrameForX(w->width());
 
+        if (f0 >= 0) {
+            size_t rf0 = w->alignToReference(f0);
+            f0 = alignFromReference(rf0);
+        }
+        if (f1 >= 0) {
+            size_t rf1 = w->alignToReference(f1);
+            f1 = alignFromReference(rf1);
+        }
+
 	int x0 = getXForFrame(f0);
 	int x1 = getXForFrame(f1);
 
@@ -200,12 +212,16 @@ void
 Overview::mousePressEvent(QMouseEvent *e)
 {
     m_clickPos = e->pos();
+    long clickFrame = getFrameForX(m_clickPos.x());
+    if (clickFrame > 0) m_dragCentreFrame = clickFrame;
+    else m_dragCentreFrame = 0;
+    m_clickedInRange = true;
+
     for (ViewSet::iterator i = m_views.begin(); i != m_views.end(); ++i) {
-	if (*i) {
-	    m_clickedInRange = true;
-	    m_dragCentreFrame = ((View *)*i)->getCentreFrame();
-	    break;
-	}
+	if (*i && (*i)->getAligningModel() == getAligningModel()) {
+            m_dragCentreFrame = (*i)->getCentreFrame();
+            break;
+        }
     }
 }
 
@@ -242,7 +258,8 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     
     if (std::max(m_centreFrame, newCentreFrame) -
 	std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
-	emit centreFrameChanged(newCentreFrame, true, PlaybackScrollContinuous);
+        size_t rf = alignToReference(newCentreFrame);
+	emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
     }
 }
 
@@ -250,7 +267,9 @@ void
 Overview::mouseDoubleClickEvent(QMouseEvent *e)
 {
     long frame = getFrameForX(e->x());
-    emit centreFrameChanged(frame, true, PlaybackScrollContinuous);
+    size_t rf = 0;
+    if (frame > 0) rf = alignToReference(frame);
+    emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
 }
 
 void

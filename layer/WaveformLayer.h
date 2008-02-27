@@ -202,6 +202,11 @@ protected:
 
     float getValueForY(const View *v, int y, size_t &channel) const;
 
+    bool getSourceFramesForX(View *v, int x, size_t modelZoomLevel,
+                             size_t &f0, size_t &f1) const;
+
+    float getNormalizeGain(View *v, int channel) const;
+
     virtual void flagBaseColourChanged() { m_cacheValid = false; }
 
     float        m_gain;

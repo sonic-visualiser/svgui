@@ -57,7 +57,7 @@ ViewManager::ViewManager() :
     settings.endGroup();
 
     if (getGlobalDarkBackground()) {
-
+/*
         std::cerr << "dark palette:" << std::endl;
         std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name().toStdString() << std::endl;
         std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name().toStdString() << std::endl;
@@ -70,7 +70,7 @@ ViewManager::ViewManager() :
         std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name().toStdString() << std::endl;
         std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name().toStdString() << std::endl;
         std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name().toStdString() << std::endl;
-
+*/
         m_lightPalette = QPalette(QColor("#000000"),  // WindowText
                                   QColor("#dddfe4"),  // Button
                                   QColor("#ffffff"),  // Light
@@ -83,6 +83,7 @@ ViewManager::ViewManager() :
                                   
 
     } else {
+/*
         std::cerr << "light palette:" << std::endl;
         std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name().toStdString() << std::endl;
         std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name().toStdString() << std::endl;
@@ -95,7 +96,7 @@ ViewManager::ViewManager() :
         std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name().toStdString() << std::endl;
         std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name().toStdString() << std::endl;
         std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name().toStdString() << std::endl;
-
+*/
         m_darkPalette = QPalette(QColor("#ffffff"),  // WindowText
                                  QColor("#3e3e3e"),  // Button
                                  QColor("#808080"),  // Light
@@ -274,18 +275,19 @@ ViewManager::constrainFrameToSelection(size_t frame) const
     MultiSelection::SelectionList sl = getSelections();
     if (sl.empty()) return frame;
 
-    size_t selectionStartFrame = sl.begin()->getStartFrame();
-    if (frame < selectionStartFrame) {
-        frame = selectionStartFrame;
-        return frame;
+    for (MultiSelection::SelectionList::const_iterator i = sl.begin();
+         i != sl.end(); ++i) {
+
+        if (frame < i->getEndFrame()) {
+            if (frame < i->getStartFrame()) {
+                return i->getStartFrame();
+            } else {
+                return frame;
+            }
+        }
     }
 
-    MultiSelection::SelectionList::iterator i = sl.end();
-    --i;
-    size_t selectionEndFrame = i->getEndFrame();
-    if (frame > selectionEndFrame) frame = selectionEndFrame;
-
-    return frame;
+    return sl.begin()->getStartFrame();
 }
 
 void
