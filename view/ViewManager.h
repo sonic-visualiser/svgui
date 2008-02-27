@@ -69,6 +69,9 @@ public:
     Model *getPlaybackModel() const;
     void setPlaybackModel(Model *);
 
+    size_t alignPlaybackFrameToReference(size_t) const;
+    size_t alignReferenceToPlaybackFrame(size_t) const;
+
     bool haveInProgressSelection() const;
     const Selection &getInProgressSelection(bool &exclusive) const;
     void setInProgressSelection(const Selection &selection, bool exclusive);
@@ -98,6 +101,7 @@ public:
 	SelectMode,
         EditMode,
 	DrawMode,
+	EraseMode,
 	MeasureMode
     };
     ToolMode getToolMode() const { return m_toolMode; }

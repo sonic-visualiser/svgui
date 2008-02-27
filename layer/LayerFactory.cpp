@@ -28,6 +28,8 @@
 #include "SliceLayer.h"
 #include "SliceableLayer.h"
 
+#include "base/Clipboard.h"
+
 #include "data/model/RangeSummarisableTimeValueModel.h"
 #include "data/model/DenseTimeValueModel.h"
 #include "data/model/SparseOneDimensionalModel.h"
@@ -350,6 +352,10 @@ LayerFactory::setChannel(Layer *layer, int channel)
 	dynamic_cast<SpectrogramLayer *>(layer)->setChannel(channel);
 	return;
     }
+    if (dynamic_cast<SpectrumLayer *>(layer)) {
+	dynamic_cast<SpectrumLayer *>(layer)->setChannel(channel);
+	return;
+    }
 }
 
 Layer *
@@ -418,8 +424,8 @@ LayerFactory::createLayer(LayerType type)
 	std::cerr << "LayerFactory::createLayer: Unknown layer type " 
 		  << type << std::endl;
     } else {
-	std::cerr << "LayerFactory::createLayer: Setting object name "
-		  << getLayerPresentationName(type).toStdString() << " on " << layer << std::endl;
+//	std::cerr << "LayerFactory::createLayer: Setting object name "
+//		  << getLayerPresentationName(type).toStdString() << " on " << layer << std::endl;
 	layer->setObjectName(getLayerPresentationName(type));
         setLayerDefaultProperties(type, layer);
     }
@@ -430,14 +436,14 @@ LayerFactory::createLayer(LayerType type)
 void
 LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
 {
-    std::cerr << "LayerFactory::setLayerDefaultProperties: type " << type << " (name \"" << getLayerTypeName(type).toStdString() << "\"" << std::endl;
+//    std::cerr << "LayerFactory::setLayerDefaultProperties: type " << type << " (name \"" << getLayerTypeName(type).toStdString() << "\")" << std::endl;
 
     QSettings settings;
     settings.beginGroup("LayerDefaults");
     QString defaults = settings.value(getLayerTypeName(type), "").toString();
     if (defaults == "") return;
 
-    std::cerr << "defaults=\"" << defaults.toStdString() << "\"" << std::endl;
+//    std::cerr << "defaults=\"" << defaults.toStdString() << "\"" << std::endl;
 
     QString xml = layer->toXmlString();
     QDomDocument docOld, docNew;
@@ -453,9 +459,9 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
         for (unsigned int i = 0; i < attrNodes.length(); ++i) {
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
-            std::cerr << "append \"" << attr.name().toStdString()
-                      << "\" -> \"" << attr.value().toStdString() << "\""
-                      << std::endl;
+//            std::cerr << "append \"" << attr.name().toStdString()
+//                      << "\" -> \"" << attr.value().toStdString() << "\""
+//                      << std::endl;
             attrs.append(attr.name(), "", "", attr.value());
         }
         
@@ -465,9 +471,9 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
             if (attrs.value(attr.name()) == "") {
-                std::cerr << "append \"" << attr.name().toStdString()
-                          << "\" -> \"" << attr.value().toStdString() << "\""
-                          << std::endl;
+//                std::cerr << "append \"" << attr.name().toStdString()
+//                          << "\" -> \"" << attr.value().toStdString() << "\""
+//                          << std::endl;
                 attrs.append(attr.name(), "", "", attr.value());
             }
         }
@@ -478,3 +484,24 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
     settings.endGroup();
 }
 
+LayerFactory::LayerType
+LayerFactory::getLayerTypeForClipboardContents(const Clipboard &clip)
+{
+    const Clipboard::PointList &contents = clip.getPoints();
+
+    bool haveFrame = false;
+    bool haveValue = false;
+    bool haveDuration = false;
+
+    for (Clipboard::PointList::const_iterator i = contents.begin();
+         i != contents.end(); ++i) {
+        if (i->haveFrame()) haveFrame = true;
+        if (i->haveValue()) haveValue = true;
+        if (i->haveDuration()) haveDuration = true;
+    }
+
+    if (haveFrame && haveValue && haveDuration) return Notes;
+    if (haveFrame && haveValue) return TimeValues;
+    return TimeInstants;
+}
+    

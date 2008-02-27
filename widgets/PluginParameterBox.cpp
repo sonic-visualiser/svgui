@@ -18,6 +18,7 @@
 #include "AudioDial.h"
 
 #include "plugin/PluginXml.h"
+#include "plugin/RealTimePluginInstance.h" // for PortHint stuff
 
 #include "base/RangeMapper.h"
 
@@ -98,8 +99,18 @@ PluginParameterBox::populate()
         float deft = params[i].defaultValue;
         float value = m_plugin->getParameter(params[i].identifier);
 
+        int hint = PortHint::NoHint;
+        RealTimePluginInstance *rtpi = dynamic_cast<RealTimePluginInstance *>
+            (m_plugin);
+        if (rtpi) {
+            hint = rtpi->getParameterDisplayHint(i);
+        }
+
         float qtz = 0.0;
         if (params[i].isQuantized) qtz = params[i].quantizeStep;
+
+        std::cerr << "PluginParameterBox: hint = " << hint << ", min = " << min << ", max = "
+                  << max << ", qtz = " << qtz << std::endl;
 
         std::vector<std::string> valueNames = params[i].valueNames;
 
@@ -107,10 +118,12 @@ PluginParameterBox::populate()
 
         int imin = 0, imax = 100;
 
-        if (qtz > 0.0) {
-            imax = int((max - min) / qtz);
-        } else {
-            qtz = (max - min) / 100.0;
+        if (!(hint & PortHint::Logarithmic)) {
+            if (qtz > 0.0) {
+                imax = int((max - min) / qtz);
+            } else {
+                qtz = (max - min) / 100.0;
+            }
         }
 
         //!!! would be nice to ensure the default value corresponds to
@@ -162,12 +175,19 @@ PluginParameterBox::populate()
             dial->setMaximum(imax);
             dial->setPageStep(1);
             dial->setNotchesVisible((imax - imin) <= 12);
-            dial->setDefaultValue(lrintf((deft - min) / qtz));
-            dial->setValue(lrintf((value - min) / qtz));
+//!!!            dial->setDefaultValue(lrintf((deft - min) / qtz));
+//            dial->setValue(lrintf((value - min) / qtz));
             dial->setFixedWidth(32);
             dial->setFixedHeight(32);
-            dial->setRangeMapper(new LinearRangeMapper
-                                 (imin, imax, min, max, unit));
+            RangeMapper *rm = 0;
+            if (hint & PortHint::Logarithmic) {
+                rm = new LogRangeMapper(imin, imax, min, max, unit);
+            } else {
+                rm = new LinearRangeMapper(imin, imax, min, max, unit);
+            }
+            dial->setRangeMapper(rm);
+            dial->setDefaultValue(rm->getPositionForValue(deft));
+            dial->setValue(rm->getPositionForValue(value));
             dial->setShowToolTip(true);
             connect(dial, SIGNAL(valueChanged(int)),
                     this, SLOT(dialChanged(int)));
@@ -178,7 +198,7 @@ PluginParameterBox::populate()
             spinbox->setMinimum(min);
             spinbox->setMaximum(max);
             spinbox->setSuffix(QString(" %1").arg(unit));
-            spinbox->setSingleStep(qtz);
+            if (qtz != 0) spinbox->setSingleStep(qtz);
             spinbox->setValue(value);
             spinbox->setDecimals(4);
             connect(spinbox, SIGNAL(valueChanged(double)),
@@ -237,6 +257,8 @@ PluginParameterBox::dialChanged(int ival)
         }
         newValue = min + ival * qtz;
     }
+
+    std::cerr << "PluginParameterBox::dialChanged: newValue = " << newValue << std::endl;
 
     QDoubleSpinBox *spin = m_params[identifier].spin;
     if (spin) {
@@ -320,7 +342,11 @@ PluginParameterBox::spinBoxChanged(double value)
     AudioDial *dial = m_params[identifier].dial;
     if (dial) {
         dial->blockSignals(true);
-        dial->setValue(ival);
+        if (dial->rangeMapper()) {
+            dial->setMappedValue(value);
+        } else {
+            dial->setValue(ival);
+        }
         dial->blockSignals(false);
     }
 

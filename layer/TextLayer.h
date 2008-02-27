@@ -44,6 +44,10 @@ public:
     virtual void drawDrag(View *v, QMouseEvent *);
     virtual void drawEnd(View *v, QMouseEvent *);
 
+    virtual void eraseStart(View *v, QMouseEvent *);
+    virtual void eraseDrag(View *v, QMouseEvent *);
+    virtual void eraseEnd(View *v, QMouseEvent *);
+
     virtual void editStart(View *v, QMouseEvent *);
     virtual void editDrag(View *v, QMouseEvent *);
     virtual void editEnd(View *v, QMouseEvent *);
@@ -52,8 +56,8 @@ public:
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
-    virtual void copy(Selection s, Clipboard &to);
-    virtual bool paste(const Clipboard &from, int frameOffset,
+    virtual void copy(View *v, Selection s, Clipboard &to);
+    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
                        bool interactive);
 
     virtual bool editOpen(View *, QMouseEvent *); // on double-click

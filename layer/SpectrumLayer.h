@@ -24,6 +24,7 @@
 #include "data/model/DenseTimeValueModel.h"
 
 #include <QColor>
+#include <QMutex>
 
 class FFTModel;
 
@@ -52,6 +53,7 @@ public:
 
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
+    virtual QString getPropertyIconName(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
     virtual QString getPropertyGroupName(const PropertyName &) const;
     virtual int getPropertyRangeAndValue(const PropertyName &,
@@ -111,6 +113,8 @@ protected:
     size_t                  m_windowHopLevel;
     bool                    m_showPeaks;
     mutable bool            m_newFFTNeeded;
+
+    mutable QMutex m_fftMutex;
 
     void setupFFT();
 

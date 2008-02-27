@@ -30,6 +30,7 @@
 #include <QInputDialog>
 #include <QMutexLocker>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include <iostream>
 #include <cmath>
@@ -802,7 +803,7 @@ ImageLayer::deleteSelection(Selection s)
 }
 
 void
-ImageLayer::copy(Selection s, Clipboard &to)
+ImageLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -812,19 +813,38 @@ ImageLayer::copy(Selection s, Clipboard &to)
     for (ImageModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
-            //!!! inadequate
             Clipboard::Point point(i->frame, i->label);
+            point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
         }
     }
 }
 
 bool
-ImageLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
+ImageLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
+
+    bool realign = false;
+
+    if (clipboardHasDifferentAlignment(v, from)) {
+
+        QMessageBox::StandardButton button =
+            QMessageBox::question(v, tr("Re-align pasted items?"),
+                                  tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+                                  QMessageBox::Yes);
+
+        if (button == QMessageBox::Cancel) {
+            return false;
+        }
+
+        if (button == QMessageBox::Yes) {
+            realign = true;
+        }
+    }
 
     ImageModel::EditCommand *command =
 	new ImageModel::EditCommand(m_model, tr("Paste"));
@@ -833,10 +853,23 @@ ImageLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
+
         size_t frame = 0;
-        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
-            frame = i->getFrame() + frameOffset;
+
+        if (!realign) {
+            
+            frame = i->getFrame();
+
+        } else {
+
+            if (i->haveReferenceFrame()) {
+                frame = i->getReferenceFrame();
+                frame = alignFromReference(v, frame);
+            } else {
+                frame = i->getFrame();
+            }
         }
+
         ImageModel::Point newPoint(frame);
 
         //!!! inadequate
@@ -879,7 +912,7 @@ ImageLayer::checkAddRemote(QString img) const
             return;
         }
 
-        FileSource *rf = new FileSource(img, true);
+        FileSource *rf = new FileSource(img, FileSource::ProgressDialog);
         if (rf->isOK()) {
             std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
             m_remoteFiles[img] = rf;

@@ -114,17 +114,6 @@ PropertyStack::repopulate()
 
         shortName = QString("&%1 %2").arg(i + 1).arg(shortName);
 
-#ifdef Q_WS_MAC
-
-        // Qt 4.2 on OS/X doesn't show the icons in the tab bar, and
-        // I'm not sure why -- use labels instead
-
-        addTab(box, shortName);
-        
-#else
-
-        // Icons on other platforms
-
 	QString iconName = container->getPropertyContainerIconName();
 
         QIcon icon(IconLoader().load(iconName));
@@ -134,8 +123,6 @@ PropertyStack::repopulate()
 	    addTab(box, icon, QString("&%1").arg(i + 1));
 	    setTabToolTip(i, name);
 	}
-
-#endif
 
 	m_boxes.push_back(box);
     }    

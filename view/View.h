@@ -271,6 +271,8 @@ signals:
     void propertyContainerSelected(PropertyContainer *pc);
     void propertyChanged(PropertyContainer::PropertyName);
 
+    void layerModelChanged();
+
     void centreFrameChanged(unsigned long frame,
                             bool globalScroll,
                             PlaybackFollowMode followMode);
@@ -308,7 +310,8 @@ protected:
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
     virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
-
+    virtual void setPaintFont(QPainter &paint);
+    
     typedef std::vector<Layer *> LayerList;
 
     int getModelsSampleRate() const;

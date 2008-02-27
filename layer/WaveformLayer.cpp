@@ -108,6 +108,13 @@ WaveformLayer::getPropertyLabel(const PropertyName &name) const
     return SingleColourLayer::getPropertyLabel(name);
 }
 
+QString
+WaveformLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Normalize Visible Area") return "normalise";
+    return "";
+}
+
 Layer::PropertyType
 WaveformLayer::getPropertyType(const PropertyName &name) const
 {
@@ -389,6 +396,73 @@ WaveformLayer::isLayerScrollable(const View *) const
 static float meterdbs[] = { -40, -30, -20, -15, -10,
                             -5, -3, -2, -1, -0.5, 0 };
 
+bool
+WaveformLayer::getSourceFramesForX(View *v, int x, size_t modelZoomLevel,
+                                   size_t &f0, size_t &f1) const
+{
+    long viewFrame = v->getFrameForX(x);
+    if (viewFrame < 0) {
+        f0 = 0;
+        f1 = 0;
+        return false;
+    }
+
+    f0 = viewFrame;
+    
+    f0 = f0 / modelZoomLevel;
+    f0 = f0 * modelZoomLevel;
+
+    viewFrame = v->getFrameForX(x + 1);
+    
+    f1 = viewFrame;
+    f1 = f1 / modelZoomLevel;
+    f1 = f1 * modelZoomLevel;
+    
+    return (f0 < m_model->getEndFrame());
+}
+
+float
+WaveformLayer::getNormalizeGain(View *v, int channel) const
+{
+    long startFrame = v->getStartFrame();
+    long endFrame = v->getEndFrame();
+
+    // Although a long for purposes of comparison against the view
+    // start and end frames, these are known to be non-negative
+    long modelStart = long(m_model->getStartFrame());
+    long modelEnd = long(m_model->getEndFrame());
+    
+    size_t rangeStart, rangeEnd;
+            
+    if (startFrame < modelStart) rangeStart = modelStart;
+    else rangeStart = startFrame;
+
+    if (endFrame < 0) rangeEnd = 0;
+    else if (endFrame > modelEnd) rangeEnd = modelEnd;
+    else rangeEnd = endFrame;
+
+    if (rangeEnd < rangeStart) rangeEnd = rangeStart;
+
+    RangeSummarisableTimeValueModel::Range range =
+        m_model->getSummary(channel, rangeStart, rangeEnd - rangeStart);
+
+    size_t minChannel = 0, maxChannel = 0;
+    bool mergingChannels = false, mixingChannels = false;
+
+    getChannelArrangement(minChannel, maxChannel,
+                          mergingChannels, mixingChannels);
+
+    if (mergingChannels || mixingChannels) {
+        RangeSummarisableTimeValueModel::Range otherRange =
+            m_model->getSummary(1, rangeStart, rangeEnd - rangeStart);
+        range.max = std::max(range.max, otherRange.max);
+        range.min = std::min(range.min, otherRange.min);
+        range.absmean = std::min(range.absmean, otherRange.absmean);
+    }
+
+    return 1.0 / std::max(fabsf(range.max), fabsf(range.min));
+}
+
 void
 WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 {
@@ -396,8 +470,6 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	return;
     }
   
-    long startFrame = v->getStartFrame();
-    long endFrame = v->getEndFrame();
     int zoomLevel = v->getZoomLevel();
 
 #ifdef DEBUG_WAVEFORM_PAINT
@@ -471,11 +543,26 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     if (x0 > 0) --x0;
     if (x1 < v->width()) ++x1;
 
-    long frame0 = v->getFrameForX(x0);
-    long frame1 = v->getFrameForX(x1 + 1);
+    // Our zoom level may differ from that at which the underlying
+    // model has its blocks.
 
+    // Each pixel within our visible range must always draw from
+    // exactly the same set of underlying audio frames, no matter what
+    // the range being drawn is.  And that set of underlying frames
+    // must remain the same when we scroll one or more pixels left or
+    // right.
+            
+    size_t modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
+
+    size_t frame0;
+    size_t frame1;
+    size_t spare;
+
+    getSourceFramesForX(v, x0, modelZoomLevel, frame0, spare);
+    getSourceFramesForX(v, x1, modelZoomLevel, spare, frame1);
+    
 #ifdef DEBUG_WAVEFORM_PAINT
-    std::cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << ")" <<  std::endl;
+    std::cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << modelZoomLevel << ")" <<  std::endl;
 #endif
 
     RangeSummarisableTimeValueModel::RangeBlock *ranges = 
@@ -500,45 +587,15 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
         m_effectiveGains.push_back(m_gain);
     }
 
-    // Although a long for purposes of comparison against the view
-    // start and end frames, these are known to be non-negative
-    long modelStart = long(m_model->getStartFrame());
-    long modelEnd = long(m_model->getEndFrame());
-
-#ifdef DEBUG_WAVEFORM_PAINT
-    std::cerr << "Model start = " << modelStart << ", end = " << modelEnd << std::endl;
-#endif
-
     for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
 
 	int prevRangeBottom = -1, prevRangeTop = -1;
 	QColor prevRangeBottomColour = baseColour, prevRangeTopColour = baseColour;
-        size_t rangeStart, rangeEnd;
 
         m_effectiveGains[ch] = m_gain;
 
         if (m_autoNormalize) {
-
-            if (startFrame < modelStart) rangeStart = modelStart;
-            else rangeStart = startFrame;
-
-            if (endFrame < 0) rangeEnd = 0;
-            else if (endFrame > modelEnd) rangeEnd = modelEnd;
-            else rangeEnd = endFrame;
-
-            if (rangeEnd < rangeStart) rangeEnd = rangeStart;
-
-            RangeSummarisableTimeValueModel::Range range =
-                m_model->getSummary(ch, rangeStart, rangeEnd - rangeStart);
-            if (mergingChannels || mixingChannels) {
-                RangeSummarisableTimeValueModel::Range otherRange =
-                    m_model->getSummary(1, rangeStart, rangeEnd - rangeStart);
-                range.max = std::max(range.max, otherRange.max);
-                range.min = std::min(range.min, otherRange.min);
-                range.absmean = std::min(range.absmean, otherRange.absmean);
-            }
-            m_effectiveGains[ch] = 1.0 / std::max(fabsf(range.max),
-                                                  fabsf(range.min));
+            m_effectiveGains[ch] = getNormalizeGain(v, ch);
         }
 
         float gain = m_effectiveGains[ch];
@@ -606,25 +663,14 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                 }
             }
         }
+  
+        m_model->getSummaries(ch, frame0, frame1 - frame0,
+                              *ranges, modelZoomLevel);
 
-	if (frame1 < modelStart) continue;
+#ifdef DEBUG_WAVEFORM_PAINT
+        std::cerr << ranges->size() << " ranges from " << frame0 << " to " << frame1 << std::endl;
+#endif
 
-	size_t modelZoomLevel = zoomLevel;
-
-        if (frame0 < modelStart) rangeStart = modelStart;
-        else rangeStart = frame0;
-
-        if (frame1 < 0) rangeEnd = 0;
-        else if (frame1 > modelEnd) rangeEnd = modelEnd;
-        else rangeEnd = frame1;
-        
-        if (rangeEnd < rangeStart) rangeEnd = rangeStart;
-
-	m_model->getSummaries
-	    (ch, rangeStart, rangeEnd - rangeStart, *ranges, modelZoomLevel);
-
-//        std::cerr << ranges->size() << " ranges" << std::endl;
-        
 	if (mergingChannels || mixingChannels) {
             if (m_model->getChannelCount() > 1) {
                 if (!otherChannelRanges) {
@@ -632,7 +678,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                         new RangeSummarisableTimeValueModel::RangeBlock;
                 }
                 m_model->getSummaries
-                    (1, rangeStart, rangeEnd - rangeStart, *otherChannelRanges,
+                    (1, frame0, frame1 - frame0, *otherChannelRanges,
                      modelZoomLevel);
             } else {
                 if (otherChannelRanges != ranges) delete otherChannelRanges;
@@ -643,42 +689,35 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	for (int x = x0; x <= x1; ++x) {
 
 	    range = RangeSummarisableTimeValueModel::Range();
-	    size_t index = x - x0;
-	    size_t maxIndex = index;
 
-            if (frame0 < modelStart) {
-                if (index < size_t((modelStart - frame0) / zoomLevel)) {
-                    continue;
-                } else {
-                    index -= ((modelStart - frame0) / zoomLevel);
-                    maxIndex = index;
-                }
+            size_t f0, f1;
+            if (!getSourceFramesForX(v, x, modelZoomLevel, f0, f1)) continue;
+            f1 = f1 - 1;
+
+            if (f0 < frame0) {
+                std::cerr << "ERROR: WaveformLayer::paint: pixel " << x << " has f0 = " << f0 << " which is less than range frame0 " << frame0 << " for x0 = " << x0 << std::endl;
+                continue;
             }
-            
-	    if (int(modelZoomLevel) != zoomLevel) {
 
-		index = size_t((double(index) * zoomLevel) / modelZoomLevel);
+            size_t i0 = (f0 - frame0) / modelZoomLevel;
+            size_t i1 = (f1 - frame0) / modelZoomLevel;
 
-		if (int(modelZoomLevel) < zoomLevel) {
-		    // Peaks may be missed!  The model should avoid
-		    // this by rounding zoom levels up rather than
-		    // down, but we'd better cope in case it doesn't
-		    maxIndex = index;
-		} else {
-		    maxIndex = size_t((double(index + 1) * zoomLevel)
-				      / modelZoomLevel) - 1;
-		}
-	    }
+#ifdef DEBUG_WAVEFORM_PAINT
+            std::cerr << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << std::endl;
+#endif
 
-	    if (ranges && index < ranges->size()) {
+            if (i1 > i0 + 1) {
+                std::cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << modelZoomLevel << ")" << std::endl;
+            }
 
-		range = (*ranges)[index];
+	    if (ranges && i0 < ranges->size()) {
 
-		if (maxIndex > index && maxIndex < ranges->size()) {
-		    range.max = std::max(range.max, (*ranges)[maxIndex].max);
-		    range.min = std::min(range.min, (*ranges)[maxIndex].min);
-		    range.absmean = (range.absmean +
-				     (*ranges)[maxIndex].absmean) / 2;
+		range = (*ranges)[i0];
+
+		if (i1 > i0 && i1 < ranges->size()) {
+		    range.max = std::max(range.max, (*ranges)[i1].max);
+		    range.min = std::min(range.min, (*ranges)[i1].min);
+		    range.absmean = (range.absmean + (*ranges)[i1].absmean) / 2;
 		}
 
 	    } else {
@@ -689,28 +728,28 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	    if (mergingChannels) {
 
-		if (otherChannelRanges && index < otherChannelRanges->size()) {
+		if (otherChannelRanges && i0 < otherChannelRanges->size()) {
 
 		    range.max = fabsf(range.max);
-		    range.min = -fabsf((*otherChannelRanges)[index].max);
+		    range.min = -fabsf((*otherChannelRanges)[i0].max);
 		    range.absmean = (range.absmean +
-				     (*otherChannelRanges)[index].absmean) / 2;
+				     (*otherChannelRanges)[i0].absmean) / 2;
 
-		    if (maxIndex > index && maxIndex < otherChannelRanges->size()) {
+		    if (i1 > i0 && i1 < otherChannelRanges->size()) {
 			// let's not concern ourselves about the mean
 			range.min = std::min
 			    (range.min,
-			     -fabsf((*otherChannelRanges)[maxIndex].max));
+			     -fabsf((*otherChannelRanges)[i1].max));
 		    }
 		}
 
 	    } else if (mixingChannels) {
 
-		if (otherChannelRanges && index < otherChannelRanges->size()) {
+		if (otherChannelRanges && i0 < otherChannelRanges->size()) {
 
-                    range.max = (range.max + (*otherChannelRanges)[index].max) / 2;
-                    range.min = (range.min + (*otherChannelRanges)[index].min) / 2;
-                    range.absmean = (range.absmean + (*otherChannelRanges)[index].absmean) / 2;
+                    range.max = (range.max + (*otherChannelRanges)[i0].max) / 2;
+                    range.min = (range.min + (*otherChannelRanges)[i0].min) / 2;
+                    range.absmean = (range.absmean + (*otherChannelRanges)[i0].absmean) / 2;
                 }
             }
 
@@ -883,11 +922,12 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     if (!m_model || !m_model->isOK()) return "";
 
-    long f0 = v->getFrameForX(x);
-    long f1 = v->getFrameForX(x + 1);
+    int zoomLevel = v->getZoomLevel();
 
-    if (f0 < 0) f0 = 0;
-    if (f1 <= f0) return "";
+    size_t modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
+
+    size_t f0, f1;
+    if (!getSourceFramesForX(v, x, modelZoomLevel, f0, f1)) return "";
     
     QString text;
 

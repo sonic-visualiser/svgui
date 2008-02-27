@@ -74,6 +74,7 @@ signals:
     void currentPaneChanged(Pane *pane);
     void currentLayerChanged(Pane *pane, Layer *layer);
     void rightButtonMenuRequested(Pane *pane, QPoint position);
+    void propertyStacksResized(int width);
     void propertyStacksResized();
     void contextHelpChanged(const QString &);
 

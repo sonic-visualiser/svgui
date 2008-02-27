@@ -33,6 +33,7 @@
 #include <QPainterPath>
 #include <QMouseEvent>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include <iostream>
 #include <cmath>
@@ -41,8 +42,8 @@ NoteLayer::NoteLayer() :
     SingleColourLayer(),
     m_model(0),
     m_editing(false),
-    m_originalPoint(0, 0.0, 0, tr("New Point")),
-    m_editingPoint(0, 0.0, 0, tr("New Point")),
+    m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
+    m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingCommand(0),
     m_verticalScale(AutoAlignScale)
 {
@@ -619,7 +620,7 @@ NoteLayer::drawStart(View *v, QMouseEvent *e)
 
     float value = getValueForY(v, e->y());
 
-    m_editingPoint = NoteModel::Point(frame, value, 0, tr("New Point"));
+    m_editingPoint = NoteModel::Point(frame, value, 0, 0.8, tr("New Point"));
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) m_editingCommand->finish();
@@ -664,6 +665,51 @@ NoteLayer::drawEnd(View *, QMouseEvent *)
 {
 //    std::cerr << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
+    m_editingCommand->finish();
+    m_editingCommand = 0;
+    m_editing = false;
+}
+
+void
+NoteLayer::eraseStart(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    NoteModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+
+    m_editingPoint = *points.begin();
+
+    if (m_editingCommand) {
+	m_editingCommand->finish();
+	m_editingCommand = 0;
+    }
+
+    m_editing = true;
+}
+
+void
+NoteLayer::eraseDrag(View *v, QMouseEvent *e)
+{
+}
+
+void
+NoteLayer::eraseEnd(View *v, QMouseEvent *e)
+{
+    if (!m_model || !m_editing) return;
+
+    m_editing = false;
+
+    NoteModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+    if (points.begin()->frame != m_editingPoint.frame ||
+        points.begin()->value != m_editingPoint.value) return;
+
+    m_editingCommand = new NoteModel::EditCommand
+        (m_model, tr("Erase Point"));
+
+    m_editingCommand->deletePoint(m_editingPoint);
+
     m_editingCommand->finish();
     m_editingCommand = 0;
     m_editing = false;
@@ -871,7 +917,7 @@ NoteLayer::deleteSelection(Selection s)
 }    
 
 void
-NoteLayer::copy(Selection s, Clipboard &to)
+NoteLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -881,18 +927,38 @@ NoteLayer::copy(Selection s, Clipboard &to)
     for (NoteModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
-            Clipboard::Point point(i->frame, i->value, i->duration, i->label);
+            Clipboard::Point point(i->frame, i->value, i->duration, i->level, i->label);
+            point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
         }
     }
 }
 
 bool
-NoteLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
+NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
+
+    bool realign = false;
+
+    if (clipboardHasDifferentAlignment(v, from)) {
+
+        QMessageBox::StandardButton button =
+            QMessageBox::question(v, tr("Re-align pasted items?"),
+                                  tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+                                  QMessageBox::Yes);
+
+        if (button == QMessageBox::Cancel) {
+            return false;
+        }
+
+        if (button == QMessageBox::Yes) {
+            realign = true;
+        }
+    }
 
     NoteModel::EditCommand *command =
 	new NoteModel::EditCommand(m_model, tr("Paste"));
@@ -902,15 +968,28 @@ NoteLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
         
         if (!i->haveFrame()) continue;
         size_t frame = 0;
-        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
-            frame = i->getFrame() + frameOffset;
+
+        if (!realign) {
+            
+            frame = i->getFrame();
+
+        } else {
+
+            if (i->haveReferenceFrame()) {
+                frame = i->getReferenceFrame();
+                frame = alignFromReference(v, frame);
+            } else {
+                frame = i->getFrame();
+            }
         }
+
         NoteModel::Point newPoint(frame);
   
         if (i->haveLabel()) newPoint.label = i->getLabel();
         if (i->haveValue()) newPoint.value = i->getValue();
         else newPoint.value = (m_model->getValueMinimum() +
                                m_model->getValueMaximum()) / 2;
+        if (i->haveLevel()) newPoint.level = i->getLevel();
         if (i->haveDuration()) newPoint.duration = i->getDuration();
         else {
             size_t nextFrame = frame;

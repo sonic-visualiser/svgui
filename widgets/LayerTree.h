@@ -19,10 +19,62 @@
 
 #include <QAbstractItemModel>
 
+#include <set>
+
 class PaneStack;
 class View;
+class Pane;
 class Layer;
 class PropertyContainer;
+class Model;
+
+class ModelDataModel : public QAbstractItemModel
+{
+    Q_OBJECT
+
+public:
+    ModelDataModel(PaneStack *stack, bool waveModelsOnly, QObject *parent = 0);
+    virtual ~ModelDataModel();
+
+    QVariant data(const QModelIndex &index, int role) const;
+
+    bool setData(const QModelIndex &index, const QVariant &value, int role);
+
+    Qt::ItemFlags flags(const QModelIndex &index) const;
+
+    QVariant headerData(int section, Qt::Orientation orientation,
+                        int role = Qt::DisplayRole) const;
+
+    QModelIndex index(int row, int column,
+                      const QModelIndex &parent = QModelIndex()) const;
+
+    QModelIndex parent(const QModelIndex &index) const;
+
+    int rowCount(const QModelIndex &parent = QModelIndex()) const;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const;
+
+protected slots:
+    void paneAdded();
+    void paneDeleted();
+    void propertyContainerAdded(PropertyContainer *);
+    void propertyContainerRemoved(PropertyContainer *);
+    void propertyContainerSelected(PropertyContainer *);
+    void propertyContainerPropertyChanged(PropertyContainer *);
+    void playParametersAudibilityChanged(bool);
+    void paneLayerModelChanged();
+    void rebuildModelSet();
+
+protected:
+    PaneStack *m_stack;
+    bool m_waveModelsOnly;
+    int m_modelTypeColumn;
+    int m_modelNameColumn;
+    int m_modelMakerColumn;
+    int m_modelSourceColumn;
+    int m_columnCount;
+
+    std::set<Model *> m_models;
+};
 
 class LayerTreeModel : public QAbstractItemModel
 {
@@ -49,15 +101,24 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
 
-protected:
-    PaneStack *m_stack;
-
 protected slots:
+    void paneAdded();
+    void paneAboutToBeDeleted(Pane *);
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);
     void propertyContainerSelected(PropertyContainer *);
     void propertyContainerPropertyChanged(PropertyContainer *);
+    void paneLayerModelChanged();
     void playParametersAudibilityChanged(bool);
+
+protected:
+    PaneStack *m_stack;
+    std::set<QObject *> m_deletedPanes;
+    int m_layerNameColumn;
+    int m_layerVisibleColumn;
+    int m_layerPlayedColumn;
+    int m_modelNameColumn;
+    int m_columnCount;
 };
 
 #endif

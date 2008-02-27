@@ -54,7 +54,8 @@ public:
     void setShowProcessingOptions(bool showWindowSize,
                                   bool showFrequencyDomainOptions);
 
-    void setCandidateInputModels(const QStringList &names);
+    void setCandidateInputModels(const QStringList &names,
+                                 QString defaultName);
     void setShowSelectionOnlyOption(bool show);
 
     Vamp::PluginBase *getPlugin() { return m_plugin; }

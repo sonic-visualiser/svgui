@@ -75,6 +75,7 @@ public:
     virtual PropertyList getProperties() const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
     virtual QString getPropertyLabel(const PropertyName &) const;
+    virtual QString getPropertyIconName(const PropertyName &) const;
     virtual QString getPropertyGroupName(const PropertyName &) const;
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const;
@@ -97,6 +98,9 @@ public:
     void setNormalizeVisibleArea(bool n);
     bool getNormalizeVisibleArea() const;
 
+    void setInvertVertical(bool i);
+    bool getInvertVertical() const;
+
     virtual const Model *getSliceableModel() const { return m_model; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
@@ -116,6 +120,7 @@ protected:
     int         m_colourMap;
     bool        m_normalizeColumns;
     bool        m_normalizeVisibleArea;
+    bool        m_invertVertical;
 
     void getColumn(size_t col, DenseThreeDimensionalModel::Column &) const;
 

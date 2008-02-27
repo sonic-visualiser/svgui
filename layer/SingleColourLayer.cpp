@@ -22,12 +22,15 @@
 #include <QTextStream>
 #include <QApplication>
 
+//#define DEBUG_COLOUR_SELECTION 1
+
 SingleColourLayer::ColourRefCount 
 SingleColourLayer::m_colourRefCount;
 
 SingleColourLayer::SingleColourLayer() :
     m_colour(0),
-    m_colourExplicitlySet(false)
+    m_colourExplicitlySet(false),
+    m_defaultColourSet(false)
 {
     setDefaultColourFor(0);
 }
@@ -125,7 +128,13 @@ SingleColourLayer::setProperty(const PropertyName &name, int value)
 void
 SingleColourLayer::setDefaultColourFor(View *v)
 {
-    if (m_colourExplicitlySet) return;
+#ifdef DEBUG_COLOUR_SELECTION
+    std::cerr << "SingleColourLayer::setDefaultColourFor: m_colourExplicitlySet = " << m_colourExplicitlySet << ", m_defaultColourSet " << m_defaultColourSet << std::endl;
+#endif
+
+    if (m_colourExplicitlySet || m_defaultColourSet) return;
+
+    if (v) m_defaultColourSet = true; // v==0 case doesn't really count
 
     bool dark = false;
     if (v) {
@@ -148,9 +157,13 @@ SingleColourLayer::setDefaultColourFor(View *v)
         // means we're being called from the constructor, and this is
         // a virtual function
         hint = getDefaultColourHint(dark, impose);
-//        std::cerr << "hint = " << hint << ", impose = " << impose << std::endl;
+#ifdef DEBUG_COLOUR_SELECTION
+        std::cerr << "hint = " << hint << ", impose = " << impose << std::endl;
+#endif
     } else {
-//        std::cerr << "(from ctor)" << std::endl;
+#ifdef DEBUG_COLOUR_SELECTION
+        std::cerr << "(from ctor)" << std::endl;
+#endif
     }
 
     if (hint >= 0 && impose) {
@@ -171,15 +184,21 @@ SingleColourLayer::setDefaultColourFor(View *v)
             count = m_colourRefCount[index];
         }
 
-//        std::cerr << "index = " << index << ", count = " << count;
+#ifdef DEBUG_COLOUR_SELECTION
+        std::cerr << "index = " << index << ", count = " << count;
+#endif
 
         if (bestColour < 0 || count < bestCount) {
             bestColour = index;
             bestCount = count;
-//            std::cerr << " *";
+#ifdef DEBUG_COLOUR_SELECTION
+            std::cerr << " *";
+#endif
         }
 
-//        std::cerr << std::endl;
+#ifdef DEBUG_COLOUR_SELECTION
+        std::cerr << std::endl;
+#endif
     }
     
     if (bestColour < 0) m_colour = 0;
@@ -289,7 +308,9 @@ SingleColourLayer::setProperties(const QXmlAttributes &attributes)
 
     if (m_colour != colour) {
 
+#ifdef DEBUG_COLOUR_SELECTION
         std::cerr << "SingleColourLayer::setProperties: changing colour from " << m_colour << " to " << colour << std::endl;
+#endif
 
         if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
             m_colourRefCount[m_colour] > 0) {

@@ -27,6 +27,7 @@
 #include <QMouseEvent>
 #include <QInputDialog>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include <iostream>
 #include <cmath>
@@ -448,6 +449,51 @@ TextLayer::drawEnd(View *v, QMouseEvent *)
 }
 
 void
+TextLayer::eraseStart(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
+    if (points.empty()) return;
+
+    m_editingPoint = *points.begin();
+
+    if (m_editingCommand) {
+	m_editingCommand->finish();
+	m_editingCommand = 0;
+    }
+
+    m_editing = true;
+}
+
+void
+TextLayer::eraseDrag(View *v, QMouseEvent *e)
+{
+}
+
+void
+TextLayer::eraseEnd(View *v, QMouseEvent *e)
+{
+    if (!m_model || !m_editing) return;
+
+    m_editing = false;
+
+    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
+    if (points.empty()) return;
+    if (points.begin()->frame != m_editingPoint.frame ||
+        points.begin()->height != m_editingPoint.height) return;
+
+    m_editingCommand = new TextModel::EditCommand
+        (m_model, tr("Erase Point"));
+
+    m_editingCommand->deletePoint(m_editingPoint);
+
+    m_editingCommand->finish();
+    m_editingCommand = 0;
+    m_editing = false;
+}
+
+void
 TextLayer::editStart(View *v, QMouseEvent *e)
 {
 //    std::cerr << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
@@ -626,7 +672,7 @@ TextLayer::deleteSelection(Selection s)
 }
 
 void
-TextLayer::copy(Selection s, Clipboard &to)
+TextLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -637,17 +683,37 @@ TextLayer::copy(Selection s, Clipboard &to)
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->height, i->label);
+            point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
         }
     }
 }
 
 bool
-TextLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
+TextLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
+
+    bool realign = false;
+
+    if (clipboardHasDifferentAlignment(v, from)) {
+
+        QMessageBox::StandardButton button =
+            QMessageBox::question(v, tr("Re-align pasted items?"),
+                                  tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+                                  QMessageBox::Yes);
+
+        if (button == QMessageBox::Cancel) {
+            return false;
+        }
+
+        if (button == QMessageBox::Yes) {
+            realign = true;
+        }
+    }
 
     TextModel::EditCommand *command =
 	new TextModel::EditCommand(m_model, tr("Paste"));
@@ -667,9 +733,21 @@ TextLayer::paste(const Clipboard &from, int frameOffset, bool /* interactive */)
         
         if (!i->haveFrame()) continue;
         size_t frame = 0;
-        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
-            frame = i->getFrame() + frameOffset;
+        
+        if (!realign) {
+            
+            frame = i->getFrame();
+
+        } else {
+
+            if (i->haveReferenceFrame()) {
+                frame = i->getReferenceFrame();
+                frame = alignFromReference(v, frame);
+            } else {
+                frame = i->getFrame();
+            }
         }
+
         TextModel::Point newPoint(frame);
 
         if (i->haveValue()) {

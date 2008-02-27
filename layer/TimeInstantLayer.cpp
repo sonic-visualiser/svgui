@@ -25,10 +25,12 @@
 #include "data/model/SparseOneDimensionalModel.h"
 
 #include "widgets/ItemEditDialog.h"
+#include "widgets/ListInputDialog.h"
 
 #include <QPainter>
 #include <QMouseEvent>
 #include <QTextStream>
+#include <QMessageBox>
 
 #include <iostream>
 #include <cmath>
@@ -493,6 +495,50 @@ TimeInstantLayer::drawEnd(View *, QMouseEvent *e)
 }
 
 void
+TimeInstantLayer::eraseStart(View *v, QMouseEvent *e)
+{
+    if (!m_model) return;
+
+    SparseOneDimensionalModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+
+    m_editingPoint = *points.begin();
+
+    if (m_editingCommand) {
+	m_editingCommand->finish();
+	m_editingCommand = 0;
+    }
+
+    m_editing = true;
+}
+
+void
+TimeInstantLayer::eraseDrag(View *v, QMouseEvent *e)
+{
+}
+
+void
+TimeInstantLayer::eraseEnd(View *v, QMouseEvent *e)
+{
+    if (!m_model || !m_editing) return;
+
+    m_editing = false;
+
+    SparseOneDimensionalModel::PointList points = getLocalPoints(v, e->x());
+    if (points.empty()) return;
+    if (points.begin()->frame != m_editingPoint.frame) return;
+
+    m_editingCommand = new SparseOneDimensionalModel::EditCommand
+        (m_model, tr("Erase Point"));
+
+    m_editingCommand->deletePoint(m_editingPoint);
+
+    m_editingCommand->finish();
+    m_editingCommand = 0;
+    m_editing = false;
+}
+
+void
 TimeInstantLayer::editStart(View *v, QMouseEvent *e)
 {
     std::cerr << "TimeInstantLayer::editStart(" << e->x() << ")" << std::endl;
@@ -667,7 +713,7 @@ TimeInstantLayer::deleteSelection(Selection s)
 }
 
 void
-TimeInstantLayer::copy(Selection s, Clipboard &to)
+TimeInstantLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -678,17 +724,37 @@ TimeInstantLayer::copy(Selection s, Clipboard &to)
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->label);
+            point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
         }
     }
 }
 
 bool
-TimeInstantLayer::paste(const Clipboard &from, int frameOffset, bool)
+TimeInstantLayer::paste(View *v, const Clipboard &from, int frameOffset, bool)
 {
     if (!m_model) return false;
 
     const Clipboard::PointList &points = from.getPoints();
+
+    bool realign = false;
+
+    if (clipboardHasDifferentAlignment(v, from)) {
+
+        QMessageBox::StandardButton button =
+            QMessageBox::question(v, tr("Re-align pasted instants?"),
+                                  tr("The instants you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+                                  QMessageBox::Yes);
+
+        if (button == QMessageBox::Cancel) {
+            return false;
+        }
+
+        if (button == QMessageBox::Yes) {
+            realign = true;
+        }
+    }
 
     SparseOneDimensionalModel::EditCommand *command =
 	new SparseOneDimensionalModel::EditCommand(m_model, tr("Paste"));
@@ -697,10 +763,29 @@ TimeInstantLayer::paste(const Clipboard &from, int frameOffset, bool)
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
+
         size_t frame = 0;
-        if (frameOffset > 0 || -frameOffset < i->getFrame()) {
-            frame = i->getFrame() + frameOffset;
+
+        if (!realign) {
+            
+            frame = i->getFrame();
+
+        } else {
+
+            if (i->haveReferenceFrame()) {
+                frame = i->getReferenceFrame();
+                frame = alignFromReference(v, frame);
+            } else {
+                frame = i->getFrame();
+            }
         }
+
+        if (frameOffset > 0) frame += frameOffset;
+        else if (frameOffset < 0) {
+            if (frame > -frameOffset) frame += frameOffset;
+            else frame = 0;
+        }
+
         SparseOneDimensionalModel::Point newPoint(frame);
         if (i->haveLabel()) {
             newPoint.label = i->getLabel();

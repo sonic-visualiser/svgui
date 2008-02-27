@@ -47,35 +47,64 @@ SpectrumLayer::SpectrumLayer() :
 
 SpectrumLayer::~SpectrumLayer()
 {
-    //!!! delete parent's model
-//    for (size_t i = 0; i < m_fft.size(); ++i) delete m_fft[i];
+    Model *m = const_cast<Model *>
+        (static_cast<const Model *>(m_sliceableModel));
+    m->aboutToDelete();
+    m_sliceableModel = 0;
+    delete m;
 }
 
 void
 SpectrumLayer::setModel(DenseTimeValueModel *model)
 {
+    std::cerr << "SpectrumLayer::setModel(" << model << ") from " << m_originModel << std::endl;
+    
     if (m_originModel == model) return;
+
     m_originModel = model;
 
     if (m_sliceableModel) {
-        const Model *oldModel = m_sliceableModel;
+        Model *m = const_cast<Model *>
+            (static_cast<const Model *>(m_sliceableModel));
+        m->aboutToDelete();
         setSliceableModel(0);
-        // surprised I'm allowed to delete a const pointer -- may be a
-        // source of future compiler rejection?
-        delete oldModel;
+        delete m;
     }
-//!!!    setupFFT();
+
+    m_newFFTNeeded = true;
+
+    emit layerParametersChanged();
+}
+
+void
+SpectrumLayer::setChannel(int channel)
+{
+    std::cerr << "SpectrumLayer::setChannel(" << channel << ") from " << m_channel << std::endl;
+    
+    m_channelSet = true;
+    
+    if (m_channel == channel) return;
+
+    m_channel = channel;
+
+    m_newFFTNeeded = true;
+
+    emit layerParametersChanged();
 }
 
 void
 SpectrumLayer::setupFFT()
 {
-    FFTModel *oldFFT = dynamic_cast<FFTModel *>
-        (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
-    
-    if (oldFFT) {
+    if (m_sliceableModel) {
+        Model *m = const_cast<Model *>
+            (static_cast<const Model *>(m_sliceableModel));
+        m->aboutToDelete();
         setSliceableModel(0);
-        delete oldFFT;
+        delete m;
+    }
+
+    if (!m_originModel) {
+        return;
     }
 
     FFTModel *newFFT = new FFTModel(m_originModel,
@@ -97,24 +126,8 @@ SpectrumLayer::setupFFT()
     }
 
     newFFT->resume();
-}
 
-void
-SpectrumLayer::setChannel(int channel)
-{
-    m_channelSet = true;
-
-    FFTModel *fft = dynamic_cast<FFTModel *>
-        (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
-
-    if (m_channel == channel) {
-        if (fft) fft->resume();
-        return;
-    }
-
-    m_channel = channel;
-
-    emit layerParametersChanged();
+    m_newFFTNeeded = false;
 }
 
 Layer::PropertyList
@@ -134,6 +147,13 @@ SpectrumLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Window Increment") return tr("Window Overlap");
     if (name == "Show Peak Frequencies") return tr("Show Peak Frequencies");
     return SliceLayer::getPropertyLabel(name);
+}
+
+QString
+SpectrumLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Show Peak Frequencies") return "show-peaks";
+    return SliceLayer::getPropertyIconName(name);
 }
 
 Layer::PropertyType
@@ -633,11 +653,14 @@ void
 SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_originModel || !m_originModel->isOK() ||
-        !m_originModel->isReady()) return;
+        !m_originModel->isReady()) {
+        std::cerr << "SpectrumLayer::paint: no origin model, or origin model not OK or not ready" << std::endl;
+        return;
+    }
 
     if (m_newFFTNeeded) {
+        std::cerr << "SpectrumLayer::paint: new FFT needed, calling setupFFT" << std::endl;
         const_cast<SpectrumLayer *>(this)->setupFFT(); //ugh
-        m_newFFTNeeded = false;
     }
 
     FFTModel *fft = dynamic_cast<FFTModel *>
@@ -652,6 +675,8 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 //!!!    if (m_binScale == LogBins) {
         pkh = 10;
 //!!!    }
+
+    paint.save();
 
     if (fft && m_showPeaks) {
 
@@ -792,6 +817,8 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    px = x;
 	}
 //    }
+
+    paint.restore();
 }
 
 void

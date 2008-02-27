@@ -440,7 +440,8 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
 }
 
 void
-PluginParameterDialog::setCandidateInputModels(const QStringList &models)
+PluginParameterDialog::setCandidateInputModels(const QStringList &models,
+                                               QString defaultModel)
 {
     m_inputModels->clear();
 
@@ -449,15 +450,17 @@ PluginParameterDialog::setCandidateInputModels(const QStringList &models)
     QString lastModel = settings.value("lastinputmodel").toString();
     settings.endGroup();
 
+    if (defaultModel == "") defaultModel = lastModel;
+
     m_inputModels->show();
 
     m_inputModelList = models;
     m_inputModels->addItems(TextAbbrev::abbreviate(models, 80));
     m_inputModels->setCurrentIndex(0);
 
-    if (lastModel != "") {
+    if (defaultModel != "") {
         for (int i = 0; i < models.size(); ++i) {
-            if (lastModel == models[i]) {
+            if (defaultModel == models[i]) {
                 m_inputModels->setCurrentIndex(i);
                 m_currentInputModel = models[i];
                 break;

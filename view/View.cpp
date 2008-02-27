@@ -19,6 +19,7 @@
 #include "base/ZoomConstraint.h"
 #include "base/Profiler.h"
 #include "base/Pitch.h"
+#include "base/Preferences.h"
 
 #include "layer/TimeRulerLayer.h"
 #include "layer/SingleColourLayer.h"
@@ -31,6 +32,7 @@
 #include <QApplication>
 #include <QProgressDialog>
 #include <QTextStream>
+#include <QFont>
 
 #include <iostream>
 #include <cassert>
@@ -326,8 +328,15 @@ View::setCentreFrame(size_t f, bool e)
 	    changeVisible = true;
 	}
 
-	if (e) emit centreFrameChanged(alignFromReference(f),
-                                       m_followPan, m_followPlay);
+	if (e) {
+            size_t rf = alignToReference(f);
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+            std::cerr << "View[" << this << "]::setCentreFrame(" << f
+                      << "): emitting centreFrameChanged("
+                      << rf << ")" << std::endl;
+#endif
+            emit centreFrameChanged(rf, m_followPan, m_followPlay);
+        }
     }
 
     return changeVisible;
@@ -344,6 +353,11 @@ View::getFrameForX(int x) const
 {
     long z = (long)m_zoomLevel;
     long frame = m_centreFrame - (width()/2) * z;
+
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+    std::cerr << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << std::endl;
+#endif
+
     frame = (frame / z) * z; // this is start frame
     return frame + x * z;
 }
@@ -498,9 +512,6 @@ View::getForeground() const
 View::LayerProgressBar::LayerProgressBar(QWidget *parent) :
     QProgressBar(parent)
 {
-    QFont f(font());
-    f.setPointSize(f.pointSize() * 8 / 10);
-    setFont(f);
 }
 
 void
@@ -518,6 +529,12 @@ View::addLayer(Layer *layer)
     m_progressBars[layer]->setMinimum(0);
     m_progressBars[layer]->setMaximum(100);
     m_progressBars[layer]->setMinimumWidth(80);
+
+    QFont f(m_progressBars[layer]->font());
+    int fs = Preferences::getInstance()->getViewFontSize();
+    f.setPointSize(std::min(fs, int(ceil(fs * 0.85))));
+
+    m_progressBars[layer]->setFont(f);
     m_progressBars[layer]->hide();
     
     connect(layer, SIGNAL(layerParametersChanged()),
@@ -650,7 +667,10 @@ View::setViewManager(ViewManager *manager)
     connect(this, SIGNAL(zoomLevelChanged(unsigned long, bool)),
 	    m_manager, SLOT(viewZoomLevelChanged(unsigned long, bool)));
 
-    if (m_followPlay != PlaybackIgnore) {
+    if (m_followPlay == PlaybackScrollPage) {
+//        std::cerr << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
+        setCentreFrame(m_manager->getGlobalCentreFrame(), false);
+    } else if (m_followPlay == PlaybackScrollContinuous) {
 //        std::cerr << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << std::endl;
         setCentreFrame(m_manager->getPlaybackFrame(), false);
     } else if (m_followPan) {
@@ -744,6 +764,8 @@ View::modelChanged()
 	delete m_cache;
 	m_cache = 0;
     }
+
+    emit layerModelChanged();
 
     checkProgress(obj);
 
@@ -869,10 +891,15 @@ View::layerNameChanged()
 }
 
 void
-View::globalCentreFrameChanged(unsigned long f)
+View::globalCentreFrameChanged(unsigned long rf)
 {
     if (m_followPan) {
-        setCentreFrame(alignToReference(f), false);
+        size_t f = alignFromReference(rf);
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+        std::cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
+                  << "): setting centre frame to " << f << std::endl;
+#endif
+        setCentreFrame(f, false);
     }
 }
 
@@ -1098,6 +1125,7 @@ View::getAligningModel() const
     }
 
     Model *anyModel = 0;
+    Model *alignedModel = 0;
     Model *goodModel = 0;
 
     for (LayerList::const_iterator i = m_layers.begin();
@@ -1111,8 +1139,10 @@ View::getAligningModel() const
         Model *model = (*i)->getModel();
         if (!model) continue;
 
+        anyModel = model;
+
         if (model->getAlignmentReference()) {
-            anyModel = model;
+            alignedModel = model;
             if (layer->isLayerOpaque() ||
                 dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
                 goodModel = model;
@@ -1121,6 +1151,7 @@ View::getAligningModel() const
     }
 
     if (goodModel) return goodModel;
+    else if (alignedModel) return alignedModel;
     else return anyModel;
 }
 
@@ -1150,17 +1181,17 @@ View::getAlignedPlaybackFrame() const
 
     Model *aligningModel = getAligningModel();
     if (!aligningModel) return pf;
-
+/*
     Model *pm = m_manager->getPlaybackModel();
 
 //    std::cerr << "View[" << this << "]::getAlignedPlaybackFrame: pf = " << pf;
 
     if (pm) {
-        pf = pm->alignFromReference(pf);
+        pf = pm->alignToReference(pf);
 //        std::cerr << " -> " << pf;
     }
-
-    int af = aligningModel->alignToReference(pf);
+*/
+    int af = aligningModel->alignFromReference(pf);
 
 //    std::cerr << ", aligned = " << af << std::endl;
     return af;
@@ -1389,6 +1420,14 @@ View::checkProgress(void *object)
 }
 
 void
+View::setPaintFont(QPainter &paint)
+{
+    QFont font(paint.font());
+    font.setPointSize(Preferences::getInstance()->getViewFontSize());
+    paint.setFont(font);
+}
+
+void
 View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
@@ -1573,7 +1612,7 @@ View::paintEvent(QPaintEvent *e)
 
 	if (repaintCache) paint.begin(m_cache);
 	else paint.begin(this);
-
+        setPaintFont(paint);
 	paint.setClipRect(cacheRect);
 
         paint.setPen(getBackground());
@@ -1614,7 +1653,7 @@ View::paintEvent(QPaintEvent *e)
 
     paint.begin(this);
     paint.setClipRect(nonCacheRect);
-
+    setPaintFont(paint);
     if (scrollables.empty()) {
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
@@ -1632,6 +1671,7 @@ View::paintEvent(QPaintEvent *e)
     paint.end();
 
     paint.begin(this);
+    setPaintFont(paint);
     if (e) paint.setClipRect(e->rect());
     if (!m_selectionCached) {
 	drawSelections(paint);
@@ -1714,8 +1754,8 @@ View::drawSelections(QPainter &paint)
     for (MultiSelection::SelectionList::iterator i = selections.begin();
 	 i != selections.end(); ++i) {
 
-	int p0 = getXForFrame(i->getStartFrame());
-	int p1 = getXForFrame(i->getEndFrame());
+	int p0 = getXForFrame(alignFromReference(i->getStartFrame()));
+	int p1 = getXForFrame(alignFromReference(i->getEndFrame()));
 
 	if (p1 < 0 || p0 > width()) continue;
 
@@ -1875,6 +1915,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     
     int labelCount = 0;
 
+    // top-left point, x-coord
+
     if ((b0 = topLayer->getXScaleValue(this, r.x(), v0, u0))) {
         axs = QString("%1 %2").arg(v0).arg(u0);
         if (u0 == "Hz" && Pitch::isFrequencyInMidiRange(v0)) {
@@ -1884,6 +1926,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         aw = paint.fontMetrics().width(axs);
         ++labelCount;
     }
+
+    // bottom-right point, x-coord
         
     if (r.width() > 0) {
         if ((b1 = topLayer->getXScaleValue(this, r.x() + r.width(), v1, u1))) {
@@ -1895,14 +1939,18 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
             bw = paint.fontMetrics().width(bxs);
         }
     }
+
+    // dimension, width
         
     if (b0 && b1 && v1 != v0 && u0 == u1) {
-        dxs = QString("(%1 %2)").arg(fabs(v1 - v0)).arg(u1);
+        dxs = QString("[%1 %2]").arg(fabs(v1 - v0)).arg(u1);
         dw = paint.fontMetrics().width(dxs);
     }
     
     b0 = false;
     b1 = false;
+
+    // top-left point, y-coord
 
     if ((b0 = topLayer->getYScaleValue(this, r.y(), v0, u0))) {
         ays = QString("%1 %2").arg(v0).arg(u0);
@@ -1913,6 +1961,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         aw = std::max(aw, paint.fontMetrics().width(ays));
         ++labelCount;
     }
+
+    // bottom-right point, y-coord
 
     if (r.height() > 0) {
         if ((b1 = topLayer->getYScaleValue(this, r.y() + r.height(), v1, u1))) {
@@ -1929,13 +1979,24 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     float dy = 0.f;
     QString du;
 
+    // dimension, height
+        
     if ((bd = topLayer->getYScaleDifference(this, r.y(), r.y() + r.height(),
                                             dy, du)) &&
         dy != 0) {
         if (du != "") {
-            dys = QString("(%1 %2)").arg(dy).arg(du);
+            if (du == "Hz") {
+                int semis;
+                float cents;
+                semis = Pitch::getPitchForFrequencyDifference(v0, v1, &cents);
+                dys = QString("[%1 %2 (%3)]")
+                    .arg(dy).arg(du)
+                    .arg(Pitch::getLabelForPitchRange(semis, cents));
+            } else {
+                dys = QString("[%1 %2]").arg(dy).arg(du);
+            }
         } else {
-            dys = QString("(%1)").arg(dy);
+            dys = QString("[%1]").arg(dy);
         }
         dw = std::max(dw, paint.fontMetrics().width(dys));
     }
