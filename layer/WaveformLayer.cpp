@@ -19,7 +19,7 @@
 #include "view/View.h"
 #include "base/Profiler.h"
 #include "base/RangeMapper.h"
-#include "base/ColourDatabase.h"
+#include "ColourDatabase.h"
 
 #include <QPainter>
 #include <QPixmap>

@@ -18,7 +18,7 @@
 #include "data/model/Model.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
-#include "base/ColourDatabase.h"
+#include "ColourDatabase.h"
 #include "view/View.h"
 
 #include "data/model/TextModel.h"
@@ -398,7 +398,7 @@ TextLayer::drawStart(View *v, QMouseEvent *e)
     m_editingPoint = TextModel::Point(frame, height, "");
     m_originalPoint = m_editingPoint;
 
-    if (m_editingCommand) m_editingCommand->finish();
+    if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new TextModel::EditCommand(m_model, "Add Label");
     m_editingCommand->addPoint(m_editingPoint);
 
@@ -443,7 +443,7 @@ TextLayer::drawEnd(View *v, QMouseEvent *)
         m_editingCommand->deletePoint(m_editingPoint);
     }
 
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -459,7 +459,7 @@ TextLayer::eraseStart(View *v, QMouseEvent *e)
     m_editingPoint = *points.begin();
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -488,7 +488,7 @@ TextLayer::eraseEnd(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
 
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -508,7 +508,7 @@ TextLayer::editStart(View *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -563,7 +563,7 @@ TextLayer::editEnd(View *, QMouseEvent *)
 	}
 
 	m_editingCommand->setName(newName);
-	m_editingCommand->finish();
+	finish(m_editingCommand);
     }
     
     m_editingCommand = 0;
@@ -615,7 +615,7 @@ TextLayer::moveSelection(Selection s, size_t newStartFrame)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -649,7 +649,7 @@ TextLayer::resizeSelection(Selection s, Selection newSize)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -668,7 +668,7 @@ TextLayer::deleteSelection(Selection s)
 	if (s.contains(i->frame)) command->deletePoint(*i);
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -767,7 +767,7 @@ TextLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
         command->addPoint(newPoint);
     }
 
-    command->finish();
+    finish(command);
     return true;
 }
 

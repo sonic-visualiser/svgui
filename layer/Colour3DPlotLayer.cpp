@@ -18,7 +18,7 @@
 #include "view/View.h"
 #include "base/Profiler.h"
 #include "base/LogRange.h"
-#include "base/ColourMapper.h"
+#include "ColourMapper.h"
 
 #include <QPainter>
 #include <QImage>

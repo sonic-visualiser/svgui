@@ -20,8 +20,8 @@
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "ViewManager.h"
-#include "base/CommandHistory.h"
-#include "base/TextAbbrev.h"
+#include "widgets/CommandHistory.h"
+#include "widgets/TextAbbrev.h"
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 

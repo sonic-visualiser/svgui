@@ -117,6 +117,11 @@ protected:
     NoteModel::Point m_editingPoint;
     NoteModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
+
+    void finish(NoteModel::EditCommand *command) {
+        Command *c = command->finish();
+        if (c) CommandHistory::getInstance()->addCommand(c, false);
+    }
 };
 
 #endif

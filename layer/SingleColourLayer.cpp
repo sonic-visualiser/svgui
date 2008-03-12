@@ -14,7 +14,7 @@
 */
 
 #include "SingleColourLayer.h"
-#include "base/ColourDatabase.h"
+#include "ColourDatabase.h"
 #include "view/View.h"
 
 #include <iostream>
@@ -106,7 +106,10 @@ SingleColourLayer::getPropertyValueLabel(const PropertyName &name,
 				    int value) const
 {
     if (name == "Colour") {
-        return Layer::getPropertyValueLabel(name, value);
+        ColourDatabase *db = ColourDatabase::getInstance();
+        if (value >= 0 && size_t(value) < db->getColourCount()) {
+            return db->getColourName(value);
+        }
     }
     return tr("<unknown>");
 }

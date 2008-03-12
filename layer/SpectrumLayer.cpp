@@ -21,7 +21,7 @@
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
 #include "base/Pitch.h"
-#include "base/ColourMapper.h"
+#include "ColourMapper.h"
 
 #include <QPainter>
 #include <QTextStream>

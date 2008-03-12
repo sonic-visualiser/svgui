@@ -131,6 +131,11 @@ protected:
     ImageModel::Point m_originalPoint;
     ImageModel::Point m_editingPoint;
     ImageModel::EditCommand *m_editingCommand;
+
+    void finish(ImageModel::EditCommand *command) {
+        Command *c = command->finish();
+        if (c) CommandHistory::getInstance()->addCommand(c, false);
+    }
 };
 
 #endif

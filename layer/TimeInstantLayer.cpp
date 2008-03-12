@@ -20,7 +20,7 @@
 #include "view/View.h"
 #include "base/Profiler.h"
 #include "base/Clipboard.h"
-#include "base/ColourDatabase.h"
+#include "ColourDatabase.h"
 
 #include "data/model/SparseOneDimensionalModel.h"
 
@@ -456,7 +456,7 @@ TimeInstantLayer::drawStart(View *v, QMouseEvent *e)
 
     m_editingPoint = SparseOneDimensionalModel::Point(frame, tr("New Point"));
 
-    if (m_editingCommand) m_editingCommand->finish();
+    if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new SparseOneDimensionalModel::EditCommand(m_model,
 								  tr("Draw Point"));
     m_editingCommand->addPoint(m_editingPoint);
@@ -489,7 +489,7 @@ TimeInstantLayer::drawEnd(View *, QMouseEvent *e)
 				      m_model->getSampleRate())
 	     .toText(false).c_str());
     m_editingCommand->setName(newName);
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -505,7 +505,7 @@ TimeInstantLayer::eraseStart(View *v, QMouseEvent *e)
     m_editingPoint = *points.begin();
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -533,7 +533,7 @@ TimeInstantLayer::eraseEnd(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
 
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -551,7 +551,7 @@ TimeInstantLayer::editStart(View *v, QMouseEvent *e)
     m_editingPoint = *points.begin();
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -590,7 +590,7 @@ TimeInstantLayer::editEnd(View *, QMouseEvent *e)
 					  m_model->getSampleRate())
 		 .toText(false).c_str());
 	m_editingCommand->setName(newName);
-	m_editingCommand->finish();
+	finish(m_editingCommand);
     }
     m_editingCommand = 0;
     m_editing = false;
@@ -624,7 +624,7 @@ TimeInstantLayer::editOpen(View *v, QMouseEvent *e)
             new SparseOneDimensionalModel::EditCommand(m_model, tr("Edit Point"));
         command->deletePoint(point);
         command->addPoint(newPoint);
-        command->finish();
+        finish(command);
     }
 
     delete dialog;
@@ -654,7 +654,7 @@ TimeInstantLayer::moveSelection(Selection s, size_t newStartFrame)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -689,7 +689,7 @@ TimeInstantLayer::resizeSelection(Selection s, Selection newSize)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -709,7 +709,7 @@ TimeInstantLayer::deleteSelection(Selection s)
 	if (s.contains(i->frame)) command->deletePoint(*i);
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -796,7 +796,7 @@ TimeInstantLayer::paste(View *v, const Clipboard &from, int frameOffset, bool)
         command->addPoint(newPoint);
     }
 
-    command->finish();
+    finish(command);
     return true;
 }
 

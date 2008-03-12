@@ -19,7 +19,7 @@
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/LogRange.h"
-#include "base/ColourDatabase.h"
+#include "ColourDatabase.h"
 #include "view/View.h"
 
 #include "data/model/SparseTimeValueModel.h"
@@ -29,7 +29,7 @@
 #include "widgets/ListInputDialog.h"
 
 #include "SpectrogramLayer.h" // for optional frequency alignment
-#include "base/ColourMapper.h"
+#include "ColourMapper.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -875,7 +875,7 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
 
     m_originalPoint = m_editingPoint;
 
-    if (m_editingCommand) m_editingCommand->finish();
+    if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
 							     tr("Draw Point"));
     if (!havePoint) {
@@ -942,7 +942,7 @@ TimeValueLayer::drawEnd(View *, QMouseEvent *)
 {
 //    std::cerr << "TimeValueLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -958,7 +958,7 @@ TimeValueLayer::eraseStart(View *v, QMouseEvent *e)
     m_editingPoint = *points.begin();
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -987,7 +987,7 @@ TimeValueLayer::eraseEnd(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
 
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -1006,7 +1006,7 @@ TimeValueLayer::editStart(View *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -1058,7 +1058,7 @@ TimeValueLayer::editEnd(View *, QMouseEvent *)
 	}
 
 	m_editingCommand->setName(newName);
-	m_editingCommand->finish();
+	finish(m_editingCommand);
     }
 
     m_editingCommand = 0;
@@ -1097,7 +1097,7 @@ TimeValueLayer::editOpen(View *v, QMouseEvent *e)
             new SparseTimeValueModel::EditCommand(m_model, tr("Edit Point"));
         command->deletePoint(point);
         command->addPoint(newPoint);
-        command->finish();
+        finish(command);
     }
 
     delete dialog;
@@ -1127,7 +1127,7 @@ TimeValueLayer::moveSelection(Selection s, size_t newStartFrame)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -1162,7 +1162,7 @@ TimeValueLayer::resizeSelection(Selection s, Selection newSize)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -1185,7 +1185,7 @@ TimeValueLayer::deleteSelection(Selection s)
         }
     }
 
-    command->finish();
+    finish(command);
 }    
 
 void
@@ -1401,7 +1401,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
         command->addPoint(newPoint);
     }
 
-    command->finish();
+    finish(command);
     return true;
 }
 

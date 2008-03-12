@@ -112,6 +112,11 @@ protected:
     SparseOneDimensionalModel::Point m_editingPoint;
     SparseOneDimensionalModel::EditCommand *m_editingCommand;
     PlotStyle m_plotStyle;
+
+    void finish(SparseOneDimensionalModel::EditCommand *command) {
+        Command *c = command->finish();
+        if (c) CommandHistory::getInstance()->addCommand(c, false);
+    }
 };
 
 #endif
