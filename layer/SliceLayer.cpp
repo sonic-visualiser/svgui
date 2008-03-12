@@ -20,8 +20,8 @@
 #include "base/AudioLevel.h"
 #include "base/RangeMapper.h"
 #include "base/RealTime.h"
-#include "base/ColourMapper.h"
-#include "base/ColourDatabase.h"
+#include "ColourMapper.h"
+#include "ColourDatabase.h"
 
 #include "PaintAssistant.h"
 

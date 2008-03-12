@@ -102,6 +102,11 @@ protected:
     TextModel::Point m_originalPoint;
     TextModel::Point m_editingPoint;
     TextModel::EditCommand *m_editingCommand;
+
+    void finish(TextModel::EditCommand *command) {
+        Command *c = command->finish();
+        if (c) CommandHistory::getInstance()->addCommand(c, false);
+    }
 };
 
 #endif

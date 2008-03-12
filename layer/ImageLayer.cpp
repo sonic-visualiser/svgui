@@ -571,7 +571,7 @@ ImageLayer::drawStart(View *v, QMouseEvent *e)
     m_editingPoint = ImageModel::Point(frame, "", "");
     m_originalPoint = m_editingPoint;
 
-    if (m_editingCommand) m_editingCommand->finish();
+    if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new ImageModel::EditCommand(m_model, "Add Image");
     m_editingCommand->addPoint(m_editingPoint);
 
@@ -616,7 +616,7 @@ ImageLayer::drawEnd(View *v, QMouseEvent *)
         m_editingCommand->deletePoint(m_editingPoint);
     }
 
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -635,7 +635,7 @@ ImageLayer::addImage(long frame, QString url)
     ImageModel::EditCommand *command =
         new ImageModel::EditCommand(m_model, "Add Image");
     command->addPoint(point);
-    command->finish();
+    finish(command);
     return true;
 }
 
@@ -654,7 +654,7 @@ ImageLayer::editStart(View *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -688,7 +688,7 @@ ImageLayer::editEnd(View *, QMouseEvent *)
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
     }
     
     m_editingCommand = 0;
@@ -746,7 +746,7 @@ ImageLayer::moveSelection(Selection s, size_t newStartFrame)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -780,7 +780,7 @@ ImageLayer::resizeSelection(Selection s, Selection newSize)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -799,7 +799,7 @@ ImageLayer::deleteSelection(Selection s)
 	if (s.contains(i->frame)) command->deletePoint(*i);
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -885,7 +885,7 @@ ImageLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* inter
         command->addPoint(newPoint);
     }
 
-    command->finish();
+    finish(command);
     return true;
 }
 

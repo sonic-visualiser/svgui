@@ -19,7 +19,7 @@
 
 #include "data/model/Model.h"
 #include "base/RealTime.h"
-#include "base/ColourDatabase.h"
+#include "ColourDatabase.h"
 #include "view/View.h"
 
 #include <QPainter>

@@ -20,7 +20,7 @@
 #include "base/Profiler.h"
 #include "base/Pitch.h"
 #include "base/LogRange.h"
-#include "base/ColourDatabase.h"
+#include "ColourDatabase.h"
 #include "view/View.h"
 
 #include "data/model/NoteModel.h"
@@ -623,7 +623,7 @@ NoteLayer::drawStart(View *v, QMouseEvent *e)
     m_editingPoint = NoteModel::Point(frame, value, 0, 0.8, tr("New Point"));
     m_originalPoint = m_editingPoint;
 
-    if (m_editingCommand) m_editingCommand->finish();
+    if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new NoteModel::EditCommand(m_model,
 						  tr("Draw Point"));
     m_editingCommand->addPoint(m_editingPoint);
@@ -665,7 +665,7 @@ NoteLayer::drawEnd(View *, QMouseEvent *)
 {
 //    std::cerr << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -681,7 +681,7 @@ NoteLayer::eraseStart(View *v, QMouseEvent *e)
     m_editingPoint = *points.begin();
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -710,7 +710,7 @@ NoteLayer::eraseEnd(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
 
-    m_editingCommand->finish();
+    finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
 }
@@ -729,7 +729,7 @@ NoteLayer::editStart(View *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
-	m_editingCommand->finish();
+	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
@@ -781,7 +781,7 @@ NoteLayer::editEnd(View *, QMouseEvent *)
 	}
 
 	m_editingCommand->setName(newName);
-	m_editingCommand->finish();
+	finish(m_editingCommand);
     }
 
     m_editingCommand = 0;
@@ -823,7 +823,7 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
             (m_model, tr("Edit Point"));
         command->deletePoint(note);
         command->addPoint(newNote);
-        command->finish();
+        finish(command);
     }
 
     delete dialog;
@@ -852,7 +852,7 @@ NoteLayer::moveSelection(Selection s, size_t newStartFrame)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -891,7 +891,7 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
 	}
     }
 
-    command->finish();
+    finish(command);
 }
 
 void
@@ -913,7 +913,7 @@ NoteLayer::deleteSelection(Selection s)
         }
     }
 
-    command->finish();
+    finish(command);
 }    
 
 void
@@ -1011,7 +1011,7 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
         command->addPoint(newPoint);
     }
 
-    command->finish();
+    finish(command);
     return true;
 }
 

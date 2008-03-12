@@ -22,6 +22,7 @@
 
 #include <map>
 
+#include "base/ViewManagerBase.h"
 #include "base/Selection.h"
 #include "base/Command.h"
 #include "base/Clipboard.h"
@@ -46,7 +47,7 @@ class View;
  * correctly whether they are supplied with a ViewManager or not.
  */
 
-class ViewManager : public QObject
+class ViewManager : public ViewManagerBase
 {
     Q_OBJECT
 

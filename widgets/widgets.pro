@@ -16,6 +16,7 @@ MOC_DIR = tmp_moc
 # Input
 HEADERS += AudioDial.h \
            ColourNameDialog.h \
+           CommandHistory.h \
            Fader.h \
            IconLoader.h \
            ImageDialog.h \
@@ -37,12 +38,14 @@ HEADERS += AudioDial.h \
            PropertyStack.h \
            RangeInputDialog.h \
            SubdividingMenu.h \
+           TextAbbrev.h \
            Thumbwheel.h \
            TipDialog.h \
            WindowShapePreview.h \
            WindowTypeSelector.h
 SOURCES += AudioDial.cpp \
            ColourNameDialog.cpp \
+           CommandHistory.cpp \
            Fader.cpp \
            IconLoader.cpp \
            ImageDialog.cpp \
@@ -64,6 +67,7 @@ SOURCES += AudioDial.cpp \
            PropertyStack.cpp \
            RangeInputDialog.cpp \
            SubdividingMenu.cpp \
+           TextAbbrev.cpp \
            Thumbwheel.cpp \
            TipDialog.cpp \
            WindowShapePreview.cpp \

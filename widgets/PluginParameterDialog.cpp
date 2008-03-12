@@ -18,7 +18,7 @@
 #include "PluginParameterBox.h"
 #include "WindowTypeSelector.h"
 
-#include "base/TextAbbrev.h"
+#include "TextAbbrev.h"
 
 #include "vamp-sdk/Plugin.h"
 #include "vamp-sdk/PluginHostAdapter.h"

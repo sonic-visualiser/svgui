@@ -23,8 +23,8 @@
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
 #include "base/LogRange.h"
-#include "base/CommandHistory.h"
-#include "base/ColourMapper.h"
+#include "widgets/CommandHistory.h"
+#include "ColourMapper.h"
 #include "ImageRegionFinder.h"
 
 #include <QPainter>

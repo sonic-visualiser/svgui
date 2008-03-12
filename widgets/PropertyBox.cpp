@@ -19,8 +19,8 @@
 #include "base/PropertyContainer.h"
 #include "base/PlayParameters.h"
 #include "layer/Layer.h"
+#include "layer/ColourDatabase.h"
 #include "base/UnitDatabase.h"
-#include "base/ColourDatabase.h"
 #include "base/RangeMapper.h"
 
 #include "plugin/RealTimePluginFactory.h"
@@ -607,12 +607,14 @@ PropertyBox::propertyControllerChanged(int value)
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
 
+    Command *c = 0;
+
     if (type == PropertyContainer::UnitsProperty) {
 
         NotifyingComboBox *cb = dynamic_cast<NotifyingComboBox *>(obj);
         if (cb) {
             QString unit = cb->currentText();
-            m_container->setPropertyWithCommand
+            c = m_container->getSetPropertyCommand
                 (name, UnitDatabase::getInstance()->getUnitId(unit));
         }
 
@@ -625,12 +627,14 @@ PropertyBox::propertyControllerChanged(int value)
                 return;
             }
         }
-        m_container->setPropertyWithCommand(name, value);
+        c = m_container->getSetPropertyCommand(name, value);
 
     } else if (type != PropertyContainer::InvalidProperty) {
 
-	m_container->setPropertyWithCommand(name, value);
+	c = m_container->getSetPropertyCommand(name, value);
     }
+
+    if (c) CommandHistory::getInstance()->addCommand(c, true, true);
     
     updateContextHelp(obj);
 }

@@ -142,6 +142,11 @@ protected:
     int m_colourMap;
     PlotStyle m_plotStyle;
     VerticalScale m_verticalScale;
+
+    void finish(SparseTimeValueModel::EditCommand *command) {
+        Command *c = command->finish();
+        if (c) CommandHistory::getInstance()->addCommand(c, false);
+    }
 };
 
 #endif

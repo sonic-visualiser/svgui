@@ -16,7 +16,7 @@
 #include "ViewManager.h"
 #include "base/AudioPlaySource.h"
 #include "data/model/Model.h"
-#include "base/CommandHistory.h"
+#include "widgets/CommandHistory.h"
 #include "View.h"
 
 #include <QSettings>

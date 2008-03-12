@@ -16,7 +16,7 @@
 #include "Layer.h"
 #include "view/View.h"
 #include "data/model/Model.h"
-#include "base/CommandHistory.h"
+#include "widgets/CommandHistory.h"
 
 #include <iostream>
 

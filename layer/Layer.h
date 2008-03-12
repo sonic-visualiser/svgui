@@ -20,6 +20,8 @@
 #include "base/XmlExportable.h"
 #include "base/Selection.h"
 
+#include "widgets/CommandHistory.h"
+
 #include <QObject>
 #include <QRect>
 #include <QXmlAttributes>
