@@ -249,8 +249,6 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
         frame /= v->getZoomLevel();
         frame *= v->getZoomLevel(); // so frame corresponds to an exact pixel
 
-	ms += incms;
-
         int x = v->getXForFrame(frame);
 
 #ifdef DEBUG_TIME_RULER_LAYER
@@ -266,11 +264,11 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (x >= rect.x() - 50) {
 
-#ifdef DEBUG_TIME_RULER_LAYER
-            std::cerr << "X in range, drawing line here" << std::endl;
-#endif
-
             RealTime rt = RealTime::fromMilliseconds(ms);
+
+#ifdef DEBUG_TIME_RULER_LAYER
+            std::cerr << "X in range, drawing line here for time " << rt.toText() << std::endl;
+#endif
 
             QString text(QString::fromStdString(rt.toText()));
             QFontMetrics metrics = paint.fontMetrics();
@@ -351,6 +349,8 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    paint.drawLine(x, 0, x, sz);
 	    paint.drawLine(x, v->height() - sz - 1, x, v->height() - 1);
 	}
+
+	ms += incms;
     }
 
     paint.restore();
