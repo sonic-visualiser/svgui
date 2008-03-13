@@ -21,6 +21,8 @@
 #include "layer/LayerFactory.h"
 #include "widgets/NotifyingTabBar.h"
 #include "widgets/IconLoader.h"
+#include "base/Command.h"
+#include "widgets/CommandHistory.h"
 
 #include <QIcon>
 #include <QTabWidget>
@@ -198,6 +200,26 @@ PropertyStack::propertyContainerNameChanged(PropertyContainer *)
     repopulate();
 }
 
+class ShowLayerCommand : public QObject, public Command
+{
+public:
+    ShowLayerCommand(View *view, Layer *layer, bool show) :
+        m_view(view), m_layer(layer), m_show(show) { }
+    void execute() {
+        m_layer->showLayer(m_view, m_show);
+    }
+    void unexecute() {
+        m_layer->showLayer(m_view, !m_show);
+    }
+    QString getName() const {
+        return tr("Change Layer Visibility");
+    }
+protected:
+    View *m_view;
+    Layer *m_layer;
+    bool m_show;
+};
+
 void
 PropertyStack::showLayer(bool show)
 {
@@ -207,7 +229,8 @@ PropertyStack::showLayer(bool show)
 	if (obj == m_boxes[i]) {
 	    Layer *layer = dynamic_cast<Layer *>(m_boxes[i]->getContainer());
 	    if (layer) {
-		layer->showLayer(m_client, show);
+                CommandHistory::getInstance()->addCommand
+                    (new ShowLayerCommand(m_client, layer, show));
 		return;
 	    }
 	}
