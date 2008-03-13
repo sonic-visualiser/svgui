@@ -18,6 +18,7 @@
 
 #include "base/PropertyContainer.h"
 #include "base/PlayParameters.h"
+#include "base/PlayParameterRepository.h"
 #include "layer/Layer.h"
 #include "layer/ColourDatabase.h"
 #include "base/UnitDatabase.h"
@@ -176,13 +177,13 @@ PropertyBox::populateViewPlayFrame()
         m_playButton->setState(!params->isPlayMuted());
 	layout->addWidget(m_playButton);
 	connect(m_playButton, SIGNAL(stateChanged(bool)),
-		params, SLOT(setPlayAudible(bool)));
+		this, SLOT(playAudibleButtonChanged(bool)));
         connect(m_playButton, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
         connect(m_playButton, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
 	connect(params, SIGNAL(playAudibleChanged(bool)),
-		m_playButton, SLOT(setState(bool)));
+		this, SLOT(playAudibleChanged(bool)));
 	layout->setAlignment(m_playButton, Qt::AlignVCenter);
 
 	layout->insertStretch(-1, 10);
@@ -214,14 +215,13 @@ PropertyBox::populateViewPlayFrame()
 		this, SLOT(playGainDialChanged(int)));
 	connect(params, SIGNAL(playGainChanged(float)),
 		this, SLOT(playGainChanged(float)));
-	connect(this, SIGNAL(changePlayGain(float)),
-		params, SLOT(setPlayGain(float)));
 	connect(this, SIGNAL(changePlayGainDial(int)),
 		gainDial, SLOT(setValue(int)));
         connect(gainDial, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
         connect(gainDial, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
+        playGainChanged(params->getPlayGain());
 	layout->setAlignment(gainDial, Qt::AlignVCenter);
 
 	AudioDial *panDial = new AudioDial;
@@ -241,14 +241,13 @@ PropertyBox::populateViewPlayFrame()
 		this, SLOT(playPanDialChanged(int)));
 	connect(params, SIGNAL(playPanChanged(float)),
 		this, SLOT(playPanChanged(float)));
-	connect(this, SIGNAL(changePlayPan(float)),
-		params, SLOT(setPlayPan(float)));
 	connect(this, SIGNAL(changePlayPanDial(int)),
 		panDial, SLOT(setValue(int)));
         connect(panDial, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
         connect(panDial, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
+        playPanChanged(params->getPlayPan());
 	layout->setAlignment(panDial, Qt::AlignVCenter);
 
     } else {
@@ -656,6 +655,26 @@ PropertyBox::addNewColour()
         db->setUseDarkBackground(index, dialog.isDarkBackgroundChecked());
     }
 }
+
+void
+PropertyBox::playAudibleChanged(bool audible)
+{
+    m_playButton->setState(audible);
+}
+
+void
+PropertyBox::playAudibleButtonChanged(bool audible)
+{
+    PlayParameters *params = m_container->getPlayParameters();
+    if (!params) return;
+
+    if (params->isPlayAudible() != audible) {
+        PlayParameterRepository::EditCommand *command =
+            new PlayParameterRepository::EditCommand(params);
+        command->setPlayAudible(audible);
+        CommandHistory::getInstance()->addCommand(command, true, true);
+    }
+}
     
 void
 PropertyBox::playGainChanged(float gain)
@@ -670,8 +689,19 @@ void
 PropertyBox::playGainDialChanged(int dialValue)
 {
     QObject *obj = sender();
+
+    PlayParameters *params = m_container->getPlayParameters();
+    if (!params) return;
+
     float gain = pow(10, float(dialValue) / 20.0);
-    emit changePlayGain(gain);
+
+    if (params->getPlayGain() != gain) {
+        PlayParameterRepository::EditCommand *command =
+            new PlayParameterRepository::EditCommand(params);
+        command->setPlayGain(gain);
+        CommandHistory::getInstance()->addCommand(command, true, true);
+    }
+
     updateContextHelp(obj);
 }
     
@@ -688,10 +718,21 @@ void
 PropertyBox::playPanDialChanged(int dialValue)
 {
     QObject *obj = sender();
+
+    PlayParameters *params = m_container->getPlayParameters();
+    if (!params) return;
+
     float pan = float(dialValue) / 50.0;
     if (pan < -1.0) pan = -1.0;
     if (pan >  1.0) pan =  1.0;
-    emit changePlayPan(pan);
+
+    if (params->getPlayPan() != pan) {
+        PlayParameterRepository::EditCommand *command =
+            new PlayParameterRepository::EditCommand(params);
+        command->setPlayPan(pan);
+        CommandHistory::getInstance()->addCommand(command, true, true);
+    }
+
     updateContextHelp(obj);
 }
 
@@ -705,6 +746,9 @@ PropertyBox::editPlugin()
 
     QString pluginId = params->getPlayPluginId();
     QString configurationXml = params->getPlayPluginConfiguration();
+
+    PlayParameterRepository::EditCommand *command = 
+        new PlayParameterRepository::EditCommand(params);
     
     RealTimePluginFactory *factory =
 	RealTimePluginFactory::instanceFor(pluginId);
@@ -721,8 +765,11 @@ PropertyBox::editPlugin()
             this, SLOT(pluginConfigurationChanged(QString)));
 
     if (dialog->exec() == QDialog::Accepted) {
-        params->setPlayPluginConfiguration(PluginXml(instance).toXmlString());
+        QString newConfiguration = PluginXml(instance).toXmlString();
+        command->setPlayPluginConfiguration(newConfiguration);
+        CommandHistory::getInstance()->addCommand(command, true);
     } else {
+        delete command;
         // restore in case we mucked about with the configuration
         // as a consequence of signals from the dialog
         params->setPlayPluginConfiguration(configurationXml);

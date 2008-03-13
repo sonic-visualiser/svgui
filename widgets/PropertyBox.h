@@ -39,9 +39,7 @@ public:
     PropertyContainer *getContainer() { return m_container; }
 
 signals:
-    void changePlayGain(float);
     void changePlayGainDial(int);
-    void changePlayPan(float);
     void changePlayPanDial(int);
     void showLayer(bool);
     void contextHelpChanged(const QString &);
@@ -56,6 +54,8 @@ protected slots:
     void propertyControllerChanged(int);
     void propertyControllerChanged(bool);
 
+    void playAudibleChanged(bool);
+    void playAudibleButtonChanged(bool);
     void playGainChanged(float);
     void playGainDialChanged(int);
     void playPanChanged(float);

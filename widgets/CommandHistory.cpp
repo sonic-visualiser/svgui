@@ -35,6 +35,8 @@
 
 #include <iostream>
 
+//#define DEBUG_COMMAND_HISTORY 1
+
 CommandHistory *CommandHistory::m_instance = 0;
 
 CommandHistory::CommandHistory() :
@@ -95,7 +97,9 @@ CommandHistory::getInstance()
 void
 CommandHistory::clear()
 {
-//    std::cerr << "CommandHistory::clear()" << std::endl;
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::clear()" << std::endl;
+#endif
     closeBundle();
     m_savedAt = -1;
     clearStack(m_undoStack);
@@ -147,10 +151,14 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
 	closeBundle();
     }
 
-//    std::cerr << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " at " << command << std::endl;
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " at " << command << std::endl;
+    if (!m_redoStack.empty()) {
+        std::cerr << "CommandHistory::clearing redo stack" << std::endl;
+    }
+#endif
 
     // We can't redo after adding a command
-//    std::cerr << "CommandHistory::clearing redo stack" << std::endl;
     clearStack(m_redoStack);
 
     // can we reach savedAt?
@@ -176,6 +184,11 @@ CommandHistory::addToBundle(Command *command, bool execute)
 {
     if (m_currentBundle) {
 	if (!command || (command->getName() != m_currentBundleName)) {
+#ifdef DEBUG_COMMAND_HISTORY
+            std::cerr << "CommandHistory::addToBundle: "
+                      << command->getName().toStdString()
+                      << ": closing current bundle" << std::endl;
+#endif
 	    closeBundle();
 	}
     }
@@ -183,6 +196,13 @@ CommandHistory::addToBundle(Command *command, bool execute)
     if (!command) return;
 
     if (!m_currentBundle) {
+
+#ifdef DEBUG_COMMAND_HISTORY
+        std::cerr << "CommandHistory::addToBundle: "
+                  << command->getName().toStdString()
+                  << ": creating new bundle" << std::endl;
+#endif
+
 	// need to addCommand before setting m_currentBundle, as addCommand
 	// with bundle false will reset m_currentBundle to 0
 	MacroCommand *mc = new MacroCommand(command->getName());
@@ -191,8 +211,21 @@ CommandHistory::addToBundle(Command *command, bool execute)
 	m_currentBundleName = command->getName();
     }
 
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::addToBundle: "
+              << command->getName().toStdString()
+              << ": adding to bundle" << std::endl;
+#endif
+
     if (execute) command->execute();
     m_currentBundle->addCommand(command);
+
+    // Emit even if we aren't executing the command, because
+    // someone must have executed it for this to make any sense
+    emit commandExecuted();
+    emit commandExecuted(command);
+
+    updateActions();
 
     delete m_bundleTimer;
     m_bundleTimer = new QTimer(this);
@@ -203,6 +236,10 @@ CommandHistory::addToBundle(Command *command, bool execute)
 void
 CommandHistory::closeBundle()
 {
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::closeBundle" << std::endl;
+#endif
+
     m_currentBundle = 0;
     m_currentBundleName = "";
 }
@@ -210,13 +247,19 @@ CommandHistory::closeBundle()
 void
 CommandHistory::bundleTimerTimeout()
 {
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::bundleTimerTimeout: bundle is " << m_currentBundle << std::endl;
+#endif
+
     closeBundle();
 }
 
 void
 CommandHistory::addToCompound(Command *command, bool execute)
 {
-//    std::cerr << "CommandHistory::addToCompound: " << command->getName().toLocal8Bit().data() << std::endl;
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::addToCompound: " << command->getName().toLocal8Bit().data() << std::endl;
+#endif
     if (!m_currentCompound) {
 	std::cerr << "CommandHistory::addToCompound: ERROR: no compound operation in progress!" << std::endl;
         return;
@@ -278,6 +321,10 @@ CommandHistory::undo()
 {
     if (m_undoStack.empty()) return;
 
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::undo()" << std::endl;
+#endif
+
     closeBundle();
 
     Command *command = m_undoStack.top();
@@ -298,6 +345,10 @@ void
 CommandHistory::redo()
 {
     if (m_redoStack.empty()) return;
+
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::redo()" << std::endl;
+#endif
 
     closeBundle();
 
@@ -374,8 +425,10 @@ CommandHistory::clipStack(CommandStack &stack, int limit)
 	CommandStack tempStack;
 
 	for (i = 0; i < limit; ++i) {
-//	    Command *command = stack.top();
-//	    std::cerr << "CommandHistory::clipStack: Saving recent command: " << command->getName().toLocal8Bit().data() << " at " << command << std::endl;
+#ifdef DEBUG_COMMAND_HISTORY
+	    Command *command = stack.top();
+	    std::cerr << "CommandHistory::clipStack: Saving recent command: " << command->getName().toLocal8Bit().data() << " at " << command << std::endl;
+#endif
 	    tempStack.push(stack.top());
 	    stack.pop();
 	}
@@ -395,7 +448,9 @@ CommandHistory::clearStack(CommandStack &stack)
     while (!stack.empty()) {
 	Command *command = stack.top();
 	// Not safe to call getName() on a command about to be deleted
-//	std::cerr << "CommandHistory::clearStack: About to delete command " << command << std::endl;
+#ifdef DEBUG_COMMAND_HISTORY
+	std::cerr << "CommandHistory::clearStack: About to delete command " << command << std::endl;
+#endif
 	delete command;
 	stack.pop();
     }
