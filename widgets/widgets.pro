@@ -17,7 +17,9 @@ MOC_DIR = tmp_moc
 HEADERS += AudioDial.h \
            ColourNameDialog.h \
            CommandHistory.h \
+           CSVFormatDialog.h \
            Fader.h \
+           FileFinder.h \
            IconLoader.h \
            ImageDialog.h \
            ItemEditDialog.h \
@@ -27,6 +29,7 @@ HEADERS += AudioDial.h \
            LayerTreeDialog.h \
            LEDButton.h \
            ListInputDialog.h \
+           MIDIFileImportDialog.h \
            NotifyingCheckBox.h \
            NotifyingComboBox.h \
            NotifyingPushButton.h \
@@ -34,6 +37,7 @@ HEADERS += AudioDial.h \
            Panner.h \
            PluginParameterBox.h \
            PluginParameterDialog.h \
+           ProgressDialog.h \
            PropertyBox.h \
            PropertyStack.h \
            RangeInputDialog.h \
@@ -46,7 +50,9 @@ HEADERS += AudioDial.h \
 SOURCES += AudioDial.cpp \
            ColourNameDialog.cpp \
            CommandHistory.cpp \
+           CSVFormatDialog.cpp \
            Fader.cpp \
+           FileFinder.cpp \
            IconLoader.cpp \
            ImageDialog.cpp \
            ItemEditDialog.cpp \
@@ -56,6 +62,7 @@ SOURCES += AudioDial.cpp \
            LayerTreeDialog.cpp \
            LEDButton.cpp \
            ListInputDialog.cpp \
+           MIDIFileImportDialog.cpp \
            NotifyingCheckBox.cpp \
            NotifyingComboBox.cpp \
            NotifyingPushButton.cpp \
@@ -63,6 +70,7 @@ SOURCES += AudioDial.cpp \
            Panner.cpp \
            PluginParameterBox.cpp \
            PluginParameterDialog.cpp \
+           ProgressDialog.cpp \
            PropertyBox.cpp \
            PropertyStack.cpp \
            RangeInputDialog.cpp \

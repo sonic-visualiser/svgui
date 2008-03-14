@@ -26,8 +26,10 @@
 #include <QUrl>
 #include <QMessageBox>
 
+#include "ProgressDialog.h"
+
 #include "data/fileio/FileSource.h"
-#include "data/fileio/FileFinder.h"
+#include "FileFinder.h"
 
 #include <iostream>
 
@@ -186,7 +188,9 @@ ImageDialog::updatePreview()
                                       tr("The URL scheme \"%1\" is not supported")
                                       .arg(url.scheme()));
             } else {
-                m_remoteFile = new FileSource(url, FileSource::ProgressDialog);
+                
+                ProgressDialog dialog(tr("Opening image URL..."), true, 2000);
+                m_remoteFile = new FileSource(url, &dialog);
                 m_remoteFile->waitForData();
                 if (!m_remoteFile->isOK()) {
                     QMessageBox::critical(this, tr("File download failed"),

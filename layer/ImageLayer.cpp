@@ -24,6 +24,7 @@
 #include "data/fileio/FileSource.h"
 
 #include "widgets/ImageDialog.h"
+#include "widgets/ProgressDialog.h"
 
 #include <QPainter>
 #include <QMouseEvent>
@@ -912,7 +913,8 @@ ImageLayer::checkAddRemote(QString img) const
             return;
         }
 
-        FileSource *rf = new FileSource(img, FileSource::ProgressDialog);
+        ProgressDialog dialog(tr("Opening image URL..."), true, 2000);
+        FileSource *rf = new FileSource(img, &dialog);
         if (rf->isOK()) {
             std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
             m_remoteFiles[img] = rf;
