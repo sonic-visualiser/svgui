@@ -59,8 +59,6 @@ void
 ProgressDialog::showTimerElapsed()
 {
     m_timerElapsed = true;
-    delete m_showTimer;
-    m_showTimer = 0;
     if (m_dialog->value() > 0) {
         m_dialog->show();
     }
@@ -75,8 +73,6 @@ ProgressDialog::setProgress(int percentage)
         m_dialog->setValue(percentage);
 
         if (percentage >= 100) {
-            delete m_showTimer;
-            m_showTimer = 0;
             m_dialog->hide();
         } else if (m_timerElapsed && !m_dialog->isVisible()) {
             m_dialog->show();
