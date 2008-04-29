@@ -318,7 +318,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	for (int i = 1; i < ticks; ++i) {
 
-            dms = ms - incms + (i * double(incms)) / ticks;
+            dms = ms + (i * double(incms)) / ticks;
             frame = lrint((dms * sampleRate) / 1000.0);
             frame /= v->getZoomLevel();
             frame *= v->getZoomLevel(); // exact pixel as above
