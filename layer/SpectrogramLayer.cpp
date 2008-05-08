@@ -1716,7 +1716,7 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
 // Plan:
 //
 // - the QImage cache is managed by the GUI thread (which creates,
-// sizes and destroys it).
+// sizes and destroys it)
 //
 // - but the cache is drawn on by another thread (paint thread)
 //
@@ -1758,7 +1758,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     // paints.  The GUI thread should then never modify the cache
     // image without holding its specific mutex.)
 
-    Profiler profiler("SpectrogramLayer::paint", false);
+    Profiler profiler("SpectrogramLayer::paint", true);
+
+    std::cerr << "SpectrogramLayer::paint entering" << std::endl;
 
     QMutexLocker locker(&m_pixmapCacheMutex);
 
@@ -1766,6 +1768,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     float ratio = float(v->getZoomLevel()) / float(getWindowIncrement());
     int imageWidth = lrintf(v->width() * ratio);
+
+    std::cerr << "SpectrogramLayer::paint: view width = " << v->width() << ", ratio = " << ratio << ", imageWidth = " << imageWidth << std::endl;
 
     PixmapCache *cache = m_pixmapCaches[v];
     if (!cache) {
@@ -1778,8 +1782,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         cache->mutex.unlock();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
         std::cerr << "SpectrogramLayer::paint: Created new cache, size "
-                  << v->width() << "x" << v->height() << " ("
-                  << v->width() * v->height() * 4 << " bytes)" << std::endl;
+                  << imageWidth << "x" << v->height() << " ("
+                  << imageWidth * v->height() * 4 << " bytes)" << std::endl;
 #endif
         return; //!!! prod paint thread
     }
@@ -1915,8 +1919,12 @@ SpectrogramLayer::PaintThread::run()
 
         if (!m_exiting) {
             //!!! wait on condition
-            if (workToDo) ; // usleep(100);
-            else sleep(1);
+            if (workToDo) {
+                // usleep(100);
+                std::cerr << "SpectrogramLayer::PaintThread::run: still work to do, continuing" << std::endl;
+            } else {
+                sleep(10);
+            }
         }
     }
 }
@@ -1926,7 +1934,7 @@ SpectrogramLayer::PaintThread::run()
 bool
 SpectrogramLayer::paintCache(View *v) const
 {
-    Profiler profiler("SpectrogramLayer::paintCache", false);
+    Profiler profiler("SpectrogramLayer::paintCache", true);
 
     m_pixmapCacheMutex.lock();
     
@@ -1943,6 +1951,11 @@ SpectrogramLayer::paintCache(View *v) const
     PixmapCache &cache = *cacheptr;
     QMutexLocker locker(&cache.mutex);
     m_pixmapCacheMutex.unlock();
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        std::cerr << "SpectrogramLayer::paintCache(): Have cache to paint onto"
+                  << std::endl;
+#endif
 
     QImage &image = *cache.pixmap; //!!! rename to cache.image
 
@@ -2144,6 +2157,7 @@ SpectrogramLayer::paintCache(View *v) const
     }
 
     bool runOutOfData = false;
+    int runOutOfDataAt = x1;
 
     std::cerr << "painting from " << x0 << " to " << x1 << std::endl;
 
@@ -2169,6 +2183,7 @@ SpectrogramLayer::paintCache(View *v) const
             std::cerr << "Met unavailable column at col " << col << std::endl;
 #endif
             runOutOfData = true;
+            runOutOfDataAt = x0 + x;
             break;
         }
 
@@ -2357,11 +2372,21 @@ SpectrogramLayer::paintCache(View *v) const
 #endif
     }
 */
+
+    if (runOutOfData) {
+        std::cerr << "ran out of data, setting x1 to " << runOutOfDataAt
+                  << std::endl;
+        x1 = runOutOfDataAt;
+    }
+
     if (cache.validArea.width() > 0) {
         
         int vx0 = 0, vx1 = 0;
         vx0 = cache.validArea.x();
         vx1 = cache.validArea.x() + cache.validArea.width();
+
+        std::cerr << "set cache valid region from "
+                  << cache.validArea.x() << " -> " << cache.validArea.x() + cache.validArea.width();
         
         cache.validArea = QRect
             (std::min(vx0, x0), cache.validArea.y(),
@@ -2369,9 +2394,17 @@ SpectrogramLayer::paintCache(View *v) const
                        x1 - std::min(vx0, x0)),
              cache.validArea.height());
 
+        std::cerr << " to "
+                  << cache.validArea.x() << " -> " << cache.validArea.x() + cache.validArea.width()
+                  << std::endl;
+        
     } else {
         
         cache.validArea = QRect(x0, 0, x1 - x0, h);
+
+        std::cerr << "set cache valid region from empty to "
+                  << cache.validArea.x() << " -> " << cache.validArea.x() + cache.validArea.width()
+                  << std::endl;
     }
         
 /*
@@ -2620,8 +2653,6 @@ SpectrogramLayer::selectPaintStrip(PixmapCache &cache, int &x0, int &x1,
         if (x0 < vx0) {
             if (x0 + paintBlockWidth < vx0) {
                 x0 = vx0 - paintBlockWidth;
-//            } else {
-//                x0 = 0;
             }
             x1 = vx0;
         } else if (x0 >= vx1) {
@@ -2664,6 +2695,8 @@ SpectrogramLayer::selectPaintStrip(PixmapCache &cache, int &x0, int &x1,
 //            }
         }
     }
+
+    std::cerr << "SpectrogramLayer::selectPaintStrip: returning " << x0 << " -> " << x1 << std::endl;
 }
 
 void
