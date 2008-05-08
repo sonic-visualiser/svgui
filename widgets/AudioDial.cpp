@@ -50,6 +50,8 @@
 #include <QPaintEvent>
 #include <QInputDialog>
 
+#include "base/Profiler.h"
+
 using std::endl;
 using std::cerr;
 
@@ -115,6 +117,8 @@ void AudioDial::setRangeMapper(RangeMapper *mapper)
 
 void AudioDial::paintEvent(QPaintEvent *)
 {
+    Profiler profiler("AudioDial::paintEvent");
+
     QPainter paint;
 
     float angle = AUDIO_DIAL_MIN // offset

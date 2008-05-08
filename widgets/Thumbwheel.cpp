@@ -129,6 +129,7 @@ Thumbwheel::setDefaultValue(int deft)
     if (m_atDefault) {
         setValue(m_default);
         m_atDefault = true; // setValue unsets this
+        m_cache = QImage();
         emit valueChanged(getValue());
     }
 }
@@ -145,6 +146,7 @@ Thumbwheel::setMappedValue(float mappedValue)
         if (newValue != getValue()) {
             setValue(newValue);
             changed = true;
+            m_cache = QImage();
         }
         if (changed) emit valueChanged(newValue);
         m_noMappedUpdate = false;
@@ -152,6 +154,7 @@ Thumbwheel::setMappedValue(float mappedValue)
         int v = int(mappedValue);
         if (v != getValue()) {
             setValue(v);
+            m_cache = QImage();
             emit valueChanged(v);
         }
     }
@@ -179,6 +182,7 @@ Thumbwheel::setValue(int value)
     }
 
     m_rotation = float(m_value - m_min) / float(m_max - m_min);
+    m_cache = QImage();
     if (isVisible()) update();
 }
 
@@ -188,6 +192,7 @@ Thumbwheel::resetToDefault()
     if (m_default == m_value) return;
     setValue(m_default);
     m_atDefault = true;
+    m_cache = QImage();
     emit valueChanged(getValue());
 }
 
@@ -436,7 +441,18 @@ Thumbwheel::wheelEvent(QWheelEvent *e)
 void
 Thumbwheel::paintEvent(QPaintEvent *)
 {
-    Profiler profiler("Thumbwheel::paintEvent", true);
+    Profiler profiler("Thumbwheel::paintEvent");
+
+    if (!m_cache.isNull()) {
+        QPainter paint(this);
+        paint.drawImage(0, 0, m_cache);
+        return;
+    }
+
+    Profiler profiler2("Thumbwheel::paintEvent (no cache)");
+
+    m_cache = QImage(size(), QImage::Format_ARGB32);
+    m_cache.fill(Qt::transparent);
 
     int bw = 3;
 
@@ -447,7 +463,8 @@ Thumbwheel::paintEvent(QPaintEvent *)
         subclip = QRect(bw+1, bw, width() - bw*2 - 2, height() - bw*2);
     }
 
-    QPainter paint(this);
+    QPainter paint(&m_cache);
+    paint.setClipRect(rect());
     paint.fillRect(subclip, palette().background().color());
 
     paint.setRenderHint(QPainter::Antialiasing, true);
@@ -563,6 +580,9 @@ Thumbwheel::paintEvent(QPaintEvent *)
             paint.drawRect(QRectF(bw, x0, width() - bw*2, x1 - x0));
         }
     }
+
+    QPainter paint2(this);
+    paint2.drawImage(0, 0, m_cache);
 }
 
 QSize

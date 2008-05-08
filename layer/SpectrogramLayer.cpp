@@ -1239,6 +1239,8 @@ SpectrogramLayer::getEffectiveMaxFrequency() const
 bool
 SpectrogramLayer::getYBinRange(View *v, int y, float &q0, float &q1) const
 {
+    Profiler profiler("SpectrogramLayer::getYBinRange");
+    
     int h = v->height();
     if (y < 0 || y >= h) return false;
 
@@ -1555,7 +1557,7 @@ SpectrogramLayer::getFFTModel(const View *v) const
                                        m_windowSize,
                                        getWindowIncrement(),
                                        fftSize,
-                                       true,
+                                       true, // polar
                                        StorageAdviser::SpeedCritical,
                                        m_candidateFillStartFrame);
 
@@ -2036,7 +2038,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     float ymag[h];
     float ydiv[h];
-    float yval[maxbin + 1]; //!!! cache this?
+
+    float yval[maxbin - minbin + 1];
+    float values[maxbin - minbin + 1];
 
     size_t increment = getWindowIncrement();
     
@@ -2044,9 +2048,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     for (size_t q = minbin; q <= maxbin; ++q) {
         float f0 = (float(q) * sr) / fftSize;
-        yval[q] = v->getYForFrequency(f0, displayMinFreq, displayMaxFreq,
-                                      logarithmic);
-//        std::cerr << "min: " << minFreq << ", max: " << maxFreq << ", yval[" << q << "]: " << yval[q] << std::endl;
+        yval[q - minbin] =
+            v->getYForFrequency(f0, displayMinFreq, displayMaxFreq,
+                                logarithmic);
     }
 
     MagnitudeRange overallMag = m_viewMags[v];
@@ -2079,7 +2083,12 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     size_t pixels = 0;
 #endif
 
+    Profiler outerprof("SpectrogramLayer::paint: all cols");
+    FFTModel::PeakSet peaks;
+
     for (int x = 0; x < w; ++x) {
+
+        Profiler innerprof("SpectrogramLayer::paint: 1 pixel column");
 
         if (runOutOfData) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2133,20 +2142,34 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 fftSuspended = true;
             }
 
+            Profiler innerprof2("SpectrogramLayer::paint: 1 data column");
+
             MagnitudeRange mag;
 
-            FFTModel::PeakSet peaks;
-            if (m_binDisplay == PeakFrequencies &&
-                s < int(fft->getWidth()) - 1) {
-                peaks = fft->getPeakFrequencies(FFTModel::AllPeaks,
-                                                s,
-                                                minbin, maxbin - 1);
+            if (m_binDisplay == PeakFrequencies) {
+                if (s < int(fft->getWidth()) - 1) {
+                    peaks = fft->getPeakFrequencies(FFTModel::AllPeaks,
+                                                    s,
+                                                    minbin, maxbin - 1);
+                } else {
+                    peaks.clear();
+                }
+            }
+                
+            if (m_colourScale == PhaseColourScale) {
+                fft->getPhasesAt(s, values, minbin, maxbin - minbin + 1);
+            } else if (m_normalizeColumns) {
+                fft->getNormalizedMagnitudesAt(s, values, minbin, maxbin - minbin + 1);
+            } else {
+                fft->getMagnitudesAt(s, values, minbin, maxbin - minbin + 1);
             }
 
             for (size_t q = minbin; q < maxbin; ++q) {
 
-                float y0 = yval[q + 1];
-                float y1 = yval[q];
+                Profiler innerprof3("SpectrogramLayer::paint: 1 bin");
+
+                float y0 = yval[q + 1 - minbin];
+                float y1 = yval[q - minbin];
 
 		if (m_binDisplay == PeakBins) {
 		    if (!fft->isLocalPeak(s, q)) continue;
@@ -2160,7 +2183,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                     continue;
                 }
 
-		float sprop = 1.0;
+		float sprop = 1.f;
 		if (s == s0i) sprop *= (s + 1) - s0;
 		if (s == s1i) sprop *= s1 - s;
  
@@ -2169,11 +2192,24 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 			(peaks[q], displayMinFreq, displayMaxFreq, logarithmic);
 		}
 		
-		int y0i = int(y0 + 0.001);
+		int y0i = int(y0 + 0.001f);
 		int y1i = int(y1);
 
-                float value;
+                float value = values[q - minbin];
+
+                if (m_colourScale != PhaseColourScale) {
+                    if (!m_normalizeColumns) {
+                        value /= (m_fftSize/2.f);
+                    }
+                    mag.sample(value);
+                    value *= m_gain;
+                }
+
+                float v2 = value;
+
+//!!!
                 
+                value = 0.f;
                 if (m_colourScale == PhaseColourScale) {
                     value = fft->getPhaseAt(s, q);
                 } else if (m_normalizeColumns) {
@@ -2186,10 +2222,14 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                     value *= m_gain;
                 }
 
+                if (value != v2) {
+                    std::cout << "old = " << value << " new = " << v2 << " at y = " << q << std::endl;
+                }
+
                 if (interpolate) {
                     
                     int ypi = y0i;
-                    if (q < maxbin - 1) ypi = int(yval[q + 2]);
+                    if (q < maxbin - 1) ypi = int(yval[q + 2 - minbin]);
 
                     for (int y = ypi; y <= y1i; ++y) {
                     
@@ -2200,7 +2240,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
                         if (ypi < y0i && y <= y0i) {
 
-                            float half = float(y0i - ypi) / 2;
+                            float half = float(y0i - ypi) / 2.f;
                             float dist = y - (ypi + half);
 
                             if (dist >= 0) {
@@ -2210,7 +2250,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                         } else {
                             if (y1i > y0i) {
 
-                                float half = float(y1i - y0i) / 2;
+                                float half = float(y1i - y0i) / 2.f;
                                 float dist = y - (y0i + half);
                                 
                                 if (dist >= 0) {
@@ -2238,7 +2278,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                             if (y < 0 || y >= h) continue;
 
                             float yprop = sprop;
-                            if (y == y0i) yprop *= (y + 1) - y0;
+                            if (y == y0i) yprop *= (y + 1.f) - y0;
                             if (y == y1i) yprop *= y1 - y;
                             ymag[y] += yprop * value;
                             ydiv[y] += yprop;
@@ -2265,6 +2305,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 }
             }
 	}
+
+        Profiler drawbufferprof("SpectrogramLayer::paint: set buffer pixels");
 
 	for (int y = 0; y < h; ++y) {
 
@@ -2301,7 +2343,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 #endif
     }
 
-    Profiler profiler2("SpectrogramLayer::paint: draw image", true);
+    outerprof.end();
+
+    Profiler profiler2("SpectrogramLayer::paint: draw image");
 
     if (recreateWholePixmapCache) {
         std::cerr << "Recreating pixmap cache: width = " << v->width()
@@ -2384,6 +2428,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 void
 SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
 {
+    Profiler profiler("SpectrogramLayer::illuminateLocalFeatures");
+
     QPoint localPos;
     if (!v->shouldIlluminateLocalFeatures(this, localPos) || !m_model) {
         return;
@@ -2823,7 +2869,7 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
-    Profiler profiler("SpectrogramLayer::paintVerticalScale", true);
+    Profiler profiler("SpectrogramLayer::paintVerticalScale");
 
     //!!! cache this?
 
