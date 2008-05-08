@@ -17,6 +17,9 @@
 #define _THUMBWHEEL_H_
 
 #include <QWidget>
+#include <QImage>
+
+#include <map>
 
 class RangeMapper;
 
@@ -92,6 +95,7 @@ protected:
     float m_clickRotation;
     bool m_showTooltip;
     RangeMapper *m_rangeMapper;
+    QImage m_cache;
 };
 
 #endif

@@ -87,7 +87,7 @@ Pane::Pane(QWidget *w) :
 void
 Pane::updateHeadsUpDisplay()
 {
-    Profiler profiler("Pane::updateHeadsUpDisplay", true);
+    Profiler profiler("Pane::updateHeadsUpDisplay");
 
     if (!isVisible()) return;
 

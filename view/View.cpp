@@ -368,6 +368,8 @@ View::getYForFrequency(float frequency,
 		       float maxf, 
 		       bool logarithmic) const
 {
+    Profiler profiler("View::getYForFrequency");
+
     int h = height();
 
     if (logarithmic) {
@@ -1401,7 +1403,7 @@ View::checkProgress(void *object)
 
 	    } else {
 
-		i->second->setText(text);
+//		i->second->setText(text);
 
 		i->second->setValue(completion);
 		i->second->move(0, ph - i->second->height());
