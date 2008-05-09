@@ -2205,10 +2205,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                     value *= m_gain;
                 }
 
+                /*
                 float v2 = value;
 
 //!!!
-                
                 value = 0.f;
                 if (m_colourScale == PhaseColourScale) {
                     value = fft->getPhaseAt(s, q);
@@ -2225,7 +2225,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 if (value != v2) {
                     std::cout << "old = " << value << " new = " << v2 << " at y = " << q << std::endl;
                 }
-
+                */
                 if (interpolate) {
                     
                     int ypi = y0i;
