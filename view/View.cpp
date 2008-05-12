@@ -527,10 +527,14 @@ View::addLayer(Layer *layer)
 
     m_layers.push_back(layer);
 
-    m_progressBars[layer] = new LayerProgressBar(this);
+//    m_progressBars[layer] = new LayerProgressBar(this);
+    m_progressBars[layer] = new QProgressBar(this);
     m_progressBars[layer]->setMinimum(0);
     m_progressBars[layer]->setMaximum(100);
-    m_progressBars[layer]->setMinimumWidth(80);
+//    m_progressBars[layer]->setMinimumWidth(80);
+    m_progressBars[layer]->setFixedWidth(80);
+//    m_progressBars[layer]->setText(""); //!!!
+    m_progressBars[layer]->setTextVisible(false);
 
     QFont f(m_progressBars[layer]->font());
     int fs = Preferences::getInstance()->getViewFontSize();
