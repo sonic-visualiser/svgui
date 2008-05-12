@@ -1421,6 +1421,17 @@ View::checkProgress(void *object)
     }
 }
 
+int
+View::getProgressBarWidth() const
+{
+    for (ProgressMap::const_iterator i = m_progressBars.begin();
+	 i != m_progressBars.end(); ++i) {
+        if (i->second && i->second->isVisible()) return i->second->width();
+    }
+
+    return 0;
+}
+
 void
 View::setPaintFont(QPainter &paint)
 {

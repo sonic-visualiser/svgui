@@ -336,6 +336,7 @@ protected:
     bool setCentreFrame(size_t f, bool doEmit);
 
     void checkProgress(void *object);
+    int getProgressBarWidth() const; // if visible
 
     size_t              m_centreFrame;
     int                 m_zoomLevel;
