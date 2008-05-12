@@ -370,7 +370,8 @@ protected:
 	QString m_text;
     };
 
-    typedef std::map<Layer *, LayerProgressBar *> ProgressMap;
+//    typedef std::map<Layer *, LayerProgressBar *> ProgressMap;
+    typedef std::map<Layer *, QProgressBar *> ProgressMap;
     ProgressMap m_progressBars; // I own the ProgressBars
 
     ViewManager *m_manager; // I don't own this

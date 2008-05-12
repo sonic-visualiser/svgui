@@ -978,8 +978,6 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
     int pbw = getProgressBarWidth();
     if (x < pbw + 5) x = pbw + 5;
 
-    std::cerr << "x = " << x << ", pbw = " << pbw << std::endl;
-
     if (r.x() < x + paint.fontMetrics().width(desc)) {
         drawVisibleText(paint, x,
                         height() - fontHeight + fontAscent - 6,
