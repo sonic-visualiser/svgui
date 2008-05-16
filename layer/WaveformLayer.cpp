@@ -455,12 +455,12 @@ WaveformLayer::getNormalizeGain(View *v, int channel) const
     if (mergingChannels || mixingChannels) {
         RangeSummarisableTimeValueModel::Range otherRange =
             m_model->getSummary(1, rangeStart, rangeEnd - rangeStart);
-        range.max = std::max(range.max, otherRange.max);
-        range.min = std::min(range.min, otherRange.min);
-        range.absmean = std::min(range.absmean, otherRange.absmean);
+        range.setMax(std::max(range.max(), otherRange.max()));
+        range.setMin(std::min(range.min(), otherRange.min()));
+        range.setAbsmean(std::min(range.absmean(), otherRange.absmean()));
     }
 
-    return 1.0 / std::max(fabsf(range.max), fabsf(range.min));
+    return 1.0 / std::max(fabsf(range.max()), fabsf(range.min()));
 }
 
 void
@@ -715,9 +715,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 		range = (*ranges)[i0];
 
 		if (i1 > i0 && i1 < ranges->size()) {
-		    range.max = std::max(range.max, (*ranges)[i1].max);
-		    range.min = std::min(range.min, (*ranges)[i1].min);
-		    range.absmean = (range.absmean + (*ranges)[i1].absmean) / 2;
+		    range.setMax(std::max(range.max(), (*ranges)[i1].max()));
+		    range.setMin(std::min(range.min(), (*ranges)[i1].min()));
+		    range.setAbsmean((range.absmean() + (*ranges)[i1].absmean()) / 2);
 		}
 
 	    } else {
@@ -730,16 +730,18 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 		if (otherChannelRanges && i0 < otherChannelRanges->size()) {
 
-		    range.max = fabsf(range.max);
-		    range.min = -fabsf((*otherChannelRanges)[i0].max);
-		    range.absmean = (range.absmean +
-				     (*otherChannelRanges)[i0].absmean) / 2;
+		    range.setMax(fabsf(range.max()));
+		    range.setMin(-fabsf((*otherChannelRanges)[i0].max()));
+		    range.setAbsmean
+                        ((range.absmean() +
+                          (*otherChannelRanges)[i0].absmean()) / 2);
 
 		    if (i1 > i0 && i1 < otherChannelRanges->size()) {
 			// let's not concern ourselves about the mean
-			range.min = std::min
-			    (range.min,
-			     -fabsf((*otherChannelRanges)[i1].max));
+			range.setMin
+                            (std::min
+                             (range.min(),
+                              -fabsf((*otherChannelRanges)[i1].max())));
 		    }
 		}
 
@@ -747,9 +749,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 		if (otherChannelRanges && i0 < otherChannelRanges->size()) {
 
-                    range.max = (range.max + (*otherChannelRanges)[i0].max) / 2;
-                    range.min = (range.min + (*otherChannelRanges)[i0].min) / 2;
-                    range.absmean = (range.absmean + (*otherChannelRanges)[i0].absmean) / 2;
+                    range.setMax((range.max() + (*otherChannelRanges)[i0].max()) / 2);
+                    range.setMin((range.min() + (*otherChannelRanges)[i0].min()) / 2);
+                    range.setAbsmean((range.absmean() + (*otherChannelRanges)[i0].absmean()) / 2);
                 }
             }
 
@@ -759,43 +761,43 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	    switch (m_scale) {
 
 	    case LinearScale:
-		rangeBottom = int( m * greyLevels * range.min * gain);
-		rangeTop    = int( m * greyLevels * range.max * gain);
-		meanBottom  = int(-m * range.absmean * gain);
-		meanTop     = int( m * range.absmean * gain);
+		rangeBottom = int( m * greyLevels * range.min() * gain);
+		rangeTop    = int( m * greyLevels * range.max() * gain);
+		meanBottom  = int(-m * range.absmean() * gain);
+		meanTop     = int( m * range.absmean() * gain);
 		break;
 
 	    case dBScale:
                 if (!mergingChannels) {
-                    int db0 = dBscale(range.min * gain, m);
-                    int db1 = dBscale(range.max * gain, m);
+                    int db0 = dBscale(range.min() * gain, m);
+                    int db1 = dBscale(range.max() * gain, m);
                     rangeTop    = std::max(db0, db1);
                     meanTop     = std::min(db0, db1);
                     if (mixingChannels) rangeBottom = meanTop;
-                    else rangeBottom = dBscale(range.absmean * gain, m);
+                    else rangeBottom = dBscale(range.absmean() * gain, m);
                     meanBottom  = rangeBottom;
                 } else {
-                    rangeBottom = -dBscale(range.min * gain, m * greyLevels);
-                    rangeTop    =  dBscale(range.max * gain, m * greyLevels);
-                    meanBottom  = -dBscale(range.absmean * gain, m);
-                    meanTop     =  dBscale(range.absmean * gain, m);
+                    rangeBottom = -dBscale(range.min() * gain, m * greyLevels);
+                    rangeTop    =  dBscale(range.max() * gain, m * greyLevels);
+                    meanBottom  = -dBscale(range.absmean() * gain, m);
+                    meanTop     =  dBscale(range.absmean() * gain, m);
                 }
 		break;
 
 	    case MeterScale:
                 if (!mergingChannels) {
-                    int r0 = abs(AudioLevel::multiplier_to_preview(range.min * gain, m));
-                    int r1 = abs(AudioLevel::multiplier_to_preview(range.max * gain, m));
+                    int r0 = abs(AudioLevel::multiplier_to_preview(range.min() * gain, m));
+                    int r1 = abs(AudioLevel::multiplier_to_preview(range.max() * gain, m));
                     rangeTop    = std::max(r0, r1);
                     meanTop     = std::min(r0, r1);
                     if (mixingChannels) rangeBottom = meanTop;
-                    else rangeBottom = AudioLevel::multiplier_to_preview(range.absmean * gain, m);
+                    else rangeBottom = AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
                     meanBottom  = rangeBottom;
                 } else {
-                    rangeBottom = -AudioLevel::multiplier_to_preview(range.min * gain, m * greyLevels);
-                    rangeTop    =  AudioLevel::multiplier_to_preview(range.max * gain, m * greyLevels);
-                    meanBottom  = -AudioLevel::multiplier_to_preview(range.absmean * gain, m);
-                    meanTop     =  AudioLevel::multiplier_to_preview(range.absmean * gain, m);
+                    rangeBottom = -AudioLevel::multiplier_to_preview(range.min() * gain, m * greyLevels);
+                    rangeTop    =  AudioLevel::multiplier_to_preview(range.max() * gain, m * greyLevels);
+                    meanBottom  = -AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
+                    meanTop     =  AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
                 }
                 break;
 	    }
@@ -820,8 +822,8 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	    if (rangeBottom < my - m) { rangeBottom = my - m; }
 	    if (rangeBottom > my + m) { rangeBottom = my + m; }
 
-	    if (range.max <= -1.0 ||
-		range.max >= 1.0) clipped = true;
+	    if (range.max() <= -1.0 ||
+		range.max() >= 1.0) clipped = true;
 	    
 	    if (meanBottom > rangeBottom) meanBottom = rangeBottom;
 	    if (meanTop < rangeTop) meanTop = rangeTop;
@@ -856,8 +858,8 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	    if (ready) {
 		if (clipped /*!!! ||
-		    range.min * gain <= -1.0 ||
-		    range.max * gain >=  1.0 */) {
+		    range.min() * gain <= -1.0 ||
+		    range.max() * gain >=  1.0 */) {
 		    paint->setPen(Qt::red); //!!! getContrastingColour
 		} else {
 		    paint->setPen(baseColour);
@@ -970,20 +972,20 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
         bool singleValue = false;
         float min, max;
 
-        if (fabs(range.min) < 0.01) {
-            min = range.min;
-            max = range.max;
+        if (fabs(range.min()) < 0.01) {
+            min = range.min();
+            max = range.max();
             singleValue = (min == max);
         } else {
-            int imin = int(range.min * 1000);
-            int imax = int(range.max * 1000);
+            int imin = int(range.min() * 1000);
+            int imax = int(range.max() * 1000);
             singleValue = (imin == imax);
             min = float(imin)/1000;
             max = float(imax)/1000;
         }
 
-	int db = int(AudioLevel::multiplier_to_dB(std::max(fabsf(range.min),
-							   fabsf(range.max)))
+	int db = int(AudioLevel::multiplier_to_dB(std::max(fabsf(range.min()),
+							   fabsf(range.max())))
 		     * 100);
 
 	if (!singleValue) {
