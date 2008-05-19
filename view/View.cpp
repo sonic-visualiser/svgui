@@ -1385,20 +1385,25 @@ View::checkProgress(void *object)
 	    int completion = i->first->getCompletion(this);
             QString text = i->first->getPropertyContainerName();
 
+            Model *model = i->first->getModel();
+            RangeSummarisableTimeValueModel *wfm = 
+                dynamic_cast<RangeSummarisableTimeValueModel *>(model);
+
             if (completion >= 100) {
 
                 //!!!
-                Model *model = i->first->getModel();
-                RangeSummarisableTimeValueModel *wfm = 
-                    dynamic_cast<RangeSummarisableTimeValueModel *>(model);
                 if (wfm ||
                     (wfm = dynamic_cast<RangeSummarisableTimeValueModel *>
                      (model->getSourceModel()))) {
                     completion = wfm->getAlignmentCompletion();
+                    std::cerr << "View::checkProgress: Alignment completion = " << completion << std::endl;
                     if (completion < 100) {
                         text = tr("Alignment");
                     }
                 }
+
+            } else if (wfm) {
+                update(); // ensure duration &c gets updated
             }
 
 	    if (completion >= 100) {
