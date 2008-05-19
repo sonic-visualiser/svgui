@@ -35,6 +35,8 @@
 #include <iostream>
 #include <cmath>
 
+#define DEBUG_TIME_INSTANT_LAYER 1
+
 TimeInstantLayer::TimeInstantLayer() :
     SingleColourLayer(),
     m_model(0),
@@ -57,7 +59,9 @@ TimeInstantLayer::setModel(SparseOneDimensionalModel *model)
 
     connectSignals(m_model);
 
+#ifdef DEBUG_TIME_INSTANT_LAYER
     std::cerr << "TimeInstantLayer::setModel(" << model << ")" << std::endl;
+#endif
 
     emit modelReplaced();
 }
@@ -446,7 +450,9 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 void
 TimeInstantLayer::drawStart(View *v, QMouseEvent *e)
 {
+#ifdef DEBUG_TIME_INSTANT_LAYER
     std::cerr << "TimeInstantLayer::drawStart(" << e->x() << ")" << std::endl;
+#endif
 
     if (!m_model) return;
 
@@ -467,7 +473,9 @@ TimeInstantLayer::drawStart(View *v, QMouseEvent *e)
 void
 TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
 {
+#ifdef DEBUG_TIME_INSTANT_LAYER
     std::cerr << "TimeInstantLayer::drawDrag(" << e->x() << ")" << std::endl;
+#endif
 
     if (!m_model || !m_editing) return;
 
@@ -482,7 +490,9 @@ TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
 void
 TimeInstantLayer::drawEnd(View *, QMouseEvent *e)
 {
+#ifdef DEBUG_TIME_INSTANT_LAYER
     std::cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << std::endl;
+#endif
     if (!m_model || !m_editing) return;
     QString newName = tr("Add Point at %1 s")
 	.arg(RealTime::frame2RealTime(m_editingPoint.frame,
@@ -541,7 +551,9 @@ TimeInstantLayer::eraseEnd(View *v, QMouseEvent *e)
 void
 TimeInstantLayer::editStart(View *v, QMouseEvent *e)
 {
+#ifdef DEBUG_TIME_INSTANT_LAYER
     std::cerr << "TimeInstantLayer::editStart(" << e->x() << ")" << std::endl;
+#endif
 
     if (!m_model) return;
 
@@ -561,7 +573,9 @@ TimeInstantLayer::editStart(View *v, QMouseEvent *e)
 void
 TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
 {
+#ifdef DEBUG_TIME_INSTANT_LAYER
     std::cerr << "TimeInstantLayer::editDrag(" << e->x() << ")" << std::endl;
+#endif
 
     if (!m_model || !m_editing) return;
 
@@ -582,7 +596,9 @@ TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
 void
 TimeInstantLayer::editEnd(View *, QMouseEvent *e)
 {
+#ifdef DEBUG_TIME_INSTANT_LAYER
     std::cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << std::endl;
+#endif
     if (!m_model || !m_editing) return;
     if (m_editingCommand) {
 	QString newName = tr("Move Point to %1 s")

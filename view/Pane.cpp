@@ -1557,14 +1557,25 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
         if (!m_editing) {
 
+            bool resist = true;
+
+            if ((e->modifiers() & Qt::ShiftModifier)) {
+                m_shiftPressed = true;
+                // ... but don't set it false if shift has been
+                // released -- we want the state when we started
+                // dragging to be used most of the time
+            }
+
+            if (m_shiftPressed) resist = false;
+
             DragMode newDragMode = updateDragMode
                 (m_dragMode,
                  m_clickPos,
                  e->pos(),
-                 true,  // can move horiz
-                 true,  // can move vert
-                 true,  // resist horiz
-                 true); // resist vert
+                 true,    // can move horiz
+                 true,    // can move vert
+                 resist,  // resist horiz
+                 resist); // resist vert
 
             if (newDragMode != UnresolvedDrag) {
 
