@@ -530,7 +530,8 @@ View::addLayer(Layer *layer)
 //    m_progressBars[layer] = new LayerProgressBar(this);
     m_progressBars[layer] = new QProgressBar(this);
     m_progressBars[layer]->setMinimum(0);
-    m_progressBars[layer]->setMaximum(100);
+    m_progressBars[layer]->setMaximum(0);
+//    m_progressBars[layer]->setMaximum(100);
 //    m_progressBars[layer]->setMinimumWidth(80);
     m_progressBars[layer]->setFixedWidth(80);
 //    m_progressBars[layer]->setText(""); //!!!
@@ -1388,6 +1389,10 @@ View::checkProgress(void *object)
             Model *model = i->first->getModel();
             RangeSummarisableTimeValueModel *wfm = 
                 dynamic_cast<RangeSummarisableTimeValueModel *>(model);
+
+            if (completion > 0) {
+                i->second->setMaximum(100); // was 0, for indeterminate start
+            }
 
             if (completion >= 100) {
 
