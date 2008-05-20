@@ -76,7 +76,28 @@ public:
      */
     virtual bool supportsOtherZoomLevels() const { return true; }
 
+    /**
+     * Paint the given rectangle of this layer onto the given view
+     * using the given painter, superimposing it on top of any
+     * existing material in that view.  The view is provided here
+     * because it is possible for one layer to exist in more than one
+     * view, so the dimensions of the view may vary from one paint
+     * call to another (without any view having been resized).
+     */
     virtual void paint(View *, QPainter &, QRect) const = 0;   
+
+    /**
+     * Enable or disable synchronous painting.  If synchronous
+     * painting is enabled, a call to paint() must complete painting
+     * the entire rectangle before it returns.  If synchronous
+     * painting is disabled (which should be the default), the paint()
+     * call may defer painting some regions if data is not yet
+     * available, by calling back on its view to schedule another
+     * update.  Synchronous painting is necessary when rendering to an
+     * image.  Simple layer types will always paint synchronously, and
+     * so may ignore this.
+     */
+    virtual void setSynchronousPainting(bool /* synchronous */) { }
 
     enum VerticalPosition {
 	PositionTop, PositionMiddle, PositionBottom

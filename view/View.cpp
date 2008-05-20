@@ -2206,7 +2206,11 @@ View::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
 
             std::cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << std::endl;
 
+            (*i)->setSynchronousPainting(true);
+
 	    (*i)->paint(this, paint, chunk);
+
+            (*i)->setSynchronousPainting(false);
 
 	    paint.restore();
 	}

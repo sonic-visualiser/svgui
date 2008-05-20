@@ -55,8 +55,8 @@ Overview::modelChanged(size_t startFrame, size_t endFrame)
             for (LayerList::const_iterator i = m_layers.begin();
                  i != m_layers.end(); ++i) {
                 if ((*i)->getModel() &&
-                    !(*i)->getModel()->isOK() ||
-                    !(*i)->getModel()->isReady()) {
+                    (!(*i)->getModel()->isOK() ||
+                     !(*i)->getModel()->isReady())) {
                     return;
                 }
             }
