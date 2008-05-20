@@ -68,6 +68,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
     m_lastEmittedZoomStep(-1),
+    m_synchronous(true), //!!!
     m_lastPaintBlockWidth(0),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
@@ -1672,6 +1673,12 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
 }
 
 void
+SpectrogramLayer::setSynchronousPainting(bool synchronous)
+{
+    m_synchronous = synchronous;
+}
+
+void
 SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     // What a lovely, old-fashioned function this is.
@@ -1883,23 +1890,30 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int paintBlockWidth = m_lastPaintBlockWidth;
 
-    if (paintBlockWidth == 0) {
-        paintBlockWidth = (300000 / zoomLevel);
+    if (m_synchronous) {
+        if (paintBlockWidth < x1 - x0) {
+            // always paint full width
+            paintBlockWidth = x1 - x0;
+        }
     } else {
-        RealTime lastTime = m_lastPaintTime;
-        while (lastTime > RealTime::fromMilliseconds(200) &&
-               paintBlockWidth > 50) {
-            paintBlockWidth /= 2;
-            lastTime = lastTime / 2;
+        if (paintBlockWidth == 0) {
+            paintBlockWidth = (300000 / zoomLevel);
+        } else {
+            RealTime lastTime = m_lastPaintTime;
+            while (lastTime > RealTime::fromMilliseconds(200) &&
+                   paintBlockWidth > 50) {
+                paintBlockWidth /= 2;
+                lastTime = lastTime / 2;
+            }
+            while (lastTime < RealTime::fromMilliseconds(90) &&
+                   paintBlockWidth < 1500) {
+                paintBlockWidth *= 2;
+                lastTime = lastTime * 2;
+            }
         }
-        while (lastTime < RealTime::fromMilliseconds(90) &&
-               paintBlockWidth < 1500) {
-            paintBlockWidth *= 2;
-            lastTime = lastTime * 2;
-        }
+        
+        if (paintBlockWidth < 20) paintBlockWidth = 20;
     }
-
-    if (paintBlockWidth < 20) paintBlockWidth = 20;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "[" << this << "]: last paint width: " << m_lastPaintBlockWidth << ", last paint time: " << m_lastPaintTime << ", new paint width: " << paintBlockWidth << std::endl;
@@ -2128,13 +2142,14 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         for (int s = s0i; s <= s1i; ++s) {
 
-            if (!fft->isColumnAvailable(s)) {
+            if (!m_synchronous) {
+                if (!fft->isColumnAvailable(s)) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                std::cerr << "Met unavailable column at col " << s << std::endl;
+                    std::cerr << "Met unavailable column at col " << s << std::endl;
 #endif
-//                continue;
-                runOutOfData = true;
-                break;
+                    runOutOfData = true;
+                    break;
+                }
             }
             
             if (!fftSuspended) {
@@ -2379,37 +2394,40 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     cache.startFrame = startFrame;
     cache.zoomLevel = zoomLevel;
 
-    if (!m_normalizeVisibleArea || !overallMagChanged) {
+    if (!m_synchronous) {
+
+        if (!m_normalizeVisibleArea || !overallMagChanged) {
     
-        if (cache.validArea.x() > 0) {
+            if (cache.validArea.x() > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            std::cerr << "SpectrogramLayer::paint() updating left (0, "
-                      << cache.validArea.x() << ")" << std::endl;
+                std::cerr << "SpectrogramLayer::paint() updating left (0, "
+                          << cache.validArea.x() << ")" << std::endl;
 #endif
-            v->update(0, 0, cache.validArea.x(), h);
-        }
-        
-        if (cache.validArea.x() + cache.validArea.width() <
-            cache.pixmap.width()) {
+                v->update(0, 0, cache.validArea.x(), h);
+            }
+            
+            if (cache.validArea.x() + cache.validArea.width() <
+                cache.pixmap.width()) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            std::cerr << "SpectrogramLayer::paint() updating right ("
-                      << cache.validArea.x() + cache.validArea.width()
-                      << ", "
-                      << cache.pixmap.width() - (cache.validArea.x() +
-                                                 cache.validArea.width())
-                      << ")" << std::endl;
+                std::cerr << "SpectrogramLayer::paint() updating right ("
+                          << cache.validArea.x() + cache.validArea.width()
+                          << ", "
+                          << cache.pixmap.width() - (cache.validArea.x() +
+                                                     cache.validArea.width())
+                          << ")" << std::endl;
 #endif
-            v->update(cache.validArea.x() + cache.validArea.width(),
-                      0,
-                      cache.pixmap.width() - (cache.validArea.x() +
-                                              cache.validArea.width()),
-                      h);
+                v->update(cache.validArea.x() + cache.validArea.width(),
+                          0,
+                          cache.pixmap.width() - (cache.validArea.x() +
+                                                  cache.validArea.width()),
+                          h);
+            }
+        } else {
+            // overallMagChanged
+            std::cerr << "\noverallMagChanged - updating all\n" << std::endl;
+            cache.validArea = QRect();
+            v->update();
         }
-    } else {
-        // overallMagChanged
-        std::cerr << "\noverallMagChanged - updating all\n" << std::endl;
-        cache.validArea = QRect();
-        v->update();
     }
 
     illuminateLocalFeatures(v, paint);
@@ -2418,9 +2436,11 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     std::cerr << "SpectrogramLayer::paint() returning" << std::endl;
 #endif
 
-    m_lastPaintBlockWidth = paintBlockWidth;
-    (void)gettimeofday(&tv, 0);
-    m_lastPaintTime = RealTime::fromTimeval(tv) - mainPaintStart;
+    if (!m_synchronous) {
+        m_lastPaintBlockWidth = paintBlockWidth;
+        (void)gettimeofday(&tv, 0);
+        m_lastPaintTime = RealTime::fromTimeval(tv) - mainPaintStart;
+    }
 
     if (fftSuspended) fft->resume();
 }

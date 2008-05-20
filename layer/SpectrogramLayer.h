@@ -57,6 +57,7 @@ public:
     virtual const ZoomConstraint *getZoomConstraint() const { return this; }
     virtual const Model *getModel() const { return m_model; }
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void setSynchronousPainting(bool synchronous);
 
     virtual int getVerticalScaleWidth(View *v, QPainter &) const;
     virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
@@ -258,6 +259,7 @@ protected:
     bool                m_normalizeColumns;
     bool                m_normalizeVisibleArea;
     int                 m_lastEmittedZoomStep;
+    bool                m_synchronous;
 
     mutable int         m_lastPaintBlockWidth;
     mutable RealTime    m_lastPaintTime;
