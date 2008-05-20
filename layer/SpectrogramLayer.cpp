@@ -68,7 +68,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
     m_lastEmittedZoomStep(-1),
-    m_synchronous(true), //!!!
+    m_synchronous(false),
     m_lastPaintBlockWidth(0),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
