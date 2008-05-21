@@ -570,9 +570,59 @@ SpectrogramLayer::invalidatePixmapCaches(size_t startFrame, size_t endFrame)
         //!!! when are views removed from the map? on setLayerDormant?
         const View *v = i->first;
 
-        if (startFrame < v->getEndFrame() && int(endFrame) >= v->getStartFrame()) {
-            i->second.validArea = QRect();
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        std::cerr << "SpectrogramLayer::invalidatePixmapCaches(" 
+                  << startFrame << ", " << endFrame << "): view range is "
+                  << v->getStartFrame() << ", " << v->getEndFrame()
+                  << std::endl;
+
+        std::cerr << "Valid area was: " << i->second.validArea.x() << ", "
+                  << i->second.validArea.y() << " "
+                  << i->second.validArea.width() << "x"
+                  << i->second.validArea.height() << std::endl;
+#endif
+
+        if (long(startFrame) > v->getStartFrame()) {
+            if (startFrame >= v->getEndFrame()) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                std::cerr << "Modified start frame is off right of view" << std::endl;
+#endif
+                return;
+            }
+            int x = v->getXForFrame(startFrame);
+            std::cerr << "clipping from 0 to " << x-1 << std::endl;
+            if (x > 1) {
+                i->second.validArea &=
+                    QRect(0, 0, x-1, v->height());
+            } else {
+                i->second.validArea = QRect();
+            }
+        } else {
+            if (long(endFrame) < v->getStartFrame()) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                std::cerr << "Modified end frame is off left of view" << std::endl;
+#endif
+                return;
+            }
+            int x = v->getXForFrame(endFrame);
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+            std::cerr << "clipping from " << x+1 << " to " << v->width()
+                      << std::endl;
+#endif
+            if (x < v->width()) {
+                i->second.validArea &=
+                    QRect(x+1, 0, v->width()-(x+1), v->height());
+            } else {
+                i->second.validArea = QRect();
+            }
         }
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        std::cerr << "Valid area is now: " << i->second.validArea.x() << ", "
+                  << i->second.validArea.y() << " "
+                  << i->second.validArea.width() << "x"
+                  << i->second.validArea.height() << std::endl;
+#endif
     }
 }
 
@@ -952,15 +1002,23 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 void
 SpectrogramLayer::cacheInvalid()
 {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    std::cerr << "SpectrogramLayer::cacheInvalid()" << std::endl;
+#endif
+
     invalidatePixmapCaches();
     invalidateMagnitudes();
 }
 
 void
-SpectrogramLayer::cacheInvalid(size_t, size_t)
+SpectrogramLayer::cacheInvalid(size_t from, size_t to)
 {
-    // for now (or forever?)
-    cacheInvalid();
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    std::cerr << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << std::endl;
+#endif
+
+    invalidatePixmapCaches(from, to);
+    invalidateMagnitudes();
 }
 
 void
@@ -1839,6 +1897,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                 } else if (dx != 0) {
 
                     // we scrolled too far to be of use
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                    std::cerr << "dx == " << dx << ": scrolled too far for cache to be useful" << std::endl;
+#endif
 
                     cache.validArea = QRect();
                     recreateWholePixmapCache = true;
