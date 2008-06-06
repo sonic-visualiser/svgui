@@ -30,6 +30,7 @@ HEADERS += AudioDial.h \
            LEDButton.h \
            ListInputDialog.h \
            MIDIFileImportDialog.h \
+           ModelDataTableDialog.h \
            NotifyingCheckBox.h \
            NotifyingComboBox.h \
            NotifyingPushButton.h \
@@ -63,6 +64,7 @@ SOURCES += AudioDial.cpp \
            LEDButton.cpp \
            ListInputDialog.cpp \
            MIDIFileImportDialog.cpp \
+           ModelDataTableDialog.cpp \
            NotifyingCheckBox.cpp \
            NotifyingComboBox.cpp \
            NotifyingPushButton.cpp \

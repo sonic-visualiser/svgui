@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2007 QMUL.
+    This file copyright 2008 QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -13,31 +13,26 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _LAYER_TREE_DIALOG_H_
-#define _LAYER_TREE_DIALOG_H_
+#ifndef _MODEL_DATA_TABLE_DIALOG_H_
+#define _MODEL_DATA_TABLE_DIALOG_H_
 
 #include <QDialog>
 
-class ModelMetadataModel;
-class LayerTreeModel;
-class PaneStack;
-class QTreeView;
+class Model;
+class ModelDataTableModel;
 class QTableView;
 
-class LayerTreeDialog : public QDialog
+class ModelDataTableDialog : public QDialog
 {
     Q_OBJECT
     
 public:
-    LayerTreeDialog(PaneStack *stack, QWidget *parent = 0);
-    ~LayerTreeDialog();
+    ModelDataTableDialog(Model *model, QWidget *parent = 0);
+    ~ModelDataTableDialog();
 
 protected:
-    PaneStack *m_paneStack;
-    ModelMetadataModel *m_modelModel;
-    QTableView *m_modelView;
-    LayerTreeModel *m_layerModel;
-    QTreeView *m_layerView;
+    ModelDataTableModel *m_table;
+    QTableView *m_tableView;
 };
 
 #endif
