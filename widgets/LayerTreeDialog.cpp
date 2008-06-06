@@ -54,7 +54,7 @@ LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     m_modelView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
     m_modelView->setShowGrid(false);
 
-    m_modelModel = new ModelDataModel(m_paneStack, true);
+    m_modelModel = new ModelMetadataModel(m_paneStack, true);
     m_modelView->setModel(m_modelModel);
 
     QGroupBox *layerBox = new QGroupBox;

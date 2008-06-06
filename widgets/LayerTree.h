@@ -28,13 +28,13 @@ class Layer;
 class PropertyContainer;
 class Model;
 
-class ModelDataModel : public QAbstractItemModel
+class ModelMetadataModel : public QAbstractItemModel
 {
     Q_OBJECT
 
 public:
-    ModelDataModel(PaneStack *stack, bool waveModelsOnly, QObject *parent = 0);
-    virtual ~ModelDataModel();
+    ModelMetadataModel(PaneStack *stack, bool waveModelsOnly, QObject *parent = 0);
+    virtual ~ModelMetadataModel();
 
     QVariant data(const QModelIndex &index, int role) const;
 

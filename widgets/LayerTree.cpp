@@ -27,7 +27,7 @@
 #include <iostream>
 
 
-ModelDataModel::ModelDataModel(PaneStack *stack, bool waveModelsOnly,
+ModelMetadataModel::ModelMetadataModel(PaneStack *stack, bool waveModelsOnly,
                                QObject *parent) :
     QAbstractItemModel(parent),
     m_stack(stack),
@@ -70,12 +70,12 @@ ModelDataModel::ModelDataModel(PaneStack *stack, bool waveModelsOnly,
     rebuildModelSet();
 }
 
-ModelDataModel::~ModelDataModel()
+ModelMetadataModel::~ModelMetadataModel()
 {
 }
 
 void
-ModelDataModel::rebuildModelSet()
+ModelMetadataModel::rebuildModelSet()
 {
     std::set<Model *> unfound = m_models;
 
@@ -111,61 +111,61 @@ ModelDataModel::rebuildModelSet()
         m_models.erase(*i);
     }
 
-    std::cerr << "ModelDataModel::rebuildModelSet: " << m_models.size() << " models" << std::endl;
+    std::cerr << "ModelMetadataModel::rebuildModelSet: " << m_models.size() << " models" << std::endl;
 }
 
 void
-ModelDataModel::paneAdded()
+ModelMetadataModel::paneAdded()
 {
     rebuildModelSet();
     emit layoutChanged();
 }
 
 void
-ModelDataModel::paneDeleted()
+ModelMetadataModel::paneDeleted()
 {
     rebuildModelSet();
     emit layoutChanged();
 }
 
 void
-ModelDataModel::paneLayerModelChanged()
+ModelMetadataModel::paneLayerModelChanged()
 {
     rebuildModelSet();
     emit layoutChanged();
 }
 
 void
-ModelDataModel::propertyContainerAdded(PropertyContainer *)
+ModelMetadataModel::propertyContainerAdded(PropertyContainer *)
 {
     rebuildModelSet();
     emit layoutChanged();
 }
 
 void
-ModelDataModel::propertyContainerRemoved(PropertyContainer *)
+ModelMetadataModel::propertyContainerRemoved(PropertyContainer *)
 {
     rebuildModelSet();
     emit layoutChanged();
 }
 
 void
-ModelDataModel::propertyContainerSelected(PropertyContainer *)
+ModelMetadataModel::propertyContainerSelected(PropertyContainer *)
 {
 }
 
 void
-ModelDataModel::propertyContainerPropertyChanged(PropertyContainer *pc)
+ModelMetadataModel::propertyContainerPropertyChanged(PropertyContainer *pc)
 {
 }
 
 void
-ModelDataModel::playParametersAudibilityChanged(bool a)
+ModelMetadataModel::playParametersAudibilityChanged(bool a)
 {
 }
 
 QVariant
-ModelDataModel::data(const QModelIndex &index, int role) const
+ModelMetadataModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid()) return QVariant();
 
@@ -206,20 +206,20 @@ ModelDataModel::data(const QModelIndex &index, int role) const
 }
 
 bool
-ModelDataModel::setData(const QModelIndex &index, const QVariant &value, int role)
+ModelMetadataModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     return false;
 }
 
 Qt::ItemFlags
-ModelDataModel::flags(const QModelIndex &index) const
+ModelMetadataModel::flags(const QModelIndex &index) const
 {
     Qt::ItemFlags flags = Qt::ItemIsEnabled;
     return flags;
 }
 
 QVariant
-ModelDataModel::headerData(int section,
+ModelMetadataModel::headerData(int section,
 			   Qt::Orientation orientation,
 			   int role) const
 {
@@ -234,7 +234,7 @@ ModelDataModel::headerData(int section,
 }
 
 QModelIndex
-ModelDataModel::index(int row, int column, const QModelIndex &parent) const
+ModelMetadataModel::index(int row, int column, const QModelIndex &parent) const
 {
     if (!parent.isValid()) {
         if (row >= m_models.size()) return QModelIndex();
@@ -245,20 +245,20 @@ ModelDataModel::index(int row, int column, const QModelIndex &parent) const
 }
 
 QModelIndex
-ModelDataModel::parent(const QModelIndex &index) const
+ModelMetadataModel::parent(const QModelIndex &index) const
 {
     return QModelIndex();
 }
 
 int
-ModelDataModel::rowCount(const QModelIndex &parent) const
+ModelMetadataModel::rowCount(const QModelIndex &parent) const
 {
     if (!parent.isValid()) return m_models.size();
     return 0;
 }
 
 int
-ModelDataModel::columnCount(const QModelIndex &parent) const
+ModelMetadataModel::columnCount(const QModelIndex &parent) const
 {
     return m_columnCount;
 }
