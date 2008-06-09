@@ -17,6 +17,8 @@
 
 #include "data/model/ModelDataTableModel.h"
 
+#include "CommandHistory.h"
+
 #include <QTableView>
 #include <QGridLayout>
 #include <QGroupBox>
@@ -24,6 +26,8 @@
 #include <QHeaderView>
 #include <QApplication>
 #include <QDesktopWidget>
+
+#include <iostream>
 
 ModelDataTableDialog::ModelDataTableDialog(Model *model, QWidget *parent) :
     QDialog(parent)
@@ -49,10 +53,16 @@ ModelDataTableDialog::ModelDataTableDialog(Model *model, QWidget *parent) :
 
     m_tableView->verticalHeader()->hide();
 //    m_tableView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
-    m_tableView->setShowGrid(false);
+//    m_tableView->setShowGrid(false);
+//    m_tableView->setSortingEnabled(true);
 
     m_table = new ModelDataTableModel(model);
     m_tableView->setModel(m_table);
+
+    connect(m_tableView, SIGNAL(clicked(const QModelIndex &)),
+            this, SLOT(viewClicked(const QModelIndex &)));
+    connect(m_tableView, SIGNAL(pressed(const QModelIndex &)),
+            this, SLOT(viewPressed(const QModelIndex &)));
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
     connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
@@ -77,5 +87,29 @@ ModelDataTableDialog::ModelDataTableDialog(Model *model, QWidget *parent) :
 ModelDataTableDialog::~ModelDataTableDialog()
 {
     delete m_table;
+}
+
+void
+ModelDataTableDialog::scrollToFrame(unsigned long frame)
+{
+    m_tableView->scrollTo(m_table->getModelIndexForFrame(frame));
+}
+
+void
+ModelDataTableDialog::viewClicked(const QModelIndex &index)
+{
+    std::cerr << "ModelDataTableDialog::viewClicked: " << index.row() << ", " << index.column() << std::endl;
+}
+
+void
+ModelDataTableDialog::viewPressed(const QModelIndex &index)
+{
+    std::cerr << "ModelDataTableDialog::viewPressed: " << index.row() << ", " << index.column() << std::endl;
+}
+
+void
+ModelDataTableDialog::executeCommand(Command *command)
+{
+    CommandHistory::getInstance()->addCommand(command, true, true);
 }
 
