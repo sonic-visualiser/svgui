@@ -21,6 +21,8 @@
 class Model;
 class ModelDataTableModel;
 class QTableView;
+class QModelIndex;
+class Command;
 
 class ModelDataTableDialog : public QDialog
 {
@@ -29,6 +31,14 @@ class ModelDataTableDialog : public QDialog
 public:
     ModelDataTableDialog(Model *model, QWidget *parent = 0);
     ~ModelDataTableDialog();
+
+public slots:
+    void scrollToFrame(unsigned long frame);
+    void executeCommand(Command *);
+
+protected slots:
+    void viewClicked(const QModelIndex &);
+    void viewPressed(const QModelIndex &);
 
 protected:
     ModelDataTableModel *m_table;
