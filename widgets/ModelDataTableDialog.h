@@ -32,8 +32,11 @@ public:
     ModelDataTableDialog(Model *model, QWidget *parent = 0);
     ~ModelDataTableDialog();
 
-public slots:
+signals:
     void scrollToFrame(unsigned long frame);
+
+public slots:
+    void scrollToFrameRequested(unsigned long frame);
     void executeCommand(Command *);
 
 protected slots:

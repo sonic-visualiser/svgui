@@ -474,6 +474,8 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
 {
     View *v = dynamic_cast<View *>(sender());
 
+    std::cerr << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << std::endl;
+
     if (locked) {
         m_globalCentreFrame = f;
         emit globalCentreFrameChanged(f);
