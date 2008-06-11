@@ -90,7 +90,7 @@ ModelDataTableDialog::~ModelDataTableDialog()
 }
 
 void
-ModelDataTableDialog::scrollToFrame(unsigned long frame)
+ModelDataTableDialog::scrollToFrameRequested(unsigned long frame)
 {
     m_tableView->scrollTo(m_table->getModelIndexForFrame(frame));
 }
@@ -99,6 +99,7 @@ void
 ModelDataTableDialog::viewClicked(const QModelIndex &index)
 {
     std::cerr << "ModelDataTableDialog::viewClicked: " << index.row() << ", " << index.column() << std::endl;
+    emit scrollToFrame(m_table->getFrameForModelIndex(index));
 }
 
 void

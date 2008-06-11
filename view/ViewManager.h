@@ -59,12 +59,10 @@ public:
 
     bool isPlaying() const;
 
-    unsigned long getGlobalCentreFrame() const;
-    void setGlobalCentreFrame(unsigned long);
+    unsigned long getGlobalCentreFrame() const; // the set method is a slot
     unsigned long getGlobalZoom() const;
 
-    unsigned long getPlaybackFrame() const;
-    void setPlaybackFrame(unsigned long frame);
+    unsigned long getPlaybackFrame() const; // the set method is a slot
 
     // Only meaningful in solo mode, and used for optional alignment feature
     Model *getPlaybackModel() const;
@@ -240,6 +238,8 @@ signals:
 public slots:
     void viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode);
     void viewZoomLevelChanged(unsigned long, bool);
+    void setGlobalCentreFrame(unsigned long);
+    void setPlaybackFrame(unsigned long);
 
 protected slots:
     void checkPlayStatus();
