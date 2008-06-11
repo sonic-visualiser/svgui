@@ -18,7 +18,7 @@
 
 #include <QDialog>
 
-class Model;
+class TabularModel;
 class ModelDataTableModel;
 class QTableView;
 class QModelIndex;
@@ -29,7 +29,7 @@ class ModelDataTableDialog : public QDialog
     Q_OBJECT
     
 public:
-    ModelDataTableDialog(Model *model, QWidget *parent = 0);
+    ModelDataTableDialog(TabularModel *model, QWidget *parent = 0);
     ~ModelDataTableDialog();
 
 signals:

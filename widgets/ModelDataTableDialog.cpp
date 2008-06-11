@@ -16,6 +16,7 @@
 #include "ModelDataTableDialog.h"
 
 #include "data/model/ModelDataTableModel.h"
+#include "data/model/TabularModel.h"
 
 #include "CommandHistory.h"
 
@@ -29,7 +30,7 @@
 
 #include <iostream>
 
-ModelDataTableDialog::ModelDataTableDialog(Model *model, QWidget *parent) :
+ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QWidget *parent) :
     QDialog(parent)
 {
     setWindowTitle(tr("Data Editor"));
@@ -54,7 +55,7 @@ ModelDataTableDialog::ModelDataTableDialog(Model *model, QWidget *parent) :
     m_tableView->verticalHeader()->hide();
 //    m_tableView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
 //    m_tableView->setShowGrid(false);
-//    m_tableView->setSortingEnabled(true);
+    m_tableView->setSortingEnabled(true);
 
     m_table = new ModelDataTableModel(model);
     m_tableView->setModel(m_table);

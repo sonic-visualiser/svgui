@@ -515,7 +515,7 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
              tr("Enter new value"),
              tr("Enter a new value from %1 to %2:")
              .arg(minimum()).arg(maximum()),
-             value(), minimum(), maximum(), pageStep(), &ok);
+             value(), minimum(), maximum(), singleStep(), &ok);
         
         if (ok) {
             setValue(newPosition);
