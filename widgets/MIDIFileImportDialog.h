@@ -22,6 +22,8 @@
 class MIDIFileImportDialog : public QObject,
                              public MIDIFileImportPreferenceAcquirer
 {
+    Q_OBJECT
+
 public:
     MIDIFileImportDialog(QWidget *parent = 0);
 

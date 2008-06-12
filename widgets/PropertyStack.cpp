@@ -203,8 +203,8 @@ PropertyStack::propertyContainerNameChanged(PropertyContainer *)
 class ShowLayerCommand : public QObject, public Command
 {
 public:
-    ShowLayerCommand(View *view, Layer *layer, bool show) :
-        m_view(view), m_layer(layer), m_show(show) { }
+    ShowLayerCommand(View *view, Layer *layer, bool show, QString name) :
+        m_view(view), m_layer(layer), m_show(show), m_name(name) { }
     void execute() {
         m_layer->showLayer(m_view, m_show);
     }
@@ -212,12 +212,13 @@ public:
         m_layer->showLayer(m_view, !m_show);
     }
     QString getName() const {
-        return tr("Change Layer Visibility");
+        return m_name;
     }
 protected:
     View *m_view;
     Layer *m_layer;
     bool m_show;
+    QString m_name;
 };
 
 void
@@ -230,7 +231,8 @@ PropertyStack::showLayer(bool show)
 	    Layer *layer = dynamic_cast<Layer *>(m_boxes[i]->getContainer());
 	    if (layer) {
                 CommandHistory::getInstance()->addCommand
-                    (new ShowLayerCommand(m_client, layer, show));
+                    (new ShowLayerCommand(m_client, layer, show,
+                                          tr("Change Layer Visibility")));
 		return;
 	    }
 	}
