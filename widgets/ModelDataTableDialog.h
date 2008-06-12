@@ -29,7 +29,7 @@ class ModelDataTableDialog : public QMainWindow
     Q_OBJECT
     
 public:
-    ModelDataTableDialog(TabularModel *model, QWidget *parent = 0);
+    ModelDataTableDialog(TabularModel *model, QString title, QWidget *parent =0);
     ~ModelDataTableDialog();
 
 signals:
