@@ -16,7 +16,7 @@
 #ifndef _MODEL_DATA_TABLE_DIALOG_H_
 #define _MODEL_DATA_TABLE_DIALOG_H_
 
-#include <QDialog>
+#include <QMainWindow>
 
 class TabularModel;
 class ModelDataTableModel;
@@ -24,7 +24,7 @@ class QTableView;
 class QModelIndex;
 class Command;
 
-class ModelDataTableDialog : public QDialog
+class ModelDataTableDialog : public QMainWindow
 {
     Q_OBJECT
     

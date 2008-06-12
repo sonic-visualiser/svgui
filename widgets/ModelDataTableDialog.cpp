@@ -31,12 +31,18 @@
 #include <iostream>
 
 ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QWidget *parent) :
-    QDialog(parent)
+    QMainWindow(parent)
 {
     setWindowTitle(tr("Data Editor"));
 
+    QToolBar *toolbar = addToolBar(tr("Toolbar"));
+    CommandHistory::getInstance()->registerToolbar(toolbar);
+
+    QFrame *mainFrame = new QFrame;
+    setCentralWidget(mainFrame);
+
     QGridLayout *grid = new QGridLayout;
-    setLayout(grid);
+    mainFrame->setLayout(grid);
     
     QGroupBox *box = new QGroupBox;
     box->setTitle(tr("Layer Data"));
@@ -54,8 +60,8 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QWidget *parent)
 
     m_tableView->verticalHeader()->hide();
 //    m_tableView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
-//    m_tableView->setShowGrid(false);
     m_tableView->setSortingEnabled(true);
+    m_tableView->sortByColumn(0, Qt::AscendingOrder);
 
     m_table = new ModelDataTableModel(model);
     m_tableView->setModel(m_table);
@@ -66,7 +72,7 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QWidget *parent)
             this, SLOT(viewPressed(const QModelIndex &)));
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
-    connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(bb, SIGNAL(rejected()), this, SLOT(close()));
     grid->addWidget(bb, 2, 0);
     grid->setRowStretch(2, 0);
     
