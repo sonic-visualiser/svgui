@@ -17,6 +17,7 @@
 
 #include "data/model/ModelDataTableModel.h"
 #include "data/model/TabularModel.h"
+#include "data/model/Model.h"
 
 #include "CommandHistory.h"
 
@@ -30,7 +31,7 @@
 
 #include <iostream>
 
-ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QWidget *parent) :
+ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, QWidget *parent) :
     QMainWindow(parent)
 {
     setWindowTitle(tr("Data Editor"));
@@ -45,7 +46,11 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QWidget *parent)
     mainFrame->setLayout(grid);
     
     QGroupBox *box = new QGroupBox;
-    box->setTitle(tr("Layer Data"));
+    if (title != "") {
+        box->setTitle(title);
+    } else {
+        box->setTitle(tr("Data in Layer"));
+    }
     grid->addWidget(box, 0, 0);
     grid->setRowStretch(0, 15);
 
