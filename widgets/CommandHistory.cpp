@@ -35,7 +35,7 @@
 
 #include <iostream>
 
-//#define DEBUG_COMMAND_HISTORY 1
+#define DEBUG_COMMAND_HISTORY 1
 
 CommandHistory *CommandHistory::m_instance = 0;
 
@@ -139,6 +139,10 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
 {
     if (!command) return;
 
+#ifdef DEBUG_COMMAND_HISTORY
+    std::cerr << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " at " << command << ": execute = " << execute << ", bundle = " << bundle << " (m_currentCompound = " << m_currentCompound << ", m_currentBundle = " << m_currentBundle << ")" << std::endl;
+#endif
+
     if (m_currentCompound) {
 	addToCompound(command, execute);
 	return;
@@ -152,7 +156,6 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
     }
 
 #ifdef DEBUG_COMMAND_HISTORY
-    std::cerr << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " at " << command << std::endl;
     if (!m_redoStack.empty()) {
         std::cerr << "CommandHistory::clearing redo stack" << std::endl;
     }
@@ -205,7 +208,7 @@ CommandHistory::addToBundle(Command *command, bool execute)
 
 	// need to addCommand before setting m_currentBundle, as addCommand
 	// with bundle false will reset m_currentBundle to 0
-	MacroCommand *mc = new MacroCommand(command->getName());
+	MacroCommand *mc = new BundleCommand(command->getName());
 	addCommand(mc, false);
 	m_currentBundle = mc;
 	m_currentBundleName = command->getName();

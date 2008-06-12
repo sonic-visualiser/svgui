@@ -23,6 +23,8 @@
 
 class SingleColourLayer : public Layer
 {
+    Q_OBJECT
+    
 public:
     virtual void setBaseColour(int);
     virtual int getBaseColour() const;

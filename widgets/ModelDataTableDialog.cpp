@@ -70,6 +70,8 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QWidget *parent)
             this, SLOT(viewClicked(const QModelIndex &)));
     connect(m_tableView, SIGNAL(pressed(const QModelIndex &)),
             this, SLOT(viewPressed(const QModelIndex &)));
+    connect(m_table, SIGNAL(executeCommand(Command *)),
+            this, SLOT(executeCommand(Command *)));
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
     connect(bb, SIGNAL(rejected()), this, SLOT(close()));
@@ -118,6 +120,7 @@ ModelDataTableDialog::viewPressed(const QModelIndex &index)
 void
 ModelDataTableDialog::executeCommand(Command *command)
 {
-    CommandHistory::getInstance()->addCommand(command, true, true);
+    std::cerr << "ModelDataTableDialog::executeCommand(" << command << ")" << std::endl;
+    CommandHistory::getInstance()->addCommand(command, false, true);
 }
 
