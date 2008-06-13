@@ -20,6 +20,7 @@
 #include "data/model/Model.h"
 
 #include "CommandHistory.h"
+#include "IconLoader.h"
 
 #include <QTableView>
 #include <QGridLayout>
@@ -28,6 +29,8 @@
 #include <QHeaderView>
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QAction>
+#include <QToolBar>
 
 #include <iostream>
 
@@ -37,6 +40,27 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, Q
     setWindowTitle(tr("Data Editor"));
 
     QToolBar *toolbar = addToolBar(tr("Toolbar"));
+
+    IconLoader il;
+
+    QAction *action = new QAction(il.load("datainsert"), tr("Insert New Item"), this);
+    action->setShortcut(tr("Insert"));
+    action->setStatusTip(tr("Insert a new item"));
+    connect(action, SIGNAL(triggered()), this, SLOT(insertRow()));
+    toolbar->addAction(action);
+
+    action = new QAction(il.load("datadelete"), tr("Delete Selected Items"), this);
+    action->setShortcut(tr("Delete"));
+    action->setStatusTip(tr("Delete the selected item or items"));
+    connect(action, SIGNAL(triggered()), this, SLOT(deleteRow()));
+    toolbar->addAction(action);
+
+    action = new QAction(il.load("dataedit"), tr("Edit Selected Item"), this);
+    action->setShortcut(tr("Edit"));
+    action->setStatusTip(tr("Edit the selected item"));
+    connect(action, SIGNAL(triggered()), this, SLOT(editRow()));
+    toolbar->addAction(action);
+
     CommandHistory::getInstance()->registerToolbar(toolbar);
 
     QFrame *mainFrame = new QFrame;
@@ -63,7 +87,7 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, Q
     m_tableView = new QTableView;
     subgrid->addWidget(m_tableView);
 
-    m_tableView->verticalHeader()->hide();
+//    m_tableView->verticalHeader()->hide();
 //    m_tableView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
     m_tableView->setSortingEnabled(true);
     m_tableView->sortByColumn(0, Qt::AscendingOrder);
@@ -120,6 +144,21 @@ void
 ModelDataTableDialog::viewPressed(const QModelIndex &index)
 {
     std::cerr << "ModelDataTableDialog::viewPressed: " << index.row() << ", " << index.column() << std::endl;
+}
+
+void
+ModelDataTableDialog::insertRow()
+{
+}
+
+void
+ModelDataTableDialog::deleteRow()
+{
+}
+
+void
+ModelDataTableDialog::editRow()
+{
 }
 
 void

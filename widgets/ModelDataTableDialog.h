@@ -42,6 +42,10 @@ public slots:
 protected slots:
     void viewClicked(const QModelIndex &);
     void viewPressed(const QModelIndex &);
+    
+    void insertRow();
+    void deleteRow();
+    void editRow();
 
 protected:
     ModelDataTableModel *m_table;
