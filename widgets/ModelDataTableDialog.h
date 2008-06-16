@@ -37,19 +37,21 @@ signals:
 
 public slots:
     void scrollToFrameRequested(unsigned long frame);
-    void executeCommand(Command *);
+    void addCommand(Command *);
 
 protected slots:
     void viewClicked(const QModelIndex &);
     void viewPressed(const QModelIndex &);
+    void currentChanged(const QModelIndex &, const QModelIndex &);
     
     void insertRow();
-    void deleteRow();
+    void deleteRows();
     void editRow();
 
 protected:
     ModelDataTableModel *m_table;
     QTableView *m_tableView;
+    int m_currentRow;
 };
 
 #endif

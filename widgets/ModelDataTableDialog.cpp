@@ -35,7 +35,8 @@
 #include <iostream>
 
 ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, QWidget *parent) :
-    QMainWindow(parent)
+    QMainWindow(parent),
+    m_currentRow(0)
 {
     setWindowTitle(tr("Data Editor"));
 
@@ -52,7 +53,7 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, Q
     action = new QAction(il.load("datadelete"), tr("Delete Selected Items"), this);
     action->setShortcut(tr("Delete"));
     action->setStatusTip(tr("Delete the selected item or items"));
-    connect(action, SIGNAL(triggered()), this, SLOT(deleteRow()));
+    connect(action, SIGNAL(triggered()), this, SLOT(deleteRows()));
     toolbar->addAction(action);
 
     action = new QAction(il.load("dataedit"), tr("Edit Selected Item"), this);
@@ -99,8 +100,12 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, Q
             this, SLOT(viewClicked(const QModelIndex &)));
     connect(m_tableView, SIGNAL(pressed(const QModelIndex &)),
             this, SLOT(viewPressed(const QModelIndex &)));
-    connect(m_table, SIGNAL(executeCommand(Command *)),
-            this, SLOT(executeCommand(Command *)));
+    connect(m_tableView->selectionModel(),
+            SIGNAL(currentChanged(const QModelIndex &, const QModelIndex &)),
+            this,
+            SLOT(currentChanged(const QModelIndex &, const QModelIndex &)));
+    connect(m_table, SIGNAL(addCommand(Command *)),
+            this, SLOT(addCommand(Command *)));
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
     connect(bb, SIGNAL(rejected()), this, SLOT(close()));
@@ -147,13 +152,30 @@ ModelDataTableDialog::viewPressed(const QModelIndex &index)
 }
 
 void
-ModelDataTableDialog::insertRow()
+ModelDataTableDialog::currentChanged(const QModelIndex &current,
+                                     const QModelIndex &previous)
 {
+    std::cerr << "ModelDataTableDialog::currentChanged: from "
+              << previous.row() << ", " << previous.column()
+              << " to " << current.row() << ", " << current.column() 
+              << std::endl;
+    m_currentRow = current.row();
 }
 
 void
-ModelDataTableDialog::deleteRow()
+ModelDataTableDialog::insertRow()
 {
+    m_table->insertRow(m_currentRow);
+}
+
+void
+ModelDataTableDialog::deleteRows()
+{
+    // not efficient
+    while (m_tableView->selectionModel()->hasSelection()) {
+        m_table->removeRow
+            (m_tableView->selectionModel()->selection().indexes().begin()->row());
+    }
 }
 
 void
@@ -162,9 +184,8 @@ ModelDataTableDialog::editRow()
 }
 
 void
-ModelDataTableDialog::executeCommand(Command *command)
+ModelDataTableDialog::addCommand(Command *command)
 {
-    std::cerr << "ModelDataTableDialog::executeCommand(" << command << ")" << std::endl;
     CommandHistory::getInstance()->addCommand(command, false, true);
 }
 
