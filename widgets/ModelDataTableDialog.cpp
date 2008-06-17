@@ -45,7 +45,15 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, Q
 
     IconLoader il;
 
-    QAction *action = new QAction(il.load("datainsert"), tr("Insert New Item"), this);
+    QAction *action = new QAction(il.load("playfollow"), tr("Track Playback"), this);
+    action->setStatusTip(tr("Toggle tracking of playback position"));
+    action->setCheckable(true);
+    connect(action, SIGNAL(triggered()), this, SLOT(togglePlayTracking()));
+    toolbar->addAction(action);
+
+    CommandHistory::getInstance()->registerToolbar(toolbar);
+
+    action = new QAction(il.load("datainsert"), tr("Insert New Item"), this);
     action->setShortcut(tr("Insert"));
     action->setStatusTip(tr("Insert a new item"));
     connect(action, SIGNAL(triggered()), this, SLOT(insertRow()));
@@ -62,8 +70,6 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, Q
     action->setStatusTip(tr("Edit the selected item"));
     connect(action, SIGNAL(triggered()), this, SLOT(editRow()));
     toolbar->addAction(action);
-
-    CommandHistory::getInstance()->registerToolbar(toolbar);
 
     QFrame *mainFrame = new QFrame;
     setCentralWidget(mainFrame);
@@ -157,6 +163,9 @@ ModelDataTableDialog::makeCurrent(int row)
     int rh = m_tableView->height() / m_tableView->rowHeight(0);
     int topRow = row - rh/2;
     if (topRow < 0) topRow = 0;
+    //!!! should not do any of this if an item in the given row is
+    //already current; should not scroll if the current row is already
+    //visible
     m_tableView->scrollTo
         (m_table->getModelIndexForRow(topRow));
     m_tableView->selectionModel()->setCurrentIndex
@@ -213,6 +222,12 @@ void
 ModelDataTableDialog::addCommand(Command *command)
 {
     CommandHistory::getInstance()->addCommand(command, false, true);
+}
+
+void
+ModelDataTableDialog::togglePlayTracking()
+{
+    m_trackPlayback = !m_trackPlayback;
 }
 
 void
