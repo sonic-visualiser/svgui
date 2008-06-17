@@ -49,6 +49,7 @@ protected slots:
     void insertRow();
     void deleteRows();
     void editRow();
+    void togglePlayTracking();
 
 protected:
     void makeCurrent(int row);
