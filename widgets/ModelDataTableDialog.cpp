@@ -36,7 +36,8 @@
 
 ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, QWidget *parent) :
     QMainWindow(parent),
-    m_currentRow(0)
+    m_currentRow(0),
+    m_trackPlayback(false)
 {
     setWindowTitle(tr("Data Editor"));
 
@@ -106,6 +107,8 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, Q
             SLOT(currentChanged(const QModelIndex &, const QModelIndex &)));
     connect(m_table, SIGNAL(addCommand(Command *)),
             this, SLOT(addCommand(Command *)));
+    connect(m_table, SIGNAL(currentChanged(const QModelIndex &)),
+            this, SLOT(currentChangedThroughResort(const QModelIndex &)));
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
     connect(bb, SIGNAL(rejected()), this, SLOT(close()));
@@ -133,9 +136,31 @@ ModelDataTableDialog::~ModelDataTableDialog()
 }
 
 void
-ModelDataTableDialog::scrollToFrameRequested(unsigned long frame)
+ModelDataTableDialog::userScrolledToFrame(unsigned long frame)
 {
-    m_tableView->scrollTo(m_table->getModelIndexForFrame(frame));
+    QModelIndex index = m_table->getModelIndexForFrame(frame);
+    makeCurrent(index.row());
+}
+
+void
+ModelDataTableDialog::playbackScrolledToFrame(unsigned long frame)
+{
+    if (m_trackPlayback) {
+        QModelIndex index = m_table->getModelIndexForFrame(frame);
+        makeCurrent(index.row());
+    }
+}
+
+void
+ModelDataTableDialog::makeCurrent(int row)
+{
+    int rh = m_tableView->height() / m_tableView->rowHeight(0);
+    int topRow = row - rh/2;
+    if (topRow < 0) topRow = 0;
+    m_tableView->scrollTo
+        (m_table->getModelIndexForRow(topRow));
+    m_tableView->selectionModel()->setCurrentIndex
+        (m_table->getModelIndexForRow(row), QItemSelectionModel::Select);
 }
 
 void
@@ -160,6 +185,7 @@ ModelDataTableDialog::currentChanged(const QModelIndex &current,
               << " to " << current.row() << ", " << current.column() 
               << std::endl;
     m_currentRow = current.row();
+    m_table->setCurrentRow(m_currentRow);
 }
 
 void
@@ -189,3 +215,13 @@ ModelDataTableDialog::addCommand(Command *command)
     CommandHistory::getInstance()->addCommand(command, false, true);
 }
 
+void
+ModelDataTableDialog::currentChangedThroughResort(const QModelIndex &index)
+{
+    std::cerr << "ModelDataTableDialog::currentChangedThroughResort: row = " << index.row() << std::endl;
+//  m_tableView->scrollTo(index);
+    makeCurrent(index.row());
+}
+
+
+    

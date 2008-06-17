@@ -36,22 +36,26 @@ signals:
     void scrollToFrame(unsigned long frame);
 
 public slots:
-    void scrollToFrameRequested(unsigned long frame);
+    void userScrolledToFrame(unsigned long frame);
+    void playbackScrolledToFrame(unsigned long frame);
     void addCommand(Command *);
 
 protected slots:
     void viewClicked(const QModelIndex &);
     void viewPressed(const QModelIndex &);
     void currentChanged(const QModelIndex &, const QModelIndex &);
+    void currentChangedThroughResort(const QModelIndex &);
     
     void insertRow();
     void deleteRows();
     void editRow();
 
 protected:
+    void makeCurrent(int row);
     ModelDataTableModel *m_table;
     QTableView *m_tableView;
     int m_currentRow;
+    bool m_trackPlayback;
 };
 
 #endif
