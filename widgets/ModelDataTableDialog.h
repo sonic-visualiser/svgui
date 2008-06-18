@@ -23,14 +23,18 @@ class ModelDataTableModel;
 class QTableView;
 class QModelIndex;
 class Command;
+class QToolBar;
 
 class ModelDataTableDialog : public QMainWindow
 {
     Q_OBJECT
     
 public:
-    ModelDataTableDialog(TabularModel *model, QString title, QWidget *parent =0);
+    ModelDataTableDialog(TabularModel *model,
+                         QString title, QWidget *parent =0);
     ~ModelDataTableDialog();
+
+    QToolBar *getPlayToolbar() { return m_playToolbar; }
 
 signals:
     void scrollToFrame(unsigned long frame);
@@ -54,6 +58,7 @@ protected slots:
 protected:
     void makeCurrent(int row);
     ModelDataTableModel *m_table;
+    QToolBar *m_playToolbar;
     QTableView *m_tableView;
     int m_currentRow;
     bool m_trackPlayback;
