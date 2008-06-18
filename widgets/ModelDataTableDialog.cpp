@@ -166,10 +166,13 @@ ModelDataTableDialog::makeCurrent(int row)
     //!!! should not do any of this if an item in the given row is
     //already current; should not scroll if the current row is already
     //visible
+    std::cerr << "rh = " << rh << ", row = " << row << ", scrolling to "
+              << topRow << std::endl;
     m_tableView->scrollTo
         (m_table->getModelIndexForRow(topRow));
     m_tableView->selectionModel()->setCurrentIndex
-        (m_table->getModelIndexForRow(row), QItemSelectionModel::Select);
+        (m_table->getModelIndexForRow(row),
+         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
 void
