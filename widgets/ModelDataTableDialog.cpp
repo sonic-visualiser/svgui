@@ -34,24 +34,30 @@
 
 #include <iostream>
 
-ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, QWidget *parent) :
+ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
+                                           QString title, QWidget *parent) :
     QMainWindow(parent),
     m_currentRow(0),
-    m_trackPlayback(false)
+    m_trackPlayback(true)
 {
     setWindowTitle(tr("Data Editor"));
 
-    QToolBar *toolbar = addToolBar(tr("Toolbar"));
+    QToolBar *toolbar;
 
+    toolbar = addToolBar(tr("Playback Toolbar"));
+    m_playToolbar = toolbar;
+    toolbar = addToolBar(tr("Play Mode Toolbar"));
+    
     IconLoader il;
 
     QAction *action = new QAction(il.load("playfollow"), tr("Track Playback"), this);
     action->setStatusTip(tr("Toggle tracking of playback position"));
     action->setCheckable(true);
+    action->setChecked(m_trackPlayback);
     connect(action, SIGNAL(triggered()), this, SLOT(togglePlayTracking()));
     toolbar->addAction(action);
 
-    CommandHistory::getInstance()->registerToolbar(toolbar);
+    toolbar = addToolBar(tr("Edit Toolbar"));
 
     action = new QAction(il.load("datainsert"), tr("Insert New Item"), this);
     action->setShortcut(tr("Insert"));
@@ -65,11 +71,15 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model, QString title, Q
     connect(action, SIGNAL(triggered()), this, SLOT(deleteRows()));
     toolbar->addAction(action);
 
+    CommandHistory::getInstance()->registerToolbar(toolbar);
+
+/*
     action = new QAction(il.load("dataedit"), tr("Edit Selected Item"), this);
     action->setShortcut(tr("Edit"));
     action->setStatusTip(tr("Edit the selected item"));
     connect(action, SIGNAL(triggered()), this, SLOT(editRow()));
     toolbar->addAction(action);
+*/
 
     QFrame *mainFrame = new QFrame;
     setCentralWidget(mainFrame);
@@ -161,18 +171,35 @@ void
 ModelDataTableDialog::makeCurrent(int row)
 {
     int rh = m_tableView->height() / m_tableView->rowHeight(0);
-    int topRow = row - rh/2;
+    int topRow = row - rh/4;
     if (topRow < 0) topRow = 0;
-    //!!! should not do any of this if an item in the given row is
-    //already current; should not scroll if the current row is already
-    //visible
+    
+    // should only scroll if the desired row is not currently visible
+
+    // should only select if no part of the desired row is currently selected
+
     std::cerr << "rh = " << rh << ", row = " << row << ", scrolling to "
               << topRow << std::endl;
-    m_tableView->scrollTo
-        (m_table->getModelIndexForRow(topRow));
-    m_tableView->selectionModel()->setCurrentIndex
-        (m_table->getModelIndexForRow(row),
-         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+
+    int pos = m_tableView->rowViewportPosition(row);
+
+    if (pos < 0 || pos >= m_tableView->height() - rh) {
+        m_tableView->scrollTo(m_table->index(topRow, 0));
+    }
+
+    bool haveRowSelected = false;
+    for (int i = 0; i < m_table->columnCount(); ++i) {
+        if (m_tableView->selectionModel()->isSelected(m_table->index(row, i))) {
+            haveRowSelected = true;
+            break;
+        }
+    }
+
+    if (!haveRowSelected) {
+        m_tableView->selectionModel()->setCurrentIndex
+            (m_table->index(row, 0),
+             QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    }
 }
 
 void
