@@ -178,8 +178,8 @@ ModelDataTableDialog::makeCurrent(int row)
 
     // should only select if no part of the desired row is currently selected
 
-    std::cerr << "rh = " << rh << ", row = " << row << ", scrolling to "
-              << topRow << std::endl;
+//    std::cerr << "rh = " << rh << ", row = " << row << ", scrolling to "
+//              << topRow << std::endl;
 
     int pos = m_tableView->rowViewportPosition(row);
 
