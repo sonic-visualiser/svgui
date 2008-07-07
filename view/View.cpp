@@ -1401,7 +1401,7 @@ View::checkProgress(void *object)
                     (wfm = dynamic_cast<RangeSummarisableTimeValueModel *>
                      (model->getSourceModel()))) {
                     completion = wfm->getAlignmentCompletion();
-                    std::cerr << "View::checkProgress: Alignment completion = " << completion << std::endl;
+//                    std::cerr << "View::checkProgress: Alignment completion = " << completion << std::endl;
                     if (completion < 100) {
                         text = tr("Alignment");
                     }
