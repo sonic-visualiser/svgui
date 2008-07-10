@@ -590,7 +590,9 @@ SpectrogramLayer::invalidatePixmapCaches(size_t startFrame, size_t endFrame)
                 return;
             }
             int x = v->getXForFrame(startFrame);
+#ifdef DEBUG_SPECTROGRAM_REPAINT
             std::cerr << "clipping from 0 to " << x-1 << std::endl;
+#endif
             if (x > 1) {
                 i->second.validArea &=
                     QRect(0, 0, x-1, v->height());
@@ -2425,8 +2427,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     Profiler profiler2("SpectrogramLayer::paint: draw image");
 
     if (recreateWholePixmapCache) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
         std::cerr << "Recreating pixmap cache: width = " << v->width()
                   << ", height = " << h << std::endl;
+#endif
 	cache.pixmap = QPixmap(v->width(), h);
     }
 
