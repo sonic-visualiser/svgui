@@ -109,8 +109,8 @@ PluginParameterBox::populate()
         float qtz = 0.0;
         if (params[i].isQuantized) qtz = params[i].quantizeStep;
 
-        std::cerr << "PluginParameterBox: hint = " << hint << ", min = " << min << ", max = "
-                  << max << ", qtz = " << qtz << std::endl;
+//        std::cerr << "PluginParameterBox: hint = " << hint << ", min = " << min << ", max = "
+//                  << max << ", qtz = " << qtz << std::endl;
 
         std::vector<std::string> valueNames = params[i].valueNames;
 
