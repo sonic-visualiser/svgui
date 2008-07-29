@@ -1159,7 +1159,7 @@ Pane::registerShortcuts(KeyReference &kr)
     
     kr.registerShortcut(tr("Zoom"), tr("Wheel"),
                         tr("Zoom in or out in time axis"));
-    kr.registerShortcut(tr("Ctrl+Wheel"), tr("Scroll"),
+    kr.registerShortcut(tr("Scroll"), tr("Ctrl+Wheel"),
                         tr("Scroll rapidly left or right in time axis"));
     kr.registerShortcut(tr("Zoom Vertically"), tr("Shift+Wheel"), 
                         tr("Zoom in or out in the vertical axis"));
