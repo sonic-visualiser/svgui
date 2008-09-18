@@ -17,6 +17,7 @@
 #include "data/fileio/FileSource.h"
 #include "data/fileio/AudioFileReaderFactory.h"
 #include "data/fileio/DataFileReaderFactory.h"
+#include "rdf/RDFImporter.h"
 
 #include <QFileInfo>
 #include <QMessageBox>
@@ -74,12 +75,12 @@ FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case LayerFile:
         settingsKey = "layerpath";
-        filter = tr("All supported files (%1)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(DataFileReaderFactory::getKnownExtensions());
+        filter = tr("All supported files (%1 %2)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nRDF files (%3)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(DataFileReaderFactory::getKnownExtensions()).arg(RDFImporter::getKnownExtensions()).arg(RDFImporter::getKnownExtensions());
         break;
 
     case LayerFileNoMidi:
         settingsKey = "layerpath";
-        filter = tr("All supported files (%1)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nText files (*.txt)\nAll files (*.*)").arg(DataFileReaderFactory::getKnownExtensions());
+        filter = tr("All supported files (%1 %2)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nRDF files (%3)\nText files (*.txt)\nAll files (*.*)").arg(DataFileReaderFactory::getKnownExtensions()).arg(RDFImporter::getKnownExtensions()).arg(RDFImporter::getKnownExtensions());
         break;
 
     case SessionOrAudioFile:
@@ -104,9 +105,10 @@ FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case AnyFile:
         settingsKey = "lastpath";
-        filter = tr("All supported files (*.sv %1 %2)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nLayer files (%2)\nAll files (*.*)")
+        filter = tr("All supported files (*.sv %1 %2 %3)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nLayer files (%2)\nAll files (*.*)")
             .arg(AudioFileReaderFactory::getKnownExtensions())
-            .arg(DataFileReaderFactory::getKnownExtensions());
+            .arg(DataFileReaderFactory::getKnownExtensions())
+            .arg(RDFImporter::getKnownExtensions());
         break;
     };
 
