@@ -23,6 +23,7 @@ HEADERS += Colour3DPlotLayer.h \
            LayerFactory.h \
            NoteLayer.h \
            PaintAssistant.h \
+           RegionLayer.h \
            SingleColourLayer.h \
            SliceableLayer.h \
            SliceLayer.h \
@@ -42,6 +43,7 @@ SOURCES += Colour3DPlotLayer.cpp \
            LayerFactory.cpp \
            NoteLayer.cpp \
            PaintAssistant.cpp \
+           RegionLayer.cpp \
            SingleColourLayer.cpp \
            SliceLayer.cpp \
            SpectrogramLayer.cpp \
