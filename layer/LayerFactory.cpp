@@ -21,6 +21,7 @@
 #include "TimeInstantLayer.h"
 #include "TimeValueLayer.h"
 #include "NoteLayer.h"
+#include "RegionLayer.h"
 #include "TextLayer.h"
 #include "ImageLayer.h"
 #include "Colour3DPlotLayer.h"
@@ -35,6 +36,7 @@
 #include "data/model/SparseOneDimensionalModel.h"
 #include "data/model/SparseTimeValueModel.h"
 #include "data/model/NoteModel.h"
+#include "data/model/RegionModel.h"
 #include "data/model/TextModel.h"
 #include "data/model/ImageModel.h"
 #include "data/model/DenseThreeDimensionalModel.h"
@@ -71,6 +73,7 @@ LayerFactory::getLayerPresentationName(LayerType type)
     case TimeInstants: return Layer::tr("Time Instants");
     case TimeValues:   return Layer::tr("Time Values");
     case Notes:        return Layer::tr("Notes");
+    case Regions:      return Layer::tr("Regions");
     case Text:         return Layer::tr("Text");
     case Image:        return Layer::tr("Images");
     case Colour3DPlot: return Layer::tr("Colour 3D Plot");
@@ -152,10 +155,14 @@ LayerFactory::getValidLayerTypes(Model *model)
 
     if (dynamic_cast<SparseTimeValueModel *>(model)) {
 	types.insert(TimeValues);
-    
-}
+    }
+
     if (dynamic_cast<NoteModel *>(model)) {
 	types.insert(Notes);
+    }
+
+    if (dynamic_cast<RegionModel *>(model)) {
+	types.insert(Regions);
     }
 
     if (dynamic_cast<TextModel *>(model)) {
@@ -183,6 +190,7 @@ LayerFactory::getValidEmptyLayerTypes()
     types.insert(TimeInstants);
     types.insert(TimeValues);
     types.insert(Notes);
+    types.insert(Regions);
     types.insert(Text);
     types.insert(Image);
     //!!! and in principle Colour3DPlot -- now that's a challenge
@@ -198,6 +206,7 @@ LayerFactory::getLayerType(const Layer *layer)
     if (dynamic_cast<const TimeInstantLayer *>(layer)) return TimeInstants;
     if (dynamic_cast<const TimeValueLayer *>(layer)) return TimeValues;
     if (dynamic_cast<const NoteLayer *>(layer)) return Notes;
+    if (dynamic_cast<const RegionLayer *>(layer)) return Regions;
     if (dynamic_cast<const TextLayer *>(layer)) return Text;
     if (dynamic_cast<const ImageLayer *>(layer)) return Image;
     if (dynamic_cast<const Colour3DPlotLayer *>(layer)) return Colour3DPlot;
@@ -216,6 +225,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case TimeInstants: return "instants";
     case TimeValues: return "values";
     case Notes: return "notes";
+    case Regions: return "regions";
     case Text: return "text";
     case Image: return "image";
     case Colour3DPlot: return "colour3d";
@@ -237,6 +247,7 @@ LayerFactory::getLayerTypeName(LayerType type)
     case TimeInstants: return "timeinstants";
     case TimeValues: return "timevalues";
     case Notes: return "notes";
+    case Regions: return "regions";
     case Text: return "text";
     case Image: return "image";
     case Colour3DPlot: return "colour3dplot";
@@ -257,6 +268,7 @@ LayerFactory::getLayerTypeForName(QString name)
     if (name == "timeinstants") return TimeInstants;
     if (name == "timevalues") return TimeValues;
     if (name == "notes") return Notes;
+    if (name == "regions") return Regions;
     if (name == "text") return Text;
     if (name == "image") return Image;
     if (name == "colour3dplot") return Colour3DPlot;
@@ -292,6 +304,9 @@ LayerFactory::setModel(Layer *layer, Model *model)
     if (trySetModel<NoteLayer, NoteModel>(layer, model))
 	return;
 
+    if (trySetModel<RegionLayer, RegionModel>(layer, model))
+	return;
+
     if (trySetModel<TextLayer, TextModel>(layer, model))
 	return;
 
@@ -320,6 +335,8 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
 	return new SparseTimeValueModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Notes) {
 	return new NoteModel(baseModel->getSampleRate(), 1, true);
+    } else if (layerType == Regions) {
+	return new RegionModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Text) {
 	return new TextModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Image) {
@@ -387,6 +404,10 @@ LayerFactory::createLayer(LayerType type)
 
     case Notes:
 	layer = new NoteLayer;
+	break;
+
+    case Regions:
+	layer = new RegionLayer;
 	break;
 
     case Text:
@@ -492,15 +513,18 @@ LayerFactory::getLayerTypeForClipboardContents(const Clipboard &clip)
     bool haveFrame = false;
     bool haveValue = false;
     bool haveDuration = false;
+    bool haveLevel = false;
 
     for (Clipboard::PointList::const_iterator i = contents.begin();
          i != contents.end(); ++i) {
         if (i->haveFrame()) haveFrame = true;
         if (i->haveValue()) haveValue = true;
         if (i->haveDuration()) haveDuration = true;
+        if (i->haveLevel()) haveLevel = true;
     }
 
-    if (haveFrame && haveValue && haveDuration) return Notes;
+    if (haveFrame && haveValue && haveDuration && haveLevel) return Notes;
+    if (haveFrame && haveValue && haveDuration) return Regions;
     if (haveFrame && haveValue) return TimeValues;
     return TimeInstants;
 }

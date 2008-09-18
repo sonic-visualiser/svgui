@@ -35,6 +35,7 @@ public:
 	TimeInstants,
 	TimeValues,
 	Notes,
+	Regions,
 	Text,
         Image,
 	Colour3DPlot,
