@@ -29,7 +29,13 @@ public:
                    int timeBeforeShow = 0, QWidget *parent = 0);
     virtual ~ProgressDialog();
 
+    virtual bool isDefinite() const;
+    virtual void setDefinite(bool definite);
+
+    virtual bool wasCancelled() const;
+
 signals:
+    void showing();
     void cancelled();
 
 public slots:
@@ -38,11 +44,13 @@ public slots:
 
 protected slots:
     virtual void showTimerElapsed();
+    void canceled();
 
 protected:
     QProgressDialog *m_dialog;
     QTimer *m_showTimer;
     bool m_timerElapsed;
+    bool m_cancelled;
 };
 
 #endif

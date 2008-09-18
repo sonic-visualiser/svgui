@@ -22,7 +22,8 @@
 ProgressDialog::ProgressDialog(QString message, bool cancellable,
                                int timeBeforeShow, QWidget *parent) : 
     m_showTimer(0),
-    m_timerElapsed(false)
+    m_timerElapsed(false),
+    m_cancelled(false)
 {
     m_dialog = new QProgressDialog(message, cancellable ? tr("Cancel") : 0,
                                    0, 100, parent);
@@ -39,7 +40,7 @@ ProgressDialog::ProgressDialog(QString message, bool cancellable,
     }
 
     if (cancellable) {
-        connect(m_dialog, SIGNAL(canceled()), this, SIGNAL(cancelled()));
+        connect(m_dialog, SIGNAL(canceled()), this, SLOT(canceled()));
     }
 }
 
@@ -49,6 +50,19 @@ ProgressDialog::~ProgressDialog()
     delete m_dialog;
 }
 
+bool
+ProgressDialog::isDefinite() const
+{
+    return (m_dialog->maximum() > 0);
+}
+
+void
+ProgressDialog::setDefinite(bool definite)
+{
+    if (definite) m_dialog->setMaximum(100);
+    else m_dialog->setMaximum(0);
+}
+
 void
 ProgressDialog::setMessage(QString text)
 {
@@ -56,10 +70,24 @@ ProgressDialog::setMessage(QString text)
 }
 
 void
+ProgressDialog::canceled()
+{
+    m_cancelled = true;
+    emit cancelled();
+}
+
+bool
+ProgressDialog::wasCancelled() const
+{
+    return m_cancelled;
+}
+
+void
 ProgressDialog::showTimerElapsed()
 {
     m_timerElapsed = true;
     if (m_dialog->value() > 0) {
+        emit showing();
         m_dialog->show();
     }
     qApp->processEvents();
@@ -72,9 +100,10 @@ ProgressDialog::setProgress(int percentage)
 
         m_dialog->setValue(percentage);
 
-        if (percentage >= 100) {
+        if (percentage >= 100 && isDefinite()) {
             m_dialog->hide();
         } else if (m_timerElapsed && !m_dialog->isVisible()) {
+            emit showing();
             m_dialog->show();
             m_dialog->raise();
         }
