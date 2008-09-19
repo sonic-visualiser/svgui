@@ -44,7 +44,8 @@ RegionLayer::RegionLayer() :
     m_originalPoint(0, 0.0, 0, tr("New Point")),
     m_editingPoint(0, 0.0, 0, tr("New Point")),
     m_editingCommand(0),
-    m_verticalScale(AutoAlignScale)
+    m_verticalScale(AutoAlignScale),
+    m_plotStyle(PlotLines)
 {
     
 }
@@ -68,6 +69,7 @@ RegionLayer::getProperties() const
     PropertyList list = SingleColourLayer::getProperties();
     list.push_back("Vertical Scale");
     list.push_back("Scale Units");
+    list.push_back("Plot Type");
     return list;
 }
 
@@ -76,6 +78,7 @@ RegionLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Vertical Scale") return tr("Vertical Scale");
     if (name == "Scale Units") return tr("Scale Units");
+    if (name == "Plot Type") return tr("Plot Type");
     return SingleColourLayer::getPropertyLabel(name);
 }
 
@@ -84,6 +87,7 @@ RegionLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Scale Units") return UnitsProperty;
     if (name == "Vertical Scale") return ValueProperty;
+    if (name == "Plot Type") return ValueProperty;
     return SingleColourLayer::getPropertyType(name);
 }
 
@@ -102,7 +106,15 @@ RegionLayer::getPropertyRangeAndValue(const PropertyName &name,
 {
     int val = 0;
 
-    if (name == "Vertical Scale") {
+    if (name == "Plot Type") {
+	
+	if (min) *min = 0;
+	if (max) *max = 1;
+        if (deflt) *deflt = 0;
+	
+	val = int(m_plotStyle);
+
+    } else if (name == "Vertical Scale") {
 	
 	if (min) *min = 0;
 	if (max) *max = 3;
@@ -130,7 +142,15 @@ QString
 RegionLayer::getPropertyValueLabel(const PropertyName &name,
                                  int value) const
 {
-    if (name == "Vertical Scale") {
+    if (name == "Plot Type") {
+
+	switch (value) {
+	default:
+	case 0: return tr("Lines");
+	case 1: return tr("Segmentation");
+	}
+
+    } else if (name == "Vertical Scale") {
 	switch (value) {
 	default:
 	case 0: return tr("Auto-Align");
@@ -144,7 +164,9 @@ RegionLayer::getPropertyValueLabel(const PropertyName &name,
 void
 RegionLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == "Vertical Scale") {
+    if (name == "Plot Type") {
+	setPlotStyle(PlotStyle(value));
+    } else if (name == "Vertical Scale") {
 	setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
         if (m_model) {
@@ -155,6 +177,14 @@ RegionLayer::setProperty(const PropertyName &name, int value)
     } else {
         return SingleColourLayer::setProperty(name, value);
     }
+}
+
+void
+RegionLayer::setPlotStyle(PlotStyle style)
+{
+    if (m_plotStyle == style) return;
+    m_plotStyle = style;
+    emit layerParametersChanged();
 }
 
 void
@@ -958,8 +988,9 @@ RegionLayer::toXml(QTextStream &stream,
                  QString indent, QString extraAttributes) const
 {
     SingleColourLayer::toXml(stream, indent, extraAttributes +
-                             QString(" verticalScale=\"%1\"")
-                             .arg(m_verticalScale));
+                             QString(" verticalScale=\"%1\" plotStyle=\"%2\"")
+                             .arg(m_verticalScale)
+                             .arg(m_plotStyle));
 }
 
 void
@@ -971,6 +1002,9 @@ RegionLayer::setProperties(const QXmlAttributes &attributes)
     VerticalScale scale = (VerticalScale)
 	attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
+    PlotStyle style = (PlotStyle)
+	attributes.value("plotStyle").toInt(&ok);
+    if (ok) setPlotStyle(style);
 }
 
 

@@ -84,6 +84,14 @@ public:
     void setVerticalScale(VerticalScale scale);
     VerticalScale getVerticalScale() const { return m_verticalScale; }
 
+    enum PlotStyle {
+	PlotLines,
+	PlotSegmentation
+    };
+
+    void setPlotStyle(PlotStyle style);
+    PlotStyle getPlotStyle() const { return m_plotStyle; }
+
     virtual bool isLayerScrollable(const View *v) const;
 
     virtual bool isLayerEditable() const { return true; }
@@ -115,6 +123,7 @@ protected:
     RegionModel::Point m_editingPoint;
     RegionModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
+    PlotStyle m_plotStyle;
 
     void finish(RegionModel::EditCommand *command) {
         Command *c = command->finish();
