@@ -290,6 +290,9 @@ RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
     RegionRec region(0);
     RegionModel::PointList::iterator i;
 
+    //!!! harmonise with whatever decision is made about point y
+    //!!! coords in paint method
+
     for (i = points.begin(); i != points.end(); ++i) {
 
 	int y = getYForValue(v, i->value);
@@ -456,18 +459,22 @@ RegionLayer::getYForValue(View *v, float val) const
     float min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->height();
+    int margin = 8;
+    if (h < margin * 8) margin = h / 8;
 
     getScaleExtents(v, min, max, logarithmic);
 
-//    std::cerr << "RegionLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+    std::cerr << "RegionLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+    std::cerr << "h = " << h << ", margin = " << margin << std::endl;
 
     if (logarithmic) {
         val = LogRange::map(val);
-//        std::cerr << "logarithmic true, val now = " << val << std::endl;
+        std::cerr << "logarithmic true, val now = " << val << std::endl;
     }
 
-    int y = int(h - ((val - min) * h) / (max - min)) - 1;
-//    std::cerr << "y = " << y << std::endl;
+    h -= margin * 2;
+    int y = margin + int(h - ((val - min) * h) / (max - min)) - 1;
+    std::cerr << "y = " << y << std::endl;
     return y;
 }
 
@@ -530,6 +537,12 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
     
+    //!!! point y coords if model does not haveDistinctValues() should
+    //!!! be assigned to avoid overlaps
+
+    //!!! if it does have distinct values, we should still ensure y
+    //!!! coord is never completely flat on the top or bottom
+
     for (RegionModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
@@ -538,7 +551,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int x = v->getXForFrame(p.frame);
 	int y = getYForValue(v, p.value);
 	int w = v->getXForFrame(p.frame + p.duration) - x;
-	int h = 3;
+	int h = 9;
 	
 	if (m_model->getValueQuantization() != 0.0) {
 	    h = y - getYForValue(v, p.value + m_model->getValueQuantization());
@@ -556,9 +569,10 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
 	}
 	
-        paint.drawLine(x, y, x + w, y);
+        paint.drawLine(x, y-1, x + w, y-1);
+        paint.drawLine(x, y+1, x + w, y+1);
         paint.drawLine(x, y - h/2, x, y + h/2);
-        paint.drawLine(x + w, y - h/2, x + w, y + h/2);
+        paint.drawLine(x+w, y - h/2, x + w, y + h/2);
 
 ///	if (p.label != "") {
 ///	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
