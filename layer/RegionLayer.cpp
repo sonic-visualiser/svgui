@@ -342,8 +342,8 @@ RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 bool
 RegionLayer::snapToFeatureFrame(View *v, int &frame,
-			      size_t &resolution,
-			      SnapType snap) const
+                                size_t &resolution,
+                                SnapType snap) const
 {
     if (!m_model) {
 	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
@@ -369,11 +369,22 @@ RegionLayer::snapToFeatureFrame(View *v, int &frame,
 
 	if (snap == SnapRight) {
 
-	    if (i->frame > frame) {
-		snapped = i->frame;
-		found = true;
-		break;
-	    }
+            // The best frame to snap to is the end frame of whichever
+            // feature we would have snapped to the start frame of if
+            // we had been snapping left.
+
+	    if (i->frame <= frame) {
+                if (i->frame + i->duration > frame) {
+                    snapped = i->frame + i->duration;
+                    found = true; // don't break, as the next may be better
+                }
+            } else {
+                if (!found) {
+                    snapped = i->frame;
+                    found = true;
+                }
+                break;
+            }
 
 	} else if (snap == SnapLeft) {
 
