@@ -26,8 +26,6 @@
 
 #include "widgets/ItemEditDialog.h"
 
-#include "SpectrogramLayer.h" // for optional frequency alignment
-
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
