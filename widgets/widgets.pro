@@ -46,6 +46,7 @@ HEADERS += AudioDial.h \
            TextAbbrev.h \
            Thumbwheel.h \
            TipDialog.h \
+           TransformFinder.h \
            WindowShapePreview.h \
            WindowTypeSelector.h
 SOURCES += AudioDial.cpp \
@@ -80,5 +81,6 @@ SOURCES += AudioDial.cpp \
            TextAbbrev.cpp \
            Thumbwheel.cpp \
            TipDialog.cpp \
+           TransformFinder.cpp \
            WindowShapePreview.cpp \
            WindowTypeSelector.cpp
