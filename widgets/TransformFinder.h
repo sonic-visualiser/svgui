@@ -18,10 +18,14 @@
 
 #include <QDialog>
 
+#include <vector>
+
 #include "transform/Transform.h"
 
 class QVBoxLayout;
 class QScrollArea;
+class QLabel;
+class QWidget;
 
 class TransformFinder : public QDialog
 {
@@ -38,7 +42,9 @@ protected slots:
     
 protected:
     QScrollArea *m_resultsScroll;
+    QWidget *m_resultsFrame;
     QVBoxLayout *m_resultsLayout;
+    std::vector<QLabel *> m_labels;
 };
 
 #endif
