@@ -25,7 +25,9 @@
 #include <QScrollArea>
 
 TransformFinder::TransformFinder(QWidget *parent) :
-    QDialog(parent)
+    QDialog(parent),
+    m_resultsFrame(0),
+    m_resultsLayout(0)
 {
     setWindowTitle(tr("Find a Transform"));
     
@@ -87,16 +89,26 @@ TransformFinder::searchTextChanged(const QString &text)
         std::cerr << "(" << j->score << ")" << std::endl;
     }
 */
-    QFrame *resultsFrame = new QFrame;
-    QVBoxLayout *resultsLayout = new QVBoxLayout;
-    resultsFrame->setLayout(resultsLayout);
+
+    if (!m_resultsLayout) {
+        std::cerr << "creating frame & layout" << std::endl;
+        m_resultsFrame = new QWidget;
+//        resultsFrame->setFrameStyle(QFrame::Sunken | QFrame::Box);
+        m_resultsLayout = new QVBoxLayout;
+        m_resultsFrame->setLayout(m_resultsLayout);
+        m_resultsScroll->setWidget(m_resultsFrame);
+        m_resultsFrame->show();
+    }
 
     i = 0;
     int maxResults = 40;
+    int height = 0;
+    int width = 0;
 
     for (std::set<TransformFactory::Match>::const_iterator j = sorted.end();
          j != sorted.begin(); ) {
         --j;
+
         QString labelText;
         TransformDescription desc =
             TransformFactory::getInstance()->getTransformDescription(j->transform);
@@ -109,13 +121,27 @@ TransformFinder::searchTextChanged(const QString &text)
             labelText += "... ";
         }
         labelText += tr("</small>");
-        resultsLayout->addWidget(new QLabel(labelText));
+
+        if (i >= m_labels.size()) {
+            QLabel *label = new QLabel(m_resultsFrame);
+            m_resultsLayout->addWidget(label);
+            m_labels.push_back(label);
+        }
+        m_labels[i]->setText(labelText);
+        QSize sh = m_labels[i]->sizeHint();
+        std::cerr << "size hint for text \"" << labelText.toStdString() << "\" has height " << sh.height() << std::endl;
+        height += sh.height();
+        if (sh.width() > width) width = sh.width();
+        m_labels[i]->show();
+
         if (++i == maxResults) break;
     }
 
-    QWidget *oldWidget = m_resultsScroll->takeWidget();
-    m_resultsScroll->setWidget(resultsFrame);
-    delete oldWidget;
+    std::cerr << "m_labels.size() = " << m_labels.size() << ", i = " << i << ", height = " << height << std::endl;
+
+    while (i < m_labels.size()) m_labels[i++]->hide();
+
+    m_resultsFrame->resize(height, width);
 }
 
 TransformId
