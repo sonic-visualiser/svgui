@@ -124,6 +124,7 @@ TransformFinder::searchTextChanged(const QString &text)
 
         if (i >= m_labels.size()) {
             QLabel *label = new QLabel(m_resultsFrame);
+            label->setTextFormat(Qt::RichText);
             m_resultsLayout->addWidget(label);
             m_labels.push_back(label);
         }
