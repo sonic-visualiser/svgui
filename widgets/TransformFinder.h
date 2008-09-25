@@ -22,10 +22,30 @@
 
 #include "transform/Transform.h"
 
-class QVBoxLayout;
+class QGridLayout;
 class QScrollArea;
 class QLabel;
+class SelectableLabel;
 class QWidget;
+
+
+#include <QLabel>
+class SelectableLabel : public QLabel
+{
+    Q_OBJECT
+
+public:
+    SelectableLabel(QWidget *parent = 0) : QLabel(parent) {
+        setTextFormat(Qt::RichText);
+    }
+    virtual ~SelectableLabel() { }
+
+    void setSelectedText(QString);
+    void setUnselectedText(QString);
+
+protected:
+    virtual void mousePressEvent(QMouseEvent *e);
+};
 
 class TransformFinder : public QDialog
 {
@@ -43,8 +63,8 @@ protected slots:
 protected:
     QScrollArea *m_resultsScroll;
     QWidget *m_resultsFrame;
-    QVBoxLayout *m_resultsLayout;
-    std::vector<QLabel *> m_labels;
+    QGridLayout *m_resultsLayout;
+    std::vector<SelectableLabel *> m_labels;
 };
 
 #endif

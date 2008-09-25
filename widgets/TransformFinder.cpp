@@ -17,12 +17,31 @@
 
 #include "transform/TransformFactory.h"
 
-#include <QVBoxLayout>
+#include <QGridLayout>
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QLabel>
+//#include <SelectableLabel>
 #include <QDialogButtonBox>
 #include <QScrollArea>
+
+void
+SelectableLabel::setUnselectedText(QString text)
+{
+    setText(text);
+}
+
+void
+SelectableLabel::setSelectedText(QString text)
+{
+    setText(text);
+}
+
+void
+SelectableLabel::mousePressEvent(QMouseEvent *e)
+{
+
+}
 
 TransformFinder::TransformFinder(QWidget *parent) :
     QDialog(parent),
@@ -94,7 +113,7 @@ TransformFinder::searchTextChanged(const QString &text)
         std::cerr << "creating frame & layout" << std::endl;
         m_resultsFrame = new QWidget;
 //        resultsFrame->setFrameStyle(QFrame::Sunken | QFrame::Box);
-        m_resultsLayout = new QVBoxLayout;
+        m_resultsLayout = new QGridLayout;
         m_resultsFrame->setLayout(m_resultsLayout);
         m_resultsScroll->setWidget(m_resultsFrame);
         m_resultsFrame->show();
@@ -109,9 +128,10 @@ TransformFinder::searchTextChanged(const QString &text)
          j != sorted.begin(); ) {
         --j;
 
-        QString labelText;
         TransformDescription desc =
             TransformFactory::getInstance()->getTransformDescription(j->transform);
+
+        QString labelText;
         labelText += tr("%2<br><small>").arg(desc.name);
         labelText += "...";
         for (TransformFactory::Match::FragmentMap::const_iterator k =
@@ -122,17 +142,37 @@ TransformFinder::searchTextChanged(const QString &text)
         }
         labelText += tr("</small>");
 
+        QString selectedText;
+        selectedText += tr("<b>%1</b><br>").arg(desc.name);
+        selectedText += tr("<small><i>%1</i></small>").arg(desc.longDescription);
+/*
+        for (TransformFactory::Match::FragmentMap::const_iterator k =
+                 j->fragments.begin();
+             k != j->fragments.end(); ++k) {
+            selectedText += tr("<br><small>%1: %2</small>").arg(k->first).arg(k->second);
+        }
+*/
+
+        selectedText += tr("<br><small>Plugin type: %1</small>").arg(desc.type);
+        selectedText += tr("<br><small>Category: %1</small>").arg(desc.category);
+        selectedText += tr("<br><small>System identifier: %1</small>").arg(desc.identifier);
+
         if (i >= m_labels.size()) {
-            QLabel *label = new QLabel(m_resultsFrame);
-            label->setTextFormat(Qt::RichText);
-            m_resultsLayout->addWidget(label);
+            SelectableLabel *label = new SelectableLabel(m_resultsFrame);
+            m_resultsLayout->addWidget(label, i, 0);
             m_labels.push_back(label);
         }
-        m_labels[i]->setText(labelText);
+        m_labels[i]->setUnselectedText(labelText);
+        m_labels[i]->setSelectedText(selectedText);
+
+/*
         QSize sh = m_labels[i]->sizeHint();
         std::cerr << "size hint for text \"" << labelText.toStdString() << "\" has height " << sh.height() << std::endl;
         height += sh.height();
         if (sh.width() > width) width = sh.width();
+*/
+//        m_labels[i]->resize(m_labels[i]->sizeHint());
+//        m_labels[i]->updateGeometry();
         m_labels[i]->show();
 
         if (++i == maxResults) break;
@@ -140,9 +180,10 @@ TransformFinder::searchTextChanged(const QString &text)
 
     std::cerr << "m_labels.size() = " << m_labels.size() << ", i = " << i << ", height = " << height << std::endl;
 
-    while (i < m_labels.size()) m_labels[i++]->hide();
+    for (int j = m_labels.size(); j > i; ) m_labels[--j]->hide();
 
-    m_resultsFrame->resize(height, width);
+    m_resultsFrame->resize(m_resultsFrame->sizeHint());
+//    m_resultsFrame->resize(height, width);
 }
 
 TransformId
