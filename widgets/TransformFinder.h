@@ -35,16 +35,26 @@ class SelectableLabel : public QLabel
     Q_OBJECT
 
 public:
-    SelectableLabel(QWidget *parent = 0) : QLabel(parent) {
-        setTextFormat(Qt::RichText);
-    }
+    SelectableLabel(QWidget *parent = 0);
     virtual ~SelectableLabel() { }
 
     void setSelectedText(QString);
     void setUnselectedText(QString);
 
+    bool isSelected() const { return m_selected; }
+
+signals:
+    void selectionChanged();
+
+public slots:
+    void setSelected(bool);
+    void toggle();
+
 protected:
     virtual void mousePressEvent(QMouseEvent *e);
+    QString m_selectedText;
+    QString m_unselectedText;
+    bool m_selected;
 };
 
 class TransformFinder : public QDialog
@@ -59,12 +69,14 @@ public:
 
 protected slots:
     void searchTextChanged(const QString &);
-    
+    void selectedLabelChanged();
+
 protected:
     QScrollArea *m_resultsScroll;
     QWidget *m_resultsFrame;
     QGridLayout *m_resultsLayout;
     std::vector<SelectableLabel *> m_labels;
+    TransformId m_selectedTransform;
 };
 
 #endif

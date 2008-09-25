@@ -25,22 +25,63 @@
 #include <QDialogButtonBox>
 #include <QScrollArea>
 
+SelectableLabel::SelectableLabel(QWidget *parent) :
+    QLabel(parent),
+    m_selected(false)
+{
+    setTextFormat(Qt::RichText);
+    setLineWidth(2);
+    setFixedWidth(420);
+    setWordWrap(true);
+}
+
 void
 SelectableLabel::setUnselectedText(QString text)
 {
-    setText(text);
+    m_unselectedText = text;
+    if (!m_selected) {
+        setText(m_unselectedText);
+        resize(sizeHint());
+    }
 }
 
 void
 SelectableLabel::setSelectedText(QString text)
 {
-    setText(text);
+    m_selectedText = text;
+    if (m_selected) {
+        setText(m_selectedText);
+        resize(sizeHint());
+    }
+}
+
+void
+SelectableLabel::setSelected(bool s)
+{
+    if (m_selected == s) return;
+    m_selected = s;
+    if (m_selected) {
+        setText(m_selectedText);
+        setFrameStyle(QFrame::Box | QFrame::Plain);
+    } else {
+        setText(m_unselectedText);
+        setFrameStyle(QFrame::NoFrame);
+    }
+    resize(sizeHint());
+    parentWidget()->resize(parentWidget()->sizeHint());
+}
+
+void
+SelectableLabel::toggle()
+{
+    setSelected(!m_selected);
 }
 
 void
 SelectableLabel::mousePressEvent(QMouseEvent *e)
 {
-
+    toggle();
+    emit selectionChanged();
 }
 
 TransformFinder::TransformFinder(QWidget *parent) :
@@ -61,6 +102,7 @@ TransformFinder::TransformFinder(QWidget *parent) :
             this, SLOT(searchTextChanged(const QString &)));
 
     m_resultsScroll = new QScrollArea;
+//    m_resultsScroll->setWidgetResizable(true);
     mainGrid->addWidget(m_resultsScroll, 1, 0, 1, 2);
     mainGrid->setRowStretch(1, 10);
 
@@ -124,6 +166,8 @@ TransformFinder::searchTextChanged(const QString &text)
     int height = 0;
     int width = 0;
 
+    if (sorted.empty()) m_selectedTransform = "";
+
     for (std::set<TransformFactory::Match>::const_iterator j = sorted.end();
          j != sorted.begin(); ) {
         --j;
@@ -144,7 +188,7 @@ TransformFinder::searchTextChanged(const QString &text)
 
         QString selectedText;
         selectedText += tr("<b>%1</b><br>").arg(desc.name);
-        selectedText += tr("<small><i>%1</i></small>").arg(desc.longDescription);
+        selectedText += tr("<small>%1</small>").arg(desc.longDescription);
 /*
         for (TransformFactory::Match::FragmentMap::const_iterator k =
                  j->fragments.begin();
@@ -153,17 +197,25 @@ TransformFinder::searchTextChanged(const QString &text)
         }
 */
 
-        selectedText += tr("<br><small>Plugin type: %1</small>").arg(desc.type);
-        selectedText += tr("<br><small>Category: %1</small>").arg(desc.category);
-        selectedText += tr("<br><small>System identifier: %1</small>").arg(desc.identifier);
+        selectedText += tr("<ul><small>");
+        selectedText += tr("<li>Plugin type: %1</li>").arg(desc.type);
+        selectedText += tr("<li>Category: %1</li>").arg(desc.category);
+        selectedText += tr("<li>System identifier: %1</li>").arg(desc.identifier);
+        selectedText += tr("</small></ul>");
 
         if (i >= m_labels.size()) {
             SelectableLabel *label = new SelectableLabel(m_resultsFrame);
             m_resultsLayout->addWidget(label, i, 0);
+            connect(label, SIGNAL(selectionChanged()), this,
+                    SLOT(selectedLabelChanged()));
             m_labels.push_back(label);
         }
+        
+        m_labels[i]->setObjectName(desc.identifier);
+        m_selectedTransform = desc.identifier;
         m_labels[i]->setUnselectedText(labelText);
         m_labels[i]->setSelectedText(selectedText);
+        m_labels[i]->setSelected(i == 0);
 
 /*
         QSize sh = m_labels[i]->sizeHint();
@@ -184,6 +236,27 @@ TransformFinder::searchTextChanged(const QString &text)
 
     m_resultsFrame->resize(m_resultsFrame->sizeHint());
 //    m_resultsFrame->resize(height, width);
+}
+
+void
+TransformFinder::selectedLabelChanged()
+{
+    QObject *s = sender();
+    m_selectedTransform = "";
+    for (int i = 0; i < m_labels.size(); ++i) {
+        if (!m_labels[i]->isVisible()) continue;
+        if (m_labels[i] == s) {
+            if (m_labels[i]->isSelected()) {
+                m_selectedTransform = m_labels[i]->objectName();
+            }
+        } else {
+            if (m_labels[i]->isSelected()) {
+                m_labels[i]->setSelected(false);
+            }
+        }
+    }
+    std::cerr << "selectedLabelChanged: selected transform is now \""
+              << m_selectedTransform.toStdString() << "\"" << std::endl;
 }
 
 TransformId
