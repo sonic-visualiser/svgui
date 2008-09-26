@@ -89,6 +89,12 @@ SelectableLabel::mousePressEvent(QMouseEvent *e)
 }
 
 void
+SelectableLabel::mouseDoubleClickEvent(QMouseEvent *e)
+{
+    std::cerr << "mouseDoubleClickEvent" << std::endl;
+}
+
+void
 SelectableLabel::enterEvent(QEvent *)
 {
 //    std::cerr << "enterEvent" << std::endl;
