@@ -22,7 +22,7 @@
 
 #include "transform/Transform.h"
 
-class QGridLayout;
+class QVBoxLayout;
 class QScrollArea;
 class QLabel;
 class SelectableLabel;
@@ -52,6 +52,8 @@ public slots:
 
 protected:
     virtual void mousePressEvent(QMouseEvent *e);
+    virtual void enterEvent(QEvent *);
+    virtual void leaveEvent(QEvent *);
     QString m_selectedText;
     QString m_unselectedText;
     bool m_selected;
@@ -74,7 +76,7 @@ protected slots:
 protected:
     QScrollArea *m_resultsScroll;
     QWidget *m_resultsFrame;
-    QGridLayout *m_resultsLayout;
+    QVBoxLayout *m_resultsLayout;
     std::vector<SelectableLabel *> m_labels;
     TransformId m_selectedTransform;
 };
