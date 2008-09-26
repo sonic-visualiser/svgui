@@ -17,22 +17,24 @@
 
 #include "transform/TransformFactory.h"
 
-#include <QGridLayout>
+#include <QVBoxLayout>
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QLabel>
 //#include <SelectableLabel>
 #include <QDialogButtonBox>
 #include <QScrollArea>
+#include <QApplication>
 
 SelectableLabel::SelectableLabel(QWidget *parent) :
     QLabel(parent),
     m_selected(false)
 {
+    setStyleSheet("QLabel:hover { background: #e0e0e0; text: black; } QLabel:!hover { background: white; text: black } QLabel { padding: 4px }");
+
     setTextFormat(Qt::RichText);
     setLineWidth(2);
     setFixedWidth(420);
-    setWordWrap(true);
 }
 
 void
@@ -62,12 +64,14 @@ SelectableLabel::setSelected(bool s)
     m_selected = s;
     if (m_selected) {
         setText(m_selectedText);
-        setFrameStyle(QFrame::Box | QFrame::Plain);
+        setWordWrap(true);
+//        setFrameStyle(QFrame::Box | QFrame::Plain);
     } else {
         setText(m_unselectedText);
-        setFrameStyle(QFrame::NoFrame);
+        setWordWrap(false);
+//        setFrameStyle(QFrame::NoFrame);
     }
-    resize(sizeHint());
+//    resize(sizeHint());
     parentWidget()->resize(parentWidget()->sizeHint());
 }
 
@@ -84,6 +88,26 @@ SelectableLabel::mousePressEvent(QMouseEvent *e)
     emit selectionChanged();
 }
 
+void
+SelectableLabel::enterEvent(QEvent *)
+{
+//    std::cerr << "enterEvent" << std::endl;
+//    QPalette palette = QApplication::palette();
+//    palette.setColor(QPalette::Window, Qt::gray);
+//    setStyleSheet("background: gray");
+//    setPalette(palette);
+}
+
+void
+SelectableLabel::leaveEvent(QEvent *)
+{
+//    std::cerr << "leaveEvent" << std::endl;
+//    setStyleSheet("background: white");
+//    QPalette palette = QApplication::palette();
+//    palette.setColor(QPalette::Window, Qt::gray);
+//    setPalette(palette);
+}
+
 TransformFinder::TransformFinder(QWidget *parent) :
     QDialog(parent),
     m_resultsFrame(0),
@@ -92,6 +116,7 @@ TransformFinder::TransformFinder(QWidget *parent) :
     setWindowTitle(tr("Find a Transform"));
     
     QGridLayout *mainGrid = new QGridLayout;
+    mainGrid->setVerticalSpacing(0);
     setLayout(mainGrid);
 
     mainGrid->addWidget(new QLabel(tr("Find:")), 0, 0);
@@ -111,8 +136,22 @@ TransformFinder::TransformFinder(QWidget *parent) :
     mainGrid->addWidget(bb, 2, 0, 1, 2);
     connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
     connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
+    if (!m_resultsLayout) {
+        std::cerr << "creating frame & layout" << std::endl;
+        m_resultsFrame = new QWidget;
+        QPalette palette = m_resultsFrame->palette();
+        palette.setColor(QPalette::Window, palette.color(QPalette::Base));
+        m_resultsFrame->setPalette(palette);
+        m_resultsScroll->setPalette(palette);
+//        resultsFrame->setFrameStyle(QFrame::Sunken | QFrame::Box);
+        m_resultsLayout = new QVBoxLayout;
+        m_resultsFrame->setLayout(m_resultsLayout);
+        m_resultsScroll->setWidget(m_resultsFrame);
+        m_resultsFrame->show();
+    }
 
     resize(500, 400); //!!!
+    m_resultsFrame->resize(480, 380);
 }
 
 TransformFinder::~TransformFinder()
@@ -150,16 +189,6 @@ TransformFinder::searchTextChanged(const QString &text)
         std::cerr << "(" << j->score << ")" << std::endl;
     }
 */
-
-    if (!m_resultsLayout) {
-        std::cerr << "creating frame & layout" << std::endl;
-        m_resultsFrame = new QWidget;
-//        resultsFrame->setFrameStyle(QFrame::Sunken | QFrame::Box);
-        m_resultsLayout = new QGridLayout;
-        m_resultsFrame->setLayout(m_resultsLayout);
-        m_resultsScroll->setWidget(m_resultsFrame);
-        m_resultsFrame->show();
-    }
 
     i = 0;
     int maxResults = 40;
@@ -205,12 +234,15 @@ TransformFinder::searchTextChanged(const QString &text)
 
         if (i >= m_labels.size()) {
             SelectableLabel *label = new SelectableLabel(m_resultsFrame);
-            m_resultsLayout->addWidget(label, i, 0);
+//            m_resultsLayout->addWidget(label, i, 0);
+            m_resultsLayout->addWidget(label);
             connect(label, SIGNAL(selectionChanged()), this,
                     SLOT(selectedLabelChanged()));
+            QPalette palette = label->palette();
+            label->setPalette(palette);
             m_labels.push_back(label);
         }
-        
+
         m_labels[i]->setObjectName(desc.identifier);
         m_selectedTransform = desc.identifier;
         m_labels[i]->setUnselectedText(labelText);
