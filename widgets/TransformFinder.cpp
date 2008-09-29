@@ -25,16 +25,16 @@
 #include <QDialogButtonBox>
 #include <QScrollArea>
 #include <QApplication>
+#include <QDesktopWidget>
 
-SelectableLabel::SelectableLabel(QWidget *parent) :
-    QLabel(parent),
+SelectableLabel::SelectableLabel(QWidget *p) :
+    QLabel(p),
     m_selected(false)
 {
-    setStyleSheet("QLabel:hover { background: #e0e0e0; text: black; } QLabel:!hover { background: white; text: black } QLabel { padding: 4px }");
-
     setTextFormat(Qt::RichText);
-    setLineWidth(2);
-    setFixedWidth(420);
+//    setLineWidth(2);
+//    setFixedWidth(480);
+    setupStyle();
 }
 
 void
@@ -58,20 +58,32 @@ SelectableLabel::setSelectedText(QString text)
 }
 
 void
+SelectableLabel::setupStyle()
+{
+    if (m_selected) {
+        setWordWrap(true);
+        setStyleSheet("QLabel:hover { background: #e0e0e0; color: black; } QLabel:!hover { background: #f0f0f0; color: black } QLabel { padding: 7px }");
+
+//        setFrameStyle(QFrame::Box | QFrame::Plain);
+    } else {
+        setWordWrap(false);
+        setStyleSheet("QLabel:hover { background: #e0e0e0; color: black; } QLabel:!hover { background: white; color: black } QLabel { padding: 7px }");
+
+//        setFrameStyle(QFrame::NoFrame);
+    }
+}    
+
+void
 SelectableLabel::setSelected(bool s)
 {
     if (m_selected == s) return;
     m_selected = s;
     if (m_selected) {
         setText(m_selectedText);
-        setWordWrap(true);
-//        setFrameStyle(QFrame::Box | QFrame::Plain);
     } else {
         setText(m_unselectedText);
-        setWordWrap(false);
-//        setFrameStyle(QFrame::NoFrame);
     }
-//    resize(sizeHint());
+    setupStyle();
     parentWidget()->resize(parentWidget()->sizeHint());
 }
 
@@ -84,7 +96,7 @@ SelectableLabel::toggle()
 void
 SelectableLabel::mousePressEvent(QMouseEvent *e)
 {
-    toggle();
+    setSelected(true);
     emit selectionChanged();
 }
 
@@ -151,13 +163,27 @@ TransformFinder::TransformFinder(QWidget *parent) :
         m_resultsScroll->setPalette(palette);
 //        resultsFrame->setFrameStyle(QFrame::Sunken | QFrame::Box);
         m_resultsLayout = new QVBoxLayout;
+        m_resultsLayout->setSpacing(0);
+        m_resultsLayout->setContentsMargins(0, 0, 0, 0);
         m_resultsFrame->setLayout(m_resultsLayout);
         m_resultsScroll->setWidget(m_resultsFrame);
         m_resultsFrame->show();
     }
 
-    resize(500, 400); //!!!
-    m_resultsFrame->resize(480, 380);
+    QDesktopWidget *desktop = QApplication::desktop();
+    QRect available = desktop->availableGeometry();
+
+    int width = available.width() / 2;
+    int height = available.height() / 2;
+    if (height < 450) {
+        if (available.height() > 500) height = 450;
+    }
+    if (width < 600) {
+        if (available.width() > 650) width = 600;
+    }
+
+    resize(width, height);
+    raise();
 }
 
 TransformFinder::~TransformFinder()
@@ -250,10 +276,19 @@ TransformFinder::searchTextChanged(const QString &text)
         }
 
         m_labels[i]->setObjectName(desc.identifier);
-        m_selectedTransform = desc.identifier;
+        m_labels[i]->setFixedWidth(this->width() - 40);
         m_labels[i]->setUnselectedText(labelText);
         m_labels[i]->setSelectedText(selectedText);
+
+        /*
+        m_labels[i]->setSelected(false);
+        m_selectedTransform = "";
+        */
+
         m_labels[i]->setSelected(i == 0);
+        if (i == 0) {
+            m_selectedTransform = desc.identifier;
+        }
 
 /*
         QSize sh = m_labels[i]->sizeHint();

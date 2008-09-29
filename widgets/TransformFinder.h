@@ -55,6 +55,7 @@ protected:
     virtual void mouseDoubleClickEvent(QMouseEvent *e);
     virtual void enterEvent(QEvent *);
     virtual void leaveEvent(QEvent *);
+    void setupStyle();
     QString m_selectedText;
     QString m_unselectedText;
     bool m_selected;
