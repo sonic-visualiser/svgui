@@ -15,116 +15,19 @@
 
 #include "TransformFinder.h"
 
+#include "base/XmlExportable.h"
 #include "transform/TransformFactory.h"
+#include "SelectableLabel.h"
 
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QLineEdit>
 #include <QLabel>
-//#include <SelectableLabel>
 #include <QDialogButtonBox>
 #include <QScrollArea>
 #include <QApplication>
 #include <QDesktopWidget>
-
-SelectableLabel::SelectableLabel(QWidget *p) :
-    QLabel(p),
-    m_selected(false)
-{
-    setTextFormat(Qt::RichText);
-//    setLineWidth(2);
-//    setFixedWidth(480);
-    setupStyle();
-}
-
-void
-SelectableLabel::setUnselectedText(QString text)
-{
-    m_unselectedText = text;
-    if (!m_selected) {
-        setText(m_unselectedText);
-        resize(sizeHint());
-    }
-}
-
-void
-SelectableLabel::setSelectedText(QString text)
-{
-    m_selectedText = text;
-    if (m_selected) {
-        setText(m_selectedText);
-        resize(sizeHint());
-    }
-}
-
-void
-SelectableLabel::setupStyle()
-{
-    if (m_selected) {
-        setWordWrap(true);
-        setStyleSheet("QLabel:hover { background: #e0e0e0; color: black; } QLabel:!hover { background: #f0f0f0; color: black } QLabel { padding: 7px }");
-
-//        setFrameStyle(QFrame::Box | QFrame::Plain);
-    } else {
-        setWordWrap(false);
-        setStyleSheet("QLabel:hover { background: #e0e0e0; color: black; } QLabel:!hover { background: white; color: black } QLabel { padding: 7px }");
-
-//        setFrameStyle(QFrame::NoFrame);
-    }
-}    
-
-void
-SelectableLabel::setSelected(bool s)
-{
-    if (m_selected == s) return;
-    m_selected = s;
-    if (m_selected) {
-        setText(m_selectedText);
-    } else {
-        setText(m_unselectedText);
-    }
-    setupStyle();
-    parentWidget()->resize(parentWidget()->sizeHint());
-}
-
-void
-SelectableLabel::toggle()
-{
-    setSelected(!m_selected);
-}
-
-void
-SelectableLabel::mousePressEvent(QMouseEvent *e)
-{
-    setSelected(true);
-    emit selectionChanged();
-}
-
-void
-SelectableLabel::mouseDoubleClickEvent(QMouseEvent *e)
-{
-    std::cerr << "mouseDoubleClickEvent" << std::endl;
-}
-
-void
-SelectableLabel::enterEvent(QEvent *)
-{
-//    std::cerr << "enterEvent" << std::endl;
-//    QPalette palette = QApplication::palette();
-//    palette.setColor(QPalette::Window, Qt::gray);
-//    setStyleSheet("background: gray");
-//    setPalette(palette);
-}
-
-void
-SelectableLabel::leaveEvent(QEvent *)
-{
-//    std::cerr << "leaveEvent" << std::endl;
-//    setStyleSheet("background: white");
-//    QPalette palette = QApplication::palette();
-//    palette.setColor(QPalette::Window, Qt::gray);
-//    setPalette(palette);
-}
+#include <QTimer>
 
 TransformFinder::TransformFinder(QWidget *parent) :
     QDialog(parent),
@@ -161,7 +64,6 @@ TransformFinder::TransformFinder(QWidget *parent) :
         palette.setColor(QPalette::Window, palette.color(QPalette::Base));
         m_resultsFrame->setPalette(palette);
         m_resultsScroll->setPalette(palette);
-//        resultsFrame->setFrameStyle(QFrame::Sunken | QFrame::Box);
         m_resultsLayout = new QVBoxLayout;
         m_resultsLayout->setSpacing(0);
         m_resultsLayout->setContentsMargins(0, 0, 0, 0);
@@ -184,6 +86,11 @@ TransformFinder::TransformFinder(QWidget *parent) :
 
     resize(width, height);
     raise();
+
+    m_upToDateCount = 0;
+    m_timer = new QTimer(this);
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(timeout()));
+    m_timer->start(0);
 }
 
 TransformFinder::~TransformFinder()
@@ -194,82 +101,98 @@ void
 TransformFinder::searchTextChanged(const QString &text)
 {
     std::cerr << "text is " << text.toStdString() << std::endl;
+    m_newSearchText = text;
+}
 
-    QStringList keywords = text.split(' ', QString::SkipEmptyParts);
-    TransformFactory::SearchResults results =
-        TransformFactory::getInstance()->search(keywords);
-    
-    std::cerr << results.size() << " result(s)..." << std::endl;
-
-    std::set<TransformFactory::Match> sorted;
-    for (TransformFactory::SearchResults::const_iterator j = results.begin();
-         j != results.end(); ++j) {
-        sorted.insert(j->second);
-    }
-
-    int i = 0;
-/*
-    for (std::set<TransformFactory::Match>::const_iterator j = sorted.begin();
-         j != sorted.end(); ++j) {
-        std::cerr << i++ << ": " << j->transform.toStdString() << ": ";
-        for (TransformFactory::Match::FragmentMap::const_iterator k =
-                 j->fragments.begin();
-             k != j->fragments.end(); ++k) {
-            std::cerr << k->first.toStdString() << ": "
-                      << k->second.toStdString() << " ";
-        }
-        std::cerr << "(" << j->score << ")" << std::endl;
-    }
-*/
-
-    i = 0;
+void
+TransformFinder::timeout()
+{
     int maxResults = 40;
-    int height = 0;
-    int width = 0;
+    
+    if (m_newSearchText != "") {
 
-    if (sorted.empty()) m_selectedTransform = "";
+        QString text = m_newSearchText;
+        m_newSearchText = "";
 
-    for (std::set<TransformFactory::Match>::const_iterator j = sorted.end();
-         j != sorted.begin(); ) {
-        --j;
+        QStringList keywords = text.split(' ', QString::SkipEmptyParts);
+        TransformFactory::SearchResults results =
+            TransformFactory::getInstance()->search(keywords);
+        
+        std::cerr << results.size() << " result(s)..." << std::endl;
+        
+        std::set<TransformFactory::Match> sorted;
+        sorted.clear();
+        for (TransformFactory::SearchResults::const_iterator j = results.begin();
+             j != results.end(); ++j) {
+            sorted.insert(j->second);
+        }
+
+        m_sortedResults.clear();
+        for (std::set<TransformFactory::Match>::const_iterator j = sorted.end();
+             j != sorted.begin(); ) {
+            --j;
+            m_sortedResults.push_back(*j);
+            if (m_sortedResults.size() == maxResults) break;
+        }
+
+        if (m_sortedResults.empty()) m_selectedTransform = "";
+        else m_selectedTransform = m_sortedResults.begin()->transform;
+
+        m_upToDateCount = 0;
+
+        for (int j = m_labels.size(); j > m_sortedResults.size(); ) {
+            m_labels[--j]->hide();
+        }
+
+        return;
+    }
+
+    if (m_upToDateCount < m_sortedResults.size()) {
+
+        int i = m_upToDateCount;
+
+        std::cerr << "sorted size = " << m_sortedResults.size() << std::endl;
 
         TransformDescription desc =
-            TransformFactory::getInstance()->getTransformDescription(j->transform);
+            TransformFactory::getInstance()->getTransformDescription
+            (m_sortedResults[i].transform);
 
         QString labelText;
-        labelText += tr("%2<br><small>").arg(desc.name);
+        labelText += tr("%1: %2<br><small>")
+            .arg(m_sortedResults[i].score)
+            .arg(XmlExportable::encodeEntities(desc.name));
+
         labelText += "...";
         for (TransformFactory::Match::FragmentMap::const_iterator k =
-                 j->fragments.begin();
-             k != j->fragments.end(); ++k) {
+                 m_sortedResults[i].fragments.begin();
+             k != m_sortedResults[i].fragments.end(); ++k) {
             labelText += k->second;
             labelText += "... ";
         }
         labelText += tr("</small>");
 
         QString selectedText;
-        selectedText += tr("<b>%1</b><br>").arg(desc.name);
-        selectedText += tr("<small>%1</small>").arg(desc.longDescription);
-/*
-        for (TransformFactory::Match::FragmentMap::const_iterator k =
-                 j->fragments.begin();
-             k != j->fragments.end(); ++k) {
-            selectedText += tr("<br><small>%1: %2</small>").arg(k->first).arg(k->second);
-        }
-*/
+        selectedText += tr("<b>%1</b><br>")
+            .arg(XmlExportable::encodeEntities(desc.name));
+        selectedText += tr("<small>%1</small>")
+            .arg(XmlExportable::encodeEntities(desc.longDescription));
 
         selectedText += tr("<ul><small>");
-        selectedText += tr("<li>Plugin type: %1</li>").arg(desc.type);
-        selectedText += tr("<li>Category: %1</li>").arg(desc.category);
-        selectedText += tr("<li>System identifier: %1</li>").arg(desc.identifier);
+        selectedText += tr("<li>Plugin type: %1</li>")
+            .arg(XmlExportable::encodeEntities(desc.type));
+        selectedText += tr("<li>Category: %1</li>")
+            .arg(XmlExportable::encodeEntities(desc.category));
+        selectedText += tr("<li>System identifier: %1</li>")
+            .arg(XmlExportable::encodeEntities(desc.identifier));
         selectedText += tr("</small></ul>");
 
         if (i >= m_labels.size()) {
             SelectableLabel *label = new SelectableLabel(m_resultsFrame);
-//            m_resultsLayout->addWidget(label, i, 0);
             m_resultsLayout->addWidget(label);
             connect(label, SIGNAL(selectionChanged()), this,
                     SLOT(selectedLabelChanged()));
+            connect(label, SIGNAL(doubleClicked()), this,
+                    SLOT(accept()));
             QPalette palette = label->palette();
             label->setPalette(palette);
             m_labels.push_back(label);
@@ -280,35 +203,15 @@ TransformFinder::searchTextChanged(const QString &text)
         m_labels[i]->setUnselectedText(labelText);
         m_labels[i]->setSelectedText(selectedText);
 
-        /*
-        m_labels[i]->setSelected(false);
-        m_selectedTransform = "";
-        */
-
-        m_labels[i]->setSelected(i == 0);
-        if (i == 0) {
-            m_selectedTransform = desc.identifier;
-        }
-
-/*
-        QSize sh = m_labels[i]->sizeHint();
-        std::cerr << "size hint for text \"" << labelText.toStdString() << "\" has height " << sh.height() << std::endl;
-        height += sh.height();
-        if (sh.width() > width) width = sh.width();
-*/
-//        m_labels[i]->resize(m_labels[i]->sizeHint());
-//        m_labels[i]->updateGeometry();
+        m_labels[i]->setSelected(m_selectedTransform == desc.identifier);
         m_labels[i]->show();
 
-        if (++i == maxResults) break;
+        ++m_upToDateCount;
+
+//        if (m_upToDateCount == m_sortedResults.size()) {
+            m_resultsFrame->resize(m_resultsFrame->sizeHint());
+//        }
     }
-
-    std::cerr << "m_labels.size() = " << m_labels.size() << ", i = " << i << ", height = " << height << std::endl;
-
-    for (int j = m_labels.size(); j > i; ) m_labels[--j]->hide();
-
-    m_resultsFrame->resize(m_resultsFrame->sizeHint());
-//    m_resultsFrame->resize(height, width);
 }
 
 void
@@ -335,6 +238,6 @@ TransformFinder::selectedLabelChanged()
 TransformId
 TransformFinder::getTransform() const
 {
-    return "";
+    return m_selectedTransform;
 }
 

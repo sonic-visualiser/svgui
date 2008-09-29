@@ -42,6 +42,7 @@ HEADERS += AudioDial.h \
            PropertyBox.h \
            PropertyStack.h \
            RangeInputDialog.h \
+           SelectableLabel.h \
            SubdividingMenu.h \
            TextAbbrev.h \
            Thumbwheel.h \
@@ -77,6 +78,7 @@ SOURCES += AudioDial.cpp \
            PropertyBox.cpp \
            PropertyStack.cpp \
            RangeInputDialog.cpp \
+           SelectableLabel.cpp \
            SubdividingMenu.cpp \
            TextAbbrev.cpp \
            Thumbwheel.cpp \
