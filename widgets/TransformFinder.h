@@ -21,45 +21,14 @@
 #include <vector>
 
 #include "transform/Transform.h"
+#include "transform/TransformFactory.h"
 
 class QVBoxLayout;
 class QScrollArea;
 class QLabel;
 class SelectableLabel;
 class QWidget;
-
-
-#include <QLabel>
-class SelectableLabel : public QLabel
-{
-    Q_OBJECT
-
-public:
-    SelectableLabel(QWidget *parent = 0);
-    virtual ~SelectableLabel() { }
-
-    void setSelectedText(QString);
-    void setUnselectedText(QString);
-
-    bool isSelected() const { return m_selected; }
-
-signals:
-    void selectionChanged();
-
-public slots:
-    void setSelected(bool);
-    void toggle();
-
-protected:
-    virtual void mousePressEvent(QMouseEvent *e);
-    virtual void mouseDoubleClickEvent(QMouseEvent *e);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
-    void setupStyle();
-    QString m_selectedText;
-    QString m_unselectedText;
-    bool m_selected;
-};
+class QTimer;
 
 class TransformFinder : public QDialog
 {
@@ -74,6 +43,7 @@ public:
 protected slots:
     void searchTextChanged(const QString &);
     void selectedLabelChanged();
+    void timeout();
 
 protected:
     QScrollArea *m_resultsScroll;
@@ -81,6 +51,12 @@ protected:
     QVBoxLayout *m_resultsLayout;
     std::vector<SelectableLabel *> m_labels;
     TransformId m_selectedTransform;
+    QTimer *m_timer;
+
+    QString m_newSearchText;
+    typedef std::vector<TransformFactory::Match> SortedResults;
+    SortedResults m_sortedResults;
+    int m_upToDateCount;
 };
 
 #endif
