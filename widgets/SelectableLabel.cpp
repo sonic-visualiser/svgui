@@ -35,6 +35,7 @@ SelectableLabel::~SelectableLabel()
 void
 SelectableLabel::setUnselectedText(QString text)
 {
+    if (m_unselectedText == text) return;
     m_unselectedText = text;
     if (!m_selected) {
         setText(m_unselectedText);
@@ -45,6 +46,7 @@ SelectableLabel::setUnselectedText(QString text)
 void
 SelectableLabel::setSelectedText(QString text)
 {
+    if (m_selectedText == text) return;
     m_selectedText = text;
     if (m_selected) {
         setText(m_selectedText);
@@ -63,8 +65,8 @@ SelectableLabel::setupStyle()
             (QString("QLabel:hover { background: %1; color: %3; } "
                      "QLabel:!hover { background: %2; color: %3 } "
                      "QLabel { padding: 7px }")
-             .arg(palette.button().color().name())
-             .arg(palette.mid().color().light().name())
+             .arg(palette.mid().color().lighter(120).name())
+             .arg(palette.mid().color().lighter(140).name())
              .arg(palette.text().color().name()));
     } else {
         setWordWrap(false);

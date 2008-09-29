@@ -90,7 +90,7 @@ TransformFinder::TransformFinder(QWidget *parent) :
     m_upToDateCount = 0;
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(timeout()));
-    m_timer->start(0);
+    m_timer->start(30);
 }
 
 TransformFinder::~TransformFinder()
@@ -147,7 +147,9 @@ TransformFinder::timeout()
         return;
     }
 
-    if (m_upToDateCount < m_sortedResults.size()) {
+    if (m_upToDateCount >= m_sortedResults.size()) return;
+
+    while (m_upToDateCount < m_sortedResults.size()) {
 
         int i = m_upToDateCount;
 
@@ -158,8 +160,7 @@ TransformFinder::timeout()
             (m_sortedResults[i].transform);
 
         QString labelText;
-        labelText += tr("%1: %2<br><small>")
-            .arg(m_sortedResults[i].score)
+        labelText += tr("%1<br><small>")
             .arg(XmlExportable::encodeEntities(desc.name));
 
         labelText += "...";
@@ -201,17 +202,20 @@ TransformFinder::timeout()
         m_labels[i]->setObjectName(desc.identifier);
         m_labels[i]->setFixedWidth(this->width() - 40);
         m_labels[i]->setUnselectedText(labelText);
+
+//        std::cerr << "selected text: " << selectedText.toStdString() << std::endl;
         m_labels[i]->setSelectedText(selectedText);
 
         m_labels[i]->setSelected(m_selectedTransform == desc.identifier);
-        m_labels[i]->show();
+
+        if (!m_labels[i]->isVisible()) m_labels[i]->show();
 
         ++m_upToDateCount;
 
-//        if (m_upToDateCount == m_sortedResults.size()) {
-            m_resultsFrame->resize(m_resultsFrame->sizeHint());
-//        }
+        if (i == 0) break;
     }
+
+    m_resultsFrame->resize(m_resultsFrame->sizeHint());
 }
 
 void
