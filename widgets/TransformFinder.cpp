@@ -28,6 +28,7 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QTimer>
+#include <QAction>
 
 TransformFinder::TransformFinder(QWidget *parent) :
     QDialog(parent),
@@ -71,6 +72,16 @@ TransformFinder::TransformFinder(QWidget *parent) :
         m_resultsScroll->setWidget(m_resultsFrame);
         m_resultsFrame->show();
     }
+
+    QAction *up = new QAction(tr("Up"), this);
+    up->setShortcut(tr("Up"));
+    connect(up, SIGNAL(triggered()), this, SLOT(up()));
+    addAction(up);
+
+    QAction *down = new QAction(tr("Down"), this);
+    down->setShortcut(tr("Down"));
+    connect(down, SIGNAL(triggered()), this, SLOT(down()));
+    addAction(down);
 
     QDesktopWidget *desktop = QApplication::desktop();
     QRect available = desktop->availableGeometry();
@@ -178,14 +189,14 @@ TransformFinder::timeout()
         selectedText += tr("<small>%1</small>")
             .arg(XmlExportable::encodeEntities(desc.longDescription));
 
-        selectedText += tr("<ul><small>");
-        selectedText += tr("<li>Plugin type: %1</li>")
+        selectedText += tr("<br><small>");
+        selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Plugin type: %1<br>")
             .arg(XmlExportable::encodeEntities(desc.type));
-        selectedText += tr("<li>Category: %1</li>")
+        selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Category: %1<br>")
             .arg(XmlExportable::encodeEntities(desc.category));
-        selectedText += tr("<li>System identifier: %1</li>")
+        selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; System identifier: %1")
             .arg(XmlExportable::encodeEntities(desc.identifier));
-        selectedText += tr("</small></ul>");
+        selectedText += tr("</small>");
 
         if (i >= m_labels.size()) {
             SelectableLabel *label = new SelectableLabel(m_resultsFrame);
@@ -243,5 +254,38 @@ TransformId
 TransformFinder::getTransform() const
 {
     return m_selectedTransform;
+}
+
+void
+TransformFinder::up()
+{
+    for (int i = 0; i < m_labels.size(); ++i) {
+        if (!m_labels[i]->isVisible()) continue;
+        if (m_labels[i]->objectName() == m_selectedTransform) {
+            if (i > 0) {
+                m_labels[i]->setSelected(false);
+                m_labels[i-1]->setSelected(true);
+                m_selectedTransform = m_labels[i-1]->objectName();
+            }
+            return;
+        }
+    }
+}
+
+void
+TransformFinder::down()
+{
+    for (int i = 0; i < m_labels.size(); ++i) {
+        if (!m_labels[i]->isVisible()) continue;
+        if (m_labels[i]->objectName() == m_selectedTransform) {
+            if (i+1 < m_labels.size() &&
+                m_labels[i+1]->isVisible()) {
+                m_labels[i]->setSelected(false);
+                m_labels[i+1]->setSelected(true);
+                m_selectedTransform = m_labels[i+1]->objectName();
+            }
+            return;
+        }
+    }
 }
 
