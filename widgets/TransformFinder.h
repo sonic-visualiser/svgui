@@ -44,6 +44,8 @@ protected slots:
     void searchTextChanged(const QString &);
     void selectedLabelChanged();
     void timeout();
+    void up();
+    void down();
 
 protected:
     QScrollArea *m_resultsScroll;
