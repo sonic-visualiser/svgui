@@ -611,7 +611,6 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	bool haveNext = false;
 	int nx = v->getXForFrame(v->getModelsEndFrame());
-// m_model->getEndFrame());
 	int ny = y;
 
 	SparseTimeValueModel::PointList::const_iterator j = i;
@@ -627,15 +626,12 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 //        std::cout << "frame = " << p.frame << ", x = " << x << ", haveNext = " << haveNext 
 //                  << ", nx = " << nx << std::endl;
 
-	int labelY = y;
-
 	if (w < 1) w = 1;
 	paint.setPen(getBaseQColor());
 
 	if (m_plotStyle == PlotSegmentation) {
             paint.setPen(getForegroundQColor(v));
             paint.setBrush(getColourForValue(v, p.value));
-	    labelY = v->height();
 	} else if (m_plotStyle == PlotLines ||
 		   m_plotStyle == PlotCurve) {
 	    paint.setBrush(Qt::NoBrush);

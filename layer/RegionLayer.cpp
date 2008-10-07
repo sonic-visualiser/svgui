@@ -20,6 +20,7 @@
 #include "base/Profiler.h"
 #include "base/LogRange.h"
 #include "ColourDatabase.h"
+#include "ColourMapper.h"
 #include "view/View.h"
 
 #include "data/model/RegionModel.h"
@@ -43,6 +44,7 @@ RegionLayer::RegionLayer() :
     m_editingPoint(0, 0.0, 0, tr("New Point")),
     m_editingCommand(0),
     m_verticalScale(AutoAlignScale),
+    m_colourMap(0),
     m_plotStyle(PlotLines)
 {
     
@@ -86,6 +88,7 @@ RegionLayer::getPropertyType(const PropertyName &name) const
     if (name == "Scale Units") return UnitsProperty;
     if (name == "Vertical Scale") return ValueProperty;
     if (name == "Plot Type") return ValueProperty;
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ValueProperty;
     return SingleColourLayer::getPropertyType(name);
 }
 
@@ -104,7 +107,15 @@ RegionLayer::getPropertyRangeAndValue(const PropertyName &name,
 {
     int val = 0;
 
-    if (name == "Plot Type") {
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) {
+            
+        if (min) *min = 0;
+        if (max) *max = ColourMapper::getColourMapCount() - 1;
+        if (deflt) *deflt = 0;
+        
+        val = m_colourMap;
+
+    } else if (name == "Plot Type") {
 	
 	if (min) *min = 0;
 	if (max) *max = 1;
@@ -138,13 +149,15 @@ RegionLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 RegionLayer::getPropertyValueLabel(const PropertyName &name,
-                                 int value) const
+                                   int value) const
 {
-    if (name == "Plot Type") {
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) {
+        return ColourMapper::getColourMapName(value);
+    } else if (name == "Plot Type") {
 
 	switch (value) {
 	default:
-	case 0: return tr("Lines");
+	case 0: return tr("Bars");
 	case 1: return tr("Segmentation");
 	}
 
@@ -162,7 +175,9 @@ RegionLayer::getPropertyValueLabel(const PropertyName &name,
 void
 RegionLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == "Plot Type") {
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) {
+        setFillColourMap(value);
+    } else if (name == "Plot Type") {
 	setPlotStyle(PlotStyle(value));
     } else if (name == "Vertical Scale") {
 	setVerticalScale(VerticalScale(value));
@@ -178,10 +193,23 @@ RegionLayer::setProperty(const PropertyName &name, int value)
 }
 
 void
+RegionLayer::setFillColourMap(int map)
+{
+    if (m_colourMap == map) return;
+    m_colourMap = map;
+    emit layerParametersChanged();
+}
+
+void
 RegionLayer::setPlotStyle(PlotStyle style)
 {
     if (m_plotStyle == style) return;
+    bool colourTypeChanged = (style == PlotSegmentation ||
+                              m_plotStyle == PlotSegmentation);
     m_plotStyle = style;
+    if (colourTypeChanged) {
+        emit layerParameterRangesChanged();
+    }
     emit layerParametersChanged();
 }
 
@@ -487,6 +515,36 @@ RegionLayer::getYForValue(View *v, float val) const
     return y;
 }
 
+QColor
+RegionLayer::getColourForValue(View *v, float val) const
+{
+    float min, max;
+    bool log;
+    getScaleExtents(v, min, max, log);
+
+    if (min > max) std::swap(min, max);
+    if (max == min) max = min + 1;
+
+    if (log) {
+        LogRange::mapRange(min, max);
+        val = LogRange::map(val);
+    }
+
+//    std::cerr << "RegionLayer::getColourForValue: min " << min << ", max "
+//              << max << ", log " << log << ", value " << val << std::endl;
+
+    QColor solid = ColourMapper(m_colourMap, min, max).map(val);
+    return QColor(solid.red(), solid.green(), solid.blue(), 120);
+}
+
+int
+RegionLayer::getDefaultColourHint(bool darkbg, bool &impose)
+{
+    impose = false;
+    return ColourDatabase::getInstance()->getColourIndex
+        (QString(darkbg ? "Bright Blue" : "Blue"));
+}
+
 float
 RegionLayer::getValueForY(View *v, int y) const
 {
@@ -552,6 +610,11 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
     //!!! if it does have distinct values, we should still ensure y
     //!!! coord is never completely flat on the top or bottom
 
+    int textY = 0;
+    if (m_plotStyle == PlotSegmentation) {
+        textY = v->getTextLabelHeight(this, paint);
+    }
+    
     for (RegionModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
@@ -562,30 +625,72 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int w = v->getXForFrame(p.frame + p.duration) - x;
 	int h = 9;
 	
+	bool haveNext = false;
+	int nx = v->getXForFrame(v->getModelsEndFrame());
+
+        RegionModel::PointList::const_iterator j = i;
+	++j;
+
+	if (j != points.end()) {
+	    const RegionModel::Point &q(*j);
+	    nx = v->getXForFrame(q.frame);
+	    haveNext = true;
+        }
+
+        if (m_plotStyle != PlotSegmentation) {
+            textY = y - paint.fontMetrics().height()
+                      + paint.fontMetrics().ascent();
+            if (textY < paint.fontMetrics().ascent() + 1) {
+                textY = paint.fontMetrics().ascent() + 1;
+            }
+        }
+
 	if (m_model->getValueQuantization() != 0.0) {
 	    h = y - getYForValue(v, p.value + m_model->getValueQuantization());
 	    if (h < 3) h = 3;
 	}
 
 	if (w < 1) w = 1;
-	paint.setPen(getBaseQColor());
-	paint.setBrush(brushColour);
 
-	if (illuminateFrame == p.frame) {
-	    if (localPos.y() >= y - h && localPos.y() < y) {
-		paint.setPen(v->getForeground());
-		paint.setBrush(v->getForeground());
+	if (m_plotStyle == PlotSegmentation) {
+            paint.setPen(getForegroundQColor(v));
+            paint.setBrush(getColourForValue(v, p.value));
+        } else {
+            paint.setPen(getBaseQColor());
+            paint.setBrush(brushColour);
+        }
+
+	if (m_plotStyle == PlotSegmentation) {
+
+	    if (nx <= x) continue;
+
+	    if (illuminateFrame != p.frame &&
+		(nx < x + 5 || x >= v->width() - 1)) {
+		paint.setPen(Qt::NoPen);
 	    }
-	}
-	
-        paint.drawLine(x, y-1, x + w, y-1);
-        paint.drawLine(x, y+1, x + w, y+1);
-        paint.drawLine(x, y - h/2, x, y + h/2);
-        paint.drawLine(x+w, y - h/2, x + w, y + h/2);
 
-///	if (p.label != "") {
-///	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
-///	}
+	    paint.drawRect(x, -1, nx - x, v->height() + 1);
+
+	} else {
+
+            if (illuminateFrame == p.frame) {
+                if (localPos.y() >= y - h && localPos.y() < y) {
+                    paint.setPen(v->getForeground());
+                    paint.setBrush(v->getForeground());
+                }
+            }
+	
+            paint.drawLine(x, y-1, x + w, y-1);
+            paint.drawLine(x, y+1, x + w, y+1);
+            paint.drawLine(x, y - h/2, x, y + h/2);
+            paint.drawLine(x+w, y - h/2, x + w, y + h/2);
+        }
+
+	if (p.label != "") {
+            if (!haveNext || nx > x + 6 + paint.fontMetrics().width(p.label)) {
+                paint.drawText(x + 5, textY, p.label);
+            }
+	}
     }
 
     paint.restore();
@@ -996,14 +1101,6 @@ RegionLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* inte
 
     finish(command);
     return true;
-}
-
-int
-RegionLayer::getDefaultColourHint(bool darkbg, bool &impose)
-{
-    impose = false;
-    return ColourDatabase::getInstance()->getColourIndex
-        (QString(darkbg ? "White" : "Black"));
 }
 
 void
