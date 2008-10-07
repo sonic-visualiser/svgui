@@ -75,6 +75,9 @@ public:
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
+    void setFillColourMap(int);
+    int getFillColourMap() const { return m_colourMap; }
+
     enum VerticalScale {
         AutoAlignScale,
         LinearScale,
@@ -112,6 +115,7 @@ protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
     int getYForValue(View *v, float value) const;
     float getValueForY(View *v, int y) const;
+    QColor getColourForValue(View *v, float value) const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
@@ -123,6 +127,7 @@ protected:
     RegionModel::Point m_editingPoint;
     RegionModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
+    int m_colourMap;
     PlotStyle m_plotStyle;
 
     void finish(RegionModel::EditCommand *command) {
