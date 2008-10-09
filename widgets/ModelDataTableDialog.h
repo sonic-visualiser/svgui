@@ -55,6 +55,8 @@ protected slots:
     void editRow();
     void togglePlayTracking();
 
+    void modelRemoved();
+
 protected:
     void makeCurrent(int row);
     ModelDataTableModel *m_table;
