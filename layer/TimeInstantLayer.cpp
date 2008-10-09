@@ -35,7 +35,7 @@
 #include <iostream>
 #include <cmath>
 
-#define DEBUG_TIME_INSTANT_LAYER 1
+//#define DEBUG_TIME_INSTANT_LAYER 1
 
 TimeInstantLayer::TimeInstantLayer() :
     SingleColourLayer(),
