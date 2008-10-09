@@ -125,6 +125,8 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
             this, SLOT(addCommand(Command *)));
     connect(m_table, SIGNAL(currentChanged(const QModelIndex &)),
             this, SLOT(currentChangedThroughResort(const QModelIndex &)));
+    connect(m_table, SIGNAL(modelRemoved()),
+            this, SLOT(modelRemoved()));
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
     connect(bb, SIGNAL(rejected()), this, SLOT(close()));
@@ -268,5 +270,10 @@ ModelDataTableDialog::currentChangedThroughResort(const QModelIndex &index)
     makeCurrent(index.row());
 }
 
+void
+ModelDataTableDialog::modelRemoved()
+{
+    close();
+}
 
     
