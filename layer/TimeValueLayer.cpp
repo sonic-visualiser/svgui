@@ -640,13 +640,20 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}	    
 
 	if (m_plotStyle == PlotStems) {
+/*
 	    paint.setPen(brushColour);
 	    if (y < origin - 1) {
 		paint.drawRect(x + w/2, y + 1, 1, origin - y);
 	    } else if (y > origin + 1) {
 		paint.drawRect(x + w/2, origin, 1, y - origin - 1);
 	    }
+*/
 	    paint.setPen(getBaseQColor());
+	    if (y < origin - 1) {
+		paint.drawLine(x + w/2, y + 1, x + w/2, origin);
+	    } else if (y > origin + 1) {
+		paint.drawLine(x + w/2, origin, x + w/2, y - 1);
+	    }
 	}
 
 	if (illuminateFrame == p.frame) {
@@ -687,8 +694,14 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
                     paint.restore();
 
 		} else if (m_plotStyle == PlotLines) {
+                    
+                    if (pointCount == 0) {
+                        path.moveTo(x + w/2, y);
+                    }
+                    ++pointCount;
 
-		    paint.drawLine(x + w/2, y, nx + w/2, ny);
+//		    paint.drawLine(x + w/2, y, nx + w/2, ny);
+                    path.lineTo(nx + w/2, ny);
 
 		} else {
 
@@ -739,7 +752,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
     }
 
-    if (m_plotStyle == PlotCurve && !path.isEmpty()) {
+    if ((m_plotStyle == PlotCurve || m_plotStyle == PlotLines)
+        && !path.isEmpty()) {
 	paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->width());
 	paint.drawPath(path);
     }
