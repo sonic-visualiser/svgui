@@ -56,7 +56,7 @@ protected:
     QTimer *m_timer;
 
     QString m_newSearchText;
-    typedef std::vector<TransformFactory::Match> SortedResults;
+    typedef std::vector<TextMatcher::Match> SortedResults;
     SortedResults m_sortedResults;
     int m_upToDateCount;
 };
