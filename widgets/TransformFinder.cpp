@@ -131,7 +131,7 @@ TransformFinder::timeout()
         
         std::cerr << results.size() << " result(s)..." << std::endl;
         
-        std::set<TransformFactory::Match> sorted;
+        std::set<TextMatcher::Match> sorted;
         sorted.clear();
         for (TransformFactory::SearchResults::const_iterator j = results.begin();
              j != results.end(); ++j) {
@@ -139,7 +139,7 @@ TransformFinder::timeout()
         }
 
         m_sortedResults.clear();
-        for (std::set<TransformFactory::Match>::const_iterator j = sorted.end();
+        for (std::set<TextMatcher::Match>::const_iterator j = sorted.end();
              j != sorted.begin(); ) {
             --j;
             m_sortedResults.push_back(*j);
@@ -147,7 +147,7 @@ TransformFinder::timeout()
         }
 
         if (m_sortedResults.empty()) m_selectedTransform = "";
-        else m_selectedTransform = m_sortedResults.begin()->transform;
+        else m_selectedTransform = m_sortedResults.begin()->key;
 
         m_upToDateCount = 0;
 
@@ -164,18 +164,29 @@ TransformFinder::timeout()
 
         int i = m_upToDateCount;
 
-        std::cerr << "sorted size = " << m_sortedResults.size() << std::endl;
+//        std::cerr << "sorted size = " << m_sortedResults.size() << std::endl;
 
-        TransformDescription desc =
-            TransformFactory::getInstance()->getTransformDescription
-            (m_sortedResults[i].transform);
+        TransformDescription desc;
+        TransformId tid = m_sortedResults[i].key;
+        TransformFactory *factory = TransformFactory::getInstance();
+        TransformFactory::TransformInstallStatus status =
+            factory->getTransformInstallStatus(tid);
+        QString suffix;
+
+        if (status == TransformFactory::TransformInstalled) {
+            desc = factory->getTransformDescription(tid);
+        } else {
+            desc = factory->getUninstalledTransformDescription(tid);
+            suffix = tr("<i> (not installed)</i>");
+        }
 
         QString labelText;
-        labelText += tr("%1<br><small>")
-            .arg(XmlExportable::encodeEntities(desc.name));
+        labelText += tr("%1%2<br><small>")
+            .arg(XmlExportable::encodeEntities(desc.name))
+            .arg(suffix);
 
         labelText += "...";
-        for (TransformFactory::Match::FragmentMap::const_iterator k =
+        for (TextMatcher::Match::FragmentMap::const_iterator k =
                  m_sortedResults[i].fragments.begin();
              k != m_sortedResults[i].fragments.end(); ++k) {
             labelText += k->second;
@@ -184,16 +195,28 @@ TransformFinder::timeout()
         labelText += tr("</small>");
 
         QString selectedText;
-        selectedText += tr("<b>%1</b><br>")
-            .arg(XmlExportable::encodeEntities(desc.name));
-        selectedText += tr("<small>%1</small>")
-            .arg(XmlExportable::encodeEntities(desc.longDescription));
+        selectedText += tr("<b>%1</b>%2<br>")
+            .arg(XmlExportable::encodeEntities
+                 (desc.name == "" ? desc.identifier : desc.name))
+            .arg(suffix);
+
+        if (desc.longDescription != "") {
+            selectedText += tr("<small>%1</small>")
+                .arg(XmlExportable::encodeEntities(desc.longDescription));
+        } else if (desc.description != "") {
+            selectedText += tr("<small>%1</small>")
+                .arg(XmlExportable::encodeEntities(desc.description));
+        }
 
         selectedText += tr("<br><small>");
-        selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Plugin type: %1<br>")
-            .arg(XmlExportable::encodeEntities(desc.type));
-        selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Category: %1<br>")
-            .arg(XmlExportable::encodeEntities(desc.category));
+        if (desc.type != "") {
+            selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Plugin type: %1<br>")
+                .arg(XmlExportable::encodeEntities(desc.type));
+        }
+        if (desc.category != "") {
+            selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Category: %1<br>")
+                .arg(XmlExportable::encodeEntities(desc.category));
+        }
         selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; System identifier: %1")
             .arg(XmlExportable::encodeEntities(desc.identifier));
         selectedText += tr("</small>");
