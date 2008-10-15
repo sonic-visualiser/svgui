@@ -501,8 +501,8 @@ RegionLayer::getYForValue(View *v, float val) const
 
     getScaleExtents(v, min, max, logarithmic);
 
-    std::cerr << "RegionLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
-    std::cerr << "h = " << h << ", margin = " << margin << std::endl;
+//    std::cerr << "RegionLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+//    std::cerr << "h = " << h << ", margin = " << margin << std::endl;
 
     if (logarithmic) {
         val = LogRange::map(val);
@@ -511,7 +511,7 @@ RegionLayer::getYForValue(View *v, float val) const
 
     h -= margin * 2;
     int y = margin + int(h - ((val - min) * h) / (max - min)) - 1;
-    std::cerr << "y = " << y << std::endl;
+//    std::cerr << "y = " << y << std::endl;
     return y;
 }
 
