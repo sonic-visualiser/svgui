@@ -22,6 +22,8 @@
 #include <QObject>
 #include <QColor>
 
+#include <map>
+
 class View;
 class QPainter;
 
@@ -80,6 +82,7 @@ public:
 
     enum VerticalScale {
         AutoAlignScale,
+        EqualSpaced,
         LinearScale,
         LogScale,
     };
@@ -111,6 +114,9 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+protected slots:
+    void recalcSpacing();
+
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
     int getYForValue(View *v, float value) const;
@@ -129,6 +135,9 @@ protected:
     VerticalScale m_verticalScale;
     int m_colourMap;
     PlotStyle m_plotStyle;
+
+    typedef std::map<float, int> SpacingMap;
+    SpacingMap m_spacingMap;
 
     void finish(RegionModel::EditCommand *command) {
         Command *c = command->finish();

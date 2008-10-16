@@ -43,7 +43,7 @@ RegionLayer::RegionLayer() :
     m_originalPoint(0, 0.0, 0, tr("New Point")),
     m_editingPoint(0, 0.0, 0, tr("New Point")),
     m_editingCommand(0),
-    m_verticalScale(AutoAlignScale),
+    m_verticalScale(EqualSpaced),
     m_colourMap(0),
     m_plotStyle(PlotLines)
 {
@@ -57,6 +57,9 @@ RegionLayer::setModel(RegionModel *model)
     m_model = model;
 
     connectSignals(m_model);
+
+    connect(m_model, SIGNAL(modelChanged()), this, SLOT(recalcSpacing()));
+    recalcSpacing();
 
 //    std::cerr << "RegionLayer::setModel(" << model << ")" << std::endl;
 
@@ -127,7 +130,7 @@ RegionLayer::getPropertyRangeAndValue(const PropertyName &name,
 	
 	if (min) *min = 0;
 	if (max) *max = 3;
-        if (deflt) *deflt = int(AutoAlignScale);
+        if (deflt) *deflt = int(EqualSpaced);
 	
 	val = int(m_verticalScale);
 
@@ -165,8 +168,9 @@ RegionLayer::getPropertyValueLabel(const PropertyName &name,
 	switch (value) {
 	default:
 	case 0: return tr("Auto-Align");
-	case 1: return tr("Linear");
-	case 2: return tr("Log");
+	case 1: return tr("Equal Spaced");
+	case 2: return tr("Linear");
+	case 3: return tr("Log");
 	}
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
@@ -228,6 +232,27 @@ RegionLayer::isLayerScrollable(const View *v) const
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
+void
+RegionLayer::recalcSpacing()
+{
+    m_spacingMap.clear();
+    if (!m_model) return;
+
+    std::set<float> values;
+
+    for (RegionModel::PointList::const_iterator i = m_model->getPoints().begin();
+         i != m_model->getPoints().end(); ++i) {
+        values.insert(i->value);
+    }
+
+    int n = 0;
+
+    for (std::set<float>::const_iterator i = values.begin();
+         i != values.end(); ++i) {
+        m_spacingMap[*i] = n++;
+    }
+}
+
 bool
 RegionLayer::getValueExtents(float &min, float &max,
                            bool &logarithmic, QString &unit) const
@@ -245,7 +270,9 @@ RegionLayer::getValueExtents(float &min, float &max,
 bool
 RegionLayer::getDisplayExtents(float &min, float &max) const
 {
-    if (!m_model || m_verticalScale == AutoAlignScale) return false;
+    if (!m_model ||
+        m_verticalScale == AutoAlignScale ||
+        m_verticalScale == EqualSpaced) return false;
 
     min = m_model->getValueMinimum();
     max = m_model->getValueMaximum();
@@ -476,6 +503,17 @@ RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 
         }
 
+    } else if (m_verticalScale == EqualSpaced) {
+
+        if (!m_spacingMap.empty()) {
+            SpacingMap::const_iterator i = m_spacingMap.begin();
+            min = i->second;
+            i = m_spacingMap.end();
+            --i;
+            max = i->second;
+            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: equal spaced; min = " << min << ", max = " << max << ", log = " << log << std::endl;
+        }
+
     } else {
 
         min = m_model->getValueMinimum();
@@ -496,23 +534,34 @@ RegionLayer::getYForValue(View *v, float val) const
     float min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->height();
-    int margin = 8;
-    if (h < margin * 8) margin = h / 8;
 
-    getScaleExtents(v, min, max, logarithmic);
+    if (m_verticalScale == EqualSpaced) {
+
+        if (m_spacingMap.empty()) return h/2;
+        
+        SpacingMap::const_iterator i = m_spacingMap.lower_bound(val);
+        //!!! what now, if i->first != v?
+
+        int vh = i->second;
+
+        SpacingMap::const_iterator j = m_spacingMap.end();
+        --j;
+
+        return h - (((h * vh) / (j->second + 1)) + (h / (2 * (j->second + 1))));
+
+    } else {
+
+        getScaleExtents(v, min, max, logarithmic);
 
 //    std::cerr << "RegionLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
 //    std::cerr << "h = " << h << ", margin = " << margin << std::endl;
 
-    if (logarithmic) {
-        val = LogRange::map(val);
-        std::cerr << "logarithmic true, val now = " << val << std::endl;
-    }
+        if (logarithmic) {
+            val = LogRange::map(val);
+        }
 
-    h -= margin * 2;
-    int y = margin + int(h - ((val - min) * h) / (max - min)) - 1;
-//    std::cerr << "y = " << y << std::endl;
-    return y;
+        return int(h - ((val - min) * h) / (max - min));
+    }
 }
 
 QColor
@@ -624,17 +673,15 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int y = getYForValue(v, p.value);
 	int w = v->getXForFrame(p.frame + p.duration) - x;
 	int h = 9;
-	
-	bool haveNext = false;
-	int nx = v->getXForFrame(v->getModelsEndFrame());
+	int ex = x + w;
 
         RegionModel::PointList::const_iterator j = i;
 	++j;
 
 	if (j != points.end()) {
 	    const RegionModel::Point &q(*j);
-	    nx = v->getXForFrame(q.frame);
-	    haveNext = true;
+	    int nx = v->getXForFrame(q.frame);
+            if (nx < ex) ex = nx;
         }
 
         if (m_plotStyle != PlotSegmentation) {
@@ -662,14 +709,14 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (m_plotStyle == PlotSegmentation) {
 
-	    if (nx <= x) continue;
+	    if (ex <= x) continue;
 
 	    if (illuminateFrame != p.frame &&
-		(nx < x + 5 || x >= v->width() - 1)) {
+		(ex < x + 5 || x >= v->width() - 1)) {
 		paint.setPen(Qt::NoPen);
 	    }
 
-	    paint.drawRect(x, -1, nx - x, v->height() + 1);
+	    paint.drawRect(x, -1, ex - x, v->height() + 1);
 
 	} else {
 
@@ -687,9 +734,9 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
 
 	if (p.label != "") {
-            if (!haveNext || nx > x + 6 + paint.fontMetrics().width(p.label)) {
+//            if (ex > x + 6 + paint.fontMetrics().width(p.label)) {
                 paint.drawText(x + 5, textY, p.label);
-            }
+//            }
 	}
     }
 
