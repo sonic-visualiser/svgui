@@ -812,11 +812,25 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
         }
         paint.restore();
     }
+    
+    float round = 1.f;
+    int dp = 0;
+    if (inc > 0) {
+        int prec = trunc(log10f(inc));
+        prec -= 1;
+        if (prec < 0) dp = -prec;
+        round = powf(10.f, prec);
+//        std::cerr << "inc = " << inc << ", round = " << round << std::endl;
+    }
 
+    int prevy = -1;
+                
     for (int i = 0; i < n; ++i) {
 
 	int y, ty;
         bool drawText = true;
+
+        float dispval = val;
 
         if (m_plotStyle == PlotSegmentation) {
             y = boxy + int(boxh - ((val - min) * boxh) / (max - min));
@@ -825,12 +839,19 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
             if (i == n-1) {
                 if (m_model->getScaleUnits() != "") drawText = false;
             }
-            y = getYForValue(v, val);
+            dispval = lrintf(val / round) * round;
+//            std::cerr << "val = " << val << ", dispval = " << dispval << std::endl;
+            y = getYForValue(v, dispval);
             ty = y - paint.fontMetrics().height() +
-                     paint.fontMetrics().ascent();
+                     paint.fontMetrics().ascent() + 2;
+
+            if (prevy >= 0 && (prevy - y) < paint.fontMetrics().height()) {
+                val += inc;
+                continue;
+            }
         }
 
-	sprintf(buffer, "%.3f", val);
+	sprintf(buffer, "%.*f", dp, dispval);
 	QString label = QString(buffer);
 
         if (m_plotStyle != PlotSegmentation) {
@@ -839,7 +860,12 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
             paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
         }
 
-        if (drawText) paint.drawText(tx, ty, label);
+        if (drawText) {
+            paint.drawText(tx + w - paint.fontMetrics().width(label) - 8,
+                           ty, label);
+        }
+
+        prevy = y;
 	val += inc;
     }
     
