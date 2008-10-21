@@ -861,8 +861,12 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
         }
 
         if (drawText) {
-            paint.drawText(tx + w - paint.fontMetrics().width(label) - 8,
-                           ty, label);
+            if (m_plotStyle != PlotSegmentation) {
+                paint.drawText(tx + w - paint.fontMetrics().width(label) - 8,
+                               ty, label);
+            } else {
+                paint.drawText(tx, ty, label);
+            }
         }
 
         prevy = y;
