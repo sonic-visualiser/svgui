@@ -1597,7 +1597,6 @@ View::paintEvent(QPaintEvent *e)
 		paint.drawPixmap(dx, 0, *m_cache);
 		paint.end();
 #endif
-
 		if (dx < 0) {
 		    cacheRect = QRect(width() + dx, 0, -dx, height());
 		} else {
