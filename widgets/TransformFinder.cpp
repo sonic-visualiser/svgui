@@ -208,17 +208,21 @@ TransformFinder::timeout()
                 .arg(XmlExportable::encodeEntities(desc.description));
         }
 
-        selectedText += tr("<br><small>");
+        selectedText += tr("<small>");
         if (desc.type != "") {
-            selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Plugin type: %1<br>")
+            selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Plugin type: %1")
                 .arg(XmlExportable::encodeEntities(desc.type));
         }
         if (desc.category != "") {
-            selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Category: %1<br>")
+            selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Category: %1")
                 .arg(XmlExportable::encodeEntities(desc.category));
         }
-        selectedText += tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; System identifier: %1")
+        selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; System identifier: %1")
             .arg(XmlExportable::encodeEntities(desc.identifier));
+        if (desc.infoUrl != "") {
+            selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; More information: <a href=\"%1\">%1</a>")
+                .arg(desc.infoUrl);
+        }
         selectedText += tr("</small>");
 
         if (i >= m_labels.size()) {
@@ -230,6 +234,10 @@ TransformFinder::timeout()
                     SLOT(accept()));
             QPalette palette = label->palette();
             label->setPalette(palette);
+            label->setTextInteractionFlags(Qt::LinksAccessibleByKeyboard |
+                                           Qt::LinksAccessibleByMouse |
+                                           Qt::TextSelectableByMouse);
+            label->setOpenExternalLinks(true);
             m_labels.push_back(label);
         }
 
