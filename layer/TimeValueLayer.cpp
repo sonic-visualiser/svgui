@@ -67,6 +67,9 @@ TimeValueLayer::setModel(SparseTimeValueModel *model)
 
     connectSignals(m_model);
 
+    m_scaleMinimum = 0;
+    m_scaleMaximum = 0;
+
 //    std::cerr << "TimeValueLayer::setModel(" << model << ")" << std::endl;
 
     emit modelReplaced();
@@ -292,7 +295,7 @@ TimeValueLayer::setDisplayExtents(float min, float max)
     m_scaleMinimum = min;
     m_scaleMaximum = max;
 
-    std::cerr << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+//    std::cerr << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
     
     emit layerParametersChanged();
     return true;

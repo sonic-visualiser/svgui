@@ -2137,8 +2137,8 @@ Pane::verticalPannerMoved(float x0, float y0, float w, float h)
     float y1 = y0 + h;
     float newmax = vmin + ((1.0 - y0) * (vmax - vmin));
     float newmin = vmin + ((1.0 - y1) * (vmax - vmin));
-    std::cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
-              << "," << h << ") -> (" << newmin << "," << newmax << ")" << std::endl;
+//    std::cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
+//              << "," << h << ") -> (" << newmin << "," << newmax << ")" << std::endl;
     setTopLayerDisplayExtents(newmin, newmax);
 }
 

@@ -156,15 +156,15 @@ Panner::paintEvent(QPaintEvent *)
 
     paint.setPen(palette().dark().color());
     paint.setBrush(bg);
-    paint.drawRect(0, 0, width(), height());
+    paint.drawRect(0, 0, width()-1, height()-1);
 
     QColor hl(m_thumbColour);
     hl.setAlpha(m_thumbAlpha);
 
     paint.setBrush(hl);
 
-    int rw = lrintf(width() * m_rectWidth);
-    int rh = lrintf(height() * m_rectHeight);
+    int rw = lrintf((width() - 1) * m_rectWidth);
+    int rh = lrintf((height() - 1) * m_rectHeight);
     if (rw < 2) rw = 2;
     if (rh < 2) rh = 2;
 
