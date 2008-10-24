@@ -20,6 +20,7 @@
 #include "base/Profiler.h"
 #include "base/Pitch.h"
 #include "base/LogRange.h"
+#include "base/RangeMapper.h"
 #include "ColourDatabase.h"
 #include "view/View.h"
 
@@ -45,7 +46,9 @@ NoteLayer::NoteLayer() :
     m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingCommand(0),
-    m_verticalScale(AutoAlignScale)
+    m_verticalScale(AutoAlignScale),
+    m_scaleMinimum(0),
+    m_scaleMaximum(0)
 {
     
 }
@@ -59,6 +62,9 @@ NoteLayer::setModel(NoteModel *model)
     connectSignals(m_model);
 
 //    std::cerr << "NoteLayer::setModel(" << model << ")" << std::endl;
+
+    m_scaleMinimum = 0;
+    m_scaleMaximum = 0;
 
     emit modelReplaced();
 }
@@ -208,7 +214,7 @@ NoteLayer::getValueExtents(float &min, float &max,
 bool
 NoteLayer::getDisplayExtents(float &min, float &max) const
 {
-    if (!m_model || m_verticalScale == AutoAlignScale) return false;
+    if (!m_model || shouldAutoAlign()) return false;
 
     if (m_verticalScale == MIDIRangeScale) {
         min = Pitch::getFrequencyForPitch(0);
@@ -216,8 +222,13 @@ NoteLayer::getDisplayExtents(float &min, float &max) const
         return true;
     }
 
-    min = m_model->getValueMinimum();
-    max = m_model->getValueMaximum();
+    if (m_scaleMinimum == m_scaleMaximum) {
+        m_scaleMinimum = m_model->getValueMinimum();
+        m_scaleMaximum = m_model->getValueMaximum();
+    }
+
+    min = m_scaleMinimum;
+    max = m_scaleMaximum;
 
     if (shouldConvertMIDIToHz()) {
         min = Pitch::getFrequencyForPitch(lrintf(min));
@@ -225,6 +236,131 @@ NoteLayer::getDisplayExtents(float &min, float &max) const
     }
 
     return true;
+}
+
+bool
+NoteLayer::setDisplayExtents(float min, float max)
+{
+    if (!m_model) return false;
+
+    if (min == max) {
+        if (min == 0.f) {
+            max = 1.f;
+        } else {
+            max = min * 1.0001;
+        }
+    }
+
+    m_scaleMinimum = min;
+    m_scaleMaximum = max;
+
+//    std::cerr << "NoteLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+    
+    emit layerParametersChanged();
+    return true;
+}
+
+int
+NoteLayer::getVerticalZoomSteps(int &defaultStep) const
+{
+    if (shouldAutoAlign()) return 0;
+    if (!m_model) return 0;
+
+    defaultStep = 0;
+    return 100;
+}
+
+int
+NoteLayer::getCurrentVerticalZoomStep() const
+{
+    if (shouldAutoAlign()) return 0;
+    if (!m_model) return 0;
+
+    RangeMapper *mapper = getNewVerticalZoomRangeMapper();
+    if (!mapper) return 0;
+
+    float dmin, dmax;
+    getDisplayExtents(dmin, dmax);
+
+    int nr = mapper->getPositionForValue(dmax - dmin);
+
+    delete mapper;
+
+    return 100 - nr;
+}
+
+//!!! lots of duplication with TimeValueLayer
+
+void
+NoteLayer::setVerticalZoomStep(int step)
+{
+    if (shouldAutoAlign()) return;
+    if (!m_model) return;
+
+    RangeMapper *mapper = getNewVerticalZoomRangeMapper();
+    if (!mapper) return;
+    
+    float min, max;
+    bool logarithmic;
+    QString unit;
+    getValueExtents(min, max, logarithmic, unit);
+    
+    float dmin, dmax;
+    getDisplayExtents(dmin, dmax);
+
+    float newdist = mapper->getValueForPosition(100 - step);
+
+    float newmin, newmax;
+
+    if (logarithmic) {
+
+        // see SpectrogramLayer::setVerticalZoomStep
+
+        newmax = (newdist + sqrtf(newdist*newdist + 4*dmin*dmax)) / 2;
+        newmin = newmax - newdist;
+
+//        std::cerr << "newmin = " << newmin << ", newmax = " << newmax << std::endl;
+
+    } else {
+        float dmid = (dmax + dmin) / 2;
+        newmin = dmid - newdist / 2;
+        newmax = dmid + newdist / 2;
+    }
+
+    if (newmin < min) {
+        newmax += (min - newmin);
+        newmin = min;
+    }
+    if (newmax > max) {
+        newmax = max;
+    }
+    
+    std::cerr << "NoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+
+    setDisplayExtents(newmin, newmax);
+}
+
+RangeMapper *
+NoteLayer::getNewVerticalZoomRangeMapper() const
+{
+    if (!m_model) return 0;
+    
+    RangeMapper *mapper;
+
+    float min, max;
+    bool logarithmic;
+    QString unit;
+    getValueExtents(min, max, logarithmic, unit);
+
+    if (min == max) return 0;
+    
+    if (logarithmic) {
+        mapper = new LogRangeMapper(0, 100, min, max, unit);
+    } else {
+        mapper = new LinearRangeMapper(0, 100, min, max, unit);
+    }
+
+    return mapper;
 }
 
 NoteModel::PointList
@@ -437,7 +573,7 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
     if (shouldConvertMIDIToHz()) queryUnits = "Hz";
     else queryUnits = m_model->getScaleUnits();
 
-    if (m_verticalScale == AutoAlignScale) {
+    if (shouldAutoAlign()) {
 
         if (!v->getValueExtents(queryUnits, min, max, log)) {
 
@@ -461,8 +597,7 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 
     } else {
 
-        min = m_model->getValueMinimum();
-        max = m_model->getValueMaximum();
+        getDisplayExtents(min, max);
 
         if (m_verticalScale == MIDIRangeScale) {
             min = Pitch::getFrequencyForPitch(0);
@@ -528,6 +663,13 @@ NoteLayer::getValueForY(View *v, int y) const
     }
 
     return val;
+}
+
+bool
+NoteLayer::shouldAutoAlign() const
+{
+    if (!m_model) return false;
+    return (m_verticalScale == AutoAlignScale);
 }
 
 void

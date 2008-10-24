@@ -95,6 +95,12 @@ public:
                                  bool &log, QString &unit) const;
 
     virtual bool getDisplayExtents(float &min, float &max) const;
+    virtual bool setDisplayExtents(float min, float max);
+
+    virtual int getVerticalZoomSteps(int &defaultStep) const;
+    virtual int getCurrentVerticalZoomStep() const;
+    virtual void setVerticalZoomStep(int);
+    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
@@ -117,6 +123,11 @@ protected:
     NoteModel::Point m_editingPoint;
     NoteModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
+
+    mutable float m_scaleMinimum;
+    mutable float m_scaleMaximum;
+
+    bool shouldAutoAlign() const;
 
     void finish(NoteModel::EditCommand *command) {
         Command *c = command->finish();
