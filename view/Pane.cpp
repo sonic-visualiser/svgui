@@ -2168,6 +2168,13 @@ Pane::editVerticalPannerExtents()
 }
 
 void
+Pane::layerParametersChanged()
+{
+    View::layerParametersChanged();
+    updateHeadsUpDisplay();
+}
+
+void
 Pane::dragEnterEvent(QDragEnterEvent *e)
 {
     QStringList formats(e->mimeData()->formats());

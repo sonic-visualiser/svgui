@@ -163,10 +163,14 @@ Panner::paintEvent(QPaintEvent *)
 
     paint.setBrush(hl);
 
+    int rw = lrintf(width() * m_rectWidth);
+    int rh = lrintf(height() * m_rectHeight);
+    if (rw < 2) rw = 2;
+    if (rh < 2) rh = 2;
+
     paint.drawRect(lrintf(width() * m_rectX),
                    lrintf(height() * m_rectY),
-                   lrintf(width() * m_rectWidth),
-                   lrintf(height() * m_rectHeight));
+                   rw, rh);
 }
 
 void

@@ -19,6 +19,7 @@
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/LogRange.h"
+#include "base/RangeMapper.h"
 #include "ColourDatabase.h"
 #include "view/View.h"
 
@@ -51,7 +52,9 @@ TimeValueLayer::TimeValueLayer() :
     m_editingCommand(0),
     m_colourMap(0),
     m_plotStyle(PlotConnectedPoints),
-    m_verticalScale(AutoAlignScale)
+    m_verticalScale(AutoAlignScale),
+    m_scaleMinimum(0),
+    m_scaleMaximum(0)
 {
     
 }
@@ -260,9 +263,147 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
 {
     if (!m_model || shouldAutoAlign()) return false;
 
-    min = m_model->getValueMinimum();
-    max = m_model->getValueMaximum();
+    if (m_scaleMinimum == m_scaleMaximum) {
+        m_scaleMinimum = m_model->getValueMinimum();
+        m_scaleMaximum = m_model->getValueMaximum();
+    }
+
+    min = m_scaleMinimum;
+    max = m_scaleMaximum;
+
+//    std::cerr << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << std::endl;
+
     return true;
+}
+
+bool
+TimeValueLayer::setDisplayExtents(float min, float max)
+{
+    if (!m_model) return false;
+
+    if (min == max) {
+        if (min == 0.f) {
+            max = 1.f;
+        } else {
+            max = min * 1.0001;
+        }
+    }
+
+    m_scaleMinimum = min;
+    m_scaleMaximum = max;
+
+    std::cerr << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+    
+    emit layerParametersChanged();
+    return true;
+}
+
+int
+TimeValueLayer::getVerticalZoomSteps(int &defaultStep) const
+{
+    if (shouldAutoAlign()) return 0;
+    if (!m_model) return 0;
+
+    defaultStep = 100;
+    return 100;
+}
+
+int
+TimeValueLayer::getCurrentVerticalZoomStep() const
+{
+    if (shouldAutoAlign()) return 0;
+    if (!m_model) return 0;
+
+    RangeMapper *mapper = getNewVerticalZoomRangeMapper();
+    if (!mapper) return 0;
+
+    float dmin, dmax;
+    getDisplayExtents(dmin, dmax);
+
+    int nr = mapper->getPositionForValue(dmax - dmin);
+/*
+    int n0 = mapper->getPositionForValue(dmax);
+    int n1 = mapper->getPositionForValue(dmin);
+    int nr = n1 - n0;
+    if (nr < 0) nr = -nr;
+
+    std::cerr << "TimeValueLayer::getCurrentVerticalZoomStep: dmin = " << dmin << ", dmax = " << dmax << ", n0 = " << n0 << ", n1 = " << n1 << ", nr = " << nr << std::endl;
+*/
+    delete mapper;
+
+    return 100 - nr;
+}
+
+void
+TimeValueLayer::setVerticalZoomStep(int step)
+{
+    if (shouldAutoAlign()) return;
+    if (!m_model) return;
+
+    RangeMapper *mapper = getNewVerticalZoomRangeMapper();
+    if (!mapper) return;
+    
+    float min, max;
+    bool logarithmic;
+    QString unit;
+    getValueExtents(min, max, logarithmic, unit);
+    
+    float dmin, dmax;
+    getDisplayExtents(dmin, dmax);
+
+    float newdist = mapper->getValueForPosition(100 - step);
+
+    float newmin, newmax;
+
+    if (logarithmic) {
+
+        // see SpectrogramLayer::setVerticalZoomStep
+
+        newmax = (newdist + sqrtf(newdist*newdist + 4*dmin*dmax)) / 2;
+        newmin = newmax - newdist;
+
+//        std::cerr << "newmin = " << newmin << ", newmax = " << newmax << std::endl;
+
+    } else {
+        float dmid = (dmax + dmin) / 2;
+        newmin = dmid - newdist / 2;
+        newmax = dmid + newdist / 2;
+    }
+
+    if (newmin < min) {
+        newmax += (min - newmin);
+        newmin = min;
+    }
+    if (newmax > max) {
+        newmax = max;
+    }
+    
+    std::cerr << "TimeValueLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+
+    setDisplayExtents(newmin, newmax);
+}
+
+RangeMapper *
+TimeValueLayer::getNewVerticalZoomRangeMapper() const
+{
+    if (!m_model) return 0;
+    
+    RangeMapper *mapper;
+
+    float min, max;
+    bool logarithmic;
+    QString unit;
+    getValueExtents(min, max, logarithmic, unit);
+
+    if (min == max) return 0;
+    
+    if (logarithmic) {
+        mapper = new LogRangeMapper(0, 100, min, max, unit);
+    } else {
+        mapper = new LinearRangeMapper(0, 100, min, max, unit);
+    }
+
+    return mapper;
 }
 
 SparseTimeValueModel::PointList
@@ -446,8 +587,7 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
 
     } else {
 
-        min = m_model->getValueMinimum();
-        max = m_model->getValueMaximum();
+        getDisplayExtents(min, max);
 
         if (m_verticalScale == LogScale) {
             LogRange::mapRange(min, max);
@@ -489,7 +629,7 @@ TimeValueLayer::getValueForY(View *v, int y) const
     float val = min + (float(h - y) * float(max - min)) / h;
 
     if (logarithmic) {
-        val = powf(10.f, val);
+        val = LogRange::map(val);
     }
 
     return val;
@@ -514,7 +654,6 @@ TimeValueLayer::getColourForValue(View *v, float val) const
     if (max == min) max = min + 1;
 
     if (log) {
-        LogRange::mapRange(min, max);
         val = LogRange::map(val);
     }
 
@@ -781,8 +920,18 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
 
     int n = 10;
 
-    float max = m_model->getValueMaximum();
-    float min = m_model->getValueMinimum();
+    float min, max;
+    bool logarithmic;
+    getScaleExtents(v, min, max, logarithmic);
+
+    if (m_plotStyle == PlotSegmentation) {
+        QString unit;
+        getValueExtents(min, max, logarithmic, unit);
+        if (logarithmic) {
+            LogRange::mapRange(min, max);
+        }
+    }
+
     float val = min;
     float inc = (max - val) / n;
 
@@ -807,7 +956,11 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
         paint.save();
         for (int y = 0; y < boxh; ++y) {
             float val = ((boxh - y) * (max - min)) / boxh + min;
-            paint.setPen(getColourForValue(v, val));
+            if (logarithmic) {
+                paint.setPen(getColourForValue(v, LogRange::unmap(val)));
+            } else {
+                paint.setPen(getColourForValue(v, val));
+            }
             paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
         }
         paint.restore();
@@ -836,12 +989,17 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
             y = boxy + int(boxh - ((val - min) * boxh) / (max - min));
             ty = y;
         } else {
-            if (i == n-1) {
+            if (i == n-1 &&
+                v->height() < paint.fontMetrics().height() * (n*2)) {
                 if (m_model->getScaleUnits() != "") drawText = false;
             }
             dispval = lrintf(val / round) * round;
 //            std::cerr << "val = " << val << ", dispval = " << dispval << std::endl;
-            y = getYForValue(v, dispval);
+            if (logarithmic) {
+                y = getYForValue(v, LogRange::unmap(dispval));
+            } else {
+                y = getYForValue(v, dispval);
+            }                
             ty = y - paint.fontMetrics().height() +
                      paint.fontMetrics().ascent() + 2;
 
@@ -851,7 +1009,11 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
             }
         }
 
-	sprintf(buffer, "%.*f", dp, dispval);
+        if (logarithmic) {
+            sprintf(buffer, "%.*g", dp < 2 ? 2 : dp, LogRange::unmap(dispval));
+        } else {
+            sprintf(buffer, "%.*f", dp, dispval);
+        }            
 	QString label = QString(buffer);
 
         if (m_plotStyle != PlotSegmentation) {
