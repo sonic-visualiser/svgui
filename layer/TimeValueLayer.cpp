@@ -307,7 +307,7 @@ TimeValueLayer::getVerticalZoomSteps(int &defaultStep) const
     if (shouldAutoAlign()) return 0;
     if (!m_model) return 0;
 
-    defaultStep = 100;
+    defaultStep = 0;
     return 100;
 }
 
