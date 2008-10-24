@@ -117,6 +117,12 @@ public:
                                  bool &logarithmic, QString &unit) const;
 
     virtual bool getDisplayExtents(float &min, float &max) const;
+    virtual bool setDisplayExtents(float min, float max);
+
+    virtual int getVerticalZoomSteps(int &defaultStep) const;
+    virtual int getCurrentVerticalZoomStep() const;
+    virtual void setVerticalZoomStep(int);
+    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
@@ -142,6 +148,9 @@ protected:
     int m_colourMap;
     PlotStyle m_plotStyle;
     VerticalScale m_verticalScale;
+
+    mutable float m_scaleMinimum;
+    mutable float m_scaleMaximum;
 
     void finish(SparseTimeValueModel::EditCommand *command) {
         Command *c = command->finish();

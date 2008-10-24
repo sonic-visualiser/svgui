@@ -1,4 +1,3 @@
-
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 
 /*
@@ -80,6 +79,8 @@ public slots:
     virtual void verticalZoomChanged();
     virtual void verticalPannerMoved(float x, float y, float w, float h);
     virtual void editVerticalPannerExtents();
+
+    virtual void layerParametersChanged();
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
 
