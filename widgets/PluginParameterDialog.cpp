@@ -19,6 +19,7 @@
 #include "WindowTypeSelector.h"
 
 #include "TextAbbrev.h"
+#include "IconLoader.h"
 
 #include "vamp-sdk/Plugin.h"
 #include "vamp-sdk/PluginHostAdapter.h"
@@ -36,6 +37,8 @@
 #include <QCheckBox>
 #include <QSettings>
 #include <QDialogButtonBox>
+#include <QDesktopServices>
+#include <QUrl>
 
 PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 					     QWidget *parent) :
@@ -100,18 +103,25 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
     subgrid->addWidget(label, row, 0);
     subgrid->addWidget(nameLabel, row, 1);
+
+    m_moreInfo = new QPushButton;
+    m_moreInfo->setIcon(IconLoader().load("info"));
+    m_moreInfo->setFixedSize(QSize(16, 16));
+    connect(m_moreInfo, SIGNAL(clicked()), this, SLOT(moreInfo()));
+    subgrid->addWidget(m_moreInfo, row, 2, Qt::AlignTop | Qt::AlignRight);
+    m_moreInfo->hide();
+
     row++;
 
     if (descriptionLabel) {
 //        label = new QLabel(tr("Description:"));
 //        label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 //        subgrid->addWidget(label, row, 0);
-        subgrid->addWidget(descriptionLabel, row, 1);
+        subgrid->addWidget(descriptionLabel, row, 1, 1, 2);
         row++;
     }
 
-    Vamp::PluginHostAdapter *fePlugin =
-        dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
+    Vamp::Plugin *fePlugin = dynamic_cast<Vamp::Plugin *>(m_plugin);
 
     if (fePlugin) {
         label = new QLabel(tr("Version:"));
@@ -119,6 +129,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         subgrid->addWidget(label, row, 0);
         subgrid->addWidget(versionLabel, row, 1);
         row++;
+    } else {
+        std::cerr << "PluginParameterDialog: Note: not a feature extraction plugin (type is " << typeid(*m_plugin).name() << ")" << std::endl;
     }
 
 //    label = new QLabel(tr("Type:"));
@@ -272,6 +284,17 @@ PluginParameterDialog::setOutputLabel(QString text,
         } else {
             m_outputDescription->hide();
         }
+    }
+}
+
+void
+PluginParameterDialog::setMoreInfoUrl(QString moreInfoUrl)
+{
+    m_moreInfoUrl = moreInfoUrl;
+    if (m_moreInfoUrl != "") {
+        m_moreInfo->show();
+    } else {
+        m_moreInfo->hide();
     }
 }
 
@@ -546,6 +569,14 @@ void
 PluginParameterDialog::windowTypeChanged(WindowType type)
 {
     m_windowType = type;
+}
+
+void
+PluginParameterDialog::moreInfo()
+{
+    if (m_moreInfoUrl != "") {
+        QDesktopServices::openUrl(QUrl(m_moreInfoUrl));
+    }
 }
 
 void
