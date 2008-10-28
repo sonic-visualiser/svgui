@@ -26,6 +26,7 @@ SelectableLabel::SelectableLabel(QWidget *p) :
 //    setLineWidth(2);
 //    setFixedWidth(480);
     setupStyle();
+    setOpenExternalLinks(true);
 }
 
 SelectableLabel::~SelectableLabel()
@@ -59,6 +60,10 @@ SelectableLabel::setupStyle()
 {
     QPalette palette = QApplication::palette();
 
+    setTextInteractionFlags(Qt::LinksAccessibleByKeyboard |
+                            Qt::LinksAccessibleByMouse |
+                            Qt::TextSelectableByMouse);
+
     if (m_selected) {
         setWordWrap(true);
         setStyleSheet
@@ -77,8 +82,6 @@ SelectableLabel::setupStyle()
              .arg(palette.button().color().name())
              .arg(palette.light().color().name())
              .arg(palette.text().color().name()));
-
-//        setStyleSheet("QLabel:hover { background: #e0e0e0; color: black; } QLabel:!hover { background: white; color: black } QLabel { padding: 7px }");
     }
 }    
 
@@ -105,15 +108,24 @@ SelectableLabel::toggle()
 void
 SelectableLabel::mousePressEvent(QMouseEvent *e)
 {
+    m_swallowRelease = !m_selected;
     setSelected(true);
+    QLabel::mousePressEvent(e);
     emit selectionChanged();
 }
 
 void
 SelectableLabel::mouseDoubleClickEvent(QMouseEvent *e)
 {
-    std::cerr << "mouseDoubleClickEvent" << std::endl;
+    QLabel::mouseDoubleClickEvent(e);
     emit doubleClicked();
+}
+
+void
+SelectableLabel::mouseReleaseEvent(QMouseEvent *e)
+{
+    if (!m_swallowRelease) QLabel::mouseReleaseEvent(e);
+    m_swallowRelease = false;
 }
 
 void
