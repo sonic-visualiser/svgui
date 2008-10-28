@@ -234,10 +234,6 @@ TransformFinder::timeout()
                     SLOT(accept()));
             QPalette palette = label->palette();
             label->setPalette(palette);
-            label->setTextInteractionFlags(Qt::LinksAccessibleByKeyboard |
-                                           Qt::LinksAccessibleByMouse |
-                                           Qt::TextSelectableByMouse);
-            label->setOpenExternalLinks(true);
             m_labels.push_back(label);
         }
 

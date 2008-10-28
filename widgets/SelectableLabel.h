@@ -41,6 +41,7 @@ public slots:
 
 protected:
     virtual void mousePressEvent(QMouseEvent *e);
+    virtual void mouseReleaseEvent(QMouseEvent *e);
     virtual void mouseDoubleClickEvent(QMouseEvent *e);
     virtual void enterEvent(QEvent *);
     virtual void leaveEvent(QEvent *);
@@ -48,6 +49,7 @@ protected:
     QString m_selectedText;
     QString m_unselectedText;
     bool m_selected;
+    bool m_swallowRelease;
 };
 
 #endif

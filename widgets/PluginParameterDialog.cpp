@@ -79,8 +79,8 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QLabel *makerLabel = new QLabel(plugin->getMaker().c_str());
     makerLabel->setWordWrap(true);
 
-    QLabel *versionLabel = new QLabel(QString("%1")
-                                      .arg(plugin->getPluginVersion()));
+    int version = plugin->getPluginVersion();
+    QLabel *versionLabel = new QLabel(QString("%1").arg(version));
     versionLabel->setWordWrap(true);
 
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
@@ -121,16 +121,12 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         row++;
     }
 
-    Vamp::Plugin *fePlugin = dynamic_cast<Vamp::Plugin *>(m_plugin);
-
-    if (fePlugin) {
+    if (version >= 0) {
         label = new QLabel(tr("Version:"));
         label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
         subgrid->addWidget(label, row, 0);
         subgrid->addWidget(versionLabel, row, 1);
         row++;
-    } else {
-        std::cerr << "PluginParameterDialog: Note: not a feature extraction plugin (type is " << typeid(*m_plugin).name() << ")" << std::endl;
     }
 
 //    label = new QLabel(tr("Type:"));
