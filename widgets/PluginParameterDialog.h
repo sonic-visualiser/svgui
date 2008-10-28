@@ -51,6 +51,8 @@ public:
 
     void setOutputLabel(QString output, QString description);
 
+    void setMoreInfoUrl(QString url);
+
     void setShowProcessingOptions(bool showWindowSize,
                                   bool showFrequencyDomainOptions);
 
@@ -81,6 +83,7 @@ protected slots:
     void incrementComboChanged(const QString &);
     void windowTypeChanged(WindowType type);
     void advancedToggled();
+    void moreInfo();
     void setAdvancedVisible(bool);
     void inputModelComboChanged(int);
     void selectionOnlyChanged(int);
@@ -100,6 +103,9 @@ protected:
     QLabel *m_outputValue;
     QLabel *m_outputDescription;
     QLabel *m_outputSpacer;
+
+    QPushButton *m_moreInfo;
+    QString m_moreInfoUrl;
 
     QGroupBox *m_channelBox;
     bool m_haveChannelBoxData;
