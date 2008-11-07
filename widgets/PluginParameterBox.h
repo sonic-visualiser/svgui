@@ -16,7 +16,7 @@
 #ifndef _PLUGIN_PARAMETER_BOX_H_
 #define _PLUGIN_PARAMETER_BOX_H_
 
-#include "vamp-sdk/PluginBase.h"
+#include <vamp-hostsdk/PluginBase.h>
 
 #include <QFrame>
 #include <map>
