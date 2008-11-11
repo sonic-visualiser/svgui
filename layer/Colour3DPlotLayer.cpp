@@ -572,6 +572,11 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 void
 Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
+/*!!!
+    if (m_model) {
+        std::cerr << "Colour3DPlotLayer::paint: model says shouldUseLogValueScale = " << m_model->shouldUseLogValueScale() << std::endl;
+    }
+*/
 //    Profiler profiler("Colour3DPlotLayer::paint");
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     std::cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << std::endl;
