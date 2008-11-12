@@ -70,8 +70,6 @@ public:
 
     virtual int getCompletion(View *) const { return m_model->getCompletion(); }
 
-    virtual bool getValueExtents(float &, float &, bool &, QString &) const { return false; }
-
     virtual PropertyList getProperties() const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
     virtual QString getPropertyLabel(const PropertyName &) const;
@@ -101,6 +99,17 @@ public:
     void setInvertVertical(bool i);
     bool getInvertVertical() const;
 
+    virtual bool getValueExtents(float &min, float &max,
+                                 bool &logarithmic, QString &unit) const;
+
+    virtual bool getDisplayExtents(float &min, float &max) const;
+    virtual bool setDisplayExtents(float min, float max);
+
+    virtual int getVerticalZoomSteps(int &defaultStep) const;
+    virtual int getCurrentVerticalZoomStep() const;
+    virtual void setVerticalZoomStep(int);
+    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
+
     virtual const Model *getSliceableModel() const { return m_model; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
@@ -122,6 +131,9 @@ protected:
     bool        m_normalizeVisibleArea;
     bool        m_invertVertical;
 
+    int         m_miny;
+    int         m_maxy;
+    
     void getColumn(size_t col, DenseThreeDimensionalModel::Column &) const;
 
     virtual int getColourScaleWidth(QPainter &) const;
