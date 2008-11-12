@@ -1616,10 +1616,12 @@ TimeValueLayer::toXml(QTextStream &stream,
 {
     SingleColourLayer::toXml(stream, indent,
                              extraAttributes +
-                             QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\"")
+                             QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\" scaleMinimum=\"%4\" scaleMaximum=\"%5\" ")
                              .arg(m_colourMap)
                              .arg(m_plotStyle)
-                             .arg(m_verticalScale));
+                             .arg(m_verticalScale)
+                             .arg(m_scaleMinimum)
+                             .arg(m_scaleMaximum));
 }
 
 void
@@ -1627,7 +1629,7 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
-    bool ok;
+    bool ok, alsoOk;
 
     int cmap = attributes.value("colourMap").toInt(&ok);
     if (ok) setFillColourMap(cmap);
@@ -1639,5 +1641,9 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
     VerticalScale scale = (VerticalScale)
 	attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
+
+    float min = attributes.value("scaleMinimum").toFloat(&ok);
+    float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
+    if (ok && alsoOk) setDisplayExtents(min, max);
 }
 
