@@ -1170,8 +1170,10 @@ NoteLayer::toXml(QTextStream &stream,
                  QString indent, QString extraAttributes) const
 {
     SingleColourLayer::toXml(stream, indent, extraAttributes +
-                             QString(" verticalScale=\"%1\"")
-                             .arg(m_verticalScale));
+                             QString(" verticalScale=\"%1\" scaleMinimum=\"%2\" scaleMaximum=\"%3\" ")
+                             .arg(m_verticalScale)
+                             .arg(m_scaleMinimum)
+                             .arg(m_scaleMaximum));
 }
 
 void
@@ -1179,10 +1181,14 @@ NoteLayer::setProperties(const QXmlAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
-    bool ok;
+    bool ok, alsoOk;
     VerticalScale scale = (VerticalScale)
 	attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
+
+    float min = attributes.value("scaleMinimum").toFloat(&ok);
+    float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
+    if (ok && alsoOk) setDisplayExtents(min, max);
 }
 
 

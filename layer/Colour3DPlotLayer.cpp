@@ -362,7 +362,7 @@ Colour3DPlotLayer::setVerticalZoomStep(int step)
 {
     if (!m_model) return;
 
-    std::cerr << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"): before: miny = " << m_miny << ", maxy = " << m_maxy << std::endl;
+//    std::cerr << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"): before: miny = " << m_miny << ", maxy = " << m_maxy << std::endl;
 
     int dist = m_model->getHeight() - step;
     if (dist < 1) dist = 1;
@@ -372,7 +372,7 @@ Colour3DPlotLayer::setVerticalZoomStep(int step)
     m_maxy = m_miny + dist;
     if (m_maxy > m_model->getHeight()) m_maxy = m_model->getHeight();
 
-    std::cerr << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"):  after: miny = " << m_miny << ", maxy = " << m_maxy << std::endl;
+//    std::cerr << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"):  after: miny = " << m_miny << ", maxy = " << m_maxy << std::endl;
     
     emit layerParametersChanged();
 }
@@ -466,7 +466,6 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     if (!m_model) return;
 
     int h = rect.height(), w = rect.width();
-    float binHeight = float(v->height()) / m_model->getHeight();
 
     int cw = getColourScaleWidth(paint);
     
@@ -486,18 +485,31 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
     paint.setPen(v->getForeground());
 
+    int sh = m_model->getHeight();
+
+    int symin = m_miny;
+    int symax = m_maxy;
+    if (symax <= symin) {
+        symin = 0;
+        symax = sh;
+    }
+    if (symin < 0) symin = 0;
+    if (symax > sh) symax = sh;
+
     int count = v->height() / paint.fontMetrics().height();
-    int step = m_model->getHeight() / count;
+    int step = (symax - symin) / count;
     if (step == 0) step = 1;
 
-    for (size_t i = 0; i < m_model->getHeight(); ++i) {
+    float binHeight = float(v->height()) / (symax - symin);
+
+    for (size_t i = symin; i < symax; ++i) {
 
         size_t idx = i;
         if (m_invertVertical) idx = m_model->getHeight() - idx - 1;
 
         if ((idx % step) != 0) continue;
 
-	int y0 = int(v->height() - (i * binHeight) - 1);
+	int y0 = int(v->height() - ((i - symin) * binHeight) - 1);
 	
 	QString text = m_model->getBinName(idx);
 	if (text == "") text = QString("[%1]").arg(idx + 1);
@@ -957,11 +969,15 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
     QString s = QString("scale=\"%1\" "
                         "colourScheme=\"%2\" "
                         "normalizeColumns=\"%3\" "
-                        "normalizeVisibleArea=\"%4\"")
+                        "normalizeVisibleArea=\"%4\" "
+                        "minY=\"%5\" "
+                        "maxY=\"%6\" ")
 	.arg((int)m_colourScale)
         .arg(m_colourMap)
         .arg(m_normalizeColumns ? "true" : "false")
-        .arg(m_normalizeVisibleArea ? "true" : "false");
+        .arg(m_normalizeVisibleArea ? "true" : "false")
+        .arg(m_miny)
+        .arg(m_maxy);
 
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -969,7 +985,7 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
 void
 Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
 {
-    bool ok = false;
+    bool ok = false, alsoOk = false;
 
     ColourScale scale = (ColourScale)attributes.value("scale").toInt(&ok);
     if (ok) setColourScale(scale);
@@ -984,5 +1000,9 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
     bool normalizeVisibleArea =
         (attributes.value("normalizeVisibleArea").trimmed() == "true");
     setNormalizeVisibleArea(normalizeVisibleArea);
+
+    float min = attributes.value("minY").toFloat(&ok);
+    float max = attributes.value("maxY").toFloat(&alsoOk);
+    if (ok && alsoOk) setDisplayExtents(min, max);
 }
 
