@@ -18,6 +18,7 @@
 #include "view/View.h"
 #include "base/Profiler.h"
 #include "base/LogRange.h"
+#include "base/RangeMapper.h"
 #include "ColourMapper.h"
 
 #include <QPainter>
@@ -40,7 +41,9 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_colourMap(0),
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
-    m_invertVertical(false)
+    m_invertVertical(false),
+    m_miny(0),
+    m_maxy(0)
 {
     
 }
@@ -288,6 +291,99 @@ Colour3DPlotLayer::isLayerScrollable(const View *v) const
     if (m_normalizeVisibleArea) return false;
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
+}
+
+bool
+Colour3DPlotLayer::getValueExtents(float &min, float &max,
+                                   bool &logarithmic, QString &unit) const
+{
+    if (!m_model) return false;
+
+    min = 0;
+    max = m_model->getHeight();
+
+    logarithmic = false;
+    unit = "";
+
+    return true;
+}
+
+bool
+Colour3DPlotLayer::getDisplayExtents(float &min, float &max) const
+{
+    if (!m_model) return false;
+
+    min = m_miny;
+    max = m_maxy;
+    if (max <= min) {
+        min = 0;
+        max = m_model->getHeight();
+    }
+    if (min < 0) min = 0;
+    if (max > m_model->getHeight()) max = m_model->getHeight();
+
+    return true;
+}
+
+bool
+Colour3DPlotLayer::setDisplayExtents(float min, float max)
+{
+    if (!m_model) return false;
+
+    m_miny = lrintf(min);
+    m_maxy = lrintf(max);
+    
+    emit layerParametersChanged();
+    return true;
+}
+
+int
+Colour3DPlotLayer::getVerticalZoomSteps(int &defaultStep) const
+{
+    if (!m_model) return 0;
+
+    defaultStep = 0;
+    int h = m_model->getHeight();
+    return h;
+}
+
+int
+Colour3DPlotLayer::getCurrentVerticalZoomStep() const
+{
+    if (!m_model) return 0;
+
+    float min, max;
+    getDisplayExtents(min, max);
+    return m_model->getHeight() - lrintf(max - min);
+}
+
+void
+Colour3DPlotLayer::setVerticalZoomStep(int step)
+{
+    if (!m_model) return;
+
+    std::cerr << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"): before: miny = " << m_miny << ", maxy = " << m_maxy << std::endl;
+
+    int dist = m_model->getHeight() - step;
+    if (dist < 1) dist = 1;
+    float centre = m_miny + (float(m_maxy) - float(m_miny)) / 2.f;
+    m_miny = lrintf(centre - float(dist)/2);
+    if (m_miny < 0) m_miny = 0;
+    m_maxy = m_miny + dist;
+    if (m_maxy > m_model->getHeight()) m_maxy = m_model->getHeight();
+
+    std::cerr << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"):  after: miny = " << m_miny << ", maxy = " << m_maxy << std::endl;
+    
+    emit layerParametersChanged();
+}
+
+RangeMapper *
+Colour3DPlotLayer::getNewVerticalZoomRangeMapper() const
+{
+    if (!m_model) return 0;
+
+    return new LinearRangeMapper(0, m_model->getHeight(),
+                                 0, m_model->getHeight(), "");
 }
 
 QString
@@ -621,6 +717,15 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
                   / long(modelResolution));
     int sh = m_model->getHeight();
 
+    int symin = m_miny;
+    int symax = m_maxy;
+    if (symax <= symin) {
+        symin = 0;
+        symax = sh;
+    }
+    if (symin < 0) symin = 0;
+    if (symax > sh) symax = sh;
+
     if (sx0 > 0) --sx0;
     fillCache(sx0 < 0 ? 0 : sx0,
               sx1 < 0 ? 0 : sx1);
@@ -667,16 +772,17 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 			  paint.fontMetrics().width("0.000000") < rw - 3 &&
 			  paint.fontMetrics().height() < (h / sh));
         
-	for (int sy = 0; sy < sh; ++sy) {
+	for (int sy = symin; sy < symax; ++sy) {
 
-	    int ry0 = h - (sy * h) / sh - 1;
+	    int ry0 = h - ((sy - symin) * h) / (symax - symin) - 1;
 	    QRgb pixel = qRgb(255, 255, 255);
 	    if (scx >= 0 && scx < m_cache->width() &&
 		sy >= 0 && sy < m_cache->height()) {
 		pixel = m_cache->pixel(scx, sy);
 	    }
 
-	    QRect r(rx0, ry0 - h / sh - 1, rw, h / sh + 1);
+	    QRect r(rx0, ry0 - h / (symax - symin) - 1,
+                    rw, h / (symax - symin) + 1);
 
             if (rw == 1) {
                 paint.setPen(pixel);
@@ -741,6 +847,15 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     int h = v->height();
     int sh = m_model->getHeight();
 
+    int symin = m_miny;
+    int symax = m_maxy;
+    if (symax <= symin) {
+        symin = 0;
+        symax = sh;
+    }
+    if (symin < 0) symin = 0;
+    if (symax > sh) symax = sh;
+
     QImage img(w, h, QImage::Format_RGB32);
 
     for (int x = x0; x < x1; ++x) {
@@ -763,8 +878,8 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
         for (int y = 0; y < h; ++y) {
 
-            float sy0 = (float(h - y - 1) * sh) / h;
-            float sy1 = (float(h - y) * sh) / h;
+            float sy0 = symin + (float(h - y - 1) * (symax - symin)) / h;
+            float sy1 = symin + (float(h - y) * (symax - symin)) / h;
             
             int sy0i = int(sy0 + 0.001);
             int sy1i = int(sy1);
