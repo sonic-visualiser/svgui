@@ -473,14 +473,43 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     if (ch > 20 && m_cache) {
 
         paint.setPen(v->getForeground());
-        paint.drawRect(4, 10, cw - 8, ch - 19);
+        paint.drawRect(4, 10, cw - 8, ch);
 
-        for (int y = 0; y < ch - 20; ++y) {
-            QRgb c = m_cache->color(((ch - 20 - y) * 255) / (ch - 20));
-//            std::cerr << "y = " << y << ": rgb " << qRed(c) << "," << qGreen(c) << "," << qBlue(c) << std::endl;
+        for (int y = 0; y < ch; ++y) {
+            QRgb c = m_cache->color(((ch - y) * 255) / ch);
             paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
             paint.drawLine(5, 11 + y, cw - 5, 11 + y);
         }
+
+        float min = m_model->getMinimumLevel();
+        float max = m_model->getMaximumLevel();
+
+        QString minstr = QString("%1").arg(min);
+        QString maxstr = QString("%1").arg(max);
+        
+        paint.save();
+
+        QFont font = paint.font();
+        font.setPixelSize(10);
+        paint.setFont(font);
+
+        int msw = paint.fontMetrics().width(maxstr);
+
+        QMatrix m;
+        m.translate(cw - 6, ch + 10);
+        m.rotate(-90);
+
+        paint.setWorldMatrix(m);
+
+        v->drawVisibleText(paint, 2, 0, minstr, View::OutlinedText);
+
+        m.translate(ch - msw - 2, 0);
+        paint.setWorldMatrix(m);
+
+        v->drawVisibleText(paint, 0, 0, maxstr, View::OutlinedText);
+
+        paint.restore();
+        
     }
 
     paint.setPen(v->getForeground());
