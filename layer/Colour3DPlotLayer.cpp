@@ -407,8 +407,19 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
     int f0 = sx0 * modelResolution;
     int f1 =  f0 + modelResolution;
 
-    float binHeight = float(v->height()) / m_model->getHeight();
-    int sy = int((v->height() - y) / binHeight);
+    int sh = m_model->getHeight();
+
+    int symin = m_miny;
+    int symax = m_maxy;
+    if (symax <= symin) {
+        symin = 0;
+        symax = sh;
+    }
+    if (symin < 0) symin = 0;
+    if (symax > sh) symax = sh;
+
+    float binHeight = float(v->height()) / (symax - symin);
+    int sy = int((v->height() - y) / binHeight) + symin;
 
     if (m_invertVertical) sy = m_model->getHeight() - sy - 1;
 
@@ -472,17 +483,35 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     int ch = h - 20;
     if (ch > 20 && m_cache) {
 
+        float min = m_model->getMinimumLevel();
+        float max = m_model->getMaximumLevel();
+
+        float mmin = min;
+        float mmax = max;
+
+        if (m_colourScale == LogScale) {
+            LogRange::mapRange(mmin, mmax);
+        } else if (m_colourScale == PlusMinusOneScale) {
+            mmin = -1.f;
+            mmax = 1.f;
+        }
+    
+        if (max == min) max = min + 1.0;
+    
         paint.setPen(v->getForeground());
-        paint.drawRect(4, 10, cw - 8, ch);
+        paint.drawRect(4, 10, cw - 8, ch+1);
 
         for (int y = 0; y < ch; ++y) {
-            QRgb c = m_cache->color(((ch - y) * 255) / ch);
+            float value = ((max - min) * (ch - y - 1)) / ch + min;
+            if (m_colourScale == LogScale) {
+                value = LogRange::map(value);
+            }
+            int pixel = int(((value - mmin) * 256) / (mmax - mmin));
+            QRgb c = m_cache->color(pixel);
+//            QRgb c = m_cache->color(((ch - y) * 255) / ch);
             paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
             paint.drawLine(5, 11 + y, cw - 5, 11 + y);
         }
-
-        float min = m_model->getMinimumLevel();
-        float max = m_model->getMaximumLevel();
 
         QString minstr = QString("%1").arg(min);
         QString maxstr = QString("%1").arg(max);
@@ -509,7 +538,6 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
         v->drawVisibleText(paint, 0, 0, maxstr, View::OutlinedText);
 
         paint.restore();
-        
     }
 
     paint.setPen(v->getForeground());
@@ -958,7 +986,6 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             if (max > 255) max = 255;
 
             img.setPixel(x - x0, y, m_cache->color(int(mag + 0.001)));
-//            img.setPixel(x - x0, y, m_cache->color(max));
         }
     }
 
