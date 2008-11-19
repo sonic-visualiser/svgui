@@ -48,7 +48,7 @@ TransformFinder::TransformFinder(QWidget *parent) :
     connect(searchField, SIGNAL(textChanged(const QString &)),
             this, SLOT(searchTextChanged(const QString &)));
 
-    m_infoLabel = new QLabel(tr("Type in the box above to search descriptions of available and known transforms"));
+    m_infoLabel = new QLabel(tr("Type in this box to search descriptions of available and known transforms"));
     mainGrid->addWidget(m_infoLabel, 1, 1);
 
     m_resultsScroll = new QScrollArea;
