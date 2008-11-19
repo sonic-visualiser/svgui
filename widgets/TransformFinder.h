@@ -43,11 +43,16 @@ public:
 protected slots:
     void searchTextChanged(const QString &);
     void selectedLabelChanged();
+    void labelDoubleClicked();
     void timeout();
     void up();
     void down();
 
 protected:
+    QLabel *m_infoLabel;
+    QLabel *m_beforeSearchLabel;
+    QLabel *m_noResultsLabel;
+
     QScrollArea *m_resultsScroll;
     QWidget *m_resultsFrame;
     QVBoxLayout *m_resultsLayout;

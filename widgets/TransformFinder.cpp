@@ -48,30 +48,38 @@ TransformFinder::TransformFinder(QWidget *parent) :
     connect(searchField, SIGNAL(textChanged(const QString &)),
             this, SLOT(searchTextChanged(const QString &)));
 
+    m_infoLabel = new QLabel(tr("Type in the box above to search descriptions of available and known transforms"));
+    mainGrid->addWidget(m_infoLabel, 1, 1);
+
     m_resultsScroll = new QScrollArea;
-//    m_resultsScroll->setWidgetResizable(true);
-    mainGrid->addWidget(m_resultsScroll, 1, 0, 1, 2);
-    mainGrid->setRowStretch(1, 10);
+    mainGrid->addWidget(m_resultsScroll, 2, 0, 1, 2);
+    mainGrid->setRowStretch(2, 10);
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                 QDialogButtonBox::Cancel);
-    mainGrid->addWidget(bb, 2, 0, 1, 2);
+    mainGrid->addWidget(bb, 3, 0, 1, 2);
     connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
     connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
-    if (!m_resultsLayout) {
-        std::cerr << "creating frame & layout" << std::endl;
-        m_resultsFrame = new QWidget;
-        QPalette palette = m_resultsFrame->palette();
-        palette.setColor(QPalette::Window, palette.color(QPalette::Base));
-        m_resultsFrame->setPalette(palette);
-        m_resultsScroll->setPalette(palette);
-        m_resultsLayout = new QVBoxLayout;
-        m_resultsLayout->setSpacing(0);
-        m_resultsLayout->setContentsMargins(0, 0, 0, 0);
-        m_resultsFrame->setLayout(m_resultsLayout);
-        m_resultsScroll->setWidget(m_resultsFrame);
-        m_resultsFrame->show();
-    }
+
+    m_resultsFrame = new QWidget;
+    QPalette palette = m_resultsFrame->palette();
+    palette.setColor(QPalette::Window, palette.color(QPalette::Base));
+    m_resultsFrame->setPalette(palette);
+    m_resultsScroll->setPalette(palette);
+    m_resultsLayout = new QVBoxLayout;
+    m_resultsLayout->setSpacing(0);
+    m_resultsLayout->setContentsMargins(0, 0, 0, 0);
+    m_resultsFrame->setLayout(m_resultsLayout);
+    m_resultsScroll->setWidget(m_resultsFrame);
+    m_resultsFrame->show();
+
+    m_noResultsLabel = new QLabel(tr("<br>&nbsp;&nbsp;No results found"));
+    m_resultsLayout->addWidget(m_noResultsLabel);
+    m_noResultsLabel->hide();
+
+    m_beforeSearchLabel = new QLabel;
+    m_resultsLayout->addWidget(m_beforeSearchLabel);
+    m_beforeSearchLabel->hide();
 
     QAction *up = new QAction(tr("Up"), this);
     up->setShortcut(tr("Up"));
@@ -111,14 +119,14 @@ TransformFinder::~TransformFinder()
 void
 TransformFinder::searchTextChanged(const QString &text)
 {
-    std::cerr << "text is " << text.toStdString() << std::endl;
+//    std::cerr << "text is " << text.toStdString() << std::endl;
     m_newSearchText = text;
 }
 
 void
 TransformFinder::timeout()
 {
-    int maxResults = 40;
+    int maxResults = 60;
     
     if (m_newSearchText != "") {
 
@@ -129,7 +137,7 @@ TransformFinder::timeout()
         TransformFactory::SearchResults results =
             TransformFactory::getInstance()->search(keywords);
         
-        std::cerr << results.size() << " result(s)..." << std::endl;
+//        std::cerr << results.size() << " result(s)..." << std::endl;
         
         std::set<TextMatcher::Match> sorted;
         sorted.clear();
@@ -137,7 +145,7 @@ TransformFinder::timeout()
              j != results.end(); ++j) {
             sorted.insert(j->second);
         }
-
+        
         m_sortedResults.clear();
         for (std::set<TextMatcher::Match>::const_iterator j = sorted.end();
              j != sorted.begin(); ) {
@@ -153,6 +161,23 @@ TransformFinder::timeout()
 
         for (int j = m_labels.size(); j > m_sortedResults.size(); ) {
             m_labels[--j]->hide();
+        }
+
+        if (m_sortedResults.empty()) {
+            m_noResultsLabel->show();
+            m_resultsFrame->resize(m_resultsFrame->sizeHint());
+        } else {
+            m_noResultsLabel->hide();
+        }
+
+        if (m_sortedResults.size() < sorted.size()) {
+            m_infoLabel->setText
+                (tr("Found %n description(s) containing <b>%1</b>, showing the first %2 only",
+                    0, sorted.size()).arg(text).arg(m_sortedResults.size()));
+        } else {
+            m_infoLabel->setText
+                (tr("Found %n description(s) containing <b>%1</b>",
+                    0, sorted.size()).arg(text));
         }
 
         return;
@@ -231,7 +256,7 @@ TransformFinder::timeout()
             connect(label, SIGNAL(selectionChanged()), this,
                     SLOT(selectedLabelChanged()));
             connect(label, SIGNAL(doubleClicked()), this,
-                    SLOT(accept()));
+                    SLOT(labelDoubleClicked()));
             QPalette palette = label->palette();
             label->setPalette(palette);
             m_labels.push_back(label);
@@ -275,6 +300,17 @@ TransformFinder::selectedLabelChanged()
     }
     std::cerr << "selectedLabelChanged: selected transform is now \""
               << m_selectedTransform.toStdString() << "\"" << std::endl;
+}
+
+void
+TransformFinder::labelDoubleClicked()
+{
+    // The first click should have selected the label already
+    if (TransformFactory::getInstance()->getTransformInstallStatus
+        (m_selectedTransform) == 
+        TransformFactory::TransformInstalled) {
+        accept();
+    }
 }
 
 TransformId
