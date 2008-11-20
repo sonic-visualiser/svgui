@@ -60,6 +60,8 @@ protected:
     TransformId m_selectedTransform;
     QTimer *m_timer;
 
+    void setupBeforeSearchLabel();
+
     QString m_newSearchText;
     typedef std::vector<TextMatcher::Match> SortedResults;
     SortedResults m_sortedResults;

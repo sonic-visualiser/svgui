@@ -48,7 +48,8 @@ TransformFinder::TransformFinder(QWidget *parent) :
     connect(searchField, SIGNAL(textChanged(const QString &)),
             this, SLOT(searchTextChanged(const QString &)));
 
-    m_infoLabel = new QLabel(tr("Type in this box to search descriptions of available and known transforms"));
+//    m_infoLabel = new QLabel(tr("Type in this box to search descriptions of available and known transforms"));
+    m_infoLabel = new QLabel;
     mainGrid->addWidget(m_infoLabel, 1, 1);
 
     m_resultsScroll = new QScrollArea;
@@ -106,6 +107,8 @@ TransformFinder::TransformFinder(QWidget *parent) :
     resize(width, height);
     raise();
 
+    setupBeforeSearchLabel();
+
     m_upToDateCount = 0;
     m_timer = new QTimer(this);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(timeout()));
@@ -114,6 +117,53 @@ TransformFinder::TransformFinder(QWidget *parent) :
 
 TransformFinder::~TransformFinder()
 {
+}
+
+void
+TransformFinder::setupBeforeSearchLabel()
+{
+    bool haveInstalled =
+        TransformFactory::getInstance()->haveInstalledTransforms();
+    bool haveUninstalled =
+        TransformFactory::getInstance()->haveUninstalledTransforms();
+
+    m_beforeSearchLabel->setWordWrap(true);
+    m_beforeSearchLabel->setOpenExternalLinks(true);
+    m_beforeSearchLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
+    m_beforeSearchLabel->setMargin(12);
+    m_beforeSearchLabel->setFixedWidth(this->width() - 40);
+
+    QString base =
+        tr("<p>Type some text into the search box to search the descriptions of:<ul><li>All currently installed <a href=\"http://www.vamp-plugins.org/\">Vamp</a> audio feature extraction plugins</li><li>All currently installed <a href=\"http://www.ladspa.org/\">LADSPA</a> audio effects plugins</li><li>Vamp plugins that are not currently installed but that have descriptions published via the semantic web</li></ul>");
+
+    QString nopull =
+        tr("<b>Unable to retrieve published descriptions from network!</b>");
+
+    QString noinst =
+        tr("<b>No plugins are currently installed!</b>");
+
+    if (haveInstalled) {
+        if (haveUninstalled) {
+            m_beforeSearchLabel->setText(base);
+        } else {
+            m_beforeSearchLabel->setText
+                (base +
+                 tr("<p>%1<br>Perhaps the network connection is down, or services are responding too slowly.<br>Only the descriptions of installed plugins will be searched.").arg(nopull));
+        }
+    } else {
+        if (haveUninstalled) {
+            m_beforeSearchLabel->setText
+                (base +
+                 tr("<p>%1<br>Only the published descriptions of Vamp feature extraction plugins will be searched.").arg(noinst));
+        } else {
+            m_beforeSearchLabel->setText
+                (base +
+                 tr("<p>%1<br>%2<br>Perhaps the network connection is down, or services are responding too slowly.<br>No search results will be available.").arg(noinst).arg(nopull));
+        }
+    }
+
+    m_beforeSearchLabel->show();
+    m_resultsFrame->resize(m_resultsFrame->sizeHint());
 }
 
 void
@@ -162,6 +212,8 @@ TransformFinder::timeout()
         for (int j = m_labels.size(); j > m_sortedResults.size(); ) {
             m_labels[--j]->hide();
         }
+
+        m_beforeSearchLabel->hide();
 
         if (m_sortedResults.empty()) {
             m_noResultsLabel->show();
