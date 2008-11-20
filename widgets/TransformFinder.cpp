@@ -148,7 +148,7 @@ TransformFinder::setupBeforeSearchLabel()
         } else {
             m_beforeSearchLabel->setText
                 (base +
-                 tr("<p>%1<br>Perhaps the network connection is down, or services are responding too slowly.<br>Only the descriptions of installed plugins will be searched.").arg(nopull));
+                 tr("<p>%1<br>Perhaps the network connection is down, services are responding too slowly, or a processing problem has occurred.<br>Only the descriptions of installed plugins will be searched.").arg(nopull));
         }
     } else {
         if (haveUninstalled) {
