@@ -20,7 +20,8 @@
 
 #include "base/Window.h"
 
-namespace Vamp { class PluginBase; }
+#include <vamp-hostsdk/PluginBase.h>
+
 class PluginParameterBox;
 class QWidget;
 class QPushButton;
