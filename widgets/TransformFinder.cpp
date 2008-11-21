@@ -286,9 +286,9 @@ TransformFinder::timeout()
         }
 
         selectedText += tr("<small>");
-        if (desc.type != "") {
+        if (desc.type != TransformDescription::UnknownType) {
             selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Plugin type: %1")
-                .arg(XmlExportable::encodeEntities(desc.type));
+                .arg(XmlExportable::encodeEntities(factory->getTransformTypeName(desc.type)));
         }
         if (desc.category != "") {
             selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Category: %1")
