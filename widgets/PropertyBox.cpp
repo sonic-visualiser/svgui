@@ -51,7 +51,7 @@
 #include <iostream>
 #include <cmath>
 
-//#define DEBUG_PROPERTY_BOX 1
+#define DEBUG_PROPERTY_BOX 1
 
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
@@ -558,6 +558,7 @@ PropertyBox::propertyContainerPropertyRangeChanged(PropertyContainer *)
 void
 PropertyBox::unitDatabaseChanged()
 {
+    std::cerr << "PropertyBox[" << this << "]: unitDatabaseChanged" << std::endl;
     blockSignals(true);
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
