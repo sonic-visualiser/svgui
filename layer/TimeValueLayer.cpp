@@ -267,8 +267,9 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
     if (!m_model || shouldAutoAlign()) return false;
 
     if (m_scaleMinimum == m_scaleMaximum) {
-        m_scaleMinimum = m_model->getValueMinimum();
-        m_scaleMaximum = m_model->getValueMaximum();
+        min = m_model->getValueMinimum();
+        max = m_model->getValueMaximum();
+        return true;
     }
 
     min = m_scaleMinimum;
