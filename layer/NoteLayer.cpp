@@ -223,12 +223,12 @@ NoteLayer::getDisplayExtents(float &min, float &max) const
     }
 
     if (m_scaleMinimum == m_scaleMaximum) {
-        m_scaleMinimum = m_model->getValueMinimum();
-        m_scaleMaximum = m_model->getValueMaximum();
+        min = m_model->getValueMinimum();
+        max = m_model->getValueMaximum();
+    } else {
+        min = m_scaleMinimum;
+        max = m_scaleMaximum;
     }
-
-    min = m_scaleMinimum;
-    max = m_scaleMaximum;
 
     if (shouldConvertMIDIToHz()) {
         min = Pitch::getFrequencyForPitch(lrintf(min));
