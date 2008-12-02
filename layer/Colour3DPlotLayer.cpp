@@ -553,11 +553,19 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     if (symin < 0) symin = 0;
     if (symax > sh) symax = sh;
 
+    float binHeight = float(v->height()) / (symax - symin);
+
+    paint.save();
+
+    QFont tf = paint.font();
+    if (paint.fontMetrics().height() >= binHeight) {
+        tf.setPixelSize(binHeight > 4 ? binHeight - 2 : 2);
+        paint.setFont(tf);
+    }
+
     int count = v->height() / paint.fontMetrics().height();
     int step = (symax - symin) / count;
     if (step == 0) step = 1;
-
-    float binHeight = float(v->height()) / (symax - symin);
 
     for (size_t i = symin; i < symax; ++i) {
 
@@ -578,6 +586,8 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
 	paint.drawText(cw + 5, ty, text);
     }
+
+    paint.restore();
 }
 
 void

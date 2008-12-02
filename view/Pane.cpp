@@ -82,6 +82,9 @@ Pane::Pane(QWidget *w) :
     setAcceptDrops(true);
     
     updateHeadsUpDisplay();
+
+
+    std::cerr << "Pane::Pane(" << this << ") returning" << std::endl;
 }
 
 void
