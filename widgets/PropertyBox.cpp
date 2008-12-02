@@ -51,7 +51,7 @@
 #include <iostream>
 #include <cmath>
 
-#define DEBUG_PROPERTY_BOX 1
+//#define DEBUG_PROPERTY_BOX 1
 
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
@@ -60,7 +60,7 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 {
 #ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox[" << this << "(\"" <<
-	container->getPropertyContainerName().toStdString() << "\")]::PropertyBox" << std::endl;
+	container->getPropertyContainerName().toStdString() << "\" at " << container << ")]::PropertyBox" << std::endl;
 #endif
 
     m_mainBox = new QVBoxLayout;
@@ -560,6 +560,10 @@ PropertyBox::unitDatabaseChanged()
 {
     std::cerr << "PropertyBox[" << this << "]: unitDatabaseChanged" << std::endl;
     blockSignals(true);
+
+//    std::cerr << "my container is " << m_container << std::endl;
+//    std::cerr << "my container's name is... " << std::endl;
+//    std::cerr << m_container->objectName().toStdString() << std::endl;
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
     for (size_t i = 0; i < properties.size(); ++i) {

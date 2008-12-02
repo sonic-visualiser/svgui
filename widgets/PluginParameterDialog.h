@@ -74,6 +74,8 @@ public:
     void getProcessingParameters(size_t &stepSize, size_t &blockSize,
                                  WindowType &windowType) const;
 
+    int exec();
+
 signals:
     void pluginConfigurationChanged(QString);
     void inputModelChanged(QString);

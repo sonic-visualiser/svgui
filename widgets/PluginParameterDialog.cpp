@@ -239,7 +239,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     m_advancedVisible = settings.value("advancedvisible", false).toBool();
     settings.endGroup();
     
-    m_advanced->setVisible(false);
+    m_advanced->hide();
 
     hbox->addWidget(m_advancedButton);
     m_advancedButton->hide();
@@ -255,6 +255,14 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
 PluginParameterDialog::~PluginParameterDialog()
 {
+}
+
+int
+PluginParameterDialog::exec()
+{
+    show();
+    setAdvancedVisible(m_advancedVisible);
+    return QDialog::exec();
 }
 
 
@@ -584,27 +592,31 @@ PluginParameterDialog::advancedToggled()
 void
 PluginParameterDialog::setAdvancedVisible(bool visible)
 {
-    m_advanced->setVisible(visible);
+//    m_advanced->setVisible(visible);
 
     if (visible) {
         m_advancedButton->setText(tr("Advanced <<"));
         m_advancedButton->setChecked(true);
+        m_advanced->show();
     } else {
+        m_advanced->hide();
         m_advancedButton->setText(tr("Advanced >>"));
         m_advancedButton->setChecked(false);
     }
+
+    std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
+
+//    setMinimumHeight(sizeHint().height());
+    adjustSize();
+
+//    (sizeHint());
+
+    m_advancedVisible = visible;
 
     QSettings settings;
     settings.beginGroup("PluginParameterDialog");
     settings.setValue("advancedvisible", visible);
     settings.endGroup();
-
-//    std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
-
-    setMinimumHeight(sizeHint().height());
-    adjustSize();
-
-    m_advancedVisible = visible;
 
 //    if (visible) setMaximumHeight(sizeHint().height());
 //    adjustSize();

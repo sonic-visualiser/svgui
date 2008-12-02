@@ -61,11 +61,12 @@ View::View(QWidget *w, bool showProgress) :
     m_manager(0),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
+    std::cerr << "View::View(" << this << ")" << std::endl;
 }
 
 View::~View()
 {
-//    std::cerr << "View::~View(" << this << ")" << std::endl;
+    std::cerr << "View::~View(" << this << ")" << std::endl;
 
     m_deleting = true;
     delete m_propertyContainer;

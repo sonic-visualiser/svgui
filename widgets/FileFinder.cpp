@@ -18,6 +18,7 @@
 #include "data/fileio/AudioFileReaderFactory.h"
 #include "data/fileio/DataFileReaderFactory.h"
 #include "rdf/RDFImporter.h"
+#include "rdf/RDFExporter.h"
 
 #include <QFileInfo>
 #include <QMessageBox>
@@ -63,7 +64,7 @@ FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     case SessionFile:
         settingsKey = "sessionpath";
         title = tr("Select a session file");
-        filter = tr("Sonic Visualiser session files (*.sv)\nAll files (*.*)");
+        filter = tr("Sonic Visualiser session files (*.sv)\nRDF files (%1)\nAll files (*.*)").arg(RDFImporter::getKnownExtensions());
         break;
 
     case AudioFile:
@@ -75,17 +76,22 @@ FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case LayerFile:
         settingsKey = "layerpath";
-        filter = tr("All supported files (%1 %2)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nRDF files (%3)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(DataFileReaderFactory::getKnownExtensions()).arg(RDFImporter::getKnownExtensions()).arg(RDFImporter::getKnownExtensions());
+        filter = tr("All supported files (%1 %2)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nRDF files (%2)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)")
+            .arg(DataFileReaderFactory::getKnownExtensions())
+            .arg(RDFImporter::getKnownExtensions());
         break;
 
     case LayerFileNoMidi:
         settingsKey = "layerpath";
-        filter = tr("All supported files (%1 %2)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nRDF files (%3)\nText files (*.txt)\nAll files (*.*)").arg(DataFileReaderFactory::getKnownExtensions()).arg(RDFImporter::getKnownExtensions()).arg(RDFImporter::getKnownExtensions());
+        filter = tr("All supported files (%1 %2)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nRDF files (%2)\nText files (*.txt)\nAll files (*.*)")
+            .arg(DataFileReaderFactory::getKnownExtensions())
+            .arg(RDFImporter::getKnownExtensions());
         break;
 
     case SessionOrAudioFile:
         settingsKey = "lastpath";
-        filter = tr("All supported files (*.sv %1)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nAll files (*.*)")
+        filter = tr("All supported files (*.sv %1)\nSonic Visualiser session files (*.sv)\nRDF files (%1)\nAudio files (%2)\nAll files (*.*)")
+            .arg(RDFImporter::getKnownExtensions())
             .arg(AudioFileReaderFactory::getKnownExtensions());
         break;
 
@@ -105,7 +111,7 @@ FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case AnyFile:
         settingsKey = "lastpath";
-        filter = tr("All supported files (*.sv %1 %2 %3)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nLayer files (%2)\nAll files (*.*)")
+        filter = tr("All supported files (*.sv %1 %2 %3)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
             .arg(AudioFileReaderFactory::getKnownExtensions())
             .arg(DataFileReaderFactory::getKnownExtensions())
             .arg(RDFImporter::getKnownExtensions());
@@ -211,13 +217,13 @@ FileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     case LayerFile:
         settingsKey = "savelayerpath";
         title = tr("Select a file to export to");
-        filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)");
+        filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
         break;
 
     case LayerFileNoMidi:
         settingsKey = "savelayerpath";
         title = tr("Select a file to export to");
-        filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nText files (*.txt)\nAll files (*.*)");
+        filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
         break;
 
     case SessionOrAudioFile:
@@ -299,6 +305,8 @@ FileFinder::getSaveFileName(FileType type, QString fallbackLocation)
                 expectedExtension = "csv";
             } else if (selectedFilter.contains(".mid")) {
                 expectedExtension = "mid";
+            } else if (selectedFilter.contains(".ttl")) {
+                expectedExtension = "ttl";
             }
             std::cerr << "expected extension = " << expectedExtension.toStdString() << std::endl;
             if (expectedExtension != "") {

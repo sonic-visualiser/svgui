@@ -682,6 +682,8 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         // draw peak lines
 
+//        std::cerr << "Showing peaks..." << std::endl;
+
         size_t col = v->getCentreFrame() / fft->getResolution();
 
         paint.save();
@@ -832,9 +834,11 @@ SpectrumLayer::toXml(QTextStream &stream,
                      QString indent, QString extraAttributes) const
 {
     QString s = QString("windowSize=\"%1\" "
-                        "windowHopLevel=\"%2\"")
+                        "windowHopLevel=\"%2\" "
+                        "showPeaks=\"%3\" ")
         .arg(m_windowSize)
-        .arg(m_windowHopLevel);
+        .arg(m_windowHopLevel)
+        .arg(m_showPeaks ? "true" : "false");
 
     SliceLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -851,6 +855,9 @@ SpectrumLayer::setProperties(const QXmlAttributes &attributes)
 
     size_t windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
     if (ok) setWindowHopLevel(windowHopLevel);
+
+    bool showPeaks = (attributes.value("showPeaks").trimmed() == "true");
+    setShowPeaks(showPeaks);
 }
 
     
