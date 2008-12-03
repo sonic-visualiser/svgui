@@ -559,7 +559,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
     QFont tf = paint.font();
     if (paint.fontMetrics().height() >= binHeight) {
-        tf.setPixelSize(binHeight > 4 ? binHeight - 2 : 2);
+        tf.setPixelSize(binHeight > 7 ? binHeight - 2 : 5);
         paint.setFont(tf);
     }
 
@@ -580,6 +580,13 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 	if (text == "") text = QString("[%1]").arg(idx + 1);
 
 	paint.drawLine(cw, y0, w, y0);
+
+        if (step > 1) {
+            paint.drawLine(w - 1, y0 - (step * binHeight) + 1,
+                           w - 1, y0 - binHeight - 1);
+            paint.drawLine(w - 2, y0 - (step * binHeight) + 1,
+                           w - 2, y0 - binHeight - 2);
+        }
 
 	int cy = int(y0 - (step * binHeight)/2);
 	int ty = cy + paint.fontMetrics().ascent()/2;

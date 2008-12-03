@@ -90,7 +90,7 @@ FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case SessionOrAudioFile:
         settingsKey = "lastpath";
-        filter = tr("All supported files (*.sv %1)\nSonic Visualiser session files (*.sv)\nRDF files (%1)\nAudio files (%2)\nAll files (*.*)")
+        filter = tr("All supported files (*.sv %1 %2)\nSonic Visualiser session files (*.sv)\nAudio files (%2)\nRDF files (%1)\nAll files (*.*)")
             .arg(RDFImporter::getKnownExtensions())
             .arg(AudioFileReaderFactory::getKnownExtensions());
         break;
