@@ -49,7 +49,7 @@ SpectrumLayer::~SpectrumLayer()
 {
     Model *m = const_cast<Model *>
         (static_cast<const Model *>(m_sliceableModel));
-    m->aboutToDelete();
+    if (m) m->aboutToDelete();
     m_sliceableModel = 0;
     delete m;
 }
