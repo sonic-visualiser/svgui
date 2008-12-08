@@ -84,7 +84,7 @@ Pane::Pane(QWidget *w) :
     updateHeadsUpDisplay();
 
 
-    std::cerr << "Pane::Pane(" << this << ") returning" << std::endl;
+//    std::cerr << "Pane::Pane(" << this << ") returning" << std::endl;
 }
 
 void

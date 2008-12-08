@@ -249,6 +249,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     hbox->addWidget(bb);
     connect(bb, SIGNAL(accepted()), this, SLOT(dialogAccepted()));
     connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
+    bb->button(QDialogButtonBox::Ok)->setDefault(true);
 
     setAdvancedVisible(m_advancedVisible);
 }
@@ -604,7 +605,7 @@ PluginParameterDialog::setAdvancedVisible(bool visible)
         m_advancedButton->setChecked(false);
     }
 
-    std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
+//    std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
 
 //    setMinimumHeight(sizeHint().height());
     adjustSize();
