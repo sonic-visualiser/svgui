@@ -118,14 +118,18 @@ public:
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);
+    void modelChanged();
+    void modelChanged(size_t, size_t);
 
 protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this
     
     mutable QImage *m_cache;
-    mutable size_t m_cacheStart;
+    mutable size_t m_cacheValidStart;
+    mutable size_t m_cacheValidEnd;
 
     ColourScale m_colourScale;
+    bool        m_colourScaleSet;
     int         m_colourMap;
     bool        m_normalizeColumns;
     bool        m_normalizeVisibleArea;
