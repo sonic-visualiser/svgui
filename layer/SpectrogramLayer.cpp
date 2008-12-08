@@ -2284,27 +2284,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                     value *= m_gain;
                 }
 
-                /*
-                float v2 = value;
-
-//!!!
-                value = 0.f;
-                if (m_colourScale == PhaseColourScale) {
-                    value = fft->getPhaseAt(s, q);
-                } else if (m_normalizeColumns) {
-                    value = fft->getNormalizedMagnitudeAt(s, q);
-                    mag.sample(value);
-                    value *= m_gain;
-                } else {
-                    value = fft->getMagnitudeAt(s, q) / (m_fftSize/2);
-                    mag.sample(value);
-                    value *= m_gain;
-                }
-
-                if (value != v2) {
-                    std::cout << "old = " << value << " new = " << v2 << " at y = " << q << std::endl;
-                }
-                */
                 if (interpolate) {
                     
                     int ypi = y0i;
