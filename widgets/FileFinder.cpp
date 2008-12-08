@@ -153,31 +153,31 @@ FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
         if (!fi.exists()) {
             
             QMessageBox::critical(0, tr("File does not exist"),
-                                  tr("File \"%1\" does not exist").arg(path));
+                                  tr("<b>File not found</b><p>File \"%1\" does not exist").arg(path));
             path = "";
             
         } else if (!fi.isReadable()) {
             
             QMessageBox::critical(0, tr("File is not readable"),
-                                  tr("File \"%1\" can not be read").arg(path));
+                                  tr("<b>File is not readable</b><p>File \"%1\" can not be read").arg(path));
             path = "";
             
         } else if (fi.isDir()) {
             
             QMessageBox::critical(0, tr("Directory selected"),
-                                  tr("File \"%1\" is a directory").arg(path));
+                                  tr("<b>Directory selected</b><p>File \"%1\" is a directory").arg(path));
             path = "";
 
         } else if (!fi.isFile()) {
             
             QMessageBox::critical(0, tr("Non-file selected"),
-                                  tr("Path \"%1\" is not a file").arg(path));
+                                  tr("<b>Not a file</b><p>Path \"%1\" is not a file").arg(path));
             path = "";
             
         } else if (fi.size() == 0) {
             
             QMessageBox::critical(0, tr("File is empty"),
-                                  tr("File \"%1\" is empty").arg(path));
+                                  tr("<b>File is empty</b><p>File \"%1\" is empty").arg(path));
             path = "";
         }                
     }
@@ -317,13 +317,13 @@ FileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         
         if (fi.isDir()) {
             QMessageBox::critical(0, tr("Directory selected"),
-                                  tr("File \"%1\" is a directory").arg(path));
+                                  tr("<b>Directory selected</b><p>File \"%1\" is a directory").arg(path));
             continue;
         }
         
         if (fi.exists()) {
             if (QMessageBox::question(0, tr("File exists"),
-                                      tr("The file \"%1\" already exists.\nDo you want to overwrite it?").arg(path),
+                                      tr("<b>File exists</b><p>The file \"%1\" already exists.\nDo you want to overwrite it?").arg(path),
                                       QMessageBox::Ok,
                                       QMessageBox::Cancel) != QMessageBox::Ok) {
                 continue;
@@ -455,9 +455,9 @@ FileFinder::locateInteractive(FileType type, QString thing)
 {
     QString question;
     if (type == AudioFile) {
-        question = tr("Audio file \"%1\" could not be opened.\nDo you want to locate it?");
+        question = tr("<b>File not found</b><p>Audio file \"%1\" could not be opened.\nDo you want to locate it?");
     } else {
-        question = tr("File \"%1\" could not be opened.\nDo you want to locate it?");
+        question = tr("<b>File not found</b><p>File \"%1\" could not be opened.\nDo you want to locate it?");
     }
 
     QString path = "";
@@ -500,7 +500,7 @@ FileFinder::locateInteractive(FileType type, QString thing)
                 } else {
                     QMessageBox::critical
                         (0, tr("Failed to open location"),
-                         tr("URL \"%1\" could not be opened").arg(path));
+                         tr("<b>Failed to open location</b><p>URL \"%1\" could not be opened").arg(path));
                     path = "";
                 }
             }
