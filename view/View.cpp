@@ -441,6 +441,7 @@ View::getZoomLevel() const
 void
 View::setZoomLevel(size_t z)
 {
+    if (z < 1) z = 1;
     if (m_zoomLevel != int(z)) {
 	m_zoomLevel = z;
 	emit zoomLevelChanged(z, m_followZoom);
