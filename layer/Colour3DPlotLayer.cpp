@@ -992,6 +992,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 void
 Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 {
+    if (!m_cache) return;
+
     size_t modelStart = m_model->getStartFrame();
     size_t modelResolution = m_model->getResolution();
 
