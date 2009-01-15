@@ -99,8 +99,8 @@ public:
     virtual bool addImage(long frame, QString url); // using a command
 
 protected slots:
-    void checkAddRemotes();
-    void remoteFileReady();
+    void checkAddSources();
+    void fileSourceReady();
 
 protected:
     ImageModel::PointList getLocalPoints(View *v, int x, int y) const;
@@ -120,10 +120,10 @@ protected:
     static ImageMap m_images;
     static QMutex m_imageMapMutex;
     mutable ViewImageMap m_scaled;
-    mutable FileSourceMap m_remoteFiles;
+    mutable FileSourceMap m_fileSources;
 
     QString getLocalFilename(QString img) const;
-    void checkAddRemote(QString img) const;
+    void checkAddSource(QString img) const;
 
     ImageModel *m_model;
     bool m_editing;

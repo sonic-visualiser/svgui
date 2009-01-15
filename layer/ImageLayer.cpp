@@ -54,8 +54,8 @@ ImageLayer::ImageLayer() :
 
 ImageLayer::~ImageLayer()
 {
-    for (FileSourceMap::iterator i = m_remoteFiles.begin();
-         i != m_remoteFiles.end(); ++i) {
+    for (FileSourceMap::iterator i = m_fileSources.begin();
+         i != m_fileSources.end(); ++i) {
         delete i->second;
     }
 }
@@ -607,7 +607,7 @@ ImageLayer::drawEnd(View *v, QMouseEvent *)
 
     if (dialog.exec() == QDialog::Accepted) {
 
-        checkAddRemote(dialog.getImage());
+        checkAddSource(dialog.getImage());
 
 	ImageModel::ChangeImageCommand *command =
 	    new ImageModel::ChangeImageCommand
@@ -627,8 +627,9 @@ ImageLayer::addImage(long frame, QString url)
 {
     QImage image(getLocalFilename(url));
     if (image.isNull()) {
-        delete m_remoteFiles[url];
-        m_remoteFiles.erase(url);
+        std::cerr << "Failed to open image from url \"" << url.toStdString() << "\" (local filename \"" << getLocalFilename(url).toStdString() << "\"" << std::endl;
+        delete m_fileSources[url];
+        m_fileSources.erase(url);
         return false;
     }
 
@@ -713,7 +714,7 @@ ImageLayer::editOpen(View *v, QMouseEvent *e)
 
     if (dialog.exec() == QDialog::Accepted) {
 
-        checkAddRemote(dialog.getImage());
+        checkAddSource(dialog.getImage());
 
 	ImageModel::ChangeImageCommand *command =
 	    new ImageModel::ChangeImageCommand
@@ -893,61 +894,58 @@ ImageLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* inter
 QString
 ImageLayer::getLocalFilename(QString img) const
 {
-    if (m_remoteFiles.find(img) == m_remoteFiles.end()) {
-        checkAddRemote(img);
-        if (m_remoteFiles.find(img) == m_remoteFiles.end()) {
+    if (m_fileSources.find(img) == m_fileSources.end()) {
+        checkAddSource(img);
+        if (m_fileSources.find(img) == m_fileSources.end()) {
             return img;
         }
     }
-    return m_remoteFiles[img]->getLocalFilename();
+    return m_fileSources[img]->getLocalFilename();
 }
 
 void
-ImageLayer::checkAddRemote(QString img) const
+ImageLayer::checkAddSource(QString img) const
 {
-    if (FileSource::isRemote(img)) {
+    std::cerr << "ImageLayer::checkAddSource(" << img.toStdString() << "): yes, trying..." << std::endl;
 
-        std::cerr << "ImageLayer::checkAddRemote(" << img.toStdString() << "): yes, trying..." << std::endl;
+    if (m_fileSources.find(img) != m_fileSources.end()) {
+        return;
+    }
 
-        if (m_remoteFiles.find(img) != m_remoteFiles.end()) {
-            return;
-        }
-
-        ProgressDialog dialog(tr("Opening image URL..."), true, 2000);
-        FileSource *rf = new FileSource(img, &dialog);
-        if (rf->isOK()) {
-            std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
-            m_remoteFiles[img] = rf;
-            connect(rf, SIGNAL(ready()), this, SLOT(remoteFileReady()));
-        } else {
-            delete rf;
-        }
+    ProgressDialog dialog(tr("Opening image URL..."), true, 2000);
+    FileSource *rf = new FileSource(img, &dialog);
+    if (rf->isOK()) {
+        std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
+        m_fileSources[img] = rf;
+        connect(rf, SIGNAL(ready()), this, SLOT(fileSourceReady()));
+    } else {
+        delete rf;
     }
 }
 
 void
-ImageLayer::checkAddRemotes()
+ImageLayer::checkAddSources()
 {
     const ImageModel::PointList &points(m_model->getPoints());
 
     for (ImageModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
         
-        checkAddRemote((*i).image);
+        checkAddSource((*i).image);
     }
 }
 
 void
-ImageLayer::remoteFileReady()
+ImageLayer::fileSourceReady()
 {
-//    std::cerr << "ImageLayer::remoteFileReady" << std::endl;
+//    std::cerr << "ImageLayer::fileSourceReady" << std::endl;
 
     FileSource *rf = dynamic_cast<FileSource *>(sender());
     if (!rf) return;
 
     QString img;
-    for (FileSourceMap::const_iterator i = m_remoteFiles.begin();
-         i != m_remoteFiles.end(); ++i) {
+    for (FileSourceMap::const_iterator i = m_fileSources.begin();
+         i != m_fileSources.end(); ++i) {
         if (i->second == rf) {
             img = i->first;
 //            std::cerr << "it's image \"" << img.toStdString() << "\"" << std::endl;
