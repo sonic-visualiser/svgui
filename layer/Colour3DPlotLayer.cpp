@@ -44,6 +44,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
     m_invertVertical(false),
+    m_opaque(false),
     m_miny(0),
     m_maxy(0)
 {
@@ -134,6 +135,7 @@ Colour3DPlotLayer::getProperties() const
     list.push_back("Normalize Columns");
     list.push_back("Normalize Visible Area");
     list.push_back("Invert Vertical Scale");
+    list.push_back("Opaque");
     return list;
 }
 
@@ -145,6 +147,7 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Normalize Columns") return tr("Normalize Columns");
     if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
     if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
+    if (name == "Opaque") return tr("Always Opaque");
     return "";
 }
 
@@ -154,6 +157,7 @@ Colour3DPlotLayer::getPropertyIconName(const PropertyName &name) const
     if (name == "Normalize Columns") return "normalise-columns";
     if (name == "Normalize Visible Area") return "normalise";
     if (name == "Invert Vertical Scale") return "invert-vertical";
+    if (name == "Opaque") return "opaque";
     return "";
 }
 
@@ -163,6 +167,7 @@ Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
     if (name == "Normalize Columns") return ToggleProperty;
     if (name == "Normalize Visible Area") return ToggleProperty;
     if (name == "Invert Vertical Scale") return ToggleProperty;
+    if (name == "Opaque") return ToggleProperty;
     return ValueProperty;
 }
 
@@ -173,6 +178,8 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
         name == "Normalize Visible Area" ||
         name == "Invert Vertical Scale" ||
 	name == "Colour Scale") return tr("Scale");
+    if (name == "Opaque" ||
+        name == "Colour") return tr("Colour");
     return QString();
 }
 
@@ -218,6 +225,11 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
         *deflt = 0;
 	val = (m_invertVertical ? 1 : 0);
 
+    } else if (name == "Opaque") {
+	
+        *deflt = 0;
+	val = (m_opaque ? 1 : 0);
+        
     } else {
 	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
@@ -261,6 +273,8 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	setNormalizeVisibleArea(value ? true : false);
     } else if (name == "Invert Vertical Scale") {
 	setInvertVertical(value ? true : false);
+    } else if (name == "Opaque") {
+	setOpaque(value ? true : false);
     }
 }
 
@@ -322,10 +336,24 @@ Colour3DPlotLayer::setInvertVertical(bool n)
     emit layerParametersChanged();
 }
 
+void
+Colour3DPlotLayer::setOpaque(bool n)
+{
+    if (m_opaque == n) return;
+    m_opaque = n;
+    emit layerParametersChanged();
+}
+
 bool
 Colour3DPlotLayer::getInvertVertical() const
 {
     return m_invertVertical;
+}
+
+bool
+Colour3DPlotLayer::getOpaque() const
+{
+    return m_opaque;
 }
 
 bool
@@ -540,6 +568,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
         }
     
         if (max == min) max = min + 1.0;
+        if (mmax == mmin) mmax = mmin + 1.0;
     
         paint.setPen(v->getForeground());
         paint.drawRect(4, 10, cw - 8, ch+1);
@@ -550,10 +579,13 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
                 value = LogRange::map(value);
             }
             int pixel = int(((value - mmin) * 256) / (mmax - mmin));
-            QRgb c = m_cache->color(pixel);
-//            QRgb c = m_cache->color(((ch - y) * 255) / ch);
-            paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
-            paint.drawLine(5, 11 + y, cw - 5, 11 + y);
+            if (pixel >= 0 && pixel < 256) {
+                QRgb c = m_cache->color(pixel);
+                paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
+                paint.drawLine(5, 11 + y, cw - 5, 11 + y);
+            } else {
+                std::cerr << "WARNING: Colour3DPlotLayer::paintVerticalScale: value " << value << ", mmin " << mmin << ", mmax " << mmax << " leads to invalid pixel " << pixel << std::endl;
+            }
         }
 
         QString minstr = QString("%1").arg(min);
@@ -896,7 +928,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     std::cerr << "Colour3DPlotLayer::paint: height = "<< m_model->getHeight() << ", modelStart = " << modelStart << ", resolution = " << modelResolution << ", model rate = " << m_model->getSampleRate() << std::endl;
 #endif
 
-    if (int(m_model->getHeight()) >= v->height() ||
+    if (m_opaque || 
+        int(m_model->getHeight()) >= v->height() ||
         int(modelResolution * m_model->getSampleRate()) < v->getZoomLevel() / 2) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
         std::cerr << "calling paintDense" << std::endl;
@@ -1116,13 +1149,17 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
                         "normalizeColumns=\"%3\" "
                         "normalizeVisibleArea=\"%4\" "
                         "minY=\"%5\" "
-                        "maxY=\"%6\" ")
+                        "maxY=\"%6\" "
+                        "invertVertical=\"%7\" "
+                        "opaque=\"%8\"")
 	.arg((int)m_colourScale)
         .arg(m_colourMap)
         .arg(m_normalizeColumns ? "true" : "false")
         .arg(m_normalizeVisibleArea ? "true" : "false")
         .arg(m_miny)
-        .arg(m_maxy);
+        .arg(m_maxy)
+        .arg(m_invertVertical ? "true" : "false")
+        .arg(m_opaque ? "true" : "false");
 
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -1145,6 +1182,14 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
     bool normalizeVisibleArea =
         (attributes.value("normalizeVisibleArea").trimmed() == "true");
     setNormalizeVisibleArea(normalizeVisibleArea);
+
+    bool invertVertical =
+        (attributes.value("invertVertical").trimmed() == "true");
+    setInvertVertical(invertVertical);
+
+    bool opaque =
+        (attributes.value("opaque").trimmed() == "true");
+    setNormalizeVisibleArea(opaque);
 
     float min = attributes.value("minY").toFloat(&ok);
     float max = attributes.value("maxY").toFloat(&alsoOk);

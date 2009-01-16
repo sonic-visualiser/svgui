@@ -1577,7 +1577,7 @@ View::paintEvent(QPaintEvent *e)
 		getXForFrame(m_centreFrame);
 
 	    if (dx > -width() && dx < width()) {
-#if defined(Q_WS_WIN32) || defined(Q_WS_MAC)
+#if defined(Q_WS_WIN32) || defined(Q_WS_MAC) || defined(NO_PIXMAP_COPY_TO_SELF)
 		// Copying a pixmap to itself doesn't work properly on Windows
 		// or Mac (it only works when moving in one direction)
 		static QPixmap *tmpPixmap = 0;
