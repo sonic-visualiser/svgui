@@ -99,6 +99,9 @@ public:
     void setInvertVertical(bool i);
     bool getInvertVertical() const;
 
+    void setOpaque(bool i);
+    bool getOpaque() const;
+
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;
 
@@ -134,6 +137,7 @@ protected:
     bool        m_normalizeColumns;
     bool        m_normalizeVisibleArea;
     bool        m_invertVertical;
+    bool        m_opaque;
 
     int         m_miny;
     int         m_maxy;
