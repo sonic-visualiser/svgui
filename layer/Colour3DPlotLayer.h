@@ -142,7 +142,7 @@ protected:
     int         m_miny;
     int         m_maxy;
     
-    void getColumn(size_t col, DenseThreeDimensionalModel::Column &) const;
+    DenseThreeDimensionalModel::Column getColumn(size_t col) const;
 
     virtual int getColourScaleWidth(QPainter &) const;
     virtual void fillCache(size_t firstBin, size_t lastBin) const;
