@@ -672,13 +672,11 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     paint.restore();
 }
 
-void
-Colour3DPlotLayer::getColumn(size_t col,
-                             DenseThreeDimensionalModel::Column &values) const
+DenseThreeDimensionalModel::Column
+Colour3DPlotLayer::getColumn(size_t col) const
 {
-    m_model->getColumn(col, values);
-
-    if (!m_normalizeColumns) return;
+    DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
+    if (!m_normalizeColumns) return values;
 
     float colMax = 0.f, colMin = 0.f;
     float min = 0.f, max = 0.f;
@@ -687,18 +685,18 @@ Colour3DPlotLayer::getColumn(size_t col,
     max = m_model->getMaximumLevel();
 
     for (size_t y = 0; y < values.size(); ++y) {
-        if (y == 0 || values[y] > colMax) colMax = values[y];
-        if (y == 0 || values[y] < colMin) colMin = values[y];
+        if (y == 0 || values.at(y) > colMax) colMax = values.at(y);
+        if (y == 0 || values.at(y) < colMin) colMin = values.at(y);
     }
     if (colMin == colMax) colMax = colMin + 1;
     
     for (size_t y = 0; y < values.size(); ++y) {
     
-        float value = values[y];
+        float value = values.at(y);
         float norm = (value - colMin) / (colMax - colMin);
-        value = min + (max - min) * norm;
+        float newvalue = min + (max - min) * norm;
 
-        values[y] = value;
+        if (value != newvalue) values[y] = newvalue;
     }    
 }
     
@@ -773,7 +771,6 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 //    std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " will be valid from " << m_cacheValidStart << " to " << m_cacheValidEnd << std::endl;
 
     DenseThreeDimensionalModel::Column values;
-    values.reserve(cacheHeight);
 
     float min = m_model->getMinimumLevel();
     float max = m_model->getMaximumLevel();
@@ -802,8 +799,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         
         for (size_t c = fillStart; c <= fillEnd; ++c) {
 	
-            values.clear();
-            getColumn(c, values);
+            values = getColumn(c);
 
             float colMax = 0.f, colMin = 0.f;
 
@@ -828,8 +824,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 
     for (size_t c = fillStart; c <= fillEnd; ++c) {
 	
-        values.clear();
-        getColumn(c, values);
+        values = getColumn(c);
 
         for (size_t y = 0; y < cacheHeight; ++y) {
 
