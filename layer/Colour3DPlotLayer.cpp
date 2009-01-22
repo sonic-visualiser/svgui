@@ -705,6 +705,7 @@ Colour3DPlotLayer::getColumn(size_t col,
 void
 Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 {
+    Profiler profiler("Colour3DPlotLayer::fillCache");
     size_t modelStart = m_model->getStartFrame();
     size_t modelEnd = m_model->getEndFrame();
     size_t modelResolution = m_model->getResolution();
@@ -867,7 +868,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
         std::cerr << "Colour3DPlotLayer::paint: model says shouldUseLogValueScale = " << m_model->shouldUseLogValueScale() << std::endl;
     }
 */
-//    Profiler profiler("Colour3DPlotLayer::paint");
+    Profiler profiler("Colour3DPlotLayer::paint");
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     std::cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << std::endl;
 #endif
@@ -925,12 +926,13 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
               sx1 < 0 ? 0 : sx1);
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    std::cerr << "Colour3DPlotLayer::paint: height = "<< m_model->getHeight() << ", modelStart = " << modelStart << ", resolution = " << modelResolution << ", model rate = " << m_model->getSampleRate() << std::endl;
+    std::cerr << "Colour3DPlotLayer::paint: height = "<< m_model->getHeight() << ", modelStart = " << modelStart << ", resolution = " << modelResolution << ", model rate = " << m_model->getSampleRate() << " (zoom level = " << v->getZoomLevel() << ", srRatio = " << srRatio << ")" << std::endl;
 #endif
 
     if (m_opaque || 
         int(m_model->getHeight()) >= v->height() ||
-        int(modelResolution * m_model->getSampleRate()) < v->getZoomLevel() / 2) {
+//        int(modelResolution * m_model->getSampleRate()) < v->getZoomLevel() / 2) {
+        ((modelResolution * srRatio) / v->getZoomLevel()) < 2) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
         std::cerr << "calling paintDense" << std::endl;
 #endif
@@ -1025,10 +1027,11 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 void
 Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 {
+    Profiler profiler("Colour3DPlotLayer::paintDense");
     if (!m_cache) return;
 
-    size_t modelStart = m_model->getStartFrame();
-    size_t modelResolution = m_model->getResolution();
+    float modelStart = m_model->getStartFrame();
+    float modelResolution = m_model->getResolution();
 
     float srRatio =
         float(v->getViewManager()->getMainModelSampleRate()) /
@@ -1050,64 +1053,70 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     if (symin < 0) symin = 0;
     if (symax > sh) symax = sh;
 
-    QImage img(w, h, QImage::Format_RGB32);
+    QImage img(w, h, QImage::Format_Indexed8);
+    img.setColorTable(m_cache->colorTable());
 
-    for (int x = x0; x < x1; ++x) {
+    uchar *peaks = new uchar[w];
+    memset(peaks, 0, w);
 
-        long xf = long(v->getFrameForX(x));
-        if (xf < 0) {
-            for (int y = 0; y < h; ++y) {
-                img.setPixel(x - x0, y, m_cache->color(0));
-            }
-            continue;
+    int psy1i = -1;
+
+    for (int y = 0; y < h; ++y) {
+
+        float sy0 = symin + (float(h - y - 1) * (symax - symin)) / h;
+        float sy1 = symin + (float(h - y) * (symax - symin)) / h;
+            
+        int sy0i = int(sy0 + 0.001);
+        int sy1i = int(sy1);
+
+        uchar *targetLine = img.scanLine(y);
+
+        if (sy0i == sy1i && sy0i == psy1i) { // same scan line as just computed
+            goto copy;
         }
 
-        xf /= srRatio;
+        memset(peaks, 0, w);
+        
+        for (int sy = sy0i; sy <= sy1i; ++sy) {
 
-        float sx0 = (float(xf) - modelStart) / modelResolution;
-        float sx1 = (float(v->getFrameForX(x+1) / srRatio) - modelStart) / modelResolution;
+            if (sy < 0 || sy >= m_cache->height()) continue;
+
+            uchar *sourceLine = m_cache->scanLine(sy);
             
-        int sx0i = int(sx0 + 0.001);
-        int sx1i = int(sx1);
+            long xf = -1, nxf = -1;
 
-        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
 
-            float sy0 = symin + (float(h - y - 1) * (symax - symin)) / h;
-            float sy1 = symin + (float(h - y) * (symax - symin)) / h;
-            
-            int sy0i = int(sy0 + 0.001);
-            int sy1i = int(sy1);
+                xf = nxf;
+                nxf = v->getFrameForX(x + 1 + x0);
 
-            float mag = 0.0, div = 0.0;
-            int max = 0;
-
-            for (int sx = sx0i; sx <= sx1i; ++sx) {
-
-                if (sx < 0 || sx >= m_cache->width()) continue;
-
-                for (int sy = sy0i; sy <= sy1i; ++sy) {
-
-                    if (sy < 0 || sy >= m_cache->height()) continue;
-
-                    float prop = 1.0;
-                    if (sx == sx0i) prop *= (sx + 1) - sx0;
-                    if (sx == sx1i) prop *= sx1 - sx;
-                    if (sy == sy0i) prop *= (sy + 1) - sy0;
-                    if (sy == sy1i) prop *= sy1 - sy;
-
-                    mag += prop * m_cache->pixelIndex(sx, sy);
-                    max = std::max(max, m_cache->pixelIndex(sx, sy));
-                    div += prop;
+                if (xf < 0) {
+                    xf = v->getFrameForX(x + x0);
                 }
+
+                if (xf < 0) {
+                    peaks[x] = 0;
+                    continue;
+                }
+
+                float sx0 = (float(xf) / srRatio - modelStart) / modelResolution;
+                float sx1 = (float(nxf) / srRatio - modelStart) / modelResolution;
+            
+                int sx0i = int(sx0 + 0.001);
+                int sx1i = int(sx1);
+
+                uchar peak = 0;
+                for (int sx = sx0i; sx <= sx1i; ++sx) {
+                    if (sx < 0 || sx >= m_cache->width()) continue;
+                    if (sourceLine[sx] > peak) peak = sourceLine[sx];
+                }
+                peaks[x] = peak;
             }
-
-            if (div != 0) mag /= div;
-            if (mag < 0) mag = 0;
-            if (mag > 255) mag = 255;
-            if (max < 0) max = 0;
-            if (max > 255) max = 255;
-
-            img.setPixel(x - x0, y, m_cache->color(int(mag + 0.001)));
+        }
+        
+    copy:
+        for (int x = 0; x < w; ++x) {
+            targetLine[x] = peaks[x];
         }
     }
 
