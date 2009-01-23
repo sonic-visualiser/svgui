@@ -36,6 +36,8 @@
 Colour3DPlotLayer::Colour3DPlotLayer() :
     m_model(0),
     m_cache(0),
+    m_peaksCache(0),
+    m_peakResolution(128),
     m_cacheValidStart(0),
     m_cacheValidEnd(0),
     m_colourScale(LinearScale),
@@ -54,6 +56,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
 Colour3DPlotLayer::~Colour3DPlotLayer()
 {
     delete m_cache;
+    delete m_peaksCache;
 }
 
 void
@@ -77,8 +80,10 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 void
 Colour3DPlotLayer::cacheInvalid()
 {
-    delete m_cache; 
+    delete m_cache;
+    delete m_peaksCache;
     m_cache = 0;
+    m_peaksCache = 0;
     m_cacheValidStart = 0;
     m_cacheValidEnd = 0;
 }
@@ -721,18 +726,38 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 
     if (m_cache && (m_cache->height() != int(cacheHeight))) {
         delete m_cache;
+        delete m_peaksCache;
         m_cache = 0;
+        m_peaksCache = 0;
     } 
 
     if (m_cache && (m_cache->width() != int(cacheWidth))) {
-        QImage *newCache = new QImage(m_cache->copy(0, 0, cacheWidth, cacheHeight));
+        QImage *newCache =
+            new QImage(m_cache->copy(0, 0, cacheWidth, cacheHeight));
         delete m_cache;
         m_cache = newCache;
+        if (m_peaksCache) {
+            QImage *newPeaksCache =
+                new QImage(m_peaksCache->copy
+                           (0, 0, cacheWidth / m_peakResolution, cacheHeight));
+            delete m_peaksCache;
+            m_peaksCache = newPeaksCache;
+        }
     }
 
     if (!m_cache) {
-        m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
+        m_cache = new QImage
+            (cacheWidth, cacheHeight, QImage::Format_Indexed8);
         m_cache->setNumColors(256);
+        if (modelResolution < m_peakResolution / 2 && !m_normalizeVisibleArea) {
+            m_peaksCache = new QImage
+                (cacheWidth / m_peakResolution + 1, cacheHeight,
+                 QImage::Format_Indexed8);
+            m_peaksCache->setNumColors(256);
+        } else if (m_peaksCache) {
+            delete m_peaksCache;
+            m_peaksCache = 0;
+        }
         m_cacheValidStart = 0;
         m_cacheValidEnd = 0;
     }
@@ -791,7 +816,12 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     
     for (int index = 0; index < 256; ++index) {
         QColor colour = mapper.map(index);
-        m_cache->setColor(index, qRgb(colour.red(), colour.green(), colour.blue()));
+        m_cache->setColor
+            (index, qRgb(colour.red(), colour.green(), colour.blue()));
+        if (m_peaksCache) {
+            m_peaksCache->setColor
+                (index, qRgb(colour.red(), colour.green(), colour.blue()));
+        }
     }
     
 //    m_cache->fill(0);
@@ -825,6 +855,14 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     
     if (visibleMin == visibleMax) visibleMax = visibleMin + 1;
 
+    int *peaks = 0;
+    if (m_peaksCache) {
+        peaks = new int[cacheHeight];
+        for (int y = 0; y < cacheHeight; ++y) {
+            peaks[y] = 0;
+        }
+    }
+
     for (size_t c = fillStart; c <= fillEnd; ++c) {
 	
         values = getColumn(c);
@@ -833,7 +871,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 
             float value = min;
             if (y < values.size()) {
-                value = values[y];
+                value = values.at(y);
             }
 
             if (m_colourScale == LogScale) {
@@ -848,6 +886,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             int pixel = int(((value - min) * 256) / (max - min));
             if (pixel < 0) pixel = 0;
             if (pixel > 255) pixel = 255;
+            if (peaks && (pixel > peaks[y])) peaks[y] = pixel;
 
             if (m_invertVertical) {
                 m_cache->setPixel(c, cacheHeight - y - 1, pixel);
@@ -855,7 +894,26 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
                 m_cache->setPixel(c, y, pixel);
             }
         }
+
+        if (peaks) {
+            size_t notch = (c % m_peakResolution);
+            if (notch == m_peakResolution-1 || c == fillEnd) {
+                size_t pc = c / m_peakResolution;
+                for (size_t y = 0; y < cacheHeight; ++y) {
+                    if (m_invertVertical) {
+                        m_peaksCache->setPixel(pc, cacheHeight - y - 1, peaks[y]);
+                    } else {
+                        m_peaksCache->setPixel(pc, y, peaks[y]);
+                    }
+                }
+                for (int y = 0; y < cacheHeight; ++y) {
+                    peaks[y] = 0;
+                }
+            }
+        }
     }
+
+    delete[] peaks;
 }
 
 void
@@ -929,7 +987,6 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     if (m_opaque || 
         int(m_model->getHeight()) >= v->height() ||
-//        int(modelResolution * m_model->getSampleRate()) < v->getZoomLevel() / 2) {
         ((modelResolution * srRatio) / v->getZoomLevel()) < 2) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
         std::cerr << "calling paintDense" << std::endl;
@@ -1031,9 +1088,9 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     float modelStart = m_model->getStartFrame();
     float modelResolution = m_model->getResolution();
 
-    float srRatio =
-        float(v->getViewManager()->getMainModelSampleRate()) /
-        float(m_model->getSampleRate());
+    int mmsr = v->getViewManager()->getMainModelSampleRate();
+    int msr = m_model->getSampleRate();
+    float srRatio = float(mmsr) / float(msr);
 
     int x0 = rect.left();
     int x1 = rect.right() + 1;
@@ -1057,7 +1114,20 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     uchar *peaks = new uchar[w];
     memset(peaks, 0, w);
 
+    int zoomLevel = v->getZoomLevel();
+    
+    QImage *source = m_cache;
+    if (m_peaksCache &&
+        ((modelResolution * srRatio * m_peakResolution) / zoomLevel) < 1) {
+//        std::cerr << "using peaks cache" << std::endl;
+        source = m_peaksCache;
+        modelResolution *= m_peakResolution;
+    } else {
+//        std::cerr << "not using peaks cache" << std::endl;
+    }
+
     int psy1i = -1;
+    int sw = source->width();
 
     for (int y = 0; y < h; ++y) {
 
@@ -1077,20 +1147,19 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
         
         for (int sy = sy0i; sy <= sy1i; ++sy) {
 
-            if (sy < 0 || sy >= m_cache->height()) continue;
+            if (sy < 0 || sy >= source->height()) continue;
 
-            uchar *sourceLine = m_cache->scanLine(sy);
+            uchar *sourceLine = source->scanLine(sy);
             
-            long xf = -1, nxf = -1;
+            long xf = -1;
+            long nxf = v->getFrameForX(x0);
+
+            int nsxi = -1;
 
             for (int x = 0; x < w; ++x) {
 
                 xf = nxf;
-                nxf = v->getFrameForX(x + 1 + x0);
-
-                if (xf < 0) {
-                    xf = v->getFrameForX(x + x0);
-                }
+                nxf = xf + zoomLevel;
 
                 if (xf < 0) {
                     peaks[x] = 0;
@@ -1105,7 +1174,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
                 uchar peak = 0;
                 for (int sx = sx0i; sx <= sx1i; ++sx) {
-                    if (sx < 0 || sx >= m_cache->width()) continue;
+                    if (sx < 0 || sx >= sw) continue;
                     if (sourceLine[sx] > peak) peak = sourceLine[sx];
                 }
                 peaks[x] = peak;
@@ -1117,6 +1186,8 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             targetLine[x] = peaks[x];
         }
     }
+
+    delete[] peaks;
 
     paint.drawImage(x0, 0, img);
 }
