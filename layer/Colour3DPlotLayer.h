@@ -128,6 +128,7 @@ protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this
     
     mutable QImage *m_cache;
+    mutable QImage *m_peaksCache;
     mutable size_t m_cacheValidStart;
     mutable size_t m_cacheValidEnd;
 
@@ -138,15 +139,16 @@ protected:
     bool        m_normalizeVisibleArea;
     bool        m_invertVertical;
     bool        m_opaque;
+    size_t      m_peakResolution;
 
     int         m_miny;
     int         m_maxy;
     
     DenseThreeDimensionalModel::Column getColumn(size_t col) const;
 
-    virtual int getColourScaleWidth(QPainter &) const;
-    virtual void fillCache(size_t firstBin, size_t lastBin) const;
-    virtual void paintDense(View *v, QPainter &paint, QRect rect) const;
+    int getColourScaleWidth(QPainter &) const;
+    void fillCache(size_t firstBin, size_t lastBin) const;
+    void paintDense(View *v, QPainter &paint, QRect rect) const;
 };
 
 #endif
