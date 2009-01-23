@@ -676,6 +676,7 @@ DenseThreeDimensionalModel::Column
 Colour3DPlotLayer::getColumn(size_t col) const
 {
     DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
+    while (values.size() < m_model->getHeight()) values.push_back(0.f);
     if (!m_normalizeColumns) return values;
 
     float colMax = 0.f, colMin = 0.f;
@@ -697,7 +698,9 @@ Colour3DPlotLayer::getColumn(size_t col) const
         float newvalue = min + (max - min) * norm;
 
         if (value != newvalue) values[y] = newvalue;
-    }    
+    }
+
+    return values;
 }
     
 void
