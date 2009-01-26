@@ -149,6 +149,7 @@ protected:
     int getColourScaleWidth(QPainter &) const;
     void fillCache(size_t firstBin, size_t lastBin) const;
     void paintDense(View *v, QPainter &paint, QRect rect) const;
+    void paintSmooth(View *v, QPainter &paint, QRect rect) const;
 };
 
 #endif

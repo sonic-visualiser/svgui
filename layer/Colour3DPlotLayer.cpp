@@ -1198,6 +1198,68 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     paint.drawImage(x0, 0, img);
 }
 
+void
+Colour3DPlotLayer::paintSmooth(View *v, QPainter &paint, QRect rect) const
+{
+    Profiler profiler("Colour3DPlotLayer:paintSmooth");
+    if (!m_cache) return;
+
+    float modelStart = m_model->getStartFrame();
+    float modelResolution = m_model->getResolution();
+
+    int mmsr = v->getViewManager()->getMainModelSampleRate();
+    int msr = m_model->getSampleRate();
+    float srRatio = float(mmsr) / float(msr);
+
+    int x0 = rect.left();
+    int x1 = rect.right() + 1;
+
+    int h = v->height(); // we always paint full height
+    int sh = m_model->getHeight();
+
+    int symin = m_miny;
+    int symax = m_maxy;
+    if (symax <= symin) {
+        symin = 0;
+        symax = sh;
+    }
+    if (symin < 0) symin = 0;
+    if (symax > sh) symax = sh;
+
+//    QImage img(w, h, QImage::Format_Indexed8);
+//    img.setColorTable(m_cache->colorTable());
+
+    int zoomLevel = v->getZoomLevel();
+    
+    QImage *source = m_cache;
+    if (m_peaksCache &&
+        ((modelResolution * srRatio * m_peakResolution) / zoomLevel) < 1) {
+        std::cerr << "using peaks cache" << std::endl;
+        source = m_peaksCache;
+        modelResolution *= m_peakResolution;
+    } else {
+        std::cerr << "not using peaks cache" << std::endl;
+    }
+
+    float sx0 = (float(v->getFrameForX(x0)) / srRatio - modelStart) / modelResolution;
+    float sx1 = (float(v->getFrameForX(x1)) / srRatio - modelStart) / modelResolution;
+    int sx0i = int(sx0 + 0.001);
+    int sx1i = int(sx1);
+
+    if (sx0i < 0) sx0i = 0;
+    if (sx0i > source->width()) sx0i = source->width();
+    
+    int tx0 = v->getXForFrame(((sx0i * modelResolution) + modelStart) * srRatio + 0.001);
+    int tx1 = v->getXForFrame(((sx1i * modelResolution) + modelStart) * srRatio);
+
+    std::cerr << "x0 " << x0 << ", x1 " << x1 << " -> sx0 " << sx0i << ", sx1 " << sx1i << " -> tx0 " << tx0 << ", tx1 " << tx1 << std::endl;
+
+    QImage img = source->copy(sx0i, 0, sx1i - sx0i, source->height())
+        .scaled(QSize(tx1 - tx0, h),
+                Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    paint.drawImage(x0, 0, img);
+}
+
 bool
 Colour3DPlotLayer::snapToFeatureFrame(View *v, int &frame,
 				      size_t &resolution,
