@@ -1095,7 +1095,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     int x0 = rect.left();
     int x1 = rect.right() + 1;
 
-    int w = x1 - x0;
+    const int w = x1 - x0; // const so it can be used as array size below
     int h = v->height();
     int sh = m_model->getHeight();
 
@@ -1128,6 +1128,25 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     int psy1i = -1;
     int sw = source->width();
+    
+    long xf = -1;
+    long nxf = v->getFrameForX(x0);
+
+    int sxa[w * 2];
+    for (int x = 0; x < w; ++x) {
+
+        xf = nxf;
+        nxf = xf + zoomLevel;
+
+        float sx0 = (float(xf) / srRatio - modelStart) / modelResolution;
+        float sx1 = (float(nxf) / srRatio - modelStart) / modelResolution;
+
+        int sx0i = int(sx0 + 0.001);
+        int sx1i = int(sx1);
+
+        sxa[x*2] = sx0i;
+        sxa[x*2 + 1] = sx1i;
+    }
 
     for (int y = 0; y < h; ++y) {
 
@@ -1151,26 +1170,10 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
             uchar *sourceLine = source->scanLine(sy);
             
-            long xf = -1;
-            long nxf = v->getFrameForX(x0);
-
-            int nsxi = -1;
-
             for (int x = 0; x < w; ++x) {
 
-                xf = nxf;
-                nxf = xf + zoomLevel;
-
-                if (xf < 0) {
-                    peaks[x] = 0;
-                    continue;
-                }
-
-                float sx0 = (float(xf) / srRatio - modelStart) / modelResolution;
-                float sx1 = (float(nxf) / srRatio - modelStart) / modelResolution;
-            
-                int sx0i = int(sx0 + 0.001);
-                int sx1i = int(sx1);
+                int sx0i = sxa[x*2];
+                int sx1i = sxa[x*2 + 1];
 
                 uchar peak = 0;
                 for (int sx = sx0i; sx <= sx1i; ++sx) {
