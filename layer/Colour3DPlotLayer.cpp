@@ -722,6 +722,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     size_t modelEndBin = modelEnd / modelResolution;
 
     size_t cacheWidth = modelEndBin - modelStartBin + 1;
+    if (lastBin > modelEndBin) cacheWidth = lastBin - modelStartBin + 1;
     size_t cacheHeight = m_model->getHeight();
 
     if (m_cache && (m_cache->height() != int(cacheHeight))) {
@@ -1096,7 +1097,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     int x1 = rect.right() + 1;
 
     const int w = x1 - x0; // const so it can be used as array size below
-    int h = v->height();
+    int h = v->height(); // we always paint full height
     int sh = m_model->getHeight();
 
     int symin = m_miny;
@@ -1162,7 +1163,9 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             goto copy;
         }
 
-        memset(peaks, 0, w);
+        for (int x = 0; x < w; ++x) {
+            peaks[x] = 0;
+        }
         
         for (int sy = sy0i; sy <= sy1i; ++sy) {
 
