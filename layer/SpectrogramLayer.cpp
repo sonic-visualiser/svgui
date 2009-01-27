@@ -2215,12 +2215,12 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
                     break;
                 }
             }
-            
+/*!!!            
             if (!fftSuspended) {
                 fft->suspendWrites();
                 fftSuspended = true;
             }
-
+*/
             Profiler innerprof2("SpectrogramLayer::paint: 1 data column");
 
             MagnitudeRange mag;
@@ -2487,7 +2487,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
         m_lastPaintTime = RealTime::fromTimeval(tv) - mainPaintStart;
     }
 
-    if (fftSuspended) fft->resume();
+//!!!    if (fftSuspended) fft->resume();
 }
 
 void
