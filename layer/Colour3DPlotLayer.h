@@ -60,6 +60,8 @@ public:
 				    size_t &resolution,
 				    SnapType snap) const;
 
+    virtual void setLayerDormant(const View *v, bool dormant);
+
     virtual bool isLayerScrollable(const View *v) const;
 
     virtual ColourSignificance getLayerColourSignificance() const {

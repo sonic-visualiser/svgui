@@ -371,6 +371,30 @@ Colour3DPlotLayer::getOpaque() const
     return m_opaque;
 }
 
+void
+Colour3DPlotLayer::setLayerDormant(const View *v, bool dormant)
+{
+    if (dormant) {
+
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+        std::cerr << "Colour3DPlotLayer::setLayerDormant(" << dormant << ")"
+                  << std::endl;
+#endif
+
+        if (isLayerDormant(v)) {
+            return;
+        }
+
+        Layer::setLayerDormant(v, true);
+
+        cacheInvalid();
+	
+    } else {
+
+        Layer::setLayerDormant(v, false);
+    }
+}
+
 bool
 Colour3DPlotLayer::isLayerScrollable(const View *v) const
 {
