@@ -553,25 +553,25 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 }
 
 void
-SpectrogramLayer::invalidatePixmapCaches()
+SpectrogramLayer::invalidateImageCaches()
 {
-    for (ViewPixmapCache::iterator i = m_pixmapCaches.begin();
-         i != m_pixmapCaches.end(); ++i) {
+    for (ViewImageCache::iterator i = m_imageCaches.begin();
+         i != m_imageCaches.end(); ++i) {
         i->second.validArea = QRect();
     }
 }
 
 void
-SpectrogramLayer::invalidatePixmapCaches(size_t startFrame, size_t endFrame)
+SpectrogramLayer::invalidateImageCaches(size_t startFrame, size_t endFrame)
 {
-    for (ViewPixmapCache::iterator i = m_pixmapCaches.begin();
-         i != m_pixmapCaches.end(); ++i) {
+    for (ViewImageCache::iterator i = m_imageCaches.begin();
+         i != m_imageCaches.end(); ++i) {
 
         //!!! when are views removed from the map? on setLayerDormant?
         const View *v = i->first;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        std::cerr << "SpectrogramLayer::invalidatePixmapCaches(" 
+        std::cerr << "SpectrogramLayer::invalidateImageCaches(" 
                   << startFrame << ", " << endFrame << "): view range is "
                   << v->getStartFrame() << ", " << v->getEndFrame()
                   << std::endl;
@@ -638,7 +638,7 @@ SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
         return;
     }
     if (name == "Spectrogram Smoothing") {
-        invalidatePixmapCaches();
+        invalidateImageCaches();
         invalidateMagnitudes();
         emit layerParametersChanged();
     }
@@ -652,7 +652,7 @@ SpectrogramLayer::setChannel(int ch)
 {
     if (m_channel == ch) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     m_channel = ch;
     invalidateFFTModels();
 
@@ -670,7 +670,7 @@ SpectrogramLayer::setWindowSize(size_t ws)
 {
     if (m_windowSize == ws) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     
     m_windowSize = ws;
     m_fftSize = ws * (m_zeroPadLevel + 1);
@@ -691,7 +691,7 @@ SpectrogramLayer::setWindowHopLevel(size_t v)
 {
     if (m_windowHopLevel == v) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     
     m_windowHopLevel = v;
     
@@ -713,7 +713,7 @@ SpectrogramLayer::setZeroPadLevel(size_t v)
 {
     if (m_zeroPadLevel == v) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     
     m_zeroPadLevel = v;
     m_fftSize = m_windowSize * (v + 1);
@@ -734,7 +734,7 @@ SpectrogramLayer::setWindowType(WindowType w)
 {
     if (m_windowType == w) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     
     m_windowType = w;
 
@@ -757,7 +757,7 @@ SpectrogramLayer::setGain(float gain)
 
     if (m_gain == gain) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     
     m_gain = gain;
     
@@ -775,7 +775,7 @@ SpectrogramLayer::setThreshold(float threshold)
 {
     if (m_threshold == threshold) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     
     m_threshold = threshold;
 
@@ -795,7 +795,7 @@ SpectrogramLayer::setMinFrequency(size_t mf)
 
 //    std::cerr << "SpectrogramLayer::setMinFrequency: " << mf << std::endl;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     invalidateMagnitudes();
     
     m_minFrequency = mf;
@@ -816,7 +816,7 @@ SpectrogramLayer::setMaxFrequency(size_t mf)
 
 //    std::cerr << "SpectrogramLayer::setMaxFrequency: " << mf << std::endl;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     invalidateMagnitudes();
     
     m_maxFrequency = mf;
@@ -833,7 +833,7 @@ SpectrogramLayer::getMaxFrequency() const
 void
 SpectrogramLayer::setColourRotation(int r)
 {
-    invalidatePixmapCaches();
+    invalidateImageCaches();
 
     if (r < 0) r = 0;
     if (r > 256) r = 256;
@@ -852,7 +852,7 @@ SpectrogramLayer::setColourScale(ColourScale colourScale)
 {
     if (m_colourScale == colourScale) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     
     m_colourScale = colourScale;
     
@@ -870,7 +870,7 @@ SpectrogramLayer::setColourMap(int map)
 {
     if (m_colourMap == map) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     
     m_colourMap = map;
     initialisePalette();
@@ -889,7 +889,7 @@ SpectrogramLayer::setFrequencyScale(FrequencyScale frequencyScale)
 {
     if (m_frequencyScale == frequencyScale) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     m_frequencyScale = frequencyScale;
 
     emit layerParametersChanged();
@@ -906,7 +906,7 @@ SpectrogramLayer::setBinDisplay(BinDisplay binDisplay)
 {
     if (m_binDisplay == binDisplay) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     m_binDisplay = binDisplay;
 
     emit layerParametersChanged();
@@ -923,7 +923,7 @@ SpectrogramLayer::setNormalizeColumns(bool n)
 {
     if (m_normalizeColumns == n) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     invalidateMagnitudes();
     m_normalizeColumns = n;
 
@@ -944,7 +944,7 @@ SpectrogramLayer::setNormalizeVisibleArea(bool n)
 
     if (m_normalizeVisibleArea == n) return;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     invalidateMagnitudes();
     m_normalizeVisibleArea = n;
 
@@ -973,8 +973,8 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 
         Layer::setLayerDormant(v, true);
 
-	invalidatePixmapCaches();
-        m_pixmapCaches.erase(v);
+	invalidateImageCaches();
+        m_imageCaches.erase(v);
 
         if (m_fftModels.find(v) != m_fftModels.end()) {
 
@@ -1008,7 +1008,7 @@ SpectrogramLayer::cacheInvalid()
     std::cerr << "SpectrogramLayer::cacheInvalid()" << std::endl;
 #endif
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     invalidateMagnitudes();
 }
 
@@ -1019,7 +1019,7 @@ SpectrogramLayer::cacheInvalid(size_t from, size_t to)
     std::cerr << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << std::endl;
 #endif
 
-    invalidatePixmapCaches(from, to);
+    invalidateImageCaches(from, to);
     invalidateMagnitudes();
 }
 
@@ -1053,7 +1053,7 @@ SpectrogramLayer::fillTimerTimedOut()
 #ifdef DEBUG_SPECTROGRAM_REPAINT
                     std::cerr << "complete!" << std::endl;
 #endif
-                    invalidatePixmapCaches();
+                    invalidateImageCaches();
                     i->second.second = -1;
                     emit modelChanged();
 
@@ -1062,7 +1062,7 @@ SpectrogramLayer::fillTimerTimedOut()
                     std::cerr << "SpectrogramLayer: emitting modelChanged("
                               << lastFill << "," << fill << ")" << std::endl;
 #endif
-                    invalidatePixmapCaches(lastFill, fill);
+                    invalidateImageCaches(lastFill, fill);
                     i->second.second = fill;
                     emit modelChanged(lastFill, fill);
                 }
@@ -1071,7 +1071,7 @@ SpectrogramLayer::fillTimerTimedOut()
                 std::cerr << "SpectrogramLayer: going backwards, emitting modelChanged("
                           << m_model->getStartFrame() << "," << m_model->getEndFrame() << ")" << std::endl;
 #endif
-                invalidatePixmapCaches();
+                invalidateImageCaches();
                 i->second.second = fill;
                 emit modelChanged(m_model->getStartFrame(), m_model->getEndFrame());
             }
@@ -1119,6 +1119,8 @@ SpectrogramLayer::initialisePalette()
     m_colourRotation = 0;
     rotatePalette(m_colourRotation - formerRotation);
     m_colourRotation = formerRotation;
+
+    m_drawBuffer = QImage();
 }
 
 void
@@ -1138,6 +1140,8 @@ SpectrogramLayer::rotatePalette(int distance)
     for (int pixel = 0; pixel < 256; ++pixel) {
 	m_palette.setColour(pixel, newPixels[pixel]);
     }
+
+    m_drawBuffer = QImage();
 }
 
 unsigned char
@@ -1778,10 +1782,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 
-    PixmapCache &cache = m_pixmapCaches[v];
+    ImageCache &cache = m_imageCaches[v];
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    std::cerr << "SpectrogramLayer::paint(): pixmap cache valid area " << cache.
+    std::cerr << "SpectrogramLayer::paint(): image cache valid area " << cache.
 
 validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() << "x" << cache.validArea.height() << std::endl;
 #endif
@@ -1796,7 +1800,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     int x0 = 0;
     int x1 = v->width();
 
-    bool recreateWholePixmapCache = true;
+    bool recreateWholeImageCache = true;
 
     x0 = rect.left();
     x1 = rect.right() + 1;
@@ -1804,8 +1808,8 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     if (cache.validArea.width() > 0) {
 
 	if (int(cache.zoomLevel) == zoomLevel &&
-	    cache.pixmap.width() == v->width() &&
-	    cache.pixmap.height() == v->height()) {
+	    cache.image.width() == v->width() &&
+	    cache.image.height() == v->height()) {
 
 	    if (v->getXForFrame(cache.startFrame) ==
 		v->getXForFrame(startFrame) &&
@@ -1813,60 +1817,60 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                 cache.validArea.x() + cache.validArea.width() >= x1) {
 	    
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-		std::cerr << "SpectrogramLayer: pixmap cache good" << std::endl;
+		std::cerr << "SpectrogramLayer: image cache good" << std::endl;
 #endif
 
-		paint.drawPixmap(rect, cache.pixmap, rect);
+		paint.drawImage(rect, cache.image, rect);
                 illuminateLocalFeatures(v, paint);
 		return;
 
 	    } else {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-		std::cerr << "SpectrogramLayer: pixmap cache partially OK" << std::endl;
+		std::cerr << "SpectrogramLayer: image cache partially OK" << std::endl;
 #endif
 
-		recreateWholePixmapCache = false;
+		recreateWholeImageCache = false;
 
 		int dx = v->getXForFrame(cache.startFrame) -
 		         v->getXForFrame(startFrame);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-		std::cerr << "SpectrogramLayer: dx = " << dx << " (pixmap cache " << cache.pixmap.width() << "x" << cache.pixmap.height() << ")" << std::endl;
+		std::cerr << "SpectrogramLayer: dx = " << dx << " (image cache " << cache.image.width() << "x" << cache.image.height() << ")" << std::endl;
 #endif
 
 		if (dx != 0 &&
-                    dx > -cache.pixmap.width() &&
-                    dx <  cache.pixmap.width()) {
+                    dx > -cache.image.width() &&
+                    dx <  cache.image.width()) {
 
-                    QPixmap tmp = cache.pixmap;
-                    QPainter cachePainter(&cache.pixmap);
+                    QImage tmp = cache.image;
+                    QPainter cachePainter(&cache.image);
                     if (dx < 0) {
-                        cachePainter.drawPixmap
+                        cachePainter.drawImage
                             (QRect(0, 0,
-                                   cache.pixmap.width() + dx,
-                                   cache.pixmap.height()),
+                                   cache.image.width() + dx,
+                                   cache.image.height()),
                              tmp,
                              QRect(-dx, 0,
-                                   cache.pixmap.width() + dx,
-                                   cache.pixmap.height()));
+                                   cache.image.width() + dx,
+                                   cache.image.height()));
                     } else {
-                        cachePainter.drawPixmap
+                        cachePainter.drawImage
                             (QRect(dx, 0,
-                                   cache.pixmap.width() - dx,
-                                   cache.pixmap.height()),
+                                   cache.image.width() - dx,
+                                   cache.image.height()),
                              tmp,
                              QRect(0, 0,
-                                   cache.pixmap.width() - dx,
-                                   cache.pixmap.height()));
+                                   cache.image.width() - dx,
+                                   cache.image.height()));
                     }
 
                     int px = cache.validArea.x();
                     int pw = cache.validArea.width();
 
 		    if (dx < 0) {
-			x0 = cache.pixmap.width() + dx;
-			x1 = cache.pixmap.width();
+			x0 = cache.image.width() + dx;
+			x1 = cache.image.width();
                         px += dx;
                         if (px < 0) {
                             pw += px;
@@ -1877,8 +1881,8 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 			x0 = 0;
 			x1 = dx;
                         px += dx;
-                        if (px + pw > cache.pixmap.width()) {
-                            pw = int(cache.pixmap.width()) - px;
+                        if (px + pw > cache.image.width()) {
+                            pw = int(cache.image.width()) - px;
                             if (pw < 0) pw = 0;
                         }
 		    }
@@ -1894,8 +1898,8 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                               << std::endl;
 #endif
 
-		    paint.drawPixmap(rect & cache.validArea,
-                                     cache.pixmap,
+		    paint.drawImage(rect & cache.validArea,
+                                     cache.image,
                                      rect & cache.validArea);
 
                 } else if (dx != 0) {
@@ -1907,27 +1911,27 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
 
                     cache.validArea = QRect();
-                    recreateWholePixmapCache = true;
+                    recreateWholeImageCache = true;
                 }
 	    }
 	} else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-	    std::cerr << "SpectrogramLayer: pixmap cache useless" << std::endl;
+	    std::cerr << "SpectrogramLayer: image cache useless" << std::endl;
             if (int(cache.zoomLevel) != zoomLevel) {
                 std::cerr << "(cache zoomLevel " << cache.zoomLevel
                           << " != " << zoomLevel << ")" << std::endl;
             }
-            if (cache.pixmap.width() != v->width()) {
-                std::cerr << "(cache width " << cache.pixmap.width()
+            if (cache.image.width() != v->width()) {
+                std::cerr << "(cache width " << cache.image.width()
                           << " != " << v->width();
             }
-            if (cache.pixmap.height() != v->height()) {
-                std::cerr << "(cache height " << cache.pixmap.height()
+            if (cache.image.height() != v->height()) {
+                std::cerr << "(cache height " << cache.image.height()
                           << " != " << v->height();
             }
 #endif
             cache.validArea = QRect();
-//            recreateWholePixmapCache = true;
+//            recreateWholeImageCache = true;
 	}
     }
 
@@ -1937,7 +1941,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
         if (m_normalizeVisibleArea) {
             cache.validArea = QRect();
-            recreateWholePixmapCache = true;
+            recreateWholeImageCache = true;
         }
     } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -1945,7 +1949,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
     }
 
-    if (recreateWholePixmapCache) {
+    if (recreateWholeImageCache) {
         x0 = 0;
         x1 = v->width();
     }
@@ -2067,10 +2071,15 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
 
     if (m_drawBuffer.width() < w || m_drawBuffer.height() < h) {
-        m_drawBuffer = QImage(w, h, QImage::Format_RGB32);
+        m_drawBuffer = QImage(w, h, QImage::Format_Indexed8);
+        m_drawBuffer.setNumColors(256);
+        for (int pixel = 0; pixel < 256; ++pixel) {
+            m_drawBuffer.setColor(pixel, m_palette.getColour(pixel).rgb());
+        }
     }
 
-    m_drawBuffer.fill(m_palette.getColour(0).rgb());
+//    m_drawBuffer.fill(m_palette.getColour(0).rgb());
+    m_drawBuffer.fill(0);
 
     int sr = m_model->getSampleRate();
 
@@ -2117,7 +2126,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 //    std::cerr << "(giving actual minFreq " << minFreq << " and display minFreq " << displayMinFreq << ")" << std::endl;
 
     float yforbin[maxbin - minbin + 1];
-    float yval[h];
 
     size_t increment = getWindowIncrement();
     
@@ -2155,10 +2163,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
         Profiler innerprof("SpectrogramLayer::paint: 1 pixel column");
 
-        runOutOfData = !getColumnValues(v, fft, x0, x,
-                                        minbin, maxbin,
-                                        displayMinFreq, displayMaxFreq,
-                                        h, yforbin, yval);
+        runOutOfData = !paintColumnValues(v, fft, x0, x,
+                                          minbin, maxbin,
+                                          displayMinFreq, displayMaxFreq,
+                                          h, yforbin);
 
         if (runOutOfData) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2166,23 +2174,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
             break;
         }
-
-        Profiler drawbufferprof("SpectrogramLayer::paint: set buffer pixels");
-
-	for (int y = 0; y < h; ++y) {
-
-            unsigned char pixel = 0;
-
-            pixel = getDisplayValue(v, yval[y]);
-
-            assert(x <= m_drawBuffer.width());
-            QColor c = m_palette.getColour(pixel);
-            m_drawBuffer.setPixel(x, y,
-                                  qRgb(c.red(), c.green(), c.blue()));
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-            ++pixels;
-#endif
-	}
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2204,12 +2195,12 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     Profiler profiler2("SpectrogramLayer::paint: draw image");
 
-    if (recreateWholePixmapCache) {
+    if (recreateWholeImageCache) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        std::cerr << "Recreating pixmap cache: width = " << v->width()
+        std::cerr << "Recreating image cache: width = " << v->width()
                   << ", height = " << h << std::endl;
 #endif
-	cache.pixmap = QPixmap(v->width(), h);
+	cache.image = QImage(v->width(), h, QImage::Format_RGB32);
     }
 
     if (w > 0) {
@@ -2219,7 +2210,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                   << " to cache at " << x0 << "," << 0 << std::endl;
 #endif
 
-        QPainter cachePainter(&cache.pixmap);
+        QPainter cachePainter(&cache.image);
         cachePainter.drawImage(x0, 0, m_drawBuffer, 0, 0, w, h);
         cachePainter.end();
     }
@@ -2232,7 +2223,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
               << " to window" << std::endl;
 #endif
 
-    paint.drawPixmap(pr.x(), pr.y(), cache.pixmap,
+    paint.drawImage(pr.x(), pr.y(), cache.image,
                      pr.x(), pr.y(), pr.width(), pr.height());
 
     cache.startFrame = startFrame;
@@ -2251,18 +2242,18 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             }
             
             if (cache.validArea.x() + cache.validArea.width() <
-                cache.pixmap.width()) {
+                cache.image.width()) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
                 std::cerr << "SpectrogramLayer::paint() updating right ("
                           << cache.validArea.x() + cache.validArea.width()
                           << ", "
-                          << cache.pixmap.width() - (cache.validArea.x() +
+                          << cache.image.width() - (cache.validArea.x() +
                                                      cache.validArea.width())
                           << ")" << std::endl;
 #endif
                 v->update(cache.validArea.x() + cache.validArea.width(),
                           0,
-                          cache.pixmap.width() - (cache.validArea.x() +
+                          cache.image.width() - (cache.validArea.x() +
                                                   cache.validArea.width()),
                           h);
             }
@@ -2291,7 +2282,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
 
 bool
-SpectrogramLayer::getColumnValues(View *v, 
+SpectrogramLayer::paintColumnValues(View *v, 
                                   FFTModel *fft,
                                   int x0,
                                   int x,
@@ -2300,8 +2291,7 @@ SpectrogramLayer::getColumnValues(View *v,
                                   float displayMinFreq,
                                   float displayMaxFreq,
                                   const int h,
-                                  const float *yforbin,
-                                  float *yval) const
+                                  const float *yforbin) const
 {
     float ymag[h];
     float ydiv[h];
@@ -2332,7 +2322,7 @@ SpectrogramLayer::getColumnValues(View *v,
         std::cerr << "Out of range at " << x0 + x << std::endl;
 #endif
         assert(x <= m_drawBuffer.width());
-        return false;
+        return true;
     }
 
     int s0i = int(s0 + 0.001);
@@ -2343,7 +2333,7 @@ SpectrogramLayer::getColumnValues(View *v,
 #ifdef DEBUG_SPECTROGRAM_REPAINT
             std::cerr << "Column " << s0i << " out of range" << std::endl;
 #endif
-            return false;
+            return true;
         } else {
             s1i = s0i;
         }
@@ -2513,11 +2503,14 @@ SpectrogramLayer::getColumnValues(View *v,
 
     for (int y = 0; y < h; ++y) {
 
+        float value = 0.f;
+
         if (ydiv[y] > 0.0) {
-            yval[y] = ymag[y] / ydiv[y];
-        } else {
-            yval[y] = 0;
+            value = ymag[y] / ydiv[y];
         }
+        
+        unsigned char pixel = getDisplayValue(v, value);
+        m_drawBuffer.setPixel(x, y, pixel);
     }
 
     return true;
@@ -2634,7 +2627,7 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
 
     if (m_minFrequency == minf && m_maxFrequency == maxf) return true;
 
-    invalidatePixmapCaches();
+    invalidateImageCaches();
     invalidateMagnitudes();
 
     m_minFrequency = minf;
@@ -2685,12 +2678,12 @@ SpectrogramLayer::snapToFeatureFrame(View *, int &frame,
 void
 SpectrogramLayer::measureDoubleClick(View *v, QMouseEvent *e)
 {
-    PixmapCache &cache = m_pixmapCaches[v];
+    ImageCache &cache = m_imageCaches[v];
 
-    std::cerr << "cache width: " << cache.pixmap.width() << ", height: "
-              << cache.pixmap.height() << std::endl;
+    std::cerr << "cache width: " << cache.image.width() << ", height: "
+              << cache.image.height() << std::endl;
 
-    QImage image = cache.pixmap.toImage();
+    QImage image = cache.image;
 
     ImageRegionFinder finder;
     QRect rect = finder.findRegionExtents(&image, e->pos());
