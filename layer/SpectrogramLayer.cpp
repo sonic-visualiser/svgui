@@ -1805,6 +1805,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     x0 = rect.left();
     x1 = rect.right() + 1;
 
+    float xPixelRatio = float(fft->getResolution()) / float(zoomLevel);
+    std::cerr << "xPixelRatio = " << xPixelRatio << std::endl;
+    if (xPixelRatio < 1.f) xPixelRatio = 1.f;
+
     if (cache.validArea.width() > 0) {
 
 	if (int(cache.zoomLevel) == zoomLevel &&
@@ -1821,6 +1825,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
 
 		paint.drawImage(rect, cache.image, rect);
+                //!!!
+//                paint.drawImage(v->rect(), cache.image,
+//                                QRect(QPoint(0, 0), cache.image.size()));
+
                 illuminateLocalFeatures(v, paint);
 		return;
 
@@ -1897,10 +1905,11 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                               << " " << pw << "x" << cache.validArea.height()
                               << std::endl;
 #endif
-
+/*
 		    paint.drawImage(rect & cache.validArea,
                                      cache.image,
                                      rect & cache.validArea);
+*/
 
                 } else if (dx != 0) {
 
@@ -2070,8 +2079,9 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     std::cerr << "x0 " << x0 << ", x1 " << x1 << ", w " << w << ", h " << h << std::endl;
 #endif
 
-    if (m_drawBuffer.width() < w || m_drawBuffer.height() < h) {
-        m_drawBuffer = QImage(w, h, QImage::Format_Indexed8);
+    if (m_drawBuffer.width() < w / xPixelRatio + 1 ||
+        m_drawBuffer.height() < h) {
+        m_drawBuffer = QImage(w / xPixelRatio + 1, h, QImage::Format_Indexed8);
         m_drawBuffer.setNumColors(256);
         for (int pixel = 0; pixel < 256; ++pixel) {
             m_drawBuffer.setColor(pixel, m_palette.getColour(pixel).rgb());
@@ -2159,13 +2169,14 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     Profiler outerprof("SpectrogramLayer::paint: all cols");
 
-    for (int x = 0; x < w; ++x) {
+    for (int x = 0; x < w / xPixelRatio; ++x) {
 
         Profiler innerprof("SpectrogramLayer::paint: 1 pixel column");
 
         runOutOfData = !paintColumnValues(v, fft, x0, x,
                                           minbin, maxbin,
                                           displayMinFreq, displayMaxFreq,
+                                          xPixelRatio,
                                           h, yforbin);
 
         if (runOutOfData) {
@@ -2211,7 +2222,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
 
         QPainter cachePainter(&cache.image);
-        cachePainter.drawImage(x0, 0, m_drawBuffer, 0, 0, w, h);
+        cachePainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        cachePainter.drawImage(QRect(x0, 0, w, h),
+                               m_drawBuffer,
+                               QRect(0, 0, w / xPixelRatio, h));
         cachePainter.end();
     }
 
@@ -2224,7 +2238,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
 
     paint.drawImage(pr.x(), pr.y(), cache.image,
-                     pr.x(), pr.y(), pr.width(), pr.height());
+                    pr.x(), pr.y(), pr.width(), pr.height());
+    //!!!
+//    paint.drawImage(v->rect(), cache.image,
+//                    QRect(QPoint(0, 0), cache.image.size()));
 
     cache.startFrame = startFrame;
     cache.zoomLevel = zoomLevel;
@@ -2290,6 +2307,7 @@ SpectrogramLayer::paintColumnValues(View *v,
                                   int maxbin,
                                   float displayMinFreq,
                                   float displayMaxFreq,
+                                    float xPixelRatio,
                                   const int h,
                                   const float *yforbin) const
 {
@@ -2317,7 +2335,7 @@ SpectrogramLayer::paintColumnValues(View *v,
 
     float s0 = 0, s1 = 0;
 
-    if (!getXBinRange(v, x0 + x, s0, s1)) {
+    if (!getXBinRange(v, x0 + x * xPixelRatio, s0, s1)) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
         std::cerr << "Out of range at " << x0 + x << std::endl;
 #endif
