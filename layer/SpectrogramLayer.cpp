@@ -39,6 +39,8 @@
 
 #include <iostream>
 
+using std::cerr;
+using std::endl;
 #include <cassert>
 #include <cmath>
 
@@ -2073,6 +2075,11 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         cache.validArea = QRect(x0, 0, x1 - x0, h);
     }
 
+    if (xPixelRatio != 1.f) {
+        x0 = int((int(x0 / xPixelRatio) - 4) * xPixelRatio + 0.0001);
+        x1 = int((int(x1 / xPixelRatio) + 4) * xPixelRatio + 0.0001);
+    }
+
     int w = x1 - x0;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2169,6 +2176,33 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     Profiler outerprof("SpectrogramLayer::paint: all cols");
 
+    int bufwid = w / xPixelRatio;
+    int binforx[bufwid + 1];
+    int binfory[h + 1];
+    
+    for (int x = 0; x <= bufwid; ++x) {
+        int vx = int(x0 + x * xPixelRatio + 0.0001);
+        float s0 = 0, s1 = 0;
+        if (!getXBinRange(v, vx, s0, s1)) {
+            binforx[x] = -1;
+        } else {
+            binforx[x] = int(s0 + 0.0001);
+        }
+    }
+    
+    for (int y = 0; y < h; ++y) {
+        float q0 = 0, q1 = 0;
+        if (!getYBinRange(v, h-y, q0, q1)) {
+            binfory[y] = -1;
+        } else {
+            binfory[y] = int(q0 + 0.0001);
+        }
+    }
+    binfory[h] = binfory[h-1];
+
+    paintColumnValues2(v, fft, bufwid, h, binforx, binfory);
+
+/*
     for (int x = 0; x < w / xPixelRatio; ++x) {
 
         Profiler innerprof("SpectrogramLayer::paint: 1 pixel column");
@@ -2186,9 +2220,9 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             break;
         }
     }
-
+*/
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    std::cerr << pixels << " pixels drawn" << std::endl;
+//    std::cerr << pixels << " pixels drawn" << std::endl;
 #endif
 
     if (overallMagChanged) {
@@ -2216,9 +2250,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (w > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        std::cerr << "Painting " << w << "x" << h
+        std::cerr << "Painting " << w/xPixelRatio << "x" << h
                   << " from draw buffer at " << 0 << "," << 0
-                  << " to cache at " << x0 << "," << 0 << std::endl;
+                  << " to " << w << "x" << h << " on cache at "
+                  << x0 << "," << 0 << std::endl;
 #endif
 
         QPainter cachePainter(&cache.image);
@@ -2297,6 +2332,90 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 //!!!    if (fftSuspended) fft->resume();
 }
 
+bool
+SpectrogramLayer::paintColumnValues2(View *v,
+                                     FFTModel *fft,
+                                     int w,
+                                     int h,
+                                     int *binforx, // w+1 values
+                                     int *binfory  // h+1 values
+    ) const
+{
+    // paint onto m_drawBuffer
+
+    int minbin = binfory[0];
+    int maxbin = binfory[h-1];
+
+    cerr << "minbin " << minbin << ", maxbin " << maxbin << endl;
+    if (minbin < 0) minbin = 0;
+    if (maxbin < 0) maxbin = minbin+1;
+
+    int psx = -1;
+    float values[maxbin - minbin + 1];
+
+    for (int x = 0; x < w; ++x) {
+        
+        for (int y = 0; y < h; ++y) {
+
+            unsigned char peakpix = 0;
+
+            int sx0 = binforx[x];
+            int sx1 = binforx[x+1];
+            if (sx0 < 0) sx0 = sx1 - 1;
+            if (sx0 < 0) continue;
+            if (sx1 <= sx0) sx1 = sx0 + 1;
+            
+            for (int sx = sx0; sx < sx1; ++sx) {
+
+                if (sx < 0 || sx >= int(fft->getWidth())) continue;
+
+                if (!m_synchronous) {
+                    if (!fft->isColumnAvailable(sx)) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                        std::cerr << "Met unavailable column at col " << sx << std::endl;
+#endif
+                        return false;
+                    }
+                }
+
+                if (sx != psx) {
+                    fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                    psx = sx;
+                }
+
+                int sy0 = binfory[y];
+                int sy1 = binfory[y+1];
+                if (sy0 < 0) sy0 = sy1 - 1;
+                if (sy0 < 0) continue;
+                if (sy1 <= sy0) sy1 = sy0 + 1;
+
+//                cerr << "sy0 " << sy0 << " sy1 " << sy1 << endl;
+
+                //!!! review
+                for (int sy = sy0; sy < sy1; ++sy) {
+
+                    float value = values[sy - minbin];
+
+                    if (m_colourScale != PhaseColourScale) {
+                        if (!m_normalizeColumns) {
+                            value /= (m_fftSize/2.f);
+                        }
+//!!!                        mag.sample(value);
+                        value *= m_gain;
+                    }
+
+                    unsigned char pix = getDisplayValue(v, value);
+                    if (pix > peakpix) peakpix = pix;
+//                    cerr <<x<<","<<y<<" -> "<<sx<<","<<sy<<" -> "<<values[sy]<<" -> "<<(int)pix<< endl;
+                }
+            }
+
+            m_drawBuffer.setPixel(x, h-y-1, peakpix);
+        }
+    }
+
+    return true;
+}
 
 bool
 SpectrogramLayer::paintColumnValues(View *v, 
@@ -2337,7 +2456,7 @@ SpectrogramLayer::paintColumnValues(View *v,
 
     if (!getXBinRange(v, x0 + x * xPixelRatio, s0, s1)) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        std::cerr << "Out of range at " << x0 + x << std::endl;
+//        std::cerr << "Out of range at " << x0 + x << std::endl;
 #endif
         assert(x <= m_drawBuffer.width());
         return true;
