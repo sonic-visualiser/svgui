@@ -284,26 +284,26 @@ protected:
     Palette m_palette;
 
     /**
-     * PixmapCache covers the area of the view, at view resolution.
+     * ImageCache covers the area of the view, at view resolution.
      * Not all of it is necessarily valid at once (it is refreshed
      * in parts when scrolling, for example).
      */
-    struct PixmapCache
+    struct ImageCache
     {
-        QPixmap pixmap;
+        QImage image;
         QRect validArea;
         long startFrame;
         size_t zoomLevel;
     };
-    typedef std::map<const View *, PixmapCache> ViewPixmapCache;
-    void invalidatePixmapCaches();
-    void invalidatePixmapCaches(size_t startFrame, size_t endFrame);
-    mutable ViewPixmapCache m_pixmapCaches;
+    typedef std::map<const View *, ImageCache> ViewImageCache;
+    void invalidateImageCaches();
+    void invalidateImageCaches(size_t startFrame, size_t endFrame);
+    mutable ViewImageCache m_imageCaches;
 
     /**
      * When painting, we draw directly onto the draw buffer and then
-     * copy this to the part of the pixmap cache that needed refreshing
-     * before copying the pixmap cache onto the window.  (Remind me why
+     * copy this to the part of the image cache that needed refreshing
+     * before copying the image cache onto the window.  (Remind me why
      * we don't draw directly onto the cache?)
      */
     mutable QImage m_drawBuffer;
@@ -413,11 +413,11 @@ protected:
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(View *v) const;
-    bool getColumnValues(View *v, FFTModel *fft, int x0, int x,
-                         int minbin, int maxbin,
-                         float displayMinFreq, float displayMaxFreq,
-                         const int h,
-                         const float *yforbin, float *yval) const;
+    bool paintColumnValues(View *v, FFTModel *fft, int x0, int x,
+                           int minbin, int maxbin,
+                           float displayMinFreq, float displayMaxFreq,
+                           const int h,
+                           const float *yforbin) const;
 
     virtual void updateMeasureRectYCoords(View *v, const MeasureRect &r) const;
     virtual void setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const;
