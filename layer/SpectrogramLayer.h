@@ -413,8 +413,9 @@ protected:
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(View *v) const;
-    bool paintColumnValues2(View *v, FFTModel *fft, int w, int h,
-                            int *binforx, int *binfory) const;
+    bool paintDrawBuffer(View *v, FFTModel *fft, int w, int h,
+                         int *binforx, int *binfory) const;
+    //!!! phasing this one out:
     bool paintColumnValues(View *v, FFTModel *fft, int x0, int x,
                            int minbin, int maxbin,
                            float displayMinFreq, float displayMaxFreq,
