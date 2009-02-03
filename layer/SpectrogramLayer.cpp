@@ -1806,11 +1806,11 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     x0 = rect.left();
     x1 = rect.right() + 1;
-
+/*
     float xPixelRatio = float(fft->getResolution()) / float(zoomLevel);
     std::cerr << "xPixelRatio = " << xPixelRatio << std::endl;
     if (xPixelRatio < 1.f) xPixelRatio = 1.f;
-
+*/
     if (cache.validArea.width() > 0) {
 
 	if (int(cache.zoomLevel) == zoomLevel &&
@@ -2013,6 +2013,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         // If part of the cache is known to be valid, select a strip
         // immediately to left or right of the valid part
 
+        //!!! this really needs to be coordinated with the selection
+        //!!! of m_drawBuffer boundaries in the bufferBinResolution
+        //!!! case below
+
         int vx0 = 0, vx1 = 0;
         vx0 = cache.validArea.x();
         vx1 = cache.validArea.x() + cache.validArea.width();
@@ -2075,28 +2079,17 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         cache.validArea = QRect(x0, 0, x1 - x0, h);
     }
 
+/*
     if (xPixelRatio != 1.f) {
         x0 = int((int(x0 / xPixelRatio) - 4) * xPixelRatio + 0.0001);
         x1 = int((int(x1 / xPixelRatio) + 4) * xPixelRatio + 0.0001);
     }
-
+*/
     int w = x1 - x0;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "x0 " << x0 << ", x1 " << x1 << ", w " << w << ", h " << h << std::endl;
 #endif
-
-    if (m_drawBuffer.width() < w / xPixelRatio + 1 ||
-        m_drawBuffer.height() < h) {
-        m_drawBuffer = QImage(w / xPixelRatio + 1, h, QImage::Format_Indexed8);
-        m_drawBuffer.setNumColors(256);
-        for (int pixel = 0; pixel < 256; ++pixel) {
-            m_drawBuffer.setColor(pixel, m_palette.getColour(pixel).rgb());
-        }
-    }
-
-//    m_drawBuffer.fill(m_palette.getColour(0).rgb());
-    m_drawBuffer.fill(0);
 
     int sr = m_model->getSampleRate();
 
@@ -2142,11 +2135,11 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
 //    std::cerr << "(giving actual minFreq " << minFreq << " and display minFreq " << displayMinFreq << ")" << std::endl;
 
-    float yforbin[maxbin - minbin + 1];
-
     size_t increment = getWindowIncrement();
     
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
+
+    float yforbin[maxbin - minbin + 1];
 
     for (size_t q = minbin; q <= maxbin; ++q) {
         float f0 = (float(q) * sr) / fftSize;
@@ -2176,31 +2169,93 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     Profiler outerprof("SpectrogramLayer::paint: all cols");
 
-    int bufwid = w / xPixelRatio;
-    int binforx[bufwid + 1];
-    int binfory[h + 1];
-    
-    for (int x = 0; x <= bufwid; ++x) {
-        int vx = int(x0 + x * xPixelRatio + 0.0001);
-        float s0 = 0, s1 = 0;
-        if (!getXBinRange(v, vx, s0, s1)) {
-            binforx[x] = -1;
-        } else {
-            binforx[x] = int(s0 + 0.0001);
+    // The draw buffer contains a fragment at either our pixel
+    // resolution (if there is more than one time-bin per pixel) or
+    // time-bin resolution (if a time-bin spans more than one pixel).
+    // We need to ensure that it starts and ends at points where a
+    // time-bin boundary occurs at an exact pixel boundary, and with a
+    // certain amount of overlap across existing pixels so that we can
+    // scale and draw from it without smoothing errors at the edges.
+
+    // If (getFrameForX(x) / increment) * increment ==
+    // getFrameForX(x), then x is a time-bin boundary.  We want two
+    // such boundaries at either side of the draw buffer -- one which
+    // we draw up to, and one which we subsequently crop at.
+
+    bool bufferBinResolution = false;
+    if (increment > zoomLevel) bufferBinResolution = true;
+
+    long leftBoundaryFrame = -1, leftCropFrame = -1;
+    long rightBoundaryFrame = -1, rightCropFrame = -1;
+
+    int bufwid;
+
+    if (bufferBinResolution) {
+
+        for (int x = x0 - 1; ; --x) {
+            long f = v->getFrameForX(x);
+            if ((f / increment) * increment == f) {
+                if (leftCropFrame == -1) leftCropFrame = f;
+                else if (x < x0 - 3) { leftBoundaryFrame = f; break; }
+            }
+        }
+        for (int x = x0 + w + 1; ; ++x) {
+            long f = v->getFrameForX(x);
+            if ((f / increment) * increment == f) {
+                if (rightCropFrame == -1) rightCropFrame = f;
+                else if (x > x0 + w + 3) { rightBoundaryFrame = f; break; }
+            }
+        }
+        cerr << "Left: crop: " << leftCropFrame << " (bin " << leftCropFrame/increment << "); boundary: " << leftBoundaryFrame << " (bin " << leftBoundaryFrame/increment << ")" << endl;
+        cerr << "Right: crop: " << rightCropFrame << " (bin " << rightCropFrame/increment << "); boundary: " << rightBoundaryFrame << " (bin " << rightBoundaryFrame/increment << ")" << endl;
+
+        bufwid = (rightBoundaryFrame - leftBoundaryFrame) / increment;
+
+    } else {
+        
+        bufwid = w;
+    }
+
+    int binforx[bufwid];
+    int binfory[h];
+
+    if (bufferBinResolution) {
+        for (int x = 0; x < bufwid; ++x) {
+            binforx[x] = (leftBoundaryFrame / increment) + x;
+            cerr << "binforx[" << x << "] = " << binforx[x] << endl;
+        }
+        m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
+    } else {
+        for (int x = 0; x < bufwid; ++x) {
+            float s0 = 0, s1 = 0;
+            if (getXBinRange(v, x + x0, s0, s1)) {
+                binforx[x] = int(s0 + 0.0001);
+            } else {
+                binforx[x] = 0; //???
+            }
+        }
+        if (m_drawBuffer.width() < bufwid || m_drawBuffer.height() < h) {
+            m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
         }
     }
+
+    m_drawBuffer.setNumColors(256);
+    for (int pixel = 0; pixel < 256; ++pixel) {
+        m_drawBuffer.setColor(pixel, m_palette.getColour(pixel).rgb());
+    }
+
+    m_drawBuffer.fill(0);
     
     for (int y = 0; y < h; ++y) {
         float q0 = 0, q1 = 0;
-        if (!getYBinRange(v, h-y, q0, q1)) {
+        if (!getYBinRange(v, h-y-1, q0, q1)) {
             binfory[y] = -1;
         } else {
             binfory[y] = int(q0 + 0.0001);
         }
     }
-    binfory[h] = binfory[h-1];
 
-    paintColumnValues2(v, fft, bufwid, h, binforx, binfory);
+    paintDrawBuffer(v, fft, bufwid, h, binforx, binfory);
 
 /*
     for (int x = 0; x < w / xPixelRatio; ++x) {
@@ -2250,17 +2305,40 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (w > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        std::cerr << "Painting " << w/xPixelRatio << "x" << h
+        std::cerr << "Painting " << w << "x" << h
                   << " from draw buffer at " << 0 << "," << 0
                   << " to " << w << "x" << h << " on cache at "
                   << x0 << "," << 0 << std::endl;
 #endif
 
         QPainter cachePainter(&cache.image);
-        cachePainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        cachePainter.drawImage(QRect(x0, 0, w, h),
-                               m_drawBuffer,
-                               QRect(0, 0, w / xPixelRatio, h));
+
+        if (bufferBinResolution) {
+            int scaledLeft = v->getXForFrame(leftBoundaryFrame);
+            int scaledRight = v->getXForFrame(rightBoundaryFrame);
+            cerr << "Rescaling image from " << bufwid
+                 << "x" << h << " to "
+                 << scaledRight-scaledLeft << "x" << h << endl;
+            QImage scaled = m_drawBuffer.scaled
+                (scaledRight - scaledLeft, h,
+                 Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+//            cachePainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+            int scaledLeftCrop = v->getXForFrame(leftCropFrame);
+            int scaledRightCrop = v->getXForFrame(rightCropFrame);
+            cerr << "Drawing image region of width " << scaledRightCrop - scaledLeftCrop << " to "
+                 << scaledLeftCrop << " from " << scaledLeftCrop - scaledLeft << endl;
+            cachePainter.drawImage
+                (QRect(scaledLeftCrop, 0,
+                       scaledRightCrop - scaledLeftCrop, h),
+                 scaled,
+                 QRect(scaledLeftCrop - scaledLeft, 0,
+                       scaledRightCrop - scaledLeftCrop, h));
+        } else {
+            cachePainter.drawImage(QRect(x0, 0, w, h),
+                                   m_drawBuffer,
+                                   QRect(0, 0, w, h));
+        }
+
         cachePainter.end();
     }
 
@@ -2333,20 +2411,19 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 }
 
 bool
-SpectrogramLayer::paintColumnValues2(View *v,
-                                     FFTModel *fft,
-                                     int w,
-                                     int h,
-                                     int *binforx, // w+1 values
-                                     int *binfory  // h+1 values
-    ) const
+SpectrogramLayer::paintDrawBuffer(View *v,
+                                  FFTModel *fft,
+                                  int w,
+                                  int h,
+                                  int *binforx,
+                                  int *binfory) const
 {
-    // paint onto m_drawBuffer
+    Profiler profiler("SpectrogramLayer::paintDrawBuffer");
 
     int minbin = binfory[0];
     int maxbin = binfory[h-1];
 
-    cerr << "minbin " << minbin << ", maxbin " << maxbin << endl;
+    cerr << "minbin " << minbin << ", maxbin " << maxbin << "; w " << w << ", h " << h << endl;
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
 
@@ -2360,7 +2437,8 @@ SpectrogramLayer::paintColumnValues2(View *v,
             unsigned char peakpix = 0;
 
             int sx0 = binforx[x];
-            int sx1 = binforx[x+1];
+            int sx1 = sx0;
+            if (x+1 < w) sx1 = binforx[x+1];
             if (sx0 < 0) sx0 = sx1 - 1;
             if (sx0 < 0) continue;
             if (sx1 <= sx0) sx1 = sx0 + 1;
@@ -2384,18 +2462,24 @@ SpectrogramLayer::paintColumnValues2(View *v,
                 }
 
                 int sy0 = binfory[y];
-                int sy1 = binfory[y+1];
+                int sy1 = sy0;
+                if (y+1 < h) sy1 = binfory[y+1];
                 if (sy0 < 0) sy0 = sy1 - 1;
                 if (sy0 < 0) continue;
                 if (sy1 <= sy0) sy1 = sy0 + 1;
 
 //                cerr << "sy0 " << sy0 << " sy1 " << sy1 << endl;
 
-                //!!! review
+                //!!! review -- if we know we're dealing with
+                //!!! magnitudes here, we can just use peak of the
+                //!!! float values
+
+                float peak = 0.f;
+                
                 for (int sy = sy0; sy < sy1; ++sy) {
 
                     float value = values[sy - minbin];
-
+/*
                     if (m_colourScale != PhaseColourScale) {
                         if (!m_normalizeColumns) {
                             value /= (m_fftSize/2.f);
@@ -2407,7 +2491,19 @@ SpectrogramLayer::paintColumnValues2(View *v,
                     unsigned char pix = getDisplayValue(v, value);
                     if (pix > peakpix) peakpix = pix;
 //                    cerr <<x<<","<<y<<" -> "<<sx<<","<<sy<<" -> "<<values[sy]<<" -> "<<(int)pix<< endl;
+*/
+                    if (value > peak) peak = value; //!!! not right for phase!
                 }
+
+                if (m_colourScale != PhaseColourScale) {
+                    if (!m_normalizeColumns) {
+                        peak /= (m_fftSize/2.f);
+                    }
+//!!!                        mag.sample(value);
+                    peak *= m_gain;
+                }
+
+                peakpix = getDisplayValue(v, peak);
             }
 
             m_drawBuffer.setPixel(x, h-y-1, peakpix);
