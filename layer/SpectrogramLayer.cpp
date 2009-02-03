@@ -42,7 +42,7 @@
 #include <cassert>
 #include <cmath>
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_model(0),
@@ -1781,7 +1781,9 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     PixmapCache &cache = m_pixmapCaches[v];
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    std::cerr << "SpectrogramLayer::paint(): pixmap cache valid area " << cache.validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() << "x" << cache.validArea.height() << std::endl;
+    std::cerr << "SpectrogramLayer::paint(): pixmap cache valid area " << cache.
+
+validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() << "x" << cache.validArea.height() << std::endl;
 #endif
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2114,11 +2116,8 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 //    std::cerr << "(giving actual minFreq " << minFreq << " and display minFreq " << displayMinFreq << ")" << std::endl;
 
-    float ymag[h];
-    float ydiv[h];
-
-    float yval[maxbin - minbin + 1];
-    float values[maxbin - minbin + 1];
+    float yforbin[maxbin - minbin + 1];
+    float yval[h];
 
     size_t increment = getWindowIncrement();
     
@@ -2126,7 +2125,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     for (size_t q = minbin; q <= maxbin; ++q) {
         float f0 = (float(q) * sr) / fftSize;
-        yval[q - minbin] =
+        yforbin[q - minbin] =
             v->getYForFrequency(f0, displayMinFreq, displayMaxFreq,
                                 logarithmic);
     }
@@ -2135,17 +2134,6 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     bool overallMagChanged = false;
 
     bool fftSuspended = false;
-
-    bool interpolate = false;
-    Preferences::SpectrogramSmoothing smoothing = 
-        Preferences::getInstance()->getSpectrogramSmoothing();
-    if (smoothing == Preferences::SpectrogramInterpolated ||
-        smoothing == Preferences::SpectrogramZeroPaddedAndInterpolated) {
-        if (m_binDisplay != PeakBins &&
-            m_binDisplay != PeakFrequencies) {
-            interpolate = true;
-        }
-    }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << ((float(v->getFrameForX(1) - v->getFrameForX(0))) / increment) << " bin(s) per pixel" << std::endl;
@@ -2162,11 +2150,15 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 #endif
 
     Profiler outerprof("SpectrogramLayer::paint: all cols");
-    FFTModel::PeakSet peaks;
 
     for (int x = 0; x < w; ++x) {
 
         Profiler innerprof("SpectrogramLayer::paint: 1 pixel column");
+
+        runOutOfData = !getColumnValues(v, fft, x0, x,
+                                        minbin, maxbin,
+                                        displayMinFreq, displayMaxFreq,
+                                        h, yforbin, yval);
 
         if (runOutOfData) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2175,214 +2167,21 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
             break;
         }
 
-	for (int y = 0; y < h; ++y) {
-	    ymag[y] = 0.f;
-	    ydiv[y] = 0.f;
-	}
-
-	float s0 = 0, s1 = 0;
-
-	if (!getXBinRange(v, x0 + x, s0, s1)) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-            std::cerr << "Out of range at " << x0 + x << std::endl;
-#endif
-	    assert(x <= m_drawBuffer.width());
-	    continue;
-	}
-
-	int s0i = int(s0 + 0.001);
-	int s1i = int(s1);
-
-	if (s1i >= int(fft->getWidth())) {
-	    if (s0i >= int(fft->getWidth())) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-                std::cerr << "Column " << s0i << " out of range" << std::endl;
-#endif
-		continue;
-	    } else {
-		s1i = s0i;
-	    }
-	}
-
-        for (int s = s0i; s <= s1i; ++s) {
-
-            if (!m_synchronous) {
-                if (!fft->isColumnAvailable(s)) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-                    std::cerr << "Met unavailable column at col " << s << std::endl;
-#endif
-                    runOutOfData = true;
-                    break;
-                }
-            }
-/*!!!            
-            if (!fftSuspended) {
-                fft->suspendWrites();
-                fftSuspended = true;
-            }
-*/
-            Profiler innerprof2("SpectrogramLayer::paint: 1 data column");
-
-            MagnitudeRange mag;
-
-            if (m_binDisplay == PeakFrequencies) {
-                if (s < int(fft->getWidth()) - 1) {
-                    peaks = fft->getPeakFrequencies(FFTModel::AllPeaks,
-                                                    s,
-                                                    minbin, maxbin - 1);
-                } else {
-                    peaks.clear();
-                }
-            }
-                
-            if (m_colourScale == PhaseColourScale) {
-                fft->getPhasesAt(s, values, minbin, maxbin - minbin + 1);
-            } else if (m_normalizeColumns) {
-                fft->getNormalizedMagnitudesAt(s, values, minbin, maxbin - minbin + 1);
-            } else {
-                fft->getMagnitudesAt(s, values, minbin, maxbin - minbin + 1);
-            }
-
-            for (size_t q = minbin; q < maxbin; ++q) {
-
-                Profiler innerprof3("SpectrogramLayer::paint: 1 bin");
-
-                float y0 = yval[q + 1 - minbin];
-                float y1 = yval[q - minbin];
-
-		if (m_binDisplay == PeakBins) {
-		    if (!fft->isLocalPeak(s, q)) continue;
-		}
-                if (m_binDisplay == PeakFrequencies) {
-                    if (peaks.find(q) == peaks.end()) continue;
-                }
-
-                if (m_threshold != 0.f &&
-                    !fft->isOverThreshold(s, q, m_threshold * (m_fftSize/2))) {
-                    continue;
-                }
-
-		float sprop = 1.f;
-		if (s == s0i) sprop *= (s + 1) - s0;
-		if (s == s1i) sprop *= s1 - s;
- 
-		if (m_binDisplay == PeakFrequencies) {
-		    y0 = y1 = v->getYForFrequency
-			(peaks[q], displayMinFreq, displayMaxFreq, logarithmic);
-		}
-		
-		int y0i = int(y0 + 0.001f);
-		int y1i = int(y1);
-
-                float value = values[q - minbin];
-
-                if (m_colourScale != PhaseColourScale) {
-                    if (!m_normalizeColumns) {
-                        value /= (m_fftSize/2.f);
-                    }
-                    mag.sample(value);
-                    value *= m_gain;
-                }
-
-                if (interpolate) {
-                    
-                    int ypi = y0i;
-                    if (q < maxbin - 1) ypi = int(yval[q + 2 - minbin]);
-
-                    for (int y = ypi; y <= y1i; ++y) {
-                    
-                        if (y < 0 || y >= h) continue;
-                    
-                        float yprop = sprop;
-                        float iprop = yprop;
-
-                        if (ypi < y0i && y <= y0i) {
-
-                            float half = float(y0i - ypi) / 2.f;
-                            float dist = y - (ypi + half);
-
-                            if (dist >= 0) {
-                                iprop = (iprop * dist) / half;
-                                ymag[y] += iprop * value;
-                            }
-                        } else {
-                            if (y1i > y0i) {
-
-                                float half = float(y1i - y0i) / 2.f;
-                                float dist = y - (y0i + half);
-                                
-                                if (dist >= 0) {
-                                    iprop = (iprop * (half - dist)) / half;
-                                }
-                            }
-
-                            ymag[y] += iprop * value;
-                            ydiv[y] += yprop;
-                        }
-                    }
-
-                } else {
-
-                    for (int y = y0i; y <= y1i; ++y) {
-                    
-                        if (y < 0 || y >= h) continue;
-                    
-                        float yprop = sprop;
-                        if (y == y0i) yprop *= (y + 1) - y0;
-                        if (y == y1i) yprop *= y1 - y;
-
-                        for (int y = y0i; y <= y1i; ++y) {
-		    
-                            if (y < 0 || y >= h) continue;
-
-                            float yprop = sprop;
-                            if (y == y0i) yprop *= (y + 1.f) - y0;
-                            if (y == y1i) yprop *= y1 - y;
-                            ymag[y] += yprop * value;
-                            ydiv[y] += yprop;
-                        }
-                    }
-                }
-	    }
-
-            if (mag.isSet()) {
-
-                if (s >= int(m_columnMags.size())) {
-                    std::cerr << "INTERNAL ERROR: " << s << " >= "
-                              << m_columnMags.size() << " at SpectrogramLayer.cpp:2087" << std::endl;
-                }
-
-                m_columnMags[s].sample(mag);
-
-                if (overallMag.sample(mag)) {
-                    //!!! scaling would change here
-                    overallMagChanged = true;
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-                    std::cerr << "Overall mag changed (again?) at column " << s << ", to [" << overallMag.getMin() << "->" << overallMag.getMax() << "]" << std::endl;
-#endif
-                }
-            }
-	}
-
         Profiler drawbufferprof("SpectrogramLayer::paint: set buffer pixels");
 
 	for (int y = 0; y < h; ++y) {
 
-	    if (ydiv[y] > 0.0) {
+            unsigned char pixel = 0;
 
-		unsigned char pixel = 0;
+            pixel = getDisplayValue(v, yval[y]);
 
-		float avg = ymag[y] / ydiv[y];
-		pixel = getDisplayValue(v, avg);
-
-		assert(x <= m_drawBuffer.width());
-		QColor c = m_palette.getColour(pixel);
-		m_drawBuffer.setPixel(x, y,
-                                      qRgb(c.red(), c.green(), c.blue()));
+            assert(x <= m_drawBuffer.width());
+            QColor c = m_palette.getColour(pixel);
+            m_drawBuffer.setPixel(x, y,
+                                  qRgb(c.red(), c.green(), c.blue()));
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                ++pixels;
+            ++pixels;
 #endif
-	    }
 	}
     }
 
@@ -2489,6 +2288,241 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 //!!!    if (fftSuspended) fft->resume();
 }
+
+
+bool
+SpectrogramLayer::getColumnValues(View *v, 
+                                  FFTModel *fft,
+                                  int x0,
+                                  int x,
+                                  int minbin,
+                                  int maxbin,
+                                  float displayMinFreq,
+                                  float displayMaxFreq,
+                                  const int h,
+                                  const float *yforbin,
+                                  float *yval) const
+{
+    float ymag[h];
+    float ydiv[h];
+    float values[maxbin - minbin + 1];
+
+    bool logarithmic = (m_frequencyScale == LogFrequencyScale);
+
+    bool interpolate = false;
+    Preferences::SpectrogramSmoothing smoothing = 
+        Preferences::getInstance()->getSpectrogramSmoothing();
+    if (smoothing == Preferences::SpectrogramInterpolated ||
+        smoothing == Preferences::SpectrogramZeroPaddedAndInterpolated) {
+        if (m_binDisplay != PeakBins &&
+            m_binDisplay != PeakFrequencies) {
+            interpolate = true;
+        }
+    }
+
+    for (int y = 0; y < h; ++y) {
+        ymag[y] = 0.f;
+        ydiv[y] = 0.f;
+    }
+
+    float s0 = 0, s1 = 0;
+
+    if (!getXBinRange(v, x0 + x, s0, s1)) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        std::cerr << "Out of range at " << x0 + x << std::endl;
+#endif
+        assert(x <= m_drawBuffer.width());
+        return false;
+    }
+
+    int s0i = int(s0 + 0.001);
+    int s1i = int(s1);
+
+    if (s1i >= int(fft->getWidth())) {
+        if (s0i >= int(fft->getWidth())) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+            std::cerr << "Column " << s0i << " out of range" << std::endl;
+#endif
+            return false;
+        } else {
+            s1i = s0i;
+        }
+    }
+
+    FFTModel::PeakSet peaks;
+
+    for (int s = s0i; s <= s1i; ++s) {
+
+        if (!m_synchronous) {
+            if (!fft->isColumnAvailable(s)) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                std::cerr << "Met unavailable column at col " << s << std::endl;
+#endif
+                return false;
+            }
+        }
+/*!!!            
+            if (!fftSuspended) {
+                fft->suspendWrites();
+                fftSuspended = true;
+            }
+*/
+        Profiler innerprof2("SpectrogramLayer::paint: 1 data column");
+
+        MagnitudeRange mag;
+
+        if (m_binDisplay == PeakFrequencies) {
+            if (s < int(fft->getWidth()) - 1) {
+                peaks = fft->getPeakFrequencies(FFTModel::AllPeaks,
+                                                s,
+                                                minbin, maxbin - 1);
+            } else {
+                peaks.clear();
+            }
+        }
+        
+        if (m_colourScale == PhaseColourScale) {
+            fft->getPhasesAt(s, values, minbin, maxbin - minbin + 1);
+        } else if (m_normalizeColumns) {
+            fft->getNormalizedMagnitudesAt(s, values, minbin, maxbin - minbin + 1);
+        } else {
+            fft->getMagnitudesAt(s, values, minbin, maxbin - minbin + 1);
+        }
+
+        for (size_t q = minbin; q < maxbin; ++q) {
+
+            Profiler innerprof3("SpectrogramLayer::paint: 1 bin");
+
+            float y0 = yforbin[q + 1 - minbin];
+            float y1 = yforbin[q - minbin];
+
+            if (m_binDisplay == PeakBins) {
+                if (!fft->isLocalPeak(s, q)) continue;
+            }
+            if (m_binDisplay == PeakFrequencies) {
+                if (peaks.find(q) == peaks.end()) continue;
+            }
+
+            if (m_threshold != 0.f &&
+                !fft->isOverThreshold(s, q, m_threshold * (m_fftSize/2))) {
+                continue;
+            }
+
+            float sprop = 1.f;
+            if (s == s0i) sprop *= (s + 1) - s0;
+            if (s == s1i) sprop *= s1 - s;
+ 
+            if (m_binDisplay == PeakFrequencies) {
+                y0 = y1 = v->getYForFrequency
+                    (peaks[q], displayMinFreq, displayMaxFreq, logarithmic);
+            }
+		
+            int y0i = int(y0 + 0.001f);
+            int y1i = int(y1);
+
+            float value = values[q - minbin];
+
+            if (m_colourScale != PhaseColourScale) {
+                if (!m_normalizeColumns) {
+                    value /= (m_fftSize/2.f);
+                }
+                mag.sample(value);
+                value *= m_gain;
+            }
+
+            if (interpolate) {
+                    
+                int ypi = y0i;
+                if (q < maxbin - 1) ypi = int(yforbin[q + 2 - minbin]);
+
+                for (int y = ypi; y <= y1i; ++y) {
+                    
+                    if (y < 0 || y >= h) continue;
+                    
+                    float yprop = sprop;
+                    float iprop = yprop;
+
+                    if (ypi < y0i && y <= y0i) {
+
+                        float half = float(y0i - ypi) / 2.f;
+                        float dist = y - (ypi + half);
+
+                        if (dist >= 0) {
+                            iprop = (iprop * dist) / half;
+                            ymag[y] += iprop * value;
+                        }
+                    } else {
+                        if (y1i > y0i) {
+
+                            float half = float(y1i - y0i) / 2.f;
+                            float dist = y - (y0i + half);
+                                
+                            if (dist >= 0) {
+                                iprop = (iprop * (half - dist)) / half;
+                            }
+                        }
+
+                        ymag[y] += iprop * value;
+                        ydiv[y] += yprop;
+                    }
+                }
+
+            } else {
+
+                for (int y = y0i; y <= y1i; ++y) {
+                    
+                    if (y < 0 || y >= h) continue;
+                    
+                    float yprop = sprop;
+                    if (y == y0i) yprop *= (y + 1) - y0;
+                    if (y == y1i) yprop *= y1 - y;
+
+                    for (int y = y0i; y <= y1i; ++y) {
+		    
+                        if (y < 0 || y >= h) continue;
+
+                        float yprop = sprop;
+                        if (y == y0i) yprop *= (y + 1.f) - y0;
+                        if (y == y1i) yprop *= y1 - y;
+                        ymag[y] += yprop * value;
+                        ydiv[y] += yprop;
+                    }
+                }
+            }
+        }
+
+        if (mag.isSet()) {
+
+            if (s >= int(m_columnMags.size())) {
+                std::cerr << "INTERNAL ERROR: " << s << " >= "
+                          << m_columnMags.size() << " at SpectrogramLayer.cpp:2087" << std::endl;
+            }
+
+            m_columnMags[s].sample(mag);
+/*!!!
+            if (overallMag.sample(mag)) {
+                //!!! scaling would change here
+                overallMagChanged = true;
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                std::cerr << "Overall mag changed (again?) at column " << s << ", to [" << overallMag.getMin() << "->" << overallMag.getMax() << "]" << std::endl;
+#endif
+            }
+*/
+        }
+    }
+
+    for (int y = 0; y < h; ++y) {
+
+        if (ydiv[y] > 0.0) {
+            yval[y] = ymag[y] / ydiv[y];
+        } else {
+            yval[y] = 0;
+        }
+    }
+
+    return true;
+}
+
 
 void
 SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
