@@ -416,6 +416,7 @@ protected:
     bool paintColumnValues(View *v, FFTModel *fft, int x0, int x,
                            int minbin, int maxbin,
                            float displayMinFreq, float displayMaxFreq,
+                           float xPixelRatio,
                            const int h,
                            const float *yforbin) const;
 
