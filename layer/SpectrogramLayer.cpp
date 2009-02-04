@@ -2421,39 +2421,41 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 
     int psx = -1;
     float values[maxbin - minbin + 1];
+    float peaks[h];
 
     for (int x = 0; x < w; ++x) {
         
         if (binforx[x] < 0) continue;
 
-        for (int y = 0; y < h; ++y) {
+        int sx0 = binforx[x];
+        int sx1 = sx0;
+        if (x+1 < w) sx1 = binforx[x+1];
+        if (sx0 < 0) sx0 = sx1 - 1;
+        if (sx0 < 0) continue;
+        if (sx1 <= sx0) sx1 = sx0 + 1;
 
-            unsigned char peakpix = 0;
-
-            int sx0 = binforx[x];
-            int sx1 = sx0;
-            if (x+1 < w) sx1 = binforx[x+1];
-            if (sx0 < 0) sx0 = sx1 - 1;
-            if (sx0 < 0) continue;
-            if (sx1 <= sx0) sx1 = sx0 + 1;
+        for (int y = 0; y < h; ++y) peaks[y] = 0.f;
             
-            for (int sx = sx0; sx < sx1; ++sx) {
+        for (int sx = sx0; sx < sx1; ++sx) {
 
-                if (sx < 0 || sx >= int(fft->getWidth())) continue;
+            if (sx < 0 || sx >= int(fft->getWidth())) continue;
 
-                if (!m_synchronous) {
-                    if (!fft->isColumnAvailable(sx)) {
+            if (!m_synchronous) {
+                if (!fft->isColumnAvailable(sx)) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                        std::cerr << "Met unavailable column at col " << sx << std::endl;
+                    std::cerr << "Met unavailable column at col " << sx << std::endl;
 #endif
-                        return false;
-                    }
+                    return false;
                 }
+            }
 
-                if (sx != psx) {
-                    fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
-                    psx = sx;
-                }
+            if (sx != psx) {
+                cerr << "Retrieving column " << sx << endl;
+                fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                psx = sx;
+            }
+
+            for (int y = 0; y < h; ++y) {
 
                 int sy0 = binfory[y];
                 int sy1 = sy0;
@@ -2468,8 +2470,6 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                 //!!! magnitudes here, we can just use peak of the
                 //!!! float values
 
-                float peak = 0.f;
-                
                 for (int sy = sy0; sy < sy1; ++sy) {
 
                     float value = values[sy - minbin];
@@ -2486,19 +2486,24 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                     if (pix > peakpix) peakpix = pix;
 //                    cerr <<x<<","<<y<<" -> "<<sx<<","<<sy<<" -> "<<values[sy]<<" -> "<<(int)pix<< endl;
 */
-                    if (value > peak) peak = value; //!!! not right for phase!
+                    if (value > peaks[y]) peaks[y] = value; //!!! not right for phase!
                 }
-
-                if (m_colourScale != PhaseColourScale) {
-                    if (!m_normalizeColumns) {
-                        peak /= (m_fftSize/2.f);
-                    }
-//!!!                        mag.sample(value);
-                    peak *= m_gain;
-                }
-
-                peakpix = getDisplayValue(v, peak);
             }
+        }
+
+        for (int y = 0; y < h; ++y) {
+
+            float peak = peaks[y];
+            
+            if (m_colourScale != PhaseColourScale) {
+                if (!m_normalizeColumns) {
+                    peak /= (m_fftSize/2.f);
+                }
+//!!!                        mag.sample(value);
+                peak *= m_gain;
+            }
+            
+            unsigned char peakpix = getDisplayValue(v, peak);
 
             m_drawBuffer.setPixel(x, h-y-1, peakpix);
         }
