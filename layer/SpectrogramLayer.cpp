@@ -1813,9 +1813,12 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 */
     if (cache.validArea.width() > 0) {
 
+        int cw = cache.image.width();
+        int ch = cache.image.height();
+        
 	if (int(cache.zoomLevel) == zoomLevel &&
-	    cache.image.width() == v->width() &&
-	    cache.image.height() == v->height()) {
+	    cw == v->width() &&
+	    ch == v->height()) {
 
 	    if (v->getXForFrame(cache.startFrame) ==
 		v->getXForFrame(startFrame) &&
@@ -1846,41 +1849,31 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 		         v->getXForFrame(startFrame);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-		std::cerr << "SpectrogramLayer: dx = " << dx << " (image cache " << cache.image.width() << "x" << cache.image.height() << ")" << std::endl;
+		std::cerr << "SpectrogramLayer: dx = " << dx << " (image cache " << cw << "x" << ch << ")" << std::endl;
 #endif
 
 		if (dx != 0 &&
-                    dx > -cache.image.width() &&
-                    dx <  cache.image.width()) {
-
-                    QImage tmp = cache.image;
-                    QPainter cachePainter(&cache.image);
-                    if (dx < 0) {
-                        cachePainter.drawImage
-                            (QRect(0, 0,
-                                   cache.image.width() + dx,
-                                   cache.image.height()),
-                             tmp,
-                             QRect(-dx, 0,
-                                   cache.image.width() + dx,
-                                   cache.image.height()));
-                    } else {
-                        cachePainter.drawImage
-                            (QRect(dx, 0,
-                                   cache.image.width() - dx,
-                                   cache.image.height()),
-                             tmp,
-                             QRect(0, 0,
-                                   cache.image.width() - dx,
-                                   cache.image.height()));
+                    dx > -cw &&
+                    dx <  cw) {
+                    
+                    int dxp = dx;
+                    if (dxp < 0) dxp = -dxp;
+                    int copy = (cw - dxp) * sizeof(QRgb);
+                    for (int y = 0; y < ch; ++y) {
+                        QRgb *line = (QRgb *)cache.image.scanLine(y);
+                        if (dx < 0) {
+                            memmove(line, line + dxp, copy);
+                        } else {
+                            memmove(line + dxp, line, copy);
+                        }
                     }
 
                     int px = cache.validArea.x();
                     int pw = cache.validArea.width();
 
 		    if (dx < 0) {
-			x0 = cache.image.width() + dx;
-			x1 = cache.image.width();
+			x0 = cw + dx;
+			x1 = cw;
                         px += dx;
                         if (px < 0) {
                             pw += px;
@@ -1891,8 +1884,8 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 			x0 = 0;
 			x1 = dx;
                         px += dx;
-                        if (px + pw > cache.image.width()) {
-                            pw = int(cache.image.width()) - px;
+                        if (px + pw > cw) {
+                            pw = int(cw) - px;
                             if (pw < 0) pw = 0;
                         }
 		    }
@@ -1912,7 +1905,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                                      cache.image,
                                      rect & cache.validArea);
 */
-
                 } else if (dx != 0) {
 
                     // we scrolled too far to be of use
@@ -1932,12 +1924,12 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                 std::cerr << "(cache zoomLevel " << cache.zoomLevel
                           << " != " << zoomLevel << ")" << std::endl;
             }
-            if (cache.image.width() != v->width()) {
-                std::cerr << "(cache width " << cache.image.width()
+            if (cw != v->width()) {
+                std::cerr << "(cache width " << cw
                           << " != " << v->width();
             }
-            if (cache.image.height() != v->height()) {
-                std::cerr << "(cache height " << cache.image.height()
+            if (ch != v->height()) {
+                std::cerr << "(cache height " << ch
                           << " != " << v->height();
             }
 #endif
@@ -2192,18 +2184,18 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (bufferBinResolution) {
 
-        for (int x = x0 - 1; ; --x) {
+        for (int x = x0; ; --x) {
             long f = v->getFrameForX(x);
             if ((f / increment) * increment == f) {
                 if (leftCropFrame == -1) leftCropFrame = f;
-                else if (x < x0 - 3) { leftBoundaryFrame = f; break; }
+                else if (x < x0 - 2) { leftBoundaryFrame = f; break; }
             }
         }
-        for (int x = x0 + w + 1; ; ++x) {
+        for (int x = x0 + w; ; ++x) {
             long f = v->getFrameForX(x);
             if ((f / increment) * increment == f) {
                 if (rightCropFrame == -1) rightCropFrame = f;
-                else if (x > x0 + w + 3) { rightBoundaryFrame = f; break; }
+                else if (x > x0 + w + 2) { rightBoundaryFrame = f; break; }
             }
         }
         cerr << "Left: crop: " << leftCropFrame << " (bin " << leftCropFrame/increment << "); boundary: " << leftBoundaryFrame << " (bin " << leftBoundaryFrame/increment << ")" << endl;
@@ -2222,7 +2214,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     if (bufferBinResolution) {
         for (int x = 0; x < bufwid; ++x) {
             binforx[x] = (leftBoundaryFrame / increment) + x;
-            cerr << "binforx[" << x << "] = " << binforx[x] << endl;
+//            cerr << "binforx[" << x << "] = " << binforx[x] << endl;
         }
         m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
     } else {
@@ -2432,6 +2424,8 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 
     for (int x = 0; x < w; ++x) {
         
+        if (binforx[x] < 0) continue;
+
         for (int y = 0; y < h; ++y) {
 
             unsigned char peakpix = 0;
