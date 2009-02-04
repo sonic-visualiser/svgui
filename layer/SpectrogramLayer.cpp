@@ -45,7 +45,7 @@ using std::endl;
 #include <cassert>
 #include <cmath>
 
-#define DEBUG_SPECTROGRAM_REPAINT 1
+//#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_model(0),
@@ -2216,8 +2216,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                 else if (x > x0 + w + 2) { rightBoundaryFrame = f; break; }
             }
         }
+#ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "Left: crop: " << leftCropFrame << " (bin " << leftCropFrame/increment << "); boundary: " << leftBoundaryFrame << " (bin " << leftBoundaryFrame/increment << ")" << endl;
         cerr << "Right: crop: " << rightCropFrame << " (bin " << rightCropFrame/increment << "); boundary: " << rightBoundaryFrame << " (bin " << rightBoundaryFrame/increment << ")" << endl;
+#endif
 
         bufwid = (rightBoundaryFrame - leftBoundaryFrame) / increment;
 
@@ -2329,17 +2331,21 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         if (bufferBinResolution) {
             int scaledLeft = v->getXForFrame(leftBoundaryFrame);
             int scaledRight = v->getXForFrame(rightBoundaryFrame);
+#ifdef DEBUG_SPECTROGRAM_REPAINT
             cerr << "Rescaling image from " << bufwid
                  << "x" << h << " to "
                  << scaledRight-scaledLeft << "x" << h << endl;
+#endif
             QImage scaled = m_drawBuffer.scaled
                 (scaledRight - scaledLeft, h,
                  Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 //            cachePainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
             int scaledLeftCrop = v->getXForFrame(leftCropFrame);
             int scaledRightCrop = v->getXForFrame(rightCropFrame);
+#ifdef DEBUG_SPECTROGRAM_REPAINT
             cerr << "Drawing image region of width " << scaledRightCrop - scaledLeftCrop << " to "
                  << scaledLeftCrop << " from " << scaledLeftCrop - scaledLeft << endl;
+#endif
             cachePainter.drawImage
                 (QRect(scaledLeftCrop, 0,
                        scaledRightCrop - scaledLeftCrop, h),
@@ -2436,14 +2442,18 @@ SpectrogramLayer::paintDrawBuffer(View *v,
     int minbin = binfory[0];
     int maxbin = binfory[h-1];
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "minbin " << minbin << ", maxbin " << maxbin << "; w " << w << ", h " << h << endl;
+#endif
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
 
     DenseThreeDimensionalModel *sourceModel = 0;
     FFTModel *fft = 0;
     int divisor = 1;
+#ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "Note: bin display = " << m_binDisplay << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
+#endif
     if (usePeaksCache) { //!!!
         sourceModel = getPeakCache(v);
         divisor = 8;//!!!
@@ -2488,10 +2498,14 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 
             if (sx != psx) {
                 if (fft) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
                     cerr << "Retrieving column " << sx << " from fft directly" << endl;
+#endif
                     fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                 } else {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
                     cerr << "Retrieving column " << sx << " from peaks cache" << endl;
+#endif
                     c = sourceModel->getColumn(sx);
                 }
                 psx = sx;
