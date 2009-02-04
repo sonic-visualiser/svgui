@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006 Chris Cannam and QMUL.
+    This file copyright 2006-2009 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -26,6 +26,7 @@
 #include "widgets/CommandHistory.h"
 #include "ColourMapper.h"
 #include "ImageRegionFinder.h"
+#include "data/model/Dense3DModelPeakCache.h"
 
 #include <QPainter>
 #include <QImage>
@@ -995,6 +996,9 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 
             delete m_fftModels[v].first;
             m_fftModels.erase(v);
+
+            delete m_peakCaches[v];
+            m_peakCaches.erase(v);
         }
 	
     } else {
@@ -1608,6 +1612,8 @@ SpectrogramLayer::getFFTModel(const View *v) const
 #endif
             delete m_fftModels[v].first;
             m_fftModels.erase(v);
+            delete m_peakCaches[v];
+            m_peakCaches.erase(v);
         } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
             std::cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[v].first->getHeight() << std::endl;
@@ -1658,6 +1664,17 @@ SpectrogramLayer::getFFTModel(const View *v) const
     }
 
     return m_fftModels[v].first;
+}
+
+Dense3DModelPeakCache *
+SpectrogramLayer::getPeakCache(const View *v) const
+{
+    if (!m_peakCaches[v]) {
+        FFTModel *f = getFFTModel(v);
+        if (!f) return 0;
+        m_peakCaches[v] = new Dense3DModelPeakCache(f, 8);
+    }
+    return m_peakCaches[v];
 }
 
 const Model *
@@ -1778,12 +1795,13 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     const_cast<SpectrogramLayer *>(this)->Layer::setLayerDormant(v, false);
 
     size_t fftSize = getFFTSize(v);
+/*
     FFTModel *fft = getFFTModel(v);
     if (!fft) {
 	std::cerr << "ERROR: SpectrogramLayer::paint(): No FFT model, returning" << std::endl;
 	return;
     }
-
+*/
     ImageCache &cache = m_imageCaches[v];
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2211,6 +2229,8 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     int binforx[bufwid];
     int binfory[h];
 
+    bool usePeaksCache = false;
+
     if (bufferBinResolution) {
         for (int x = 0; x < bufwid; ++x) {
             binforx[x] = (leftBoundaryFrame / increment) + x;
@@ -2229,6 +2249,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         if (m_drawBuffer.width() < bufwid || m_drawBuffer.height() < h) {
             m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
         }
+        usePeaksCache = (increment * 8) < zoomLevel;
     }
 
     m_drawBuffer.setNumColors(256);
@@ -2247,7 +2268,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         }
     }
 
-    paintDrawBuffer(v, fft, bufwid, h, binforx, binfory);
+    paintDrawBuffer(v, bufwid, h, binforx, binfory, usePeaksCache);
 
 /*
     for (int x = 0; x < w / xPixelRatio; ++x) {
@@ -2404,11 +2425,11 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
 bool
 SpectrogramLayer::paintDrawBuffer(View *v,
-                                  FFTModel *fft,
                                   int w,
                                   int h,
                                   int *binforx,
-                                  int *binfory) const
+                                  int *binfory,
+                                  bool usePeaksCache) const
 {
     Profiler profiler("SpectrogramLayer::paintDrawBuffer");
 
@@ -2419,17 +2440,33 @@ SpectrogramLayer::paintDrawBuffer(View *v,
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
 
+    DenseThreeDimensionalModel *sourceModel = 0;
+    FFTModel *fft = 0;
+    int divisor = 1;
+    cerr << "Note: bin display = " << m_binDisplay << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
+    if (usePeaksCache) { //!!!
+        sourceModel = getPeakCache(v);
+        divisor = 8;//!!!
+        minbin = 0;
+        maxbin = sourceModel->getHeight();
+    } else {
+        sourceModel = fft = getFFTModel(v);
+    }
+
+    if (!sourceModel) return false;
+
     int psx = -1;
     float values[maxbin - minbin + 1];
+    DenseThreeDimensionalModel::Column c;
     float peaks[h];
 
     for (int x = 0; x < w; ++x) {
         
         if (binforx[x] < 0) continue;
 
-        int sx0 = binforx[x];
+        int sx0 = binforx[x] / divisor;
         int sx1 = sx0;
-        if (x+1 < w) sx1 = binforx[x+1];
+        if (x+1 < w) sx1 = binforx[x+1] / divisor;
         if (sx0 < 0) sx0 = sx1 - 1;
         if (sx0 < 0) continue;
         if (sx1 <= sx0) sx1 = sx0 + 1;
@@ -2438,10 +2475,10 @@ SpectrogramLayer::paintDrawBuffer(View *v,
             
         for (int sx = sx0; sx < sx1; ++sx) {
 
-            if (sx < 0 || sx >= int(fft->getWidth())) continue;
+            if (sx < 0 || sx >= int(sourceModel->getWidth())) continue;
 
             if (!m_synchronous) {
-                if (!fft->isColumnAvailable(sx)) {
+                if (!sourceModel->isColumnAvailable(sx)) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
                     std::cerr << "Met unavailable column at col " << sx << std::endl;
 #endif
@@ -2450,8 +2487,13 @@ SpectrogramLayer::paintDrawBuffer(View *v,
             }
 
             if (sx != psx) {
-                cerr << "Retrieving column " << sx << endl;
-                fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                if (fft) {
+                    cerr << "Retrieving column " << sx << " from fft directly" << endl;
+                    fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                } else {
+                    cerr << "Retrieving column " << sx << " from peaks cache" << endl;
+                    c = sourceModel->getColumn(sx);
+                }
                 psx = sx;
             }
 
@@ -2472,7 +2514,10 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 
                 for (int sy = sy0; sy < sy1; ++sy) {
 
-                    float value = values[sy - minbin];
+                    float value = 0.f;
+                    if (fft) value = values[sy - minbin];
+                    else value = c[sy];
+
 /*
                     if (m_colourScale != PhaseColourScale) {
                         if (!m_normalizeColumns) {

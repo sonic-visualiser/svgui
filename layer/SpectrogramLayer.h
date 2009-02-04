@@ -36,6 +36,7 @@ class QImage;
 class QPixmap;
 class QTimer;
 class FFTModel;
+class Dense3DModelPeakCache;
 
 
 /**
@@ -235,7 +236,7 @@ protected slots:
 
 protected:
     const DenseTimeValueModel *m_model; // I do not own this
-    
+
     int                 m_channel;
     size_t              m_windowSize;
     WindowType          m_windowType;
@@ -352,12 +353,14 @@ protected:
     size_t getZeroPadLevel(const View *v) const;
     size_t getFFTSize(const View *v) const;
     FFTModel *getFFTModel(const View *v) const;
+    Dense3DModelPeakCache *getPeakCache(const View *v) const;
     void invalidateFFTModels();
 
     typedef std::pair<FFTModel *, int> FFTFillPair; // model, last fill
     typedef std::map<const View *, FFTFillPair> ViewFFTMap;
-    typedef std::vector<float> FloatVector;
+    typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
     mutable ViewFFTMap m_fftModels;
+    mutable PeakCacheMap m_peakCaches;
     mutable Model *m_sliceableModel;
 
     class MagnitudeRange {
@@ -413,8 +416,9 @@ protected:
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(View *v) const;
-    bool paintDrawBuffer(View *v, FFTModel *fft, int w, int h,
-                         int *binforx, int *binfory) const;
+    bool paintDrawBuffer(View *v, int w, int h,
+                         int *binforx, int *binfory,
+                         bool usePeaksCache) const;
     //!!! phasing this one out:
     bool paintColumnValues(View *v, FFTModel *fft, int x0, int x,
                            int minbin, int maxbin,
