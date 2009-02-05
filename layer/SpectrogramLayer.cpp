@@ -2704,8 +2704,19 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                 for (int sy = sy0; sy < sy1; ++sy) {
 
                     float value = 0.f;
-                    if (fft) value = values[sy - minbin];
-                    else value = c[sy];
+                    if (fft) {
+                        if (m_binDisplay == PeakBins) {
+                            if (!fft->isLocalPeak(sx, sy)) continue;
+                        }
+                        value = values[sy - minbin];
+                    } else {
+                        if (m_binDisplay == PeakBins) {
+                            if (sy == 0 || sy+1 >= c.size() || 
+                                c.at(sy) < c.at(sy-1) ||
+                                c.at(sy) < c.at(sy+1)) continue;
+                        }
+                        value = c.at(sy);
+                    }
 
                     if (m_colourScale != PhaseColourScale) {
                         if (!m_normalizeColumns) {
