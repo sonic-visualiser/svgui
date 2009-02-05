@@ -2281,13 +2281,14 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             if (getXBinRange(v, x + x0, s0, s1)) {
                 binforx[x] = int(s0 + 0.0001);
             } else {
-                binforx[x] = 0; //???
+                binforx[x] = -1; //???
             }
         }
         if (m_drawBuffer.width() < bufwid || m_drawBuffer.height() < h) {
             m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
         }
         usePeaksCache = (increment * 8) < zoomLevel;
+        if (m_colourScale == PhaseColourScale) usePeaksCache = false;
     }
 
     m_drawBuffer.setNumColors(256);
@@ -2511,6 +2512,9 @@ SpectrogramLayer::paintDrawBuffer(View *v,
         
         if (binforx[x] < 0) continue;
 
+        float columnGain = m_gain;
+        float columnMax = 0.f;
+
         int sx0 = binforx[x] / divisor;
         int sx1 = sx0;
         if (x+1 < w) sx1 = binforx[x+1] / divisor;
@@ -2538,12 +2542,23 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 #ifdef DEBUG_SPECTROGRAM_REPAINT
                     cerr << "Retrieving column " << sx << " from fft directly" << endl;
 #endif
-                    fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                    if (m_colourScale == PhaseColourScale) {
+                        fft->getPhasesAt(sx, values, minbin, maxbin - minbin + 1);
+                    } else if (m_normalizeColumns) {
+                        fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                    } else {
+                        fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                    }
                 } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
                     cerr << "Retrieving column " << sx << " from peaks cache" << endl;
 #endif
                     c = sourceModel->getColumn(sx);
+                    if (m_normalizeColumns) {
+                        for (int y = 0; y < h; ++y) {
+                            if (c[y] > columnMax) columnMax = c[y];
+                        }
+                    }
                 }
                 psx = sx;
             }
@@ -2587,6 +2602,10 @@ SpectrogramLayer::paintDrawBuffer(View *v,
             }
         }
 
+        if (m_normalizeColumns && columnMax > 0.f) {
+            columnGain /= columnMax;
+        }
+
         for (int y = 0; y < h; ++y) {
 
             float peak = peaks[y];
@@ -2596,7 +2615,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                     peak /= (m_fftSize/2.f);
                 }
 //!!!                        mag.sample(value);
-                peak *= m_gain;
+                peak *= columnGain;
             }
             
             unsigned char peakpix = getDisplayValue(v, peak);
