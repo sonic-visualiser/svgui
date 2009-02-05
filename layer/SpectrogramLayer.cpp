@@ -45,7 +45,7 @@ using std::endl;
 #include <cassert>
 #include <cmath>
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_model(0),
@@ -1321,15 +1321,46 @@ SpectrogramLayer::getYBinRange(View *v, int y, float &q0, float &q1) const
 
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
-    //!!! wrong for smoothing -- wrong fft size for fft model
+    q0 = v->getFrequencyForY(y, minf, maxf, logarithmic);
+    q1 = v->getFrequencyForY(y - 1, minf, maxf, logarithmic);
+
+    // Now map these on to actual bins, using raw FFT size (unsmoothed)
+
+    int b0 = int((q0 * m_fftSize) / sr);
+    int b1 = int((q1 * m_fftSize) / sr);
+    
+    //!!! this is supposed to return fractions-of-bins, as it were, hence the floats
+    q0 = b0;
+    q1 = b1;
+    
+//    q0 = (b0 * sr) / m_fftSize;
+//    q1 = (b1 * sr) / m_fftSize;
+
+    return true;
+}
+
+bool
+SpectrogramLayer::getSmoothedYBinRange(View *v, int y, float &q0, float &q1) const
+{
+    Profiler profiler("SpectrogramLayer::getSmoothedYBinRange");
+
+    int h = v->height();
+    if (y < 0 || y >= h) return false;
+
+    int sr = m_model->getSampleRate();
+    float minf = getEffectiveMinFrequency();
+    float maxf = getEffectiveMaxFrequency();
+
+    bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
     q0 = v->getFrequencyForY(y, minf, maxf, logarithmic);
     q1 = v->getFrequencyForY(y - 1, minf, maxf, logarithmic);
 
-    // Now map these on to actual bins
+    // Now map these on to actual bins, using zero-padded FFT size if
+    // appropriate
 
-    int b0 = int((q0 * m_fftSize) / sr);
-    int b1 = int((q1 * m_fftSize) / sr);
+    int b0 = int((q0 * getFFTSize(v)) / sr);
+    int b1 = int((q1 * getFFTSize(v)) / sr);
     
     //!!! this is supposed to return fractions-of-bins, as it were, hence the floats
     q0 = b0;
@@ -1693,8 +1724,13 @@ SpectrogramLayer::invalidateFFTModels()
          i != m_fftModels.end(); ++i) {
         delete i->second.first;
     }
+    for (PeakCacheMap::iterator i = m_peakCaches.begin();
+         i != m_peakCaches.end(); ++i) {
+        delete i->second;
+    }
     
     m_fftModels.clear();
+    m_peakCaches.clear();
 
     if (m_sliceableModel) {
         std::cerr << "SpectrogramLayer: emitting sliceableModelReplaced(" << m_sliceableModel << ", 0)" << std::endl;
@@ -2263,10 +2299,11 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     
     for (int y = 0; y < h; ++y) {
         float q0 = 0, q1 = 0;
-        if (!getYBinRange(v, h-y-1, q0, q1)) {
+        if (!getSmoothedYBinRange(v, h-y-1, q0, q1)) {
             binfory[y] = -1;
         } else {
             binfory[y] = int(q0 + 0.0001);
+            cerr << "binfory[" << y << "] = " << binfory[y] << endl;
         }
     }
 
