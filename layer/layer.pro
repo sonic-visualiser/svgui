@@ -6,13 +6,6 @@ load(../sv.prf)
 CONFIG += sv staticlib qt thread warn_on stl rtti exceptions
 QT += xml
 
-
-#!!!
-	debug {
-		CONFIG += precompile_header
-		PRECOMPILED_HEADER = ../stable.h
-	}
-
 TARGET = svlayer
 
 DEPENDPATH += . ..

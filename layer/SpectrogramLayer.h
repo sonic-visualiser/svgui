@@ -333,8 +333,16 @@ protected:
 	size_t modelStart;
 	size_t modelEnd;
     };
+
+    // Note that the getYBin... methods return the nominal bin in the
+    // un-smoothed spectrogram.  This is not necessarily the same bin
+    // as is pulled from the spectrogram and drawn at the given
+    // position, if the spectrogram has oversampling smoothing.  Use
+    // getSmoothedYBinRange to obtain that.
+
     bool getXBinRange(View *v, int x, float &windowMin, float &windowMax) const;
     bool getYBinRange(View *v, int y, float &freqBinMin, float &freqBinMax) const;
+    bool getSmoothedYBinRange(View *v, int y, float &freqBinMin, float &freqBinMax) const;
 
     bool getYBinSourceRange(View *v, int y, float &freqMin, float &freqMax) const;
     bool getAdjustedYBinSourceRange(View *v, int x, int y,
