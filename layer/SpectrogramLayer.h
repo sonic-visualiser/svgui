@@ -427,6 +427,13 @@ protected:
     bool paintDrawBuffer(View *v, int w, int h,
                          int *binforx, int *binfory,
                          bool usePeaksCache) const;
+    bool paintDrawBufferPeakFrequencies(View *v, int w, int h,
+                                        int *binforx,
+                                        int minbin,
+                                        int maxbin,
+                                        float displayMinFreq,
+                                        float displayMaxFreq,
+                                        bool logarithmic) const;
     //!!! phasing this one out:
     bool paintColumnValues(View *v, FFTModel *fft, int x0, int x,
                            int minbin, int maxbin,
