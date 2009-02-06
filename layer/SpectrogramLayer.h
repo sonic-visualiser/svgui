@@ -425,7 +425,7 @@ protected:
     void invalidateMagnitudes();
     bool updateViewMagnitudes(View *v) const;
     bool paintDrawBuffer(View *v, int w, int h,
-                         int *binforx, int *binfory,
+                         int *binforx, float *binfory,
                          bool usePeaksCache) const;
     bool paintDrawBufferPeakFrequencies(View *v, int w, int h,
                                         int *binforx,
