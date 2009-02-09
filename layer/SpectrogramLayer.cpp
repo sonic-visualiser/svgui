@@ -2302,14 +2302,16 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             }
         }
 
-        paintDrawBuffer(v, bufwid, h, binforx, binfory, usePeaksCache);
+        paintDrawBuffer(v, bufwid, h, binforx, binfory, usePeaksCache,
+                        overallMag, overallMagChanged);
 
     } else {
 
         paintDrawBufferPeakFrequencies(v, bufwid, h, binforx,
                                        minbin, maxbin,
                                        displayMinFreq, displayMaxFreq,
-                                       logarithmic);
+                                       logarithmic,
+                                       overallMag, overallMagChanged);
     }
 
 /*
@@ -2482,7 +2484,9 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                                                  int maxbin,
                                                  float displayMinFreq,
                                                  float displayMaxFreq,
-                                                 bool logarithmic) const
+                                                 bool logarithmic,
+                                                 MagnitudeRange &overallMag,
+                                                 bool &overallMagChanged) const
 {
     Profiler profiler("SpectrogramLayer::paintDrawBufferPeakFrequencies");
 
@@ -2577,6 +2581,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                               << std::endl;
                 } else {
                     m_columnMags[sx].sample(mag);
+                    if (overallMag.sample(mag)) overallMagChanged = true;
                 }
             }
         }
@@ -2591,7 +2596,9 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                                   int h,
                                   int *binforx,
                                   float *binfory,
-                                  bool usePeaksCache) const
+                                  bool usePeaksCache,
+                                  MagnitudeRange &overallMag,
+                                  bool &overallMagChanged) const
 {
     Profiler profiler("SpectrogramLayer::paintDrawBuffer");
 
@@ -2774,6 +2781,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                               << std::endl;
                 } else {
                     m_columnMags[sx].sample(mag);
+                    if (overallMag.sample(mag)) overallMagChanged = true;
                 }
             }
         }
