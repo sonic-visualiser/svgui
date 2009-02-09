@@ -170,6 +170,9 @@ Pane::updateHeadsUpDisplay()
         m_reset->setFixedHeight(16);
         m_reset->setFixedWidth(16);
         layout->addWidget(m_reset, 1, 2);
+        
+        layout->setColumnStretch(0, 20);
+
         connect(m_reset, SIGNAL(clicked()), m_hthumb, SLOT(resetToDefault()));
         connect(m_reset, SIGNAL(clicked()), m_vthumb, SLOT(resetToDefault()));
         connect(m_reset, SIGNAL(clicked()), m_vpan, SLOT(resetToDefault()));
