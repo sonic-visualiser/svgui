@@ -426,21 +426,18 @@ protected:
     bool updateViewMagnitudes(View *v) const;
     bool paintDrawBuffer(View *v, int w, int h,
                          int *binforx, float *binfory,
-                         bool usePeaksCache) const;
+                         bool usePeaksCache,
+                         MagnitudeRange &overallMag,
+                         bool &overallMagChanged) const;
     bool paintDrawBufferPeakFrequencies(View *v, int w, int h,
                                         int *binforx,
                                         int minbin,
                                         int maxbin,
                                         float displayMinFreq,
                                         float displayMaxFreq,
-                                        bool logarithmic) const;
-    //!!! phasing this one out:
-    bool paintColumnValues(View *v, FFTModel *fft, int x0, int x,
-                           int minbin, int maxbin,
-                           float displayMinFreq, float displayMaxFreq,
-                           float xPixelRatio,
-                           const int h,
-                           const float *yforbin) const;
+                                        bool logarithmic,
+                                        MagnitudeRange &overallMag,
+                                        bool &overallMagChanged) const;
 
     virtual void updateMeasureRectYCoords(View *v, const MeasureRect &r) const;
     virtual void setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const;
