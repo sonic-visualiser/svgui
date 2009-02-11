@@ -293,7 +293,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 		m_layout->addWidget(new QLabel(groupName, m_mainWidget), row, 0);
 		QFrame *frame = new QFrame(m_mainWidget);
 		m_layout->addWidget(frame, row, 1, 1, 2);
-		m_groupLayouts[groupName] = new QHBoxLayout;
+		m_groupLayouts[groupName] = new QGridLayout;
 		m_groupLayouts[groupName]->setMargin(0);
 		frame->setLayout(m_groupLayouts[groupName]);
 	    }
@@ -337,7 +337,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseLeftWidget()));
 	    if (inGroup) {
 		button->setToolTip(propertyLabel);
-		m_groupLayouts[groupName]->addWidget(button);
+		m_groupLayouts[groupName]->addWidget
+                    (button, 0, m_groupLayouts[groupName]->columnCount());
 	    } else {
 		m_layout->addWidget(button, row, 1, 1, 2);
 	    }
@@ -390,7 +391,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	    if (inGroup) {
 		dial->setFixedWidth(24);
 		dial->setFixedHeight(24);
-		m_groupLayouts[groupName]->addWidget(dial);
+		m_groupLayouts[groupName]->addWidget
+                    (dial, 0, m_groupLayouts[groupName]->columnCount());
 	    } else {
 		dial->setFixedWidth(32);
 		dial->setFixedHeight(32);
@@ -482,7 +484,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
 	    if (inGroup) {
 		cb->setToolTip(propertyLabel);
-		m_groupLayouts[groupName]->addWidget(cb);
+		m_groupLayouts[groupName]->addWidget
+                    (cb, 0, m_groupLayouts[groupName]->columnCount());
 	    } else {
 		m_layout->addWidget(cb, row, 1, 1, 2);
 	    }

@@ -85,7 +85,7 @@ protected:
     QVBoxLayout *m_mainBox;
     LEDButton *m_showButton;
     LEDButton *m_playButton;
-    std::map<QString, QLayout *> m_groupLayouts;
+    std::map<QString, QGridLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };
 
