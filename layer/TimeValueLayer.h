@@ -129,6 +129,14 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    virtual ColourSignificance getLayerColourSignificance() const {
+        if (m_plotStyle == PlotSegmentation) {
+            return ColourHasMeaningfulValue;
+        } else {
+            return ColourDistinguishes;
+        }
+    }
+
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
     int getYForValue(View *, float value) const;
