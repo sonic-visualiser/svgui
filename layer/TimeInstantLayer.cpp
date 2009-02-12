@@ -63,6 +63,10 @@ TimeInstantLayer::setModel(SparseOneDimensionalModel *model)
     std::cerr << "TimeInstantLayer::setModel(" << model << ")" << std::endl;
 #endif
 
+    if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
+        setPlotStyle(PlotSegmentation);
+    }
+
     emit modelReplaced();
 }
 

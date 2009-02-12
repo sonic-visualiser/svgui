@@ -69,6 +69,13 @@ TimeValueLayer::setModel(SparseTimeValueModel *model)
     m_scaleMinimum = 0;
     m_scaleMaximum = 0;
 
+    if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
+        setPlotStyle(PlotSegmentation);
+    }
+    if (m_model && m_model->getRDFTypeURI().endsWith("Change")) {
+        setPlotStyle(PlotSegmentation);
+    }
+
 //    std::cerr << "TimeValueLayer::setModel(" << model << ")" << std::endl;
 
     emit modelReplaced();

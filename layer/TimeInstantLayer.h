@@ -100,6 +100,14 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    virtual ColourSignificance getLayerColourSignificance() const {
+        if (m_plotStyle == PlotSegmentation) {
+            return ColourHasMeaningfulValue;
+        } else {
+            return ColourDistinguishes;
+        }
+    }
+
 protected:
     SparseOneDimensionalModel::PointList getLocalPoints(View *v, int) const;
 
