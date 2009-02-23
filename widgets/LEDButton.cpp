@@ -139,17 +139,27 @@ LEDButton::paintEvent(QPaintEvent *)
 
     if (led_state) {
 	if (d->on_map) {
-	    paint.begin(this);
-	    paint.drawPixmap(0, 0, *d->on_map);
-	    paint.end();
-	    return;
+            if (d->on_map->size() == size()) {
+                paint.begin(this);
+                paint.drawPixmap(0, 0, *d->on_map);
+                paint.end();
+                return;
+            } else {
+                delete d->on_map;
+                d->on_map = 0;
+            }
 	}
     } else {
 	if (d->off_map) {
-	    paint.begin(this);
-	    paint.drawPixmap(0, 0, *d->off_map);
-	    paint.end();
-	    return;
+            if (d->off_map->size() == size()) {
+                paint.begin(this);
+                paint.drawPixmap(0, 0, *d->off_map);
+                paint.end();
+                return;
+            } else {
+                delete d->off_map;
+                d->off_map = 0;
+            }
 	}
     }
 
