@@ -166,6 +166,7 @@ Pane::updateHeadsUpDisplay()
         }
 
         m_reset = new NotifyingPushButton;
+	m_reset->setFlat(true);
         m_reset->setCursor(Qt::ArrowCursor);
         m_reset->setFixedHeight(16);
         m_reset->setFixedWidth(16);
