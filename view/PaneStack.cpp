@@ -67,6 +67,7 @@ PaneStack::addPane(bool suppressPropertyBox)
     layout->setMargin(0);
     layout->setSpacing(2);
 
+
 //    QHBoxLayout *layout = new QHBoxLayout;
 
 //    QVBoxLayout *vlayout = new QVBoxLayout;
@@ -76,6 +77,7 @@ PaneStack::addPane(bool suppressPropertyBox)
     QPushButton *xButton = new QPushButton(frame);
     xButton->setIcon(IconLoader().load("cross"));
     xButton->setFixedSize(QSize(16, 16));
+    xButton->setFlat(true);
     layout->addWidget(xButton, 0, 0);
 //    vlayout->setStretchFactor(xButton, 0);
     connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
@@ -84,6 +86,7 @@ PaneStack::addPane(bool suppressPropertyBox)
 //    currentIndicator->setFixedWidth(QPainter(this).fontMetrics().width("x"));
     layout->addWidget(currentIndicator, 1, 0);
     layout->setRowStretch(1, 20);
+    currentIndicator->setMinimumWidth(8);
     currentIndicator->setScaledContents(true);
 
     Pane *pane = new Pane(frame);
