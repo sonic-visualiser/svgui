@@ -170,6 +170,7 @@ Pane::updateHeadsUpDisplay()
         m_reset->setCursor(Qt::ArrowCursor);
         m_reset->setFixedHeight(16);
         m_reset->setFixedWidth(16);
+        m_reset->setIcon(QPixmap(":/icons/zoom-reset.png"));
         layout->addWidget(m_reset, 1, 2);
         
         layout->setColumnStretch(0, 20);
