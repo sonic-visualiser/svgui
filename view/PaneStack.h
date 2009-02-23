@@ -25,7 +25,7 @@ class QWidget;
 class QLabel;
 class QStackedWidget;
 class QSplitter;
-class QHBoxLayout;
+class QGridLayout;
 class View;
 class Pane;
 class Layer;
@@ -110,7 +110,7 @@ protected:
 	QWidget     *propertyStack;
 	QLabel      *currentIndicator;
         QFrame      *frame;
-        QHBoxLayout *layout;
+        QGridLayout *layout;
     };
 
     std::vector<PaneRec> m_panes;
