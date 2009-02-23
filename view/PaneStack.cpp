@@ -1,4 +1,3 @@
-
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 
 /*
@@ -63,31 +62,34 @@ Pane *
 PaneStack::addPane(bool suppressPropertyBox)
 {
     QFrame *frame = new QFrame;
-    QHBoxLayout *layout = new QHBoxLayout;
+
+    QGridLayout *layout = new QGridLayout;
     layout->setMargin(0);
     layout->setSpacing(2);
 
-    QVBoxLayout *vlayout = new QVBoxLayout;
-    layout->addLayout(vlayout);
-    layout->setStretchFactor(vlayout, 0);
+//    QHBoxLayout *layout = new QHBoxLayout;
+
+//    QVBoxLayout *vlayout = new QVBoxLayout;
+//    layout->addLayout(vlayout);
+//    layout->setStretchFactor(vlayout, 0);
 
     QPushButton *xButton = new QPushButton(frame);
     xButton->setIcon(IconLoader().load("cross"));
     xButton->setFixedSize(QSize(16, 16));
-    vlayout->addWidget(xButton);
-    vlayout->setStretchFactor(xButton, 0);
+    layout->addWidget(xButton, 0, 0);
+//    vlayout->setStretchFactor(xButton, 0);
     connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
 
     QLabel *currentIndicator = new QLabel(frame);
 //    currentIndicator->setFixedWidth(QPainter(this).fontMetrics().width("x"));
-    vlayout->addWidget(currentIndicator);
-    vlayout->setStretchFactor(currentIndicator, 10);
+    layout->addWidget(currentIndicator, 1, 0);
+    layout->setRowStretch(1, 20);
     currentIndicator->setScaledContents(true);
 
     Pane *pane = new Pane(frame);
     pane->setViewManager(m_viewManager);
-    layout->addWidget(pane);
-    layout->setStretchFactor(pane, 10);
+    layout->addWidget(pane, 0, 1, 2, 1);
+    layout->setColumnStretch(1, 20);
 
     m_xButtonMap[xButton] = pane;
 
@@ -104,12 +106,12 @@ PaneStack::addPane(bool suppressPropertyBox)
                 this, SIGNAL(contextHelpChanged(const QString &)));
     }
     if (m_layoutStyle == PropertyStackPerPaneLayout) {
-        layout->addWidget(properties);
+        layout->addWidget(properties, 0, 2, 2, 1);
     } else {
         properties->setParent(m_propertyStackStack);
         m_propertyStackStack->addWidget(properties);
     }
-    layout->setStretchFactor(properties, 1);
+    layout->setColumnStretch(2, 1);
 
     PaneRec rec;
     rec.pane = pane;
@@ -181,7 +183,7 @@ PaneStack::setLayoutStyle(LayoutStyle style)
         for (i = m_panes.begin(); i != m_panes.end(); ++i) {
             m_propertyStackStack->removeWidget(i->propertyStack);
             i->propertyStack->setParent(i->frame);
-            i->layout->addWidget(i->propertyStack);
+            i->layout->addWidget(i->propertyStack, 0, 2, 2, 1);
             i->propertyStack->show();
         }
         m_propertyStackStack->hide();
