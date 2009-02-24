@@ -15,6 +15,7 @@
 
 #include "ViewManager.h"
 #include "base/AudioPlaySource.h"
+#include "base/RealTime.h"
 #include "data/model/Model.h"
 #include "widgets/CommandHistory.h"
 #include "View.h"
@@ -324,7 +325,8 @@ QString
 ViewManager::SetSelectionCommand::getName() const
 {
     if (m_newSelection.getSelections().empty()) return tr("Clear Selection");
-    else return tr("Select");
+    if (m_newSelection.getSelections().size() > 1) return tr("Select Multiple Regions");
+    else return tr("Select Region");
 }
 
 Selection
@@ -339,6 +341,15 @@ ViewManager::setToolMode(ToolMode mode)
     m_toolMode = mode;
 
     emit toolModeChanged();
+
+    switch (mode) {
+    case NavigateMode: emit activity(tr("Enter Navigate mode")); break;
+    case SelectMode: emit activity(tr("Enter Select mode")); break;
+    case EditMode: emit activity(tr("Enter Edit mode")); break;
+    case DrawMode: emit activity(tr("Enter Draw mode")); break;
+    case EraseMode: emit activity(tr("Enter Erase mode")); break;
+    case MeasureMode: emit activity(tr("Enter Measure mode")); break;
+    };
 }
 
 void
@@ -350,6 +361,9 @@ ViewManager::setPlayLoopMode(bool mode)
 
         emit playLoopModeChanged();
         emit playLoopModeChanged(mode);
+
+        if (mode) emit activity(tr("Switch on Loop mode"));
+        else emit activity(tr("Switch off Loop mode"));
     }
 }
 
@@ -362,6 +376,9 @@ ViewManager::setPlaySelectionMode(bool mode)
 
         emit playSelectionModeChanged();
         emit playSelectionModeChanged(mode);
+
+        if (mode) emit activity(tr("Switch on Play Selection mode"));
+        else emit activity(tr("Switch off Play Selection mode"));
     }
 }
 
@@ -374,6 +391,9 @@ ViewManager::setPlaySoloMode(bool mode)
 
         emit playSoloModeChanged();
         emit playSoloModeChanged(mode);
+
+        if (mode) emit activity(tr("Switch on Play Solo mode"));
+        else emit activity(tr("Switch off Play Solo mode"));
     }
 }
 
@@ -386,6 +406,9 @@ ViewManager::setAlignMode(bool mode)
 
         emit alignModeChanged();
         emit alignModeChanged(mode);
+
+        if (mode) emit activity(tr("Switch on Alignment mode"));
+        else emit activity(tr("Switch off Alignment mode"));
     }
 }
 
@@ -485,6 +508,10 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
         if (v) emit viewCentreFrameChanged(v, f);
     }
 
+    emit activity(tr("Scroll view to %1")
+                  .arg(RealTime::frame2RealTime
+                       (f, m_mainModelSampleRate).toText().c_str()));
+
     if (mode == PlaybackIgnore) {
         return;
     }
@@ -539,6 +566,7 @@ ViewManager::viewZoomLevelChanged(unsigned long z, bool locked)
 #endif
 
     emit viewZoomLevelChanged(v, z, locked);
+    emit activity(tr("Zoom to %n sample(s) per pixel", "", z));
 }
 
 void
@@ -547,6 +575,7 @@ ViewManager::setOverlayMode(OverlayMode mode)
     if (m_overlayMode != mode) {
         m_overlayMode = mode;
         emit overlayModeChanged();
+        emit activity(tr("Change overlay level"));
     }
 
     QSettings settings;
@@ -561,6 +590,8 @@ ViewManager::setZoomWheelsEnabled(bool enabled)
     if (m_zoomWheelsEnabled != enabled) {
         m_zoomWheelsEnabled = enabled;
         emit zoomWheelsEnabledChanged();
+        if (enabled) emit activity("Show zoom wheels");
+        else emit activity("Hide zoom wheels");
     }
 
     QSettings settings;

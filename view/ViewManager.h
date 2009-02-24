@@ -235,6 +235,9 @@ signals:
     /** Emitted when the zoom wheels have been toggled. */
     void zoomWheelsEnabledChanged();
 
+    /** Emitted when any loggable activity has occurred. */
+    void activity(QString);
+
 public slots:
     void viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode);
     void viewZoomLevelChanged(unsigned long, bool);

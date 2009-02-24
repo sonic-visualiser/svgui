@@ -181,6 +181,11 @@ signals:
      */
     void documentRestored();
 
+    /**
+     * Emitted when some activity happened (for activity logging).
+     */
+    void activity(QString);
+
 protected:
     CommandHistory();
     static CommandHistory *m_instance;
@@ -208,6 +213,7 @@ protected:
     void addToCompound(Command *command, bool execute);
 
     MacroCommand *m_currentBundle;
+    bool m_bundling;
     QString m_currentBundleName;
     QTimer *m_bundleTimer;
     int m_bundleTimeout;

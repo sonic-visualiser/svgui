@@ -55,7 +55,7 @@ public:
     virtual ~Layer();
 
     virtual const Model *getModel() const = 0;
-    virtual Model *getModel() {
+    Model *getModel() {
 	return const_cast<Model *>(const_cast<const Layer *>(this)->getModel());
     }
 
