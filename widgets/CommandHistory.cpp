@@ -47,8 +47,9 @@ CommandHistory::CommandHistory() :
     m_currentCompound(0),
     m_executeCompound(false),
     m_currentBundle(0),
+    m_bundling(false),
     m_bundleTimer(0),
-    m_bundleTimeout(5000)
+    m_bundleTimeout(3000)
 {
     m_undoAction = new QAction(QIcon(":/icons/undo.png"), tr("&Undo"), this);
     m_undoAction->setShortcut(tr("Ctrl+Z"));
@@ -178,7 +179,8 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
     // someone must have executed it for this to make any sense
     emit commandExecuted();
     emit commandExecuted(command);
-
+    if (!m_bundling) emit activity(command->getName());
+    
     updateActions();
 }
 
@@ -209,7 +211,9 @@ CommandHistory::addToBundle(Command *command, bool execute)
 	// need to addCommand before setting m_currentBundle, as addCommand
 	// with bundle false will reset m_currentBundle to 0
 	MacroCommand *mc = new BundleCommand(command->getName());
+        m_bundling = true;
 	addCommand(mc, false);
+        m_bundling = false;
 	m_currentBundle = mc;
 	m_currentBundleName = command->getName();
     }
@@ -243,6 +247,7 @@ CommandHistory::closeBundle()
     std::cerr << "CommandHistory::closeBundle" << std::endl;
 #endif
 
+    if (m_currentBundle) emit activity(m_currentBundle->getName());
     m_currentBundle = 0;
     m_currentBundleName = "";
 }
@@ -334,6 +339,7 @@ CommandHistory::undo()
     command->unexecute();
     emit commandExecuted();
     emit commandUnexecuted(command);
+    emit activity(tr("Undo %1").arg(command->getName()));
 
     m_redoStack.push(command);
     m_undoStack.pop();
@@ -359,6 +365,7 @@ CommandHistory::redo()
     command->execute();
     emit commandExecuted();
     emit commandExecuted(command);
+    emit activity(tr("Redo %1").arg(command->getName()));
 
     m_undoStack.push(command);
     m_redoStack.pop();

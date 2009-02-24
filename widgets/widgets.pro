@@ -14,7 +14,8 @@ OBJECTS_DIR = tmp_obj
 MOC_DIR = tmp_moc
 
 # Input
-HEADERS += AudioDial.h \
+HEADERS += ActivityLog.h \
+           AudioDial.h \
            ClickableLabel.h \
            ColourNameDialog.h \
            CommandHistory.h \
@@ -51,7 +52,8 @@ HEADERS += AudioDial.h \
            TransformFinder.h \
            WindowShapePreview.h \
            WindowTypeSelector.h
-SOURCES += AudioDial.cpp \
+SOURCES += ActivityLog.cpp \
+           AudioDial.cpp \
            ColourNameDialog.cpp \
            CommandHistory.cpp \
            CSVFormatDialog.cpp \
