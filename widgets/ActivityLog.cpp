@@ -51,6 +51,6 @@ ActivityLog::activityHappened(QString name)
     m_model->insertRows(row, 1);
     QModelIndex ix = m_model->index(row, 0);
     m_model->setData(ix, name);
-    if (m_listView->isVisible()) m_listView->scrollTo(ix);
+    if (isVisible()) m_listView->scrollTo(ix);
 }
 
