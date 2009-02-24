@@ -171,6 +171,7 @@ Pane::updateHeadsUpDisplay()
         m_reset->setFixedHeight(16);
         m_reset->setFixedWidth(16);
         m_reset->setIcon(QPixmap(":/icons/zoom-reset.png"));
+        m_reset->setToolTip(tr("Reset zoom to default"));
         layout->addWidget(m_reset, 1, 2);
         
         layout->setColumnStretch(0, 20);
