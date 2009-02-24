@@ -18,6 +18,7 @@
 #include "Pane.h"
 #include "widgets/PropertyStack.h"
 #include "widgets/IconLoader.h"
+#include "widgets/ClickableLabel.h"
 #include "layer/Layer.h"
 #include "ViewManager.h"
 
@@ -67,23 +68,15 @@ PaneStack::addPane(bool suppressPropertyBox)
     layout->setMargin(0);
     layout->setSpacing(2);
 
-
-//    QHBoxLayout *layout = new QHBoxLayout;
-
-//    QVBoxLayout *vlayout = new QVBoxLayout;
-//    layout->addLayout(vlayout);
-//    layout->setStretchFactor(vlayout, 0);
-
     QPushButton *xButton = new QPushButton(frame);
     xButton->setIcon(IconLoader().load("cross"));
     xButton->setFixedSize(QSize(16, 16));
     xButton->setFlat(true);
     layout->addWidget(xButton, 0, 0);
-//    vlayout->setStretchFactor(xButton, 0);
     connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
 
-    QLabel *currentIndicator = new QLabel(frame);
-//    currentIndicator->setFixedWidth(QPainter(this).fontMetrics().width("x"));
+    ClickableLabel *currentIndicator = new ClickableLabel(frame);
+    connect(currentIndicator, SIGNAL(clicked()), this, SLOT(indicatorClicked()));
     layout->addWidget(currentIndicator, 1, 0);
     layout->setRowStretch(1, 20);
     currentIndicator->setMinimumWidth(8);
@@ -536,6 +529,19 @@ PaneStack::paneDeleteButtonClicked()
         if (m_xButtonMap.find(w) != m_xButtonMap.end()) {
             Pane *p = m_xButtonMap[w];
             emit paneDeleteButtonClicked(p);
+        }
+    }
+}
+
+void
+PaneStack::indicatorClicked()
+{
+    QObject *s = sender();
+
+    for (size_t i = 0; i < m_panes.size(); ++i) {
+	if (m_panes[i].currentIndicator == s) {
+            setCurrentPane(m_panes[i].pane);
+            return;
         }
     }
 }
