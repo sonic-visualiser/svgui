@@ -100,6 +100,7 @@ public slots:
     void paneDropAccepted(QStringList);
     void paneDropAccepted(QString);
     void paneDeleteButtonClicked();
+    void indicatorClicked();
 
 protected:
     Pane *m_currentPane;

@@ -15,6 +15,7 @@ MOC_DIR = tmp_moc
 
 # Input
 HEADERS += AudioDial.h \
+           ClickableLabel.h \
            ColourNameDialog.h \
            CommandHistory.h \
            CSVFormatDialog.h \
