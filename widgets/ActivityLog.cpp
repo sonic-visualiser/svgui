@@ -18,6 +18,7 @@
 #include <QListView>
 #include <QGridLayout>
 #include <QStringListModel>
+#include <QTime>
 
 #include <iostream>
 
@@ -40,11 +41,16 @@ ActivityLog::activityHappened(QString name)
 {
     name = name.replace("&", "");
     std::cerr << "ActivityLog::activityHappened(" << name.toStdString() << ")" << std::endl;
-//    int row = m_model->rowCount();
-    int row = 0;
+    if (name == m_prevName) {
+        std::cerr << "(ignoring duplicate)" << std::endl;
+        return;
+    }
+    m_prevName = name;
+    int row = m_model->rowCount();
+    name = tr("%1: %2").arg(QTime::currentTime().toString()).arg(name);
     m_model->insertRows(row, 1);
-    m_model->setData(m_model->index(row, 0), name);
+    QModelIndex ix = m_model->index(row, 0);
+    m_model->setData(ix, name);
+    if (m_listView->isVisible()) m_listView->scrollTo(ix);
 }
 
-
-    

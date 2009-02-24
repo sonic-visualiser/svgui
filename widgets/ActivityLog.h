@@ -36,6 +36,7 @@ public slots:
 private:
     QListView *m_listView;
     QStringListModel *m_model;
+    QString m_prevName;
 };
 
 #endif

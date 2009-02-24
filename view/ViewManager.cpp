@@ -19,6 +19,7 @@
 #include "data/model/Model.h"
 #include "widgets/CommandHistory.h"
 #include "View.h"
+#include "Overview.h"
 
 #include <QSettings>
 #include <QApplication>
@@ -508,9 +509,11 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
         if (v) emit viewCentreFrameChanged(v, f);
     }
 
-    emit activity(tr("Scroll view to %1")
-                  .arg(RealTime::frame2RealTime
-                       (f, m_mainModelSampleRate).toText().c_str()));
+    if (!dynamic_cast<Overview *>(v) || (mode != PlaybackIgnore)) {
+        emit activity(tr("Scroll to %1")
+                      .arg(RealTime::frame2RealTime
+                           (f, m_mainModelSampleRate).toText().c_str()));
+    }
 
     if (mode == PlaybackIgnore) {
         return;
@@ -566,7 +569,10 @@ ViewManager::viewZoomLevelChanged(unsigned long z, bool locked)
 #endif
 
     emit viewZoomLevelChanged(v, z, locked);
-    emit activity(tr("Zoom to %n sample(s) per pixel", "", z));
+
+    if (!dynamic_cast<Overview *>(v)) {
+        emit activity(tr("Zoom to %n sample(s) per pixel", "", z));
+    }
 }
 
 void

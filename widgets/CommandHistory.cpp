@@ -35,7 +35,9 @@
 
 #include <iostream>
 
-//#define DEBUG_COMMAND_HISTORY 1
+#include <typeinfo>
+
+#define DEBUG_COMMAND_HISTORY 1
 
 CommandHistory *CommandHistory::m_instance = 0;
 
@@ -141,7 +143,7 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
     if (!command) return;
 
 #ifdef DEBUG_COMMAND_HISTORY
-    std::cerr << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " at " << command << ": execute = " << execute << ", bundle = " << bundle << " (m_currentCompound = " << m_currentCompound << ", m_currentBundle = " << m_currentBundle << ")" << std::endl;
+    std::cerr << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " of type " << typeid(*command).name() << " at " << command << ": execute = " << execute << ", bundle = " << bundle << " (m_currentCompound = " << m_currentCompound << ", m_currentBundle = " << m_currentBundle << ")" << std::endl;
 #endif
 
     if (m_currentCompound) {
