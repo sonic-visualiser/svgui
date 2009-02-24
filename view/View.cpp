@@ -1858,9 +1858,12 @@ View::drawSelections(QPainter &paint)
 	    int ex = sx;
 	    int dx = sx;
 
+            bool durationBothEnds = true;
+
 	    if (sw + ew > (p1 - p0)) {
 		ey += metrics.height();
 		dy += metrics.height();
+                durationBothEnds = false;
 	    }
 
 	    if (ew < (p1 - p0)) {
@@ -1874,6 +1877,9 @@ View::drawSelections(QPainter &paint)
 	    paint.drawText(sx, sy, startText);
 	    paint.drawText(ex, ey, endText);
 	    paint.drawText(dx, dy, durationText);
+            if (durationBothEnds) {
+                paint.drawText(sx, dy, durationText);
+            }
 	}
     }
 
