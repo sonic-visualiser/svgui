@@ -18,18 +18,31 @@
 #include <QListView>
 #include <QGridLayout>
 #include <QStringListModel>
+#include <QLabel>
+#include <QDialogButtonBox>
 #include <QTime>
+#include <QApplication>
 
 #include <iostream>
 
 ActivityLog::ActivityLog() : QDialog()
 {
-    m_model = new QStringListModel;
-    m_listView = new QListView;
+    setWindowTitle(tr("Activity Log"));
+
     QGridLayout *layout = new QGridLayout;
-    layout->addWidget(m_listView, 0, 0);
     setLayout(layout);
+
+    layout->addWidget(new QLabel(tr("<p>Activity Log shows a list of your interactions and other events within %1.</p>").arg(QApplication::applicationName())), 0, 0);
+
+    m_listView = new QListView;
+    m_model = new QStringListModel;
     m_listView->setModel(m_model);
+    layout->addWidget(m_listView, 1, 0);
+    layout->setRowStretch(1, 10);
+
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
+    connect(bb, SIGNAL(rejected()), this, SLOT(hide()));
+    layout->addWidget(bb, 2, 0);
 }
 
 ActivityLog::~ActivityLog()
@@ -54,3 +67,12 @@ ActivityLog::activityHappened(QString name)
     if (isVisible()) m_listView->scrollTo(ix);
 }
 
+void
+ActivityLog::scrollToEnd()
+{
+    if (m_model->rowCount() == 0 || !isVisible()) return;
+    QModelIndex ix = m_model->index(m_model->rowCount()-1, 0);
+    m_listView->scrollTo(ix);
+}
+
+    
