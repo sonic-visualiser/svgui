@@ -32,7 +32,7 @@ ActivityLog::ActivityLog() : QDialog()
     QGridLayout *layout = new QGridLayout;
     setLayout(layout);
 
-    layout->addWidget(new QLabel(tr("<p>Activity Log shows a list of your interactions and other events within %1.</p>").arg(QApplication::applicationName())), 0, 0);
+    layout->addWidget(new QLabel(tr("<p>Activity Log lists your interactions and other events within %1.</p>").arg(QApplication::applicationName())), 0, 0);
 
     m_listView = new QListView;
     m_model = new QStringListModel;
