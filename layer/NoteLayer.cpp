@@ -1155,6 +1155,38 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
     return true;
 }
 
+void
+NoteLayer::addNoteOn(long frame, int pitch, int velocity)
+{
+    m_pendingNoteOns.insert(Note(frame, pitch, 0, float(velocity) / 127.0, ""));
+}
+
+void
+NoteLayer::addNoteOff(long frame, int pitch)
+{
+    for (NoteSet::iterator i = m_pendingNoteOns.begin();
+         i != m_pendingNoteOns.end(); ++i) {
+        if (lrintf((*i).value) == pitch) {
+            Note note(*i);
+            m_pendingNoteOns.erase(i);
+            note.duration = frame - note.frame;
+            if (m_model) {
+                NoteModel::AddPointCommand *c = new NoteModel::AddPointCommand
+                    (m_model, note, tr("Record Note"));
+                // execute and bundle:
+                CommandHistory::getInstance()->addCommand(c, true, true);
+            }
+            break;
+        }
+    }
+}
+
+void
+NoteLayer::abandonNoteOns()
+{
+    m_pendingNoteOns.clear();
+}
+
 int
 NoteLayer::getDefaultColourHint(bool darkbg, bool &impose)
 {
