@@ -84,7 +84,12 @@ public:
     virtual void setProperty(const PropertyName &, int value);
     virtual void setProperties(const QXmlAttributes &);
     
-    enum ColourScale { LinearScale, LogScale, PlusMinusOneScale };
+    enum ColourScale {
+        LinearScale,
+        LogScale,
+        PlusMinusOneScale,
+        AbsoluteScale
+    };
 
     void setColourScale(ColourScale);
     ColourScale getColourScale() const { return m_colourScale; }
