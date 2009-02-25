@@ -212,7 +212,7 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
     if (name == "Colour Scale") {
 
 	*min = 0;
-	*max = 2;
+	*max = 3;
         *deflt = (int)LinearScale;
 
 	val = (int)m_colourScale;
@@ -265,6 +265,7 @@ Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
 	case 0: return tr("Linear");
 	case 1: return tr("Log");
 	case 2: return tr("+/-1");
+	case 3: return tr("Absolute");
 	}
     }
     return tr("<unknown>");
@@ -279,6 +280,7 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	case 0: setColourScale(LinearScale); break;
 	case 1: setColourScale(LogScale); break;
 	case 2: setColourScale(PlusMinusOneScale); break;
+	case 3: setColourScale(AbsoluteScale); break;
 	}
     } else if (name == "Colour") {
         setColourMap(value);
@@ -604,6 +606,15 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
         } else if (m_colourScale == PlusMinusOneScale) {
             mmin = -1.f;
             mmax = 1.f;
+        } else if (m_colourScale == AbsoluteScale) {
+            if (mmin < 0) {
+                if (fabsf(mmin) > fabsf(mmax)) mmax = fabsf(mmin);
+                else mmax = fabsf(mmax);
+                mmin = 0;
+            } else {
+                mmin = fabsf(mmin);
+                mmax = fabsf(mmax);
+            }
         }
     
         if (max == min) max = min + 1.0;
@@ -844,6 +855,15 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     } else if (m_colourScale == PlusMinusOneScale) {
         min = -1.f;
         max = 1.f;
+    } else if (m_colourScale == AbsoluteScale) {
+        if (min < 0) {
+            if (fabsf(min) > fabsf(max)) max = fabsf(min);
+            else max = fabsf(max);
+            min = 0;
+        } else {
+            min = fabsf(min);
+            max = fabsf(max);
+        }
     }
     
     if (max == min) max = min + 1.0;
@@ -886,6 +906,15 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             visibleMin = LogRange::map(visibleMin);
             visibleMax = LogRange::map(visibleMax);
             if (visibleMin > visibleMax) std::swap(visibleMin, visibleMax);
+        } else if (m_colourScale == AbsoluteScale) {
+            if (visibleMin < 0) {
+                if (fabsf(visibleMin) > fabsf(visibleMax)) visibleMax = fabsf(visibleMin);
+                else visibleMax = fabsf(visibleMax);
+                visibleMin = 0;
+            } else {
+                visibleMin = fabsf(visibleMin);
+                visibleMax = fabsf(visibleMax);
+            }
         }
     }
     
@@ -912,6 +941,8 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 
             if (m_colourScale == LogScale) {
                 value = LogRange::map(value);
+            } else if (m_colourScale == AbsoluteScale) {
+                value = fabsf(value);
             }
             
             if (normalizeVisible) {
@@ -1065,7 +1096,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 		pixel = m_cache->pixel(sx, sy);
 	    }
 
-	    QRect r(rx0, ry0 - h / (symax - symin) - 1,
+	    QRect r(rx0, ry0 - h / (symax - symin),
                     rw, h / (symax - symin) + 1);
 
             if (rw == 1) {
