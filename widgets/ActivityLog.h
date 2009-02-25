@@ -32,6 +32,7 @@ public:
 
 public slots:
     void activityHappened(QString);
+    void scrollToEnd();
 
 private:
     QListView *m_listView;
