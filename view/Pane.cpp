@@ -1739,7 +1739,7 @@ Pane::dragTopLayer(QMouseEvent *e)
         }
                 
         if (getXForFrame(m_centreFrame) != getXForFrame(newCentreFrame)) {
-            setCentreFrame(newCentreFrame);
+            setCentreFrame(newCentreFrame, !m_ctrlPressed);
         }
     }
 
