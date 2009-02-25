@@ -102,6 +102,24 @@ public:
     virtual void setVerticalZoomStep(int);
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
+    /**
+     * Add a note-on.  Used when recording MIDI "live".  The note will
+     * not be finally added to the layer until the corresponding
+     * note-off.
+     */
+    void addNoteOn(long frame, int pitch, int velocity);
+    
+    /**
+     * Add a note-off.  This will cause a note to appear, if and only
+     * if there is a matching pending note-on.
+     */
+    void addNoteOff(long frame, int pitch);
+
+    /**
+     * Abandon all pending note-on events.
+     */
+    void abandonNoteOns();
+
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 
@@ -123,6 +141,9 @@ protected:
     NoteModel::Point m_editingPoint;
     NoteModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
+
+    typedef std::set<NoteModel::Point, NoteModel::Point::Comparator> NoteSet;
+    NoteSet m_pendingNoteOns;
 
     mutable float m_scaleMinimum;
     mutable float m_scaleMaximum;
