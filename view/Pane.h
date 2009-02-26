@@ -140,6 +140,7 @@ protected:
     bool m_clickedInRange;
     bool m_shiftPressed;
     bool m_ctrlPressed;
+    bool m_altPressed;
 
     bool m_navigating;
     bool m_resizing;

@@ -141,7 +141,7 @@ public:
     /**
      * Scroll left or right by a smallish or largish amount.
      */
-    virtual void scroll(bool right, bool lots);
+    virtual void scroll(bool right, bool lots, bool doEmit = true);
 
     virtual void addLayer(Layer *v);
     virtual void removeLayer(Layer *v); // does not delete the layer
