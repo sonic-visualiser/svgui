@@ -677,16 +677,18 @@ View::setViewManager(ViewManager *manager)
 	    m_manager, SLOT(viewZoomLevelChanged(unsigned long, bool)));
 
     if (m_followPlay == PlaybackScrollPage) {
-//        std::cerr << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
+        std::cerr << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
         setCentreFrame(m_manager->getGlobalCentreFrame(), false);
     } else if (m_followPlay == PlaybackScrollContinuous) {
-//        std::cerr << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << std::endl;
+        std::cerr << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << std::endl;
         setCentreFrame(m_manager->getPlaybackFrame(), false);
     } else if (m_followPan) {
-//        std::cerr << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
+        std::cerr << "View::setViewManager: (follow pan) setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
         setCentreFrame(m_manager->getGlobalCentreFrame(), false);
     }
     if (m_followZoom) setZoomLevel(m_manager->getGlobalZoom());
+
+    movePlayPointer(getAlignedPlaybackFrame());
 
     toolModeChanged();
 }
@@ -927,17 +929,24 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
 
     f = getAlignedPlaybackFrame();
 
-    if (m_playPointerFrame == f) return;
-    bool visible = (getXForFrame(m_playPointerFrame) != getXForFrame(f));
+    movePlayPointer(f);
+}
+
+void
+View::movePlayPointer(unsigned long newFrame)
+{
+    if (m_playPointerFrame == newFrame) return;
+    bool visibleChange =
+        (getXForFrame(m_playPointerFrame) != getXForFrame(newFrame));
     size_t oldPlayPointerFrame = m_playPointerFrame;
-    m_playPointerFrame = f;
-    if (!visible) return;
+    m_playPointerFrame = newFrame;
+    if (!visibleChange) return;
 
     switch (m_followPlay) {
 
     case PlaybackScrollContinuous:
 	if (QApplication::mouseButtons() == Qt::NoButton) {
-	    setCentreFrame(f, false);
+	    setCentreFrame(m_playPointerFrame, false);
 	}
 	break;
 
@@ -948,7 +957,7 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
 
 	long w = getEndFrame() - getStartFrame();
 	w -= w/5;
-	long sf = (f / w) * w - w/8;
+	long sf = (m_playPointerFrame / w) * w - w/8;
 
 	if (m_manager &&
 	    m_manager->isPlaying() &&
@@ -963,7 +972,7 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
 	}
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	std::cerr << "PlaybackScrollPage: f = " << f << ", sf = " << sf << ", start frame "
+	std::cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
 		  << getStartFrame() << std::endl;
 #endif
 
@@ -994,7 +1003,8 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
     }
 
     case PlaybackIgnore:
-	if (long(f) >= getStartFrame() && f < getEndFrame()) {
+	if (long(m_playPointerFrame) >= getStartFrame() &&
+            m_playPointerFrame < getEndFrame()) {
 	    update();
 	}
 	break;
