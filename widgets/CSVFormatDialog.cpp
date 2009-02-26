@@ -23,6 +23,7 @@
 #include <QTableWidget>
 #include <QComboBox>
 #include <QLabel>
+#include <QDialogButtonBox>
 
 
 CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
@@ -122,26 +123,16 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     layout->addWidget(m_exampleWidget, 6, 0, 1, 4);
     layout->setColumnStretch(3, 10);
-    layout->setRowStretch(4, 10);
+    layout->setRowStretch(6, 10);
 
-    QPushButton *ok = new QPushButton(tr("OK"));
-    connect(ok, SIGNAL(clicked()), this, SLOT(accept()));
-    ok->setDefault(true);
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
+                                                QDialogButtonBox::Cancel);
+    layout->addWidget(bb, 7, 0, 1, 4);
+    connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
 
-    QPushButton *cancel = new QPushButton(tr("Cancel"));
-    connect(cancel, SIGNAL(clicked()), this, SLOT(reject()));
+    setLayout(layout);
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    buttonLayout->addStretch(1);
-    buttonLayout->addWidget(ok);
-    buttonLayout->addWidget(cancel);
-
-    QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(layout);
-    mainLayout->addLayout(buttonLayout);
-
-    setLayout(mainLayout);
-    
     timingTypeChanged(m_timingTypeCombo->currentIndex());
 }
 
