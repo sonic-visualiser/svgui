@@ -64,6 +64,7 @@ Pane::Pane(QWidget *w) :
     m_clickedInRange(false),
     m_shiftPressed(false),
     m_ctrlPressed(false),
+    m_altPressed(false),
     m_navigating(false),
     m_resizing(false),
     m_editing(false),
@@ -1237,6 +1238,7 @@ Pane::mousePressEvent(QMouseEvent *e)
     m_editingSelectionEdge = 0;
     m_shiftPressed = (e->modifiers() & Qt::ShiftModifier);
     m_ctrlPressed = (e->modifiers() & Qt::ControlModifier);
+    m_altPressed = (e->modifiers() & Qt::AltModifier);
     m_dragMode = UnresolvedDrag;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
@@ -1739,7 +1741,7 @@ Pane::dragTopLayer(QMouseEvent *e)
         }
                 
         if (getXForFrame(m_centreFrame) != getXForFrame(newCentreFrame)) {
-            setCentreFrame(newCentreFrame, !m_ctrlPressed);
+            setCentreFrame(newCentreFrame, !m_altPressed);
         }
     }
 
@@ -1925,6 +1927,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     m_clickedInRange = true;
     m_shiftPressed = (e->modifiers() & Qt::ShiftModifier);
     m_ctrlPressed = (e->modifiers() & Qt::ControlModifier);
+    m_altPressed = (e->modifiers() & Qt::AltModifier);
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();

@@ -1354,7 +1354,7 @@ View::zoom(bool in)
 }
 
 void
-View::scroll(bool right, bool lots)
+View::scroll(bool right, bool lots, bool e)
 {
     long delta;
     if (lots) {
@@ -1365,11 +1365,11 @@ View::scroll(bool right, bool lots)
     if (right) delta = -delta;
 
     if (int(m_centreFrame) < delta) {
-	setCentreFrame(0);
+	setCentreFrame(0, e);
     } else if (int(m_centreFrame) - delta >= int(getModelsEndFrame())) {
-	setCentreFrame(getModelsEndFrame());
+	setCentreFrame(getModelsEndFrame(), e);
     } else {
-	setCentreFrame(m_centreFrame - delta);
+	setCentreFrame(m_centreFrame - delta, e);
     }
 }
 
