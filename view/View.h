@@ -335,6 +335,8 @@ protected:
 
     bool setCentreFrame(size_t f, bool doEmit);
 
+    void movePlayPointer(unsigned long f);
+
     void checkProgress(void *object);
     int getProgressBarWidth() const; // if visible
 
