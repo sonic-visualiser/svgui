@@ -52,6 +52,7 @@ TimeValueLayer::TimeValueLayer() :
     m_colourMap(0),
     m_plotStyle(PlotConnectedPoints),
     m_verticalScale(AutoAlignScale),
+    m_drawSegmentDivisions(true),
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
@@ -88,6 +89,7 @@ TimeValueLayer::getProperties() const
     list.push_back("Plot Type");
     list.push_back("Vertical Scale");
     list.push_back("Scale Units");
+    list.push_back("Draw Segment Division Lines");
     return list;
 }
 
@@ -97,6 +99,7 @@ TimeValueLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Plot Type") return tr("Plot Type");
     if (name == "Vertical Scale") return tr("Vertical Scale");
     if (name == "Scale Units") return tr("Scale Units");
+    if (name == "Draw Segment Division Lines") return tr("Draw Segment Division Lines");
     return SingleColourLayer::getPropertyLabel(name);
 }
 
@@ -107,6 +110,7 @@ TimeValueLayer::getPropertyType(const PropertyName &name) const
     if (name == "Vertical Scale") return ValueProperty;
     if (name == "Scale Units") return UnitsProperty;
     if (name == "Colour" && m_plotStyle == PlotSegmentation) return ValueProperty;
+    if (name == "Draw Segment Division Lines") return ToggleProperty;
     return SingleColourLayer::getPropertyType(name);
 }
 
@@ -115,6 +119,9 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Vertical Scale" || name == "Scale Units") {
         return tr("Scale");
+    }
+    if (name == "Plot Type" || name == "Draw Segment Division Lines") {
+        return tr("Plot Type");
     }
     return SingleColourLayer::getPropertyGroupName(name);
 }
@@ -156,6 +163,13 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
             val = UnitDatabase::getInstance()->getUnitId
                 (m_model->getScaleUnits());
         }
+
+    } else if (name == "Draw Segment Division Lines") {
+
+        if (min) *min = 0;
+        if (max) *max = 0;
+        if (deflt) *deflt = 1;
+        val = (m_drawSegmentDivisions ? 1.0 : 0.0);
 
     } else {
 	
@@ -208,6 +222,8 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
                 (UnitDatabase::getInstance()->getUnitById(value));
             emit modelChanged();
         }
+    } else if (name == "Draw Segment Division Lines") {
+        setDrawSegmentDivisions(value > 0.5);
     } else {
         SingleColourLayer::setProperty(name, value);
     }
@@ -239,6 +255,14 @@ TimeValueLayer::setVerticalScale(VerticalScale scale)
 {
     if (m_verticalScale == scale) return;
     m_verticalScale = scale;
+    emit layerParametersChanged();
+}
+
+void
+TimeValueLayer::setDrawSegmentDivisions(bool draw)
+{
+    if (m_drawSegmentDivisions == draw) return;
+    m_drawSegmentDivisions = draw;
     emit layerParametersChanged();
 }
 
@@ -886,9 +910,12 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    
 	    if (nx <= x) continue;
 
-	    if (illuminateFrame != p.frame &&
-		(nx < x + 5 || x >= v->width() - 1)) {
-		paint.setPen(Qt::NoPen);
+            if (illuminateFrame != p.frame) {
+                if (!m_drawSegmentDivisions ||
+                    nx < x + 5 ||
+                    x >= v->width() - 1) {
+                    paint.setPen(Qt::NoPen);
+                }
 	    }
 
 	    paint.drawRect(x, -1, nx - x, v->height() + 1);
@@ -1623,12 +1650,13 @@ TimeValueLayer::toXml(QTextStream &stream,
 {
     SingleColourLayer::toXml(stream, indent,
                              extraAttributes +
-                             QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\" scaleMinimum=\"%4\" scaleMaximum=\"%5\" ")
+                             QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\" scaleMinimum=\"%4\" scaleMaximum=\"%5\" drawDivisions=\"%6\" ")
                              .arg(m_colourMap)
                              .arg(m_plotStyle)
                              .arg(m_verticalScale)
                              .arg(m_scaleMinimum)
-                             .arg(m_scaleMaximum));
+                             .arg(m_scaleMaximum)
+                             .arg(m_drawSegmentDivisions ? "true" : "false"));
 }
 
 void
@@ -1648,6 +1676,9 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
     VerticalScale scale = (VerticalScale)
 	attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
+
+    bool draw = (attributes.value("drawDivisions").trimmed() == "true");
+    setDrawSegmentDivisions(draw);
 
     float min = attributes.value("scaleMinimum").toFloat(&ok);
     float max = attributes.value("scaleMaximum").toFloat(&alsoOk);

@@ -103,6 +103,9 @@ public:
     void setVerticalScale(VerticalScale scale);
     VerticalScale getVerticalScale() const { return m_verticalScale; }
 
+    void setDrawSegmentDivisions(bool);
+    bool getDrawSegmentDivisions() const { return m_drawSegmentDivisions; }
+
     virtual bool isLayerScrollable(const View *v) const;
 
     virtual bool isLayerEditable() const { return true; }
@@ -156,6 +159,7 @@ protected:
     int m_colourMap;
     PlotStyle m_plotStyle;
     VerticalScale m_verticalScale;
+    bool m_drawSegmentDivisions;
 
     mutable float m_scaleMinimum;
     mutable float m_scaleMaximum;

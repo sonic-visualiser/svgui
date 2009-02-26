@@ -942,10 +942,14 @@ View::movePlayPointer(unsigned long newFrame)
     m_playPointerFrame = newFrame;
     if (!visibleChange) return;
 
+    bool somethingGoingOn =
+        ((QApplication::mouseButtons() != Qt::NoButton) ||
+         (QApplication::keyboardModifiers() & Qt::AltModifier));
+
     switch (m_followPlay) {
 
     case PlaybackScrollContinuous:
-	if (QApplication::mouseButtons() == Qt::NoButton) {
+	if (!somethingGoingOn) {
 	    setCentreFrame(m_playPointerFrame, false);
 	}
 	break;
@@ -986,7 +990,7 @@ View::movePlayPointer(unsigned long newFrame)
 #endif
 
 	if (xnew < width()/8 || xnew > (width()*7)/8) {
-	    if (QApplication::mouseButtons() == Qt::NoButton) {
+	    if (!somethingGoingOn) {
 		long offset = getFrameForX(width()/2) - getStartFrame();
 		long newCentre = sf + offset;
 		bool changed = setCentreFrame(newCentre, false);
