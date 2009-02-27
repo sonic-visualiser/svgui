@@ -103,6 +103,13 @@ TimeValueLayer::getPropertyLabel(const PropertyName &name) const
     return SingleColourLayer::getPropertyLabel(name);
 }
 
+QString
+TimeValueLayer::getPropertyIconName(const PropertyName &name) const
+{
+    if (name == "Draw Segment Division Lines") return "lines";
+    return "";
+}
+
 Layer::PropertyType
 TimeValueLayer::getPropertyType(const PropertyName &name) const
 {
