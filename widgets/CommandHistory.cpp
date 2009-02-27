@@ -37,7 +37,7 @@
 
 #include <typeinfo>
 
-#define DEBUG_COMMAND_HISTORY 1
+//#define DEBUG_COMMAND_HISTORY 1
 
 CommandHistory *CommandHistory::m_instance = 0;
 
