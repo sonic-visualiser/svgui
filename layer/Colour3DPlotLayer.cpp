@@ -796,11 +796,13 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         m_cache = new QImage
             (cacheWidth, cacheHeight, QImage::Format_Indexed8);
         m_cache->setNumColors(256);
+        m_cache->fill(0);
         if (!m_normalizeVisibleArea) {
             m_peaksCache = new QImage
                 (cacheWidth / m_peakResolution + 1, cacheHeight,
                  QImage::Format_Indexed8);
             m_peaksCache->setNumColors(256);
+            m_peaksCache->fill(0);
         } else if (m_peaksCache) {
             delete m_peaksCache;
             m_peaksCache = 0;
@@ -880,8 +882,6 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         }
     }
     
-//    m_cache->fill(0);
-
     float visibleMax = 0.f, visibleMin = 0.f;
 
     if (normalizeVisible) {
@@ -986,10 +986,11 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 void
 Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
+/*
     if (m_model) {
         std::cerr << "Colour3DPlotLayer::paint: model says shouldUseLogValueScale = " << m_model->shouldUseLogValueScale() << std::endl;
     }
-
+*/
     Profiler profiler("Colour3DPlotLayer::paint");
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     std::cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << std::endl;
