@@ -70,6 +70,7 @@ public:
 
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
+    virtual QString getPropertyIconName(const PropertyName &) const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
     virtual QString getPropertyGroupName(const PropertyName &) const;
     virtual int getPropertyRangeAndValue(const PropertyName &,
