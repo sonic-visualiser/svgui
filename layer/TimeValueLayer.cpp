@@ -605,6 +605,79 @@ TimeValueLayer::snapToFeatureFrame(View *v, int &frame,
     return found;
 }
 
+bool
+TimeValueLayer::snapToSimilarFeature(View *v, int &frame,
+                                     size_t &resolution,
+                                     SnapType snap) const
+{
+    if (!m_model) {
+	return Layer::snapToSimilarFeature(v, frame, resolution, snap);
+    }
+
+    resolution = m_model->getResolution();
+
+    const SparseTimeValueModel::PointList &points = m_model->getPoints();
+    SparseTimeValueModel::PointList close = m_model->getPoints(frame, frame);
+
+    SparseTimeValueModel::PointList::const_iterator i;
+
+    int matchframe = frame;
+    float matchvalue = 0.f;
+
+    for (i = close.begin(); i != close.end(); ++i) {
+        if (i->frame > frame) break;
+        matchvalue = i->value;
+        matchframe = i->frame;
+    }
+
+    int snapped = frame;
+    bool found = false;
+    bool distant = false;
+    float epsilon = 0.0001;
+
+    i = close.begin();
+
+    // Scan through the close points first, then the more distant ones
+    // if no suitable close one is found
+
+    while (i != points.end()) {
+
+        if (i == close.end()) {
+            i = points.begin();
+            distant = true;
+        }
+
+	if (snap == SnapRight) {
+
+	    if (i->frame > matchframe &&
+                fabsf(i->value - matchvalue) < epsilon) {
+		snapped = i->frame;
+		found = true;
+		break;
+	    }
+
+	} else if (snap == SnapLeft) {
+
+	    if (i->frame < matchframe) {
+                if (fabsf(i->value - matchvalue) < epsilon) {
+                    snapped = i->frame;
+                    found = true; // don't break, as the next may be better
+                }
+	    } else if (found || distant) {
+		break;
+	    }
+
+	} else { 
+            // no other snap types supported
+	}
+
+        ++i;
+    }
+
+    frame = snapped;
+    return found;
+}
+
 void
 TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 {
