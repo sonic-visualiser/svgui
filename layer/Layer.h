@@ -166,13 +166,37 @@ public:
      *
      * Return true if a suitable feature was found and frame adjusted
      * accordingly.  Return false if no suitable feature was available
-     * (and leave frame unmodified).  Also return the resolution of
-     * the model in this layer in sample frames.
+     * (and leave frame unmodified).  If returning true, also return
+     * the resolution of the model in this layer in sample frames.
      */
     virtual bool snapToFeatureFrame(View *   /* v */,
 				    int &    /* frame */,
 				    size_t &resolution,
 				    SnapType /* snap */) const {
+	resolution = 1;
+	return false;
+    }
+
+    /**
+     * Adjust the given frame to snap to the next feature that has
+     * "effectively" the same value as the feature prior to the given
+     * frame, if possible.
+     *
+     * The snap type must be SnapLeft (snap to the time of the next
+     * feature prior to the one preceding the given frame that has a
+     * similar value to it) or SnapRight (snap to the time of the next
+     * feature following the given frame that has a similar value to
+     * the feature preceding it).  Other values are not permitted.
+     *
+     * Return true if a suitable feature was found and frame adjusted
+     * accordingly.  Return false if no suitable feature was available
+     * (and leave frame unmodified).  If returning true, also return
+     * the resolution of the model in this layer in sample frames.
+     */
+    virtual bool snapToSimilarFeature(View *   /* v */,
+                                      int &    /* source frame */,
+                                      size_t &resolution,
+                                      SnapType /* snap */) const {
 	resolution = 1;
 	return false;
     }
