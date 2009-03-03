@@ -676,21 +676,31 @@ View::setViewManager(ViewManager *manager)
     connect(this, SIGNAL(zoomLevelChanged(unsigned long, bool)),
 	    m_manager, SLOT(viewZoomLevelChanged(unsigned long, bool)));
 
+//    setCentreFrame(m_manager->getViewInitialCentreFrame());
+
     if (m_followPlay == PlaybackScrollPage) {
-        std::cerr << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
+//        std::cerr << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
         setCentreFrame(m_manager->getGlobalCentreFrame(), false);
     } else if (m_followPlay == PlaybackScrollContinuous) {
-        std::cerr << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << std::endl;
+//        std::cerr << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << std::endl;
         setCentreFrame(m_manager->getPlaybackFrame(), false);
     } else if (m_followPan) {
-        std::cerr << "View::setViewManager: (follow pan) setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
+//        std::cerr << "View::setViewManager: (follow pan) setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
         setCentreFrame(m_manager->getGlobalCentreFrame(), false);
     }
+
     if (m_followZoom) setZoomLevel(m_manager->getGlobalZoom());
 
     movePlayPointer(getAlignedPlaybackFrame());
 
     toolModeChanged();
+}
+
+void
+View::setViewManager(ViewManager *vm, long initialCentreFrame)
+{
+    setViewManager(vm);
+    setCentreFrame(initialCentreFrame, false);
 }
 
 void

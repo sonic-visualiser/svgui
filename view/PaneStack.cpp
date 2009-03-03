@@ -82,8 +82,19 @@ PaneStack::addPane(bool suppressPropertyBox)
     currentIndicator->setMinimumWidth(8);
     currentIndicator->setScaledContents(true);
 
+    long initialCentreFrame = -1;
+    for (int i = 0; i < m_panes.size(); ++i) {
+        long f = m_panes[i].pane->getCentreFrame();
+        initialCentreFrame = f;
+        break;
+    }
+
     Pane *pane = new Pane(frame);
-    pane->setViewManager(m_viewManager);
+    if (initialCentreFrame >= 0) {
+        pane->setViewManager(m_viewManager, initialCentreFrame);
+    } else {
+        pane->setViewManager(m_viewManager);
+    }
     layout->addWidget(pane, 0, 1, 2, 1);
     layout->setColumnStretch(1, 20);
 
