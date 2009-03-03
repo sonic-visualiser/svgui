@@ -175,6 +175,7 @@ public:
     virtual const Layer *getSelectedLayer() const;
 
     virtual void setViewManager(ViewManager *m);
+    virtual void setViewManager(ViewManager *m, long initialFrame);
     virtual ViewManager *getViewManager() const { return m_manager; }
 
     virtual void setFollowGlobalPan(bool f);
