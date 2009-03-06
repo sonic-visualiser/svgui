@@ -762,7 +762,9 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     size_t modelEnd = m_model->getEndFrame();
     size_t modelResolution = m_model->getResolution();
 
-//    std::cerr << "Colour3DPlotLayer::fillCache: " << firstBin << " -> " << lastBin << std::endl;
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+    std::cerr << "Colour3DPlotLayer::fillCache: " << firstBin << " -> " << lastBin << std::endl;
+#endif
 
     size_t modelStartBin = modelStart / modelResolution;
     size_t modelEndBin = modelEnd / modelResolution;
@@ -812,6 +814,9 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     }
 
     if (m_cacheValidStart <= firstBin && m_cacheValidEnd >= lastBin) {
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+        std::cerr << "Cache is valid in this region already" << std::endl;
+#endif
         return;
     }
     
@@ -845,7 +850,9 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         m_cacheValidEnd = fillEnd;
     }
 
-//    std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " will be valid from " << m_cacheValidStart << " to " << m_cacheValidEnd << std::endl;
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+    std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " will be valid from " << m_cacheValidStart << " to " << m_cacheValidEnd << std::endl;
+#endif
 
     DenseThreeDimensionalModel::Column values;
 
@@ -1124,8 +1131,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
             
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-            std::cerr << "rect " << r.x() << "," << r.y() << " "
-                      << r.width() << "x" << r.height() << std::endl;
+//            std::cerr << "rect " << r.x() << "," << r.y() << " "
+//                      << r.width() << "x" << r.height() << std::endl;
 #endif
 
 	    paint.drawRect(r);
