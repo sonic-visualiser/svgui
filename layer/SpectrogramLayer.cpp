@@ -2173,7 +2173,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
 //    std::cerr << "(giving actual minFreq " << minFreq << " and display minFreq " << displayMinFreq << ")" << std::endl;
 
-    size_t increment = getWindowIncrement();
+    int increment = getWindowIncrement();
     
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 /*
@@ -2662,6 +2662,10 @@ SpectrogramLayer::paintDrawBuffer(View *v,
         for (int y = 0; y < h; ++y) peaks[y] = 0.f;
             
         for (int sx = sx0; sx < sx1; ++sx) {
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+//            std::cerr << "sx = " << sx << std::endl;
+#endif
 
             if (sx < 0 || sx >= int(sourceModel->getWidth())) continue;
 
