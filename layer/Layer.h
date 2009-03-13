@@ -22,6 +22,8 @@
 
 #include "widgets/CommandHistory.h"
 
+#include "system/System.h"
+
 #include <QObject>
 #include <QRect>
 #include <QXmlAttributes>
