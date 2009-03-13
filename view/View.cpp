@@ -36,7 +36,7 @@
 
 #include <iostream>
 #include <cassert>
-#include <math.h>
+#include <cmath>
 
 //#define DEBUG_VIEW_WIDGET_PAINT 1
 
