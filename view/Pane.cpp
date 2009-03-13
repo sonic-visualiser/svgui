@@ -1668,8 +1668,8 @@ Pane::zoomToRegion(int x0, int y0, int x1, int y1)
         float rmax = min + ((max - min) * (height() - y0)) / height();
         std::cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << std::endl;
         if (log) {
-            rmin = powf(10, rmin);
-            rmax = powf(10, rmax);
+            rmin = exp10f(rmin);
+            rmax = exp10f(rmax);
         }
         std::cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit.toStdString() << std::endl;
 
