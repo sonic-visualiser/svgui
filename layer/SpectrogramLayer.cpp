@@ -2034,9 +2034,9 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         if (paintBlockWidth < 20) paintBlockWidth = 20;
     }
 
-//#ifdef DEBUG_SPECTROGRAM_REPAINT
+#ifdef DEBUG_SPECTROGRAM_REPAINT
     std::cerr << "[" << this << "]: last paint width: " << m_lastPaintBlockWidth << ", last paint time: " << m_lastPaintTime << ", new paint width: " << paintBlockWidth << std::endl;
-//#endif
+#endif
 
     // We always paint the full height when refreshing the cache.
     // Smaller heights can be used when painting direct from cache
