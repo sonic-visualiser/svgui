@@ -42,6 +42,8 @@
 #include <iostream>
 #include <cmath>
 
+//#define DEBUG_TIME_VALUE_LAYER 1
+
 TimeValueLayer::TimeValueLayer() :
     SingleColourLayer(),
     m_model(0),
@@ -77,7 +79,9 @@ TimeValueLayer::setModel(SparseTimeValueModel *model)
         setPlotStyle(PlotSegmentation);
     }
 
-//    std::cerr << "TimeValueLayer::setModel(" << model << ")" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::setModel(" << model << ")" << std::endl;
+#endif
 
     emit modelReplaced();
 }
@@ -312,7 +316,9 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
     min = m_scaleMinimum;
     max = m_scaleMaximum;
 
-//    std::cerr << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << std::endl;
+#endif
 
     return true;
 }
@@ -333,7 +339,9 @@ TimeValueLayer::setDisplayExtents(float min, float max)
     m_scaleMinimum = min;
     m_scaleMaximum = max;
 
-//    std::cerr << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+#endif
     
     emit layerParametersChanged();
     return true;
@@ -362,14 +370,16 @@ TimeValueLayer::getCurrentVerticalZoomStep() const
     getDisplayExtents(dmin, dmax);
 
     int nr = mapper->getPositionForValue(dmax - dmin);
-/*
+
+#ifdef DEBUG_TIME_VALUE_LAYER
     int n0 = mapper->getPositionForValue(dmax);
     int n1 = mapper->getPositionForValue(dmin);
     int nr = n1 - n0;
     if (nr < 0) nr = -nr;
 
     std::cerr << "TimeValueLayer::getCurrentVerticalZoomStep: dmin = " << dmin << ", dmax = " << dmax << ", n0 = " << n0 << ", n1 = " << n1 << ", nr = " << nr << std::endl;
-*/
+#endif
+
     delete mapper;
 
     return 100 - nr;
@@ -403,7 +413,9 @@ TimeValueLayer::setVerticalZoomStep(int step)
         newmax = (newdist + sqrtf(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
-//        std::cerr << "newmin = " << newmin << ", newmax = " << newmax << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+        std::cerr << "newmin = " << newmin << ", newmax = " << newmax << std::endl;
+#endif
 
     } else {
         float dmid = (dmax + dmin) / 2;
@@ -419,7 +431,9 @@ TimeValueLayer::setVerticalZoomStep(int step)
         newmax = max;
     }
     
+#ifdef DEBUG_TIME_VALUE_LAYER
     std::cerr << "TimeValueLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+#endif
 
     setDisplayExtents(newmin, newmax);
 }
@@ -721,8 +735,10 @@ TimeValueLayer::getYForValue(View *v, float val) const
 
     getScaleExtents(v, min, max, logarithmic);
 
-//    std::cerr << "getYForValue(" << val << "): min " << min << ", max "
-//              << max << ", log " << logarithmic << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "getYForValue(" << val << "): min " << min << ", max "
+              << max << ", log " << logarithmic << std::endl;
+#endif
 
     if (logarithmic) {
         val = LogRange::map(val);
@@ -771,8 +787,10 @@ TimeValueLayer::getColourForValue(View *v, float val) const
         val = LogRange::map(val);
     }
 
-//    std::cerr << "TimeValueLayer::getColourForValue: min " << min << ", max "
-//              << max << ", log " << log << ", value " << val << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::getColourForValue: min " << min << ", max "
+              << max << ", log " << log << ", value " << val << std::endl;
+#endif
 
     QColor solid = ColourMapper(m_colourMap, min, max).map(val);
     return QColor(solid.red(), solid.green(), solid.blue(), 120);
@@ -812,8 +830,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     brushColour.setAlpha(80);
     paint.setBrush(brushColour);
 
-//    std::cerr << "TimeValueLayer::paint: resolution is "
-//	      << m_model->getResolution() << " frames" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::paint: resolution is "
+	      << m_model->getResolution() << " frames" << std::endl;
+#endif
 
     float min = m_model->getValueMinimum();
     float max = m_model->getValueMaximum();
@@ -828,7 +848,9 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
 	SparseTimeValueModel::PointList localPoints =
 	    getLocalPoints(v, localPos.x());
-//        std::cerr << "TimeValueLayer: " << localPoints.size() << " local points" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+        std::cerr << "TimeValueLayer: " << localPoints.size() << " local points" << std::endl;
+#endif
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
 
@@ -986,7 +1008,9 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (m_plotStyle == PlotSegmentation) {
 
-//            std::cerr << "drawing rect" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+            std::cerr << "drawing rect" << std::endl;
+#endif
 	    
 	    if (nx <= x) continue;
 
@@ -1090,7 +1114,9 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
         prec -= 1;
         if (prec < 0) dp = -prec;
         round = powf(10.f, prec);
-//        std::cerr << "inc = " << inc << ", round = " << round << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+        std::cerr << "inc = " << inc << ", round = " << round << std::endl;
+#endif
     }
 
     int prevy = -1;
@@ -1111,7 +1137,9 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
                 if (m_model->getScaleUnits() != "") drawText = false;
             }
             dispval = lrintf(val / round) * round;
-//            std::cerr << "val = " << val << ", dispval = " << dispval << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+            std::cerr << "val = " << val << ", dispval = " << dispval << std::endl;
+#endif
             if (logarithmic) {
                 y = getYForValue(v, LogRange::unmap(dispval));
             } else {
@@ -1161,7 +1189,9 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
 void
 TimeValueLayer::drawStart(View *v, QMouseEvent *e)
 {
-//    std::cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
+#endif
 
     if (!m_model) return;
 
@@ -1179,7 +1209,9 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
         for (SparseTimeValueModel::PointList::iterator i = points.begin();
              i != points.end(); ++i) {
             if (((i->frame / resolution) * resolution) != frame) {
-//                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+#endif
                 continue;
             }
             m_editingPoint = *i;
@@ -1207,7 +1239,9 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
 void
 TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 {
-//    std::cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+#endif
 
     if (!m_model || !m_editing) return;
 
@@ -1220,7 +1254,9 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 
     SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
 
-//    std::cerr << points.size() << " points" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << points.size() << " points" << std::endl;
+#endif
 
     bool havePoint = false;
 
@@ -1229,14 +1265,20 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
              i != points.end(); ++i) {
             if (i->frame == m_editingPoint.frame &&
                 i->value == m_editingPoint.value) {
-            //    std::cerr << "ignoring current editing point at " << i->frame << ", " << i->value << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+                std::cerr << "ignoring current editing point at " << i->frame << ", " << i->value << std::endl;
+#endif
                 continue;
             }
             if (((i->frame / resolution) * resolution) != frame) {
-            //    std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+#endif
                 continue;
             }
-        //    std::cerr << "adjusting to new point at " << i->frame << ", " << i->value << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+            std::cerr << "adjusting to new point at " << i->frame << ", " << i->value << std::endl;
+#endif
             m_editingPoint = *i;
             m_originalPoint = m_editingPoint;
             m_editingCommand->deletePoint(m_editingPoint);
@@ -1259,7 +1301,9 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 void
 TimeValueLayer::drawEnd(View *, QMouseEvent *)
 {
-//    std::cerr << "TimeValueLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+#endif
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
     m_editingCommand = 0;
@@ -1314,7 +1358,9 @@ TimeValueLayer::eraseEnd(View *v, QMouseEvent *e)
 void
 TimeValueLayer::editStart(View *v, QMouseEvent *e)
 {
-//    std::cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+#endif
 
     if (!m_model) return;
 
@@ -1335,7 +1381,9 @@ TimeValueLayer::editStart(View *v, QMouseEvent *e)
 void
 TimeValueLayer::editDrag(View *v, QMouseEvent *e)
 {
-//    std::cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+#endif
 
     if (!m_model || !m_editing) return;
 
@@ -1359,7 +1407,9 @@ TimeValueLayer::editDrag(View *v, QMouseEvent *e)
 void
 TimeValueLayer::editEnd(View *, QMouseEvent *)
 {
-//    std::cerr << "TimeValueLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "TimeValueLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+#endif
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {
@@ -1697,15 +1747,19 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
         if (i->haveValue()) {
             newPoint.value = i->getValue();
         } else {
-//            std::cerr << "Setting value on point at " << newPoint.frame << " from labeller";
-//            if (i == points.begin()) {
-//                std::cerr << ", no prev point" << std::endl;
-//            } else {
-//                std::cerr << ", prev point is at " << prevPoint.frame << std::endl;
-//            }
+#ifdef DEBUG_TIME_VALUE_LAYER
+            std::cerr << "Setting value on point at " << newPoint.frame << " from labeller";
+            if (i == points.begin()) {
+                std::cerr << ", no prev point" << std::endl;
+            } else {
+                std::cerr << ", prev point is at " << prevPoint.frame << std::endl;
+            }
+#endif
             labeller.setValue<SparseTimeValueModel::Point>
                 (newPoint, (i == points.begin()) ? 0 : &prevPoint);
-//            std::cerr << "New point value = " << newPoint.value << std::endl;
+#ifdef DEBUG_TIME_VALUE_LAYER
+            std::cerr << "New point value = " << newPoint.value << std::endl;
+#endif
             if (labeller.actingOnPrevPoint() && i != points.begin()) {
                 usePrev = true;
             }
@@ -1762,6 +1816,9 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
 
     float min = attributes.value("scaleMinimum").toFloat(&ok);
     float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
-    if (ok && alsoOk) setDisplayExtents(min, max);
+#ifdef DEBUG_TIME_VALUE_LAYER
+    std::cerr << "from properties: min = " << min << ", max = " << max << std::endl;
+#endif
+    if (ok && alsoOk && min != max) setDisplayExtents(min, max);
 }
 
