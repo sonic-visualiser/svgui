@@ -510,9 +510,11 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
     }
 
     if (!dynamic_cast<Overview *>(v) || (mode != PlaybackIgnore)) {
-        emit activity(tr("Scroll to %1")
-                      .arg(RealTime::frame2RealTime
-                           (f, m_mainModelSampleRate).toText().c_str()));
+        if (m_mainModelSampleRate != 0) {
+            emit activity(tr("Scroll to %1")
+                          .arg(RealTime::frame2RealTime
+                               (f, m_mainModelSampleRate).toText().c_str()));
+        }
     }
 
     if (mode == PlaybackIgnore) {
