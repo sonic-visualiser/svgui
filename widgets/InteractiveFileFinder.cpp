@@ -13,7 +13,7 @@
     COPYING included with this distribution for more information.
 */
 
-#include "FileFinder.h"
+#include "InteractiveFileFinder.h"
 #include "data/fileio/FileSource.h"
 #include "data/fileio/AudioFileReaderFactory.h"
 #include "data/fileio/DataFileReaderFactory.h"
@@ -29,29 +29,22 @@
 
 #include <iostream>
 
-FileFinder *
-FileFinder::m_instance = 0;
+InteractiveFileFinder 
+InteractiveFileFinder::m_instance;
 
-FileFinder::FileFinder() :
+InteractiveFileFinder::InteractiveFileFinder() :
     m_lastLocatedLocation("")
 {
+    std::cerr << "Registering interactive file finder" << std::endl;
+    FileFinder::registerFileFinder(this);
 }
 
-FileFinder::~FileFinder()
+InteractiveFileFinder::~InteractiveFileFinder()
 {
-}
-
-FileFinder *
-FileFinder::getInstance()
-{
-    if (m_instance == 0) {
-        m_instance = new FileFinder();
-    }
-    return m_instance;
 }
 
 QString
-FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
+InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 {
     QString settingsKey;
     QString lastPath = fallbackLocation;
@@ -191,7 +184,7 @@ FileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 }
 
 QString
-FileFinder::getSaveFileName(FileType type, QString fallbackLocation)
+InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
 {
     QString settingsKey;
     QString lastPath = fallbackLocation;
@@ -227,7 +220,7 @@ FileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         break;
 
     case SessionOrAudioFile:
-        std::cerr << "ERROR: Internal error: FileFinder::getSaveFileName: SessionOrAudioFile cannot be used here" << std::endl;
+        std::cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: SessionOrAudioFile cannot be used here" << std::endl;
         abort();
 
     case ImageFile:
@@ -237,7 +230,7 @@ FileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         break;
 
     case AnyFile:
-        std::cerr << "ERROR: Internal error: FileFinder::getSaveFileName: AnyFile cannot be used here" << std::endl;
+        std::cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: AnyFile cannot be used here" << std::endl;
         abort();
     };
 
@@ -342,7 +335,7 @@ FileFinder::getSaveFileName(FileType type, QString fallbackLocation)
 }
 
 void
-FileFinder::registerLastOpenedFilePath(FileType type, QString path)
+InteractiveFileFinder::registerLastOpenedFilePath(FileType type, QString path)
 {
     QString settingsKey;
 
@@ -386,11 +379,11 @@ FileFinder::registerLastOpenedFilePath(FileType type, QString path)
 }
     
 QString
-FileFinder::find(FileType type, QString location, QString lastKnownLocation)
+InteractiveFileFinder::find(FileType type, QString location, QString lastKnownLocation)
 {
     if (FileSource::canHandleScheme(location)) {
         if (FileSource(location).isAvailable()) {
-            std::cerr << "FileFinder::find: ok, it's available... returning" << std::endl;
+            std::cerr << "InteractiveFileFinder::find: ok, it's available... returning" << std::endl;
             return location;
         }
     }
@@ -411,7 +404,7 @@ FileFinder::find(FileType type, QString location, QString lastKnownLocation)
 }
 
 QString
-FileFinder::findRelative(QString location, QString relativeTo)
+InteractiveFileFinder::findRelative(QString location, QString relativeTo)
 {
     if (relativeTo == "") return "";
 
@@ -451,7 +444,7 @@ FileFinder::findRelative(QString location, QString relativeTo)
 }
 
 QString
-FileFinder::locateInteractive(FileType type, QString thing)
+InteractiveFileFinder::locateInteractive(FileType type, QString thing)
 {
     QString question;
     if (type == AudioFile) {

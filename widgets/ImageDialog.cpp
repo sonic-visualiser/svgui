@@ -29,7 +29,7 @@
 #include "ProgressDialog.h"
 
 #include "data/fileio/FileSource.h"
-#include "FileFinder.h"
+#include "InteractiveFileFinder.h"
 
 #include <iostream>
 
@@ -228,7 +228,7 @@ void
 ImageDialog::browseClicked()
 {
     QString file =
-        FileFinder::getInstance()->getOpenFileName(FileFinder::ImageFile);
+        InteractiveFileFinder::getInstance()->getOpenFileName(FileFinder::ImageFile);
 
     if (file != "") {
         setImage(file);

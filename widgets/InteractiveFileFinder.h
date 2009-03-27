@@ -13,28 +13,21 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _FILE_FINDER_H_
-#define _FILE_FINDER_H_
+#ifndef _INTERACTIVE_FILE_FINDER_H_
+#define _INTERACTIVE_FILE_FINDER_H_
+
+#include "data/fileio/FileFinder.h"
 
 #include <QString>
 #include <QObject>
 
-class FileFinder : public QObject
+class InteractiveFileFinder : public QObject,
+                              public FileFinder
 {
     Q_OBJECT
 
 public:
-    virtual ~FileFinder();
-
-    enum FileType {
-        SessionFile,
-        AudioFile,
-        LayerFile,
-        LayerFileNoMidi,
-        SessionOrAudioFile,
-        ImageFile,
-        AnyFile
-    };
+    virtual ~InteractiveFileFinder();
 
     QString getOpenFileName(FileType type, QString fallbackLocation = "");
     QString getSaveFileName(FileType type, QString fallbackLocation = "");
@@ -42,11 +35,11 @@ public:
 
     QString find(FileType type, QString location, QString lastKnownLocation = "");
 
-    static FileFinder *getInstance();
+    static InteractiveFileFinder *getInstance() { return &m_instance; }
 
 protected:
-    FileFinder();
-    static FileFinder *m_instance;
+    InteractiveFileFinder();
+    static InteractiveFileFinder m_instance;
 
     QString findRelative(QString location, QString relativeTo);
     QString locateInteractive(FileType type, QString thing);
