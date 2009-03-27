@@ -21,7 +21,7 @@ HEADERS += ActivityLog.h \
            CommandHistory.h \
            CSVFormatDialog.h \
            Fader.h \
-           FileFinder.h \
+           InteractiveFileFinder.h \
            IconLoader.h \
            ImageDialog.h \
            ItemEditDialog.h \
@@ -58,7 +58,7 @@ SOURCES += ActivityLog.cpp \
            CommandHistory.cpp \
            CSVFormatDialog.cpp \
            Fader.cpp \
-           FileFinder.cpp \
+           InteractiveFileFinder.cpp \
            IconLoader.cpp \
            ImageDialog.cpp \
            ItemEditDialog.cpp \
