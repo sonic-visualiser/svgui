@@ -120,7 +120,7 @@ PluginParameterBox::populate()
 
         if (!(hint & PortHint::Logarithmic)) {
             if (qtz > 0.0) {
-                imax = int((max - min) / qtz);
+                imax = lrintf((max - min) / qtz);
             } else {
                 qtz = (max - min) / 100.0;
             }
@@ -258,7 +258,7 @@ PluginParameterBox::dialChanged(int ival)
         newValue = min + ival * qtz;
     }
 
-    std::cerr << "PluginParameterBox::dialChanged: newValue = " << newValue << std::endl;
+//    std::cerr << "PluginParameterBox::dialChanged: newValue = " << newValue << std::endl;
 
     QDoubleSpinBox *spin = m_params[identifier].spin;
     if (spin) {
@@ -266,6 +266,8 @@ PluginParameterBox::dialChanged(int ival)
         spin->setValue(newValue);
         spin->blockSignals(false);
     }
+
+//    std::cerr << "setting plugin parameter \"" << identifier.toStdString() << "\" to value " << newValue << std::endl;
 
     m_plugin->setParameter(identifier.toStdString(), newValue);
 
@@ -325,14 +327,14 @@ PluginParameterBox::spinBoxChanged(double value)
     if (params.isQuantized) qtz = params.quantizeStep;
     
     if (qtz > 0.0) {
-        int step = int((value - min) / qtz);
+        int step = lrintf((value - min) / qtz);
         value = min + step * qtz;
     }
 
     int imax = 100;
     
     if (qtz > 0.0) {
-        imax = int((max - min) / qtz);
+        imax = lrintf((max - min) / qtz);
     } else {
         qtz = (max - min) / 100.0;
     }
@@ -349,6 +351,8 @@ PluginParameterBox::spinBoxChanged(double value)
         }
         dial->blockSignals(false);
     }
+
+    std::cerr << "setting plugin parameter \"" << identifier.toStdString() << "\" to value " << value << std::endl;
 
     m_plugin->setParameter(identifier.toStdString(), value);
 
