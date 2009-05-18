@@ -97,6 +97,17 @@ public:
     void setColourMap(int map);
     int getColourMap() const;
 
+    enum BinScale {
+	LinearBinScale,
+	LogBinScale
+    };
+    
+    /**
+     * Specify the scale for the y axis.
+     */
+    void setBinScale(BinScale);
+    BinScale getBinScale() const;
+
     void setNormalizeColumns(bool n);
     bool getNormalizeColumns() const;
 
@@ -142,6 +153,7 @@ protected:
     ColourScale m_colourScale;
     bool        m_colourScaleSet;
     int         m_colourMap;
+    BinScale    m_binScale;
     bool        m_normalizeColumns;
     bool        m_normalizeVisibleArea;
     bool        m_invertVertical;

@@ -43,6 +43,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_colourScale(LinearScale),
     m_colourScaleSet(false),
     m_colourMap(0),
+    m_binScale(LinearBinScale),
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
     m_invertVertical(false),
@@ -149,6 +150,7 @@ Colour3DPlotLayer::getProperties() const
     list.push_back("Colour Scale");
     list.push_back("Normalize Columns");
     list.push_back("Normalize Visible Area");
+    list.push_back("Bin Scale");
     list.push_back("Invert Vertical Scale");
     list.push_back("Opaque");
     return list;
@@ -163,6 +165,7 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
     if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
     if (name == "Opaque") return tr("Always Opaque");
+    if (name == "Bin Scale") return tr("Bin Scale");
     return "";
 }
 
@@ -191,8 +194,9 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Normalize Columns" ||
         name == "Normalize Visible Area" ||
-        name == "Invert Vertical Scale" ||
 	name == "Colour Scale") return tr("Scale");
+    if (name == "Bin Scale" ||
+        name == "Invert Vertical Scale") return tr("Bins");
     if (name == "Opaque" ||
         name == "Colour") return tr("Colour");
     return QString();
@@ -240,6 +244,13 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
         *deflt = 0;
 	val = (m_invertVertical ? 1 : 0);
 
+    } else if (name == "Bin Scale") {
+
+	*min = 0;
+	*max = 1;
+        *deflt = int(LinearBinScale);
+	val = (int)m_binScale;
+
     } else if (name == "Opaque") {
 	
         *deflt = 0;
@@ -268,6 +279,13 @@ Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
 	case 3: return tr("Absolute");
 	}
     }
+    if (name == "Bin Scale") {
+	switch (value) {
+	default:
+	case 0: return tr("Linear");
+	case 1: return tr("Log");
+	}
+    }
     return tr("<unknown>");
 }
 
@@ -292,6 +310,12 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	setInvertVertical(value ? true : false);
     } else if (name == "Opaque") {
 	setOpaque(value ? true : false);
+    } else if (name == "Bin Scale") {
+	switch (value) {
+	default:
+	case 0: setBinScale(LinearBinScale); break;
+	case 1: setBinScale(LogBinScale); break;
+	}
     }
 }
 
@@ -312,6 +336,21 @@ Colour3DPlotLayer::setColourMap(int map)
     m_colourMap = map;
     cacheInvalid();
     emit layerParametersChanged();
+}
+
+void
+Colour3DPlotLayer::setBinScale(BinScale binScale)
+{
+    if (m_binScale == binScale) return;
+    m_binScale = binScale;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
+Colour3DPlotLayer::BinScale
+Colour3DPlotLayer::getBinScale() const
+{
+    return m_binScale;
 }
 
 void
@@ -1234,8 +1273,19 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     for (int y = 0; y < h; ++y) {
 
-        float sy0 = symin + (float(h - y - 1) * (symax - symin)) / h;
-        float sy1 = symin + (float(h - y) * (symax - symin)) / h;
+        float sy0, sy1;
+
+        if (m_binScale == LinearBinScale) {
+            sy0 = symin + (float(h - y - 1) * (symax - symin)) / h;
+            sy1 = symin + (float(h - y) * (symax - symin)) / h;
+        } else {
+            float logmin = LogRange::map(symin);
+            float logmax = LogRange::map(symax);
+            sy0 = logmin + (float(h - y - 1) * (logmax - logmin)) / h;
+            sy1 = logmin + (float(h - y) * (logmax - logmin)) / h;
+            sy0 = pow10f(sy0);
+            sy1 = pow10f(sy1);
+        }
             
         int sy0i = int(sy0 + 0.001);
         int sy1i = int(sy1);
