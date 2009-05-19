@@ -169,6 +169,9 @@ protected:
     void fillCache(size_t firstBin, size_t lastBin) const;
     void paintDense(View *v, QPainter &paint, QRect rect) const;
     void paintSmooth(View *v, QPainter &paint, QRect rect) const;
+
+    float getYForBin(View *, float bin) const;
+    float getBinForY(View *, float y) const;
 };
 
 #endif
