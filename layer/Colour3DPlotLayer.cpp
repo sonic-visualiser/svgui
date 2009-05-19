@@ -537,6 +537,42 @@ Colour3DPlotLayer::getNewVerticalZoomRangeMapper() const
                                  0, m_model->getHeight(), "");
 }
 
+float
+Colour3DPlotLayer::getYForBin(View *v, float bin) const
+{
+    float y = bin;
+    if (!m_model) return y;
+    float mn = 0, mx = m_model->getHeight();
+    getDisplayExtents(mn, mx);
+    float h = v->height();
+    if (m_binScale == LinearBinScale) {
+        y = h - (((bin - mn) * h) / (mx - mn));
+    } else {
+        float logmin = mn + 1, logmax = mx + 1;
+        LogRange::mapRange(logmin, logmax);
+        y = h - (((LogRange::map(bin + 1) - logmin) * h) / (logmax - logmin));
+    }
+    return y;
+}
+
+float
+Colour3DPlotLayer::getBinForY(View *v, float y) const
+{
+    float bin = y;
+    if (!m_model) return bin;
+    float mn = 0, mx = m_model->getHeight();
+    getDisplayExtents(mn, mx);
+    float h = v->height();
+    if (m_binScale == LinearBinScale) {
+        bin = mn + ((h - y) * (mx - mn)) / h;
+    } else {
+        float logmin = mn + 1, logmax = mx + 1;
+        LogRange::mapRange(logmin, logmax);
+        bin = LogRange::unmap(logmin + ((h - y) * (logmax - logmin)) / h) - 1;
+    }
+    return bin;
+}
+
 QString
 Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
@@ -717,42 +753,76 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     if (symin < 0) symin = 0;
     if (symax > sh) symax = sh;
 
-    float binHeight = float(v->height()) / (symax - symin);
-
     paint.save();
+/*
+    int count = v->height() / paint.fontMetrics().height();
+    int step = (symax - symin) / count;
+    if (step == 0) step = 1;
+
+    float logmin = symin+1, logmax = symax+1;
+    LogRange::mapRange(logmin, logmax);
+
+    float binHeight = float(v->height()) / (symax - symin); //!!!
+    if (m_binScale == LogBinScale) {
+        binHeight = float(v->height()) / (logmax - logmin);
+    }
 
     QFont tf = paint.font();
     if (paint.fontMetrics().height() >= binHeight) {
         tf.setPixelSize(binHeight > 7 ? binHeight - 2 : 5);
         paint.setFont(tf);
     }
+*/
 
-    int count = v->height() / paint.fontMetrics().height();
-    int step = (symax - symin) / count;
-    if (step == 0) step = 1;
+    int py = 0;
 
     for (size_t i = symin; i < symax; ++i) {
 
         size_t idx = i;
         if (m_invertVertical) idx = m_model->getHeight() - idx - 1;
 
-        if ((idx % step) != 0) continue;
+//        if ((idx % step) != 0) continue;
 
-	int y0 = int(v->height() - ((i - symin) * binHeight) - 1);
+        int y0;
+/*
+        if (m_binScale == LinearBinScale) {
+            y0 = int(v->height() - ((i - symin) * binHeight) - 1);
+        } else {
+            //!!! garbage
+            float yy = LogRange::unmap(LogRange::map(i+1) - logmin);
+            y0 = int(v->height() - (yy * binHeight) - 1);
+        }
+*/
+        y0 = lrintf(getYForBin(v, i));
+        int h = py - y0;
+
+        if (i > symin) {
+            if (paint.fontMetrics().height() >= h) {
+                if (h >= 7) {
+                    QFont tf = paint.font();
+                    tf.setPixelSize(h > 7 ? h-2 : 5);
+                    paint.setFont(tf);
+                } else {
+                    continue;
+                }
+            }
+        }
 	
+        py = y0;
+
 	QString text = m_model->getBinName(idx);
 	if (text == "") text = QString("[%1]").arg(idx + 1);
 
 	paint.drawLine(cw, y0, w, y0);
-
-        if (step > 1) {
+/*!!!
+        if (i > symin) {
             paint.drawLine(w - 1, y0 - (step * binHeight) + 1,
                            w - 1, y0 - binHeight - 1);
             paint.drawLine(w - 2, y0 - (step * binHeight) + 1,
                            w - 2, y0 - binHeight - 2);
         }
-
-	int cy = int(y0 - (step * binHeight)/2);
+*/
+	int cy = int(y0 - h/2);
 	int ty = cy + paint.fontMetrics().ascent()/2;
 
 	paint.drawText(cw + 5, ty, text);
@@ -1271,22 +1341,30 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
         sxa[x*2 + 1] = sx1i;
     }
 
+    float logmin = symin+1, logmax = symax+1;
+    LogRange::mapRange(logmin, logmax);
+
     for (int y = 0; y < h; ++y) {
 
         float sy0, sy1;
 
+        sy0 = getBinForY(v, y + 1);
+        sy1 = getBinForY(v, y);
+/*
         if (m_binScale == LinearBinScale) {
             sy0 = symin + (float(h - y - 1) * (symax - symin)) / h;
             sy1 = symin + (float(h - y) * (symax - symin)) / h;
         } else {
-            float logmin = LogRange::map(symin);
-            float logmax = LogRange::map(symax);
+//            float logmin = LogRange::map(symin);
+//            float logmax = LogRange::map(symax);
             sy0 = logmin + (float(h - y - 1) * (logmax - logmin)) / h;
             sy1 = logmin + (float(h - y) * (logmax - logmin)) / h;
-            sy0 = pow10f(sy0);
-            sy1 = pow10f(sy1);
+            sy0 = LogRange::unmap(sy0)-1;
+            sy1 = LogRange::unmap(sy1)-1;
+//            sy0 = pow10f(sy0);
+//            sy1 = pow10f(sy1);
         }
-            
+*/          
         int sy0i = int(sy0 + 0.001);
         int sy1i = int(sy1);
 
