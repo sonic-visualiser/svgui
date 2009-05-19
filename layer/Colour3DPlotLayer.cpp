@@ -774,7 +774,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     }
 */
 
-    int py = 0;
+    int py = h;
 
     for (size_t i = symin; i < symax; ++i) {
 
@@ -798,9 +798,9 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 
         if (i > symin) {
             if (paint.fontMetrics().height() >= h) {
-                if (h >= 7) {
+                if (h >= 8) {
                     QFont tf = paint.font();
-                    tf.setPixelSize(h > 7 ? h-2 : 5);
+                    tf.setPixelSize(h-2);
                     paint.setFont(tf);
                 } else {
                     continue;
