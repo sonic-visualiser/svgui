@@ -43,6 +43,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_colourScale(LinearScale),
     m_colourScaleSet(false),
     m_colourMap(0),
+    m_gain(1.0),
     m_binScale(LinearBinScale),
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
@@ -150,6 +151,7 @@ Colour3DPlotLayer::getProperties() const
     list.push_back("Colour Scale");
     list.push_back("Normalize Columns");
     list.push_back("Normalize Visible Area");
+    list.push_back("Gain");
     list.push_back("Bin Scale");
     list.push_back("Invert Vertical Scale");
     list.push_back("Opaque");
@@ -164,6 +166,7 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Normalize Columns") return tr("Normalize Columns");
     if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
     if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
+    if (name == "Gain") return tr("Gain");
     if (name == "Opaque") return tr("Always Opaque");
     if (name == "Bin Scale") return tr("Bin Scale");
     return "";
@@ -182,6 +185,7 @@ Colour3DPlotLayer::getPropertyIconName(const PropertyName &name) const
 Layer::PropertyType
 Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
 {
+    if (name == "Gain") return RangeProperty;
     if (name == "Normalize Columns") return ToggleProperty;
     if (name == "Normalize Visible Area") return ToggleProperty;
     if (name == "Invert Vertical Scale") return ToggleProperty;
@@ -194,7 +198,8 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Normalize Columns" ||
         name == "Normalize Visible Area" ||
-	name == "Colour Scale") return tr("Scale");
+	name == "Colour Scale" ||
+        name == "Gain") return tr("Scale");
     if (name == "Bin Scale" ||
         name == "Invert Vertical Scale") return tr("Bins");
     if (name == "Opaque" ||
@@ -213,7 +218,20 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
     if (!max) max = &garbage1;
     if (!deflt) deflt = &garbage2;
 
-    if (name == "Colour Scale") {
+    if (name == "Gain") {
+
+	*min = -50;
+	*max = 50;
+
+        *deflt = lrintf(log10(1.f) * 20.0);;
+	if (*deflt < *min) *deflt = *min;
+	if (*deflt > *max) *deflt = *max;
+
+	val = lrintf(log10(m_gain) * 20.0);
+	if (val < *min) val = *min;
+	if (val > *max) val = *max;
+
+    } else if (name == "Colour Scale") {
 
 	*min = 0;
 	*max = 3;
@@ -289,10 +307,21 @@ Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
     return tr("<unknown>");
 }
 
+RangeMapper *
+Colour3DPlotLayer::getNewPropertyRangeMapper(const PropertyName &name) const
+{
+    if (name == "Gain") {
+        return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
+    }
+    return 0;
+}
+
 void
 Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 {
-    if (name == "Colour Scale") {
+    if (name == "Gain") {
+	setGain(pow(10, float(value)/20.0));
+    } else if (name == "Colour Scale") {
 	switch (value) {
 	default:
 	case 0: setColourScale(LinearScale); break;
@@ -336,6 +365,21 @@ Colour3DPlotLayer::setColourMap(int map)
     m_colourMap = map;
     cacheInvalid();
     emit layerParametersChanged();
+}
+
+void
+Colour3DPlotLayer::setGain(float gain)
+{
+    if (m_gain == gain) return;
+    m_gain = gain;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
+float
+Colour3DPlotLayer::getGain() const
+{
+    return m_gain;
 }
 
 void
@@ -605,8 +649,10 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
     if (symin < 0) symin = 0;
     if (symax > sh) symax = sh;
 
-    float binHeight = float(v->height()) / (symax - symin);
-    int sy = int((v->height() - y) / binHeight) + symin;
+ //    float binHeight = float(v->height()) / (symax - symin);
+//    int sy = int((v->height() - y) / binHeight) + symin;
+
+    int sy = getBinForY(v, y);
 
     if (m_invertVertical) sy = m_model->getHeight() - sy - 1;
 
@@ -754,45 +800,13 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
     if (symax > sh) symax = sh;
 
     paint.save();
-/*
-    int count = v->height() / paint.fontMetrics().height();
-    int step = (symax - symin) / count;
-    if (step == 0) step = 1;
-
-    float logmin = symin+1, logmax = symax+1;
-    LogRange::mapRange(logmin, logmax);
-
-    float binHeight = float(v->height()) / (symax - symin); //!!!
-    if (m_binScale == LogBinScale) {
-        binHeight = float(v->height()) / (logmax - logmin);
-    }
-
-    QFont tf = paint.font();
-    if (paint.fontMetrics().height() >= binHeight) {
-        tf.setPixelSize(binHeight > 7 ? binHeight - 2 : 5);
-        paint.setFont(tf);
-    }
-*/
 
     int py = h;
 
-    for (size_t i = symin; i < symax; ++i) {
-
-        size_t idx = i;
-        if (m_invertVertical) idx = m_model->getHeight() - idx - 1;
-
-//        if ((idx % step) != 0) continue;
+    for (size_t i = symin; i <= symax; ++i) {
 
         int y0;
-/*
-        if (m_binScale == LinearBinScale) {
-            y0 = int(v->height() - ((i - symin) * binHeight) - 1);
-        } else {
-            //!!! garbage
-            float yy = LogRange::unmap(LogRange::map(i+1) - logmin);
-            y0 = int(v->height() - (yy * binHeight) - 1);
-        }
-*/
+
         y0 = lrintf(getYForBin(v, i));
         int h = py - y0;
 
@@ -810,22 +824,23 @@ Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) cons
 	
         py = y0;
 
-	QString text = m_model->getBinName(idx);
-	if (text == "") text = QString("[%1]").arg(idx + 1);
-
-	paint.drawLine(cw, y0, w, y0);
-/*!!!
-        if (i > symin) {
-            paint.drawLine(w - 1, y0 - (step * binHeight) + 1,
-                           w - 1, y0 - binHeight - 1);
-            paint.drawLine(w - 2, y0 - (step * binHeight) + 1,
-                           w - 2, y0 - binHeight - 2);
+        if (i < symax) {
+            paint.drawLine(cw, y0, w, y0);
         }
-*/
-	int cy = int(y0 - h/2);
-	int ty = cy + paint.fontMetrics().ascent()/2;
 
-	paint.drawText(cw + 5, ty, text);
+        if (i > symin) {
+
+            size_t idx = i - 1;
+            if (m_invertVertical) idx = m_model->getHeight() - idx - 1;
+
+            QString text = m_model->getBinName(idx);
+            if (text == "") text = QString("[%1]").arg(idx + 1);
+
+            int ty = y0 + (h/2) - (paint.fontMetrics().height()/2) +
+                paint.fontMetrics().ascent() + 1;
+
+            paint.drawText(cw + 5, ty, text);
+        }
     }
 
     paint.restore();
@@ -1055,6 +1070,8 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
                 value = values.at(y);
             }
 
+            value = value * m_gain;
+
             if (m_colourScale == LogScale) {
                 value = LogRange::map(value);
             } else if (m_colourScale == AbsoluteScale) {
@@ -1206,15 +1223,15 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
         
 	for (int sy = symin; sy < symax; ++sy) {
 
-	    int ry0 = h - ((sy - symin) * h) / (symax - symin) - 1;
+            int ry0 = getYForBin(v, sy);
+            int ry1 = getYForBin(v, sy + 1);
+            QRect r(rx0, ry1, rw, ry0 - ry1);
+
 	    QRgb pixel = qRgb(255, 255, 255);
 	    if (sx >= 0 && sx < m_cache->width() &&
 		sy >= 0 && sy < m_cache->height()) {
 		pixel = m_cache->pixel(sx, sy);
 	    }
-
-	    QRect r(rx0, ry0 - h / (symax - symin),
-                    rw, h / (symax - symin) + 1);
 
             if (rw == 1) {
                 paint.setPen(pixel);
@@ -1511,7 +1528,8 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
                         "minY=\"%5\" "
                         "maxY=\"%6\" "
                         "invertVertical=\"%7\" "
-                        "opaque=\"%8\"")
+                        "opaque=\"%8\" "
+                        "binScale=\"%9\"")
 	.arg((int)m_colourScale)
         .arg(m_colourMap)
         .arg(m_normalizeColumns ? "true" : "false")
@@ -1519,7 +1537,8 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
         .arg(m_miny)
         .arg(m_maxy)
         .arg(m_invertVertical ? "true" : "false")
-        .arg(m_opaque ? "true" : "false");
+        .arg(m_opaque ? "true" : "false")
+        .arg((int)m_binScale);
 
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -1534,6 +1553,9 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
 
     int colourMap = attributes.value("colourScheme").toInt(&ok);
     if (ok) setColourMap(colourMap);
+
+    BinScale binscale = (BinScale)attributes.value("binScale").toInt(&ok);
+    if (ok) setBinScale(binscale);
 
     bool normalizeColumns =
         (attributes.value("normalizeColumns").trimmed() == "true");
