@@ -81,6 +81,7 @@ public:
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
+    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
     virtual void setProperty(const PropertyName &, int value);
     virtual void setProperties(const QXmlAttributes &);
     
@@ -96,6 +97,13 @@ public:
 
     void setColourMap(int map);
     int getColourMap() const;
+
+    /**
+     * Set the gain multiplier for sample values in this view.
+     * The default is 1.0.
+     */
+    void setGain(float gain);
+    float getGain() const;
 
     enum BinScale {
 	LinearBinScale,
@@ -153,6 +161,7 @@ protected:
     ColourScale m_colourScale;
     bool        m_colourScaleSet;
     int         m_colourMap;
+    float       m_gain;
     BinScale    m_binScale;
     bool        m_normalizeColumns;
     bool        m_normalizeVisibleArea;
