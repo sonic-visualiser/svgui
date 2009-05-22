@@ -39,7 +39,7 @@ ColourMapper::~ColourMapper()
 int
 ColourMapper::getColourMapCount()
 {
-    return 11;
+    return 12;
 }
 
 QString
@@ -60,6 +60,7 @@ ColourMapper::getColourMapName(int n)
     case Banded:           return tr("Banded");
     case Highlight:        return tr("Highlight");
     case Printer:          return tr("Printer");
+    case HighGain:         return tr("High Gain");
     }
 
     return tr("<unknown>");
@@ -180,6 +181,31 @@ ColourMapper::map(float value) const
         r = g = b = 1.f - r;
         hsv = false;
         break;
+
+    case HighGain:
+        if (norm <= 1.f / 256.f) {
+            norm = 0.f;
+        } else {
+            norm = 0.1f + (powf(((norm - 0.5f) * 2.f), 3.f) + 1.f) / 2.081f;
+        }
+        // now as for Sunset
+        r = (norm - 0.24f) * 2.38f;
+        if (r > 1.f) r = 1.f;
+        if (r < 0.f) r = 0.f;
+        g = (norm - 0.64f) * 2.777f;
+        if (g > 1.f) g = 1.f;
+        if (g < 0.f) g = 0.f;
+        b = (3.6f * norm);
+        if (norm > 0.277f) b = 2.f - b;
+        if (b > 1.f) b = 1.f;
+        if (b < 0.f) b = 0.f;
+        hsv = false;
+/*
+        if (r > 1.f) r = 1.f;
+        r = g = b = 1.f - r;
+        hsv = false;
+*/
+        break;
     }
 
     if (hsv) {
@@ -229,6 +255,9 @@ ColourMapper::getContrastingColour() const
 
     case Printer:
         return Qt::red;
+
+    case HighGain:
+        return Qt::red;
     }
 
     return Qt::white;
@@ -244,6 +273,7 @@ ColourMapper::hasLightBackground() const
 
     case BlackOnWhite:
     case Printer:
+    case HighGain:
         return true;
 
     default:

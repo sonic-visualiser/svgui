@@ -43,7 +43,8 @@ public:
         FruitSalad,
         Banded,
         Highlight,
-        Printer
+        Printer,
+        HighGain
     };
 
     int getMap() const { return m_map; }

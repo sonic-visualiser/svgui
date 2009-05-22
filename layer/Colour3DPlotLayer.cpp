@@ -1561,9 +1561,10 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
         .arg(m_maxy)
         .arg(m_invertVertical ? "true" : "false")
         .arg(m_opaque ? "true" : "false")
-        .arg(QString("binScale=\"%1\" smooth=\"%2\" ")
+        .arg(QString("binScale=\"%1\" smooth=\"%2\" gain=\"%3\" ")
              .arg((int)m_binScale)
-             .arg(m_smooth ? "true" : "false"));
+             .arg(m_smooth ? "true" : "false")
+             .arg(m_gain));
     
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -1601,6 +1602,9 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
     bool smooth =
         (attributes.value("smooth").trimmed() == "true");
     setSmooth(smooth);
+
+    float gain = attributes.value("gain").toFloat(&ok);
+    if (ok) setGain(gain);
 
     float min = attributes.value("minY").toFloat(&ok);
     float max = attributes.value("maxY").toFloat(&alsoOk);
