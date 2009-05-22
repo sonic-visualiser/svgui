@@ -128,6 +128,9 @@ public:
     void setOpaque(bool i);
     bool getOpaque() const;
 
+    void setSmooth(bool i);
+    bool getSmooth() const;
+
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;
 
@@ -167,6 +170,7 @@ protected:
     bool        m_normalizeVisibleArea;
     bool        m_invertVertical;
     bool        m_opaque;
+    bool        m_smooth;
     size_t      m_peakResolution;
 
     int         m_miny;
@@ -177,7 +181,6 @@ protected:
     int getColourScaleWidth(QPainter &) const;
     void fillCache(size_t firstBin, size_t lastBin) const;
     void paintDense(View *v, QPainter &paint, QRect rect) const;
-    void paintSmooth(View *v, QPainter &paint, QRect rect) const;
 
     float getYForBin(View *, float bin) const;
     float getBinForY(View *, float y) const;

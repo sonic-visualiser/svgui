@@ -49,6 +49,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_normalizeVisibleArea(false),
     m_invertVertical(false),
     m_opaque(false),
+    m_smooth(false),
     m_miny(0),
     m_maxy(0)
 {
@@ -155,6 +156,7 @@ Colour3DPlotLayer::getProperties() const
     list.push_back("Bin Scale");
     list.push_back("Invert Vertical Scale");
     list.push_back("Opaque");
+    list.push_back("Smooth");
     return list;
 }
 
@@ -168,6 +170,7 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
     if (name == "Gain") return tr("Gain");
     if (name == "Opaque") return tr("Always Opaque");
+    if (name == "Smooth") return tr("Smooth");
     if (name == "Bin Scale") return tr("Bin Scale");
     return "";
 }
@@ -179,6 +182,7 @@ Colour3DPlotLayer::getPropertyIconName(const PropertyName &name) const
     if (name == "Normalize Visible Area") return "normalise";
     if (name == "Invert Vertical Scale") return "invert-vertical";
     if (name == "Opaque") return "opaque";
+    if (name == "Smooth") return "smooth";
     return "";
 }
 
@@ -190,6 +194,7 @@ Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
     if (name == "Normalize Visible Area") return ToggleProperty;
     if (name == "Invert Vertical Scale") return ToggleProperty;
     if (name == "Opaque") return ToggleProperty;
+    if (name == "Smooth") return ToggleProperty;
     return ValueProperty;
 }
 
@@ -203,6 +208,7 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Bin Scale" ||
         name == "Invert Vertical Scale") return tr("Bins");
     if (name == "Opaque" ||
+        name == "Smooth" ||
         name == "Colour") return tr("Colour");
     return QString();
 }
@@ -274,6 +280,11 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
         *deflt = 0;
 	val = (m_opaque ? 1 : 0);
         
+    } else if (name == "Smooth") {
+	
+        *deflt = 0;
+	val = (m_smooth ? 1 : 0);
+        
     } else {
 	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
@@ -339,6 +350,8 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	setInvertVertical(value ? true : false);
     } else if (name == "Opaque") {
 	setOpaque(value ? true : false);
+    } else if (name == "Smooth") {
+	setSmooth(value ? true : false);
     } else if (name == "Bin Scale") {
 	switch (value) {
 	default:
@@ -444,6 +457,14 @@ Colour3DPlotLayer::setOpaque(bool n)
     emit layerParametersChanged();
 }
 
+void
+Colour3DPlotLayer::setSmooth(bool n)
+{
+    if (m_smooth == n) return;
+    m_smooth = n;
+    emit layerParametersChanged();
+}
+
 bool
 Colour3DPlotLayer::getInvertVertical() const
 {
@@ -454,6 +475,12 @@ bool
 Colour3DPlotLayer::getOpaque() const
 {
     return m_opaque;
+}
+
+bool
+Colour3DPlotLayer::getSmooth() const
+{
+    return m_smooth;
 }
 
 void
@@ -1186,6 +1213,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 #endif
 
     if (m_opaque || 
+        m_smooth ||
         int(m_model->getHeight()) >= v->height() ||
         ((modelResolution * srRatio) / v->getZoomLevel()) < 2) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
@@ -1342,7 +1370,9 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     long xf = -1;
     long nxf = v->getFrameForX(x0);
 
-    int sxa[w * 2];
+    float epsilon = 0.000001;
+
+    float sxa[w * 2];
     for (int x = 0; x < w; ++x) {
 
         xf = nxf;
@@ -1351,143 +1381,137 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
         float sx0 = (float(xf) / srRatio - modelStart) / modelResolution;
         float sx1 = (float(nxf) / srRatio - modelStart) / modelResolution;
 
-        int sx0i = int(sx0 + 0.001);
-        int sx1i = int(sx1);
-
-        sxa[x*2] = sx0i;
-        sxa[x*2 + 1] = sx1i;
+        sxa[x*2] = sx0;
+        sxa[x*2 + 1] = sx1;
     }
 
     float logmin = symin+1, logmax = symax+1;
     LogRange::mapRange(logmin, logmax);
 
-    for (int y = 0; y < h; ++y) {
-
-        float sy0, sy1;
-
-        sy0 = getBinForY(v, y + 1);
-        sy1 = getBinForY(v, y);
-/*
-        if (m_binScale == LinearBinScale) {
-            sy0 = symin + (float(h - y - 1) * (symax - symin)) / h;
-            sy1 = symin + (float(h - y) * (symax - symin)) / h;
-        } else {
-//            float logmin = LogRange::map(symin);
-//            float logmax = LogRange::map(symax);
-            sy0 = logmin + (float(h - y - 1) * (logmax - logmin)) / h;
-            sy1 = logmin + (float(h - y) * (logmax - logmin)) / h;
-            sy0 = LogRange::unmap(sy0)-1;
-            sy1 = LogRange::unmap(sy1)-1;
-//            sy0 = pow10f(sy0);
-//            sy1 = pow10f(sy1);
-        }
-*/          
-        int sy0i = int(sy0 + 0.001);
-        int sy1i = int(sy1);
-
-        uchar *targetLine = img.scanLine(y);
-
-        if (sy0i == sy1i && sy0i == psy1i) { // same scan line as just computed
-            goto copy;
-        }
-
-        for (int x = 0; x < w; ++x) {
-            peaks[x] = 0;
-        }
+    if (m_smooth) {
         
-        for (int sy = sy0i; sy <= sy1i; ++sy) {
+        for (int y = 0; y < h; ++y) {
 
-            if (sy < 0 || sy >= source->height()) continue;
+            float sy = getBinForY(v, y) - 0.5;
+            int syi = int(sy + epsilon);
+            if (syi < 0 || syi >= source->height()) continue;
 
-            uchar *sourceLine = source->scanLine(sy);
-            
+            uchar *targetLine = img.scanLine(y);
+            uchar *sourceLine = source->scanLine(syi);
+            uchar *nextSource;
+            if (syi + 1 < source->height()) {
+                nextSource = source->scanLine(syi + 1);
+            } else {
+                nextSource = sourceLine;
+            }
+
             for (int x = 0; x < w; ++x) {
 
-                int sx1i = sxa[x*2 + 1];
-                if (sx1i < 0) continue;
+                targetLine[x] = 0;
 
-                int sx0i = sxa[x*2];
+                float sx0 = sxa[x*2];
+                int sx0i = int(sx0 + epsilon);
                 if (sx0i >= sw) break;
+                if (sx0i < 0) continue;
 
-                uchar peak = 0;
-                for (int sx = sx0i; sx <= sx1i; ++sx) {
-                    if (sx < 0 || sx >= sw) continue;
-                    if (sourceLine[sx] > peak) peak = sourceLine[sx];
+                float a, b, value;
+
+                float sx1 = sxa[x*2+1];
+                if (sx1 > sx0 + 1.f) {
+                    int sx1i = int(sx1);
+                    bool have = false;
+                    for (int sx = sx0i; sx <= sx1i; ++sx) {
+                        if (sx < 0 || sx >= sw) continue;
+                        if (!have) {
+                            a = float(sourceLine[sx]);
+                            b = float(nextSource[sx]);
+                            have = true;
+                        } else {
+                            a = std::max(a, float(sourceLine[sx]));
+                            b = std::max(b, float(nextSource[sx]));
+                        }
+                    }
+                    float yprop = sy - syi;
+                    value = (a * (1.f - yprop) + b * yprop);
+                } else {
+                    a = float(sourceLine[sx0i]);
+                    b = float(nextSource[sx0i]);
+                    float yprop = sy - syi;
+                    value = (a * (1.f - yprop) + b * yprop);
+                    int oi = sx0i + 1;
+                    float xprop = sx0 - sx0i;
+                    xprop -= 0.5;
+                    if (xprop < 0) {
+                        oi = sx0i - 1;
+                        xprop = -xprop;
+                    }
+                    if (oi < 0 || oi >= sw) oi = sx0i;
+                    a = float(sourceLine[oi]);
+                    b = float(nextSource[oi]);
+                    value = (value * (1.f - xprop) +
+                             (a * (1.f - yprop) + b * yprop) * xprop);
                 }
-                peaks[x] = peak;
+                
+                int vi = lrintf(value);
+                if (vi > 255) vi = 255;
+                if (vi < 0) vi = 0;
+                targetLine[x] = uchar(vi);
             }
         }
+    } else {
+
+        for (int y = 0; y < h; ++y) {
+
+            float sy0, sy1;
+
+            sy0 = getBinForY(v, y + 1);
+            sy1 = getBinForY(v, y);
+
+            int sy0i = int(sy0 + epsilon);
+            int sy1i = int(sy1);
+
+            uchar *targetLine = img.scanLine(y);
+
+            if (sy0i == sy1i && sy0i == psy1i) { // same source scan line as just computed
+                goto copy;
+            }
+
+            for (int x = 0; x < w; ++x) {
+                peaks[x] = 0;
+            }
         
-    copy:
-        for (int x = 0; x < w; ++x) {
-            targetLine[x] = peaks[x];
+            for (int sy = sy0i; sy <= sy1i; ++sy) {
+
+                if (sy < 0 || sy >= source->height()) continue;
+
+                uchar *sourceLine = source->scanLine(sy);
+            
+                for (int x = 0; x < w; ++x) {
+
+                    int sx1i = int(sxa[x*2 + 1]);
+                    if (sx1i < 0) continue;
+
+                    int sx0i = int(sxa[x*2] + epsilon);
+                    if (sx0i >= sw) break;
+
+                    uchar peak = 0;
+                    for (int sx = sx0i; sx <= sx1i; ++sx) {
+                        if (sx < 0 || sx >= sw) continue;
+                        if (sourceLine[sx] > peak) peak = sourceLine[sx];
+                    }
+                    peaks[x] = peak;
+                }
+            }
+        
+        copy:
+            for (int x = 0; x < w; ++x) {
+                targetLine[x] = peaks[x];
+            }
         }
     }
 
     delete[] peaks;
 
-    paint.drawImage(x0, 0, img);
-}
-
-void
-Colour3DPlotLayer::paintSmooth(View *v, QPainter &paint, QRect rect) const
-{
-    Profiler profiler("Colour3DPlotLayer:paintSmooth");
-    if (!m_cache) return;
-
-    float modelStart = m_model->getStartFrame();
-    float modelResolution = m_model->getResolution();
-
-    int mmsr = v->getViewManager()->getMainModelSampleRate();
-    int msr = m_model->getSampleRate();
-    float srRatio = float(mmsr) / float(msr);
-
-    int x0 = rect.left();
-    int x1 = rect.right() + 1;
-
-    int h = v->height(); // we always paint full height
-    int sh = m_model->getHeight();
-
-    int symin = m_miny;
-    int symax = m_maxy;
-    if (symax <= symin) {
-        symin = 0;
-        symax = sh;
-    }
-    if (symin < 0) symin = 0;
-    if (symax > sh) symax = sh;
-
-//    QImage img(w, h, QImage::Format_Indexed8);
-//    img.setColorTable(m_cache->colorTable());
-
-    int zoomLevel = v->getZoomLevel();
-    
-    QImage *source = m_cache;
-    if (m_peaksCache &&
-        ((modelResolution * srRatio * m_peakResolution) / zoomLevel) < 1) {
-        std::cerr << "using peaks cache" << std::endl;
-        source = m_peaksCache;
-        modelResolution *= m_peakResolution;
-    } else {
-        std::cerr << "not using peaks cache" << std::endl;
-    }
-
-    float sx0 = (float(v->getFrameForX(x0)) / srRatio - modelStart) / modelResolution;
-    float sx1 = (float(v->getFrameForX(x1)) / srRatio - modelStart) / modelResolution;
-    int sx0i = int(sx0 + 0.001);
-    int sx1i = int(sx1);
-
-    if (sx0i < 0) sx0i = 0;
-    if (sx0i > source->width()) sx0i = source->width();
-    
-    int tx0 = v->getXForFrame(((sx0i * modelResolution) + modelStart) * srRatio + 0.001);
-    int tx1 = v->getXForFrame(((sx1i * modelResolution) + modelStart) * srRatio);
-
-    std::cerr << "x0 " << x0 << ", x1 " << x1 << " -> sx0 " << sx0i << ", sx1 " << sx1i << " -> tx0 " << tx0 << ", tx1 " << tx1 << std::endl;
-
-    QImage img = source->copy(sx0i, 0, sx1i - sx0i, source->height())
-        .scaled(QSize(tx1 - tx0, h),
-                Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     paint.drawImage(x0, 0, img);
 }
 
@@ -1528,8 +1552,7 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
                         "minY=\"%5\" "
                         "maxY=\"%6\" "
                         "invertVertical=\"%7\" "
-                        "opaque=\"%8\" "
-                        "binScale=\"%9\"")
+                        "opaque=\"%8\" %9")
 	.arg((int)m_colourScale)
         .arg(m_colourMap)
         .arg(m_normalizeColumns ? "true" : "false")
@@ -1538,8 +1561,10 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
         .arg(m_maxy)
         .arg(m_invertVertical ? "true" : "false")
         .arg(m_opaque ? "true" : "false")
-        .arg((int)m_binScale);
-
+        .arg(QString("binScale=\"%1\" smooth=\"%2\" ")
+             .arg((int)m_binScale)
+             .arg(m_smooth ? "true" : "false"));
+    
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
@@ -1571,7 +1596,11 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
 
     bool opaque =
         (attributes.value("opaque").trimmed() == "true");
-    setNormalizeVisibleArea(opaque);
+    setOpaque(opaque);
+
+    bool smooth =
+        (attributes.value("smooth").trimmed() == "true");
+    setSmooth(smooth);
 
     float min = attributes.value("minY").toFloat(&ok);
     float max = attributes.value("maxY").toFloat(&alsoOk);
