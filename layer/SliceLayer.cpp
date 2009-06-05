@@ -1,4 +1,3 @@
-
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 
 /*
@@ -248,7 +247,7 @@ SliceLayer::getYForValue(float value, const View *v, float &norm) const
     case dBScale:
     {
         float db = thresh;
-        if (value > 0.f) db = 10.f * log10f(value);
+        if (value > 0.f) db = 10.f * log10f(fabsf(value));
         if (db < thresh) db = thresh;
         norm = (db - thresh) / -thresh;
         y = yorigin - (float(h) * norm);
@@ -261,9 +260,12 @@ SliceLayer::getYForValue(float value, const View *v, float &norm) const
         y = yorigin - y;
         break;
         
+    case AbsoluteScale:
+        value = fabsf(value);
+        // and fall through
+        
     default:
-//        std::cerr << "thresh = " << m_threshold << std::endl;
-        norm = (fabsf(value) - m_threshold);
+        norm = (value - m_threshold);
         if (norm < 0) norm = 0;
         y = yorigin - (float(h) * norm);
         break;
@@ -299,7 +301,7 @@ SliceLayer::getValueForY(float y, const View *v) const
     case MeterScale:
         value = AudioLevel::preview_to_multiplier(lrintf(y), h);
         break;
-
+    
     default:
         value = y / h + m_threshold;
     }
@@ -315,6 +317,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
+    paint.setBrush(Qt::NoBrush);
 
     if (v->getViewManager() && v->getViewManager()->shouldShowScaleGuides()) {
         if (!m_scalePoints.empty()) {
@@ -497,7 +500,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 int
 SliceLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 {
-    if (m_energyScale == LinearScale) {
+    if (m_energyScale == LinearScale || m_energyScale == AbsoluteScale) {
 	return std::max(paint.fontMetrics().width("0.0") + 13,
                         paint.fontMetrics().width("x10-10"));
     } else {
@@ -510,7 +513,7 @@ void
 SliceLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 {
     float thresh = m_threshold;
-    if (m_energyScale != LinearScale) {
+    if (m_energyScale != LinearScale && m_energyScale != AbsoluteScale) {
         thresh = AudioLevel::dB_to_multiplier(getThresholdDb());
     }
     
@@ -545,13 +548,12 @@ Layer::PropertyList
 SliceLayer::getProperties() const
 {
     PropertyList list = SingleColourLayer::getProperties();
+    list.push_back("Bin Scale");
     list.push_back("Plot Type");
-//    list.push_back("Sampling Mode");
     list.push_back("Scale");
     list.push_back("Normalize");
     list.push_back("Threshold");
     list.push_back("Gain");
-    list.push_back("Bin Scale");
 
     return list;
 }
@@ -565,7 +567,7 @@ SliceLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Threshold") return tr("Threshold");
     if (name == "Gain") return tr("Gain");
     if (name == "Sampling Mode") return tr("Sampling Mode");
-    if (name == "Bin Scale") return tr("Plot X Scale");
+    if (name == "Bin Scale") return tr("Bin Scale");
     return SingleColourLayer::getPropertyLabel(name);
 }
 
@@ -599,7 +601,7 @@ SliceLayer::getPropertyGroupName(const PropertyName &name) const
         name == "Threshold" ||
         name == "Gain") return tr("Scale");
     if (name == "Plot Type" ||
-        name == "Bin Scale") return tr("Plot Type");
+        name == "Bin Scale") return tr("Bins");
     return SingleColourLayer::getPropertyGroupName(name);
 }
 
@@ -655,7 +657,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Scale") {
 
 	*min = 0;
-	*max = 2;
+	*max = 3;
         *deflt = (int)dBScale;
 
 	val = (int)m_energyScale;
@@ -704,7 +706,8 @@ SliceLayer::getPropertyValueLabel(const PropertyName &name,
 	default:
 	case 0: return tr("Linear");
 	case 1: return tr("Meter");
-	case 2: return tr("dB");
+	case 2: return tr("Log");
+	case 3: return tr("Absolute");
 	}
     }
     if (name == "Sampling Mode") {
@@ -727,9 +730,9 @@ SliceLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == "Bin Scale") {
 	switch (value) {
 	default:
-	case 0: return tr("Linear Bins");
-	case 1: return tr("Log Bins");
-	case 2: return tr("Rev Log Bins");
+	case 0: return tr("Linear");
+	case 1: return tr("Log");
+	case 2: return tr("Rev Log");
 	}
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
@@ -763,6 +766,7 @@ SliceLayer::setProperty(const PropertyName &name, int value)
 	case 0: setEnergyScale(LinearScale); break;
 	case 1: setEnergyScale(MeterScale); break;
 	case 2: setEnergyScale(dBScale); break;
+	case 3: setEnergyScale(AbsoluteScale); break;
 	}
     } else if (name == "Plot Type") {
 	setPlotStyle(PlotStyle(value));
