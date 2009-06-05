@@ -1,4 +1,3 @@
-
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 
 /*
@@ -70,7 +69,7 @@ public:
 
     virtual bool isLayerScrollable(const View *) const { return false; }
 
-    enum EnergyScale { LinearScale, MeterScale, dBScale };
+    enum EnergyScale { LinearScale, MeterScale, dBScale, AbsoluteScale };
 
     enum SamplingMode { NearestSample, SampleMean, SamplePeak };
 
