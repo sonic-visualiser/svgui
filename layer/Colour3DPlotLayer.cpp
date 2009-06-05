@@ -1410,9 +1410,9 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
                 targetLine[x] = 0;
 
                 float sx0 = sxa[x*2];
+                if (sx0 < 0) continue;
                 int sx0i = int(sx0 + epsilon);
                 if (sx0i >= sw) break;
-                if (sx0i < 0) continue;
 
                 float a, b, value;
 
@@ -1488,10 +1488,13 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             
                 for (int x = 0; x < w; ++x) {
 
-                    int sx1i = int(sxa[x*2 + 1]);
-                    if (sx1i < 0) continue;
+                    float sx1 = sxa[x*2 + 1];
+                    if (sx1 < 0) continue;
+                    int sx1i = int(sx1);
 
-                    int sx0i = int(sxa[x*2] + epsilon);
+                    float sx0 = sxa[x*2];
+                    if (sx0 < 0) continue;
+                    int sx0i = int(sx0 + epsilon);
                     if (sx0i >= sw) break;
 
                     uchar peak = 0;
