@@ -62,6 +62,12 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
 Pane *
 PaneStack::addPane(bool suppressPropertyBox)
 {
+    return insertPane(getPaneCount(), suppressPropertyBox);
+}
+
+Pane *
+PaneStack::insertPane(int index, bool suppressPropertyBox)
+{
     QFrame *frame = new QFrame;
 
     QGridLayout *layout = new QGridLayout;
@@ -129,7 +135,7 @@ PaneStack::addPane(bool suppressPropertyBox)
     m_panes.push_back(rec);
 
     frame->setLayout(layout);
-    m_splitter->addWidget(frame);
+    m_splitter->insertWidget(index, frame);
 
     connect(pane, SIGNAL(propertyContainerAdded(PropertyContainer *)),
 	    this, SLOT(propertyContainerAdded(PropertyContainer *)));
