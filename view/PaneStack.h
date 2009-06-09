@@ -1,4 +1,3 @@
-
 /* -*- c-basic-offset: 4 indent-tabs-mode: nil -*-  vi:set ts=8 sts=4 sw=4: */
 
 /*
@@ -41,6 +40,7 @@ public:
     PaneStack(QWidget *parent, ViewManager *viewManager);
 
     Pane *addPane(bool suppressPropertyBox = false); // I own the returned value
+    Pane *insertPane(int index, bool suppressPropertyBox = false); // I own the returned value
     void deletePane(Pane *pane); // Deletes the pane, but _not_ its layers
 
     int getPaneCount() const; // Returns only count of visible panes
