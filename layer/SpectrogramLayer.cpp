@@ -2575,10 +2575,12 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
 
             if (mag.isSet()) {
                 if (sx >= int(m_columnMags.size())) {
+#ifdef DEBUG_SPECTROGRAM
                     std::cerr << "INTERNAL ERROR: " << sx << " >= "
                               << m_columnMags.size()
                               << " at SpectrogramLayer.cpp::paintDrawBuffer"
                               << std::endl;
+#endif
                 } else {
                     m_columnMags[sx].sample(mag);
                     if (overallMag.sample(mag)) overallMagChanged = true;
@@ -2779,10 +2781,12 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 
             if (mag.isSet()) {
                 if (sx >= int(m_columnMags.size())) {
+#ifdef DEBUG_SPECTROGRAM
                     std::cerr << "INTERNAL ERROR: " << sx << " >= "
                               << m_columnMags.size()
                               << " at SpectrogramLayer.cpp::paintDrawBuffer"
                               << std::endl;
+#endif
                 } else {
                     m_columnMags[sx].sample(mag);
                     if (overallMag.sample(mag)) overallMagChanged = true;
