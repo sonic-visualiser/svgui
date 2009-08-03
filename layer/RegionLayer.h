@@ -137,7 +137,11 @@ protected:
     PlotStyle m_plotStyle;
 
     typedef std::map<float, int> SpacingMap;
+    // region value -> ordering
     SpacingMap m_spacingMap;
+
+    int spacingIndexToY(View *v, int i) const;
+    float yToSpacingIndex(View *v, int y) const;
 
     void finish(RegionModel::EditCommand *command) {
         Command *c = command->finish();

@@ -238,11 +238,14 @@ RegionLayer::recalcSpacing()
     m_spacingMap.clear();
     if (!m_model) return;
 
+    std::cerr << "RegionLayer::recalcSpacing" << std::endl;
+
     std::set<float> values;
 
     for (RegionModel::PointList::const_iterator i = m_model->getPoints().begin();
          i != m_model->getPoints().end(); ++i) {
         values.insert(i->value);
+        std::cerr << "RegionLayer::recalcSpacing: value found: " << i->value << std::endl;
     }
 
     int n = 0;
@@ -250,6 +253,7 @@ RegionLayer::recalcSpacing()
     for (std::set<float>::const_iterator i = values.begin();
          i != values.end(); ++i) {
         m_spacingMap[*i] = n++;
+        std::cerr << "RegionLayer::recalcSpacing: " << *i << " -> " << m_spacingMap[*i] << std::endl;
     }
 }
 
@@ -493,13 +497,13 @@ RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
             min = m_model->getValueMinimum();
             max = m_model->getValueMaximum();
 
-            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+//            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
 
         } else if (log) {
 
             LogRange::mapRange(min, max);
 
-            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+//            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
 
         }
 
@@ -511,7 +515,7 @@ RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
             i = m_spacingMap.end();
             --i;
             max = i->second;
-            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: equal spaced; min = " << min << ", max = " << max << ", log = " << log << std::endl;
+//            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: equal spaced; min = " << min << ", max = " << max << ", log = " << log << std::endl;
         }
 
     } else {
@@ -529,6 +533,28 @@ RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 }
 
 int
+RegionLayer::spacingIndexToY(View *v, int i) const
+{
+    int h = v->height();
+    int n = m_spacingMap.size();
+    // this maps from i (spacing of the value from the spacing
+    // map) and n (number of region types) to y
+    int y = h - (((h * i) / n) + (h / (2 * n)));
+    return y;
+}
+
+float
+RegionLayer::yToSpacingIndex(View *v, int y) const
+{
+    // we return an inexact result here (float rather than int)
+    int h = v->height();
+    int n = m_spacingMap.size();
+    // from y = h - ((h * i) / n) + (h / (2 * n)) as above
+    float vh = ((h + (h / float(2 * n)) - y) * n) / h;
+    return vh;
+}
+
+int
 RegionLayer::getYForValue(View *v, float val) const
 {
     float min = 0.0, max = 0.0;
@@ -542,12 +568,11 @@ RegionLayer::getYForValue(View *v, float val) const
         SpacingMap::const_iterator i = m_spacingMap.lower_bound(val);
         //!!! what now, if i->first != v?
 
-        int vh = i->second;
+        int y = spacingIndexToY(v, i->second);
 
-        SpacingMap::const_iterator j = m_spacingMap.end();
-        --j;
+        std::cerr << "RegionLayer::getYForValue: value " << val << " -> i->second " << i->second << " -> y " << y << std::endl;
+        return y;
 
-        return h - (((h * vh) / (j->second + 1)) + (h / (2 * (j->second + 1))));
 
     } else {
 
@@ -561,6 +586,95 @@ RegionLayer::getYForValue(View *v, float val) const
         }
 
         return int(h - ((val - min) * h) / (max - min));
+    }
+}
+
+float
+RegionLayer::getValueForY(View *v, int y) const
+{
+    float min = 0.0, max = 0.0;
+    bool logarithmic = false;
+    int h = v->height();
+
+    if (m_verticalScale == EqualSpaced) {
+
+        // if we're equal spaced, we probably want to snap to the
+        // nearest item when close to it, and give some notification
+        // that we're doing so
+
+        if (m_spacingMap.empty()) return 1.f;
+
+        // n is the number of distinct regions.  if we are close to
+        // one of the m/n divisions in the y scale, we should snap to
+        // the value of the mth region.
+
+        float vh = yToSpacingIndex(v, y);
+
+        // spacings in the map are integral, so find the closest one,
+        // map it back to its y coordinate, and see how far we are
+        // from it
+
+        int n = m_spacingMap.size();
+        int ivh = lrintf(vh);
+        if (ivh < 0) ivh = 0;
+        if (ivh > n-1) ivh = n-1;
+        int iy = spacingIndexToY(v, ivh);
+
+        int dist = iy - y;
+        int gap = h / n; // between region lines
+
+        std::cerr << "getValueForY: y = " << y << ", n = " << n << ", vh = " << vh << ", iy = " << iy << ", dist = " << dist << ", gap = " << gap << std::endl;
+
+        SpacingMap::const_iterator i = m_spacingMap.begin();
+        while (i != m_spacingMap.end()) {
+            if (i->second == ivh) break;
+            ++i;
+        }
+        if (i == m_spacingMap.end()) i = m_spacingMap.begin();
+
+        float val = 0;
+
+        if (dist > -gap/3 && dist < gap/3) {
+            // snap
+            val = i->first;
+            std::cerr << "snapped to " << val << std::endl;
+        } else if (dist < 0) {
+            // bisect gap to prior
+            if (i == m_spacingMap.begin()) {
+                val = i->first - 1.f;
+                std::cerr << "extended down to " << val << std::endl;
+            } else {
+                SpacingMap::const_iterator j = i;
+                --j;
+                val = (i->first + j->first) / 2;
+                std::cerr << "bisected down to " << val << std::endl;
+            }
+        } else {
+            // bisect gap to following
+            SpacingMap::const_iterator j = i;
+            ++j;
+            if (j == m_spacingMap.end()) {
+                val = i->first + 1.f;
+                std::cerr << "extended up to " << val << std::endl;
+            } else {
+                val = (i->first + j->first) / 2;
+                std::cerr << "bisected up to " << val << std::endl;
+            }
+        }            
+
+        return val;
+
+    } else {
+
+        getScaleExtents(v, min, max, logarithmic);
+
+        float val = min + (float(h - y) * float(max - min)) / h;
+
+        if (logarithmic) {
+            val = powf(10.f, val);
+        }
+
+        return val;
     }
 }
 
@@ -592,24 +706,6 @@ RegionLayer::getDefaultColourHint(bool darkbg, bool &impose)
     impose = false;
     return ColourDatabase::getInstance()->getColourIndex
         (QString(darkbg ? "Bright Blue" : "Blue"));
-}
-
-float
-RegionLayer::getValueForY(View *v, int y) const
-{
-    float min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->height();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-    float val = min + (float(h - y) * float(max - min)) / h;
-
-    if (logarithmic) {
-        val = powf(10.f, val);
-    }
-
-    return val;
 }
 
 void
@@ -778,7 +874,8 @@ RegionLayer::drawDrag(View *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float newValue = getValueForY(v, e->y());
+    float newValue = m_editingPoint.value;
+    if (m_verticalScale != EqualSpaced) newValue = getValueForY(v, e->y());
 
     long newFrame = m_editingPoint.frame;
     long newDuration = frame - newFrame;
