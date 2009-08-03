@@ -538,18 +538,13 @@ Thumbwheel::paintEvent(QPaintEvent *)
         x1 += bw;
         x2 += bw;
 
-        int grey = lrintf(255 * depth);
+        int grey = lrintf(120 * depth);
+
         QColor fc = QColor(grey, grey, grey);
-        QColor oc = palette().dark().color();
+//        QColor oc = fc.dark(150);  //palette().dark().color();
+        QColor oc = palette().highlight().color();
 
-        paint.setPen(oc);
-        paint.setBrush(fc);
-
-        if (m_orientation == Qt::Horizontal) {
-            paint.drawRect(QRectF(x1, bw, x2 - x1, height() - bw*2));
-        } else {
-            paint.drawRect(QRectF(bw, x1, width() - bw*2, x2 - x1));
-        }
+        paint.setPen(fc);
 
         if (m_showScale) {
 
@@ -571,7 +566,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
             }
         }
 
-        paint.setPen(oc);
+        paint.setPen(fc);
         paint.setBrush(palette().background().color());
 
         if (m_orientation == Qt::Horizontal) {
