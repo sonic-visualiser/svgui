@@ -478,7 +478,6 @@ Thumbwheel::paintEvent(QPaintEvent *)
     float h1 = h - 0.5;
 
     for (int i = bw-1; i >= 0; --i) {
-//    for (int i = 0; i < 1; ++i) {
 
         int grey = (i + 1) * (256 / (bw + 1));
         QColor fc = QColor(grey, grey, grey);
@@ -541,7 +540,6 @@ Thumbwheel::paintEvent(QPaintEvent *)
         int grey = lrintf(120 * depth);
 
         QColor fc = QColor(grey, grey, grey);
-//        QColor oc = fc.dark(150);  //palette().dark().color();
         QColor oc = palette().highlight().color();
 
         paint.setPen(fc);
