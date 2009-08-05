@@ -40,8 +40,8 @@ RegionLayer::RegionLayer() :
     SingleColourLayer(),
     m_model(0),
     m_editing(false),
-    m_originalPoint(0, 0.0, 0, tr("New Point")),
-    m_editingPoint(0, 0.0, 0, tr("New Point")),
+    m_originalPoint(0, 0.0, 0, tr("New Region")),
+    m_editingPoint(0, 0.0, 0, tr("New Region")),
     m_editingCommand(0),
     m_verticalScale(EqualSpaced),
     m_colourMap(0),
@@ -852,12 +852,12 @@ RegionLayer::drawStart(View *v, QMouseEvent *e)
 
     float value = getValueForY(v, e->y());
 
-    m_editingPoint = RegionModel::Point(frame, value, 0, tr("New Point"));
+    m_editingPoint = RegionModel::Point(frame, value, 0, tr("New Region"));
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new RegionModel::EditCommand(m_model,
-                                                    tr("Draw Point"));
+                                                    tr("Draw Region"));
     m_editingCommand->addPoint(m_editingPoint);
 
     m_editing = true;
@@ -939,7 +939,7 @@ RegionLayer::eraseEnd(View *v, QMouseEvent *e)
         points.begin()->value != m_editingPoint.value) return;
 
     m_editingCommand = new RegionModel::EditCommand
-        (m_model, tr("Erase Point"));
+        (m_model, tr("Erase Region"));
 
     m_editingCommand->deletePoint(m_editingPoint);
 
@@ -984,7 +984,7 @@ RegionLayer::editDrag(View *v, QMouseEvent *e)
 
     if (!m_editingCommand) {
 	m_editingCommand = new RegionModel::EditCommand(m_model,
-						      tr("Drag Point"));
+						      tr("Drag Region"));
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
@@ -1005,9 +1005,9 @@ RegionLayer::editEnd(View *, QMouseEvent *)
 
 	if (m_editingPoint.frame != m_originalPoint.frame) {
 	    if (m_editingPoint.value != m_originalPoint.value) {
-		newName = tr("Edit Point");
+		newName = tr("Edit Region");
 	    } else {
-		newName = tr("Relocate Point");
+		newName = tr("Relocate Region");
 	    }
 	} else {
 	    newName = tr("Change Point Value");
@@ -1053,7 +1053,7 @@ RegionLayer::editOpen(View *v, QMouseEvent *e)
         newRegion.label = dialog->getText();
         
         RegionModel::EditCommand *command = new RegionModel::EditCommand
-            (m_model, tr("Edit Point"));
+            (m_model, tr("Edit Region"));
         command->deletePoint(region);
         command->addPoint(newRegion);
         finish(command);
