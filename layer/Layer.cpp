@@ -554,7 +554,7 @@ Layer::findFocusedMeasureRect(QPoint focusPoint) const
         int xd = focusPoint.x() - cx;
         int yd = focusPoint.y() - cy;
         
-        float d = sqrt(xd * xd + yd * yd);
+        float d = sqrt(float(xd * xd + yd * yd));
         
         if (focusRectItr == m_measureRects.end() || d < frDist) {
             focusRectItr = i;

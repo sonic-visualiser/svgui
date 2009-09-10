@@ -30,6 +30,10 @@
 
 #include <cassert>
 
+#ifndef __GNUC__
+#include <alloca.h>
+#endif
+
 //#define DEBUG_COLOUR_3D_PLOT_LAYER_PAINT 1
 
 
@@ -1372,7 +1376,11 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     float epsilon = 0.000001;
 
+#ifdef __GNUC__
     float sxa[w * 2];
+#else
+    float *sxa = (float *)alloca(w * 2 * sizeof(float));
+#endif
     for (int x = 0; x < w; ++x) {
 
         xf = nxf;
