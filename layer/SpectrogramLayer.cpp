@@ -45,6 +45,10 @@ using std::endl;
 #include <cassert>
 #include <cmath>
 
+#ifndef __GNUC__
+#include <alloca.h>
+#endif
+
 //#define DEBUG_SPECTROGRAM_REPAINT 1
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
@@ -2256,8 +2260,13 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         bufwid = w;
     }
 
+#ifdef __GNUC__
     int binforx[bufwid];
     float binfory[h];
+#else
+    int *binforx = (int *)alloca(bufwid * sizeof(int));
+    float *binfory = (float *)alloca(h * sizeof(float));
+#endif
 
     bool usePeaksCache = false;
 
@@ -2502,7 +2511,12 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
     FFTModel::PeakSet peakfreqs;
 
     int px = -1, psx = -1;
+
+#ifdef __GNUC__
     float values[maxbin - minbin + 1];
+#else
+    float *values = (float *)alloca((maxbin - minbin + 1) * sizeof(float));
+#endif
 
     for (int x = 0; x < w; ++x) {
         
@@ -2642,10 +2656,17 @@ SpectrogramLayer::paintDrawBuffer(View *v,
     }
 
     int psx = -1;
+
+#ifdef __GNUC__
     float autoarray[maxbin - minbin + 1];
+    float peaks[h];
+#else
+    float *autoarray = (float *)alloca((maxbin - minbin + 1) * sizeof(float));
+    float *peaks = (float *)alloca(h * sizeof(float));
+#endif
+
     const float *values = autoarray;
     DenseThreeDimensionalModel::Column c;
-    float peaks[h];
 
     for (int x = 0; x < w; ++x) {
         

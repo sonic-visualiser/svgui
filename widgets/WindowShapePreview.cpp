@@ -26,6 +26,10 @@
 
 #include <iostream>
 
+#ifndef __GNUC__
+#include <alloca.h>
+#endif
+
 WindowShapePreview::WindowShapePreview(QWidget *parent) :
     QFrame(parent),
     m_windowType(WindowType(999))
@@ -67,7 +71,12 @@ WindowShapePreview::updateLabels()
     
     path = QPainterPath();
 
+#ifdef __GNUC__
     float acc[w];
+#else
+    float *acc = (float *)alloca(w * sizeof(float));
+#endif
+
     for (int i = 0; i < w; ++i) acc[i] = 0.f;
     for (int j = 0; j < 3; ++j) {
         for (int i = 0; i < step * 2; ++i) {
