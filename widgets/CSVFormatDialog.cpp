@@ -192,12 +192,12 @@ CSVFormatDialog::modelTypeChanged(int type)
 {
     m_modelType = (CSVFormat::ModelType)type;
 
-    if (m_modelType == CSVFormat::ThreeDimensionalModel) {
+//    if (m_modelType == CSVFormat::ThreeDimensionalModel) {
         // We can't load 3d models with explicit timing, because the 3d
         // model is dense so we need a fixed sample increment
-        m_timingTypeCombo->setCurrentIndex(2);
-        timingTypeChanged(2);
-    }
+//        m_timingTypeCombo->setCurrentIndex(2);
+//        timingTypeChanged(2);
+//    }
 }
 
 void
@@ -212,10 +212,10 @@ CSVFormatDialog::timingTypeChanged(int type)
 	m_sampleRateLabel->setEnabled(false);
 	m_windowSizeCombo->setEnabled(false);
 	m_windowSizeLabel->setEnabled(false);
-        if (m_modelType == CSVFormat::ThreeDimensionalModel) {
-            m_modelTypeCombo->setCurrentIndex(1);
-            modelTypeChanged(1);
-        }
+//        if (m_modelType == CSVFormat::ThreeDimensionalModel) {
+//            m_modelTypeCombo->setCurrentIndex(1);
+//            modelTypeChanged(1);
+//        }
 	break;
 
     case 1:
@@ -225,10 +225,10 @@ CSVFormatDialog::timingTypeChanged(int type)
 	m_sampleRateLabel->setEnabled(true);
 	m_windowSizeCombo->setEnabled(false);
 	m_windowSizeLabel->setEnabled(false);
-        if (m_modelType == CSVFormat::ThreeDimensionalModel) {
-            m_modelTypeCombo->setCurrentIndex(1);
-            modelTypeChanged(1);
-        }
+//        if (m_modelType == CSVFormat::ThreeDimensionalModel) {
+//            m_modelTypeCombo->setCurrentIndex(1);
+//            modelTypeChanged(1);
+//        }
 	break;
 
     case 2:
