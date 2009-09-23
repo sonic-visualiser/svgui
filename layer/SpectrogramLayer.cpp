@@ -2389,7 +2389,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
             Preferences::SpectrogramXSmoothing xsmoothing = 
                 Preferences::getInstance()->getSpectrogramXSmoothing();
-            cerr << "xsmoothing == " << xsmoothing << endl;
+//            cerr << "xsmoothing == " << xsmoothing << endl;
             QImage scaled = m_drawBuffer.scaled
                 (scaledRight - scaledLeft, h,
                  Qt::IgnoreAspectRatio,
