@@ -1603,9 +1603,18 @@ View::paintEvent(QPaintEvent *e)
 		getXForFrame(m_centreFrame);
 
 	    if (dx > -width() && dx < width()) {
-#if defined(Q_WS_WIN32) || defined(Q_WS_MAC) || defined(NO_PIXMAP_COPY_TO_SELF)
-		// Copying a pixmap to itself doesn't work properly on Windows
-		// or Mac (it only works when moving in one direction)
+#ifdef PIXMAP_COPY_TO_SELF
+                // This is not normally defined. Copying a pixmap to
+		// itself doesn't work properly on Windows, Mac, or
+		// X11 with the raster backend (it only works when
+		// moving in one direction and then presumably only by
+		// accident).  It does actually seem to be fine on X11
+		// with the native backend, but we prefer not to use
+		// that anyway
+		paint.begin(m_cache);
+		paint.drawPixmap(dx, 0, *m_cache);
+		paint.end();
+#else
 		static QPixmap *tmpPixmap = 0;
 		if (!tmpPixmap ||
 		    tmpPixmap->width() != width() ||
@@ -1618,11 +1627,6 @@ View::paintEvent(QPaintEvent *e)
 		paint.end();
 		paint.begin(m_cache);
 		paint.drawPixmap(dx, 0, *tmpPixmap);
-		paint.end();
-#else
-		// But it seems to be fine on X11
-		paint.begin(m_cache);
-		paint.drawPixmap(dx, 0, *m_cache);
 		paint.end();
 #endif
 		if (dx < 0) {
