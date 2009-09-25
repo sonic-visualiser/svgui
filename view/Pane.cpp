@@ -745,7 +745,8 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
 
             QString text(QString::fromStdString
                          (RealTime::frame2RealTime
-                          (m_centreFrame, sampleRate).toText(true)));
+                          (m_centreFrame, sampleRate)
+                          .toText(true)));
             
             int tw = paint.fontMetrics().width(text);
             int x = width()/2 - 4 - tw;
