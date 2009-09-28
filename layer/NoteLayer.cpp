@@ -404,6 +404,34 @@ NoteLayer::getLocalPoints(View *v, int x) const
     return usePoints;
 }
 
+bool
+NoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
+{
+    if (!m_model) return false;
+
+    long frame = v->getFrameForX(x);
+
+    NoteModel::PointList onPoints = m_model->getPoints(frame);
+    if (onPoints.empty()) return false;
+
+    std::cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << std::endl;
+
+    int nearestDistance = -1;
+
+    for (NoteModel::PointList::const_iterator i = onPoints.begin();
+         i != onPoints.end(); ++i) {
+        
+        int distance = getYForValue(v, (*i).value) - y;
+        if (distance < 0) distance = -distance;
+        if (nearestDistance == -1 || distance < nearestDistance) {
+            nearestDistance = distance;
+            p = *i;
+        }
+    }
+
+    return true;
+}
+
 QString
 NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
@@ -818,10 +846,12 @@ NoteLayer::eraseStart(View *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
-    NoteModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return;
+//    NoteModel::PointList points = getLocalPoints(v, e->x());
+//    if (points.empty()) return;
 
-    m_editingPoint = *points.begin();
+//    m_editingPoint = *points.begin();
+
+    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
 	finish(m_editingCommand);
@@ -843,13 +873,18 @@ NoteLayer::eraseEnd(View *v, QMouseEvent *e)
 
     m_editing = false;
 
+/*
     NoteModel::PointList points = getLocalPoints(v, e->x());
     if (points.empty()) return;
     if (points.begin()->frame != m_editingPoint.frame ||
         points.begin()->value != m_editingPoint.value) return;
+*/
 
-    m_editingCommand = new NoteModel::EditCommand
-        (m_model, tr("Erase Point"));
+    NoteModel::Point p(0);
+    if (!getPointToDrag(v, e->x(), e->y(), p)) return;
+    if (p.frame != m_editingPoint.frame || p.value != m_editingPoint.value) return;
+
+    m_editingCommand = new NoteModel::EditCommand(m_model, tr("Erase Point"));
 
     m_editingCommand->deletePoint(m_editingPoint);
 
@@ -865,10 +900,14 @@ NoteLayer::editStart(View *v, QMouseEvent *e)
 
     if (!m_model) return;
 
+/*
     NoteModel::PointList points = getLocalPoints(v, e->x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
+*/
+
+    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
@@ -935,11 +974,15 @@ bool
 NoteLayer::editOpen(View *v, QMouseEvent *e)
 {
     if (!m_model) return false;
-
+/*
     NoteModel::PointList points = getLocalPoints(v, e->x());
     if (points.empty()) return false;
+*/
 
-    NoteModel::Point note = *points.begin();
+    NoteModel::Point note(0);
+    if (!getPointToDrag(v, e->x(), e->y(), note)) return false;
+
+//    NoteModel::Point note = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
         (m_model->getSampleRate(),
