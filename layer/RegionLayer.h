@@ -125,10 +125,14 @@ protected:
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    RegionModel::PointList getLocalPoints(View *v, int) const;
+    RegionModel::PointList getLocalPoints(View *v, int x) const;
+
+    bool getPointToDrag(View *v, int x, int y, RegionModel::Point &) const;
 
     RegionModel *m_model;
     bool m_editing;
+    int m_dragYOrigin;
+    int m_dragYRebase;
     RegionModel::Point m_originalPoint;
     RegionModel::Point m_editingPoint;
     RegionModel::EditCommand *m_editingCommand;

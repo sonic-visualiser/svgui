@@ -135,6 +135,8 @@ protected:
 
     NoteModel::PointList getLocalPoints(View *v, int) const;
 
+    bool getPointToDrag(View *v, int x, int y, NoteModel::Point &) const;
+
     NoteModel *m_model;
     bool m_editing;
     NoteModel::Point m_originalPoint;

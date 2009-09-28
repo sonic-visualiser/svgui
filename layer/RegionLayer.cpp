@@ -327,6 +327,32 @@ RegionLayer::getLocalPoints(View *v, int x) const
     return usePoints;
 }
 
+bool
+RegionLayer::getPointToDrag(View *v, int x, int y, RegionModel::Point &p) const
+{
+    if (!m_model) return false;
+
+    long frame = v->getFrameForX(x);
+
+    RegionModel::PointList onPoints = m_model->getPoints(frame);
+    if (onPoints.empty()) return false;
+
+    int nearestDistance = -1;
+
+    for (RegionModel::PointList::const_iterator i = onPoints.begin();
+         i != onPoints.end(); ++i) {
+        
+        int distance = getYForValue(v, (*i).value) - y;
+        if (distance < 0) distance = -distance;
+        if (nearestDistance == -1 || distance < nearestDistance) {
+            nearestDistance = distance;
+            p = *i;
+        }
+    }
+
+    return true;
+}
+
 QString
 RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
@@ -760,6 +786,9 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
         textY = v->getTextLabelHeight(this, paint);
     }
     
+    int fontHeight = paint.fontMetrics().height();
+    int fontAscent = paint.fontMetrics().ascent();
+
     for (RegionModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
@@ -781,10 +810,9 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
 
         if (m_plotStyle != PlotSegmentation) {
-            textY = y - paint.fontMetrics().height()
-                      + paint.fontMetrics().ascent();
-            if (textY < paint.fontMetrics().ascent() + 1) {
-                textY = paint.fontMetrics().ascent() + 1;
+            textY = y - fontHeight + fontAscent;
+            if (textY < fontAscent + 1) {
+                textY = fontAscent + 1;
             }
         }
 
@@ -829,11 +857,11 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
             paint.drawLine(x+w, y - h/2, x + w, y + h/2);
         }
 
-	if (p.label != "") {
-//            if (ex > x + 6 + paint.fontMetrics().width(p.label)) {
-                paint.drawText(x + 5, textY, p.label);
-//            }
-	}
+        QString label = p.label;
+	if (label == "") {
+            label = QString("[%1]").arg(p.value);
+        }
+        v->drawVisibleText(paint, x + 5, textY, label, View::OutlinedText);
     }
 
     paint.restore();
@@ -852,13 +880,15 @@ RegionLayer::drawStart(View *v, QMouseEvent *e)
 
     float value = getValueForY(v, e->y());
 
-    m_editingPoint = RegionModel::Point(frame, value, 0, tr("New Region"));
+    m_editingPoint = RegionModel::Point(frame, value, 0, "");
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new RegionModel::EditCommand(m_model,
                                                     tr("Draw Region"));
     m_editingCommand->addPoint(m_editingPoint);
+
+    recalcSpacing();
 
     m_editing = true;
 }
@@ -891,6 +921,8 @@ RegionLayer::drawDrag(View *v, QMouseEvent *e)
     m_editingPoint.value = newValue;
     m_editingPoint.duration = newDuration;
     m_editingCommand->addPoint(m_editingPoint);
+
+//    recalcSpacing();
 }
 
 void
@@ -901,6 +933,8 @@ RegionLayer::drawEnd(View *, QMouseEvent *)
     finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
+
+    recalcSpacing();
 }
 
 void
@@ -908,17 +942,20 @@ RegionLayer::eraseStart(View *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
+    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
+/*
     RegionModel::PointList points = getLocalPoints(v, e->x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
-
+*/
     if (m_editingCommand) {
 	finish(m_editingCommand);
 	m_editingCommand = 0;
     }
 
     m_editing = true;
+    recalcSpacing();
 }
 
 void
@@ -932,11 +969,15 @@ RegionLayer::eraseEnd(View *v, QMouseEvent *e)
     if (!m_model || !m_editing) return;
 
     m_editing = false;
-
+/*
     RegionModel::PointList points = getLocalPoints(v, e->x());
     if (points.empty()) return;
     if (points.begin()->frame != m_editingPoint.frame ||
         points.begin()->value != m_editingPoint.value) return;
+*/
+    RegionModel::Point p(0);
+    if (!getPointToDrag(v, e->x(), e->y(), p)) return;
+    if (p.frame != m_editingPoint.frame || p.value != m_editingPoint.value) return;
 
     m_editingCommand = new RegionModel::EditCommand
         (m_model, tr("Erase Region"));
@@ -946,19 +987,28 @@ RegionLayer::eraseEnd(View *v, QMouseEvent *e)
     finish(m_editingCommand);
     m_editingCommand = 0;
     m_editing = false;
+    recalcSpacing();
 }
 
 void
 RegionLayer::editStart(View *v, QMouseEvent *e)
 {
-//    std::cerr << "RegionLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+    std::cerr << "RegionLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model) return;
 
-    RegionModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return;
+//    OrderedPointList opoints = getNearbyPoints(v, e->x(), e->y());
+//    RegionLayer:
 
-    m_editingPoint = *points.begin();
+//    RegionModel::PointList points = getLocalPoints(v, e->x());
+//    if (points.empty()) return;
+
+//    m_editingPoint = *points.begin();
+    
+    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) {
+        return;
+    }
+
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
@@ -967,12 +1017,15 @@ RegionLayer::editStart(View *v, QMouseEvent *e)
     }
 
     m_editing = true;
+    m_dragYOrigin = e->y();
+    m_dragYRebase = e->y();
+    recalcSpacing();
 }
 
 void
 RegionLayer::editDrag(View *v, QMouseEvent *e)
 {
-//    std::cerr << "RegionLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+    std::cerr << "RegionLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
 
     if (!m_model || !m_editing) return;
 
@@ -980,23 +1033,31 @@ RegionLayer::editDrag(View *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(v, e->y());
+    int activeY = e->y() + (m_dragYRebase - m_dragYOrigin);
+    float value = getValueForY(v, activeY);
 
     if (!m_editingCommand) {
 	m_editingCommand = new RegionModel::EditCommand(m_model,
 						      tr("Drag Region"));
     }
 
+    if (m_verticalScale == EqualSpaced) {
+        if (getYForValue(v, value) != getYForValue(v, m_editingPoint.value)) {
+            m_dragYRebase = e->y();
+        }
+    }
+
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
     m_editingPoint.value = value;
     m_editingCommand->addPoint(m_editingPoint);
+    recalcSpacing();
 }
 
 void
-RegionLayer::editEnd(View *, QMouseEvent *)
+RegionLayer::editEnd(View *, QMouseEvent *e)
 {
-//    std::cerr << "RegionLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+    std::cerr << "RegionLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {
@@ -1019,17 +1080,22 @@ RegionLayer::editEnd(View *, QMouseEvent *)
 
     m_editingCommand = 0;
     m_editing = false;
+    recalcSpacing();
 }
 
 bool
 RegionLayer::editOpen(View *v, QMouseEvent *e)
 {
     if (!m_model) return false;
-
+/*
     RegionModel::PointList points = getLocalPoints(v, e->x());
     if (points.empty()) return false;
+*/
 
-    RegionModel::Point region = *points.begin();
+    RegionModel::Point region(0);
+    if (!getPointToDrag(v, e->x(), e->y(), region)) return false;
+
+//    RegionModel::Point region = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
         (m_model->getSampleRate(),
@@ -1060,6 +1126,7 @@ RegionLayer::editOpen(View *v, QMouseEvent *e)
     }
 
     delete dialog;
+    recalcSpacing();
     return true;
 }
 
@@ -1086,6 +1153,7 @@ RegionLayer::moveSelection(Selection s, size_t newStartFrame)
     }
 
     finish(command);
+    recalcSpacing();
 }
 
 void
@@ -1125,6 +1193,7 @@ RegionLayer::resizeSelection(Selection s, Selection newSize)
     }
 
     finish(command);
+    recalcSpacing();
 }
 
 void
@@ -1147,6 +1216,7 @@ RegionLayer::deleteSelection(Selection s)
     }
 
     finish(command);
+    recalcSpacing();
 }    
 
 void
@@ -1244,6 +1314,7 @@ RegionLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* inte
     }
 
     finish(command);
+    recalcSpacing();
     return true;
 }
 
