@@ -120,7 +120,7 @@ protected slots:
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
     int getYForValue(View *v, float value) const;
-    float getValueForY(View *v, int y) const;
+    float getValueForY(View *v, int y, int avoid = -1) const;
     QColor getColourForValue(View *v, float value) const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
@@ -131,8 +131,10 @@ protected:
 
     RegionModel *m_model;
     bool m_editing;
-    int m_dragYOrigin;
-    int m_dragYRebase;
+    int m_dragPointX;
+    int m_dragPointY;
+    int m_dragStartX;
+    int m_dragStartY;
     RegionModel::Point m_originalPoint;
     RegionModel::Point m_editingPoint;
     RegionModel::EditCommand *m_editingCommand;
@@ -141,8 +143,12 @@ protected:
     PlotStyle m_plotStyle;
 
     typedef std::map<float, int> SpacingMap;
+
     // region value -> ordering
     SpacingMap m_spacingMap;
+
+    // region value -> number of regions with this value
+    SpacingMap m_distributionMap;
 
     int spacingIndexToY(View *v, int i) const;
     float yToSpacingIndex(View *v, int y) const;

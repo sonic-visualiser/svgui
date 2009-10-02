@@ -139,6 +139,10 @@ protected:
 
     NoteModel *m_model;
     bool m_editing;
+    int m_dragPointX;
+    int m_dragPointY;
+    int m_dragStartX;
+    int m_dragStartY;
     NoteModel::Point m_originalPoint;
     NoteModel::Point m_editingPoint;
     NoteModel::EditCommand *m_editingCommand;
