@@ -36,6 +36,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <utility>
 
 NoteLayer::NoteLayer() :
     SingleColourLayer(),
@@ -414,7 +415,7 @@ NoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
     NoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
 
-    std::cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << std::endl;
+//    std::cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << std::endl;
 
     int nearestDistance = -1;
 
@@ -731,12 +732,12 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
-    long illuminateFrame = -1;
+    NoteModel::Point illuminatePoint(0);
+    bool shouldIlluminate = false;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
-	NoteModel::PointList localPoints =
-	    getLocalPoints(v, localPos.x());
-	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
+        shouldIlluminate = getPointToDrag(v, localPos.x(), localPos.y(),
+                                          illuminatePoint);
     }
 
     paint.save();
@@ -761,18 +762,30 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 	paint.setPen(getBaseQColor());
 	paint.setBrush(brushColour);
 
-	if (illuminateFrame == p.frame) {
-	    if (localPos.y() >= y - h && localPos.y() < y) {
-		paint.setPen(v->getForeground());
-		paint.setBrush(v->getForeground());
-	    }
+	if (shouldIlluminate &&
+            // "illuminatePoint == p"
+            !NoteModel::Point::Comparator()(illuminatePoint, p) &&
+            !NoteModel::Point::Comparator()(p, illuminatePoint)) {
+
+            paint.setPen(v->getForeground());
+            paint.setBrush(v->getForeground());
+
+            QString vlabel = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
+            v->drawVisibleText(paint, 
+                               x - paint.fontMetrics().width(vlabel) - 2,
+                               y + paint.fontMetrics().height()/2
+                                 - paint.fontMetrics().descent(), 
+                               vlabel, View::OutlinedText);
+
+            QString hlabel = RealTime::frame2RealTime
+                (p.frame, m_model->getSampleRate()).toText(true).c_str();
+            v->drawVisibleText(paint, 
+                               x,
+                               y - h/2 - paint.fontMetrics().descent() - 2,
+                               hlabel, View::OutlinedText);
 	}
 	
 	paint.drawRect(x, y - h/2, w, h);
-
-///	if (p.label != "") {
-///	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
-///	}
     }
 
     paint.restore();
@@ -846,11 +859,6 @@ NoteLayer::eraseStart(View *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
-//    NoteModel::PointList points = getLocalPoints(v, e->x());
-//    if (points.empty()) return;
-
-//    m_editingPoint = *points.begin();
-
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
@@ -873,13 +881,6 @@ NoteLayer::eraseEnd(View *v, QMouseEvent *e)
 
     m_editing = false;
 
-/*
-    NoteModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return;
-    if (points.begin()->frame != m_editingPoint.frame ||
-        points.begin()->value != m_editingPoint.value) return;
-*/
-
     NoteModel::Point p(0);
     if (!getPointToDrag(v, e->x(), e->y(), p)) return;
     if (p.frame != m_editingPoint.frame || p.value != m_editingPoint.value) return;
@@ -900,15 +901,11 @@ NoteLayer::editStart(View *v, QMouseEvent *e)
 
     if (!m_model) return;
 
-/*
-    NoteModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return;
-
-    m_editingPoint = *points.begin();
-*/
-
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
+
+    m_dragPointX = v->getXForFrame(m_editingPoint.frame);
+    m_dragPointY = getYForValue(v, m_editingPoint.value);
 
     if (m_editingCommand) {
 	finish(m_editingCommand);
@@ -916,6 +913,8 @@ NoteLayer::editStart(View *v, QMouseEvent *e)
     }
 
     m_editing = true;
+    m_dragStartX = e->x();
+    m_dragStartY = e->y();
 }
 
 void
@@ -925,11 +924,16 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    int xdist = e->x() - m_dragStartX;
+    int ydist = e->y() - m_dragStartY;
+    int newx = m_dragPointX + xdist;
+    int newy = m_dragPointY + ydist;
+
+    long frame = v->getFrameForX(newx);
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(v, e->y());
+    float value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
 	m_editingCommand = new NoteModel::EditCommand(m_model,
@@ -974,10 +978,6 @@ bool
 NoteLayer::editOpen(View *v, QMouseEvent *e)
 {
     if (!m_model) return false;
-/*
-    NoteModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return false;
-*/
 
     NoteModel::Point note(0);
     if (!getPointToDrag(v, e->x(), e->y(), note)) return false;

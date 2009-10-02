@@ -1558,38 +1558,29 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
 
-        if (m_editing) {
-            if (!editSelectionDrag(e)) {
-                Layer *layer = getSelectedLayer();
-                if (layer && layer->isLayerEditable()) {
-                    layer->editDrag(this, e);
-                }
-            }
+        bool resist = true;
+
+        if ((e->modifiers() & Qt::ShiftModifier)) {
+            m_shiftPressed = true;
+            // ... but don't set it false if shift has been
+            // released -- we want the state when we started
+            // dragging to be used most of the time
         }
+
+        if (m_shiftPressed) resist = false;
+
+        m_dragMode = updateDragMode
+            (m_dragMode,
+             m_clickPos,
+             e->pos(),
+             true,    // can move horiz
+             true,    // can move vert
+             resist,  // resist horiz
+             resist); // resist vert
 
         if (!m_editing) {
 
-            bool resist = true;
-
-            if ((e->modifiers() & Qt::ShiftModifier)) {
-                m_shiftPressed = true;
-                // ... but don't set it false if shift has been
-                // released -- we want the state when we started
-                // dragging to be used most of the time
-            }
-
-            if (m_shiftPressed) resist = false;
-
-            DragMode newDragMode = updateDragMode
-                (m_dragMode,
-                 m_clickPos,
-                 e->pos(),
-                 true,    // can move horiz
-                 true,    // can move vert
-                 resist,  // resist horiz
-                 resist); // resist vert
-
-            if (newDragMode != UnresolvedDrag) {
+            if (m_dragMode != UnresolvedDrag) {
 
                 m_editing = true;
 
@@ -1604,6 +1595,29 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                     if (layer && layer->isLayerEditable()) {
                         layer->editStart(this, &clickEvent);
                     }
+                }
+            }
+
+        } else {
+
+            if (!editSelectionDrag(e)) {
+
+                Layer *layer = getSelectedLayer();
+
+                if (layer && layer->isLayerEditable()) {
+
+                    int x = e->x();
+                    int y = e->y();
+                    if (m_dragMode == VerticalDrag) x = m_clickPos.x();
+                    else if (m_dragMode == HorizontalDrag) y = m_clickPos.y();
+
+                    QMouseEvent moveEvent(QEvent::MouseMove,
+                                          QPoint(x, y),
+                                          Qt::NoButton,
+                                          e->buttons(),
+                                          e->modifiers());
+                                              
+                    layer->editDrag(this, &moveEvent);
                 }
             }
         }
@@ -1966,6 +1980,8 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
             m_dragStartMinValue = dmin;
         }
     }
+
+    m_clickedInRange = false; // in case mouseReleaseEvent is not properly called
 }
 
 void
@@ -2502,7 +2518,7 @@ Pane::updateContextHelp(const QPoint *pos)
         
         //!!! could call through to layer
 	if (editable) {
-            help = tr("Click and drag an item in the active layer to move it");
+            help = tr("Click and drag an item in the active layer to move it; hold Shift to override initial resistance");
             if (pos) {
                 bool closeToLeft = false, closeToRight = false;
                 Selection selection = getSelectionAt(pos->x(), closeToLeft, closeToRight);
