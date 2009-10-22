@@ -33,6 +33,8 @@
 #include <map>
 #include <set>
 
+#include <iostream>
+
 class ZoomConstraint;
 class Model;
 class QPainter;
@@ -143,6 +145,10 @@ public:
 
     virtual QString getFeatureDescription(View *, QPoint &) const {
 	return "";
+    }
+
+    virtual QString getLabelPreceding(size_t frame) const {
+        return "";
     }
 
     enum SnapType {

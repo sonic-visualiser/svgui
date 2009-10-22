@@ -24,6 +24,7 @@ class QTableView;
 class QModelIndex;
 class Command;
 class QToolBar;
+class QLineEdit;
 
 class ModelDataTableDialog : public QMainWindow
 {
@@ -49,6 +50,8 @@ protected slots:
     void viewPressed(const QModelIndex &);
     void currentChanged(const QModelIndex &, const QModelIndex &);
     void currentChangedThroughResort(const QModelIndex &);
+    void searchTextChanged(const QString &);
+    void searchRepeated();
     
     void insertRow();
     void deleteRows();
@@ -62,6 +65,7 @@ protected:
     ModelDataTableModel *m_table;
     QToolBar *m_playToolbar;
     QTableView *m_tableView;
+    QLineEdit *m_find;
     int m_currentRow;
     bool m_trackPlayback;
 };

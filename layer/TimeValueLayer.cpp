@@ -505,6 +505,18 @@ TimeValueLayer::getLocalPoints(View *v, int x) const
 }
 
 QString
+TimeValueLayer::getLabelPreceding(size_t frame) const
+{
+    if (!m_model) return "";
+    SparseTimeValueModel::PointList points = m_model->getPreviousPoints(frame);
+    for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
+         i != points.end(); ++i) {
+        if (i->label != "") return i->label;
+    }
+    return "";
+}
+
+QString
 TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
     int x = pos.x();

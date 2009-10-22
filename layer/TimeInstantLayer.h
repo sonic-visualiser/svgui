@@ -35,6 +35,7 @@ public:
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
+    virtual QString getLabelPreceding(size_t) const;
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(View *v, int &frame,

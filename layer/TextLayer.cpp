@@ -120,7 +120,7 @@ TextLayer::getLocalPoints(View *v, int x, int y) const
     TextModel::PointList points(m_model->getPoints(frame0, frame1));
 
     TextModel::PointList rv;
-    QFontMetrics metrics = QPainter().fontMetrics();
+    QFontMetrics metrics = QFontMetrics(QFont());
 
     for (TextModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
@@ -151,6 +151,34 @@ TextLayer::getLocalPoints(View *v, int x, int y) const
     }
 
     return rv;
+}
+
+bool
+TextLayer::getPointToDrag(View *v, int x, int y, TextModel::Point &p) const
+{
+    if (!m_model) return false;
+
+    long a = v->getFrameForX(x - 120);
+    long b = v->getFrameForX(x + 10);
+    TextModel::PointList onPoints = m_model->getPoints(a, b);
+    if (onPoints.empty()) return false;
+
+    float nearestDistance = -1;
+
+    for (TextModel::PointList::const_iterator i = onPoints.begin();
+         i != onPoints.end(); ++i) {
+
+        int yd = getYForHeight(v, (*i).height) - y;
+        int xd = v->getXForFrame((*i).frame) - x;
+        float distance = sqrt(yd*yd + xd*xd);
+
+        if (nearestDistance == -1 || distance < nearestDistance) {
+            nearestDistance = distance;
+            p = *i;
+        }
+    }
+
+    return true;
 }
 
 QString
@@ -307,12 +335,12 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 //	      << m_model->getResolution() << " frames" << std::endl;
 
     QPoint localPos;
-    long illuminateFrame = -1;
+    TextModel::Point illuminatePoint(0);
+    bool shouldIlluminate;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
-	TextModel::PointList localPoints = getLocalPoints(v, localPos.x(),
-							  localPos.y());
-	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
+        shouldIlluminate = getPointToDrag(v, localPos.x(), localPos.y(),
+                                          illuminatePoint);
     }
 
     int boxMaxWidth = 150;
@@ -329,12 +357,15 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int x = v->getXForFrame(p.frame);
 	int y = getYForHeight(v, p.height);
 
-	if (illuminateFrame == p.frame) {
-	    paint.setBrush(penColour);
-            paint.setPen(v->getBackground());
-	} else {
+        if (!shouldIlluminate ||
+            // "illuminatePoint != p"
+            TextModel::Point::Comparator()(illuminatePoint, p) ||
+            TextModel::Point::Comparator()(p, illuminatePoint)) {
 	    paint.setPen(penColour);
 	    paint.setBrush(brushColour);
+        } else {
+	    paint.setBrush(penColour);
+            paint.setPen(v->getBackground());
 	}
 
 	QString label = p.label;
@@ -453,10 +484,7 @@ TextLayer::eraseStart(View *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
-    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
-    if (points.empty()) return;
-
-    m_editingPoint = *points.begin();
+    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
 	finish(m_editingCommand);
@@ -478,10 +506,9 @@ TextLayer::eraseEnd(View *v, QMouseEvent *e)
 
     m_editing = false;
 
-    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
-    if (points.empty()) return;
-    if (points.begin()->frame != m_editingPoint.frame ||
-        points.begin()->height != m_editingPoint.height) return;
+    TextModel::Point p(0);
+    if (!getPointToDrag(v, e->x(), e->y(), p)) return;
+    if (p.frame != m_editingPoint.frame || p.height != m_editingPoint.height) return;
 
     m_editingCommand = new TextModel::EditCommand
         (m_model, tr("Erase Point"));
@@ -500,11 +527,11 @@ TextLayer::editStart(View *v, QMouseEvent *e)
 
     if (!m_model) return;
 
-    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
-    if (points.empty()) return;
+    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) {
+        return;
+    }
 
     m_editOrigin = e->pos();
-    m_editingPoint = *points.begin();
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
@@ -575,18 +602,18 @@ TextLayer::editOpen(View *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
-    TextModel::PointList points = getLocalPoints(v, e->x(), e->y());
-    if (points.empty()) return false;
+    TextModel::Point text(0);
+    if (!getPointToDrag(v, e->x(), e->y(), text)) return false;
 
-    QString label = points.begin()->label;
+    QString label = text.label;
 
     bool ok = false;
     label = QInputDialog::getText(v, tr("Enter label"),
 				  tr("Please enter a new label:"),
 				  QLineEdit::Normal, label, &ok);
-    if (ok && label != points.begin()->label) {
+    if (ok && label != text.label) {
 	TextModel::RelabelCommand *command =
-	    new TextModel::RelabelCommand(m_model, *points.begin(), label);
+	    new TextModel::RelabelCommand(m_model, text, label);
 	CommandHistory::getInstance()->addCommand(command);
     }
 

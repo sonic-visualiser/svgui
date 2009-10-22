@@ -38,6 +38,7 @@ public:
     virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getLabelPreceding(size_t) const;
 
     virtual bool snapToFeatureFrame(View *v, int &frame,
 				    size_t &resolution,

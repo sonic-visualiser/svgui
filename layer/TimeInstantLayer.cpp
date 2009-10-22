@@ -201,6 +201,18 @@ TimeInstantLayer::getLocalPoints(View *v, int x) const
 }
 
 QString
+TimeInstantLayer::getLabelPreceding(size_t frame) const
+{
+    if (!m_model) return "";
+    SparseOneDimensionalModel::PointList points = m_model->getPreviousPoints(frame);
+    for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
+         i != points.end(); ++i) {
+        if (i->label != "") return i->label;
+    }
+    return "";
+}
+
+QString
 TimeInstantLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
     int x = pos.x();
