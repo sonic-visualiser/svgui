@@ -353,6 +353,18 @@ RegionLayer::getPointToDrag(View *v, int x, int y, RegionModel::Point &p) const
 }
 
 QString
+RegionLayer::getLabelPreceding(size_t frame) const
+{
+    if (!m_model) return "";
+    RegionModel::PointList points = m_model->getPreviousPoints(frame);
+    for (RegionModel::PointList::const_iterator i = points.begin();
+         i != points.end(); ++i) {
+        if (i->label != "") return i->label;
+    }
+    return "";
+}
+
+QString
 RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
     int x = pos.x();
@@ -751,7 +763,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 //    Profiler profiler("RegionLayer::paint", true);
 
-    int x0 = rect.left(), x1 = rect.right();
+    int x0 = rect.left() - 40, x1 = rect.right();
     long frame0 = v->getFrameForX(x0);
     long frame1 = v->getFrameForX(x1);
 
@@ -826,8 +838,6 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
             paint.setBrush(brushColour);
         }
 
-        bool illuminated = false;
-
 	if (m_plotStyle == PlotSegmentation) {
 
 	    if (ex <= x) continue;
@@ -837,12 +847,14 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
                 RegionModel::Point::Comparator()(illuminatePoint, p) ||
                 RegionModel::Point::Comparator()(p, illuminatePoint)) {
 
-//	    if (illuminateFrame != p.frame &&
-//		(ex < x + 5 || x >= v->width() - 1)) {
+                paint.drawLine(x, 0, x, v->height());
                 paint.setPen(Qt::NoPen);
+
+            } else {
+                paint.setPen(QPen(getForegroundQColor(v), 2));
             }
 
-	    paint.drawRect(x, -1, ex - x, v->height() + 1);
+	    paint.drawRect(x, 0, ex - x, v->height() + 1);
 
 	} else {
 
@@ -867,14 +879,37 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
                                    x,
                                    y - h/2 - paint.fontMetrics().descent() - 2,
                                    hlabel, View::OutlinedText);
-
-                illuminated = true;
             }
             
             paint.drawLine(x, y-1, x + w, y-1);
             paint.drawLine(x, y+1, x + w, y+1);
             paint.drawLine(x, y - h/2, x, y + h/2);
             paint.drawLine(x+w, y - h/2, x + w, y + h/2);
+        }
+    }
+
+    int nextLabelMinX = -100;
+    int lastLabelY = 0;
+
+    for (RegionModel::PointList::const_iterator i = points.begin();
+	 i != points.end(); ++i) {
+
+	const RegionModel::Point &p(*i);
+
+	int x = v->getXForFrame(p.frame);
+	int y = getYForValue(v, p.value);
+
+        bool illuminated = false;
+
+	if (m_plotStyle != PlotSegmentation) {
+
+            if (shouldIlluminate &&
+                // "illuminatePoint == p"
+                !RegionModel::Point::Comparator()(illuminatePoint, p) &&
+                !RegionModel::Point::Comparator()(p, illuminatePoint)) {
+
+                illuminated = true;
+            }
         }
 
         if (!illuminated) {
@@ -883,18 +918,25 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
                 label = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
             }
 
+            int labelX, labelY;
+
             if (m_plotStyle != PlotSegmentation) {
-                v->drawVisibleText(paint,
-                                   x - paint.fontMetrics().width(label) - 2,
-                                   y + paint.fontMetrics().height()/2
-                                     - paint.fontMetrics().descent(), 
-                                   label, View::OutlinedText);
+                labelX = x - paint.fontMetrics().width(label) - 2;
+                labelY = y + paint.fontMetrics().height()/2 
+                    - paint.fontMetrics().descent();
             } else {
-                v->drawVisibleText(paint,
-                                   x + 5,
-                                   v->getTextLabelHeight(this, paint),
-                                   label, View::OutlinedText);
+                labelX = x + 5;
+                labelY = v->getTextLabelHeight(this, paint);
+                if (labelX < nextLabelMinX) {
+                    if (lastLabelY < v->height()/2) {
+                        labelY = lastLabelY + fontHeight;
+                    }
+                }
+                lastLabelY = labelY;
+                nextLabelMinX = labelX + paint.fontMetrics().width(label);
             }
+
+            v->drawVisibleText(paint, labelX, labelY, label, View::OutlinedText);
         }
     }
 
@@ -1101,15 +1143,9 @@ bool
 RegionLayer::editOpen(View *v, QMouseEvent *e)
 {
     if (!m_model) return false;
-/*
-    RegionModel::PointList points = getLocalPoints(v, e->x());
-    if (points.empty()) return false;
-*/
 
     RegionModel::Point region(0);
     if (!getPointToDrag(v, e->x(), e->y(), region)) return false;
-
-//    RegionModel::Point region = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
         (m_model->getSampleRate(),

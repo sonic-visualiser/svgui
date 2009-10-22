@@ -96,6 +96,8 @@ protected:
 
     TextModel::PointList getLocalPoints(View *v, int x, int y) const;
 
+    bool getPointToDrag(View *v, int x, int y, TextModel::Point &) const;
+
     TextModel *m_model;
     bool m_editing;
     QPoint m_editOrigin;

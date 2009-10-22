@@ -112,8 +112,12 @@ PropertyStack::repopulate()
         if (layer) {
             shortName = LayerFactory::getInstance()->getLayerPresentationName
                 (LayerFactory::getInstance()->getLayerType(layer));
+            if (layer->getLayerPresentationName() != "") {
+                name = layer->getLayerPresentationName();
+            }
         }
 
+        bool nameDiffers = (name != shortName);
         shortName = QString("&%1 %2").arg(i + 1).arg(shortName);
 
 	QString iconName = container->getPropertyContainerIconName();
@@ -121,6 +125,9 @@ PropertyStack::repopulate()
         QIcon icon(IconLoader().load(iconName));
 	if (icon.isNull()) {
 	    addTab(box, shortName);
+            if (nameDiffers) {
+                setTabToolTip(i, name);
+            }
 	} else {
 	    addTab(box, icon, QString("&%1").arg(i + 1));
 	    setTabToolTip(i, name);

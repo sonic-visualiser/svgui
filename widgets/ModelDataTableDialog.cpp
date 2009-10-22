@@ -23,7 +23,9 @@
 #include "IconLoader.h"
 
 #include <QTableView>
+#include <QLineEdit>
 #include <QGridLayout>
+#include <QLabel>
 #include <QGroupBox>
 #include <QDialogButtonBox>
 #include <QHeaderView>
@@ -102,16 +104,25 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
     subgrid->setSpacing(0);
     subgrid->setMargin(5);
 
-    m_tableView = new QTableView;
-    subgrid->addWidget(m_tableView);
+    subgrid->addWidget(new QLabel(tr("Find:")), 1, 0);
+    subgrid->addWidget(new QLabel(tr(" ")), 1, 1);
+    m_find = new QLineEdit;
+    subgrid->addWidget(m_find, 1, 2);
+    connect(m_find, SIGNAL(textChanged(const QString &)),
+            this, SLOT(searchTextChanged(const QString &)));
+    connect(m_find, SIGNAL(returnPressed()),
+            this, SLOT(searchRepeated()));
 
-//    m_tableView->verticalHeader()->hide();
-//    m_tableView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
+    m_tableView = new QTableView;
+    subgrid->addWidget(m_tableView, 0, 0, 1, 3);
+
     m_tableView->setSortingEnabled(true);
     m_tableView->sortByColumn(0, Qt::AscendingOrder);
 
     m_table = new ModelDataTableModel(model);
     m_tableView->setModel(m_table);
+
+    m_tableView->horizontalHeader()->setStretchLastSection(true);
 
     connect(m_tableView, SIGNAL(clicked(const QModelIndex &)),
             this, SLOT(viewClicked(const QModelIndex &)));
@@ -141,8 +152,11 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
     if (height < 370) {
         if (available.height() > 500) height = 370;
     }
-    if (width < 500) {
-        if (available.width() > 650) width = 500;
+    if (width < 650) {
+        if (available.width() > 750) width = 650;
+        else if (width < 500) {
+            if (available.width() > 650) width = 500;
+        }
     }
 
     resize(width, height);
@@ -166,6 +180,28 @@ ModelDataTableDialog::playbackScrolledToFrame(unsigned long frame)
     if (m_trackPlayback) {
         QModelIndex index = m_table->getModelIndexForFrame(frame);
         makeCurrent(index.row());
+    }
+}
+
+void
+ModelDataTableDialog::searchTextChanged(const QString &text)
+{
+    QModelIndex mi = m_table->findText(text);
+    if (mi.isValid()) {
+        makeCurrent(mi.row());
+        m_tableView->selectionModel()->setCurrentIndex
+            (mi, QItemSelectionModel::ClearAndSelect);
+    }
+}
+
+void
+ModelDataTableDialog::searchRepeated()
+{
+    QModelIndex mi = m_table->findText(m_find->text());
+    if (mi.isValid()) {
+        makeCurrent(mi.row());
+        m_tableView->selectionModel()->setCurrentIndex
+            (mi, QItemSelectionModel::ClearAndSelect);
     }
 }
 
