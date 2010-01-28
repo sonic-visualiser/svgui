@@ -111,6 +111,9 @@ public:
     void setDrawSegmentDivisions(bool);
     bool getDrawSegmentDivisions() const { return m_drawSegmentDivisions; }
 
+    void setShowDerivative(bool);
+    bool getShowDerivative() const { return m_derivative; }
+
     virtual bool isLayerScrollable(const View *v) const;
 
     virtual bool isLayerEditable() const { return true; }
@@ -165,6 +168,7 @@ protected:
     PlotStyle m_plotStyle;
     VerticalScale m_verticalScale;
     bool m_drawSegmentDivisions;
+    bool m_derivative;
 
     mutable float m_scaleMinimum;
     mutable float m_scaleMaximum;

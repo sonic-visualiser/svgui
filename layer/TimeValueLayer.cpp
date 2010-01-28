@@ -55,6 +55,7 @@ TimeValueLayer::TimeValueLayer() :
     m_plotStyle(PlotConnectedPoints),
     m_verticalScale(AutoAlignScale),
     m_drawSegmentDivisions(true),
+    m_derivative(false),
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
@@ -94,6 +95,7 @@ TimeValueLayer::getProperties() const
     list.push_back("Vertical Scale");
     list.push_back("Scale Units");
     list.push_back("Draw Segment Division Lines");
+    list.push_back("Show Derivative");
     return list;
 }
 
@@ -104,6 +106,7 @@ TimeValueLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Vertical Scale") return tr("Vertical Scale");
     if (name == "Scale Units") return tr("Scale Units");
     if (name == "Draw Segment Division Lines") return tr("Draw Segment Division Lines");
+    if (name == "Show Derivative") return tr("Show Derivative");
     return SingleColourLayer::getPropertyLabel(name);
 }
 
@@ -111,6 +114,7 @@ QString
 TimeValueLayer::getPropertyIconName(const PropertyName &name) const
 {
     if (name == "Draw Segment Division Lines") return "lines";
+    if (name == "Show Derivative") return "derivative";
     return "";
 }
 
@@ -122,6 +126,7 @@ TimeValueLayer::getPropertyType(const PropertyName &name) const
     if (name == "Scale Units") return UnitsProperty;
     if (name == "Colour" && m_plotStyle == PlotSegmentation) return ValueProperty;
     if (name == "Draw Segment Division Lines") return ToggleProperty;
+    if (name == "Show Derivative") return ToggleProperty;
     return SingleColourLayer::getPropertyType(name);
 }
 
@@ -131,7 +136,8 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Vertical Scale" || name == "Scale Units") {
         return tr("Scale");
     }
-    if (name == "Plot Type" || name == "Draw Segment Division Lines") {
+    if (name == "Plot Type" || name == "Draw Segment Division Lines" ||
+        name == "Show Derivative") {
         return tr("Plot Type");
     }
     return SingleColourLayer::getPropertyGroupName(name);
@@ -181,6 +187,13 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
         if (max) *max = 0;
         if (deflt) *deflt = 1;
         val = (m_drawSegmentDivisions ? 1.0 : 0.0);
+
+    } else if (name == "Show Derivative") {
+
+        if (min) *min = 0;
+        if (max) *max = 0;
+        if (deflt) *deflt = 0;
+        val = (m_derivative ? 1.0 : 0.0);
 
     } else {
 	
@@ -235,6 +248,8 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
         }
     } else if (name == "Draw Segment Division Lines") {
         setDrawSegmentDivisions(value > 0.5);
+    } else if (name == "Show Derivative") {
+        setShowDerivative(value > 0.5);
     } else {
         SingleColourLayer::setProperty(name, value);
     }
@@ -277,6 +292,14 @@ TimeValueLayer::setDrawSegmentDivisions(bool draw)
     emit layerParametersChanged();
 }
 
+void
+TimeValueLayer::setShowDerivative(bool show)
+{
+    if (m_derivative == show) return;
+    m_derivative = show;
+    emit layerParametersChanged();
+}
+
 bool
 TimeValueLayer::isLayerScrollable(const View *v) const
 {
@@ -299,6 +322,10 @@ TimeValueLayer::getValueExtents(float &min, float &max,
     max = m_model->getValueMaximum();
     logarithmic = (m_verticalScale == LogScale);
     unit = m_model->getScaleUnits();
+    if (m_derivative) {
+        max = std::max(fabsf(min), fabsf(max));
+        min = -max;
+    }
     return true;
 }
 
@@ -310,11 +337,15 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
     if (m_scaleMinimum == m_scaleMaximum) {
         min = m_model->getValueMinimum();
         max = m_model->getValueMaximum();
-        return true;
+    } else {
+        min = m_scaleMinimum;
+        max = m_scaleMaximum;
     }
 
-    min = m_scaleMinimum;
-    max = m_scaleMaximum;
+    if (m_derivative) {
+        max = std::max(fabsf(min), fabsf(max));
+        min = -max;
+    }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     std::cerr << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << std::endl;
@@ -372,12 +403,7 @@ TimeValueLayer::getCurrentVerticalZoomStep() const
     int nr = mapper->getPositionForValue(dmax - dmin);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    int n0 = mapper->getPositionForValue(dmax);
-    int n1 = mapper->getPositionForValue(dmin);
-    int nr = n1 - n0;
-    if (nr < 0) nr = -nr;
-
-    std::cerr << "TimeValueLayer::getCurrentVerticalZoomStep: dmin = " << dmin << ", dmax = " << dmax << ", n0 = " << n0 << ", n1 = " << n1 << ", nr = " << nr << std::endl;
+    std::cerr << "TimeValueLayer::getCurrentVerticalZoomStep: dmin = " << dmin << ", dmax = " << dmax << ", nr = " << nr << std::endl;
 #endif
 
     delete mapper;
@@ -831,6 +857,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     int x0 = rect.left(), x1 = rect.right();
     long frame0 = v->getFrameForX(x0);
     long frame1 = v->getFrameForX(x1);
+    if (m_derivative) --frame0;
 
     SparseTimeValueModel::PointList points(m_model->getPoints
 					   (frame0, frame1));
@@ -883,10 +910,19 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
+        if (m_derivative && i == points.begin()) continue;
+        
 	const SparseTimeValueModel::Point &p(*i);
 
+        float value = p.value;
+        if (m_derivative) {
+            SparseTimeValueModel::PointList::const_iterator j = i;
+            --j;
+            value -= j->value;
+        }
+
 	int x = v->getXForFrame(p.frame);
-	int y = getYForValue(v, p.value);
+	int y = getYForValue(v, value);
 
         if (m_plotStyle != PlotSegmentation) {
             textY = y - paint.fontMetrics().height()
@@ -905,8 +941,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (j != points.end()) {
 	    const SparseTimeValueModel::Point &q(*j);
+            float nvalue = q.value;
+            if (m_derivative) nvalue -= p.value;
 	    nx = v->getXForFrame(q.frame);
-	    ny = getYForValue(v, q.value);
+	    ny = getYForValue(v, nvalue);
 	    haveNext = true;
         }
 
@@ -918,7 +956,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (m_plotStyle == PlotSegmentation) {
             paint.setPen(getForegroundQColor(v));
-            paint.setBrush(getColourForValue(v, p.value));
+            paint.setBrush(getColourForValue(v, value));
 	} else if (m_plotStyle == PlotLines ||
 		   m_plotStyle == PlotCurve) {
 	    paint.setBrush(Qt::NoBrush);
@@ -1314,7 +1352,7 @@ void
 TimeValueLayer::drawEnd(View *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+    std::cerr << "TimeValueLayer::drawEnd" << std::endl;
 #endif
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
@@ -1420,7 +1458,7 @@ void
 TimeValueLayer::editEnd(View *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+    std::cerr << "TimeValueLayer::editEnd" << std::endl;
 #endif
     if (!m_model || !m_editing) return;
 
@@ -1796,13 +1834,14 @@ TimeValueLayer::toXml(QTextStream &stream,
 {
     SingleColourLayer::toXml(stream, indent,
                              extraAttributes +
-                             QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\" scaleMinimum=\"%4\" scaleMaximum=\"%5\" drawDivisions=\"%6\" ")
+                             QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\" scaleMinimum=\"%4\" scaleMaximum=\"%5\" drawDivisions=\"%6\" derivative=\"%7\" ")
                              .arg(m_colourMap)
                              .arg(m_plotStyle)
                              .arg(m_verticalScale)
                              .arg(m_scaleMinimum)
                              .arg(m_scaleMaximum)
-                             .arg(m_drawSegmentDivisions ? "true" : "false"));
+                             .arg(m_drawSegmentDivisions ? "true" : "false")
+                             .arg(m_derivative ? "true" : "false"));
 }
 
 void
@@ -1825,6 +1864,9 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
 
     bool draw = (attributes.value("drawDivisions").trimmed() == "true");
     setDrawSegmentDivisions(draw);
+
+    bool derivative = (attributes.value("derivative").trimmed() == "true");
+    setShowDerivative(derivative);
 
     float min = attributes.value("scaleMinimum").toFloat(&ok);
     float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
