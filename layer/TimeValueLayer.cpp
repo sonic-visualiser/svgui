@@ -905,6 +905,14 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     int textY = 0;
     if (m_plotStyle == PlotSegmentation) {
         textY = v->getTextLabelHeight(this, paint);
+    } else {
+        int originY = getYForValue(v, 0.f);
+        if (originY > 0 && originY < v->height()) {
+            paint.save();
+            paint.setPen(getPartialShades(v)[1]);
+            paint.drawLine(x0, originY, x1, originY);
+            paint.restore();
+        }
     }
     
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
