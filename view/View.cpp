@@ -531,22 +531,27 @@ View::addLayer(Layer *layer)
 
     m_layers.push_back(layer);
 
-//    m_progressBars[layer] = new LayerProgressBar(this);
-    m_progressBars[layer] = new QProgressBar(this);
-    m_progressBars[layer]->setMinimum(0);
-    m_progressBars[layer]->setMaximum(0);
-//    m_progressBars[layer]->setMaximum(100);
-//    m_progressBars[layer]->setMinimumWidth(80);
-    m_progressBars[layer]->setFixedWidth(80);
-//    m_progressBars[layer]->setText(""); //!!!
-    m_progressBars[layer]->setTextVisible(false);
+    QProgressBar *pb = new QProgressBar(this);
+    pb->setMinimum(0);
+    pb->setMaximum(0);
+    pb->setFixedWidth(80);
+    pb->setTextVisible(false);
 
-    QFont f(m_progressBars[layer]->font());
+    ProgressBarRec pbr;
+    pbr.bar = pb;
+    pbr.lastCheck = 0;
+    pbr.checkTimer = new QTimer();
+    connect(pbr.checkTimer, SIGNAL(timeout()), this,
+            SLOT(progressCheckStalledTimerElapsed()));
+
+    m_progressBars[layer] = pbr;
+
+    QFont f(pb->font());
     int fs = Preferences::getInstance()->getViewFontSize();
     f.setPointSize(std::min(fs, int(ceil(fs * 0.85))));
 
-    m_progressBars[layer]->setFont(f);
-    m_progressBars[layer]->hide();
+    pb->setFont(f);
+    pb->hide();
     
     connect(layer, SIGNAL(layerParametersChanged()),
 	    this,    SLOT(layerParametersChanged()));
@@ -586,7 +591,8 @@ View::removeLayer(Layer *layer)
 	if (*i == layer) {
 	    m_layers.erase(i);
 	    if (m_progressBars.find(layer) != m_progressBars.end()) {
-		delete m_progressBars[layer];
+		delete m_progressBars[layer].bar;
+		delete m_progressBars[layer].checkTimer;
 		m_progressBars.erase(layer);
 	    }
 	    break;
@@ -1406,10 +1412,17 @@ View::checkProgress(void *object)
 
     int ph = height();
 
-    for (ProgressMap::const_iterator i = m_progressBars.begin();
+    for (ProgressMap::iterator i = m_progressBars.begin();
 	 i != m_progressBars.end(); ++i) {
 
+        QProgressBar *pb = i->second.bar;
+
 	if (i->first == object) {
+
+            // The timer is used to test for stalls.  If the progress
+            // bar does not get updated for some length of time, the
+            // timer prompts it to go back into "indeterminate" mode
+            QTimer *timer = i->second.checkTimer;
 
 	    int completion = i->first->getCompletion(this);
             QString text = i->first->getPropertyContainerName();
@@ -1419,7 +1432,7 @@ View::checkProgress(void *object)
                 dynamic_cast<RangeSummarisableTimeValueModel *>(model);
 
             if (completion > 0) {
-                i->second->setMaximum(100); // was 0, for indeterminate start
+                pb->setMaximum(100); // was 0, for indeterminate start
             }
 
             if (completion >= 100) {
@@ -1441,25 +1454,51 @@ View::checkProgress(void *object)
 
 	    if (completion >= 100) {
 
-		i->second->hide();
+		pb->hide();
+                timer->stop();
 
 	    } else {
 
-//		i->second->setText(text);
+//                std::cerr << "progress = " << completion << std::endl;
 
-		i->second->setValue(completion);
-		i->second->move(0, ph - i->second->height());
+                if (!pb->isVisible()) {
+                    i->second.lastCheck = 0;
+                    timer->setInterval(2000);
+                    timer->start();
+                }
 
-		i->second->show();
-		i->second->update();
+		pb->setValue(completion);
+		pb->move(0, ph - pb->height());
 
-		ph -= i->second->height();
+		pb->show();
+		pb->update();
+
+		ph -= pb->height();
 	    }
 	} else {
-	    if (i->second->isVisible()) {
-		ph -= i->second->height();
+	    if (pb->isVisible()) {
+		ph -= pb->height();
 	    }
 	}
+    }
+}
+
+void
+View::progressCheckStalledTimerElapsed()
+{
+    QObject *s = sender();
+    QTimer *t = qobject_cast<QTimer *>(s);
+    if (!t) return;
+    for (ProgressMap::iterator i =  m_progressBars.begin();
+         i != m_progressBars.end(); ++i) {
+        if (i->second.checkTimer == t) {
+            int value = i->second.bar->value();
+            if (value > 0 && value == i->second.lastCheck) {
+                i->second.bar->setMaximum(0); // indeterminate
+            }
+            i->second.lastCheck = value;
+            return;
+        }
     }
 }
 
@@ -1468,7 +1507,9 @@ View::getProgressBarWidth() const
 {
     for (ProgressMap::const_iterator i = m_progressBars.begin();
 	 i != m_progressBars.end(); ++i) {
-        if (i->second && i->second->isVisible()) return i->second->width();
+        if (i->second.bar && i->second.bar->isVisible()) {
+            return i->second.bar->width();
+        }
     }
 
     return 0;

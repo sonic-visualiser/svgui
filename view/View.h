@@ -305,6 +305,8 @@ public slots:
     virtual void overlayModeChanged();
     virtual void zoomWheelsEnabledChanged();
 
+    virtual void progressCheckStalledTimerElapsed();
+
 protected:
     View(QWidget *, bool showProgress);
     virtual void paintEvent(QPaintEvent *e);
@@ -373,8 +375,12 @@ protected:
 	QString m_text;
     };
 
-//    typedef std::map<Layer *, LayerProgressBar *> ProgressMap;
-    typedef std::map<Layer *, QProgressBar *> ProgressMap;
+    struct ProgressBarRec {
+        QProgressBar *bar;
+        int lastCheck;
+        QTimer *checkTimer;
+    };
+    typedef std::map<Layer *, ProgressBarRec> ProgressMap;
     ProgressMap m_progressBars; // I own the ProgressBars
 
     ViewManager *m_manager; // I don't own this
