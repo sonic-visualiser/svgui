@@ -170,7 +170,7 @@ TextLayer::getPointToDrag(View *v, int x, int y, TextModel::Point &p) const
 
         int yd = getYForHeight(v, (*i).height) - y;
         int xd = v->getXForFrame((*i).frame) - x;
-        float distance = sqrt(yd*yd + xd*xd);
+        float distance = sqrtf(yd*yd + xd*xd);
 
         if (nearestDistance == -1 || distance < nearestDistance) {
             nearestDistance = distance;
