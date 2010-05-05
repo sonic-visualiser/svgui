@@ -2366,7 +2366,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         std::cerr << "Recreating image cache: width = " << v->width()
                   << ", height = " << h << std::endl;
 #endif
-	cache.image = QImage(v->width(), h, QImage::Format_RGB32);
+	cache.image = QImage(v->width(), h, QImage::Format_ARGB32_Premultiplied);
     }
 
     if (w > 0) {
