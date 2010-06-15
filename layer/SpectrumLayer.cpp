@@ -170,7 +170,7 @@ SpectrumLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Window Size" ||
 	name == "Window Increment") return tr("Window");
-    if (name == "Show Peak Frequencies") return tr("Plot Type");
+    if (name == "Show Peak Frequencies") return tr("Bins");
     return SliceLayer::getPropertyGroupName(name);
 }
 
