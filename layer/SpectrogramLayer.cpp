@@ -2582,9 +2582,10 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                 float y = v->getYForFrequency
                     (freq, displayMinFreq, displayMaxFreq, logarithmic);
 
-                if (y < 0 || y >= h) continue;
+                int iy = int(y + 0.5);
+                if (iy < 0 || iy >= h) continue;
 
-                m_drawBuffer.setPixel(x, y, getDisplayValue(v, value));
+                m_drawBuffer.setPixel(x, iy, getDisplayValue(v, value));
             }
 
             if (mag.isSet()) {
