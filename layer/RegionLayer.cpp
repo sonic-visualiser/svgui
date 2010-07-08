@@ -517,6 +517,79 @@ RegionLayer::snapToFeatureFrame(View *v, int &frame,
     return found;
 }
 
+bool
+RegionLayer::snapToSimilarFeature(View *v, int &frame,
+                                  size_t &resolution,
+                                  SnapType snap) const
+{
+    if (!m_model) {
+	return Layer::snapToSimilarFeature(v, frame, resolution, snap);
+    }
+
+    resolution = m_model->getResolution();
+
+    const RegionModel::PointList &points = m_model->getPoints();
+    RegionModel::PointList close = m_model->getPoints(frame, frame);
+
+    RegionModel::PointList::const_iterator i;
+
+    int matchframe = frame;
+    float matchvalue = 0.f;
+
+    for (i = close.begin(); i != close.end(); ++i) {
+        if (i->frame > frame) break;
+        matchvalue = i->value;
+        matchframe = i->frame;
+    }
+
+    int snapped = frame;
+    bool found = false;
+    bool distant = false;
+    float epsilon = 0.0001;
+
+    i = close.begin();
+
+    // Scan through the close points first, then the more distant ones
+    // if no suitable close one is found
+
+    while (i != points.end()) {
+
+        if (i == close.end()) {
+            i = points.begin();
+            distant = true;
+        }
+
+	if (snap == SnapRight) {
+
+	    if (i->frame > matchframe &&
+                fabsf(i->value - matchvalue) < epsilon) {
+		snapped = i->frame;
+		found = true;
+		break;
+	    }
+
+	} else if (snap == SnapLeft) {
+
+	    if (i->frame < matchframe) {
+                if (fabsf(i->value - matchvalue) < epsilon) {
+                    snapped = i->frame;
+                    found = true; // don't break, as the next may be better
+                }
+	    } else if (found || distant) {
+		break;
+	    }
+
+	} else { 
+            // no other snap types supported
+	}
+
+        ++i;
+    }
+
+    frame = snapped;
+    return found;
+}
+
 void
 RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 {
@@ -847,6 +920,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
                 RegionModel::Point::Comparator()(illuminatePoint, p) ||
                 RegionModel::Point::Comparator()(p, illuminatePoint)) {
 
+                paint.setPen(QPen(getForegroundQColor(v), 1));
                 paint.drawLine(x, 0, x, v->height());
                 paint.setPen(Qt::NoPen);
 
@@ -854,7 +928,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
                 paint.setPen(QPen(getForegroundQColor(v), 2));
             }
 
-	    paint.drawRect(x, 0, ex - x, v->height() + 1);
+	    paint.drawRect(x, -1, ex - x, v->height() + 2);
 
 	} else {
 
