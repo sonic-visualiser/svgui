@@ -38,12 +38,14 @@ public:
 protected slots:
     void modelTypeChanged(int type);
     void timingTypeChanged(int type);
+    void durationTypeChanged(int type);
     void sampleRateChanged(QString);
     void windowSizeChanged(QString);
 
 protected:
     CSVFormat::ModelType  m_modelType;
     CSVFormat::TimingType m_timingType;
+    CSVFormat::DurationType m_durationType;
     CSVFormat::TimeUnits  m_timeUnits;
 
     QString    m_separator;
@@ -58,6 +60,8 @@ protected:
     
     QComboBox *m_modelTypeCombo;
     QComboBox *m_timingTypeCombo;
+    QLabel *m_durationTypeLabel;
+    QComboBox *m_durationTypeCombo;
     QLabel *m_sampleRateLabel;
     QComboBox *m_sampleRateCombo;
     QLabel *m_windowSizeLabel;

@@ -42,6 +42,9 @@ public:
     virtual bool snapToFeatureFrame(View *v, int &frame,
 				    size_t &resolution,
 				    SnapType snap) const;
+    virtual bool snapToSimilarFeature(View *v, int &frame,
+                                      size_t &resolution,
+                                      SnapType snap) const;
 
     virtual void drawStart(View *v, QMouseEvent *);
     virtual void drawDrag(View *v, QMouseEvent *);

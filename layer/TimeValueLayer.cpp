@@ -1072,6 +1072,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    
 	    if (nx <= x) continue;
 
+            paint.setPen(QPen(getForegroundQColor(v), 2));
+
             if (illuminateFrame != p.frame) {
                 if (!m_drawSegmentDivisions ||
                     nx < x + 5 ||

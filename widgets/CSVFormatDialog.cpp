@@ -31,6 +31,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     QDialog(parent),
     m_modelType(CSVFormat::OneDimensionalModel),
     m_timingType(CSVFormat::ExplicitTiming),
+    m_durationType(CSVFormat::Durations),
     m_timeUnits(CSVFormat::TimeAudioFrames),
     m_separator(""),
     m_behaviour(QString::KeepEmptyParts)
@@ -40,6 +41,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     m_modelType = format.getModelType();
     m_timingType = format.getTimingType();
+    m_durationType = format.getDurationType();
     m_timeUnits = format.getTimeUnits();
     m_separator = format.getSeparator();
     m_sampleRate = format.getSampleRate();
@@ -58,6 +60,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     m_modelTypeCombo = new QComboBox;
     m_modelTypeCombo->addItem(tr("A point in time"));
     m_modelTypeCombo->addItem(tr("A value at a time"));
+    m_modelTypeCombo->addItem(tr("A value across a time range"));
     m_modelTypeCombo->addItem(tr("A set of values"));
     layout->addWidget(m_modelTypeCombo, 1, 1, 1, 2);
     connect(m_modelTypeCombo, SIGNAL(activated(int)),
@@ -76,8 +79,19 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     m_timingTypeCombo->setCurrentIndex(m_timingType == CSVFormat::ExplicitTiming ?
                                        m_timeUnits == CSVFormat::TimeSeconds ? 0 : 1 : 2);
 
+    m_durationTypeLabel = new QLabel(tr("The second column contains:"));
+    layout->addWidget(m_durationTypeLabel, 3, 0);
+    
+    m_durationTypeCombo = new QComboBox;
+    m_durationTypeCombo->addItem(tr("Duration"));
+    m_durationTypeCombo->addItem(tr("End time"));
+    layout->addWidget(m_durationTypeCombo, 3, 1, 1, 2);
+    connect(m_durationTypeCombo, SIGNAL(activated(int)),
+	    this, SLOT(durationTypeChanged(int)));
+    m_durationTypeCombo->setCurrentIndex(int(m_durationType));
+
     m_sampleRateLabel = new QLabel(tr("Audio sample rate (Hz):"));
-    layout->addWidget(m_sampleRateLabel, 3, 0);
+    layout->addWidget(m_sampleRateLabel, 4, 0);
     
     size_t sampleRates[] = {
 	8000, 11025, 12000, 22050, 24000, 32000,
@@ -92,14 +106,14 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     }
     m_sampleRateCombo->setEditable(true);
 
-    layout->addWidget(m_sampleRateCombo, 3, 1);
+    layout->addWidget(m_sampleRateCombo, 4, 1);
     connect(m_sampleRateCombo, SIGNAL(activated(QString)),
 	    this, SLOT(sampleRateChanged(QString)));
     connect(m_sampleRateCombo, SIGNAL(editTextChanged(QString)),
 	    this, SLOT(sampleRateChanged(QString)));
 
     m_windowSizeLabel = new QLabel(tr("Frame increment between rows:"));
-    layout->addWidget(m_windowSizeLabel, 4, 0);
+    layout->addWidget(m_windowSizeLabel, 5, 0);
 
     m_windowSizeCombo = new QComboBox;
     m_windowSize = 1024;
@@ -110,30 +124,32 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     }
     m_windowSizeCombo->setEditable(true);
 
-    layout->addWidget(m_windowSizeCombo, 4, 1);
+    layout->addWidget(m_windowSizeCombo, 5, 1);
     connect(m_windowSizeCombo, SIGNAL(activated(QString)),
 	    this, SLOT(windowSizeChanged(QString)));
     connect(m_windowSizeCombo, SIGNAL(editTextChanged(QString)),
 	    this, SLOT(windowSizeChanged(QString)));
 
-    layout->addWidget(new QLabel(tr("\nExample data from file:")), 5, 0, 1, 4);
+    layout->addWidget(new QLabel(tr("\nExample data from file:")), 6, 0, 1, 4);
 
     m_exampleWidget = new QTableWidget
 	(std::min(10, m_example.size()), m_maxExampleCols);
 
-    layout->addWidget(m_exampleWidget, 6, 0, 1, 4);
+    layout->addWidget(m_exampleWidget, 7, 0, 1, 4);
     layout->setColumnStretch(3, 10);
     layout->setRowStretch(6, 10);
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                 QDialogButtonBox::Cancel);
-    layout->addWidget(bb, 7, 0, 1, 4);
+    layout->addWidget(bb, 8, 0, 1, 4);
     connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
     connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
 
     setLayout(layout);
 
+    modelTypeChanged(m_modelTypeCombo->currentIndex());
     timingTypeChanged(m_timingTypeCombo->currentIndex());
+    durationTypeChanged(m_durationTypeCombo->currentIndex());
 }
 
 CSVFormatDialog::~CSVFormatDialog()
@@ -146,6 +162,7 @@ CSVFormatDialog::getFormat() const
     CSVFormat format;
     format.setModelType(m_modelType);
     format.setTimingType(m_timingType);
+    format.setDurationType(m_durationType);
     format.setTimeUnits(m_timeUnits);
     format.setSeparator(m_separator);
     format.setSampleRate(m_sampleRate);
@@ -192,12 +209,13 @@ CSVFormatDialog::modelTypeChanged(int type)
 {
     m_modelType = (CSVFormat::ModelType)type;
 
-//    if (m_modelType == CSVFormat::ThreeDimensionalModel) {
-        // We can't load 3d models with explicit timing, because the 3d
-        // model is dense so we need a fixed sample increment
-//        m_timingTypeCombo->setCurrentIndex(2);
-//        timingTypeChanged(2);
-//    }
+    if (m_modelType == CSVFormat::TwoDimensionalModelWithDuration) {
+        m_durationTypeCombo->setEnabled(true);
+        m_durationTypeLabel->setEnabled(true);
+    } else {
+        m_durationTypeCombo->setEnabled(false);
+        m_durationTypeLabel->setEnabled(false);
+    }
 }
 
 void
@@ -212,10 +230,6 @@ CSVFormatDialog::timingTypeChanged(int type)
 	m_sampleRateLabel->setEnabled(false);
 	m_windowSizeCombo->setEnabled(false);
 	m_windowSizeLabel->setEnabled(false);
-//        if (m_modelType == CSVFormat::ThreeDimensionalModel) {
-//            m_modelTypeCombo->setCurrentIndex(1);
-//            modelTypeChanged(1);
-//        }
 	break;
 
     case 1:
@@ -225,10 +239,6 @@ CSVFormatDialog::timingTypeChanged(int type)
 	m_sampleRateLabel->setEnabled(true);
 	m_windowSizeCombo->setEnabled(false);
 	m_windowSizeLabel->setEnabled(false);
-//        if (m_modelType == CSVFormat::ThreeDimensionalModel) {
-//            m_modelTypeCombo->setCurrentIndex(1);
-//            modelTypeChanged(1);
-//        }
 	break;
 
     case 2:
@@ -242,6 +252,12 @@ CSVFormatDialog::timingTypeChanged(int type)
     }
 
     populateExample();
+}
+
+void
+CSVFormatDialog::durationTypeChanged(int type)
+{
+    m_durationType = (CSVFormat::DurationType)type;
 }
 
 void
