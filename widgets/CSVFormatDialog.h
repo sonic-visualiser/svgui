@@ -29,8 +29,7 @@ class CSVFormatDialog : public QDialog
     Q_OBJECT
     
 public:
-    CSVFormatDialog(QWidget *parent, CSVFormat initialFormat,
-                    size_t defaultSampleRate);
+    CSVFormatDialog(QWidget *parent, CSVFormat initialFormat);
     ~CSVFormatDialog();
 
     CSVFormat getFormat() const;
@@ -38,36 +37,21 @@ public:
 protected slots:
     void modelTypeChanged(int type);
     void timingTypeChanged(int type);
-    void durationTypeChanged(int type);
     void sampleRateChanged(QString);
     void windowSizeChanged(QString);
+    void columnPurposeChanged(int purpose);
 
 protected:
-    CSVFormat::ModelType  m_modelType;
-    CSVFormat::TimingType m_timingType;
-    CSVFormat::DurationType m_durationType;
-    CSVFormat::TimeUnits  m_timeUnits;
-
-    QString    m_separator;
-    size_t     m_sampleRate;
-    size_t     m_windowSize;
-
-    QString::SplitBehavior m_behaviour;
-    
-    QList<QStringList> m_example;
-    int m_maxExampleCols;
-    QTableWidget *m_exampleWidget;
+    CSVFormat m_format;
     
     QComboBox *m_modelTypeCombo;
     QComboBox *m_timingTypeCombo;
-    QLabel *m_durationTypeLabel;
-    QComboBox *m_durationTypeCombo;
     QLabel *m_sampleRateLabel;
     QComboBox *m_sampleRateCombo;
     QLabel *m_windowSizeLabel;
     QComboBox *m_windowSizeCombo;
 
-    void populateExample();
+    QList<QComboBox *> m_columnPurposeCombos;
 };
 
 #endif
