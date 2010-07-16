@@ -25,73 +25,99 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 
+#include <iostream>
 
-CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
-				 size_t defaultSampleRate) :
+CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
     QDialog(parent),
-    m_modelType(CSVFormat::OneDimensionalModel),
-    m_timingType(CSVFormat::ExplicitTiming),
-    m_durationType(CSVFormat::Durations),
-    m_timeUnits(CSVFormat::TimeAudioFrames),
-    m_separator(""),
-    m_behaviour(QString::KeepEmptyParts)
+    m_format(format)
 {
     setModal(true);
     setWindowTitle(tr("Select Data Format"));
 
-    m_modelType = format.getModelType();
-    m_timingType = format.getTimingType();
-    m_durationType = format.getDurationType();
-    m_timeUnits = format.getTimeUnits();
-    m_separator = format.getSeparator();
-    m_sampleRate = format.getSampleRate();
-    m_windowSize = format.getWindowSize();
-    m_behaviour = format.getSplitBehaviour();
-    m_example = format.getExample();
-    m_maxExampleCols = format.getMaxExampleCols();
-
     QGridLayout *layout = new QGridLayout;
 
-    layout->addWidget(new QLabel(tr("<b>Select Data Format</b><p>Please select the correct data format for this file.")),
-		      0, 0, 1, 4);
+    int row = 0;
 
-    layout->addWidget(new QLabel(tr("Each row specifies:")), 1, 0);
+    layout->addWidget(new QLabel(tr("Please select the correct data format for this file.")),
+		      row++, 0, 1, 4);
+
+    QFrame *exampleFrame = new QFrame;
+    exampleFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+    exampleFrame->setLineWidth(2);
+    QGridLayout *exampleLayout = new QGridLayout;
+    exampleFrame->setLayout(exampleLayout);
+
+    QPalette palette = exampleFrame->palette();
+    palette.setColor(QPalette::Window, palette.color(QPalette::Base));
+    exampleFrame->setPalette(palette);
+
+    QFont fp;
+    fp.setFixedPitch(true);
+    fp.setStyleHint(QFont::TypeWriter);
+    fp.setFamily("Monospaced");
+    
+    int columns = format.getColumnCount();
+    QList<QStringList> example = m_format.getExample();
+
+    for (int i = 0; i < columns; ++i) {
+        
+        QComboBox *cpc = new QComboBox;
+        m_columnPurposeCombos.push_back(cpc);
+        exampleLayout->addWidget(cpc, 0, i);
+
+        // NB must be in the same order as the CSVFormat::ColumnPurpose enum
+        cpc->addItem(tr("<ignore>")); // ColumnUnknown
+        cpc->addItem(tr("Time"));     // ColumnStartTime
+        cpc->addItem(tr("End time")); // ColumnEndTime
+        cpc->addItem(tr("Duration")); // ColumnDuration
+        cpc->addItem(tr("Value"));    // ColumnValue
+        cpc->addItem(tr("Label"));    // ColumnLabel
+        cpc->setCurrentIndex(int(m_format.getColumnPurpose(i)));
+        connect(cpc, SIGNAL(activated(int)), this, SLOT(columnPurposeChanged(int)));
+
+        if (i < m_format.getMaxExampleCols()) {
+            for (int j = 0; j < example.size() && j < 6; ++j) {
+                QLabel *label = new QLabel;
+                label->setTextFormat(Qt::PlainText);
+                label->setText(example[j][i]);
+                label->setFont(fp);
+                label->setPalette(palette);
+                exampleLayout->addWidget(label, j+1, i);
+            }
+        }
+    }
+
+    layout->addWidget(exampleFrame, row, 0, 1, 4);
+    layout->setColumnStretch(3, 10);
+    layout->setRowStretch(row++, 10);
+
+    layout->addWidget(new QLabel(tr("Each row describes:")), row, 0);
 
     m_modelTypeCombo = new QComboBox;
     m_modelTypeCombo->addItem(tr("A point in time"));
     m_modelTypeCombo->addItem(tr("A value at a time"));
     m_modelTypeCombo->addItem(tr("A value across a time range"));
     m_modelTypeCombo->addItem(tr("A set of values"));
-    layout->addWidget(m_modelTypeCombo, 1, 1, 1, 2);
+    layout->addWidget(m_modelTypeCombo, row++, 1, 1, 2);
     connect(m_modelTypeCombo, SIGNAL(activated(int)),
 	    this, SLOT(modelTypeChanged(int)));
-    m_modelTypeCombo->setCurrentIndex(int(m_modelType));
+    m_modelTypeCombo->setCurrentIndex(int(m_format.getModelType()));
 
-    layout->addWidget(new QLabel(tr("The first column contains:")), 2, 0);
+    layout->addWidget(new QLabel(tr("Timing is specified:")), row, 0);
     
     m_timingTypeCombo = new QComboBox;
-    m_timingTypeCombo->addItem(tr("Time, in seconds"));
-    m_timingTypeCombo->addItem(tr("Time, in audio sample frames"));
-    m_timingTypeCombo->addItem(tr("Data (rows are consecutive in time)"));
-    layout->addWidget(m_timingTypeCombo, 2, 1, 1, 2);
+    m_timingTypeCombo->addItem(tr("Explicitly, in seconds"));
+    m_timingTypeCombo->addItem(tr("Explicitly, in audio sample frames"));
+    m_timingTypeCombo->addItem(tr("Implicitly: rows are equally spaced in time"));
+    layout->addWidget(m_timingTypeCombo, row++, 1, 1, 2);
     connect(m_timingTypeCombo, SIGNAL(activated(int)),
 	    this, SLOT(timingTypeChanged(int)));
-    m_timingTypeCombo->setCurrentIndex(m_timingType == CSVFormat::ExplicitTiming ?
-                                       m_timeUnits == CSVFormat::TimeSeconds ? 0 : 1 : 2);
-
-    m_durationTypeLabel = new QLabel(tr("The second column contains:"));
-    layout->addWidget(m_durationTypeLabel, 3, 0);
-    
-    m_durationTypeCombo = new QComboBox;
-    m_durationTypeCombo->addItem(tr("Duration"));
-    m_durationTypeCombo->addItem(tr("End time"));
-    layout->addWidget(m_durationTypeCombo, 3, 1, 1, 2);
-    connect(m_durationTypeCombo, SIGNAL(activated(int)),
-	    this, SLOT(durationTypeChanged(int)));
-    m_durationTypeCombo->setCurrentIndex(int(m_durationType));
+    m_timingTypeCombo->setCurrentIndex
+        (m_format.getTimingType() == CSVFormat::ExplicitTiming ?
+         m_format.getTimeUnits() == CSVFormat::TimeSeconds ? 0 : 1 : 2);
 
     m_sampleRateLabel = new QLabel(tr("Audio sample rate (Hz):"));
-    layout->addWidget(m_sampleRateLabel, 4, 0);
+    layout->addWidget(m_sampleRateLabel, row, 0);
     
     size_t sampleRates[] = {
 	8000, 11025, 12000, 22050, 24000, 32000,
@@ -99,49 +125,42 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     };
 
     m_sampleRateCombo = new QComboBox;
-    m_sampleRate = defaultSampleRate;
     for (size_t i = 0; i < sizeof(sampleRates) / sizeof(sampleRates[0]); ++i) {
 	m_sampleRateCombo->addItem(QString("%1").arg(sampleRates[i]));
-	if (sampleRates[i] == m_sampleRate) m_sampleRateCombo->setCurrentIndex(i);
+	if (sampleRates[i] == m_format.getSampleRate()) {
+            m_sampleRateCombo->setCurrentIndex(i);
+        }
     }
     m_sampleRateCombo->setEditable(true);
 
-    layout->addWidget(m_sampleRateCombo, 4, 1);
+    layout->addWidget(m_sampleRateCombo, row++, 1);
     connect(m_sampleRateCombo, SIGNAL(activated(QString)),
 	    this, SLOT(sampleRateChanged(QString)));
     connect(m_sampleRateCombo, SIGNAL(editTextChanged(QString)),
 	    this, SLOT(sampleRateChanged(QString)));
 
     m_windowSizeLabel = new QLabel(tr("Frame increment between rows:"));
-    layout->addWidget(m_windowSizeLabel, 5, 0);
+    layout->addWidget(m_windowSizeLabel, row, 0);
 
     m_windowSizeCombo = new QComboBox;
-    m_windowSize = 1024;
     for (int i = 0; i <= 16; ++i) {
 	int value = 1 << i;
 	m_windowSizeCombo->addItem(QString("%1").arg(value));
-	if (value == int(m_windowSize)) m_windowSizeCombo->setCurrentIndex(i);
+	if (value == int(m_format.getWindowSize())) {
+            m_windowSizeCombo->setCurrentIndex(i);
+        }
     }
     m_windowSizeCombo->setEditable(true);
 
-    layout->addWidget(m_windowSizeCombo, 5, 1);
+    layout->addWidget(m_windowSizeCombo, row++, 1);
     connect(m_windowSizeCombo, SIGNAL(activated(QString)),
 	    this, SLOT(windowSizeChanged(QString)));
     connect(m_windowSizeCombo, SIGNAL(editTextChanged(QString)),
 	    this, SLOT(windowSizeChanged(QString)));
 
-    layout->addWidget(new QLabel(tr("\nExample data from file:")), 6, 0, 1, 4);
-
-    m_exampleWidget = new QTableWidget
-	(std::min(10, m_example.size()), m_maxExampleCols);
-
-    layout->addWidget(m_exampleWidget, 7, 0, 1, 4);
-    layout->setColumnStretch(3, 10);
-    layout->setRowStretch(6, 10);
-
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                 QDialogButtonBox::Cancel);
-    layout->addWidget(bb, 8, 0, 1, 4);
+    layout->addWidget(bb, row++, 0, 1, 4);
     connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
     connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
 
@@ -149,7 +168,6 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     modelTypeChanged(m_modelTypeCombo->currentIndex());
     timingTypeChanged(m_timingTypeCombo->currentIndex());
-    durationTypeChanged(m_durationTypeCombo->currentIndex());
 }
 
 CSVFormatDialog::~CSVFormatDialog()
@@ -159,63 +177,13 @@ CSVFormatDialog::~CSVFormatDialog()
 CSVFormat
 CSVFormatDialog::getFormat() const
 {
-    CSVFormat format;
-    format.setModelType(m_modelType);
-    format.setTimingType(m_timingType);
-    format.setDurationType(m_durationType);
-    format.setTimeUnits(m_timeUnits);
-    format.setSeparator(m_separator);
-    format.setSampleRate(m_sampleRate);
-    format.setWindowSize(m_windowSize);
-    format.setSplitBehaviour(m_behaviour);
-    return format;
-}
-
-void
-CSVFormatDialog::populateExample()
-{
-    m_exampleWidget->setColumnCount
-        (m_timingType == CSVFormat::ExplicitTiming ?
-	 m_maxExampleCols - 1 : m_maxExampleCols);
-
-    m_exampleWidget->setHorizontalHeaderLabels(QStringList());
-
-    for (int i = 0; i < m_example.size(); ++i) {
-	for (int j = 0; j < m_example[i].size(); ++j) {
-
-	    QTableWidgetItem *item = new QTableWidgetItem(m_example[i][j]);
-
-	    if (j == 0) {
-		if (m_timingType == CSVFormat::ExplicitTiming) {
-		    m_exampleWidget->setVerticalHeaderItem(i, item);
-		    continue;
-		} else {
-		    QTableWidgetItem *header =
-			new QTableWidgetItem(QString("%1").arg(i));
-		    header->setFlags(Qt::ItemIsEnabled);
-		    m_exampleWidget->setVerticalHeaderItem(i, header);
-		}
-	    }
-	    int index = j;
-	    if (m_timingType == CSVFormat::ExplicitTiming) --index;
-	    item->setFlags(Qt::ItemIsEnabled);
-	    m_exampleWidget->setItem(i, index, item);
-	}
-    }
+    return m_format;
 }
 
 void
 CSVFormatDialog::modelTypeChanged(int type)
 {
-    m_modelType = (CSVFormat::ModelType)type;
-
-    if (m_modelType == CSVFormat::TwoDimensionalModelWithDuration) {
-        m_durationTypeCombo->setEnabled(true);
-        m_durationTypeLabel->setEnabled(true);
-    } else {
-        m_durationTypeCombo->setEnabled(false);
-        m_durationTypeLabel->setEnabled(false);
-    }
+    m_format.setModelType((CSVFormat::ModelType)type);
 }
 
 void
@@ -224,8 +192,8 @@ CSVFormatDialog::timingTypeChanged(int type)
     switch (type) {
 
     case 0:
-	m_timingType = CSVFormat::ExplicitTiming;
-	m_timeUnits = CSVFormat::TimeSeconds;
+	m_format.setTimingType(CSVFormat::ExplicitTiming);
+	m_format.setTimeUnits(CSVFormat::TimeSeconds);
 	m_sampleRateCombo->setEnabled(false);
 	m_sampleRateLabel->setEnabled(false);
 	m_windowSizeCombo->setEnabled(false);
@@ -233,8 +201,8 @@ CSVFormatDialog::timingTypeChanged(int type)
 	break;
 
     case 1:
-	m_timingType = CSVFormat::ExplicitTiming;
-	m_timeUnits = CSVFormat::TimeAudioFrames;
+	m_format.setTimingType(CSVFormat::ExplicitTiming);
+	m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
 	m_sampleRateCombo->setEnabled(true);
 	m_sampleRateLabel->setEnabled(true);
 	m_windowSizeCombo->setEnabled(false);
@@ -242,22 +210,14 @@ CSVFormatDialog::timingTypeChanged(int type)
 	break;
 
     case 2:
-	m_timingType = CSVFormat::ImplicitTiming;
-	m_timeUnits = CSVFormat::TimeWindows;
+	m_format.setTimingType(CSVFormat::ImplicitTiming);
+	m_format.setTimeUnits(CSVFormat::TimeWindows);
 	m_sampleRateCombo->setEnabled(true);
 	m_sampleRateLabel->setEnabled(true);
 	m_windowSizeCombo->setEnabled(true);
 	m_windowSizeLabel->setEnabled(true);
 	break;
     }
-
-    populateExample();
-}
-
-void
-CSVFormatDialog::durationTypeChanged(int type)
-{
-    m_durationType = (CSVFormat::DurationType)type;
 }
 
 void
@@ -265,7 +225,7 @@ CSVFormatDialog::sampleRateChanged(QString rateString)
 {
     bool ok = false;
     int sampleRate = rateString.toInt(&ok);
-    if (ok) m_sampleRate = sampleRate;
+    if (ok) m_format.setSampleRate(sampleRate);
 }
 
 void
@@ -273,5 +233,27 @@ CSVFormatDialog::windowSizeChanged(QString sizeString)
 {
     bool ok = false;
     int size = sizeString.toInt(&ok);
-    if (ok) m_windowSize = size;
+    if (ok) m_format.setWindowSize(size);
 }
+
+void
+CSVFormatDialog::columnPurposeChanged(int purpose)
+{
+    QObject *o = sender();
+    QComboBox *cb = qobject_cast<QComboBox *>(o);
+    if (!cb) return;
+    int changedCol = -1;
+    for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
+        if (cb == m_columnPurposeCombos[i]) {
+            changedCol = i;
+            break;
+        }
+    }
+    if (changedCol < 0) {
+        std::cerr << "Hm, some problem here -- column combo changed, but cannot locate column" << std::endl;
+        return;
+    }
+    
+}
+
+
