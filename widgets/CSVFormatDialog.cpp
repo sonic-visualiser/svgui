@@ -15,6 +15,8 @@
 
 #include "CSVFormatDialog.h"
 
+#include "layer/LayerFactory.h"
+
 #include <QFrame>
 #include <QGridLayout>
 #include <QPushButton>
@@ -45,6 +47,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
     exampleFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
     exampleFrame->setLineWidth(2);
     QGridLayout *exampleLayout = new QGridLayout;
+    exampleLayout->setSpacing(4);
     exampleFrame->setLayout(exampleLayout);
 
     QPalette palette = exampleFrame->palette();
@@ -52,9 +55,10 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
     exampleFrame->setPalette(palette);
 
     QFont fp;
-    fp.setFixedPitch(true);
-    fp.setStyleHint(QFont::TypeWriter);
-    fp.setFamily("Monospaced");
+    fp.setPointSize(fp.pointSize() * 0.9);
+//    fp.setFixedPitch(true);
+//    fp.setStyleHint(QFont::TypeWriter);
+//    fp.setFamily("Monospaced");
     
     int columns = format.getColumnCount();
     QList<QStringList> example = m_format.getExample();
@@ -82,6 +86,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
                 label->setText(example[j][i]);
                 label->setFont(fp);
                 label->setPalette(palette);
+                label->setIndent(8);
                 exampleLayout->addWidget(label, j+1, i);
             }
         }
@@ -90,18 +95,6 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
     layout->addWidget(exampleFrame, row, 0, 1, 4);
     layout->setColumnStretch(3, 10);
     layout->setRowStretch(row++, 10);
-
-    layout->addWidget(new QLabel(tr("Each row describes:")), row, 0);
-
-    m_modelTypeCombo = new QComboBox;
-    m_modelTypeCombo->addItem(tr("A point in time"));
-    m_modelTypeCombo->addItem(tr("A value at a time"));
-    m_modelTypeCombo->addItem(tr("A value across a time range"));
-    m_modelTypeCombo->addItem(tr("A set of values"));
-    layout->addWidget(m_modelTypeCombo, row++, 1, 1, 2);
-    connect(m_modelTypeCombo, SIGNAL(activated(int)),
-	    this, SLOT(modelTypeChanged(int)));
-    m_modelTypeCombo->setCurrentIndex(int(m_format.getModelType()));
 
     layout->addWidget(new QLabel(tr("Timing is specified:")), row, 0);
     
@@ -158,6 +151,12 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
     connect(m_windowSizeCombo, SIGNAL(editTextChanged(QString)),
 	    this, SLOT(windowSizeChanged(QString)));
 
+    m_modelLabel = new QLabel;
+    QFont f(m_modelLabel->font());
+    f.setItalic(true);
+    m_modelLabel->setFont(f);
+    layout->addWidget(m_modelLabel, row++, 0, 1, 4);
+
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                 QDialogButtonBox::Cancel);
     layout->addWidget(bb, row++, 0, 1, 4);
@@ -166,8 +165,8 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
 
     setLayout(layout);
 
-    modelTypeChanged(m_modelTypeCombo->currentIndex());
     timingTypeChanged(m_timingTypeCombo->currentIndex());
+    updateModelLabel();
 }
 
 CSVFormatDialog::~CSVFormatDialog()
@@ -181,9 +180,27 @@ CSVFormatDialog::getFormat() const
 }
 
 void
-CSVFormatDialog::modelTypeChanged(int type)
+CSVFormatDialog::updateModelLabel()
 {
-    m_format.setModelType((CSVFormat::ModelType)type);
+    LayerFactory *f = LayerFactory::getInstance();
+
+    QString s;
+    switch (m_format.getModelType()) {
+    case CSVFormat::OneDimensionalModel:
+        s = f->getLayerPresentationName(LayerFactory::TimeInstants);
+        break;
+    case CSVFormat::TwoDimensionalModel:
+        s = f->getLayerPresentationName(LayerFactory::TimeValues);
+        break; 
+    case CSVFormat::TwoDimensionalModelWithDuration:
+        s = f->getLayerPresentationName(LayerFactory::Regions);
+        break;
+    case CSVFormat::ThreeDimensionalModel:
+        s = f->getLayerPresentationName(LayerFactory::Colour3DPlot);
+        break;
+    }   
+
+    m_modelLabel->setText("\n" + QString("Data will be displayed in a %1 layer.").arg(s));
 }
 
 void
@@ -237,23 +254,87 @@ CSVFormatDialog::windowSizeChanged(QString sizeString)
 }
 
 void
-CSVFormatDialog::columnPurposeChanged(int purpose)
+CSVFormatDialog::columnPurposeChanged(int p)
 {
     QObject *o = sender();
+
     QComboBox *cb = qobject_cast<QComboBox *>(o);
     if (!cb) return;
-    int changedCol = -1;
+
+    CSVFormat::ColumnPurpose purpose = (CSVFormat::ColumnPurpose)p;
+
+    bool haveStartTime = false;
+    bool haveDuration = false;
+    int valueCount = 0;
+
     for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
-        if (cb == m_columnPurposeCombos[i]) {
-            changedCol = i;
-            break;
+
+        CSVFormat::ColumnPurpose cp = m_format.getColumnPurpose(i);
+
+        bool thisChanged = (cb == m_columnPurposeCombos[i]);
+        
+        if (thisChanged) {
+
+            cp = purpose;
+
+        } else {
+
+            // We can only have one ColumnStartTime column, and only
+            // one of either ColumnDuration or ColumnEndTime
+
+            if (purpose == CSVFormat::ColumnStartTime) {
+                if (cp == purpose) {
+                    cp = CSVFormat::ColumnValue;
+                }
+            } else if (purpose == CSVFormat::ColumnDuration ||
+                       purpose == CSVFormat::ColumnEndTime) {
+                if (cp == CSVFormat::ColumnDuration ||
+                    cp == CSVFormat::ColumnEndTime) {
+                    cp = CSVFormat::ColumnValue;
+                }
+            }
+
+            // And we can only have one label
+            if (purpose == CSVFormat::ColumnLabel) {
+                if (cp == purpose) {
+                    cp = CSVFormat::ColumnUnknown;
+                }
+            }
+        }
+
+        if (cp == CSVFormat::ColumnStartTime) {
+            haveStartTime = true;
+        }
+        if (cp == CSVFormat::ColumnEndTime ||
+            cp == CSVFormat::ColumnDuration) {
+            haveDuration = true;
+        }
+        if (cp == CSVFormat::ColumnValue) {
+            ++valueCount;
+        }
+
+        m_columnPurposeCombos[i]->setCurrentIndex(int(cp));
+        m_format.setColumnPurpose(i, cp);
+    }
+
+    if (!haveStartTime) {
+        m_timingTypeCombo->setCurrentIndex(2);
+        timingTypeChanged(2);
+    }
+
+    if (haveStartTime && haveDuration) {
+        m_format.setModelType(CSVFormat::TwoDimensionalModelWithDuration);
+    } else {
+        if (valueCount > 1) {
+            m_format.setModelType(CSVFormat::ThreeDimensionalModel);
+        } else if (valueCount > 0) {
+            m_format.setModelType(CSVFormat::TwoDimensionalModel);
+        } else {
+            m_format.setModelType(CSVFormat::OneDimensionalModel);
         }
     }
-    if (changedCol < 0) {
-        std::cerr << "Hm, some problem here -- column combo changed, but cannot locate column" << std::endl;
-        return;
-    }
-    
+
+    updateModelLabel();
 }
 
 
