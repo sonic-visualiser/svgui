@@ -35,21 +35,21 @@ public:
     CSVFormat getFormat() const;
     
 protected slots:
-    void modelTypeChanged(int type);
     void timingTypeChanged(int type);
     void sampleRateChanged(QString);
     void windowSizeChanged(QString);
     void columnPurposeChanged(int purpose);
+    void updateModelLabel();
 
 protected:
     CSVFormat m_format;
     
-    QComboBox *m_modelTypeCombo;
     QComboBox *m_timingTypeCombo;
     QLabel *m_sampleRateLabel;
     QComboBox *m_sampleRateCombo;
     QLabel *m_windowSizeLabel;
     QComboBox *m_windowSizeCombo;
+    QLabel *m_modelLabel;
 
     QList<QComboBox *> m_columnPurposeCombos;
 };
