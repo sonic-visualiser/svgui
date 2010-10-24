@@ -732,10 +732,20 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
 
         paint.save();
 
-        QColor penColour, surroundColour;
+        QColor penColour, surroundColour, boxColour;
 
         penColour = getForeground();
         surroundColour = getBackground();
+        boxColour = surroundColour;
+        boxColour.setAlpha(127);
+
+        paint.setPen(Qt::NoPen);
+        paint.setBrush(boxColour);
+        QRect r = paint.fontMetrics().boundingRect(text);
+        r.translate(QPoint(x, y));
+//        std::cerr << "drawVisibleText: r = " << r.x() << "," <<r.y() << " " << r.width() << "x" << r.height() << std::endl;
+        paint.drawRect(r);
+        paint.setBrush(Qt::NoBrush);
 
 	paint.setPen(surroundColour);
 
