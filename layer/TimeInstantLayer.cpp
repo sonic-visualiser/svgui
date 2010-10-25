@@ -386,7 +386,8 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 	++j;
 
 	int x = v->getXForFrame(p.frame);
-	if (x == prevX && p.frame != illuminateFrame) continue;
+        if (x == prevX && m_plotStyle == PlotInstants &&
+            p.frame != illuminateFrame) continue;
 
 	int iw = v->getXForFrame(p.frame + m_model->getResolution()) - x;
 	if (iw < 2) {
@@ -434,7 +435,7 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    paint.setPen(Qt::NoPen);
 		}
 
-		paint.drawRect(x, -1, nx - x, v->height() + 1);
+                paint.drawRect(x, -1, nx - x, v->height() + 1);
 	    }
 
 	    odd = !odd;
@@ -455,7 +456,8 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
 
 	    if (good) {
-		paint.drawText(x + iw + 2, textY, p.label);
+                v->drawVisibleText(paint, x + iw + 2, textY, p.label, View::OutlinedText);
+//		paint.drawText(x + iw + 2, textY, p.label);
 	    }
 	}
 
