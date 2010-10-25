@@ -1087,7 +1087,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (p.label != "") {
             if (!haveNext || nx > x + 6 + paint.fontMetrics().width(p.label)) {
-                paint.drawText(x + 5, textY, p.label);
+                v->drawVisibleText(paint, x + 5, textY, p.label, View::OutlinedText);
+//                paint.drawText(x + 5, textY, p.label);
             }
 	}
     }
