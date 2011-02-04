@@ -917,17 +917,55 @@ void
 Pane::drawEditingSelection(QPainter &paint)
 {
     int offset = m_mousePos.x() - m_clickPos.x();
-    int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
+
+    long origStart = m_editingSelection.getStartFrame();
+
+    int p0 = getXForFrame(origStart) + offset;
     int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
-    
+
     if (m_editingSelectionEdge < 0) {
         p1 = getXForFrame(m_editingSelection.getEndFrame());
     } else if (m_editingSelectionEdge > 0) {
         p0 = getXForFrame(m_editingSelection.getStartFrame());
     }
     
+    long newStart = getFrameForX(p0);
+    long newEnd = getFrameForX(p1);
+    
     paint.save();
     paint.setPen(QPen(getForeground(), 2));
+
+    int fontHeight = paint.fontMetrics().height();
+    int fontAscent = paint.fontMetrics().ascent();
+    int sampleRate = getModelsSampleRate();
+    QString startText, endText, offsetText;
+    startText = QString("%1").arg(newStart);
+    endText = QString("%1").arg(newEnd);
+    offsetText = QString("%1").arg(newStart - origStart);
+    if (newStart >= origStart) {
+        offsetText = tr("+%1").arg(offsetText);
+    }
+    if (sampleRate) {
+        startText = QString("%1 / %2")
+            .arg(QString::fromStdString
+                 (RealTime::frame2RealTime(newStart, sampleRate).toText()))
+            .arg(startText);
+        endText = QString("%1 / %2")
+            .arg(QString::fromStdString
+                 (RealTime::frame2RealTime(newEnd, sampleRate).toText()))
+            .arg(endText);
+        offsetText = QString("%1 / %2")
+            .arg(QString::fromStdString
+                 (RealTime::frame2RealTime(newStart - origStart, sampleRate).toText()))
+            .arg(offsetText);
+        if (newStart >= origStart) {
+            offsetText = tr("+%1").arg(offsetText);
+        }
+    }
+    drawVisibleText(paint, p0 + 2, fontAscent + fontHeight + 4, startText, OutlinedText);
+    drawVisibleText(paint, p1 + 2, fontAscent + fontHeight + 4, endText, OutlinedText);
+    drawVisibleText(paint, p0 + 2, fontAscent + fontHeight*2 + 4, offsetText, OutlinedText);
+    drawVisibleText(paint, p1 + 2, fontAscent + fontHeight*2 + 4, offsetText, OutlinedText);
     
     //!!! duplicating display policy with View::drawSelections
     
