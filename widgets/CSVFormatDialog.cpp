@@ -200,7 +200,7 @@ CSVFormatDialog::updateModelLabel()
         break;
     }   
 
-    m_modelLabel->setText("\n" + QString("Data will be displayed in a %1 layer.").arg(s));
+    m_modelLabel->setText("\n" + tr("Data will be displayed in a %1 layer.").arg(s));
 }
 
 void
