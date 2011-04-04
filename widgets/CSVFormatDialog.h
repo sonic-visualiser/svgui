@@ -29,7 +29,8 @@ class CSVFormatDialog : public QDialog
     Q_OBJECT
     
 public:
-    CSVFormatDialog(QWidget *parent, CSVFormat initialFormat);
+    CSVFormatDialog(QWidget *parent, CSVFormat initialFormat,
+                    int maxDisplayCols = 5);
     ~CSVFormatDialog();
 
     CSVFormat getFormat() const;
@@ -43,6 +44,7 @@ protected slots:
 
 protected:
     CSVFormat m_format;
+    int m_maxDisplayCols;
     
     QComboBox *m_timingTypeCombo;
     QLabel *m_sampleRateLabel;
@@ -52,6 +54,7 @@ protected:
     QLabel *m_modelLabel;
 
     QList<QComboBox *> m_columnPurposeCombos;
+    int m_fuzzyColumn;
 };
 
 #endif

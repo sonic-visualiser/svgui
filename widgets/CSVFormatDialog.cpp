@@ -29,9 +29,12 @@
 
 #include <iostream>
 
-CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
+CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
+                                 int maxDisplayCols) :
     QDialog(parent),
-    m_format(format)
+    m_format(format),
+    m_maxDisplayCols(maxDisplayCols),
+    m_fuzzyColumn(-1)
 {
     setModal(true);
     setWindowTitle(tr("Select Data Format"));
@@ -64,10 +67,22 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
     QList<QStringList> example = m_format.getExample();
 
     for (int i = 0; i < columns; ++i) {
-        
+
         QComboBox *cpc = new QComboBox;
         m_columnPurposeCombos.push_back(cpc);
         exampleLayout->addWidget(cpc, 0, i);
+        connect(cpc, SIGNAL(activated(int)), this, SLOT(columnPurposeChanged(int)));
+
+        if (i == m_maxDisplayCols && columns > i + 2) {
+            m_fuzzyColumn = i;
+            cpc->addItem(tr("<ignore>"));
+            cpc->addItem(tr("Values"));
+            cpc->setCurrentIndex
+                (m_format.getColumnPurpose(i-1) == CSVFormat::ColumnUnknown ? 0 : 1);
+            exampleLayout->addWidget(new QLabel(tr("(%1 more)").arg(columns - i)),
+                                     1, i);
+            break;
+        }
 
         // NB must be in the same order as the CSVFormat::ColumnPurpose enum
         cpc->addItem(tr("<ignore>")); // ColumnUnknown
@@ -77,18 +92,15 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format) :
         cpc->addItem(tr("Value"));    // ColumnValue
         cpc->addItem(tr("Label"));    // ColumnLabel
         cpc->setCurrentIndex(int(m_format.getColumnPurpose(i)));
-        connect(cpc, SIGNAL(activated(int)), this, SLOT(columnPurposeChanged(int)));
 
-        if (i < m_format.getMaxExampleCols()) {
-            for (int j = 0; j < example.size() && j < 6; ++j) {
-                QLabel *label = new QLabel;
-                label->setTextFormat(Qt::PlainText);
-                label->setText(example[j][i]);
-                label->setFont(fp);
-                label->setPalette(palette);
-                label->setIndent(8);
-                exampleLayout->addWidget(label, j+1, i);
-            }
+        for (int j = 0; j < example.size() && j < 6; ++j) {
+            QLabel *label = new QLabel;
+            label->setTextFormat(Qt::PlainText);
+            label->setText(example[j][i]);
+            label->setFont(fp);
+            label->setPalette(palette);
+            label->setIndent(8);
+            exampleLayout->addWidget(label, j+1, i);
         }
     }
 
@@ -275,9 +287,26 @@ CSVFormatDialog::columnPurposeChanged(int p)
         
         if (thisChanged) {
 
+            std::cerr << "i == " << i << ", fuzzy == " << m_fuzzyColumn
+                      << ", p == " << p << std::endl;
+
+            if (i == m_fuzzyColumn) {
+                for (int j = i; j < m_format.getColumnCount(); ++j) {
+                    if (p == 0) { // Ignore
+                        m_format.setColumnPurpose(j, CSVFormat::ColumnUnknown);
+                    } else { // Value
+                        m_format.setColumnPurpose(j, CSVFormat::ColumnValue);
+                        ++valueCount;
+                    }
+                }
+                continue;
+            }
+
             cp = purpose;
 
         } else {
+
+            if (i == m_fuzzyColumn) continue;
 
             // We can only have one ColumnStartTime column, and only
             // one of either ColumnDuration or ColumnEndTime
