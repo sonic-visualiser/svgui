@@ -2905,6 +2905,13 @@ SpectrogramLayer::getCompletion(View *v) const
     return completion;
 }
 
+QString
+SpectrogramLayer::getError(View *v) const
+{
+    if (m_fftModels.find(v) == m_fftModels.end()) return "";
+    return m_fftModels[v].first->getError();
+}
+
 bool
 SpectrogramLayer::getValueExtents(float &min, float &max,
                                   bool &logarithmic, QString &unit) const

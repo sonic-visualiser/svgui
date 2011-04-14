@@ -362,6 +362,8 @@ protected:
     LayerList           m_layers; // I don't own these, but see dtor note above
     bool                m_haveSelectedLayer;
 
+    QString             m_lastError;
+
     // caches for use in getScrollableBackLayers, getNonScrollableFrontLayers
     mutable LayerList m_lastScrollableBackLayers;
     mutable LayerList m_lastNonScrollableBackLayers;
