@@ -200,6 +200,7 @@ public:
     float getFrequencyForY(const View *v, int y) const;
 
     virtual int getCompletion(View *v) const;
+    virtual QString getError(View *v) const;
 
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;

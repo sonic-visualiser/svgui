@@ -33,6 +33,7 @@
 #include <QProgressDialog>
 #include <QTextStream>
 #include <QFont>
+#include <QMessageBox>
 
 #include <iostream>
 #include <cassert>
@@ -1436,6 +1437,12 @@ View::checkProgress(void *object)
 
 	    int completion = i->first->getCompletion(this);
             QString text = i->first->getPropertyContainerName();
+            QString error = i->first->getError(this);
+
+            if (error != "" && error != m_lastError) {
+                QMessageBox::critical(this, tr("Layer rendering error"), error);
+                m_lastError = error;
+            }
 
             Model *model = i->first->getModel();
             RangeSummarisableTimeValueModel *wfm = 

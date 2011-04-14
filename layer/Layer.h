@@ -339,6 +339,13 @@ public:
      */
     virtual int getCompletion(View *) const { return 100; }
 
+    /**
+     * Return an error string if any errors have occurred while
+     * loading or processing data for the given view.  Return the
+     * empty string if no error has occurred.
+     */
+    virtual QString getError(View *) const { return ""; }
+
     virtual void setObjectName(const QString &name);
 
     /**
