@@ -106,7 +106,7 @@ Layer::setObjectName(const QString &name)
 PlayParameters *
 Layer::getPlayParameters() 
 {
-//    std::cerr << "Layer (" << this << ", " << objectName().toStdString() << ")::getPlayParameters: model is "<< getModel() << std::endl;
+//    std::cerr << "Layer (" << this << ", " << objectName() << ")::getPlayParameters: model is "<< getModel() << std::endl;
     const Model *model = getModel();
     if (model) {
 	return PlayParameterRepository::getInstance()->getPlayParameters(model);

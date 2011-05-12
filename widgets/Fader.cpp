@@ -222,7 +222,7 @@ Fader::setValue(float v)
                 .arg(abs(int(db * 10.0) % 10))
                 .arg(abs(int(db * 100.0) % 10));
 	}
-        std::cerr << "Fader: setting tooltip to \"" << text.toStdString() << "\"" << std::endl;
+        std::cerr << "Fader: setting tooltip to \"" << text << "\"" << std::endl;
         QWidget::setToolTip(text);
 	update();
     }

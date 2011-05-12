@@ -446,7 +446,7 @@ LayerFactory::createLayer(LayerType type)
 		  << type << std::endl;
     } else {
 //	std::cerr << "LayerFactory::createLayer: Setting object name "
-//		  << getLayerPresentationName(type).toStdString() << " on " << layer << std::endl;
+//		  << getLayerPresentationName(type) << " on " << layer << std::endl;
 	layer->setObjectName(getLayerPresentationName(type));
         setLayerDefaultProperties(type, layer);
     }
@@ -457,14 +457,14 @@ LayerFactory::createLayer(LayerType type)
 void
 LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
 {
-//    std::cerr << "LayerFactory::setLayerDefaultProperties: type " << type << " (name \"" << getLayerTypeName(type).toStdString() << "\")" << std::endl;
+//    std::cerr << "LayerFactory::setLayerDefaultProperties: type " << type << " (name \"" << getLayerTypeName(type) << "\")" << std::endl;
 
     QSettings settings;
     settings.beginGroup("LayerDefaults");
     QString defaults = settings.value(getLayerTypeName(type), "").toString();
     if (defaults == "") return;
 
-//    std::cerr << "defaults=\"" << defaults.toStdString() << "\"" << std::endl;
+//    std::cerr << "defaults=\"" << defaults << "\"" << std::endl;
 
     QString xml = layer->toXmlString();
     QDomDocument docOld, docNew;
@@ -481,7 +481,7 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
 //            std::cerr << "append \"" << attr.name().toStdString()
-//                      << "\" -> \"" << attr.value().toStdString() << "\""
+//                      << "\" -> \"" << attr.value() << "\""
 //                      << std::endl;
             attrs.append(attr.name(), "", "", attr.value());
         }
@@ -493,7 +493,7 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
             if (attr.isNull()) continue;
             if (attrs.value(attr.name()) == "") {
 //                std::cerr << "append \"" << attr.name().toStdString()
-//                          << "\" -> \"" << attr.value().toStdString() << "\""
+//                          << "\" -> \"" << attr.value() << "\""
 //                          << std::endl;
                 attrs.append(attr.name(), "", "", attr.value());
             }

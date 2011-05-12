@@ -99,7 +99,7 @@ AudioDial::~AudioDial (void)
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
-//    std::cerr << "AudioDial[" << this << "][\"" << objectName().toStdString() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << std::endl;
+//    std::cerr << "AudioDial[" << this << "][\"" << objectName() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << std::endl;
 
     if (m_rangeMapper == mapper) return;
 

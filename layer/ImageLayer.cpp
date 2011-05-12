@@ -500,7 +500,7 @@ ImageLayer::setLayerDormant(const View *v, bool dormant)
 bool
 ImageLayer::getImageOriginalSize(QString name, QSize &size) const
 {
-//    std::cerr << "getImageOriginalSize: \"" << name.toStdString() << "\"" << std::endl;
+//    std::cerr << "getImageOriginalSize: \"" << name << "\"" << std::endl;
 
     QMutexLocker locker(&m_imageMapMutex);
     if (m_images.find(name) == m_images.end()) {
@@ -521,7 +521,7 @@ ImageLayer::getImage(View *v, QString name, QSize maxSize) const
 {
     bool need = false;
 
-//    std::cerr << "ImageLayer::getImage(" << v << ", " << name.toStdString() << ", ("
+//    std::cerr << "ImageLayer::getImage(" << v << ", " << name << ", ("
 //              << maxSize.width() << "x" << maxSize.height() << "))" << std::endl;
 
     if (!m_scaled[v][name].isNull()  &&
@@ -627,7 +627,7 @@ ImageLayer::addImage(long frame, QString url)
 {
     QImage image(getLocalFilename(url));
     if (image.isNull()) {
-        std::cerr << "Failed to open image from url \"" << url.toStdString() << "\" (local filename \"" << getLocalFilename(url).toStdString() << "\"" << std::endl;
+        std::cerr << "Failed to open image from url \"" << url << "\" (local filename \"" << getLocalFilename(url) << "\"" << std::endl;
         delete m_fileSources[url];
         m_fileSources.erase(url);
         return false;
@@ -906,7 +906,7 @@ ImageLayer::getLocalFilename(QString img) const
 void
 ImageLayer::checkAddSource(QString img) const
 {
-    std::cerr << "ImageLayer::checkAddSource(" << img.toStdString() << "): yes, trying..." << std::endl;
+    std::cerr << "ImageLayer::checkAddSource(" << img << "): yes, trying..." << std::endl;
 
     if (m_fileSources.find(img) != m_fileSources.end()) {
         return;
@@ -915,7 +915,7 @@ ImageLayer::checkAddSource(QString img) const
     ProgressDialog dialog(tr("Opening image URL..."), true, 2000);
     FileSource *rf = new FileSource(img, &dialog);
     if (rf->isOK()) {
-        std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename().toStdString() << ")" << std::endl;
+        std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename() << ")" << std::endl;
         m_fileSources[img] = rf;
         connect(rf, SIGNAL(ready()), this, SLOT(fileSourceReady()));
     } else {
@@ -948,7 +948,7 @@ ImageLayer::fileSourceReady()
          i != m_fileSources.end(); ++i) {
         if (i->second == rf) {
             img = i->first;
-//            std::cerr << "it's image \"" << img.toStdString() << "\"" << std::endl;
+//            std::cerr << "it's image \"" << img << "\"" << std::endl;
             break;
         }
     }

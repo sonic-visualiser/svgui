@@ -34,6 +34,8 @@
 #include <QWheelEvent>
 #include <QPaintEvent>
 
+#include "base/Debug.h"
+
 class Fader : public QWidget
 {
     Q_OBJECT

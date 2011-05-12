@@ -22,6 +22,8 @@
 
 #include <vector>
 
+#include "base/Debug.h"
+
 class QLabel;
 class QXmlInputSource;
 

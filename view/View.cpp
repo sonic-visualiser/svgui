@@ -1272,7 +1272,7 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
 
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
 //        std::cerr << "View::getScrollableBackLayers: calling isLayerDormant on layer " << *i << std::endl;
-//        std::cerr << "(name is " << (*i)->objectName().toStdString() << ")"
+//        std::cerr << "(name is " << (*i)->objectName() << ")"
 //                  << std::endl;
 //        std::cerr << "View::getScrollableBackLayers: I am " << this << std::endl;
 	if ((*i)->isLayerDormant(this)) continue;
