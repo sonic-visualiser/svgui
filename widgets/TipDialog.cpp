@@ -134,7 +134,7 @@ TipDialog::readTips()
 
     QFile file(filename);
 
-    std::cerr << "TipDialog::readTips from " << filename.toStdString() << std::endl;
+    std::cerr << "TipDialog::readTips from " << filename << std::endl;
 
     QXmlInputSource source(&file);
     
@@ -146,7 +146,7 @@ void
 TipDialog::showTip()
 {
     if (m_tipNumber < int(m_tips.size())) {
-        std::cerr << "Tip " << m_tipNumber << " is: " << m_tips[m_tipNumber].toStdString() << std::endl;
+        std::cerr << "Tip " << m_tipNumber << " is: " << m_tips[m_tipNumber] << std::endl;
         m_label->setText(m_tips[m_tipNumber]);
     } else {
         accept();
@@ -188,11 +188,11 @@ TipDialog::TipFileParser::startElement(const QString &, const QString &,
 {
     QString name = qName.toLower();
 
-    std::cerr << "TipFileParser::startElement(" << name.toStdString() << ")" << std::endl;
+    std::cerr << "TipFileParser::startElement(" << name << ")" << std::endl;
 
     if (name == "tips") {
         QString caption = attributes.value("caption");
-        std::cerr << "TipFileParser::caption = " << caption.toStdString() << std::endl;
+        std::cerr << "TipFileParser::caption = " << caption << std::endl;
         if (caption != "") m_dialog->m_caption = caption;
     } else if (name == "tip") {
         if (m_inTip) {
@@ -263,7 +263,7 @@ TipDialog::TipFileParser::endElement(const QString &, const QString &,
 bool
 TipDialog::TipFileParser::characters(const QString &text)
 {
-    std::cerr << "TipFileParser::characters(" << text.toStdString() << ")" << std::endl;
+    std::cerr << "TipFileParser::characters(" << text << ")" << std::endl;
 
     if (m_inText || m_inHtml) {
         m_dialog->m_tips[m_dialog->m_tips.size()-1] += text;
@@ -280,7 +280,7 @@ TipDialog::TipFileParser::error(const QXmlParseException &exception)
 	.arg(exception.message())
 	.arg(exception.lineNumber())
 	.arg(exception.columnNumber());
-    std::cerr << errorString.toStdString() << std::endl;
+    std::cerr << errorString << std::endl;
     return QXmlDefaultHandler::error(exception);
 }
 
@@ -292,6 +292,6 @@ TipDialog::TipFileParser::fatalError(const QXmlParseException &exception)
 	.arg(exception.message())
 	.arg(exception.lineNumber())
 	.arg(exception.columnNumber());
-    std::cerr << errorString.toStdString() << std::endl;
+    std::cerr << errorString << std::endl;
     return QXmlDefaultHandler::fatalError(exception);
 }

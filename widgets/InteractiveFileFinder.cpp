@@ -284,7 +284,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         
         QFileInfo fi(path);
 
-        std::cerr << "type = " << type << ", suffix = " << fi.suffix().toStdString() << std::endl;
+        std::cerr << "type = " << type << ", suffix = " << fi.suffix() << std::endl;
         
         if ((type == LayerFile || type == LayerFileNoMidi)
             && fi.suffix() == "") {
@@ -301,7 +301,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
             } else if (selectedFilter.contains(".ttl")) {
                 expectedExtension = "ttl";
             }
-            std::cerr << "expected extension = " << expectedExtension.toStdString() << std::endl;
+            std::cerr << "expected extension = " << expectedExtension << std::endl;
             if (expectedExtension != "") {
                 path = QString("%1.%2").arg(path).arg(expectedExtension);
                 fi = QFileInfo(path);
@@ -408,8 +408,8 @@ InteractiveFileFinder::findRelative(QString location, QString relativeTo)
 {
     if (relativeTo == "") return "";
 
-    std::cerr << "Looking for \"" << location.toStdString() << "\" next to \""
-              << relativeTo.toStdString() << "\"..." << std::endl;
+    std::cerr << "Looking for \"" << location << "\" next to \""
+              << relativeTo << "\"..." << std::endl;
 
     QString fileName;
     QString resolved;
@@ -427,7 +427,7 @@ InteractiveFileFinder::findRelative(QString location, QString relativeTo)
     if (FileSource::isRemote(relativeTo)) {
         resolved = QUrl(relativeTo).resolved(fileName).toString();
         if (!FileSource(resolved).isAvailable()) resolved = "";
-        std::cerr << "resolved: " << resolved.toStdString() << std::endl;
+        std::cerr << "resolved: " << resolved << std::endl;
     } else {
         if (QUrl(relativeTo).scheme() == "file") {
             relativeTo = QUrl(relativeTo).toLocalFile();

@@ -828,7 +828,7 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
     QString title = model->getTitle();
     QString maker = model->getMaker();
 //std::cerr << "Pane::drawWorkTitle: title=\"" << title.toStdString()
-//<< "\", maker=\"" << maker.toStdString() << "\"" << std::endl;
+//<< "\", maker=\"" << maker << "\"" << std::endl;
     if (title == "") return;
 
     QString text = title;
@@ -875,7 +875,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
         texts.push_back((*i)->getLayerPresentationName());
 //        std::cerr << "Pane " << this << ": Layer presentation name for " << *i << ": "
-//                  << texts[texts.size()-1].toStdString() << std::endl;
+//                  << texts[texts.size()-1] << std::endl;
         pixmaps.push_back((*i)->getLayerPresentationPixmap
                           (QSize(fontAscent, fontAscent)));
     }
@@ -892,7 +892,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 	
         for (size_t i = 0; i < texts.size(); ++i) {
 
-//            std::cerr << "Pane "<< this << ": text " << i << ": " << texts[i].toStdString() << std::endl;
+//            std::cerr << "Pane "<< this << ": text " << i << ": " << texts[i] << std::endl;
             
             if (i + 1 == texts.size()) {
                 paint.setPen(getForeground());
@@ -1724,7 +1724,7 @@ Pane::zoomToRegion(int x0, int y0, int x1, int y1)
             rmin = powf(10, rmin);
             rmax = powf(10, rmax);
         }
-        std::cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit.toStdString() << std::endl;
+        std::cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << std::endl;
 
         layer->setDisplayExtents(rmin, rmax);
         updateVerticalPanner();

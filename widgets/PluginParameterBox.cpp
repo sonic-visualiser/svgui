@@ -225,7 +225,7 @@ PluginParameterBox::dialChanged(int ival)
     }
 
     if (m_params.find(identifier) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::dialChanged: Unknown parameter \"" << identifier.toStdString() << "\"" << std::endl;
+        std::cerr << "WARNING: PluginParameterBox::dialChanged: Unknown parameter \"" << identifier << "\"" << std::endl;
         return;
     }
 
@@ -267,7 +267,7 @@ PluginParameterBox::dialChanged(int ival)
         spin->blockSignals(false);
     }
 
-//    std::cerr << "setting plugin parameter \"" << identifier.toStdString() << "\" to value " << newValue << std::endl;
+//    std::cerr << "setting plugin parameter \"" << identifier << "\" to value " << newValue << std::endl;
 
     m_plugin->setParameter(identifier.toStdString(), newValue);
 
@@ -288,7 +288,7 @@ PluginParameterBox::checkBoxChanged(int state)
     }
 
     if (m_params.find(identifier) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::checkBoxChanged: Unknown parameter \"" << identifier.toStdString() << "\"" << std::endl;
+        std::cerr << "WARNING: PluginParameterBox::checkBoxChanged: Unknown parameter \"" << identifier << "\"" << std::endl;
         return;
     }
 
@@ -314,7 +314,7 @@ PluginParameterBox::spinBoxChanged(double value)
     }
 
     if (m_params.find(identifier) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::spinBoxChanged: Unknown parameter \"" << identifier.toStdString() << "\"" << std::endl;
+        std::cerr << "WARNING: PluginParameterBox::spinBoxChanged: Unknown parameter \"" << identifier << "\"" << std::endl;
         return;
     }
 
@@ -352,7 +352,7 @@ PluginParameterBox::spinBoxChanged(double value)
         dial->blockSignals(false);
     }
 
-    std::cerr << "setting plugin parameter \"" << identifier.toStdString() << "\" to value " << value << std::endl;
+    std::cerr << "setting plugin parameter \"" << identifier << "\" to value " << value << std::endl;
 
     m_plugin->setParameter(identifier.toStdString(), value);
 

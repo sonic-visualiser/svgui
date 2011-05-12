@@ -204,7 +204,7 @@ ImageDialog::updatePreview()
             }
         }
         
-//        std::cerr << "image filename: \"" << fileName.toStdString() << "\"" << std::endl;
+//        std::cerr << "image filename: \"" << fileName << "\"" << std::endl;
 
         m_loadedImage = QPixmap(fileName);
         m_loadedImageFile = img;

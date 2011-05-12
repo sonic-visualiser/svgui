@@ -638,7 +638,7 @@ SpectrogramLayer::invalidateImageCaches(size_t startFrame, size_t endFrame)
 void
 SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
 {
-    std::cerr << "SpectrogramLayer::preferenceChanged(" << name.toStdString() << ")" << std::endl;
+    std::cerr << "SpectrogramLayer::preferenceChanged(" << name << ")" << std::endl;
 
     if (name == "Window Type") {
         setWindowType(Preferences::getInstance()->getWindowType());
