@@ -35,7 +35,7 @@ InteractiveFileFinder::m_instance;
 InteractiveFileFinder::InteractiveFileFinder() :
     m_lastLocatedLocation("")
 {
-    std::cerr << "Registering interactive file finder" << std::endl;
+    DEBUG << "Registering interactive file finder" << endl;
     FileFinder::registerFileFinder(this);
 }
 
@@ -383,7 +383,7 @@ InteractiveFileFinder::find(FileType type, QString location, QString lastKnownLo
 {
     if (FileSource::canHandleScheme(location)) {
         if (FileSource(location).isAvailable()) {
-            std::cerr << "InteractiveFileFinder::find: ok, it's available... returning" << std::endl;
+            DEBUG << "InteractiveFileFinder::find: ok, it's available... returning" << endl;
             return location;
         }
     }
@@ -408,8 +408,8 @@ InteractiveFileFinder::findRelative(QString location, QString relativeTo)
 {
     if (relativeTo == "") return "";
 
-    std::cerr << "Looking for \"" << location << "\" next to \""
-              << relativeTo << "\"..." << std::endl;
+    DEBUG << "Looking for \"" << location << "\" next to \""
+              << relativeTo << "\"..." << endl;
 
     QString fileName;
     QString resolved;

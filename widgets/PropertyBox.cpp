@@ -148,7 +148,7 @@ PropertyBox::populateViewPlayFrame()
     layout->setMargin(layout->margin() / 2);
 
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName() << ") params " << params << std::endl;
+    DEBUG << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName() << ") params " << params << endl;
 #endif
 
     if (layer) {
@@ -530,7 +530,7 @@ PropertyBox::propertyContainerPropertyChanged(PropertyContainer *pc)
     if (pc != m_container) return;
     
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox::propertyContainerPropertyChanged" << std::endl;
+    DEBUG << "PropertyBox::propertyContainerPropertyChanged" << endl;
 #endif
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
@@ -608,8 +608,7 @@ PropertyBox::propertyControllerChanged(int value)
     QString name = obj->objectName();
 
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox::propertyControllerChanged(" << name.toStdString()
-	      << ", " << value << ")" << std::endl;
+    DEBUG << "PropertyBox::propertyControllerChanged(" << name	      << ", " << value << ")" << endl;
 #endif
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);

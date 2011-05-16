@@ -442,11 +442,11 @@ LayerFactory::createLayer(LayerType type)
     }
 
     if (!layer) {
-	std::cerr << "LayerFactory::createLayer: Unknown layer type " 
-		  << type << std::endl;
+	DEBUG << "LayerFactory::createLayer: Unknown layer type " 
+		  << type << endl;
     } else {
-//	std::cerr << "LayerFactory::createLayer: Setting object name "
-//		  << getLayerPresentationName(type) << " on " << layer << std::endl;
+//	DEBUG << "LayerFactory::createLayer: Setting object name "
+//		  << getLayerPresentationName(type) << " on " << layer << endl;
 	layer->setObjectName(getLayerPresentationName(type));
         setLayerDefaultProperties(type, layer);
     }
@@ -457,7 +457,7 @@ LayerFactory::createLayer(LayerType type)
 void
 LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
 {
-//    std::cerr << "LayerFactory::setLayerDefaultProperties: type " << type << " (name \"" << getLayerTypeName(type) << "\")" << std::endl;
+//    DEBUG << "LayerFactory::setLayerDefaultProperties: type " << type << " (name \"" << getLayerTypeName(type) << "\")" << endl;
 
     QSettings settings;
     settings.beginGroup("LayerDefaults");

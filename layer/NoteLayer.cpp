@@ -60,7 +60,7 @@ NoteLayer::setModel(NoteModel *model)
 
     connectSignals(m_model);
 
-//    std::cerr << "NoteLayer::setModel(" << model << ")" << std::endl;
+//    DEBUG << "NoteLayer::setModel(" << model << ")" << endl;
 
     m_scaleMinimum = 0;
     m_scaleMaximum = 0;
@@ -253,7 +253,7 @@ NoteLayer::setDisplayExtents(float min, float max)
     m_scaleMinimum = min;
     m_scaleMaximum = max;
 
-//    std::cerr << "NoteLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+//    DEBUG << "NoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
     
     emit layerParametersChanged();
     return true;
@@ -334,7 +334,7 @@ NoteLayer::setVerticalZoomStep(int step)
         newmax = max;
     }
     
-    std::cerr << "NoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+    DEBUG << "NoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
 
     setDisplayExtents(newmin, newmax);
 }
@@ -724,8 +724,8 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     QColor brushColour(getBaseQColor());
     brushColour.setAlpha(80);
 
-//    std::cerr << "NoteLayer::paint: resolution is "
-//	      << m_model->getResolution() << " frames" << std::endl;
+//    DEBUG << "NoteLayer::paint: resolution is "
+//	      << m_model->getResolution() << " frames" << endl;
 
     float min = m_model->getValueMinimum();
     float max = m_model->getValueMaximum();
@@ -794,7 +794,7 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 void
 NoteLayer::drawStart(View *v, QMouseEvent *e)
 {
-//    std::cerr << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
+//    DEBUG << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) return;
 
@@ -818,7 +818,7 @@ NoteLayer::drawStart(View *v, QMouseEvent *e)
 void
 NoteLayer::drawDrag(View *v, QMouseEvent *e)
 {
-//    std::cerr << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+//    DEBUG << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model || !m_editing) return;
 
@@ -847,7 +847,7 @@ NoteLayer::drawDrag(View *v, QMouseEvent *e)
 void
 NoteLayer::drawEnd(View *, QMouseEvent *)
 {
-//    std::cerr << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+//    DEBUG << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
     m_editingCommand = 0;
@@ -897,7 +897,7 @@ NoteLayer::eraseEnd(View *v, QMouseEvent *e)
 void
 NoteLayer::editStart(View *v, QMouseEvent *e)
 {
-//    std::cerr << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+//    DEBUG << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) return;
 
@@ -920,7 +920,7 @@ NoteLayer::editStart(View *v, QMouseEvent *e)
 void
 NoteLayer::editDrag(View *v, QMouseEvent *e)
 {
-//    std::cerr << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+//    DEBUG << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model || !m_editing) return;
 
@@ -949,7 +949,7 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
 void
 NoteLayer::editEnd(View *, QMouseEvent *)
 {
-//    std::cerr << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
+//    DEBUG << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {

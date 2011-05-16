@@ -29,6 +29,7 @@
 #define _LED_BUTTON_H_
 
 #include <QWidget>
+#include "base/Debug.h"
 
 class QColor;
 

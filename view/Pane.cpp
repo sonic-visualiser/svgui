@@ -85,7 +85,7 @@ Pane::Pane(QWidget *w) :
     updateHeadsUpDisplay();
 
 
-//    std::cerr << "Pane::Pane(" << this << ") returning" << std::endl;
+//    DEBUG << "Pane::Pane(" << this << ") returning" << endl;
 }
 
 void
@@ -624,7 +624,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
 //	    Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
-//	    std::cerr << "Pane::paintEvent: calling paint.save() in vertical scale block" << std::endl;
+//	    DEBUG << "Pane::paintEvent: calling paint.save() in vertical scale block" << endl;
         paint.save();
             
         paint.setPen(getForeground());
@@ -827,8 +827,7 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
 {
     QString title = model->getTitle();
     QString maker = model->getMaker();
-//std::cerr << "Pane::drawWorkTitle: title=\"" << title.toStdString()
-//<< "\", maker=\"" << maker << "\"" << std::endl;
+//DEBUG << "Pane::drawWorkTitle: title=\"" << title//<< "\", maker=\"" << maker << "\"" << endl;
     if (title == "") return;
 
     QString text = title;
@@ -1784,8 +1783,8 @@ Pane::dragTopLayer(QMouseEvent *e)
         }
 
 #ifdef DEBUG_PANE	    
-        std::cerr << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame <<
-            ", models end frame = " << getModelsEndFrame() << std::endl;
+        DEBUG << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame <<
+            ", models end frame = " << getModelsEndFrame() << endl;
 #endif
 
         if (newCentreFrame >= getModelsEndFrame()) {
@@ -1850,26 +1849,26 @@ Pane::updateDragMode(DragMode dragMode,
 
     int smallThreshold = 10, bigThreshold = 80;
 
-//    std::cerr << "Pane::updateDragMode: xdiff = " << xdiff << ", ydiff = "
-//              << ydiff << ", canMoveVertical = " << canMoveVertical << ", drag mode = " << m_dragMode << std::endl;
+//    DEBUG << "Pane::updateDragMode: xdiff = " << xdiff << ", ydiff = "
+//              << ydiff << ", canMoveVertical = " << canMoveVertical << ", drag mode = " << m_dragMode << endl;
 
     if (dragMode == UnresolvedDrag) {
 
         if (abs(ydiff) > smallThreshold &&
             abs(ydiff) > abs(xdiff) * 2 &&
             canMoveVertical) {
-//            std::cerr << "Pane::updateDragMode: passed vertical threshold" << std::endl;
+//            DEBUG << "Pane::updateDragMode: passed vertical threshold" << endl;
             dragMode = VerticalDrag;
         } else if (abs(xdiff) > smallThreshold &&
                    abs(xdiff) > abs(ydiff) * 2 &&
                    canMoveHorizontal) {
-//            std::cerr << "Pane::updateDragMode: passed horizontal threshold" << std::endl;
+//            DEBUG << "Pane::updateDragMode: passed horizontal threshold" << endl;
             dragMode = HorizontalDrag;
         } else if (abs(xdiff) > smallThreshold &&
                    abs(ydiff) > smallThreshold &&
                    canMoveVertical &&
                    canMoveHorizontal) {
-//            std::cerr << "Pane::updateDragMode: passed both thresholds" << std::endl;
+//            DEBUG << "Pane::updateDragMode: passed both thresholds" << endl;
             dragMode = FreeDrag;
         }
     }
@@ -2278,7 +2277,7 @@ Pane::dropEvent(QDropEvent *e)
 
         if (e->provides("text/uri-list")) {
 
-            std::cerr << "accepting... data is \"" << e->encodedData("text/uri-list").data() << "\"" << std::endl;
+            DEBUG << "accepting... data is \"" << e->encodedData("text/uri-list").data() << "\"" << endl;
             emit dropAccepted(QString::fromLocal8Bit
                               (e->encodedData("text/uri-list").data())
                               .split(QRegExp("[\\r\\n]+"), 
@@ -2373,7 +2372,7 @@ void
 Pane::toolModeChanged()
 {
     ViewManager::ToolMode mode = m_manager->getToolMode();
-//    std::cerr << "Pane::toolModeChanged(" << mode << ")" << std::endl;
+//    DEBUG << "Pane::toolModeChanged(" << mode << ")" << endl;
 
     if (mode == ViewManager::MeasureMode && !m_measureCursor1) {
         m_measureCursor1 = new QCursor(QBitmap(":/icons/measure1cursor.xbm"),
