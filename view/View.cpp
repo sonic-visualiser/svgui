@@ -64,12 +64,12 @@ View::View(QWidget *w, bool showProgress) :
     m_manager(0),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
-    std::cerr << "View::View(" << this << ")" << std::endl;
+    DEBUG << "View::View(" << this << ")" << endl;
 }
 
 View::~View()
 {
-//    std::cerr << "View::~View(" << this << ")" << std::endl;
+//    DEBUG << "View::~View(" << this << ")" << endl;
 
     m_deleting = true;
     delete m_propertyContainer;
@@ -274,7 +274,7 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
 void
 View::toolModeChanged()
 {
-//    std::cerr << "View::toolModeChanged(" << m_manager->getToolMode() << ")" << std::endl;
+//    DEBUG << "View::toolModeChanged(" << m_manager->getToolMode() << ")" << endl;
 }
 
 void
@@ -359,7 +359,7 @@ View::getFrameForX(int x) const
     long frame = m_centreFrame - (width()/2) * z;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    std::cerr << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << std::endl;
+    DEBUG << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << endl;
 #endif
 
     frame = (frame / z) * z; // this is start frame
@@ -688,13 +688,13 @@ View::setViewManager(ViewManager *manager)
 //    setCentreFrame(m_manager->getViewInitialCentreFrame());
 
     if (m_followPlay == PlaybackScrollPage) {
-//        std::cerr << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
+//        DEBUG << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << endl;
         setCentreFrame(m_manager->getGlobalCentreFrame(), false);
     } else if (m_followPlay == PlaybackScrollContinuous) {
-//        std::cerr << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << std::endl;
+//        DEBUG << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << endl;
         setCentreFrame(m_manager->getPlaybackFrame(), false);
     } else if (m_followPan) {
-//        std::cerr << "View::setViewManager: (follow pan) setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << std::endl;
+//        DEBUG << "View::setViewManager: (follow pan) setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << endl;
         setCentreFrame(m_manager->getGlobalCentreFrame(), false);
     }
 
@@ -897,7 +897,7 @@ View::layerParametersChanged()
     Layer *layer = dynamic_cast<Layer *>(sender());
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    std::cerr << "View::layerParametersChanged()" << std::endl;
+    DEBUG << "View::layerParametersChanged()" << endl;
 #endif
 
     delete m_cache;
@@ -1271,10 +1271,10 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
     bool metUnscrollable = false;
 
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
-//        std::cerr << "View::getScrollableBackLayers: calling isLayerDormant on layer " << *i << std::endl;
+//        DEBUG << "View::getScrollableBackLayers: calling isLayerDormant on layer " << *i << endl;
 //        std::cerr << "(name is " << (*i)->objectName() << ")"
 //                  << std::endl;
-//        std::cerr << "View::getScrollableBackLayers: I am " << this << std::endl;
+//        DEBUG << "View::getScrollableBackLayers: I am " << this << endl;
 	if ((*i)->isLayerDormant(this)) continue;
 	if ((*i)->isLayerOpaque()) {
 	    // You can't see anything behind an opaque layer!
@@ -1459,7 +1459,7 @@ View::checkProgress(void *object)
                     (wfm = dynamic_cast<RangeSummarisableTimeValueModel *>
                      (model->getSourceModel()))) {
                     completion = wfm->getAlignmentCompletion();
-//                    std::cerr << "View::checkProgress: Alignment completion = " << completion << std::endl;
+//                    DEBUG << "View::checkProgress: Alignment completion = " << completion << endl;
                     if (completion < 100) {
                         text = tr("Alignment");
                     }
@@ -1544,7 +1544,7 @@ void
 View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
-//    std::cerr << "View::paintEvent: centre frame is " << m_centreFrame << std::endl;
+//    DEBUG << "View::paintEvent: centre frame is " << m_centreFrame << endl;
 
     if (m_layers.empty()) {
 	QFrame::paintEvent(e);
@@ -1876,7 +1876,7 @@ View::drawSelections(QPainter &paint)
 	if (p1 < 0 || p0 > width()) continue;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	std::cerr << "View::drawSelections: " << p0 << ",-1 [" << (p1-p0) << "x" << (height()+1) << "]" << std::endl;
+	DEBUG << "View::drawSelections: " << p0 << ",-1 [" << (p1-p0) << "x" << (height()+1) << "]" << endl;
 #endif
 
 	bool illuminateThis =
@@ -1978,8 +1978,8 @@ void
 View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
                           bool focus) const
 {
-//    std::cerr << "View::drawMeasurementRect(" << r.x() << "," << r.y() << " "
-//              << r.width() << "x" << r.height() << ")" << std::endl;
+//    DEBUG << "View::drawMeasurementRect(" << r.x() << "," << r.y() << " "
+//              << r.width() << "x" << r.height() << ")" << endl;
 
     if (r.x() + r.width() < 0 || r.x() >= width()) return;
 

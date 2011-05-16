@@ -53,7 +53,7 @@ void
 ActivityLog::activityHappened(QString name)
 {
     name = name.replace("&", "");
-//    std::cerr << "ActivityLog::activityHappened(" << name << ")" << std::endl;
+//    DEBUG << "ActivityLog::activityHappened(" << name << ")" << endl;
     if (name == m_prevName) {
 //        std::cerr << "(ignoring duplicate)" << std::endl;
         return;

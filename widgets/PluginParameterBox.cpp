@@ -258,7 +258,7 @@ PluginParameterBox::dialChanged(int ival)
         newValue = min + ival * qtz;
     }
 
-//    std::cerr << "PluginParameterBox::dialChanged: newValue = " << newValue << std::endl;
+//    DEBUG << "PluginParameterBox::dialChanged: newValue = " << newValue << endl;
 
     QDoubleSpinBox *spin = m_params[identifier].spin;
     if (spin) {
@@ -267,7 +267,7 @@ PluginParameterBox::dialChanged(int ival)
         spin->blockSignals(false);
     }
 
-//    std::cerr << "setting plugin parameter \"" << identifier << "\" to value " << newValue << std::endl;
+//    DEBUG << "setting plugin parameter \"" << identifier << "\" to value " << newValue << endl;
 
     m_plugin->setParameter(identifier.toStdString(), newValue);
 
@@ -352,7 +352,7 @@ PluginParameterBox::spinBoxChanged(double value)
         dial->blockSignals(false);
     }
 
-    std::cerr << "setting plugin parameter \"" << identifier << "\" to value " << value << std::endl;
+    DEBUG << "setting plugin parameter \"" << identifier << "\" to value " << value << endl;
 
     m_plugin->setParameter(identifier.toStdString(), value);
 

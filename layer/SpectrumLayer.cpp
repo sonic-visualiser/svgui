@@ -57,7 +57,7 @@ SpectrumLayer::~SpectrumLayer()
 void
 SpectrumLayer::setModel(DenseTimeValueModel *model)
 {
-    std::cerr << "SpectrumLayer::setModel(" << model << ") from " << m_originModel << std::endl;
+    DEBUG << "SpectrumLayer::setModel(" << model << ") from " << m_originModel << endl;
     
     if (m_originModel == model) return;
 
@@ -79,7 +79,7 @@ SpectrumLayer::setModel(DenseTimeValueModel *model)
 void
 SpectrumLayer::setChannel(int channel)
 {
-    std::cerr << "SpectrumLayer::setChannel(" << channel << ") from " << m_channel << std::endl;
+    DEBUG << "SpectrumLayer::setChannel(" << channel << ") from " << m_channel << endl;
     
     m_channelSet = true;
     
@@ -654,12 +654,12 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_originModel || !m_originModel->isOK() ||
         !m_originModel->isReady()) {
-        std::cerr << "SpectrumLayer::paint: no origin model, or origin model not OK or not ready" << std::endl;
+        DEBUG << "SpectrumLayer::paint: no origin model, or origin model not OK or not ready" << endl;
         return;
     }
 
     if (m_newFFTNeeded) {
-        std::cerr << "SpectrumLayer::paint: new FFT needed, calling setupFFT" << std::endl;
+        DEBUG << "SpectrumLayer::paint: new FFT needed, calling setupFFT" << endl;
         const_cast<SpectrumLayer *>(this)->setupFFT(); //ugh
     }
 
@@ -682,7 +682,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         // draw peak lines
 
-//        std::cerr << "Showing peaks..." << std::endl;
+//        DEBUG << "Showing peaks..." << endl;
 
         size_t col = v->getCentreFrame() / fft->getResolution();
 
