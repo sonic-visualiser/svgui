@@ -132,7 +132,7 @@ void
 SingleColourLayer::setDefaultColourFor(View *v)
 {
 #ifdef DEBUG_COLOUR_SELECTION
-    std::cerr << "SingleColourLayer::setDefaultColourFor: m_colourExplicitlySet = " << m_colourExplicitlySet << ", m_defaultColourSet " << m_defaultColourSet << std::endl;
+    DEBUG << "SingleColourLayer::setDefaultColourFor: m_colourExplicitlySet = " << m_colourExplicitlySet << ", m_defaultColourSet " << m_defaultColourSet << endl;
 #endif
 
     if (m_colourExplicitlySet || m_defaultColourSet) return;
@@ -312,7 +312,7 @@ SingleColourLayer::setProperties(const QXmlAttributes &attributes)
     if (m_colour != colour) {
 
 #ifdef DEBUG_COLOUR_SELECTION
-        std::cerr << "SingleColourLayer::setProperties: changing colour from " << m_colour << " to " << colour << std::endl;
+        DEBUG << "SingleColourLayer::setProperties: changing colour from " << m_colour << " to " << colour << endl;
 #endif
 
         if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&

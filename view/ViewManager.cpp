@@ -61,17 +61,17 @@ ViewManager::ViewManager() :
     if (getGlobalDarkBackground()) {
 /*
         std::cerr << "dark palette:" << std::endl;
-        std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name().toStdString() << std::endl;
-        std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name().toStdString() << std::endl;
-        std::cerr << "base = " << QApplication::palette().color(QPalette::Base).name().toStdString() << std::endl;
-        std::cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name().toStdString() << std::endl;
-        std::cerr << "text = " << QApplication::palette().color(QPalette::Text).name().toStdString() << std::endl;
-        std::cerr << "button = " << QApplication::palette().color(QPalette::Button).name().toStdString() << std::endl;
-        std::cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name().toStdString() << std::endl;
-        std::cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name().toStdString() << std::endl;
-        std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name().toStdString() << std::endl;
-        std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name().toStdString() << std::endl;
-        std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name().toStdString() << std::endl;
+        std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name() << std::endl;
+        std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name() << std::endl;
+        std::cerr << "base = " << QApplication::palette().color(QPalette::Base).name() << std::endl;
+        std::cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name() << std::endl;
+        std::cerr << "text = " << QApplication::palette().color(QPalette::Text).name() << std::endl;
+        std::cerr << "button = " << QApplication::palette().color(QPalette::Button).name() << std::endl;
+        std::cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name() << std::endl;
+        std::cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name() << std::endl;
+        std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name() << std::endl;
+        std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name() << std::endl;
+        std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name() << std::endl;
 */
         m_lightPalette = QPalette(QColor("#000000"),  // WindowText
                                   QColor("#dddfe4"),  // Button
@@ -87,17 +87,17 @@ ViewManager::ViewManager() :
     } else {
 /*
         std::cerr << "light palette:" << std::endl;
-        std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name().toStdString() << std::endl;
-        std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name().toStdString() << std::endl;
-        std::cerr << "base = " << QApplication::palette().color(QPalette::Base).name().toStdString() << std::endl;
-        std::cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name().toStdString() << std::endl;
-        std::cerr << "text = " << QApplication::palette().color(QPalette::Text).name().toStdString() << std::endl;
-        std::cerr << "button = " << QApplication::palette().color(QPalette::Button).name().toStdString() << std::endl;
-        std::cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name().toStdString() << std::endl;
-        std::cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name().toStdString() << std::endl;
-        std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name().toStdString() << std::endl;
-        std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name().toStdString() << std::endl;
-        std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name().toStdString() << std::endl;
+        std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name() << std::endl;
+        std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name() << std::endl;
+        std::cerr << "base = " << QApplication::palette().color(QPalette::Base).name() << std::endl;
+        std::cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name() << std::endl;
+        std::cerr << "text = " << QApplication::palette().color(QPalette::Text).name() << std::endl;
+        std::cerr << "button = " << QApplication::palette().color(QPalette::Button).name() << std::endl;
+        std::cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name() << std::endl;
+        std::cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name() << std::endl;
+        std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name() << std::endl;
+        std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name() << std::endl;
+        std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name() << std::endl;
 */
         m_darkPalette = QPalette(QColor("#ffffff"),  // WindowText
                                  QColor("#3e3e3e"),  // Button
@@ -499,7 +499,7 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
     View *v = dynamic_cast<View *>(sender());
 
 #ifdef DEBUG_VIEW_MANAGER
-    std::cerr << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << std::endl;
+    DEBUG << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << endl;
 #endif
 
     if (locked) {
@@ -556,7 +556,7 @@ ViewManager::viewZoomLevelChanged(unsigned long z, bool locked)
     View *v = dynamic_cast<View *>(sender());
 
     if (!v) {
-        std::cerr << "ViewManager::viewZoomLevelChanged: WARNING: sender is not a view" << std::endl;
+        DEBUG << "ViewManager::viewZoomLevelChanged: WARNING: sender is not a view" << endl;
         return;
     }
 

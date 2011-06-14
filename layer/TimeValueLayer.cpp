@@ -81,7 +81,7 @@ TimeValueLayer::setModel(SparseTimeValueModel *model)
     }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::setModel(" << model << ")" << std::endl;
+    DEBUG << "TimeValueLayer::setModel(" << model << ")" << endl;
 #endif
 
     emit modelReplaced();
@@ -348,7 +348,7 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
     }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << std::endl;
+    DEBUG << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << endl;
 #endif
 
     return true;
@@ -371,7 +371,7 @@ TimeValueLayer::setDisplayExtents(float min, float max)
     m_scaleMaximum = max;
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+    DEBUG << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
 #endif
     
     emit layerParametersChanged();
@@ -403,7 +403,7 @@ TimeValueLayer::getCurrentVerticalZoomStep() const
     int nr = mapper->getPositionForValue(dmax - dmin);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getCurrentVerticalZoomStep: dmin = " << dmin << ", dmax = " << dmax << ", nr = " << nr << std::endl;
+    DEBUG << "TimeValueLayer::getCurrentVerticalZoomStep: dmin = " << dmin << ", dmax = " << dmax << ", nr = " << nr << endl;
 #endif
 
     delete mapper;
@@ -458,7 +458,7 @@ TimeValueLayer::setVerticalZoomStep(int step)
     }
     
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+    DEBUG << "TimeValueLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
 #endif
 
     setDisplayExtents(newmin, newmax);
@@ -826,8 +826,8 @@ TimeValueLayer::getColourForValue(View *v, float val) const
     }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getColourForValue: min " << min << ", max "
-              << max << ", log " << log << ", value " << val << std::endl;
+    DEBUG << "TimeValueLayer::getColourForValue: min " << min << ", max "
+              << max << ", log " << log << ", value " << val << endl;
 #endif
 
     QColor solid = ColourMapper(m_colourMap, min, max).map(val);
@@ -870,8 +870,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.setBrush(brushColour);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::paint: resolution is "
-	      << m_model->getResolution() << " frames" << std::endl;
+    DEBUG << "TimeValueLayer::paint: resolution is "
+	      << m_model->getResolution() << " frames" << endl;
 #endif
 
     float min = m_model->getValueMinimum();
@@ -1067,7 +1067,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	if (m_plotStyle == PlotSegmentation) {
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-            std::cerr << "drawing rect" << std::endl;
+            DEBUG << "drawing rect" << endl;
 #endif
 	    
 	    if (nx <= x) continue;
@@ -1251,7 +1251,7 @@ void
 TimeValueLayer::drawStart(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
+    DEBUG << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
     if (!m_model) return;
@@ -1271,7 +1271,7 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
              i != points.end(); ++i) {
             if (((i->frame / resolution) * resolution) != frame) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+                DEBUG << "ignoring out-of-range frame at " << i->frame << endl;
 #endif
                 continue;
             }
@@ -1301,7 +1301,7 @@ void
 TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+    DEBUG << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
     if (!m_model || !m_editing) return;
@@ -1327,18 +1327,18 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
             if (i->frame == m_editingPoint.frame &&
                 i->value == m_editingPoint.value) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                std::cerr << "ignoring current editing point at " << i->frame << ", " << i->value << std::endl;
+                DEBUG << "ignoring current editing point at " << i->frame << ", " << i->value << endl;
 #endif
                 continue;
             }
             if (((i->frame / resolution) * resolution) != frame) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+                DEBUG << "ignoring out-of-range frame at " << i->frame << endl;
 #endif
                 continue;
             }
 #ifdef DEBUG_TIME_VALUE_LAYER
-            std::cerr << "adjusting to new point at " << i->frame << ", " << i->value << std::endl;
+            DEBUG << "adjusting to new point at " << i->frame << ", " << i->value << endl;
 #endif
             m_editingPoint = *i;
             m_originalPoint = m_editingPoint;
@@ -1363,7 +1363,7 @@ void
 TimeValueLayer::drawEnd(View *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::drawEnd" << std::endl;
+    DEBUG << "TimeValueLayer::drawEnd" << endl;
 #endif
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
@@ -1420,7 +1420,7 @@ void
 TimeValueLayer::editStart(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+    DEBUG << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
     if (!m_model) return;
@@ -1443,7 +1443,7 @@ void
 TimeValueLayer::editDrag(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+    DEBUG << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
     if (!m_model || !m_editing) return;
@@ -1469,7 +1469,7 @@ void
 TimeValueLayer::editEnd(View *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::editEnd" << std::endl;
+    DEBUG << "TimeValueLayer::editEnd" << endl;
 #endif
     if (!m_model || !m_editing) return;
 
@@ -1809,9 +1809,9 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
             newPoint.value = i->getValue();
         } else {
 #ifdef DEBUG_TIME_VALUE_LAYER
-            std::cerr << "Setting value on point at " << newPoint.frame << " from labeller";
+            DEBUG << "Setting value on point at " << newPoint.frame << " from labeller";
             if (i == points.begin()) {
-                std::cerr << ", no prev point" << std::endl;
+                DEBUG << ", no prev point" << endl;
             } else {
                 std::cerr << ", prev point is at " << prevPoint.frame << std::endl;
             }
