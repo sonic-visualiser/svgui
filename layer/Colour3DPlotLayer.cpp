@@ -493,7 +493,7 @@ Colour3DPlotLayer::setLayerDormant(const View *v, bool dormant)
     if (dormant) {
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        DEBUG << "Colour3DPlotLayer::setLayerDormant(" << dormant << ")"
+        SVDEBUG << "Colour3DPlotLayer::setLayerDormant(" << dormant << ")"
                   << endl;
 #endif
 
@@ -588,7 +588,7 @@ Colour3DPlotLayer::setVerticalZoomStep(int step)
 {
     if (!m_model) return;
 
-//    DEBUG << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"): before: miny = " << m_miny << ", maxy = " << m_maxy << endl;
+//    SVDEBUG << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"): before: miny = " << m_miny << ", maxy = " << m_maxy << endl;
 
     int dist = m_model->getHeight() - step;
     if (dist < 1) dist = 1;
@@ -598,7 +598,7 @@ Colour3DPlotLayer::setVerticalZoomStep(int step)
     m_maxy = m_miny + dist;
     if (m_maxy > m_model->getHeight()) m_maxy = m_model->getHeight();
 
-//    DEBUG << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"):  after: miny = " << m_miny << ", maxy = " << m_maxy << endl;
+//    SVDEBUG << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"):  after: miny = " << m_miny << ", maxy = " << m_maxy << endl;
     
     emit layerParametersChanged();
 }
@@ -918,7 +918,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     size_t modelResolution = m_model->getResolution();
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    DEBUG << "Colour3DPlotLayer::fillCache: " << firstBin << " -> " << lastBin << endl;
+    SVDEBUG << "Colour3DPlotLayer::fillCache: " << firstBin << " -> " << lastBin << endl;
 #endif
 
     size_t modelStartBin = modelStart / modelResolution;
@@ -1152,12 +1152,12 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
 /*
     if (m_model) {
-        DEBUG << "Colour3DPlotLayer::paint: model says shouldUseLogValueScale = " << m_model->shouldUseLogValueScale() << endl;
+        SVDEBUG << "Colour3DPlotLayer::paint: model says shouldUseLogValueScale = " << m_model->shouldUseLogValueScale() << endl;
     }
 */
     Profiler profiler("Colour3DPlotLayer::paint");
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    DEBUG << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
+    SVDEBUG << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
 #endif
 
     int completion = 0;
@@ -1213,7 +1213,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
               sx1 < 0 ? 0 : sx1);
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    DEBUG << "Colour3DPlotLayer::paint: height = "<< m_model->getHeight() << ", modelStart = " << modelStart << ", resolution = " << modelResolution << ", model rate = " << m_model->getSampleRate() << " (zoom level = " << v->getZoomLevel() << ", srRatio = " << srRatio << ")" << endl;
+    SVDEBUG << "Colour3DPlotLayer::paint: height = "<< m_model->getHeight() << ", modelStart = " << modelStart << ", resolution = " << modelResolution << ", model rate = " << m_model->getSampleRate() << " (zoom level = " << v->getZoomLevel() << ", srRatio = " << srRatio << ")" << endl;
 #endif
 
     if (m_opaque || 
@@ -1221,14 +1221,14 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
         int(m_model->getHeight()) >= v->height() ||
         ((modelResolution * srRatio) / v->getZoomLevel()) < 2) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        DEBUG << "calling paintDense" << endl;
+        SVDEBUG << "calling paintDense" << endl;
 #endif
         paintDense(v, paint, rect);
         return;
     }
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    DEBUG << "Colour3DPlotLayer::paint: w " << x1-x0 << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sx1-sx0 << ", sh " << sh << endl;
+    SVDEBUG << "Colour3DPlotLayer::paint: w " << x1-x0 << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sx1-sx0 << ", sh " << sh << endl;
     std::cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", resolution " << m_model->getResolution() << std::endl;
 #endif
 
@@ -1358,7 +1358,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     if (m_peaksCache) {
         if (((modelResolution * srRatio * m_peakResolution) / zoomLevel) < 1) {
-            DEBUG << "using peaks cache" << endl;
+            SVDEBUG << "using peaks cache" << endl;
             source = m_peaksCache;
             modelResolution *= m_peakResolution;
         } else {

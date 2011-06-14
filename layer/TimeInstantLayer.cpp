@@ -60,7 +60,7 @@ TimeInstantLayer::setModel(SparseOneDimensionalModel *model)
     connectSignals(m_model);
 
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    DEBUG << "TimeInstantLayer::setModel(" << model << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::setModel(" << model << ")" << endl;
 #endif
 
     if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
@@ -363,7 +363,7 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 	oddBrushColour.setAlpha(100);
     }
 
-//    DEBUG << "TimeInstantLayer::paint: resolution is "
+//    SVDEBUG << "TimeInstantLayer::paint: resolution is "
 //	      << m_model->getResolution() << " frames" << endl;
 
     QPoint localPos;
@@ -469,7 +469,7 @@ void
 TimeInstantLayer::drawStart(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    DEBUG << "TimeInstantLayer::drawStart(" << e->x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::drawStart(" << e->x() << ")" << endl;
 #endif
 
     if (!m_model) return;
@@ -492,7 +492,7 @@ void
 TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    DEBUG << "TimeInstantLayer::drawDrag(" << e->x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::drawDrag(" << e->x() << ")" << endl;
 #endif
 
     if (!m_model || !m_editing) return;
@@ -509,7 +509,7 @@ void
 TimeInstantLayer::drawEnd(View *, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    DEBUG << "TimeInstantLayer::drawEnd(" << e->x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::drawEnd(" << e->x() << ")" << endl;
 #endif
     if (!m_model || !m_editing) return;
     QString newName = tr("Add Point at %1 s")
@@ -570,7 +570,7 @@ void
 TimeInstantLayer::editStart(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    DEBUG << "TimeInstantLayer::editStart(" << e->x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::editStart(" << e->x() << ")" << endl;
 #endif
 
     if (!m_model) return;
@@ -592,7 +592,7 @@ void
 TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    DEBUG << "TimeInstantLayer::editDrag(" << e->x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::editDrag(" << e->x() << ")" << endl;
 #endif
 
     if (!m_model || !m_editing) return;
@@ -615,7 +615,7 @@ void
 TimeInstantLayer::editEnd(View *, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    DEBUG << "TimeInstantLayer::editEnd(" << e->x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::editEnd(" << e->x() << ")" << endl;
 #endif
     if (!m_model || !m_editing) return;
     if (m_editingCommand) {

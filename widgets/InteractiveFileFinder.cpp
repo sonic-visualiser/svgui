@@ -35,7 +35,7 @@ InteractiveFileFinder::m_instance;
 InteractiveFileFinder::InteractiveFileFinder() :
     m_lastLocatedLocation("")
 {
-    DEBUG << "Registering interactive file finder" << endl;
+    SVDEBUG << "Registering interactive file finder" << endl;
     FileFinder::registerFileFinder(this);
 }
 
@@ -383,7 +383,7 @@ InteractiveFileFinder::find(FileType type, QString location, QString lastKnownLo
 {
     if (FileSource::canHandleScheme(location)) {
         if (FileSource(location).isAvailable()) {
-            DEBUG << "InteractiveFileFinder::find: ok, it's available... returning" << endl;
+            SVDEBUG << "InteractiveFileFinder::find: ok, it's available... returning" << endl;
             return location;
         }
     }
@@ -408,7 +408,7 @@ InteractiveFileFinder::findRelative(QString location, QString relativeTo)
 {
     if (relativeTo == "") return "";
 
-    DEBUG << "Looking for \"" << location << "\" next to \""
+    SVDEBUG << "Looking for \"" << location << "\" next to \""
               << relativeTo << "\"..." << endl;
 
     QString fileName;

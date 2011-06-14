@@ -288,7 +288,7 @@ WaveformLayer::setChannelMode(ChannelMode channelMode)
 void
 WaveformLayer::setChannel(int channel)
 {
-//    DEBUG << "WaveformLayer::setChannel(" << channel << ")" << endl;
+//    SVDEBUG << "WaveformLayer::setChannel(" << channel << ")" << endl;
 
     if (m_channel == channel) return;
     m_channel = channel;
@@ -382,7 +382,7 @@ WaveformLayer::getChannelArrangement(size_t &min, size_t &max,
     merging = (m_channelMode == MergeChannels && rawChannels > 1);
     mixing = (m_channelMode == MixChannels && rawChannels > 1);
 
-//    DEBUG << "WaveformLayer::getChannelArrangement: min " << min << ", max " << max << ", merging " << merging << ", channels " << channels << endl;
+//    SVDEBUG << "WaveformLayer::getChannelArrangement: min " << min << ", max " << max << ", merging " << merging << ", channels " << channels << endl;
 
     return channels;
 }    
@@ -474,7 +474,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 #ifdef DEBUG_WAVEFORM_PAINT
     Profiler profiler("WaveformLayer::paint", true);
-    DEBUG << "WaveformLayer::paint (" << rect.x() << "," << rect.y()
+    SVDEBUG << "WaveformLayer::paint (" << rect.x() << "," << rect.y()
 	      << ") [" << rect.width() << "x" << rect.height() << "]: zoom " << zoomLevel << ", start " << startFrame << endl;
 #endif
 
@@ -494,7 +494,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     if (m_aggressive) {
 
 #ifdef DEBUG_WAVEFORM_PAINT
-        DEBUG << "WaveformLayer::paint: aggressive is true" << endl;
+        SVDEBUG << "WaveformLayer::paint: aggressive is true" << endl;
 #endif
 
 	if (m_cacheValid && (zoomLevel != m_cacheZoomLevel)) {
@@ -504,7 +504,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	if (!m_cache || m_cache->width() != w || m_cache->height() != h) {
 #ifdef DEBUG_WAVEFORM_PAINT
             if (m_cache) {
-                DEBUG << "WaveformLayer::paint: cache size " << m_cache->width() << "x" << m_cache->height() << " differs from view size " << w << "x" << h << ": regenerating aggressive cache" << endl;
+                SVDEBUG << "WaveformLayer::paint: cache size " << m_cache->width() << "x" << m_cache->height() << " differs from view size " << w << "x" << h << ": regenerating aggressive cache" << endl;
             }
 #endif
 	    delete m_cache;
@@ -562,7 +562,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     getSourceFramesForX(v, x1, modelZoomLevel, spare, frame1);
     
 #ifdef DEBUG_WAVEFORM_PAINT
-    DEBUG << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << modelZoomLevel << ")" <<  endl;
+    SVDEBUG << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << modelZoomLevel << ")" <<  endl;
 #endif
 
     RangeSummarisableTimeValueModel::RangeBlock *ranges = 
@@ -703,11 +703,11 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
             size_t i1 = (f1 - frame0) / modelZoomLevel;
 
 #ifdef DEBUG_WAVEFORM_PAINT
-            DEBUG << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
+            SVDEBUG << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
 #endif
 
             if (i1 > i0 + 1) {
-                DEBUG << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << modelZoomLevel << ")" << endl;
+                SVDEBUG << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << modelZoomLevel << ")" << endl;
             }
 
 	    if (ranges && i0 < ranges->size()) {

@@ -85,7 +85,7 @@ Pane::Pane(QWidget *w) :
     updateHeadsUpDisplay();
 
 
-//    DEBUG << "Pane::Pane(" << this << ") returning" << endl;
+//    SVDEBUG << "Pane::Pane(" << this << ") returning" << endl;
 }
 
 void
@@ -624,7 +624,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
 //	    Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
-//	    DEBUG << "Pane::paintEvent: calling paint.save() in vertical scale block" << endl;
+//	    SVDEBUG << "Pane::paintEvent: calling paint.save() in vertical scale block" << endl;
         paint.save();
             
         paint.setPen(getForeground());
@@ -827,7 +827,7 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
 {
     QString title = model->getTitle();
     QString maker = model->getMaker();
-//DEBUG << "Pane::drawWorkTitle: title=\"" << title//<< "\", maker=\"" << maker << "\"" << endl;
+//SVDEBUG << "Pane::drawWorkTitle: title=\"" << title//<< "\", maker=\"" << maker << "\"" << endl;
     if (title == "") return;
 
     QString text = title;
@@ -1783,7 +1783,7 @@ Pane::dragTopLayer(QMouseEvent *e)
         }
 
 #ifdef DEBUG_PANE	    
-        DEBUG << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame <<
+        SVDEBUG << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame <<
             ", models end frame = " << getModelsEndFrame() << endl;
 #endif
 
@@ -1849,7 +1849,7 @@ Pane::updateDragMode(DragMode dragMode,
 
     int smallThreshold = 10, bigThreshold = 80;
 
-//    DEBUG << "Pane::updateDragMode: xdiff = " << xdiff << ", ydiff = "
+//    SVDEBUG << "Pane::updateDragMode: xdiff = " << xdiff << ", ydiff = "
 //              << ydiff << ", canMoveVertical = " << canMoveVertical << ", drag mode = " << m_dragMode << endl;
 
     if (dragMode == UnresolvedDrag) {
@@ -1857,18 +1857,18 @@ Pane::updateDragMode(DragMode dragMode,
         if (abs(ydiff) > smallThreshold &&
             abs(ydiff) > abs(xdiff) * 2 &&
             canMoveVertical) {
-//            DEBUG << "Pane::updateDragMode: passed vertical threshold" << endl;
+//            SVDEBUG << "Pane::updateDragMode: passed vertical threshold" << endl;
             dragMode = VerticalDrag;
         } else if (abs(xdiff) > smallThreshold &&
                    abs(xdiff) > abs(ydiff) * 2 &&
                    canMoveHorizontal) {
-//            DEBUG << "Pane::updateDragMode: passed horizontal threshold" << endl;
+//            SVDEBUG << "Pane::updateDragMode: passed horizontal threshold" << endl;
             dragMode = HorizontalDrag;
         } else if (abs(xdiff) > smallThreshold &&
                    abs(ydiff) > smallThreshold &&
                    canMoveVertical &&
                    canMoveHorizontal) {
-//            DEBUG << "Pane::updateDragMode: passed both thresholds" << endl;
+//            SVDEBUG << "Pane::updateDragMode: passed both thresholds" << endl;
             dragMode = FreeDrag;
         }
     }
@@ -2277,7 +2277,7 @@ Pane::dropEvent(QDropEvent *e)
 
         if (e->provides("text/uri-list")) {
 
-            DEBUG << "accepting... data is \"" << e->encodedData("text/uri-list").data() << "\"" << endl;
+            SVDEBUG << "accepting... data is \"" << e->encodedData("text/uri-list").data() << "\"" << endl;
             emit dropAccepted(QString::fromLocal8Bit
                               (e->encodedData("text/uri-list").data())
                               .split(QRegExp("[\\r\\n]+"), 
@@ -2372,7 +2372,7 @@ void
 Pane::toolModeChanged()
 {
     ViewManager::ToolMode mode = m_manager->getToolMode();
-//    DEBUG << "Pane::toolModeChanged(" << mode << ")" << endl;
+//    SVDEBUG << "Pane::toolModeChanged(" << mode << ")" << endl;
 
     if (mode == ViewManager::MeasureMode && !m_measureCursor1) {
         m_measureCursor1 = new QCursor(QBitmap(":/icons/measure1cursor.xbm"),

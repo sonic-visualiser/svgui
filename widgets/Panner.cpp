@@ -210,7 +210,7 @@ Panner::getRectExtents(float &x0, float &y0, float &width, float &height)
 void
 Panner::setRectExtents(float x0, float y0, float width, float height)
 {
-//    DEBUG << "Panner::setRectExtents(" << x0 << ", " << y0 << ", "
+//    SVDEBUG << "Panner::setRectExtents(" << x0 << ", " << y0 << ", "
 //              << width << ", " << height << ")" << endl;
 
     if (m_rectX == x0 &&

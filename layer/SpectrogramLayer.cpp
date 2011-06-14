@@ -578,7 +578,7 @@ SpectrogramLayer::invalidateImageCaches(size_t startFrame, size_t endFrame)
         const View *v = i->first;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        DEBUG << "SpectrogramLayer::invalidateImageCaches(" 
+        SVDEBUG << "SpectrogramLayer::invalidateImageCaches(" 
                   << startFrame << ", " << endFrame << "): view range is "
                   << v->getStartFrame() << ", " << v->getEndFrame()
                   << endl;
@@ -598,7 +598,7 @@ SpectrogramLayer::invalidateImageCaches(size_t startFrame, size_t endFrame)
             }
             int x = v->getXForFrame(startFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            DEBUG << "clipping from 0 to " << x-1 << endl;
+            SVDEBUG << "clipping from 0 to " << x-1 << endl;
 #endif
             if (x > 1) {
                 i->second.validArea &=
@@ -615,7 +615,7 @@ SpectrogramLayer::invalidateImageCaches(size_t startFrame, size_t endFrame)
             }
             int x = v->getXForFrame(endFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            DEBUG << "clipping from " << x+1 << " to " << v->width()
+            SVDEBUG << "clipping from " << x+1 << " to " << v->width()
                       << endl;
 #endif
             if (x < v->width()) {
@@ -638,7 +638,7 @@ SpectrogramLayer::invalidateImageCaches(size_t startFrame, size_t endFrame)
 void
 SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
 {
-    DEBUG << "SpectrogramLayer::preferenceChanged(" << name << ")" << endl;
+    SVDEBUG << "SpectrogramLayer::preferenceChanged(" << name << ")" << endl;
 
     if (name == "Window Type") {
         setWindowType(Preferences::getInstance()->getWindowType());
@@ -764,7 +764,7 @@ SpectrogramLayer::getWindowType() const
 void
 SpectrogramLayer::setGain(float gain)
 {
-//    DEBUG << "SpectrogramLayer::setGain(" << gain << ") (my gain is now "
+//    SVDEBUG << "SpectrogramLayer::setGain(" << gain << ") (my gain is now "
 //	      << m_gain << ")" << endl;
 
     if (m_gain == gain) return;
@@ -805,7 +805,7 @@ SpectrogramLayer::setMinFrequency(size_t mf)
 {
     if (m_minFrequency == mf) return;
 
-//    DEBUG << "SpectrogramLayer::setMinFrequency: " << mf << endl;
+//    SVDEBUG << "SpectrogramLayer::setMinFrequency: " << mf << endl;
 
     invalidateImageCaches();
     invalidateMagnitudes();
@@ -826,7 +826,7 @@ SpectrogramLayer::setMaxFrequency(size_t mf)
 {
     if (m_maxFrequency == mf) return;
 
-//    DEBUG << "SpectrogramLayer::setMaxFrequency: " << mf << endl;
+//    SVDEBUG << "SpectrogramLayer::setMaxFrequency: " << mf << endl;
 
     invalidateImageCaches();
     invalidateMagnitudes();
@@ -951,7 +951,7 @@ SpectrogramLayer::getNormalizeColumns() const
 void
 SpectrogramLayer::setNormalizeVisibleArea(bool n)
 {
-    DEBUG << "SpectrogramLayer::setNormalizeVisibleArea(" << n
+    SVDEBUG << "SpectrogramLayer::setNormalizeVisibleArea(" << n
               << ") (from " << m_normalizeVisibleArea << ")" << endl;
 
     if (m_normalizeVisibleArea == n) return;
@@ -975,7 +975,7 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
     if (dormant) {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        DEBUG << "SpectrogramLayer::setLayerDormant(" << dormant << ")"
+        SVDEBUG << "SpectrogramLayer::setLayerDormant(" << dormant << ")"
                   << endl;
 #endif
 
@@ -1020,7 +1020,7 @@ void
 SpectrogramLayer::cacheInvalid()
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "SpectrogramLayer::cacheInvalid()" << endl;
+    SVDEBUG << "SpectrogramLayer::cacheInvalid()" << endl;
 #endif
 
     invalidateImageCaches();
@@ -1031,7 +1031,7 @@ void
 SpectrogramLayer::cacheInvalid(size_t from, size_t to)
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
+    SVDEBUG << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
 #endif
 
     invalidateImageCaches(from, to);
@@ -1046,7 +1046,7 @@ SpectrogramLayer::fillTimerTimedOut()
     bool allDone = true;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "SpectrogramLayer::fillTimerTimedOut: have " << m_fftModels.size() << " FFT models associated with views" << endl;
+    SVDEBUG << "SpectrogramLayer::fillTimerTimedOut: have " << m_fftModels.size() << " FFT models associated with views" << endl;
 #endif
 
     for (ViewFFTMap::iterator i = m_fftModels.begin();
@@ -1060,7 +1060,7 @@ SpectrogramLayer::fillTimerTimedOut()
             size_t fill = model->getFillExtent();
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            DEBUG << "SpectrogramLayer::fillTimerTimedOut: extent for " << model << ": " << fill << ", last " << lastFill << ", total " << m_model->getEndFrame() << endl;
+            SVDEBUG << "SpectrogramLayer::fillTimerTimedOut: extent for " << model << ": " << fill << ", last " << lastFill << ", total " << m_model->getEndFrame() << endl;
 #endif
 
             if (fill >= lastFill) {
@@ -1629,13 +1629,13 @@ SpectrogramLayer::getFFTModel(const View *v) const
     if (m_fftModels.find(v) != m_fftModels.end()) {
         if (m_fftModels[v].first == 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            DEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found null model" << endl;
+            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found null model" << endl;
 #endif
             return 0;
         }
         if (m_fftModels[v].first->getHeight() != fftSize / 2 + 1) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            DEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[v].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
+            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[v].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
 #endif
             delete m_fftModels[v].first;
             m_fftModels.erase(v);
@@ -1643,7 +1643,7 @@ SpectrogramLayer::getFFTModel(const View *v) const
             m_peakCaches.erase(v);
         } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            DEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[v].first->getHeight() << endl;
+            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[v].first->getHeight() << endl;
 #endif
             return m_fftModels[v].first;
         }
@@ -1764,7 +1764,7 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
     int s0 = int(std::min(s00, s10) + 0.0001);
     int s1 = int(std::max(s01, s11) + 0.0001);
 
-//    DEBUG << "SpectrogramLayer::updateViewMagnitudes: x0 = " << x0 << ", x1 = " << x1 << ", s00 = " << s00 << ", s11 = " << s11 << " s0 = " << s0 << ", s1 = " << s1 << endl;
+//    SVDEBUG << "SpectrogramLayer::updateViewMagnitudes: x0 = " << x0 << ", x1 = " << x1 << ", s00 = " << s00 << ", s11 = " << s11 << " s0 = " << s0 << ", s1 = " << s1 << endl;
 
     if (int(m_columnMags.size()) <= s1) {
         m_columnMags.resize(s1 + 1);
@@ -1777,7 +1777,7 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "SpectrogramLayer::updateViewMagnitudes returning from cols "
+    SVDEBUG << "SpectrogramLayer::updateViewMagnitudes returning from cols "
               << s0 << " -> " << s1 << " inclusive" << endl;
 #endif
 
@@ -1802,7 +1802,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     Profiler profiler("SpectrogramLayer::paint", false);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << endl;
+    SVDEBUG << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << endl;
     
     std::cerr << "rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << std::endl;
 #endif
@@ -1816,7 +1816,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     }
 
     if (isLayerDormant(v)) {
-	DEBUG << "SpectrogramLayer::paint(): Layer is dormant, making it undormant again" << endl;
+	SVDEBUG << "SpectrogramLayer::paint(): Layer is dormant, making it undormant again" << endl;
     }
 
     // Need to do this even if !isLayerDormant, as that could mean v
@@ -1837,14 +1837,14 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     ImageCache &cache = m_imageCaches[v];
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "SpectrogramLayer::paint(): image cache valid area " << cache.
+    SVDEBUG << "SpectrogramLayer::paint(): image cache valid area " << cache.
 
 validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() << "x" << cache.validArea.height() << endl;
 #endif
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     bool stillCacheing = (m_updateTimer != 0);
-    DEBUG << "SpectrogramLayer::paint(): Still cacheing = " << stillCacheing << endl;
+    SVDEBUG << "SpectrogramLayer::paint(): Still cacheing = " << stillCacheing << endl;
 #endif
 
     int zoomLevel = v->getZoomLevel();
@@ -2202,7 +2202,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     bool runOutOfData = false;
 
     if (w == 0) {
-        DEBUG << "*** NOTE: w == 0" << endl;
+        SVDEBUG << "*** NOTE: w == 0" << endl;
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2363,7 +2363,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (recreateWholeImageCache) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        DEBUG << "Recreating image cache: width = " << v->width()
+        SVDEBUG << "Recreating image cache: width = " << v->width()
                   << ", height = " << h << endl;
 #endif
 	cache.image = QImage(v->width(), h, QImage::Format_ARGB32_Premultiplied);
@@ -2371,7 +2371,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (w > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        DEBUG << "Painting " << w << "x" << h
+        SVDEBUG << "Painting " << w << "x" << h
                   << " from draw buffer at " << 0 << "," << 0
                   << " to " << w << "x" << h << " on cache at "
                   << x0 << "," << 0 << endl;
@@ -2383,13 +2383,13 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             int scaledLeft = v->getXForFrame(leftBoundaryFrame);
             int scaledRight = v->getXForFrame(rightBoundaryFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            DEBUG << "Rescaling image from " << bufwid
+            SVDEBUG << "Rescaling image from " << bufwid
                  << "x" << h << " to "
                  << scaledRight-scaledLeft << "x" << h << endl;
 #endif
             Preferences::SpectrogramXSmoothing xsmoothing = 
                 Preferences::getInstance()->getSpectrogramXSmoothing();
-//            DEBUG << "xsmoothing == " << xsmoothing << endl;
+//            SVDEBUG << "xsmoothing == " << xsmoothing << endl;
             QImage scaled = m_drawBuffer.scaled
                 (scaledRight - scaledLeft, h,
                  Qt::IgnoreAspectRatio,
@@ -2398,7 +2398,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             int scaledLeftCrop = v->getXForFrame(leftCropFrame);
             int scaledRightCrop = v->getXForFrame(rightCropFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            DEBUG << "Drawing image region of width " << scaledRightCrop - scaledLeftCrop << " to "
+            SVDEBUG << "Drawing image region of width " << scaledRightCrop - scaledLeftCrop << " to "
                  << scaledLeftCrop << " from " << scaledLeftCrop - scaledLeft << endl;
 #endif
             cachePainter.drawImage
@@ -2419,7 +2419,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     QRect pr = rect & cache.validArea;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "Painting " << pr.width() << "x" << pr.height()
+    SVDEBUG << "Painting " << pr.width() << "x" << pr.height()
               << " from cache at " << pr.x() << "," << pr.y()
               << " to window" << endl;
 #endif
@@ -2439,7 +2439,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     
             if (cache.validArea.x() > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                DEBUG << "SpectrogramLayer::paint() updating left (0, "
+                SVDEBUG << "SpectrogramLayer::paint() updating left (0, "
                           << cache.validArea.x() << ")" << endl;
 #endif
                 v->update(0, 0, cache.validArea.x(), h);
@@ -2448,7 +2448,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             if (cache.validArea.x() + cache.validArea.width() <
                 cache.image.width()) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                DEBUG << "SpectrogramLayer::paint() updating right ("
+                SVDEBUG << "SpectrogramLayer::paint() updating right ("
                           << cache.validArea.x() + cache.validArea.width()
                           << ", "
                           << cache.image.width() - (cache.validArea.x() +
@@ -2472,7 +2472,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     illuminateLocalFeatures(v, paint);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "SpectrogramLayer::paint() returning" << endl;
+    SVDEBUG << "SpectrogramLayer::paint() returning" << endl;
 #endif
 
     if (!m_synchronous) {
@@ -2707,7 +2707,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
             if (sx != psx) {
                 if (fft) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    DEBUG << "Retrieving column " << sx << " from fft directly" << endl;
+                    SVDEBUG << "Retrieving column " << sx << " from fft directly" << endl;
 #endif
                     if (m_colourScale == PhaseColourScale) {
                         fft->getPhasesAt(sx, autoarray, minbin, maxbin - minbin + 1);
@@ -2718,7 +2718,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                     }
                 } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    DEBUG << "Retrieving column " << sx << " from peaks cache" << endl;
+                    SVDEBUG << "Retrieving column " << sx << " from peaks cache" << endl;
 #endif
                     c = sourceModel->getColumn(sx);
                     if (m_normalizeColumns) {
@@ -2900,7 +2900,7 @@ SpectrogramLayer::getCompletion(View *v) const
 
     size_t completion = m_fftModels[v].first->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    DEBUG << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
+    SVDEBUG << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
     return completion;
 }
@@ -2933,7 +2933,7 @@ SpectrogramLayer::getDisplayExtents(float &min, float &max) const
     min = getEffectiveMinFrequency();
     max = getEffectiveMaxFrequency();
 
-//    DEBUG << "SpectrogramLayer::getDisplayExtents: " << min << "->" << max << endl;
+//    SVDEBUG << "SpectrogramLayer::getDisplayExtents: " << min << "->" << max << endl;
     return true;
 }    
 
@@ -2942,7 +2942,7 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
 {
     if (!m_model) return false;
 
-//    DEBUG << "SpectrogramLayer::setDisplayExtents: " << min << "->" << max << endl;
+//    SVDEBUG << "SpectrogramLayer::setDisplayExtents: " << min << "->" << max << endl;
 
     if (min < 0) min = 0;
     if (max > m_model->getSampleRate()/2) max = m_model->getSampleRate()/2;
@@ -3551,7 +3551,7 @@ SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
 
     defaultStep = mapper.getPositionForValue(initialMax) - minStep;
 
-//    DEBUG << "SpectrogramLayer::getVerticalZoomSteps: " << maxStep - minStep << " (" << maxStep <<"-" << minStep << "), default is " << defaultStep << " (from initial max freq " << initialMax << ")" << endl;
+//    SVDEBUG << "SpectrogramLayer::getVerticalZoomSteps: " << maxStep - minStep << " (" << maxStep <<"-" << minStep << "), default is " << defaultStep << " (from initial max freq " << initialMax << ")" << endl;
 
     return maxStep - minStep;
 }
@@ -3566,7 +3566,7 @@ SpectrogramLayer::getCurrentVerticalZoomStep() const
     
     SpectrogramRangeMapper mapper(m_model->getSampleRate(), m_fftSize);
     int n = mapper.getPositionForValue(dmax - dmin);
-//    DEBUG << "SpectrogramLayer::getCurrentVerticalZoomStep: " << n << endl;
+//    SVDEBUG << "SpectrogramLayer::getCurrentVerticalZoomStep: " << n << endl;
     return n;
 }
 
@@ -3632,7 +3632,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
         newmax = mmax;
     }
     
-//    DEBUG << "SpectrogramLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
+//    SVDEBUG << "SpectrogramLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
 
     setMinFrequency(lrintf(newmin));
     setMaxFrequency(lrintf(newmax));
@@ -3654,7 +3654,7 @@ SpectrogramLayer::updateMeasureRectYCoords(View *v, const MeasureRect &r) const
     int y1 = y0;
     if (r.endY > 0.0) y1 = getYForFrequency(v, r.endY);
 
-//    DEBUG << "SpectrogramLayer::updateMeasureRectYCoords: start " << r.startY << " -> " << y0 << ", end " << r.endY << " -> " << y1 << endl;
+//    SVDEBUG << "SpectrogramLayer::updateMeasureRectYCoords: start " << r.startY << " -> " << y0 << ", end " << r.endY << " -> " << y1 << endl;
 
     r.pixrect = QRect(r.pixrect.x(), y0, r.pixrect.width(), y1 - y0);
 }
@@ -3668,7 +3668,7 @@ SpectrogramLayer::setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int 
     } else {
         r.endY = getFrequencyForY(v, y);
     }
-//    DEBUG << "SpectrogramLayer::setMeasureRectYCoord: start " << r.startY << " <- " << y << ", end " << r.endY << " <- " << y << endl;
+//    SVDEBUG << "SpectrogramLayer::setMeasureRectYCoord: start " << r.startY << " <- " << y << ", end " << r.endY << " <- " << y << endl;
 
 }
 
@@ -3744,13 +3744,13 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 
     size_t minFrequency = attributes.value("minFrequency").toUInt(&ok);
     if (ok) {
-        DEBUG << "SpectrogramLayer::setProperties: setting min freq to " << minFrequency << endl;
+        SVDEBUG << "SpectrogramLayer::setProperties: setting min freq to " << minFrequency << endl;
         setMinFrequency(minFrequency);
     }
 
     size_t maxFrequency = attributes.value("maxFrequency").toUInt(&ok);
     if (ok) {
-        DEBUG << "SpectrogramLayer::setProperties: setting max freq to " << maxFrequency << endl;
+        SVDEBUG << "SpectrogramLayer::setProperties: setting max freq to " << maxFrequency << endl;
         setMaxFrequency(maxFrequency);
     }
 

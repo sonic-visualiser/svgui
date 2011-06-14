@@ -499,7 +499,7 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
     View *v = dynamic_cast<View *>(sender());
 
 #ifdef DEBUG_VIEW_MANAGER
-    DEBUG << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << endl;
+    SVDEBUG << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << endl;
 #endif
 
     if (locked) {
@@ -556,7 +556,7 @@ ViewManager::viewZoomLevelChanged(unsigned long z, bool locked)
     View *v = dynamic_cast<View *>(sender());
 
     if (!v) {
-        DEBUG << "ViewManager::viewZoomLevelChanged: WARNING: sender is not a view" << endl;
+        SVDEBUG << "ViewManager::viewZoomLevelChanged: WARNING: sender is not a view" << endl;
         return;
     }
 

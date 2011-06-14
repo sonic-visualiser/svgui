@@ -42,7 +42,7 @@ Layer::Layer() :
 
 Layer::~Layer()
 {
-//    DEBUG << "Layer::~Layer(" << this << ")" << endl;
+//    SVDEBUG << "Layer::~Layer(" << this << ")" << endl;
 }
 
 void
@@ -169,7 +169,7 @@ size_t
 Layer::alignToReference(View *v, size_t frame) const
 {
     const Model *m = getModel();
-    DEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
+    SVDEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
     if (m && m->getAlignmentReference()) {
         return m->alignToReference(frame);
     } else {
@@ -181,7 +181,7 @@ size_t
 Layer::alignFromReference(View *v, size_t frame) const
 {
     const Model *m = getModel();
-    DEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
+    SVDEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
     if (m && m->getAlignmentReference()) {
         return m->alignFromReference(frame);
     } else {

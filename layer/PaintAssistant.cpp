@@ -104,7 +104,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             ny = getYForValue(scale, nval, minVal, maxVal, rect.y(), h);
         }
 
-//        DEBUG << "PaintAssistant::paintVerticalLevelScale: val = "
+//        SVDEBUG << "PaintAssistant::paintVerticalLevelScale: val = "
 //                  << val << ", y = " << y << ", h = " << h << endl;
 
         bool spaceForLabel = (i == 0 ||

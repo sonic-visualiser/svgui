@@ -51,7 +51,7 @@ TextLayer::setModel(TextModel *model)
 
     connectSignals(m_model);
 
-//    DEBUG << "TextLayer::setModel(" << model << ")" << endl;
+//    SVDEBUG << "TextLayer::setModel(" << model << ")" << endl;
 
     emit modelReplaced();
 }
@@ -331,7 +331,7 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
     QColor penColour;
     penColour = v->getForeground();
 
-//    DEBUG << "TextLayer::paint: resolution is "
+//    SVDEBUG << "TextLayer::paint: resolution is "
 //	      << m_model->getResolution() << " frames" << endl;
 
     QPoint localPos;
@@ -413,10 +413,10 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 void
 TextLayer::drawStart(View *v, QMouseEvent *e)
 {
-//    DEBUG << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) {
-	DEBUG << "TextLayer::drawStart: no model" << endl;
+	SVDEBUG << "TextLayer::drawStart: no model" << endl;
 	return;
     }
 
@@ -439,7 +439,7 @@ TextLayer::drawStart(View *v, QMouseEvent *e)
 void
 TextLayer::drawDrag(View *v, QMouseEvent *e)
 {
-//    DEBUG << "TextLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model || !m_editing) return;
 
@@ -458,7 +458,7 @@ TextLayer::drawDrag(View *v, QMouseEvent *e)
 void
 TextLayer::drawEnd(View *v, QMouseEvent *)
 {
-//    DEBUG << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
 
     bool ok = false;
@@ -523,7 +523,7 @@ TextLayer::eraseEnd(View *v, QMouseEvent *e)
 void
 TextLayer::editStart(View *v, QMouseEvent *e)
 {
-//    DEBUG << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) return;
 
@@ -572,7 +572,7 @@ TextLayer::editDrag(View *v, QMouseEvent *e)
 void
 TextLayer::editEnd(View *, QMouseEvent *)
 {
-//    DEBUG << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {

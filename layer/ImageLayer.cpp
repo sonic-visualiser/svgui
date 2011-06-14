@@ -127,7 +127,7 @@ ImageLayer::getLocalPoints(View *v, int x, int y) const
 {
     if (!m_model) return ImageModel::PointList();
 
-//    DEBUG << "ImageLayer::getLocalPoints(" << x << "," << y << "):";
+//    SVDEBUG << "ImageLayer::getLocalPoints(" << x << "," << y << "):";
     const ImageModel::PointList &points(m_model->getPoints());
 
     ImageModel::PointList rv;
@@ -155,7 +155,7 @@ ImageLayer::getLocalPoints(View *v, int x, int y) const
         int width = 32;
         if (m_scaled[v].find(p.image) != m_scaled[v].end()) {
             width = m_scaled[v][p.image].width();
-//            DEBUG << "scaled width = " << width << endl;
+//            SVDEBUG << "scaled width = " << width << endl;
         }
 
         if (x >= px && x < px + width) {
@@ -521,7 +521,7 @@ ImageLayer::getImage(View *v, QString name, QSize maxSize) const
 {
     bool need = false;
 
-//    DEBUG << "ImageLayer::getImage(" << v << ", " << name << ", ("
+//    SVDEBUG << "ImageLayer::getImage(" << v << ", " << name << ", ("
 //              << maxSize.width() << "x" << maxSize.height() << "))" << endl;
 
     if (!m_scaled[v][name].isNull()  &&
@@ -558,10 +558,10 @@ ImageLayer::getImage(View *v, QString name, QSize maxSize) const
 void
 ImageLayer::drawStart(View *v, QMouseEvent *e)
 {
-//    DEBUG << "ImageLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) {
-	DEBUG << "ImageLayer::drawStart: no model" << endl;
+	SVDEBUG << "ImageLayer::drawStart: no model" << endl;
 	return;
     }
 
@@ -582,7 +582,7 @@ ImageLayer::drawStart(View *v, QMouseEvent *e)
 void
 ImageLayer::drawDrag(View *v, QMouseEvent *e)
 {
-//    DEBUG << "ImageLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model || !m_editing) return;
 
@@ -598,7 +598,7 @@ ImageLayer::drawDrag(View *v, QMouseEvent *e)
 void
 ImageLayer::drawEnd(View *v, QMouseEvent *)
 {
-//    DEBUG << "ImageLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
 
     bool ok = false;
@@ -644,7 +644,7 @@ ImageLayer::addImage(long frame, QString url)
 void
 ImageLayer::editStart(View *v, QMouseEvent *e)
 {
-//    DEBUG << "ImageLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) return;
 
@@ -686,7 +686,7 @@ ImageLayer::editDrag(View *v, QMouseEvent *e)
 void
 ImageLayer::editEnd(View *, QMouseEvent *)
 {
-//    DEBUG << "ImageLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {
@@ -906,7 +906,7 @@ ImageLayer::getLocalFilename(QString img) const
 void
 ImageLayer::checkAddSource(QString img) const
 {
-    DEBUG << "ImageLayer::checkAddSource(" << img << "): yes, trying..." << endl;
+    SVDEBUG << "ImageLayer::checkAddSource(" << img << "): yes, trying..." << endl;
 
     if (m_fileSources.find(img) != m_fileSources.end()) {
         return;
@@ -938,7 +938,7 @@ ImageLayer::checkAddSources()
 void
 ImageLayer::fileSourceReady()
 {
-//    DEBUG << "ImageLayer::fileSourceReady" << endl;
+//    SVDEBUG << "ImageLayer::fileSourceReady" << endl;
 
     FileSource *rf = dynamic_cast<FileSource *>(sender());
     if (!rf) return;

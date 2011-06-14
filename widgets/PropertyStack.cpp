@@ -80,7 +80,7 @@ PropertyStack::repopulate()
     blockSignals(true);
 
 #ifdef DEBUG_PROPERTY_STACK
-    DEBUG << "PropertyStack::repopulate" << endl;
+    SVDEBUG << "PropertyStack::repopulate" << endl;
 #endif
     
     while (count() > 0) {
