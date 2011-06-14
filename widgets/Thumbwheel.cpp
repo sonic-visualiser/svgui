@@ -142,7 +142,7 @@ Thumbwheel::setMappedValue(float mappedValue)
         bool changed = (m_mappedValue != mappedValue);
         m_mappedValue = mappedValue;
         m_noMappedUpdate = true;
-//        DEBUG << "Thumbwheel::setMappedValue(" << mappedValue << "): new value is " << newValue << " (visible " << isVisible() << ")" << endl;
+//        SVDEBUG << "Thumbwheel::setMappedValue(" << mappedValue << "): new value is " << newValue << " (visible " << isVisible() << ")" << endl;
         if (newValue != getValue()) {
             setValue(newValue);
             changed = true;
@@ -169,7 +169,7 @@ Thumbwheel::getDefaultValue() const
 void
 Thumbwheel::setValue(int value)
 {
-//    DEBUG << "Thumbwheel::setValue(" << value << ") (from " << m_value
+//    SVDEBUG << "Thumbwheel::setValue(" << value << ") (from " << m_value
 //              << ", rotation " << m_rotation << ")" << " (visible " << isVisible() << ")" << endl;
 
     if (m_value != value) {
@@ -206,7 +206,7 @@ float
 Thumbwheel::getMappedValue() const
 {
     if (m_rangeMapper) {
-//        DEBUG << "Thumbwheel::getMappedValue(): value = " << getValue() << ", mappedValue = " << m_mappedValue << endl;
+//        SVDEBUG << "Thumbwheel::getMappedValue(): value = " << getValue() << ", mappedValue = " << m_mappedValue << endl;
         return m_mappedValue;
     }
     return getValue();

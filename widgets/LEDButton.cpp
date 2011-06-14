@@ -99,7 +99,7 @@ LEDButton::mousePressEvent(QMouseEvent *e)
     if (e->buttons() & Qt::LeftButton) {
 	toggle();
 	bool newState = state();
-	DEBUG << "emitting new state " << newState << endl;
+	SVDEBUG << "emitting new state " << newState << endl;
 	emit stateChanged(newState);
     }
 }

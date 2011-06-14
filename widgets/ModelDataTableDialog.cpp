@@ -243,21 +243,21 @@ ModelDataTableDialog::makeCurrent(int row)
 void
 ModelDataTableDialog::viewClicked(const QModelIndex &index)
 {
-//    DEBUG << "ModelDataTableDialog::viewClicked: " << index.row() << ", " << index.column() << endl;
+//    SVDEBUG << "ModelDataTableDialog::viewClicked: " << index.row() << ", " << index.column() << endl;
     emit scrollToFrame(m_table->getFrameForModelIndex(index));
 }
 
 void
 ModelDataTableDialog::viewPressed(const QModelIndex &index)
 {
-//    DEBUG << "ModelDataTableDialog::viewPressed: " << index.row() << ", " << index.column() << endl;
+//    SVDEBUG << "ModelDataTableDialog::viewPressed: " << index.row() << ", " << index.column() << endl;
 }
 
 void
 ModelDataTableDialog::currentChanged(const QModelIndex &current,
                                      const QModelIndex &previous)
 {
-//    DEBUG << "ModelDataTableDialog::currentChanged: from "
+//    SVDEBUG << "ModelDataTableDialog::currentChanged: from "
 //              << previous.row() << ", " << previous.column()
 //              << " to " << current.row() << ", " << current.column() 
 //              << endl;
@@ -301,7 +301,7 @@ ModelDataTableDialog::togglePlayTracking()
 void
 ModelDataTableDialog::currentChangedThroughResort(const QModelIndex &index)
 {
-//    DEBUG << "ModelDataTableDialog::currentChangedThroughResort: row = " << index.row() << endl;
+//    SVDEBUG << "ModelDataTableDialog::currentChangedThroughResort: row = " << index.row() << endl;
 //  m_tableView->scrollTo(index);
     makeCurrent(index.row());
 }

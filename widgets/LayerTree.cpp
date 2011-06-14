@@ -111,7 +111,7 @@ ModelMetadataModel::rebuildModelSet()
         m_models.erase(*i);
     }
 
-    DEBUG << "ModelMetadataModel::rebuildModelSet: " << m_models.size() << " models" << endl;
+    SVDEBUG << "ModelMetadataModel::rebuildModelSet: " << m_models.size() << " models" << endl;
 }
 
 void
@@ -371,7 +371,7 @@ LayerTreeModel::playParametersAudibilityChanged(bool a)
     PlayParameters *params = dynamic_cast<PlayParameters *>(sender());
     if (!params) return;
 
-    DEBUG << "LayerTreeModel::playParametersAudibilityChanged("
+    SVDEBUG << "LayerTreeModel::playParametersAudibilityChanged("
               << params << "," << a << ")" << endl;
 
     for (int i = 0; i < m_stack->getPaneCount(); ++i) {
@@ -381,7 +381,7 @@ LayerTreeModel::playParametersAudibilityChanged(bool a)
             Layer *layer = pane->getLayer(j);
             if (!layer) continue;
             if (layer->getPlayParameters() == params) {
-                DEBUG << "LayerTreeModel::playParametersAudibilityChanged("
+                SVDEBUG << "LayerTreeModel::playParametersAudibilityChanged("
                           << params << "," << a << "): row " << pane->getLayerCount() - j - 1 << ", col " << 2 << endl;
 
                 emit dataChanged(createIndex(pane->getLayerCount() - j - 1,

@@ -365,7 +365,7 @@ void AudioDial::setMappedValue(float mappedValue)
         bool changed = (m_mappedValue != mappedValue);
         m_mappedValue = mappedValue;
         m_noMappedUpdate = true;
-        DEBUG << "AudioDial::setMappedValue(" << mappedValue << "): new position is " << newPosition << endl;
+        SVDEBUG << "AudioDial::setMappedValue(" << mappedValue << "): new position is " << newPosition << endl;
         if (newPosition != value()) {
             setValue(newPosition);
         } else if (changed) {
@@ -390,7 +390,7 @@ void AudioDial::setShowToolTip(bool show)
 float AudioDial::mappedValue() const
 {
     if (m_rangeMapper) {
-//        DEBUG << "AudioDial::mappedValue(): value = " << value() << ", mappedValue = " << m_mappedValue << endl;
+//        SVDEBUG << "AudioDial::mappedValue(): value = " << value() << ", mappedValue = " << m_mappedValue << endl;
         return m_mappedValue;
     }
     return value();

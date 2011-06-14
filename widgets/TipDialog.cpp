@@ -114,7 +114,7 @@ TipDialog::previous()
 void
 TipDialog::readTips()
 {
-    DEBUG << "TipDialog::readTips" << endl;
+    SVDEBUG << "TipDialog::readTips" << endl;
 
     QString language = QLocale::system().name();
     QString filename = QString(":i18n/tips_%1.xml").arg(language);
@@ -134,7 +134,7 @@ TipDialog::readTips()
 
     QFile file(filename);
 
-    DEBUG << "TipDialog::readTips from " << filename << endl;
+    SVDEBUG << "TipDialog::readTips from " << filename << endl;
 
     QXmlInputSource source(&file);
     
@@ -188,11 +188,11 @@ TipDialog::TipFileParser::startElement(const QString &, const QString &,
 {
     QString name = qName.toLower();
 
-    DEBUG << "TipFileParser::startElement(" << name << ")" << endl;
+    SVDEBUG << "TipFileParser::startElement(" << name << ")" << endl;
 
     if (name == "tips") {
         QString caption = attributes.value("caption");
-        DEBUG << "TipFileParser::caption = " << caption << endl;
+        SVDEBUG << "TipFileParser::caption = " << caption << endl;
         if (caption != "") m_dialog->m_caption = caption;
     } else if (name == "tip") {
         if (m_inTip) {
@@ -224,7 +224,7 @@ TipDialog::TipFileParser::startElement(const QString &, const QString &,
         m_dialog->m_tips[m_dialog->m_tips.size()-1] += ">";
     }
     
-    DEBUG << "TipFileParser::startElement done" << endl;
+    SVDEBUG << "TipFileParser::startElement done" << endl;
     return true;
 }
 
@@ -263,7 +263,7 @@ TipDialog::TipFileParser::endElement(const QString &, const QString &,
 bool
 TipDialog::TipFileParser::characters(const QString &text)
 {
-    DEBUG << "TipFileParser::characters(" << text << ")" << endl;
+    SVDEBUG << "TipFileParser::characters(" << text << ")" << endl;
 
     if (m_inText || m_inHtml) {
         m_dialog->m_tips[m_dialog->m_tips.size()-1] += text;

@@ -101,7 +101,7 @@ void
 CommandHistory::clear()
 {
 #ifdef DEBUG_COMMAND_HISTORY
-    DEBUG << "CommandHistory::clear()" << endl;
+    SVDEBUG << "CommandHistory::clear()" << endl;
 #endif
     closeBundle();
     m_savedAt = -1;
@@ -143,7 +143,7 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
     if (!command) return;
 
 #ifdef DEBUG_COMMAND_HISTORY
-    DEBUG << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " of type " << typeid(*command).name() << " at " << command << ": execute = " << execute << ", bundle = " << bundle << " (m_currentCompound = " << m_currentCompound << ", m_currentBundle = " << m_currentBundle << ")" << endl;
+    SVDEBUG << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " of type " << typeid(*command).name() << " at " << command << ": execute = " << execute << ", bundle = " << bundle << " (m_currentCompound = " << m_currentCompound << ", m_currentBundle = " << m_currentBundle << ")" << endl;
 #endif
 
     if (m_currentCompound) {
@@ -160,7 +160,7 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
 
 #ifdef DEBUG_COMMAND_HISTORY
     if (!m_redoStack.empty()) {
-        DEBUG << "CommandHistory::clearing redo stack" << endl;
+        SVDEBUG << "CommandHistory::clearing redo stack" << endl;
     }
 #endif
 
@@ -192,7 +192,7 @@ CommandHistory::addToBundle(Command *command, bool execute)
     if (m_currentBundle) {
 	if (!command || (command->getName() != m_currentBundleName)) {
 #ifdef DEBUG_COMMAND_HISTORY
-            DEBUG << "CommandHistory::addToBundle: "
+            SVDEBUG << "CommandHistory::addToBundle: "
                       << command->getName()                      << ": closing current bundle" << endl;
 #endif
 	    closeBundle();
@@ -204,7 +204,7 @@ CommandHistory::addToBundle(Command *command, bool execute)
     if (!m_currentBundle) {
 
 #ifdef DEBUG_COMMAND_HISTORY
-        DEBUG << "CommandHistory::addToBundle: "
+        SVDEBUG << "CommandHistory::addToBundle: "
                   << command->getName()                  << ": creating new bundle" << endl;
 #endif
 
@@ -219,7 +219,7 @@ CommandHistory::addToBundle(Command *command, bool execute)
     }
 
 #ifdef DEBUG_COMMAND_HISTORY
-    DEBUG << "CommandHistory::addToBundle: "
+    SVDEBUG << "CommandHistory::addToBundle: "
               << command->getName()              << ": adding to bundle" << endl;
 #endif
 
@@ -243,7 +243,7 @@ void
 CommandHistory::closeBundle()
 {
 #ifdef DEBUG_COMMAND_HISTORY
-    DEBUG << "CommandHistory::closeBundle" << endl;
+    SVDEBUG << "CommandHistory::closeBundle" << endl;
 #endif
 
     if (m_currentBundle) emit activity(m_currentBundle->getName());
@@ -255,7 +255,7 @@ void
 CommandHistory::bundleTimerTimeout()
 {
 #ifdef DEBUG_COMMAND_HISTORY
-    DEBUG << "CommandHistory::bundleTimerTimeout: bundle is " << m_currentBundle << endl;
+    SVDEBUG << "CommandHistory::bundleTimerTimeout: bundle is " << m_currentBundle << endl;
 #endif
 
     closeBundle();
@@ -265,10 +265,10 @@ void
 CommandHistory::addToCompound(Command *command, bool execute)
 {
 #ifdef DEBUG_COMMAND_HISTORY
-    DEBUG << "CommandHistory::addToCompound: " << command->getName().toLocal8Bit().data() << endl;
+    SVDEBUG << "CommandHistory::addToCompound: " << command->getName().toLocal8Bit().data() << endl;
 #endif
     if (!m_currentCompound) {
-	DEBUG << "CommandHistory::addToCompound: ERROR: no compound operation in progress!" << endl;
+	SVDEBUG << "CommandHistory::addToCompound: ERROR: no compound operation in progress!" << endl;
         return;
     }
 
@@ -280,7 +280,7 @@ void
 CommandHistory::startCompoundOperation(QString name, bool execute)
 {
     if (m_currentCompound) {
-	DEBUG << "CommandHistory::startCompoundOperation: ERROR: compound operation already in progress!" << endl;
+	SVDEBUG << "CommandHistory::startCompoundOperation: ERROR: compound operation already in progress!" << endl;
 	std::cerr << "(name is " << m_currentCompound->getName().toLocal8Bit().data() << ")" << std::endl;
         return;
     }
@@ -295,7 +295,7 @@ void
 CommandHistory::endCompoundOperation()
 {
     if (!m_currentCompound) {
-	DEBUG << "CommandHistory::endCompoundOperation: ERROR: no compound operation in progress!" << endl;
+	SVDEBUG << "CommandHistory::endCompoundOperation: ERROR: no compound operation in progress!" << endl;
         return;
     }
 
@@ -329,7 +329,7 @@ CommandHistory::undo()
     if (m_undoStack.empty()) return;
 
 #ifdef DEBUG_COMMAND_HISTORY
-    DEBUG << "CommandHistory::undo()" << endl;
+    SVDEBUG << "CommandHistory::undo()" << endl;
 #endif
 
     closeBundle();
@@ -355,7 +355,7 @@ CommandHistory::redo()
     if (m_redoStack.empty()) return;
 
 #ifdef DEBUG_COMMAND_HISTORY
-    DEBUG << "CommandHistory::redo()" << endl;
+    SVDEBUG << "CommandHistory::redo()" << endl;
 #endif
 
     closeBundle();
@@ -436,7 +436,7 @@ CommandHistory::clipStack(CommandStack &stack, int limit)
 	for (i = 0; i < limit; ++i) {
 #ifdef DEBUG_COMMAND_HISTORY
 	    Command *command = stack.top();
-	    DEBUG << "CommandHistory::clipStack: Saving recent command: " << command->getName().toLocal8Bit().data() << " at " << command << endl;
+	    SVDEBUG << "CommandHistory::clipStack: Saving recent command: " << command->getName().toLocal8Bit().data() << " at " << command << endl;
 #endif
 	    tempStack.push(stack.top());
 	    stack.pop();
@@ -458,7 +458,7 @@ CommandHistory::clearStack(CommandStack &stack)
 	Command *command = stack.top();
 	// Not safe to call getName() on a command about to be deleted
 #ifdef DEBUG_COMMAND_HISTORY
-	DEBUG << "CommandHistory::clearStack: About to delete command " << command << endl;
+	SVDEBUG << "CommandHistory::clearStack: About to delete command " << command << endl;
 #endif
 	delete command;
 	stack.pop();
