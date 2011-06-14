@@ -60,7 +60,7 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 {
 #ifdef DEBUG_PROPERTY_BOX
     std::cerr << "PropertyBox[" << this << "(\"" <<
-	container->getPropertyContainerName().toStdString() << "\" at " << container << ")]::PropertyBox" << std::endl;
+	container->getPropertyContainerName() << "\" at " << container << ")]::PropertyBox" << std::endl;
 #endif
 
     m_mainBox = new QVBoxLayout;
@@ -148,7 +148,7 @@ PropertyBox::populateViewPlayFrame()
     layout->setMargin(layout->margin() / 2);
 
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName().toStdString() << ") params " << params << std::endl;
+    DEBUG << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName() << ") params " << params << endl;
 #endif
 
     if (layer) {
@@ -277,9 +277,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     std::cerr << "PropertyBox[" << this
 	      << "(\"" << m_container->getPropertyContainerName().toStdString()
 	      << "\")]";
-    std::cerr << "::updatePropertyEditor(\"" << name.toStdString() << "\"):";
+    std::cerr << "::updatePropertyEditor(\"" << name << "\"):";
     std::cerr << " value " << value << ", have " << have << ", group \""
-	      << groupName.toStdString() << "\"" << std::endl;
+	      << groupName << "\"" << std::endl;
 #endif
 
     bool inGroup = (groupName != QString());
@@ -288,7 +288,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	if (inGroup) {
 	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
 #ifdef DEBUG_PROPERTY_BOX
-		std::cerr << "PropertyBox: adding label \"" << groupName.toStdString() << "\" and frame for group for \"" << name.toStdString() << "\"" << std::endl;
+		std::cerr << "PropertyBox: adding label \"" << groupName << "\" and frame for group for \"" << name << "\"" << std::endl;
 #endif
 		m_layout->addWidget(new QLabel(groupName, m_mainWidget), row, 0);
 		QFrame *frame = new QFrame(m_mainWidget);
@@ -299,7 +299,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	    }
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
-	    std::cerr << "PropertyBox: adding label \"" << propertyLabel.toStdString() << "\"" << std::endl;
+	    std::cerr << "PropertyBox: adding label \"" << propertyLabel << "\"" << std::endl;
 #endif
 	    m_layout->addWidget(new QLabel(propertyLabel, m_mainWidget), row, 0);
 	}
@@ -530,7 +530,7 @@ PropertyBox::propertyContainerPropertyChanged(PropertyContainer *pc)
     if (pc != m_container) return;
     
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox::propertyContainerPropertyChanged" << std::endl;
+    DEBUG << "PropertyBox::propertyContainerPropertyChanged" << endl;
 #endif
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
@@ -566,7 +566,7 @@ PropertyBox::unitDatabaseChanged()
 
 //    std::cerr << "my container is " << m_container << std::endl;
 //    std::cerr << "my container's name is... " << std::endl;
-//    std::cerr << m_container->objectName().toStdString() << std::endl;
+//    std::cerr << m_container->objectName() << std::endl;
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
     for (size_t i = 0; i < properties.size(); ++i) {
@@ -608,8 +608,7 @@ PropertyBox::propertyControllerChanged(int value)
     QString name = obj->objectName();
 
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox::propertyControllerChanged(" << name.toStdString()
-	      << ", " << value << ")" << std::endl;
+    DEBUG << "PropertyBox::propertyControllerChanged(" << name	      << ", " << value << ")" << endl;
 #endif
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);

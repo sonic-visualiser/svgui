@@ -67,7 +67,7 @@ SubdividingMenu::setEntries(const std::set<QString> &entries)
          j != entries.end();
          ++j) {
 
-//        std::cerr << "SubdividingMenu::setEntries: j -> " << j->toStdString() << std::endl;
+//        DEBUG << "SubdividingMenu::setEntries: j -> " << j->toStdString() << endl;
 
         m_nameToChunkMenuMap[*j] = chunkMenu;
 
@@ -176,12 +176,12 @@ SubdividingMenu::addAction(QAction *action)
     }
 
     if (m_nameToChunkMenuMap.find(name) == m_nameToChunkMenuMap.end()) {
-//        std::cerr << "SubdividingMenu::addAction(" << name.toStdString() << "): not found in name-to-chunk map, adding to main menu" << std::endl;
+//        DEBUG << "SubdividingMenu::addAction(" << name << "): not found in name-to-chunk map, adding to main menu" << endl;
         QMenu::addAction(action);
         return;
     }
 
-//    std::cerr << "SubdividingMenu::addAction(" << name.toStdString() << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title().toStdString() << std::endl;
+//    DEBUG << "SubdividingMenu::addAction(" << name << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title() << endl;
     m_nameToChunkMenuMap[name]->addAction(action);
 }
 
@@ -195,11 +195,11 @@ SubdividingMenu::addAction(const QString &name)
     }
 
     if (m_nameToChunkMenuMap.find(name) == m_nameToChunkMenuMap.end()) {
-//        std::cerr << "SubdividingMenu::addAction(" << name.toStdString() << "): not found in name-to-chunk map, adding to main menu" << std::endl;
+//        DEBUG << "SubdividingMenu::addAction(" << name << "): not found in name-to-chunk map, adding to main menu" << endl;
         return QMenu::addAction(name);
     }
 
-//    std::cerr << "SubdividingMenu::addAction(" << name.toStdString() << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title().toStdString() << std::endl;
+//    DEBUG << "SubdividingMenu::addAction(" << name << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title() << endl;
     return m_nameToChunkMenuMap[name]->addAction(name);
 }
 
@@ -212,12 +212,12 @@ SubdividingMenu::addAction(const QString &name, QAction *action)
     }
 
     if (m_nameToChunkMenuMap.find(name) == m_nameToChunkMenuMap.end()) {
-//        std::cerr << "SubdividingMenu::addAction(" << name.toStdString() << "): not found in name-to-chunk map, adding to main menu" << std::endl;
+//        DEBUG << "SubdividingMenu::addAction(" << name << "): not found in name-to-chunk map, adding to main menu" << endl;
         QMenu::addAction(action);
         return;
     }
 
-//    std::cerr << "SubdividingMenu::addAction(" << name.toStdString() << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title().toStdString() << std::endl;
+//    DEBUG << "SubdividingMenu::addAction(" << name << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title() << endl;
     m_nameToChunkMenuMap[name]->addAction(action);
 }
 
@@ -232,12 +232,12 @@ SubdividingMenu::addMenu(QMenu *menu)
     }
 
     if (m_nameToChunkMenuMap.find(name) == m_nameToChunkMenuMap.end()) {
-//        std::cerr << "SubdividingMenu::addMenu(" << name.toStdString() << "): not found in name-to-chunk map, adding to main menu" << std::endl;
+//        DEBUG << "SubdividingMenu::addMenu(" << name << "): not found in name-to-chunk map, adding to main menu" << endl;
         QMenu::addMenu(menu);
         return;
     }
 
-//    std::cerr << "SubdividingMenu::addMenu(" << name.toStdString() << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title().toStdString() << std::endl;
+//    DEBUG << "SubdividingMenu::addMenu(" << name << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title() << endl;
     m_nameToChunkMenuMap[name]->addMenu(menu);
 }
 
@@ -252,11 +252,11 @@ SubdividingMenu::addMenu(const QString &name)
     }
 
     if (m_nameToChunkMenuMap.find(name) == m_nameToChunkMenuMap.end()) {
-//        std::cerr << "SubdividingMenu::addMenu(" << name.toStdString() << "): not found in name-to-chunk map, adding to main menu" << std::endl;
+//        DEBUG << "SubdividingMenu::addMenu(" << name << "): not found in name-to-chunk map, adding to main menu" << endl;
         return QMenu::addMenu(name);
     }
 
-//    std::cerr << "SubdividingMenu::addMenu(" << name.toStdString() << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title().toStdString() << std::endl;
+//    DEBUG << "SubdividingMenu::addMenu(" << name << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title() << endl;
     return m_nameToChunkMenuMap[name]->addMenu(name);
 }
 
@@ -269,12 +269,12 @@ SubdividingMenu::addMenu(const QString &name, QMenu *menu)
     }
 
     if (m_nameToChunkMenuMap.find(name) == m_nameToChunkMenuMap.end()) {
-//        std::cerr << "SubdividingMenu::addMenu(" << name.toStdString() << "): not found in name-to-chunk map, adding to main menu" << std::endl;
+//        DEBUG << "SubdividingMenu::addMenu(" << name << "): not found in name-to-chunk map, adding to main menu" << endl;
         QMenu::addMenu(menu);
         return;
     }
 
-//    std::cerr << "SubdividingMenu::addMenu(" << name.toStdString() << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title().toStdString() << std::endl;
+//    DEBUG << "SubdividingMenu::addMenu(" << name << "): found in name-to-chunk map for menu " << m_nameToChunkMenuMap[name]->title() << endl;
     m_nameToChunkMenuMap[name]->addMenu(menu);
 }
 

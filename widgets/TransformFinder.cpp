@@ -169,7 +169,7 @@ TransformFinder::setupBeforeSearchLabel()
 void
 TransformFinder::searchTextChanged(const QString &text)
 {
-//    std::cerr << "text is " << text.toStdString() << std::endl;
+//    std::cerr << "text is " << text << std::endl;
     m_newSearchText = text;
 }
 
@@ -318,7 +318,7 @@ TransformFinder::timeout()
         m_labels[i]->setFixedWidth(this->width() - 40);
         m_labels[i]->setUnselectedText(labelText);
 
-//        std::cerr << "selected text: " << selectedText.toStdString() << std::endl;
+//        std::cerr << "selected text: " << selectedText << std::endl;
         m_labels[i]->setSelectedText(selectedText);
 
         m_labels[i]->setSelected(m_selectedTransform == desc.identifier);
@@ -351,7 +351,7 @@ TransformFinder::selectedLabelChanged()
         }
     }
     std::cerr << "selectedLabelChanged: selected transform is now \""
-              << m_selectedTransform.toStdString() << "\"" << std::endl;
+              << m_selectedTransform << "\"" << std::endl;
 }
 
 void

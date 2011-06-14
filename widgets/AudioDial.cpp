@@ -99,7 +99,7 @@ AudioDial::~AudioDial (void)
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
-//    std::cerr << "AudioDial[" << this << "][\"" << objectName().toStdString() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << std::endl;
+//    std::cerr << "AudioDial[" << this << "][\"" << objectName() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << std::endl;
 
     if (m_rangeMapper == mapper) return;
 
@@ -365,7 +365,7 @@ void AudioDial::setMappedValue(float mappedValue)
         bool changed = (m_mappedValue != mappedValue);
         m_mappedValue = mappedValue;
         m_noMappedUpdate = true;
-        std::cerr << "AudioDial::setMappedValue(" << mappedValue << "): new position is " << newPosition << std::endl;
+        DEBUG << "AudioDial::setMappedValue(" << mappedValue << "): new position is " << newPosition << endl;
         if (newPosition != value()) {
             setValue(newPosition);
         } else if (changed) {
@@ -390,7 +390,7 @@ void AudioDial::setShowToolTip(bool show)
 float AudioDial::mappedValue() const
 {
     if (m_rangeMapper) {
-//        std::cerr << "AudioDial::mappedValue(): value = " << value() << ", mappedValue = " << m_mappedValue << std::endl;
+//        DEBUG << "AudioDial::mappedValue(): value = " << value() << ", mappedValue = " << m_mappedValue << endl;
         return m_mappedValue;
     }
     return value();

@@ -73,7 +73,7 @@ SliceLayer::setSliceableModel(const Model *model)
 void
 SliceLayer::sliceableModelReplaced(const Model *orig, const Model *replacement)
 {
-    std::cerr << "SliceLayer::sliceableModelReplaced(" << orig << ", " << replacement << ")" << std::endl;
+    DEBUG << "SliceLayer::sliceableModelReplaced(" << orig << ", " << replacement << ")" << endl;
 
     if (orig == m_sliceableModel) {
         setSliceableModel
@@ -84,7 +84,7 @@ SliceLayer::sliceableModelReplaced(const Model *orig, const Model *replacement)
 void
 SliceLayer::modelAboutToBeDeleted(Model *m)
 {
-    std::cerr << "SliceLayer::modelAboutToBeDeleted(" << m << ")" << std::endl;
+    DEBUG << "SliceLayer::modelAboutToBeDeleted(" << m << ")" << endl;
 
     if (m == m_sliceableModel) {
         setSliceableModel(0);

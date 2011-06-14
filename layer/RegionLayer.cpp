@@ -61,7 +61,7 @@ RegionLayer::setModel(RegionModel *model)
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(recalcSpacing()));
     recalcSpacing();
 
-//    std::cerr << "RegionLayer::setModel(" << model << ")" << std::endl;
+//    DEBUG << "RegionLayer::setModel(" << model << ")" << endl;
 
     emit modelReplaced();
 }
@@ -239,12 +239,12 @@ RegionLayer::recalcSpacing()
     m_distributionMap.clear();
     if (!m_model) return;
 
-//    std::cerr << "RegionLayer::recalcSpacing" << std::endl;
+//    DEBUG << "RegionLayer::recalcSpacing" << endl;
 
     for (RegionModel::PointList::const_iterator i = m_model->getPoints().begin();
          i != m_model->getPoints().end(); ++i) {
         m_distributionMap[i->value]++;
-//        std::cerr << "RegionLayer::recalcSpacing: value found: " << i->value << " (now have " << m_distributionMap[i->value] << " of this value)" <<  std::endl;
+//        DEBUG << "RegionLayer::recalcSpacing: value found: " << i->value << " (now have " << m_distributionMap[i->value] << " of this value)" <<  endl;
     }
 
     int n = 0;
@@ -252,7 +252,7 @@ RegionLayer::recalcSpacing()
     for (SpacingMap::const_iterator i = m_distributionMap.begin();
          i != m_distributionMap.end(); ++i) {
         m_spacingMap[i->first] = n++;
-//        std::cerr << "RegionLayer::recalcSpacing: " << i->first << " -> " << m_spacingMap[i->first] << std::endl;
+//        DEBUG << "RegionLayer::recalcSpacing: " << i->first << " -> " << m_spacingMap[i->first] << endl;
     }
 }
 
@@ -680,7 +680,7 @@ RegionLayer::getYForValue(View *v, float val) const
 
         int y = spacingIndexToY(v, i->second);
 
-//        std::cerr << "RegionLayer::getYForValue: value " << val << " -> i->second " << i->second << " -> y " << y << std::endl;
+//        DEBUG << "RegionLayer::getYForValue: value " << val << " -> i->second " << i->second << " -> y " << y << endl;
         return y;
 
 
@@ -811,8 +811,8 @@ RegionLayer::getColourForValue(View *v, float val) const
         val = LogRange::map(val);
     }
 
-//    std::cerr << "RegionLayer::getColourForValue: min " << min << ", max "
-//              << max << ", log " << log << ", value " << val << std::endl;
+//    DEBUG << "RegionLayer::getColourForValue: min " << min << ", max "
+//              << max << ", log " << log << ", value " << val << endl;
 
     QColor solid = ColourMapper(m_colourMap, min, max).map(val);
     return QColor(solid.red(), solid.green(), solid.blue(), 120);
@@ -848,8 +848,8 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
     QColor brushColour(getBaseQColor());
     brushColour.setAlpha(80);
 
-//    std::cerr << "RegionLayer::paint: resolution is "
-//	      << m_model->getResolution() << " frames" << std::endl;
+//    DEBUG << "RegionLayer::paint: resolution is "
+//	      << m_model->getResolution() << " frames" << endl;
 
     float min = m_model->getValueMinimum();
     float max = m_model->getValueMaximum();

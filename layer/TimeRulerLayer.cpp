@@ -72,7 +72,7 @@ TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
     resolution = RealTime::realTime2Frame(rtick, rate);
     int right = left + resolution;
 
-//    std::cerr << "TimeRulerLayer::snapToFeatureFrame: type "
+//    DEBUG << "TimeRulerLayer::snapToFeatureFrame: type "
 //              << int(snap) << ", frame " << frame << " (time "
 //              << rt << ", tick " << rtick << ", rounded " << rdrt << ") ";
 
@@ -135,7 +135,7 @@ TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
     }
     }
 
-//    std::cerr << " -> " << frame << " (resolution = " << resolution << ")" << std::endl;
+//    DEBUG << " -> " << frame << " (resolution = " << resolution << ")" << endl;
 
     return true;
 }
@@ -195,8 +195,8 @@ void
 TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
 #ifdef DEBUG_TIME_RULER_LAYER
-    std::cerr << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
-	      << ") [" << rect.width() << "x" << rect.height() << "]" << std::endl;
+    DEBUG << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
+	      << ") [" << rect.width() << "x" << rect.height() << "]" << endl;
 #endif
     
     if (!m_model || !m_model->isOK()) return;
@@ -252,7 +252,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
         int x = v->getXForFrame(frame);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-        std::cerr << "Considering frame = " << frame << ", x = " << x << std::endl;
+        DEBUG << "Considering frame = " << frame << ", x = " << x << endl;
 #endif
 
         if (x >= rect.x() + rect.width() + 50) {
