@@ -227,6 +227,8 @@ public:
 
     virtual const Model *getSliceableModel() const;
 
+    virtual void processMouseEvent(const View *, QMouseEvent *, int);
+
 protected slots:
     void cacheInvalid();
     void cacheInvalid(size_t startFrame, size_t endFrame);

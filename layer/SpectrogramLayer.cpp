@@ -3781,3 +3781,36 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     setNormalizeVisibleArea(normalizeVisibleArea);
 }
     
+void
+SpectrogramLayer::processMouseEvent(const View *v, QMouseEvent *e, int w)
+{
+
+    std::cerr<< "Mouse click detected in the layer: (" << e->x() << "," << e->y() << ")" << std::endl;
+
+    //is there a way to declare pkw and w may as class private variables?
+
+    int pkw = (m_frequencyScale == LogFrequencyScale ? 10 : 0);
+
+    int pianoKeyboardXLeft = w - pkw - 1;
+    int pianoKeyboardXRight = w;    
+
+    float freq;
+    QString unit;
+    float *centsOffsetReturn = 0;
+    float concertA = 0.0;
+    int midipitch;
+
+    if ((e->x() >= pianoKeyboardXLeft)&&(e->x() <= pianoKeyboardXRight))
+    {
+        std::cerr << "Piano keyboard left border: " << pianoKeyboardXLeft<<std::endl;
+        std::cerr << "Piano keyboard right border: " << pianoKeyboardXRight<<std::endl;
+        std::cerr<< "Mouse click detected within the piano keyboard: (" << e->x() << "," << e->y() << ")" << std::endl;
+
+        if (getYScaleValue(v, e->y(),freq, unit)) {
+
+            midipitch = Pitch::getPitchForFrequency(freq,centsOffsetReturn,concertA);
+
+            std::cerr<< "Frequency: " << freq << " " << unit.toStdString() << " (midi pitch = " << midipitch << ")" << std::endl;
+        }
+    }
+}

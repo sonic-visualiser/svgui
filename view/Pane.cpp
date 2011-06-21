@@ -25,6 +25,10 @@
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 
+#include "layer/LayerFactory.h"
+#include "layer/Layer.h"
+#include "layer/SpectrogramLayer.h"
+
 //!!! ugh
 #include "data/model/WaveFileModel.h"
 
@@ -1304,6 +1308,24 @@ Pane::mousePressEvent(QMouseEvent *e)
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
             m_dragStartMinValue = dmin;
         }
+
+    //to process the mouse event when a left click is made in the layer and the tool mode is Select
+    //(to handle e.g. the audio feedback of the piano keyboard notes)
+    //does not work with the Navigate tool mode: (mode == ViewManager::NavigateMode) ||
+    //which could be also interesting
+    } else if ((mode == ViewManager::SelectMode) &&
+                   (e->buttons() & Qt::LeftButton)) {
+
+            Layer *layer = getTopLayer();
+            LayerFactory::LayerType type = LayerFactory::getInstance()->getLayerType(layer);
+
+            //if (type==(LayerFactory::LayerType) MelodicRangeSpectrogram) layer->checkMouseClick(this, e);
+
+            //std::cerr << "Vertical scale width: " << getVerticalScaleWidth() << std::endl;
+
+            //should call processMouseEvent only when a LogFrequencyScale is used but this is handled by
+            //overidding the function only in the relevant layer types
+            layer->processMouseEvent(this, e, getVerticalScaleWidth());
 
     } else if (mode == ViewManager::SelectMode) {
 

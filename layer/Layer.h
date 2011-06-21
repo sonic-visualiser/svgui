@@ -511,6 +511,11 @@ public:
      */
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const { return 0; }
 
+    //function to override in Layer subclasses in order to handle mouse events
+    //within the layer (e.g. audio feedback when clicking on the piano keyboard notes
+    //in SpectrogramLayer and SpectrumLayer)
+    virtual void processMouseEvent(const View *, QMouseEvent *, int) {}
+
 public slots:
     void showLayer(View *, bool show);
 
