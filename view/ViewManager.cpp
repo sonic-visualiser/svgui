@@ -48,7 +48,8 @@ ViewManager::ViewManager() :
     m_illuminateLocalFeatures(true),
     m_showWorkTitle(false),
     m_lightPalette(QApplication::palette()),
-    m_darkPalette(QApplication::palette())
+    m_darkPalette(QApplication::palette()),
+    m_minimalModeEnabled(0)
 {
     QSettings settings;
     settings.beginGroup("MainWindow");
@@ -635,5 +636,21 @@ ViewManager::getGlobalDarkBackground() const
         dark = true;
     }
     return dark;
+}
+
+void
+ViewManager::setMinimalModeEnabled(bool enabled)
+{
+    if (m_minimalModeEnabled != enabled) {
+        m_minimalModeEnabled = enabled;
+        emit minimalModeEnabledChanged();
+        if (enabled) emit activity("Activates minimal mode");
+        else emit activity("Activates full mode");
+    }
+
+    QSettings settings;
+    settings.beginGroup("MainWindow");
+    settings.setValue("minimal-mode-enabled", m_minimalModeEnabled);
+    settings.endGroup();
 }
 
