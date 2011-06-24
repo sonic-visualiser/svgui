@@ -227,7 +227,7 @@ public:
 
     virtual const Model *getSliceableModel() const;
 
-    virtual void processMouseEvent(const View *, QMouseEvent *, int);
+    virtual bool scaleClicked(const View *, QMouseEvent *);
 
 protected slots:
     void cacheInvalid();

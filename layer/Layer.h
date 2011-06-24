@@ -247,6 +247,14 @@ public:
      */
     virtual bool editOpen(View *, QMouseEvent *) { return false; }
 
+    /**
+     * A click occurred over the layer's scale area.  If the layer has
+     * a response to this (e.g. play a note corresponding to frequency
+     * scale), perform it and return true.  Return false if this click
+     * is not meaningful to the layer.
+     */
+    virtual bool scaleClicked(const View *, QMouseEvent *) { return false; }
+
     virtual void moveSelection(Selection, size_t /* newStartFrame */) { }
     virtual void resizeSelection(Selection, Selection /* newSize */) { }
     virtual void deleteSelection(Selection) { }
@@ -510,11 +518,6 @@ public:
      * the caller.
      */
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const { return 0; }
-
-    //function to override in Layer subclasses in order to handle mouse events
-    //within the layer (e.g. audio feedback when clicking on the piano keyboard notes
-    //in SpectrogramLayer and SpectrumLayer)
-    virtual void processMouseEvent(const View *, QMouseEvent *, int) {}
 
 public slots:
     void showLayer(View *, bool show);
