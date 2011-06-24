@@ -3798,7 +3798,10 @@ SpectrogramLayer::scaleClicked(const View *v, QMouseEvent *e)
 
         std::cerr<< "Frequency: " << freq << " " << unit.toStdString() << " (midi pitch = " << midipitch << ")" << std::endl;
 
+        v->playExampleNote(midipitch);
+
         return true;
+
     } else {
         return false;
     }
