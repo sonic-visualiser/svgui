@@ -45,6 +45,8 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
+    //virtual int getHorizontalScaleHeight(View *, QPainter &) const;
+
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
     virtual VerticalPosition getPreferredFrameCountPosition() const {
@@ -95,6 +97,8 @@ public:
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
+
+    virtual bool scaleClicked(const View *, QMouseEvent *);
 
 protected slots:
     void preferenceChanged(PropertyContainer::PropertyName name);

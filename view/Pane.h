@@ -52,6 +52,8 @@ public:
 
     virtual size_t getVerticalScaleWidth() const;
 
+    //virtual size_t getHorizontalScaleHeight() const;
+
     virtual QImage *toNewImage(size_t f0, size_t f1);
     virtual QImage *toNewImage() { return View::toNewImage(); }
     virtual QSize getImageSize(size_t f0, size_t f1);

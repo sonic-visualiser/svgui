@@ -3274,7 +3274,8 @@ SpectrogramLayer::getVerticalScaleWidth(View *, QPainter &paint) const
     int fw = paint.fontMetrics().width(tr("43Hz"));
     if (tw < fw) tw = fw;
 
-    int tickw = (m_frequencyScale == LogFrequencyScale ? 10 : 4);
+    //int tickw = (m_frequencyScale == LogFrequencyScale ? 10 : 4);
+    int tickw = (m_frequencyScale == LogFrequencyScale ? 20 : 4);
     
     return cw + tickw + tw + 13;
 }
@@ -3292,8 +3293,11 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 
     int h = rect.height(), w = rect.width();
 
-    int tickw = (m_frequencyScale == LogFrequencyScale ? 10 : 4);
-    int pkw = (m_frequencyScale == LogFrequencyScale ? 10 : 0);
+    //int tickw = (m_frequencyScale == LogFrequencyScale ? 10 : 4);
+    //int pkw = (m_frequencyScale == LogFrequencyScale ? 10 : 0);
+
+    int tickw = (m_frequencyScale == LogFrequencyScale ? 20 : 4);
+    int pkw = (m_frequencyScale == LogFrequencyScale ? 20 : 0);
 
     size_t bins = m_fftSize / 2;
     int sr = m_model->getSampleRate();
@@ -3798,7 +3802,9 @@ SpectrogramLayer::scaleClicked(const View *v, QMouseEvent *e)
 
         std::cerr<< "Frequency: " << freq << " " << unit.toStdString() << " (midi pitch = " << midipitch << ")" << std::endl;
 
-        v->playExampleNote(midipitch);
+        if ((midipitch>=0)&&(midipitch<127)) {
+            v->playExampleNote(midipitch);
+        }
 
         return true;
 

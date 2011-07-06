@@ -129,6 +129,9 @@ public:
     virtual QPixmap getLayerPresentationPixmap(QSize) const { return QPixmap(); }
 
     virtual int getVerticalScaleWidth(View *, QPainter &) const { return 0; }
+
+    //virtual int getHorizontalScaleHeight(View *, QPainter &) const { return 0; } //this causes the application to crash at startup?
+
     virtual void paintVerticalScale(View *, QPainter &, QRect) const { }
 
     virtual bool getCrosshairExtents(View *, QPainter &, QPoint /* cursorPos */,

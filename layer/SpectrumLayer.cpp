@@ -25,7 +25,7 @@
 
 #include <QPainter>
 #include <QTextStream>
-
+#include <QMouseEvent>
 
 SpectrumLayer::SpectrumLayer() :
     m_originModel(0),
@@ -673,7 +673,9 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int pkh = 0;
 //!!!    if (m_binScale == LogBins) {
-        pkh = 10;
+        //pkh = 10; //too small
+    pkh = 20;
+
 //!!!    }
 
     paint.save();
@@ -823,6 +825,17 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.restore();
 }
 
+/*
+int
+SpectrumLayer::getHorizontalScaleHeight(View *v, QPainter &paint) const
+{
+    int h = v->height();
+    int pkh = 10;
+
+    return h - pkh - 1;
+}*/
+
+
 void
 SpectrumLayer::getBiasCurve(BiasCurve &curve) const
 {
@@ -860,4 +873,30 @@ SpectrumLayer::setProperties(const QXmlAttributes &attributes)
     setShowPeaks(showPeaks);
 }
 
-    
+bool
+SpectrumLayer::scaleClicked(const View *v, QMouseEvent *e)
+{
+    std::cerr<< "Mouse click detected in the spectrum scale area: (" << e->x() << "," << e->y() << ")" << std::endl;
+
+    float freq;
+    QString unit;
+    float *centsOffsetReturn = 0;
+    float concertA = 0.0;
+    int midipitch;
+
+    if (getXScaleValue(v, e->x(), freq, unit)) {
+
+        midipitch = Pitch::getPitchForFrequency(freq,centsOffsetReturn,concertA);
+
+        std::cerr<< "Frequency: " << freq << " " << unit.toStdString() << " (midi pitch = " << midipitch << ")" << std::endl;
+
+        if ((midipitch>=0)&&(midipitch<127)) {
+            v->playExampleNote(midipitch);
+        }
+
+        return true;
+
+    } else {
+        return false;
+    }
+}
