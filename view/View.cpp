@@ -2365,6 +2365,12 @@ View::getImageSize(size_t f0, size_t f1)
 }
 
 void
+View::playExampleNote(int midiPitch) const
+{
+    if (m_manager) m_manager->playExampleNote(midiPitch);
+}
+
+void
 View::toXml(QTextStream &stream,
             QString indent, QString extraAttributes) const
 {

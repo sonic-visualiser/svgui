@@ -191,6 +191,12 @@ ViewManager::alignReferenceToPlaybackFrame(size_t frame) const
     else return m_playbackModel->alignFromReference(frame);
 }
 
+void
+ViewManager::playExampleNote(int midiPitch)
+{
+    m_playSource->queueExampleNote(midiPitch);
+}
+
 bool
 ViewManager::haveInProgressSelection() const
 {

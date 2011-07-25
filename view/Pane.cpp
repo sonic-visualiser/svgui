@@ -14,7 +14,6 @@
 */
 
 #include "Pane.h"
-#include "layer/Layer.h"
 #include "data/model/Model.h"
 #include "base/ZoomConstraint.h"
 #include "base/RealTime.h"
@@ -24,6 +23,10 @@
 #include "widgets/TextAbbrev.h"
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
+
+#include "layer/LayerFactory.h"
+#include "layer/Layer.h"
+#include "layer/SpectrogramLayer.h"
 
 //!!! ugh
 #include "data/model/WaveFileModel.h"
@@ -1286,6 +1289,79 @@ Pane::mousePressEvent(QMouseEvent *e)
     m_resizing = false;
     m_editing = false;
     m_releasing = false;
+
+    bool scaleclick = false;
+
+    Layer *layer = getTopLayer();
+    if (layer) {
+        LayerFactory::LayerType type = LayerFactory::getInstance()->getLayerType(layer);
+
+        //std::cerr << "hello before switch: " << LayerFactory::getInstance()->getLayerTypeName(type) << std::endl;
+
+        switch(type) {
+
+            case LayerFactory::Spectrogram:
+            {
+                std::cerr << "hello spectrogram ("<< e->x() <<", " << e->y() << ")" << std::endl;                
+            }
+            case LayerFactory::MelodicRangeSpectrogram:
+            {
+                std::cerr << "hello melodic ("<< e->x() <<", " << e->y() << ")" << std::endl;
+                int sw = getVerticalScaleWidth();
+                int pkhms = 20; //this value should be retrieved from SpectrogramLayer
+                int slb = sw - pkhms - 1; //scale left border
+
+                //std::cerr << "slb: "<< slb << std::endl;
+
+                if ((e->x() < sw)&&(e->x() > slb)) {
+                    scaleclick = true;
+                }
+                break;
+            }
+            case LayerFactory::Spectrum:
+            {
+                std::cerr << "hello spectrum ("<< e->x() <<", " << e->y() << ")" << std::endl;
+
+                int h = height();
+                int pkhs = 20; //this value should be retrieved from SpectrumLayer
+
+                int sh = h - pkhs - 1;
+
+                //if (e->y() < layer->getHorizontalScaleHeight(this)) {
+
+                if (e->y() > sh) {                    
+                    scaleclick = true;
+                 }
+                break;
+            }
+        }
+
+        if (scaleclick) {
+            // Click occurred over the layer's scale area.  Ask the layer
+            // to do something with it: if it does so (i.e. returns true),
+            // we've nothing else to do
+            if (layer->scaleClicked(this, e)) {
+                m_clickedInRange = false;
+                emit paneInteractedWith();
+                return;
+            }
+        }
+    }
+    /*
+    if (e->x() < getVerticalScaleWidth()) {
+        // Click occurred over the layer's scale area.  Ask the layer
+        // to do something with it: if it does so (i.e. returns true),
+        // we've nothing else to do
+        Layer *layer = getTopLayer();
+        if (layer) {
+            if (layer->scaleClicked(this, e)) {
+                m_clickedInRange = false;
+                emit paneInteractedWith();
+                return;
+            }
+        }
+    }
+    */
 
     if (mode == ViewManager::NavigateMode ||
         (e->buttons() & Qt::MidButton) ||

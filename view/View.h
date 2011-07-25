@@ -307,6 +307,8 @@ public slots:
 
     virtual void progressCheckStalledTimerElapsed();
 
+    virtual void playExampleNote(int midiPitch) const;
+
 protected:
     View(QWidget *, bool showProgress);
     virtual void paintEvent(QPaintEvent *e);

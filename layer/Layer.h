@@ -129,6 +129,9 @@ public:
     virtual QPixmap getLayerPresentationPixmap(QSize) const { return QPixmap(); }
 
     virtual int getVerticalScaleWidth(View *, QPainter &) const { return 0; }
+
+    //virtual int getHorizontalScaleHeight(View *, QPainter &) const { return 0; } //this causes the application to crash at startup?
+
     virtual void paintVerticalScale(View *, QPainter &, QRect) const { }
 
     virtual bool getCrosshairExtents(View *, QPainter &, QPoint /* cursorPos */,
@@ -246,6 +249,14 @@ public:
      * supported, return false.
      */
     virtual bool editOpen(View *, QMouseEvent *) { return false; }
+
+    /**
+     * A click occurred over the layer's scale area.  If the layer has
+     * a response to this (e.g. play a note corresponding to frequency
+     * scale), perform it and return true.  Return false if this click
+     * is not meaningful to the layer.
+     */
+    virtual bool scaleClicked(const View *, QMouseEvent *) { return false; }
 
     virtual void moveSelection(Selection, size_t /* newStartFrame */) { }
     virtual void resizeSelection(Selection, Selection /* newSize */) { }

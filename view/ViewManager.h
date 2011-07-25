@@ -251,6 +251,7 @@ public slots:
     void viewZoomLevelChanged(unsigned long, bool);
     void setGlobalCentreFrame(unsigned long);
     void setPlaybackFrame(unsigned long);
+    void playExampleNote(int midiPitch);
 
 protected slots:
     void checkPlayStatus();
