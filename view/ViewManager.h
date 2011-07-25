@@ -188,6 +188,9 @@ public:
     void setGlobalDarkBackground(bool dark);
     bool getGlobalDarkBackground() const;
 
+    void setMinimalModeEnabled(bool enable);
+    bool getMinimalModeEnabled() const { return m_minimalModeEnabled; };
+
 signals:
     /** Emitted when user causes the global centre frame to change. */
     void globalCentreFrameChanged(unsigned long frame);
@@ -237,6 +240,11 @@ signals:
 
     /** Emitted when any loggable activity has occurred. */
     void activity(QString);
+
+    /** Emitted when the view mode has been toggled. */
+    //no slot associated yet with this signal but may be useful;
+    //changes currently handled by the slot MainWindow::toggleViewMode()
+    void minimalModeEnabledChanged();
 
 public slots:
     void viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode);
@@ -296,6 +304,8 @@ protected:
     bool m_zoomWheelsEnabled;
     bool m_illuminateLocalFeatures;
     bool m_showWorkTitle;
+
+    bool m_minimalModeEnabled;
 
     QPalette m_lightPalette;
     QPalette m_darkPalette;
