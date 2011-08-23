@@ -1302,11 +1302,11 @@ Pane::mousePressEvent(QMouseEvent *e)
 
             case LayerFactory::Spectrogram:
             {
-                std::cerr << "hello spectrogram ("<< e->x() <<", " << e->y() << ")" << std::endl;                
+                //std::cerr << "hello spectrogram ("<< e->x() <<", " << e->y() << ")" << std::endl;
             }
             case LayerFactory::MelodicRangeSpectrogram:
             {
-                std::cerr << "hello melodic ("<< e->x() <<", " << e->y() << ")" << std::endl;
+                //std::cerr << "hello melodic ("<< e->x() <<", " << e->y() << ")" << std::endl;
                 int sw = getVerticalScaleWidth();
                 int pkhms = 20; //this value should be retrieved from SpectrogramLayer
                 int slb = sw - pkhms - 1; //scale left border
@@ -1320,7 +1320,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             }
             case LayerFactory::Spectrum:
             {
-                std::cerr << "hello spectrum ("<< e->x() <<", " << e->y() << ")" << std::endl;
+                //std::cerr << "hello spectrum ("<< e->x() <<", " << e->y() << ")" << std::endl;
 
                 int h = height();
                 int pkhs = 20; //this value should be retrieved from SpectrumLayer

@@ -3788,7 +3788,7 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 bool
 SpectrogramLayer::scaleClicked(const View *v, QMouseEvent *e)
 {
-    std::cerr<< "Mouse click detected in the spectrogram scale area: (" << e->x() << "," << e->y() << ")" << std::endl;
+    //std::cerr<< "Mouse click detected in the spectrogram scale area: (" << e->x() << "," << e->y() << ")" << std::endl;
 
     float freq;
     QString unit;
@@ -3800,7 +3800,7 @@ SpectrogramLayer::scaleClicked(const View *v, QMouseEvent *e)
 
         midipitch = Pitch::getPitchForFrequency(freq,centsOffsetReturn,concertA);
 
-        std::cerr<< "Frequency: " << freq << " " << unit.toStdString() << " (midi pitch = " << midipitch << ")" << std::endl;
+        //std::cerr<< "Frequency: " << freq << " " << unit.toStdString() << " (midi pitch = " << midipitch << ")" << std::endl;
 
         if ((midipitch>=0)&&(midipitch<127)) {
             v->playExampleNote(midipitch);

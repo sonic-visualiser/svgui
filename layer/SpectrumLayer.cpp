@@ -876,7 +876,7 @@ SpectrumLayer::setProperties(const QXmlAttributes &attributes)
 bool
 SpectrumLayer::scaleClicked(const View *v, QMouseEvent *e)
 {
-    std::cerr<< "Mouse click detected in the spectrum scale area: (" << e->x() << "," << e->y() << ")" << std::endl;
+    //std::cerr<< "Mouse click detected in the spectrum scale area: (" << e->x() << "," << e->y() << ")" << std::endl;
 
     float freq;
     QString unit;
@@ -888,7 +888,7 @@ SpectrumLayer::scaleClicked(const View *v, QMouseEvent *e)
 
         midipitch = Pitch::getPitchForFrequency(freq,centsOffsetReturn,concertA);
 
-        std::cerr<< "Frequency: " << freq << " " << unit.toStdString() << " (midi pitch = " << midipitch << ")" << std::endl;
+        //std::cerr<< "Frequency: " << freq << " " << unit.toStdString() << " (midi pitch = " << midipitch << ")" << std::endl;
 
         if ((midipitch>=0)&&(midipitch<127)) {
             v->playExampleNote(midipitch);
