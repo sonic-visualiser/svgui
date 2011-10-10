@@ -885,12 +885,18 @@ SliceLayer::toXml(QTextStream &stream,
     s += QString("colourScheme=\"%1\" "
 		 "energyScale=\"%2\" "
                  "samplingMode=\"%3\" "
-                 "gain=\"%4\" "
-                 "normalize=\"%5\"")
+                 "plotStyle=\"%4\" "
+                 "binScale=\"%5\" "
+                 "gain=\"%6\" "
+                 "threshold=\"%7\" "
+                 "normalize=\"%8\"")
         .arg(m_colourMap)
 	.arg(m_energyScale)
         .arg(m_samplingMode)
+        .arg(m_plotStyle)
+        .arg(m_binScale)
         .arg(m_gain)
+        .arg(m_threshold)
         .arg(m_normalize ? "true" : "false");
 
     SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
@@ -914,8 +920,19 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
     int colourMap = attributes.value("colourScheme").toInt(&ok);
     if (ok) setFillColourMap(colourMap);
 
+    PlotStyle s = (PlotStyle)
+	attributes.value("plotStyle").toInt(&ok);
+    if (ok) setPlotStyle(s);
+
+    BinScale b = (BinScale)
+	attributes.value("binScale").toInt(&ok);
+    if (ok) setBinScale(b);
+
     float gain = attributes.value("gain").toFloat(&ok);
     if (ok) setGain(gain);
+
+    float threshold = attributes.value("threshold").toFloat(&ok);
+    if (ok) setThreshold(threshold);
 
     bool normalize = (attributes.value("normalize").trimmed() == "true");
     setNormalize(normalize);

@@ -1238,7 +1238,11 @@ Pane::registerShortcuts(KeyReference &kr)
     kr.registerShortcut(tr("Select"), tr("Left"), 
                         tr("Click left button and drag to select region; drag region edge to resize"));
     kr.registerShortcut(tr("Multi Select"), tr("Ctrl+Left"), 
+#ifdef Q_OS_MAC
+                        tr("Cmd-click left button and drag to select an additional region"));
+#else
                         tr("Ctrl-click left button and drag to select an additional region"));
+#endif
     kr.registerShortcut(tr("Fine Select"), tr("Shift+Left"), 
                         tr("Shift-click left button and drag to select without snapping to items or grid"));
     
@@ -2591,11 +2595,19 @@ Pane::updateContextHelp(const QPoint *pos)
         bool haveSelection = (m_manager && !m_manager->getSelections().empty());
 
         if (haveSelection) {
+#ifdef Q_OS_MAC
+            if (editable) {
+                help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; hold Cmd for multi-select; middle-click and drag to navigate");
+            } else {
+                help = tr("Click and drag to select a range; hold Cmd for multi-select; middle-click and drag to navigate");
+            }
+#else
             if (editable) {
                 help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; hold Ctrl for multi-select; middle-click and drag to navigate");
             } else {
                 help = tr("Click and drag to select a range; hold Ctrl for multi-select; middle-click and drag to navigate");
             }                
+#endif
 
             if (pos) {
                 bool closeToLeft = false, closeToRight = false;
