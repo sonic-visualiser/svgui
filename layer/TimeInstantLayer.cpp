@@ -60,7 +60,7 @@ TimeInstantLayer::setModel(SparseOneDimensionalModel *model)
     connectSignals(m_model);
 
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVDEBUG << "TimeInstantLayer::setModel(" << model << ")" << endl;
+    std::cerr << "TimeInstantLayer::setModel(" << model << ")" << std::endl;
 #endif
 
     if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
@@ -469,7 +469,7 @@ void
 TimeInstantLayer::drawStart(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVDEBUG << "TimeInstantLayer::drawStart(" << e->x() << ")" << endl;
+    std::cerr << "TimeInstantLayer::drawStart(" << e->x() << ")" << std::endl;
 #endif
 
     if (!m_model) return;
@@ -492,7 +492,7 @@ void
 TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVDEBUG << "TimeInstantLayer::drawDrag(" << e->x() << ")" << endl;
+    std::cerr << "TimeInstantLayer::drawDrag(" << e->x() << ")" << std::endl;
 #endif
 
     if (!m_model || !m_editing) return;
@@ -509,7 +509,7 @@ void
 TimeInstantLayer::drawEnd(View *, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVDEBUG << "TimeInstantLayer::drawEnd(" << e->x() << ")" << endl;
+    std::cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << std::endl;
 #endif
     if (!m_model || !m_editing) return;
     QString newName = tr("Add Point at %1 s")
@@ -570,7 +570,7 @@ void
 TimeInstantLayer::editStart(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVDEBUG << "TimeInstantLayer::editStart(" << e->x() << ")" << endl;
+    std::cerr << "TimeInstantLayer::editStart(" << e->x() << ")" << std::endl;
 #endif
 
     if (!m_model) return;
@@ -592,7 +592,7 @@ void
 TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVDEBUG << "TimeInstantLayer::editDrag(" << e->x() << ")" << endl;
+    std::cerr << "TimeInstantLayer::editDrag(" << e->x() << ")" << std::endl;
 #endif
 
     if (!m_model || !m_editing) return;
@@ -615,7 +615,7 @@ void
 TimeInstantLayer::editEnd(View *, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVDEBUG << "TimeInstantLayer::editEnd(" << e->x() << ")" << endl;
+    std::cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << std::endl;
 #endif
     if (!m_model || !m_editing) return;
     if (m_editingCommand) {
