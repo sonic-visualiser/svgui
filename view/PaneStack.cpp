@@ -104,8 +104,6 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     layout->addWidget(pane, 0, 1, 2, 1);
     layout->setColumnStretch(1, 20);
 
-    m_xButtonMap[xButton] = pane;
-
     QWidget *properties = 0;
     if (suppressPropertyBox) {
 	properties = new QFrame();
@@ -129,6 +127,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     PaneRec rec;
     rec.pane = pane;
     rec.propertyStack = properties;
+    rec.xButton = xButton;
     rec.currentIndicator = currentIndicator;
     rec.frame = frame;
     rec.layout = layout;
@@ -156,6 +155,8 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     if (!m_currentPane) {
 	setCurrentPane(pane);
     }
+
+    showOrHidePaneAccessories();
 
     return pane;
 }
@@ -263,15 +264,6 @@ PaneStack::deletePane(Pane *pane)
 
     emit paneAboutToBeDeleted(pane);
 
-    for (std::map<QWidget *, Pane *>::iterator i = m_xButtonMap.begin();
-         i != m_xButtonMap.end(); ++i) {
-
-        if (i->second == pane) {
-            m_xButtonMap.erase(i);
-            break;
-        }
-    }
-
     delete pane->parent();
 
     if (m_currentPane == pane) {
@@ -282,7 +274,22 @@ PaneStack::deletePane(Pane *pane)
 	}
     }
 
+    showOrHidePaneAccessories();
+
     emit paneDeleted();
+}
+
+void
+PaneStack::showOrHidePaneAccessories()
+{
+    std::cerr << "PaneStack::showOrHidePaneAccessories: count == " << getPaneCount() << std::endl;
+
+    bool multi = (getPaneCount() > 1);
+    for (std::vector<PaneRec>::iterator i = m_panes.begin();
+         i != m_panes.end(); ++i) {
+        i->xButton->setVisible(multi);
+        i->currentIndicator->setVisible(multi);
+    }
 }
 
 int
@@ -319,14 +326,15 @@ PaneStack::hidePane(Pane *pane)
 		}
 	    }
 	    
+            showOrHidePaneAccessories();
+            emit paneHidden(pane);
+            emit paneHidden();
 	    return;
 	}
 	++i;
     }
 
     std::cerr << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << std::endl;
-    emit paneHidden(pane);
-    emit paneHidden();
 }
 
 void
@@ -342,6 +350,8 @@ PaneStack::showPane(Pane *pane)
 	    if (pw) pw->show();
 
 	    //!!! update current pane
+
+            showOrHidePaneAccessories();
 
 	    return;
 	}
@@ -541,11 +551,9 @@ void
 PaneStack::paneDeleteButtonClicked()
 {
     QObject *s = sender();
-    QWidget *w = dynamic_cast<QWidget *>(s);
-    if (w) {
-        if (m_xButtonMap.find(w) != m_xButtonMap.end()) {
-            Pane *p = m_xButtonMap[w];
-            emit paneDeleteButtonClicked(p);
+    for (size_t i = 0; i < m_panes.size(); ++i) {
+	if (m_panes[i].xButton == s) {
+            emit paneDeleteButtonClicked(m_panes[i].pane);
         }
     }
 }
