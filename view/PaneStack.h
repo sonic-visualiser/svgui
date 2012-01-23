@@ -25,6 +25,7 @@ class QLabel;
 class QStackedWidget;
 class QSplitter;
 class QGridLayout;
+class QPushButton;
 class View;
 class Pane;
 class Layer;
@@ -109,6 +110,7 @@ protected:
     {
 	Pane        *pane;
 	QWidget     *propertyStack;
+        QPushButton *xButton;
 	QLabel      *currentIndicator;
         QFrame      *frame;
         QGridLayout *layout;
@@ -117,14 +119,14 @@ protected:
     std::vector<PaneRec> m_panes;
     std::vector<PaneRec> m_hiddenPanes;
 
-    std::map<QWidget *, Pane *> m_xButtonMap;
-
     QSplitter *m_splitter;
     QStackedWidget *m_propertyStackStack;
 
     ViewManager *m_viewManager; // I don't own this
     int m_propertyStackMinWidth;
     void sizePropertyStacks();
+
+    void showOrHidePaneAccessories();
 
     LayoutStyle m_layoutStyle;
 };
