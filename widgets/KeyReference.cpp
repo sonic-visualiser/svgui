@@ -194,3 +194,10 @@ KeyReference::dialogButtonClicked(QAbstractButton *)
     m_dialog->hide();
 }
 
+void
+KeyReference::hide()
+{
+    if (m_dialog) {
+        m_dialog->hide();
+    }
+}

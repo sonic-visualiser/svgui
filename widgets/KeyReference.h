@@ -43,6 +43,7 @@ public:
     void registerAlternativeShortcut(QString actionName, QString alternative);
 
     void show();
+    void hide();
 
 protected slots:
     void dialogButtonClicked(QAbstractButton *);
