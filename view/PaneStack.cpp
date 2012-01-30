@@ -122,7 +122,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
         properties->setParent(m_propertyStackStack);
         m_propertyStackStack->addWidget(properties);
     }
-    layout->setColumnStretch(2, 1);
+    layout->setColumnStretch(2, 0);
 
     PaneRec rec;
     rec.pane = pane;
