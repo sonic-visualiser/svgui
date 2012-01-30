@@ -60,8 +60,8 @@ public:
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
     virtual void setSynchronousPainting(bool synchronous);
 
-    virtual int getVerticalScaleWidth(View *v, QPainter &) const;
-    virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(View *v, bool detailed, QPainter &) const;
+    virtual void paintVerticalScale(View *v, bool detailed, QPainter &paint, QRect rect) const;
 
     virtual bool getCrosshairExtents(View *, QPainter &, QPoint cursorPos,
                                      std::vector<QRect> &extents) const;

@@ -102,6 +102,8 @@ public:
     virtual void setVerticalZoomStep(int);
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
+    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+
     /**
      * Add a note-on.  Used when recording MIDI "live".  The note will
      * not be finally added to the layer until the corresponding

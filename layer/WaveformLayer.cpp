@@ -1154,7 +1154,7 @@ WaveformLayer::getYScaleDifference(const View *v, int y0, int y1,
 }
 
 int
-WaveformLayer::getVerticalScaleWidth(View *, QPainter &paint) const
+WaveformLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 {
     if (m_scale == LinearScale) {
 	return paint.fontMetrics().width("0.0") + 13;
@@ -1165,7 +1165,7 @@ WaveformLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 }
 
 void
-WaveformLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
+WaveformLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
 	return;

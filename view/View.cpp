@@ -674,6 +674,8 @@ View::setViewManager(ViewManager *manager)
 	    this, SLOT(selectionChanged()));
     connect(m_manager, SIGNAL(overlayModeChanged()),
             this, SLOT(overlayModeChanged()));
+    connect(m_manager, SIGNAL(showCentreLineChanged()),
+            this, SLOT(overlayModeChanged()));
     connect(m_manager, SIGNAL(zoomWheelsEnabledChanged()),
             this, SLOT(zoomWheelsEnabledChanged()));
 

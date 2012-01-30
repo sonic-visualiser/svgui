@@ -554,7 +554,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
     // then the scale should be drawn from any underlying layer
     // with a scale regardless of unit.
 
-    int sw = topLayer->getVerticalScaleWidth(this, paint);
+    int sw = topLayer->getVerticalScaleWidth
+        (this, m_manager->shouldShowVerticalColourScale(), paint);
 
     if (sw > 0) {
         scaleLayer = topLayer;
@@ -576,7 +577,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
                         
                     if ((*vi) == topLayer) continue;
                         
-                    sw = (*vi)->getVerticalScaleWidth(this, paint);
+                    sw = (*vi)->getVerticalScaleWidth
+                        (this, m_manager->shouldShowVerticalColourScale(), paint);
                         
                     if (sw > 0) {
                         scaleLayer = *vi;
@@ -605,7 +607,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
                         if ((*vi)->getValueExtents(min, max, log, unit) &&
                             unit == requireUnit) {
 
-                            sw = (*vi)->getVerticalScaleWidth(this, paint);
+                            sw = (*vi)->getVerticalScaleWidth
+                                (this, m_manager->shouldShowVerticalColourScale(), paint);
                             if (sw > 0) {
                                 scaleLayer = *vi;
                                 m_scaleWidth = sw;
@@ -633,7 +636,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
         
         paint.setBrush(Qt::NoBrush);
         scaleLayer->paintVerticalScale
-            (this, paint, QRect(0, 0, m_scaleWidth, height()));
+            (this, m_manager->shouldShowVerticalColourScale(),
+             paint, QRect(0, 0, m_scaleWidth, height()));
         
         paint.restore();
     }
@@ -1053,7 +1057,8 @@ Pane::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
             
             paint.setBrush(Qt::NoBrush);
             (*vi)->paintVerticalScale
-                (this, paint, QRect(xorigin, 0, m_scaleWidth, height()));
+                (this, m_manager->shouldShowVerticalColourScale(),
+                 paint, QRect(xorigin, 0, m_scaleWidth, height()));
             
             paint.restore();
             break;
@@ -1078,7 +1083,8 @@ Pane::toNewImage(size_t f0, size_t f1)
         for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
             --vi;
             QPainter paint(image);
-            m_scaleWidth = (*vi)->getVerticalScaleWidth(this, paint);
+            m_scaleWidth = (*vi)->getVerticalScaleWidth
+                (this, m_manager->shouldShowVerticalColourScale(), paint);
             break;
         }
     } else {
@@ -1114,7 +1120,8 @@ Pane::getImageSize(size_t f0, size_t f1)
         for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
             --vi;
             QPainter paint(image);
-            sw = (*vi)->getVerticalScaleWidth(this, paint);
+            sw = (*vi)->getVerticalScaleWidth
+                (this, m_manager->shouldShowVerticalColourScale(), paint);
             break;
         }
     }

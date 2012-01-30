@@ -1106,7 +1106,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-TimeValueLayer::getVerticalScaleWidth(View *, QPainter &paint) const
+TimeValueLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 {
     int w = paint.fontMetrics().width("-000.000");
     if (m_plotStyle == PlotSegmentation) return w + 20;
@@ -1114,7 +1114,7 @@ TimeValueLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 }
 
 void
-TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
+TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
     if (!m_model) return;
 
@@ -1139,7 +1139,7 @@ TimeValueLayer::paintVerticalScale(View *v, QPainter &paint, QRect) const
 
     char buffer[40];
 
-    int w = getVerticalScaleWidth(v, paint);
+    int w = getVerticalScaleWidth(v, false, paint);
 
     int tx = 5;
 

@@ -51,8 +51,8 @@ public:
     virtual const Model *getModel() const { return m_model; }
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
-    virtual int getVerticalScaleWidth(View *v, QPainter &) const;
-    virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
+    virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
