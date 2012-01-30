@@ -43,8 +43,9 @@ ViewManager::ViewManager() :
     m_playSelectionMode(false),
     m_playSoloMode(false),
     m_alignMode(false),
-    m_overlayMode(StandardOverlays),
+    m_overlayMode(MinimalOverlays),
     m_zoomWheelsEnabled(true),
+    m_showCentreLine(true),
     m_illuminateLocalFeatures(true),
     m_showWorkTitle(false),
     m_lightPalette(QApplication::palette()),
@@ -54,8 +55,17 @@ ViewManager::ViewManager() :
     settings.beginGroup("MainWindow");
     m_overlayMode = OverlayMode
         (settings.value("overlay-mode", int(m_overlayMode)).toInt());
+
+    if (m_overlayMode != NoOverlays &&
+        m_overlayMode != MinimalOverlays &&
+        m_overlayMode != AllOverlays) {
+        m_overlayMode = MinimalOverlays;
+    }
+
     m_zoomWheelsEnabled =
         settings.value("zoom-wheels-enabled", m_zoomWheelsEnabled).toBool();
+    m_showCentreLine =
+        settings.value("show-centre-line", m_showCentreLine).toBool();
     settings.endGroup();
 
     if (getGlobalDarkBackground()) {
@@ -605,6 +615,22 @@ ViewManager::setZoomWheelsEnabled(bool enabled)
     QSettings settings;
     settings.beginGroup("MainWindow");
     settings.setValue("zoom-wheels-enabled", m_zoomWheelsEnabled);
+    settings.endGroup();
+}
+
+void
+ViewManager::setShowCentreLine(bool show)
+{
+    if (m_showCentreLine != show) {
+        m_showCentreLine = show;
+        emit showCentreLineChanged();
+        if (show) emit activity("Show centre line");
+        else emit activity("Hide centre line");
+    }
+
+    QSettings settings;
+    settings.beginGroup("MainWindow");
+    settings.setValue("show-centre-line", int(m_showCentreLine));
     settings.endGroup();
 }
 

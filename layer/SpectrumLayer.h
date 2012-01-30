@@ -93,6 +93,8 @@ public:
     void setShowPeaks(bool);
     bool getShowPeaks() const { return m_showPeaks; }
 
+    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 

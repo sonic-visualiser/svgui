@@ -92,6 +92,8 @@ public:
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 
+    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+
     virtual void setLayerDormant(const View *v, bool dormant);
 
     void setProperties(const QXmlAttributes &attributes);

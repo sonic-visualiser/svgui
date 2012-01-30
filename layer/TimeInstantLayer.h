@@ -109,6 +109,8 @@ public:
         }
     }
 
+    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+
 protected:
     SparseOneDimensionalModel::PointList getLocalPoints(View *v, int) const;
 

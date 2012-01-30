@@ -128,8 +128,11 @@ public:
     virtual QString getLayerPresentationName() const;
     virtual QPixmap getLayerPresentationPixmap(QSize) const { return QPixmap(); }
 
-    virtual int getVerticalScaleWidth(View *, QPainter &) const { return 0; }
-    virtual void paintVerticalScale(View *, QPainter &, QRect) const { }
+    virtual int getVerticalScaleWidth(View *, bool detailed,
+                                      QPainter &) const = 0;
+
+    virtual void paintVerticalScale(View *, bool detailed,
+                                    QPainter &, QRect) const { }
 
     virtual bool getCrosshairExtents(View *, QPainter &, QPoint /* cursorPos */,
                                      std::vector<QRect> &) const {

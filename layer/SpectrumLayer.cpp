@@ -442,7 +442,7 @@ SpectrumLayer::getCrosshairExtents(View *v, QPainter &paint,
     int hoffset = 2;
     if (m_binScale == LogBins) hoffset = 13;
 
-    int sw = getVerticalScaleWidth(v, paint);
+    int sw = getVerticalScaleWidth(v, false, paint);
 
     QRect value(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
                 paint.fontMetrics().width("0.0000001 V") + 2,
@@ -668,7 +668,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     float thresh = (powf(10, -6) / m_gain) * (m_windowSize / 2.f); // -60dB adj
 
-    int xorigin = getVerticalScaleWidth(v, paint) + 1;
+    int xorigin = getVerticalScaleWidth(v, false, paint) + 1;
     int w = v->width() - xorigin - 1;
 
     int pkh = 0;

@@ -83,6 +83,8 @@ public:
     virtual bool getValueExtents(float &min, float &max,
                                  bool &logarithmic, QString &unit) const;
 
+    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 

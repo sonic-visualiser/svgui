@@ -148,26 +148,28 @@ public:
     enum OverlayMode {
         NoOverlays,
         MinimalOverlays,
-        StandardOverlays,
         AllOverlays
     };
     void setOverlayMode(OverlayMode mode);
     OverlayMode getOverlayMode() const { return m_overlayMode; }
 
-    bool shouldShowCentreLine() const {
+    void setShowCentreLine(bool show);
+    bool shouldShowCentreLine() const { return m_showCentreLine; }
+
+    bool shouldShowDuration() const {
         return m_overlayMode != NoOverlays;
     }
     bool shouldShowFrameCount() const {
-        return m_overlayMode != NoOverlays;
-    }
-    bool shouldShowDuration() const {
-        return m_overlayMode > MinimalOverlays;
+        return m_showCentreLine && shouldShowDuration();
     }
     bool shouldShowVerticalScale() const {
-        return m_overlayMode > MinimalOverlays;
+        return m_overlayMode != NoOverlays;
+    }
+    bool shouldShowVerticalColourScale() const {
+        return m_overlayMode == AllOverlays;
     }
     bool shouldShowSelectionExtents() const {
-        return m_overlayMode > MinimalOverlays;
+        return m_overlayMode != NoOverlays;
     }
     bool shouldShowLayerNames() const {
         return m_overlayMode == AllOverlays;
@@ -232,6 +234,9 @@ signals:
     /** Emitted when the overlay mode has been changed. */
     void overlayModeChanged();
 
+    /** Emitted when the centre line visibility has been changed. */
+    void showCentreLineChanged();
+
     /** Emitted when the zoom wheels have been toggled. */
     void zoomWheelsEnabledChanged();
 
@@ -294,6 +299,7 @@ protected:
 
     OverlayMode m_overlayMode;
     bool m_zoomWheelsEnabled;
+    bool m_showCentreLine;
     bool m_illuminateLocalFeatures;
     bool m_showWorkTitle;
 

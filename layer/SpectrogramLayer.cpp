@@ -3031,7 +3031,7 @@ SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
     QRect horizontal(0, cursorPos.y(), cursorPos.x(), 1);
     extents.push_back(horizontal);
 
-    int sw = getVerticalScaleWidth(v, paint);
+    int sw = getVerticalScaleWidth(v, false, paint);//!!!
 
     QRect freq(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
                paint.fontMetrics().width("123456 Hz") + 2,
@@ -3065,7 +3065,7 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
 {
     paint.save();
 
-    int sw = getVerticalScaleWidth(v, paint);
+    int sw = getVerticalScaleWidth(v, false, paint); //!!!
 
     QFont fn = paint.font();
     if (fn.pointSize() > 8) {
@@ -3260,11 +3260,12 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 }
 
 int
-SpectrogramLayer::getVerticalScaleWidth(View *, QPainter &paint) const
+SpectrogramLayer::getVerticalScaleWidth(View *, bool detailed, QPainter &paint) const
 {
     if (!m_model || !m_model->isOK()) return 0;
 
-    int cw = getColourScaleWidth(paint);
+    int cw = 0;
+    if (detailed) cw = getColourScaleWidth(paint);
 
     int tw = paint.fontMetrics().width(QString("%1")
 				     .arg(m_maxFrequency > 0 ?
@@ -3280,7 +3281,7 @@ SpectrogramLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 }
 
 void
-SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
+SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
 	return;
@@ -3303,14 +3304,16 @@ SpectrogramLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
 	if (bins > m_fftSize / 2) bins = m_fftSize / 2;
     }
 
-    int cw = getColourScaleWidth(paint);
+    int cw = 0;
+
+    if (detailed) cw = getColourScaleWidth(paint);
     int cbw = paint.fontMetrics().width("dB");
 
     int py = -1;
     int textHeight = paint.fontMetrics().height();
     int toff = -textHeight + paint.fontMetrics().ascent() + 2;
 
-    if (h > textHeight * 3 + 10) {
+    if (detailed && (h > textHeight * 3 + 10)) {
 
         int topLines = 2;
         if (m_colourScale == PhaseColourScale) topLines = 1;

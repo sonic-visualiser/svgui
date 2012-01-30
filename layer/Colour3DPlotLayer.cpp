@@ -714,7 +714,7 @@ Colour3DPlotLayer::getColourScaleWidth(QPainter &) const
 }
 
 int
-Colour3DPlotLayer::getVerticalScaleWidth(View *, QPainter &paint) const
+Colour3DPlotLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 {
     if (!m_model) return 0;
 
@@ -736,7 +736,7 @@ Colour3DPlotLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 }
 
 void
-Colour3DPlotLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
+Colour3DPlotLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const
 {
     if (!m_model) return;
 

@@ -330,7 +330,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     paint.setPen(getBaseQColor());
 
-    int xorigin = getVerticalScaleWidth(v, paint) + 1;
+    int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
     int w = v->width() - xorigin - 1;
 
     m_xorigins[v] = xorigin; // for use in getFeatureDescription
@@ -498,7 +498,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-SliceLayer::getVerticalScaleWidth(View *, QPainter &paint) const
+SliceLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 {
     if (m_energyScale == LinearScale || m_energyScale == AbsoluteScale) {
 	return std::max(paint.fontMetrics().width("0.0") + 13,
@@ -510,7 +510,7 @@ SliceLayer::getVerticalScaleWidth(View *, QPainter &paint) const
 }
 
 void
-SliceLayer::paintVerticalScale(View *v, QPainter &paint, QRect rect) const
+SliceLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const
 {
     float thresh = m_threshold;
     if (m_energyScale != LinearScale && m_energyScale != AbsoluteScale) {

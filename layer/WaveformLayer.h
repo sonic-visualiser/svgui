@@ -46,8 +46,8 @@ public:
         return ColourAndBackgroundSignificant;
     }
 
-    virtual int getVerticalScaleWidth(View *v, QPainter &) const;
-    virtual void paintVerticalScale(View *v, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(View *v, bool detailed, QPainter &) const;
+    virtual void paintVerticalScale(View *v, bool detailed, QPainter &paint, QRect rect) const;
 
     void setModel(const RangeSummarisableTimeValueModel *model);
 
