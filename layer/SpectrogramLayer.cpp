@@ -76,6 +76,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_normalizeVisibleArea(false),
     m_lastEmittedZoomStep(-1),
     m_synchronous(false),
+    m_haveDetailedScale(false),
     m_lastPaintBlockWidth(0),
     m_updateTimer(0),
     m_candidateFillStartFrame(0),
@@ -3031,7 +3032,7 @@ SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
     QRect horizontal(0, cursorPos.y(), cursorPos.x(), 1);
     extents.push_back(horizontal);
 
-    int sw = getVerticalScaleWidth(v, false, paint);//!!!
+    int sw = getVerticalScaleWidth(v, m_haveDetailedScale, paint);
 
     QRect freq(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
                paint.fontMetrics().width("123456 Hz") + 2,
@@ -3065,7 +3066,7 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
 {
     paint.save();
 
-    int sw = getVerticalScaleWidth(v, false, paint); //!!!
+    int sw = getVerticalScaleWidth(v, m_haveDetailedScale, paint);
 
     QFont fn = paint.font();
     if (fn.pointSize() > 8) {
@@ -3487,6 +3488,8 @@ SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QR
 	    py = y;
 	}
     }
+
+    m_haveDetailedScale = detailed;
 }
 
 class SpectrogramRangeMapper : public RangeMapper

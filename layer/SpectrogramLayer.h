@@ -263,6 +263,7 @@ protected:
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
 
+    mutable bool        m_haveDetailedScale;
     mutable int         m_lastPaintBlockWidth;
     mutable RealTime    m_lastPaintTime;
 
