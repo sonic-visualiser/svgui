@@ -63,6 +63,13 @@ RegionLayer::setModel(RegionModel *model)
 
 //    SVDEBUG << "RegionLayer::setModel(" << model << ")" << endl;
 
+    if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
+        setPlotStyle(PlotSegmentation);
+    }
+    if (m_model && m_model->getRDFTypeURI().endsWith("Change")) {
+        setPlotStyle(PlotSegmentation);
+    }
+
     emit modelReplaced();
 }
 
