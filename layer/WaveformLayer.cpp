@@ -474,8 +474,8 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 #ifdef DEBUG_WAVEFORM_PAINT
     Profiler profiler("WaveformLayer::paint", true);
-    SVDEBUG << "WaveformLayer::paint (" << rect.x() << "," << rect.y()
-	      << ") [" << rect.width() << "x" << rect.height() << "]: zoom " << zoomLevel << ", start " << startFrame << endl;
+    std::cerr << "WaveformLayer::paint (" << rect.x() << "," << rect.y()
+	      << ") [" << rect.width() << "x" << rect.height() << "]: zoom " << zoomLevel << endl;
 #endif
 
     size_t channels = 0, minChannel = 0, maxChannel = 0;
@@ -494,7 +494,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     if (m_aggressive) {
 
 #ifdef DEBUG_WAVEFORM_PAINT
-        SVDEBUG << "WaveformLayer::paint: aggressive is true" << endl;
+        std::cerr << "WaveformLayer::paint: aggressive is true" << endl;
 #endif
 
 	if (m_cacheValid && (zoomLevel != m_cacheZoomLevel)) {
@@ -504,7 +504,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	if (!m_cache || m_cache->width() != w || m_cache->height() != h) {
 #ifdef DEBUG_WAVEFORM_PAINT
             if (m_cache) {
-                SVDEBUG << "WaveformLayer::paint: cache size " << m_cache->width() << "x" << m_cache->height() << " differs from view size " << w << "x" << h << ": regenerating aggressive cache" << endl;
+                std::cerr << "WaveformLayer::paint: cache size " << m_cache->width() << "x" << m_cache->height() << " differs from view size " << w << "x" << h << ": regenerating aggressive cache" << endl;
             }
 #endif
 	    delete m_cache;
@@ -562,7 +562,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     getSourceFramesForX(v, x1, modelZoomLevel, spare, frame1);
     
 #ifdef DEBUG_WAVEFORM_PAINT
-    SVDEBUG << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << modelZoomLevel << ")" <<  endl;
+    std::cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << modelZoomLevel << ")" <<  std::endl;
 #endif
 
     RangeSummarisableTimeValueModel::RangeBlock *ranges = 
@@ -602,8 +602,10 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	int m = (h / channels) / 2;
 	int my = m + (((ch - minChannel) * h) / channels);
-	
-//	std::cerr << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << std::endl;
+
+#ifdef DEBUG_WAVEFORM_PAINT	
+	std::cerr << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << std::endl;
+#endif
 
 	if (my - m > y1 || my + m < y0) continue;
 
@@ -703,11 +705,11 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
             size_t i1 = (f1 - frame0) / modelZoomLevel;
 
 #ifdef DEBUG_WAVEFORM_PAINT
-            SVDEBUG << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
+            std::cerr << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << std::endl;
 #endif
 
             if (i1 > i0 + 1) {
-                SVDEBUG << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << modelZoomLevel << ")" << endl;
+                std::cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << modelZoomLevel << ")" << std::endl;
             }
 
 	    if (ranges && i0 < ranges->size()) {
@@ -721,6 +723,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 		}
 
 	    } else {
+#ifdef DEBUG_WAVEFORM_PAINT
+                std::cerr << "No (or not enough) ranges for i0 = " << i0 << std::endl;
+#endif
 		continue;
 	    }
 
@@ -868,7 +873,15 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 		paint->setPen(midColour);
 	    }
 
-	    paint->drawLine(x, rangeBottom, x, rangeTop);
+#ifdef DEBUG_WAVEFORM_PAINT
+            std::cerr << "range " << rangeBottom << " -> " << rangeTop << std::endl;
+#endif
+
+            if (rangeTop == rangeBottom) {
+                paint->drawPoint(x, rangeTop);
+            } else {
+                paint->drawLine(x, rangeBottom, x, rangeTop);
+            }
 
 	    prevRangeTopColour = baseColour;
 	    prevRangeBottomColour = baseColour;
