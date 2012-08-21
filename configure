@@ -624,7 +624,6 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-CODENAME
 QMAKE_CONFIG
 HAVES
 CXXFLAGS_MINIMAL
@@ -6873,9 +6872,8 @@ fi
 
 
 
-
-
 ac_config_files="$ac_config_files config.pri"
+
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
