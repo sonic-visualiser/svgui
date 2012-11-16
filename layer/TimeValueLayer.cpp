@@ -160,7 +160,7 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Plot Type") {
 	
 	if (min) *min = 0;
-	if (max) *max = 5;
+	if (max) *max = 6;
         if (deflt) *deflt = int(PlotConnectedPoints);
 	
 	val = int(m_plotStyle);
@@ -218,6 +218,7 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
 	case 3: return tr("Lines");
 	case 4: return tr("Curve");
 	case 5: return tr("Segmentation");
+	case 6: return tr("Discrete Curves");
 	}
     } else if (name == "Vertical Scale") {
 	switch (value) {
@@ -307,7 +308,8 @@ TimeValueLayer::isLayerScrollable(const View *v) const
     // they're always scrollable
 
     if (m_plotStyle == PlotLines ||
-	m_plotStyle == PlotCurve) return true;
+	m_plotStyle == PlotCurve ||
+        m_plotStyle == PlotDiscreteCurves) return true;
 
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
@@ -915,6 +917,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
     }
     
+    int prevFrame = 0;
+
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
@@ -932,6 +936,12 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int x = v->getXForFrame(p.frame);
 	int y = getYForValue(v, value);
 
+        bool gap = false;
+        if (m_plotStyle == PlotDiscreteCurves) { 
+            gap = (p.frame > prevFrame &&
+                   (p.frame - prevFrame >= m_model->getResolution() * 2));
+        }
+
         if (m_plotStyle != PlotSegmentation) {
             textY = y - paint.fontMetrics().height()
                       + paint.fontMetrics().ascent();
@@ -941,7 +951,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
 
 	bool haveNext = false;
-	int nx = v->getXForFrame(v->getModelsEndFrame());
+        int nf = v->getModelsEndFrame();
+	int nx = v->getXForFrame(nf);
 	int ny = y;
 
 	SparseTimeValueModel::PointList::const_iterator j = i;
@@ -951,7 +962,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    const SparseTimeValueModel::Point &q(*j);
             float nvalue = q.value;
             if (m_derivative) nvalue -= p.value;
-	    nx = v->getXForFrame(q.frame);
+            nf = q.frame;
+	    nx = v->getXForFrame(nf);
 	    ny = getYForValue(v, nvalue);
 	    haveNext = true;
         }
@@ -960,15 +972,19 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 //                  << ", nx = " << nx << std::endl;
 
 	if (w < 1) w = 1;
-	paint.setPen(getBaseQColor());
 
-	if (m_plotStyle == PlotSegmentation) {
+        if (m_plotStyle == PlotDiscreteCurves) {
+            paint.setPen(QPen(getBaseQColor(), 3));
+            paint.setBrush(Qt::NoBrush);
+        } else if (m_plotStyle == PlotSegmentation) {
             paint.setPen(getForegroundQColor(v));
             paint.setBrush(getColourForValue(v, value));
 	} else if (m_plotStyle == PlotLines ||
 		   m_plotStyle == PlotCurve) {
+            paint.setPen(getBaseQColor());
 	    paint.setBrush(Qt::NoBrush);
 	} else {
+            paint.setPen(getBaseQColor());
 	    paint.setBrush(brushColour);
 	}	    
 
@@ -999,6 +1015,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    //or curve mode
 
 	    if (m_plotStyle != PlotCurve &&
+                m_plotStyle != PlotDiscreteCurves &&
 		m_plotStyle != PlotLines) {
 		paint.setPen(getForegroundQColor(v));
 	    }	    
@@ -1006,6 +1023,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (m_plotStyle != PlotLines &&
 	    m_plotStyle != PlotCurve &&
+            m_plotStyle != PlotDiscreteCurves &&
 	    m_plotStyle != PlotSegmentation) {
             if (m_plotStyle != PlotStems ||
                 w > 1) {
@@ -1015,6 +1033,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (m_plotStyle == PlotConnectedPoints ||
 	    m_plotStyle == PlotLines ||
+            m_plotStyle == PlotDiscreteCurves ||
 	    m_plotStyle == PlotCurve) {
 
 	    if (haveNext) {
@@ -1044,7 +1063,15 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    float y0 = y;
 		    float y1 = ny;
 
-		    if (pointCount == 0) {
+                    if (m_plotStyle == PlotDiscreteCurves) {
+                        bool nextGap = nf - p.frame >= m_model->getResolution() * 2;
+                        if (nextGap) {
+                            x1 = x0;
+                            y1 = y0;
+                        }
+                    }
+
+		    if (pointCount == 0 || gap) {
 			path.moveTo((x0 + x1) / 2, (y0 + y1) / 2);
 		    }
 		    ++pointCount;
@@ -1091,9 +1118,12 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 //                paint.drawText(x + 5, textY, p.label);
             }
 	}
+
+        prevFrame = p.frame;
     }
 
-    if ((m_plotStyle == PlotCurve || m_plotStyle == PlotLines)
+    if ((m_plotStyle == PlotCurve || m_plotStyle == PlotDiscreteCurves ||
+         m_plotStyle == PlotLines)
         && !path.isEmpty()) {
 	paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->width());
 	paint.drawPath(path);

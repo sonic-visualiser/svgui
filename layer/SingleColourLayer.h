@@ -26,11 +26,29 @@ class SingleColourLayer : public Layer
     Q_OBJECT
     
 public:
+    /**
+     * Set the colour used to draw primary items in the layer. The
+     * colour value is a colour database index as returned by
+     * ColourDatabase::getColourIndex().
+     */
     virtual void setBaseColour(int);
+
+    /**
+     * Retrieve the current primary drawing colour, as a
+     * ColourDatabase index value.
+     */
     virtual int getBaseColour() const;
 
+    /**
+     * Return true if the layer currently has a dark colour on a light
+     * background, false if it has a light colour on a dark
+     * background.
+     */
     virtual bool hasLightBackground() const;
 
+    /**
+     * Implements Layer::getLayerColourSignificance()
+     */
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourDistinguishes;
     }
