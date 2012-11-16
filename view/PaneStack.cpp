@@ -42,6 +42,7 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     m_splitter(new QSplitter),
     m_propertyStackStack(new QStackedWidget),
     m_viewManager(viewManager),
+    m_propertyStackMinWidth(100),
     m_layoutStyle(PropertyStackPerPaneLayout)
 {
     QHBoxLayout *layout = new QHBoxLayout;

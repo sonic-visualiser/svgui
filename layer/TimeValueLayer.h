@@ -92,7 +92,8 @@ public:
 	PlotConnectedPoints,
 	PlotLines,
 	PlotCurve,
-	PlotSegmentation
+	PlotSegmentation,
+        PlotDiscreteCurves
     };
 
     void setPlotStyle(PlotStyle style);
