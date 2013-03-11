@@ -51,7 +51,7 @@ LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     subgrid->addWidget(m_modelView);
 
     m_modelView->verticalHeader()->hide();
-    m_modelView->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
+    m_modelView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     m_modelView->setShowGrid(false);
 
     m_modelModel = new ModelMetadataModel(m_paneStack, true);
@@ -69,7 +69,7 @@ LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     subgrid->setMargin(5);
 
     m_layerView = new QTreeView;
-    m_layerView->header()->setResizeMode(QHeaderView::ResizeToContents);
+    m_layerView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
     subgrid->addWidget(m_layerView);
 
     m_layerModel = new LayerTreeModel(m_paneStack);
