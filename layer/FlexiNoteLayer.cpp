@@ -13,7 +13,7 @@
     COPYING included with this distribution for more information.
 */
 
-#include "NoteLayer.h"
+#include "FlexiNoteLayer.h"
 
 #include "data/model/Model.h"
 #include "base/RealTime.h"
@@ -24,7 +24,7 @@
 #include "ColourDatabase.h"
 #include "view/View.h"
 
-#include "data/model/NoteModel.h"
+#include "data/model/FlexiNoteModel.h"
 
 #include "widgets/ItemEditDialog.h"
 
@@ -38,7 +38,7 @@
 #include <cmath>
 #include <utility>
 
-NoteLayer::NoteLayer() :
+FlexiNoteLayer::FlexiNoteLayer() :
     SingleColourLayer(),
     m_model(0),
     m_editing(false),
@@ -53,14 +53,14 @@ NoteLayer::NoteLayer() :
 }
 
 void
-NoteLayer::setModel(NoteModel *model)
+FlexiNoteLayer::setModel(FlexiNoteModel *model)
 {
     if (m_model == model) return;
     m_model = model;
 
     connectSignals(m_model);
 
-//    SVDEBUG << "NoteLayer::setModel(" << model << ")" << endl;
+//    SVDEBUG << "FlexiNoteLayer::setModel(" << model << ")" << endl;
 
     m_scaleMinimum = 0;
     m_scaleMaximum = 0;
@@ -69,7 +69,7 @@ NoteLayer::setModel(NoteModel *model)
 }
 
 Layer::PropertyList
-NoteLayer::getProperties() const
+FlexiNoteLayer::getProperties() const
 {
     PropertyList list = SingleColourLayer::getProperties();
     list.push_back("Vertical Scale");
@@ -78,7 +78,7 @@ NoteLayer::getProperties() const
 }
 
 QString
-NoteLayer::getPropertyLabel(const PropertyName &name) const
+FlexiNoteLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Vertical Scale") return tr("Vertical Scale");
     if (name == "Scale Units") return tr("Scale Units");
@@ -86,7 +86,7 @@ NoteLayer::getPropertyLabel(const PropertyName &name) const
 }
 
 Layer::PropertyType
-NoteLayer::getPropertyType(const PropertyName &name) const
+FlexiNoteLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Scale Units") return UnitsProperty;
     if (name == "Vertical Scale") return ValueProperty;
@@ -94,7 +94,7 @@ NoteLayer::getPropertyType(const PropertyName &name) const
 }
 
 QString
-NoteLayer::getPropertyGroupName(const PropertyName &name) const
+FlexiNoteLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Vertical Scale" || name == "Scale Units") {
         return tr("Scale");
@@ -103,7 +103,7 @@ NoteLayer::getPropertyGroupName(const PropertyName &name) const
 }
 
 int
-NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
+FlexiNoteLayer::getPropertyRangeAndValue(const PropertyName &name,
                                     int *min, int *max, int *deflt) const
 {
     int val = 0;
@@ -133,7 +133,7 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 }
 
 QString
-NoteLayer::getPropertyValueLabel(const PropertyName &name,
+FlexiNoteLayer::getPropertyValueLabel(const PropertyName &name,
                                  int value) const
 {
     if (name == "Vertical Scale") {
@@ -149,7 +149,7 @@ NoteLayer::getPropertyValueLabel(const PropertyName &name,
 }
 
 void
-NoteLayer::setProperty(const PropertyName &name, int value)
+FlexiNoteLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Vertical Scale") {
 	setVerticalScale(VerticalScale(value));
@@ -165,7 +165,7 @@ NoteLayer::setProperty(const PropertyName &name, int value)
 }
 
 void
-NoteLayer::setVerticalScale(VerticalScale scale)
+FlexiNoteLayer::setVerticalScale(VerticalScale scale)
 {
     if (m_verticalScale == scale) return;
     m_verticalScale = scale;
@@ -173,14 +173,14 @@ NoteLayer::setVerticalScale(VerticalScale scale)
 }
 
 bool
-NoteLayer::isLayerScrollable(const View *v) const
+FlexiNoteLayer::isLayerScrollable(const View *v) const
 {
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 bool
-NoteLayer::shouldConvertMIDIToHz() const
+FlexiNoteLayer::shouldConvertMIDIToHz() const
 {
     QString unit = m_model->getScaleUnits();
     return (unit != "Hz");
@@ -191,7 +191,7 @@ NoteLayer::shouldConvertMIDIToHz() const
 }
 
 bool
-NoteLayer::getValueExtents(float &min, float &max,
+FlexiNoteLayer::getValueExtents(float &min, float &max,
                            bool &logarithmic, QString &unit) const
 {
     if (!m_model) return false;
@@ -211,7 +211,7 @@ NoteLayer::getValueExtents(float &min, float &max,
 }
 
 bool
-NoteLayer::getDisplayExtents(float &min, float &max) const
+FlexiNoteLayer::getDisplayExtents(float &min, float &max) const
 {
     if (!m_model || shouldAutoAlign()) return false;
 
@@ -238,7 +238,7 @@ NoteLayer::getDisplayExtents(float &min, float &max) const
 }
 
 bool
-NoteLayer::setDisplayExtents(float min, float max)
+FlexiNoteLayer::setDisplayExtents(float min, float max)
 {
     if (!m_model) return false;
 
@@ -253,14 +253,14 @@ NoteLayer::setDisplayExtents(float min, float max)
     m_scaleMinimum = min;
     m_scaleMaximum = max;
 
-//    SVDEBUG << "NoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
+//    SVDEBUG << "FlexiNoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
     
     emit layerParametersChanged();
     return true;
 }
 
 int
-NoteLayer::getVerticalZoomSteps(int &defaultStep) const
+FlexiNoteLayer::getVerticalZoomSteps(int &defaultStep) const
 {
     if (shouldAutoAlign()) return 0;
     if (!m_model) return 0;
@@ -270,7 +270,7 @@ NoteLayer::getVerticalZoomSteps(int &defaultStep) const
 }
 
 int
-NoteLayer::getCurrentVerticalZoomStep() const
+FlexiNoteLayer::getCurrentVerticalZoomStep() const
 {
     if (shouldAutoAlign()) return 0;
     if (!m_model) return 0;
@@ -291,7 +291,7 @@ NoteLayer::getCurrentVerticalZoomStep() const
 //!!! lots of duplication with TimeValueLayer
 
 void
-NoteLayer::setVerticalZoomStep(int step)
+FlexiNoteLayer::setVerticalZoomStep(int step)
 {
     if (shouldAutoAlign()) return;
     if (!m_model) return;
@@ -334,13 +334,13 @@ NoteLayer::setVerticalZoomStep(int step)
         newmax = max;
     }
     
-    SVDEBUG << "NoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
+    SVDEBUG << "FlexiNoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
 
     setDisplayExtents(newmin, newmax);
 }
 
 RangeMapper *
-NoteLayer::getNewVerticalZoomRangeMapper() const
+FlexiNoteLayer::getNewVerticalZoomRangeMapper() const
 {
     if (!m_model) return 0;
     
@@ -362,26 +362,26 @@ NoteLayer::getNewVerticalZoomRangeMapper() const
     return mapper;
 }
 
-NoteModel::PointList
-NoteLayer::getLocalPoints(View *v, int x) const
+FlexiNoteModel::PointList
+FlexiNoteLayer::getLocalPoints(View *v, int x) const
 {
-    if (!m_model) return NoteModel::PointList();
+    if (!m_model) return FlexiNoteModel::PointList();
 
     long frame = v->getFrameForX(x);
 
-    NoteModel::PointList onPoints =
+    FlexiNoteModel::PointList onPoints =
 	m_model->getPoints(frame);
 
     if (!onPoints.empty()) {
 	return onPoints;
     }
 
-    NoteModel::PointList prevPoints =
+    FlexiNoteModel::PointList prevPoints =
 	m_model->getPreviousPoints(frame);
-    NoteModel::PointList nextPoints =
+    FlexiNoteModel::PointList nextPoints =
 	m_model->getNextPoints(frame);
 
-    NoteModel::PointList usePoints = prevPoints;
+    FlexiNoteModel::PointList usePoints = prevPoints;
 
     if (prevPoints.empty()) {
 	usePoints = nextPoints;
@@ -406,20 +406,20 @@ NoteLayer::getLocalPoints(View *v, int x) const
 }
 
 bool
-NoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
+FlexiNoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
 {
     if (!m_model) return false;
 
     long frame = v->getFrameForX(x);
 
-    NoteModel::PointList onPoints = m_model->getPoints(frame);
+    FlexiNoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
 
 //    std::cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << std::endl;
 
     int nearestDistance = -1;
 
-    for (NoteModel::PointList::const_iterator i = onPoints.begin();
+    for (FlexiNoteModel::PointList::const_iterator i = onPoints.begin();
          i != onPoints.end(); ++i) {
         
         int distance = getYForValue(v, (*i).value) - y;
@@ -434,13 +434,13 @@ NoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
 }
 
 QString
-NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
+FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 {
     int x = pos.x();
 
     if (!m_model || !m_model->getSampleRate()) return "";
 
-    NoteModel::PointList points = getLocalPoints(v, x);
+    FlexiNoteModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
 	if (!m_model->isReady()) {
@@ -450,8 +450,8 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 	}
     }
 
-    Note note(0);
-    NoteModel::PointList::iterator i;
+    FlexiNote note(0);
+    FlexiNoteModel::PointList::iterator i;
 
     for (i = points.begin(); i != points.end(); ++i) {
 
@@ -521,7 +521,7 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-NoteLayer::snapToFeatureFrame(View *v, int &frame,
+FlexiNoteLayer::snapToFeatureFrame(View *v, int &frame,
 			      size_t &resolution,
 			      SnapType snap) const
 {
@@ -530,7 +530,7 @@ NoteLayer::snapToFeatureFrame(View *v, int &frame,
     }
 
     resolution = m_model->getResolution();
-    NoteModel::PointList points;
+    FlexiNoteModel::PointList points;
 
     if (snap == SnapNeighbouring) {
 	
@@ -544,7 +544,7 @@ NoteLayer::snapToFeatureFrame(View *v, int &frame,
     int snapped = frame;
     bool found = false;
 
-    for (NoteModel::PointList::const_iterator i = points.begin();
+    for (FlexiNoteModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
 	if (snap == SnapRight) {
@@ -566,7 +566,7 @@ NoteLayer::snapToFeatureFrame(View *v, int &frame,
 
 	} else { // nearest
 
-	    NoteModel::PointList::const_iterator j = i;
+	    FlexiNoteModel::PointList::const_iterator j = i;
 	    ++j;
 
 	    if (j == points.end()) {
@@ -593,7 +593,7 @@ NoteLayer::snapToFeatureFrame(View *v, int &frame,
 }
 
 void
-NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
+FlexiNoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -615,13 +615,13 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
                 max = Pitch::getFrequencyForPitch(lrintf(max + 1));
             }
 
-            std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+            std::cerr << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
 
         } else if (log) {
 
             LogRange::mapRange(min, max);
 
-            std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+            std::cerr << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
 
         }
 
@@ -647,7 +647,7 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 }
 
 int
-NoteLayer::getYForValue(View *v, float val) const
+FlexiNoteLayer::getYForValue(View *v, float val) const
 {
     float min = 0.0, max = 0.0;
     bool logarithmic = false;
@@ -655,7 +655,7 @@ NoteLayer::getYForValue(View *v, float val) const
 
     getScaleExtents(v, min, max, logarithmic);
 
-//    std::cerr << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+//    std::cerr << "FlexiNoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
 
     if (shouldConvertMIDIToHz()) {
         val = Pitch::getFrequencyForPitch(lrintf(val),
@@ -674,7 +674,7 @@ NoteLayer::getYForValue(View *v, float val) const
 }
 
 float
-NoteLayer::getValueForY(View *v, int y) const
+FlexiNoteLayer::getValueForY(View *v, int y) const
 {
     float min = 0.0, max = 0.0;
     bool logarithmic = false;
@@ -696,27 +696,27 @@ NoteLayer::getValueForY(View *v, int y) const
 }
 
 bool
-NoteLayer::shouldAutoAlign() const
+FlexiNoteLayer::shouldAutoAlign() const
 {
     if (!m_model) return false;
     return (m_verticalScale == AutoAlignScale);
 }
 
 void
-NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
+FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
     int sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
-//    Profiler profiler("NoteLayer::paint", true);
+//    Profiler profiler("FlexiNoteLayer::paint", true);
 
     int x0 = rect.left(), x1 = rect.right();
     long frame0 = v->getFrameForX(x0);
     long frame1 = v->getFrameForX(x1);
 
-    NoteModel::PointList points(m_model->getPoints(frame0, frame1));
+    FlexiNoteModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -724,7 +724,7 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     QColor brushColour(getBaseQColor());
     brushColour.setAlpha(80);
 
-//    SVDEBUG << "NoteLayer::paint: resolution is "
+//    SVDEBUG << "FlexiNoteLayer::paint: resolution is "
 //	      << m_model->getResolution() << " frames" << endl;
 
     float min = m_model->getValueMinimum();
@@ -732,7 +732,7 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
-    NoteModel::Point illuminatePoint(0);
+    FlexiNoteModel::Point illuminatePoint(0);
     bool shouldIlluminate = false;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
@@ -743,10 +743,10 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
     
-    for (NoteModel::PointList::const_iterator i = points.begin();
+    for (FlexiNoteModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
 
-	const NoteModel::Point &p(*i);
+	const FlexiNoteModel::Point &p(*i);
 
 	int x = v->getXForFrame(p.frame);
 	int y = getYForValue(v, p.value);
@@ -764,8 +764,8 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (shouldIlluminate &&
             // "illuminatePoint == p"
-            !NoteModel::Point::Comparator()(illuminatePoint, p) &&
-            !NoteModel::Point::Comparator()(p, illuminatePoint)) {
+            !FlexiNoteModel::Point::Comparator()(illuminatePoint, p) &&
+            !FlexiNoteModel::Point::Comparator()(p, illuminatePoint)) {
 
             paint.setPen(v->getForeground());
             paint.setBrush(v->getForeground());
@@ -792,9 +792,9 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 void
-NoteLayer::drawStart(View *v, QMouseEvent *e)
+FlexiNoteLayer::drawStart(View *v, QMouseEvent *e)
 {
-//    SVDEBUG << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "FlexiNoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) return;
 
@@ -804,11 +804,11 @@ NoteLayer::drawStart(View *v, QMouseEvent *e)
 
     float value = getValueForY(v, e->y());
 
-    m_editingPoint = NoteModel::Point(frame, value, 0, 0.8, tr("New Point"));
+    m_editingPoint = FlexiNoteModel::Point(frame, value, 0, 0.8, tr("New Point"));
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new NoteModel::EditCommand(m_model,
+    m_editingCommand = new FlexiNoteModel::EditCommand(m_model,
 						  tr("Draw Point"));
     m_editingCommand->addPoint(m_editingPoint);
 
@@ -816,9 +816,9 @@ NoteLayer::drawStart(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::drawDrag(View *v, QMouseEvent *e)
+FlexiNoteLayer::drawDrag(View *v, QMouseEvent *e)
 {
-//    SVDEBUG << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "FlexiNoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model || !m_editing) return;
 
@@ -845,9 +845,9 @@ NoteLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::drawEnd(View *, QMouseEvent *)
+FlexiNoteLayer::drawEnd(View *, QMouseEvent *)
 {
-//    SVDEBUG << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "FlexiNoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
     m_editingCommand = 0;
@@ -855,7 +855,7 @@ NoteLayer::drawEnd(View *, QMouseEvent *)
 }
 
 void
-NoteLayer::eraseStart(View *v, QMouseEvent *e)
+FlexiNoteLayer::eraseStart(View *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
@@ -870,22 +870,22 @@ NoteLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::eraseDrag(View *v, QMouseEvent *e)
+FlexiNoteLayer::eraseDrag(View *v, QMouseEvent *e)
 {
 }
 
 void
-NoteLayer::eraseEnd(View *v, QMouseEvent *e)
+FlexiNoteLayer::eraseEnd(View *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
     m_editing = false;
 
-    NoteModel::Point p(0);
+    FlexiNoteModel::Point p(0);
     if (!getPointToDrag(v, e->x(), e->y(), p)) return;
     if (p.frame != m_editingPoint.frame || p.value != m_editingPoint.value) return;
 
-    m_editingCommand = new NoteModel::EditCommand(m_model, tr("Erase Point"));
+    m_editingCommand = new FlexiNoteModel::EditCommand(m_model, tr("Erase Point"));
 
     m_editingCommand->deletePoint(m_editingPoint);
 
@@ -895,9 +895,9 @@ NoteLayer::eraseEnd(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::editStart(View *v, QMouseEvent *e)
+FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
 {
-//    SVDEBUG << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "FlexiNoteLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) return;
 
@@ -918,9 +918,9 @@ NoteLayer::editStart(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::editDrag(View *v, QMouseEvent *e)
+FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
 {
-//    SVDEBUG << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "FlexiNoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model || !m_editing) return;
 
@@ -936,7 +936,7 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
     float value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
-	m_editingCommand = new NoteModel::EditCommand(m_model,
+	m_editingCommand = new FlexiNoteModel::EditCommand(m_model,
 						      tr("Drag Point"));
     }
 
@@ -947,9 +947,9 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::editEnd(View *, QMouseEvent *)
+FlexiNoteLayer::editEnd(View *, QMouseEvent *)
 {
-//    SVDEBUG << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {
@@ -975,14 +975,14 @@ NoteLayer::editEnd(View *, QMouseEvent *)
 }
 
 bool
-NoteLayer::editOpen(View *v, QMouseEvent *e)
+FlexiNoteLayer::editOpen(View *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
-    NoteModel::Point note(0);
+    FlexiNoteModel::Point note(0);
     if (!getPointToDrag(v, e->x(), e->y(), note)) return false;
 
-//    NoteModel::Point note = *points.begin();
+//    FlexiNoteModel::Point note = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
         (m_model->getSampleRate(),
@@ -999,13 +999,13 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
 
     if (dialog->exec() == QDialog::Accepted) {
 
-        NoteModel::Point newNote = note;
+        FlexiNoteModel::Point newNote = note;
         newNote.frame = dialog->getFrameTime();
         newNote.value = dialog->getValue();
         newNote.duration = dialog->getFrameDuration();
         newNote.label = dialog->getText();
         
-        NoteModel::EditCommand *command = new NoteModel::EditCommand
+        FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
             (m_model, tr("Edit Point"));
         command->deletePoint(note);
         command->addPoint(newNote);
@@ -1017,21 +1017,21 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::moveSelection(Selection s, size_t newStartFrame)
+FlexiNoteLayer::moveSelection(Selection s, size_t newStartFrame)
 {
     if (!m_model) return;
 
-    NoteModel::EditCommand *command =
-	new NoteModel::EditCommand(m_model, tr("Drag Selection"));
+    FlexiNoteModel::EditCommand *command =
+	new FlexiNoteModel::EditCommand(m_model, tr("Drag Selection"));
 
-    NoteModel::PointList points =
+    FlexiNoteModel::PointList points =
 	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
-    for (NoteModel::PointList::iterator i = points.begin();
+    for (FlexiNoteModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
 
 	if (s.contains(i->frame)) {
-	    NoteModel::Point newPoint(*i);
+	    FlexiNoteModel::Point newPoint(*i);
 	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
 	    command->deletePoint(*i);
 	    command->addPoint(newPoint);
@@ -1042,21 +1042,21 @@ NoteLayer::moveSelection(Selection s, size_t newStartFrame)
 }
 
 void
-NoteLayer::resizeSelection(Selection s, Selection newSize)
+FlexiNoteLayer::resizeSelection(Selection s, Selection newSize)
 {
     if (!m_model) return;
 
-    NoteModel::EditCommand *command =
-	new NoteModel::EditCommand(m_model, tr("Resize Selection"));
+    FlexiNoteModel::EditCommand *command =
+	new FlexiNoteModel::EditCommand(m_model, tr("Resize Selection"));
 
-    NoteModel::PointList points =
+    FlexiNoteModel::PointList points =
 	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     double ratio =
 	double(newSize.getEndFrame() - newSize.getStartFrame()) /
 	double(s.getEndFrame() - s.getStartFrame());
 
-    for (NoteModel::PointList::iterator i = points.begin();
+    for (FlexiNoteModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
 
 	if (s.contains(i->frame)) {
@@ -1069,7 +1069,7 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
 	    targetEnd = newSize.getStartFrame() +
 		double(targetEnd - s.getStartFrame()) * ratio;
 
-	    NoteModel::Point newPoint(*i);
+	    FlexiNoteModel::Point newPoint(*i);
 	    newPoint.frame = lrint(targetStart);
 	    newPoint.duration = lrint(targetEnd - targetStart);
 	    command->deletePoint(*i);
@@ -1081,17 +1081,17 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
 }
 
 void
-NoteLayer::deleteSelection(Selection s)
+FlexiNoteLayer::deleteSelection(Selection s)
 {
     if (!m_model) return;
 
-    NoteModel::EditCommand *command =
-	new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
+    FlexiNoteModel::EditCommand *command =
+	new FlexiNoteModel::EditCommand(m_model, tr("Delete Selected Points"));
 
-    NoteModel::PointList points =
+    FlexiNoteModel::PointList points =
 	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
-    for (NoteModel::PointList::iterator i = points.begin();
+    for (FlexiNoteModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
 
         if (s.contains(i->frame)) {
@@ -1103,14 +1103,14 @@ NoteLayer::deleteSelection(Selection s)
 }    
 
 void
-NoteLayer::copy(View *v, Selection s, Clipboard &to)
+FlexiNoteLayer::copy(View *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
-    NoteModel::PointList points =
+    FlexiNoteModel::PointList points =
 	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
-    for (NoteModel::PointList::iterator i = points.begin();
+    for (FlexiNoteModel::PointList::iterator i = points.begin();
 	 i != points.end(); ++i) {
 	if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->value, i->duration, i->level, i->label);
@@ -1121,7 +1121,7 @@ NoteLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
+FlexiNoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1146,8 +1146,8 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
         }
     }
 
-    NoteModel::EditCommand *command =
-	new NoteModel::EditCommand(m_model, tr("Paste"));
+    FlexiNoteModel::EditCommand *command =
+	new FlexiNoteModel::EditCommand(m_model, tr("Paste"));
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1169,7 +1169,7 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
             }
         }
 
-        NoteModel::Point newPoint(frame);
+        FlexiNoteModel::Point newPoint(frame);
   
         if (i->haveLabel()) newPoint.label = i->getLabel();
         if (i->haveValue()) newPoint.value = i->getValue();
@@ -1202,23 +1202,23 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
 }
 
 void
-NoteLayer::addNoteOn(long frame, int pitch, int velocity)
+FlexiNoteLayer::addNoteOn(long frame, int pitch, int velocity)
 {
-    m_pendingNoteOns.insert(Note(frame, pitch, 0, float(velocity) / 127.0, ""));
+    m_pendingNoteOns.insert(FlexiNote(frame, pitch, 0, float(velocity) / 127.0, ""));
 }
 
 void
-NoteLayer::addNoteOff(long frame, int pitch)
+FlexiNoteLayer::addNoteOff(long frame, int pitch)
 {
-    for (NoteSet::iterator i = m_pendingNoteOns.begin();
+    for (FlexiNoteSet::iterator i = m_pendingNoteOns.begin();
          i != m_pendingNoteOns.end(); ++i) {
         if (lrintf((*i).value) == pitch) {
-            Note note(*i);
+            FlexiNote note(*i);
             m_pendingNoteOns.erase(i);
             note.duration = frame - note.frame;
             if (m_model) {
-                NoteModel::AddPointCommand *c = new NoteModel::AddPointCommand
-                    (m_model, note, tr("Record Note"));
+                FlexiNoteModel::AddPointCommand *c = new FlexiNoteModel::AddPointCommand
+                    (m_model, note, tr("Record FlexiNote"));
                 // execute and bundle:
                 CommandHistory::getInstance()->addCommand(c, true, true);
             }
@@ -1228,13 +1228,13 @@ NoteLayer::addNoteOff(long frame, int pitch)
 }
 
 void
-NoteLayer::abandonNoteOns()
+FlexiNoteLayer::abandonNoteOns()
 {
     m_pendingNoteOns.clear();
 }
 
 int
-NoteLayer::getDefaultColourHint(bool darkbg, bool &impose)
+FlexiNoteLayer::getDefaultColourHint(bool darkbg, bool &impose)
 {
     impose = false;
     return ColourDatabase::getInstance()->getColourIndex
@@ -1242,7 +1242,7 @@ NoteLayer::getDefaultColourHint(bool darkbg, bool &impose)
 }
 
 void
-NoteLayer::toXml(QTextStream &stream,
+FlexiNoteLayer::toXml(QTextStream &stream,
                  QString indent, QString extraAttributes) const
 {
     SingleColourLayer::toXml(stream, indent, extraAttributes +
@@ -1253,7 +1253,7 @@ NoteLayer::toXml(QTextStream &stream,
 }
 
 void
-NoteLayer::setProperties(const QXmlAttributes &attributes)
+FlexiNoteLayer::setProperties(const QXmlAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 

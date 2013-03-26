@@ -13,11 +13,11 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _NOTE_LAYER_H_
-#define _NOTE_LAYER_H_
+#ifndef _FLEXINOTE_LAYER_H_
+#define _FLEXINOTE_LAYER_H_
 
 #include "SingleColourLayer.h"
-#include "data/model/NoteModel.h"
+#include "data/model/FlexiNoteModel.h"
 
 #include <QObject>
 #include <QColor>
@@ -25,12 +25,12 @@
 class View;
 class QPainter;
 
-class NoteLayer : public SingleColourLayer
+class FlexiNoteLayer : public SingleColourLayer
 {
     Q_OBJECT
 
 public:
-    NoteLayer();
+    FlexiNoteLayer();
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
@@ -63,7 +63,7 @@ public:
                        bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
-    void setModel(NoteModel *model);
+    void setModel(FlexiNoteModel *model);
 
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
@@ -135,30 +135,30 @@ protected:
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    NoteModel::PointList getLocalPoints(View *v, int) const;
+    FlexiNoteModel::PointList getLocalPoints(View *v, int) const;
 
-    bool getPointToDrag(View *v, int x, int y, NoteModel::Point &) const;
+    bool getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &) const;
 
-    NoteModel *m_model;
+    FlexiNoteModel *m_model;
     bool m_editing;
     int m_dragPointX;
     int m_dragPointY;
     int m_dragStartX;
     int m_dragStartY;
-    NoteModel::Point m_originalPoint;
-    NoteModel::Point m_editingPoint;
-    NoteModel::EditCommand *m_editingCommand;
+    FlexiNoteModel::Point m_originalPoint;
+    FlexiNoteModel::Point m_editingPoint;
+    FlexiNoteModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
 
-    typedef std::set<NoteModel::Point, NoteModel::Point::Comparator> NoteSet;
-    NoteSet m_pendingNoteOns;
+    typedef std::set<FlexiNoteModel::Point, FlexiNoteModel::Point::Comparator> FlexiNoteSet;
+    FlexiNoteSet m_pendingNoteOns;
 
     mutable float m_scaleMinimum;
     mutable float m_scaleMaximum;
 
     bool shouldAutoAlign() const;
 
-    void finish(NoteModel::EditCommand *command) {
+    void finish(FlexiNoteModel::EditCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
