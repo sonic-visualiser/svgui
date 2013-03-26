@@ -21,6 +21,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/Layer.h \
            layer/LayerFactory.h \
            layer/NoteLayer.h \
+           layer/FlexiNoteLayer.h \
            layer/PaintAssistant.h \
            layer/RegionLayer.h \
            layer/SingleColourLayer.h \
@@ -41,6 +42,7 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/Layer.cpp \
            layer/LayerFactory.cpp \
            layer/NoteLayer.cpp \
+           layer/FlexiNoteLayer.cpp \
            layer/PaintAssistant.cpp \
            layer/RegionLayer.cpp \
            layer/SingleColourLayer.cpp \
