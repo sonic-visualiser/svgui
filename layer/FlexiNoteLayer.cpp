@@ -45,11 +45,10 @@ FlexiNoteLayer::FlexiNoteLayer() :
     m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingCommand(0),
-    m_verticalScale(AutoAlignScale),
-    m_scaleMinimum(0),
-    m_scaleMaximum(0)
+    m_verticalScale(MIDIRangeScale),
+    m_scaleMinimum(34),
+    m_scaleMaximum(77)
 {
-    
 }
 
 void
@@ -213,11 +212,14 @@ FlexiNoteLayer::getValueExtents(float &min, float &max,
 bool
 FlexiNoteLayer::getDisplayExtents(float &min, float &max) const
 {
-    if (!m_model || shouldAutoAlign()) return false;
+    if (!m_model || shouldAutoAlign()) {
+		std::cerr << "No model or shouldAutoAlign()" << std::endl;
+		return false;
+	}
 
     if (m_verticalScale == MIDIRangeScale) {
         min = Pitch::getFrequencyForPitch(0);
-        max = Pitch::getFrequencyForPitch(127);
+        max = Pitch::getFrequencyForPitch(70);
         return true;
     }
 
@@ -631,7 +633,7 @@ FlexiNoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
 
         if (m_verticalScale == MIDIRangeScale) {
             min = Pitch::getFrequencyForPitch(0);
-            max = Pitch::getFrequencyForPitch(127);
+            max = Pitch::getFrequencyForPitch(70);
         } else if (shouldConvertMIDIToHz()) {
             min = Pitch::getFrequencyForPitch(lrintf(min));
             max = Pitch::getFrequencyForPitch(lrintf(max + 1));
