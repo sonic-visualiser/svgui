@@ -406,7 +406,7 @@ FlexiNoteLayer::getLocalPoints(View *v, int x) const
 }
 
 bool
-FlexiNoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
+FlexiNoteLayer::getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &p) const
 {
     if (!m_model) return false;
 
