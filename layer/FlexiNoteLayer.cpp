@@ -39,21 +39,33 @@
 #include <utility>
 
 FlexiNoteLayer::FlexiNoteLayer() :
-    SingleColourLayer(),
-    m_model(0),
-    m_editing(false),
-    m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
-    m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
-    m_editingCommand(0),
-    m_verticalScale(MIDIRangeScale),
-    m_scaleMinimum(34),
-    m_scaleMaximum(77)
+	SingleColourLayer(),
+
+		m_model(0),
+		m_editing(false),
+		m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
+		m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
+		m_editingCommand(0),
+		m_verticalScale(AutoAlignScale),
+		m_scaleMinimum(0),
+		m_scaleMaximum(0)
+
+    // m_model(0),
+    // m_editing(false),
+    // m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
+    // m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
+    // m_editingCommand(0),
+    // m_verticalScale(MIDIRangeScale),
+    // m_scaleMinimum(34),
+    // m_scaleMaximum(77)
 {
+	std::cerr << "NOTE: constructed FlexiNoteLayer" << std::endl;
 }
 
 void
-FlexiNoteLayer::setModel(FlexiNoteModel *model)
+FlexiNoteLayer::setModel(FlexiNoteModel *model) // THIS FUNCTION FAILS
 {
+	std::cerr << "NOTE: FlexiNoteLayer::setModel called" << std::endl; //delete this!!
     if (m_model == model) return;
     m_model = model;
 
@@ -63,6 +75,7 @@ FlexiNoteLayer::setModel(FlexiNoteModel *model)
 
     m_scaleMinimum = 0;
     m_scaleMaximum = 0;
+	std::cerr << "NOTE: FlexiNoteLayer::NoteModel set" << std::endl; //delete this!!
 
     emit modelReplaced();
 }
