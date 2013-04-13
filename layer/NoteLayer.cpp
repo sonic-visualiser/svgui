@@ -49,12 +49,14 @@ NoteLayer::NoteLayer() :
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
-    
+  	SVDEBUG << "constructed NoteLayer" << endl;
 }
 
 void
 NoteLayer::setModel(NoteModel *model)
 {
+	std::cerr << "NOTE: called NoteLayer::setModel" << std::endl; //delete this!!
+	
     if (m_model == model) return;
     m_model = model;
 
@@ -64,6 +66,8 @@ NoteLayer::setModel(NoteModel *model)
 
     m_scaleMinimum = 0;
     m_scaleMaximum = 0;
+
+	std::cerr << "NOTE: NoteLayer::NoteModel set" << std::endl; //delete this!!
 
     emit modelReplaced();
 }

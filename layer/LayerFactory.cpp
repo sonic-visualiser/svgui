@@ -75,7 +75,7 @@ LayerFactory::getLayerPresentationName(LayerType type)
     case TimeInstants: return Layer::tr("Time Instants");
     case TimeValues:   return Layer::tr("Time Values");
     case Notes:        return Layer::tr("Notes");
-    case FlexiNotes:   return Layer::tr("flexible Notes");
+    case FlexiNotes:   return Layer::tr("Flexible Notes");
     case Regions:      return Layer::tr("Regions");
     case Text:         return Layer::tr("Text");
     case Image:        return Layer::tr("Images");
@@ -161,13 +161,13 @@ LayerFactory::getValidLayerTypes(Model *model)
     }
 
     if (dynamic_cast<NoteModel *>(model)) {
-	types.insert(FlexiNotes);
+	// types.insert(FlexiNotes);
 	types.insert(Notes);
     }
 
     if (dynamic_cast<FlexiNoteModel *>(model)) {
 	types.insert(FlexiNotes);
-	types.insert(Notes);
+	// types.insert(Notes);
     }
 
     if (dynamic_cast<RegionModel *>(model)) {
@@ -295,6 +295,8 @@ LayerFactory::setModel(Layer *layer, Model *model)
 {
 //    if (trySetModel<WaveformLayer, RangeSummarisableTimeValueModel>(layer, model))
 //	return;
+	
+	std::cerr << "LayerFactory::setModel called... " << std::endl;
 
     if (trySetModel<WaveformLayer, WaveFileModel>(layer, model))
 	return;
@@ -314,11 +316,19 @@ LayerFactory::setModel(Layer *layer, Model *model)
     if (trySetModel<TimeValueLayer, SparseTimeValueModel>(layer, model))
 	return;
 
-    if (trySetModel<NoteLayer, NoteModel>(layer, model))
-	return;
+    if (trySetModel<NoteLayer, NoteModel>(layer, model)) {
+		std::cerr << "trying to set note layer model" << std::endl;
+	return; }
 
-    if (trySetModel<FlexiNoteLayer, FlexiNoteModel>(layer, model))
-	return;
+    if (trySetModel<FlexiNoteLayer, FlexiNoteModel>(layer, model)) {
+		std::cerr << "trying to set flexi note layer model" << std::endl;
+	return; }
+	
+	FlexiNoteLayer *clayer = dynamic_cast<FlexiNoteLayer *>(layer);
+	if (!clayer) { std::cerr << "layer cast failed" << std::endl; return; }
+	FlexiNoteModel *cmodel = dynamic_cast<FlexiNoteModel *>(model);
+	if (!cmodel) { std::cerr << "model cast failed" << std::endl; return; }
+	clayer->setModel(cmodel);
 
     if (trySetModel<RegionLayer, RegionModel>(layer, model))
 	return;
@@ -340,6 +350,7 @@ LayerFactory::setModel(Layer *layer, Model *model)
 
 //    if (trySetModel<SliceLayer, DenseThreeDimensionalModel>(layer, model)) 
 //        return;
+	std::cerr << "LayerFactory::setModel done... " << std::endl;
 }
 
 Model *
