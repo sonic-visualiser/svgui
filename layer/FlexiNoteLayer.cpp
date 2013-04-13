@@ -51,12 +51,12 @@ FlexiNoteLayer::FlexiNoteLayer() :
 		// m_scaleMaximum(0)
 
     m_model(0),
-    m_editing(true),
+    m_editing(false),
     m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingCommand(0),
     m_verticalScale(MIDIRangeScale),
-    m_scaleMinimum(34),
+    m_scaleMinimum(34), 
     m_scaleMaximum(77)
 {
 }
@@ -69,8 +69,8 @@ FlexiNoteLayer::setModel(FlexiNoteModel *model)
 
     connectSignals(m_model);
 
-    m_scaleMinimum = 0;
-    m_scaleMaximum = 0;
+    // m_scaleMinimum = 0;
+    // m_scaleMaximum = 0;
 
     emit modelReplaced();
 }
