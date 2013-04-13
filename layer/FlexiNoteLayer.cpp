@@ -63,9 +63,8 @@ FlexiNoteLayer::FlexiNoteLayer() :
 }
 
 void
-FlexiNoteLayer::setModel(FlexiNoteModel *model) // THIS FUNCTION FAILS
+FlexiNoteLayer::setModel(FlexiNoteModel *model) 
 {
-	std::cerr << "NOTE: FlexiNoteLayer::setModel called" << std::endl; //delete this!!
     if (m_model == model) return;
     m_model = model;
 
@@ -75,7 +74,6 @@ FlexiNoteLayer::setModel(FlexiNoteModel *model) // THIS FUNCTION FAILS
 
     m_scaleMinimum = 0;
     m_scaleMaximum = 0;
-	std::cerr << "NOTE: FlexiNoteLayer::NoteModel set" << std::endl; //delete this!!
 
     emit modelReplaced();
 }
