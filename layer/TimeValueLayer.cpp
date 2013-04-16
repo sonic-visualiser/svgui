@@ -517,6 +517,8 @@ TimeValueLayer::getLocalPoints(View *v, int x) const
 
     if (prevPoints.empty()) {
 	usePoints = nextPoints;
+    } else if (nextPoints.empty()) {
+        // stick with prevPoints
     } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
 	       !(nextPoints.begin()->frame > v->getEndFrame())) {
 	usePoints = nextPoints;
@@ -529,7 +531,7 @@ TimeValueLayer::getLocalPoints(View *v, int x) const
 	int fuzz = 2;
 	int px = v->getXForFrame(usePoints.begin()->frame);
 	if ((px > x && px - x > fuzz) ||
-	    (px < x && x - px > fuzz + 1)) {
+	    (px < x && x - px > fuzz + 3)) {
 	    usePoints.clear();
 	}
     }
@@ -970,7 +972,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         if (m_plotStyle != PlotSegmentation) {
             textY = y - paint.fontMetrics().height()
-                      + paint.fontMetrics().ascent();
+                      + paint.fontMetrics().ascent() - 1;
             if (textY < paint.fontMetrics().ascent() + 1) {
                 textY = paint.fontMetrics().ascent() + 1;
             }
@@ -1029,29 +1031,35 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
 	}
 
+        bool illuminate = false;
+
 	if (illuminateFrame == p.frame) {
 
-	    //!!! aside from the problem of choosing a colour, it'd be
-	    //better to save the highlighted rects and draw them at
-	    //the end perhaps
-
-	    //!!! not equipped to illuminate the right section in line
-	    //or curve mode
+	    // not equipped to illuminate the right section in line
+	    // or curve mode
 
 	    if (m_plotStyle != PlotCurve &&
                 m_plotStyle != PlotDiscreteCurves &&
 		m_plotStyle != PlotLines) {
-		paint.setPen(getForegroundQColor(v));
-	    }	    
-	}
+                illuminate = true;
+            }
+        }
 
 	if (m_plotStyle != PlotLines &&
 	    m_plotStyle != PlotCurve &&
             m_plotStyle != PlotDiscreteCurves &&
 	    m_plotStyle != PlotSegmentation) {
+            if (illuminate) {
+                paint.save();
+		paint.setPen(getForegroundQColor(v));
+                paint.setBrush(getForegroundQColor(v));
+            }
             if (m_plotStyle != PlotStems ||
                 w > 1) {
                 paint.drawRect(x, y - 1, w, 2);
+            }
+            if (illuminate) {
+                paint.restore();
             }
 	}
 
@@ -1125,7 +1133,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
             paint.setPen(QPen(getForegroundQColor(v), 2));
 
-            if (illuminateFrame != p.frame) {
+            if (!illuminate) {
                 if (!m_drawSegmentDivisions ||
                     nx < x + 5 ||
                     x >= v->width() - 1) {
@@ -1141,13 +1149,14 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         if (label == "" &&
             (m_plotStyle == PlotPoints ||
-             m_plotStyle == PlotSegmentation)) {
+             m_plotStyle == PlotSegmentation ||
+             m_plotStyle == PlotConnectedPoints)) {
             label = QString("%1").arg(p.value);
             italic = true;
         }
 
 	if (label != "") {
-            if (!haveNext || nx > x + 6 + paint.fontMetrics().width(p.label)) {
+            if (!haveNext || nx > x + 6 + paint.fontMetrics().width(label)) {
                 v->drawVisibleText(paint, x + 5, textY, label,
                                    italic ?
                                    View::OutlinedItalicText :
