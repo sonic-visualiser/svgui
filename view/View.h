@@ -190,7 +190,8 @@ public:
 
     enum TextStyle {
 	BoxedText,
-	OutlinedText
+	OutlinedText,
+        OutlinedItalicText
     };
 
     virtual void drawVisibleText(QPainter &p, int x, int y,

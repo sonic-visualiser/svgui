@@ -731,9 +731,15 @@ View::setFollowGlobalZoom(bool f)
 void
 View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle style) const
 {
-    if (style == OutlinedText) {
+    if (style == OutlinedText || style == OutlinedItalicText) {
 
         paint.save();
+
+        if (style == OutlinedItalicText) {
+            QFont f(paint.font());
+            f.setItalic(true);
+            paint.setFont(f);
+        }
 
         QColor penColour, surroundColour, boxColour;
 
@@ -744,6 +750,7 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
 
         paint.setPen(Qt::NoPen);
         paint.setBrush(boxColour);
+        
         QRect r = paint.fontMetrics().boundingRect(text);
         r.translate(QPoint(x, y));
 //        std::cerr << "drawVisibleText: r = " << r.x() << "," <<r.y() << " " << r.width() << "x" << r.height() << std::endl;

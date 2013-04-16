@@ -1137,16 +1137,21 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
 
         QString label = p.label;
+        bool italic = false;
 
         if (label == "" &&
             (m_plotStyle == PlotPoints ||
              m_plotStyle == PlotSegmentation)) {
-            label = QString("%1").arg(p.value); //??? but use italic?
+            label = QString("%1").arg(p.value);
+            italic = true;
         }
 
 	if (label != "") {
             if (!haveNext || nx > x + 6 + paint.fontMetrics().width(p.label)) {
-                v->drawVisibleText(paint, x + 5, textY, label, View::OutlinedText);
+                v->drawVisibleText(paint, x + 5, textY, label,
+                                   italic ?
+                                   View::OutlinedItalicText :
+                                   View::OutlinedText);
             }
 	}
 
