@@ -42,7 +42,7 @@
 #include <iostream>
 #include <cmath>
 
-#define DEBUG_TIME_VALUE_LAYER 1
+//#define DEBUG_TIME_VALUE_LAYER 1
 
 TimeValueLayer::TimeValueLayer() :
     SingleColourLayer(),
@@ -763,7 +763,7 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
     } else {
 
         getDisplayExtents(min, max);
-
+        
         if (m_verticalScale == LogScale) {
             LogRange::mapRange(min, max);
             log = true;
@@ -1082,7 +1082,6 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
                     if (pointCount == 0) {
                         path.moveTo(x + w/2, y);
                     }
-                    ++pointCount;
 
 //		    paint.drawLine(x + w/2, y, nx + w/2, ny);
                     path.lineTo(nx + w/2, ny);
@@ -1106,7 +1105,6 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    if (pointCount == 0 || gap) {
 			path.moveTo((x0 + x1) / 2, (y0 + y1) / 2);
 		    }
-		    ++pointCount;
 
 		    if (nx - x > 5) {
 			path.cubicTo(x0, y0,
@@ -1151,12 +1149,17 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
             (m_plotStyle == PlotPoints ||
              m_plotStyle == PlotSegmentation ||
              m_plotStyle == PlotConnectedPoints)) {
-            label = QString("%1").arg(p.value);
+            char lc[20];
+            snprintf(lc, 20, "%.3g", p.value);
+            label = lc;
             italic = true;
         }
 
 	if (label != "") {
-            if (!haveNext || nx > x + 6 + paint.fontMetrics().width(label)) {
+            bool haveRoom = nx > x + 6 + paint.fontMetrics().width(label);
+            if (haveRoom ||
+                (!haveNext &&
+                 (pointCount == 0 || !italic))) {
                 v->drawVisibleText(paint, x + 5, textY, label,
                                    italic ?
                                    View::OutlinedItalicText :
@@ -1165,6 +1168,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
 
         prevFrame = p.frame;
+        ++pointCount;
     }
 
     if ((m_plotStyle == PlotCurve || m_plotStyle == PlotDiscreteCurves ||
