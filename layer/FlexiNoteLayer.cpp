@@ -761,11 +761,11 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 	int x = v->getXForFrame(p.frame);
 	int y = getYForValue(v, p.value);
 	int w = v->getXForFrame(p.frame + p.duration) - x;
-	int h = 3;
+	int h = 8; //GF: larger notes
 	
 	if (m_model->getValueQuantization() != 0.0) {
 	    h = y - getYForValue(v, p.value + m_model->getValueQuantization());
-	    if (h < 3) h = 3;
+	    if (h < 3) h = 8; //GF: larger notes
 	}
 
 	if (w < 1) w = 1;
@@ -987,6 +987,7 @@ FlexiNoteLayer::editEnd(View *, QMouseEvent *)
 bool
 FlexiNoteLayer::editOpen(View *v, QMouseEvent *e)
 {
+    std::cerr << "Opening note editor dialog" << std::endl;
     if (!m_model) return false;
 
     FlexiNoteModel::Point note(0);
