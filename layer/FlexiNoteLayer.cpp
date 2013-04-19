@@ -55,7 +55,7 @@ FlexiNoteLayer::FlexiNoteLayer() :
     m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingCommand(0),
-    m_verticalScale(MIDIRangeScale),
+    m_verticalScale(AutoAlignScale),
     m_scaleMinimum(34), 
     m_scaleMaximum(77)
 {
@@ -227,7 +227,7 @@ FlexiNoteLayer::getDisplayExtents(float &min, float &max) const
 
     if (m_verticalScale == MIDIRangeScale) {
         min = Pitch::getFrequencyForPitch(0);
-        max = Pitch::getFrequencyForPitch(70);
+        max = Pitch::getFrequencyForPitch(127);
         return true;
     }
 
