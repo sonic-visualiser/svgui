@@ -52,6 +52,9 @@ public:
     virtual void editDrag(View *v, QMouseEvent *);
     virtual void editEnd(View *v, QMouseEvent *);
 
+    virtual void splitStart(View *v, QMouseEvent *);
+    virtual void splitEnd(View *v, QMouseEvent *);
+
     virtual bool editOpen(View *v, QMouseEvent *);
 
     virtual void moveSelection(Selection s, size_t newStartFrame);
