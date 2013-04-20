@@ -1278,7 +1278,7 @@ Pane::mousePressEvent(QMouseEvent *e)
         return;
     }
 
-//    std::cerr << "mousePressEvent" << std::endl;
+   // std::cerr << "mousePressEvent" << std::endl;
 
     m_clickPos = e->pos();
     m_mousePos = m_clickPos;
@@ -1378,6 +1378,12 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
 
+        std::cerr << "mouse pressed in edit mode" << std::endl;
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->splitStart(this, e); 
+        }
+
         // Do nothing here -- we'll do it in mouseMoveEvent when the
         // drag threshold has been passed
 
@@ -1473,6 +1479,12 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	}
 
     } else if (mode == ViewManager::EditMode) {
+	
+		//GF: temporary
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->splitEnd(this, e);
+            update(); }
 
         if (m_editing) {
             if (!editSelectionEnd(e)) {
@@ -1482,7 +1494,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
                     update();
                 }
             }
-        }
+        } 
 
     } else if (mode == ViewManager::MeasureMode) {
 
@@ -1615,7 +1627,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             // dragging to be used most of the time
         }
 
-        if (m_shiftPressed) resist = false;
+		if (m_shiftPressed) resist = false;
 
         m_dragMode = updateDragMode
             (m_dragMode,
