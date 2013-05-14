@@ -35,6 +35,7 @@
 #include <QDropEvent>
 #include <QCursor>
 #include <QTextStream>
+#include <QMimeData>
 
 #include <iostream>
 #include <cmath>
@@ -1507,7 +1508,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
 //    std::cerr << "mouseMoveEvent" << std::endl;
 
-    updateContextHelp(&e->pos());
+    QPoint pos = e->pos();
+    updateContextHelp(&pos);
 
     if (m_navigating && m_clickedInRange && !m_releasing) {
 
@@ -2260,7 +2262,8 @@ Pane::dragEnterEvent(QDragEnterEvent *e)
               << ", possibleActions: " << e->possibleActions()
               << ", proposedAction: " << e->proposedAction() << std::endl;
     
-    if (e->provides("text/uri-list") || e->provides("text/plain")) {
+    if (e->mimeData()->hasFormat("text/uri-list") ||
+        e->mimeData()->hasFormat("text/plain")) {
 
         if (e->proposedAction() & Qt::CopyAction) {
             e->acceptProposedAction();
@@ -2277,7 +2280,8 @@ Pane::dropEvent(QDropEvent *e)
     std::cerr << "dropEvent: text: \"" << e->mimeData()->text().toStdString()
               << "\"" << std::endl;
 
-    if (e->provides("text/uri-list") || e->provides("text/plain")) {
+    if (e->mimeData()->hasFormat("text/uri-list") || 
+        e->mimeData()->hasFormat("text/plain")) {
 
         if (e->proposedAction() & Qt::CopyAction) {
             e->acceptProposedAction();
@@ -2286,16 +2290,16 @@ Pane::dropEvent(QDropEvent *e)
             e->accept();
         }
 
-        if (e->provides("text/uri-list")) {
+        if (e->mimeData()->hasFormat("text/uri-list")) {
 
-            SVDEBUG << "accepting... data is \"" << e->encodedData("text/uri-list").data() << "\"" << endl;
+            SVDEBUG << "accepting... data is \"" << e->mimeData()->data("text/uri-list").data() << "\"" << endl;
             emit dropAccepted(QString::fromLocal8Bit
-                              (e->encodedData("text/uri-list").data())
+                              (e->mimeData()->data("text/uri-list").data())
                               .split(QRegExp("[\\r\\n]+"), 
                                      QString::SkipEmptyParts));
         } else {
             emit dropAccepted(QString::fromLocal8Bit
-                              (e->encodedData("text/plain").data()));
+                              (e->mimeData()->data("text/plain").data()));
         }
     }
 }

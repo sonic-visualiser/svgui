@@ -49,7 +49,7 @@ KeyReference::registerShortcut(QAction *action, QString overrideName)
     QString name = action->text();
     if (overrideName != "") name = overrideName;
 
-    QString shortcut = action->shortcut();
+    QString shortcut = action->shortcut().toString();
     QString tip = action->statusTip();
 
     registerShortcut(name, shortcut, tip);

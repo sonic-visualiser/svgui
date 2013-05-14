@@ -37,7 +37,7 @@ class ListInputDialog : public QDialog
 public:
     ListInputDialog(QWidget *parent, const QString &title,
                     const QString &label, const QStringList &list,
-                    int current = 0, Qt::WFlags f = 0);
+                    int current = 0);
     virtual ~ListInputDialog();
 
     void setItemAvailability(int item, bool available);
@@ -47,7 +47,7 @@ public:
     
     static QString getItem(QWidget *parent, const QString &title,
                            const QString &label, const QStringList &list,
-                           int current = 0, bool *ok = 0, Qt::WFlags f = 0);
+                           int current = 0, bool *ok = 0);
 
 protected:
     QStringList m_strings;

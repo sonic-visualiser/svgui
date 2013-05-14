@@ -1840,7 +1840,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
 
             if (generation == Labeller::ValueFromCyclicalCounter ||
                 generation == Labeller::ValueFromTwoLevelCounter) {
-                int cycleSize = QInputDialog::getInteger
+                int cycleSize = QInputDialog::getInt
                     (0, tr("Select cycle size"),
                      tr("Cycle size:"), 4, 2, 16, 1);
                 labeller.setCounterCycleSize(cycleSize);

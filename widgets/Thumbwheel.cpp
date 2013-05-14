@@ -373,7 +373,7 @@ Thumbwheel::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
         
     } else {
         
-        int newValue = QInputDialog::getInteger
+        int newValue = QInputDialog::getInt
             (this,
              tr("Enter new value"),
              tr("Enter a new value from %1 to %2:")

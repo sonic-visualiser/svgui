@@ -2293,7 +2293,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         if (m_colourScale == PhaseColourScale) usePeaksCache = false;
     }
 
-    m_drawBuffer.setNumColors(256);
+// No longer exists in Qt5:    m_drawBuffer.setNumColors(256);
     for (int pixel = 0; pixel < 256; ++pixel) {
         m_drawBuffer.setColor(pixel, m_palette.getColour(pixel).rgb());
     }

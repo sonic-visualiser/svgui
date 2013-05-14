@@ -952,13 +952,13 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     if (!m_cache) {
         m_cache = new QImage
             (cacheWidth, cacheHeight, QImage::Format_Indexed8);
-        m_cache->setNumColors(256);
+// No longer exists in Qt5:        m_cache->setNumColors(256);
         m_cache->fill(0);
         if (!m_normalizeVisibleArea) {
             m_peaksCache = new QImage
                 (cacheWidth / m_peakResolution + 1, cacheHeight,
                  QImage::Format_Indexed8);
-            m_peaksCache->setNumColors(256);
+// No longer exists in Qt5:            m_peaksCache->setNumColors(256);
             m_peaksCache->fill(0);
         } else if (m_peaksCache) {
             delete m_peaksCache;
