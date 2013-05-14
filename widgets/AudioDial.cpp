@@ -510,7 +510,7 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
         
     } else {
         
-        int newPosition = QInputDialog::getInteger
+        int newPosition = QInputDialog::getInt
             (this,
              tr("Enter new value"),
              tr("Enter a new value from %1 to %2:")

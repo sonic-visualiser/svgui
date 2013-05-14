@@ -238,7 +238,7 @@ ModelMetadataModel::index(int row, int column, const QModelIndex &parent) const
 {
     if (!parent.isValid()) {
         if (row >= m_models.size()) return QModelIndex();
-	return createIndex(row, column, 0);
+	return createIndex(row, column, (void *)0);
     }
 
     return QModelIndex();

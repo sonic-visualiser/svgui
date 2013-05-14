@@ -32,7 +32,7 @@ class TipDialog : public QDialog
     Q_OBJECT
 
 public:
-    TipDialog(QWidget *parent = 0, Qt::WFlags flags = 0);
+    TipDialog(QWidget *parent = 0);
     virtual ~TipDialog();
 
     bool isOK() { return !m_tips.empty(); }
