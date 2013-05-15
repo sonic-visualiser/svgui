@@ -26,7 +26,7 @@
 
 #include <iostream>
 
-//#define DEBUG_VIEW_MANAGER 1
+#define DEBUG_VIEW_MANAGER 1
 
 ViewManager::ViewManager() :
     m_playSource(0),
@@ -129,7 +129,7 @@ unsigned long
 ViewManager::getGlobalCentreFrame() const
 {
 #ifdef DEBUG_VIEW_MANAGER
-    std::cout << "ViewManager::getGlobalCentreFrame: returning " << m_globalCentreFrame << std::endl;
+    std::cerr << "ViewManager::getGlobalCentreFrame: returning " << m_globalCentreFrame << std::endl;
 #endif
     return m_globalCentreFrame;
 }
@@ -138,7 +138,7 @@ void
 ViewManager::setGlobalCentreFrame(unsigned long f)
 {
 #ifdef DEBUG_VIEW_MANAGER
-    std::cout << "ViewManager::setGlobalCentreFrame to " << f << std::endl;
+    std::cerr << "ViewManager::setGlobalCentreFrame to " << f << std::endl;
 #endif
     m_globalCentreFrame = f;
     emit globalCentreFrameChanged(f);
@@ -148,7 +148,7 @@ unsigned long
 ViewManager::getGlobalZoom() const
 {
 #ifdef DEBUG_VIEW_MANAGER
-    std::cout << "ViewManager::getGlobalZoom: returning " << m_globalZoom << std::endl;
+    std::cerr << "ViewManager::getGlobalZoom: returning " << m_globalZoom << std::endl;
 #endif
     return m_globalZoom;
 }
@@ -473,7 +473,7 @@ ViewManager::checkPlayStatus()
 	m_playbackFrame = m_playSource->getCurrentPlayingFrame();
 
 #ifdef DEBUG_VIEW_MANAGER
-	std::cout << "ViewManager::checkPlayStatus: Playing, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << std::endl;
+	std::cerr << "ViewManager::checkPlayStatus: Playing, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << std::endl;
 #endif
 
 	emit playbackFrameChanged(m_playbackFrame);
@@ -491,7 +491,7 @@ ViewManager::checkPlayStatus()
 	}
 
 #ifdef DEBUG_VIEW_MANAGER
-//	std::cout << "ViewManager::checkPlayStatus: Not playing" << std::endl;
+//	std::cerr << "ViewManager::checkPlayStatus: Not playing" << std::endl;
 #endif
     }
 }
@@ -509,7 +509,7 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
     View *v = dynamic_cast<View *>(sender());
 
 #ifdef DEBUG_VIEW_MANAGER
-    SVDEBUG << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << endl;
+    std::cerr << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << std::endl;
 #endif
 
     if (locked) {
@@ -538,7 +538,7 @@ void
 ViewManager::seek(unsigned long f)
 {
 #ifdef DEBUG_VIEW_MANAGER 
-    std::cout << "ViewManager::seek(" << f << ")" << std::endl;
+    std::cerr << "ViewManager::seek(" << f << ")" << std::endl;
 #endif
 
     if (m_playSource && m_playSource->isPlaying()) {
@@ -548,7 +548,7 @@ ViewManager::seek(unsigned long f)
 	    m_playbackFrame = f;
 	    m_playSource->play(f);
 #ifdef DEBUG_VIEW_MANAGER 
-	    std::cout << "ViewManager::considerSeek: reseeking from " << playFrame << " to " << f << std::endl;
+	    std::cerr << "ViewManager::considerSeek: reseeking from " << playFrame << " to " << f << std::endl;
 #endif
             emit playbackFrameChanged(f);
 	}
@@ -577,7 +577,7 @@ ViewManager::viewZoomLevelChanged(unsigned long z, bool locked)
     }
 
 #ifdef DEBUG_VIEW_MANAGER 
-    std::cout << "ViewManager::viewZoomLevelChanged(" << v << ", " << z << ", " << locked << ")" << std::endl;
+    std::cerr << "ViewManager::viewZoomLevelChanged(" << v << ", " << z << ", " << locked << ")" << std::endl;
 #endif
 
     emit viewZoomLevelChanged(v, z, locked);
