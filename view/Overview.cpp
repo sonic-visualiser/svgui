@@ -22,7 +22,7 @@
 #include <QPainter>
 #include <iostream>
 
-#define DEBUG_OVERVIEW 1
+//#define DEBUG_OVERVIEW 1
 
 using std::cerr;
 using std::endl;
@@ -277,6 +277,9 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     if (std::max(m_centreFrame, newCentreFrame) -
 	std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
         size_t rf = alignToReference(newCentreFrame);
+#ifdef DEBUG_OVERVIEW
+        std::cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << std::endl;
+#endif
 	emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
     }
 }
@@ -287,6 +290,10 @@ Overview::mouseDoubleClickEvent(QMouseEvent *e)
     long frame = getFrameForX(e->x());
     size_t rf = 0;
     if (frame > 0) rf = alignToReference(frame);
+#ifdef DEBUG_OVERVIEW
+    std::cerr << "Overview::mouseDoubleClickEvent: frame " << frame << " -> rf " << rf << std::endl;
+#endif
+    m_clickedInRange = false; // we're not starting a drag with the second click
     emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
 }
 
