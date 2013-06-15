@@ -446,6 +446,7 @@ FlexiNoteLayer::getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &p) 
 bool
 FlexiNoteLayer::getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &p) const
 {
+    // GF: find the note that is closest to the cursor
     if (!m_model) return false;
 
     long frame = v->getFrameForX(x);
@@ -481,11 +482,11 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
     FlexiNoteModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
-    if (!m_model->isReady()) {
-        return tr("In progress");
-    } else {
-        return tr("No local points");
-    }
+	if (!m_model->isReady()) {
+	    return tr("In progress");
+	} else {
+	    return tr("No local points");
+	}
     }
 
     FlexiNote note(0);
@@ -493,26 +494,27 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     for (i = points.begin(); i != points.end(); ++i) {
 
-    int y = getYForValue(v, i->value);
-    int h = 3;
+	int y = getYForValue(v, i->value);
+	int h = NOTE_HEIGHT; // GF: larger notes
 
-    if (m_model->getValueQuantization() != 0.0) {
-        h = y - getYForValue(v, i->value + m_model->getValueQuantization());
-        if (h < 3) h = 3;
-    }
+	if (m_model->getValueQuantization() != 0.0) {
+	    h = y - getYForValue(v, i->value + m_model->getValueQuantization());
+	    if (h < NOTE_HEIGHT) h = NOTE_HEIGHT;
+	}
 
-    if (pos.y() >= y - h && pos.y() <= y) {
-        note = *i;
-        break;
-    }
+    // GF: this is not quite correct
+	if (pos.y() >= y - 4 && pos.y() <= y + h) {
+	    note = *i;
+	    break;
+	}
     }
 
     if (i == points.end()) return tr("No local points");
 
     RealTime rt = RealTime::frame2RealTime(note.frame,
-                       m_model->getSampleRate());
+					   m_model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(note.duration,
-                       m_model->getSampleRate());
+					   m_model->getSampleRate());
     
     QString pitchText;
 
@@ -541,20 +543,20 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
     QString text;
 
     if (note.label == "") {
-    text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
-        .arg(rt.toText(true).c_str())
-        .arg(pitchText)
-        .arg(rd.toText(true).c_str());
+	text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
+	    .arg(rt.toText(true).c_str())
+	    .arg(pitchText)
+	    .arg(rd.toText(true).c_str());
     } else {
-    text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
-        .arg(rt.toText(true).c_str())
-        .arg(pitchText)
-        .arg(rd.toText(true).c_str())
-        .arg(note.label);
+	text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
+	    .arg(rt.toText(true).c_str())
+	    .arg(pitchText)
+	    .arg(rd.toText(true).c_str())
+	    .arg(note.label);
     }
 
     pos = QPoint(v->getXForFrame(note.frame),
-         getYForValue(v, note.value));
+		 getYForValue(v, note.value));
     return text;
 }
 
@@ -789,11 +791,11 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     int x = v->getXForFrame(p.frame);
     int y = getYForValue(v, p.value);
     int w = v->getXForFrame(p.frame + p.duration) - x;
-    int h = 8; //GF: larger notes
+    int h = NOTE_HEIGHT; //GF: larger notes
     
     if (m_model->getValueQuantization() != 0.0) {
         h = y - getYForValue(v, p.value + m_model->getValueQuantization());
-        if (h < 3) h = 8; //GF: larger notes
+        if (h < NOTE_HEIGHT) h = NOTE_HEIGHT; //GF: larger notes
     }
 
     if (w < 1) w = 1;
