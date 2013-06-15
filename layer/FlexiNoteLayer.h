@@ -16,6 +16,8 @@
 #ifndef _FLEXINOTE_LAYER_H_
 #define _FLEXINOTE_LAYER_H_
 
+#define NOTE_HEIGHT 8
+
 #include "SingleColourLayer.h"
 #include "data/model/FlexiNoteModel.h"
 
@@ -37,8 +39,8 @@ public:
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(View *v, int &frame,
-				    size_t &resolution,
-				    SnapType snap) const;
+                    size_t &resolution,
+                    SnapType snap) const;
 
     virtual void drawStart(View *v, QMouseEvent *);
     virtual void drawDrag(View *v, QMouseEvent *);
@@ -54,6 +56,8 @@ public:
 
     virtual void splitStart(View *v, QMouseEvent *);
     virtual void splitEnd(View *v, QMouseEvent *);
+
+    virtual void mouseMoveEvent(View *v, QMouseEvent *);
 
     virtual bool editOpen(View *v, QMouseEvent *);
 
@@ -75,7 +79,7 @@ public:
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
+                      int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
     enum VerticalScale {
@@ -141,6 +145,8 @@ protected:
     FlexiNoteModel::PointList getLocalPoints(View *v, int) const;
 
     bool getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &) const;
+    bool getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &) const;
+    void getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
 
     FlexiNoteModel *m_model;
     bool m_editing;

@@ -25,6 +25,11 @@
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 
+// GF: added so we can propagate the mouse move event to the note layer for context handling.
+#include "layer/LayerFactory.h"
+#include "layer/FlexiNoteLayer.h"
+
+
 //!!! ugh
 #include "data/model/WaveFileModel.h"
 
@@ -1559,15 +1564,23 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     if (!m_clickedInRange) {
     
-    if (mode == ViewManager::SelectMode && hasTopLayerTimeXAxis()) {
-        bool closeToLeft = false, closeToRight = false;
-        getSelectionAt(e->x(), closeToLeft, closeToRight);
-        if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
-        setCursor(Qt::SizeHorCursor);
-        } else {
-        setCursor(Qt::ArrowCursor);
+        // GF: handle mouse move for context sensitive cursor switching in NoteEditMode.
+        // GF: Propagate the event to FlexiNoteLayer. I somehow feel it's best handeled there rather than here, but perhaps not if this will be needed elsewhere too.
+        if (mode == ViewManager::NoteEditMode && LayerFactory::getInstance()->getLayerType(getTopLayer()) == LayerFactory::FlexiNotes) {
+        
+            dynamic_cast<FlexiNoteLayer *>(getTopLayer())->mouseMoveEvent(this, e);
+
+        }   
+    
+        if (mode == ViewManager::SelectMode && hasTopLayerTimeXAxis()) {
+            bool closeToLeft = false, closeToRight = false;
+            getSelectionAt(e->x(), closeToLeft, closeToRight);
+            if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
+                setCursor(Qt::SizeHorCursor);
+            } else {
+                setCursor(Qt::ArrowCursor);
+            }
         }
-    }
 
         if (!m_manager->isPlaying()) {
 
