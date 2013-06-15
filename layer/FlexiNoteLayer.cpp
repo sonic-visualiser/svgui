@@ -1056,24 +1056,22 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
         return; 
     }
 
-    FlexiNoteModel::Point note(0);
+    // MM simpler declaration
+    FlexiNote note(0);
     if (!getPointToDrag(v, e->x(), e->y(), note)) return;
 
     long frame = v->getFrameForX(e->x());
 
-    FlexiNoteModel::Point newNote1 = note;
-    newNote1.frame = note.frame;
-    newNote1.value = note.value;
-    // newNote1.duration = note.duration+10000;
-    newNote1.duration = frame - note.frame - 100;
-    newNote1.label = note.label;
-
-    FlexiNoteModel::Point newNote2 = note;
-    newNote2.frame = frame + 100;
-    newNote2.value = note.value;
-    newNote2.duration = note.duration - (frame - note.frame - 100);
-    newNote2.label = note.label;
-
+    int gap = 0; // MM: I prefer a gap of 0, but we can decide later
+    
+    // MM: changed this a bit, to make it slightly clearer
+    FlexiNote newNote1(note.frame, note.value, 
+                       frame - note.frame - gap, 
+                       note.level, note.label);
+    
+    FlexiNote newNote2(frame, note.value, 
+                       note.duration - newNote1.duration, 
+                       note.level, note.label);
 
     FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
         (m_model, tr("Edit Point"));
