@@ -360,6 +360,7 @@ ViewManager::setToolMode(ToolMode mode)
     case DrawMode: emit activity(tr("Enter Draw mode")); break;
     case EraseMode: emit activity(tr("Enter Erase mode")); break;
     case MeasureMode: emit activity(tr("Enter Measure mode")); break;
+    case NoteEditMode: emit activity(tr("Enter NoteEdit mode")); break; // GF: NoteEditMode activity (I'm not yet certain why we need to emit this.)
     };
 }
 
