@@ -98,10 +98,11 @@ public:
     enum ToolMode {
 	NavigateMode,
 	SelectMode,
-        EditMode,
+    EditMode,
 	DrawMode,
 	EraseMode,
-	MeasureMode
+	MeasureMode,
+	NoteEditMode //GF: Tonioni: this tool mode will be context sensitive.
     };
     ToolMode getToolMode() const { return m_toolMode; }
     void setToolMode(ToolMode mode);
