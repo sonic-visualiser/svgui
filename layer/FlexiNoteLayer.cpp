@@ -944,8 +944,12 @@ FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
-
-    m_dragPointX = v->getXForFrame(m_editingPoint.frame);
+    
+    if (m_editMode == rightBoundary) {
+        m_dragPointX = v->getXForFrame(m_editingPoint.frame + m_editingPoint.duration);
+    } else {
+        m_dragPointX = v->getXForFrame(m_editingPoint.frame);
+    }
     m_dragPointY = getYForValue(v, m_editingPoint.value);
 
     if (m_editingCommand) {
@@ -983,9 +987,17 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
-    m_editingPoint.frame = frame;
+    if (m_editMode == leftBoundary) 
+        m_editingPoint.duration = m_editingPoint.duration + (m_editingPoint.frame - frame); // GF: left boundary change
+    if (m_editMode == rightBoundary) {
+        m_editingPoint.duration = frame - m_editingPoint.frame; // GF: right boundary change
+    } else {
+        m_editingPoint.frame = frame;
+    }
     m_editingPoint.value = value;
     m_editingCommand->addPoint(m_editingPoint);
+    std::cerr << "added new point(" << m_editingPoint.frame << "," << m_editingPoint.duration << ")" << std::endl;
+    
 }
 
 void
@@ -1047,7 +1059,7 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
 {
     // GF: note splitting ends. (!! remove printing soon)
     std::cerr << "splitEnd" << std::endl;
-    if (!m_model || !m_editing) return;
+    if (!m_model || !m_editing || m_editMode != splitNote) return;
 
     int xdist = e->x() - m_dragStartX;
     int ydist = e->y() - m_dragStartY;
@@ -1056,7 +1068,7 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
         return; 
     }
 
-    // MM simpler declaration
+    // MM: simpler declaration 
     FlexiNote note(0);
     if (!getPointToDrag(v, e->x(), e->y(), note)) return;
 
@@ -1064,7 +1076,7 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
 
     int gap = 0; // MM: I prefer a gap of 0, but we can decide later
     
-    // MM: changed this a bit, to make it slightly clearer
+    // MM: changed this a bit, to make it slightly clearer (// GF: nice changes!)
     FlexiNote newNote1(note.frame, note.value, 
                        frame - note.frame - gap, 
                        note.level, note.label);
@@ -1076,6 +1088,10 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
     FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
         (m_model, tr("Edit Point"));
     command->deletePoint(note);
+    if ((e->modifiers() & Qt::ShiftModifier)) {
+        finish(command);
+        return;
+    }
     command->addPoint(newNote1);
     command->addPoint(newNote2);
     finish(command);
@@ -1096,14 +1112,16 @@ FlexiNoteLayer::mouseMoveEvent(View *v, QMouseEvent *e)
     bool closeToLeft = false, closeToRight = false, closeToTop = false, closeToBottom = false;
     getRelativeMousePosition(v, note, e->x(), e->y(), closeToLeft, closeToRight, closeToTop, closeToBottom);
     // if (!closeToLeft) return;
-    if (closeToLeft || closeToRight) { v->setCursor(Qt::SizeHorCursor); return; }
     // if (closeToTop) v->setCursor(Qt::SizeVerCursor);
-    if (closeToTop) { v->setCursor(Qt::CrossCursor); return; }
-    if (closeToBottom) { v->setCursor(Qt::UpArrowCursor); return; }
+    
+    if (closeToLeft) { v->setCursor(Qt::SizeHorCursor); m_editMode = leftBoundary; return; }
+    if (closeToRight) { v->setCursor(Qt::SizeHorCursor); m_editMode = rightBoundary; return; }
+    if (closeToTop) { v->setCursor(Qt::CrossCursor);  m_editMode = dragNote; return; }
+    if (closeToBottom) { v->setCursor(Qt::UpArrowCursor); m_editMode = splitNote; return; }
+
     v->setCursor(Qt::ArrowCursor);
 
-
-    std::cerr << "Mouse moved in edit mode over FlexiNoteLayer" << std::endl;
+    // std::cerr << "Mouse moved in edit mode over FlexiNoteLayer" << std::endl;
     // v->setCursor(Qt::SizeHorCursor);
 
 }
@@ -1111,6 +1129,7 @@ FlexiNoteLayer::mouseMoveEvent(View *v, QMouseEvent *e)
 void
 FlexiNoteLayer::getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const
 {
+    // GF: TODO: consoloidate the tolerance values
     if (!m_model) return;
 
     int ctol = 2;
