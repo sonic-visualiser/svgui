@@ -88,6 +88,14 @@ public:
         LogScale,
         MIDIRangeScale
     };
+    
+    //GF: Tonioni: context sensitive note edit actions (denoted clockwise from top).
+    enum EditMode {
+        dragNote,
+        rightBoundary,
+        splitNote,
+        leftBoundary
+    };
 
     void setVerticalScale(VerticalScale scale);
     VerticalScale getVerticalScale() const { return m_verticalScale; }
@@ -158,6 +166,7 @@ protected:
     FlexiNoteModel::Point m_editingPoint;
     FlexiNoteModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
+    EditMode m_editMode;
 
     typedef std::set<FlexiNoteModel::Point, FlexiNoteModel::Point::Comparator> FlexiNoteSet;
     FlexiNoteSet m_pendingNoteOns;

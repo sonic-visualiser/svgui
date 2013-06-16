@@ -1627,23 +1627,88 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::SelectMode) {
 
-        if (!hasTopLayerTimeXAxis()) return;
+            if (!hasTopLayerTimeXAxis()) return;
 
-        dragExtendSelection(e);
+            dragExtendSelection(e);
 
     } else if (mode == ViewManager::DrawMode) {
 
-    Layer *layer = getSelectedLayer();
-    if (layer && layer->isLayerEditable()) {
-        layer->drawDrag(this, e);
-    }
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->drawDrag(this, e);
+        }
 
     } else if (mode == ViewManager::EraseMode) {
 
-    Layer *layer = getSelectedLayer();
-    if (layer && layer->isLayerEditable()) {
-        layer->eraseDrag(this, e);
-    }
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->eraseDrag(this, e);
+        }
+
+    // GF: handling NoteEditMode dragging and boundary actions for mouseMoveEvent
+    } else if (mode == ViewManager::NoteEditMode) {
+
+        bool resist = true;
+
+        if ((e->modifiers() & Qt::ShiftModifier)) {
+            m_shiftPressed = true;
+        }
+
+        if (m_shiftPressed) resist = false;
+
+        m_dragMode = updateDragMode
+            (m_dragMode,
+             m_clickPos,
+             e->pos(),
+             true,    // can move horiz
+             true,    // can move vert
+             resist,  // resist horiz
+             resist); // resist vert
+
+        if (!m_editing) {
+
+            if (m_dragMode != UnresolvedDrag) {
+
+                m_editing = true;
+
+                QMouseEvent clickEvent(QEvent::MouseButtonPress,
+                                       m_clickPos,
+                                       Qt::NoButton,
+                                       e->buttons(),
+                                       e->modifiers());
+
+                if (!editSelectionStart(&clickEvent)) {
+                    Layer *layer = getSelectedLayer();
+                    if (layer && layer->isLayerEditable()) {
+                        std::cerr << "calling edit start" << std::endl;
+                        layer->editStart(this, &clickEvent);
+                    }
+                }
+            }
+
+        } else {
+
+            if (!editSelectionDrag(e)) {
+
+                Layer *layer = getSelectedLayer();
+
+                if (layer && layer->isLayerEditable()) {
+
+                    int x = e->x();
+                    int y = e->y();
+                    if (m_dragMode == VerticalDrag) x = m_clickPos.x();
+                    else if (m_dragMode == HorizontalDrag) y = m_clickPos.y();
+
+                    QMouseEvent moveEvent(QEvent::MouseMove,
+                                          QPoint(x, y),
+                                          Qt::NoButton,
+                                          e->buttons(),
+                                          e->modifiers());
+                    std::cerr << "calling editDrag" << std::endl;
+                    layer->editDrag(this, &moveEvent);
+                }
+            }
+        }
 
     } else if (mode == ViewManager::EditMode) {
 
