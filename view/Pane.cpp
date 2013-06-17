@@ -335,7 +335,7 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
     if (m_manager && m_manager->getToolMode() == ViewManager::MeasureMode) {
         return false;
     }
-
+    
     if (m_manager && !m_manager->shouldIlluminateLocalFeatures()) {
         return false;
     }
