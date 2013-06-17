@@ -1069,8 +1069,6 @@ FlexiNoteLayer::editEnd(View *v, QMouseEvent *e)
     m_editingCommand->setName(newName);
     finish(m_editingCommand);
     }
-    
-    setVerticalRangeToNoteRange();
 
     m_editingCommand = 0;
     m_editing = false;
