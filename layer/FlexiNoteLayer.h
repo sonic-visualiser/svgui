@@ -16,7 +16,7 @@
 #ifndef _FLEXINOTE_LAYER_H_
 #define _FLEXINOTE_LAYER_H_
 
-#define NOTE_HEIGHT 8
+#define NOTE_HEIGHT 16
 
 #include "SingleColourLayer.h"
 #include "data/model/FlexiNoteModel.h"
@@ -91,10 +91,10 @@ public:
     
     //GF: Tonioni: context sensitive note edit actions (denoted clockwise from top).
     enum EditMode {
-        dragNote,
-        rightBoundary,
-        splitNote,
-        leftBoundary
+        DragNote,
+        RightBoundary,
+        SplitNote,
+        LeftBoundary
     };
 
     void setVerticalScale(VerticalScale scale);
@@ -141,6 +141,8 @@ public:
                        QString extraAttributes = "") const;
 
     void setProperties(const QXmlAttributes &attributes);
+    
+    void setVerticalRangeToNoteRange();
 
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
@@ -164,6 +166,8 @@ protected:
     int m_dragStartY;
     FlexiNoteModel::Point m_originalPoint;
     FlexiNoteModel::Point m_editingPoint;
+    long m_greatestLeftNeighbourFrame;
+    long m_smallestRightNeighbourFrame;
     FlexiNoteModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
     EditMode m_editMode;
