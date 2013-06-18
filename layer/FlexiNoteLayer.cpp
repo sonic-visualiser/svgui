@@ -482,11 +482,11 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
     FlexiNoteModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
-	if (!m_model->isReady()) {
-	    return tr("In progress");
-	} else {
-	    return tr("No local points");
-	}
+    if (!m_model->isReady()) {
+        return tr("In progress");
+    } else {
+        return tr("No local points");
+    }
     }
 
     FlexiNote note(0);
@@ -494,27 +494,27 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     for (i = points.begin(); i != points.end(); ++i) {
 
-	int y = getYForValue(v, i->value);
-	int h = NOTE_HEIGHT; // GF: larger notes
+    int y = getYForValue(v, i->value);
+    int h = NOTE_HEIGHT; // GF: larger notes
 
-	if (m_model->getValueQuantization() != 0.0) {
-	    h = y - getYForValue(v, i->value + m_model->getValueQuantization());
-	    if (h < NOTE_HEIGHT) h = NOTE_HEIGHT;
-	}
+    if (m_model->getValueQuantization() != 0.0) {
+        h = y - getYForValue(v, i->value + m_model->getValueQuantization());
+        if (h < NOTE_HEIGHT) h = NOTE_HEIGHT;
+    }
 
     // GF: this is not quite correct
-	if (pos.y() >= y - 4 && pos.y() <= y + h) {
-	    note = *i;
-	    break;
-	}
+    if (pos.y() >= y - 4 && pos.y() <= y + h) {
+        note = *i;
+        break;
+    }
     }
 
     if (i == points.end()) return tr("No local points");
 
     RealTime rt = RealTime::frame2RealTime(note.frame,
-					   m_model->getSampleRate());
+                       m_model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(note.duration,
-					   m_model->getSampleRate());
+                       m_model->getSampleRate());
     
     QString pitchText;
 
@@ -543,20 +543,20 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
     QString text;
 
     if (note.label == "") {
-	text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(pitchText)
-	    .arg(rd.toText(true).c_str());
+    text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
+        .arg(rt.toText(true).c_str())
+        .arg(pitchText)
+        .arg(rd.toText(true).c_str());
     } else {
-	text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(pitchText)
-	    .arg(rd.toText(true).c_str())
-	    .arg(note.label);
+    text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
+        .arg(rt.toText(true).c_str())
+        .arg(pitchText)
+        .arg(rd.toText(true).c_str())
+        .arg(note.label);
     }
 
     pos = QPoint(v->getXForFrame(note.frame),
-		 getYForValue(v, note.value));
+         getYForValue(v, note.value));
     return text;
 }
 
@@ -1038,7 +1038,11 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
             break;
         }
     }
+<<<<<<< local
+    if (m_editMode == dragNote) m_editingPoint.value = value;
+=======
     
+>>>>>>> other
     m_editingCommand->addPoint(m_editingPoint);
     std::cerr << "added new point(" << m_editingPoint.frame << "," << m_editingPoint.duration << ")" << std::endl;
     
