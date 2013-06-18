@@ -37,6 +37,7 @@
 #include <iostream>
 #include <cmath>
 #include <utility>
+#include <limits>
 
 FlexiNoteLayer::FlexiNoteLayer() :
     SingleColourLayer(),
@@ -1038,11 +1039,6 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
             break;
         }
     }
-<<<<<<< local
-    if (m_editMode == dragNote) m_editingPoint.value = value;
-=======
-    
->>>>>>> other
     m_editingCommand->addPoint(m_editingPoint);
     std::cerr << "added new point(" << m_editingPoint.frame << "," << m_editingPoint.duration << ")" << std::endl;
     
