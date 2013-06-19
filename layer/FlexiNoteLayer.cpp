@@ -1002,9 +1002,9 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
-    long frame = v->getFrameForX(newx);
-    if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    long dragFrame = v->getFrameForX(newx);
+    if (dragFrame < 0) dragFrame = 0;
+    dragFrame = dragFrame / m_model->getResolution() * m_model->getResolution();
     
     float value = getValueForY(v, newy);
 
@@ -1016,28 +1016,34 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
     m_editingCommand->deletePoint(m_editingPoint);
 
     std::cerr << "edit mode: " << m_editMode << std::endl;
+    
     switch (m_editMode) {
         case LeftBoundary : {
-            if ((frame > m_greatestLeftNeighbourFrame) 
-                 && (frame < m_originalPoint.frame + m_originalPoint.duration - 1)
-                 && (frame < m_smallestRightNeighbourFrame)) {
-                m_editingPoint.duration = m_editingPoint.frame + m_editingPoint.duration - frame + 1;
-                m_editingPoint.frame = frame;
+            // left
+            if (dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+            // right
+            if (dragFrame >= m_originalPoint.frame + m_originalPoint.duration) {
+                dragFrame = m_originalPoint.frame + m_originalPoint.duration - 1;
             }
+            m_editingPoint.frame = dragFrame;
+            m_editingPoint.duration = m_originalPoint.frame - dragFrame + m_originalPoint.duration;
             break;
         }
         case RightBoundary : {
-            long tempDuration = frame - m_originalPoint.frame;
-            if (tempDuration > 0 && m_originalPoint.frame + tempDuration - 1 < m_smallestRightNeighbourFrame) {
-                m_editingPoint.duration = tempDuration;
-            }
+            // left
+            if (dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+            if (dragFrame >= m_smallestRightNeighbourFrame) dragFrame = m_smallestRightNeighbourFrame - 1;
+            m_editingPoint.duration = dragFrame - m_originalPoint.frame + 1;
             break;
         }
         case DragNote : {
-            if (frame <= m_smallestRightNeighbourFrame - m_editingPoint.duration
-                && frame > m_greatestLeftNeighbourFrame) {
-                m_editingPoint.frame = frame; // only move if it doesn't overlap with right note or left note
+            // left
+            if (dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+            // right
+            if (dragFrame + m_originalPoint.duration >= m_smallestRightNeighbourFrame) {
+                dragFrame = m_smallestRightNeighbourFrame - m_originalPoint.duration;
             }
+            m_editingPoint.frame = dragFrame;
             m_editingPoint.value = value;
             break;
         }
