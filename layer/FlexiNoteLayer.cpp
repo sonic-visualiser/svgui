@@ -16,6 +16,7 @@
 #include "FlexiNoteLayer.h"
 
 #include "data/model/Model.h"
+#include "data/model/SparseTimeValueModel.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/Pitch.h"
@@ -37,7 +38,9 @@
 #include <iostream>
 #include <cmath>
 #include <utility>
-#include <limits>
+#include <limits> // GF: included to compile std::numerical_limits on linux
+#include <vector>
+
 
 FlexiNoteLayer::FlexiNoteLayer() :
     SingleColourLayer(),
@@ -1129,6 +1132,9 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
                        note.duration - newNote1.duration, 
                        note.level, note.label);
 
+    updateNoteValue(v,newNote1);
+    updateNoteValue(v,newNote2);
+
     FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
         (m_model, tr("Edit Point"));
     command->deletePoint(note);
@@ -1140,6 +1146,43 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
     command->addPoint(newNote2);
     finish(command);
     
+}
+
+void
+FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
+{
+    //GF: update the note value conforming the median of pitch values in the underlying note layer
+    Layer *layer = v->getLayer(1); // GF: !!! gross assumption about correct layer order
+    SparseTimeValueModel *model = 0;
+    if (layer && layer->getModel()) 
+        model = dynamic_cast<SparseTimeValueModel *>(layer->getModel());
+        
+    if (!model) return;
+        
+    std::cerr << model->getTypeName() << std::endl;
+
+    SparseModel<TimeValuePoint>::PointList dataPoints = model->getPoints(note.frame, note.frame + note.duration);
+    if (dataPoints.empty()) return;
+   
+   // std::cerr << "frame " << note.frame << ": " << dataPoints.size() << " candidate points" << std::endl;
+   
+   std::vector<float> pitchValues;
+   
+    for (SparseModel<TimeValuePoint>::PointList::const_iterator i = dataPoints.begin(); 
+        i != dataPoints.end(); ++i) {
+            pitchValues.push_back((*i).value);
+    }
+    sort(pitchValues.begin(), pitchValues.end());
+    size_t size = pitchValues.size();
+    double median;
+
+    if (size % 2 == 0) {
+        median = (pitchValues[size/2 - 1] + pitchValues[size/2]) / 2;
+    } else {
+        median = pitchValues[size/2];
+    }
+    
+    note.value = median;
 }
 
 void 

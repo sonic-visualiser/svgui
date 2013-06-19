@@ -157,6 +157,7 @@ protected:
     bool getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &) const;
     bool getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &) const;
     void getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
+    void updateNoteValue(View *v, FlexiNoteModel::Point &note) const;
 
     FlexiNoteModel *m_model;
     bool m_editing;
