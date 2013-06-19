@@ -1052,7 +1052,7 @@ FlexiNoteLayer::editEnd(View *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
-
+    
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {
@@ -1532,24 +1532,30 @@ FlexiNoteLayer::setProperties(const QXmlAttributes &attributes)
 
     float min = attributes.value("scaleMinimum").toFloat(&ok);
     float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
-    if (ok && alsoOk) setDisplayExtents(min, max);
+    // if (ok && alsoOk) setDisplayExtents(min, max);
 }
 
 void
-FlexiNoteLayer::setVerticalRangeToNoteRange()
+FlexiNoteLayer::setVerticalRangeToNoteRange(View *v)
 {
-    float minf = std::numeric_limits<float>::max();;
+    float minf = std::numeric_limits<float>::max();
     float maxf = 0;
+    bool hasNotes = 0;
     for (FlexiNoteModel::PointList::const_iterator i = m_model->getPoints().begin();
          i != m_model->getPoints().end(); ++i) {
+             hasNotes = 1;
              FlexiNote note = *i;
              if (note.value < minf) minf = note.value;
-             else if (note.value > maxf) maxf = note.value;
-             std::cerr << "min frequency:" << minf << ", max frequency: " << maxf << std::endl;
+             if (note.value > maxf) maxf = note.value;
     }
     
-	if (this) {
-            setDisplayExtents(minf,maxf);
+    std::cerr << "min frequency:" << minf << ", max frequency: " << maxf << std::endl;
+    
+    if (hasNotes) {
+        v->getLayer(1)->setDisplayExtents(minf*0.8,maxf*1.2); 
+        // MM: this is a hack because we rely on 
+        // * this layer being automatically aligned to layer 1
+        // * layer one is a log frequency layer.
     }
 }
 

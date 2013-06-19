@@ -142,7 +142,7 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
     
-    void setVerticalRangeToNoteRange();
+    void setVerticalRangeToNoteRange(View *v);
 
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
