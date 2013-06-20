@@ -2107,10 +2107,10 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     if (mode == ViewManager::NavigateMode ||
         mode == ViewManager::EditMode) {
 
-    Layer *layer = getSelectedLayer();
-    if (layer && layer->isLayerEditable()) {
-        if (layer->editOpen(this, e)) relocate = false;
-    }
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            if (layer->editOpen(this, e)) relocate = false;
+        }
 
     } else if (mode == ViewManager::MeasureMode) {
 
@@ -2132,6 +2132,14 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         float vmin, vmax, dmin, dmax;
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
             m_dragStartMinValue = dmin;
+        }
+    }
+    
+    if (mode == ViewManager::NoteEditMode) {
+        std::cerr << "double click in note edit mode" << std::endl;
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->addNote(this, e); 
         }
     }
 
