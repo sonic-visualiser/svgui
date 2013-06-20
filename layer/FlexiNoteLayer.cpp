@@ -1558,7 +1558,7 @@ FlexiNoteLayer::setVerticalRangeToNoteRange(View *v)
     std::cerr << "min frequency:" << minf << ", max frequency: " << maxf << std::endl;
     
     if (hasNotes) {
-        v->getLayer(1)->setDisplayExtents(minf*0.8,maxf*1.2); 
+        v->getLayer(1)->setDisplayExtents(minf*0.66,maxf*1.5); 
         // MM: this is a hack because we rely on 
         // * this layer being automatically aligned to layer 1
         // * layer one is a log frequency layer.
