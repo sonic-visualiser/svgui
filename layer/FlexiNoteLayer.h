@@ -96,6 +96,8 @@ public:
         SplitNote,
         LeftBoundary
     };
+    
+    void setIntelligentActions(bool on) { m_intelligentActions=on; }
 
     void setVerticalScale(VerticalScale scale);
     VerticalScale getVerticalScale() const { return m_verticalScale; }
@@ -161,6 +163,7 @@ protected:
 
     FlexiNoteModel *m_model;
     bool m_editing;
+    bool m_intelligentActions;
     int m_dragPointX;
     int m_dragPointY;
     int m_dragStartX;

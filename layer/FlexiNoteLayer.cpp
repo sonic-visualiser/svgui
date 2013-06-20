@@ -61,7 +61,8 @@ FlexiNoteLayer::FlexiNoteLayer() :
     m_editingCommand(0),
     m_verticalScale(AutoAlignScale),
     m_scaleMinimum(34), 
-    m_scaleMaximum(77)
+    m_scaleMaximum(77),
+    m_intelligentActions(true)
 {
 }
 
@@ -1019,10 +1020,10 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
     
     switch (m_editMode) {
         case LeftBoundary : {
-            // left
-            if (dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+            // left 
+            if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
             // right
-            if (dragFrame >= m_originalPoint.frame + m_originalPoint.duration) {
+            if (m_intelligentActions && dragFrame >= m_originalPoint.frame + m_originalPoint.duration) {
                 dragFrame = m_originalPoint.frame + m_originalPoint.duration - 1;
             }
             m_editingPoint.frame = dragFrame;
@@ -1031,16 +1032,16 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
         }
         case RightBoundary : {
             // left
-            if (dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
-            if (dragFrame >= m_smallestRightNeighbourFrame) dragFrame = m_smallestRightNeighbourFrame - 1;
+            if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+            if (m_intelligentActions && dragFrame >= m_smallestRightNeighbourFrame) dragFrame = m_smallestRightNeighbourFrame - 1;
             m_editingPoint.duration = dragFrame - m_originalPoint.frame + 1;
             break;
         }
         case DragNote : {
             // left
-            if (dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+            if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
             // right
-            if (dragFrame + m_originalPoint.duration >= m_smallestRightNeighbourFrame) {
+            if (m_intelligentActions && dragFrame + m_originalPoint.duration >= m_smallestRightNeighbourFrame) {
                 dragFrame = m_smallestRightNeighbourFrame - m_originalPoint.duration;
             }
             m_editingPoint.frame = dragFrame;
@@ -1137,9 +1138,11 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
     FlexiNote newNote2(frame, note.value, 
                        note.duration - newNote1.duration, 
                        note.level, note.label);
-
-    updateNoteValue(v,newNote1);
-    updateNoteValue(v,newNote2);
+                       
+    if (m_intelligentActions) {
+        updateNoteValue(v,newNote1);
+        updateNoteValue(v,newNote2);
+    }
 
     FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
         (m_model, tr("Edit Point"));
