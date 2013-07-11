@@ -1120,7 +1120,6 @@ Pane::getImageSize(size_t f0, size_t f1)
     if (m_manager && m_manager->shouldShowVerticalScale()) {
         for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
             --vi;
-            QPainter paint(image);
             sw = (*vi)->getVerticalScaleWidth
                 (this, m_manager->shouldShowVerticalColourScale(), paint);
             break;
