@@ -28,8 +28,8 @@
 
 #include <iostream>
 
-TipDialog::TipDialog(QWidget *parent, Qt::WFlags flags) :
-    QDialog(parent, flags),
+TipDialog::TipDialog(QWidget *parent) :
+    QDialog(parent),
     m_tipNumber(0),
     m_label(0),
     m_caption(tr("Tip of the Day"))
