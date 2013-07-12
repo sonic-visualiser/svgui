@@ -22,6 +22,8 @@
 #include <QPainter>
 #include <iostream>
 
+//#define DEBUG_OVERVIEW 1
+
 using std::cerr;
 using std::endl;
 
@@ -90,14 +92,20 @@ Overview::unregisterView(View *view)
 }
 
 void
-Overview::globalCentreFrameChanged(unsigned long)
+Overview::globalCentreFrameChanged(unsigned long f)
 {
+#ifdef DEBUG_OVERVIEW
+    std::cerr << "Overview::globalCentreFrameChanged: " << f << std::endl;
+#endif
     update();
 }
 
 void
-Overview::viewCentreFrameChanged(View *v, unsigned long)
+Overview::viewCentreFrameChanged(View *v, unsigned long f)
 {
+#ifdef DEBUG_OVERVIEW
+    std::cerr << "Overview[" << this << "]::viewCentreFrameChanged(" << v << "): " << f << std::endl;
+#endif
     if (m_views.find(v) != m_views.end()) {
 	update();
     }
@@ -115,6 +123,10 @@ Overview::viewZoomLevelChanged(View *v, unsigned long, bool)
 void
 Overview::viewManagerPlaybackFrameChanged(unsigned long f)
 {
+#ifdef DEBUG_OVERVIEW
+    std::cerr << "Overview[" << this << "]::viewManagerPlaybackFrameChanged(" << f << "): " << f << std::endl;
+#endif
+
     bool changed = false;
 
     f = getAlignedPlaybackFrame();
@@ -130,7 +142,9 @@ Overview::paintEvent(QPaintEvent *e)
 {
     // Recalculate zoom in case the size of the widget has changed.
 
-//    SVDEBUG << "Overview::paintEvent: width is " << width() << ", centre frame " << m_centreFrame << endl;
+#ifdef DEBUG_OVERVIEW
+    std::cerr << "Overview::paintEvent: width is " << width() << ", centre frame " << m_centreFrame << std::endl;
+#endif
 
     size_t startFrame = getModelsStartFrame();
     size_t frameCount = getModelsEndFrame() - getModelsStartFrame();
@@ -148,10 +162,14 @@ Overview::paintEvent(QPaintEvent *e)
 	centreFrame = (startFrame + getModelsEndFrame())/2;
     }
     if (centreFrame != m_centreFrame) {
-//        SVDEBUG << "Overview::paintEvent: Centre frame changed from "
-//                  << m_centreFrame << " to " << centreFrame << " and thus start frame from " << getStartFrame();
+#ifdef DEBUG_OVERVIEW
+        std::cerr << "Overview::paintEvent: Centre frame changed from "
+                  << m_centreFrame << " to " << centreFrame << " and thus start frame from " << getStartFrame();
+#endif
 	m_centreFrame = centreFrame;
-//        SVDEBUG << " to " << getStartFrame() << endl;
+#ifdef DEBUG_OVERVIEW
+        std::cerr << " to " << getStartFrame() << std::endl;
+#endif
 	emit centreFrameChanged(m_centreFrame, false, PlaybackIgnore);
     }
 
@@ -259,6 +277,9 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     if (std::max(m_centreFrame, newCentreFrame) -
 	std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
         size_t rf = alignToReference(newCentreFrame);
+#ifdef DEBUG_OVERVIEW
+        std::cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << std::endl;
+#endif
 	emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
     }
 }
@@ -269,6 +290,10 @@ Overview::mouseDoubleClickEvent(QMouseEvent *e)
     long frame = getFrameForX(e->x());
     size_t rf = 0;
     if (frame > 0) rf = alignToReference(frame);
+#ifdef DEBUG_OVERVIEW
+    std::cerr << "Overview::mouseDoubleClickEvent: frame " << frame << " -> rf " << rf << std::endl;
+#endif
+    m_clickedInRange = false; // we're not starting a drag with the second click
     emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
 }
 

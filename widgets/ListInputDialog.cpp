@@ -25,8 +25,8 @@
 
 ListInputDialog::ListInputDialog(QWidget *parent, const QString &title,
 				 const QString &labelText, const QStringList &list,
-				 int current, Qt::WFlags f) :
-    QDialog(parent, f),
+				 int current) :
+    QDialog(parent),
     m_strings(list)
 {
     setWindowTitle(title);
@@ -89,9 +89,9 @@ ListInputDialog::setFootnote(QString footnote)
 QString
 ListInputDialog::getItem(QWidget *parent, const QString &title,
                          const QString &label, const QStringList &list,
-                         int current, bool *ok, Qt::WFlags f)
+                         int current, bool *ok)
 {
-    ListInputDialog dialog(parent, title, label, list, current, f);
+    ListInputDialog dialog(parent, title, label, list, current);
     
     bool accepted = (dialog.exec() == QDialog::Accepted);
     if (ok) *ok = accepted;

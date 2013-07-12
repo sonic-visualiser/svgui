@@ -130,7 +130,7 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     // Use our own QFileDialog just for symmetry with getSaveFileName below
 
     QFileDialog dialog;
-    dialog.setFilters(filter.split('\n'));
+    dialog.setNameFilters(filter.split('\n'));
     dialog.setWindowTitle(title);
     dialog.setDirectory(lastPath);
 
@@ -254,7 +254,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     // need to adjust the file extension based on the selected filter
 
     QFileDialog dialog;
-    dialog.setFilters(filter.split('\n'));
+    dialog.setNameFilters(filter.split('\n'));
     dialog.setWindowTitle(title);
     dialog.setDirectory(lastPath);
 
@@ -289,7 +289,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         if ((type == LayerFile || type == LayerFileNoMidi)
             && fi.suffix() == "") {
             QString expectedExtension;
-            QString selectedFilter = dialog.selectedFilter();
+            QString selectedFilter = dialog.selectedNameFilter();
             if (selectedFilter.contains(".svl")) {
                 expectedExtension = "svl";
             } else if (selectedFilter.contains(".txt")) {
