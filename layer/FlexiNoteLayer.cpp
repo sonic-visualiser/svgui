@@ -249,6 +249,10 @@ FlexiNoteLayer::getDisplayExtents(float &min, float &max) const
         max = Pitch::getFrequencyForPitch(lrintf(max + 1));
     }
 
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << std::endl;
+#endif
+
     return true;
 }
 
@@ -268,7 +272,9 @@ FlexiNoteLayer::setDisplayExtents(float min, float max)
     m_scaleMinimum = min;
     m_scaleMaximum = max;
 
-//    SVDEBUG << "FlexiNoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "FlexiNoteLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+#endif
     
     emit layerParametersChanged();
     return true;
@@ -349,7 +355,9 @@ FlexiNoteLayer::setVerticalZoomStep(int step)
         newmax = max;
     }
     
-    SVDEBUG << "FlexiNoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "FlexiNoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+#endif
 
     setDisplayExtents(newmin, newmax);
 }
@@ -1579,7 +1587,7 @@ FlexiNoteLayer::setProperties(const QXmlAttributes &attributes)
 
     float min = attributes.value("scaleMinimum").toFloat(&ok);
     float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
-    // if (ok && alsoOk) setDisplayExtents(min, max);
+//    if (ok && alsoOk && min != max) setDisplayExtents(min, max);
 }
 
 void
