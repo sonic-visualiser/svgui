@@ -1263,7 +1263,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
         if (prec < 0) dp = -prec;
         round = powf(10.f, prec);
 #ifdef DEBUG_TIME_VALUE_LAYER
-        std::cerr << "inc = " << inc << ", round = " << round << std::endl;
+        std::cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << std::endl;
 #endif
     }
 
@@ -1303,7 +1303,11 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
         }
 
         if (logarithmic) {
-            sprintf(buffer, "%.*g", dp < 2 ? 2 : dp, LogRange::unmap(dispval));
+            double dv = LogRange::unmap(dispval);
+            int digits = trunc(log10f(dv));
+            int sf = dp + (digits > 0 ? digits : 0);
+            if (sf < 2) sf = 2;
+            sprintf(buffer, "%.*g", sf, dv);
         } else {
             sprintf(buffer, "%.*f", dp, dispval);
         }            
