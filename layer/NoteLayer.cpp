@@ -38,6 +38,8 @@
 #include <cmath>
 #include <utility>
 
+//#define DEBUG_NOTE_LAYER 1
+
 NoteLayer::NoteLayer() :
     SingleColourLayer(),
     m_model(0),
@@ -615,13 +617,17 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
                 max = Pitch::getFrequencyForPitch(lrintf(max + 1));
             }
 
+#ifdef DEBUG_NOTE_LAYER
             std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+#endif
 
         } else if (log) {
 
             LogRange::mapRange(min, max);
 
+#ifdef DEBUG_NOTE_LAYER
             std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+#endif
 
         }
 
@@ -655,21 +661,29 @@ NoteLayer::getYForValue(View *v, float val) const
 
     getScaleExtents(v, min, max, logarithmic);
 
-//    std::cerr << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+#endif
 
     if (shouldConvertMIDIToHz()) {
         val = Pitch::getFrequencyForPitch(lrintf(val),
                                           lrintf((val - lrintf(val)) * 100));
-//        std::cerr << "shouldConvertMIDIToHz true, val now = " << val << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+        std::cerr << "shouldConvertMIDIToHz true, val now = " << val << std::endl;
+#endif
     }
 
     if (logarithmic) {
         val = LogRange::map(val);
-//        std::cerr << "logarithmic true, val now = " << val << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+        std::cerr << "logarithmic true, val now = " << val << std::endl;
+#endif
     }
 
     int y = int(h - ((val - min) * h) / (max - min)) - 1;
-//    std::cerr << "y = " << y << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "y = " << y << std::endl;
+#endif
     return y;
 }
 

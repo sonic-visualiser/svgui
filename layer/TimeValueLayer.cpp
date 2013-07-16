@@ -746,13 +746,18 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
     max = 0.0;
     log = false;
 
+    bool haveAutoAlignment = false;
+
     if (shouldAutoAlign()) {
 
         if (!v->getValueExtents(m_model->getScaleUnits(), min, max, log)) {
             min = m_model->getValueMinimum();
             max = m_model->getValueMaximum();
-        } else if (log) {
-            LogRange::mapRange(min, max);
+        } else {
+            haveAutoAlignment = true;
+            if (log) {
+                LogRange::mapRange(min, max);
+            }
         }
 
     } else if (m_verticalScale == PlusMinusOneScale) {
@@ -774,18 +779,21 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
     std::cerr << "TimeValueLayer::getScaleExtents: min = " << min << ", max = " << max << std::endl;
 #endif
 
-    if (max == min) {
-        max = max + 0.5;
-        min = min - 0.5;
-    } else {
-        float margin = (max - min) / 10.0;
-        max = max + margin;
-        min = min - margin;
-    }
+    if (!haveAutoAlignment) {
+
+        if (max == min) {
+            max = max + 0.5;
+            min = min - 0.5;
+        } else {
+            float margin = (max - min) / 10.0;
+            max = max + margin;
+            min = min - margin;
+        }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getScaleExtents: min = " << min << ", max = " << max << " (after adjustment)" << std::endl;
+        std::cerr << "TimeValueLayer::getScaleExtents: min = " << min << ", max = " << max << " (after adjustment)" << std::endl;
 #endif
+    }
 }
 
 int
@@ -1255,7 +1263,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
         if (prec < 0) dp = -prec;
         round = powf(10.f, prec);
 #ifdef DEBUG_TIME_VALUE_LAYER
-        std::cerr << "inc = " << inc << ", round = " << round << std::endl;
+        std::cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << std::endl;
 #endif
     }
 
@@ -1295,7 +1303,11 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
         }
 
         if (logarithmic) {
-            sprintf(buffer, "%.*g", dp < 2 ? 2 : dp, LogRange::unmap(dispval));
+            double dv = LogRange::unmap(dispval);
+            int digits = trunc(log10f(dv));
+            int sf = dp + (digits > 0 ? digits : 0);
+            if (sf < 2) sf = 2;
+            sprintf(buffer, "%.*g", sf, dv);
         } else {
             sprintf(buffer, "%.*f", dp, dispval);
         }            
