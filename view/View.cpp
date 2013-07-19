@@ -995,7 +995,7 @@ View::movePlayPointer(unsigned long newFrame)
     case PlaybackScrollPage:
     { 
 	int xold = getXForFrame(oldPlayPointerFrame);
-	update(xold - 1, 0, 3, height());
+	update(xold - 4, 0, 9, height());
 
 	long w = getEndFrame() - getStartFrame();
 	w -= w/5;
@@ -1034,12 +1034,12 @@ View::movePlayPointer(unsigned long newFrame)
 		bool changed = setCentreFrame(newCentre, false);
 		if (changed) {
 		    xold = getXForFrame(oldPlayPointerFrame);
-		    update(xold - 1, 0, 3, height());
+		    update(xold - 4, 0, 9, height());
 		}
 	    }
 	}
 
-	update(xnew - 1, 0, 3, height());
+	update(xnew - 4, 0, 9, height());
 
 	break;
     }
