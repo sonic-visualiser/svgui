@@ -102,6 +102,11 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
         }
         break;
 
+    case CSVFile:
+        settingsKey = "layerpath";
+        filter = tr("Comma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nText files (*.txt)\nAll files (*.*)");
+        break;
+
     case AnyFile:
         settingsKey = "lastpath";
         filter = tr("All supported files (*.sv %1 %2 %3)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
@@ -229,6 +234,12 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         filter = tr("Portable Network Graphics files (*.png)\nAll files (*.*)");
         break;
 
+    case CSVFile:
+        settingsKey = "savelayerpath";
+        title = tr("Select a file to export to");
+        filter = tr("Comma-separated data files (*.csv)\nText files (*.txt)\nAll files (*.*)");
+        break;
+
     case AnyFile:
         std::cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: AnyFile cannot be used here" << std::endl;
         abort();
@@ -268,6 +279,8 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         dialog.setDefaultSuffix("wav");
     } else if (type == ImageFile) {
         dialog.setDefaultSuffix("png");
+    } else if (type == CSVFile) {
+        dialog.setDefaultSuffix("csv");
     }
 
     bool good = false;
@@ -362,6 +375,10 @@ InteractiveFileFinder::registerLastOpenedFilePath(FileType type, QString path)
 
     case ImageFile:
         settingsKey = "imagepath";
+        break;
+
+    case CSVFile:
+        settingsKey = "layerpath";
         break;
 
     case AnyFile:
