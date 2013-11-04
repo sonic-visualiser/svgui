@@ -233,7 +233,7 @@ PropertyBox::populateViewPlayFrame()
 
 QString property_container_name; // the name could be : Waveform, Time Instants, etc
 property_container_name = layer->getPropertyContainerName();// obtain the name
-boolean isWaveform;
+bool isWaveform;
 
 isWaveform = property_container_name.contains("Waveform", Qt::CaseInsensitive);//if QString contains "Waveform"
 
