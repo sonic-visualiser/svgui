@@ -56,6 +56,7 @@
 
  QHBoxLayout *layout1 = new QHBoxLayout;
  int tracks=0;
+ extern bool isIMAF;
 //#include "C:/Users/Paco/Desktop/SV mio/sonic-visualiser/main/imafdecoder.h"
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
@@ -231,6 +232,7 @@ PropertyBox::populateViewPlayFrame()
 
 //code added by Jesus
 
+if (isIMAF){
 QString property_container_name; // the name could be : Waveform, Time Instants, etc
 property_container_name = layer->getPropertyContainerName();// obtain the name
 bool isWaveform;
@@ -278,7 +280,8 @@ if (isWaveform == true){
                  window->setLayout(layout1);
                  window ->showNormal();
              }
-} // end if
+} // end if isWaveform
+} // end if isIMAF
 // end code added by Jesus
 
 	AudioDial *panDial = new AudioDial;
