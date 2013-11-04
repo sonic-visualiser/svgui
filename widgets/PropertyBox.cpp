@@ -51,8 +51,12 @@
 #include <iostream>
 #include <cmath>
 
+#include "Fader.h"
 //#define DEBUG_PROPERTY_BOX 1
 
+ QHBoxLayout *layout1 = new QHBoxLayout;
+ int tracks=0;
+//#include "C:/Users/Paco/Desktop/SV mio/sonic-visualiser/main/imafdecoder.h"
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
     m_showButton(0),
@@ -112,6 +116,7 @@ PropertyBox::~PropertyBox()
     std::cerr << "PropertyBox[" << this << "]::~PropertyBox" << std::endl;
 #endif
 }
+
 
 void
 PropertyBox::populateViewPlayFrame()
@@ -198,13 +203,13 @@ PropertyBox::populateViewPlayFrame()
         }
 
 	AudioDial *gainDial = new AudioDial;
-	layout->addWidget(gainDial);
+    layout->addWidget(gainDial);
 	gainDial->setMeterColor(Qt::darkRed);
 	gainDial->setMinimum(-50);
 	gainDial->setMaximum(50);
 	gainDial->setPageStep(1);
-	gainDial->setFixedWidth(24);
-	gainDial->setFixedHeight(24);
+    gainDial->setFixedWidth(24);
+    gainDial->setFixedHeight(24);
 	gainDial->setNotchesVisible(false);
 	gainDial->setDefaultValue(0);
         gainDial->setObjectName(tr("Playback Gain"));
@@ -223,6 +228,58 @@ PropertyBox::populateViewPlayFrame()
                 this, SLOT(mouseLeftWidget()));
         playGainChanged(params->getPlayGain());
 	layout->setAlignment(gainDial, Qt::AlignVCenter);
+
+//code added by Jesus
+
+QString property_container_name; // the name could be : Waveform, Time Instants, etc
+property_container_name = layer->getPropertyContainerName();// obtain the name
+boolean isWaveform;
+
+isWaveform = property_container_name.contains("Waveform", Qt::CaseInsensitive);//if QString contains "Waveform"
+
+if (isWaveform == true){
+   tracks++;
+
+  AudioDial *gainDial1 = new AudioDial;
+  gainDial1->setMeterColor(Qt::darkRed);
+  gainDial1->setMinimum(-63);
+  gainDial1->setMaximum(10);
+  gainDial1->setPageStep(1);
+  gainDial1->setFixedWidth(60);
+  gainDial1->setFixedHeight(60);
+  gainDial1->setNotchesVisible(false);
+  gainDial1->setDefaultValue(0);
+  gainDial1->setObjectName(tr("Playback Gain"));
+  gainDial1->setRangeMapper(new LinearRangeMapper
+                               (-50, 50, -25, 25, tr("dB")));
+      gainDial1->setShowToolTip(true);
+  connect(gainDial1, SIGNAL(valueChanged(int)),
+      this, SLOT(playGainDialChanged(int)));
+  connect(params, SIGNAL(playGainChanged(float)),
+      this, SLOT(playGainChanged(float)));
+  connect(this, SIGNAL(changePlayGainDial(int)),
+      gainDial1, SLOT(setValue(int)));
+      connect(gainDial1, SIGNAL(mouseEntered()),
+              this, SLOT(mouseEnteredWidget()));
+      connect(gainDial1, SIGNAL(mouseLeft()),
+              this, SLOT(mouseLeftWidget()));
+      playGainChanged(params->getPlayGain());
+  layout1->setAlignment(gainDial1, Qt::AlignVCenter);
+
+  QWidget *window = new QWidget;
+
+
+//          QLabel *showLabel1 = new QLabel(tr("Track"));
+//          layout1->addWidget(showLabel1);
+//          layout1->setAlignment(showLabel1, Qt::AlignVCenter);
+
+             layout1->addWidget(gainDial1);
+             if (tracks==3){
+                 window->setLayout(layout1);
+                 window ->showNormal();
+             }
+} // end if
+// end code added by Jesus
 
 	AudioDial *panDial = new AudioDial;
 	layout->addWidget(panDial);

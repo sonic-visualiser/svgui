@@ -1428,7 +1428,8 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 	    int y1 = std::max(m_clickPos.y(), m_mousePos.y());
 
             zoomToRegion(x0, y0, x1, y1);
-	}
+
+    }
 
     } else if (mode == ViewManager::SelectMode) {
 
@@ -1461,8 +1462,8 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
-	    layer->drawEnd(this, e);
-	    update();
+        layer->drawEnd(this, e);
+        update();
 	}
 
     } else if (mode == ViewManager::EraseMode) {
@@ -1596,7 +1597,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
 	Layer *layer = getSelectedLayer();
 	if (layer && layer->isLayerEditable()) {
-	    layer->drawDrag(this, e);
+        layer->drawDrag(this, e);
 	}
 
     } else if (mode == ViewManager::EraseMode) {

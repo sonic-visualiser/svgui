@@ -220,7 +220,6 @@ public:
     virtual void drawStart(View *, QMouseEvent *) { }
     virtual void drawDrag(View *, QMouseEvent *) { }
     virtual void drawEnd(View *, QMouseEvent *) { }
-
     virtual void eraseStart(View *, QMouseEvent *) { }
     virtual void eraseDrag(View *, QMouseEvent *) { }
     virtual void eraseEnd(View *, QMouseEvent *) { }

@@ -127,13 +127,13 @@ TextLayer::getLocalPoints(View *v, int x, int y) const
 
 	const TextModel::Point &p(*i);
 
-	int px = v->getXForFrame(p.frame);
-	int py = getYForHeight(v, p.height);
+    int px = v->getXForFrame(p.frame);
+    int py = getYForHeight(v, p.height);
 
 	QString label = p.label;
 	if (label == "") {
-	    label = tr("<no text>");
-	}
+        label = tr("<no text>");
+    }
 
 	QRect rect = metrics.boundingRect
 	    (QRect(0, 0, 150, 200),
@@ -205,7 +205,7 @@ TextLayer::getFeatureDescription(View *v, QPoint &pos) const
     QString text;
 
     if (points.begin()->label == "") {
-	text = QString(tr("Time:\t%1\nHeight:\t%2\nLabel:\t%3"))
+    text = QString(tr("Time:\t%1\nHeight:\t%2\nLabel:\t%3"))
 	    .arg(rt.toText(true).c_str())
 	    .arg(points.begin()->height)
 	    .arg(points.begin()->label);
@@ -370,7 +370,7 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	QString label = p.label;
 	if (label == "") {
-	    label = tr("<no text>");
+        label = tr("<no text>");
 	}
 
 	QRect boxRect = paint.fontMetrics().boundingRect
@@ -453,6 +453,8 @@ TextLayer::drawDrag(View *v, QMouseEvent *e)
     m_editingPoint.frame = frame;
     m_editingPoint.height = height;
     m_editingCommand->addPoint(m_editingPoint);
+
+
 }
 
 void
@@ -463,7 +465,7 @@ TextLayer::drawEnd(View *v, QMouseEvent *)
 
     bool ok = false;
     QString label = QInputDialog::getText(v, tr("Enter label"),
-					  tr("Please enter a new label:"),
+                      tr("Please enter a new label:"),
 					  QLineEdit::Normal, "", &ok);
 
     if (ok) {

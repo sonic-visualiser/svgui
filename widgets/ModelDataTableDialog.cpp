@@ -51,7 +51,6 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
     toolbar = addToolBar(tr("Play Mode Toolbar"));
     
     IconLoader il;
-
     QAction *action = new QAction(il.load("playfollow"), tr("Track Playback"), this);
     action->setStatusTip(tr("Toggle tracking of playback position"));
     action->setCheckable(true);

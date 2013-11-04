@@ -950,11 +950,11 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
     RealTime rt1 = RealTime::frame2RealTime(f1, m_model->getSampleRate());
 
     if (f1 != f0 + 1 && (rt0.sec != rt1.sec || rt0.msec() != rt1.msec())) {
-	text += tr("Time:\t%1 - %2")
+    text += tr("Time:\t%1 - %2")
 	    .arg(rt0.toText(true).c_str())
 	    .arg(rt1.toText(true).c_str());
     } else {
-	text += tr("Time:\t%1")
+    text += tr("Time:\t%1")
 	    .arg(rt0.toText(true).c_str());
     }
 
