@@ -320,10 +320,14 @@ TimeValueLayer::getValueExtents(float &min, float &max,
                                 bool &logarithmic, QString &unit) const
 {
     if (!m_model) return false;
+
     min = m_model->getValueMinimum();
     max = m_model->getValueMaximum();
+
     logarithmic = (m_verticalScale == LogScale);
+
     unit = m_model->getScaleUnits();
+
     if (m_derivative) {
         max = std::max(fabsf(min), fabsf(max));
         min = -max;
@@ -332,6 +336,22 @@ TimeValueLayer::getValueExtents(float &min, float &max,
 #ifdef DEBUG_TIME_VALUE_LAYER
     std::cerr << "TimeValueLayer::getValueExtents: min = " << min << ", max = " << max << std::endl;
 #endif
+
+    if (!shouldAutoAlign() && !logarithmic && !m_derivative) {
+
+        if (max == min) {
+            max = max + 0.5;
+            min = min - 0.5;
+        } else {
+            float margin = (max - min) / 10.0;
+            max = max + margin;
+            min = min - margin;
+        }
+
+#ifdef DEBUG_TIME_VALUE_LAYER
+        std::cerr << "TimeValueLayer::getValueExtents: min = " << min << ", max = " << max << " (after adjustment)" << std::endl;
+#endif
+    }
 
     return true;
 }
@@ -342,8 +362,9 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
     if (!m_model || shouldAutoAlign()) return false;
 
     if (m_scaleMinimum == m_scaleMaximum) {
-        min = m_model->getValueMinimum();
-        max = m_model->getValueMaximum();
+        bool log;
+        QString unit;
+        getValueExtents(min, max, log, unit);
     } else {
         min = m_scaleMinimum;
         max = m_scaleMaximum;
@@ -772,19 +793,6 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     std::cerr << "TimeValueLayer::getScaleExtents: min = " << min << ", max = " << max << std::endl;
-#endif
-
-    if (max == min) {
-        max = max + 0.5;
-        min = min - 0.5;
-    } else {
-        float margin = (max - min) / 10.0;
-        max = max + margin;
-        min = min - margin;
-    }
-
-#ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getScaleExtents: min = " << min << ", max = " << max << " (after adjustment)" << std::endl;
 #endif
 }
 
@@ -1255,7 +1263,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
         if (prec < 0) dp = -prec;
         round = powf(10.f, prec);
 #ifdef DEBUG_TIME_VALUE_LAYER
-        std::cerr << "inc = " << inc << ", round = " << round << std::endl;
+        std::cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << std::endl;
 #endif
     }
 
@@ -1295,7 +1303,11 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
         }
 
         if (logarithmic) {
-            sprintf(buffer, "%.*g", dp < 2 ? 2 : dp, LogRange::unmap(dispval));
+            double dv = LogRange::unmap(dispval);
+            int digits = trunc(log10f(dv));
+            int sf = dp + (digits > 0 ? digits : 0);
+            if (sf < 2) sf = 2;
+            sprintf(buffer, "%.*g", sf, dv);
         } else {
             sprintf(buffer, "%.*f", dp, dispval);
         }            

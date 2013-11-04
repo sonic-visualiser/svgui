@@ -670,7 +670,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                               *ranges, modelZoomLevel);
 
 #ifdef DEBUG_WAVEFORM_PAINT
-        std::cerr << ranges->size() << " ranges from " << frame0 << " to " << frame1 << std::endl;
+        std::cerr << "channel " << ch << ": " << ranges->size() << " ranges from " << frame0 << " to " << frame1 << " at zoom level " << modelZoomLevel << std::endl;
 #endif
 
 	if (mergingChannels || mixingChannels) {
@@ -844,18 +844,18 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	    }
 
 	    if (x != x0 && prevRangeBottom != -1) {
-		if (prevRangeBottom > rangeBottom &&
-		    prevRangeTop    > rangeBottom) {
+		if (prevRangeBottom > rangeBottom + 1 &&
+		    prevRangeTop    > rangeBottom + 1) {
 //		    paint->setPen(midColour);
 		    paint->setPen(baseColour);
-		    paint->drawLine(x-1, prevRangeTop, x, rangeBottom);
+		    paint->drawLine(x-1, prevRangeTop, x, rangeBottom + 1);
 		    paint->setPen(prevRangeTopColour);
 		    paint->drawPoint(x-1, prevRangeTop);
-		} else if (prevRangeBottom < rangeTop &&
-			   prevRangeTop    < rangeTop) {
+		} else if (prevRangeBottom < rangeTop - 1 &&
+			   prevRangeTop    < rangeTop - 1) {
 //		    paint->setPen(midColour);
 		    paint->setPen(baseColour);
-		    paint->drawLine(x-1, prevRangeBottom, x, rangeTop);
+		    paint->drawLine(x-1, prevRangeBottom, x, rangeTop - 1);
 		    paint->setPen(prevRangeBottomColour);
 		    paint->drawPoint(x-1, prevRangeBottom);
 		}
@@ -874,7 +874,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	    }
 
 #ifdef DEBUG_WAVEFORM_PAINT
-            std::cerr << "range " << rangeBottom << " -> " << rangeTop << std::endl;
+            std::cerr << "range " << rangeBottom << " -> " << rangeTop << ", means " << meanBottom << " -> " << meanTop << ", raw range " << range.min() << " -> " << range.max() << std::endl;
 #endif
 
             if (rangeTop == rangeBottom) {
@@ -990,11 +990,11 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
             max = range.max();
             singleValue = (min == max);
         } else {
-            int imin = int(range.min() * 1000);
-            int imax = int(range.max() * 1000);
+            int imin = lrint(range.min() * 10000);
+            int imax = lrint(range.max() * 10000);
             singleValue = (imin == imax);
-            min = float(imin)/1000;
-            max = float(imax)/1000;
+            min = float(imin)/10000;
+            max = float(imax)/10000;
         }
 
 	int db = int(AudioLevel::multiplier_to_dB(std::max(fabsf(range.min()),

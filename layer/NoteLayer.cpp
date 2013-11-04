@@ -38,6 +38,8 @@
 #include <cmath>
 #include <utility>
 
+//#define DEBUG_NOTE_LAYER 1
+
 NoteLayer::NoteLayer() :
     SingleColourLayer(),
     m_model(0),
@@ -234,6 +236,10 @@ NoteLayer::getDisplayExtents(float &min, float &max) const
         max = Pitch::getFrequencyForPitch(lrintf(max + 1));
     }
 
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << std::endl;
+#endif
+
     return true;
 }
 
@@ -253,7 +259,9 @@ NoteLayer::setDisplayExtents(float min, float max)
     m_scaleMinimum = min;
     m_scaleMaximum = max;
 
-//    SVDEBUG << "NoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "NoteLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+#endif
     
     emit layerParametersChanged();
     return true;
@@ -334,7 +342,9 @@ NoteLayer::setVerticalZoomStep(int step)
         newmax = max;
     }
     
-    SVDEBUG << "NoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "NoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+#endif
 
     setDisplayExtents(newmin, newmax);
 }
@@ -615,13 +625,17 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
                 max = Pitch::getFrequencyForPitch(lrintf(max + 1));
             }
 
+#ifdef DEBUG_NOTE_LAYER
             std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+#endif
 
         } else if (log) {
 
             LogRange::mapRange(min, max);
 
+#ifdef DEBUG_NOTE_LAYER
             std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+#endif
 
         }
 
@@ -655,21 +669,29 @@ NoteLayer::getYForValue(View *v, float val) const
 
     getScaleExtents(v, min, max, logarithmic);
 
-//    std::cerr << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+#endif
 
     if (shouldConvertMIDIToHz()) {
         val = Pitch::getFrequencyForPitch(lrintf(val),
                                           lrintf((val - lrintf(val)) * 100));
-//        std::cerr << "shouldConvertMIDIToHz true, val now = " << val << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+        std::cerr << "shouldConvertMIDIToHz true, val now = " << val << std::endl;
+#endif
     }
 
     if (logarithmic) {
         val = LogRange::map(val);
-//        std::cerr << "logarithmic true, val now = " << val << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+        std::cerr << "logarithmic true, val now = " << val << std::endl;
+#endif
     }
 
     int y = int(h - ((val - min) * h) / (max - min)) - 1;
-//    std::cerr << "y = " << y << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+    std::cerr << "y = " << y << std::endl;
+#endif
     return y;
 }
 
@@ -1264,7 +1286,7 @@ NoteLayer::setProperties(const QXmlAttributes &attributes)
 
     float min = attributes.value("scaleMinimum").toFloat(&ok);
     float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
-    if (ok && alsoOk) setDisplayExtents(min, max);
+    if (ok && alsoOk && min != max) setDisplayExtents(min, max);
 }
 
 
