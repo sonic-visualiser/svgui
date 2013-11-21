@@ -1350,11 +1350,11 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     
     QImage *source = m_cache;
     
-    std::cerr << "modelResolution " << modelResolution << ", srRatio "
+    SVDEBUG << "modelResolution " << modelResolution << ", srRatio "
               << srRatio << ", m_peakResolution " << m_peakResolution
               << ", zoomLevel " << zoomLevel << ", result "
               << ((modelResolution * srRatio * m_peakResolution) / zoomLevel)
-              << std::endl;
+              << endl;
 
     if (m_peaksCache) {
         if (((modelResolution * srRatio * m_peakResolution) / zoomLevel) < 1) {
@@ -1362,10 +1362,10 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             source = m_peaksCache;
             modelResolution *= m_peakResolution;
         } else {
-            std::cerr << "not using peaks cache" << std::endl;
+            SVDEBUG << "not using peaks cache" << endl;
         }
     } else {
-        std::cerr << "have no peaks cache" << std::endl;
+        SVDEBUG << "have no peaks cache" << endl;
     }
 
     int psy1i = -1;
