@@ -17,6 +17,8 @@
 
 #include "layer/LayerFactory.h"
 
+#include "TextAbbrev.h"
+
 #include <QFrame>
 #include <QGridLayout>
 #include <QPushButton>
@@ -96,7 +98,8 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
         for (int j = 0; j < example.size() && j < 6; ++j) {
             QLabel *label = new QLabel;
             label->setTextFormat(Qt::PlainText);
-            label->setText(example[j][i]);
+            QString text = TextAbbrev::abbreviate(example[j][i], 35);
+            label->setText(text);
             label->setFont(fp);
             label->setPalette(palette);
             label->setIndent(8);
