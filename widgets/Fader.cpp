@@ -57,25 +57,25 @@ Fader::Fader(QWidget *parent, bool withoutKnob) :
     QString background_path = ":/icons/fader_background.png";
     bool ok = m_back.load(background_path);
     if (ok == false) {
-	std::cerr << "Fader: Error loading pixmap" << std::endl;
+	cerr << "Fader: Error loading pixmap" << endl;
     }
 
     QString leds_path = ":/icons/fader_leds.png";
     ok = m_leds.load(leds_path);
     if (ok == false) {
-	std::cerr <<  "Error loading pixmap" << std::endl;
+	cerr <<  "Error loading pixmap" << endl;
     }
 
     QString knob_path = ":/icons/fader_knob.png";
     ok = m_knob.load(knob_path);
     if (ok == false) {
-	std::cerr <<  "Error loading pixmap" << std::endl;
+	cerr <<  "Error loading pixmap" << endl;
     }
 
     QString clip_path = ":/icons/fader_knob_red.png";
     ok = m_clip.load(clip_path);
     if (ok == false) {
-	std::cerr <<  "Error loading pixmap" << std::endl;
+	cerr <<  "Error loading pixmap" << endl;
     }
 }
 
@@ -222,7 +222,7 @@ Fader::setValue(float v)
                 .arg(abs(int(db * 10.0) % 10))
                 .arg(abs(int(db * 100.0) % 10));
 	}
-        std::cerr << "Fader: setting tooltip to \"" << text << "\"" << std::endl;
+        cerr << "Fader: setting tooltip to \"" << text << "\"" << endl;
         QWidget::setToolTip(text);
 	update();
     }

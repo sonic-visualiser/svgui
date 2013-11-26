@@ -109,8 +109,8 @@ PluginParameterBox::populate()
         float qtz = 0.0;
         if (params[i].isQuantized) qtz = params[i].quantizeStep;
 
-//        std::cerr << "PluginParameterBox: hint = " << hint << ", min = " << min << ", max = "
-//                  << max << ", qtz = " << qtz << std::endl;
+//        cerr << "PluginParameterBox: hint = " << hint << ", min = " << min << ", max = "
+//                  << max << ", qtz = " << qtz << endl;
 
         std::vector<std::string> valueNames = params[i].valueNames;
 
@@ -225,7 +225,7 @@ PluginParameterBox::dialChanged(int ival)
     }
 
     if (m_params.find(identifier) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::dialChanged: Unknown parameter \"" << identifier << "\"" << std::endl;
+        cerr << "WARNING: PluginParameterBox::dialChanged: Unknown parameter \"" << identifier << "\"" << endl;
         return;
     }
 
@@ -288,7 +288,7 @@ PluginParameterBox::checkBoxChanged(int state)
     }
 
     if (m_params.find(identifier) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::checkBoxChanged: Unknown parameter \"" << identifier << "\"" << std::endl;
+        cerr << "WARNING: PluginParameterBox::checkBoxChanged: Unknown parameter \"" << identifier << "\"" << endl;
         return;
     }
 
@@ -314,7 +314,7 @@ PluginParameterBox::spinBoxChanged(double value)
     }
 
     if (m_params.find(identifier) == m_params.end()) {
-        std::cerr << "WARNING: PluginParameterBox::spinBoxChanged: Unknown parameter \"" << identifier << "\"" << std::endl;
+        cerr << "WARNING: PluginParameterBox::spinBoxChanged: Unknown parameter \"" << identifier << "\"" << endl;
         return;
     }
 

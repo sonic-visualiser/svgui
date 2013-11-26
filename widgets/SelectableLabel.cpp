@@ -131,7 +131,7 @@ SelectableLabel::mouseReleaseEvent(QMouseEvent *e)
 void
 SelectableLabel::enterEvent(QEvent *)
 {
-//    std::cerr << "enterEvent" << std::endl;
+//    cerr << "enterEvent" << endl;
 //    QPalette palette = QApplication::palette();
 //    palette.setColor(QPalette::Window, Qt::gray);
 //    setStyleSheet("background: gray");
@@ -141,7 +141,7 @@ SelectableLabel::enterEvent(QEvent *)
 void
 SelectableLabel::leaveEvent(QEvent *)
 {
-//    std::cerr << "leaveEvent" << std::endl;
+//    cerr << "leaveEvent" << endl;
 //    setStyleSheet("background: white");
 //    QPalette palette = QApplication::palette();
 //    palette.setColor(QPalette::Window, Qt::gray);

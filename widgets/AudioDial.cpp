@@ -52,8 +52,8 @@
 
 #include "base/Profiler.h"
 
-using std::endl;
-using std::cerr;
+
+
 
 
 //!!! Pedro updated his version to use my up/down response code from RG -- need to grab that code in preference to this version from Rui
@@ -99,7 +99,7 @@ AudioDial::~AudioDial (void)
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
-//    std::cerr << "AudioDial[" << this << "][\"" << objectName() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << std::endl;
+//    cerr << "AudioDial[" << this << "][\"" << objectName() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << endl;
 
     if (m_rangeMapper == mapper) return;
 
@@ -183,7 +183,7 @@ void AudioDial::paintEvent(QPaintEvent *)
     // Tick notches...
 
     if ( notchesVisible() ) {
-//	std::cerr << "Notches visible" << std::endl;
+//	cerr << "Notches visible" << endl;
 	pen.setColor(palette().dark().color());
 	pen.setWidth(scale);
 	paint.setPen(pen);
@@ -202,7 +202,7 @@ void AudioDial::paintEvent(QPaintEvent *)
     pen.setWidth(indent);
     paint.setPen(pen);
 
-//    std::cerr << "degrees " << degrees << ", gives us " << -(degrees - 45) * 16 << std::endl;
+//    cerr << "degrees " << degrees << ", gives us " << -(degrees - 45) * 16 << endl;
 
     int arcLen = -(degrees - 45) * 16;
     if (arcLen == 0) arcLen = -16;

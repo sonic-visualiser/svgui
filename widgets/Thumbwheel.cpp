@@ -506,7 +506,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
     float radians = m_rotation * 1.5f * M_PI;
 
-//    std::cerr << "value = " << m_value << ", min = " << m_min << ", max = " << m_max << ", rotation = " << rotation << std::endl;
+//    cerr << "value = " << m_value << ", min = " << m_min << ", max = " << m_max << ", rotation = " << rotation << endl;
 
     w = (m_orientation == Qt::Horizontal ? width() : height()) - bw*2;
 

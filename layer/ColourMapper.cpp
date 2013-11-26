@@ -19,6 +19,8 @@
 
 #include <cmath>
 
+#include "base/Debug.h"
+
 ColourMapper::ColourMapper(int map, float min, float max) :
     QObject(),
     m_map(map),
@@ -26,8 +28,8 @@ ColourMapper::ColourMapper(int map, float min, float max) :
     m_max(max)
 {
     if (m_min == m_max) {
-        std::cerr << "WARNING: ColourMapper: min == max (== " << m_min
-                  << "), adjusting" << std::endl;
+        cerr << "WARNING: ColourMapper: min == max (== " << m_min
+                  << "), adjusting" << endl;
         m_max = m_min + 1;
     }
 }

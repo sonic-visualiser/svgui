@@ -143,7 +143,7 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
     if (!command) return;
 
 #ifdef DEBUG_COMMAND_HISTORY
-    SVDEBUG << "CommandHistory::addCommand: " << command->getName().toLocal8Bit().data() << " of type " << typeid(*command).name() << " at " << command << ": execute = " << execute << ", bundle = " << bundle << " (m_currentCompound = " << m_currentCompound << ", m_currentBundle = " << m_currentBundle << ")" << endl;
+    SVDEBUG << "CommandHistory::addCommand: " << command->getName() << " of type " << typeid(*command).name() << " at " << command << ": execute = " << execute << ", bundle = " << bundle << " (m_currentCompound = " << m_currentCompound << ", m_currentBundle = " << m_currentBundle << ")" << endl;
 #endif
 
     if (m_currentCompound) {
@@ -265,7 +265,7 @@ void
 CommandHistory::addToCompound(Command *command, bool execute)
 {
 #ifdef DEBUG_COMMAND_HISTORY
-    SVDEBUG << "CommandHistory::addToCompound: " << command->getName().toLocal8Bit().data() << endl;
+    SVDEBUG << "CommandHistory::addToCompound: " << command->getName() << endl;
 #endif
     if (!m_currentCompound) {
 	SVDEBUG << "CommandHistory::addToCompound: ERROR: no compound operation in progress!" << endl;
@@ -281,7 +281,7 @@ CommandHistory::startCompoundOperation(QString name, bool execute)
 {
     if (m_currentCompound) {
 	SVDEBUG << "CommandHistory::startCompoundOperation: ERROR: compound operation already in progress!" << endl;
-	std::cerr << "(name is " << m_currentCompound->getName().toLocal8Bit().data() << ")" << std::endl;
+	cerr << "(name is " << m_currentCompound->getName() << ")" << endl;
         return;
     }
  
@@ -436,7 +436,7 @@ CommandHistory::clipStack(CommandStack &stack, int limit)
 	for (i = 0; i < limit; ++i) {
 #ifdef DEBUG_COMMAND_HISTORY
 	    Command *command = stack.top();
-	    SVDEBUG << "CommandHistory::clipStack: Saving recent command: " << command->getName().toLocal8Bit().data() << " at " << command << endl;
+	    SVDEBUG << "CommandHistory::clipStack: Saving recent command: " << command->getName() << " at " << command << endl;
 #endif
 	    tempStack.push(stack.top());
 	    stack.pop();
