@@ -40,6 +40,8 @@
 #include <QDesktopServices>
 #include <QUrl>
 
+#include "base/Debug.h"
+
 PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 					     QWidget *parent) :
     QDialog(parent),
@@ -327,7 +329,7 @@ PluginParameterDialog::setChannelArrangement(int sourceChannels,
         } else {
 
             if (m_haveChannelBoxData) {
-                std::cerr << "WARNING: PluginParameterDialog::setChannelArrangement: Calling more than once on same dialog is not currently implemented" << std::endl;
+                cerr << "WARNING: PluginParameterDialog::setChannelArrangement: Calling more than once on same dialog is not currently implemented" << endl;
                 return;
             }
             
@@ -372,7 +374,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
                                                 bool showFrequencyDomainOptions)
 {
     if (m_haveWindowBoxData) {
-        std::cerr << "WARNING: PluginParameterDialog::setShowProcessingOptions: Calling more than once on same dialog is not currently implemented" << std::endl;
+        cerr << "WARNING: PluginParameterDialog::setShowProcessingOptions: Calling more than once on same dialog is not currently implemented" << endl;
         return;
     }
 
@@ -385,7 +387,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
         int increment = 1024;
         if (fePlugin) {
             size = fePlugin->getPreferredBlockSize();
-            std::cerr << "Feature extraction plugin \"" << fePlugin->getName() << "\" reports preferred block size as " << size << std::endl;
+            cerr << "Feature extraction plugin \"" << fePlugin->getName() << "\" reports preferred block size as " << size << endl;
             if (size == 0) size = 1024;
             increment = fePlugin->getPreferredStepSize();
             if (increment == 0) {
@@ -406,7 +408,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
             windowLayout->addWidget(new QLabel(tr("Audio frames per block:")), 0, 0);
         }
 
-        std::cerr << "size: " << size << ", increment: " << increment << std::endl;
+        cerr << "size: " << size << ", increment: " << increment << endl;
 
         QComboBox *blockSizeCombo = new QComboBox;
         blockSizeCombo->setEditable(true);
@@ -559,7 +561,7 @@ void
 PluginParameterDialog::blockSizeComboChanged(const QString &text)
 {
     m_blockSize = text.toInt();
-    std::cerr << "Block size changed to " << m_blockSize << std::endl;
+    cerr << "Block size changed to " << m_blockSize << endl;
 }
 
 void
@@ -567,7 +569,7 @@ PluginParameterDialog::incrementComboChanged(const QString &text)
 {
     m_stepSize = text.toInt();
     //!!! rename increment to step size throughout
-    std::cerr << "Increment changed to " << m_stepSize << std::endl;
+    cerr << "Increment changed to " << m_stepSize << endl;
 }
 
 void
@@ -605,7 +607,7 @@ PluginParameterDialog::setAdvancedVisible(bool visible)
         m_advancedButton->setChecked(false);
     }
 
-//    std::cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << std::endl;
+//    cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << endl;
 
 //    setMinimumHeight(sizeHint().height());
     adjustSize();

@@ -57,8 +57,8 @@ SliceLayer::setSliceableModel(const Model *model)
         dynamic_cast<const DenseThreeDimensionalModel *>(model);
 
     if (model && !sliceable) {
-        std::cerr << "WARNING: SliceLayer::setSliceableModel(" << model
-                  << "): model is not a DenseThreeDimensionalModel" << std::endl;
+        cerr << "WARNING: SliceLayer::setSliceableModel(" << model
+                  << "): model is not a DenseThreeDimensionalModel" << endl;
     }
 
     if (m_sliceableModel == sliceable) return;
@@ -360,7 +360,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     size_t f1 = v->getFrameForX(f0x + 1);
     if (f1 > f0) --f1;
 
-//    std::cerr << "centre frame " << v->getCentreFrame() << ", x " << f0x << ", f0 " << f0 << ", f1 " << f1 << std::endl;
+//    cerr << "centre frame " << v->getCentreFrame() << ", x " << f0x << ", f0 " << f0 << ", f1 " << f1 << endl;
 
     size_t res = m_sliceableModel->getResolution();
     size_t col0 = f0 / res;
@@ -369,7 +369,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     f0 = col0 * res;
     f1 = (col1 + 1) * res - 1;
 
-//    std::cerr << "resolution " << res << ", col0 " << col0 << ", col1 " << col1 << ", f0 " << f0 << ", f1 " << f1 << std::endl;
+//    cerr << "resolution " << res << ", col0 " << col0 << ", col1 " << col1 << ", f0 " << f0 << ", f1 " << f1 << endl;
 
     m_currentf0 = f0;
     m_currentf1 = f1;
@@ -622,7 +622,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 50;
         *deflt = 0;
 
-        std::cerr << "gain is " << m_gain << ", mode is " << m_samplingMode << std::endl;
+        cerr << "gain is " << m_gain << ", mode is " << m_samplingMode << endl;
 
 	val = lrint(log10(m_gain) * 20.0);
 	if (val < *min) val = *min;

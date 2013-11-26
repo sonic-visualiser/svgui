@@ -258,7 +258,7 @@ PaneStack::deletePane(Pane *pane)
 	}
 
 	if (!found) {
-	    std::cerr << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << std::endl;
+	    cerr << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << endl;
 	    return;
 	}
     }
@@ -283,7 +283,7 @@ PaneStack::deletePane(Pane *pane)
 void
 PaneStack::showOrHidePaneAccessories()
 {
-    std::cerr << "PaneStack::showOrHidePaneAccessories: count == " << getPaneCount() << std::endl;
+    cerr << "PaneStack::showOrHidePaneAccessories: count == " << getPaneCount() << endl;
 
     bool multi = (getPaneCount() > 1);
     for (std::vector<PaneRec>::iterator i = m_panes.begin();
@@ -335,7 +335,7 @@ PaneStack::hidePane(Pane *pane)
 	++i;
     }
 
-    std::cerr << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << std::endl;
+    cerr << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << endl;
 }
 
 void
@@ -359,7 +359,7 @@ PaneStack::showPane(Pane *pane)
 	++i;
     }
 
-    std::cerr << "WARNING: PaneStack::showPane(" << pane << "): Pane not found in hidden panes" << std::endl;
+    cerr << "WARNING: PaneStack::showPane(" << pane << "): Pane not found in hidden panes" << endl;
 }
 
 void
@@ -398,7 +398,7 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
 	m_currentPane = pane;
 	emit currentPaneChanged(m_currentPane);
     } else {
-	std::cerr << "WARNING: PaneStack::setCurrentPane(" << pane << "): pane is not a visible pane in this stack" << std::endl;
+	cerr << "WARNING: PaneStack::setCurrentPane(" << pane << "): pane is not a visible pane in this stack" << endl;
     }
 }
 
@@ -602,11 +602,11 @@ PaneStack::sizePanesEqually()
     }
 
 /*
-    std::cerr << "sizes: ";
+    cerr << "sizes: ";
     for (int i = 0; i < sizes.size(); ++i) {
-        std::cerr << sizes[i] << " ";
+        cerr << sizes[i] << " ";
     }
-    std::cerr << std::endl;
+    cerr << endl;
 */
 
     m_splitter->setSizes(sizes);

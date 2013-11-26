@@ -163,7 +163,7 @@ ImageLayer::getLocalPoints(View *v, int x, int y) const
         }
     }
 
-//    std::cerr << rv.size() << " point(s)" << std::endl;
+//    cerr << rv.size() << " point(s)" << endl;
 
     return rv;
 }
@@ -500,15 +500,15 @@ ImageLayer::setLayerDormant(const View *v, bool dormant)
 bool
 ImageLayer::getImageOriginalSize(QString name, QSize &size) const
 {
-//    std::cerr << "getImageOriginalSize: \"" << name << "\"" << std::endl;
+//    cerr << "getImageOriginalSize: \"" << name << "\"" << endl;
 
     QMutexLocker locker(&m_imageMapMutex);
     if (m_images.find(name) == m_images.end()) {
-//        std::cerr << "don't have, trying to open local" << std::endl;
+//        cerr << "don't have, trying to open local" << endl;
         m_images[name] = QImage(getLocalFilename(name));
     }
     if (m_images[name].isNull()) {
-//        std::cerr << "null image" << std::endl;
+//        cerr << "null image" << endl;
         return false;
     } else {
         size = m_images[name].size();
@@ -529,7 +529,7 @@ ImageLayer::getImage(View *v, QString name, QSize maxSize) const
           m_scaled[v][name].height() <= maxSize.height()) ||
          (m_scaled[v][name].width()  <= maxSize.width() &&
           m_scaled[v][name].height() == maxSize.height()))) {
-//        std::cerr << "cache hit" << std::endl;
+//        cerr << "cache hit" << endl;
         return m_scaled[v][name];
     }
 
@@ -540,7 +540,7 @@ ImageLayer::getImage(View *v, QString name, QSize maxSize) const
     }
 
     if (m_images[name].isNull()) {
-//        std::cerr << "null image" << std::endl;
+//        cerr << "null image" << endl;
         m_scaled[v][name] = QImage();
     } else if (m_images[name].width() <= maxSize.width() &&
                m_images[name].height() <= maxSize.height()) {
@@ -627,7 +627,7 @@ ImageLayer::addImage(long frame, QString url)
 {
     QImage image(getLocalFilename(url));
     if (image.isNull()) {
-        std::cerr << "Failed to open image from url \"" << url << "\" (local filename \"" << getLocalFilename(url) << "\"" << std::endl;
+        cerr << "Failed to open image from url \"" << url << "\" (local filename \"" << getLocalFilename(url) << "\"" << endl;
         delete m_fileSources[url];
         m_fileSources.erase(url);
         return false;
@@ -915,7 +915,7 @@ ImageLayer::checkAddSource(QString img) const
     ProgressDialog dialog(tr("Opening image URL..."), true, 2000);
     FileSource *rf = new FileSource(img, &dialog);
     if (rf->isOK()) {
-        std::cerr << "ok, adding it (local filename = " << rf->getLocalFilename() << ")" << std::endl;
+        cerr << "ok, adding it (local filename = " << rf->getLocalFilename() << ")" << endl;
         m_fileSources[img] = rf;
         connect(rf, SIGNAL(ready()), this, SLOT(fileSourceReady()));
     } else {
@@ -948,7 +948,7 @@ ImageLayer::fileSourceReady()
          i != m_fileSources.end(); ++i) {
         if (i->second == rf) {
             img = i->first;
-//            std::cerr << "it's image \"" << img << "\"" << std::endl;
+//            cerr << "it's image \"" << img << "\"" << endl;
             break;
         }
     }

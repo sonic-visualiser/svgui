@@ -177,7 +177,7 @@ WindowShapePreview::updateLabels()
     path = QPainterPath();
     freqPainter.setPen(Qt::black);
 
-//    std::cerr << "maxdb = " << maxdb << ", mindb = " << mindb << ", maxval = " <<maxval << std::endl;
+//    cerr << "maxdb = " << maxdb << ", mindb = " << mindb << ", maxval = " <<maxval << endl;
 
     for (int i = 0; i < fftsize/2; ++i) {
         float power = output[i][0] * output[i][0] + output[i][1] * output[i][1];

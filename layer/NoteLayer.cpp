@@ -237,7 +237,7 @@ NoteLayer::getDisplayExtents(float &min, float &max) const
     }
 
 #ifdef DEBUG_NOTE_LAYER
-    std::cerr << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << std::endl;
+    cerr << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << endl;
 #endif
 
     return true;
@@ -260,7 +260,7 @@ NoteLayer::setDisplayExtents(float min, float max)
     m_scaleMaximum = max;
 
 #ifdef DEBUG_NOTE_LAYER
-    std::cerr << "NoteLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+    cerr << "NoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
 #endif
     
     emit layerParametersChanged();
@@ -326,7 +326,7 @@ NoteLayer::setVerticalZoomStep(int step)
         newmax = (newdist + sqrtf(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
-//        std::cerr << "newmin = " << newmin << ", newmax = " << newmax << std::endl;
+//        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
         float dmid = (dmax + dmin) / 2;
@@ -343,7 +343,7 @@ NoteLayer::setVerticalZoomStep(int step)
     }
     
 #ifdef DEBUG_NOTE_LAYER
-    std::cerr << "NoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+    cerr << "NoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
 #endif
 
     setDisplayExtents(newmin, newmax);
@@ -425,7 +425,7 @@ NoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
     NoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
 
-//    std::cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << std::endl;
+//    cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << endl;
 
     int nearestDistance = -1;
 
@@ -626,7 +626,7 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
             }
 
 #ifdef DEBUG_NOTE_LAYER
-            std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+            cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 #endif
 
         } else if (log) {
@@ -634,7 +634,7 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
             LogRange::mapRange(min, max);
 
 #ifdef DEBUG_NOTE_LAYER
-            std::cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+            cerr << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 #endif
 
         }
@@ -670,27 +670,27 @@ NoteLayer::getYForValue(View *v, float val) const
     getScaleExtents(v, min, max, logarithmic);
 
 #ifdef DEBUG_NOTE_LAYER
-    std::cerr << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+    cerr << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
 #endif
 
     if (shouldConvertMIDIToHz()) {
         val = Pitch::getFrequencyForPitch(lrintf(val),
                                           lrintf((val - lrintf(val)) * 100));
 #ifdef DEBUG_NOTE_LAYER
-        std::cerr << "shouldConvertMIDIToHz true, val now = " << val << std::endl;
+        cerr << "shouldConvertMIDIToHz true, val now = " << val << endl;
 #endif
     }
 
     if (logarithmic) {
         val = LogRange::map(val);
 #ifdef DEBUG_NOTE_LAYER
-        std::cerr << "logarithmic true, val now = " << val << std::endl;
+        cerr << "logarithmic true, val now = " << val << endl;
 #endif
     }
 
     int y = int(h - ((val - min) * h) / (max - min)) - 1;
 #ifdef DEBUG_NOTE_LAYER
-    std::cerr << "y = " << y << std::endl;
+    cerr << "y = " << y << endl;
 #endif
     return y;
 }

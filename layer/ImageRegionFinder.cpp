@@ -118,7 +118,7 @@ ImageRegionFinder::similar(QRgb a, QRgb b) const
     float db = float(qBlue(a) - qBlue(b)) / 255.f;
     float dist = sqrtf(dr * dr + dg * dg + db * db);
 
-//    std::cerr << "thresh=" << thresh << ", dist=" << dist << std::endl;
+//    cerr << "thresh=" << thresh << ", dist=" << dist << endl;
 
     return (dist < thresh);
 }
