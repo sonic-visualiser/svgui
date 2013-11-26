@@ -2257,7 +2257,7 @@ Pane::dragEnterEvent(QDragEnterEvent *e)
 {
     QStringList formats(e->mimeData()->formats());
     cerr << "dragEnterEvent: format: "
-              << formats.join(",").toStdString()
+              << formats.join(",")
               << ", possibleActions: " << e->possibleActions()
               << ", proposedAction: " << e->proposedAction() << endl;
     
@@ -2276,7 +2276,7 @@ Pane::dragEnterEvent(QDragEnterEvent *e)
 void
 Pane::dropEvent(QDropEvent *e)
 {
-    cerr << "dropEvent: text: \"" << e->mimeData()->text().toStdString()
+    cerr << "dropEvent: text: \"" << e->mimeData()->text()
               << "\"" << endl;
 
     if (e->mimeData()->hasFormat("text/uri-list") || 

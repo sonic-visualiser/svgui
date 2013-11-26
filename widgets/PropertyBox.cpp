@@ -275,7 +275,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
 #ifdef DEBUG_PROPERTY_BOX
     cerr << "PropertyBox[" << this
-	      << "(\"" << m_container->getPropertyContainerName().toStdString()
+	      << "(\"" << m_container->getPropertyContainerName()
 	      << "\")]";
     cerr << "::updatePropertyEditor(\"" << name << "\"):";
     cerr << " value " << value << ", have " << have << ", group \""
