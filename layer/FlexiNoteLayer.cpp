@@ -250,7 +250,7 @@ FlexiNoteLayer::getDisplayExtents(float &min, float &max) const
     }
 
 #ifdef DEBUG_NOTE_LAYER
-    std::cerr << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << std::endl;
+    cerr << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << endl;
 #endif
 
     return true;
@@ -273,7 +273,7 @@ FlexiNoteLayer::setDisplayExtents(float min, float max)
     m_scaleMaximum = max;
 
 #ifdef DEBUG_NOTE_LAYER
-    std::cerr << "FlexiNoteLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+    cerr << "FlexiNoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
 #endif
     
     emit layerParametersChanged();
@@ -339,7 +339,7 @@ FlexiNoteLayer::setVerticalZoomStep(int step)
         newmax = (newdist + sqrtf(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
-//        std::cerr << "newmin = " << newmin << ", newmax = " << newmax << std::endl;
+//        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
         float dmid = (dmax + dmin) / 2;
@@ -356,7 +356,7 @@ FlexiNoteLayer::setVerticalZoomStep(int step)
     }
     
 #ifdef DEBUG_NOTE_LAYER
-    std::cerr << "FlexiNoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+    cerr << "FlexiNoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
 #endif
 
     setDisplayExtents(newmin, newmax);
@@ -438,7 +438,7 @@ FlexiNoteLayer::getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &p) 
     FlexiNoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
 
-//    std::cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << std::endl;
+//    cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << endl;
 
     int nearestDistance = -1;
 
@@ -668,14 +668,17 @@ FlexiNoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
                 max = Pitch::getFrequencyForPitch(lrintf(max + 1));
             }
 
-            // std::cerr << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+            cerr << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
+#endif
 
         } else if (log) {
 
             LogRange::mapRange(min, max);
 
-            // std::cerr << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
-
+#ifdef DEBUG_NOTE_LAYER
+            cerr << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
+#endif
         }
 
     } else {
@@ -708,21 +711,29 @@ FlexiNoteLayer::getYForValue(View *v, float val) const
 
     getScaleExtents(v, min, max, logarithmic);
 
-//    std::cerr << "FlexiNoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+    cerr << "FlexiNoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
+#endif
 
     if (shouldConvertMIDIToHz()) {
         val = Pitch::getFrequencyForPitch(lrintf(val),
                                           lrintf((val - lrintf(val)) * 100));
-//        std::cerr << "shouldConvertMIDIToHz true, val now = " << val << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+        cerr << "shouldConvertMIDIToHz true, val now = " << val << endl;
+#endif
     }
 
     if (logarithmic) {
         val = LogRange::map(val);
-//        std::cerr << "logarithmic true, val now = " << val << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+        cerr << "logarithmic true, val now = " << val << endl;
+#endif
     }
 
     int y = int(h - ((val - min) * h) / (max - min)) - 1;
-//    std::cerr << "y = " << y << std::endl;
+#ifdef DEBUG_NOTE_LAYER
+    cerr << "y = " << y << endl;
+#endif
     return y;
 }
 

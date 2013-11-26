@@ -17,6 +17,8 @@
 
 #include <iostream>
 
+#include "base/Debug.h"
+
 using std::set;
 using std::map;
 
@@ -81,7 +83,7 @@ SubdividingMenu::setEntries(const std::set<QString> &entries)
             firstInitialInChunk = initial;
         }
 
-//        std::cerr << "count = "<< count << ", upper limit = " << m_upperLimit << std::endl;
+//        cerr << "count = "<< count << ", upper limit = " << m_upperLimit << endl;
 
         bool lastInChunk = (k == entries.end() ||
                             (count >= m_lowerLimit-1 &&
@@ -134,7 +136,7 @@ void
 SubdividingMenu::entriesAdded()
 {
     if (m_entriesSet) {
-        std::cerr << "ERROR: SubdividingMenu::entriesAdded: setEntries was also called -- should use one mechanism or the other, but not both" << std::endl;
+        cerr << "ERROR: SubdividingMenu::entriesAdded: setEntries was also called -- should use one mechanism or the other, but not both" << endl;
         return;
     }
     

@@ -106,7 +106,7 @@ Layer::setObjectName(const QString &name)
 PlayParameters *
 Layer::getPlayParameters() 
 {
-//    std::cerr << "Layer (" << this << ", " << objectName() << ")::getPlayParameters: model is "<< getModel() << std::endl;
+//    cerr << "Layer (" << this << ", " << objectName() << ")::getPlayParameters: model is "<< getModel() << endl;
     const Model *model = getModel();
     if (model) {
 	return PlayParameterRepository::getInstance()->getPlayParameters(model);
@@ -257,7 +257,7 @@ Layer::clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const
         }
         long myMappedFrame = alignToReference(v, sourceFrame);
 
-//        std::cerr << "sourceFrame = " << sourceFrame << ", referenceFrame = " << referenceFrame << " (have = " << i->haveReferenceFrame() << "), myMappedFrame = " << myMappedFrame << std::endl;
+//        cerr << "sourceFrame = " << sourceFrame << ", referenceFrame = " << referenceFrame << " (have = " << i->haveReferenceFrame() << "), myMappedFrame = " << myMappedFrame << endl;
 
         if (myMappedFrame != referenceFrame) return true;
     }

@@ -486,7 +486,7 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
     QString defaults = settings.value(getLayerTypeName(type), "").toString();
     if (defaults == "") return;
 
-//    std::cerr << "defaults=\"" << defaults << "\"" << std::endl;
+//    cerr << "defaults=\"" << defaults << "\"" << endl;
 
     QString xml = layer->toXmlString();
     QDomDocument docOld, docNew;
@@ -502,9 +502,9 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
         for (unsigned int i = 0; i < attrNodes.length(); ++i) {
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
-//            std::cerr << "append \"" << attr.name().toStdString()
+//            cerr << "append \"" << attr.name()
 //                      << "\" -> \"" << attr.value() << "\""
-//                      << std::endl;
+//                      << endl;
             attrs.append(attr.name(), "", "", attr.value());
         }
         
@@ -514,9 +514,9 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
             if (attrs.value(attr.name()) == "") {
-//                std::cerr << "append \"" << attr.name().toStdString()
+//                cerr << "append \"" << attr.name()
 //                          << "\" -> \"" << attr.value() << "\""
-//                          << std::endl;
+//                          << endl;
                 attrs.append(attr.name(), "", "", attr.value());
             }
         }

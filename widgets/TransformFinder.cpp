@@ -169,7 +169,7 @@ TransformFinder::setupBeforeSearchLabel()
 void
 TransformFinder::searchTextChanged(const QString &text)
 {
-//    std::cerr << "text is " << text << std::endl;
+//    cerr << "text is " << text << endl;
     m_newSearchText = text;
 }
 
@@ -187,7 +187,7 @@ TransformFinder::timeout()
         TransformFactory::SearchResults results =
             TransformFactory::getInstance()->search(keywords);
         
-//        std::cerr << results.size() << " result(s)..." << std::endl;
+//        cerr << results.size() << " result(s)..." << endl;
         
         std::set<TextMatcher::Match> sorted;
         sorted.clear();
@@ -241,7 +241,7 @@ TransformFinder::timeout()
 
         int i = m_upToDateCount;
 
-//        std::cerr << "sorted size = " << m_sortedResults.size() << std::endl;
+//        cerr << "sorted size = " << m_sortedResults.size() << endl;
 
         TransformDescription desc;
         TransformId tid = m_sortedResults[i].key;
@@ -318,7 +318,7 @@ TransformFinder::timeout()
         m_labels[i]->setFixedWidth(this->width() - 40);
         m_labels[i]->setUnselectedText(labelText);
 
-//        std::cerr << "selected text: " << selectedText << std::endl;
+//        cerr << "selected text: " << selectedText << endl;
         m_labels[i]->setSelectedText(selectedText);
 
         m_labels[i]->setSelected(m_selectedTransform == desc.identifier);
@@ -350,8 +350,8 @@ TransformFinder::selectedLabelChanged()
             }
         }
     }
-    std::cerr << "selectedLabelChanged: selected transform is now \""
-              << m_selectedTransform << "\"" << std::endl;
+    cerr << "selectedLabelChanged: selected transform is now \""
+              << m_selectedTransform << "\"" << endl;
 }
 
 void
