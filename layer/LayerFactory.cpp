@@ -480,7 +480,7 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
         for (unsigned int i = 0; i < attrNodes.length(); ++i) {
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
-//            cerr << "append \"" << attr.name().toStdString()
+//            cerr << "append \"" << attr.name()
 //                      << "\" -> \"" << attr.value() << "\""
 //                      << endl;
             attrs.append(attr.name(), "", "", attr.value());
@@ -492,7 +492,7 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
             if (attrs.value(attr.name()) == "") {
-//                cerr << "append \"" << attr.name().toStdString()
+//                cerr << "append \"" << attr.name()
 //                          << "\" -> \"" << attr.value() << "\""
 //                          << endl;
                 attrs.append(attr.name(), "", "", attr.value());
