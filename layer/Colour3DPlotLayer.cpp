@@ -689,7 +689,7 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     float value = m_model->getValueAt(sx0, sy);
 
-//    std::cerr << "bin value (" << sx0 << "," << sy << ") is " << value << std::endl;
+//    cerr << "bin value (" << sx0 << "," << sy << ") is " << value << endl;
     
     QString binName = m_model->getBinName(sy);
     if (binName == "") binName = QString("[%1]").arg(sy + 1);
@@ -786,7 +786,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect
                 paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
                 paint.drawLine(5, 11 + y, cw - 5, 11 + y);
             } else {
-                std::cerr << "WARNING: Colour3DPlotLayer::paintVerticalScale: value " << value << ", mmin " << mmin << ", mmax " << mmax << " leads to invalid pixel " << pixel << std::endl;
+                cerr << "WARNING: Colour3DPlotLayer::paintVerticalScale: value " << value << ", mmin " << mmin << ", mmax " << mmax << " leads to invalid pixel " << pixel << endl;
             }
         }
 
@@ -970,7 +970,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 
     if (m_cacheValidStart <= firstBin && m_cacheValidEnd >= lastBin) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        std::cerr << "Cache is valid in this region already" << std::endl;
+        cerr << "Cache is valid in this region already" << endl;
 #endif
         return;
     }
@@ -1006,7 +1006,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     }
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    std::cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " will be valid from " << m_cacheValidStart << " to " << m_cacheValidEnd << std::endl;
+    cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " will be valid from " << m_cacheValidStart << " to " << m_cacheValidEnd << endl;
 #endif
 
     DenseThreeDimensionalModel::Column values;
@@ -1229,7 +1229,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     SVDEBUG << "Colour3DPlotLayer::paint: w " << x1-x0 << ", h " << h << ", sx0 " << sx0 << ", sx1 " << sx1 << ", sw " << sx1-sx0 << ", sh " << sh << endl;
-    std::cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", resolution " << m_model->getResolution() << std::endl;
+    cerr << "Colour3DPlotLayer: sample rate is " << m_model->getSampleRate() << ", resolution " << m_model->getResolution() << endl;
 #endif
 
     QPoint illuminatePos;
@@ -1289,8 +1289,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    }
             
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-//            std::cerr << "rect " << r.x() << "," << r.y() << " "
-//                      << r.width() << "x" << r.height() << std::endl;
+//            cerr << "rect " << r.x() << "," << r.y() << " "
+//                      << r.width() << "x" << r.height() << endl;
 #endif
 
 	    paint.drawRect(r);

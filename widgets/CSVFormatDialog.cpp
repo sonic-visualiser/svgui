@@ -31,6 +31,8 @@
 
 #include <iostream>
 
+#include "base/Debug.h"
+
 CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
                                  int maxDisplayCols) :
     QDialog(parent),
@@ -290,8 +292,8 @@ CSVFormatDialog::columnPurposeChanged(int p)
         
         if (thisChanged) {
 
-            std::cerr << "i == " << i << ", fuzzy == " << m_fuzzyColumn
-                      << ", p == " << p << std::endl;
+            cerr << "i == " << i << ", fuzzy == " << m_fuzzyColumn
+                      << ", p == " << p << endl;
 
             if (i == m_fuzzyColumn) {
                 for (int j = i; j < m_format.getColumnCount(); ++j) {

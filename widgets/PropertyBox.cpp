@@ -59,8 +59,8 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     m_playButton(0)
 {
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox[" << this << "(\"" <<
-	container->getPropertyContainerName() << "\" at " << container << ")]::PropertyBox" << std::endl;
+    cerr << "PropertyBox[" << this << "(\"" <<
+	container->getPropertyContainerName() << "\" at " << container << ")]::PropertyBox" << endl;
 #endif
 
     m_mainBox = new QVBoxLayout;
@@ -102,14 +102,14 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
             this, SLOT(colourDatabaseChanged()));
 
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox[" << this << "]::PropertyBox returning" << std::endl;
+    cerr << "PropertyBox[" << this << "]::PropertyBox returning" << endl;
 #endif
 }
 
 PropertyBox::~PropertyBox()
 {
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox[" << this << "]::~PropertyBox" << std::endl;
+    cerr << "PropertyBox[" << this << "]::~PropertyBox" << endl;
 #endif
 }
 
@@ -117,7 +117,7 @@ void
 PropertyBox::populateViewPlayFrame()
 {
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox(" << m_container << ")::populateViewPlayFrame" << std::endl;
+    cerr << "PropertyBox(" << m_container << ")::populateViewPlayFrame" << endl;
 #endif
 
     if (m_viewPlayFrame) {
@@ -274,12 +274,12 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     QString iconName = m_container->getPropertyIconName(name);
 
 #ifdef DEBUG_PROPERTY_BOX
-    std::cerr << "PropertyBox[" << this
+    cerr << "PropertyBox[" << this
 	      << "(\"" << m_container->getPropertyContainerName().toStdString()
 	      << "\")]";
-    std::cerr << "::updatePropertyEditor(\"" << name << "\"):";
-    std::cerr << " value " << value << ", have " << have << ", group \""
-	      << groupName << "\"" << std::endl;
+    cerr << "::updatePropertyEditor(\"" << name << "\"):";
+    cerr << " value " << value << ", have " << have << ", group \""
+	      << groupName << "\"" << endl;
 #endif
 
     bool inGroup = (groupName != QString());
@@ -288,7 +288,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	if (inGroup) {
 	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
 #ifdef DEBUG_PROPERTY_BOX
-		std::cerr << "PropertyBox: adding label \"" << groupName << "\" and frame for group for \"" << name << "\"" << std::endl;
+		cerr << "PropertyBox: adding label \"" << groupName << "\" and frame for group for \"" << name << "\"" << endl;
 #endif
 		m_layout->addWidget(new QLabel(groupName, m_mainWidget), row, 0);
 		QFrame *frame = new QFrame(m_mainWidget);
@@ -299,7 +299,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	    }
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
-	    std::cerr << "PropertyBox: adding label \"" << propertyLabel << "\"" << std::endl;
+	    cerr << "PropertyBox: adding label \"" << propertyLabel << "\"" << endl;
 #endif
 	    m_layout->addWidget(new QLabel(propertyLabel, m_mainWidget), row, 0);
 	}
@@ -316,7 +316,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             assert(button);
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
-	    std::cerr << "PropertyBox: creating new checkbox" << std::endl;
+	    cerr << "PropertyBox: creating new checkbox" << endl;
 #endif
             if (iconName != "") {
                 button = new NotifyingPushButton();
@@ -370,7 +370,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
-	    std::cerr << "PropertyBox: creating new dial" << std::endl;
+	    cerr << "PropertyBox: creating new dial" << endl;
 #endif
 	    dial = new AudioDial();
 	    dial->setObjectName(name);
@@ -426,7 +426,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	    assert(cb);
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
-	    std::cerr << "PropertyBox: creating new combobox" << std::endl;
+	    cerr << "PropertyBox: creating new combobox" << endl;
 #endif
 
 	    cb = new NotifyingComboBox();
@@ -561,12 +561,12 @@ PropertyBox::propertyContainerPropertyRangeChanged(PropertyContainer *)
 void
 PropertyBox::unitDatabaseChanged()
 {
-    std::cerr << "PropertyBox[" << this << "]: unitDatabaseChanged" << std::endl;
+    cerr << "PropertyBox[" << this << "]: unitDatabaseChanged" << endl;
     blockSignals(true);
 
-//    std::cerr << "my container is " << m_container << std::endl;
-//    std::cerr << "my container's name is... " << std::endl;
-//    std::cerr << m_container->objectName() << std::endl;
+//    cerr << "my container is " << m_container << endl;
+//    cerr << "my container's name is... " << endl;
+//    cerr << m_container->objectName() << endl;
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
     for (size_t i = 0; i < properties.size(); ++i) {

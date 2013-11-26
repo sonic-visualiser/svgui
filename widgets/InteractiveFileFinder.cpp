@@ -225,7 +225,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         break;
 
     case SessionOrAudioFile:
-        std::cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: SessionOrAudioFile cannot be used here" << std::endl;
+        cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: SessionOrAudioFile cannot be used here" << endl;
         abort();
 
     case ImageFile:
@@ -241,7 +241,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         break;
 
     case AnyFile:
-        std::cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: AnyFile cannot be used here" << std::endl;
+        cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: AnyFile cannot be used here" << endl;
         abort();
     };
 
@@ -297,7 +297,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         
         QFileInfo fi(path);
 
-        std::cerr << "type = " << type << ", suffix = " << fi.suffix() << std::endl;
+        cerr << "type = " << type << ", suffix = " << fi.suffix() << endl;
         
         if ((type == LayerFile || type == LayerFileNoMidi)
             && fi.suffix() == "") {
@@ -314,7 +314,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
             } else if (selectedFilter.contains(".ttl")) {
                 expectedExtension = "ttl";
             }
-            std::cerr << "expected extension = " << expectedExtension << std::endl;
+            cerr << "expected extension = " << expectedExtension << endl;
             if (expectedExtension != "") {
                 path = QString("%1.%2").arg(path).arg(expectedExtension);
                 fi = QFileInfo(path);
@@ -444,7 +444,7 @@ InteractiveFileFinder::findRelative(QString location, QString relativeTo)
     if (FileSource::isRemote(relativeTo)) {
         resolved = QUrl(relativeTo).resolved(fileName).toString();
         if (!FileSource(resolved).isAvailable()) resolved = "";
-        std::cerr << "resolved: " << resolved << std::endl;
+        cerr << "resolved: " << resolved << endl;
     } else {
         if (QUrl(relativeTo).scheme() == "file") {
             relativeTo = QUrl(relativeTo).toLocalFile();

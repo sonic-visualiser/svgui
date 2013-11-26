@@ -52,13 +52,13 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         } while (!round && mult < limit);
         if (round) {
             mult /= 10;
-//            std::cerr << "\n\nstep goes from " << step;
+//            cerr << "\n\nstep goes from " << step;
             step = float(round) / mult;
             n = lrintf((maxVal - minVal) / step);
             if (mult > 1) {
                 mult /= 10;
             }
-//            std::cerr << " to " << step << " (n = " << n << ")" << std::endl;
+//            cerr << " to " << step << " (n = " << n << ")" << endl;
         }
     }
 

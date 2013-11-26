@@ -263,7 +263,7 @@ TextAbbrev::getPrefixLength(const QStringList &texts)
 
 //    SVDEBUG << "TextAbbrev::getPrefixLength: prefix length is " << candidate << endl;
 //    for (int i = 0; i < texts.size(); ++i) {
-//        std::cerr << texts[i].left(candidate) << "|" << texts[i].right(texts[i].length() - candidate) << std::endl;
+//        cerr << texts[i].left(candidate) << "|" << texts[i].right(texts[i].length() - candidate) << endl;
 //    }
 
     return candidate;

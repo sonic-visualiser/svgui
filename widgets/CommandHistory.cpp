@@ -281,7 +281,7 @@ CommandHistory::startCompoundOperation(QString name, bool execute)
 {
     if (m_currentCompound) {
 	SVDEBUG << "CommandHistory::startCompoundOperation: ERROR: compound operation already in progress!" << endl;
-	std::cerr << "(name is " << m_currentCompound->getName().toLocal8Bit().data() << ")" << std::endl;
+	cerr << "(name is " << m_currentCompound->getName().toLocal8Bit().data() << ")" << endl;
         return;
     }
  

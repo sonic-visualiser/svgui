@@ -614,13 +614,13 @@ RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
             min = m_model->getValueMinimum();
             max = m_model->getValueMaximum();
 
-//            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+//            cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 
         } else if (log) {
 
             LogRange::mapRange(min, max);
 
-//            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << std::endl;
+//            cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 
         }
 
@@ -632,7 +632,7 @@ RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
             i = m_spacingMap.end();
             --i;
             max = i->second;
-//            std::cerr << "RegionLayer[" << this << "]::getScaleExtents: equal spaced; min = " << min << ", max = " << max << ", log = " << log << std::endl;
+//            cerr << "RegionLayer[" << this << "]::getScaleExtents: equal spaced; min = " << min << ", max = " << max << ", log = " << log << endl;
         }
 
     } else {
@@ -695,8 +695,8 @@ RegionLayer::getYForValue(View *v, float val) const
 
         getScaleExtents(v, min, max, logarithmic);
 
-//    std::cerr << "RegionLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << std::endl;
-//    std::cerr << "h = " << h << ", margin = " << margin << std::endl;
+//    cerr << "RegionLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
+//    cerr << "h = " << h << ", margin = " << margin << endl;
 
         if (logarithmic) {
             val = LogRange::map(val);
@@ -740,7 +740,7 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
         int dist = iy - y;
         int gap = h / n; // between region lines
 
-//        std::cerr << "getValueForY: y = " << y << ", vh = " << vh << ", ivh = " << ivh << " of " << n << ", iy = " << iy << ", dist = " << dist << ", gap = " << gap << std::endl;
+//        cerr << "getValueForY: y = " << y << ", vh = " << vh << ", ivh = " << ivh << " of " << n << ", iy = " << iy << ", dist = " << dist << ", gap = " << gap << endl;
 
         SpacingMap::const_iterator i = m_spacingMap.begin();
         while (i != m_spacingMap.end()) {
@@ -749,11 +749,11 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
         }
         if (i == m_spacingMap.end()) i = m_spacingMap.begin();
 
-//        std::cerr << "nearest existing value = " << i->first << " at " << iy << std::endl;
+//        cerr << "nearest existing value = " << i->first << " at " << iy << endl;
 
         float val = 0;
 
-//        std::cerr << "note: avoid = " << avoid << ", i->second = " << i->second << std::endl;
+//        cerr << "note: avoid = " << avoid << ", i->second = " << i->second << endl;
 
         if (dist < -gap/3 &&
             ((avoid == -1) ||
@@ -761,12 +761,12 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
             // bisect gap to prior
             if (i == m_spacingMap.begin()) {
                 val = i->first - 1.f;
-//                std::cerr << "extended down to " << val << std::endl;
+//                cerr << "extended down to " << val << endl;
             } else {
                 SpacingMap::const_iterator j = i;
                 --j;
                 val = (i->first + j->first) / 2;
-//                std::cerr << "bisected down to " << val << std::endl;
+//                cerr << "bisected down to " << val << endl;
             }
         } else if (dist > gap/3 &&
                    ((avoid == -1) ||
@@ -776,15 +776,15 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
             ++j;
             if (j == m_spacingMap.end()) {
                 val = i->first + 1.f;
-//                std::cerr << "extended up to " << val << std::endl;
+//                cerr << "extended up to " << val << endl;
             } else {
                 val = (i->first + j->first) / 2;
-//                std::cerr << "bisected up to " << val << std::endl;
+//                cerr << "bisected up to " << val << endl;
             }
         } else {
             // snap
             val = i->first;
-//            std::cerr << "snapped to " << val << std::endl;
+//            cerr << "snapped to " << val << endl;
         }            
 
         return val;
