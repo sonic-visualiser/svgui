@@ -511,7 +511,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         }
         cb->blockSignals(false);
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
 	// Crashes on startup without this, for some reason
 	cb->setMinimumSize(QSize(10, 10));
 #endif
