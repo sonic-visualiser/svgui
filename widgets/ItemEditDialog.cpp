@@ -147,8 +147,8 @@ ItemEditDialog::ItemEditDialog(size_t sampleRate, int options,
         m_valueSpinBox = new QDoubleSpinBox;
         m_valueSpinBox->setSuffix(QString(" %1").arg(valueUnits));
         m_valueSpinBox->setDecimals(10);
-        m_valueSpinBox->setMinimum(-1e100);
-        m_valueSpinBox->setMaximum(1e100);
+        m_valueSpinBox->setMinimum(-1e10);
+        m_valueSpinBox->setMaximum(1e10);
         connect(m_valueSpinBox, SIGNAL(valueChanged(double)),
                 this, SLOT(valueChanged(double)));
         subgrid->addWidget(m_valueSpinBox, subrow, 1);
