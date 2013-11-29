@@ -580,24 +580,44 @@ PaneStack::sizePanesEqually()
 
     int count = sizes.size();
 
-    int total = 0;
+    int fixed = 0, variable = 0, total = 0;
+    int varicount = 0;
+
     for (int i = 0; i < count; ++i) {
         total += sizes[i];
+    }
+
+    variable = total;
+
+    for (int i = 0; i < count; ++i) {
+        int minh = m_panes[i].pane->minimumSize().height();
+        if (minh == m_panes[i].pane->maximumSize().height()) {
+            fixed += minh;
+            variable -= minh;
+        } else {
+            varicount++;
+        }
     }
 
     if (total == 0) return;
 
     sizes.clear();
 
-    int each = total / count;
+    int each = (varicount > 0 ? (variable / varicount) : 0);
     int remaining = total;
 
     for (int i = 0; i < count; ++i) {
         if (i == count - 1) {
             sizes.push_back(remaining);
         } else {
-            sizes.push_back(each);
-            remaining -= each;
+            int minh = m_panes[i].pane->minimumSize().height();
+            if (minh == m_panes[i].pane->maximumSize().height()) {
+                sizes.push_back(minh);
+                remaining -= minh;
+            } else {
+                sizes.push_back(each);
+                remaining -= each;
+            }
         }
     }
 
@@ -611,5 +631,4 @@ PaneStack::sizePanesEqually()
 
     m_splitter->setSizes(sizes);
 }
-
 
