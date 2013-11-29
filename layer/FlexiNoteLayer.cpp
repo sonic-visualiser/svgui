@@ -60,6 +60,7 @@ FlexiNoteLayer::FlexiNoteLayer() :
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingCommand(0),
     m_verticalScale(AutoAlignScale),
+    m_editMode(DragNote),
     m_scaleMinimum(34), 
     m_scaleMaximum(77),
     m_intelligentActions(true)
@@ -1303,7 +1304,8 @@ FlexiNoteLayer::getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, i
     if (x >= noteEndX - tol && x <= noteEndX + tol) closeToRight = true;
     if (y >= noteStartY - tol && y <= noteStartY + tol) closeToTop = true;
     if (y >= noteEndY - tol && y <= noteEndY + tol) closeToBottom = true;
-    
+
+//    cerr << "FlexiNoteLayer::getRelativeMousePosition: close to: left " << closeToLeft << " right " << closeToRight << " top " << closeToTop << " bottom " << closeToBottom << endl;
 }
 
 
