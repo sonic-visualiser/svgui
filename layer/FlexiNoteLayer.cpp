@@ -228,7 +228,7 @@ bool
 FlexiNoteLayer::getDisplayExtents(float &min, float &max) const
 {
     if (!m_model || shouldAutoAlign()) {
-        std::cerr << "No model or shouldAutoAlign()" << std::endl;
+//        std::cerr << "No model or shouldAutoAlign()" << std::endl;
         return false;
     }
 
@@ -858,16 +858,18 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-NoteLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
+FlexiNoteLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 {
     return 10;
 }
 
 void
-NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
+FlexiNoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
     float fmin, fmax;
-    getDisplayExtents(fmin, fmax);
+    bool log;
+    QString unit;
+    if (!getValueExtents(fmin, fmax, log, unit)) return;
     PianoScale().paintPianoVertical
         (v, paint, QRect(0, 0, 10, v->height()), fmin, fmax);
     paint.drawLine(10, 0, 10, v->height());
