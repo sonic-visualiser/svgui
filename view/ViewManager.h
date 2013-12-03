@@ -248,10 +248,10 @@ public slots:
     void viewZoomLevelChanged(unsigned long, bool);
     void setGlobalCentreFrame(unsigned long);
     void setPlaybackFrame(unsigned long);
+    void playStatusChanged(bool playing);
 
 protected slots:
     void checkPlayStatus();
-    void playStatusChanged(bool playing);
     void seek(unsigned long);
 //!!!    void considerZoomChange(void *, unsigned long, bool);
 

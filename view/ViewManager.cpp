@@ -453,6 +453,9 @@ ViewManager::setAudioPlaySource(AudioPlaySource *source)
 void
 ViewManager::playStatusChanged(bool /* playing */)
 {
+#ifdef DEBUG_VIEW_MANAGER
+    cerr << "ViewManager::playStatusChanged" << endl;
+#endif
     checkPlayStatus();
 }
 
@@ -482,8 +485,6 @@ ViewManager::checkPlayStatus()
 
     } else {
 
-	QTimer::singleShot(100, this, SLOT(checkPlayStatus()));
-	
 	if (m_lastLeft != 0.0 || m_lastRight != 0.0) {
 	    emit outputLevelsChanged(0.0, 0.0);
 	    m_lastLeft = 0.0;
@@ -491,7 +492,7 @@ ViewManager::checkPlayStatus()
 	}
 
 #ifdef DEBUG_VIEW_MANAGER
-//	cerr << "ViewManager::checkPlayStatus: Not playing" << endl;
+	cerr << "ViewManager::checkPlayStatus: Not playing" << endl;
 #endif
     }
 }
