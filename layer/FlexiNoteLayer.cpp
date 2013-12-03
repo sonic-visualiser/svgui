@@ -24,6 +24,7 @@
 #include "base/RangeMapper.h"
 #include "ColourDatabase.h"
 #include "view/View.h"
+#include "PianoScale.h"
 
 #include "data/model/FlexiNoteModel.h"
 
@@ -854,6 +855,22 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     }
 
     paint.restore();
+}
+
+int
+NoteLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
+{
+    return 10;
+}
+
+void
+NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
+{
+    float fmin, fmax;
+    getDisplayExtents(fmin, fmax);
+    PianoScale().paintPianoVertical
+        (v, paint, QRect(0, 0, 10, v->height()), fmin, fmax);
+    paint.drawLine(10, 0, 10, v->height());
 }
 
 void

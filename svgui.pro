@@ -37,6 +37,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/NoteLayer.h \
            layer/FlexiNoteLayer.h \
            layer/PaintAssistant.h \
+           layer/PianoScale.h \
            layer/RegionLayer.h \
            layer/SingleColourLayer.h \
            layer/SliceableLayer.h \
@@ -58,6 +59,7 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/NoteLayer.cpp \
            layer/FlexiNoteLayer.cpp \
            layer/PaintAssistant.cpp \
+           layer/PianoScale.cpp \
            layer/RegionLayer.cpp \
            layer/SingleColourLayer.cpp \
            layer/SliceLayer.cpp \
