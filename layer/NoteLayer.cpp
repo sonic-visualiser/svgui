@@ -824,7 +824,9 @@ void
 NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
     float fmin, fmax;
-    getDisplayExtents(fmin, fmax);
+    bool log;
+    QString unit;
+    if (!getValueExtents(fmin, fmax, log, unit)) return;
     PianoScale().paintPianoVertical
         (v, paint, QRect(0, 0, 10, v->height()), fmin, fmax);
     paint.drawLine(10, 0, 10, v->height());
