@@ -27,6 +27,7 @@
 #include "ColourMapper.h"
 #include "ImageRegionFinder.h"
 #include "data/model/Dense3DModelPeakCache.h"
+#include "PianoScale.h"
 
 #include <QPainter>
 #include <QImage>
@@ -3435,58 +3436,9 @@ SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QR
 
         // piano keyboard
 
-	paint.drawLine(w - pkw - 1, 0, w - pkw - 1, h);
-
-	float minf = getEffectiveMinFrequency();
-	float maxf = getEffectiveMaxFrequency();
-
-	int py = h, ppy = h;
-	paint.setBrush(paint.pen().color());
-
-	for (int i = 0; i < 128; ++i) {
-
-	    float f = Pitch::getFrequencyForPitch(i);
-	    int y = lrintf(v->getYForFrequency(f, minf, maxf, true));
-
-            if (y < -2) break;
-            if (y > h + 2) {
-                continue;
-            }
-
-	    int n = (i % 12);
-
-            if (n == 1) {
-                // C# -- fill the C from here
-                QColor col = Qt::gray;
-                if (i == 61) { // filling middle C
-                    col = Qt::blue;
-                    col = col.light(150);
-                }
-                if (ppy - y > 2) {
-                    paint.fillRect(w - pkw,
-                                   y,
-                                   pkw,
-                                   (py + ppy) / 2 - y,
-                                   col);
-                }
-            }
-
-	    if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
-		// black notes
-		paint.drawLine(w - pkw, y, w, y);
-		int rh = ((py - y) / 4) * 2;
-		if (rh < 2) rh = 2;
-		paint.drawRect(w - pkw, y - (py-y)/4, pkw/2, rh);
-	    } else if (n == 0 || n == 5) {
-		// C, F
-		if (py < h) {
-		    paint.drawLine(w - pkw, (y + py) / 2, w, (y + py) / 2);
-		}
-	    }
-
-            ppy = py;
-	    py = y;
-	}
+        PianoScale().paintPianoVertical
+            (v, paint, QRect(w - pkw - 1, 0, pkw, h),
+             getEffectiveMinFrequency(), getEffectiveMaxFrequency());
     }
 
     m_haveDetailedScale = detailed;
