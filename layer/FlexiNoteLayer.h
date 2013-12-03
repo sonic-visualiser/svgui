@@ -36,6 +36,9 @@ public:
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
+    virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
+    virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
+
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(View *v, int &frame,
@@ -120,8 +123,6 @@ public:
     virtual int getCurrentVerticalZoomStep() const;
     virtual void setVerticalZoomStep(int);
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
-
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
 
     /**
      * Add a note-on.  Used when recording MIDI "live".  The note will
