@@ -30,6 +30,7 @@
 #include "widgets/ListInputDialog.h"
 
 #include "ColourMapper.h"
+#include "PianoScale.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -1179,9 +1180,11 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         ++pointCount;
     }
 
-    if ((m_plotStyle == PlotCurve || m_plotStyle == PlotDiscreteCurves ||
-         m_plotStyle == PlotLines)
-        && !path.isEmpty()) {
+    if (m_plotStyle == PlotDiscreteCurves) {
+        paint.setRenderHint(QPainter::Antialiasing, true);
+	paint.drawPath(path);
+    } else if ((m_plotStyle == PlotCurve || m_plotStyle == PlotLines)
+               && !path.isEmpty()) {
 	paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->width());
 	paint.drawPath(path);
     }
@@ -1335,6 +1338,16 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     if (m_model->getScaleUnits() != "") {
         paint.drawText(5, 5 + paint.fontMetrics().ascent(),
                        m_model->getScaleUnits());
+    }
+
+    if (logarithmic &&
+        (m_model->getScaleUnits() == "Hz") &&
+        (m_plotStyle != PlotSegmentation)) {
+        float fmin, fmax;
+        getDisplayExtents(fmin, fmax);
+        PianoScale().paintPianoVertical
+            (v, paint, QRect(w, 0, 10, h), fmin, fmax);
+        paint.drawLine(w + 10, 0, w + 10, h);
     }
 }
 
