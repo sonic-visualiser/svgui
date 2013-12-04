@@ -30,10 +30,13 @@ win32-msvc* {
 HEADERS += layer/Colour3DPlotLayer.h \
 	   layer/ColourDatabase.h \
 	   layer/ColourMapper.h \
+           layer/FlexiNoteLayer.h \
            layer/ImageLayer.h \
            layer/ImageRegionFinder.h \
            layer/Layer.h \
            layer/LayerFactory.h \
+           layer/LinearNumericalScale.h \
+           layer/LogNumericalScale.h \
            layer/NoteLayer.h \
            layer/PaintAssistant.h \
            layer/PianoScale.h \
@@ -47,14 +50,18 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/TimeInstantLayer.h \
            layer/TimeRulerLayer.h \
            layer/TimeValueLayer.h \
+           layer/VerticalScaleLayer.h \
            layer/WaveformLayer.h
 SOURCES += layer/Colour3DPlotLayer.cpp \
 	   layer/ColourDatabase.cpp \
 	   layer/ColourMapper.cpp \
+           layer/FlexiNoteLayer.cpp \
            layer/ImageLayer.cpp \
            layer/ImageRegionFinder.cpp \
            layer/Layer.cpp \
            layer/LayerFactory.cpp \
+           layer/LinearNumericalScale.cpp \
+           layer/LogNumericalScale.cpp \
            layer/NoteLayer.cpp \
            layer/PaintAssistant.cpp \
            layer/PianoScale.cpp \
