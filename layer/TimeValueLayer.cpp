@@ -31,6 +31,8 @@
 
 #include "ColourMapper.h"
 #include "PianoScale.h"
+#include "LinearNumericalScale.h"
+#include "LogNumericalScale.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -144,6 +146,13 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
     return SingleColourLayer::getPropertyGroupName(name);
 }
 
+QString
+TimeValueLayer::getScaleUnits() const
+{
+    if (m_model) return m_model->getScaleUnits();
+    else return "";
+}
+
 int
 TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 					 int *min, int *max, int *deflt) const
@@ -179,7 +188,7 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
         if (deflt) *deflt = 0;
         if (m_model) {
             val = UnitDatabase::getInstance()->getUnitId
-                (m_model->getScaleUnits());
+                (getScaleUnits());
         }
 
     } else if (name == "Draw Segment Division Lines") {
@@ -327,7 +336,7 @@ TimeValueLayer::getValueExtents(float &min, float &max,
 
     logarithmic = (m_verticalScale == LogScale);
 
-    unit = m_model->getScaleUnits();
+    unit = getScaleUnits();
 
     if (m_derivative) {
         max = std::max(fabsf(min), fabsf(max));
@@ -595,7 +604,7 @@ TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
     
     QString text;
-    QString unit = m_model->getScaleUnits();
+    QString unit = getScaleUnits();
     if (unit != "") unit = " " + unit;
 
     if (points.begin()->label == "") {
@@ -770,7 +779,7 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
 
     if (shouldAutoAlign()) {
 
-        if (!v->getValueExtents(m_model->getScaleUnits(), min, max, log)) {
+        if (!v->getValueExtents(getScaleUnits(), min, max, log)) {
             min = m_model->getValueMinimum();
             max = m_model->getValueMaximum();
         } else if (log) {
@@ -840,7 +849,7 @@ bool
 TimeValueLayer::shouldAutoAlign() const
 {
     if (!m_model) return false;
-    QString unit = m_model->getScaleUnits();
+    QString unit = getScaleUnits();
     return (m_verticalScale == AutoAlignScale && unit != "");
 }
 
@@ -1196,10 +1205,15 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-TimeValueLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
+TimeValueLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 {
     if (!m_model || shouldAutoAlign()) return 0;
-    int w = paint.fontMetrics().width("-000.000");
+    int w = 0;
+    if (m_verticalScale == LogScale) {
+        w = LogNumericalScale().getWidth(v, paint);
+    } else {
+        w = LinearNumericalScale().getWidth(v, paint);
+    }
     if (m_plotStyle == PlotSegmentation) return w + 20;
     else return w + 10;
 }
@@ -1209,6 +1223,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
     if (!m_model) return;
 
+/*
     int h = v->height();
 
     int n = 10;
@@ -1235,7 +1250,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     int tx = 5;
 
     int boxx = 5, boxy = 5;
-    if (m_model->getScaleUnits() != "") {
+    if (getScaleUnits() != "") {
         boxy += paint.fontMetrics().height();
     }
     int boxw = 10, boxh = h - boxy - 5;
@@ -1286,7 +1301,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
         } else {
             if (i == n-1 &&
                 v->height() < paint.fontMetrics().height() * (n*2)) {
-                if (m_model->getScaleUnits() != "") drawText = false;
+                if (getScaleUnits() != "") drawText = false;
             }
             dispval = lrintf(val / round) * round;
 #ifdef DEBUG_TIME_VALUE_LAYER
@@ -1335,20 +1350,38 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
         prevy = y;
 	val += inc;
     }
-    
-    if (m_model->getScaleUnits() != "") {
-        paint.drawText(5, 5 + paint.fontMetrics().ascent(),
-                       m_model->getScaleUnits());
-    }
+*/
+    float min, max;
+    bool logarithmic;
+    getScaleExtents(v, min, max, logarithmic);
 
-    if (logarithmic &&
-        (m_model->getScaleUnits() == "Hz") &&
-        (m_plotStyle != PlotSegmentation)) {
-        float fmin, fmax;
-        getDisplayExtents(fmin, fmax);
-        PianoScale().paintPianoVertical
-            (v, paint, QRect(w, 0, 10, h), fmin, fmax);
-        paint.drawLine(w + 10, 0, w + 10, h);
+    int w = getVerticalScaleWidth(v, false, paint);
+    int h = v->height();
+
+    if (m_plotStyle == PlotSegmentation) {
+
+        //!!! todo!
+
+    } else {
+
+        if (logarithmic) {
+            LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        } else {
+            LinearNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        }
+
+        if (logarithmic && (getScaleUnits() == "Hz")) {
+            PianoScale().paintPianoVertical
+                (v, paint, QRect(w - 10, 0, 10, h), 
+                 LogRange::unmap(min), 
+                 LogRange::unmap(max));
+            paint.drawLine(w, 0, w, h);
+        }
+    }
+        
+    if (getScaleUnits() != "") {
+        paint.drawText(5, 5 + paint.fontMetrics().ascent(),
+                       getScaleUnits());
     }
 }
 
@@ -1615,7 +1648,7 @@ TimeValueLayer::editOpen(View *v, QMouseEvent *e)
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowValue |
          ItemEditDialog::ShowText,
-         m_model->getScaleUnits());
+         getScaleUnits());
 
     dialog->setFrameTime(point.frame);
     dialog->setValue(point.value);
