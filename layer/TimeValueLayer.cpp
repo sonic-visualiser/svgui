@@ -1198,6 +1198,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 int
 TimeValueLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 {
+    if (!m_model || shouldAutoAlign()) return 0;
     int w = paint.fontMetrics().width("-000.000");
     if (m_plotStyle == PlotSegmentation) return w + 20;
     else return w + 10;
