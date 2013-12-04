@@ -13,15 +13,17 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef VERTICAL_SCALE_LAYER_H
-#define VERTICAL_SCALE_LAYER_H
+#ifndef COLOUR_SCALE_LAYER_H
+#define COLOUR_SCALE_LAYER_H
 
-class VerticalScaleLayer
+#include <QString>
+#include <QColor>
+
+class ColourScaleLayer
 {
 public:
-    virtual int getYForValue(View *, float value) const = 0;
-    virtual float getValueForY(View *, int y) const = 0;
     virtual QString getScaleUnits() const = 0;
+    virtual QColor getColourForValue(View *v, float value) const = 0;
 };
 
 #endif

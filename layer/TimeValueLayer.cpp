@@ -28,11 +28,14 @@
 
 #include "widgets/ItemEditDialog.h"
 #include "widgets/ListInputDialog.h"
+#include "widgets/TextAbbrev.h"
 
 #include "ColourMapper.h"
 #include "PianoScale.h"
 #include "LinearNumericalScale.h"
 #include "LogNumericalScale.h"
+#include "LinearColourScale.h"
+#include "LogColourScale.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -1207,14 +1210,21 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 int
 TimeValueLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 {
-    int w = 0;
-    if (m_verticalScale == LogScale) {
-        w = LogNumericalScale().getWidth(v, paint);
+    if (!m_model || shouldAutoAlign()) {
+        return 0;
+    } else if (m_plotStyle == PlotSegmentation) {
+        if (m_verticalScale == LogScale) {
+            return LogColourScale().getWidth(v, paint);
+        } else {
+            return LinearColourScale().getWidth(v, paint);
+        }
     } else {
-        w = LinearNumericalScale().getWidth(v, paint);
+        if (m_verticalScale == LogScale) {
+            return LogNumericalScale().getWidth(v, paint) + 10; // for piano
+        } else {
+            return LinearNumericalScale().getWidth(v, paint);
+        }
     }
-    if (m_plotStyle == PlotSegmentation) return w + 20;
-    else return w + 10;
 }
 
 void
@@ -1222,146 +1232,27 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
     if (!m_model) return;
 
-/*
-    int h = v->height();
-
-    int n = 10;
-
+    QString unit;
     float min, max;
     bool logarithmic;
-    getScaleExtents(v, min, max, logarithmic);
+
+    int w = getVerticalScaleWidth(v, false, paint);
+    int h = v->height();
 
     if (m_plotStyle == PlotSegmentation) {
-        QString unit;
+
         getValueExtents(min, max, logarithmic, unit);
+
         if (logarithmic) {
             LogRange::mapRange(min, max);
-        }
-    }
-
-    float val = min;
-    float inc = (max - val) / n;
-
-    char buffer[40];
-
-    int w = getVerticalScaleWidth(v, false, paint);
-
-    int tx = 5;
-
-    int boxx = 5, boxy = 5;
-    if (getScaleUnits() != "") {
-        boxy += paint.fontMetrics().height();
-    }
-    int boxw = 10, boxh = h - boxy - 5;
-
-    if (m_plotStyle == PlotSegmentation) {
-        tx += boxx + boxw;
-        paint.drawRect(boxx, boxy, boxw, boxh);
-    }
-
-    if (m_plotStyle == PlotSegmentation) {
-        paint.save();
-        for (int y = 0; y < boxh; ++y) {
-            float val = ((boxh - y) * (max - min)) / boxh + min;
-            if (logarithmic) {
-                paint.setPen(getColourForValue(v, LogRange::unmap(val)));
-            } else {
-                paint.setPen(getColourForValue(v, val));
-            }
-            paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
-        }
-        paint.restore();
-    }
-    
-    float round = 1.f;
-    int dp = 0;
-    if (inc > 0) {
-        int prec = trunc(log10f(inc));
-        prec -= 1;
-        if (prec < 0) dp = -prec;
-        round = powf(10.f, prec);
-#ifdef DEBUG_TIME_VALUE_LAYER
-        cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << endl;
-#endif
-    }
-
-    int prevy = -1;
-                
-    for (int i = 0; i < n; ++i) {
-
-	int y, ty;
-        bool drawText = true;
-
-        float dispval = val;
-
-        if (m_plotStyle == PlotSegmentation) {
-            y = boxy + int(boxh - ((val - min) * boxh) / (max - min));
-            ty = y;
+            LogColourScale().paintVertical(v, this, paint, 0, min, max);
         } else {
-            if (i == n-1 &&
-                v->height() < paint.fontMetrics().height() * (n*2)) {
-                if (getScaleUnits() != "") drawText = false;
-            }
-            dispval = lrintf(val / round) * round;
-#ifdef DEBUG_TIME_VALUE_LAYER
-            cerr << "val = " << val << ", dispval = " << dispval << endl;
-#endif
-            if (logarithmic) {
-                y = getYForValue(v, LogRange::unmap(dispval));
-            } else {
-                y = getYForValue(v, dispval);
-            }                
-            ty = y - paint.fontMetrics().height() +
-                     paint.fontMetrics().ascent() + 2;
-
-            if (prevy >= 0 && (prevy - y) < paint.fontMetrics().height()) {
-                val += inc;
-                continue;
-            }
+            LinearColourScale().paintVertical(v, this, paint, 0, min, max);
         }
-
-        if (logarithmic) {
-            double dv = LogRange::unmap(dispval);
-            int digits = trunc(log10f(dv));
-            int sf = dp + (digits > 0 ? digits : 0);
-            if (sf < 2) sf = 2;
-            sprintf(buffer, "%.*g", sf, dv);
-        } else {
-            sprintf(buffer, "%.*f", dp, dispval);
-        }            
-	QString label = QString(buffer);
-
-        if (m_plotStyle != PlotSegmentation) {
-            paint.drawLine(w - 5, y, w, y);
-        } else {
-            paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
-        }
-
-        if (drawText) {
-            if (m_plotStyle != PlotSegmentation) {
-                paint.drawText(tx + w - paint.fontMetrics().width(label) - 8,
-                               ty, label);
-            } else {
-                paint.drawText(tx, ty, label);
-            }
-        }
-
-        prevy = y;
-	val += inc;
-    }
-*/
-    float min, max;
-    bool logarithmic;
-    getScaleExtents(v, min, max, logarithmic);
-
-    int w = getVerticalScaleWidth(v, false, paint);
-    int h = v->height();
-
-    if (m_plotStyle == PlotSegmentation) {
-
-        //!!! todo!
 
     } else {
+
+        getScaleExtents(v, min, max, logarithmic);
 
         if (logarithmic) {
             LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
@@ -1379,8 +1270,12 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     }
         
     if (getScaleUnits() != "") {
-        paint.drawText(5, 5 + paint.fontMetrics().ascent(),
-                       getScaleUnits());
+        int mw = w - 5;
+        paint.drawText(5,
+                       5 + paint.fontMetrics().ascent(),
+                       TextAbbrev::abbreviate(getScaleUnits(),
+                                              paint.fontMetrics(),
+                                              mw));
     }
 }
 
