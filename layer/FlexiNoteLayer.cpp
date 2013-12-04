@@ -121,7 +121,7 @@ FlexiNoteLayer::getPropertyGroupName(const PropertyName &name) const
 }
 
 QString
-NoteLayer::getScaleUnits() const
+FlexiNoteLayer::getScaleUnits() const
 {
     if (m_model) return m_model->getScaleUnits();
     else return "";
