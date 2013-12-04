@@ -860,19 +860,29 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 int
 FlexiNoteLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 {
-    return 10;
+    if (m_verticalScale == LinearScale ||
+        m_verticalScale == AutoAlignScale) {
+        return 0;
+    } else {
+        return 10;
+    }
 }
 
 void
 FlexiNoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
-    float fmin, fmax;
-    bool log;
-    QString unit;
-    if (!getValueExtents(fmin, fmax, log, unit)) return;
-    PianoScale().paintPianoVertical
-        (v, paint, QRect(0, 0, 10, v->height()), fmin, fmax);
-    paint.drawLine(10, 0, 10, v->height());
+    if (m_verticalScale == LinearScale ||
+        m_verticalScale == AutoAlignScale) {
+        return;
+    } else {
+        float fmin, fmax;
+        bool log;
+        QString unit;
+        if (!getValueExtents(fmin, fmax, log, unit)) return;
+        PianoScale().paintPianoVertical
+            (v, paint, QRect(0, 0, 10, v->height()), fmin, fmax);
+        paint.drawLine(10, 0, 10, v->height());
+    }
 }
 
 void
