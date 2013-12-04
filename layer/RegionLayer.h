@@ -17,6 +17,9 @@
 #define _REGION_LAYER_H_
 
 #include "SingleColourLayer.h"
+#include "VerticalScaleLayer.h"
+#include "ColourScaleLayer.h"
+
 #include "data/model/RegionModel.h"
 
 #include <QObject>
@@ -27,7 +30,9 @@
 class View;
 class QPainter;
 
-class RegionLayer : public SingleColourLayer
+class RegionLayer : public SingleColourLayer,
+                    public VerticalScaleLayer,
+                    public ColourScaleLayer
 {
     Q_OBJECT
 
@@ -35,6 +40,9 @@ public:
     RegionLayer();
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
+
+    virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
+    virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
     virtual QString getLabelPreceding(size_t) const;
@@ -116,18 +124,20 @@ public:
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
-
     void setProperties(const QXmlAttributes &attributes);
+
+    /// VerticalScaleLayer and ColourScaleLayer methods
+    int getYForValue(View *v, float value) const;
+    float getValueForY(View *v, int y) const;
+    virtual QString getScaleUnits() const;
+    QColor getColourForValue(View *v, float value) const;
 
 protected slots:
     void recalcSpacing();
 
 protected:
+    float getValueForY(View *v, int y, int avoid) const;
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
-    int getYForValue(View *v, float value) const;
-    float getValueForY(View *v, int y, int avoid = -1) const;
-    QColor getColourForValue(View *v, float value) const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
