@@ -64,6 +64,7 @@ LogNumericalScale::paintVertical(View *v,
         int prec = trunc(log10f(minDispInc));
         if (prec < 0) dp = -prec;
         round = powf(10.f, prec);
+        if (dp > 4) dp = 4;
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "round = " << round << ", prec = " << prec << ", dp = " << dp << endl;
 #endif
@@ -97,11 +98,13 @@ LogNumericalScale::paintVertical(View *v,
 	    continue;
         }
 
-	double dv = dispval;
-	int digits = trunc(log10f(dv));
+	int digits = trunc(log10f(dispval));
 	int sf = dp + (digits > 0 ? digits : 0);
 	if (sf < 4) sf = 4;
-	sprintf(buffer, "%.*g", sf, dv);
+#ifdef DEBUG_TIME_VALUE_LAYER
+        cerr << "sf = " << sf << endl;
+#endif
+	sprintf(buffer, "%.*g", sf, dispval);
 
 	QString label = QString(buffer);
 
