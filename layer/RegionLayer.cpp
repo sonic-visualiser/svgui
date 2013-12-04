@@ -20,12 +20,19 @@
 #include "base/Profiler.h"
 #include "base/LogRange.h"
 #include "ColourDatabase.h"
+
 #include "ColourMapper.h"
+#include "LinearNumericalScale.h"
+#include "LogNumericalScale.h"
+#include "LinearColourScale.h"
+#include "LogColourScale.h"
+
 #include "view/View.h"
 
 #include "data/model/RegionModel.h"
 
 #include "widgets/ItemEditDialog.h"
+#include "widgets/TextAbbrev.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -146,7 +153,7 @@ RegionLayer::getPropertyRangeAndValue(const PropertyName &name,
         if (deflt) *deflt = 0;
         if (m_model) {
             val = UnitDatabase::getInstance()->getUnitId
-                (m_model->getScaleUnits());
+                (getScaleUnits());
         }
 
     } else {
@@ -270,7 +277,7 @@ RegionLayer::getValueExtents(float &min, float &max,
     if (!m_model) return false;
     min = m_model->getValueMinimum();
     max = m_model->getValueMaximum();
-    unit = m_model->getScaleUnits();
+    unit = getScaleUnits();
 
     if (m_verticalScale == LogScale) logarithmic = true;
 
@@ -419,7 +426,7 @@ RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
     
     QString valueText;
 
-    valueText = tr("%1 %2").arg(region.value).arg(m_model->getScaleUnits());
+    valueText = tr("%1 %2").arg(region.value).arg(getScaleUnits());
 
     QString text;
 
@@ -597,6 +604,13 @@ RegionLayer::snapToSimilarFeature(View *v, int &frame,
     return found;
 }
 
+QString
+RegionLayer::getScaleUnits() const
+{
+    if (m_model) return m_model->getScaleUnits();
+    else return "";
+}
+
 void
 RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 {
@@ -605,7 +619,7 @@ RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
     log = false;
 
     QString queryUnits;
-    queryUnits = m_model->getScaleUnits();
+    queryUnits = getScaleUnits();
 
     if (m_verticalScale == AutoAlignScale) {
 
@@ -704,6 +718,12 @@ RegionLayer::getYForValue(View *v, float val) const
 
         return int(h - ((val - min) * h) / (max - min));
     }
+}
+
+float
+RegionLayer::getValueForY(View *v, int y) const
+{
+    return getValueForY(v, y, -1);
 }
 
 float
@@ -947,7 +967,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
                 paint.setPen(v->getForeground());
                 paint.setBrush(v->getForeground());
 
-                QString vlabel = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
+                QString vlabel = QString("%1%2").arg(p.value).arg(getScaleUnits());
                 v->drawVisibleText(paint, 
                                    x - paint.fontMetrics().width(vlabel) - 2,
                                    y + paint.fontMetrics().height()/2
@@ -996,7 +1016,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
         if (!illuminated) {
             QString label = p.label;
             if (label == "") {
-                label = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
+                label = QString("%1%2").arg(p.value).arg(getScaleUnits());
             }
 
             int labelX, labelY;
@@ -1022,6 +1042,72 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
     }
 
     paint.restore();
+}
+
+int
+RegionLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
+{
+    if (!m_model || 
+        m_verticalScale == AutoAlignScale || 
+        m_verticalScale == EqualSpaced) {
+        return 0;
+    } else if (m_plotStyle == PlotSegmentation) {
+        if (m_verticalScale == LogScale) {
+            return LogColourScale().getWidth(v, paint);
+        } else {
+            return LinearColourScale().getWidth(v, paint);
+        }
+    } else {
+        if (m_verticalScale == LogScale) {
+            return LogNumericalScale().getWidth(v, paint);
+        } else {
+            return LinearNumericalScale().getWidth(v, paint);
+        }
+    }
+}
+
+void
+RegionLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
+{
+    if (!m_model) return;
+
+    QString unit;
+    float min, max;
+    bool logarithmic;
+
+    int w = getVerticalScaleWidth(v, false, paint);
+    int h = v->height();
+
+    if (m_plotStyle == PlotSegmentation) {
+
+        getValueExtents(min, max, logarithmic, unit);
+
+        if (logarithmic) {
+            LogRange::mapRange(min, max);
+            LogColourScale().paintVertical(v, this, paint, 0, min, max);
+        } else {
+            LinearColourScale().paintVertical(v, this, paint, 0, min, max);
+        }
+
+    } else {
+
+        getScaleExtents(v, min, max, logarithmic);
+
+        if (logarithmic) {
+            LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        } else {
+            LinearNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        }
+    }
+        
+    if (getScaleUnits() != "") {
+        int mw = w - 5;
+        paint.drawText(5,
+                       5 + paint.fontMetrics().ascent(),
+                       TextAbbrev::abbreviate(getScaleUnits(),
+                                              paint.fontMetrics(),
+                                              mw));
+    }
 }
 
 void
@@ -1234,7 +1320,7 @@ RegionLayer::editOpen(View *v, QMouseEvent *e)
          ItemEditDialog::ShowDuration |
          ItemEditDialog::ShowValue |
          ItemEditDialog::ShowText,
-         m_model->getScaleUnits());
+         getScaleUnits());
 
     dialog->setFrameTime(region.frame);
     dialog->setValue(region.value);

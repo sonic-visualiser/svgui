@@ -19,6 +19,8 @@
 #define NOTE_HEIGHT 16
 
 #include "SingleColourLayer.h"
+#include "VerticalScaleLayer.h"
+
 #include "data/model/FlexiNoteModel.h"
 
 #include <QObject>
@@ -27,7 +29,9 @@
 class View;
 class QPainter;
 
-class FlexiNoteLayer : public SingleColourLayer
+
+class FlexiNoteLayer : public SingleColourLayer,
+                       public VerticalScaleLayer
 {
     Q_OBJECT
 
@@ -149,10 +153,13 @@ public:
     
     void setVerticalRangeToNoteRange(View *v);
 
+    /// VerticalScaleLayer methods
+    virtual int getYForValue(View *v, float value) const;
+    virtual float getValueForY(View *v, int y) const;
+    virtual QString getScaleUnits() const;
+
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
-    int getYForValue(View *v, float value) const;
-    float getValueForY(View *v, int y) const;
     bool shouldConvertMIDIToHz() const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);

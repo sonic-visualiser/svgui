@@ -13,15 +13,23 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef VERTICAL_SCALE_LAYER_H
-#define VERTICAL_SCALE_LAYER_H
+#ifndef LINEAR_COLOUR_SCALE_H
+#define LINEAR_COLOUR_SCALE_H
 
-class VerticalScaleLayer
+#include <QRect>
+
+class QPainter;
+class View;
+class ColourScaleLayer;
+
+class LinearColourScale
 {
 public:
-    virtual int getYForValue(View *, float value) const = 0;
-    virtual float getValueForY(View *, int y) const = 0;
-    virtual QString getScaleUnits() const = 0;
+    int getWidth(View *v, QPainter &paint);
+
+    void paintVertical
+    (View *v, const ColourScaleLayer *layer, QPainter &paint, int x0,
+     float minf, float maxf);
 };
 
 #endif
