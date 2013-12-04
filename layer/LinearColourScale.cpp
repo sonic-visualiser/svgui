@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#include "LinearNumericalScale.h"
-#include "VerticalScaleLayer.h"
+#include "LinearColourScale.h"
+#include "ColourScaleLayer.h"
 
 #include <QPainter>
 
@@ -23,30 +23,47 @@
 #include "view/View.h"
 
 int
-LinearNumericalScale::getWidth(View *v,
-			       QPainter &paint)
+LinearColourScale::getWidth(View *v,
+			    QPainter &paint)
 {
-    return paint.fontMetrics().width("-000.00") + 10;
+    return paint.fontMetrics().width("-000.00") + 15;
 }
 
 void
-LinearNumericalScale::paintVertical(View *v,
-				    const VerticalScaleLayer *layer,
-				    QPainter &paint,
-				    int x0,
-				    float minf,
-				    float maxf)
+LinearColourScale::paintVertical(View *v,
+				 const ColourScaleLayer *layer,
+				 QPainter &paint,
+				 int x0,
+				 float min,
+				 float max)
 {
     int h = v->height();
 
     int n = 10;
 
-    float val = minf;
-    float inc = (maxf - val) / n;
+    float val = min;
+    float inc = (max - val) / n;
 
     char buffer[40];
 
     int w = getWidth(v, paint) + x0;
+
+    int boxx = 5, boxy = 5;
+    if (layer->getScaleUnits() != "") {
+        boxy += paint.fontMetrics().height();
+    }
+    int boxw = 10, boxh = h - boxy - 5;
+
+    int tx = 5 + boxx + boxw;
+    paint.drawRect(boxx, boxy, boxw, boxh);
+
+    paint.save();
+    for (int y = 0; y < boxh; ++y) {
+	float val = ((boxh - y) * (max - min)) / boxh + min;
+	paint.setPen(layer->getColourForValue(v, val));
+	paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
+    }
+    paint.restore();
 
     float round = 1.f;
     int dp = 0;
@@ -60,46 +77,21 @@ LinearNumericalScale::paintVertical(View *v,
 #endif
     }
 
-    int prevy = -1;
-                
     for (int i = 0; i < n; ++i) {
 
 	int y, ty;
-        bool drawText = true;
 
-        float dispval = val;
+	y = boxy + int(boxh - ((val - min) * boxh) / (max - min));
 
-	if (i == n-1 &&
-	    v->height() < paint.fontMetrics().height() * (n*2)) {
-	    if (layer->getScaleUnits() != "") drawText = false;
-	}
-	dispval = lrintf(val / round) * round;
+	ty = y - paint.fontMetrics().height() +
+	    paint.fontMetrics().ascent() + 2;
 
-#ifdef DEBUG_TIME_VALUE_LAYER
-	cerr << "val = " << val << ", dispval = " << dispval << endl;
-#endif
-
-	y = layer->getYForValue(v, dispval);
-
-	ty = y - paint.fontMetrics().height() + paint.fontMetrics().ascent() + 2;
-	
-	if (prevy >= 0 && (prevy - y) < paint.fontMetrics().height()) {
-	    val += inc;
-	    continue;
-        }
-
-	sprintf(buffer, "%.*f", dp, dispval);
-
+	sprintf(buffer, "%.*f", dp, val);
 	QString label = QString(buffer);
 
-	paint.drawLine(w - 5, y, w, y);
+	paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
+	paint.drawText(tx, ty, label);
 
-        if (drawText) {
-	    paint.drawText(w - paint.fontMetrics().width(label) - 6,
-			   ty, label);
-        }
-
-        prevy = y;
 	val += inc;
     }
 }

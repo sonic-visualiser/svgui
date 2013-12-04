@@ -33,6 +33,8 @@
 #include "PianoScale.h"
 #include "LinearNumericalScale.h"
 #include "LogNumericalScale.h"
+#include "LinearColourScale.h"
+#include "LogColourScale.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -1208,14 +1210,19 @@ int
 TimeValueLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 {
     if (!m_model || shouldAutoAlign()) return 0;
-    int w = 0;
-    if (m_verticalScale == LogScale) {
-        w = LogNumericalScale().getWidth(v, paint);
+    if (m_plotStyle == PlotSegmentation) {
+        if (m_verticalScale == LogScale) {
+            return LogColourScale().getWidth(v, paint);
+        } else {
+            return LinearColourScale().getWidth(v, paint);
+        }
     } else {
-        w = LinearNumericalScale().getWidth(v, paint);
+        if (m_verticalScale == LogScale) {
+            return LogNumericalScale().getWidth(v, paint) + 10; // for piano
+        } else {
+            return LinearNumericalScale().getWidth(v, paint);
+        }
     }
-    if (m_plotStyle == PlotSegmentation) return w + 20;
-    else return w + 10;
 }
 
 void
@@ -1351,18 +1358,29 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 	val += inc;
     }
 */
+    QString unit;
     float min, max;
     bool logarithmic;
-    getScaleExtents(v, min, max, logarithmic);
 
     int w = getVerticalScaleWidth(v, false, paint);
     int h = v->height();
 
     if (m_plotStyle == PlotSegmentation) {
 
-        //!!! todo!
+        getValueExtents(min, max, logarithmic, unit);
+
+        if (logarithmic) {
+
+            LogRange::mapRange(min, max);
+            LogColourScale().paintVertical(v, this, paint, 0, min, max);
+
+        } else {
+            LinearColourScale().paintVertical(v, this, paint, 0, min, max);
+        }
 
     } else {
+
+        getScaleExtents(v, min, max, logarithmic);
 
         if (logarithmic) {
             LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
