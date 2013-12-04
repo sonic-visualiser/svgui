@@ -30,7 +30,7 @@ int
 LogNumericalScale::getWidth(View *,
 			    QPainter &paint)
 {
-    return paint.fontMetrics().width("-000.00");
+    return paint.fontMetrics().width("-000.00") + 10;
 }
 
 void
