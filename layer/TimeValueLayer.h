@@ -155,13 +155,13 @@ public:
     }
 
     /// VerticalScaleLayer and ColourScaleLayer methods
-    virtual void getScaleExtents(View *, float &min, float &max, bool &log) const;
     virtual int getYForValue(View *, float value) const;
     virtual float getValueForY(View *, int y) const;
     virtual QString getScaleUnits() const;
     virtual QColor getColourForValue(View *v, float value) const;
 
 protected:
+    void getScaleExtents(View *, float &min, float &max, bool &log) const;
     bool shouldAutoAlign() const;
 
     SparseTimeValueModel::PointList getLocalPoints(View *v, int) const;

@@ -28,6 +28,7 @@
 
 #include "widgets/ItemEditDialog.h"
 #include "widgets/ListInputDialog.h"
+#include "widgets/TextAbbrev.h"
 
 #include "ColourMapper.h"
 #include "PianoScale.h"
@@ -1209,8 +1210,9 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 int
 TimeValueLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 {
-    if (!m_model || shouldAutoAlign()) return 0;
-    if (m_plotStyle == PlotSegmentation) {
+    if (!m_model || shouldAutoAlign()) {
+        return 0;
+    } else if (m_plotStyle == PlotSegmentation) {
         if (m_verticalScale == LogScale) {
             return LogColourScale().getWidth(v, paint);
         } else {
@@ -1268,8 +1270,12 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     }
         
     if (getScaleUnits() != "") {
-        paint.drawText(5, 5 + paint.fontMetrics().ascent(),
-                       getScaleUnits());
+        int mw = w - 5;
+        paint.drawText(5,
+                       5 + paint.fontMetrics().ascent(),
+                       TextAbbrev::abbreviate(getScaleUnits(),
+                                              paint.fontMetrics(),
+                                              mw));
     }
 }
 

@@ -23,11 +23,15 @@
 #include "base/RangeMapper.h"
 #include "ColourDatabase.h"
 #include "view/View.h"
+
 #include "PianoScale.h"
+#include "LinearNumericalScale.h"
+#include "LogNumericalScale.h"
 
 #include "data/model/NoteModel.h"
 
 #include "widgets/ItemEditDialog.h"
+#include "widgets/TextAbbrev.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -105,6 +109,13 @@ NoteLayer::getPropertyGroupName(const PropertyName &name) const
     return SingleColourLayer::getPropertyGroupName(name);
 }
 
+QString
+NoteLayer::getScaleUnits() const
+{
+    if (m_model) return m_model->getScaleUnits();
+    else return "";
+}
+
 int
 NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
                                     int *min, int *max, int *deflt) const
@@ -124,7 +135,7 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
         if (deflt) *deflt = 0;
         if (m_model) {
             val = UnitDatabase::getInstance()->getUnitId
-                (m_model->getScaleUnits());
+                (getScaleUnits());
         }
 
     } else {
@@ -185,7 +196,7 @@ NoteLayer::isLayerScrollable(const View *v) const
 bool
 NoteLayer::shouldConvertMIDIToHz() const
 {
-    QString unit = m_model->getScaleUnits();
+    QString unit = getScaleUnits();
     return (unit != "Hz");
 //    if (unit == "" ||
 //        unit.startsWith("MIDI") ||
@@ -205,7 +216,7 @@ NoteLayer::getValueExtents(float &min, float &max,
         unit = "Hz";
         min = Pitch::getFrequencyForPitch(lrintf(min));
         max = Pitch::getFrequencyForPitch(lrintf(max + 1));
-    } else unit = m_model->getScaleUnits();
+    } else unit = getScaleUnits();
 
     if (m_verticalScale == MIDIRangeScale ||
         m_verticalScale == LogScale) logarithmic = true;
@@ -499,7 +510,7 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
             .arg(mnote)
             .arg(freq);
 
-    } else if (m_model->getScaleUnits() == "Hz") {
+    } else if (getScaleUnits() == "Hz") {
 
         pitchText = tr("%1 Hz (%2, %3)")
             .arg(note.value)
@@ -508,7 +519,7 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     } else {
         pitchText = tr("%1 %2")
-            .arg(note.value).arg(m_model->getScaleUnits());
+            .arg(note.value).arg(getScaleUnits());
     }
 
     QString text;
@@ -612,7 +623,7 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 
     QString queryUnits;
     if (shouldConvertMIDIToHz()) queryUnits = "Hz";
-    else queryUnits = m_model->getScaleUnits();
+    else queryUnits = getScaleUnits();
 
     if (shouldAutoAlign()) {
 
@@ -793,7 +804,7 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
             paint.setPen(v->getForeground());
             paint.setBrush(v->getForeground());
 
-            QString vlabel = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
+            QString vlabel = QString("%1%2").arg(p.value).arg(getScaleUnits());
             v->drawVisibleText(paint, 
                                x - paint.fontMetrics().width(vlabel) - 2,
                                y + paint.fontMetrics().height()/2
@@ -815,28 +826,54 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-NoteLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
+NoteLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 {
     if (!m_model || shouldAutoAlign()) {
         return 0;
-    } else if (m_verticalScale == LogScale || 
-               m_verticalScale == MIDIRangeScale) {
-        return 10;
-    } else {
-        return 0;
+    } else  {
+        if (m_verticalScale == LogScale || m_verticalScale == MIDIRangeScale) {
+            return LogNumericalScale().getWidth(v, paint) + 10; // for piano
+        } else {
+            return LinearNumericalScale().getWidth(v, paint);
+        }
     }
 }
 
 void
 NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
-    if (m_verticalScale == LogScale ||
-        m_verticalScale == MIDIRangeScale) {
-        float fmin, fmax;
-        getDisplayExtents(fmin, fmax);
+    if (!m_model) return;
+
+    QString unit;
+    float min, max;
+    bool logarithmic;
+
+    int w = getVerticalScaleWidth(v, false, paint);
+    int h = v->height();
+
+    getScaleExtents(v, min, max, logarithmic);
+
+    if (logarithmic) {
+        LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
+    } else {
+        LinearNumericalScale().paintVertical(v, this, paint, 0, min, max);
+    }
+    
+    if (logarithmic && (getScaleUnits() == "Hz")) {
         PianoScale().paintPianoVertical
-            (v, paint, QRect(0, 0, 10, v->height()), fmin, fmax);
-        paint.drawLine(10, 0, 10, v->height());
+            (v, paint, QRect(w - 10, 0, 10, h), 
+             LogRange::unmap(min), 
+             LogRange::unmap(max));
+        paint.drawLine(w, 0, w, h);
+    }
+        
+    if (getScaleUnits() != "") {
+        int mw = w - 5;
+        paint.drawText(5,
+                       5 + paint.fontMetrics().ascent(),
+                       TextAbbrev::abbreviate(getScaleUnits(),
+                                              paint.fontMetrics(),
+                                              mw));
     }
 }
 
@@ -1039,7 +1076,7 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
          ItemEditDialog::ShowDuration |
          ItemEditDialog::ShowValue |
          ItemEditDialog::ShowText,
-         m_model->getScaleUnits());
+         getScaleUnits());
 
     dialog->setFrameTime(note.frame);
     dialog->setValue(note.value);
