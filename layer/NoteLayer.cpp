@@ -817,17 +817,27 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 int
 NoteLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 {
-    return 10;
+    if (!m_model || shouldAutoAlign()) {
+        return 0;
+    } else if (m_verticalScale == LogScale || 
+               m_verticalScale == MIDIRangeScale) {
+        return 10;
+    } else {
+        return 0;
+    }
 }
 
 void
 NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
-    float fmin, fmax;
-    getDisplayExtents(fmin, fmax);
-    PianoScale().paintPianoVertical
-        (v, paint, QRect(0, 0, 10, v->height()), fmin, fmax);
-    paint.drawLine(10, 0, 10, v->height());
+    if (m_verticalScale == LogScale ||
+        m_verticalScale == MIDIRangeScale) {
+        float fmin, fmax;
+        getDisplayExtents(fmin, fmax);
+        PianoScale().paintPianoVertical
+            (v, paint, QRect(0, 0, 10, v->height()), fmin, fmax);
+        paint.drawLine(10, 0, 10, v->height());
+    }
 }
 
 void
