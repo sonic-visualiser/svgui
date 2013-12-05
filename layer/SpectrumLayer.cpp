@@ -717,7 +717,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
             size_t bin = i->first;
             
-//            std::cerr << "bin = " << bin << ", thresh = " << thresh << ", value = " << fft->getMagnitudeAt(col, bin) << std::endl;
+//            cerr << "bin = " << bin << ", thresh = " << thresh << ", value = " << fft->getMagnitudeAt(col, bin) << endl;
 
             if (!fft->isOverThreshold(col, bin, thresh)) continue;
             

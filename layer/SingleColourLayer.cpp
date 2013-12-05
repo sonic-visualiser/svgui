@@ -161,11 +161,11 @@ SingleColourLayer::setDefaultColourFor(View *v)
         // a virtual function
         hint = getDefaultColourHint(dark, impose);
 #ifdef DEBUG_COLOUR_SELECTION
-        std::cerr << "hint = " << hint << ", impose = " << impose << std::endl;
+        cerr << "hint = " << hint << ", impose = " << impose << endl;
 #endif
     } else {
 #ifdef DEBUG_COLOUR_SELECTION
-        std::cerr << "(from ctor)" << std::endl;
+        cerr << "(from ctor)" << endl;
 #endif
     }
 
@@ -188,19 +188,19 @@ SingleColourLayer::setDefaultColourFor(View *v)
         }
 
 #ifdef DEBUG_COLOUR_SELECTION
-        std::cerr << "index = " << index << ", count = " << count;
+        cerr << "index = " << index << ", count = " << count;
 #endif
 
         if (bestColour < 0 || count < bestCount) {
             bestColour = index;
             bestCount = count;
 #ifdef DEBUG_COLOUR_SELECTION
-            std::cerr << " *";
+            cerr << " *";
 #endif
         }
 
 #ifdef DEBUG_COLOUR_SELECTION
-        std::cerr << std::endl;
+        cerr << endl;
 #endif
     }
     

@@ -43,8 +43,8 @@
 
 //#define DEBUG_VIEW_WIDGET_PAINT 1
 
-using std::cerr;
-using std::endl;
+
+
 
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
@@ -325,7 +325,7 @@ View::setCentreFrame(size_t f, bool e)
 	if (newPixel != formerPixel) {
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	    std::cout << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << std::endl;
+	    cout << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
 #endif
 	    update();
 
@@ -335,9 +335,9 @@ View::setCentreFrame(size_t f, bool e)
 	if (e) {
             size_t rf = alignToReference(f);
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-            std::cerr << "View[" << this << "]::setCentreFrame(" << f
+            cerr << "View[" << this << "]::setCentreFrame(" << f
                       << "): emitting centreFrameChanged("
-                      << rf << ")" << std::endl;
+                      << rf << ")" << endl;
 #endif
             emit centreFrameChanged(rf, m_followPan, m_followPlay);
         }
@@ -436,7 +436,7 @@ int
 View::getZoomLevel() const
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-//	std::cout << "zoom level: " << m_zoomLevel << std::endl;
+//	cout << "zoom level: " << m_zoomLevel << endl;
 #endif
     return m_zoomLevel;
 }
@@ -753,7 +753,7 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
         
         QRect r = paint.fontMetrics().boundingRect(text);
         r.translate(QPoint(x, y));
-//        std::cerr << "drawVisibleText: r = " << r.x() << "," <<r.y() << " " << r.width() << "x" << r.height() << std::endl;
+//        cerr << "drawVisibleText: r = " << r.x() << "," <<r.y() << " " << r.width() << "x" << r.height() << endl;
         paint.drawRect(r);
         paint.setBrush(Qt::NoBrush);
 
@@ -774,7 +774,7 @@ View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle sty
 
     } else {
 
-	std::cerr << "ERROR: View::drawVisibleText: Boxed style not yet implemented!" << std::endl;
+	cerr << "ERROR: View::drawVisibleText: Boxed style not yet implemented!" << endl;
     }
 }
 
@@ -791,7 +791,7 @@ View::modelChanged()
     QObject *obj = sender();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    std::cerr << "View(" << this << ")::modelChanged()" << std::endl;
+    cerr << "View(" << this << ")::modelChanged()" << endl;
 #endif
     
     // If the model that has changed is not used by any of the cached
@@ -830,7 +830,7 @@ View::modelChanged(size_t startFrame, size_t endFrame)
     size_t myEndFrame = getEndFrame();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    std::cerr << "View(" << this << ")::modelChanged(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << std::endl;
+    cerr << "View(" << this << ")::modelChanged(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << endl;
 #endif
 
     if (myStartFrame > 0 && endFrame < size_t(myStartFrame)) {
@@ -873,7 +873,7 @@ View::modelChanged(size_t startFrame, size_t endFrame)
 void
 View::modelCompletionChanged()
 {
-//    std::cerr << "View(" << this << ")::modelCompletionChanged()" << std::endl;
+//    cerr << "View(" << this << ")::modelCompletionChanged()" << endl;
 
     QObject *obj = sender();
     checkProgress(obj);
@@ -882,7 +882,7 @@ View::modelCompletionChanged()
 void
 View::modelAlignmentCompletionChanged()
 {
-//    std::cerr << "View(" << this << ")::modelAlignmentCompletionChanged()" << std::endl;
+//    cerr << "View(" << this << ")::modelAlignmentCompletionChanged()" << endl;
 
     QObject *obj = sender();
     checkProgress(obj);
@@ -892,7 +892,7 @@ void
 View::modelReplaced()
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    std::cerr << "View(" << this << ")::modelReplaced()" << std::endl;
+    cerr << "View(" << this << ")::modelReplaced()" << endl;
 #endif
     delete m_cache;
     m_cache = 0;
@@ -945,8 +945,8 @@ View::globalCentreFrameChanged(unsigned long rf)
     if (m_followPan) {
         size_t f = alignFromReference(rf);
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        std::cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
-                  << "): setting centre frame to " << f << std::endl;
+        cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
+                  << "): setting centre frame to " << f << endl;
 #endif
         setCentreFrame(f, false);
     }
@@ -1014,8 +1014,8 @@ View::movePlayPointer(unsigned long newFrame)
 	}
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	std::cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
-		  << getStartFrame() << std::endl;
+	cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
+		  << getStartFrame() << endl;
 #endif
 
 	// We don't consider scrolling unless the pointer is outside
@@ -1024,7 +1024,7 @@ View::movePlayPointer(unsigned long newFrame)
 	int xnew = getXForFrame(m_playPointerFrame);
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	std::cerr << "xnew = " << xnew << ", width = " << width() << std::endl;
+	cerr << "xnew = " << xnew << ", width = " << width() << endl;
 #endif
 
 	if (xnew < width()/8 || xnew > (width()*7)/8) {
@@ -1057,7 +1057,7 @@ void
 View::viewZoomLevelChanged(View *p, unsigned long z, bool locked)
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    std::cerr  << "View[" << this << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << std::endl;
+    cerr  << "View[" << this << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << endl;
 #endif
     if (m_followZoom && p != this && locked) {
         setZoomLevel(z);
@@ -1245,16 +1245,16 @@ View::getAlignedPlaybackFrame() const
 /*
     Model *pm = m_manager->getPlaybackModel();
 
-//    std::cerr << "View[" << this << "]::getAlignedPlaybackFrame: pf = " << pf;
+//    cerr << "View[" << this << "]::getAlignedPlaybackFrame: pf = " << pf;
 
     if (pm) {
         pf = pm->alignToReference(pf);
-//        std::cerr << " -> " << pf;
+//        cerr << " -> " << pf;
     }
 */
     int af = aligningModel->alignFromReference(pf);
 
-//    std::cerr << ", aligned = " << af << std::endl;
+//    cerr << ", aligned = " << af << endl;
     return af;
 }
 
@@ -1281,8 +1281,8 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
 
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
 //        SVDEBUG << "View::getScrollableBackLayers: calling isLayerDormant on layer " << *i << endl;
-//        std::cerr << "(name is " << (*i)->objectName() << ")"
-//                  << std::endl;
+//        cerr << "(name is " << (*i)->objectName() << ")"
+//                  << endl;
 //        SVDEBUG << "View::getScrollableBackLayers: I am " << this << endl;
 	if ((*i)->isLayerDormant(this)) continue;
 	if ((*i)->isLayerOpaque()) {
@@ -1485,7 +1485,7 @@ View::checkProgress(void *object)
 
 	    } else {
 
-//                std::cerr << "progress = " << completion << std::endl;
+//                cerr << "progress = " << completion << endl;
 
                 if (!pb->isVisible()) {
                     i->second.lastCheck = 0;
@@ -1578,8 +1578,8 @@ View::paintEvent(QPaintEvent *e)
     if (e) {
 	cacheRect &= e->rect();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	std::cerr << "paint rect " << cacheRect.width() << "x" << cacheRect.height()
-		  << ", my rect " << width() << "x" << height() << std::endl;
+	cerr << "paint rect " << cacheRect.width() << "x" << cacheRect.height()
+		  << ", my rect " << width() << "x" << height() << endl;
 #endif
     }
 
@@ -1619,11 +1619,11 @@ View::paintEvent(QPaintEvent *e)
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    std::cerr << "View(" << this << ")::paintEvent: have " << scrollables.size()
+    cerr << "View(" << this << ")::paintEvent: have " << scrollables.size()
 	      << " scrollable back layers and " << nonScrollables.size()
-	      << " non-scrollable front layers" << std::endl;
-    std::cerr << "haveSelections " << haveSelections << ", selectionCacheable "
-	      << selectionCacheable << ", m_selectionCached " << m_selectionCached << std::endl;
+	      << " non-scrollable front layers" << endl;
+    cerr << "haveSelections " << haveSelections << ", selectionCacheable "
+	      << selectionCacheable << ", m_selectionCached " << m_selectionCached << endl;
 #endif
 
     if (layersChanged || scrollables.empty() ||
@@ -1636,8 +1636,8 @@ View::paintEvent(QPaintEvent *e)
     if (!scrollables.empty()) {
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        std::cerr << "View(" << this << "): cache " << m_cache << ", cache zoom "
-                  << m_cacheZoomLevel << ", zoom " << m_zoomLevel << std::endl;
+        cerr << "View(" << this << "): cache " << m_cache << ", cache zoom "
+                  << m_cacheZoomLevel << ", zoom " << m_zoomLevel << endl;
 #endif
 
 	if (!m_cache ||
@@ -1651,13 +1651,13 @@ View::paintEvent(QPaintEvent *e)
 		delete m_cache;
                 m_cache = 0;
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-		std::cerr << "View(" << this << ")::paintEvent: small repaint, not bothering to recreate cache" << std::endl;
+		cerr << "View(" << this << ")::paintEvent: small repaint, not bothering to recreate cache" << endl;
 #endif
 	    } else {
 		delete m_cache;
 		m_cache = new QPixmap(width(), height());
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-		std::cerr << "View(" << this << ")::paintEvent: recreated cache" << std::endl;
+		cerr << "View(" << this << ")::paintEvent: recreated cache" << endl;
 #endif
 		cacheRect = rect();
 		repaintCache = true;
@@ -1702,19 +1702,19 @@ View::paintEvent(QPaintEvent *e)
 		    cacheRect = QRect(0, 0, dx, height());
 		}
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-		std::cerr << "View(" << this << ")::paintEvent: scrolled cache by " << dx << std::endl;
+		cerr << "View(" << this << ")::paintEvent: scrolled cache by " << dx << endl;
 #endif
 	    } else {
 		cacheRect = rect();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-		std::cerr << "View(" << this << ")::paintEvent: scrolling too far" << std::endl;
+		cerr << "View(" << this << ")::paintEvent: scrolling too far" << endl;
 #endif
 	    }
 	    repaintCache = true;
 
 	} else {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	    std::cerr << "View(" << this << ")::paintEvent: cache is good" << std::endl;
+	    cerr << "View(" << this << ")::paintEvent: cache is good" << endl;
 #endif
 	    paint.begin(this);
 	    paint.drawPixmap(cacheRect, *m_cache, cacheRect);
@@ -1728,7 +1728,7 @@ View::paintEvent(QPaintEvent *e)
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-//    std::cerr << "View(" << this << ")::paintEvent: cacheRect " << cacheRect << ", nonCacheRect " << (nonCacheRect | cacheRect) << ", repaintCache " << repaintCache << ", paintedCacheRect " << paintedCacheRect << std::endl;
+//    cerr << "View(" << this << ")::paintEvent: cacheRect " << cacheRect << ", nonCacheRect " << (nonCacheRect | cacheRect) << ", repaintCache " << repaintCache << ", paintedCacheRect " << paintedCacheRect << endl;
 #endif
 
     // Scrollable (cacheable) items first
@@ -2309,7 +2309,7 @@ View::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
 		    paint.save();
 	            paint.translate(xorigin + x, 0);
 
-	            std::cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << std::endl;
+	            cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
 
 	            (*i)->setSynchronousPainting(true);
 

@@ -17,6 +17,9 @@
 #define _TIME_VALUE_LAYER_H_
 
 #include "SingleColourLayer.h"
+#include "VerticalScaleLayer.h"
+#include "ColourScaleLayer.h"
+
 #include "data/model/SparseTimeValueModel.h"
 
 #include <QObject>
@@ -25,7 +28,9 @@
 class View;
 class QPainter;
 
-class TimeValueLayer : public SingleColourLayer
+class TimeValueLayer : public SingleColourLayer, 
+                       public VerticalScaleLayer, 
+                       public ColourScaleLayer
 {
     Q_OBJECT
 
@@ -149,11 +154,14 @@ public:
         }
     }
 
+    /// VerticalScaleLayer and ColourScaleLayer methods
+    virtual int getYForValue(View *, float value) const;
+    virtual float getValueForY(View *, int y) const;
+    virtual QString getScaleUnits() const;
+    virtual QColor getColourForValue(View *v, float value) const;
+
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
-    int getYForValue(View *, float value) const;
-    float getValueForY(View *, int y) const;
-    QColor getColourForValue(View *v, float value) const;
     bool shouldAutoAlign() const;
 
     SparseTimeValueModel::PointList getLocalPoints(View *v, int) const;

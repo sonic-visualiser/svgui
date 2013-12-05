@@ -70,18 +70,18 @@ ViewManager::ViewManager() :
 
     if (getGlobalDarkBackground()) {
 /*
-        std::cerr << "dark palette:" << std::endl;
-        std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name() << std::endl;
-        std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name() << std::endl;
-        std::cerr << "base = " << QApplication::palette().color(QPalette::Base).name() << std::endl;
-        std::cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name() << std::endl;
-        std::cerr << "text = " << QApplication::palette().color(QPalette::Text).name() << std::endl;
-        std::cerr << "button = " << QApplication::palette().color(QPalette::Button).name() << std::endl;
-        std::cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name() << std::endl;
-        std::cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name() << std::endl;
-        std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name() << std::endl;
-        std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name() << std::endl;
-        std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name() << std::endl;
+        cerr << "dark palette:" << endl;
+        cerr << "window = " << QApplication::palette().color(QPalette::Window).name() << endl;
+        cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name() << endl;
+        cerr << "base = " << QApplication::palette().color(QPalette::Base).name() << endl;
+        cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name() << endl;
+        cerr << "text = " << QApplication::palette().color(QPalette::Text).name() << endl;
+        cerr << "button = " << QApplication::palette().color(QPalette::Button).name() << endl;
+        cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name() << endl;
+        cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name() << endl;
+        cerr << "light = " << QApplication::palette().color(QPalette::Light).name() << endl;
+        cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name() << endl;
+        cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name() << endl;
 */
         m_lightPalette = QPalette(QColor("#000000"),  // WindowText
                                   QColor("#dddfe4"),  // Button
@@ -96,18 +96,18 @@ ViewManager::ViewManager() :
 
     } else {
 /*
-        std::cerr << "light palette:" << std::endl;
-        std::cerr << "window = " << QApplication::palette().color(QPalette::Window).name() << std::endl;
-        std::cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name() << std::endl;
-        std::cerr << "base = " << QApplication::palette().color(QPalette::Base).name() << std::endl;
-        std::cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name() << std::endl;
-        std::cerr << "text = " << QApplication::palette().color(QPalette::Text).name() << std::endl;
-        std::cerr << "button = " << QApplication::palette().color(QPalette::Button).name() << std::endl;
-        std::cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name() << std::endl;
-        std::cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name() << std::endl;
-        std::cerr << "light = " << QApplication::palette().color(QPalette::Light).name() << std::endl;
-        std::cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name() << std::endl;
-        std::cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name() << std::endl;
+        cerr << "light palette:" << endl;
+        cerr << "window = " << QApplication::palette().color(QPalette::Window).name() << endl;
+        cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name() << endl;
+        cerr << "base = " << QApplication::palette().color(QPalette::Base).name() << endl;
+        cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name() << endl;
+        cerr << "text = " << QApplication::palette().color(QPalette::Text).name() << endl;
+        cerr << "button = " << QApplication::palette().color(QPalette::Button).name() << endl;
+        cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name() << endl;
+        cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name() << endl;
+        cerr << "light = " << QApplication::palette().color(QPalette::Light).name() << endl;
+        cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name() << endl;
+        cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name() << endl;
 */
         m_darkPalette = QPalette(QColor("#ffffff"),  // WindowText
                                  QColor("#3e3e3e"),  // Button
@@ -129,7 +129,7 @@ unsigned long
 ViewManager::getGlobalCentreFrame() const
 {
 #ifdef DEBUG_VIEW_MANAGER
-    std::cerr << "ViewManager::getGlobalCentreFrame: returning " << m_globalCentreFrame << std::endl;
+    cerr << "ViewManager::getGlobalCentreFrame: returning " << m_globalCentreFrame << endl;
 #endif
     return m_globalCentreFrame;
 }
@@ -138,7 +138,7 @@ void
 ViewManager::setGlobalCentreFrame(unsigned long f)
 {
 #ifdef DEBUG_VIEW_MANAGER
-    std::cerr << "ViewManager::setGlobalCentreFrame to " << f << std::endl;
+    cerr << "ViewManager::setGlobalCentreFrame to " << f << endl;
 #endif
     m_globalCentreFrame = f;
     emit globalCentreFrameChanged(f);
@@ -148,7 +148,7 @@ unsigned long
 ViewManager::getGlobalZoom() const
 {
 #ifdef DEBUG_VIEW_MANAGER
-    std::cerr << "ViewManager::getGlobalZoom: returning " << m_globalZoom << std::endl;
+    cerr << "ViewManager::getGlobalZoom: returning " << m_globalZoom << endl;
 #endif
     return m_globalZoom;
 }
@@ -453,6 +453,9 @@ ViewManager::setAudioPlaySource(AudioPlaySource *source)
 void
 ViewManager::playStatusChanged(bool /* playing */)
 {
+#ifdef DEBUG_VIEW_MANAGER
+    cerr << "ViewManager::playStatusChanged" << endl;
+#endif
     checkPlayStatus();
 }
 
@@ -473,7 +476,7 @@ ViewManager::checkPlayStatus()
 	m_playbackFrame = m_playSource->getCurrentPlayingFrame();
 
 #ifdef DEBUG_VIEW_MANAGER
-	std::cerr << "ViewManager::checkPlayStatus: Playing, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << std::endl;
+	cerr << "ViewManager::checkPlayStatus: Playing, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
 #endif
 
 	emit playbackFrameChanged(m_playbackFrame);
@@ -482,8 +485,6 @@ ViewManager::checkPlayStatus()
 
     } else {
 
-	QTimer::singleShot(100, this, SLOT(checkPlayStatus()));
-	
 	if (m_lastLeft != 0.0 || m_lastRight != 0.0) {
 	    emit outputLevelsChanged(0.0, 0.0);
 	    m_lastLeft = 0.0;
@@ -491,7 +492,7 @@ ViewManager::checkPlayStatus()
 	}
 
 #ifdef DEBUG_VIEW_MANAGER
-//	std::cerr << "ViewManager::checkPlayStatus: Not playing" << std::endl;
+	cerr << "ViewManager::checkPlayStatus: Not playing" << endl;
 #endif
     }
 }
@@ -509,7 +510,7 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
     View *v = dynamic_cast<View *>(sender());
 
 #ifdef DEBUG_VIEW_MANAGER
-    std::cerr << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << std::endl;
+    cerr << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << endl;
 #endif
 
     if (locked) {
@@ -538,7 +539,7 @@ void
 ViewManager::seek(unsigned long f)
 {
 #ifdef DEBUG_VIEW_MANAGER 
-    std::cerr << "ViewManager::seek(" << f << ")" << std::endl;
+    cerr << "ViewManager::seek(" << f << ")" << endl;
 #endif
 
     if (m_playSource && m_playSource->isPlaying()) {
@@ -548,7 +549,7 @@ ViewManager::seek(unsigned long f)
 	    m_playbackFrame = f;
 	    m_playSource->play(f);
 #ifdef DEBUG_VIEW_MANAGER 
-	    std::cerr << "ViewManager::considerSeek: reseeking from " << playFrame << " to " << f << std::endl;
+	    cerr << "ViewManager::considerSeek: reseeking from " << playFrame << " to " << f << endl;
 #endif
             emit playbackFrameChanged(f);
 	}
@@ -577,7 +578,7 @@ ViewManager::viewZoomLevelChanged(unsigned long z, bool locked)
     }
 
 #ifdef DEBUG_VIEW_MANAGER 
-    std::cerr << "ViewManager::viewZoomLevelChanged(" << v << ", " << z << ", " << locked << ")" << std::endl;
+    cerr << "ViewManager::viewZoomLevelChanged(" << v << ", " << z << ", " << locked << ")" << endl;
 #endif
 
     emit viewZoomLevelChanged(v, z, locked);

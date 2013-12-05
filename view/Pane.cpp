@@ -53,8 +53,8 @@
 
 //#define DEBUG_PANE
 
-using std::cerr;
-using std::endl;
+
+
 
 QCursor *Pane::m_measureCursor1 = 0;
 QCursor *Pane::m_measureCursor2 = 0;
@@ -110,7 +110,7 @@ Pane::updateHeadsUpDisplay()
         ++count;
     }
 
-    std::cerr << "Have " << count+1 << " zoom levels" << std::endl;
+    cerr << "Have " << count+1 << " zoom levels" << endl;
 */
 
     Layer *layer = 0;
@@ -223,25 +223,25 @@ Pane::updateHeadsUpDisplay()
                 step *= 2;
                 --pwr;
             }
-//            std::cerr << level << std::endl;
+//            cerr << level << endl;
             level += step;
             if (++count == 100 || level > 262144) break;
         }
     }
 
-//    std::cerr << "Have " << count << " zoom levels" << std::endl;
+//    cerr << "Have " << count << " zoom levels" << endl;
 
     m_hthumb->setMinimumValue(0);
     m_hthumb->setMaximumValue(count);
     m_hthumb->setValue(count - current);
 
-//    std::cerr << "set value to " << count-current << std::endl;
+//    cerr << "set value to " << count-current << endl;
 
-//    std::cerr << "default value is " << m_hthumb->getDefaultValue() << std::endl;
+//    cerr << "default value is " << m_hthumb->getDefaultValue() << endl;
 
     if (count != 50 && m_hthumb->getDefaultValue() == 0) {
         m_hthumb->setDefaultValue(count - current);
-//        std::cerr << "set default value to " << m_hthumb->getDefaultValue() << std::endl;
+//        cerr << "set default value to " << m_hthumb->getDefaultValue() << endl;
     }
 
     bool haveVThumb = false;
@@ -261,9 +261,9 @@ Pane::updateHeadsUpDisplay()
             m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
             m_vthumb->blockSignals(false);
 
-//            std::cerr << "Vertical thumbwheel: min 0, max " << max
+//            cerr << "Vertical thumbwheel: min 0, max " << max
 //                      << ", default " << defaultStep << ", value "
-//                      << m_vthumb->getValue() << std::endl;
+//                      << m_vthumb->getValue() << endl;
 
         }
     }
@@ -774,11 +774,11 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
     const Model *reference = model->getAlignmentReference();
 /*
     if (!reference) {
-        std::cerr << "Pane[" << this << "]::drawAlignmentStatus: No reference" << std::endl;
+        cerr << "Pane[" << this << "]::drawAlignmentStatus: No reference" << endl;
     } else if (reference == model) {
-        std::cerr << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << std::endl;
+        cerr << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << endl;
     } else {
-        std::cerr << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << std::endl;
+        cerr << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << endl;
     }
 */
     QString text;
@@ -878,8 +878,8 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     std::vector<QPixmap> pixmaps;
     for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
         texts.push_back((*i)->getLayerPresentationName());
-//        std::cerr << "Pane " << this << ": Layer presentation name for " << *i << ": "
-//                  << texts[texts.size()-1] << std::endl;
+//        cerr << "Pane " << this << ": Layer presentation name for " << *i << ": "
+//                  << texts[texts.size()-1] << endl;
         pixmaps.push_back((*i)->getLayerPresentationPixmap
                           (QSize(fontAscent, fontAscent)));
     }
@@ -896,7 +896,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 	
         for (size_t i = 0; i < texts.size(); ++i) {
 
-//            std::cerr << "Pane "<< this << ": text " << i << ": " << texts[i] << std::endl;
+//            cerr << "Pane "<< this << ": text " << i << ": " << texts[i] << endl;
             
             if (i + 1 == texts.size()) {
                 paint.setPen(getForeground());
@@ -1278,7 +1278,7 @@ Pane::mousePressEvent(QMouseEvent *e)
         return;
     }
 
-//    std::cerr << "mousePressEvent" << std::endl;
+//    cerr << "mousePressEvent" << endl;
 
     m_clickPos = e->pos();
     m_mousePos = m_clickPos;
@@ -1398,7 +1398,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         return;
     }
 
-//    std::cerr << "mouseReleaseEvent" << std::endl;
+//    cerr << "mouseReleaseEvent" << endl;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolMode();
@@ -1506,7 +1506,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         return;
     }
 
-//    std::cerr << "mouseMoveEvent" << std::endl;
+//    cerr << "mouseMoveEvent" << endl;
 
     QPoint pos = e->pos();
     updateContextHelp(&pos);
@@ -1703,11 +1703,11 @@ Pane::zoomToRegion(int x0, int y0, int x1, int y1)
     }
 	    
     float ratio = float(w) / float(width());
-//	std::cerr << "ratio: " << ratio << std::endl;
+//	cerr << "ratio: " << ratio << endl;
     size_t newZoomLevel = (size_t)nearbyint(m_zoomLevel * ratio);
     if (newZoomLevel < 1) newZoomLevel = 1;
 
-//	std::cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << std::endl;
+//	cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << endl;
     setZoomLevel(getZoomConstraintBlockSize(newZoomLevel));
     setStartFrame(newStartFrame);
 
@@ -1731,12 +1731,12 @@ Pane::zoomToRegion(int x0, int y0, int x1, int y1)
         }
         float rmin = min + ((max - min) * (height() - y1)) / height();
         float rmax = min + ((max - min) * (height() - y0)) / height();
-        std::cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << std::endl;
+        cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << endl;
         if (log) {
             rmin = powf(10, rmin);
             rmax = powf(10, rmax);
         }
-        std::cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << std::endl;
+        cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << endl;
 
         layer->setDisplayExtents(rmin, rmax);
         updateVerticalPanner();
@@ -1818,12 +1818,12 @@ Pane::dragTopLayer(QMouseEvent *e)
 
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
 
-//            std::cerr << "ydiff = " << ydiff << std::endl;
+//            cerr << "ydiff = " << ydiff << endl;
 
             int ydiff = e->y() - m_clickPos.y();
             float perpix = (dmax - dmin) / height();
             float valdiff = ydiff * perpix;
-//            std::cerr << "valdiff = " << valdiff << std::endl;
+//            cerr << "valdiff = " << valdiff << endl;
 
             if (m_dragMode == UnresolvedDrag && ydiff != 0) {
                 m_dragMode = VerticalDrag;
@@ -1839,8 +1839,8 @@ Pane::dragTopLayer(QMouseEvent *e)
                 newmin -= newmax - vmax;
                 newmax -= newmax - vmax;
             }
-//            std::cerr << "(" << dmin << ", " << dmax << ") -> ("
-//                      << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << std::endl;
+//            cerr << "(" << dmin << ", " << dmax << ") -> ("
+//                      << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << endl;
 
             setTopLayerDisplayExtents(newmin, newmax);
             updateVerticalPanner();
@@ -1923,7 +1923,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
                                   resolution, Layer::SnapRight);
     }
 	
-//	std::cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << std::endl;
+//	cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
 
     if (snapFrameLeft < 0) snapFrameLeft = 0;
     if (snapFrameRight < 0) snapFrameRight = 0;
@@ -1986,7 +1986,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         return;
     }
 
-//    std::cerr << "mouseDoubleClickEvent" << std::endl;
+//    cerr << "mouseDoubleClickEvent" << endl;
 
     m_clickPos = e->pos();
     m_clickedInRange = true;
@@ -2059,7 +2059,7 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-    //std::cerr << "wheelEvent, delta " << e->delta() << std::endl;
+    //cerr << "wheelEvent, delta " << e->delta() << endl;
 
     int count = e->delta();
 
@@ -2178,13 +2178,13 @@ Pane::horizontalThumbwheelMoved(int value)
                 step *= 2;
                 --pwr;
             }
-//            std::cerr << level << std::endl;
+//            cerr << level << endl;
             level += step;
             if (++count == 100 || level > 262144) break;
         }
     }
         
-//    std::cerr << "new level is " << level << std::endl;
+//    cerr << "new level is " << level << endl;
     setZoomLevel(level);
 }    
 
@@ -2216,8 +2216,8 @@ Pane::verticalPannerMoved(float x0, float y0, float w, float h)
     float y1 = y0 + h;
     float newmax = vmin + ((1.0 - y0) * (vmax - vmin));
     float newmin = vmin + ((1.0 - y1) * (vmax - vmin));
-//    std::cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
-//              << "," << h << ") -> (" << newmin << "," << newmax << ")" << std::endl;
+//    cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
+//              << "," << h << ") -> (" << newmin << "," << newmax << ")" << endl;
     setTopLayerDisplayExtents(newmin, newmax);
 }
 
@@ -2257,10 +2257,10 @@ void
 Pane::dragEnterEvent(QDragEnterEvent *e)
 {
     QStringList formats(e->mimeData()->formats());
-    std::cerr << "dragEnterEvent: format: "
-              << formats.join(",").toStdString()
+    cerr << "dragEnterEvent: format: "
+              << formats.join(",")
               << ", possibleActions: " << e->possibleActions()
-              << ", proposedAction: " << e->proposedAction() << std::endl;
+              << ", proposedAction: " << e->proposedAction() << endl;
     
     if (e->mimeData()->hasFormat("text/uri-list") ||
         e->mimeData()->hasFormat("text/plain")) {
@@ -2277,8 +2277,8 @@ Pane::dragEnterEvent(QDragEnterEvent *e)
 void
 Pane::dropEvent(QDropEvent *e)
 {
-    std::cerr << "dropEvent: text: \"" << e->mimeData()->text().toStdString()
-              << "\"" << std::endl;
+    cerr << "dropEvent: text: \"" << e->mimeData()->text()
+              << "\"" << endl;
 
     if (e->mimeData()->hasFormat("text/uri-list") || 
         e->mimeData()->hasFormat("text/plain")) {
@@ -2442,8 +2442,8 @@ Pane::zoomWheelsEnabledChanged()
 void
 Pane::viewZoomLevelChanged(View *v, unsigned long z, bool locked)
 {
-//    std::cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
-//              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << std::endl;
+//    cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
+//              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << endl;
 
     View::viewZoomLevelChanged(v, z, locked);
 

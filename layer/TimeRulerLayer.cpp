@@ -29,8 +29,8 @@
 
 //#define DEBUG_TIME_RULER_LAYER 1
 
-using std::cerr;
-using std::endl;
+
+
 
 TimeRulerLayer::TimeRulerLayer() :
     SingleColourLayer(),
@@ -207,7 +207,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
     long startFrame = v->getFrameForX(rect.x() - 50);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-    std::cerr << "start frame = " << startFrame << std::endl;
+    cerr << "start frame = " << startFrame << endl;
 #endif
 
     bool quarter = false;
@@ -217,7 +217,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
     ms = (ms / incms) * incms - incms;
 
 #ifdef DEBUG_TIME_RULER_LAYER
-    std::cerr << "start ms = " << ms << " at step " << incms << std::endl;
+    cerr << "start ms = " << ms << " at step " << incms << endl;
 #endif
 
     // Calculate the number of ticks per increment -- approximate
@@ -257,7 +257,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         if (x >= rect.x() + rect.width() + 50) {
 #ifdef DEBUG_TIME_RULER_LAYER
-            std::cerr << "X well out of range, ending here" << std::endl;
+            cerr << "X well out of range, ending here" << endl;
 #endif
             break;
         }
@@ -267,7 +267,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
             RealTime rt = RealTime::fromMilliseconds(ms);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-            std::cerr << "X in range, drawing line here for time " << rt.toText() << std::endl;
+            cerr << "X in range, drawing line here for time " << rt.toText() << endl;
 #endif
 
             QString text(QString::fromStdString(rt.toText()));
@@ -278,7 +278,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
                 (x < rect.x() - tw/2 ||
                  x >= rect.x() + rect.width() + tw/2)) {
 #ifdef DEBUG_TIME_RULER_LAYER
-                std::cerr << "hm, maybe X isn't in range after all (x = " << x << ", tw = " << tw << ", rect.x() = " << rect.x() << ", rect.width() = " << rect.width() << ")" << std::endl;
+                cerr << "hm, maybe X isn't in range after all (x = " << x << ", tw = " << tw << ", rect.x() = " << rect.x() << ", rect.width() = " << rect.width() << ")" << endl;
 #endif
             }
 
@@ -327,13 +327,13 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
             if (x < rect.x() || x >= rect.x() + rect.width()) {
 #ifdef DEBUG_TIME_RULER_LAYER
-//                std::cerr << "tick " << i << ": X out of range, going on to next tick" << std::endl;
+//                cerr << "tick " << i << ": X out of range, going on to next tick" << endl;
 #endif
                 continue;
             }
 
 #ifdef DEBUG_TIME_RULER_LAYER
-            std::cerr << "tick " << i << " in range, drawing at " << x << std::endl;
+            cerr << "tick " << i << " in range, drawing at " << x << endl;
 #endif
 
 	    int sz = 5;

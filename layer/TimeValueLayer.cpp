@@ -28,8 +28,14 @@
 
 #include "widgets/ItemEditDialog.h"
 #include "widgets/ListInputDialog.h"
+#include "widgets/TextAbbrev.h"
 
 #include "ColourMapper.h"
+#include "PianoScale.h"
+#include "LinearNumericalScale.h"
+#include "LogNumericalScale.h"
+#include "LinearColourScale.h"
+#include "LogColourScale.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -81,7 +87,7 @@ TimeValueLayer::setModel(SparseTimeValueModel *model)
     }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::setModel(" << model << ")" << std::endl;
+    cerr << "TimeValueLayer::setModel(" << model << ")" << endl;
 #endif
 
     emit modelReplaced();
@@ -143,6 +149,13 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
     return SingleColourLayer::getPropertyGroupName(name);
 }
 
+QString
+TimeValueLayer::getScaleUnits() const
+{
+    if (m_model) return m_model->getScaleUnits();
+    else return "";
+}
+
 int
 TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 					 int *min, int *max, int *deflt) const
@@ -178,7 +191,7 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
         if (deflt) *deflt = 0;
         if (m_model) {
             val = UnitDatabase::getInstance()->getUnitId
-                (m_model->getScaleUnits());
+                (getScaleUnits());
         }
 
     } else if (name == "Draw Segment Division Lines") {
@@ -326,7 +339,7 @@ TimeValueLayer::getValueExtents(float &min, float &max,
 
     logarithmic = (m_verticalScale == LogScale);
 
-    unit = m_model->getScaleUnits();
+    unit = getScaleUnits();
 
     if (m_derivative) {
         max = std::max(fabsf(min), fabsf(max));
@@ -334,7 +347,7 @@ TimeValueLayer::getValueExtents(float &min, float &max,
     }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getValueExtents: min = " << min << ", max = " << max << std::endl;
+    cerr << "TimeValueLayer::getValueExtents: min = " << min << ", max = " << max << endl;
 #endif
 
     if (!shouldAutoAlign() && !logarithmic && !m_derivative) {
@@ -349,7 +362,7 @@ TimeValueLayer::getValueExtents(float &min, float &max,
         }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-        std::cerr << "TimeValueLayer::getValueExtents: min = " << min << ", max = " << max << " (after adjustment)" << std::endl;
+        cerr << "TimeValueLayer::getValueExtents: min = " << min << ", max = " << max << " (after adjustment)" << endl;
 #endif
     }
 
@@ -376,7 +389,7 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
     }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << std::endl;
+    cerr << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << endl;
 #endif
 
     return true;
@@ -399,7 +412,7 @@ TimeValueLayer::setDisplayExtents(float min, float max)
     m_scaleMaximum = max;
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << std::endl;
+    cerr << "TimeValueLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
 #endif
     
     emit layerParametersChanged();
@@ -431,7 +444,7 @@ TimeValueLayer::getCurrentVerticalZoomStep() const
     int nr = mapper->getPositionForValue(dmax - dmin);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getCurrentVerticalZoomStep: dmin = " << dmin << ", dmax = " << dmax << ", nr = " << nr << std::endl;
+    cerr << "TimeValueLayer::getCurrentVerticalZoomStep: dmin = " << dmin << ", dmax = " << dmax << ", nr = " << nr << endl;
 #endif
 
     delete mapper;
@@ -468,7 +481,7 @@ TimeValueLayer::setVerticalZoomStep(int step)
         newmin = newmax - newdist;
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-        std::cerr << "newmin = " << newmin << ", newmax = " << newmax << std::endl;
+        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
 #endif
 
     } else {
@@ -486,7 +499,7 @@ TimeValueLayer::setVerticalZoomStep(int step)
     }
     
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << std::endl;
+    cerr << "TimeValueLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
 #endif
 
     setDisplayExtents(newmin, newmax);
@@ -594,7 +607,7 @@ TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
     
     QString text;
-    QString unit = m_model->getScaleUnits();
+    QString unit = getScaleUnits();
     if (unit != "") unit = " " + unit;
 
     if (points.begin()->label == "") {
@@ -769,7 +782,7 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
 
     if (shouldAutoAlign()) {
 
-        if (!v->getValueExtents(m_model->getScaleUnits(), min, max, log)) {
+        if (!v->getValueExtents(getScaleUnits(), min, max, log)) {
             min = m_model->getValueMinimum();
             max = m_model->getValueMaximum();
         } else if (log) {
@@ -792,7 +805,7 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
     }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getScaleExtents: min = " << min << ", max = " << max << std::endl;
+    cerr << "TimeValueLayer::getScaleExtents: min = " << min << ", max = " << max << endl;
 #endif
 }
 
@@ -806,8 +819,8 @@ TimeValueLayer::getYForValue(View *v, float val) const
     getScaleExtents(v, min, max, logarithmic);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "getYForValue(" << val << "): min " << min << ", max "
-              << max << ", log " << logarithmic << std::endl;
+    cerr << "getYForValue(" << val << "): min " << min << ", max "
+              << max << ", log " << logarithmic << endl;
 #endif
 
     if (logarithmic) {
@@ -839,7 +852,7 @@ bool
 TimeValueLayer::shouldAutoAlign() const
 {
     if (!m_model) return false;
-    QString unit = m_model->getScaleUnits();
+    QString unit = getScaleUnits();
     return (m_verticalScale == AutoAlignScale && unit != "");
 }
 
@@ -858,8 +871,8 @@ TimeValueLayer::getColourForValue(View *v, float val) const
     }
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::getColourForValue: min " << min << ", max "
-              << max << ", log " << log << ", value " << val << std::endl;
+    cerr << "TimeValueLayer::getColourForValue: min " << min << ", max "
+              << max << ", log " << log << ", value " << val << endl;
 #endif
 
     QColor solid = ColourMapper(m_colourMap, min, max).map(val);
@@ -902,8 +915,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.setBrush(brushColour);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::paint: resolution is "
-	      << m_model->getResolution() << " frames" << std::endl;
+    cerr << "TimeValueLayer::paint: resolution is "
+	      << m_model->getResolution() << " frames" << endl;
 #endif
 
     float min = m_model->getValueMinimum();
@@ -920,7 +933,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	SparseTimeValueModel::PointList localPoints =
 	    getLocalPoints(v, localPos.x());
 #ifdef DEBUG_TIME_VALUE_LAYER
-        std::cerr << "TimeValueLayer: " << localPoints.size() << " local points" << std::endl;
+        cerr << "TimeValueLayer: " << localPoints.size() << " local points" << endl;
 #endif
 	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
@@ -1004,8 +1017,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    haveNext = true;
         }
 
-//        std::cout << "frame = " << p.frame << ", x = " << x << ", haveNext = " << haveNext 
-//                  << ", nx = " << nx << std::endl;
+//        cout << "frame = " << p.frame << ", x = " << x << ", haveNext = " << haveNext 
+//                  << ", nx = " << nx << endl;
 
         if (m_plotStyle == PlotDiscreteCurves) {
             paint.setPen(QPen(getBaseQColor(), 3));
@@ -1132,7 +1145,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	if (m_plotStyle == PlotSegmentation) {
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-            std::cerr << "drawing rect" << std::endl;
+            cerr << "drawing rect" << endl;
 #endif
 	    
 	    if (nx <= x) continue;
@@ -1179,9 +1192,11 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         ++pointCount;
     }
 
-    if ((m_plotStyle == PlotCurve || m_plotStyle == PlotDiscreteCurves ||
-         m_plotStyle == PlotLines)
-        && !path.isEmpty()) {
+    if (m_plotStyle == PlotDiscreteCurves) {
+        paint.setRenderHint(QPainter::Antialiasing, true);
+	paint.drawPath(path);
+    } else if ((m_plotStyle == PlotCurve || m_plotStyle == PlotLines)
+               && !path.isEmpty()) {
 	paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->width());
 	paint.drawPath(path);
     }
@@ -1193,11 +1208,23 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-TimeValueLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
+TimeValueLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 {
-    int w = paint.fontMetrics().width("-000.000");
-    if (m_plotStyle == PlotSegmentation) return w + 20;
-    else return w + 10;
+    if (!m_model || shouldAutoAlign()) {
+        return 0;
+    } else if (m_plotStyle == PlotSegmentation) {
+        if (m_verticalScale == LogScale) {
+            return LogColourScale().getWidth(v, paint);
+        } else {
+            return LinearColourScale().getWidth(v, paint);
+        }
+    } else {
+        if (m_verticalScale == LogScale) {
+            return LogNumericalScale().getWidth(v, paint) + 10; // for piano
+        } else {
+            return LinearNumericalScale().getWidth(v, paint);
+        }
+    }
 }
 
 void
@@ -1205,136 +1232,50 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
     if (!m_model) return;
 
-    int h = v->height();
-
-    int n = 10;
-
+    QString unit;
     float min, max;
     bool logarithmic;
-    getScaleExtents(v, min, max, logarithmic);
-
-    if (m_plotStyle == PlotSegmentation) {
-        QString unit;
-        getValueExtents(min, max, logarithmic, unit);
-        if (logarithmic) {
-            LogRange::mapRange(min, max);
-        }
-    }
-
-    float val = min;
-    float inc = (max - val) / n;
-
-    char buffer[40];
 
     int w = getVerticalScaleWidth(v, false, paint);
-
-    int tx = 5;
-
-    int boxx = 5, boxy = 5;
-    if (m_model->getScaleUnits() != "") {
-        boxy += paint.fontMetrics().height();
-    }
-    int boxw = 10, boxh = h - boxy - 5;
+    int h = v->height();
 
     if (m_plotStyle == PlotSegmentation) {
-        tx += boxx + boxw;
-        paint.drawRect(boxx, boxy, boxw, boxh);
-    }
 
-    if (m_plotStyle == PlotSegmentation) {
-        paint.save();
-        for (int y = 0; y < boxh; ++y) {
-            float val = ((boxh - y) * (max - min)) / boxh + min;
-            if (logarithmic) {
-                paint.setPen(getColourForValue(v, LogRange::unmap(val)));
-            } else {
-                paint.setPen(getColourForValue(v, val));
-            }
-            paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
-        }
-        paint.restore();
-    }
-    
-    float round = 1.f;
-    int dp = 0;
-    if (inc > 0) {
-        int prec = trunc(log10f(inc));
-        prec -= 1;
-        if (prec < 0) dp = -prec;
-        round = powf(10.f, prec);
-#ifdef DEBUG_TIME_VALUE_LAYER
-        std::cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << std::endl;
-#endif
-    }
-
-    int prevy = -1;
-                
-    for (int i = 0; i < n; ++i) {
-
-	int y, ty;
-        bool drawText = true;
-
-        float dispval = val;
-
-        if (m_plotStyle == PlotSegmentation) {
-            y = boxy + int(boxh - ((val - min) * boxh) / (max - min));
-            ty = y;
-        } else {
-            if (i == n-1 &&
-                v->height() < paint.fontMetrics().height() * (n*2)) {
-                if (m_model->getScaleUnits() != "") drawText = false;
-            }
-            dispval = lrintf(val / round) * round;
-#ifdef DEBUG_TIME_VALUE_LAYER
-            std::cerr << "val = " << val << ", dispval = " << dispval << std::endl;
-#endif
-            if (logarithmic) {
-                y = getYForValue(v, LogRange::unmap(dispval));
-            } else {
-                y = getYForValue(v, dispval);
-            }                
-            ty = y - paint.fontMetrics().height() +
-                     paint.fontMetrics().ascent() + 2;
-
-            if (prevy >= 0 && (prevy - y) < paint.fontMetrics().height()) {
-                val += inc;
-                continue;
-            }
-        }
+        getValueExtents(min, max, logarithmic, unit);
 
         if (logarithmic) {
-            double dv = LogRange::unmap(dispval);
-            int digits = trunc(log10f(dv));
-            int sf = dp + (digits > 0 ? digits : 0);
-            if (sf < 2) sf = 2;
-            sprintf(buffer, "%.*g", sf, dv);
+            LogRange::mapRange(min, max);
+            LogColourScale().paintVertical(v, this, paint, 0, min, max);
         } else {
-            sprintf(buffer, "%.*f", dp, dispval);
-        }            
-	QString label = QString(buffer);
-
-        if (m_plotStyle != PlotSegmentation) {
-            paint.drawLine(w - 5, y, w, y);
-        } else {
-            paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
+            LinearColourScale().paintVertical(v, this, paint, 0, min, max);
         }
 
-        if (drawText) {
-            if (m_plotStyle != PlotSegmentation) {
-                paint.drawText(tx + w - paint.fontMetrics().width(label) - 8,
-                               ty, label);
-            } else {
-                paint.drawText(tx, ty, label);
-            }
+    } else {
+
+        getScaleExtents(v, min, max, logarithmic);
+
+        if (logarithmic) {
+            LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        } else {
+            LinearNumericalScale().paintVertical(v, this, paint, 0, min, max);
         }
 
-        prevy = y;
-	val += inc;
+        if (logarithmic && (getScaleUnits() == "Hz")) {
+            PianoScale().paintPianoVertical
+                (v, paint, QRect(w - 10, 0, 10, h), 
+                 LogRange::unmap(min), 
+                 LogRange::unmap(max));
+            paint.drawLine(w, 0, w, h);
+        }
     }
-    
-    if (m_model->getScaleUnits() != "") {
-        paint.drawText(5, 5 + paint.fontMetrics().ascent(),
-                       m_model->getScaleUnits());
+        
+    if (getScaleUnits() != "") {
+        int mw = w - 5;
+        paint.drawText(5,
+                       5 + paint.fontMetrics().ascent(),
+                       TextAbbrev::abbreviate(getScaleUnits(),
+                                              paint.fontMetrics(),
+                                              mw));
     }
 }
 
@@ -1342,7 +1283,7 @@ void
 TimeValueLayer::drawStart(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << std::endl;
+    cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
     if (!m_model) return;
@@ -1362,7 +1303,7 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
              i != points.end(); ++i) {
             if (((i->frame / resolution) * resolution) != frame) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+                cerr << "ignoring out-of-range frame at " << i->frame << endl;
 #endif
                 continue;
             }
@@ -1392,7 +1333,7 @@ void
 TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+    cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
     if (!m_model || !m_editing) return;
@@ -1407,7 +1348,7 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
     SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << points.size() << " points" << std::endl;
+    cerr << points.size() << " points" << endl;
 #endif
 
     bool havePoint = false;
@@ -1418,18 +1359,18 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
             if (i->frame == m_editingPoint.frame &&
                 i->value == m_editingPoint.value) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                std::cerr << "ignoring current editing point at " << i->frame << ", " << i->value << std::endl;
+                cerr << "ignoring current editing point at " << i->frame << ", " << i->value << endl;
 #endif
                 continue;
             }
             if (((i->frame / resolution) * resolution) != frame) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                std::cerr << "ignoring out-of-range frame at " << i->frame << std::endl;
+                cerr << "ignoring out-of-range frame at " << i->frame << endl;
 #endif
                 continue;
             }
 #ifdef DEBUG_TIME_VALUE_LAYER
-            std::cerr << "adjusting to new point at " << i->frame << ", " << i->value << std::endl;
+            cerr << "adjusting to new point at " << i->frame << ", " << i->value << endl;
 #endif
             m_editingPoint = *i;
             m_originalPoint = m_editingPoint;
@@ -1454,7 +1395,7 @@ void
 TimeValueLayer::drawEnd(View *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::drawEnd" << std::endl;
+    cerr << "TimeValueLayer::drawEnd" << endl;
 #endif
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
@@ -1511,7 +1452,7 @@ void
 TimeValueLayer::editStart(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
+    cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
     if (!m_model) return;
@@ -1534,7 +1475,7 @@ void
 TimeValueLayer::editDrag(View *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
+    cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
     if (!m_model || !m_editing) return;
@@ -1560,7 +1501,7 @@ void
 TimeValueLayer::editEnd(View *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "TimeValueLayer::editEnd" << std::endl;
+    cerr << "TimeValueLayer::editEnd" << endl;
 #endif
     if (!m_model || !m_editing) return;
 
@@ -1601,7 +1542,7 @@ TimeValueLayer::editOpen(View *v, QMouseEvent *e)
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowValue |
          ItemEditDialog::ShowText,
-         m_model->getScaleUnits());
+         getScaleUnits());
 
     dialog->setFrameTime(point.frame);
     dialog->setValue(point.value);
@@ -1900,17 +1841,17 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
             newPoint.value = i->getValue();
         } else {
 #ifdef DEBUG_TIME_VALUE_LAYER
-            std::cerr << "Setting value on point at " << newPoint.frame << " from labeller";
+            cerr << "Setting value on point at " << newPoint.frame << " from labeller";
             if (i == points.begin()) {
-                std::cerr << ", no prev point" << std::endl;
+                cerr << ", no prev point" << endl;
             } else {
-                std::cerr << ", prev point is at " << prevPoint.frame << std::endl;
+                cerr << ", prev point is at " << prevPoint.frame << endl;
             }
 #endif
             labeller.setValue<SparseTimeValueModel::Point>
                 (newPoint, (i == points.begin()) ? 0 : &prevPoint);
 #ifdef DEBUG_TIME_VALUE_LAYER
-            std::cerr << "New point value = " << newPoint.value << std::endl;
+            cerr << "New point value = " << newPoint.value << endl;
 #endif
             if (labeller.actingOnPrevPoint() && i != points.begin()) {
                 usePrev = true;
@@ -1973,7 +1914,7 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
     float min = attributes.value("scaleMinimum").toFloat(&ok);
     float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
 #ifdef DEBUG_TIME_VALUE_LAYER
-    std::cerr << "from properties: min = " << min << ", max = " << max << std::endl;
+    cerr << "from properties: min = " << min << ", max = " << max << endl;
 #endif
     if (ok && alsoOk && min != max) setDisplayExtents(min, max);
 }

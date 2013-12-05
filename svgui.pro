@@ -30,12 +30,18 @@ win32-msvc* {
 HEADERS += layer/Colour3DPlotLayer.h \
 	   layer/ColourDatabase.h \
 	   layer/ColourMapper.h \
+           layer/ColourScaleLayer.h \
            layer/ImageLayer.h \
            layer/ImageRegionFinder.h \
            layer/Layer.h \
            layer/LayerFactory.h \
+           layer/LinearNumericalScale.h \
+           layer/LogNumericalScale.h \
+           layer/LinearColourScale.h \
+           layer/LogColourScale.h \
            layer/NoteLayer.h \
            layer/PaintAssistant.h \
+           layer/PianoScale.h \
            layer/RegionLayer.h \
            layer/SingleColourLayer.h \
            layer/SliceableLayer.h \
@@ -46,6 +52,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/TimeInstantLayer.h \
            layer/TimeRulerLayer.h \
            layer/TimeValueLayer.h \
+           layer/VerticalScaleLayer.h \
            layer/WaveformLayer.h
 SOURCES += layer/Colour3DPlotLayer.cpp \
 	   layer/ColourDatabase.cpp \
@@ -54,8 +61,13 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/ImageRegionFinder.cpp \
            layer/Layer.cpp \
            layer/LayerFactory.cpp \
+           layer/LinearNumericalScale.cpp \
+           layer/LogNumericalScale.cpp \
+           layer/LinearColourScale.cpp \
+           layer/LogColourScale.cpp \
            layer/NoteLayer.cpp \
            layer/PaintAssistant.cpp \
+           layer/PianoScale.cpp \
            layer/RegionLayer.cpp \
            layer/SingleColourLayer.cpp \
            layer/SliceLayer.cpp \

@@ -17,6 +17,8 @@
 #define _NOTE_LAYER_H_
 
 #include "SingleColourLayer.h"
+#include "VerticalScaleLayer.h"
+
 #include "data/model/NoteModel.h"
 
 #include <QObject>
@@ -25,7 +27,8 @@
 class View;
 class QPainter;
 
-class NoteLayer : public SingleColourLayer
+class NoteLayer : public SingleColourLayer,
+                  public VerticalScaleLayer
 {
     Q_OBJECT
 
@@ -33,6 +36,9 @@ public:
     NoteLayer();
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
+
+    virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
+    virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
@@ -102,8 +108,6 @@ public:
     virtual void setVerticalZoomStep(int);
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
-
     /**
      * Add a note-on.  Used when recording MIDI "live".  The note will
      * not be finally added to the layer until the corresponding
@@ -127,10 +131,13 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    /// VerticalScaleLayer methods
+    virtual int getYForValue(View *v, float value) const;
+    virtual float getValueForY(View *v, int y) const;
+    virtual QString getScaleUnits() const;
+
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
-    int getYForValue(View *v, float value) const;
-    float getValueForY(View *v, int y) const;
     bool shouldConvertMIDIToHz() const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
