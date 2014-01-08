@@ -147,6 +147,19 @@ public:
     Scale getScale() const { return m_scale; }
 
     /**
+     * Specify the height of the middle of the waveform track or
+     * tracks within the layer, from 0.0 to 1.0.
+     *
+     * A value of 0.0 would indicate that the waveform occupies
+     * effectively no space at the very top of the layer; 1.0 would
+     * indicate that the waveform occupies no space at the very
+     * bottom; the default value of 0.5 indicates that it occupies the
+     * whole layer, centred at the middle.
+     */
+    void setMiddleLineHeight(float height);
+    float getMiddleLineHeight() const { return m_middleLineHeight; }
+
+    /**
      * Enable or disable aggressive pixmap cacheing.  If enabled,
      * waveforms will be rendered to an off-screen pixmap and
      * refreshed from there instead of being redrawn from the peak
@@ -216,6 +229,7 @@ protected:
     ChannelMode  m_channelMode;
     int          m_channel;
     Scale        m_scale;
+    float        m_middleLineHeight;
     bool         m_aggressive;
 
     mutable std::vector<float> m_effectiveGains;
