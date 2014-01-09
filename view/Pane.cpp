@@ -333,7 +333,7 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
     QPoint discard;
     bool b0, b1;
 
-    if (m_manager && m_manager->getToolMode() == ViewManager::MeasureMode) {
+    if (m_manager && m_manager->getToolModeFor(this) == ViewManager::MeasureMode) {
         return false;
     }
     
@@ -358,7 +358,7 @@ Pane::shouldIlluminateLocalSelection(QPoint &pos,
 {
     if (m_identifyFeatures &&
     m_manager &&
-    m_manager->getToolMode() == ViewManager::EditMode &&
+    m_manager->getToolModeFor(this) == ViewManager::EditMode &&
     !m_manager->getSelections().empty() &&
     !selectionIsBeingEdited()) {
 
@@ -413,7 +413,7 @@ Pane::paintEvent(QPaintEvent *e)
 
     if (e) paint.setClipRect(r);
 
-    ViewManager::ToolMode toolMode = m_manager->getToolMode();
+    ViewManager::ToolMode toolMode = m_manager->getToolModeFor(this);
 
     if (m_manager &&
 //        !m_manager->isPlaying() &&
@@ -1296,7 +1296,7 @@ Pane::mousePressEvent(QMouseEvent *e)
     m_dragMode = UnresolvedDrag;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     m_navigating = false;
     m_resizing = false;
@@ -1415,7 +1415,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 //    cerr << "mouseReleaseEvent" << endl;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     m_releasing = true;
 
@@ -1558,7 +1558,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     }
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     QPoint prevPoint = m_identifyPoint;
     m_identifyPoint = e->pos();
@@ -2100,7 +2100,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     m_altPressed = (e->modifiers() & Qt::AltModifier);
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     bool relocate = (mode == ViewManager::NavigateMode ||
                      (e->buttons() & Qt::MidButton));
@@ -2421,9 +2421,9 @@ bool
 Pane::editSelectionStart(QMouseEvent *e)
 {
     if (!m_identifyFeatures ||
-    !m_manager ||
-    m_manager->getToolMode() != ViewManager::EditMode) {
-    return false;
+        !m_manager ||
+        m_manager->getToolModeFor(this) != ViewManager::EditMode) {
+        return false;
     }
 
     bool closeToLeft, closeToRight;
@@ -2499,7 +2499,7 @@ Pane::editSelectionEnd(QMouseEvent *)
 void
 Pane::toolModeChanged()
 {
-    ViewManager::ToolMode mode = m_manager->getToolMode();
+    ViewManager::ToolMode mode = m_manager->getToolModeFor(this);
 //    SVDEBUG << "Pane::toolModeChanged(" << mode << ")" << endl;
 
     if (mode == ViewManager::MeasureMode && !m_measureCursor1) {
@@ -2629,7 +2629,7 @@ Pane::updateContextHelp(const QPoint *pos)
     }
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     bool editable = false;
     Layer *layer = getSelectedLayer();

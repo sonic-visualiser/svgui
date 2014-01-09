@@ -364,6 +364,28 @@ ViewManager::setToolMode(ToolMode mode)
     };
 }
 
+ViewManager::ToolMode
+ViewManager::getToolModeFor(const View *v) const
+{
+    if (m_toolModeOverrides.find(v) == m_toolModeOverrides.end()) {
+        return getToolMode();
+    } else {
+        return m_toolModeOverrides.find(v)->second;
+    }
+}
+
+void
+ViewManager::setToolModeFor(const View *v, ToolMode mode)
+{
+    m_toolModeOverrides[v] = mode;
+}
+
+void
+ViewManager::clearToolModeOverrides()
+{
+    m_toolModeOverrides.clear();
+}
+
 void
 ViewManager::setPlayLoopMode(bool mode)
 {
