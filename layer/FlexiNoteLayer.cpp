@@ -613,10 +613,16 @@ FlexiNoteLayer::snapToFeatureFrame(View *v, int &frame,
     for (FlexiNoteModel::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
+        cerr << "FlexiNoteModel: point at " << i->frame << endl;
+
         if (snap == SnapRight) {
 
             if (i->frame > frame) {
                 snapped = i->frame;
+                found = true;
+                break;
+            } else if (i->frame + i->duration >= frame) {
+                snapped = i->frame + i->duration;
                 found = true;
                 break;
             }
@@ -653,6 +659,8 @@ FlexiNoteLayer::snapToFeatureFrame(View *v, int &frame,
             }
         }
     }
+
+    cerr << "snapToFeatureFrame: frame " << frame << " -> snapped " << snapped << ", found = " << found << endl;
 
     frame = snapped;
     return found;
