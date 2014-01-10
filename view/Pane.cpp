@@ -173,7 +173,7 @@ Pane::updateHeadsUpDisplay()
         }
 
         m_reset = new NotifyingPushButton;
-    m_reset->setFlat(true);
+        m_reset->setFlat(true);
         m_reset->setCursor(Qt::ArrowCursor);
         m_reset->setFixedHeight(16);
         m_reset->setFixedWidth(16);
@@ -1308,12 +1308,12 @@ Pane::mousePressEvent(QMouseEvent *e)
         (mode == ViewManager::MeasureMode &&
          (e->buttons() & Qt::LeftButton) && m_shiftPressed)) {
 
-    if (mode != ViewManager::NavigateMode) {
-        setCursor(Qt::PointingHandCursor);
-    }
+        if (mode != ViewManager::NavigateMode) {
+            setCursor(Qt::PointingHandCursor);
+        }
 
-    m_navigating = true;
-    m_dragCentreFrame = m_centreFrame;
+        m_navigating = true;
+        m_dragCentreFrame = m_centreFrame;
         m_dragStartMinValue = 0;
         
         float vmin, vmax, dmin, dmax;
@@ -1325,63 +1325,63 @@ Pane::mousePressEvent(QMouseEvent *e)
 
         if (!hasTopLayerTimeXAxis()) return;
 
-    bool closeToLeft = false, closeToRight = false;
-    Selection selection = getSelectionAt(e->x(), closeToLeft, closeToRight);
+        bool closeToLeft = false, closeToRight = false;
+        Selection selection = getSelectionAt(e->x(), closeToLeft, closeToRight);
 
-    if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
+        if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
 
-        m_manager->removeSelection(selection);
+            m_manager->removeSelection(selection);
 
-        if (closeToLeft) {
-        m_selectionStartFrame = selection.getEndFrame();
+            if (closeToLeft) {
+                m_selectionStartFrame = selection.getEndFrame();
+            } else {
+                m_selectionStartFrame = selection.getStartFrame();
+            }
+            
+            m_manager->setInProgressSelection(selection, false);
+            m_resizing = true;
+            
         } else {
-        m_selectionStartFrame = selection.getStartFrame();
-        }
-
-        m_manager->setInProgressSelection(selection, false);
-        m_resizing = true;
+            
+            int mouseFrame = getFrameForX(e->x());
+            size_t resolution = 1;
+            int snapFrame = mouseFrame;
     
-    } else {
-
-        int mouseFrame = getFrameForX(e->x());
-        size_t resolution = 1;
-        int snapFrame = mouseFrame;
-    
-        Layer *layer = getSelectedLayer();
-        if (layer && !m_shiftPressed) {
-        layer->snapToFeatureFrame(this, snapFrame,
-                      resolution, Layer::SnapLeft);
-        }
+            Layer *layer = getSelectedLayer();
+            if (layer && !m_shiftPressed) {
+                layer->snapToFeatureFrame(this, snapFrame,
+                                          resolution, Layer::SnapLeft);
+            }
         
-        if (snapFrame < 0) snapFrame = 0;
-        m_selectionStartFrame = snapFrame;
-        if (m_manager) {
-        m_manager->setInProgressSelection
+            if (snapFrame < 0) snapFrame = 0;
+            m_selectionStartFrame = snapFrame;
+            if (m_manager) {
+                m_manager->setInProgressSelection
                     (Selection(alignToReference(snapFrame),
                                alignToReference(snapFrame + resolution)),
                      !m_ctrlPressed);
+            }
+
+            m_resizing = false;
         }
 
-        m_resizing = false;
-    }
-
-    update();
+        update();
 
     } else if (mode == ViewManager::DrawMode) {
 
-    Layer *layer = getSelectedLayer();
-    if (layer && layer->isLayerEditable()) {
-        layer->drawStart(this, e);
-    }
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->drawStart(this, e);
+        }
 
     } else if (mode == ViewManager::EraseMode) {
 
-    Layer *layer = getSelectedLayer();
-    if (layer && layer->isLayerEditable()) {
-        layer->eraseStart(this, e);
-    }
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->eraseStart(this, e);
+        }
 
-    // GF: handle mouse press for NoteEditMode 
+        // GF: handle mouse press for NoteEditMode 
     } else if (mode == ViewManager::NoteEditMode) {
 
         std::cerr << "mouse pressed in note edit mode" << std::endl;
@@ -1420,28 +1420,28 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     m_releasing = true;
 
     if (m_clickedInRange) {
-    mouseMoveEvent(e);
+        mouseMoveEvent(e);
     }
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
 
-    m_navigating = false;
+        m_navigating = false;
 
-    if (mode != ViewManager::NavigateMode) {
-        // restore cursor
-        toolModeChanged();
-    }
+        if (mode != ViewManager::NavigateMode) {
+            // restore cursor
+            toolModeChanged();
+        }
 
-    if (m_shiftPressed) {
+        if (m_shiftPressed) {
 
-        int x0 = std::min(m_clickPos.x(), m_mousePos.x());
-        int x1 = std::max(m_clickPos.x(), m_mousePos.x());
+            int x0 = std::min(m_clickPos.x(), m_mousePos.x());
+            int x1 = std::max(m_clickPos.x(), m_mousePos.x());
 
-        int y0 = std::min(m_clickPos.y(), m_mousePos.y());
-        int y1 = std::max(m_clickPos.y(), m_mousePos.y());
+            int y0 = std::min(m_clickPos.y(), m_mousePos.y());
+            int y1 = std::max(m_clickPos.y(), m_mousePos.y());
 
             zoomToRegion(x0, y0, x1, y1);
-    }
+        }
 
     } else if (mode == ViewManager::SelectMode) {
 
@@ -1450,33 +1450,33 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             return;
         }
 
-    if (m_manager && m_manager->haveInProgressSelection()) {
+        if (m_manager && m_manager->haveInProgressSelection()) {
 
-        bool exclusive;
-        Selection selection = m_manager->getInProgressSelection(exclusive);
+            bool exclusive;
+            Selection selection = m_manager->getInProgressSelection(exclusive);
         
-        if (selection.getEndFrame() < selection.getStartFrame() + 2) {
-        selection = Selection();
+            if (selection.getEndFrame() < selection.getStartFrame() + 2) {
+                selection = Selection();
+            }
+        
+            m_manager->clearInProgressSelection();
+        
+            if (exclusive) {
+                m_manager->setSelection(selection);
+            } else {
+                m_manager->addSelection(selection);
+            }
         }
-        
-        m_manager->clearInProgressSelection();
-        
-        if (exclusive) {
-        m_manager->setSelection(selection);
-        } else {
-        m_manager->addSelection(selection);
-        }
-    }
     
-    update();
+        update();
 
     } else if (mode == ViewManager::DrawMode) {
 
-    Layer *layer = getSelectedLayer();
-    if (layer && layer->isLayerEditable()) {
-        layer->drawEnd(this, e);
-        update();
-    }
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->drawEnd(this, e);
+            update();
+        }
 
     } else if (mode == ViewManager::EraseMode) {
 
@@ -1611,26 +1611,26 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             }
         }
 
-    return;
+        return;
     }
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
 
-    if (m_shiftPressed) {
+        if (m_shiftPressed) {
 
-        m_mousePos = e->pos();
-        update();
+            m_mousePos = e->pos();
+            update();
 
-    } else {
+        } else {
 
             dragTopLayer(e);
         }
 
     } else if (mode == ViewManager::SelectMode) {
 
-            if (!hasTopLayerTimeXAxis()) return;
+        if (!hasTopLayerTimeXAxis()) return;
 
-            dragExtendSelection(e);
+        dragExtendSelection(e);
 
     } else if (mode == ViewManager::DrawMode) {
 
@@ -1646,7 +1646,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             layer->eraseDrag(this, e);
         }
 
-    // GF: handling NoteEditMode dragging and boundary actions for mouseMoveEvent
+        // GF: handling NoteEditMode dragging and boundary actions for mouseMoveEvent
     } else if (mode == ViewManager::NoteEditMode) {
 
         bool resist = true;
@@ -2514,33 +2514,33 @@ Pane::toolModeChanged()
     switch (mode) {
 
     case ViewManager::NavigateMode:
-    setCursor(Qt::PointingHandCursor);
-    break;
+        setCursor(Qt::PointingHandCursor);
+        break;
     
     case ViewManager::SelectMode:
-    setCursor(Qt::ArrowCursor);
-    break;
+        setCursor(Qt::ArrowCursor);
+        break;
     
     case ViewManager::EditMode:
-    setCursor(Qt::UpArrowCursor);
-    break;
+        setCursor(Qt::UpArrowCursor);
+        break;
     
     case ViewManager::DrawMode:
-    setCursor(Qt::CrossCursor);
-    break;
+        setCursor(Qt::CrossCursor);
+        break;
     
     case ViewManager::EraseMode:
-    setCursor(Qt::CrossCursor);
-    break;
+        setCursor(Qt::CrossCursor);
+        break;
 
     case ViewManager::MeasureMode:
         if (m_measureCursor1) setCursor(*m_measureCursor1);
-    break;
+        break;
 
-    // GF: NoteEditMode uses the same default cursor as EditMode, but it will change in a context sensitive manner.
+        // GF: NoteEditMode uses the same default cursor as EditMode, but it will change in a context sensitive manner.
     case ViewManager::NoteEditMode:
-    setCursor(Qt::UpArrowCursor);
-    break;
+        setCursor(Qt::UpArrowCursor);
+        break;
 
 /*  
     case ViewManager::TextMode:
@@ -2681,21 +2681,21 @@ Pane::updateContextHelp(const QPoint *pos)
     } else if (mode == ViewManager::DrawMode) {
         
         //!!! could call through to a layer function to find out exact meaning
-    if (editable) {
+        if (editable) {
             help = tr("Click to add a new item in the active layer");
         }
 
     } else if (mode == ViewManager::EraseMode) {
         
         //!!! could call through to a layer function to find out exact meaning
-    if (editable) {
+        if (editable) {
             help = tr("Click to erase an item from the active layer");
         }
         
     } else if (mode == ViewManager::EditMode) {
         
         //!!! could call through to layer
-    if (editable) {
+        if (editable) {
             help = tr("Click and drag an item in the active layer to move it; hold Shift to override initial resistance");
             if (pos) {
                 bool closeToLeft = false, closeToRight = false;
