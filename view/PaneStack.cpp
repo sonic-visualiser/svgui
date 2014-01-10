@@ -158,6 +158,8 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
             this, SLOT(paneDropAccepted(QStringList)));
     connect(pane, SIGNAL(dropAccepted(QString)),
             this, SLOT(paneDropAccepted(QString)));
+    connect(pane, SIGNAL(doubleClickSelectInvoked(size_t)),
+            this, SIGNAL(doubleClickSelectInvoked(size_t)));
 
     emit paneAdded(pane);
     emit paneAdded();
