@@ -50,14 +50,14 @@
 FlexiNoteLayer::FlexiNoteLayer() :
     SingleColourLayer(),
 
-        // m_model(0),
-        // m_editing(false),
-        // m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
-        // m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
-        // m_editingCommand(0),
-        // m_verticalScale(AutoAlignScale),
-        // m_scaleMinimum(0),
-        // m_scaleMaximum(0)
+    // m_model(0),
+    // m_editing(false),
+    // m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
+    // m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
+    // m_editingCommand(0),
+    // m_verticalScale(AutoAlignScale),
+    // m_scaleMinimum(0),
+    // m_scaleMaximum(0)
 
     m_model(0),
     m_editing(false),
@@ -129,17 +129,17 @@ FlexiNoteLayer::getScaleUnits() const
 
 int
 FlexiNoteLayer::getPropertyRangeAndValue(const PropertyName &name,
-                                    int *min, int *max, int *deflt) const
+                                         int *min, int *max, int *deflt) const
 {
     int val = 0;
 
     if (name == "Vertical Scale") {
     
-    if (min) *min = 0;
-    if (max) *max = 3;
+        if (min) *min = 0;
+        if (max) *max = 3;
         if (deflt) *deflt = int(AutoAlignScale);
     
-    val = int(m_verticalScale);
+        val = int(m_verticalScale);
 
     } else if (name == "Scale Units") {
 
@@ -151,7 +151,7 @@ FlexiNoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else {
 
-    val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
+        val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -159,16 +159,16 @@ FlexiNoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 FlexiNoteLayer::getPropertyValueLabel(const PropertyName &name,
-                                 int value) const
+                                      int value) const
 {
     if (name == "Vertical Scale") {
-    switch (value) {
-    default:
-    case 0: return tr("Auto-Align");
-    case 1: return tr("Linear");
-    case 2: return tr("Log");
-    case 3: return tr("MIDI Notes");
-    }
+        switch (value) {
+        default:
+        case 0: return tr("Auto-Align");
+        case 1: return tr("Linear");
+        case 2: return tr("Log");
+        case 3: return tr("MIDI Notes");
+        }
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
 }
@@ -177,7 +177,7 @@ void
 FlexiNoteLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Vertical Scale") {
-    setVerticalScale(VerticalScale(value));
+        setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
         if (m_model) {
             m_model->setScaleUnits
@@ -217,7 +217,7 @@ FlexiNoteLayer::shouldConvertMIDIToHz() const
 
 bool
 FlexiNoteLayer::getValueExtents(float &min, float &max,
-                           bool &logarithmic, QString &unit) const
+                                bool &logarithmic, QString &unit) const
 {
     if (!m_model) return false;
     min = m_model->getValueMinimum();
@@ -406,36 +406,36 @@ FlexiNoteLayer::getLocalPoints(View *v, int x) const
     long frame = v->getFrameForX(x);
 
     FlexiNoteModel::PointList onPoints =
-    m_model->getPoints(frame);
+        m_model->getPoints(frame);
 
     if (!onPoints.empty()) {
-    return onPoints;
+        return onPoints;
     }
 
     FlexiNoteModel::PointList prevPoints =
-    m_model->getPreviousPoints(frame);
+        m_model->getPreviousPoints(frame);
     FlexiNoteModel::PointList nextPoints =
-    m_model->getNextPoints(frame);
+        m_model->getNextPoints(frame);
 
     FlexiNoteModel::PointList usePoints = prevPoints;
 
     if (prevPoints.empty()) {
-    usePoints = nextPoints;
+        usePoints = nextPoints;
     } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
-           !(nextPoints.begin()->frame > v->getEndFrame())) {
-    usePoints = nextPoints;
+               !(nextPoints.begin()->frame > v->getEndFrame())) {
+        usePoints = nextPoints;
     } else if (long(nextPoints.begin()->frame) - frame <
-           frame - long(prevPoints.begin()->frame)) {
-    usePoints = nextPoints;
+               frame - long(prevPoints.begin()->frame)) {
+        usePoints = nextPoints;
     }
 
     if (!usePoints.empty()) {
-    int fuzz = 2;
-    int px = v->getXForFrame(usePoints.begin()->frame);
-    if ((px > x && px - x > fuzz) ||
-        (px < x && x - px > fuzz + 1)) {
-        usePoints.clear();
-    }
+        int fuzz = 2;
+        int px = v->getXForFrame(usePoints.begin()->frame);
+        if ((px > x && px - x > fuzz) ||
+            (px < x && x - px > fuzz + 1)) {
+            usePoints.clear();
+        }
     }
 
     return usePoints;
@@ -508,11 +508,11 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
     FlexiNoteModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
-    if (!m_model->isReady()) {
-        return tr("In progress");
-    } else {
-        return tr("No local points");
-    }
+        if (!m_model->isReady()) {
+            return tr("In progress");
+        } else {
+            return tr("No local points");
+        }
     }
 
     FlexiNote note(0);
@@ -520,27 +520,27 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     for (i = points.begin(); i != points.end(); ++i) {
 
-    int y = getYForValue(v, i->value);
-    int h = NOTE_HEIGHT; // GF: larger notes
+        int y = getYForValue(v, i->value);
+        int h = NOTE_HEIGHT; // GF: larger notes
 
-    if (m_model->getValueQuantization() != 0.0) {
-        h = y - getYForValue(v, i->value + m_model->getValueQuantization());
-        if (h < NOTE_HEIGHT) h = NOTE_HEIGHT;
-    }
+        if (m_model->getValueQuantization() != 0.0) {
+            h = y - getYForValue(v, i->value + m_model->getValueQuantization());
+            if (h < NOTE_HEIGHT) h = NOTE_HEIGHT;
+        }
 
-    // GF: this is not quite correct
-    if (pos.y() >= y - 4 && pos.y() <= y + h) {
-        note = *i;
-        break;
-    }
+        // GF: this is not quite correct
+        if (pos.y() >= y - 4 && pos.y() <= y + h) {
+            note = *i;
+            break;
+        }
     }
 
     if (i == points.end()) return tr("No local points");
 
     RealTime rt = RealTime::frame2RealTime(note.frame,
-                       m_model->getSampleRate());
+                                           m_model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(note.duration,
-                       m_model->getSampleRate());
+                                           m_model->getSampleRate());
     
     QString pitchText;
 
@@ -569,30 +569,30 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
     QString text;
 
     if (note.label == "") {
-    text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
-        .arg(rt.toText(true).c_str())
-        .arg(pitchText)
-        .arg(rd.toText(true).c_str());
+        text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
+            .arg(rt.toText(true).c_str())
+            .arg(pitchText)
+            .arg(rd.toText(true).c_str());
     } else {
-    text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
-        .arg(rt.toText(true).c_str())
-        .arg(pitchText)
-        .arg(rd.toText(true).c_str())
-        .arg(note.label);
+        text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
+            .arg(rt.toText(true).c_str())
+            .arg(pitchText)
+            .arg(rd.toText(true).c_str())
+            .arg(note.label);
     }
 
     pos = QPoint(v->getXForFrame(note.frame),
-         getYForValue(v, note.value));
+                 getYForValue(v, note.value));
     return text;
 }
 
 bool
 FlexiNoteLayer::snapToFeatureFrame(View *v, int &frame,
-                  size_t &resolution,
-                  SnapType snap) const
+                                   size_t &resolution,
+                                   SnapType snap) const
 {
     if (!m_model) {
-    return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
@@ -600,10 +600,10 @@ FlexiNoteLayer::snapToFeatureFrame(View *v, int &frame,
 
     if (snap == SnapNeighbouring) {
     
-    points = getLocalPoints(v, v->getXForFrame(frame));
-    if (points.empty()) return false;
-    frame = points.begin()->frame;
-    return true;
+        points = getLocalPoints(v, v->getXForFrame(frame));
+        if (points.empty()) return false;
+        frame = points.begin()->frame;
+        return true;
     }    
 
     points = m_model->getPoints(frame, frame);
@@ -611,47 +611,47 @@ FlexiNoteLayer::snapToFeatureFrame(View *v, int &frame,
     bool found = false;
 
     for (FlexiNoteModel::PointList::const_iterator i = points.begin();
-     i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-    if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
-        if (i->frame > frame) {
-        snapped = i->frame;
-        found = true;
-        break;
+            if (i->frame > frame) {
+                snapped = i->frame;
+                found = true;
+                break;
+            }
+
+        } else if (snap == SnapLeft) {
+
+            if (i->frame <= frame) {
+                snapped = i->frame;
+                found = true; // don't break, as the next may be better
+            } else {
+                break;
+            }
+
+        } else { // nearest
+
+            FlexiNoteModel::PointList::const_iterator j = i;
+            ++j;
+
+            if (j == points.end()) {
+
+                snapped = i->frame;
+                found = true;
+                break;
+
+            } else if (j->frame >= frame) {
+
+                if (j->frame - frame < frame - i->frame) {
+                    snapped = j->frame;
+                } else {
+                    snapped = i->frame;
+                }
+                found = true;
+                break;
+            }
         }
-
-    } else if (snap == SnapLeft) {
-
-        if (i->frame <= frame) {
-        snapped = i->frame;
-        found = true; // don't break, as the next may be better
-        } else {
-        break;
-        }
-
-    } else { // nearest
-
-        FlexiNoteModel::PointList::const_iterator j = i;
-        ++j;
-
-        if (j == points.end()) {
-
-        snapped = i->frame;
-        found = true;
-        break;
-
-        } else if (j->frame >= frame) {
-
-        if (j->frame - frame < frame - i->frame) {
-            snapped = j->frame;
-        } else {
-            snapped = i->frame;
-        }
-        found = true;
-        break;
-        }
-    }
     }
 
     frame = snapped;
@@ -821,48 +821,48 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.setRenderHint(QPainter::Antialiasing, false);
     
     for (FlexiNoteModel::PointList::const_iterator i = points.begin();
-     i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-    const FlexiNoteModel::Point &p(*i);
+        const FlexiNoteModel::Point &p(*i);
 
-    int x = v->getXForFrame(p.frame);
-    int y = getYForValue(v, p.value);
-    int w = v->getXForFrame(p.frame + p.duration) - x;
-    int h = NOTE_HEIGHT; //GF: larger notes
+        int x = v->getXForFrame(p.frame);
+        int y = getYForValue(v, p.value);
+        int w = v->getXForFrame(p.frame + p.duration) - x;
+        int h = NOTE_HEIGHT; //GF: larger notes
     
-    if (m_model->getValueQuantization() != 0.0) {
-        h = y - getYForValue(v, p.value + m_model->getValueQuantization());
-        if (h < NOTE_HEIGHT) h = NOTE_HEIGHT; //GF: larger notes
-    }
+        if (m_model->getValueQuantization() != 0.0) {
+            h = y - getYForValue(v, p.value + m_model->getValueQuantization());
+            if (h < NOTE_HEIGHT) h = NOTE_HEIGHT; //GF: larger notes
+        }
 
-    if (w < 1) w = 1;
-    paint.setPen(getBaseQColor());
-    paint.setBrush(brushColour);
+        if (w < 1) w = 1;
+        paint.setPen(getBaseQColor());
+        paint.setBrush(brushColour);
 
-    // if (shouldIlluminate &&
-    //         // "illuminatePoint == p"
-    //         !FlexiNoteModel::Point::Comparator()(illuminatePoint, p) &&
-    //         !FlexiNoteModel::Point::Comparator()(p, illuminatePoint)) {
-    // 
-    //         paint.setPen(v->getForeground());
-    //         paint.setBrush(v->getForeground());
-    // 
-    //         QString vlabel = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
-    //         v->drawVisibleText(paint, 
-    //                            x - paint.fontMetrics().width(vlabel) - 2,
-    //                            y + paint.fontMetrics().height()/2
-    //                              - paint.fontMetrics().descent(), 
-    //                            vlabel, View::OutlinedText);
-    // 
-    //         QString hlabel = RealTime::frame2RealTime
-    //             (p.frame, m_model->getSampleRate()).toText(true).c_str();
-    //         v->drawVisibleText(paint, 
-    //                            x,
-    //                            y - h/2 - paint.fontMetrics().descent() - 2,
-    //                            hlabel, View::OutlinedText);
-    // }
+        // if (shouldIlluminate &&
+        //         // "illuminatePoint == p"
+        //         !FlexiNoteModel::Point::Comparator()(illuminatePoint, p) &&
+        //         !FlexiNoteModel::Point::Comparator()(p, illuminatePoint)) {
+        // 
+        //         paint.setPen(v->getForeground());
+        //         paint.setBrush(v->getForeground());
+        // 
+        //         QString vlabel = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
+        //         v->drawVisibleText(paint, 
+        //                            x - paint.fontMetrics().width(vlabel) - 2,
+        //                            y + paint.fontMetrics().height()/2
+        //                              - paint.fontMetrics().descent(), 
+        //                            vlabel, View::OutlinedText);
+        // 
+        //         QString hlabel = RealTime::frame2RealTime
+        //             (p.frame, m_model->getSampleRate()).toText(true).c_str();
+        //         v->drawVisibleText(paint, 
+        //                            x,
+        //                            y - h/2 - paint.fontMetrics().descent() - 2,
+        //                            hlabel, View::OutlinedText);
+        // }
     
-    paint.drawRect(x, y - h/2, w, h);
+        paint.drawRect(x, y - h/2, w, h);
     }
 
     paint.restore();
@@ -938,7 +938,7 @@ FlexiNoteLayer::drawStart(View *v, QMouseEvent *e)
 
     if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new FlexiNoteModel::EditCommand(m_model,
-                          tr("Draw Point"));
+                                                       tr("Draw Point"));
     m_editingCommand->addPoint(m_editingPoint);
 
     m_editing = true;
@@ -991,8 +991,8 @@ FlexiNoteLayer::eraseStart(View *v, QMouseEvent *e)
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
-    finish(m_editingCommand);
-    m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -1042,8 +1042,8 @@ FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
     m_dragPointY = getYForValue(v, m_editingPoint.value);
 
     if (m_editingCommand) {
-    finish(m_editingCommand);
-    m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -1094,8 +1094,8 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
     float value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
-    m_editingCommand = new FlexiNoteModel::EditCommand(m_model,
-                              tr("Drag Point"));
+        m_editingCommand = new FlexiNoteModel::EditCommand(m_model,
+                                                           tr("Drag Point"));
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
@@ -1103,35 +1103,35 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
     std::cerr << "edit mode: " << m_editMode << std::endl;
     
     switch (m_editMode) {
-        case LeftBoundary : {
-            // left 
-            if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
-            // right
-            if (m_intelligentActions && dragFrame >= m_originalPoint.frame + m_originalPoint.duration) {
-                dragFrame = m_originalPoint.frame + m_originalPoint.duration - 1;
-            }
-            m_editingPoint.frame = dragFrame;
-            m_editingPoint.duration = m_originalPoint.frame - dragFrame + m_originalPoint.duration;
-            break;
+    case LeftBoundary : {
+        // left 
+        if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+        // right
+        if (m_intelligentActions && dragFrame >= m_originalPoint.frame + m_originalPoint.duration) {
+            dragFrame = m_originalPoint.frame + m_originalPoint.duration - 1;
         }
-        case RightBoundary : {
-            // left
-            if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
-            if (m_intelligentActions && dragFrame >= m_smallestRightNeighbourFrame) dragFrame = m_smallestRightNeighbourFrame - 1;
-            m_editingPoint.duration = dragFrame - m_originalPoint.frame + 1;
-            break;
+        m_editingPoint.frame = dragFrame;
+        m_editingPoint.duration = m_originalPoint.frame - dragFrame + m_originalPoint.duration;
+        break;
+    }
+    case RightBoundary : {
+        // left
+        if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+        if (m_intelligentActions && dragFrame >= m_smallestRightNeighbourFrame) dragFrame = m_smallestRightNeighbourFrame - 1;
+        m_editingPoint.duration = dragFrame - m_originalPoint.frame + 1;
+        break;
+    }
+    case DragNote : {
+        // left
+        if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
+        // right
+        if (m_intelligentActions && dragFrame + m_originalPoint.duration >= m_smallestRightNeighbourFrame) {
+            dragFrame = m_smallestRightNeighbourFrame - m_originalPoint.duration;
         }
-        case DragNote : {
-            // left
-            if (m_intelligentActions && dragFrame <= m_greatestLeftNeighbourFrame) dragFrame = m_greatestLeftNeighbourFrame + 1;
-            // right
-            if (m_intelligentActions && dragFrame + m_originalPoint.duration >= m_smallestRightNeighbourFrame) {
-                dragFrame = m_smallestRightNeighbourFrame - m_originalPoint.duration;
-            }
-            m_editingPoint.frame = dragFrame;
-            m_editingPoint.value = value;
-            break;
-        }
+        m_editingPoint.frame = dragFrame;
+        m_editingPoint.value = value;
+        break;
+    }
     }
     m_editingCommand->addPoint(m_editingPoint);
     std::cerr << "added new point(" << m_editingPoint.frame << "," << m_editingPoint.duration << ")" << std::endl;
@@ -1148,20 +1148,20 @@ FlexiNoteLayer::editEnd(View *v, QMouseEvent *e)
 
     if (m_editingCommand) {
 
-    QString newName = m_editingCommand->getName();
+        QString newName = m_editingCommand->getName();
 
-    if (m_editingPoint.frame != m_originalPoint.frame) {
-        if (m_editingPoint.value != m_originalPoint.value) {
-        newName = tr("Edit Point");
+        if (m_editingPoint.frame != m_originalPoint.frame) {
+            if (m_editingPoint.value != m_originalPoint.value) {
+                newName = tr("Edit Point");
+            } else {
+                newName = tr("Relocate Point");
+            }
         } else {
-        newName = tr("Relocate Point");
+            newName = tr("Change Point Value");
         }
-    } else {
-        newName = tr("Change Point Value");
-    }
 
-    m_editingCommand->setName(newName);
-    finish(m_editingCommand);
+        m_editingCommand->setName(newName);
+        finish(m_editingCommand);
     }
 
     m_editingCommand = 0;
@@ -1182,8 +1182,8 @@ FlexiNoteLayer::splitStart(View *v, QMouseEvent *e)
     // m_dragPointY = getYForValue(v, m_editingPoint.value);
 
     if (m_editingCommand) {
-    finish(m_editingCommand);
-    m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -1272,7 +1272,7 @@ FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
     {
         FlexiNote newNote(frame, value, duration, 100, "new note");
         FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
-          (m_model, tr("Add Point"));
+            (m_model, tr("Add Point"));
         command->addPoint(newNote);
         finish(command);
     }
@@ -1295,13 +1295,13 @@ FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
     SparseModel<TimeValuePoint>::PointList dataPoints = model->getPoints(note.frame, note.frame + note.duration);
     if (dataPoints.empty()) return;
    
-   // std::cerr << "frame " << note.frame << ": " << dataPoints.size() << " candidate points" << std::endl;
+    // std::cerr << "frame " << note.frame << ": " << dataPoints.size() << " candidate points" << std::endl;
    
-   std::vector<float> pitchValues;
+    std::vector<float> pitchValues;
    
     for (SparseModel<TimeValuePoint>::PointList::const_iterator i = dataPoints.begin(); 
-        i != dataPoints.end(); ++i) {
-            pitchValues.push_back((*i).value);
+         i != dataPoints.end(); ++i) {
+        pitchValues.push_back((*i).value);
     }
     sort(pitchValues.begin(), pitchValues.end());
     size_t size = pitchValues.size();
@@ -1422,20 +1422,20 @@ FlexiNoteLayer::moveSelection(Selection s, size_t newStartFrame)
     if (!m_model) return;
 
     FlexiNoteModel::EditCommand *command =
-    new FlexiNoteModel::EditCommand(m_model, tr("Drag Selection"));
+        new FlexiNoteModel::EditCommand(m_model, tr("Drag Selection"));
 
     FlexiNoteModel::PointList points =
-    m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (FlexiNoteModel::PointList::iterator i = points.begin();
-     i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-    if (s.contains(i->frame)) {
-        FlexiNoteModel::Point newPoint(*i);
-        newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-        command->deletePoint(*i);
-        command->addPoint(newPoint);
-    }
+        if (s.contains(i->frame)) {
+            FlexiNoteModel::Point newPoint(*i);
+            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -1447,34 +1447,34 @@ FlexiNoteLayer::resizeSelection(Selection s, Selection newSize)
     if (!m_model) return;
 
     FlexiNoteModel::EditCommand *command =
-    new FlexiNoteModel::EditCommand(m_model, tr("Resize Selection"));
+        new FlexiNoteModel::EditCommand(m_model, tr("Resize Selection"));
 
     FlexiNoteModel::PointList points =
-    m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     double ratio =
-    double(newSize.getEndFrame() - newSize.getStartFrame()) /
-    double(s.getEndFrame() - s.getStartFrame());
+        double(newSize.getEndFrame() - newSize.getStartFrame()) /
+        double(s.getEndFrame() - s.getStartFrame());
 
     for (FlexiNoteModel::PointList::iterator i = points.begin();
-     i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-    if (s.contains(i->frame)) {
+        if (s.contains(i->frame)) {
 
-        double targetStart = i->frame;
-        targetStart = newSize.getStartFrame() + 
-        double(targetStart - s.getStartFrame()) * ratio;
+            double targetStart = i->frame;
+            targetStart = newSize.getStartFrame() + 
+                double(targetStart - s.getStartFrame()) * ratio;
 
-        double targetEnd = i->frame + i->duration;
-        targetEnd = newSize.getStartFrame() +
-        double(targetEnd - s.getStartFrame()) * ratio;
+            double targetEnd = i->frame + i->duration;
+            targetEnd = newSize.getStartFrame() +
+                double(targetEnd - s.getStartFrame()) * ratio;
 
-        FlexiNoteModel::Point newPoint(*i);
-        newPoint.frame = lrint(targetStart);
-        newPoint.duration = lrint(targetEnd - targetStart);
-        command->deletePoint(*i);
-        command->addPoint(newPoint);
-    }
+            FlexiNoteModel::Point newPoint(*i);
+            newPoint.frame = lrint(targetStart);
+            newPoint.duration = lrint(targetEnd - targetStart);
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -1486,13 +1486,13 @@ FlexiNoteLayer::deleteSelection(Selection s)
     if (!m_model) return;
 
     FlexiNoteModel::EditCommand *command =
-    new FlexiNoteModel::EditCommand(m_model, tr("Delete Selected Points"));
+        new FlexiNoteModel::EditCommand(m_model, tr("Delete Selected Points"));
 
     FlexiNoteModel::PointList points =
-    m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (FlexiNoteModel::PointList::iterator i = points.begin();
-     i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
         if (s.contains(i->frame)) {
             command->deletePoint(*i);
@@ -1508,11 +1508,11 @@ FlexiNoteLayer::copy(View *v, Selection s, Clipboard &to)
     if (!m_model) return;
 
     FlexiNoteModel::PointList points =
-    m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (FlexiNoteModel::PointList::iterator i = points.begin();
-     i != points.end(); ++i) {
-    if (s.contains(i->frame)) {
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->value, i->duration, i->level, i->label);
             point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
@@ -1547,7 +1547,7 @@ FlexiNoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* i
     }
 
     FlexiNoteModel::EditCommand *command =
-    new FlexiNoteModel::EditCommand(m_model, tr("Paste"));
+        new FlexiNoteModel::EditCommand(m_model, tr("Paste"));
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1643,7 +1643,7 @@ FlexiNoteLayer::getDefaultColourHint(bool darkbg, bool &impose)
 
 void
 FlexiNoteLayer::toXml(QTextStream &stream,
-                 QString indent, QString extraAttributes) const
+                      QString indent, QString extraAttributes) const
 {
     SingleColourLayer::toXml(stream, indent, extraAttributes +
                              QString(" verticalScale=\"%1\" scaleMinimum=\"%2\" scaleMaximum=\"%3\" ")
@@ -1659,7 +1659,7 @@ FlexiNoteLayer::setProperties(const QXmlAttributes &attributes)
 
     bool ok, alsoOk;
     VerticalScale scale = (VerticalScale)
-    attributes.value("verticalScale").toInt(&ok);
+        attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
 
     float min = attributes.value("scaleMinimum").toFloat(&ok);
@@ -1675,10 +1675,10 @@ FlexiNoteLayer::setVerticalRangeToNoteRange(View *v)
     bool hasNotes = 0;
     for (FlexiNoteModel::PointList::const_iterator i = m_model->getPoints().begin();
          i != m_model->getPoints().end(); ++i) {
-             hasNotes = 1;
-             FlexiNote note = *i;
-             if (note.value < minf) minf = note.value;
-             if (note.value > maxf) maxf = note.value;
+        hasNotes = 1;
+        FlexiNote note = *i;
+        if (note.value < minf) minf = note.value;
+        if (note.value > maxf) maxf = note.value;
     }
     
     std::cerr << "min frequency:" << minf << ", max frequency: " << maxf << std::endl;
