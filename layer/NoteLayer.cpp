@@ -842,7 +842,7 @@ NoteLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 void
 NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model) return;
+    if (!m_model || m_model->getPoints().empty()) return;
 
     QString unit;
     float min, max;
