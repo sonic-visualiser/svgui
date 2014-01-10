@@ -2105,6 +2105,13 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     bool relocate = (mode == ViewManager::NavigateMode ||
                      (e->buttons() & Qt::MidButton));
 
+    if (mode == ViewManager::SelectMode) {
+        m_clickedInRange = false;
+        m_manager->clearInProgressSelection();
+        emit doubleClickSelectInvoked(getFrameForX(e->x()));
+        return;
+    }
+
     if (mode == ViewManager::NavigateMode ||
         mode == ViewManager::EditMode) {
 
@@ -2453,8 +2460,8 @@ Pane::editSelectionEnd(QMouseEvent *)
     Layer *layer = getSelectedLayer();
 
     if (offset == 0 || !layer) {
-    m_editingSelection = Selection();
-    return true;
+        m_editingSelection = Selection();
+        return true;
     }
 
     int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
@@ -2470,21 +2477,21 @@ Pane::editSelectionEnd(QMouseEvent *)
         CommandHistory::getInstance()->startCompoundOperation
             (tr("Drag Selection"), true);
 
-    layer->moveSelection(m_editingSelection, f0);
+        layer->moveSelection(m_editingSelection, f0);
     
     } else {
     
         CommandHistory::getInstance()->startCompoundOperation
             (tr("Resize Selection"), true);
 
-    if (m_editingSelectionEdge < 0) {
-        f1 = m_editingSelection.getEndFrame();
-    } else {
-        f0 = m_editingSelection.getStartFrame();
-    }
+        if (m_editingSelectionEdge < 0) {
+            f1 = m_editingSelection.getEndFrame();
+        } else {
+            f0 = m_editingSelection.getStartFrame();
+        }
 
-    newSelection = Selection(f0, f1);
-    layer->resizeSelection(m_editingSelection, newSelection);
+        newSelection = Selection(f0, f1);
+        layer->resizeSelection(m_editingSelection, newSelection);
     }
     
     m_manager->removeSelection(m_editingSelection);
