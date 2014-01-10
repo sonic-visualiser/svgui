@@ -68,6 +68,8 @@ public:
     void setLayoutStyle(LayoutStyle style);
 
     void setPropertyStackMinWidth(int mw);
+    
+    void setShowPaneAccessories(bool show); // current indicator, close button
 
     void sizePanesEqually();
 
@@ -118,6 +120,8 @@ protected:
 
     std::vector<PaneRec> m_panes;
     std::vector<PaneRec> m_hiddenPanes;
+
+    bool m_showAccessories;
 
     QSplitter *m_splitter;
     QStackedWidget *m_propertyStackStack;

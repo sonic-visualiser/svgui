@@ -39,6 +39,7 @@
 PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     QFrame(parent),
     m_currentPane(0),
+    m_showAccessories(true),
     m_splitter(new QSplitter),
     m_propertyStackStack(new QStackedWidget),
     m_viewManager(viewManager),
@@ -60,6 +61,12 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     setLayout(layout);
 }
 
+void
+PaneStack::setShowPaneAccessories(bool show)
+{
+    m_showAccessories = show;
+}
+
 Pane *
 PaneStack::addPane(bool suppressPropertyBox)
 {
@@ -79,6 +86,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     xButton->setIcon(IconLoader().load("cross"));
     xButton->setFixedSize(QSize(16, 16));
     xButton->setFlat(true);
+    xButton->setVisible(m_showAccessories);
     layout->addWidget(xButton, 0, 0);
     connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
 
@@ -88,6 +96,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     layout->setRowStretch(1, 20);
     currentIndicator->setMinimumWidth(8);
     currentIndicator->setScaledContents(true);
+    currentIndicator->setVisible(m_showAccessories);
 
     long initialCentreFrame = -1;
     for (int i = 0; i < m_panes.size(); ++i) {
@@ -288,8 +297,8 @@ PaneStack::showOrHidePaneAccessories()
     bool multi = (getPaneCount() > 1);
     for (std::vector<PaneRec>::iterator i = m_panes.begin();
          i != m_panes.end(); ++i) {
-        i->xButton->setVisible(multi);
-        i->currentIndicator->setVisible(multi);
+        i->xButton->setVisible(multi && m_showAccessories);
+        i->currentIndicator->setVisible(multi && m_showAccessories);
     }
 }
 
