@@ -170,13 +170,27 @@ public:
      */
     void setBinDisplay(BinDisplay);
     BinDisplay getBinDisplay() const;
-
+ 
+    /**
+     * Normalize each column to its maximum value, independent of its
+     * neighbours.
+     */
     void setNormalizeColumns(bool n);
     bool getNormalizeColumns() const;
 
+    /**
+     * Normalize each value against the maximum in the visible region.
+     */
     void setNormalizeVisibleArea(bool n);
     bool getNormalizeVisibleArea() const;
 
+    /**
+     * Normalize each column to its maximum value, and then scale by
+     * the log of the (absolute) maximum value.
+     */
+    void setNormalizeHybrid(bool n);
+    bool getNormalizeHybrid() const;
+    
     void setColourMap(int map);
     int getColourMap() const;
 
@@ -260,6 +274,7 @@ protected:
     BinDisplay          m_binDisplay;
     bool                m_normalizeColumns;
     bool                m_normalizeVisibleArea;
+    bool                m_normalizeHybrid;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
 
@@ -320,7 +335,6 @@ protected:
     void rotatePalette(int distance);
 
     unsigned char getDisplayValue(View *v, float input) const;
-    float getInputForDisplayValue(unsigned char uc) const;
 
     int getColourScaleWidth(QPainter &) const;
 

@@ -116,11 +116,25 @@ public:
     void setBinScale(BinScale);
     BinScale getBinScale() const;
 
+    /**
+     * Normalize each column to its maximum value, independent of its
+     * neighbours.
+     */
     void setNormalizeColumns(bool n);
     bool getNormalizeColumns() const;
 
+    /**
+     * Normalize each value against the maximum in the visible region.
+     */
     void setNormalizeVisibleArea(bool n);
     bool getNormalizeVisibleArea() const;
+
+    /**
+     * Normalize each column to its maximum value, and then scale by
+     * the log of the (absolute) maximum value.
+     */
+    void setNormalizeHybrid(bool n);
+    bool getNormalizeHybrid() const;
 
     void setInvertVertical(bool i);
     bool getInvertVertical() const;
@@ -168,6 +182,7 @@ protected:
     BinScale    m_binScale;
     bool        m_normalizeColumns;
     bool        m_normalizeVisibleArea;
+    bool        m_normalizeHybrid;
     bool        m_invertVertical;
     bool        m_opaque;
     bool        m_smooth;
