@@ -67,6 +67,7 @@ signals:
     void rightButtonMenuRequested(QPoint position);
     void dropAccepted(QStringList uriList);
     void dropAccepted(QString text);
+    void doubleClickSelectInvoked(size_t frame);
 
 public slots:
     virtual void toolModeChanged();

@@ -4,10 +4,21 @@ TEMPLATE = lib
 exists(config.pri) {
     include(config.pri)
 }
-win* {
-    !exists(config.pri) {
-        DEFINES += HAVE_BZ2 HAVE_FFTW3 HAVE_FFTW3F HAVE_SNDFILE HAVE_SAMPLERATE HAVE_VAMP HAVE_VAMPHOSTSDK HAVE_RUBBERBAND HAVE_DATAQUAY HAVE_LIBLO HAVE_MAD HAVE_ID3TAG
+!exists(config.pri) {
+    win32-g++ {
+        INCLUDEPATH += ../sv-dependency-builds/win32-mingw/include
+        LIBS += -L../sv-dependency-builds/win32-mingw/lib
     }
+    win32-msvc* {
+        INCLUDEPATH += ../sv-dependency-builds/win32-msvc/include
+        LIBS += -L../sv-dependency-builds/win32-msvc/lib
+    }
+    macx* {
+        INCLUDEPATH += ../sv-dependency-builds/osx/include
+        LIBS += -L../sv-dependency-builds/osx/lib
+    }
+
+    DEFINES += HAVE_BZ2 HAVE_FFTW3 HAVE_FFTW3F HAVE_SNDFILE HAVE_SAMPLERATE HAVE_VAMP HAVE_VAMPHOSTSDK HAVE_RUBBERBAND HAVE_LIBLO HAVE_MAD HAVE_ID3TAG
 }
 
 CONFIG += staticlib qt thread warn_on stl rtti exceptions
@@ -20,17 +31,11 @@ INCLUDEPATH += . ../svcore
 OBJECTS_DIR = o
 MOC_DIR = o
 
-win32-g++ {
-    INCLUDEPATH += ../sv-dependency-builds/win32-mingw/include
-}
-win32-msvc* {
-    INCLUDEPATH += ../sv-dependency-builds/win32-msvc/include
-}
-
 HEADERS += layer/Colour3DPlotLayer.h \
 	   layer/ColourDatabase.h \
 	   layer/ColourMapper.h \
            layer/ColourScaleLayer.h \
+           layer/FlexiNoteLayer.h \
            layer/ImageLayer.h \
            layer/ImageRegionFinder.h \
            layer/Layer.h \
@@ -57,6 +62,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
 SOURCES += layer/Colour3DPlotLayer.cpp \
 	   layer/ColourDatabase.cpp \
 	   layer/ColourMapper.cpp \
+           layer/FlexiNoteLayer.cpp \
            layer/ImageLayer.cpp \
            layer/ImageRegionFinder.cpp \
            layer/Layer.cpp \

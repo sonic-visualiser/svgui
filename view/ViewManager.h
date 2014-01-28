@@ -101,10 +101,18 @@ public:
         EditMode,
 	DrawMode,
 	EraseMode,
-	MeasureMode
+	MeasureMode,
+	NoteEditMode //GF: Tonioni: this tool mode will be context sensitive.
     };
     ToolMode getToolMode() const { return m_toolMode; }
     void setToolMode(ToolMode mode);
+
+    /// Override the tool mode for a specific view 
+    void setToolModeFor(const View *v, ToolMode mode);
+    /// Return override mode if it exists for this view or global mode otherwise
+    ToolMode getToolModeFor(const View *v) const;
+    /// Clear all current view-specific overrides
+    void clearToolModeOverrides();
 
     bool getPlayLoopMode() const { return m_playLoopMode; }
     void setPlayLoopMode(bool on);
@@ -273,6 +281,7 @@ protected:
     Clipboard m_clipboard;
 
     ToolMode m_toolMode;
+    std::map<const View *, ToolMode> m_toolModeOverrides;
 
     bool m_playLoopMode;
     bool m_playSelectionMode;

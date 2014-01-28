@@ -229,6 +229,10 @@ public:
     virtual void editDrag(View *, QMouseEvent *) { }
     virtual void editEnd(View *, QMouseEvent *) { }
 
+    virtual void splitStart(View *, QMouseEvent *) { }
+    virtual void splitEnd(View *, QMouseEvent *) { }
+    virtual void addNote(View *v, QMouseEvent *e) { };
+
     // Measurement rectangle (or equivalent).  Unlike draw and edit,
     // the base Layer class can provide working implementations of
     // these for most situations.

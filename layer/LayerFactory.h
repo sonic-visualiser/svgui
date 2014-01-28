@@ -35,6 +35,7 @@ public:
 	TimeInstants,
 	TimeValues,
 	Notes,
+	FlexiNotes,
 	Regions,
 	Text,
         Image,

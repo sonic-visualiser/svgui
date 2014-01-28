@@ -188,6 +188,7 @@ PropertyBox::populateViewPlayFrame()
 
 	layout->insertStretch(-1, 10);
 
+/*!!! todo: restore playback sample selection
         if (params->getPlayPluginId() != "") {
             QPushButton *pluginButton = new QPushButton(QIcon(":icons/faders.png"), "");
             pluginButton->setFixedWidth(24);
@@ -196,6 +197,7 @@ PropertyBox::populateViewPlayFrame()
             connect(pluginButton, SIGNAL(clicked()),
                     this, SLOT(editPlugin()));
         }
+*/
 
 	AudioDial *gainDial = new AudioDial;
 	layout->addWidget(gainDial);
@@ -742,7 +744,7 @@ PropertyBox::playPanDialChanged(int dialValue)
 
     updateContextHelp(obj);
 }
-
+/*!!! todo: restore playback sample selection
 void
 PropertyBox::editPlugin()
 {
@@ -794,7 +796,7 @@ PropertyBox::pluginConfigurationChanged(QString configurationXml)
 
     params->setPlayPluginConfiguration(configurationXml);
 }    
-
+*/
 void
 PropertyBox::layerVisibilityChanged(bool visible)
 {

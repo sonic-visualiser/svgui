@@ -43,6 +43,7 @@ WaveformLayer::WaveformLayer() :
     m_channelMode(SeparateChannels),
     m_channel(-1),
     m_scale(LinearScale),
+    m_middleLineHeight(0.5),
     m_aggressive(false),
     m_cache(0),
     m_cacheValid(false)
@@ -306,6 +307,15 @@ WaveformLayer::setScale(Scale scale)
 }
 
 void
+WaveformLayer::setMiddleLineHeight(float height)
+{
+    if (m_middleLineHeight == height) return;
+    m_middleLineHeight = height;
+    m_cacheValid = false;
+    emit layerParametersChanged();
+}
+
+void
 WaveformLayer::setAggressiveCacheing(bool aggressive)
 {
     if (m_aggressive == aggressive) return;
@@ -531,6 +541,15 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     }
 
     paint->setRenderHint(QPainter::Antialiasing, false);
+
+    if (m_middleLineHeight != 0.5) {
+        paint->save();
+        float space = m_middleLineHeight * 2;
+        if (space > 1.0) space = 2.0 - space;
+        float yt = h * (m_middleLineHeight - space/2);
+        paint->translate(QPointF(0, yt));
+        paint->scale(1.0, space);
+    }
 
     int x0 = 0, x1 = w - 1;
     int y0 = 0, y1 = h - 1;
@@ -913,6 +932,10 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	    prevRangeBottom = rangeBottom;
 	    prevRangeTop = rangeTop;
 	}
+    }
+
+    if (m_middleLineHeight != 0.5) {
+        paint->restore();
     }
 
     if (m_aggressive) {
@@ -1314,14 +1337,16 @@ WaveformLayer::toXml(QTextStream &stream,
 		 "channelMode=\"%4\" "
 		 "channel=\"%5\" "
                  "scale=\"%6\" "
-		 "aggressive=\"%7\" "
-                 "autoNormalize=\"%8\"")
+                 "middleLineHeight=\"%7\" "
+		 "aggressive=\"%8\" "
+                 "autoNormalize=\"%9\"")
 	.arg(m_gain)
 	.arg(m_showMeans)
 	.arg(m_greyscale)
 	.arg(m_channelMode)
 	.arg(m_channel)
 	.arg(m_scale)
+        .arg(m_middleLineHeight)
 	.arg(m_aggressive)
         .arg(m_autoNormalize);
 
@@ -1353,9 +1378,11 @@ WaveformLayer::setProperties(const QXmlAttributes &attributes)
     int channel = attributes.value("channel").toInt(&ok);
     if (ok) setChannel(channel);
 
-    Scale scale = (Scale)
-	attributes.value("scale").toInt(&ok);
+    Scale scale = (Scale)attributes.value("scale").toInt(&ok);
     if (ok) setScale(scale);
+
+    float middleLineHeight = attributes.value("middleLineHeight").toFloat(&ok);
+    if (ok) setMiddleLineHeight(middleLineHeight);
 
     bool aggressive = (attributes.value("aggressive") == "1" ||
 		       attributes.value("aggressive") == "true");

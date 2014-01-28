@@ -360,7 +360,30 @@ ViewManager::setToolMode(ToolMode mode)
     case DrawMode: emit activity(tr("Enter Draw mode")); break;
     case EraseMode: emit activity(tr("Enter Erase mode")); break;
     case MeasureMode: emit activity(tr("Enter Measure mode")); break;
+    case NoteEditMode: emit activity(tr("Enter NoteEdit mode")); break; // GF: NoteEditMode activity (I'm not yet certain why we need to emit this.)
     };
+}
+
+ViewManager::ToolMode
+ViewManager::getToolModeFor(const View *v) const
+{
+    if (m_toolModeOverrides.find(v) == m_toolModeOverrides.end()) {
+        return getToolMode();
+    } else {
+        return m_toolModeOverrides.find(v)->second;
+    }
+}
+
+void
+ViewManager::setToolModeFor(const View *v, ToolMode mode)
+{
+    m_toolModeOverrides[v] = mode;
+}
+
+void
+ViewManager::clearToolModeOverrides()
+{
+    m_toolModeOverrides.clear();
 }
 
 void

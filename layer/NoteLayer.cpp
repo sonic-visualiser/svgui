@@ -56,12 +56,12 @@ NoteLayer::NoteLayer() :
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
-    
+  	SVDEBUG << "constructed NoteLayer" << endl;
 }
 
 void
 NoteLayer::setModel(NoteModel *model)
-{
+{	
     if (m_model == model) return;
     m_model = model;
 
@@ -842,7 +842,7 @@ NoteLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 void
 NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model) return;
+    if (!m_model || m_model->getPoints().empty()) return;
 
     QString unit;
     float min, max;

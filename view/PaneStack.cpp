@@ -39,6 +39,7 @@
 PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     QFrame(parent),
     m_currentPane(0),
+    m_showAccessories(true),
     m_splitter(new QSplitter),
     m_propertyStackStack(new QStackedWidget),
     m_viewManager(viewManager),
@@ -60,6 +61,12 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     setLayout(layout);
 }
 
+void
+PaneStack::setShowPaneAccessories(bool show)
+{
+    m_showAccessories = show;
+}
+
 Pane *
 PaneStack::addPane(bool suppressPropertyBox)
 {
@@ -79,6 +86,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     xButton->setIcon(IconLoader().load("cross"));
     xButton->setFixedSize(QSize(16, 16));
     xButton->setFlat(true);
+    xButton->setVisible(m_showAccessories);
     layout->addWidget(xButton, 0, 0);
     connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
 
@@ -88,6 +96,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     layout->setRowStretch(1, 20);
     currentIndicator->setMinimumWidth(8);
     currentIndicator->setScaledContents(true);
+    currentIndicator->setVisible(m_showAccessories);
 
     long initialCentreFrame = -1;
     for (int i = 0; i < m_panes.size(); ++i) {
@@ -149,6 +158,8 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
             this, SLOT(paneDropAccepted(QStringList)));
     connect(pane, SIGNAL(dropAccepted(QString)),
             this, SLOT(paneDropAccepted(QString)));
+    connect(pane, SIGNAL(doubleClickSelectInvoked(size_t)),
+            this, SIGNAL(doubleClickSelectInvoked(size_t)));
 
     emit paneAdded(pane);
     emit paneAdded();
@@ -288,8 +299,8 @@ PaneStack::showOrHidePaneAccessories()
     bool multi = (getPaneCount() > 1);
     for (std::vector<PaneRec>::iterator i = m_panes.begin();
          i != m_panes.end(); ++i) {
-        i->xButton->setVisible(multi);
-        i->currentIndicator->setVisible(multi);
+        i->xButton->setVisible(multi && m_showAccessories);
+        i->currentIndicator->setVisible(multi && m_showAccessories);
     }
 }
 
@@ -580,24 +591,44 @@ PaneStack::sizePanesEqually()
 
     int count = sizes.size();
 
-    int total = 0;
+    int fixed = 0, variable = 0, total = 0;
+    int varicount = 0;
+
     for (int i = 0; i < count; ++i) {
         total += sizes[i];
+    }
+
+    variable = total;
+
+    for (int i = 0; i < count; ++i) {
+        int minh = m_panes[i].pane->minimumSize().height();
+        if (minh == m_panes[i].pane->maximumSize().height()) {
+            fixed += minh;
+            variable -= minh;
+        } else {
+            varicount++;
+        }
     }
 
     if (total == 0) return;
 
     sizes.clear();
 
-    int each = total / count;
+    int each = (varicount > 0 ? (variable / varicount) : 0);
     int remaining = total;
 
     for (int i = 0; i < count; ++i) {
         if (i == count - 1) {
             sizes.push_back(remaining);
         } else {
-            sizes.push_back(each);
-            remaining -= each;
+            int minh = m_panes[i].pane->minimumSize().height();
+            if (minh == m_panes[i].pane->maximumSize().height()) {
+                sizes.push_back(minh);
+                remaining -= minh;
+            } else {
+                sizes.push_back(each);
+                remaining -= each;
+            }
         }
     }
 
@@ -611,5 +642,4 @@ PaneStack::sizePanesEqually()
 
     m_splitter->setSizes(sizes);
 }
-
 

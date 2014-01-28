@@ -25,6 +25,11 @@
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 
+// GF: added so we can propagate the mouse move event to the note layer for context handling.
+#include "layer/LayerFactory.h"
+#include "layer/FlexiNoteLayer.h"
+
+
 //!!! ugh
 #include "data/model/WaveFileModel.h"
 
@@ -168,7 +173,7 @@ Pane::updateHeadsUpDisplay()
         }
 
         m_reset = new NotifyingPushButton;
-	m_reset->setFlat(true);
+        m_reset->setFlat(true);
         m_reset->setCursor(Qt::ArrowCursor);
         m_reset->setFixedHeight(16);
         m_reset->setFixedWidth(16);
@@ -328,19 +333,19 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
     QPoint discard;
     bool b0, b1;
 
-    if (m_manager && m_manager->getToolMode() == ViewManager::MeasureMode) {
+    if (m_manager && m_manager->getToolModeFor(this) == ViewManager::MeasureMode) {
         return false;
     }
-
+    
     if (m_manager && !m_manager->shouldIlluminateLocalFeatures()) {
         return false;
     }
 
     if (layer == getSelectedLayer() &&
-	!shouldIlluminateLocalSelection(discard, b0, b1)) {
+    !shouldIlluminateLocalSelection(discard, b0, b1)) {
 
-	pos = m_identifyPoint;
-	return m_identifyFeatures;
+    pos = m_identifyPoint;
+    return m_identifyFeatures;
     }
 
     return false;
@@ -348,25 +353,25 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
 
 bool
 Pane::shouldIlluminateLocalSelection(QPoint &pos,
-				     bool &closeToLeft,
-				     bool &closeToRight) const
+                     bool &closeToLeft,
+                     bool &closeToRight) const
 {
     if (m_identifyFeatures &&
-	m_manager &&
-	m_manager->getToolMode() == ViewManager::EditMode &&
-	!m_manager->getSelections().empty() &&
-	!selectionIsBeingEdited()) {
+    m_manager &&
+    m_manager->getToolModeFor(this) == ViewManager::EditMode &&
+    !m_manager->getSelections().empty() &&
+    !selectionIsBeingEdited()) {
 
-	Selection s(getSelectionAt(m_identifyPoint.x(),
-				   closeToLeft, closeToRight));
+    Selection s(getSelectionAt(m_identifyPoint.x(),
+                   closeToLeft, closeToRight));
 
-	if (!s.isEmpty()) {
-	    if (getSelectedLayer() && getSelectedLayer()->isLayerEditable()) {
-		
-		pos = m_identifyPoint;
-		return true;
-	    }
-	}
+    if (!s.isEmpty()) {
+        if (getSelectedLayer() && getSelectedLayer()->isLayerEditable()) {
+        
+        pos = m_identifyPoint;
+        return true;
+        }
+    }
     }
 
     return false;
@@ -376,10 +381,10 @@ bool
 Pane::selectionIsBeingEdited() const
 {
     if (!m_editingSelection.isEmpty()) {
-	if (m_mousePos != m_clickPos &&
-	    getFrameForX(m_mousePos.x()) != getFrameForX(m_clickPos.x())) {
-	    return true;
-	}
+    if (m_mousePos != m_clickPos &&
+        getFrameForX(m_mousePos.x()) != getFrameForX(m_clickPos.x())) {
+        return true;
+    }
     }
     return false;
 }
@@ -408,7 +413,7 @@ Pane::paintEvent(QPaintEvent *e)
 
     if (e) paint.setClipRect(r);
 
-    ViewManager::ToolMode toolMode = m_manager->getToolMode();
+    ViewManager::ToolMode toolMode = m_manager->getToolModeFor(this);
 
     if (m_manager &&
 //        !m_manager->isPlaying() &&
@@ -626,9 +631,9 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
         
     if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
 
-//	    Profiler profiler("Pane::paintEvent - painting vertical scale", true);
+//      Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
-//	    SVDEBUG << "Pane::paintEvent: calling paint.save() in vertical scale block" << endl;
+//      SVDEBUG << "Pane::paintEvent: calling paint.save() in vertical scale block" << endl;
         paint.save();
             
         paint.setPen(getForeground());
@@ -649,7 +654,7 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
 {
     QPoint pos = m_identifyPoint;
     QString desc = topLayer->getFeatureDescription(this, pos);
-	    
+        
     if (desc != "") {
         
         paint.save();
@@ -726,7 +731,7 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
     LayerList::iterator vi = m_layers.end();
     
     if (vi != m_layers.begin()) {
-	    
+        
         switch ((*--vi)->getPreferredFrameCountPosition()) {
             
         case Layer::PositionTop:
@@ -893,7 +898,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     }
     
     if (r.x() + r.width() >= llx - fontAscent - 3) {
-	
+    
         for (size_t i = 0; i < texts.size(); ++i) {
 
 //            cerr << "Pane "<< this << ": text " << i << ": " << texts[i] << endl;
@@ -1147,8 +1152,8 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
 
     long testFrame = getFrameForX(x - 5);
     if (testFrame < 0) {
-	testFrame = getFrameForX(x);
-	if (testFrame < 0) return Selection();
+    testFrame = getFrameForX(x);
+    if (testFrame < 0) return Selection();
     }
 
     Selection selection = m_manager->getContainingSelection(testFrame, true);
@@ -1291,7 +1296,7 @@ Pane::mousePressEvent(QMouseEvent *e)
     m_dragMode = UnresolvedDrag;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     m_navigating = false;
     m_resizing = false;
@@ -1303,12 +1308,12 @@ Pane::mousePressEvent(QMouseEvent *e)
         (mode == ViewManager::MeasureMode &&
          (e->buttons() & Qt::LeftButton) && m_shiftPressed)) {
 
-	if (mode != ViewManager::NavigateMode) {
-	    setCursor(Qt::PointingHandCursor);
-	}
+        if (mode != ViewManager::NavigateMode) {
+            setCursor(Qt::PointingHandCursor);
+        }
 
-	m_navigating = true;
-	m_dragCentreFrame = m_centreFrame;
+        m_navigating = true;
+        m_dragCentreFrame = m_centreFrame;
         m_dragStartMinValue = 0;
         
         float vmin, vmax, dmin, dmax;
@@ -1320,61 +1325,70 @@ Pane::mousePressEvent(QMouseEvent *e)
 
         if (!hasTopLayerTimeXAxis()) return;
 
-	bool closeToLeft = false, closeToRight = false;
-	Selection selection = getSelectionAt(e->x(), closeToLeft, closeToRight);
+        bool closeToLeft = false, closeToRight = false;
+        Selection selection = getSelectionAt(e->x(), closeToLeft, closeToRight);
 
-	if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
+        if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
 
-	    m_manager->removeSelection(selection);
+            m_manager->removeSelection(selection);
 
-	    if (closeToLeft) {
-		m_selectionStartFrame = selection.getEndFrame();
-	    } else {
-		m_selectionStartFrame = selection.getStartFrame();
-	    }
-
-	    m_manager->setInProgressSelection(selection, false);
-	    m_resizing = true;
-	
-	} else {
-
-	    int mouseFrame = getFrameForX(e->x());
-	    size_t resolution = 1;
-	    int snapFrame = mouseFrame;
-	
-	    Layer *layer = getSelectedLayer();
-	    if (layer && !m_shiftPressed) {
-		layer->snapToFeatureFrame(this, snapFrame,
-					  resolution, Layer::SnapLeft);
-	    }
-	    
-	    if (snapFrame < 0) snapFrame = 0;
-	    m_selectionStartFrame = snapFrame;
-	    if (m_manager) {
-		m_manager->setInProgressSelection
+            if (closeToLeft) {
+                m_selectionStartFrame = selection.getEndFrame();
+            } else {
+                m_selectionStartFrame = selection.getStartFrame();
+            }
+            
+            m_manager->setInProgressSelection(selection, false);
+            m_resizing = true;
+            
+        } else {
+            
+            int mouseFrame = getFrameForX(e->x());
+            size_t resolution = 1;
+            int snapFrame = mouseFrame;
+    
+            Layer *layer = getSelectedLayer();
+            if (layer && !m_shiftPressed) {
+                layer->snapToFeatureFrame(this, snapFrame,
+                                          resolution, Layer::SnapLeft);
+            }
+        
+            if (snapFrame < 0) snapFrame = 0;
+            m_selectionStartFrame = snapFrame;
+            if (m_manager) {
+                m_manager->setInProgressSelection
                     (Selection(alignToReference(snapFrame),
                                alignToReference(snapFrame + resolution)),
                      !m_ctrlPressed);
-	    }
+            }
 
-	    m_resizing = false;
-	}
+            m_resizing = false;
+        }
 
-	update();
+        update();
 
     } else if (mode == ViewManager::DrawMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->drawStart(this, e);
-	}
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->drawStart(this, e);
+        }
 
     } else if (mode == ViewManager::EraseMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->eraseStart(this, e);
-	}
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->eraseStart(this, e);
+        }
+
+        // GF: handle mouse press for NoteEditMode 
+    } else if (mode == ViewManager::NoteEditMode) {
+
+        std::cerr << "mouse pressed in note edit mode" << std::endl;
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->splitStart(this, e); 
+        }
 
     } else if (mode == ViewManager::EditMode) {
 
@@ -1401,33 +1415,33 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 //    cerr << "mouseReleaseEvent" << endl;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     m_releasing = true;
 
     if (m_clickedInRange) {
-	mouseMoveEvent(e);
+        mouseMoveEvent(e);
     }
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
 
-	m_navigating = false;
+        m_navigating = false;
 
-	if (mode != ViewManager::NavigateMode) {
-	    // restore cursor
-	    toolModeChanged();
-	}
+        if (mode != ViewManager::NavigateMode) {
+            // restore cursor
+            toolModeChanged();
+        }
 
-	if (m_shiftPressed) {
+        if (m_shiftPressed) {
 
-	    int x0 = std::min(m_clickPos.x(), m_mousePos.x());
-	    int x1 = std::max(m_clickPos.x(), m_mousePos.x());
+            int x0 = std::min(m_clickPos.x(), m_mousePos.x());
+            int x1 = std::max(m_clickPos.x(), m_mousePos.x());
 
-	    int y0 = std::min(m_clickPos.y(), m_mousePos.y());
-	    int y1 = std::max(m_clickPos.y(), m_mousePos.y());
+            int y0 = std::min(m_clickPos.y(), m_mousePos.y());
+            int y1 = std::max(m_clickPos.y(), m_mousePos.y());
 
             zoomToRegion(x0, y0, x1, y1);
-	}
+        }
 
     } else if (mode == ViewManager::SelectMode) {
 
@@ -1436,43 +1450,49 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             return;
         }
 
-	if (m_manager && m_manager->haveInProgressSelection()) {
+        if (m_manager && m_manager->haveInProgressSelection()) {
 
-	    bool exclusive;
-	    Selection selection = m_manager->getInProgressSelection(exclusive);
-	    
-	    if (selection.getEndFrame() < selection.getStartFrame() + 2) {
-		selection = Selection();
-	    }
-	    
-	    m_manager->clearInProgressSelection();
-	    
-	    if (exclusive) {
-		m_manager->setSelection(selection);
-	    } else {
-		m_manager->addSelection(selection);
-	    }
-	}
-	
-	update();
+            bool exclusive;
+            Selection selection = m_manager->getInProgressSelection(exclusive);
+        
+            if (selection.getEndFrame() < selection.getStartFrame() + 2) {
+                selection = Selection();
+            }
+        
+            m_manager->clearInProgressSelection();
+        
+            if (exclusive) {
+                m_manager->setSelection(selection);
+            } else {
+                m_manager->addSelection(selection);
+            }
+        }
+    
+        update();
 
     } else if (mode == ViewManager::DrawMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->drawEnd(this, e);
-	    update();
-	}
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->drawEnd(this, e);
+            update();
+        }
 
     } else if (mode == ViewManager::EraseMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->eraseEnd(this, e);
-	    update();
-	}
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->eraseEnd(this, e);
+            update();
+        }
 
-    } else if (mode == ViewManager::EditMode) {
+    } else if (mode == ViewManager::NoteEditMode) {
+    
+        //GF: handle mouse release for NoteEditMode (note: works but will need to re-think this a bit later)
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->splitEnd(this, e);
+            update(); }
 
         if (m_editing) {
             if (!editSelectionEnd(e)) {
@@ -1482,7 +1502,20 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
                     update();
                 }
             }
-        }
+        } 
+
+    } else if (mode == ViewManager::EditMode) {
+        
+        // GF: edited this previously, but restored to original state
+        if (m_editing) {
+            if (!editSelectionEnd(e)) {
+                Layer *layer = getSelectedLayer();
+                if (layer && layer->isLayerEditable()) {
+                    layer->editEnd(this, e);
+                    update();
+                }
+            }
+        } 
 
     } else if (mode == ViewManager::MeasureMode) {
 
@@ -1525,22 +1558,30 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     }
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     QPoint prevPoint = m_identifyPoint;
     m_identifyPoint = e->pos();
 
     if (!m_clickedInRange) {
-	
-	if (mode == ViewManager::SelectMode && hasTopLayerTimeXAxis()) {
-	    bool closeToLeft = false, closeToRight = false;
-	    getSelectionAt(e->x(), closeToLeft, closeToRight);
-	    if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
-		setCursor(Qt::SizeHorCursor);
-	    } else {
-		setCursor(Qt::ArrowCursor);
-	    }
-	}
+    
+        // GF: handle mouse move for context sensitive cursor switching in NoteEditMode.
+        // GF: Propagate the event to FlexiNoteLayer. I somehow feel it's best handeled there rather than here, but perhaps not if this will be needed elsewhere too.
+        if (mode == ViewManager::NoteEditMode && LayerFactory::getInstance()->getLayerType(getTopLayer()) == LayerFactory::FlexiNotes) {
+        
+            dynamic_cast<FlexiNoteLayer *>(getTopLayer())->mouseMoveEvent(this, e);
+
+        }   
+    
+        if (mode == ViewManager::SelectMode && hasTopLayerTimeXAxis()) {
+            bool closeToLeft = false, closeToRight = false;
+            getSelectionAt(e->x(), closeToLeft, closeToRight);
+            if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
+                setCursor(Qt::SizeHorCursor);
+            } else {
+                setCursor(Qt::ArrowCursor);
+            }
+        }
 
         if (!m_manager->isPlaying()) {
 
@@ -1570,17 +1611,17 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             }
         }
 
-	return;
+        return;
     }
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
 
-	if (m_shiftPressed) {
+        if (m_shiftPressed) {
 
-	    m_mousePos = e->pos();
-	    update();
+            m_mousePos = e->pos();
+            update();
 
-	} else {
+        } else {
 
             dragTopLayer(e);
         }
@@ -1593,17 +1634,82 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::DrawMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->drawDrag(this, e);
-	}
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->drawDrag(this, e);
+        }
 
     } else if (mode == ViewManager::EraseMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    layer->eraseDrag(this, e);
-	}
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->eraseDrag(this, e);
+        }
+
+        // GF: handling NoteEditMode dragging and boundary actions for mouseMoveEvent
+    } else if (mode == ViewManager::NoteEditMode) {
+
+        bool resist = true;
+
+        if ((e->modifiers() & Qt::ShiftModifier)) {
+            m_shiftPressed = true;
+        }
+
+        if (m_shiftPressed) resist = false;
+
+        m_dragMode = updateDragMode
+            (m_dragMode,
+             m_clickPos,
+             e->pos(),
+             true,    // can move horiz
+             true,    // can move vert
+             resist,  // resist horiz
+             resist); // resist vert
+
+        if (!m_editing) {
+
+            if (m_dragMode != UnresolvedDrag) {
+
+                m_editing = true;
+
+                QMouseEvent clickEvent(QEvent::MouseButtonPress,
+                                       m_clickPos,
+                                       Qt::NoButton,
+                                       e->buttons(),
+                                       e->modifiers());
+
+                if (!editSelectionStart(&clickEvent)) {
+                    Layer *layer = getSelectedLayer();
+                    if (layer && layer->isLayerEditable()) {
+                        std::cerr << "calling edit start" << std::endl;
+                        layer->editStart(this, &clickEvent);
+                    }
+                }
+            }
+
+        } else {
+
+            if (!editSelectionDrag(e)) {
+
+                Layer *layer = getSelectedLayer();
+
+                if (layer && layer->isLayerEditable()) {
+
+                    int x = e->x();
+                    int y = e->y();
+                    if (m_dragMode == VerticalDrag) x = m_clickPos.x();
+                    else if (m_dragMode == HorizontalDrag) y = m_clickPos.y();
+
+                    QMouseEvent moveEvent(QEvent::MouseMove,
+                                          QPoint(x, y),
+                                          Qt::NoButton,
+                                          e->buttons(),
+                                          e->modifiers());
+                    std::cerr << "calling editDrag" << std::endl;
+                    layer->editDrag(this, &moveEvent);
+                }
+            }
+        }
 
     } else if (mode == ViewManager::EditMode) {
 
@@ -1689,18 +1795,18 @@ void
 Pane::zoomToRegion(int x0, int y0, int x1, int y1)
 {
     int w = x1 - x0;
-	    
+        
     long newStartFrame = getFrameForX(x0);
-	    
+        
     long visibleFrames = getEndFrame() - getStartFrame();
     if (newStartFrame <= -visibleFrames) {
         newStartFrame  = -visibleFrames + 1;
     }
-	    
+        
     if (newStartFrame >= long(getModelsEndFrame())) {
         newStartFrame  = getModelsEndFrame() - 1;
     }
-	    
+        
     float ratio = float(w) / float(width());
 //	cerr << "ratio: " << ratio << endl;
     size_t newZoomLevel = (size_t)nearbyint(m_zoomLevel * ratio);
@@ -1785,7 +1891,7 @@ Pane::dragTopLayer(QMouseEvent *e)
         long frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
 
         size_t newCentreFrame = m_dragCentreFrame;
-	    
+        
         if (frameOff < 0) {
             newCentreFrame -= frameOff;
         } else if (newCentreFrame >= size_t(frameOff)) {
@@ -1794,7 +1900,7 @@ Pane::dragTopLayer(QMouseEvent *e)
             newCentreFrame = 0;
         }
 
-#ifdef DEBUG_PANE	    
+#ifdef DEBUG_PANE       
         SVDEBUG << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame <<
             ", models end frame = " << getModelsEndFrame() << endl;
 #endif
@@ -1913,7 +2019,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
     size_t resolution = 1;
     int snapFrameLeft = mouseFrame;
     int snapFrameRight = mouseFrame;
-	
+    
     Layer *layer = getSelectedLayer();
     if (layer && !m_shiftPressed) {
         layer->snapToFeatureFrame(this, snapFrameLeft,
@@ -1926,9 +2032,9 @@ Pane::dragExtendSelection(QMouseEvent *e)
 
     if (snapFrameLeft < 0) snapFrameLeft = 0;
     if (snapFrameRight < 0) snapFrameRight = 0;
-	
+    
     size_t min, max;
-	
+    
     if (m_selectionStartFrame > size_t(snapFrameLeft)) {
         min = snapFrameLeft;
         max = m_selectionStartFrame;
@@ -1994,18 +2100,25 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     m_altPressed = (e->modifiers() & Qt::AltModifier);
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     bool relocate = (mode == ViewManager::NavigateMode ||
                      (e->buttons() & Qt::MidButton));
 
+    if (mode == ViewManager::SelectMode) {
+        m_clickedInRange = false;
+        m_manager->clearInProgressSelection();
+        emit doubleClickSelectInvoked(getFrameForX(e->x()));
+        return;
+    }
+
     if (mode == ViewManager::NavigateMode ||
         mode == ViewManager::EditMode) {
 
-	Layer *layer = getSelectedLayer();
-	if (layer && layer->isLayerEditable()) {
-	    if (layer->editOpen(this, e)) relocate = false;
-	}
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            if (layer->editOpen(this, e)) relocate = false;
+        }
 
     } else if (mode == ViewManager::MeasureMode) {
 
@@ -2027,6 +2140,14 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         float vmin, vmax, dmin, dmax;
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
             m_dragStartMinValue = dmin;
+        }
+    }
+    
+    if (mode == ViewManager::NoteEditMode) {
+        std::cerr << "double click in note edit mode" << std::endl;
+        Layer *layer = getSelectedLayer();
+        if (layer && layer->isLayerEditable()) {
+            layer->addNote(this, e); 
         }
     }
 
@@ -2063,31 +2184,31 @@ Pane::wheelEvent(QWheelEvent *e)
     int count = e->delta();
 
     if (count > 0) {
-	if (count >= 120) count /= 120;
-	else count = 1;
+    if (count >= 120) count /= 120;
+    else count = 1;
     } 
 
     if (count < 0) {
-	if (count <= -120) count /= 120;
-	else count = -1;
+    if (count <= -120) count /= 120;
+    else count = -1;
     }
 
     if (e->modifiers() & Qt::ControlModifier) {
 
-	// Scroll left or right, rapidly
+    // Scroll left or right, rapidly
 
-	if (getStartFrame() < 0 && 
-	    getEndFrame() >= getModelsEndFrame()) return;
+    if (getStartFrame() < 0 && 
+        getEndFrame() >= getModelsEndFrame()) return;
 
-	long delta = ((width() / 2) * count * m_zoomLevel);
+    long delta = ((width() / 2) * count * m_zoomLevel);
 
-	if (int(m_centreFrame) < delta) {
-	    setCentreFrame(0);
-	} else if (int(m_centreFrame) - delta >= int(getModelsEndFrame())) {
-	    setCentreFrame(getModelsEndFrame());
-	} else {
-	    setCentreFrame(m_centreFrame - delta);
-	}
+    if (int(m_centreFrame) < delta) {
+        setCentreFrame(0);
+    } else if (int(m_centreFrame) - delta >= int(getModelsEndFrame())) {
+        setCentreFrame(getModelsEndFrame());
+    } else {
+        setCentreFrame(m_centreFrame - delta);
+    }
 
     } else if (e->modifiers() & Qt::ShiftModifier) {
 
@@ -2107,29 +2228,29 @@ Pane::wheelEvent(QWheelEvent *e)
 
     } else {
 
-	// Zoom in or out
+    // Zoom in or out
 
-	int newZoomLevel = m_zoomLevel;
+    int newZoomLevel = m_zoomLevel;
   
-	while (count > 0) {
-	    if (newZoomLevel <= 2) {
-		newZoomLevel = 1;
-		break;
-	    }
-	    newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
-						      ZoomConstraint::RoundDown);
-	    --count;
-	}
-	
-	while (count < 0) {
-	    newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
-						      ZoomConstraint::RoundUp);
-	    ++count;
-	}
-	
-	if (newZoomLevel != m_zoomLevel) {
-	    setZoomLevel(newZoomLevel);
-	}
+    while (count > 0) {
+        if (newZoomLevel <= 2) {
+        newZoomLevel = 1;
+        break;
+        }
+        newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
+                              ZoomConstraint::RoundDown);
+        --count;
+    }
+    
+    while (count < 0) {
+        newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
+                              ZoomConstraint::RoundUp);
+        ++count;
+    }
+    
+    if (newZoomLevel != m_zoomLevel) {
+        setZoomLevel(newZoomLevel);
+    }
     }
 
     emit paneInteractedWith();
@@ -2307,9 +2428,9 @@ bool
 Pane::editSelectionStart(QMouseEvent *e)
 {
     if (!m_identifyFeatures ||
-	!m_manager ||
-	m_manager->getToolMode() != ViewManager::EditMode) {
-	return false;
+        !m_manager ||
+        m_manager->getToolModeFor(this) != ViewManager::EditMode) {
+        return false;
     }
 
     bool closeToLeft, closeToRight;
@@ -2339,8 +2460,8 @@ Pane::editSelectionEnd(QMouseEvent *)
     Layer *layer = getSelectedLayer();
 
     if (offset == 0 || !layer) {
-	m_editingSelection = Selection();
-	return true;
+        m_editingSelection = Selection();
+        return true;
     }
 
     int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
@@ -2352,25 +2473,25 @@ Pane::editSelectionEnd(QMouseEvent *)
     Selection newSelection(f0, f1);
     
     if (m_editingSelectionEdge == 0) {
-	
+    
         CommandHistory::getInstance()->startCompoundOperation
             (tr("Drag Selection"), true);
 
-	layer->moveSelection(m_editingSelection, f0);
-	
+        layer->moveSelection(m_editingSelection, f0);
+    
     } else {
-	
+    
         CommandHistory::getInstance()->startCompoundOperation
             (tr("Resize Selection"), true);
 
-	if (m_editingSelectionEdge < 0) {
-	    f1 = m_editingSelection.getEndFrame();
-	} else {
-	    f0 = m_editingSelection.getStartFrame();
-	}
+        if (m_editingSelectionEdge < 0) {
+            f1 = m_editingSelection.getEndFrame();
+        } else {
+            f0 = m_editingSelection.getStartFrame();
+        }
 
-	newSelection = Selection(f0, f1);
-	layer->resizeSelection(m_editingSelection, newSelection);
+        newSelection = Selection(f0, f1);
+        layer->resizeSelection(m_editingSelection, newSelection);
     }
     
     m_manager->removeSelection(m_editingSelection);
@@ -2385,7 +2506,7 @@ Pane::editSelectionEnd(QMouseEvent *)
 void
 Pane::toolModeChanged()
 {
-    ViewManager::ToolMode mode = m_manager->getToolMode();
+    ViewManager::ToolMode mode = m_manager->getToolModeFor(this);
 //    SVDEBUG << "Pane::toolModeChanged(" << mode << ")" << endl;
 
     if (mode == ViewManager::MeasureMode && !m_measureCursor1) {
@@ -2400,33 +2521,38 @@ Pane::toolModeChanged()
     switch (mode) {
 
     case ViewManager::NavigateMode:
-	setCursor(Qt::PointingHandCursor);
-	break;
-	
+        setCursor(Qt::PointingHandCursor);
+        break;
+    
     case ViewManager::SelectMode:
-	setCursor(Qt::ArrowCursor);
-	break;
-	
+        setCursor(Qt::ArrowCursor);
+        break;
+    
     case ViewManager::EditMode:
-	setCursor(Qt::UpArrowCursor);
-	break;
-	
+        setCursor(Qt::UpArrowCursor);
+        break;
+    
     case ViewManager::DrawMode:
-	setCursor(Qt::CrossCursor);
-	break;
-	
+        setCursor(Qt::CrossCursor);
+        break;
+    
     case ViewManager::EraseMode:
-	setCursor(Qt::CrossCursor);
-	break;
+        setCursor(Qt::CrossCursor);
+        break;
 
     case ViewManager::MeasureMode:
         if (m_measureCursor1) setCursor(*m_measureCursor1);
-	break;
+        break;
 
-/*	
+        // GF: NoteEditMode uses the same default cursor as EditMode, but it will change in a context sensitive manner.
+    case ViewManager::NoteEditMode:
+        setCursor(Qt::UpArrowCursor);
+        break;
+
+/*  
     case ViewManager::TextMode:
-	setCursor(Qt::IBeamCursor);
-	break;
+    setCursor(Qt::IBeamCursor);
+    break;
 */
     }
 }
@@ -2510,7 +2636,7 @@ Pane::updateContextHelp(const QPoint *pos)
     }
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
-    if (m_manager) mode = m_manager->getToolMode();
+    if (m_manager) mode = m_manager->getToolModeFor(this);
 
     bool editable = false;
     Layer *layer = getSelectedLayer();
@@ -2562,21 +2688,21 @@ Pane::updateContextHelp(const QPoint *pos)
     } else if (mode == ViewManager::DrawMode) {
         
         //!!! could call through to a layer function to find out exact meaning
-	if (editable) {
+        if (editable) {
             help = tr("Click to add a new item in the active layer");
         }
 
     } else if (mode == ViewManager::EraseMode) {
         
         //!!! could call through to a layer function to find out exact meaning
-	if (editable) {
+        if (editable) {
             help = tr("Click to erase an item from the active layer");
         }
         
     } else if (mode == ViewManager::EditMode) {
         
         //!!! could call through to layer
-	if (editable) {
+        if (editable) {
             help = tr("Click and drag an item in the active layer to move it; hold Shift to override initial resistance");
             if (pos) {
                 bool closeToLeft = false, closeToRight = false;
@@ -2620,8 +2746,8 @@ Pane::toXml(QTextStream &stream,
 {
     View::toXml
         (stream, indent,
-	 QString("type=\"pane\" centreLineVisible=\"%1\" height=\"%2\" %3")
-	 .arg(m_centreLineVisible).arg(height()).arg(extraAttributes));
+     QString("type=\"pane\" centreLineVisible=\"%1\" height=\"%2\" %3")
+     .arg(m_centreLineVisible).arg(height()).arg(extraAttributes));
 }
 
 
