@@ -972,7 +972,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	 i != points.end(); ++i) {
 
         if (m_derivative && i == points.begin()) continue;
-        
+
 	const SparseTimeValueModel::Point &p(*i);
 
         float value = p.value;
@@ -987,6 +987,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         bool gap = false;
         if (m_plotStyle == PlotDiscreteCurves) { 
+            if (value == 0.0) {
+                // Treat zeros as gaps
+                continue;
+            }
             gap = (p.frame > prevFrame &&
                    (p.frame - prevFrame >= m_model->getResolution() * 2));
         }
@@ -1000,6 +1004,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
 
 	bool haveNext = false;
+        float nvalue = 0.f;
         int nf = v->getModelsEndFrame();
 	int nx = v->getXForFrame(nf);
 	int ny = y;
@@ -1009,7 +1014,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (j != points.end()) {
 	    const SparseTimeValueModel::Point &q(*j);
-            float nvalue = q.value;
+            nvalue = q.value;
             if (m_derivative) nvalue -= p.value;
             nf = q.frame;
 	    nx = v->getXForFrame(nf);
@@ -1116,7 +1121,9 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    float y1 = ny;
 
                     if (m_plotStyle == PlotDiscreteCurves) {
-                        bool nextGap = nf - p.frame >= m_model->getResolution() * 2;
+                        bool nextGap =
+                            (nvalue == 0.0) ||
+                            (nf - p.frame >= m_model->getResolution() * 2);
                         if (nextGap) {
                             x1 = x0;
                             y1 = y0;
