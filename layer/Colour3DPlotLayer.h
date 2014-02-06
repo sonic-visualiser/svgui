@@ -151,6 +151,9 @@ public:
     virtual bool getDisplayExtents(float &min, float &max) const;
     virtual bool setDisplayExtents(float min, float max);
 
+    virtual bool getYScaleValue(const View *, int /* y */,
+                                float &/* value */, QString &/* unit */) const;
+
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
     virtual void setVerticalZoomStep(int);
@@ -188,17 +191,32 @@ protected:
     bool        m_smooth;
     size_t      m_peakResolution;
 
+    // Minimum and maximum bin numbers visible within the view. We
+    // always snap to whole bins at view edges.
     int         m_miny;
     int         m_maxy;
+
+    /**
+     * Return the y coordinate at which the given bin "starts"
+     * (i.e. at the bottom of the bin, if the given bin is an integer
+     * and the vertical scale is the usual way up). Bin number may be
+     * fractional, to obtain a position part-way through a bin.
+     */
+    float getYForBin(View *, float bin) const;
+
+    /**
+     * Return the bin number, possibly fractional, at the given y
+     * coordinate. Note that the whole numbers occur at the positions
+     * at which the bins "start" (i.e. the bottom of the visible bin,
+     * if the vertical scale is the usual way up).
+     */
+    float getBinForY(View *, float y) const;
     
     DenseThreeDimensionalModel::Column getColumn(size_t col) const;
 
     int getColourScaleWidth(QPainter &) const;
     void fillCache(size_t firstBin, size_t lastBin) const;
     void paintDense(View *v, QPainter &paint, QRect rect) const;
-
-    float getYForBin(View *, float bin) const;
-    float getBinForY(View *, float y) const;
 };
 
 #endif
