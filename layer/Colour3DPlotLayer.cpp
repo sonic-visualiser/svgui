@@ -579,6 +579,13 @@ Colour3DPlotLayer::setDisplayExtents(float min, float max)
     return true;
 }
 
+bool
+Colour3DPlotLayer::getYScaleValue(const View *v, int y,
+                                  float &value, QString &unit) const
+{
+    return false;//!!!
+}
+
 int
 Colour3DPlotLayer::getVerticalZoomSteps(int &defaultStep) const
 {
