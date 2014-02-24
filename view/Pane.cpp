@@ -1471,7 +1471,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         else if (m_manager && !m_manager->haveInProgressSelection()) {
             
             //cerr << "JTEST: release without selection" << endl;
-            // Get frame locatrion of mouse
+            // Get frame location of mouse
             int mouseFrame = getFrameForX(e->x());
             //cerr << "JTEST: frame location of click is " << mouseFrame << endl;
             // Move play head to that frame location
