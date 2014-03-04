@@ -74,6 +74,10 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
 	    m_client, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
 }
 
+PropertyStack::~PropertyStack()
+{
+}
+
 void
 PropertyStack::repopulate()
 {

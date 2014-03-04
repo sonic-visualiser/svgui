@@ -90,8 +90,7 @@ Pane::Pane(QWidget *w) :
     
     updateHeadsUpDisplay();
 
-
-//    SVDEBUG << "Pane::Pane(" << this << ") returning" << endl;
+    cerr << "Pane::Pane(" << this << ") returning" << endl;
 }
 
 void
