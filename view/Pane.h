@@ -68,6 +68,7 @@ signals:
     void dropAccepted(QStringList uriList);
     void dropAccepted(QString text);
     void doubleClickSelectInvoked(size_t frame);
+    void regionOutlined(QRect rect);
 
 public slots:
     virtual void toolModeChanged();
@@ -84,6 +85,8 @@ public slots:
     virtual void layerParametersChanged();
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
+
+    void zoomToRegion(QRect r);
 
     void mouseEnteredWidget();
     void mouseLeftWidget();
@@ -130,7 +133,6 @@ protected:
 
     void dragTopLayer(QMouseEvent *e);
     void dragExtendSelection(QMouseEvent *e);
-    void zoomToRegion(int x0, int y0, int x1, int y1);
     void updateContextHelp(const QPoint *pos);
     void edgeScrollMaybe(int x);
 
