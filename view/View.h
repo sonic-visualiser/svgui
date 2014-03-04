@@ -401,6 +401,8 @@ class ViewPropertyContainer : public PropertyContainer
 
 public:
     ViewPropertyContainer(View *v);
+    virtual ~ViewPropertyContainer();
+
     PropertyList getProperties() const { return m_v->getProperties(); }
     QString getPropertyLabel(const PropertyName &n) const {
         return m_v->getPropertyLabel(n);
