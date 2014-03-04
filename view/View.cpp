@@ -64,12 +64,12 @@ View::View(QWidget *w, bool showProgress) :
     m_manager(0),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
-    SVDEBUG << "View::View(" << this << ")" << endl;
+//    cerr << "View::View(" << this << ")" << endl;
 }
 
 View::~View()
 {
-//    SVDEBUG << "View::~View(" << this << ")" << endl;
+//    cerr << "View::~View(" << this << ")" << endl;
 
     m_deleting = true;
     delete m_propertyContainer;
@@ -2407,7 +2407,11 @@ View::toXml(QTextStream &stream,
 ViewPropertyContainer::ViewPropertyContainer(View *v) :
     m_v(v)
 {
+//    cerr << "ViewPropertyContainer: " << this << " is owned by View " << v << endl;
     connect(m_v, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
 	    this, SIGNAL(propertyChanged(PropertyContainer::PropertyName)));
 }
 
+ViewPropertyContainer::~ViewPropertyContainer()
+{
+}

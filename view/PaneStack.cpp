@@ -236,11 +236,16 @@ PaneStack::getHiddenPane(int n)
 void
 PaneStack::deletePane(Pane *pane)
 {
+    cerr << "PaneStack::deletePane(" << pane << ")" << endl;
+
     std::vector<PaneRec>::iterator i;
     bool found = false;
 
+    QWidget *stack = 0;
+
     for (i = m_panes.begin(); i != m_panes.end(); ++i) {
 	if (i->pane == pane) {
+            stack = i->propertyStack;
 	    m_panes.erase(i);
 	    found = true;
 	    break;
@@ -251,6 +256,7 @@ PaneStack::deletePane(Pane *pane)
 
 	for (i = m_hiddenPanes.begin(); i != m_hiddenPanes.end(); ++i) {
 	    if (i->pane == pane) {
+                stack = i->propertyStack;
 		m_hiddenPanes.erase(i);
 		found = true;
 		break;
@@ -264,6 +270,18 @@ PaneStack::deletePane(Pane *pane)
     }
 
     emit paneAboutToBeDeleted(pane);
+
+    cerr << "PaneStack::deletePane: about to delete parent " << pane->parent() << " of pane " << pane << endl;
+
+    // The property stack associated with the parent was initially
+    // created with the same parent as it, so it would be deleted when
+    // we delete the pane's parent in a moment -- but it may have been
+    // reparented depending on the layout. We'd better delete it
+    // separately first. (This fixes a crash on opening a new layer
+    // with a new unit type in it, when a long-defunct property box
+    // could be signalled from the unit database to tell it that a new
+    // unit had appeared.)
+    delete stack;
 
     delete pane->parent();
 
