@@ -214,8 +214,13 @@ signals:
     /** Emitted when the output levels change. Values in range 0.0 -> 1.0. */
     void outputLevelsChanged(float left, float right);
 
-    /** Emitted when the selection has changed. */
+    /** Emitted whenever the selection has changed. */
     void selectionChanged();
+
+    /** Emitted when the selection has been changed through an
+     * explicit selection-editing action. *Not* emitted when the
+     * selection has been changed through undo or redo. */
+    void selectionChangedByUser();
 
     /** Emitted when the in-progress (rubberbanding) selection has changed. */
     void inProgressSelectionChanged();

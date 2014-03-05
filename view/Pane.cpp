@@ -359,10 +359,10 @@ Pane::shouldIlluminateLocalSelection(QPoint &pos,
                      bool &closeToRight) const
 {
     if (m_identifyFeatures &&
-    m_manager &&
-    m_manager->getToolModeFor(this) == ViewManager::EditMode &&
-    !m_manager->getSelections().empty() &&
-    !selectionIsBeingEdited()) {
+        m_manager &&
+        m_manager->getToolModeFor(this) == ViewManager::EditMode &&
+        !m_manager->getSelections().empty() &&
+        !selectionIsBeingEdited()) {
 
     Selection s(getSelectionAt(m_identifyPoint.x(),
                    closeToLeft, closeToRight));
