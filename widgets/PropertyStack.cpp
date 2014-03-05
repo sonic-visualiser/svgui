@@ -23,6 +23,7 @@
 #include "widgets/IconLoader.h"
 #include "base/Command.h"
 #include "widgets/CommandHistory.h"
+#include "layer/ShowLayerCommand.h"
 
 #include <QIcon>
 #include <QTabWidget>
@@ -220,27 +221,6 @@ PropertyStack::propertyContainerNameChanged(PropertyContainer *)
     if (sender() != m_client) return;
     repopulate();
 }
-
-class ShowLayerCommand : public QObject, public Command
-{
-public:
-    ShowLayerCommand(View *view, Layer *layer, bool show, QString name) :
-        m_view(view), m_layer(layer), m_show(show), m_name(name) { }
-    void execute() {
-        m_layer->showLayer(m_view, m_show);
-    }
-    void unexecute() {
-        m_layer->showLayer(m_view, !m_show);
-    }
-    QString getName() const {
-        return m_name;
-    }
-protected:
-    View *m_view;
-    Layer *m_layer;
-    bool m_show;
-    QString m_name;
-};
 
 void
 PropertyStack::showLayer(bool show)
