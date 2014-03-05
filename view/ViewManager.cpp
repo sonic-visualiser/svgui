@@ -279,6 +279,7 @@ ViewManager::setSelections(const MultiSelection &ms)
     if (m_selections.getSelections() == ms.getSelections()) return;
     SetSelectionCommand *command = new SetSelectionCommand(this, ms);
     CommandHistory::getInstance()->addCommand(command);
+    emit selectionChangedByUser();
 }
 
 size_t
