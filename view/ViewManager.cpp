@@ -670,11 +670,13 @@ ViewManager::setGlobalDarkBackground(bool dark)
         m_lightPalette = QApplication::palette();
     }
 
+#ifndef Q_OS_MAC
     if (dark) {
         QApplication::setPalette(m_darkPalette);
     } else {
         QApplication::setPalette(m_lightPalette);
     }
+#endif
 }
 
 bool
