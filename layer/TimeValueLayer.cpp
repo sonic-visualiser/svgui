@@ -1170,33 +1170,36 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    paint.drawRect(x, -1, nx - x, v->height() + 1);
 	}
 
-        QString label = p.label;
-        bool italic = false;
+        if (v->shouldShowFeatureLabels()) {
 
-        if (label == "" &&
-            (m_plotStyle == PlotPoints ||
-             m_plotStyle == PlotSegmentation ||
-             m_plotStyle == PlotConnectedPoints)) {
-            char lc[20];
-            snprintf(lc, 20, "%.3g", p.value);
-            label = lc;
-            italic = true;
-        }
+            QString label = p.label;
+            bool italic = false;
 
-	if (label != "") {
-            // Quick test for 20px before we do the slower test using metrics
-            bool haveRoom = (nx > x + 20);
-            haveRoom = (haveRoom &&
-                        (nx > x + 6 + paint.fontMetrics().width(label)));
-            if (haveRoom ||
-                (!haveNext &&
-                 (pointCount == 0 || !italic))) {
-                v->drawVisibleText(paint, x + 5, textY, label,
-                                   italic ?
-                                   View::OutlinedItalicText :
-                                   View::OutlinedText);
+            if (label == "" &&
+                (m_plotStyle == PlotPoints ||
+                 m_plotStyle == PlotSegmentation ||
+                 m_plotStyle == PlotConnectedPoints)) {
+                char lc[20];
+                snprintf(lc, 20, "%.3g", p.value);
+                label = lc;
+                italic = true;
             }
-	}
+
+            if (label != "") {
+                // Quick test for 20px before we do the slower test using metrics
+                bool haveRoom = (nx > x + 20);
+                haveRoom = (haveRoom &&
+                            (nx > x + 6 + paint.fontMetrics().width(label)));
+                if (haveRoom ||
+                    (!haveNext &&
+                     (pointCount == 0 || !italic))) {
+                    v->drawVisibleText(paint, x + 5, textY, label,
+                                       italic ?
+                                       View::OutlinedItalicText :
+                                       View::OutlinedText);
+                }
+            }
+        }
 
         prevFrame = p.frame;
         ++pointCount;
