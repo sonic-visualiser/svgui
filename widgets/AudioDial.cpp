@@ -231,31 +231,31 @@ void AudioDial::paintEvent(QPaintEvent *)
 	c = c.light(110);
     }
 
-    // Scale shadow...
+    // Scale shadow, omitting the bottom part...
 
     shadowAngle = 2160;
-    c = palette().dark().color();
-    for (int arc = 120; arc < 2880; arc += 240) {
+    c = palette().shadow().color();
+    for (int i = 0; i < 5; ++i) {
 	pen.setColor(c);
 	paint.setPen(pen);
+        int arc = i * 240 + 120;
 	paint.drawArc(scale/2, scale/2,
 		      width-scale, width-scale, shadowAngle + arc, 240);
+	c = c.light(110);
+    }
+    c = palette().shadow().color();
+    for (int i = 0; i < 12; ++i) {
+	pen.setColor(c);
+	paint.setPen(pen);
+        int arc = i * 240 + 120;
 	paint.drawArc(scale/2, scale/2,
 		      width-scale, width-scale, shadowAngle - arc, 240);
-	c = c.light(108);
+	c = c.light(110);
     }
-
-    // Undraw the bottom part...
-
-    pen.setColor(palette().background().color());
-    pen.setWidth(scale * 4);
-    paint.setPen(pen);
-    paint.drawArc(scale/2, scale/2,
-		  width-scale, width-scale, -45 * 16, -92 * 16);
 
     // Scale ends...
 
-    pen.setColor(palette().dark().color());
+    pen.setColor(palette().shadow().color());
     pen.setWidth(scale);
     paint.setPen(pen);
     for (int i = 0; i < numTicks; ++i) {
