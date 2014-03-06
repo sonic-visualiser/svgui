@@ -200,6 +200,9 @@ public:
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const;
 
+    virtual bool shouldShowFeatureLabels() const {
+        return m_manager && m_manager->shouldShowFeatureLabels();
+    }
     virtual bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const {
 	return false;
     }
