@@ -1177,7 +1177,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
 
 	if (label != "") {
-            bool haveRoom = nx > x + 6 + paint.fontMetrics().width(label);
+            // Quick test for 20px before we do the slower test using metrics
+            bool haveRoom = (nx > x + 20);
+            haveRoom = (haveRoom &&
+                        (nx > x + 6 + paint.fontMetrics().width(label)));
             if (haveRoom ||
                 (!haveNext &&
                  (pointCount == 0 || !italic))) {
