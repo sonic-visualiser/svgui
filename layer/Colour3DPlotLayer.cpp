@@ -959,6 +959,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     size_t cacheHeight = m_model->getHeight();
 
     if (m_cache && (m_cache->height() != int(cacheHeight))) {
+        // height has changed: delete everything rather than resizing
         delete m_cache;
         delete m_peaksCache;
         m_cache = 0;
@@ -966,6 +967,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
     } 
 
     if (m_cache && (m_cache->width() != int(cacheWidth))) {
+        // width has changed and we have an existing cache: resize it
         QImage *newCache =
             new QImage(m_cache->copy(0, 0, cacheWidth, cacheHeight));
         delete m_cache;
@@ -973,7 +975,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         if (m_peaksCache) {
             QImage *newPeaksCache =
                 new QImage(m_peaksCache->copy
-                           (0, 0, cacheWidth / m_peakResolution, cacheHeight));
+                           (0, 0, cacheWidth / m_peakResolution + 1, cacheHeight));
             delete m_peaksCache;
             m_peaksCache = newPeaksCache;
         }
@@ -997,6 +999,9 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         m_cacheValidStart = 0;
         m_cacheValidEnd = 0;
     }
+
+//    cerr << "cache size = " << m_cache->width() << "x" << m_cache->height()
+//         << " peaks cache size = " << m_peaksCache->width() << "x" << m_peaksCache->height() << endl;
 
     if (m_cacheValidStart <= firstBin && m_cacheValidEnd >= lastBin) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
@@ -1124,6 +1129,12 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 	
         values = getColumn(c);
 
+        if (c >= m_cache->width()) {
+            cerr << "ERROR: column " << c << " >= cache width "
+                 << m_cache->width() << endl;
+            continue;
+        }
+
         for (size_t y = 0; y < cacheHeight; ++y) {
 
             float value = min;
@@ -1152,7 +1163,11 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             if (m_invertVertical) {
                 m_cache->setPixel(c, cacheHeight - y - 1, pixel);
             } else {
-                m_cache->setPixel(c, y, pixel);
+                if (y >= m_cache->height()) {
+                    cerr << "ERROR: row " << y << " >= cache height " << m_cache->height() << endl;
+                } else {
+                    m_cache->setPixel(c, y, pixel);
+                }
             }
         }
 
@@ -1160,11 +1175,23 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             size_t notch = (c % m_peakResolution);
             if (notch == m_peakResolution-1 || c == fillEnd) {
                 size_t pc = c / m_peakResolution;
+                if (pc >= m_peaksCache->width()) {
+                    cerr << "ERROR: peak column " << pc
+                         << " (from col " << c << ") >= peaks cache width "
+                         << m_peaksCache->width() << endl;
+                    continue;
+                }
                 for (size_t y = 0; y < cacheHeight; ++y) {
                     if (m_invertVertical) {
                         m_peaksCache->setPixel(pc, cacheHeight - y - 1, peaks[y]);
                     } else {
-                        m_peaksCache->setPixel(pc, y, peaks[y]);
+                        if (y >= m_peaksCache->height()) {
+                            cerr << "ERROR: row " << y
+                                 << " >= peaks cache height "
+                                 << m_peaksCache->height() << endl;
+                        } else {
+                            m_peaksCache->setPixel(pc, y, peaks[y]);
+                        }
                     }
                 }
                 for (int y = 0; y < cacheHeight; ++y) {
