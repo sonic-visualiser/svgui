@@ -23,6 +23,7 @@
 #include "widgets/IconLoader.h"
 #include "base/Command.h"
 #include "widgets/CommandHistory.h"
+#include "layer/ShowLayerCommand.h"
 
 #include <QIcon>
 #include <QTabWidget>
@@ -72,6 +73,10 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
 
     connect(this, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
 	    m_client, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
+}
+
+PropertyStack::~PropertyStack()
+{
 }
 
 void
@@ -153,9 +158,19 @@ PropertyStack::containsContainer(PropertyContainer *pc) const
 int
 PropertyStack::getContainerIndex(PropertyContainer *pc) const
 {
-    for (size_t i = 0; i < m_client->getPropertyContainerCount(); ++i) {
-	PropertyContainer *container = m_client->getPropertyContainer(i);
-	if (pc == container) return i;
+    // This is used to obtain an index to be passed to setCurrentIndex
+    // -- which is the index of the property container's box in our
+    // stack of boxes. That is not the same thing as the index of the
+    // container (i.e. the layer) in the view: the view reorders its
+    // containers whenever one is raised to the top, while our boxes
+    // remain in the same order. So we must find this container in the
+    // box list, not in the view.
+
+    for (size_t i = 0; i < m_boxes.size(); ++i) {
+	PropertyContainer *container = m_boxes[i]->getContainer();
+	if (pc == container) {
+            return i;
+        }
     }
 
     return false;
@@ -206,27 +221,6 @@ PropertyStack::propertyContainerNameChanged(PropertyContainer *)
     if (sender() != m_client) return;
     repopulate();
 }
-
-class ShowLayerCommand : public QObject, public Command
-{
-public:
-    ShowLayerCommand(View *view, Layer *layer, bool show, QString name) :
-        m_view(view), m_layer(layer), m_show(show), m_name(name) { }
-    void execute() {
-        m_layer->showLayer(m_view, m_show);
-    }
-    void unexecute() {
-        m_layer->showLayer(m_view, !m_show);
-    }
-    QString getName() const {
-        return m_name;
-    }
-protected:
-    View *m_view;
-    Layer *m_layer;
-    bool m_show;
-    QString m_name;
-};
 
 void
 PropertyStack::showLayer(bool show)

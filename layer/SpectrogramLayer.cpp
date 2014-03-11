@@ -75,6 +75,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_binDisplay(AllBins),
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
+    m_normalizeHybrid(false),
     m_lastEmittedZoomStep(-1),
     m_synchronous(false),
     m_haveDetailedScale(false),
@@ -951,6 +952,24 @@ SpectrogramLayer::getNormalizeColumns() const
 }
 
 void
+SpectrogramLayer::setNormalizeHybrid(bool n)
+{
+    if (m_normalizeHybrid == n) return;
+
+    invalidateImageCaches();
+    invalidateMagnitudes();
+    m_normalizeHybrid = n;
+
+    emit layerParametersChanged();
+}
+
+bool
+SpectrogramLayer::getNormalizeHybrid() const
+{
+    return m_normalizeHybrid;
+}
+
+void
 SpectrogramLayer::setNormalizeVisibleArea(bool n)
 {
     SVDEBUG << "SpectrogramLayer::setNormalizeVisibleArea(" << n
@@ -1242,50 +1261,6 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
     if (value > UCHAR_MAX) value = UCHAR_MAX;
     if (value < 0) value = 0;
     return value;
-}
-
-float
-SpectrogramLayer::getInputForDisplayValue(unsigned char uc) const
-{
-    //!!! unused
-
-    int value = uc;
-    float input;
-
-    //!!! incorrect for normalizing visible area (and also out of date)
-    
-    switch (m_colourScale) {
-	
-    default:
-    case LinearColourScale:
-	input = float(value - 1) / 255.0 / (m_normalizeColumns ? 1 : 50);
-	break;
-    
-    case MeterColourScale:
-	input = AudioLevel::preview_to_multiplier(value - 1, 255)
-	    / (m_normalizeColumns ? 1.0 : 50.0);
-	break;
-
-    case dBSquaredColourScale:
-	input = float(value - 1) / 255.0;
-	input = (input * 80.0) - 80.0;
-	input = powf(10.0, input) / 20.0;
-	value = int(input);
-	break;
-
-    case dBColourScale:
-	input = float(value - 1) / 255.0;
-	input = (input * 80.0) - 80.0;
-	input = powf(10.0, input) / 20.0;
-	value = int(input);
-	break;
-
-    case PhaseColourScale:
-	input = float(value - 128) * M_PI / 127.0;
-	break;
-    }
-
-    return input;
 }
 
 float
@@ -2556,6 +2531,14 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                     fft->getPhasesAt(sx, values, minbin, maxbin - minbin + 1);
                 } else if (m_normalizeColumns) {
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                } else if (m_normalizeHybrid) {
+                    fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+                    float max = fft->getMaximumMagnitudeAt(sx);
+                    if (max > 0.f) {
+                        for (int i = minbin; i <= maxbin; ++i) {
+                            values[i - minbin] *= log10(max);
+                        }
+                    }
                 } else {
                     fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                 }
@@ -2574,7 +2557,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                 float value = values[bin - minbin];
 
                 if (m_colourScale != PhaseColourScale) {
-                    if (!m_normalizeColumns) {
+                    if (!m_normalizeColumns && !m_normalizeHybrid) {
                         value /= (m_fftSize/2.f);
                     }
                     mag.sample(value);
@@ -2715,6 +2698,14 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                         fft->getPhasesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                     } else if (m_normalizeColumns) {
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
+                    } else if (m_normalizeHybrid) {
+                        fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
+                        float max = fft->getMaximumMagnitudeAt(sx);
+                        for (int i = minbin; i <= maxbin; ++i) {
+                            if (max > 0.f) {
+                                autoarray[i - minbin] *= log10(max);
+                            }
+                        }
                     } else {
                         fft->getMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                     }
@@ -2723,7 +2714,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                     SVDEBUG << "Retrieving column " << sx << " from peaks cache" << endl;
 #endif
                     c = sourceModel->getColumn(sx);
-                    if (m_normalizeColumns) {
+                    if (m_normalizeColumns || m_normalizeHybrid) {
                         for (int y = 0; y < h; ++y) {
                             if (c[y] > columnMax) columnMax = c[y];
                         }
@@ -2823,9 +2814,12 @@ SpectrogramLayer::paintDrawBuffer(View *v,
             float peak = peaks[y];
             
             if (m_colourScale != PhaseColourScale &&
-                m_normalizeColumns && 
+                (m_normalizeColumns || m_normalizeHybrid) && 
                 columnMax > 0.f) {
                 peak /= columnMax;
+                if (m_normalizeHybrid) {
+                    peak *= log10(columnMax);
+                }
             }
             
             unsigned char peakpix = getDisplayValue(v, peak);

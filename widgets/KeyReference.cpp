@@ -49,7 +49,7 @@ KeyReference::registerShortcut(QAction *action, QString overrideName)
     QString name = action->text();
     if (overrideName != "") name = overrideName;
 
-    QString shortcut = action->shortcut().toString();
+    QString shortcut = action->shortcut().toString(QKeySequence::NativeText);
     QString tip = action->statusTip();
 
     registerShortcut(name, shortcut, tip);
@@ -87,6 +87,13 @@ KeyReference::registerAlternativeShortcut(QAction *action, QString alternative)
 }
 
 void
+KeyReference::registerAlternativeShortcut(QAction *action, QKeySequence shortcut)
+{
+    QString name = action->text();
+    registerAlternativeShortcut(name, shortcut.toString(QKeySequence::NativeText));
+}
+
+void
 KeyReference::registerAlternativeShortcut(QString name, QString alternative)
 {
     name.replace(tr("&"), "");
@@ -99,6 +106,12 @@ KeyReference::registerAlternativeShortcut(QString name, QString alternative)
             return;
         }
     }
+}
+
+void
+KeyReference::registerAlternativeShortcut(QString name, QKeySequence shortcut)
+{
+    registerAlternativeShortcut(name, shortcut.toString(QKeySequence::NativeText));
 }
 
 void
@@ -147,7 +160,7 @@ KeyReference::show()
                 altdesc = tr("</b>&nbsp;(%1)<b>").arg(altdesc);
             }
 
-            text += QString("<tr><td>&nbsp;<b>%1%2</b></td><td>&nbsp;%3</td><td>%4</td></tr>\n")
+            text += QString("<tr><td width=\"12%\">&nbsp;<b>%1%2</b></td><td>&nbsp;%3</td><td>%4</td></tr>\n")
                 .arg(shortcut).arg(altdesc).arg(actionName).arg(tip);
         }
     }

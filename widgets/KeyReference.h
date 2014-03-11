@@ -20,6 +20,7 @@
 #include <QString>
 #include <vector>
 #include <map>
+#include <QKeySequence>
 
 class QAction;
 class QTextEdit;
@@ -38,9 +39,11 @@ public:
 
     void registerShortcut(QAction *, QString overrideName = "");
     void registerAlternativeShortcut(QAction *, QString alternative);
+    void registerAlternativeShortcut(QAction *, QKeySequence alternative);
 
     void registerShortcut(QString actionName, QString shortcut, QString tipText);
     void registerAlternativeShortcut(QString actionName, QString alternative);
+    void registerAlternativeShortcut(QString actionName, QKeySequence alternative);
 
     void show();
     void hide();

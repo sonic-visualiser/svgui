@@ -31,6 +31,7 @@ class PropertyStack : public QTabWidget
 
 public:
     PropertyStack(QWidget *parent, View *client);
+    virtual ~PropertyStack();
 
     View *getClient() { return m_client; }
     bool containsContainer(PropertyContainer *container) const;

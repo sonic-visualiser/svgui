@@ -131,7 +131,7 @@ public:
     virtual int getVerticalScaleWidth(View *, bool detailed,
                                       QPainter &) const = 0;
 
-    virtual void paintVerticalScale(View *, bool detailed,
+    virtual void paintVerticalScale(View *, bool /* detailed */,
                                     QPainter &, QRect) const { }
 
     virtual bool getCrosshairExtents(View *, QPainter &, QPoint /* cursorPos */,
@@ -150,7 +150,7 @@ public:
 	return "";
     }
 
-    virtual QString getLabelPreceding(size_t frame) const {
+    virtual QString getLabelPreceding(size_t /* frame */) const {
         return "";
     }
 
@@ -231,7 +231,7 @@ public:
 
     virtual void splitStart(View *, QMouseEvent *) { }
     virtual void splitEnd(View *, QMouseEvent *) { }
-    virtual void addNote(View *v, QMouseEvent *e) { };
+    virtual void addNote(View *, QMouseEvent *) { };
 
     // Measurement rectangle (or equivalent).  Unlike draw and edit,
     // the base Layer class can provide working implementations of

@@ -43,7 +43,7 @@ ViewManager::ViewManager() :
     m_playSelectionMode(false),
     m_playSoloMode(false),
     m_alignMode(false),
-    m_overlayMode(MinimalOverlays),
+    m_overlayMode(StandardOverlays),
     m_zoomWheelsEnabled(true),
     m_showCentreLine(true),
     m_illuminateLocalFeatures(true),
@@ -57,9 +57,9 @@ ViewManager::ViewManager() :
         (settings.value("overlay-mode", int(m_overlayMode)).toInt());
 
     if (m_overlayMode != NoOverlays &&
-        m_overlayMode != MinimalOverlays &&
+        m_overlayMode != StandardOverlays &&
         m_overlayMode != AllOverlays) {
-        m_overlayMode = MinimalOverlays;
+        m_overlayMode = StandardOverlays;
     }
 
     m_zoomWheelsEnabled =
@@ -279,6 +279,7 @@ ViewManager::setSelections(const MultiSelection &ms)
     if (m_selections.getSelections() == ms.getSelections()) return;
     SetSelectionCommand *command = new SetSelectionCommand(this, ms);
     CommandHistory::getInstance()->addCommand(command);
+    emit selectionChangedByUser();
 }
 
 size_t
@@ -669,11 +670,13 @@ ViewManager::setGlobalDarkBackground(bool dark)
         m_lightPalette = QApplication::palette();
     }
 
+#ifndef Q_OS_MAC
     if (dark) {
         QApplication::setPalette(m_darkPalette);
     } else {
         QApplication::setPalette(m_lightPalette);
     }
+#endif
 }
 
 bool
