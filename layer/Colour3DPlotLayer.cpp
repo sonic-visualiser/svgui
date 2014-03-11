@@ -51,6 +51,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_binScale(LinearBinScale),
     m_normalizeColumns(false),
     m_normalizeVisibleArea(false),
+    m_normalizeHybrid(false),
     m_invertVertical(false),
     m_opaque(false),
     m_smooth(false),
@@ -427,6 +428,21 @@ bool
 Colour3DPlotLayer::getNormalizeColumns() const
 {
     return m_normalizeColumns;
+}
+
+void
+Colour3DPlotLayer::setNormalizeHybrid(bool n)
+{
+    if (m_normalizeHybrid == n) return;
+    m_normalizeHybrid = n;
+    cacheInvalid();
+    emit layerParametersChanged();
+}
+
+bool
+Colour3DPlotLayer::getNormalizeHybrid() const
+{
+    return m_normalizeHybrid;
 }
 
 void
@@ -882,7 +898,7 @@ Colour3DPlotLayer::getColumn(size_t col) const
 {
     DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
     while (values.size() < m_model->getHeight()) values.push_back(0.f);
-    if (!m_normalizeColumns) return values;
+    if (!m_normalizeColumns && !m_normalizeHybrid) return values;
 
     float colMax = 0.f, colMin = 0.f;
     float min = 0.f, max = 0.f;
@@ -903,6 +919,13 @@ Colour3DPlotLayer::getColumn(size_t col) const
         float newvalue = min + (max - min) * norm;
 
         if (value != newvalue) values[y] = newvalue;
+    }
+
+    if (m_normalizeHybrid && (colMax > 0.0)) {
+        float logmax = log10(colMax);
+        for (size_t y = 0; y < values.size(); ++y) {
+            values[y] *= logmax;
+        }
     }
 
     return values;

@@ -117,7 +117,7 @@ void
 PropertyBox::populateViewPlayFrame()
 {
 #ifdef DEBUG_PROPERTY_BOX
-    cerr << "PropertyBox(" << m_container << ")::populateViewPlayFrame" << endl;
+    cerr << "PropertyBox[" << this << ":" << m_container << "]::populateViewPlayFrame" << endl;
 #endif
 
     if (m_viewPlayFrame) {
@@ -563,7 +563,9 @@ PropertyBox::propertyContainerPropertyRangeChanged(PropertyContainer *)
 void
 PropertyBox::unitDatabaseChanged()
 {
+#ifdef DEBUG_PROPERTY_BOX
     cerr << "PropertyBox[" << this << "]: unitDatabaseChanged" << endl;
+#endif
     blockSignals(true);
 
 //    cerr << "my container is " << m_container << endl;

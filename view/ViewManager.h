@@ -155,7 +155,8 @@ public:
 
     enum OverlayMode {
         NoOverlays,
-        MinimalOverlays,
+        GlobalOverlays,
+        StandardOverlays,
         AllOverlays
     };
     void setOverlayMode(OverlayMode mode);
@@ -177,7 +178,7 @@ public:
         return m_overlayMode == AllOverlays;
     }
     bool shouldShowSelectionExtents() const {
-        return m_overlayMode != NoOverlays;
+        return m_overlayMode != NoOverlays && m_overlayMode != GlobalOverlays;
     }
     bool shouldShowLayerNames() const {
         return m_overlayMode == AllOverlays;
@@ -190,6 +191,9 @@ public:
     }
     bool shouldIlluminateLocalFeatures() const {
         return m_illuminateLocalFeatures;
+    }
+    bool shouldShowFeatureLabels() const {
+        return m_overlayMode != NoOverlays && m_overlayMode != GlobalOverlays;
     }
 
     void setZoomWheelsEnabled(bool enable);
@@ -214,8 +218,13 @@ signals:
     /** Emitted when the output levels change. Values in range 0.0 -> 1.0. */
     void outputLevelsChanged(float left, float right);
 
-    /** Emitted when the selection has changed. */
+    /** Emitted whenever the selection has changed. */
     void selectionChanged();
+
+    /** Emitted when the selection has been changed through an
+     * explicit selection-editing action. *Not* emitted when the
+     * selection has been changed through undo or redo. */
+    void selectionChangedByUser();
 
     /** Emitted when the in-progress (rubberbanding) selection has changed. */
     void inProgressSelectionChanged();

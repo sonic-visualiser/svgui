@@ -200,6 +200,9 @@ public:
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const;
 
+    virtual bool shouldShowFeatureLabels() const {
+        return m_manager && m_manager->shouldShowFeatureLabels();
+    }
     virtual bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const {
 	return false;
     }
@@ -401,6 +404,8 @@ class ViewPropertyContainer : public PropertyContainer
 
 public:
     ViewPropertyContainer(View *v);
+    virtual ~ViewPropertyContainer();
+
     PropertyList getProperties() const { return m_v->getProperties(); }
     QString getPropertyLabel(const PropertyName &n) const {
         return m_v->getPropertyLabel(n);

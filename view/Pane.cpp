@@ -90,8 +90,10 @@ Pane::Pane(QWidget *w) :
     
     updateHeadsUpDisplay();
 
+    connect(this, SIGNAL(regionOutlined(QRect)), 
+            this, SLOT(zoomToRegion(QRect)));
 
-//    SVDEBUG << "Pane::Pane(" << this << ") returning" << endl;
+    cerr << "Pane::Pane(" << this << ") returning" << endl;
 }
 
 void
@@ -357,10 +359,10 @@ Pane::shouldIlluminateLocalSelection(QPoint &pos,
                      bool &closeToRight) const
 {
     if (m_identifyFeatures &&
-    m_manager &&
-    m_manager->getToolModeFor(this) == ViewManager::EditMode &&
-    !m_manager->getSelections().empty() &&
-    !selectionIsBeingEdited()) {
+        m_manager &&
+        m_manager->getToolModeFor(this) == ViewManager::EditMode &&
+        !m_manager->getSelections().empty() &&
+        !selectionIsBeingEdited()) {
 
     Selection s(getSelectionAt(m_identifyPoint.x(),
                    closeToLeft, closeToRight));
@@ -1440,7 +1442,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             int y0 = std::min(m_clickPos.y(), m_mousePos.y());
             int y1 = std::max(m_clickPos.y(), m_mousePos.y());
 
-            zoomToRegion(x0, y0, x1, y1);
+            emit regionOutlined(QRect(x0, y0, x1 - x0, y1 - y0));
         }
 
     } else if (mode == ViewManager::SelectMode) {
@@ -1452,6 +1454,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
         if (m_manager && m_manager->haveInProgressSelection()) {
 
+            //cerr << "JTEST: release with selection" << endl;
             bool exclusive;
             Selection selection = m_manager->getInProgressSelection(exclusive);
         
@@ -1466,6 +1469,16 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             } else {
                 m_manager->addSelection(selection);
             }
+        }
+        else if (m_manager && !m_manager->haveInProgressSelection()) {
+            
+            //cerr << "JTEST: release without selection" << endl;
+            // Get frame location of mouse
+            int mouseFrame = getFrameForX(e->x());
+            //cerr << "JTEST: frame location of click is " << mouseFrame << endl;
+            // Move play head to that frame location
+            int playbackFrame = fmax(0,mouseFrame);
+            m_manager->setPlaybackFrame(playbackFrame);
         }
     
         update();
@@ -1792,8 +1805,13 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 }
 
 void
-Pane::zoomToRegion(int x0, int y0, int x1, int y1)
+Pane::zoomToRegion(QRect r)
 {
+    int x0 = r.x();
+    int y0 = r.y();
+    int x1 = r.x() + r.width();
+    int y1 = r.y() + r.height();
+
     int w = x1 - x0;
         
     long newStartFrame = getFrameForX(x0);
