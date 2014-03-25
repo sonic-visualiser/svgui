@@ -1286,16 +1286,28 @@ FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
     }
 }
 
+SparseTimeValueModel *
+FlexiNoteLayer::getAssociatedPitchModel(View *v) const
+{
+    // Better than we used to do, but still not very satisfactory
+
+    for (int i = 0; i < v->getLayerCount(); ++i) {
+        Layer *layer = v->getLayer(i);
+        if (layer) {
+            SparseTimeValueModel *model = qobject_cast<SparseTimeValueModel *>
+                (layer->getModel());
+            if (model && model->getScaleUnits() == "Hz") {
+                return model;
+            }
+        }
+    }
+    return 0;
+}
 
 void
 FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
 {
-    //GF: update the note value conforming the median of pitch values in the underlying note layer
-    Layer *layer = v->getLayer(1); // GF: !!! gross assumption about correct layer order
-    SparseTimeValueModel *model = 0;
-    if (layer && layer->getModel()) 
-        model = dynamic_cast<SparseTimeValueModel *>(layer->getModel());
-        
+    SparseTimeValueModel *model = getAssociatedPitchModel(v);
     if (!model) return;
         
     std::cerr << model->getTypeName() << std::endl;
