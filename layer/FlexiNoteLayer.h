@@ -80,6 +80,7 @@ public:
 
     void splitNotesAt(View *v, int frame);
     void snapSelectedNotesToPitchTrack(View *v, Selection s);
+    void mergeNotes(View *v, Selection s);
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(FlexiNoteModel *model);
@@ -173,7 +174,7 @@ protected:
     bool getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &) const;
     void getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
     SparseTimeValueModel *getAssociatedPitchModel(View *v) const;
-    void updateNoteValue(View *v, FlexiNoteModel::Point &note) const;
+    bool updateNoteValue(View *v, FlexiNoteModel::Point &note) const;
 
     FlexiNoteModel *m_model;
     bool m_editing;
