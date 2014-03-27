@@ -78,6 +78,9 @@ public:
     virtual bool paste(View *v, const Clipboard &from, int frameOffset,
                        bool interactive);
 
+    void splitNotesAt(View *v, int frame);
+    void snapSelectedNotesToPitchTrack(View *v, Selection s);
+
     virtual const Model *getModel() const { return m_model; }
     void setModel(FlexiNoteModel *model);
 
