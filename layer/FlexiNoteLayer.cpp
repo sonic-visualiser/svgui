@@ -1301,7 +1301,8 @@ FlexiNoteLayer::getAssociatedPitchModel(View *v) const
 
     for (int i = 0; i < v->getLayerCount(); ++i) {
         Layer *layer = v->getLayer(i);
-        if (layer && !layer->isLayerDormant(v)) {
+        if (layer && !layer->isLayerDormant(v) && 
+            layer->getLayerPresentationName() != "candidate") {
             cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
             SparseTimeValueModel *model = qobject_cast<SparseTimeValueModel *>
                 (layer->getModel());
@@ -1335,7 +1336,7 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
 
         cerr << "snapSelectedNotesToPitchTrack: looking at note from " << note.frame << " to " << note.frame + note.duration << endl;
 
-        if (!s.contains(note.frame) ||
+        if (!s.contains(note.frame) &&
             !s.contains(note.frame + note.duration - 1)) {
             continue;
         }
@@ -1405,7 +1406,7 @@ FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
              dataPoints.begin(); i != dataPoints.end(); ++i) {
         if (i->frame >= note.frame &&
             i->frame < note.frame + note.duration) {
-            pitchValues.push_back((*i).value);
+            pitchValues.push_back(i->value);
         }
     }
         
