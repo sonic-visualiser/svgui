@@ -1354,15 +1354,22 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
 }
 
 void
-FlexiNoteLayer::mergeNotes(View *v, Selection s)
+FlexiNoteLayer::mergeNotes(View *v, Selection s, bool inclusive)
 {
     FlexiNoteModel::PointList points =
         m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     FlexiNoteModel::PointList::iterator i = points.begin();
-    while (i != points.end() && i->frame + i->duration < s.getStartFrame()) {
-        ++i;
+    if (inclusive) {
+        while (i != points.end() && i->frame + i->duration < s.getStartFrame()) {
+            ++i;
+        }
+    } else {
+        while (i != points.end() && i->frame < s.getStartFrame()) {
+            ++i;
+        }
     }
+        
     if (i == points.end()) return;
 
     FlexiNoteModel::EditCommand *command = 
@@ -1372,7 +1379,11 @@ FlexiNoteLayer::mergeNotes(View *v, Selection s)
 
     while (i != points.end()) {
 
-        if (i->frame >= s.getEndFrame()) break;
+        if (inclusive) {
+            if (i->frame >= s.getEndFrame()) break;
+        } else {
+            if (i->frame + i->duration > s.getEndFrame()) break;
+        }
 
         newNote.duration = i->frame + i->duration - newNote.frame;
         command->deletePoint(*i);
