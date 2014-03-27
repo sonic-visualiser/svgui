@@ -1214,11 +1214,18 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
         return; 
     }
 
-    // MM: simpler declaration 
-    FlexiNote note(0);
-    if (!getPointToDrag(v, e->x(), e->y(), note)) return;
-
     long frame = v->getFrameForX(e->x());
+
+    splitNotesAt(v, frame);
+}
+
+void
+FlexiNoteLayer::splitNotesAt(View *v, int frame)
+{
+    FlexiNoteModel::PointList onPoints = m_model->getPoints(frame);
+    if (onPoints.empty()) return;
+    
+    FlexiNote note(*onPoints.begin());
 
     int gap = 0; // MM: I prefer a gap of 0, but we can decide later
     
@@ -1239,14 +1246,16 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
     FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
         (m_model, tr("Edit Point"));
     command->deletePoint(note);
+
+/* cc can this be the best way to delete a note?
     if ((e->modifiers() & Qt::ShiftModifier)) {
         finish(command);
         return;
     }
+*/
     command->addPoint(newNote1);
     command->addPoint(newNote2);
     finish(command);
-    
 }
 
 void
@@ -1276,8 +1285,7 @@ FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
     }
 
     if (!m_intelligentActions || 
-        m_model->getPoints(frame).empty() && duration > 0)
-    {
+        (m_model->getPoints(frame).empty() && duration > 0)) {
         FlexiNote newNote(frame, value, duration, 100, "new note");
         FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
             (m_model, tr("Add Point"));
@@ -1291,17 +1299,59 @@ FlexiNoteLayer::getAssociatedPitchModel(View *v) const
 {
     // Better than we used to do, but still not very satisfactory
 
+    cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
+
     for (int i = 0; i < v->getLayerCount(); ++i) {
         Layer *layer = v->getLayer(i);
-        if (layer) {
+        if (layer && !layer->isLayerDormant(v)) {
+            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
             SparseTimeValueModel *model = qobject_cast<SparseTimeValueModel *>
                 (layer->getModel());
+            cerr << "FlexiNoteLayer::getAssociatedPitchModel: and its model is " << model << endl;
             if (model && model->getScaleUnits() == "Hz") {
+                cerr << "FlexiNoteLayer::getAssociatedPitchModel: it's good, returning " << model << endl;
                 return model;
             }
         }
     }
     return 0;
+}
+
+void
+FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
+{
+    if (!m_model) return;
+
+    FlexiNoteModel::PointList points =
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
+        (m_model, tr("Snap Notes"));
+
+    cerr << "snapSelectedNotesToPitchTrack: selection is from " << s.getStartFrame() << " to " << s.getEndFrame() << endl;
+
+    for (FlexiNoteModel::PointList::iterator i = points.begin();
+         i != points.end(); ++i) {
+
+        FlexiNote note(*i);
+
+        cerr << "snapSelectedNotesToPitchTrack: looking at note from " << note.frame << " to " << note.frame + note.duration << endl;
+
+        if (!s.contains(note.frame) ||
+            !s.contains(note.frame + note.duration - 1)) {
+            continue;
+        }
+
+        FlexiNote newNote(note);
+
+        command->deletePoint(note);
+
+        updateNoteValue(v, newNote);
+
+        command->addPoint(newNote);
+    }
+
+    finish(command);
 }
 
 void
@@ -1313,10 +1363,11 @@ FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
     std::cerr << model->getTypeName() << std::endl;
 
     SparseModel<TimeValuePoint>::PointList dataPoints = model->getPoints(note.frame, note.frame + note.duration);
+   
+    std::cerr << "frame " << note.frame << ": " << dataPoints.size() << " candidate points" << std::endl;
+   
     if (dataPoints.empty()) return;
-   
-    // std::cerr << "frame " << note.frame << ": " << dataPoints.size() << " candidate points" << std::endl;
-   
+
     std::vector<float> pitchValues;
    
     for (SparseModel<TimeValuePoint>::PointList::const_iterator i = dataPoints.begin(); 
