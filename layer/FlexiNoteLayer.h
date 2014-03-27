@@ -80,7 +80,7 @@ public:
 
     void splitNotesAt(View *v, int frame);
     void snapSelectedNotesToPitchTrack(View *v, Selection s);
-    void mergeNotes(View *v, Selection s);
+    void mergeNotes(View *v, Selection s, bool inclusive);
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(FlexiNoteModel *model);
