@@ -1229,7 +1229,6 @@ FlexiNoteLayer::splitNotesAt(View *v, int frame)
 
     int gap = 0; // MM: I prefer a gap of 0, but we can decide later
     
-    // MM: changed this a bit, to make it slightly clearer (// GF: nice changes!)
     FlexiNote newNote1(note.frame, note.value, 
                        frame - note.frame - gap, 
                        note.level, note.label);
@@ -1237,24 +1236,23 @@ FlexiNoteLayer::splitNotesAt(View *v, int frame)
     FlexiNote newNote2(frame, note.value, 
                        note.duration - newNote1.duration, 
                        note.level, note.label);
-                       
-    if (m_intelligentActions) {
-        updateNoteValue(v,newNote1);
-        updateNoteValue(v,newNote2);
-    }
 
     FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
         (m_model, tr("Edit Point"));
     command->deletePoint(note);
-
-/* cc can this be the best way to delete a note?
-    if ((e->modifiers() & Qt::ShiftModifier)) {
-        finish(command);
-        return;
+                       
+    if (m_intelligentActions) {
+        if (updateNoteValue(v, newNote1)) {
+            command->addPoint(newNote1);
+        }
+        if (updateNoteValue(v, newNote2)) {
+            command->addPoint(newNote2);
+        }
+    } else {
+        command->addPoint(newNote1);
+        command->addPoint(newNote2);
     }
-*/
-    command->addPoint(newNote1);
-    command->addPoint(newNote2);
+
     finish(command);
 }
 
@@ -1346,34 +1344,73 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
 
         command->deletePoint(note);
 
-        updateNoteValue(v, newNote);
-
-        command->addPoint(newNote);
+        if (updateNoteValue(v, newNote)) {
+            command->addPoint(newNote);
+        }
     }
-
+    
     finish(command);
 }
 
 void
+FlexiNoteLayer::mergeNotes(View *v, Selection s)
+{
+    FlexiNoteModel::PointList points =
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    FlexiNoteModel::PointList::iterator i = points.begin();
+    while (i != points.end() && i->frame + i->duration < s.getStartFrame()) {
+        ++i;
+    }
+    if (i == points.end()) return;
+
+    FlexiNoteModel::EditCommand *command = 
+        new FlexiNoteModel::EditCommand(m_model, tr("Merge Notes"));
+
+    FlexiNote newNote(*i);
+
+    while (i != points.end()) {
+
+        if (i->frame >= s.getEndFrame()) break;
+
+        newNote.duration = i->frame + i->duration - newNote.frame;
+        command->deletePoint(*i);
+
+        ++i;
+    }
+
+    updateNoteValue(v, newNote);
+    command->addPoint(newNote);
+    finish(command);
+}
+
+bool
 FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
 {
     SparseTimeValueModel *model = getAssociatedPitchModel(v);
-    if (!model) return;
+    if (!model) return false;
         
     std::cerr << model->getTypeName() << std::endl;
 
-    SparseModel<TimeValuePoint>::PointList dataPoints = model->getPoints(note.frame, note.frame + note.duration);
+    SparseModel<TimeValuePoint>::PointList dataPoints =
+        model->getPoints(note.frame, note.frame + note.duration);
    
     std::cerr << "frame " << note.frame << ": " << dataPoints.size() << " candidate points" << std::endl;
    
-    if (dataPoints.empty()) return;
+    if (dataPoints.empty()) return false;
 
     std::vector<float> pitchValues;
    
-    for (SparseModel<TimeValuePoint>::PointList::const_iterator i = dataPoints.begin(); 
-         i != dataPoints.end(); ++i) {
-        pitchValues.push_back((*i).value);
+    for (SparseModel<TimeValuePoint>::PointList::const_iterator i =
+             dataPoints.begin(); i != dataPoints.end(); ++i) {
+        if (i->frame >= note.frame &&
+            i->frame < note.frame + note.duration) {
+            pitchValues.push_back((*i).value);
+        }
     }
+        
+    if (pitchValues.empty()) return false;
+
     sort(pitchValues.begin(), pitchValues.end());
     size_t size = pitchValues.size();
     double median;
@@ -1385,6 +1422,8 @@ FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
     }
     
     note.value = median;
+
+    return true;
 }
 
 void 
