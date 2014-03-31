@@ -172,7 +172,8 @@ KeyReference::show()
     m_text->setReadOnly(true);
 
     m_dialog = new QDialog;
-    m_dialog->setWindowTitle(tr("Sonic Visualiser: Key and Mouse Reference"));
+    m_dialog->setWindowTitle(tr("%1: Key and Mouse Reference")
+                             .arg(QApplication::applicationName()));
 
     QVBoxLayout *layout = new QVBoxLayout;
     m_dialog->setLayout(layout);

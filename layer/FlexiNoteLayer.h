@@ -28,7 +28,7 @@
 
 class View;
 class QPainter;
-
+class SparseTimeValueModel;
 
 class FlexiNoteLayer : public SingleColourLayer,
                        public VerticalScaleLayer
@@ -77,6 +77,10 @@ public:
     virtual void copy(View *v, Selection s, Clipboard &to);
     virtual bool paste(View *v, const Clipboard &from, int frameOffset,
                        bool interactive);
+
+    void splitNotesAt(View *v, int frame);
+    void snapSelectedNotesToPitchTrack(View *v, Selection s);
+    void mergeNotes(View *v, Selection s, bool inclusive);
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(FlexiNoteModel *model);
@@ -169,7 +173,8 @@ protected:
     bool getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &) const;
     bool getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &) const;
     void getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
-    void updateNoteValue(View *v, FlexiNoteModel::Point &note) const;
+    SparseTimeValueModel *getAssociatedPitchModel(View *v) const;
+    bool updateNoteValue(View *v, FlexiNoteModel::Point &note) const;
 
     FlexiNoteModel *m_model;
     bool m_editing;
