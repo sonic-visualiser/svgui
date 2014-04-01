@@ -1043,7 +1043,7 @@ FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
     m_originalPoint = FlexiNote(m_editingPoint);
     
     if (m_editMode == RightBoundary) {
-        m_dragPointX =   v->getXForFrame(m_editingPoint.frame + m_editingPoint.duration);
+        m_dragPointX = v->getXForFrame(m_editingPoint.frame + m_editingPoint.duration);
     } else {
         m_dragPointX = v->getXForFrame(m_editingPoint.frame);
     }
@@ -1079,7 +1079,7 @@ FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
             break;
         }
     }
-    std::cerr << "note frame: " << onset << ", left boundary: " << m_greatestLeftNeighbourFrame << ", right boundary: " << m_smallestRightNeighbourFrame << std::endl;
+    std::cerr << "editStart: mode is " << m_editMode << ", note frame: " << onset << ", left boundary: " << m_greatestLeftNeighbourFrame << ", right boundary: " << m_smallestRightNeighbourFrame << std::endl;
 }
 
 void
@@ -1216,41 +1216,50 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
 
     long frame = v->getFrameForX(e->x());
 
-    splitNotesAt(v, frame);
+    splitNotesAt(v, frame, e);
 }
 
 void
 FlexiNoteLayer::splitNotesAt(View *v, int frame)
+{
+    splitNotesAt(v, frame, 0);
+}
+
+void
+FlexiNoteLayer::splitNotesAt(View *v, int frame, QMouseEvent *e)
 {
     FlexiNoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return;
     
     FlexiNote note(*onPoints.begin());
 
-    int gap = 0; // MM: I prefer a gap of 0, but we can decide later
-    
-    FlexiNote newNote1(note.frame, note.value, 
-                       frame - note.frame - gap, 
-                       note.level, note.label);
-    
-    FlexiNote newNote2(frame, note.value, 
-                       note.duration - newNote1.duration, 
-                       note.level, note.label);
-
     FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
         (m_model, tr("Edit Point"));
     command->deletePoint(note);
+
+    if (!e || !(e->modifiers() & Qt::ShiftModifier)) {
+
+        int gap = 0; // MM: I prefer a gap of 0, but we can decide later
+    
+        FlexiNote newNote1(note.frame, note.value, 
+                           frame - note.frame - gap, 
+                           note.level, note.label);
+    
+        FlexiNote newNote2(frame, note.value, 
+                           note.duration - newNote1.duration, 
+                           note.level, note.label);
                        
-    if (m_intelligentActions) {
-        if (updateNoteValue(v, newNote1)) {
+        if (m_intelligentActions) {
+            if (updateNoteValue(v, newNote1)) {
+                command->addPoint(newNote1);
+            }
+            if (updateNoteValue(v, newNote2)) {
+                command->addPoint(newNote2);
+            }
+        } else {
             command->addPoint(newNote1);
-        }
-        if (updateNoteValue(v, newNote2)) {
             command->addPoint(newNote2);
         }
-    } else {
-        command->addPoint(newNote1);
-        command->addPoint(newNote2);
     }
 
     finish(command);

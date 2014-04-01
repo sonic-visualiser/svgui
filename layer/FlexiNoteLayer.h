@@ -175,6 +175,7 @@ protected:
     void getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
     SparseTimeValueModel *getAssociatedPitchModel(View *v) const;
     bool updateNoteValue(View *v, FlexiNoteModel::Point &note) const;
+    void splitNotesAt(View *v, int frame, QMouseEvent *e);
 
     FlexiNoteModel *m_model;
     bool m_editing;
