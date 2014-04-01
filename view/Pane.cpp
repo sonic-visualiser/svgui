@@ -344,10 +344,10 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
     }
 
     if (layer == getSelectedLayer() &&
-    !shouldIlluminateLocalSelection(discard, b0, b1)) {
+        !shouldIlluminateLocalSelection(discard, b0, b1)) {
 
-    pos = m_identifyPoint;
-    return m_identifyFeatures;
+        pos = m_identifyPoint;
+        return m_identifyFeatures;
     }
 
     return false;
@@ -364,16 +364,16 @@ Pane::shouldIlluminateLocalSelection(QPoint &pos,
         !m_manager->getSelections().empty() &&
         !selectionIsBeingEdited()) {
 
-    Selection s(getSelectionAt(m_identifyPoint.x(),
-                   closeToLeft, closeToRight));
+        Selection s(getSelectionAt(m_identifyPoint.x(),
+                                   closeToLeft, closeToRight));
 
-    if (!s.isEmpty()) {
-        if (getSelectedLayer() && getSelectedLayer()->isLayerEditable()) {
-        
-        pos = m_identifyPoint;
-        return true;
+        if (!s.isEmpty()) {
+            if (getSelectedLayer() && getSelectedLayer()->isLayerEditable()) {
+            
+                pos = m_identifyPoint;
+                return true;
+            }
         }
-    }
     }
 
     return false;
@@ -1276,6 +1276,18 @@ Pane::registerShortcuts(KeyReference &kr)
                         tr("Shift-click left button and drag to zoom to a rectangular area"));
 }
 
+Layer *
+Pane::getTopFlexiNoteLayer()
+{
+    for (int i = int(m_layers.size()) - 1; i >= 0; --i) {
+        if (LayerFactory::getInstance()->getLayerType(m_layers[i]) ==
+            LayerFactory::FlexiNotes) {
+            return m_layers[i];
+        }
+    }
+    return 0;
+}
+
 void
 Pane::mousePressEvent(QMouseEvent *e)
 {
@@ -1387,8 +1399,8 @@ Pane::mousePressEvent(QMouseEvent *e)
     } else if (mode == ViewManager::NoteEditMode) {
 
         std::cerr << "mouse pressed in note edit mode" << std::endl;
-        Layer *layer = getSelectedLayer();
-        if (layer && layer->isLayerEditable()) {
+        Layer *layer = getTopFlexiNoteLayer();
+        if (layer) {
             layer->splitStart(this, e); 
         }
 
@@ -1502,15 +1514,14 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     } else if (mode == ViewManager::NoteEditMode) {
     
         //GF: handle mouse release for NoteEditMode (note: works but will need to re-think this a bit later)
-        Layer *layer = getSelectedLayer();
-        if (layer && layer->isLayerEditable()) {
-            layer->splitEnd(this, e);
-            update(); }
+        Layer *layer = getTopFlexiNoteLayer();
 
-        if (m_editing) {
-            if (!editSelectionEnd(e)) {
-                Layer *layer = getSelectedLayer();
-                if (layer && layer->isLayerEditable()) {
+        if (layer) {
+            layer->splitEnd(this, e);
+            update();
+
+            if (m_editing) {
+                if (!editSelectionEnd(e)) {
                     layer->editEnd(this, e);
                     update();
                 }
@@ -1519,7 +1530,6 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EditMode) {
         
-        // GF: edited this previously, but restored to original state
         if (m_editing) {
             if (!editSelectionEnd(e)) {
                 Layer *layer = getSelectedLayer();
@@ -1580,10 +1590,12 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     
         // GF: handle mouse move for context sensitive cursor switching in NoteEditMode.
         // GF: Propagate the event to FlexiNoteLayer. I somehow feel it's best handeled there rather than here, but perhaps not if this will be needed elsewhere too.
-        if (mode == ViewManager::NoteEditMode && LayerFactory::getInstance()->getLayerType(getTopLayer()) == LayerFactory::FlexiNotes) {
-        
-            dynamic_cast<FlexiNoteLayer *>(getTopLayer())->mouseMoveEvent(this, e);
-
+        if (mode == ViewManager::NoteEditMode) {
+            FlexiNoteLayer *layer = qobject_cast<FlexiNoteLayer *>(getTopFlexiNoteLayer());
+            if (layer) {
+                layer->mouseMoveEvent(this, e); //!!! ew
+                return;
+            }
         }   
     
         if (mode == ViewManager::SelectMode && hasTopLayerTimeXAxis()) {
@@ -1692,8 +1704,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                                        e->modifiers());
 
                 if (!editSelectionStart(&clickEvent)) {
-                    Layer *layer = getSelectedLayer();
-                    if (layer && layer->isLayerEditable()) {
+                    Layer *layer = getTopFlexiNoteLayer();
+                    if (layer) {
                         std::cerr << "calling edit start" << std::endl;
                         layer->editStart(this, &clickEvent);
                     }
