@@ -136,6 +136,8 @@ protected:
     void updateContextHelp(const QPoint *pos);
     void edgeScrollMaybe(int x);
 
+    Layer *getTopFlexiNoteLayer();
+
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
     QPoint m_clickPos;
