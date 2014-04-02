@@ -25,6 +25,13 @@
 
 #include <iostream>
 
+#include "base/Debug.h"
+
+using std::cerr;
+using std::endl;
+
+#define PRINT_ACTIVITY 1
+
 ActivityLog::ActivityLog() : QDialog()
 {
     setWindowTitle(tr("Activity Log"));
@@ -53,9 +60,16 @@ void
 ActivityLog::activityHappened(QString name)
 {
     name = name.replace("&", "");
-//    SVDEBUG << "ActivityLog::activityHappened(" << name << ")" << endl;
+
+#ifdef PRINT_ACTIVITY
+    cerr << "ActivityLog: " << name;
     if (name == m_prevName) {
-//        cerr << "(ignoring duplicate)" << endl;
+        cerr << " (duplicate)";
+    }
+    cerr << endl;
+#endif
+
+    if (name == m_prevName) {
         return;
     }
     m_prevName = name;

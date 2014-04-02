@@ -1043,7 +1043,7 @@ FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
     m_originalPoint = FlexiNote(m_editingPoint);
     
     if (m_editMode == RightBoundary) {
-        m_dragPointX =   v->getXForFrame(m_editingPoint.frame + m_editingPoint.duration);
+        m_dragPointX = v->getXForFrame(m_editingPoint.frame + m_editingPoint.duration);
     } else {
         m_dragPointX = v->getXForFrame(m_editingPoint.frame);
     }
@@ -1079,7 +1079,7 @@ FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
             break;
         }
     }
-    std::cerr << "note frame: " << onset << ", left boundary: " << m_greatestLeftNeighbourFrame << ", right boundary: " << m_smallestRightNeighbourFrame << std::endl;
+    std::cerr << "editStart: mode is " << m_editMode << ", note frame: " << onset << ", left boundary: " << m_greatestLeftNeighbourFrame << ", right boundary: " << m_smallestRightNeighbourFrame << std::endl;
 }
 
 void
@@ -1214,39 +1214,55 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
         return; 
     }
 
-    // MM: simpler declaration 
-    FlexiNote note(0);
-    if (!getPointToDrag(v, e->x(), e->y(), note)) return;
-
     long frame = v->getFrameForX(e->x());
 
-    int gap = 0; // MM: I prefer a gap of 0, but we can decide later
+    splitNotesAt(v, frame, e);
+}
+
+void
+FlexiNoteLayer::splitNotesAt(View *v, int frame)
+{
+    splitNotesAt(v, frame, 0);
+}
+
+void
+FlexiNoteLayer::splitNotesAt(View *v, int frame, QMouseEvent *e)
+{
+    FlexiNoteModel::PointList onPoints = m_model->getPoints(frame);
+    if (onPoints.empty()) return;
     
-    // MM: changed this a bit, to make it slightly clearer (// GF: nice changes!)
-    FlexiNote newNote1(note.frame, note.value, 
-                       frame - note.frame - gap, 
-                       note.level, note.label);
-    
-    FlexiNote newNote2(frame, note.value, 
-                       note.duration - newNote1.duration, 
-                       note.level, note.label);
-                       
-    if (m_intelligentActions) {
-        updateNoteValue(v,newNote1);
-        updateNoteValue(v,newNote2);
-    }
+    FlexiNote note(*onPoints.begin());
 
     FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
         (m_model, tr("Edit Point"));
     command->deletePoint(note);
-    if ((e->modifiers() & Qt::ShiftModifier)) {
-        finish(command);
-        return;
-    }
-    command->addPoint(newNote1);
-    command->addPoint(newNote2);
-    finish(command);
+
+    if (!e || !(e->modifiers() & Qt::ShiftModifier)) {
+
+        int gap = 0; // MM: I prefer a gap of 0, but we can decide later
     
+        FlexiNote newNote1(note.frame, note.value, 
+                           frame - note.frame - gap, 
+                           note.level, note.label);
+    
+        FlexiNote newNote2(frame, note.value, 
+                           note.duration - newNote1.duration, 
+                           note.level, note.label);
+                       
+        if (m_intelligentActions) {
+            if (updateNoteValue(v, newNote1)) {
+                command->addPoint(newNote1);
+            }
+            if (updateNoteValue(v, newNote2)) {
+                command->addPoint(newNote2);
+            }
+        } else {
+            command->addPoint(newNote1);
+            command->addPoint(newNote2);
+        }
+    }
+
+    finish(command);
 }
 
 void
@@ -1276,8 +1292,7 @@ FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
     }
 
     if (!m_intelligentActions || 
-        m_model->getPoints(frame).empty() && duration > 0)
-    {
+        (m_model->getPoints(frame).empty() && duration > 0)) {
         FlexiNote newNote(frame, value, duration, 100, "new note");
         FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
             (m_model, tr("Add Point"));
@@ -1286,31 +1301,137 @@ FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
     }
 }
 
+SparseTimeValueModel *
+FlexiNoteLayer::getAssociatedPitchModel(View *v) const
+{
+    // Better than we used to do, but still not very satisfactory
+
+    cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
+
+    for (int i = 0; i < v->getLayerCount(); ++i) {
+        Layer *layer = v->getLayer(i);
+        if (layer && !layer->isLayerDormant(v) && 
+            layer->getLayerPresentationName() != "candidate") {
+            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
+            SparseTimeValueModel *model = qobject_cast<SparseTimeValueModel *>
+                (layer->getModel());
+            cerr << "FlexiNoteLayer::getAssociatedPitchModel: and its model is " << model << endl;
+            if (model && model->getScaleUnits() == "Hz") {
+                cerr << "FlexiNoteLayer::getAssociatedPitchModel: it's good, returning " << model << endl;
+                return model;
+            }
+        }
+    }
+    return 0;
+}
 
 void
+FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
+{
+    if (!m_model) return;
+
+    FlexiNoteModel::PointList points =
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    FlexiNoteModel::EditCommand *command = new FlexiNoteModel::EditCommand
+        (m_model, tr("Snap Notes"));
+
+    cerr << "snapSelectedNotesToPitchTrack: selection is from " << s.getStartFrame() << " to " << s.getEndFrame() << endl;
+
+    for (FlexiNoteModel::PointList::iterator i = points.begin();
+         i != points.end(); ++i) {
+
+        FlexiNote note(*i);
+
+        cerr << "snapSelectedNotesToPitchTrack: looking at note from " << note.frame << " to " << note.frame + note.duration << endl;
+
+        if (!s.contains(note.frame) &&
+            !s.contains(note.frame + note.duration - 1)) {
+            continue;
+        }
+
+        FlexiNote newNote(note);
+
+        command->deletePoint(note);
+
+        if (updateNoteValue(v, newNote)) {
+            command->addPoint(newNote);
+        }
+    }
+    
+    finish(command);
+}
+
+void
+FlexiNoteLayer::mergeNotes(View *v, Selection s, bool inclusive)
+{
+    FlexiNoteModel::PointList points =
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    FlexiNoteModel::PointList::iterator i = points.begin();
+    if (inclusive) {
+        while (i != points.end() && i->frame + i->duration < s.getStartFrame()) {
+            ++i;
+        }
+    } else {
+        while (i != points.end() && i->frame < s.getStartFrame()) {
+            ++i;
+        }
+    }
+        
+    if (i == points.end()) return;
+
+    FlexiNoteModel::EditCommand *command = 
+        new FlexiNoteModel::EditCommand(m_model, tr("Merge Notes"));
+
+    FlexiNote newNote(*i);
+
+    while (i != points.end()) {
+
+        if (inclusive) {
+            if (i->frame >= s.getEndFrame()) break;
+        } else {
+            if (i->frame + i->duration > s.getEndFrame()) break;
+        }
+
+        newNote.duration = i->frame + i->duration - newNote.frame;
+        command->deletePoint(*i);
+
+        ++i;
+    }
+
+    updateNoteValue(v, newNote);
+    command->addPoint(newNote);
+    finish(command);
+}
+
+bool
 FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
 {
-    //GF: update the note value conforming the median of pitch values in the underlying note layer
-    Layer *layer = v->getLayer(1); // GF: !!! gross assumption about correct layer order
-    SparseTimeValueModel *model = 0;
-    if (layer && layer->getModel()) 
-        model = dynamic_cast<SparseTimeValueModel *>(layer->getModel());
-        
-    if (!model) return;
+    SparseTimeValueModel *model = getAssociatedPitchModel(v);
+    if (!model) return false;
         
     std::cerr << model->getTypeName() << std::endl;
 
-    SparseModel<TimeValuePoint>::PointList dataPoints = model->getPoints(note.frame, note.frame + note.duration);
-    if (dataPoints.empty()) return;
+    SparseModel<TimeValuePoint>::PointList dataPoints =
+        model->getPoints(note.frame, note.frame + note.duration);
    
-    // std::cerr << "frame " << note.frame << ": " << dataPoints.size() << " candidate points" << std::endl;
+    std::cerr << "frame " << note.frame << ": " << dataPoints.size() << " candidate points" << std::endl;
    
+    if (dataPoints.empty()) return false;
+
     std::vector<float> pitchValues;
    
-    for (SparseModel<TimeValuePoint>::PointList::const_iterator i = dataPoints.begin(); 
-         i != dataPoints.end(); ++i) {
-        pitchValues.push_back((*i).value);
+    for (SparseModel<TimeValuePoint>::PointList::const_iterator i =
+             dataPoints.begin(); i != dataPoints.end(); ++i) {
+        if (i->frame >= note.frame &&
+            i->frame < note.frame + note.duration) {
+            pitchValues.push_back(i->value);
+        }
     }
+        
+    if (pitchValues.empty()) return false;
+
     sort(pitchValues.begin(), pitchValues.end());
     size_t size = pitchValues.size();
     double median;
@@ -1322,6 +1443,8 @@ FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
     }
     
     note.value = median;
+
+    return true;
 }
 
 void 
