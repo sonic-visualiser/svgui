@@ -1233,47 +1233,6 @@ Pane::registerShortcuts(KeyReference &kr)
                         tr("Double-click middle button to relocate with any tool"));
     kr.registerShortcut(tr("Menu"), tr("Right"),
                         tr("Show pane context menu"));
-    
-    kr.setCategory(tr("Navigate Tool Mouse Actions"));
-    
-    kr.registerShortcut(tr("Navigate"), tr("Left"), 
-                        tr("Click left button and drag to move around"));
-    kr.registerShortcut(tr("Zoom to Area"), tr("Shift+Left"), 
-                        tr("Shift-click left button and drag to zoom to a rectangular area"));
-    kr.registerShortcut(tr("Relocate"), tr("Double-Click Left"), 
-                        tr("Double-click left button to jump to clicked location"));
-    kr.registerShortcut(tr("Edit"), tr("Double-Click Left"), 
-                        tr("Double-click left button on an item to edit it"));
-        
-    kr.setCategory(tr("Select Tool Mouse Actions"));
-    kr.registerShortcut(tr("Select"), tr("Left"), 
-                        tr("Click left button and drag to select region; drag region edge to resize"));
-    kr.registerShortcut(tr("Multi Select"), tr("Ctrl+Left"), 
-#ifdef Q_OS_MAC
-                        tr("Cmd-click left button and drag to select an additional region"));
-#else
-                        tr("Ctrl-click left button and drag to select an additional region"));
-#endif
-    kr.registerShortcut(tr("Fine Select"), tr("Shift+Left"), 
-                        tr("Shift-click left button and drag to select without snapping to items or grid"));
-    
-    kr.setCategory(tr("Edit Tool Mouse Actions"));
-    kr.registerShortcut(tr("Move"), tr("Left"), 
-                        tr("Click left button on an item or selected region and drag to move"));
-    kr.registerShortcut(tr("Edit"), tr("Double-Click Left"), 
-                        tr("Double-click left button on an item to edit it"));
-    
-    kr.setCategory(tr("Draw Tool Mouse Actions"));
-    kr.registerShortcut(tr("Draw"), tr("Left"), 
-                        tr("Click left button and drag to create new item"));
-
-    kr.setCategory(tr("Measure Tool Mouse Actions"));
-    kr.registerShortcut(tr("Measure Area"), tr("Left"), 
-                        tr("Click left button and drag to measure a rectangular area"));
-    kr.registerShortcut(tr("Measure Item"), tr("Double-Click Left"), 
-                        tr("Click left button and drag to measure extents of an item or shape"));
-    kr.registerShortcut(tr("Zoom to Area"), tr("Shift+Left"), 
-                        tr("Shift-click left button and drag to zoom to a rectangular area"));
 }
 
 Layer *
