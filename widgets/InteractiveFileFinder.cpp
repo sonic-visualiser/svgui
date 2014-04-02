@@ -33,6 +33,7 @@ InteractiveFileFinder
 InteractiveFileFinder::m_instance;
 
 InteractiveFileFinder::InteractiveFileFinder() :
+    m_sessionExtension("sv"),
     m_lastLocatedLocation("")
 {
     SVDEBUG << "Registering interactive file finder" << endl;
@@ -41,6 +42,12 @@ InteractiveFileFinder::InteractiveFileFinder() :
 
 InteractiveFileFinder::~InteractiveFileFinder()
 {
+}
+
+void
+InteractiveFileFinder::setApplicationSessionExtension(QString extension)
+{
+    m_sessionExtension = extension;
 }
 
 QString
@@ -57,7 +64,10 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     case SessionFile:
         settingsKey = "sessionpath";
         title = tr("Select a session file");
-        filter = tr("Sonic Visualiser session files (*.sv)\nRDF files (%1)\nAll files (*.*)").arg(RDFImporter::getKnownExtensions());
+        filter = tr("%1 session files (*.%1)\nRDF files (%3)\nAll files (*.*)")
+            .arg(QApplication::applicationName())
+            .arg(m_sessionExtension)
+            .arg(RDFImporter::getKnownExtensions());
         break;
 
     case AudioFile:
@@ -97,9 +107,11 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case SessionOrAudioFile:
         settingsKey = "lastpath";
-        filter = tr("All supported files (*.sv %1 %2)\nSonic Visualiser session files (*.sv)\nAudio files (%2)\nRDF files (%1)\nAll files (*.*)")
+        filter = tr("All supported files (*.sv %1 %2)\n%3 session files (*.%4)\nAudio files (%2)\nRDF files (%1)\nAll files (*.*)")
             .arg(RDFImporter::getKnownExtensions())
-            .arg(AudioFileReaderFactory::getKnownExtensions());
+            .arg(AudioFileReaderFactory::getKnownExtensions())
+            .arg(QApplication::applicationName())
+            .arg(m_sessionExtension);
         break;
 
     case ImageFile:
@@ -123,10 +135,12 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case AnyFile:
         settingsKey = "lastpath";
-        filter = tr("All supported files (*.sv %1 %2 %3)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
+        filter = tr("All supported files (*.sv %1 %2 %3)\n%4 session files (*.%5)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
             .arg(AudioFileReaderFactory::getKnownExtensions())
             .arg(DataFileReaderFactory::getKnownExtensions())
-            .arg(RDFImporter::getKnownExtensions());
+            .arg(RDFImporter::getKnownExtensions())
+            .arg(QApplication::applicationName())
+            .arg(m_sessionExtension);
         break;
     };
 
@@ -216,7 +230,8 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     case SessionFile:
         settingsKey = "savesessionpath";
         title = tr("Select a session file");
-        filter = tr("Sonic Visualiser session files (*.sv)\nAll files (*.*)");
+        filter = tr("%1 session files (*.%2)\nAll files (*.*)")
+            .arg(QApplication::applicationName()).arg(m_sessionExtension);
         break;
 
     case AudioFile:
@@ -300,7 +315,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     dialog.setConfirmOverwrite(false); // we'll do that
         
     if (type == SessionFile) {
-        dialog.setDefaultSuffix("sv");
+        dialog.setDefaultSuffix(m_sessionExtension);
     } else if (type == AudioFile) {
         dialog.setDefaultSuffix("wav");
     } else if (type == ImageFile) {
