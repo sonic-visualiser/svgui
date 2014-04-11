@@ -1141,6 +1141,7 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
         break;
     }
     }
+    updateNoteValue(v, m_editingPoint);
     m_editingCommand->addPoint(m_editingPoint);
     std::cerr << "added new point(" << m_editingPoint.frame << "," << m_editingPoint.duration << ")" << std::endl;
     
@@ -1354,9 +1355,7 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
 
         command->deletePoint(note);
 
-        if (updateNoteValue(v, newNote)) {
-            command->addPoint(newNote);
-        }
+
     }
     
     finish(command);
