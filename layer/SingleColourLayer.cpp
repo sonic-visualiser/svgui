@@ -307,6 +307,9 @@ SingleColourLayer::setProperties(const QXmlAttributes &attributes)
     int colour = ColourDatabase::getInstance()->putStringValues
         (colourName, colourSpec, darkbg);
 
+    if (colour == -1)
+      return;
+
     m_colourExplicitlySet = true;
 
     if (m_colour != colour) {
