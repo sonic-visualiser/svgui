@@ -32,7 +32,15 @@ SingleColourLayer::SingleColourLayer() :
     m_colourExplicitlySet(false),
     m_defaultColourSet(false)
 {
+    // Reference current colour because setDefaulColourFor
+    // will unreference it before (possibly) changing it.
+    refColor();
     setDefaultColourFor(0);
+}
+
+SingleColourLayer::~SingleColourLayer()
+{
+    unrefColor();
 }
 
 QPixmap
@@ -152,10 +160,6 @@ SingleColourLayer::setDefaultColourFor(View *v)
     int hint = -1;
     bool impose = false;
     if (v) {
-        if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
-            m_colourRefCount[m_colour] > 0) {
-            m_colourRefCount[m_colour]--;
-        }
         // We don't want to call this if !v because that probably
         // means we're being called from the constructor, and this is
         // a virtual function
@@ -173,6 +177,8 @@ SingleColourLayer::setDefaultColourFor(View *v)
         setBaseColour(hint);
         return;
     }
+
+    unrefColor();
 
     int bestCount = 0, bestColour = -1;
     
@@ -203,15 +209,11 @@ SingleColourLayer::setDefaultColourFor(View *v)
         cerr << endl;
 #endif
     }
-    
+
     if (bestColour < 0) m_colour = 0;
     else m_colour = bestColour;
 
-    if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
-        m_colourRefCount[m_colour] = 1;
-    } else {
-        m_colourRefCount[m_colour]++;
-    }
+    refColor();
 }
 
 void
@@ -221,18 +223,9 @@ SingleColourLayer::setBaseColour(int colour)
 
     if (m_colour == colour) return;
 
-    if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
-        m_colourRefCount[m_colour] > 0) {
-        m_colourRefCount[m_colour]--;
-    }
-
+    refColor();
     m_colour = colour;
-
-    if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
-        m_colourRefCount[m_colour] = 1;
-    } else {
-        m_colourRefCount[m_colour]++;
-    }
+    unrefColor();
 
     flagBaseColourChanged();
     emit layerParametersChanged();
@@ -318,20 +311,27 @@ SingleColourLayer::setProperties(const QXmlAttributes &attributes)
         SVDEBUG << "SingleColourLayer::setProperties: changing colour from " << m_colour << " to " << colour << endl;
 #endif
 
-        if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
-            m_colourRefCount[m_colour] > 0) {
-            m_colourRefCount[m_colour]--;
-        }
-
+        unrefColor();
         m_colour = colour;
-
-        if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
-            m_colourRefCount[m_colour] = 1;
-        } else {
-            m_colourRefCount[m_colour]++;
-        }
+        refColor();
 
         flagBaseColourChanged();
     }
 }
 
+void SingleColourLayer::refColor()
+{
+    if (m_colourRefCount.find(m_colour) == m_colourRefCount.end()) {
+        m_colourRefCount[m_colour] = 1;
+    } else {
+        m_colourRefCount[m_colour]++;
+    }
+}
+
+void SingleColourLayer::unrefColor()
+{
+    if (m_colourRefCount.find(m_colour) != m_colourRefCount.end() &&
+        m_colourRefCount[m_colour] > 0) {
+        m_colourRefCount[m_colour]--;
+    }
+}
