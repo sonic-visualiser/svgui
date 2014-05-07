@@ -258,6 +258,14 @@ ViewManager::addSelection(const Selection &selection)
 }
 
 void
+ViewManager::addSelectionQuietly(const Selection &selection)
+{
+    MultiSelection ms(m_selections);
+    ms.addSelection(selection);
+    setSelections(ms, true);
+}
+
+void
 ViewManager::removeSelection(const Selection &selection)
 {
     MultiSelection ms(m_selections);
@@ -274,12 +282,14 @@ ViewManager::clearSelections()
 }
 
 void
-ViewManager::setSelections(const MultiSelection &ms)
+ViewManager::setSelections(const MultiSelection &ms, bool quietly)
 {
     if (m_selections.getSelections() == ms.getSelections()) return;
     SetSelectionCommand *command = new SetSelectionCommand(this, ms);
     CommandHistory::getInstance()->addCommand(command);
-    emit selectionChangedByUser();
+    if (!quietly) {
+        emit selectionChangedByUser();
+    }
 }
 
 size_t

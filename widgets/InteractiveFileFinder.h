@@ -18,6 +18,7 @@
 
 #include "data/fileio/FileFinder.h"
 
+#include <QApplication>
 #include <QString>
 #include <QObject>
 
@@ -28,6 +29,14 @@ class InteractiveFileFinder : public QObject,
 
 public:
     virtual ~InteractiveFileFinder();
+
+    /// Specify the extension for this application's session files
+    /// (without the dot)
+    void setApplicationSessionExtension(QString extension);
+
+    QString getApplicationSessionExtension() const {
+        return m_sessionExtension;
+    }
 
     QString getOpenFileName(FileType type, QString fallbackLocation = "");
     QString getSaveFileName(FileType type, QString fallbackLocation = "");
@@ -44,6 +53,7 @@ protected:
     QString findRelative(QString location, QString relativeTo);
     QString locateInteractive(FileType type, QString thing);
 
+    QString m_sessionExtension;
     QString m_lastLocatedLocation;
 };
 

@@ -465,6 +465,10 @@ Pane::paintEvent(QPaintEvent *e)
 
     m_scaleWidth = 0;
 
+    if (workModel) {
+        drawModelTimeExtents(r, paint, workModel);
+    }
+
     if (m_manager && m_manager->shouldShowVerticalScale() && topLayer) {
         drawVerticalScale(r, topLayer, paint);
     }
@@ -772,6 +776,39 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
         
         drawVisibleText(paint, x, y, text, OutlinedText);
     }
+}
+
+void
+Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
+{
+    int x0 = getXForFrame(model->getStartFrame());
+    int x1 = getXForFrame(model->getEndFrame());
+
+    int lw = 10;
+
+    paint.save();
+
+    QBrush brush;
+
+    if (hasLightBackground()) {
+        brush = QBrush(QColor("#f8f8f8"));
+        paint.setPen(Qt::black);
+    } else {
+        brush = QBrush(QColor("#101010"));
+        paint.setPen(Qt::white);
+    }
+
+    if (x0 > r.x()) {
+        paint.fillRect(0, 0, x0, height(), brush);
+        paint.drawLine(x0, 0, x0, height());
+    }
+
+    if (x1 < r.x() + r.width()) {
+        paint.fillRect(x1, 0, width() - x1, height(), brush);
+        paint.drawLine(x1, 0, x1, height());
+    }
+
+    paint.restore();
 }
 
 void

@@ -3657,18 +3657,21 @@ SpectrogramLayer::toXml(QTextStream &stream,
 		 "colourScheme=\"%4\" "
 		 "colourRotation=\"%5\" "
 		 "frequencyScale=\"%6\" "
-		 "binDisplay=\"%7\" "
-		 "normalizeColumns=\"%8\" "
-                 "normalizeVisibleArea=\"%9\"")
+		 "binDisplay=\"%7\" ")
 	.arg(m_minFrequency)
 	.arg(m_maxFrequency)
 	.arg(m_colourScale)
 	.arg(m_colourMap)
 	.arg(m_colourRotation)
 	.arg(m_frequencyScale)
-	.arg(m_binDisplay)
+	.arg(m_binDisplay);
+
+    s += QString("normalizeColumns=\"%1\" "
+                 "normalizeVisibleArea=\"%2\" "
+                 "normalizeHybrid=\"%3\" ")
 	.arg(m_normalizeColumns ? "true" : "false")
-        .arg(m_normalizeVisibleArea ? "true" : "false");
+        .arg(m_normalizeVisibleArea ? "true" : "false")
+        .arg(m_normalizeHybrid ? "true" : "false");
 
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -3741,5 +3744,9 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     bool normalizeVisibleArea =
 	(attributes.value("normalizeVisibleArea").trimmed() == "true");
     setNormalizeVisibleArea(normalizeVisibleArea);
+
+    bool normalizeHybrid =
+	(attributes.value("normalizeHybrid").trimmed() == "true");
+    setNormalizeHybrid(normalizeHybrid);
 }
     

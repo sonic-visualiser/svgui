@@ -86,6 +86,13 @@ public:
     size_t constrainFrameToSelection(size_t frame) const;
 
     /**
+     * Adding a selection normally emits the selectionChangedByUser
+     * signal. Call this to add a selection without emitting that signal.
+     * This is used in session file load, for example.
+     */
+    void addSelectionQuietly(const Selection &selection);
+
+    /**
      * Return the selection that contains a given frame.
      * If defaultToFollowing is true, and if the frame is not in a
      * selected area, return the next selection after the given frame.
@@ -297,7 +304,7 @@ protected:
     bool m_playSoloMode;
     bool m_alignMode;
 
-    void setSelections(const MultiSelection &ms);
+    void setSelections(const MultiSelection &ms, bool quietly = false);
     void signalSelectionChange();
 
     class SetSelectionCommand : public Command
