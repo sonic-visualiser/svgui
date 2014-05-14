@@ -47,7 +47,7 @@ signals:
 public slots:
     void propertyContainerPropertyChanged(PropertyContainer *);
     void propertyContainerPropertyRangeChanged(PropertyContainer *);
-//!!!    void pluginConfigurationChanged(QString);
+    void playClipChanged(QString);
     void layerVisibilityChanged(bool);
 
 protected slots:
@@ -66,7 +66,7 @@ protected slots:
     void unitDatabaseChanged();
     void colourDatabaseChanged();
 
-//!!!    void editPlugin();
+    void editPlayParameters();
 
     void mouseEnteredWidget();
     void mouseLeftWidget();
