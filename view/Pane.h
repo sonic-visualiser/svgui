@@ -67,6 +67,8 @@ signals:
     void rightButtonMenuRequested(QPoint position);
     void dropAccepted(QStringList uriList);
     void dropAccepted(QString text);
+    void doubleClickSelectInvoked(size_t frame);
+    void regionOutlined(QRect rect);
 
 public slots:
     virtual void toolModeChanged();
@@ -83,6 +85,8 @@ public slots:
     virtual void layerParametersChanged();
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
+
+    void zoomToRegion(QRect r);
 
     void mouseEnteredWidget();
     void mouseLeftWidget();
@@ -103,6 +107,7 @@ protected:
     void drawVerticalScale(QRect r, Layer *, QPainter &);
     void drawFeatureDescription(Layer *, QPainter &);
     void drawCentreLine(int, QPainter &, bool omitLine);
+    void drawModelTimeExtents(QRect, QPainter &, const Model *);
     void drawDurationAndRate(QRect, const Model *, int, QPainter &);
     void drawWorkTitle(QRect, QPainter &, const Model *);
     void drawLayerNames(QRect, QPainter &);
@@ -129,9 +134,10 @@ protected:
 
     void dragTopLayer(QMouseEvent *e);
     void dragExtendSelection(QMouseEvent *e);
-    void zoomToRegion(int x0, int y0, int x1, int y1);
     void updateContextHelp(const QPoint *pos);
     void edgeScrollMaybe(int x);
+
+    Layer *getTopFlexiNoteLayer();
 
     bool m_identifyFeatures;
     QPoint m_identifyPoint;

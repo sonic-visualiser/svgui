@@ -86,6 +86,13 @@ public:
     size_t constrainFrameToSelection(size_t frame) const;
 
     /**
+     * Adding a selection normally emits the selectionChangedByUser
+     * signal. Call this to add a selection without emitting that signal.
+     * This is used in session file load, for example.
+     */
+    void addSelectionQuietly(const Selection &selection);
+
+    /**
      * Return the selection that contains a given frame.
      * If defaultToFollowing is true, and if the frame is not in a
      * selected area, return the next selection after the given frame.
@@ -101,10 +108,18 @@ public:
         EditMode,
 	DrawMode,
 	EraseMode,
-	MeasureMode
+	MeasureMode,
+	NoteEditMode //GF: Tonioni: this tool mode will be context sensitive.
     };
     ToolMode getToolMode() const { return m_toolMode; }
     void setToolMode(ToolMode mode);
+
+    /// Override the tool mode for a specific view 
+    void setToolModeFor(const View *v, ToolMode mode);
+    /// Return override mode if it exists for this view or global mode otherwise
+    ToolMode getToolModeFor(const View *v) const;
+    /// Clear all current view-specific overrides
+    void clearToolModeOverrides();
 
     bool getPlayLoopMode() const { return m_playLoopMode; }
     void setPlayLoopMode(bool on);
@@ -147,7 +162,8 @@ public:
 
     enum OverlayMode {
         NoOverlays,
-        MinimalOverlays,
+        GlobalOverlays,
+        StandardOverlays,
         AllOverlays
     };
     void setOverlayMode(OverlayMode mode);
@@ -169,7 +185,7 @@ public:
         return m_overlayMode == AllOverlays;
     }
     bool shouldShowSelectionExtents() const {
-        return m_overlayMode != NoOverlays;
+        return m_overlayMode != NoOverlays && m_overlayMode != GlobalOverlays;
     }
     bool shouldShowLayerNames() const {
         return m_overlayMode == AllOverlays;
@@ -182,6 +198,9 @@ public:
     }
     bool shouldIlluminateLocalFeatures() const {
         return m_illuminateLocalFeatures;
+    }
+    bool shouldShowFeatureLabels() const {
+        return m_overlayMode != NoOverlays && m_overlayMode != GlobalOverlays;
     }
 
     void setZoomWheelsEnabled(bool enable);
@@ -206,8 +225,13 @@ signals:
     /** Emitted when the output levels change. Values in range 0.0 -> 1.0. */
     void outputLevelsChanged(float left, float right);
 
-    /** Emitted when the selection has changed. */
+    /** Emitted whenever the selection has changed. */
     void selectionChanged();
+
+    /** Emitted when the selection has been changed through an
+     * explicit selection-editing action. *Not* emitted when the
+     * selection has been changed through undo or redo. */
+    void selectionChangedByUser();
 
     /** Emitted when the in-progress (rubberbanding) selection has changed. */
     void inProgressSelectionChanged();
@@ -273,13 +297,14 @@ protected:
     Clipboard m_clipboard;
 
     ToolMode m_toolMode;
+    std::map<const View *, ToolMode> m_toolModeOverrides;
 
     bool m_playLoopMode;
     bool m_playSelectionMode;
     bool m_playSoloMode;
     bool m_alignMode;
 
-    void setSelections(const MultiSelection &ms);
+    void setSelections(const MultiSelection &ms, bool quietly = false);
     void signalSelectionChange();
 
     class SetSelectionCommand : public Command

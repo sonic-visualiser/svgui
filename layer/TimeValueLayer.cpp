@@ -972,7 +972,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	 i != points.end(); ++i) {
 
         if (m_derivative && i == points.begin()) continue;
-        
+
 	const SparseTimeValueModel::Point &p(*i);
 
         float value = p.value;
@@ -987,6 +987,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         bool gap = false;
         if (m_plotStyle == PlotDiscreteCurves) { 
+            if (value == 0.0) {
+                // Treat zeros as gaps
+                continue;
+            }
             gap = (p.frame > prevFrame &&
                    (p.frame - prevFrame >= m_model->getResolution() * 2));
         }
@@ -1000,6 +1004,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
 
 	bool haveNext = false;
+        float nvalue = 0.f;
         int nf = v->getModelsEndFrame();
 	int nx = v->getXForFrame(nf);
 	int ny = y;
@@ -1009,7 +1014,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	if (j != points.end()) {
 	    const SparseTimeValueModel::Point &q(*j);
-            float nvalue = q.value;
+            nvalue = q.value;
             if (m_derivative) nvalue -= p.value;
             nf = q.frame;
 	    nx = v->getXForFrame(nf);
@@ -1116,7 +1121,9 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    float y1 = ny;
 
                     if (m_plotStyle == PlotDiscreteCurves) {
-                        bool nextGap = nf - p.frame >= m_model->getResolution() * 2;
+                        bool nextGap =
+                            (nvalue == 0.0) ||
+                            (nf - p.frame >= m_model->getResolution() * 2);
                         if (nextGap) {
                             x1 = x0;
                             y1 = y0;
@@ -1163,33 +1170,36 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    paint.drawRect(x, -1, nx - x, v->height() + 1);
 	}
 
-        QString label = p.label;
-        bool italic = false;
+        if (v->shouldShowFeatureLabels()) {
 
-        if (label == "" &&
-            (m_plotStyle == PlotPoints ||
-             m_plotStyle == PlotSegmentation ||
-             m_plotStyle == PlotConnectedPoints)) {
-            char lc[20];
-            snprintf(lc, 20, "%.3g", p.value);
-            label = lc;
-            italic = true;
-        }
+            QString label = p.label;
+            bool italic = false;
 
-	if (label != "") {
-            // Quick test for 20px before we do the slower test using metrics
-            bool haveRoom = (nx > x + 20);
-            haveRoom = (haveRoom &&
-                        (nx > x + 6 + paint.fontMetrics().width(label)));
-            if (haveRoom ||
-                (!haveNext &&
-                 (pointCount == 0 || !italic))) {
-                v->drawVisibleText(paint, x + 5, textY, label,
-                                   italic ?
-                                   View::OutlinedItalicText :
-                                   View::OutlinedText);
+            if (label == "" &&
+                (m_plotStyle == PlotPoints ||
+                 m_plotStyle == PlotSegmentation ||
+                 m_plotStyle == PlotConnectedPoints)) {
+                char lc[20];
+                snprintf(lc, 20, "%.3g", p.value);
+                label = lc;
+                italic = true;
             }
-	}
+
+            if (label != "") {
+                // Quick test for 20px before we do the slower test using metrics
+                bool haveRoom = (nx > x + 20);
+                haveRoom = (haveRoom &&
+                            (nx > x + 6 + paint.fontMetrics().width(label)));
+                if (haveRoom ||
+                    (!haveNext &&
+                     (pointCount == 0 || !italic))) {
+                    v->drawVisibleText(paint, x + 5, textY, label,
+                                       italic ?
+                                       View::OutlinedItalicText :
+                                       View::OutlinedText);
+                }
+            }
+        }
 
         prevFrame = p.frame;
         ++pointCount;
@@ -1233,7 +1243,7 @@ TimeValueLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 void
 TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model) return;
+    if (!m_model || m_model->getPoints().empty()) return;
 
     QString unit;
     float min, max;

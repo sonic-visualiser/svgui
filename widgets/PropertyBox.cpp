@@ -24,10 +24,6 @@
 #include "base/UnitDatabase.h"
 #include "base/RangeMapper.h"
 
-#include "plugin/RealTimePluginFactory.h"
-#include "plugin/RealTimePluginInstance.h"
-#include "plugin/PluginXml.h"
-
 #include "AudioDial.h"
 #include "LEDButton.h"
 #include "IconLoader.h"
@@ -46,6 +42,7 @@
 #include <QApplication>
 #include <QColorDialog>
 #include <QInputDialog>
+#include <QDir>
 
 #include <cassert>
 #include <iostream>
@@ -188,13 +185,14 @@ PropertyBox::populateViewPlayFrame()
 
 	layout->insertStretch(-1, 10);
 
-        if (params->getPlayPluginId() != "") {
-            QPushButton *pluginButton = new QPushButton(QIcon(":icons/faders.png"), "");
-            pluginButton->setFixedWidth(24);
-            pluginButton->setFixedHeight(24);
-            layout->addWidget(pluginButton);
-            connect(pluginButton, SIGNAL(clicked()),
-                    this, SLOT(editPlugin()));
+        if (params->getPlayClipId() != "") {
+            QPushButton *playParamButton =
+                new QPushButton(QIcon(":icons/faders.png"), "");
+            playParamButton->setFixedWidth(24);
+            playParamButton->setFixedHeight(24);
+            layout->addWidget(playParamButton);
+            connect(playParamButton, SIGNAL(clicked()),
+                    this, SLOT(editPlayParameters()));
         }
 
 	AudioDial *gainDial = new AudioDial;
@@ -461,7 +459,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 // manages its own Add New Colour entry...
                 
                 ColourDatabase *db = ColourDatabase::getInstance();
-                for (size_t i = 0; i < db->getColourCount(); ++i) {
+                for (int i = 0; i < db->getColourCount(); ++i) {
                     QString name = db->getColourName(i);
                     cb->addItem(db->getExamplePixmap(i, QSize(12, 12)), name);
                 }
@@ -746,55 +744,56 @@ PropertyBox::playPanDialChanged(int dialValue)
 }
 
 void
-PropertyBox::editPlugin()
+PropertyBox::editPlayParameters()
 {
-    //!!! should probably just emit and let something else do this
-
     PlayParameters *params = m_container->getPlayParameters();
     if (!params) return;
 
-    QString pluginId = params->getPlayPluginId();
-    QString configurationXml = params->getPlayPluginConfiguration();
+    QString clip = params->getPlayClipId();
 
     PlayParameterRepository::EditCommand *command = 
         new PlayParameterRepository::EditCommand(params);
     
-    RealTimePluginFactory *factory =
-	RealTimePluginFactory::instanceFor(pluginId);
-    if (!factory) return;
+    QInputDialog *dialog = new QInputDialog(this);
 
-    RealTimePluginInstance *instance =
-        factory->instantiatePlugin(pluginId, 0, 0, 48000, 1024, 1);
-    if (!instance) return;
+    QDir dir(":/samples");
+    QStringList clipFiles = dir.entryList(QStringList() << "*.wav", QDir::Files);
 
-    PluginXml(instance).setParametersFromXml(configurationXml);
+    QStringList clips;
+    foreach (QString str, clipFiles) {
+        clips.push_back(str.replace(".wav", ""));
+    }
+    dialog->setComboBoxItems(clips);
 
-    PluginParameterDialog *dialog = new PluginParameterDialog(instance);
-    connect(dialog, SIGNAL(pluginConfigurationChanged(QString)),
-            this, SLOT(pluginConfigurationChanged(QString)));
+    dialog->setLabelText(tr("Set playback clip:"));
+
+    QComboBox *cb = dialog->findChild<QComboBox *>();
+    if (cb) cb->setCurrentText(clip);
+
+    connect(dialog, SIGNAL(textValueChanged(QString)), 
+            this, SLOT(playClipChanged(QString)));
 
     if (dialog->exec() == QDialog::Accepted) {
-        QString newConfiguration = PluginXml(instance).toXmlString();
-        command->setPlayPluginConfiguration(newConfiguration);
+        QString newClip = dialog->textValue();
+        command->setPlayClipId(newClip);
         CommandHistory::getInstance()->addCommand(command, true);
     } else {
         delete command;
         // restore in case we mucked about with the configuration
         // as a consequence of signals from the dialog
-        params->setPlayPluginConfiguration(configurationXml);
+        params->setPlayClipId(clip);
     }
 
     delete dialog;
-    delete instance;
 }
 
 void
-PropertyBox::pluginConfigurationChanged(QString configurationXml)
+PropertyBox::playClipChanged(QString id)
 {
     PlayParameters *params = m_container->getPlayParameters();
     if (!params) return;
 
-    params->setPlayPluginConfiguration(configurationXml);
+    params->setPlayClipId(id);
 }    
 
 void
