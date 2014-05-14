@@ -33,6 +33,7 @@ InteractiveFileFinder
 InteractiveFileFinder::m_instance;
 
 InteractiveFileFinder::InteractiveFileFinder() :
+    m_sessionExtension("sv"),
     m_lastLocatedLocation("")
 {
     SVDEBUG << "Registering interactive file finder" << endl;
@@ -41,6 +42,12 @@ InteractiveFileFinder::InteractiveFileFinder() :
 
 InteractiveFileFinder::~InteractiveFileFinder()
 {
+}
+
+void
+InteractiveFileFinder::setApplicationSessionExtension(QString extension)
+{
+    m_sessionExtension = extension;
 }
 
 QString
@@ -57,7 +64,10 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     case SessionFile:
         settingsKey = "sessionpath";
         title = tr("Select a session file");
-        filter = tr("Sonic Visualiser session files (*.sv)\nRDF files (%1)\nAll files (*.*)").arg(RDFImporter::getKnownExtensions());
+        filter = tr("%1 session files (*.%1)\nRDF files (%3)\nAll files (*.*)")
+            .arg(QApplication::applicationName())
+            .arg(m_sessionExtension)
+            .arg(RDFImporter::getKnownExtensions());
         break;
 
     case AudioFile:
@@ -81,11 +91,27 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
             .arg(RDFImporter::getKnownExtensions());
         break;
 
+    case LayerFileNonSV:
+        settingsKey = "layerpath";
+        filter = tr("All supported files (%1 %2)\nComma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nSpace-separated .lab files (*.lab)\nRDF files (%2)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)")
+            .arg(DataFileReaderFactory::getKnownExtensions())
+            .arg(RDFImporter::getKnownExtensions());
+        break;
+
+    case LayerFileNoMidiNonSV:
+        settingsKey = "layerpath";
+        filter = tr("All supported files (%1 %2)\nComma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nSpace-separated .lab files (*.lab)\nRDF files (%2)\nText files (*.txt)\nAll files (*.*)")
+            .arg(DataFileReaderFactory::getKnownExtensions())
+            .arg(RDFImporter::getKnownExtensions());
+        break;
+
     case SessionOrAudioFile:
         settingsKey = "lastpath";
-        filter = tr("All supported files (*.sv %1 %2)\nSonic Visualiser session files (*.sv)\nAudio files (%2)\nRDF files (%1)\nAll files (*.*)")
+        filter = tr("All supported files (*.sv %1 %2)\n%3 session files (*.%4)\nAudio files (%2)\nRDF files (%1)\nAll files (*.*)")
             .arg(RDFImporter::getKnownExtensions())
-            .arg(AudioFileReaderFactory::getKnownExtensions());
+            .arg(AudioFileReaderFactory::getKnownExtensions())
+            .arg(QApplication::applicationName())
+            .arg(m_sessionExtension);
         break;
 
     case ImageFile:
@@ -109,10 +135,12 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case AnyFile:
         settingsKey = "lastpath";
-        filter = tr("All supported files (*.sv %1 %2 %3)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
+        filter = tr("All supported files (*.sv %1 %2 %3)\n%4 session files (*.%5)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
             .arg(AudioFileReaderFactory::getKnownExtensions())
             .arg(DataFileReaderFactory::getKnownExtensions())
-            .arg(RDFImporter::getKnownExtensions());
+            .arg(RDFImporter::getKnownExtensions())
+            .arg(QApplication::applicationName())
+            .arg(m_sessionExtension);
         break;
     };
 
@@ -202,7 +230,8 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     case SessionFile:
         settingsKey = "savesessionpath";
         title = tr("Select a session file");
-        filter = tr("Sonic Visualiser session files (*.sv)\nAll files (*.*)");
+        filter = tr("%1 session files (*.%2)\nAll files (*.*)")
+            .arg(QApplication::applicationName()).arg(m_sessionExtension);
         break;
 
     case AudioFile:
@@ -222,6 +251,18 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         settingsKey = "savelayerpath";
         title = tr("Select a file to export to");
         filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
+        break;
+
+    case LayerFileNonSV:
+        settingsKey = "savelayerpath";
+        title = tr("Select a file to export to");
+        filter = tr("Comma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nRDF/Turtle files (%1)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
+        break;
+
+    case LayerFileNoMidiNonSV:
+        settingsKey = "savelayerpath";
+        title = tr("Select a file to export to");
+        filter = tr("Comma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
         break;
 
     case SessionOrAudioFile:
@@ -274,7 +315,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     dialog.setConfirmOverwrite(false); // we'll do that
         
     if (type == SessionFile) {
-        dialog.setDefaultSuffix("sv");
+        dialog.setDefaultSuffix(m_sessionExtension);
     } else if (type == AudioFile) {
         dialog.setDefaultSuffix("wav");
     } else if (type == ImageFile) {
@@ -299,7 +340,8 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
 
         cerr << "type = " << type << ", suffix = " << fi.suffix() << endl;
         
-        if ((type == LayerFile || type == LayerFileNoMidi)
+        if ((type == LayerFile || type == LayerFileNoMidi || 
+             type == LayerFileNonSV || type == LayerFileNoMidiNonSV)
             && fi.suffix() == "") {
             QString expectedExtension;
             QString selectedFilter = dialog.selectedNameFilter();
@@ -366,6 +408,14 @@ InteractiveFileFinder::registerLastOpenedFilePath(FileType type, QString path)
         break;
 
     case LayerFileNoMidi:
+        settingsKey = "layerpath";
+        break;
+
+    case LayerFileNonSV:
+        settingsKey = "layerpath";
+        break;
+
+    case LayerFileNoMidiNonSV:
         settingsKey = "layerpath";
         break;
 
