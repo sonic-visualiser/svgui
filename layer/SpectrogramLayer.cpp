@@ -3459,6 +3459,11 @@ public:
 
         return n;
     }
+    
+    virtual int getPositionForValueUnclamped(float value) const {
+        // We don't really support this
+        return getPositionForValue(value);
+    }
 
     virtual float getValueForPosition(int position) const {
 
@@ -3478,6 +3483,11 @@ public:
         return dist;
     }
     
+    virtual float getValueForPositionUnclamped(int position) const {
+        // We don't really support this
+        return getValueForPosition(position);
+    }
+
     virtual QString getUnit() const { return "Hz"; }
 
 protected:

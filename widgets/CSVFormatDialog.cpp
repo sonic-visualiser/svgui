@@ -94,6 +94,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
         cpc->addItem(tr("End time")); // ColumnEndTime
         cpc->addItem(tr("Duration")); // ColumnDuration
         cpc->addItem(tr("Value"));    // ColumnValue
+        cpc->addItem(tr("Pitch"));    // ColumnPitch
         cpc->addItem(tr("Label"));    // ColumnLabel
         cpc->setCurrentIndex(int(m_format.getColumnPurpose(i)));
 
@@ -212,6 +213,9 @@ CSVFormatDialog::updateModelLabel()
     case CSVFormat::TwoDimensionalModelWithDuration:
         s = f->getLayerPresentationName(LayerFactory::Regions);
         break;
+    case CSVFormat::TwoDimensionalModelWithDurationAndPitch:
+        s = f->getLayerPresentationName(LayerFactory::Notes);
+        break;
     case CSVFormat::ThreeDimensionalModel:
         s = f->getLayerPresentationName(LayerFactory::Colour3DPlot);
         break;
@@ -282,6 +286,7 @@ CSVFormatDialog::columnPurposeChanged(int p)
 
     bool haveStartTime = false;
     bool haveDuration = false;
+    bool havePitch = false;
     int valueCount = 0;
 
     for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
@@ -343,6 +348,9 @@ CSVFormatDialog::columnPurposeChanged(int p)
             cp == CSVFormat::ColumnDuration) {
             haveDuration = true;
         }
+        if (cp == CSVFormat::ColumnPitch) {
+            havePitch = true;
+        }
         if (cp == CSVFormat::ColumnValue) {
             ++valueCount;
         }
@@ -357,7 +365,11 @@ CSVFormatDialog::columnPurposeChanged(int p)
     }
 
     if (haveStartTime && haveDuration) {
-        m_format.setModelType(CSVFormat::TwoDimensionalModelWithDuration);
+        if (havePitch) {
+            m_format.setModelType(CSVFormat::TwoDimensionalModelWithDurationAndPitch);
+        } else {
+            m_format.setModelType(CSVFormat::TwoDimensionalModelWithDuration);
+        }
     } else {
         if (valueCount > 1) {
             m_format.setModelType(CSVFormat::ThreeDimensionalModel);
