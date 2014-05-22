@@ -197,7 +197,7 @@ LayerFactory::getValidEmptyLayerTypes()
     LayerTypeSet types;
     types.insert(TimeInstants);
     types.insert(TimeValues);
-    types.insert(FlexiNotes);
+	types.insert(FlexiNotes);
     types.insert(Notes);
     types.insert(Regions);
     types.insert(Text);
@@ -214,7 +214,7 @@ LayerFactory::getLayerType(const Layer *layer)
     if (dynamic_cast<const TimeRulerLayer *>(layer)) return TimeRuler;
     if (dynamic_cast<const TimeInstantLayer *>(layer)) return TimeInstants;
     if (dynamic_cast<const TimeValueLayer *>(layer)) return TimeValues;
-    if (dynamic_cast<const FlexiNoteLayer *>(layer)) return FlexiNotes;
+	if (dynamic_cast<const FlexiNoteLayer *>(layer)) return FlexiNotes;
     if (dynamic_cast<const NoteLayer *>(layer)) return Notes;
     if (dynamic_cast<const RegionLayer *>(layer)) return Regions;
     if (dynamic_cast<const TextLayer *>(layer)) return Text;
@@ -235,7 +235,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case TimeInstants: return "instants";
     case TimeValues: return "values";
     case Notes: return "notes";
-    case FlexiNotes: return "flexinotes";
+    case FlexiNotes: return "flexible notes";
     case Regions: return "regions";
     case Text: return "text";
     case Image: return "image";
@@ -349,7 +349,7 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
 	return new SparseOneDimensionalModel(baseModel->getSampleRate(), 1);
     } else if (layerType == TimeValues) {
 	return new SparseTimeValueModel(baseModel->getSampleRate(), 1, true);
-    } else if (layerType == FlexiNotes) {
+	} else if (layerType == FlexiNotes) {
 	return new FlexiNoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Notes) {
 	return new NoteModel(baseModel->getSampleRate(), 1, true);
