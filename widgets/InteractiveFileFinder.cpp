@@ -53,7 +53,7 @@ InteractiveFileFinder::setApplicationSessionExtension(QString extension)
 QString
 InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 {
-    QString settingsKey;
+    QString settingsKeyStub;
     QString lastPath = fallbackLocation;
     
     QString title = tr("Select file");
@@ -62,7 +62,7 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     switch (type) {
 
     case SessionFile:
-        settingsKey = "sessionpath";
+        settingsKeyStub = "session";
         title = tr("Select a session file");
         filter = tr("%1 session files (*.%1)\nRDF files (%3)\nAll files (*.*)")
             .arg(QApplication::applicationName())
@@ -71,42 +71,42 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
         break;
 
     case AudioFile:
-        settingsKey = "audiopath";
+        settingsKeyStub = "audio";
         title = "Select an audio file";
         filter = tr("Audio files (%1)\nAll files (*.*)")
             .arg(AudioFileReaderFactory::getKnownExtensions());
         break;
 
     case LayerFile:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         filter = tr("All supported files (%1 %2)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nRDF files (%2)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)")
             .arg(DataFileReaderFactory::getKnownExtensions())
             .arg(RDFImporter::getKnownExtensions());
         break;
 
     case LayerFileNoMidi:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         filter = tr("All supported files (%1 %2)\nSonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nRDF files (%2)\nText files (*.txt)\nAll files (*.*)")
             .arg(DataFileReaderFactory::getKnownExtensions())
             .arg(RDFImporter::getKnownExtensions());
         break;
 
     case LayerFileNonSV:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         filter = tr("All supported files (%1 %2)\nComma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nSpace-separated .lab files (*.lab)\nRDF files (%2)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)")
             .arg(DataFileReaderFactory::getKnownExtensions())
             .arg(RDFImporter::getKnownExtensions());
         break;
 
     case LayerFileNoMidiNonSV:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         filter = tr("All supported files (%1 %2)\nComma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nSpace-separated .lab files (*.lab)\nRDF files (%2)\nText files (*.txt)\nAll files (*.*)")
             .arg(DataFileReaderFactory::getKnownExtensions())
             .arg(RDFImporter::getKnownExtensions());
         break;
 
     case SessionOrAudioFile:
-        settingsKey = "lastpath";
+        settingsKeyStub = "last";
         filter = tr("All supported files (*.sv %1 %2)\n%3 session files (*.%4)\nAudio files (%2)\nRDF files (%1)\nAll files (*.*)")
             .arg(RDFImporter::getKnownExtensions())
             .arg(AudioFileReaderFactory::getKnownExtensions())
@@ -115,7 +115,7 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
         break;
 
     case ImageFile:
-        settingsKey = "imagepath";
+        settingsKeyStub = "image";
         {
             QStringList fmts;
             QList<QByteArray> formats = QImageReader::supportedImageFormats();
@@ -129,12 +129,12 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
         break;
 
     case CSVFile:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         filter = tr("Comma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nText files (*.txt)\nAll files (*.*)");
         break;
 
     case AnyFile:
-        settingsKey = "lastpath";
+        settingsKeyStub = "last";
         filter = tr("All supported files (*.sv %1 %2 %3)\n%4 session files (*.%5)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
             .arg(AudioFileReaderFactory::getKnownExtensions())
             .arg(DataFileReaderFactory::getKnownExtensions())
@@ -156,7 +156,7 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     QSettings settings;
     settings.beginGroup("FileFinder");
-    lastPath = settings.value(settingsKey, lastPath).toString();
+    lastPath = settings.value(settingsKeyStub + "path", lastPath).toString();
 
     QString path = "";
 
@@ -209,7 +209,7 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     }
 
     if (path != "") {
-        settings.setValue(settingsKey,
+        settings.setValue(settingsKeyStub + "path",
                           QFileInfo(path).absoluteDir().canonicalPath());
     }
     
@@ -219,7 +219,7 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 QString
 InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
 {
-    QString settingsKey;
+    QString settingsKeyStub;
     QString lastPath = fallbackLocation;
     
     QString title = tr("Select file");
@@ -228,39 +228,39 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     switch (type) {
 
     case SessionFile:
-        settingsKey = "savesessionpath";
+        settingsKeyStub = "savesession";
         title = tr("Select a session file");
         filter = tr("%1 session files (*.%2)\nAll files (*.*)")
             .arg(QApplication::applicationName()).arg(m_sessionExtension);
         break;
 
     case AudioFile:
-        settingsKey = "saveaudiopath";
+        settingsKeyStub = "saveaudio";
         title = "Select an audio file";
         title = tr("Select a file to export to");
         filter = tr("WAV audio files (*.wav)\nAll files (*.*)");
         break;
 
     case LayerFile:
-        settingsKey = "savelayerpath";
+        settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
         filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
         break;
 
     case LayerFileNoMidi:
-        settingsKey = "savelayerpath";
+        settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
         filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
         break;
 
     case LayerFileNonSV:
-        settingsKey = "savelayerpath";
+        settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
         filter = tr("Comma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nRDF/Turtle files (%1)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
         break;
 
     case LayerFileNoMidiNonSV:
-        settingsKey = "savelayerpath";
+        settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
         filter = tr("Comma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
         break;
@@ -270,13 +270,13 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
         abort();
 
     case ImageFile:
-        settingsKey = "saveimagepath";
+        settingsKeyStub = "saveimage";
         title = tr("Select a file to export to");
         filter = tr("Portable Network Graphics files (*.png)\nAll files (*.*)");
         break;
 
     case CSVFile:
-        settingsKey = "savelayerpath";
+        settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
         filter = tr("Comma-separated data files (*.csv)\nText files (*.txt)\nAll files (*.*)");
         break;
@@ -298,7 +298,7 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
 
     QSettings settings;
     settings.beginGroup("FileFinder");
-    lastPath = settings.value(settingsKey, lastPath).toString();
+    lastPath = settings.value(settingsKeyStub + "path", lastPath).toString();
 
     QString path = "";
 
@@ -306,22 +306,37 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     // need to adjust the file extension based on the selected filter
 
     QFileDialog dialog;
-    dialog.setNameFilters(filter.split('\n'));
+
+    QStringList filters = filter.split('\n');
+
+    dialog.setNameFilters(filters);
     dialog.setWindowTitle(title);
     dialog.setDirectory(lastPath);
 
     dialog.setAcceptMode(QFileDialog::AcceptSave);
     dialog.setFileMode(QFileDialog::AnyFile);
     dialog.setConfirmOverwrite(false); // we'll do that
-        
+    
+    QString defaultSuffix;
     if (type == SessionFile) {
-        dialog.setDefaultSuffix(m_sessionExtension);
+        defaultSuffix = m_sessionExtension;
     } else if (type == AudioFile) {
-        dialog.setDefaultSuffix("wav");
+        defaultSuffix = "wav";
     } else if (type == ImageFile) {
-        dialog.setDefaultSuffix("png");
+        defaultSuffix = "png";
     } else if (type == CSVFile) {
-        dialog.setDefaultSuffix("csv");
+        defaultSuffix = "csv";
+    }
+
+    defaultSuffix = 
+        settings.value(settingsKeyStub + "suffix", defaultSuffix).toString();
+
+    dialog.setDefaultSuffix(defaultSuffix);
+
+    foreach (QString f, filters) {
+        if (f.contains("." + defaultSuffix)) {
+            dialog.selectNameFilter(f);
+        }
     }
 
     bool good = false;
@@ -382,8 +397,10 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     }
         
     if (path != "") {
-        settings.setValue(settingsKey,
+        settings.setValue(settingsKeyStub + "path",
                           QFileInfo(path).absoluteDir().canonicalPath());
+        settings.setValue(settingsKeyStub + "suffix",
+                          QFileInfo(path).suffix());
     }
     
     return path;
@@ -392,47 +409,47 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
 void
 InteractiveFileFinder::registerLastOpenedFilePath(FileType type, QString path)
 {
-    QString settingsKey;
+    QString settingsKeyStub;
 
     switch (type) {
     case SessionFile:
-        settingsKey = "sessionpath";
+        settingsKeyStub = "session";
         break;
 
     case AudioFile:
-        settingsKey = "audiopath";
+        settingsKeyStub = "audio";
         break;
 
     case LayerFile:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         break;
 
     case LayerFileNoMidi:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         break;
 
     case LayerFileNonSV:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         break;
 
     case LayerFileNoMidiNonSV:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         break;
 
     case SessionOrAudioFile:
-        settingsKey = "lastpath";
+        settingsKeyStub = "last";
         break;
 
     case ImageFile:
-        settingsKey = "imagepath";
+        settingsKeyStub = "image";
         break;
 
     case CSVFile:
-        settingsKey = "layerpath";
+        settingsKeyStub = "layer";
         break;
 
     case AnyFile:
-        settingsKey = "lastpath";
+        settingsKeyStub = "last";
         break;
     }
 
@@ -440,7 +457,9 @@ InteractiveFileFinder::registerLastOpenedFilePath(FileType type, QString path)
         QSettings settings;
         settings.beginGroup("FileFinder");
         path = QFileInfo(path).absoluteDir().canonicalPath();
-        settings.setValue(settingsKey, path);
+        QString suffix = QFileInfo(path).suffix();
+        settings.setValue(settingsKeyStub + "path", path);
+        settings.setValue(settingsKeyStub + "suffix", suffix);
         settings.setValue("lastpath", path);
     }
 }
