@@ -1351,11 +1351,14 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
             continue;
         }
 
+        cerr << "snapSelectedNotesToPitchTrack: making new note" << endl;
         FlexiNote newNote(note);
 
         command->deletePoint(note);
 
-
+        if (updateNoteValue(v, newNote)) {
+            command->addPoint(newNote);
+        }
     }
     
     finish(command);
