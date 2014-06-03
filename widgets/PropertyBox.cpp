@@ -768,7 +768,13 @@ PropertyBox::editPlayParameters()
     dialog->setLabelText(tr("Set playback clip:"));
 
     QComboBox *cb = dialog->findChild<QComboBox *>();
-    if (cb) cb->setCurrentText(clip);
+    if (cb) {
+        for (int i = 0; i < cb->count(); ++i) {
+            if (cb->itemText(i) == clip) {
+                cb->setCurrentIndex(i);
+            }
+        }
+    }
 
     connect(dialog, SIGNAL(textValueChanged(QString)), 
             this, SLOT(playClipChanged(QString)));
