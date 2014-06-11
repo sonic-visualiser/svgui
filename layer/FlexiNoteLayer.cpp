@@ -820,6 +820,7 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     FlexiNoteModel::Point illuminatePoint(0);
     bool shouldIlluminate = false;
 
+
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
         shouldIlluminate = getPointToDrag(v, localPos.x(), localPos.y(),
                                           illuminatePoint);
@@ -847,28 +848,31 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
         paint.setPen(getBaseQColor());
         paint.setBrush(brushColour);
 
-        // if (shouldIlluminate &&
-        //         // "illuminatePoint == p"
-        //         !FlexiNoteModel::Point::Comparator()(illuminatePoint, p) &&
-        //         !FlexiNoteModel::Point::Comparator()(p, illuminatePoint)) {
-        // 
-        //         paint.setPen(v->getForeground());
-        //         paint.setBrush(v->getForeground());
-        // 
-        //         QString vlabel = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
-        //         v->drawVisibleText(paint, 
-        //                            x - paint.fontMetrics().width(vlabel) - 2,
-        //                            y + paint.fontMetrics().height()/2
-        //                              - paint.fontMetrics().descent(), 
-        //                            vlabel, View::OutlinedText);
-        // 
-        //         QString hlabel = RealTime::frame2RealTime
-        //             (p.frame, m_model->getSampleRate()).toText(true).c_str();
-        //         v->drawVisibleText(paint, 
-        //                            x,
-        //                            y - h/2 - paint.fontMetrics().descent() - 2,
-        //                            hlabel, View::OutlinedText);
-        // }
+        if (shouldIlluminate &&
+                // "illuminatePoint == p"
+                !FlexiNoteModel::Point::Comparator()(illuminatePoint, p) &&
+                !FlexiNoteModel::Point::Comparator()(p, illuminatePoint)) {
+
+                paint.drawLine(x, -1, x, v->height() + 1);
+                paint.drawLine(x+w, -1, x+w, v->height() + 1);
+        
+                paint.setPen(v->getForeground());
+                // paint.setBrush(v->getForeground());
+        
+                QString vlabel = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
+                v->drawVisibleText(paint, 
+                                   x - paint.fontMetrics().width(vlabel) - 2,
+                                   y + paint.fontMetrics().height()/2
+                                     - paint.fontMetrics().descent(), 
+                                   vlabel, View::OutlinedText);
+        
+                QString hlabel = RealTime::frame2RealTime
+                    (p.duration, m_model->getSampleRate()).toText(true).c_str();
+                v->drawVisibleText(paint, 
+                                   x,
+                                   y - h/2 - paint.fontMetrics().descent() - 2,
+                                   hlabel, View::OutlinedText);
+        }
     
         paint.drawRect(x, y - h/2, w, h);
     }
@@ -1472,7 +1476,13 @@ FlexiNoteLayer::mouseMoveEvent(View *v, QMouseEvent *e)
 
     v->setCursor(Qt::ArrowCursor);
 
-    // std::cerr << "Mouse moved in edit mode over FlexiNoteLayer" << std::endl;
+    // QPainter paint;
+    // paint.begin(m_pan);
+    // QRect r(rect());
+    // paint(v, paint, r); 
+    // paint.end(this);
+
+    std::cerr << "Mouse moved in edit mode over FlexiNoteLayer" << std::endl;
     // v->setCursor(Qt::SizeHorCursor);
 
 }
@@ -1634,6 +1644,29 @@ FlexiNoteLayer::deleteSelection(Selection s)
 
     finish(command);
 }    
+
+void
+FlexiNoteLayer::deleteSelectionInclusive(Selection s)
+{
+    if (!m_model) return;
+
+    FlexiNoteModel::EditCommand *command =
+        new FlexiNoteModel::EditCommand(m_model, tr("Delete Selected Points"));
+
+    FlexiNoteModel::PointList points =
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+
+    for (FlexiNoteModel::PointList::iterator i = points.begin();
+         i != points.end(); ++i) {
+        bool overlap = !(((s.getStartFrame() < i->frame) && (s.getEndFrame() < i->frame))
+            || ((s.getStartFrame() > i->frame+i->duration) && (s.getEndFrame() > i->frame+i->duration)));
+        if (overlap) {
+            command->deletePoint(*i);
+        }
+    }
+
+    finish(command);
+}
 
 void
 FlexiNoteLayer::copy(View *v, Selection s, Clipboard &to)
