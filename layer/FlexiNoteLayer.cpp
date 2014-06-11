@@ -1476,12 +1476,6 @@ FlexiNoteLayer::mouseMoveEvent(View *v, QMouseEvent *e)
 
     v->setCursor(Qt::ArrowCursor);
 
-    // QPainter paint;
-    // paint.begin(m_pan);
-    // QRect r(rect());
-    // paint(v, paint, r); 
-    // paint.end(this);
-
     std::cerr << "Mouse moved in edit mode over FlexiNoteLayer" << std::endl;
     // v->setCursor(Qt::SizeHorCursor);
 

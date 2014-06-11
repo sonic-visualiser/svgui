@@ -1590,7 +1590,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             FlexiNoteLayer *layer = qobject_cast<FlexiNoteLayer *>(getTopFlexiNoteLayer());
             if (layer) {
                 layer->mouseMoveEvent(this, e); //!!! ew
-                return;
+                update();
+                // return;
             }
         }   
     
