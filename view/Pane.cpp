@@ -1433,6 +1433,9 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         mouseMoveEvent(e);
     }
 
+    int mouseFrame = e ? getFrameForX(e->x()) : 0;
+    if (mouseFrame < 0) mouseFrame == 0;
+
     if (m_navigating || mode == ViewManager::NavigateMode) {
 
         m_navigating = false;
@@ -1451,6 +1454,12 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             int y1 = std::max(m_clickPos.y(), m_mousePos.y());
 
             emit regionOutlined(QRect(x0, y0, x1 - x0, y1 - y0));
+
+        } else if (m_manager && m_dragMode == UnresolvedDrag) {
+
+            // Simple click, no drag made: move play head to the mouse
+            // frame location
+            m_manager->setPlaybackFrame(mouseFrame);
         }
 
     } else if (mode == ViewManager::SelectMode) {
@@ -1477,16 +1486,12 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             } else {
                 m_manager->addSelection(selection);
             }
-        }
-        else if (m_manager && !m_manager->haveInProgressSelection()) {
+
+        } else if (m_manager && !m_manager->haveInProgressSelection()) {
             
-            //cerr << "JTEST: release without selection" << endl;
-            // Get frame location of mouse
-            int mouseFrame = getFrameForX(e->x());
-            //cerr << "JTEST: frame location of click is " << mouseFrame << endl;
-            // Move play head to that frame location
-            int playbackFrame = fmax(0,mouseFrame);
-            m_manager->setPlaybackFrame(playbackFrame);
+            // Simple click, no selection made: move play head to the
+            // mouse frame location
+            m_manager->setPlaybackFrame(mouseFrame);
         }
     
         update();
