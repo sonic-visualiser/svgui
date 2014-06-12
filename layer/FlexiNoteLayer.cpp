@@ -859,19 +859,30 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
                 paint.setPen(v->getForeground());
                 // paint.setBrush(v->getForeground());
         
-                QString vlabel = QString("%1%2").arg(p.value).arg(m_model->getScaleUnits());
+                QString vlabel = QString("freq: %1%2").arg(p.value).arg(m_model->getScaleUnits());
+                // v->drawVisibleText(paint, 
+                //                    x - paint.fontMetrics().width(vlabel) - 2,
+                //                    y + paint.fontMetrics().height()/2
+                //                      - paint.fontMetrics().descent(), 
+                //                    vlabel, View::OutlinedText);
                 v->drawVisibleText(paint, 
-                                   x - paint.fontMetrics().width(vlabel) - 2,
-                                   y + paint.fontMetrics().height()/2
+                                   x,
+                                   y - h/2 - 2 - paint.fontMetrics().height()
                                      - paint.fontMetrics().descent(), 
                                    vlabel, View::OutlinedText);
-        
-                QString hlabel = RealTime::frame2RealTime
-                    (p.duration, m_model->getSampleRate()).toText(true).c_str();
+
+                QString hlabel = "dur: " + QString(RealTime::frame2RealTime
+                    (p.duration, m_model->getSampleRate()).toText(true).c_str());
                 v->drawVisibleText(paint, 
                                    x,
                                    y - h/2 - paint.fontMetrics().descent() - 2,
                                    hlabel, View::OutlinedText);
+
+                QString llabel = QString("%1").arg(p.label);
+                v->drawVisibleText(paint, 
+                                   x,
+                                   y + h + 2 + paint.fontMetrics().descent(),
+                                   llabel, View::OutlinedText);
         }
     
         paint.drawRect(x, y - h/2, w, h);
