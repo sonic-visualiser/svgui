@@ -280,7 +280,7 @@ Overview::mouseMoveEvent(QMouseEvent *e)
 #ifdef DEBUG_OVERVIEW
         cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << endl;
 #endif
-	emit centreFrameChanged(rf, true, PlaybackIgnore);
+	emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
     }
 }
 

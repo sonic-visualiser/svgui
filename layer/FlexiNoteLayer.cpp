@@ -1281,19 +1281,22 @@ FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
     long frame = v->getFrameForX(e->x());
     float value = getValueForY(v, e->y());
     
+    FlexiNoteModel::PointList noteList = m_model->getPoints();
+
     if (m_intelligentActions) {
         long smallestRightNeighbourFrame = 0;
-        for (FlexiNoteModel::PointList::const_iterator i = m_model->getPoints().begin();
-             i != m_model->getPoints().end(); ++i) {
+        for (FlexiNoteModel::PointList::const_iterator i = noteList.begin();
+             i != noteList.end(); ++i) {
             FlexiNote currentNote = *i;
             if (currentNote.frame > frame) {
                 smallestRightNeighbourFrame = currentNote.frame;
                 break;
             }
         }
-        
-        duration = std::min(smallestRightNeighbourFrame - frame + 1, duration);
-        duration = (duration > 0) ? duration : 0;
+        if (smallestRightNeighbourFrame > 0) {
+            duration = std::min(smallestRightNeighbourFrame - frame + 1, duration);
+            duration = (duration > 0) ? duration : 0;
+        }
     }
 
     if (!m_intelligentActions || 
