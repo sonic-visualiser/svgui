@@ -352,6 +352,7 @@ protected:
     bool                m_followPan;
     bool                m_followZoom;
     PlaybackFollowMode  m_followPlay;
+    bool                m_followPlayIsDetached;
     size_t              m_playPointerFrame;
     bool                m_lightBackground;
     bool                m_showProgress;
