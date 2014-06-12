@@ -1060,6 +1060,8 @@ View::movePlayPointer(unsigned long newFrame)
 
             if (xnew > width() / 8) {
                 m_followPlayIsDetached = false;
+            } else if (somethingGoingOn) {
+                m_followPlayIsDetached = true;
             }
 
             if (!somethingGoingOn && shouldScroll) {
