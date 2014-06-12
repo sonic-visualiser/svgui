@@ -53,6 +53,7 @@ View::View(QWidget *w, bool showProgress) :
     m_followPan(true),
     m_followZoom(true),
     m_followPlay(PlaybackScrollPage),
+    m_followPlayIsDetached(false),
     m_playPointerFrame(0),
     m_showProgress(showProgress),
     m_cache(0),
@@ -992,6 +993,12 @@ View::movePlayPointer(unsigned long newFrame)
         ((QApplication::mouseButtons() != Qt::NoButton) ||
          (QApplication::keyboardModifiers() & Qt::AltModifier));
 
+    bool pointerInVisibleArea =
+	long(m_playPointerFrame) >= getStartFrame() &&
+        (m_playPointerFrame < getEndFrame() ||
+         // include old pointer location so we know to refresh when moving out
+         oldPlayPointerFrame < getEndFrame());
+
     switch (m_followPlay) {
 
     case PlaybackScrollContinuous:
@@ -1001,56 +1008,73 @@ View::movePlayPointer(unsigned long newFrame)
 	break;
 
     case PlaybackScrollPage:
-    { 
-	int xold = getXForFrame(oldPlayPointerFrame);
-	update(xold - 4, 0, 9, height());
 
-	long w = getEndFrame() - getStartFrame();
-	w -= w/5;
-	long sf = (m_playPointerFrame / w) * w - w/8;
+        if (!pointerInVisibleArea && somethingGoingOn) {
 
-	if (m_manager &&
-	    m_manager->isPlaying() &&
-	    m_manager->getPlaySelectionMode()) {
-	    MultiSelection::SelectionList selections = m_manager->getSelections();
-	    if (!selections.empty()) {
-		size_t selectionStart = selections.begin()->getStartFrame();
-		if (sf < long(selectionStart) - w / 10) {
-		    sf = long(selectionStart) - w / 10;
-		}
-	    }
-	}
+            m_followPlayIsDetached = true;
+
+        } else if (!pointerInVisibleArea && m_followPlayIsDetached) {
+
+            // do nothing; we aren't tracking until the pointer comes back in
+
+        } else {
+
+            int xold = getXForFrame(oldPlayPointerFrame);
+            update(xold - 4, 0, 9, height());
+
+            long w = getEndFrame() - getStartFrame();
+            w -= w/5;
+            long sf = (m_playPointerFrame / w) * w - w/8;
+
+            if (m_manager &&
+                m_manager->isPlaying() &&
+                m_manager->getPlaySelectionMode()) {
+                MultiSelection::SelectionList selections = m_manager->getSelections();
+                if (!selections.empty()) {
+                    size_t selectionStart = selections.begin()->getStartFrame();
+                    if (sf < long(selectionStart) - w / 10) {
+                        sf = long(selectionStart) - w / 10;
+                    }
+                }
+            }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
-		  << getStartFrame() << endl;
+            cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
+                 << getStartFrame() << endl;
 #endif
 
-	// We don't consider scrolling unless the pointer is outside
-	// the clearly visible range already
+            // We don't consider scrolling unless the pointer is outside
+            // the central visible range already
 
-	int xnew = getXForFrame(m_playPointerFrame);
+            int xnew = getXForFrame(m_playPointerFrame);
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	cerr << "xnew = " << xnew << ", width = " << width() << endl;
+            cerr << "xnew = " << xnew << ", width = " << width() << endl;
 #endif
 
-	if (xnew < width()/8 || xnew > (width()*7)/8) {
-	    if (!somethingGoingOn) {
-		long offset = getFrameForX(width()/2) - getStartFrame();
-		long newCentre = sf + offset;
-		bool changed = setCentreFrame(newCentre, false);
-		if (changed) {
-		    xold = getXForFrame(oldPlayPointerFrame);
-		    update(xold - 4, 0, 9, height());
-		}
-	    }
-	}
+            bool shouldScroll = (xnew > (width() * 7) / 8);
 
-	update(xnew - 4, 0, 9, height());
+            if (!m_followPlayIsDetached && (xnew < width() / 8)) {
+                shouldScroll = true;
+            }
 
-	break;
-    }
+            if (xnew > width() / 8) {
+                m_followPlayIsDetached = false;
+            }
+
+            if (!somethingGoingOn && shouldScroll) {
+                long offset = getFrameForX(width()/2) - getStartFrame();
+                long newCentre = sf + offset;
+                bool changed = setCentreFrame(newCentre, false);
+                if (changed) {
+                    xold = getXForFrame(oldPlayPointerFrame);
+                    update(xold - 4, 0, 9, height());
+                }
+            }
+
+            update(xnew - 4, 0, 9, height());
+        }
+        break;
 
     case PlaybackIgnore:
 	if (long(m_playPointerFrame) >= getStartFrame() &&
