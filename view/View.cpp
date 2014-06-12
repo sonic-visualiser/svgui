@@ -1820,7 +1820,10 @@ View::paintEvent(QPaintEvent *e)
         showPlayPointer = false;
     } else if (m_manager && !m_manager->isPlaying()) {
         if (m_playPointerFrame == getCentreFrame() &&
+            m_manager->shouldShowCentreLine() &&
             m_followPlay != PlaybackIgnore) {
+            // Don't show the play pointer when it is redundant with
+            // the centre line
             showPlayPointer = false;
         }
     }
