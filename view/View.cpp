@@ -26,6 +26,8 @@
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h"
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
+#include "widgets/IconLoader.h"
+
 #include <QPainter>
 #include <QPaintEvent>
 #include <QRect>
@@ -34,6 +36,7 @@
 #include <QTextStream>
 #include <QFont>
 #include <QMessageBox>
+#include <QPushButton>
 
 #include <iostream>
 #include <cassert>
@@ -517,11 +520,6 @@ View::getForeground() const
     else return Qt::white;
 }
 
-View::LayerProgressBar::LayerProgressBar(QWidget *parent) :
-    QProgressBar(parent)
-{
-}
-
 void
 View::addLayer(Layer *layer)
 {
@@ -539,7 +537,14 @@ View::addLayer(Layer *layer)
     pb->setFixedWidth(80);
     pb->setTextVisible(false);
 
+    QPushButton *cancel = new QPushButton(this);
+    cancel->setIcon(IconLoader().load("fileclose"));
+    cancel->setFlat(true);
+    cancel->setFixedSize(QSize(20, 20));
+    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelClicked()));
+    
     ProgressBarRec pbr;
+    pbr.cancel = cancel;
     pbr.bar = pb;
     pbr.lastCheck = 0;
     pbr.checkTimer = new QTimer();
@@ -551,6 +556,8 @@ View::addLayer(Layer *layer)
     QFont f(pb->font());
     int fs = Preferences::getInstance()->getViewFontSize();
     f.setPointSize(std::min(fs, int(ceil(fs * 0.85))));
+
+    cancel->hide();
 
     pb->setFont(f);
     pb->hide();
@@ -594,6 +601,7 @@ View::removeLayer(Layer *layer)
 	    m_layers.erase(i);
 	    if (m_progressBars.find(layer) != m_progressBars.end()) {
 		delete m_progressBars[layer].bar;
+                delete m_progressBars[layer].cancel;
 		delete m_progressBars[layer].checkTimer;
 		m_progressBars.erase(layer);
 	    }
@@ -1460,6 +1468,25 @@ View::scroll(bool right, bool lots, bool e)
 }
 
 void
+View::cancelClicked()
+{
+    QPushButton *cancel = qobject_cast<QPushButton *>(sender());
+    if (!cancel) return;
+
+    for (ProgressMap::iterator i = m_progressBars.begin();
+	 i != m_progressBars.end(); ++i) {
+
+        if (i->second.cancel == cancel) {
+
+            Layer *layer = i->first;
+            Model *model = layer->getModel();
+
+            if (model) model->abandon();
+        }
+    }
+}
+
+void
 View::checkProgress(void *object)
 {
     if (!m_showProgress) return;
@@ -1470,6 +1497,7 @@ View::checkProgress(void *object)
 	 i != m_progressBars.end(); ++i) {
 
         QProgressBar *pb = i->second.bar;
+        QPushButton *cancel = i->second.cancel;
 
 	if (i->first == object) {
 
@@ -1516,6 +1544,7 @@ View::checkProgress(void *object)
 	    if (completion >= 100) {
 
 		pb->hide();
+                cancel->hide();
                 timer->stop();
 
 	    } else {
@@ -1528,8 +1557,11 @@ View::checkProgress(void *object)
                     timer->start();
                 }
 
+                cancel->move(0, ph - pb->height()/2 - 10);
+                cancel->show();
+
 		pb->setValue(completion);
-		pb->move(0, ph - pb->height());
+		pb->move(20, ph - pb->height());
 
 		pb->show();
 		pb->update();

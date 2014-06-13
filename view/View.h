@@ -29,6 +29,8 @@
 class Layer;
 class ViewPropertyContainer;
 
+class QPushButton;
+
 #include <map>
 #include <set>
 
@@ -309,6 +311,8 @@ public slots:
     virtual void overlayModeChanged();
     virtual void zoomWheelsEnabledChanged();
 
+    virtual void cancelClicked();
+
     virtual void progressCheckStalledTimerElapsed();
 
 protected:
@@ -373,16 +377,8 @@ protected:
     mutable LayerList m_lastScrollableBackLayers;
     mutable LayerList m_lastNonScrollableBackLayers;
 
-    class LayerProgressBar : public QProgressBar {
-    public:
-	LayerProgressBar(QWidget *parent);
-	virtual QString text() const { return m_text; }
-	virtual void setText(QString text) { m_text = text; }
-    protected:
-	QString m_text;
-    };
-
     struct ProgressBarRec {
+        QPushButton *cancel;
         QProgressBar *bar;
         int lastCheck;
         QTimer *checkTimer;
