@@ -1329,7 +1329,7 @@ FlexiNoteLayer::getAssociatedPitchModel(View *v) const
 
     for (int i = 0; i < v->getLayerCount(); ++i) {
         Layer *layer = v->getLayer(i);
-        if (layer && !layer->isLayerDormant(v) && 
+        if (layer &&
             layer->getLayerPresentationName() != "candidate") {
             cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
             SparseTimeValueModel *model = qobject_cast<SparseTimeValueModel *>
