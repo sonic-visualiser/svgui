@@ -1620,7 +1620,7 @@ void
 View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
-//    SVDEBUG << "View::paintEvent: centre frame is " << m_centreFrame << endl;
+//    cerr << "View::paintEvent: centre frame is " << m_centreFrame << endl;
 
     if (m_layers.empty()) {
 	QFrame::paintEvent(e);
