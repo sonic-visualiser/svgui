@@ -91,6 +91,9 @@ public slots:
     void mouseEnteredWidget();
     void mouseLeftWidget();
 
+protected slots:
+    void playbackScheduleTimerElapsed();
+
 protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void mousePressEvent(QMouseEvent *e);
@@ -139,6 +142,8 @@ protected:
 
     Layer *getTopFlexiNoteLayer();
 
+    void schedulePlaybackFrameMove(int frame);
+
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
     QPoint m_clickPos;
@@ -183,6 +188,9 @@ protected:
     NotifyingPushButton *m_reset;
 
     bool m_mouseInWidget;
+
+    bool m_playbackFrameMoveScheduled;
+    int m_playbackFrameMoveTo;
 
     static QCursor *m_measureCursor1;
     static QCursor *m_measureCursor2;
