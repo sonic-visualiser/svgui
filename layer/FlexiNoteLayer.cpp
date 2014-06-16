@@ -1667,8 +1667,8 @@ FlexiNoteLayer::deleteSelectionInclusive(Selection s)
     for (FlexiNoteModel::PointList::iterator i = points.begin();
          i != points.end(); ++i) {
         bool overlap = !(
-            ((s.getStartFrame() < i->frame) && (s.getEndFrame() < i->frame)) || // selection is left of note
-            ((s.getStartFrame() > (i->frame+i->duration-1)) && (s.getEndFrame() > (i->frame+i->duration-1))) // selection is right of note
+            ((s.getStartFrame() <= i->frame) && (s.getEndFrame() <= i->frame)) || // selection is left of note
+            ((s.getStartFrame() >= (i->frame+i->duration)) && (s.getEndFrame() >= (i->frame+i->duration))) // selection is right of note
             );
         if (overlap) {
             command->deletePoint(*i);
