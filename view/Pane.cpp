@@ -41,6 +41,7 @@
 #include <QCursor>
 #include <QTextStream>
 #include <QMimeData>
+#include <QApplication>
 
 #include <iostream>
 #include <cmath>
@@ -82,7 +83,9 @@ Pane::Pane(QWidget *w) :
     m_hthumb(0),
     m_vthumb(0),
     m_reset(0),
-    m_mouseInWidget(false)
+    m_mouseInWidget(false),
+    m_playbackFrameMoveScheduled(false),
+    m_playbackFrameMoveTo(0)
 {
     setObjectName("Pane");
     setMouseTracking(true);
@@ -784,8 +787,6 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
     int x0 = getXForFrame(model->getStartFrame());
     int x1 = getXForFrame(model->getEndFrame());
 
-    int lw = 10;
-
     paint.save();
 
     QBrush brush;
@@ -938,7 +939,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     
     if (r.x() + r.width() >= llx - fontAscent - 3) {
     
-        for (size_t i = 0; i < texts.size(); ++i) {
+        for (int i = 0; i < texts.size(); ++i) {
 
 //            cerr << "Pane "<< this << ": text " << i << ": " << texts[i] << endl;
             
@@ -1331,6 +1332,11 @@ Pane::mousePressEvent(QMouseEvent *e)
             m_dragStartMinValue = dmin;
         }
 
+        // Schedule a play-head move to the mouse frame location. This
+        // will happen only if nothing else of interest happens
+        // (double-click, drag) before the timeout.
+        schedulePlaybackFrameMove(getFrameForX(e->x()));
+
     } else if (mode == ViewManager::SelectMode) {
 
         if (!hasTopLayerTimeXAxis()) return;
@@ -1373,6 +1379,12 @@ Pane::mousePressEvent(QMouseEvent *e)
             }
 
             m_resizing = false;
+
+            // Schedule a play-head move to the mouse frame
+            // location. This will happen only if nothing else of
+            // interest happens (double-click, drag) before the
+            // timeout.
+            schedulePlaybackFrameMove(mouseFrame);
         }
 
         update();
@@ -1416,6 +1428,24 @@ Pane::mousePressEvent(QMouseEvent *e)
 }
 
 void
+Pane::schedulePlaybackFrameMove(int frame)
+{
+    m_playbackFrameMoveTo = frame;
+    m_playbackFrameMoveScheduled = true;
+    QTimer::singleShot(QApplication::doubleClickInterval() + 10, this,
+                       SLOT(playbackScheduleTimerElapsed()));
+}
+
+void
+Pane::playbackScheduleTimerElapsed()
+{
+    if (m_playbackFrameMoveScheduled) {
+        m_manager->setPlaybackFrame(m_playbackFrameMoveTo);
+        m_playbackFrameMoveScheduled = false;
+    }
+}
+
+void
 Pane::mouseReleaseEvent(QMouseEvent *e)
 {
     if (e->buttons() & Qt::RightButton) {
@@ -1434,7 +1464,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     }
 
     int mouseFrame = e ? getFrameForX(e->x()) : 0;
-    if (mouseFrame < 0) mouseFrame == 0;
+    if (mouseFrame < 0) mouseFrame = 0;
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
 
@@ -1454,12 +1484,6 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             int y1 = std::max(m_clickPos.y(), m_mousePos.y());
 
             emit regionOutlined(QRect(x0, y0, x1 - x0, y1 - y0));
-
-        } else if (m_manager && m_dragMode == UnresolvedDrag) {
-
-            // Simple click, no drag made: move play head to the mouse
-            // frame location
-            m_manager->setPlaybackFrame(mouseFrame);
         }
 
     } else if (mode == ViewManager::SelectMode) {
@@ -1486,12 +1510,6 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             } else {
                 m_manager->addSelection(selection);
             }
-
-        } else if (m_manager && !m_manager->haveInProgressSelection()) {
-            
-            // Simple click, no selection made: move play head to the
-            // mouse frame location
-            m_manager->setPlaybackFrame(mouseFrame);
         }
     
         update();
@@ -1816,6 +1834,10 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
         update();
     }
+    
+    if (m_dragMode != UnresolvedDrag) {
+        m_playbackFrameMoveScheduled = false;
+    }
 }
 
 void
@@ -2087,6 +2109,10 @@ Pane::dragExtendSelection(QMouseEvent *e)
     edgeScrollMaybe(e->x());
 
     update();
+
+    if (min != max) {
+        m_playbackFrameMoveScheduled = false;
+    }
 }
 
 void
@@ -2123,13 +2149,16 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         return;
     }
 
-//    cerr << "mouseDoubleClickEvent" << endl;
+    cerr << "mouseDoubleClickEvent" << endl;
 
     m_clickPos = e->pos();
     m_clickedInRange = true;
     m_shiftPressed = (e->modifiers() & Qt::ShiftModifier);
     m_ctrlPressed = (e->modifiers() & Qt::ControlModifier);
     m_altPressed = (e->modifiers() & Qt::AltModifier);
+
+    // cancel any pending move that came from a single click
+    m_playbackFrameMoveScheduled = false;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolModeFor(this);
