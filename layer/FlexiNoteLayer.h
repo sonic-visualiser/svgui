@@ -137,13 +137,13 @@ public:
      * not be finally added to the layer until the corresponding
      * note-off.
      */
-    void addNoteOn(long frame, int pitch, int velocity);
+    void addNoteOn(int frame, int pitch, int velocity);
     
     /**
      * Add a note-off.  This will cause a note to appear, if and only
      * if there is a matching pending note-on.
      */
-    void addNoteOff(long frame, int pitch);
+    void addNoteOff(int frame, int pitch);
 
     /**
      * Abandon all pending note-on events.
@@ -186,8 +186,8 @@ protected:
     int m_dragStartY;
     FlexiNoteModel::Point m_originalPoint;
     FlexiNoteModel::Point m_editingPoint;
-    long m_greatestLeftNeighbourFrame;
-    long m_smallestRightNeighbourFrame;
+    int m_greatestLeftNeighbourFrame;
+    int m_smallestRightNeighbourFrame;
     FlexiNoteModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
     EditMode m_editMode;

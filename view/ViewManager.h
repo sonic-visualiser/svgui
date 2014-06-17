@@ -59,17 +59,17 @@ public:
 
     bool isPlaying() const;
 
-    unsigned long getGlobalCentreFrame() const; // the set method is a slot
-    unsigned long getGlobalZoom() const;
+    int getGlobalCentreFrame() const; // the set method is a slot
+    int getGlobalZoom() const;
 
-    unsigned long getPlaybackFrame() const; // the set method is a slot
+    int getPlaybackFrame() const; // the set method is a slot
 
     // Only meaningful in solo mode, and used for optional alignment feature
     Model *getPlaybackModel() const;
     void setPlaybackModel(Model *);
 
-    size_t alignPlaybackFrameToReference(size_t) const;
-    size_t alignReferenceToPlaybackFrame(size_t) const;
+    int alignPlaybackFrameToReference(int) const;
+    int alignReferenceToPlaybackFrame(int) const;
 
     bool haveInProgressSelection() const;
     const Selection &getInProgressSelection(bool &exclusive) const;
@@ -83,7 +83,7 @@ public:
     void addSelection(const Selection &selection);
     void removeSelection(const Selection &selection);
     void clearSelections();
-    size_t constrainFrameToSelection(size_t frame) const;
+    int constrainFrameToSelection(int frame) const;
 
     /**
      * Adding a selection normally emits the selectionChangedByUser
@@ -98,7 +98,7 @@ public:
      * selected area, return the next selection after the given frame.
      * Return the empty selection if no appropriate selection is found.
      */
-    Selection getContainingSelection(size_t frame, bool defaultToFollowing) const;
+    Selection getContainingSelection(int frame, bool defaultToFollowing) const;
 
     Clipboard &getClipboard() { return m_clipboard; }
 
@@ -142,23 +142,23 @@ public:
      * differ from this will play back at the wrong speed -- there is
      * no per-model resampler.
      */
-    size_t getPlaybackSampleRate() const;
+    int getPlaybackSampleRate() const;
 
     /**
      * The sample rate of the audio output device.  If the playback
      * sample rate differs from this, everything will be resampled at
      * the output stage.
      */
-    size_t getOutputSampleRate() const;
+    int getOutputSampleRate() const;
 
     /**
      * The sample rate of the current main model.  This may in theory
      * differ from the playback sample rate, in which case even the
      * main model will play at the wrong speed.
      */
-    size_t getMainModelSampleRate() const { return m_mainModelSampleRate; }
+    int getMainModelSampleRate() const { return m_mainModelSampleRate; }
 
-    void setMainModelSampleRate(size_t sr) { m_mainModelSampleRate = sr; }
+    void setMainModelSampleRate(int sr) { m_mainModelSampleRate = sr; }
 
     enum OverlayMode {
         NoOverlays,
@@ -211,16 +211,16 @@ public:
 
 signals:
     /** Emitted when user causes the global centre frame to change. */
-    void globalCentreFrameChanged(unsigned long frame);
+    void globalCentreFrameChanged(int frame);
 
     /** Emitted when user scrolls a view, but doesn't affect global centre. */
-    void viewCentreFrameChanged(View *v, unsigned long frame);
+    void viewCentreFrameChanged(View *v, int frame);
 
     /** Emitted when a view zooms. */
-    void viewZoomLevelChanged(View *v, unsigned long zoom, bool locked);
+    void viewZoomLevelChanged(View *v, int zoom, bool locked);
 
     /** Emitted when the playback frame changes. */
-    void playbackFrameChanged(unsigned long frame);
+    void playbackFrameChanged(int frame);
 
     /** Emitted when the output levels change. Values in range 0.0 -> 1.0. */
     void outputLevelsChanged(float left, float right);
@@ -268,24 +268,24 @@ signals:
     void activity(QString);
 
 public slots:
-    void viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode);
-    void viewZoomLevelChanged(unsigned long, bool);
-    void setGlobalCentreFrame(unsigned long);
-    void setPlaybackFrame(unsigned long);
+    void viewCentreFrameChanged(int, bool, PlaybackFollowMode);
+    void viewZoomLevelChanged(int, bool);
+    void setGlobalCentreFrame(int);
+    void setPlaybackFrame(int);
     void playStatusChanged(bool playing);
 
 protected slots:
     void checkPlayStatus();
-    void seek(unsigned long);
-//!!!    void considerZoomChange(void *, unsigned long, bool);
+    void seek(int);
+//!!!    void considerZoomChange(void *, int, bool);
 
 protected:
     AudioPlaySource *m_playSource;
-    unsigned long m_globalCentreFrame;
-    unsigned long m_globalZoom;
-    mutable unsigned long m_playbackFrame;
+    int m_globalCentreFrame;
+    int m_globalZoom;
+    mutable int m_playbackFrame;
     Model *m_playbackModel; //!!!
-    size_t m_mainModelSampleRate;
+    int m_mainModelSampleRate;
 
     float m_lastLeft;
     float m_lastRight;

@@ -525,7 +525,7 @@ signals:
     void modelChanged();
     void modelCompletionChanged();
     void modelAlignmentCompletionChanged();
-    void modelChanged(int startFrame, int endFrame);
+    void modelChangedWithin(int startFrame, int endFrame);
     void modelReplaced();
 
     void layerParametersChanged();
@@ -546,8 +546,8 @@ protected:
 
         mutable QRect pixrect;
         bool haveFrames;
-        long startFrame; // only valid if haveFrames
-        long endFrame;   // ditto
+        int startFrame; // only valid if haveFrames
+        int endFrame;   // ditto
         double startY;
         double endY;
 

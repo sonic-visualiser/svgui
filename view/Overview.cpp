@@ -39,11 +39,11 @@ Overview::Overview(QWidget *w) :
 }
 
 void
-Overview::modelChanged(size_t startFrame, size_t endFrame)
+Overview::modelChangedWithin(int startFrame, int endFrame)
 {
     bool zoomChanged = false;
 
-    size_t frameCount = getModelsEndFrame() - getModelsStartFrame();
+    int frameCount = getModelsEndFrame() - getModelsStartFrame();
     int zoomLevel = frameCount / width();
     if (zoomLevel < 1) zoomLevel = 1;
     zoomLevel = getZoomConstraintBlockSize(zoomLevel,
@@ -67,7 +67,7 @@ Overview::modelChanged(size_t startFrame, size_t endFrame)
         }
     }
 
-    View::modelChanged(startFrame, endFrame);
+    View::modelChangedWithin(startFrame, endFrame);
 }
 
 void
@@ -92,7 +92,11 @@ Overview::unregisterView(View *view)
 }
 
 void
-Overview::globalCentreFrameChanged(unsigned long f)
+Overview::globalCentreFrameChanged(int 
+#ifdef DEBUG_OVERVIEW
+                                   f
+#endif
+    )
 {
 #ifdef DEBUG_OVERVIEW
     cerr << "Overview::globalCentreFrameChanged: " << f << endl;
@@ -101,7 +105,11 @@ Overview::globalCentreFrameChanged(unsigned long f)
 }
 
 void
-Overview::viewCentreFrameChanged(View *v, unsigned long f)
+Overview::viewCentreFrameChanged(View *v, int
+#ifdef DEBUG_OVERVIEW
+                                 f
+#endif
+    )
 {
 #ifdef DEBUG_OVERVIEW
     cerr << "Overview[" << this << "]::viewCentreFrameChanged(" << v << "): " << f << endl;
@@ -112,7 +120,7 @@ Overview::viewCentreFrameChanged(View *v, unsigned long f)
 }    
 
 void
-Overview::viewZoomLevelChanged(View *v, unsigned long, bool)
+Overview::viewZoomLevelChanged(View *v, int, bool)
 {
     if (v == this) return;
     if (m_views.find(v) != m_views.end()) {
@@ -121,7 +129,7 @@ Overview::viewZoomLevelChanged(View *v, unsigned long, bool)
 }
 
 void
-Overview::viewManagerPlaybackFrameChanged(unsigned long f)
+Overview::viewManagerPlaybackFrameChanged(int f)
 {
 #ifdef DEBUG_OVERVIEW
     cerr << "Overview[" << this << "]::viewManagerPlaybackFrameChanged(" << f << "): " << f << endl;
@@ -146,8 +154,8 @@ Overview::paintEvent(QPaintEvent *e)
     cerr << "Overview::paintEvent: width is " << width() << ", centre frame " << m_centreFrame << endl;
 #endif
 
-    size_t startFrame = getModelsStartFrame();
-    size_t frameCount = getModelsEndFrame() - getModelsStartFrame();
+    int startFrame = getModelsStartFrame();
+    int frameCount = getModelsEndFrame() - getModelsStartFrame();
     int zoomLevel = frameCount / width();
     if (zoomLevel < 1) zoomLevel = 1;
     zoomLevel = getZoomConstraintBlockSize(zoomLevel,
@@ -157,7 +165,7 @@ Overview::paintEvent(QPaintEvent *e)
 	emit zoomLevelChanged(m_zoomLevel, m_followZoom);
     }
 
-    size_t centreFrame = startFrame + m_zoomLevel * (width() / 2);
+    int centreFrame = startFrame + m_zoomLevel * (width() / 2);
     if (centreFrame > (startFrame + getModelsEndFrame())/2) {
 	centreFrame = (startFrame + getModelsEndFrame())/2;
     }
@@ -197,15 +205,15 @@ Overview::paintEvent(QPaintEvent *e)
 
 	View *w = (View *)*i;
 
-	long f0 = w->getFrameForX(0);
-	long f1 = w->getFrameForX(w->width());
+	int f0 = w->getFrameForX(0);
+	int f1 = w->getFrameForX(w->width());
 
         if (f0 >= 0) {
-            size_t rf0 = w->alignToReference(f0);
+            int rf0 = w->alignToReference(f0);
             f0 = alignFromReference(rf0);
         }
         if (f1 >= 0) {
-            size_t rf1 = w->alignToReference(f1);
+            int rf1 = w->alignToReference(f1);
             f1 = alignFromReference(rf1);
         }
 
@@ -230,7 +238,7 @@ void
 Overview::mousePressEvent(QMouseEvent *e)
 {
     m_clickPos = e->pos();
-    long clickFrame = getFrameForX(m_clickPos.x());
+    int clickFrame = getFrameForX(m_clickPos.x());
     if (clickFrame > 0) m_dragCentreFrame = clickFrame;
     else m_dragCentreFrame = 0;
     m_clickedInRange = true;
@@ -257,13 +265,13 @@ Overview::mouseMoveEvent(QMouseEvent *e)
 {
     if (!m_clickedInRange) return;
 
-    long xoff = int(e->x()) - int(m_clickPos.x());
-    long frameOff = xoff * m_zoomLevel;
+    int xoff = int(e->x()) - int(m_clickPos.x());
+    int frameOff = xoff * m_zoomLevel;
     
-    size_t newCentreFrame = m_dragCentreFrame;
+    int newCentreFrame = m_dragCentreFrame;
     if (frameOff > 0) {
 	newCentreFrame += frameOff;
-    } else if (newCentreFrame >= size_t(-frameOff)) {
+    } else if (newCentreFrame >= int(-frameOff)) {
 	newCentreFrame += frameOff;
     } else {
 	newCentreFrame = 0;
@@ -275,8 +283,8 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     }
     
     if (std::max(m_centreFrame, newCentreFrame) -
-	std::min(m_centreFrame, newCentreFrame) > size_t(m_zoomLevel)) {
-        size_t rf = alignToReference(newCentreFrame);
+	std::min(m_centreFrame, newCentreFrame) > int(m_zoomLevel)) {
+        int rf = alignToReference(newCentreFrame);
 #ifdef DEBUG_OVERVIEW
         cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << endl;
 #endif
@@ -287,8 +295,8 @@ Overview::mouseMoveEvent(QMouseEvent *e)
 void
 Overview::mouseDoubleClickEvent(QMouseEvent *e)
 {
-    long frame = getFrameForX(e->x());
-    size_t rf = 0;
+    int frame = getFrameForX(e->x());
+    int rf = 0;
     if (frame > 0) rf = alignToReference(frame);
 #ifdef DEBUG_OVERVIEW
     cerr << "Overview::mouseDoubleClickEvent: frame " << frame << " -> rf " << rf << endl;

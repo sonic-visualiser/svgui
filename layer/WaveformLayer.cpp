@@ -410,7 +410,7 @@ bool
 WaveformLayer::getSourceFramesForX(View *v, int x, int modelZoomLevel,
                                    int &f0, int &f1) const
 {
-    long viewFrame = v->getFrameForX(x);
+    int viewFrame = v->getFrameForX(x);
     if (viewFrame < 0) {
         f0 = 0;
         f1 = 0;
@@ -434,13 +434,11 @@ WaveformLayer::getSourceFramesForX(View *v, int x, int modelZoomLevel,
 float
 WaveformLayer::getNormalizeGain(View *v, int channel) const
 {
-    long startFrame = v->getStartFrame();
-    long endFrame = v->getEndFrame();
+    int startFrame = v->getStartFrame();
+    int endFrame = v->getEndFrame();
 
-    // Although a long for purposes of comparison against the view
-    // start and end frames, these are known to be non-negative
-    long modelStart = long(m_model->getStartFrame());
-    long modelEnd = long(m_model->getEndFrame());
+    int modelStart = m_model->getStartFrame();
+    int modelEnd = m_model->getEndFrame();
     
     int rangeStart, rangeEnd;
             
