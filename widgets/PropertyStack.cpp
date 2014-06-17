@@ -96,7 +96,7 @@ PropertyStack::repopulate()
     }
     m_boxes.clear();
     
-    for (size_t i = 0; i < m_client->getPropertyContainerCount(); ++i) {
+    for (int i = 0; i < m_client->getPropertyContainerCount(); ++i) {
 
 	PropertyContainer *container = m_client->getPropertyContainer(i);
 	QString name = container->getPropertyContainerName();
@@ -147,7 +147,7 @@ PropertyStack::repopulate()
 bool
 PropertyStack::containsContainer(PropertyContainer *pc) const
 {
-    for (size_t i = 0; i < m_client->getPropertyContainerCount(); ++i) {
+    for (int i = 0; i < m_client->getPropertyContainerCount(); ++i) {
 	PropertyContainer *container = m_client->getPropertyContainer(i);
 	if (pc == container) return true;
     }

@@ -22,7 +22,7 @@
 using std::set;
 using std::map;
 
-SubdividingMenu::SubdividingMenu(size_t lowerLimit, size_t upperLimit,
+SubdividingMenu::SubdividingMenu(int lowerLimit, int upperLimit,
                                  QWidget *parent) :
     QMenu(parent),
     m_lowerLimit(lowerLimit ? lowerLimit : 14),
@@ -31,8 +31,8 @@ SubdividingMenu::SubdividingMenu(size_t lowerLimit, size_t upperLimit,
 {
 }
 
-SubdividingMenu::SubdividingMenu(const QString &title, size_t lowerLimit,
-                                 size_t upperLimit, QWidget *parent) :
+SubdividingMenu::SubdividingMenu(const QString &title, int lowerLimit,
+                                 int upperLimit, QWidget *parent) :
     QMenu(title, parent),
     m_lowerLimit(lowerLimit ? lowerLimit : 14),
     m_upperLimit(upperLimit ? upperLimit : (m_lowerLimit * 5) / 2),
@@ -53,11 +53,11 @@ SubdividingMenu::setEntries(const std::set<QString> &entries)
 {
     m_entriesSet = true;
 
-    size_t total = entries.size();
+    int total = entries.size();
         
     if (total < m_upperLimit) return;
 
-    size_t count = 0;
+    int count = 0;
     QMenu *chunkMenu = new QMenu();
     chunkMenu->setTearOffEnabled(isTearOffEnabled());
 

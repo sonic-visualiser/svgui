@@ -201,7 +201,7 @@ TransformFinder::timeout()
              j != sorted.begin(); ) {
             --j;
             m_sortedResults.push_back(*j);
-            if (m_sortedResults.size() == maxResults) break;
+            if ((int)m_sortedResults.size() == maxResults) break;
         }
 
         if (m_sortedResults.empty()) m_selectedTransform = "";
@@ -209,7 +209,7 @@ TransformFinder::timeout()
 
         m_upToDateCount = 0;
 
-        for (int j = m_labels.size(); j > m_sortedResults.size(); ) {
+        for (int j = (int)m_labels.size(); j > (int)m_sortedResults.size(); ) {
             m_labels[--j]->hide();
         }
 
@@ -235,9 +235,9 @@ TransformFinder::timeout()
         return;
     }
 
-    if (m_upToDateCount >= m_sortedResults.size()) return;
+    if (m_upToDateCount >= (int)m_sortedResults.size()) return;
 
-    while (m_upToDateCount < m_sortedResults.size()) {
+    while (m_upToDateCount < (int)m_sortedResults.size()) {
 
         int i = m_upToDateCount;
 
@@ -302,7 +302,7 @@ TransformFinder::timeout()
         }
         selectedText += tr("</small>");
 
-        if (i >= m_labels.size()) {
+        if (i >= (int)m_labels.size()) {
             SelectableLabel *label = new SelectableLabel(m_resultsFrame);
             m_resultsLayout->addWidget(label);
             connect(label, SIGNAL(selectionChanged()), this,
@@ -338,7 +338,7 @@ TransformFinder::selectedLabelChanged()
 {
     QObject *s = sender();
     m_selectedTransform = "";
-    for (int i = 0; i < m_labels.size(); ++i) {
+    for (int i = 0; i < (int)m_labels.size(); ++i) {
         if (!m_labels[i]->isVisible()) continue;
         if (m_labels[i] == s) {
             if (m_labels[i]->isSelected()) {
@@ -374,7 +374,7 @@ TransformFinder::getTransform() const
 void
 TransformFinder::up()
 {
-    for (int i = 0; i < m_labels.size(); ++i) {
+    for (int i = 0; i < (int)m_labels.size(); ++i) {
         if (!m_labels[i]->isVisible()) continue;
         if (m_labels[i]->objectName() == m_selectedTransform) {
             if (i > 0) {
@@ -390,10 +390,10 @@ TransformFinder::up()
 void
 TransformFinder::down()
 {
-    for (int i = 0; i < m_labels.size(); ++i) {
+    for (int i = 0; i < (int)m_labels.size(); ++i) {
         if (!m_labels[i]->isVisible()) continue;
         if (m_labels[i]->objectName() == m_selectedTransform) {
-            if (i+1 < m_labels.size() &&
+            if (i+1 < (int)m_labels.size() &&
                 m_labels[i+1]->isVisible()) {
                 m_labels[i]->setSelected(false);
                 m_labels[i+1]->setSelected(true);

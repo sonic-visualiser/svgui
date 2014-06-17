@@ -37,17 +37,17 @@ public:
         ShowText       = 1 << 3
     };
 
-    ItemEditDialog(size_t sampleRate, int options, QString valueUnits = "",
+    ItemEditDialog(int sampleRate, int options, QString valueUnits = "",
                    QWidget *parent = 0);
 
-    void setFrameTime(long frame);
-    long getFrameTime() const;
+    void setFrameTime(int frame);
+    int getFrameTime() const;
 
     void setRealTime(RealTime rt);
     RealTime getRealTime() const;
 
-    void setFrameDuration(long frame);
-    long getFrameDuration() const;
+    void setFrameDuration(int frame);
+    int getFrameDuration() const;
     
     void setRealDuration(RealTime rt);
     RealTime getRealDuration() const;
@@ -70,9 +70,9 @@ protected slots:
     void reset();
 
 protected:
-    size_t m_sampleRate;
-    long m_defaultFrame;
-    long m_defaultDuration;
+    int m_sampleRate;
+    int m_defaultFrame;
+    int m_defaultDuration;
     float m_defaultValue;
     QString m_defaultText;
     QSpinBox *m_frameTimeSpinBox;
