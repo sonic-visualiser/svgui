@@ -98,7 +98,7 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
-    virtual bool addImage(long frame, QString url); // using a command
+    virtual bool addImage(int frame, QString url); // using a command
 
 protected slots:
     void checkAddSources();

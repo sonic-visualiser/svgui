@@ -113,13 +113,13 @@ public:
      * not be finally added to the layer until the corresponding
      * note-off.
      */
-    void addNoteOn(long frame, int pitch, int velocity);
+    void addNoteOn(int frame, int pitch, int velocity);
     
     /**
      * Add a note-off.  This will cause a note to appear, if and only
      * if there is a matching pending note-on.
      */
-    void addNoteOff(long frame, int pitch);
+    void addNoteOff(int frame, int pitch);
 
     /**
      * Abandon all pending note-on events.

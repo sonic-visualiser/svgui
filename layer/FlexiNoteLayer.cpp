@@ -403,7 +403,7 @@ FlexiNoteLayer::getLocalPoints(View *v, int x) const
 {
     if (!m_model) return FlexiNoteModel::PointList();
 
-    long frame = v->getFrameForX(x);
+    int frame = v->getFrameForX(x);
 
     FlexiNoteModel::PointList onPoints =
         m_model->getPoints(frame);
@@ -446,7 +446,7 @@ FlexiNoteLayer::getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &p) 
 {
     if (!m_model) return false;
 
-    long frame = v->getFrameForX(x);
+    int frame = v->getFrameForX(x);
 
     FlexiNoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
@@ -475,7 +475,7 @@ FlexiNoteLayer::getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &p) c
     // GF: find the note that is closest to the cursor
     if (!m_model) return false;
 
-    long frame = v->getFrameForX(x);
+    int frame = v->getFrameForX(x);
 
     FlexiNoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
@@ -798,8 +798,8 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    Profiler profiler("FlexiNoteLayer::paint", true);
 
     int x0 = rect.left(), x1 = rect.right();
-    long frame0 = v->getFrameForX(x0);
-    long frame1 = v->getFrameForX(x1);
+    int frame0 = v->getFrameForX(x0);
+    int frame1 = v->getFrameForX(x1);
 
     FlexiNoteModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
@@ -935,7 +935,7 @@ FlexiNoteLayer::drawStart(View *v, QMouseEvent *e)
 
     if (!m_model) return;
 
-    long frame = v->getFrameForX(e->x());
+    int frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -959,14 +959,14 @@ FlexiNoteLayer::drawDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    int frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
     float newValue = getValueForY(v, e->y());
 
-    long newFrame = m_editingPoint.frame;
-    long newDuration = frame - newFrame;
+    int newFrame = m_editingPoint.frame;
+    int newDuration = frame - newFrame;
     if (newDuration < 0) {
         newFrame = frame;
         newDuration = -newDuration;
@@ -1058,11 +1058,11 @@ FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
     m_dragStartX = e->x();
     m_dragStartY = e->y();
     
-    long onset = m_originalPoint.frame;
-    long offset = m_originalPoint.frame + m_originalPoint.duration - 1;
+    int onset = m_originalPoint.frame;
+    int offset = m_originalPoint.frame + m_originalPoint.duration - 1;
     
     m_greatestLeftNeighbourFrame = -1;
-    m_smallestRightNeighbourFrame = std::numeric_limits<long>::max();
+    m_smallestRightNeighbourFrame = std::numeric_limits<int>::max();
     
     for (FlexiNoteModel::PointList::const_iterator i = m_model->getPoints().begin();
          i != m_model->getPoints().end(); ++i) {
@@ -1095,7 +1095,7 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
-    long dragFrame = v->getFrameForX(newx);
+    int dragFrame = v->getFrameForX(newx);
     if (dragFrame < 0) dragFrame = 0;
     dragFrame = dragFrame / m_model->getResolution() * m_model->getResolution();
     
@@ -1217,7 +1217,7 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
         return; 
     }
 
-    long frame = v->getFrameForX(e->x());
+    int frame = v->getFrameForX(e->x());
 
     splitNotesAt(v, frame, e);
 }
@@ -1274,13 +1274,13 @@ FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
     std::cerr << "addNote" << std::endl;
     if (!m_model) return;
 
-    long duration = 10000;
+    int duration = 10000;
     
-    long frame = v->getFrameForX(e->x());
+    int frame = v->getFrameForX(e->x());
     float value = getValueForY(v, e->y());
     
     if (m_intelligentActions) {
-        long smallestRightNeighbourFrame = 0;
+        int smallestRightNeighbourFrame = 0;
         for (FlexiNoteModel::PointList::const_iterator i = m_model->getPoints().begin();
              i != m_model->getPoints().end(); ++i) {
             FlexiNote currentNote = *i;
@@ -1737,13 +1737,13 @@ FlexiNoteLayer::paste(View *v, const Clipboard &from, int /*frameOffset */, bool
 }
 
 void
-FlexiNoteLayer::addNoteOn(long frame, int pitch, int velocity)
+FlexiNoteLayer::addNoteOn(int frame, int pitch, int velocity)
 {
     m_pendingNoteOns.insert(FlexiNote(frame, pitch, 0, float(velocity) / 127.0, ""));
 }
 
 void
-FlexiNoteLayer::addNoteOff(long frame, int pitch)
+FlexiNoteLayer::addNoteOff(int frame, int pitch)
 {
     for (FlexiNoteSet::iterator i = m_pendingNoteOns.begin();
          i != m_pendingNoteOns.end(); ++i) {

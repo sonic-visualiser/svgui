@@ -185,7 +185,7 @@ ImageLayer::getFeatureDescription(View *v, QPoint &pos) const
 	}
     }
 
-//    long useFrame = points.begin()->frame;
+//    int useFrame = points.begin()->frame;
 
 //    RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
 
@@ -292,8 +292,8 @@ ImageLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    int x0 = rect.left(), x1 = rect.right();
     int x0 = 0, x1 = v->width();
 
-    long frame0 = v->getFrameForX(x0);
-    long frame1 = v->getFrameForX(x1);
+    int frame0 = v->getFrameForX(x0);
+    int frame1 = v->getFrameForX(x1);
 
     ImageModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
@@ -563,7 +563,7 @@ ImageLayer::drawStart(View *v, QMouseEvent *e)
 	return;
     }
 
-    long frame = v->getFrameForX(e->x());
+    int frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -584,7 +584,7 @@ ImageLayer::drawDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    int frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -619,7 +619,7 @@ ImageLayer::drawEnd(View *, QMouseEvent *)
 }
 
 bool
-ImageLayer::addImage(long frame, QString url)
+ImageLayer::addImage(int frame, QString url)
 {
     QImage image(getLocalFilename(url));
     if (image.isNull()) {
@@ -664,8 +664,8 @@ ImageLayer::editDrag(View *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
-    long frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
-    long frame = m_originalPoint.frame + frameDiff;
+    int frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
+    int frame = m_originalPoint.frame + frameDiff;
 
     if (frame < 0) frame = 0;
     frame = (frame / m_model->getResolution()) * m_model->getResolution();

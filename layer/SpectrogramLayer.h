@@ -310,7 +310,7 @@ protected:
     {
         QImage image;
         QRect validArea;
-        long startFrame;
+        int startFrame;
         int zoomLevel;
     };
     typedef std::map<const View *, ImageCache> ViewImageCache;
@@ -344,7 +344,7 @@ protected:
     float getEffectiveMaxFrequency() const;
 
     struct LayerRange {
-	long   startFrame;
+	int   startFrame;
 	int    zoomLevel;
 	int modelStart;
 	int modelEnd;

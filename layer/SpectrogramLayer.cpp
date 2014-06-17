@@ -141,7 +141,7 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     connectSignals(m_model);
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(cacheInvalid()));
-    connect(m_model, SIGNAL(modelChanged(int, int)),
+    connect(m_model, SIGNAL(modelChangedWithin(int, int)),
 	    this, SLOT(cacheInvalid(int, int)));
 
     emit modelReplaced();
@@ -592,7 +592,7 @@ SpectrogramLayer::invalidateImageCaches(int startFrame, int endFrame)
                   << i->second.validArea.height() << endl;
 #endif
 
-        if (long(startFrame) > v->getStartFrame()) {
+        if (int(startFrame) > v->getStartFrame()) {
             if (startFrame >= v->getEndFrame()) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
                 cerr << "Modified start frame is off right of view" << endl;
@@ -610,7 +610,7 @@ SpectrogramLayer::invalidateImageCaches(int startFrame, int endFrame)
                 i->second.validArea = QRect();
             }
         } else {
-            if (long(endFrame) < v->getStartFrame()) {
+            if (int(endFrame) < v->getStartFrame()) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
                 cerr << "Modified end frame is off left of view" << endl;
 #endif
@@ -1100,7 +1100,7 @@ SpectrogramLayer::fillTimerTimedOut()
 #endif
                     invalidateImageCaches(lastFill, fill);
                     i->second.second = fill;
-                    emit modelChanged(lastFill, fill);
+                    emit modelChangedWithin(lastFill, fill);
                 }
             } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -1109,7 +1109,7 @@ SpectrogramLayer::fillTimerTimedOut()
 #endif
                 invalidateImageCaches();
                 i->second.second = fill;
-                emit modelChanged(m_model->getStartFrame(), m_model->getEndFrame());
+                emit modelChangedWithin(m_model->getStartFrame(), m_model->getEndFrame());
             }
 
             if (i->second.second >= 0) {
@@ -1780,7 +1780,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     cerr << "rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
 #endif
 
-    long startFrame = v->getStartFrame();
+    int startFrame = v->getStartFrame();
     if (startFrame < 0) m_candidateFillStartFrame = 0;
     else m_candidateFillStartFrame = startFrame;
 
@@ -1796,7 +1796,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     // is not in the dormancy map at all -- we need it to be present
     // and accountable for when determining whether we need the cache
     // in the cache-fill thread above.
-    //!!! no longer use cache-fill thread
+    //!!! no inter use cache-fill thread
     const_cast<SpectrogramLayer *>(this)->Layer::setLayerDormant(v, false);
 
     int fftSize = getFFTSize(v);
@@ -2196,22 +2196,22 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     bool bufferBinResolution = false;
     if (increment > zoomLevel) bufferBinResolution = true;
 
-    long leftBoundaryFrame = -1, leftCropFrame = -1;
-    long rightBoundaryFrame = -1, rightCropFrame = -1;
+    int leftBoundaryFrame = -1, leftCropFrame = -1;
+    int rightBoundaryFrame = -1, rightCropFrame = -1;
 
     int bufwid;
 
     if (bufferBinResolution) {
 
         for (int x = x0; ; --x) {
-            long f = v->getFrameForX(x);
+            int f = v->getFrameForX(x);
             if ((f / increment) * increment == f) {
                 if (leftCropFrame == -1) leftCropFrame = f;
                 else if (x < x0 - 2) { leftBoundaryFrame = f; break; }
             }
         }
         for (int x = x0 + w; ; ++x) {
-            long f = v->getFrameForX(x);
+            int f = v->getFrameForX(x);
             if ((f / increment) * increment == f) {
                 if (rightCropFrame == -1) rightCropFrame = f;
                 else if (x > x0 + w + 2) { rightBoundaryFrame = f; break; }
@@ -3080,7 +3080,7 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
                            View::OutlinedText);
     }
 
-    long frame = v->getFrameForX(cursorPos.x());
+    int frame = v->getFrameForX(cursorPos.x());
     RealTime rt = RealTime::frame2RealTime(frame, m_model->getSampleRate());
     QString rtLabel = QString("%1 s").arg(rt.toText(true).c_str());
     QString frameLabel = QString("%1").arg(frame);
