@@ -164,7 +164,7 @@ LayerFactory::getValidLayerTypes(Model *model)
 	types.insert(Notes);
     }
 
-	// NOTE: GF: types is a set, so order of insertion does not matter
+    // NOTE: GF: types is a set, so order of insertion does not matter
     if (dynamic_cast<FlexiNoteModel *>(model)) {
 	types.insert(FlexiNotes);
     }
@@ -316,7 +316,7 @@ LayerFactory::setModel(Layer *layer, Model *model)
     if (trySetModel<NoteLayer, NoteModel>(layer, model)) 
 	return; 
 
-	// GF: added FlexiNoteLayer
+    // GF: added FlexiNoteLayer
     if (trySetModel<FlexiNoteLayer, FlexiNoteModel>(layer, model)) 
 	return; 
 	
