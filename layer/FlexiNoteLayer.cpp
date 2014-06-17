@@ -61,14 +61,14 @@ FlexiNoteLayer::FlexiNoteLayer() :
 
     m_model(0),
     m_editing(false),
+    m_intelligentActions(true),
     m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingCommand(0),
     m_verticalScale(AutoAlignScale),
     m_editMode(DragNote),
     m_scaleMinimum(34), 
-    m_scaleMaximum(77),
-    m_intelligentActions(true)
+    m_scaleMaximum(77)
 {
 }
 
@@ -421,11 +421,11 @@ FlexiNoteLayer::getLocalPoints(View *v, int x) const
 
     if (prevPoints.empty()) {
         usePoints = nextPoints;
-    } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
+    } else if (prevPoints.begin()->frame < v->getStartFrame() &&
                !(nextPoints.begin()->frame > v->getEndFrame())) {
         usePoints = nextPoints;
-    } else if (long(nextPoints.begin()->frame) - frame <
-               frame - long(prevPoints.begin()->frame)) {
+    } else if (nextPoints.begin()->frame - frame <
+               frame - prevPoints.begin()->frame) {
         usePoints = nextPoints;
     }
 
@@ -588,7 +588,7 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 bool
 FlexiNoteLayer::snapToFeatureFrame(View *v, int &frame,
-                                   size_t &resolution,
+                                   int &resolution,
                                    SnapType snap) const
 {
     if (!m_model) {
@@ -818,12 +818,12 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     QPoint localPos;
     FlexiNoteModel::Point illuminatePoint(0);
-    bool shouldIlluminate = false;
+//    bool shouldIlluminate = false;
 
-    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
-        shouldIlluminate = getPointToDrag(v, localPos.x(), localPos.y(),
-                                          illuminatePoint);
-    }
+//    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
+//        shouldIlluminate = getPointToDrag(v, localPos.x(), localPos.y(),
+//                                          illuminatePoint);
+//    }
 
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
@@ -1007,7 +1007,7 @@ FlexiNoteLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::eraseDrag(View *v, QMouseEvent *e)
+FlexiNoteLayer::eraseDrag(View *, QMouseEvent *)
 {
 }
 
@@ -1140,6 +1140,8 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
         m_editingPoint.value = value;
         break;
     }
+    case SplitNote: // nothing
+        break;
     }
     updateNoteValue(v, m_editingPoint);
     m_editingCommand->addPoint(m_editingPoint);
@@ -1148,7 +1150,7 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::editEnd(View *v, QMouseEvent *e)
+FlexiNoteLayer::editEnd(View *, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
@@ -1435,7 +1437,7 @@ FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
     if (pitchValues.empty()) return false;
 
     sort(pitchValues.begin(), pitchValues.end());
-    size_t size = pitchValues.size();
+    int size = pitchValues.size();
     double median;
 
     if (size % 2 == 0) {
@@ -1550,7 +1552,7 @@ FlexiNoteLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::moveSelection(Selection s, size_t newStartFrame)
+FlexiNoteLayer::moveSelection(Selection s, int newStartFrame)
 {
     if (!m_model) return;
 
@@ -1654,7 +1656,7 @@ FlexiNoteLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-FlexiNoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
+FlexiNoteLayer::paste(View *v, const Clipboard &from, int /*frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1686,7 +1688,7 @@ FlexiNoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* i
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
-        size_t frame = 0;
+        int frame = 0;
 
         if (!realign) {
             
@@ -1711,7 +1713,7 @@ FlexiNoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* i
         if (i->haveLevel()) newPoint.level = i->getLevel();
         if (i->haveDuration()) newPoint.duration = i->getDuration();
         else {
-            size_t nextFrame = frame;
+            int nextFrame = frame;
             Clipboard::PointList::const_iterator j = i;
             for (; j != points.end(); ++j) {
                 if (!j->haveFrame()) continue;
@@ -1790,13 +1792,14 @@ FlexiNoteLayer::setProperties(const QXmlAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
-    bool ok, alsoOk;
+    bool ok;
     VerticalScale scale = (VerticalScale)
         attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
 
-    float min = attributes.value("scaleMinimum").toFloat(&ok);
-    float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
+//    bool alsoOk;
+//    float min = attributes.value("scaleMinimum").toFloat(&ok);
+//    float max = attributes.value("scaleMaximum").toFloat(&alsoOk);
 //    if (ok && alsoOk && min != max) setDisplayExtents(min, max);
 }
 

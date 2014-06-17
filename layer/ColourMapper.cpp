@@ -278,6 +278,16 @@ ColourMapper::hasLightBackground() const
     case HighGain:
         return true;
 
+    case DefaultColours:
+    case Sunset:
+    case WhiteOnBlack:
+    case RedOnBlue:
+    case YellowOnBlack:
+    case BlueOnBlack:
+    case FruitSalad:
+    case Banded:
+    case Highlight:
+        
     default:
         return false;
     }

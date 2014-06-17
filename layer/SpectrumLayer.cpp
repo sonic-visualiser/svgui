@@ -121,7 +121,7 @@ SpectrumLayer::setupFFT()
     setSliceableModel(newFFT);
 
     m_biasCurve.clear();
-    for (size_t i = 0; i < m_windowSize; ++i) {
+    for (int i = 0; i < m_windowSize; ++i) {
         m_biasCurve.push_back(1.f / (float(m_windowSize)/2.f));
     }
 
@@ -257,7 +257,7 @@ SpectrumLayer::setProperty(const PropertyName &name, int value)
 }
 
 void
-SpectrumLayer::setWindowSize(size_t ws)
+SpectrumLayer::setWindowSize(int ws)
 {
     if (m_windowSize == ws) return;
     m_windowSize = ws;
@@ -266,7 +266,7 @@ SpectrumLayer::setWindowSize(size_t ws)
 }
 
 void
-SpectrumLayer::setWindowHopLevel(size_t v)
+SpectrumLayer::setWindowHopLevel(int v)
 {
     if (m_windowHopLevel == v) return;
     m_windowHopLevel = v;
@@ -566,7 +566,7 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
     if (!m_sliceableModel) return "";
 
     int minbin = 0, maxbin = 0, range = 0;
-    QString genericDesc = SliceLayer::getFeatureDescription
+    QString genericDesc = SliceLayer::getFeatureDescriptionAux
         (v, p, false, minbin, maxbin, range);
 
     if (genericDesc == "") return "";
@@ -684,7 +684,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 //        SVDEBUG << "Showing peaks..." << endl;
 
-        size_t col = v->getCentreFrame() / fft->getResolution();
+        int col = v->getCentreFrame() / fft->getResolution();
 
         paint.save();
         paint.setRenderHint(QPainter::Antialiasing, false);
@@ -702,11 +702,11 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         BiasCurve curve;
         getBiasCurve(curve);
-        size_t cs = curve.size();
+        int cs = curve.size();
 
         std::vector<float> values;
         
-        for (size_t bin = 0; bin < fft->getHeight(); ++bin) {
+        for (int bin = 0; bin < fft->getHeight(); ++bin) {
             float value = m_sliceableModel->getValueAt(col, bin);
             if (bin < cs) value *= curve[bin];
             values.push_back(value);
@@ -715,7 +715,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
         for (FFTModel::PeakSet::iterator i = peaks.begin();
              i != peaks.end(); ++i) {
 
-            size_t bin = i->first;
+            int bin = i->first;
             
 //            cerr << "bin = " << bin << ", thresh = " << thresh << ", value = " << fft->getMagnitudeAt(col, bin) << endl;
 
@@ -726,7 +726,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
             int x = lrintf(getXForFrequency(freq, w));
 
             float norm = 0.f;
-            float y = getYForValue(values[bin], v, norm); // don't need y, need norm
+            (void)getYForValue(values[bin], v, norm); // don't need return value, need norm
 
             paint.setPen(mapper.map(norm));
             paint.drawLine(xorigin + x, 0, xorigin + x, v->height() - pkh - 1);
@@ -850,10 +850,10 @@ SpectrumLayer::setProperties(const QXmlAttributes &attributes)
 
     bool ok = false;
 
-    size_t windowSize = attributes.value("windowSize").toUInt(&ok);
+    int windowSize = attributes.value("windowSize").toUInt(&ok);
     if (ok) setWindowSize(windowSize);
 
-    size_t windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
+    int windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
     if (ok) setWindowHopLevel(windowHopLevel);
 
     bool showPeaks = (attributes.value("showPeaks").trimmed() == "true");
