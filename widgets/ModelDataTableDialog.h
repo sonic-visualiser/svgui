@@ -38,11 +38,11 @@ public:
     QToolBar *getPlayToolbar() { return m_playToolbar; }
 
 signals:
-    void scrollToFrame(unsigned long frame);
+    void scrollToFrame(int frame);
 
 public slots:
-    void userScrolledToFrame(unsigned long frame);
-    void playbackScrolledToFrame(unsigned long frame);
+    void userScrolledToFrame(int frame);
+    void playbackScrolledToFrame(int frame);
     void addCommand(Command *);
 
 protected slots:

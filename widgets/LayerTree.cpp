@@ -155,12 +155,12 @@ ModelMetadataModel::propertyContainerSelected(PropertyContainer *)
 }
 
 void
-ModelMetadataModel::propertyContainerPropertyChanged(PropertyContainer *pc)
+ModelMetadataModel::propertyContainerPropertyChanged(PropertyContainer *)
 {
 }
 
 void
-ModelMetadataModel::playParametersAudibilityChanged(bool a)
+ModelMetadataModel::playParametersAudibilityChanged(bool )
 {
 }
 
@@ -169,7 +169,7 @@ ModelMetadataModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid()) return QVariant();
 
-    QObject *obj = static_cast<QObject *>(index.internalPointer());
+//    QObject *obj = static_cast<QObject *>(index.internalPointer());
     int row = index.row(), col = index.column();
 
     //!!! not exactly the ideal use of a std::set
@@ -206,13 +206,13 @@ ModelMetadataModel::data(const QModelIndex &index, int role) const
 }
 
 bool
-ModelMetadataModel::setData(const QModelIndex &index, const QVariant &value, int role)
+ModelMetadataModel::setData(const QModelIndex &, const QVariant &, int )
 {
     return false;
 }
 
 Qt::ItemFlags
-ModelMetadataModel::flags(const QModelIndex &index) const
+ModelMetadataModel::flags(const QModelIndex &) const
 {
     Qt::ItemFlags flags = Qt::ItemIsEnabled;
     return flags;
@@ -237,7 +237,7 @@ QModelIndex
 ModelMetadataModel::index(int row, int column, const QModelIndex &parent) const
 {
     if (!parent.isValid()) {
-        if (row >= m_models.size()) return QModelIndex();
+        if (row >= (int)m_models.size()) return QModelIndex();
 	return createIndex(row, column, (void *)0);
     }
 
@@ -245,7 +245,7 @@ ModelMetadataModel::index(int row, int column, const QModelIndex &parent) const
 }
 
 QModelIndex
-ModelMetadataModel::parent(const QModelIndex &index) const
+ModelMetadataModel::parent(const QModelIndex &) const
 {
     return QModelIndex();
 }
@@ -258,7 +258,7 @@ ModelMetadataModel::rowCount(const QModelIndex &parent) const
 }
 
 int
-ModelMetadataModel::columnCount(const QModelIndex &parent) const
+ModelMetadataModel::columnCount(const QModelIndex &) const
 {
     return m_columnCount;
 }

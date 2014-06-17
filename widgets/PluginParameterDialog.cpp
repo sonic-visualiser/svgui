@@ -51,7 +51,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     m_blockSize(0),
     m_windowType(HanningWindow),
     m_parameterBox(0),
-    m_selectionOnly(false)
+    m_currentSelectionOnly(false)
 {
     setWindowTitle(tr("Plugin Parameters"));
 
@@ -540,15 +540,15 @@ PluginParameterDialog::getSelectionOnly() const
 }
 
 void
-PluginParameterDialog::getProcessingParameters(size_t &blockSize) const
+PluginParameterDialog::getProcessingParameters(int &blockSize) const
 {
     blockSize = m_blockSize;
     return;
 }
 
 void
-PluginParameterDialog::getProcessingParameters(size_t &stepSize,
-                                               size_t &blockSize,
+PluginParameterDialog::getProcessingParameters(int &stepSize,
+                                               int &blockSize,
                                                WindowType &windowType) const
 {
     stepSize = m_stepSize;
