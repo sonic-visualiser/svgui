@@ -361,17 +361,17 @@ WaveformLayer::dBscale(float sample, int m) const
     return int(((dB + 50.0) * m) / 50.0 + 0.1);
 }
 
-size_t
-WaveformLayer::getChannelArrangement(size_t &min, size_t &max,
+int
+WaveformLayer::getChannelArrangement(int &min, int &max,
                                      bool &merging, bool &mixing)
     const
 {
     if (!m_model || !m_model->isOK()) return 0;
 
-    size_t channels = m_model->getChannelCount();
+    int channels = m_model->getChannelCount();
     if (channels == 0) return 0;
 
-    size_t rawChannels = channels;
+    int rawChannels = channels;
 
     if (m_channel == -1) {
 	min = 0;
@@ -407,8 +407,8 @@ static float meterdbs[] = { -40, -30, -20, -15, -10,
                             -5, -3, -2, -1, -0.5, 0 };
 
 bool
-WaveformLayer::getSourceFramesForX(View *v, int x, size_t modelZoomLevel,
-                                   size_t &f0, size_t &f1) const
+WaveformLayer::getSourceFramesForX(View *v, int x, int modelZoomLevel,
+                                   int &f0, int &f1) const
 {
     long viewFrame = v->getFrameForX(x);
     if (viewFrame < 0) {
@@ -442,7 +442,7 @@ WaveformLayer::getNormalizeGain(View *v, int channel) const
     long modelStart = long(m_model->getStartFrame());
     long modelEnd = long(m_model->getEndFrame());
     
-    size_t rangeStart, rangeEnd;
+    int rangeStart, rangeEnd;
             
     if (startFrame < modelStart) rangeStart = modelStart;
     else rangeStart = startFrame;
@@ -456,7 +456,7 @@ WaveformLayer::getNormalizeGain(View *v, int channel) const
     RangeSummarisableTimeValueModel::Range range =
         m_model->getSummary(channel, rangeStart, rangeEnd - rangeStart);
 
-    size_t minChannel = 0, maxChannel = 0;
+    int minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
 
     getChannelArrangement(minChannel, maxChannel,
@@ -488,7 +488,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	      << ") [" << rect.width() << "x" << rect.height() << "]: zoom " << zoomLevel << endl;
 #endif
 
-    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    int channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
 
     channels = getChannelArrangement(minChannel, maxChannel,
@@ -571,11 +571,11 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     // must remain the same when we scroll one or more pixels left or
     // right.
             
-    size_t modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
+    int modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
 
-    size_t frame0;
-    size_t frame1;
-    size_t spare;
+    int frame0;
+    int frame1;
+    int spare;
 
     getSourceFramesForX(v, x0, modelZoomLevel, frame0, spare);
     getSourceFramesForX(v, x1, modelZoomLevel, spare, frame1);
@@ -602,11 +602,11 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	midColour = midColour.light(50);
     }
 
-    while (m_effectiveGains.size() <= maxChannel) {
+    while ((int)m_effectiveGains.size() <= maxChannel) {
         m_effectiveGains.push_back(m_gain);
     }
 
-    for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
+    for (int ch = minChannel; ch <= maxChannel; ++ch) {
 
 	int prevRangeBottom = -1, prevRangeTop = -1;
 	QColor prevRangeBottomColour = baseColour, prevRangeTopColour = baseColour;
@@ -711,7 +711,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	    range = RangeSummarisableTimeValueModel::Range();
 
-            size_t f0, f1;
+            int f0, f1;
             if (!getSourceFramesForX(v, x, modelZoomLevel, f0, f1)) continue;
             f1 = f1 - 1;
 
@@ -720,8 +720,8 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                 continue;
             }
 
-            size_t i0 = (f0 - frame0) / modelZoomLevel;
-            size_t i1 = (f1 - frame0) / modelZoomLevel;
+            int i0 = (f0 - frame0) / modelZoomLevel;
+            int i1 = (f1 - frame0) / modelZoomLevel;
 
 #ifdef DEBUG_WAVEFORM_PAINT
             cerr << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
@@ -731,11 +731,11 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                 cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << modelZoomLevel << ")" << endl;
             }
 
-	    if (ranges && i0 < ranges->size()) {
+	    if (ranges && i0 < (int)ranges->size()) {
 
 		range = (*ranges)[i0];
 
-		if (i1 > i0 && i1 < ranges->size()) {
+		if (i1 > i0 && i1 < (int)ranges->size()) {
 		    range.setMax(std::max(range.max(), (*ranges)[i1].max()));
 		    range.setMin(std::min(range.min(), (*ranges)[i1].min()));
 		    range.setAbsmean((range.absmean() + (*ranges)[i1].absmean()) / 2);
@@ -752,7 +752,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	    if (mergingChannels) {
 
-		if (otherChannelRanges && i0 < otherChannelRanges->size()) {
+		if (otherChannelRanges && i0 < (int)otherChannelRanges->size()) {
 
 		    range.setMax(fabsf(range.max()));
 		    range.setMin(-fabsf((*otherChannelRanges)[i0].max()));
@@ -760,7 +760,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                         ((range.absmean() +
                           (*otherChannelRanges)[i0].absmean()) / 2);
 
-		    if (i1 > i0 && i1 < otherChannelRanges->size()) {
+		    if (i1 > i0 && i1 < (int)otherChannelRanges->size()) {
 			// let's not concern ourselves about the mean
 			range.setMin
                             (std::min
@@ -771,7 +771,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	    } else if (mixingChannels) {
 
-		if (otherChannelRanges && i0 < otherChannelRanges->size()) {
+		if (otherChannelRanges && i0 < (int)otherChannelRanges->size()) {
 
                     range.setMax((range.max() + (*otherChannelRanges)[i0].max()) / 2);
                     range.setMin((range.min() + (*otherChannelRanges)[i0].min()) / 2);
@@ -962,9 +962,9 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     int zoomLevel = v->getZoomLevel();
 
-    size_t modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
+    int modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
 
-    size_t f0, f1;
+    int f0, f1;
     if (!getSourceFramesForX(v, x, modelZoomLevel, f0, f1)) return "";
     
     QString text;
@@ -981,16 +981,16 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 	    .arg(rt0.toText(true).c_str());
     }
 
-    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    int channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
 
     channels = getChannelArrangement(minChannel, maxChannel,
                                      mergingChannels, mixingChannels);
     if (channels == 0) return "";
 
-    for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
+    for (int ch = minChannel; ch <= maxChannel; ++ch) {
 
-	size_t blockSize = v->getZoomLevel();
+	int blockSize = v->getZoomLevel();
 	RangeSummarisableTimeValueModel::RangeBlock ranges;
         m_model->getSummaries(ch, f0, f1 - f0, ranges, blockSize);
 
@@ -1037,9 +1037,9 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 int
-WaveformLayer::getYForValue(const View *v, float value, size_t channel) const
+WaveformLayer::getYForValue(const View *v, float value, int channel) const
 {
-    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    int channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
 
     channels = getChannelArrangement(minChannel, maxChannel,
@@ -1080,9 +1080,9 @@ WaveformLayer::getYForValue(const View *v, float value, size_t channel) const
 }
 
 float
-WaveformLayer::getValueForY(const View *v, int y, size_t &channel) const
+WaveformLayer::getValueForY(const View *v, int y, int &channel) const
 {
-    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    int channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
 
     channels = getChannelArrangement(minChannel, maxChannel,
@@ -1129,7 +1129,7 @@ bool
 WaveformLayer::getYScaleValue(const View *v, int y,
                               float &value, QString &unit) const
 {
-    size_t channel;
+    int channel;
 
     value = getValueForY(v, y, channel);
 
@@ -1155,7 +1155,7 @@ bool
 WaveformLayer::getYScaleDifference(const View *v, int y0, int y1,
                                    float &diff, QString &unit) const
 {
-    size_t c0, c1;
+    int c0, c1;
     float v0 = getValueForY(v, y0, c0);
     float v1 = getValueForY(v, y1, c1);
 
@@ -1207,7 +1207,7 @@ WaveformLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) co
 	return;
     }
 
-    size_t channels = 0, minChannel = 0, maxChannel = 0;
+    int channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
 
     channels = getChannelArrangement(minChannel, maxChannel,
@@ -1220,11 +1220,11 @@ WaveformLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) co
 
     float gain = m_gain;
 
-    for (size_t ch = minChannel; ch <= maxChannel; ++ch) {
+    for (int ch = minChannel; ch <= maxChannel; ++ch) {
 
 	int lastLabelledY = -1;
 
-        if (ch < m_effectiveGains.size()) gain = m_effectiveGains[ch];
+        if (ch < (int)m_effectiveGains.size()) gain = m_effectiveGains[ch];
 
         int n = 10;
 

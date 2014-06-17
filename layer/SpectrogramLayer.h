@@ -70,7 +70,7 @@ public:
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(View *v, int &frame,
-				    size_t &resolution,
+				    int &resolution,
 				    SnapType snap) const;
 
     virtual void measureDoubleClick(View *, QMouseEvent *);
@@ -99,17 +99,17 @@ public:
     void setChannel(int);
     int getChannel() const;
 
-    void setWindowSize(size_t);
-    size_t getWindowSize() const;
+    void setWindowSize(int);
+    int getWindowSize() const;
     
-    void setWindowHopLevel(size_t level);
-    size_t getWindowHopLevel() const;
+    void setWindowHopLevel(int level);
+    int getWindowHopLevel() const;
 
     void setWindowType(WindowType type);
     WindowType getWindowType() const;
 
-    void setZeroPadLevel(size_t level);
-    size_t getZeroPadLevel() const;
+    void setZeroPadLevel(int level);
+    int getZeroPadLevel() const;
 
     /**
      * Set the gain multiplier for sample values in this view.
@@ -127,11 +127,11 @@ public:
     void setThreshold(float threshold);
     float getThreshold() const;
 
-    void setMinFrequency(size_t);
-    size_t getMinFrequency() const;
+    void setMinFrequency(int);
+    int getMinFrequency() const;
 
-    void setMaxFrequency(size_t); // 0 -> no maximum
-    size_t getMaxFrequency() const;
+    void setMaxFrequency(int); // 0 -> no maximum
+    int getMaxFrequency() const;
 
     enum ColourScale {
 	LinearColourScale,
@@ -243,7 +243,7 @@ public:
 
 protected slots:
     void cacheInvalid();
-    void cacheInvalid(size_t startFrame, size_t endFrame);
+    void cacheInvalid(int startFrame, int endFrame);
     
     void preferenceChanged(PropertyContainer::PropertyName name);
 
@@ -253,20 +253,20 @@ protected:
     const DenseTimeValueModel *m_model; // I do not own this
 
     int                 m_channel;
-    size_t              m_windowSize;
+    int              m_windowSize;
     WindowType          m_windowType;
-    size_t              m_windowHopLevel;
-    size_t              m_zeroPadLevel;
-    size_t              m_fftSize;
+    int              m_windowHopLevel;
+    int              m_zeroPadLevel;
+    int              m_fftSize;
     float               m_gain;
     float               m_initialGain;
     float               m_threshold;
     float               m_initialThreshold;
     int                 m_colourRotation;
     int                 m_initialRotation;
-    size_t              m_minFrequency;
-    size_t              m_maxFrequency;
-    size_t              m_initialMaxFrequency;
+    int              m_minFrequency;
+    int              m_maxFrequency;
+    int              m_initialMaxFrequency;
     ColourScale         m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
@@ -311,11 +311,11 @@ protected:
         QImage image;
         QRect validArea;
         long startFrame;
-        size_t zoomLevel;
+        int zoomLevel;
     };
     typedef std::map<const View *, ImageCache> ViewImageCache;
     void invalidateImageCaches();
-    void invalidateImageCaches(size_t startFrame, size_t endFrame);
+    void invalidateImageCaches(int startFrame, int endFrame);
     mutable ViewImageCache m_imageCaches;
 
     /**
@@ -328,7 +328,7 @@ protected:
 
     mutable QTimer *m_updateTimer;
 
-    mutable size_t m_candidateFillStartFrame;
+    mutable int m_candidateFillStartFrame;
     bool m_exiting;
 
     void initialisePalette();
@@ -346,8 +346,8 @@ protected:
     struct LayerRange {
 	long   startFrame;
 	int    zoomLevel;
-	size_t modelStart;
-	size_t modelEnd;
+	int modelStart;
+	int modelEnd;
     };
 
     // Note that the getYBin... methods return the nominal bin in the
@@ -368,14 +368,14 @@ protected:
     bool getXYBinSourceRange(View *v, int x, int y, float &min, float &max,
 			     float &phaseMin, float &phaseMax) const;
 
-    size_t getWindowIncrement() const {
+    int getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;
         else if (m_windowHopLevel == 1) return (m_windowSize * 3) / 4;
         else return m_windowSize / (1 << (m_windowHopLevel - 1));
     }
 
-    size_t getZeroPadLevel(const View *v) const;
-    size_t getFFTSize(const View *v) const;
+    int getZeroPadLevel(const View *v) const;
+    int getFFTSize(const View *v) const;
     FFTModel *getFFTModel(const View *v) const;
     Dense3DModelPeakCache *getPeakCache(const View *v) const;
     void invalidateFFTModels();

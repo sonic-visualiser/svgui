@@ -544,7 +544,7 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 bool
 NoteLayer::snapToFeatureFrame(View *v, int &frame,
-			      size_t &resolution,
+			      int &resolution,
 			      SnapType snap) const
 {
     if (!m_model) {
@@ -956,7 +956,7 @@ NoteLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::eraseDrag(View *v, QMouseEvent *e)
+NoteLayer::eraseDrag(View *, QMouseEvent *)
 {
 }
 
@@ -1103,7 +1103,7 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::moveSelection(Selection s, size_t newStartFrame)
+NoteLayer::moveSelection(Selection s, int newStartFrame)
 {
     if (!m_model) return;
 
@@ -1207,7 +1207,7 @@ NoteLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
+NoteLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1239,7 +1239,7 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
-        size_t frame = 0;
+        int frame = 0;
 
         if (!realign) {
             
@@ -1264,7 +1264,7 @@ NoteLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
         if (i->haveLevel()) newPoint.level = i->getLevel();
         if (i->haveDuration()) newPoint.duration = i->getDuration();
         else {
-            size_t nextFrame = frame;
+            int nextFrame = frame;
             Clipboard::PointList::const_iterator j = i;
             for (; j != points.end(); ++j) {
                 if (!j->haveFrame()) continue;

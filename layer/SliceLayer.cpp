@@ -95,13 +95,13 @@ QString
 SliceLayer::getFeatureDescription(View *v, QPoint &p) const
 {
     int minbin, maxbin, range;
-    return getFeatureDescription(v, p, true, minbin, maxbin, range);
+    return getFeatureDescriptionAux(v, p, true, minbin, maxbin, range);
 }
 
 QString
-SliceLayer::getFeatureDescription(View *v, QPoint &p,
-                                  bool includeBinDescription,
-                                  int &minbin, int &maxbin, int &range) const
+SliceLayer::getFeatureDescriptionAux(View *v, QPoint &p,
+                                     bool includeBinDescription,
+                                     int &minbin, int &maxbin, int &range) const
 {
     minbin = 0;
     maxbin = 0;
@@ -121,8 +121,8 @@ SliceLayer::getFeatureDescription(View *v, QPoint &p,
     
     int sampleRate = m_sliceableModel->getSampleRate();
 
-    size_t f0 = m_currentf0;
-    size_t f1 = m_currentf1;
+    int f0 = m_currentf0;
+    int f1 = m_currentf1;
 
     RealTime rt0 = RealTime::frame2RealTime(f0, sampleRate);
     RealTime rt1 = RealTime::frame2RealTime(f1, sampleRate);
@@ -264,6 +264,7 @@ SliceLayer::getYForValue(float value, const View *v, float &norm) const
         value = fabsf(value);
         // and fall through
         
+    case LinearScale:
     default:
         norm = (value - m_threshold);
         if (norm < 0) norm = 0;
@@ -301,7 +302,9 @@ SliceLayer::getValueForY(float y, const View *v) const
     case MeterScale:
         value = AudioLevel::preview_to_multiplier(lrintf(y), h);
         break;
-    
+
+    case LinearScale:
+    case AbsoluteScale:
     default:
         value = y / h + m_threshold;
     }
@@ -322,7 +325,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     if (v->getViewManager() && v->getViewManager()->shouldShowScaleGuides()) {
         if (!m_scalePoints.empty()) {
             paint.setPen(QColor(240, 240, 240)); //!!! and dark background?
-            for (size_t i = 0; i < m_scalePoints.size(); ++i) {
+            for (int i = 0; i < (int)m_scalePoints.size(); ++i) {
                 paint.drawLine(0, m_scalePoints[i], rect.width(), m_scalePoints[i]);
             }
         }
@@ -345,26 +348,26 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     QPainterPath path;
 
-    size_t mh = m_sliceableModel->getHeight();
+    int mh = m_sliceableModel->getHeight();
 
     int divisor = 0;
 
     m_values.clear();
-    for (size_t bin = 0; bin < mh; ++bin) {
+    for (int bin = 0; bin < mh; ++bin) {
         m_values.push_back(0.f);
     }
 
-    size_t f0 = v->getCentreFrame();
+    int f0 = v->getCentreFrame();
     int f0x = v->getXForFrame(f0);
     f0 = v->getFrameForX(f0x);
-    size_t f1 = v->getFrameForX(f0x + 1);
+    int f1 = v->getFrameForX(f0x + 1);
     if (f1 > f0) --f1;
 
 //    cerr << "centre frame " << v->getCentreFrame() << ", x " << f0x << ", f0 " << f0 << ", f1 " << f1 << endl;
 
-    size_t res = m_sliceableModel->getResolution();
-    size_t col0 = f0 / res;
-    size_t col1 = col0;
+    int res = m_sliceableModel->getResolution();
+    int col0 = f0 / res;
+    int col1 = col0;
     if (m_samplingMode != NearestSample) col1 = f1 / res;
     f0 = col0 * res;
     f1 = (col1 + 1) * res - 1;
@@ -376,10 +379,10 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     BiasCurve curve;
     getBiasCurve(curve);
-    size_t cs = curve.size();
+    int cs = curve.size();
 
-    for (size_t col = col0; col <= col1; ++col) {
-        for (size_t bin = 0; bin < mh; ++bin) {
+    for (int col = col0; col <= col1; ++col) {
+        for (int bin = 0; bin < mh; ++bin) {
             float value = m_sliceableModel->getValueAt(col, bin);
             if (bin < cs) value *= curve[bin];
             if (m_samplingMode == SamplePeak) {
@@ -392,22 +395,21 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
     }
 
     float max = 0.f;
-    for (size_t bin = 0; bin < mh; ++bin) {
+    for (int bin = 0; bin < mh; ++bin) {
         if (m_samplingMode == SampleMean) m_values[bin] /= divisor;
         if (m_values[bin] > max) max = m_values[bin];
     }
     if (max != 0.f && m_normalize) {
-        for (size_t bin = 0; bin < mh; ++bin) {
+        for (int bin = 0; bin < mh; ++bin) {
             m_values[bin] /= max;
         }
     }
 
-    float py = 0;
     float nx = xorigin;
 
     ColourMapper mapper(m_colourMap, 0, 1);
 
-    for (size_t bin = 0; bin < mh; ++bin) {
+    for (int bin = 0; bin < mh; ++bin) {
 
         float x = nx;
         nx = xorigin + getXForBin(bin + 1, mh, w);
@@ -446,7 +448,6 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
             paint.fillRect(QRectF(x, y, nx - x, yorigin - y), mapper.map(norm));
         }
 
-        py = y;
     }
 
     if (m_plotStyle != PlotFilledBlocks) {

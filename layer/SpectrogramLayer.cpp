@@ -141,8 +141,8 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     connectSignals(m_model);
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(cacheInvalid()));
-    connect(m_model, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SLOT(cacheInvalid(size_t, size_t)));
+    connect(m_model, SIGNAL(modelChanged(int, int)),
+	    this, SLOT(cacheInvalid(int, int)));
 
     emit modelReplaced();
 }
@@ -572,7 +572,7 @@ SpectrogramLayer::invalidateImageCaches()
 }
 
 void
-SpectrogramLayer::invalidateImageCaches(size_t startFrame, size_t endFrame)
+SpectrogramLayer::invalidateImageCaches(int startFrame, int endFrame)
 {
     for (ViewImageCache::iterator i = m_imageCaches.begin();
          i != m_imageCaches.end(); ++i) {
@@ -681,7 +681,7 @@ SpectrogramLayer::getChannel() const
 }
 
 void
-SpectrogramLayer::setWindowSize(size_t ws)
+SpectrogramLayer::setWindowSize(int ws)
 {
     if (m_windowSize == ws) return;
 
@@ -695,14 +695,14 @@ SpectrogramLayer::setWindowSize(size_t ws)
     emit layerParametersChanged();
 }
 
-size_t
+int
 SpectrogramLayer::getWindowSize() const
 {
     return m_windowSize;
 }
 
 void
-SpectrogramLayer::setWindowHopLevel(size_t v)
+SpectrogramLayer::setWindowHopLevel(int v)
 {
     if (m_windowHopLevel == v) return;
 
@@ -717,14 +717,14 @@ SpectrogramLayer::setWindowHopLevel(size_t v)
 //    fillCache();
 }
 
-size_t
+int
 SpectrogramLayer::getWindowHopLevel() const
 {
     return m_windowHopLevel;
 }
 
 void
-SpectrogramLayer::setZeroPadLevel(size_t v)
+SpectrogramLayer::setZeroPadLevel(int v)
 {
     if (m_zeroPadLevel == v) return;
 
@@ -738,7 +738,7 @@ SpectrogramLayer::setZeroPadLevel(size_t v)
     emit layerParametersChanged();
 }
 
-size_t
+int
 SpectrogramLayer::getZeroPadLevel() const
 {
     return m_zeroPadLevel;
@@ -804,7 +804,7 @@ SpectrogramLayer::getThreshold() const
 }
 
 void
-SpectrogramLayer::setMinFrequency(size_t mf)
+SpectrogramLayer::setMinFrequency(int mf)
 {
     if (m_minFrequency == mf) return;
 
@@ -818,14 +818,14 @@ SpectrogramLayer::setMinFrequency(size_t mf)
     emit layerParametersChanged();
 }
 
-size_t
+int
 SpectrogramLayer::getMinFrequency() const
 {
     return m_minFrequency;
 }
 
 void
-SpectrogramLayer::setMaxFrequency(size_t mf)
+SpectrogramLayer::setMaxFrequency(int mf)
 {
     if (m_maxFrequency == mf) return;
 
@@ -839,7 +839,7 @@ SpectrogramLayer::setMaxFrequency(size_t mf)
     emit layerParametersChanged();
 }
 
-size_t
+int
 SpectrogramLayer::getMaxFrequency() const
 {
     return m_maxFrequency;
@@ -1049,7 +1049,7 @@ SpectrogramLayer::cacheInvalid()
 }
 
 void
-SpectrogramLayer::cacheInvalid(size_t from, size_t to)
+SpectrogramLayer::cacheInvalid(int from, int to)
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     SVDEBUG << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
@@ -1074,11 +1074,11 @@ SpectrogramLayer::fillTimerTimedOut()
          i != m_fftModels.end(); ++i) {
 
         const FFTModel *model = i->second.first;
-        size_t lastFill = i->second.second;
+        int lastFill = i->second.second;
 
         if (model) {
 
-            size_t fill = model->getFillExtent();
+            int fill = model->getFillExtent();
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
             SVDEBUG << "SpectrogramLayer::fillTimerTimedOut: extent for " << model << ": " << fill << ", last " << lastFill << ", total " << m_model->getEndFrame() << endl;
@@ -1270,7 +1270,7 @@ SpectrogramLayer::getEffectiveMinFrequency() const
     float minf = float(sr) / m_fftSize;
 
     if (m_minFrequency > 0.0) {
-	size_t minbin = size_t((double(m_minFrequency) * m_fftSize) / sr + 0.01);
+	int minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.01);
 	if (minbin < 1) minbin = 1;
 	minf = minbin * sr / m_fftSize;
     }
@@ -1285,7 +1285,7 @@ SpectrogramLayer::getEffectiveMaxFrequency() const
     float maxf = float(sr) / 2;
 
     if (m_maxFrequency > 0.0) {
-	size_t maxbin = size_t((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
+	int maxbin = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
 	if (maxbin > m_fftSize / 2) maxbin = m_fftSize / 2;
 	maxf = maxbin * sr / m_fftSize;
     }
@@ -1348,8 +1348,8 @@ SpectrogramLayer::getSmoothedYBinRange(View *v, int y, float &q0, float &q1) con
 bool
 SpectrogramLayer::getXBinRange(View *v, int x, float &s0, float &s1) const
 {
-    size_t modelStart = m_model->getStartFrame();
-    size_t modelEnd = m_model->getEndFrame();
+    int modelStart = m_model->getStartFrame();
+    int modelEnd = m_model->getEndFrame();
 
     // Each pixel column covers an exact range of sample frames:
     int f0 = v->getFrameForX(x) - modelStart;
@@ -1362,7 +1362,7 @@ SpectrogramLayer::getXBinRange(View *v, int x, float &s0, float &s1) const
     // And that range may be drawn from a possibly non-integral
     // range of spectrogram windows:
 
-    size_t windowIncrement = getWindowIncrement();
+    int windowIncrement = getWindowIncrement();
     s0 = float(f0) / windowIncrement;
     s1 = float(f1) / windowIncrement;
 
@@ -1434,9 +1434,6 @@ const
 
     int sr = m_model->getSampleRate();
 
-    size_t windowSize = m_windowSize;
-    size_t windowIncrement = getWindowIncrement();
-
     bool haveAdj = false;
 
     bool peaksOnly = (m_binDisplay == PeakBins ||
@@ -1457,7 +1454,6 @@ const
 	    if (!fft->isOverThreshold(s, q, m_threshold * (m_fftSize/2))) continue;
 
 	    float freq = binfreq;
-	    bool steady = false;
 	    
 	    if (s < int(fft->getWidth()) - 1) {
 
@@ -1501,7 +1497,7 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 
     bool rv = false;
 
-    size_t zp = getZeroPadLevel(v);
+    int zp = getZeroPadLevel(v);
     q0i *= zp + 1;
     q1i *= zp + 1;
 
@@ -1547,7 +1543,7 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
     return rv;
 }
    
-size_t
+int
 SpectrogramLayer::getZeroPadLevel(const View *v) const
 {
     //!!! tidy all this stuff
@@ -1564,13 +1560,13 @@ SpectrogramLayer::getZeroPadLevel(const View *v) const
 
     int sr = m_model->getSampleRate();
     
-    size_t maxbin = m_fftSize / 2;
+    int maxbin = m_fftSize / 2;
     if (m_maxFrequency > 0) {
 	maxbin = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
 	if (maxbin > m_fftSize / 2) maxbin = m_fftSize / 2;
     }
 
-    size_t minbin = 1;
+    int minbin = 1;
     if (m_minFrequency > 0) {
 	minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.1);
 	if (minbin < 1) minbin = 1;
@@ -1590,7 +1586,7 @@ SpectrogramLayer::getZeroPadLevel(const View *v) const
     }
 }
 
-size_t
+int
 SpectrogramLayer::getFFTSize(const View *v) const
 {
     return m_fftSize * (getZeroPadLevel(v) + 1);
@@ -1601,7 +1597,7 @@ SpectrogramLayer::getFFTModel(const View *v) const
 {
     if (!m_model) return 0;
 
-    size_t fftSize = getFFTSize(v);
+    int fftSize = getFFTSize(v);
 
     if (m_fftModels.find(v) != m_fftModels.end()) {
         if (m_fftModels[v].first == 0) {
@@ -1803,7 +1799,7 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
     //!!! no longer use cache-fill thread
     const_cast<SpectrogramLayer *>(this)->Layer::setLayerDormant(v, false);
 
-    size_t fftSize = getFFTSize(v);
+    int fftSize = getFFTSize(v);
 /*
     FFTModel *fft = getFFTModel(v);
     if (!fft) {
@@ -2123,13 +2119,13 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     // Note fftSize is the actual zero-padded fft size, m_fftSize the
     // nominal fft size.
     
-    size_t maxbin = m_fftSize / 2;
+    int maxbin = m_fftSize / 2;
     if (m_maxFrequency > 0) {
 	maxbin = int((double(m_maxFrequency) * m_fftSize) / sr + 0.001);
 	if (maxbin > m_fftSize / 2) maxbin = m_fftSize / 2;
     }
 
-    size_t minbin = 1;
+    int minbin = 1;
     if (m_minFrequency > 0) {
 	minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.001);
 //        cerr << "m_minFrequency = " << m_minFrequency << " -> minbin = " << minbin << endl;
@@ -2160,7 +2156,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 /*
     float yforbin[maxbin - minbin + 1];
 
-    for (size_t q = minbin; q <= maxbin; ++q) {
+    for (int q = minbin; q <= maxbin; ++q) {
         float f0 = (float(q) * sr) / fftSize;
         yforbin[q - minbin] =
             v->getYForFrequency(f0, displayMinFreq, displayMaxFreq,
@@ -2170,20 +2166,16 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     MagnitudeRange overallMag = m_viewMags[v];
     bool overallMagChanged = false;
 
-    bool fftSuspended = false;
-
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << ((float(v->getFrameForX(1) - v->getFrameForX(0))) / increment) << " bin(s) per pixel" << endl;
 #endif
-
-    bool runOutOfData = false;
 
     if (w == 0) {
         SVDEBUG << "*** NOTE: w == 0" << endl;
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    size_t pixels = 0;
+    int pixels = 0;
 #endif
 
     Profiler outerprof("SpectrogramLayer::paint: all cols");
@@ -2498,8 +2490,6 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
     for (int x = 0; x < w; ++x) {
         
         if (binforx[x] < 0) continue;
-
-        float columnMax = 0.f;
 
         int sx0 = binforx[x];
         int sx1 = sx0;
@@ -2894,7 +2884,7 @@ SpectrogramLayer::getCompletion(View *v) const
     if (m_updateTimer == 0) return 100;
     if (m_fftModels.find(v) == m_fftModels.end()) return 100;
 
-    size_t completion = m_fftModels[v].first->getCompletion();
+    int completion = m_fftModels[v].first->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     SVDEBUG << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
@@ -2943,8 +2933,8 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
     if (min < 0) min = 0;
     if (max > m_model->getSampleRate()/2) max = m_model->getSampleRate()/2;
     
-    size_t minf = lrintf(min);
-    size_t maxf = lrintf(max);
+    int minf = lrintf(min);
+    int maxf = lrintf(max);
 
     if (m_minFrequency == minf && m_maxFrequency == maxf) return true;
 
@@ -2976,7 +2966,7 @@ SpectrogramLayer::getYScaleValue(const View *v, int y,
 
 bool
 SpectrogramLayer::snapToFeatureFrame(View *, int &frame,
-				     size_t &resolution,
+				     int &resolution,
 				     SnapType snap) const
 {
     resolution = getWindowIncrement();
@@ -3292,7 +3282,7 @@ SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QR
     int tickw = (m_frequencyScale == LogFrequencyScale ? 10 : 4);
     int pkw = (m_frequencyScale == LogFrequencyScale ? 10 : 0);
 
-    size_t bins = m_fftSize / 2;
+    int bins = m_fftSize / 2;
     int sr = m_model->getSampleRate();
 
     if (m_maxFrequency > 0) {
@@ -3508,7 +3498,7 @@ SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
     int maxStep = mapper.getPositionForValue(0);
     int minStep = mapper.getPositionForValue(float(sr) / 2);
 
-    size_t initialMax = m_initialMaxFrequency;
+    int initialMax = m_initialMaxFrequency;
     if (initialMax == 0) initialMax = sr / 2;
 
     defaultStep = mapper.getPositionForValue(initialMax) - minStep;
@@ -3684,13 +3674,13 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     int channel = attributes.value("channel").toInt(&ok);
     if (ok) setChannel(channel);
 
-    size_t windowSize = attributes.value("windowSize").toUInt(&ok);
+    int windowSize = attributes.value("windowSize").toUInt(&ok);
     if (ok) setWindowSize(windowSize);
 
-    size_t windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
+    int windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
     if (ok) setWindowHopLevel(windowHopLevel);
     else {
-        size_t windowOverlap = attributes.value("windowOverlap").toUInt(&ok);
+        int windowOverlap = attributes.value("windowOverlap").toUInt(&ok);
         // a percentage value
         if (ok) {
             if (windowOverlap == 0) setWindowHopLevel(0);
@@ -3707,13 +3697,13 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     float threshold = attributes.value("threshold").toFloat(&ok);
     if (ok) setThreshold(threshold);
 
-    size_t minFrequency = attributes.value("minFrequency").toUInt(&ok);
+    int minFrequency = attributes.value("minFrequency").toUInt(&ok);
     if (ok) {
         SVDEBUG << "SpectrogramLayer::setProperties: setting min freq to " << minFrequency << endl;
         setMinFrequency(minFrequency);
     }
 
-    size_t maxFrequency = attributes.value("maxFrequency").toUInt(&ok);
+    int maxFrequency = attributes.value("maxFrequency").toUInt(&ok);
     if (ok) {
         SVDEBUG << "SpectrogramLayer::setProperties: setting max freq to " << maxFrequency << endl;
         setMaxFrequency(maxFrequency);

@@ -23,7 +23,7 @@
 #include "view/View.h"
 
 int
-LinearNumericalScale::getWidth(View *v,
+LinearNumericalScale::getWidth(View *,
 			       QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 10;
@@ -37,8 +37,6 @@ LinearNumericalScale::paintVertical(View *v,
 				    float minf,
 				    float maxf)
 {
-    int h = v->height();
-
     int n = 10;
 
     float val = minf;

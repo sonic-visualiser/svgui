@@ -51,8 +51,8 @@ Layer::connectSignals(const Model *model)
     connect(model, SIGNAL(modelChanged()),
             this, SIGNAL(modelChanged()));
 
-    connect(model, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SIGNAL(modelChanged(size_t, size_t)));
+    connect(model, SIGNAL(modelChanged(int, int)),
+	    this, SIGNAL(modelChanged(int, int)));
 
     connect(model, SIGNAL(completionChanged()),
 	    this, SIGNAL(modelCompletionChanged()));
@@ -165,8 +165,8 @@ Layer::getYScaleDifference(const View *v, int y0, int y1,
     return true;
 }
 
-size_t
-Layer::alignToReference(View *v, size_t frame) const
+int
+Layer::alignToReference(View *v, int frame) const
 {
     const Model *m = getModel();
     SVDEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
@@ -177,8 +177,8 @@ Layer::alignToReference(View *v, size_t frame) const
     }
 }
 
-size_t
-Layer::alignFromReference(View *v, size_t frame) const
+int
+Layer::alignFromReference(View *v, int frame) const
 {
     const Model *m = getModel();
     SVDEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
@@ -405,7 +405,7 @@ Layer::measureEnd(View *v, QMouseEvent *e)
 }
 
 void
-Layer::measureDoubleClick(View *v, QMouseEvent *e)
+Layer::measureDoubleClick(View *, QMouseEvent *)
 {
     // nothing, in the base class
 }

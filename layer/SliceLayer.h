@@ -115,10 +115,10 @@ protected:
     virtual float getYForValue(float value, const View *v, float &norm) const;
     virtual float getValueForY(float y, const View *v) const;
     
-    virtual QString getFeatureDescription(View *v, QPoint &,
-                                          bool includeBinDescription,
-                                          int &minbin, int &maxbin,
-                                          int &range) const;
+    virtual QString getFeatureDescriptionAux(View *v, QPoint &,
+                                             bool includeBinDescription,
+                                             int &minbin, int &maxbin,
+                                             int &range) const;
 
     // This curve may, of course, be flat -- the spectrum uses it for
     // normalizing the fft results by the fft size (with 1/(fftsize/2)
@@ -144,8 +144,8 @@ protected:
     mutable std::map<const View *, int> m_xorigins;
     mutable std::map<const View *, int> m_yorigins;
     mutable std::map<const View *, int> m_heights;
-    mutable size_t                    m_currentf0;
-    mutable size_t                    m_currentf1;
+    mutable int                    m_currentf0;
+    mutable int                    m_currentf1;
     mutable std::vector<float>        m_values;
 };
 

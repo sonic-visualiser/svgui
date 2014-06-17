@@ -78,7 +78,7 @@ ImageLayer::getProperties() const
 }
 
 QString
-ImageLayer::getPropertyLabel(const PropertyName &name) const
+ImageLayer::getPropertyLabel(const PropertyName &) const
 {
     return "";
 }
@@ -116,14 +116,14 @@ ImageLayer::getValueExtents(float &, float &, bool &, QString &) const
 }
 
 bool
-ImageLayer::isLayerScrollable(const View *v) const
+ImageLayer::isLayerScrollable(const View *) const
 {
     return true;
 }
 
 
 ImageModel::PointList
-ImageLayer::getLocalPoints(View *v, int x, int y) const
+ImageLayer::getLocalPoints(View *v, int x, int ) const
 {
     if (!m_model) return ImageModel::PointList();
 
@@ -185,9 +185,9 @@ ImageLayer::getFeatureDescription(View *v, QPoint &pos) const
 	}
     }
 
-    long useFrame = points.begin()->frame;
+//    long useFrame = points.begin()->frame;
 
-    RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
+//    RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
 
     QString text;
 /*    
@@ -209,7 +209,7 @@ ImageLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 bool
 ImageLayer::snapToFeatureFrame(View *v, int &frame,
-			      size_t &resolution,
+			      int &resolution,
 			      SnapType snap) const
 {
     if (!m_model) {
@@ -519,8 +519,6 @@ ImageLayer::getImageOriginalSize(QString name, QSize &size) const
 QImage 
 ImageLayer::getImage(View *v, QString name, QSize maxSize) const
 {
-    bool need = false;
-
 //    SVDEBUG << "ImageLayer::getImage(" << v << ", " << name << ", ("
 //              << maxSize.width() << "x" << maxSize.height() << "))" << endl;
 
@@ -596,12 +594,10 @@ ImageLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-ImageLayer::drawEnd(View *v, QMouseEvent *)
+ImageLayer::drawEnd(View *, QMouseEvent *)
 {
 //    SVDEBUG << "ImageLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
-
-    bool ok = false;
 
     ImageDialog dialog(tr("Select image"), "", "");
 
@@ -727,7 +723,7 @@ ImageLayer::editOpen(View *v, QMouseEvent *e)
 }    
 
 void
-ImageLayer::moveSelection(Selection s, size_t newStartFrame)
+ImageLayer::moveSelection(Selection s, int newStartFrame)
 {
     if (!m_model) return;
 
@@ -823,7 +819,7 @@ ImageLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-ImageLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
+ImageLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -856,7 +852,7 @@ ImageLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* inter
         
         if (!i->haveFrame()) continue;
 
-        size_t frame = 0;
+        int frame = 0;
 
         if (!realign) {
             
@@ -970,7 +966,7 @@ ImageLayer::toXml(QTextStream &stream,
 }
 
 void
-ImageLayer::setProperties(const QXmlAttributes &attributes)
+ImageLayer::setProperties(const QXmlAttributes &)
 {
 }
 
