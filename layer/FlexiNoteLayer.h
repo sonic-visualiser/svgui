@@ -73,6 +73,7 @@ public:
     virtual void moveSelection(Selection s, int newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
+    virtual void deleteSelectionInclusive(Selection s);
 
     virtual void copy(View *v, Selection s, Clipboard &to);
     virtual bool paste(View *v, const Clipboard &from, int frameOffset,

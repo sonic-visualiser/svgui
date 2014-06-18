@@ -41,6 +41,7 @@
 #include <QCursor>
 #include <QTextStream>
 #include <QMimeData>
+#include <QApplication>
 
 #include <iostream>
 #include <cmath>
@@ -82,7 +83,9 @@ Pane::Pane(QWidget *w) :
     m_hthumb(0),
     m_vthumb(0),
     m_reset(0),
-    m_mouseInWidget(false)
+    m_mouseInWidget(false),
+    m_playbackFrameMoveScheduled(false),
+    m_playbackFrameMoveTo(0)
 {
     setObjectName("Pane");
     setMouseTracking(true);
@@ -1329,6 +1332,11 @@ Pane::mousePressEvent(QMouseEvent *e)
             m_dragStartMinValue = dmin;
         }
 
+        // Schedule a play-head move to the mouse frame location. This
+        // will happen only if nothing else of interest happens
+        // (double-click, drag) before the timeout.
+        schedulePlaybackFrameMove(getFrameForX(e->x()));
+
     } else if (mode == ViewManager::SelectMode) {
 
         if (!hasTopLayerTimeXAxis()) return;
@@ -1371,6 +1379,12 @@ Pane::mousePressEvent(QMouseEvent *e)
             }
 
             m_resizing = false;
+
+            // Schedule a play-head move to the mouse frame
+            // location. This will happen only if nothing else of
+            // interest happens (double-click, drag) before the
+            // timeout.
+            schedulePlaybackFrameMove(mouseFrame);
         }
 
         update();
@@ -1414,6 +1428,24 @@ Pane::mousePressEvent(QMouseEvent *e)
 }
 
 void
+Pane::schedulePlaybackFrameMove(int frame)
+{
+    m_playbackFrameMoveTo = frame;
+    m_playbackFrameMoveScheduled = true;
+    QTimer::singleShot(QApplication::doubleClickInterval() + 10, this,
+                       SLOT(playbackScheduleTimerElapsed()));
+}
+
+void
+Pane::playbackScheduleTimerElapsed()
+{
+    if (m_playbackFrameMoveScheduled) {
+        m_manager->setPlaybackFrame(m_playbackFrameMoveTo);
+        m_playbackFrameMoveScheduled = false;
+    }
+}
+
+void
 Pane::mouseReleaseEvent(QMouseEvent *e)
 {
     if (e->buttons() & Qt::RightButton) {
@@ -1430,6 +1462,9 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     if (m_clickedInRange) {
         mouseMoveEvent(e);
     }
+
+    int mouseFrame = e ? getFrameForX(e->x()) : 0;
+    if (mouseFrame < 0) mouseFrame = 0;
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
 
@@ -1475,16 +1510,6 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             } else {
                 m_manager->addSelection(selection);
             }
-        }
-        else if (m_manager && !m_manager->haveInProgressSelection()) {
-            
-            //cerr << "JTEST: release without selection" << endl;
-            // Get frame location of mouse
-            int mouseFrame = getFrameForX(e->x());
-            //cerr << "JTEST: frame location of click is " << mouseFrame << endl;
-            // Move play head to that frame location
-            int playbackFrame = fmax(0,mouseFrame);
-            m_manager->setPlaybackFrame(playbackFrame);
         }
     
         update();
@@ -1588,7 +1613,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             FlexiNoteLayer *layer = qobject_cast<FlexiNoteLayer *>(getTopFlexiNoteLayer());
             if (layer) {
                 layer->mouseMoveEvent(this, e); //!!! ew
-                return;
+                update();
+                // return;
             }
         }   
     
@@ -1807,6 +1833,10 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         }
 
         update();
+    }
+    
+    if (m_dragMode != UnresolvedDrag) {
+        m_playbackFrameMoveScheduled = false;
     }
 }
 
@@ -2078,6 +2108,10 @@ Pane::dragExtendSelection(QMouseEvent *e)
     edgeScrollMaybe(e->x());
 
     update();
+
+    if (min != max) {
+        m_playbackFrameMoveScheduled = false;
+    }
 }
 
 void
@@ -2114,13 +2148,16 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         return;
     }
 
-//    cerr << "mouseDoubleClickEvent" << endl;
+    cerr << "mouseDoubleClickEvent" << endl;
 
     m_clickPos = e->pos();
     m_clickedInRange = true;
     m_shiftPressed = (e->modifiers() & Qt::ShiftModifier);
     m_ctrlPressed = (e->modifiers() & Qt::ControlModifier);
     m_altPressed = (e->modifiers() & Qt::AltModifier);
+
+    // cancel any pending move that came from a single click
+    m_playbackFrameMoveScheduled = false;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolModeFor(this);
