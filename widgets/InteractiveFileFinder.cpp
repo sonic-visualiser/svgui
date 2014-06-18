@@ -217,7 +217,8 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 }
 
 QString
-InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
+InteractiveFileFinder::getSaveFileName(FileType type, 
+                                       QString fallbackLocation)
 {
     QString settingsKeyStub;
     QString lastPath = fallbackLocation;
@@ -312,7 +313,6 @@ InteractiveFileFinder::getSaveFileName(FileType type, QString fallbackLocation)
     dialog.setNameFilters(filters);
     dialog.setWindowTitle(title);
     dialog.setDirectory(lastPath);
-
     dialog.setAcceptMode(QFileDialog::AcceptSave);
     dialog.setFileMode(QFileDialog::AnyFile);
     dialog.setConfirmOverwrite(false); // we'll do that

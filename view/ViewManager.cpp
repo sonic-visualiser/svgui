@@ -554,7 +554,7 @@ ViewManager::viewCentreFrameChanged(int f, bool locked,
         if (v) emit viewCentreFrameChanged(v, f);
     }
 
-    if (!dynamic_cast<Overview *>(v) || (mode != PlaybackIgnore)) {
+    if (!dynamic_cast<Overview *>(v) || (mode == PlaybackScrollContinuous)) {
         if (m_mainModelSampleRate != 0) {
             emit activity(tr("Scroll to %1")
                           .arg(RealTime::frame2RealTime
@@ -562,7 +562,7 @@ ViewManager::viewCentreFrameChanged(int f, bool locked,
         }
     }
 
-    if (mode == PlaybackIgnore) {
+    if (mode != PlaybackScrollContinuous) {
         return;
     }
 

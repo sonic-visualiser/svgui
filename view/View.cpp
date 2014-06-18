@@ -26,6 +26,8 @@
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h"
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
+#include "widgets/IconLoader.h"
+
 #include <QPainter>
 #include <QPaintEvent>
 #include <QRect>
@@ -34,6 +36,7 @@
 #include <QTextStream>
 #include <QFont>
 #include <QMessageBox>
+#include <QPushButton>
 
 #include <iostream>
 #include <cassert>
@@ -53,6 +56,7 @@ View::View(QWidget *w, bool showProgress) :
     m_followPan(true),
     m_followZoom(true),
     m_followPlay(PlaybackScrollPage),
+    m_followPlayIsDetached(false),
     m_playPointerFrame(0),
     m_showProgress(showProgress),
     m_cache(0),
@@ -516,11 +520,6 @@ View::getForeground() const
     else return Qt::white;
 }
 
-View::LayerProgressBar::LayerProgressBar(QWidget *parent) :
-    QProgressBar(parent)
-{
-}
-
 void
 View::addLayer(Layer *layer)
 {
@@ -538,7 +537,14 @@ View::addLayer(Layer *layer)
     pb->setFixedWidth(80);
     pb->setTextVisible(false);
 
+    QPushButton *cancel = new QPushButton(this);
+    cancel->setIcon(IconLoader().load("fileclose"));
+    cancel->setFlat(true);
+    cancel->setFixedSize(QSize(20, 20));
+    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelClicked()));
+    
     ProgressBarRec pbr;
+    pbr.cancel = cancel;
     pbr.bar = pb;
     pbr.lastCheck = 0;
     pbr.checkTimer = new QTimer();
@@ -550,6 +556,8 @@ View::addLayer(Layer *layer)
     QFont f(pb->font());
     int fs = Preferences::getInstance()->getViewFontSize();
     f.setPointSize(std::min(fs, int(ceil(fs * 0.85))));
+
+    cancel->hide();
 
     pb->setFont(f);
     pb->hide();
@@ -593,6 +601,7 @@ View::removeLayer(Layer *layer)
 	    m_layers.erase(i);
 	    if (m_progressBars.find(layer) != m_progressBars.end()) {
 		delete m_progressBars[layer].bar;
+                delete m_progressBars[layer].cancel;
 		delete m_progressBars[layer].checkTimer;
 		m_progressBars.erase(layer);
 	    }
@@ -992,6 +1001,12 @@ View::movePlayPointer(int newFrame)
         ((QApplication::mouseButtons() != Qt::NoButton) ||
          (QApplication::keyboardModifiers() & Qt::AltModifier));
 
+    bool pointerInVisibleArea =
+	long(m_playPointerFrame) >= getStartFrame() &&
+        (m_playPointerFrame < getEndFrame() ||
+         // include old pointer location so we know to refresh when moving out
+         oldPlayPointerFrame < getEndFrame());
+
     switch (m_followPlay) {
 
     case PlaybackScrollContinuous:
@@ -1001,56 +1016,75 @@ View::movePlayPointer(int newFrame)
 	break;
 
     case PlaybackScrollPage:
-    { 
-	int xold = getXForFrame(oldPlayPointerFrame);
-	update(xold - 4, 0, 9, height());
 
-	int w = getEndFrame() - getStartFrame();
-	w -= w/5;
-	int sf = (m_playPointerFrame / w) * w - w/8;
+        if (!pointerInVisibleArea && somethingGoingOn) {
 
-	if (m_manager &&
-	    m_manager->isPlaying() &&
-	    m_manager->getPlaySelectionMode()) {
-	    MultiSelection::SelectionList selections = m_manager->getSelections();
-	    if (!selections.empty()) {
-		int selectionStart = selections.begin()->getStartFrame();
-		if (sf < selectionStart - w / 10) {
-		    sf = selectionStart - w / 10;
-		}
-	    }
-	}
+            m_followPlayIsDetached = true;
+
+        } else if (!pointerInVisibleArea && m_followPlayIsDetached) {
+
+            // do nothing; we aren't tracking until the pointer comes back in
+
+        } else {
+
+            int xold = getXForFrame(oldPlayPointerFrame);
+            update(xold - 4, 0, 9, height());
+
+            int w = getEndFrame() - getStartFrame();
+            w -= w/5;
+            int sf = (m_playPointerFrame / w) * w - w/8;
+
+            if (m_manager &&
+                m_manager->isPlaying() &&
+                m_manager->getPlaySelectionMode()) {
+                MultiSelection::SelectionList selections = m_manager->getSelections();
+                if (!selections.empty()) {
+                    int selectionStart = selections.begin()->getStartFrame();
+                    if (sf < selectionStart - w / 10) {
+                        sf = selectionStart - w / 10;
+                    }
+                }
+            }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
-		  << getStartFrame() << endl;
+            cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
+                 << getStartFrame() << endl;
 #endif
 
-	// We don't consider scrolling unless the pointer is outside
-	// the clearly visible range already
+            // We don't consider scrolling unless the pointer is outside
+            // the central visible range already
 
-	int xnew = getXForFrame(m_playPointerFrame);
+            int xnew = getXForFrame(m_playPointerFrame);
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	cerr << "xnew = " << xnew << ", width = " << width() << endl;
+            cerr << "xnew = " << xnew << ", width = " << width() << endl;
 #endif
 
-	if (xnew < width()/8 || xnew > (width()*7)/8) {
-	    if (!somethingGoingOn) {
-		int offset = getFrameForX(width()/2) - getStartFrame();
-		int newCentre = sf + offset;
-		bool changed = setCentreFrame(newCentre, false);
-		if (changed) {
-		    xold = getXForFrame(oldPlayPointerFrame);
-		    update(xold - 4, 0, 9, height());
-		}
-	    }
-	}
+            bool shouldScroll = (xnew > (width() * 7) / 8);
 
-	update(xnew - 4, 0, 9, height());
+            if (!m_followPlayIsDetached && (xnew < width() / 8)) {
+                shouldScroll = true;
+            }
 
-	break;
-    }
+            if (xnew > width() / 8) {
+                m_followPlayIsDetached = false;
+            } else if (somethingGoingOn) {
+                m_followPlayIsDetached = true;
+            }
+
+            if (!somethingGoingOn && shouldScroll) {
+                int offset = getFrameForX(width()/2) - getStartFrame();
+                int newCentre = sf + offset;
+                bool changed = setCentreFrame(newCentre, false);
+                if (changed) {
+                    xold = getXForFrame(oldPlayPointerFrame);
+                    update(xold - 4, 0, 9, height());
+                }
+            }
+
+            update(xnew - 4, 0, 9, height());
+        }
+        break;
 
     case PlaybackIgnore:
 	if (m_playPointerFrame >= getStartFrame() &&
@@ -1434,6 +1468,25 @@ View::scroll(bool right, bool lots, bool e)
 }
 
 void
+View::cancelClicked()
+{
+    QPushButton *cancel = qobject_cast<QPushButton *>(sender());
+    if (!cancel) return;
+
+    for (ProgressMap::iterator i = m_progressBars.begin();
+	 i != m_progressBars.end(); ++i) {
+
+        if (i->second.cancel == cancel) {
+
+            Layer *layer = i->first;
+            Model *model = layer->getModel();
+
+            if (model) model->abandon();
+        }
+    }
+}
+
+void
 View::checkProgress(void *object)
 {
     if (!m_showProgress) return;
@@ -1444,6 +1497,7 @@ View::checkProgress(void *object)
 	 i != m_progressBars.end(); ++i) {
 
         QProgressBar *pb = i->second.bar;
+        QPushButton *cancel = i->second.cancel;
 
 	if (i->first == object) {
 
@@ -1490,6 +1544,7 @@ View::checkProgress(void *object)
 	    if (completion >= 100) {
 
 		pb->hide();
+                cancel->hide();
                 timer->stop();
 
 	    } else {
@@ -1502,8 +1557,11 @@ View::checkProgress(void *object)
                     timer->start();
                 }
 
+                cancel->move(0, ph - pb->height()/2 - 10);
+                cancel->show();
+
 		pb->setValue(completion);
-		pb->move(0, ph - pb->height());
+		pb->move(20, ph - pb->height());
 
 		pb->show();
 		pb->update();
@@ -1562,7 +1620,7 @@ void
 View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
-//    SVDEBUG << "View::paintEvent: centre frame is " << m_centreFrame << endl;
+//    cerr << "View::paintEvent: centre frame is " << m_centreFrame << endl;
 
     if (m_layers.empty()) {
 	QFrame::paintEvent(e);
@@ -1818,7 +1876,10 @@ View::paintEvent(QPaintEvent *e)
         showPlayPointer = false;
     } else if (m_manager && !m_manager->isPlaying()) {
         if (m_playPointerFrame == getCentreFrame() &&
+            m_manager->shouldShowCentreLine() &&
             m_followPlay != PlaybackIgnore) {
+            // Don't show the play pointer when it is redundant with
+            // the centre line
             showPlayPointer = false;
         }
     }
