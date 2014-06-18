@@ -39,10 +39,10 @@ class SubdividingMenu : public QMenu
     Q_OBJECT
 
 public:
-    SubdividingMenu(size_t lowerLimit = 0, size_t upperLimit = 0,
+    SubdividingMenu(int lowerLimit = 0, int upperLimit = 0,
                     QWidget *parent = 0);
-    SubdividingMenu(const QString &title, size_t lowerLimit = 0,
-                    size_t upperLimit = 0, QWidget *parent = 0);
+    SubdividingMenu(const QString &title, int lowerLimit = 0,
+                    int upperLimit = 0, QWidget *parent = 0);
     virtual ~SubdividingMenu();
 
     void setEntries(const std::set<QString> &entries);
@@ -65,8 +65,8 @@ public:
 protected:
     std::map<QString, QMenu *> m_nameToChunkMenuMap;
 
-    size_t m_lowerLimit;
-    size_t m_upperLimit;
+    int m_lowerLimit;
+    int m_upperLimit;
 
     bool m_entriesSet;
     std::map<QString, QObject *> m_pendingEntries;

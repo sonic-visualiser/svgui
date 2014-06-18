@@ -125,7 +125,7 @@ ViewManager::~ViewManager()
 {
 }
 
-unsigned long
+int
 ViewManager::getGlobalCentreFrame() const
 {
 #ifdef DEBUG_VIEW_MANAGER
@@ -135,7 +135,7 @@ ViewManager::getGlobalCentreFrame() const
 }
 
 void
-ViewManager::setGlobalCentreFrame(unsigned long f)
+ViewManager::setGlobalCentreFrame(int f)
 {
 #ifdef DEBUG_VIEW_MANAGER
     cerr << "ViewManager::setGlobalCentreFrame to " << f << endl;
@@ -144,7 +144,7 @@ ViewManager::setGlobalCentreFrame(unsigned long f)
     emit globalCentreFrameChanged(f);
 }
 
-unsigned long
+int
 ViewManager::getGlobalZoom() const
 {
 #ifdef DEBUG_VIEW_MANAGER
@@ -153,7 +153,7 @@ ViewManager::getGlobalZoom() const
     return m_globalZoom;
 }
 
-unsigned long
+int
 ViewManager::getPlaybackFrame() const
 {
     if (m_playSource && m_playSource->isPlaying()) {
@@ -163,7 +163,7 @@ ViewManager::getPlaybackFrame() const
 }
 
 void
-ViewManager::setPlaybackFrame(unsigned long f)
+ViewManager::setPlaybackFrame(int f)
 {
     if (m_playbackFrame != f) {
 	m_playbackFrame = f;
@@ -186,15 +186,15 @@ ViewManager::setPlaybackModel(Model *model)
     m_playbackModel = model;
 }
 
-size_t
-ViewManager::alignPlaybackFrameToReference(size_t frame) const
+int
+ViewManager::alignPlaybackFrameToReference(int frame) const
 {
     if (!m_playbackModel) return frame;
     else return m_playbackModel->alignToReference(frame);
 }
 
-size_t
-ViewManager::alignReferenceToPlaybackFrame(size_t frame) const
+int
+ViewManager::alignReferenceToPlaybackFrame(int frame) const
 {
     if (!m_playbackModel) return frame;
     else return m_playbackModel->alignFromReference(frame);
@@ -292,8 +292,8 @@ ViewManager::setSelections(const MultiSelection &ms, bool quietly)
     }
 }
 
-size_t
-ViewManager::constrainFrameToSelection(size_t frame) const
+int
+ViewManager::constrainFrameToSelection(int frame) const
 {
     MultiSelection::SelectionList sl = getSelections();
     if (sl.empty()) return frame;
@@ -352,7 +352,7 @@ ViewManager::SetSelectionCommand::getName() const
 }
 
 Selection
-ViewManager::getContainingSelection(size_t frame, bool defaultToFollowing) const
+ViewManager::getContainingSelection(int frame, bool defaultToFollowing) const
 {
     return m_selections.getContainingSelection(frame, defaultToFollowing);
 }
@@ -457,7 +457,7 @@ ViewManager::setAlignMode(bool mode)
     }
 }
 
-size_t 
+int 
 ViewManager::getPlaybackSampleRate() const
 {
     if (m_playSource) {
@@ -466,7 +466,7 @@ ViewManager::getPlaybackSampleRate() const
     return 0;
 }
 
-size_t
+int
 ViewManager::getOutputSampleRate() const
 {
     if (m_playSource) {
@@ -538,7 +538,7 @@ ViewManager::isPlaying() const
 }
 
 void
-ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
+ViewManager::viewCentreFrameChanged(int f, bool locked,
                                     PlaybackFollowMode mode)
 {
     View *v = dynamic_cast<View *>(sender());
@@ -570,15 +570,15 @@ ViewManager::viewCentreFrameChanged(unsigned long f, bool locked,
 }
 
 void
-ViewManager::seek(unsigned long f)
+ViewManager::seek(int f)
 {
 #ifdef DEBUG_VIEW_MANAGER 
     cerr << "ViewManager::seek(" << f << ")" << endl;
 #endif
 
     if (m_playSource && m_playSource->isPlaying()) {
-	unsigned long playFrame = m_playSource->getCurrentPlayingFrame();
-	unsigned long diff = std::max(f, playFrame) - std::min(f, playFrame);
+	int playFrame = m_playSource->getCurrentPlayingFrame();
+	int diff = std::max(f, playFrame) - std::min(f, playFrame);
 	if (diff > 20000) {
 	    m_playbackFrame = f;
 	    m_playSource->play(f);
@@ -596,7 +596,7 @@ ViewManager::seek(unsigned long f)
 }
 
 void
-ViewManager::viewZoomLevelChanged(unsigned long z, bool locked)
+ViewManager::viewZoomLevelChanged(int z, bool locked)
 {
     View *v = dynamic_cast<View *>(sender());
 

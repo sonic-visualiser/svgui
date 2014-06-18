@@ -43,7 +43,7 @@ public:
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(View *v, int &frame,
-				    size_t &resolution,
+				    int &resolution,
 				    SnapType snap) const;
 
     virtual void drawStart(View *v, QMouseEvent *);
@@ -54,7 +54,7 @@ public:
     virtual void editDrag(View *v, QMouseEvent *);
     virtual void editEnd(View *v, QMouseEvent *);
 
-    virtual void moveSelection(Selection s, size_t newStartFrame);
+    virtual void moveSelection(Selection s, int newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
@@ -98,7 +98,7 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
-    virtual bool addImage(long frame, QString url); // using a command
+    virtual bool addImage(int frame, QString url); // using a command
 
 protected slots:
     void checkAddSources();

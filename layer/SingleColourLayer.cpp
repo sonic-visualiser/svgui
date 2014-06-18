@@ -115,7 +115,7 @@ SingleColourLayer::getPropertyValueLabel(const PropertyName &name,
 {
     if (name == "Colour") {
         ColourDatabase *db = ColourDatabase::getInstance();
-        if (value >= 0 && size_t(value) < db->getColourCount()) {
+        if (value >= 0 && value < db->getColourCount()) {
             return db->getColourName(value);
         }
     }
