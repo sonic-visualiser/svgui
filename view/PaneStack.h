@@ -93,7 +93,7 @@ signals:
 
     void paneDeleteButtonClicked(Pane *pane);
 
-    void doubleClickSelectInvoked(size_t frame);
+    void doubleClickSelectInvoked(int frame);
 
 public slots:
     void propertyContainerAdded(PropertyContainer *);

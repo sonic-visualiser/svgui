@@ -41,7 +41,7 @@ public:
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
-    virtual bool snapToFeatureFrame(View *, int &, size_t &, SnapType) const;
+    virtual bool snapToFeatureFrame(View *, int &, int &, SnapType) const;
 
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourIrrelevant;

@@ -23,7 +23,7 @@
 #include "view/View.h"
 
 int
-LinearColourScale::getWidth(View *v,
+LinearColourScale::getWidth(View *,
 			    QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 15;
@@ -33,7 +33,7 @@ void
 LinearColourScale::paintVertical(View *v,
 				 const ColourScaleLayer *layer,
 				 QPainter &paint,
-				 int x0,
+				 int /* x0 */,
 				 float min,
 				 float max)
 {
@@ -45,8 +45,6 @@ LinearColourScale::paintVertical(View *v,
     float inc = (max - val) / n;
 
     char buffer[40];
-
-    int w = getWidth(v, paint) + x0;
 
     int boxx = 5, boxy = 5;
     if (layer->getScaleUnits() != "") {
@@ -65,16 +63,16 @@ LinearColourScale::paintVertical(View *v,
     }
     paint.restore();
 
-    float round = 1.f;
+//    float round = 1.f;
     int dp = 0;
     if (inc > 0) {
         int prec = trunc(log10f(inc));
         prec -= 1;
         if (prec < 0) dp = -prec;
-        round = powf(10.f, prec);
-#ifdef DEBUG_TIME_VALUE_LAYER
-        cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << endl;
-#endif
+//        round = powf(10.f, prec);
+//#ifdef DEBUG_TIME_VALUE_LAYER
+//        cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << endl;
+//#endif
     }
 
     for (int i = 0; i < n; ++i) {

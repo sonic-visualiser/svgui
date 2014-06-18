@@ -574,7 +574,7 @@ TimeValueLayer::getLocalPoints(View *v, int x) const
 }
 
 QString
-TimeValueLayer::getLabelPreceding(size_t frame) const
+TimeValueLayer::getLabelPreceding(int frame) const
 {
     if (!m_model) return "";
     SparseTimeValueModel::PointList points = m_model->getPreviousPoints(frame);
@@ -630,7 +630,7 @@ TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 bool
 TimeValueLayer::snapToFeatureFrame(View *v, int &frame,
-				   size_t &resolution,
+				   int &resolution,
 				   SnapType snap) const
 {
     if (!m_model) {
@@ -702,7 +702,7 @@ TimeValueLayer::snapToFeatureFrame(View *v, int &frame,
 
 bool
 TimeValueLayer::snapToSimilarFeature(View *v, int &frame,
-                                     size_t &resolution,
+                                     int &resolution,
                                      SnapType snap) const
 {
     if (!m_model) {
@@ -1435,7 +1435,7 @@ TimeValueLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::eraseDrag(View *v, QMouseEvent *e)
+TimeValueLayer::eraseDrag(View *, QMouseEvent *)
 {
 }
 
@@ -1580,7 +1580,7 @@ TimeValueLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::moveSelection(Selection s, size_t newStartFrame)
+TimeValueLayer::moveSelection(Selection s, int newStartFrame)
 {
     if (!m_model) return;
 
@@ -1682,7 +1682,7 @@ TimeValueLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
+TimeValueLayer::paste(View *v, const Clipboard &from, int /* frameOffset */,
                       bool interactive)
 {
     if (!m_model) return false;
@@ -1721,7 +1721,6 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
     Labeller::ValueType generation = Labeller::ValueNone;
 
     bool haveUsableLabels = false;
-    bool haveExistingItems = !(m_model->isEmpty());
     Labeller labeller;
     labeller.setSampleRate(m_model->getSampleRate());
 
@@ -1823,7 +1822,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int frameOffset,
         
         if (!i->haveFrame()) continue;
 
-        size_t frame = 0;
+        int frame = 0;
 
         if (!realign) {
             

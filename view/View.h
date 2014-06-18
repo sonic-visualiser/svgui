@@ -64,13 +64,13 @@ public:
      * This is a calculated value based on the centre-frame, widget
      * width and zoom level.  The result may be negative.
      */
-    long getStartFrame() const;
+    int getStartFrame() const;
 
     /**
      * Set the widget pan based on the given first visible frame.  The
      * frame value may be negative.
      */
-    void setStartFrame(long);
+    void setStartFrame(int);
 
     /**
      * Return the centre frame of the visible widget.  This is an
@@ -78,30 +78,30 @@ public:
      * frame values (start, end) are calculated from this based on the
      * zoom and other factors.
      */
-    size_t getCentreFrame() const { return m_centreFrame; }
+    int getCentreFrame() const { return m_centreFrame; }
 
     /**
      * Set the centre frame of the visible widget.
      */
-    void setCentreFrame(size_t f) { setCentreFrame(f, true); }
+    void setCentreFrame(int f) { setCentreFrame(f, true); }
 
     /**
      * Retrieve the last visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
      * width and zoom level.
      */
-    size_t getEndFrame() const;
+    int getEndFrame() const;
 
     /**
      * Return the pixel x-coordinate corresponding to a given sample
      * frame (which may be negative).
      */
-    int getXForFrame(long frame) const;
+    int getXForFrame(int frame) const;
 
     /**
      * Return the closest frame to the given pixel x-coordinate.
      */
-    long getFrameForX(int x) const;
+    int getFrameForX(int x) const;
 
     /**
      * Return the pixel y-coordinate corresponding to a given
@@ -133,7 +133,7 @@ public:
      * centre frame will be unchanged; the start and end frames will
      * change.
      */
-    virtual void setZoomLevel(size_t z);
+    virtual void setZoomLevel(int z);
 
     /**
      * Zoom in or out.
@@ -177,7 +177,7 @@ public:
     virtual const Layer *getSelectedLayer() const;
 
     virtual void setViewManager(ViewManager *m);
-    virtual void setViewManager(ViewManager *m, long initialFrame);
+    virtual void setViewManager(ViewManager *m, int initialFrame);
     virtual ViewManager *getViewManager() const { return m_manager; }
 
     virtual void setFollowGlobalPan(bool f);
@@ -234,15 +234,15 @@ public:
     }
     virtual QString getPropertyContainerIconName() const = 0;
 
-    virtual size_t getPropertyContainerCount() const;
+    virtual int getPropertyContainerCount() const;
 
-    virtual const PropertyContainer *getPropertyContainer(size_t i) const;
-    virtual PropertyContainer *getPropertyContainer(size_t i);
+    virtual const PropertyContainer *getPropertyContainer(int i) const;
+    virtual PropertyContainer *getPropertyContainer(int i);
 
     // Render the contents on a wide canvas
-    virtual QImage *toNewImage(size_t f0, size_t f1);
+    virtual QImage *toNewImage(int f0, int f1);
     virtual QImage *toNewImage();
-    virtual QSize getImageSize(size_t f0, size_t f1);
+    virtual QSize getImageSize(int f0, int f1);
     virtual QSize getImageSize();
 
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
@@ -254,19 +254,19 @@ public:
                        QString extraAttributes = "") const;
 
     // First frame actually in model, to right of scale, if present
-    virtual size_t getFirstVisibleFrame() const;
-    virtual size_t getLastVisibleFrame() const;
+    virtual int getFirstVisibleFrame() const;
+    virtual int getLastVisibleFrame() const;
 
-    size_t getModelsStartFrame() const;
-    size_t getModelsEndFrame() const;
+    int getModelsStartFrame() const;
+    int getModelsEndFrame() const;
 
     typedef std::set<Model *> ModelSet;
     ModelSet getModels();
 
     //!!!
     Model *getAligningModel() const;
-    size_t alignFromReference(size_t) const;
-    size_t alignToReference(size_t) const;
+    int alignFromReference(int) const;
+    int alignToReference(int) const;
     int getAlignedPlaybackFrame() const;
 
 signals:
@@ -280,17 +280,17 @@ signals:
 
     void layerModelChanged();
 
-    void centreFrameChanged(unsigned long frame,
+    void centreFrameChanged(int frame,
                             bool globalScroll,
                             PlaybackFollowMode followMode);
 
-    void zoomLevelChanged(unsigned long, bool);
+    void zoomLevelChanged(int, bool);
 
     void contextHelpChanged(const QString &);
 
 public slots:
     virtual void modelChanged();
-    virtual void modelChanged(size_t startFrame, size_t endFrame);
+    virtual void modelChangedWithin(int startFrame, int endFrame);
     virtual void modelCompletionChanged();
     virtual void modelAlignmentCompletionChanged();
     virtual void modelReplaced();
@@ -299,10 +299,10 @@ public slots:
     virtual void layerMeasurementRectsChanged();
     virtual void layerNameChanged();
 
-    virtual void globalCentreFrameChanged(unsigned long);
-    virtual void viewCentreFrameChanged(View *, unsigned long);
-    virtual void viewManagerPlaybackFrameChanged(unsigned long);
-    virtual void viewZoomLevelChanged(View *, unsigned long, bool);
+    virtual void globalCentreFrameChanged(int);
+    virtual void viewCentreFrameChanged(View *, int);
+    virtual void viewManagerPlaybackFrameChanged(int);
+    virtual void viewZoomLevelChanged(View *, int, bool);
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
 
@@ -320,7 +320,7 @@ protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
-    virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
+    virtual bool render(QPainter &paint, int x0, int f0, int f1);
     virtual void setPaintFont(QPainter &paint);
     
     typedef std::vector<Layer *> LayerList;
@@ -329,7 +329,7 @@ protected:
     bool areLayersScrollable() const;
     LayerList getScrollableBackLayers(bool testChanged, bool &changed) const;
     LayerList getNonScrollableFrontLayers(bool testChanged, bool &changed) const;
-    size_t getZoomConstraintBlockSize(size_t blockSize,
+    int getZoomConstraintBlockSize(int blockSize,
 				      ZoomConstraint::RoundingDirection dir =
 				      ZoomConstraint::RoundNearest) const;
 
@@ -344,25 +344,25 @@ protected:
     // false.
     bool hasTopLayerTimeXAxis() const;
 
-    bool setCentreFrame(size_t f, bool doEmit);
+    bool setCentreFrame(int f, bool doEmit);
 
-    void movePlayPointer(unsigned long f);
+    void movePlayPointer(int f);
 
     void checkProgress(void *object);
     int getProgressBarWidth() const; // if visible
 
-    size_t              m_centreFrame;
+    int              m_centreFrame;
     int                 m_zoomLevel;
     bool                m_followPan;
     bool                m_followZoom;
     PlaybackFollowMode  m_followPlay;
     bool                m_followPlayIsDetached;
-    size_t              m_playPointerFrame;
+    int                 m_playPointerFrame;
     bool                m_lightBackground;
     bool                m_showProgress;
 
     QPixmap            *m_cache;
-    size_t              m_cacheCentreFrame;
+    int                 m_cacheCentreFrame;
     int                 m_cacheZoomLevel;
     bool                m_selectionCached;
 

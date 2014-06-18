@@ -201,7 +201,7 @@ TimeInstantLayer::getLocalPoints(View *v, int x) const
 }
 
 QString
-TimeInstantLayer::getLabelPreceding(size_t frame) const
+TimeInstantLayer::getLabelPreceding(int frame) const
 {
     if (!m_model) return "";
     SparseOneDimensionalModel::PointList points = m_model->getPreviousPoints(frame);
@@ -250,7 +250,7 @@ TimeInstantLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 bool
 TimeInstantLayer::snapToFeatureFrame(View *v, int &frame,
-				     size_t &resolution,
+				     int &resolution,
 				     SnapType snap) const
 {
     if (!m_model) {
@@ -506,7 +506,7 @@ TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::drawEnd(View *, QMouseEvent *e)
+TimeInstantLayer::drawEnd(View *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << endl;
@@ -541,7 +541,7 @@ TimeInstantLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::eraseDrag(View *v, QMouseEvent *e)
+TimeInstantLayer::eraseDrag(View *, QMouseEvent *)
 {
 }
 
@@ -612,7 +612,7 @@ TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::editEnd(View *, QMouseEvent *e)
+TimeInstantLayer::editEnd(View *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << endl;
@@ -666,7 +666,7 @@ TimeInstantLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::moveSelection(Selection s, size_t newStartFrame)
+TimeInstantLayer::moveSelection(Selection s, int newStartFrame)
 {
     if (!m_model) return;
 
@@ -798,7 +798,7 @@ TimeInstantLayer::paste(View *v, const Clipboard &from, int frameOffset, bool)
         
         if (!i->haveFrame()) continue;
 
-        size_t frame = 0;
+        int frame = 0;
 
         if (!realign) {
             

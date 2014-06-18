@@ -81,11 +81,11 @@ public:
     void setChannel(int);
     int getChannel() const { return m_channel; }
 
-    void setWindowSize(size_t);
-    size_t getWindowSize() const { return m_windowSize; }
+    void setWindowSize(int);
+    int getWindowSize() const { return m_windowSize; }
     
-    void setWindowHopLevel(size_t level);
-    size_t getWindowHopLevel() const { return m_windowHopLevel; }
+    void setWindowHopLevel(int level);
+    int getWindowHopLevel() const { return m_windowHopLevel; }
 
     void setWindowType(WindowType type);
     WindowType getWindowType() const { return m_windowType; }
@@ -110,9 +110,9 @@ protected:
     DenseTimeValueModel    *m_originModel;
     int                     m_channel;
     bool                    m_channelSet;
-    size_t                  m_windowSize;
+    int                  m_windowSize;
     WindowType              m_windowType;
-    size_t                  m_windowHopLevel;
+    int                  m_windowHopLevel;
     bool                    m_showPeaks;
     mutable bool            m_newFFTNeeded;
 
@@ -129,7 +129,7 @@ protected:
     float getFrequencyForX(float x, float w) const;
     float getXForFrequency(float freq, float w) const;
 
-    size_t getWindowIncrement() const {
+    int getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;
         else if (m_windowHopLevel == 1) return (m_windowSize * 3) / 4;
         else return m_windowSize / (1 << (m_windowHopLevel - 1));

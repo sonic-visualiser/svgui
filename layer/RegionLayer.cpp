@@ -367,7 +367,7 @@ RegionLayer::getPointToDrag(View *v, int x, int y, RegionModel::Point &p) const
 }
 
 QString
-RegionLayer::getLabelPreceding(size_t frame) const
+RegionLayer::getLabelPreceding(int frame) const
 {
     if (!m_model) return "";
     RegionModel::PointList points = m_model->getPreviousPoints(frame);
@@ -450,7 +450,7 @@ RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 bool
 RegionLayer::snapToFeatureFrame(View *v, int &frame,
-                                size_t &resolution,
+                                int &resolution,
                                 SnapType snap) const
 {
     if (!m_model) {
@@ -533,7 +533,7 @@ RegionLayer::snapToFeatureFrame(View *v, int &frame,
 
 bool
 RegionLayer::snapToSimilarFeature(View *v, int &frame,
-                                  size_t &resolution,
+                                  int &resolution,
                                   SnapType snap) const
 {
     if (!m_model) {
@@ -901,7 +901,6 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
     //!!! coord is never completely flat on the top or bottom
 
     int fontHeight = paint.fontMetrics().height();
-    int fontAscent = paint.fontMetrics().ascent();
 
     for (RegionModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
@@ -1076,7 +1075,6 @@ RegionLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     bool logarithmic;
 
     int w = getVerticalScaleWidth(v, false, paint);
-    int h = v->height();
 
     if (m_plotStyle == PlotSegmentation) {
 
@@ -1192,7 +1190,7 @@ RegionLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::eraseDrag(View *v, QMouseEvent *e)
+RegionLayer::eraseDrag(View *, QMouseEvent *)
 {
 }
 
@@ -1279,7 +1277,7 @@ RegionLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::editEnd(View *, QMouseEvent *e)
+RegionLayer::editEnd(View *, QMouseEvent *)
 {
     if (!m_model || !m_editing) return;
 
@@ -1348,7 +1346,7 @@ RegionLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::moveSelection(Selection s, size_t newStartFrame)
+RegionLayer::moveSelection(Selection s, int newStartFrame)
 {
     if (!m_model) return;
 
@@ -1455,7 +1453,7 @@ RegionLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-RegionLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
+RegionLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1487,7 +1485,7 @@ RegionLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* inte
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
-        size_t frame = 0;
+        int frame = 0;
 
         if (!realign) {
             
@@ -1511,7 +1509,7 @@ RegionLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* inte
                                m_model->getValueMaximum()) / 2;
         if (i->haveDuration()) newPoint.duration = i->getDuration();
         else {
-            size_t nextFrame = frame;
+            int nextFrame = frame;
             Clipboard::PointList::const_iterator j = i;
             for (; j != points.end(); ++j) {
                 if (!j->haveFrame()) continue;

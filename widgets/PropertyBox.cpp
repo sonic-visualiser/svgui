@@ -517,6 +517,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	break;
     }
 
+    case PropertyContainer::InvalidProperty:
     default:
 	break;
     }

@@ -93,10 +93,11 @@ LayerFactory::getLayerPresentationName(LayerType type)
 	// likewise
 	return Layer::tr("Spectrogram");
 
-    default: break;
+    case UnknownLayer:
+    default:
+        cerr << "WARNING: LayerFactory::getLayerPresentationName passed unknown layer" << endl;
+        return Layer::tr("Unknown Layer");
     }
-
-    return Layer::tr("Layer");
 }
 
 bool
@@ -244,7 +245,10 @@ LayerFactory::getLayerIconName(LayerType type)
     case Slice: return "spectrum";
     case MelodicRangeSpectrogram: return "spectrogram";
     case PeakFrequencySpectrogram: return "spectrogram";
-    default: return "unknown";
+    case UnknownLayer:
+    default:
+        cerr << "WARNING: LayerFactory::getLayerIconName passed unknown layer" << endl;
+        return "unknown";
     }
 }
 
@@ -267,7 +271,10 @@ LayerFactory::getLayerTypeName(LayerType type)
     case Slice: return "slice";
     case MelodicRangeSpectrogram: return "melodicrange";
     case PeakFrequencySpectrogram: return "peakfrequency";
-    default: return "unknown";
+    case UnknownLayer:
+    default:
+        cerr << "WARNING: LayerFactory::getLayerTypeName passed unknown layer" << endl;
+        return "unknown";
     }
 }
 
@@ -460,11 +467,14 @@ LayerFactory::createLayer(LayerType type)
 	layer = new SpectrogramLayer(SpectrogramLayer::MelodicPeaks);
 	break;
 
-    default: break;
+    case UnknownLayer:
+    default:
+        cerr << "WARNING: LayerFactory::createLayer passed unknown layer" << endl;
+        break;
     }
 
     if (!layer) {
-	SVDEBUG << "LayerFactory::createLayer: Unknown layer type " 
+	cerr << "LayerFactory::createLayer: Unknown layer type " 
 		  << type << endl;
     } else {
 //	SVDEBUG << "LayerFactory::createLayer: Setting object name "
@@ -499,7 +509,7 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
         QDomElement layerElt = docNew.firstChildElement("layer");
         QDomNamedNodeMap attrNodes = layerElt.attributes();
         
-        for (unsigned int i = 0; i < attrNodes.length(); ++i) {
+        for (int i = 0; i < attrNodes.length(); ++i) {
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
 //            cerr << "append \"" << attr.name()
@@ -510,7 +520,7 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
         
         layerElt = docOld.firstChildElement("layer");
         attrNodes = layerElt.attributes();
-        for (unsigned int i = 0; i < attrNodes.length(); ++i) {
+        for (int i = 0; i < attrNodes.length(); ++i) {
             QDomAttr attr = attrNodes.item(i).toAttr();
             if (attr.isNull()) continue;
             if (attrs.value(attr.name()) == "") {

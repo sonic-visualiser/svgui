@@ -130,13 +130,13 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     m_sampleRateLabel = new QLabel(tr("Audio sample rate (Hz):"));
     layout->addWidget(m_sampleRateLabel, row, 0);
     
-    size_t sampleRates[] = {
+    int sampleRates[] = {
 	8000, 11025, 12000, 22050, 24000, 32000,
 	44100, 48000, 88200, 96000, 176400, 192000
     };
 
     m_sampleRateCombo = new QComboBox;
-    for (size_t i = 0; i < sizeof(sampleRates) / sizeof(sampleRates[0]); ++i) {
+    for (int i = 0; i < int(sizeof(sampleRates) / sizeof(sampleRates[0])); ++i) {
 	m_sampleRateCombo->addItem(QString("%1").arg(sampleRates[i]));
 	if (sampleRates[i] == m_format.getSampleRate()) {
             m_sampleRateCombo->setCurrentIndex(i);

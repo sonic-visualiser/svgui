@@ -150,7 +150,7 @@ public:
 	return "";
     }
 
-    virtual QString getLabelPreceding(size_t /* frame */) const {
+    virtual QString getLabelPreceding(int /* frame */) const {
         return "";
     }
 
@@ -182,7 +182,7 @@ public:
      */
     virtual bool snapToFeatureFrame(View *   /* v */,
 				    int &    /* frame */,
-				    size_t &resolution,
+				    int &resolution,
 				    SnapType /* snap */) const {
 	resolution = 1;
 	return false;
@@ -206,7 +206,7 @@ public:
      */
     virtual bool snapToSimilarFeature(View *   /* v */,
                                       int &    /* source frame */,
-                                      size_t &resolution,
+                                      int &resolution,
                                       SnapType /* snap */) const {
 	resolution = 1;
 	return false;
@@ -254,7 +254,7 @@ public:
      */
     virtual bool editOpen(View *, QMouseEvent *) { return false; }
 
-    virtual void moveSelection(Selection, size_t /* newStartFrame */) { }
+    virtual void moveSelection(Selection, int /* newStartFrame */) { }
     virtual void resizeSelection(Selection, Selection /* newSize */) { }
     virtual void deleteSelection(Selection) { }
 
@@ -525,7 +525,7 @@ signals:
     void modelChanged();
     void modelCompletionChanged();
     void modelAlignmentCompletionChanged();
-    void modelChanged(size_t startFrame, size_t endFrame);
+    void modelChangedWithin(int startFrame, int endFrame);
     void modelReplaced();
 
     void layerParametersChanged();
@@ -538,16 +538,16 @@ signals:
 protected:
     void connectSignals(const Model *);
 
-    virtual size_t alignToReference(View *v, size_t frame) const;
-    virtual size_t alignFromReference(View *v, size_t frame) const;
+    virtual int alignToReference(View *v, int frame) const;
+    virtual int alignFromReference(View *v, int frame) const;
     bool clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const;
 
     struct MeasureRect {
 
         mutable QRect pixrect;
         bool haveFrames;
-        long startFrame; // only valid if haveFrames
-        long endFrame;   // ditto
+        int startFrame; // only valid if haveFrames
+        int endFrame;   // ditto
         double startY;
         double endY;
 

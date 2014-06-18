@@ -221,7 +221,7 @@ TextLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 bool
 TextLayer::snapToFeatureFrame(View *v, int &frame,
-			      size_t &resolution,
+			      int &resolution,
 			      SnapType snap) const
 {
     if (!m_model) {
@@ -495,7 +495,7 @@ TextLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::eraseDrag(View *v, QMouseEvent *e)
+TextLayer::eraseDrag(View *, QMouseEvent *)
 {
 }
 
@@ -621,7 +621,7 @@ TextLayer::editOpen(View *v, QMouseEvent *e)
 }    
 
 void
-TextLayer::moveSelection(Selection s, size_t newStartFrame)
+TextLayer::moveSelection(Selection s, int newStartFrame)
 {
     if (!m_model) return;
 
@@ -717,7 +717,7 @@ TextLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-TextLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* interactive */)
+TextLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -759,7 +759,7 @@ TextLayer::paste(View *v, const Clipboard &from, int frameOffset, bool /* intera
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
-        size_t frame = 0;
+        int frame = 0;
         
         if (!realign) {
             

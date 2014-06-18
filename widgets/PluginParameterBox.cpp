@@ -331,10 +331,10 @@ PluginParameterBox::spinBoxChanged(double value)
         value = min + step * qtz;
     }
 
-    int imax = 100;
+//    int imax = 100;
     
     if (qtz > 0.0) {
-        imax = lrintf((max - min) / qtz);
+//        imax = lrintf((max - min) / qtz);
     } else {
         qtz = (max - min) / 100.0;
     }
