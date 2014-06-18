@@ -98,9 +98,9 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     currentIndicator->setScaledContents(true);
     currentIndicator->setVisible(m_showAccessories);
 
-    long initialCentreFrame = -1;
-    for (int i = 0; i < m_panes.size(); ++i) {
-        long f = m_panes[i].pane->getCentreFrame();
+    int initialCentreFrame = -1;
+    for (int i = 0; i < (int)m_panes.size(); ++i) {
+        int f = m_panes[i].pane->getCentreFrame();
         initialCentreFrame = f;
         break;
     }
@@ -158,8 +158,8 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
             this, SLOT(paneDropAccepted(QStringList)));
     connect(pane, SIGNAL(dropAccepted(QString)),
             this, SLOT(paneDropAccepted(QString)));
-    connect(pane, SIGNAL(doubleClickSelectInvoked(size_t)),
-            this, SIGNAL(doubleClickSelectInvoked(size_t)));
+    connect(pane, SIGNAL(doubleClickSelectInvoked(int)),
+            this, SIGNAL(doubleClickSelectInvoked(int)));
 
     emit paneAdded(pane);
     emit paneAdded();
@@ -220,7 +220,7 @@ PaneStack::setLayoutStyle(LayoutStyle style)
 Pane *
 PaneStack::getPane(int n)
 {
-    if (n < m_panes.size()) {
+    if (n < (int)m_panes.size()) {
         return m_panes[n].pane;
     } else {
         return 0;
@@ -532,7 +532,7 @@ PaneStack::sizePropertyStacks()
 
     if (m_propertyStackMinWidth > 0) maxMinWidth = m_propertyStackMinWidth;
 
-    for (size_t i = 0; i < m_panes.size(); ++i) {
+    for (int i = 0; i < (int)m_panes.size(); ++i) {
 	if (!m_panes[i].propertyStack) continue;
 #ifdef DEBUG_PANE_STACK
 	SVDEBUG << "PaneStack::sizePropertyStacks: " << i << ": min " 
@@ -554,7 +554,7 @@ PaneStack::sizePropertyStacks()
 
     m_propertyStackStack->setMaximumWidth(setWidth + 10);
 
-    for (size_t i = 0; i < m_panes.size(); ++i) {
+    for (int i = 0; i < (int)m_panes.size(); ++i) {
 	if (!m_panes[i].propertyStack) continue;
 	m_panes[i].propertyStack->setMinimumWidth(setWidth);
     }
@@ -581,7 +581,7 @@ void
 PaneStack::paneDeleteButtonClicked()
 {
     QObject *s = sender();
-    for (size_t i = 0; i < m_panes.size(); ++i) {
+    for (int i = 0; i < (int)m_panes.size(); ++i) {
 	if (m_panes[i].xButton == s) {
             emit paneDeleteButtonClicked(m_panes[i].pane);
         }
@@ -593,7 +593,7 @@ PaneStack::indicatorClicked()
 {
     QObject *s = sender();
 
-    for (size_t i = 0; i < m_panes.size(); ++i) {
+    for (int i = 0; i < (int)m_panes.size(); ++i) {
 	if (m_panes[i].currentIndicator == s) {
             setCurrentPane(m_panes[i].pane);
             return;

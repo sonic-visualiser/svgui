@@ -26,6 +26,8 @@
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h"
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
+#include "widgets/IconLoader.h"
+
 #include <QPainter>
 #include <QPaintEvent>
 #include <QRect>
@@ -34,6 +36,7 @@
 #include <QTextStream>
 #include <QFont>
 #include <QMessageBox>
+#include <QPushButton>
 
 #include <iostream>
 #include <cassert>
@@ -53,6 +56,7 @@ View::View(QWidget *w, bool showProgress) :
     m_followPan(true),
     m_followZoom(true),
     m_followPlay(PlaybackScrollPage),
+    m_followPlayIsDetached(false),
     m_playPointerFrame(0),
     m_showProgress(showProgress),
     m_cache(0),
@@ -154,21 +158,21 @@ View::setProperty(const PropertyContainer::PropertyName &name, int value)
     }
 }
 
-size_t
+int
 View::getPropertyContainerCount() const
 {
     return m_layers.size() + 1; // the 1 is for me
 }
 
 const PropertyContainer *
-View::getPropertyContainer(size_t i) const
+View::getPropertyContainer(int i) const
 {
     return (const PropertyContainer *)(((View *)this)->
 				       getPropertyContainer(i));
 }
 
 PropertyContainer *
-View::getPropertyContainer(size_t i)
+View::getPropertyContainer(int i)
 {
     if (i == 0) return m_propertyContainer;
     return m_layers[i-1];
@@ -291,26 +295,26 @@ View::zoomWheelsEnabledChanged()
     // subclass might override this
 }
 
-long
+int
 View::getStartFrame() const
 {
     return getFrameForX(0);
 }
 
-size_t
+int
 View::getEndFrame() const
 {
     return getFrameForX(width()) - 1;
 }
 
 void
-View::setStartFrame(long f)
+View::setStartFrame(int f)
 {
     setCentreFrame(f + m_zoomLevel * (width() / 2));
 }
 
 bool
-View::setCentreFrame(size_t f, bool e)
+View::setCentreFrame(int f, bool e)
 {
     bool changeVisible = false;
 
@@ -333,7 +337,7 @@ View::setCentreFrame(size_t f, bool e)
 	}
 
 	if (e) {
-            size_t rf = alignToReference(f);
+            int rf = alignToReference(f);
 #ifdef DEBUG_VIEW_WIDGET_PAINT
             cerr << "View[" << this << "]::setCentreFrame(" << f
                       << "): emitting centreFrameChanged("
@@ -347,16 +351,16 @@ View::setCentreFrame(size_t f, bool e)
 }
 
 int
-View::getXForFrame(long frame) const
+View::getXForFrame(int frame) const
 {
     return (frame - getStartFrame()) / m_zoomLevel;
 }
 
-long
+int
 View::getFrameForX(int x) const
 {
-    long z = (long)m_zoomLevel;
-    long frame = m_centreFrame - (width()/2) * z;
+    int z = m_zoomLevel;
+    int frame = m_centreFrame - (width()/2) * z;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     SVDEBUG << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << endl;
@@ -442,7 +446,7 @@ View::getZoomLevel() const
 }
 
 void
-View::setZoomLevel(size_t z)
+View::setZoomLevel(int z)
 {
     if (z < 1) z = 1;
     if (m_zoomLevel != int(z)) {
@@ -516,11 +520,6 @@ View::getForeground() const
     else return Qt::white;
 }
 
-View::LayerProgressBar::LayerProgressBar(QWidget *parent) :
-    QProgressBar(parent)
-{
-}
-
 void
 View::addLayer(Layer *layer)
 {
@@ -538,7 +537,14 @@ View::addLayer(Layer *layer)
     pb->setFixedWidth(80);
     pb->setTextVisible(false);
 
+    QPushButton *cancel = new QPushButton(this);
+    cancel->setIcon(IconLoader().load("fileclose"));
+    cancel->setFlat(true);
+    cancel->setFixedSize(QSize(20, 20));
+    connect(cancel, SIGNAL(clicked()), this, SLOT(cancelClicked()));
+    
     ProgressBarRec pbr;
+    pbr.cancel = cancel;
     pbr.bar = pb;
     pbr.lastCheck = 0;
     pbr.checkTimer = new QTimer();
@@ -550,6 +556,8 @@ View::addLayer(Layer *layer)
     QFont f(pb->font());
     int fs = Preferences::getInstance()->getViewFontSize();
     f.setPointSize(std::min(fs, int(ceil(fs * 0.85))));
+
+    cancel->hide();
 
     pb->setFont(f);
     pb->hide();
@@ -568,8 +576,8 @@ View::addLayer(Layer *layer)
 	    this,    SLOT(modelCompletionChanged()));
     connect(layer, SIGNAL(modelAlignmentCompletionChanged()),
 	    this,    SLOT(modelAlignmentCompletionChanged()));
-    connect(layer, SIGNAL(modelChanged(size_t, size_t)),
-	    this,    SLOT(modelChanged(size_t, size_t)));
+    connect(layer, SIGNAL(modelChangedWithin(int, int)),
+	    this,    SLOT(modelChangedWithin(int, int)));
     connect(layer, SIGNAL(modelReplaced()),
 	    this,    SLOT(modelReplaced()));
 
@@ -593,6 +601,7 @@ View::removeLayer(Layer *layer)
 	    m_layers.erase(i);
 	    if (m_progressBars.find(layer) != m_progressBars.end()) {
 		delete m_progressBars[layer].bar;
+                delete m_progressBars[layer].cancel;
 		delete m_progressBars[layer].checkTimer;
 		m_progressBars.erase(layer);
 	    }
@@ -612,8 +621,8 @@ View::removeLayer(Layer *layer)
                this,    SLOT(modelCompletionChanged()));
     disconnect(layer, SIGNAL(modelAlignmentCompletionChanged()),
                this,    SLOT(modelAlignmentCompletionChanged()));
-    disconnect(layer, SIGNAL(modelChanged(size_t, size_t)),
-               this,    SLOT(modelChanged(size_t, size_t)));
+    disconnect(layer, SIGNAL(modelChangedWithin(int, int)),
+               this,    SLOT(modelChangedWithin(int, int)));
     disconnect(layer, SIGNAL(modelReplaced()),
                this,    SLOT(modelReplaced()));
 
@@ -650,29 +659,29 @@ void
 View::setViewManager(ViewManager *manager)
 {
     if (m_manager) {
-	m_manager->disconnect(this, SLOT(globalCentreFrameChanged(unsigned long)));
-	m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, unsigned long)));
-	m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(unsigned long)));
-	m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, unsigned long, bool)));
+	m_manager->disconnect(this, SLOT(globalCentreFrameChanged(int)));
+	m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, int)));
+	m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(int)));
+	m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, int, bool)));
         m_manager->disconnect(this, SLOT(toolModeChanged()));
         m_manager->disconnect(this, SLOT(selectionChanged()));
         m_manager->disconnect(this, SLOT(overlayModeChanged()));
         m_manager->disconnect(this, SLOT(zoomWheelsEnabledChanged()));
-        disconnect(m_manager, SLOT(viewCentreFrameChanged(unsigned long, bool, PlaybackFollowMode)));
-	disconnect(m_manager, SLOT(zoomLevelChanged(unsigned long, bool)));
+        disconnect(m_manager, SLOT(viewCentreFrameChanged(int, bool, PlaybackFollowMode)));
+	disconnect(m_manager, SLOT(zoomLevelChanged(int, bool)));
     }
 
     m_manager = manager;
 
-    connect(m_manager, SIGNAL(globalCentreFrameChanged(unsigned long)),
-	    this, SLOT(globalCentreFrameChanged(unsigned long)));
-    connect(m_manager, SIGNAL(viewCentreFrameChanged(View *, unsigned long)),
-	    this, SLOT(viewCentreFrameChanged(View *, unsigned long)));
-    connect(m_manager, SIGNAL(playbackFrameChanged(unsigned long)),
-	    this, SLOT(viewManagerPlaybackFrameChanged(unsigned long)));
+    connect(m_manager, SIGNAL(globalCentreFrameChanged(int)),
+	    this, SLOT(globalCentreFrameChanged(int)));
+    connect(m_manager, SIGNAL(viewCentreFrameChanged(View *, int)),
+	    this, SLOT(viewCentreFrameChanged(View *, int)));
+    connect(m_manager, SIGNAL(playbackFrameChanged(int)),
+	    this, SLOT(viewManagerPlaybackFrameChanged(int)));
 
-    connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, unsigned long, bool)),
-	    this, SLOT(viewZoomLevelChanged(View *, unsigned long, bool)));
+    connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, int, bool)),
+	    this, SLOT(viewZoomLevelChanged(View *, int, bool)));
 
     connect(m_manager, SIGNAL(toolModeChanged()),
 	    this, SLOT(toolModeChanged()));
@@ -687,13 +696,13 @@ View::setViewManager(ViewManager *manager)
     connect(m_manager, SIGNAL(zoomWheelsEnabledChanged()),
             this, SLOT(zoomWheelsEnabledChanged()));
 
-    connect(this, SIGNAL(centreFrameChanged(unsigned long, bool,
+    connect(this, SIGNAL(centreFrameChanged(int, bool,
                                             PlaybackFollowMode)),
-            m_manager, SLOT(viewCentreFrameChanged(unsigned long, bool,
+            m_manager, SLOT(viewCentreFrameChanged(int, bool,
                                                    PlaybackFollowMode)));
 
-    connect(this, SIGNAL(zoomLevelChanged(unsigned long, bool)),
-	    m_manager, SLOT(viewZoomLevelChanged(unsigned long, bool)));
+    connect(this, SIGNAL(zoomLevelChanged(int, bool)),
+	    m_manager, SLOT(viewZoomLevelChanged(int, bool)));
 
 //    setCentreFrame(m_manager->getViewInitialCentreFrame());
 
@@ -716,7 +725,7 @@ View::setViewManager(ViewManager *manager)
 }
 
 void
-View::setViewManager(ViewManager *vm, long initialCentreFrame)
+View::setViewManager(ViewManager *vm, int initialCentreFrame)
 {
     setViewManager(vm);
     setCentreFrame(initialCentreFrame, false);
@@ -830,18 +839,18 @@ View::modelChanged()
 }
 
 void
-View::modelChanged(size_t startFrame, size_t endFrame)
+View::modelChangedWithin(int startFrame, int endFrame)
 {
     QObject *obj = sender();
 
-    long myStartFrame = getStartFrame();
-    size_t myEndFrame = getEndFrame();
+    int myStartFrame = getStartFrame();
+    int myEndFrame = getEndFrame();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << this << ")::modelChanged(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << endl;
+    cerr << "View(" << this << ")::modelChangedWithin(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << endl;
 #endif
 
-    if (myStartFrame > 0 && endFrame < size_t(myStartFrame)) {
+    if (myStartFrame > 0 && endFrame < int(myStartFrame)) {
 	checkProgress(obj);
 	return;
     }
@@ -870,7 +879,7 @@ View::modelChanged(size_t startFrame, size_t endFrame)
 	m_cache = 0;
     }
 
-    if (long(startFrame) < myStartFrame) startFrame = myStartFrame;
+    if (startFrame < myStartFrame) startFrame = myStartFrame;
     if (endFrame > myEndFrame) endFrame = myEndFrame;
 
     checkProgress(obj);
@@ -948,10 +957,10 @@ View::layerNameChanged()
 }
 
 void
-View::globalCentreFrameChanged(unsigned long rf)
+View::globalCentreFrameChanged(int rf)
 {
     if (m_followPan) {
-        size_t f = alignFromReference(rf);
+        int f = alignFromReference(rf);
 #ifdef DEBUG_VIEW_WIDGET_PAINT
         cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
                   << "): setting centre frame to " << f << endl;
@@ -961,13 +970,13 @@ View::globalCentreFrameChanged(unsigned long rf)
 }
 
 void
-View::viewCentreFrameChanged(View *, unsigned long )
+View::viewCentreFrameChanged(View *, int )
 {
     // We do nothing with this, but a subclass might
 }
 
 void
-View::viewManagerPlaybackFrameChanged(unsigned long f)
+View::viewManagerPlaybackFrameChanged(int f)
 {
     if (m_manager) {
 	if (sender() != m_manager) return;
@@ -979,18 +988,24 @@ View::viewManagerPlaybackFrameChanged(unsigned long f)
 }
 
 void
-View::movePlayPointer(unsigned long newFrame)
+View::movePlayPointer(int newFrame)
 {
     if (m_playPointerFrame == newFrame) return;
     bool visibleChange =
         (getXForFrame(m_playPointerFrame) != getXForFrame(newFrame));
-    size_t oldPlayPointerFrame = m_playPointerFrame;
+    int oldPlayPointerFrame = m_playPointerFrame;
     m_playPointerFrame = newFrame;
     if (!visibleChange) return;
 
     bool somethingGoingOn =
         ((QApplication::mouseButtons() != Qt::NoButton) ||
          (QApplication::keyboardModifiers() & Qt::AltModifier));
+
+    bool pointerInVisibleArea =
+	long(m_playPointerFrame) >= getStartFrame() &&
+        (m_playPointerFrame < getEndFrame() ||
+         // include old pointer location so we know to refresh when moving out
+         oldPlayPointerFrame < getEndFrame());
 
     switch (m_followPlay) {
 
@@ -1001,59 +1016,78 @@ View::movePlayPointer(unsigned long newFrame)
 	break;
 
     case PlaybackScrollPage:
-    { 
-	int xold = getXForFrame(oldPlayPointerFrame);
-	update(xold - 4, 0, 9, height());
 
-	long w = getEndFrame() - getStartFrame();
-	w -= w/5;
-	long sf = (m_playPointerFrame / w) * w - w/8;
+        if (!pointerInVisibleArea && somethingGoingOn) {
 
-	if (m_manager &&
-	    m_manager->isPlaying() &&
-	    m_manager->getPlaySelectionMode()) {
-	    MultiSelection::SelectionList selections = m_manager->getSelections();
-	    if (!selections.empty()) {
-		size_t selectionStart = selections.begin()->getStartFrame();
-		if (sf < long(selectionStart) - w / 10) {
-		    sf = long(selectionStart) - w / 10;
-		}
-	    }
-	}
+            m_followPlayIsDetached = true;
+
+        } else if (!pointerInVisibleArea && m_followPlayIsDetached) {
+
+            // do nothing; we aren't tracking until the pointer comes back in
+
+        } else {
+
+            int xold = getXForFrame(oldPlayPointerFrame);
+            update(xold - 4, 0, 9, height());
+
+            int w = getEndFrame() - getStartFrame();
+            w -= w/5;
+            int sf = (m_playPointerFrame / w) * w - w/8;
+
+            if (m_manager &&
+                m_manager->isPlaying() &&
+                m_manager->getPlaySelectionMode()) {
+                MultiSelection::SelectionList selections = m_manager->getSelections();
+                if (!selections.empty()) {
+                    int selectionStart = selections.begin()->getStartFrame();
+                    if (sf < selectionStart - w / 10) {
+                        sf = selectionStart - w / 10;
+                    }
+                }
+            }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
-		  << getStartFrame() << endl;
+            cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
+                 << getStartFrame() << endl;
 #endif
 
-	// We don't consider scrolling unless the pointer is outside
-	// the clearly visible range already
+            // We don't consider scrolling unless the pointer is outside
+            // the central visible range already
 
-	int xnew = getXForFrame(m_playPointerFrame);
+            int xnew = getXForFrame(m_playPointerFrame);
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	cerr << "xnew = " << xnew << ", width = " << width() << endl;
+            cerr << "xnew = " << xnew << ", width = " << width() << endl;
 #endif
 
-	if (xnew < width()/8 || xnew > (width()*7)/8) {
-	    if (!somethingGoingOn) {
-		long offset = getFrameForX(width()/2) - getStartFrame();
-		long newCentre = sf + offset;
-		bool changed = setCentreFrame(newCentre, false);
-		if (changed) {
-		    xold = getXForFrame(oldPlayPointerFrame);
-		    update(xold - 4, 0, 9, height());
-		}
-	    }
-	}
+            bool shouldScroll = (xnew > (width() * 7) / 8);
 
-	update(xnew - 4, 0, 9, height());
+            if (!m_followPlayIsDetached && (xnew < width() / 8)) {
+                shouldScroll = true;
+            }
 
-	break;
-    }
+            if (xnew > width() / 8) {
+                m_followPlayIsDetached = false;
+            } else if (somethingGoingOn) {
+                m_followPlayIsDetached = true;
+            }
+
+            if (!somethingGoingOn && shouldScroll) {
+                int offset = getFrameForX(width()/2) - getStartFrame();
+                int newCentre = sf + offset;
+                bool changed = setCentreFrame(newCentre, false);
+                if (changed) {
+                    xold = getXForFrame(oldPlayPointerFrame);
+                    update(xold - 4, 0, 9, height());
+                }
+            }
+
+            update(xnew - 4, 0, 9, height());
+        }
+        break;
 
     case PlaybackIgnore:
-	if (long(m_playPointerFrame) >= getStartFrame() &&
+	if (m_playPointerFrame >= getStartFrame() &&
             m_playPointerFrame < getEndFrame()) {
 	    update();
 	}
@@ -1062,7 +1096,7 @@ View::movePlayPointer(unsigned long newFrame)
 }
 
 void
-View::viewZoomLevelChanged(View *p, unsigned long z, bool locked)
+View::viewZoomLevelChanged(View *p, int z, bool locked)
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr  << "View[" << this << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << endl;
@@ -1083,35 +1117,35 @@ View::selectionChanged()
     update();
 }
 
-size_t
+int
 View::getFirstVisibleFrame() const
 {
-    long f0 = getStartFrame();
-    size_t f = getModelsStartFrame();
-    if (f0 < 0 || f0 < long(f)) return f;
+    int f0 = getStartFrame();
+    int f = getModelsStartFrame();
+    if (f0 < 0 || f0 < f) return f;
     return f0;
 }
 
-size_t 
+int 
 View::getLastVisibleFrame() const
 {
-    size_t f0 = getEndFrame();
-    size_t f = getModelsEndFrame();
+    int f0 = getEndFrame();
+    int f = getModelsEndFrame();
     if (f0 > f) return f;
     return f0;
 }
 
-size_t
+int
 View::getModelsStartFrame() const
 {
     bool first = true;
-    size_t startFrame = 0;
+    int startFrame = 0;
 
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
 
 	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 
-	    size_t thisStartFrame = (*i)->getModel()->getStartFrame();
+	    int thisStartFrame = (*i)->getModel()->getStartFrame();
 
 	    if (first || thisStartFrame < startFrame) {
 		startFrame = thisStartFrame;
@@ -1122,17 +1156,17 @@ View::getModelsStartFrame() const
     return startFrame;
 }
 
-size_t
+int
 View::getModelsEndFrame() const
 {
     bool first = true;
-    size_t endFrame = 0;
+    int endFrame = 0;
 
     for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
 
 	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 
-	    size_t thisEndFrame = (*i)->getModel()->getEndFrame();
+	    int thisEndFrame = (*i)->getModel()->getEndFrame();
 
 	    if (first || thisEndFrame > endFrame) {
 		endFrame = thisEndFrame;
@@ -1224,8 +1258,8 @@ View::getAligningModel() const
     else return anyModel;
 }
 
-size_t
-View::alignFromReference(size_t f) const
+int
+View::alignFromReference(int f) const
 {
     if (!m_manager->getAlignMode()) return f;
     Model *aligningModel = getAligningModel();
@@ -1233,8 +1267,8 @@ View::alignFromReference(size_t f) const
     return aligningModel->alignFromReference(f);
 }
 
-size_t
-View::alignToReference(size_t f) const
+int
+View::alignToReference(int f) const
 {
     if (!m_manager->getAlignMode()) return f;
     Model *aligningModel = getAligningModel();
@@ -1344,12 +1378,12 @@ View::getNonScrollableFrontLayers(bool testChanged, bool &changed) const
     return nonScrollables;
 }
 
-size_t
-View::getZoomConstraintBlockSize(size_t blockSize,
+int
+View::getZoomConstraintBlockSize(int blockSize,
 				 ZoomConstraint::RoundingDirection dir)
     const
 {
-    size_t candidate = blockSize;
+    int candidate = blockSize;
     bool haveCandidate = false;
 
     PowerOfSqrtTwoZoomConstraint defaultZoomConstraint;
@@ -1359,7 +1393,7 @@ View::getZoomConstraintBlockSize(size_t blockSize,
 	const ZoomConstraint *zoomConstraint = (*i)->getZoomConstraint();
 	if (!zoomConstraint) zoomConstraint = &defaultZoomConstraint;
 
-	size_t thisBlockSize =
+	int thisBlockSize =
 	    zoomConstraint->getNearestBlockSize(blockSize, dir);
 
 	// Go for the block size that's furthest from the one
@@ -1416,7 +1450,7 @@ View::zoom(bool in)
 void
 View::scroll(bool right, bool lots, bool e)
 {
-    long delta;
+    int delta;
     if (lots) {
 	delta = (getEndFrame() - getStartFrame()) / 2;
     } else {
@@ -1434,6 +1468,25 @@ View::scroll(bool right, bool lots, bool e)
 }
 
 void
+View::cancelClicked()
+{
+    QPushButton *cancel = qobject_cast<QPushButton *>(sender());
+    if (!cancel) return;
+
+    for (ProgressMap::iterator i = m_progressBars.begin();
+	 i != m_progressBars.end(); ++i) {
+
+        if (i->second.cancel == cancel) {
+
+            Layer *layer = i->first;
+            Model *model = layer->getModel();
+
+            if (model) model->abandon();
+        }
+    }
+}
+
+void
 View::checkProgress(void *object)
 {
     if (!m_showProgress) return;
@@ -1444,6 +1497,7 @@ View::checkProgress(void *object)
 	 i != m_progressBars.end(); ++i) {
 
         QProgressBar *pb = i->second.bar;
+        QPushButton *cancel = i->second.cancel;
 
 	if (i->first == object) {
 
@@ -1490,6 +1544,7 @@ View::checkProgress(void *object)
 	    if (completion >= 100) {
 
 		pb->hide();
+                cancel->hide();
                 timer->stop();
 
 	    } else {
@@ -1502,8 +1557,11 @@ View::checkProgress(void *object)
                     timer->start();
                 }
 
+                cancel->move(0, ph - pb->height()/2 - 10);
+                cancel->show();
+
 		pb->setValue(completion);
-		pb->move(0, ph - pb->height());
+		pb->move(20, ph - pb->height());
 
 		pb->show();
 		pb->update();
@@ -1562,7 +1620,7 @@ void
 View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
-//    SVDEBUG << "View::paintEvent: centre frame is " << m_centreFrame << endl;
+//    cerr << "View::paintEvent: centre frame is " << m_centreFrame << endl;
 
     if (m_layers.empty()) {
 	QFrame::paintEvent(e);
@@ -1602,7 +1660,6 @@ View::paintEvent(QPaintEvent *e)
     LayerList nonScrollables = getNonScrollableFrontLayers(true, layersChanged);
     bool selectionCacheable = nonScrollables.empty();
     bool haveSelections = m_manager && !m_manager->getSelections().empty();
-    bool selectionDrawn = false;
 
     // If all the non-scrollable layers are non-opaque, then we draw
     // the selection rectangle behind them and cache it.  If any are
@@ -1674,7 +1731,7 @@ View::paintEvent(QPaintEvent *e)
 
 	} else if (m_cacheCentreFrame != m_centreFrame) {
 
-	    long dx =
+	    int dx =
 		getXForFrame(m_cacheCentreFrame) -
 		getXForFrame(m_centreFrame);
 
@@ -1766,7 +1823,6 @@ View::paintEvent(QPaintEvent *e)
 	if (haveSelections && selectionCacheable) {
 	    drawSelections(paint);
 	    m_selectionCached = repaintCache;
-	    selectionDrawn = true;
 	}
 	
 	paint.end();
@@ -1815,12 +1871,15 @@ View::paintEvent(QPaintEvent *e)
     bool showPlayPointer = true;
     if (m_followPlay == PlaybackScrollContinuous) {
         showPlayPointer = false;
-    } else if (long(m_playPointerFrame) <= getStartFrame() ||
+    } else if (m_playPointerFrame <= getStartFrame() ||
                m_playPointerFrame >= getEndFrame()) {
         showPlayPointer = false;
     } else if (m_manager && !m_manager->isPlaying()) {
         if (m_playPointerFrame == getCentreFrame() &&
+            m_manager->shouldShowCentreLine() &&
             m_followPlay != PlaybackIgnore) {
+            // Don't show the play pointer when it is redundant with
+            // the centre line
             showPlayPointer = false;
         }
     }
@@ -1876,7 +1935,7 @@ View::drawSelections(QPainter &paint)
     int sampleRate = getModelsSampleRate();
 
     QPoint localPos;
-    long illuminateFrame = -1;
+    int illuminateFrame = -1;
     bool closeToLeft, closeToRight;
 
     if (shouldIlluminateLocalSelection(localPos, closeToLeft, closeToRight)) {
@@ -2232,14 +2291,14 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 }
 
 bool
-View::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
+View::render(QPainter &paint, int xorigin, int f0, int f1)
 {
-    size_t x0 = f0 / m_zoomLevel;
-    size_t x1 = f1 / m_zoomLevel;
+    int x0 = f0 / m_zoomLevel;
+    int x1 = f1 / m_zoomLevel;
 
-    size_t w = x1 - x0;
+    int w = x1 - x0;
 
-    size_t origCentreFrame = m_centreFrame;
+    int origCentreFrame = m_centreFrame;
 
     bool someLayersIncomplete = false;
 
@@ -2287,7 +2346,7 @@ View::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
     QProgressDialog progress(tr("Rendering image..."),
                              tr("Cancel"), 0, w / width(), this);
 
-    for (size_t x = 0; x < w; x += width()) {
+    for (int x = 0; x < w; x += width()) {
 
         progress.setValue(x / width());
         qApp->processEvents();
@@ -2339,17 +2398,17 @@ View::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
 QImage *
 View::toNewImage()
 {
-    size_t f0 = getModelsStartFrame();
-    size_t f1 = getModelsEndFrame();
+    int f0 = getModelsStartFrame();
+    int f1 = getModelsEndFrame();
 
     return toNewImage(f0, f1);
 }
 
 QImage *
-View::toNewImage(size_t f0, size_t f1)
+View::toNewImage(int f0, int f1)
 {
-    size_t x0 = f0 / getZoomLevel();
-    size_t x1 = f1 / getZoomLevel();
+    int x0 = f0 / getZoomLevel();
+    int x1 = f1 / getZoomLevel();
     
     QImage *image = new QImage(x1 - x0, height(), QImage::Format_RGB32);
 
@@ -2367,17 +2426,17 @@ View::toNewImage(size_t f0, size_t f1)
 QSize
 View::getImageSize()
 {
-    size_t f0 = getModelsStartFrame();
-    size_t f1 = getModelsEndFrame();
+    int f0 = getModelsStartFrame();
+    int f1 = getModelsEndFrame();
 
     return getImageSize(f0, f1);
 }
     
 QSize
-View::getImageSize(size_t f0, size_t f1)
+View::getImageSize(int f0, int f1)
 {
-    size_t x0 = f0 / getZoomLevel();
-    size_t x1 = f1 / getZoomLevel();
+    int x0 = f0 / getZoomLevel();
+    int x1 = f1 / getZoomLevel();
 
     return QSize(x1 - x0, height());
 }
@@ -2403,7 +2462,7 @@ View::toXml(QTextStream &stream,
 	     m_followPlay == PlaybackScrollPage ? "page" : "ignore")
 	.arg(extraAttributes);
 
-    for (size_t i = 0; i < m_layers.size(); ++i) {
+    for (int i = 0; i < (int)m_layers.size(); ++i) {
         bool visible = !m_layers[i]->isLayerDormant(this);
         m_layers[i]->toBriefXml(stream, indent + "  ",
                                 QString("visible=\"%1\"")

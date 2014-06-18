@@ -41,6 +41,7 @@
 #include <QCursor>
 #include <QTextStream>
 #include <QMimeData>
+#include <QApplication>
 
 #include <iostream>
 #include <cmath>
@@ -82,7 +83,9 @@ Pane::Pane(QWidget *w) :
     m_hthumb(0),
     m_vthumb(0),
     m_reset(0),
-    m_mouseInWidget(false)
+    m_mouseInWidget(false),
+    m_playbackFrameMoveScheduled(false),
+    m_playbackFrameMoveTo(0)
 {
     setObjectName("Pane");
     setMouseTracking(true);
@@ -543,7 +546,7 @@ Pane::paintEvent(QPaintEvent *e)
     paint.end();
 }
 
-size_t
+int
 Pane::getVerticalScaleWidth() const
 {
     if (m_scaleWidth > 0) return m_scaleWidth;
@@ -784,8 +787,6 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
     int x0 = getXForFrame(model->getStartFrame());
     int x1 = getXForFrame(model->getEndFrame());
 
-    int lw = 10;
-
     paint.save();
 
     QBrush brush;
@@ -938,7 +939,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     
     if (r.x() + r.width() >= llx - fontAscent - 3) {
     
-        for (size_t i = 0; i < texts.size(); ++i) {
+        for (int i = 0; i < texts.size(); ++i) {
 
 //            cerr << "Pane "<< this << ": text " << i << ": " << texts[i] << endl;
             
@@ -966,7 +967,7 @@ Pane::drawEditingSelection(QPainter &paint)
 {
     int offset = m_mousePos.x() - m_clickPos.x();
 
-    long origStart = m_editingSelection.getStartFrame();
+    int origStart = m_editingSelection.getStartFrame();
 
     int p0 = getXForFrame(origStart) + offset;
     int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
@@ -977,8 +978,8 @@ Pane::drawEditingSelection(QPainter &paint)
         p0 = getXForFrame(m_editingSelection.getStartFrame());
     }
     
-    long newStart = getFrameForX(p0);
-    long newEnd = getFrameForX(p1);
+    int newStart = getFrameForX(p0);
+    int newEnd = getFrameForX(p1);
     
     paint.save();
     paint.setPen(QPen(getForeground(), 2));
@@ -1041,10 +1042,10 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
 
     if (r.y() + r.height() < height() - fontHeight - 6) return;
 
-    size_t modelRate = waveformModel->getSampleRate();
-    size_t nativeRate = waveformModel->getNativeRate();
-    size_t playbackRate = m_manager->getPlaybackSampleRate();
-    size_t outputRate = m_manager->getOutputSampleRate();
+    int modelRate = waveformModel->getSampleRate();
+    int nativeRate = waveformModel->getNativeRate();
+    int playbackRate = m_manager->getPlaybackSampleRate();
+    int outputRate = m_manager->getOutputSampleRate();
         
     QString srNote = "";
 
@@ -1083,7 +1084,7 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
 }
 
 bool
-Pane::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
+Pane::render(QPainter &paint, int xorigin, int f0, int f1)
 {
     if (!View::render(paint, xorigin + m_scaleWidth, f0, f1)) {
         return false;
@@ -1114,10 +1115,10 @@ Pane::render(QPainter &paint, int xorigin, size_t f0, size_t f1)
 }
 
 QImage *
-Pane::toNewImage(size_t f0, size_t f1)
+Pane::toNewImage(int f0, int f1)
 {
-    size_t x0 = f0 / getZoomLevel();
-    size_t x1 = f1 / getZoomLevel();
+    int x0 = f0 / getZoomLevel();
+    int x1 = f1 / getZoomLevel();
 
     QImage *image = new QImage(x1 - x0 + m_scaleWidth,
                                height(), QImage::Format_RGB32);
@@ -1154,7 +1155,7 @@ Pane::toNewImage(size_t f0, size_t f1)
 }
 
 QSize
-Pane::getImageSize(size_t f0, size_t f1)
+Pane::getImageSize(int f0, int f1)
 {
     QSize s = View::getImageSize(f0, f1);
     QImage *image = new QImage(100, 100, QImage::Format_RGB32);
@@ -1173,11 +1174,11 @@ Pane::getImageSize(size_t f0, size_t f1)
     return QSize(sw + s.width(), s.height());
 }
 
-size_t
+int
 Pane::getFirstVisibleFrame() const
 {
-    long f0 = getFrameForX(m_scaleWidth);
-    size_t f = View::getFirstVisibleFrame();
+    int f0 = getFrameForX(m_scaleWidth);
+    int f = View::getFirstVisibleFrame();
     if (f0 < 0 || f0 < long(f)) return f;
     return f0;
 }
@@ -1189,7 +1190,7 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
 
     if (!m_manager) return Selection();
 
-    long testFrame = getFrameForX(x - 5);
+    int testFrame = getFrameForX(x - 5);
     if (testFrame < 0) {
     testFrame = getFrameForX(x);
     if (testFrame < 0) return Selection();
@@ -1331,6 +1332,11 @@ Pane::mousePressEvent(QMouseEvent *e)
             m_dragStartMinValue = dmin;
         }
 
+        // Schedule a play-head move to the mouse frame location. This
+        // will happen only if nothing else of interest happens
+        // (double-click, drag) before the timeout.
+        schedulePlaybackFrameMove(getFrameForX(e->x()));
+
     } else if (mode == ViewManager::SelectMode) {
 
         if (!hasTopLayerTimeXAxis()) return;
@@ -1354,7 +1360,7 @@ Pane::mousePressEvent(QMouseEvent *e)
         } else {
             
             int mouseFrame = getFrameForX(e->x());
-            size_t resolution = 1;
+            int resolution = 1;
             int snapFrame = mouseFrame;
     
             Layer *layer = getSelectedLayer();
@@ -1373,6 +1379,12 @@ Pane::mousePressEvent(QMouseEvent *e)
             }
 
             m_resizing = false;
+
+            // Schedule a play-head move to the mouse frame
+            // location. This will happen only if nothing else of
+            // interest happens (double-click, drag) before the
+            // timeout.
+            schedulePlaybackFrameMove(mouseFrame);
         }
 
         update();
@@ -1416,6 +1428,24 @@ Pane::mousePressEvent(QMouseEvent *e)
 }
 
 void
+Pane::schedulePlaybackFrameMove(int frame)
+{
+    m_playbackFrameMoveTo = frame;
+    m_playbackFrameMoveScheduled = true;
+    QTimer::singleShot(QApplication::doubleClickInterval() + 10, this,
+                       SLOT(playbackScheduleTimerElapsed()));
+}
+
+void
+Pane::playbackScheduleTimerElapsed()
+{
+    if (m_playbackFrameMoveScheduled) {
+        m_manager->setPlaybackFrame(m_playbackFrameMoveTo);
+        m_playbackFrameMoveScheduled = false;
+    }
+}
+
+void
 Pane::mouseReleaseEvent(QMouseEvent *e)
 {
     if (e->buttons() & Qt::RightButton) {
@@ -1432,6 +1462,9 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     if (m_clickedInRange) {
         mouseMoveEvent(e);
     }
+
+    int mouseFrame = e ? getFrameForX(e->x()) : 0;
+    if (mouseFrame < 0) mouseFrame = 0;
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
 
@@ -1477,16 +1510,6 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             } else {
                 m_manager->addSelection(selection);
             }
-        }
-        else if (m_manager && !m_manager->haveInProgressSelection()) {
-            
-            //cerr << "JTEST: release without selection" << endl;
-            // Get frame location of mouse
-            int mouseFrame = getFrameForX(e->x());
-            //cerr << "JTEST: frame location of click is " << mouseFrame << endl;
-            // Move play head to that frame location
-            int playbackFrame = fmax(0,mouseFrame);
-            m_manager->setPlaybackFrame(playbackFrame);
         }
     
         update();
@@ -1590,7 +1613,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             FlexiNoteLayer *layer = qobject_cast<FlexiNoteLayer *>(getTopFlexiNoteLayer());
             if (layer) {
                 layer->mouseMoveEvent(this, e); //!!! ew
-                return;
+                update();
+                // return;
             }
         }   
     
@@ -1810,6 +1834,10 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
         update();
     }
+    
+    if (m_dragMode != UnresolvedDrag) {
+        m_playbackFrameMoveScheduled = false;
+    }
 }
 
 void
@@ -1822,9 +1850,9 @@ Pane::zoomToRegion(QRect r)
 
     int w = x1 - x0;
         
-    long newStartFrame = getFrameForX(x0);
+    int newStartFrame = getFrameForX(x0);
         
-    long visibleFrames = getEndFrame() - getStartFrame();
+    int visibleFrames = getEndFrame() - getStartFrame();
     if (newStartFrame <= -visibleFrames) {
         newStartFrame  = -visibleFrames + 1;
     }
@@ -1835,7 +1863,7 @@ Pane::zoomToRegion(QRect r)
         
     float ratio = float(w) / float(width());
 //	cerr << "ratio: " << ratio << endl;
-    size_t newZoomLevel = (size_t)nearbyint(m_zoomLevel * ratio);
+    int newZoomLevel = (int)nearbyint(m_zoomLevel * ratio);
     if (newZoomLevel < 1) newZoomLevel = 1;
 
 //	cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << endl;
@@ -1914,13 +1942,12 @@ Pane::dragTopLayer(QMouseEvent *e)
     if (m_dragMode == HorizontalDrag ||
         m_dragMode == FreeDrag) {
 
-        long frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
-
-        size_t newCentreFrame = m_dragCentreFrame;
+        int frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
+        int newCentreFrame = m_dragCentreFrame;
         
         if (frameOff < 0) {
             newCentreFrame -= frameOff;
-        } else if (newCentreFrame >= size_t(frameOff)) {
+        } else if (newCentreFrame >= frameOff) {
             newCentreFrame -= frameOff;
         } else {
             newCentreFrame = 0;
@@ -2042,7 +2069,7 @@ void
 Pane::dragExtendSelection(QMouseEvent *e)
 {
     int mouseFrame = getFrameForX(e->x());
-    size_t resolution = 1;
+    int resolution = 1;
     int snapFrameLeft = mouseFrame;
     int snapFrameRight = mouseFrame;
     
@@ -2059,12 +2086,12 @@ Pane::dragExtendSelection(QMouseEvent *e)
     if (snapFrameLeft < 0) snapFrameLeft = 0;
     if (snapFrameRight < 0) snapFrameRight = 0;
     
-    size_t min, max;
+    int min, max;
     
-    if (m_selectionStartFrame > size_t(snapFrameLeft)) {
+    if (m_selectionStartFrame > snapFrameLeft) {
         min = snapFrameLeft;
         max = m_selectionStartFrame;
-    } else if (size_t(snapFrameRight) > m_selectionStartFrame) {
+    } else if (snapFrameRight > m_selectionStartFrame) {
         min = m_selectionStartFrame;
         max = snapFrameRight;
     } else {
@@ -2081,6 +2108,10 @@ Pane::dragExtendSelection(QMouseEvent *e)
     edgeScrollMaybe(e->x());
 
     update();
+
+    if (min != max) {
+        m_playbackFrameMoveScheduled = false;
+    }
 }
 
 void
@@ -2117,13 +2148,16 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         return;
     }
 
-//    cerr << "mouseDoubleClickEvent" << endl;
+    cerr << "mouseDoubleClickEvent" << endl;
 
     m_clickPos = e->pos();
     m_clickedInRange = true;
     m_shiftPressed = (e->modifiers() & Qt::ShiftModifier);
     m_ctrlPressed = (e->modifiers() & Qt::ControlModifier);
     m_altPressed = (e->modifiers() & Qt::AltModifier);
+
+    // cancel any pending move that came from a single click
+    m_playbackFrameMoveScheduled = false;
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolModeFor(this);
@@ -2155,7 +2189,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 
     if (relocate) {
 
-        long f = getFrameForX(e->x());
+        int f = getFrameForX(e->x());
 
         setCentreFrame(f);
 
@@ -2226,11 +2260,11 @@ Pane::wheelEvent(QWheelEvent *e)
     if (getStartFrame() < 0 && 
         getEndFrame() >= getModelsEndFrame()) return;
 
-    long delta = ((width() / 2) * count * m_zoomLevel);
+    int delta = ((width() / 2) * count * m_zoomLevel);
 
-    if (int(m_centreFrame) < delta) {
+    if (m_centreFrame < delta) {
         setCentreFrame(0);
-    } else if (int(m_centreFrame) - delta >= int(getModelsEndFrame())) {
+    } else if (m_centreFrame - delta >= getModelsEndFrame()) {
         setCentreFrame(getModelsEndFrame());
     } else {
         setCentreFrame(m_centreFrame - delta);
@@ -2355,7 +2389,7 @@ Pane::verticalThumbwheelMoved(int value)
 }    
 
 void
-Pane::verticalPannerMoved(float x0, float y0, float w, float h)
+Pane::verticalPannerMoved(float , float y0, float , float h)
 {
     float vmin, vmax, dmin, dmax;
     if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) return;
@@ -2493,8 +2527,8 @@ Pane::editSelectionEnd(QMouseEvent *)
     int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
     int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
 
-    long f0 = getFrameForX(p0);
-    long f1 = getFrameForX(p1);
+    int f0 = getFrameForX(p0);
+    int f1 = getFrameForX(p1);
 
     Selection newSelection(f0, f1);
     
@@ -2591,7 +2625,7 @@ Pane::zoomWheelsEnabledChanged()
 }
 
 void
-Pane::viewZoomLevelChanged(View *v, unsigned long z, bool locked)
+Pane::viewZoomLevelChanged(View *v, int z, bool locked)
 {
 //    cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
 //              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << endl;

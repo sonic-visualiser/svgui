@@ -48,13 +48,13 @@ public:
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
 
-    virtual size_t getFirstVisibleFrame() const;
+    virtual int getFirstVisibleFrame() const;
 
-    virtual size_t getVerticalScaleWidth() const;
+    virtual int getVerticalScaleWidth() const;
 
-    virtual QImage *toNewImage(size_t f0, size_t f1);
+    virtual QImage *toNewImage(int f0, int f1);
     virtual QImage *toNewImage() { return View::toNewImage(); }
-    virtual QSize getImageSize(size_t f0, size_t f1);
+    virtual QSize getImageSize(int f0, int f1);
     virtual QSize getImageSize() { return View::getImageSize(); }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
@@ -67,13 +67,13 @@ signals:
     void rightButtonMenuRequested(QPoint position);
     void dropAccepted(QStringList uriList);
     void dropAccepted(QString text);
-    void doubleClickSelectInvoked(size_t frame);
+    void doubleClickSelectInvoked(int frame);
     void regionOutlined(QRect rect);
 
 public slots:
     virtual void toolModeChanged();
     virtual void zoomWheelsEnabledChanged();
-    virtual void viewZoomLevelChanged(View *v, unsigned long z, bool locked);
+    virtual void viewZoomLevelChanged(View *v, int z, bool locked);
     virtual void modelAlignmentCompletionChanged();
 
     virtual void horizontalThumbwheelMoved(int value);
@@ -90,6 +90,9 @@ public slots:
 
     void mouseEnteredWidget();
     void mouseLeftWidget();
+
+protected slots:
+    void playbackScheduleTimerElapsed();
 
 protected:
     virtual void paintEvent(QPaintEvent *e);
@@ -114,7 +117,7 @@ protected:
     void drawEditingSelection(QPainter &);
     void drawAlignmentStatus(QRect, QPainter &, const Model *, bool down);
 
-    virtual bool render(QPainter &paint, int x0, size_t f0, size_t f1);
+    virtual bool render(QPainter &paint, int x0, int f0, int f1);
 
     Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight) const;
 
@@ -139,6 +142,8 @@ protected:
 
     Layer *getTopFlexiNoteLayer();
 
+    void schedulePlaybackFrameMove(int frame);
+
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
     QPoint m_clickPos;
@@ -152,10 +157,10 @@ protected:
     bool m_resizing;
     bool m_editing;
     bool m_releasing;
-    size_t m_dragCentreFrame;
+    int m_dragCentreFrame;
     float m_dragStartMinValue;
     bool m_centreLineVisible;
-    size_t m_selectionStartFrame;
+    int m_selectionStartFrame;
     Selection m_editingSelection;
     int m_editingSelectionEdge;
     mutable int m_scaleWidth;
@@ -183,6 +188,9 @@ protected:
     NotifyingPushButton *m_reset;
 
     bool m_mouseInWidget;
+
+    bool m_playbackFrameMoveScheduled;
+    int m_playbackFrameMoveTo;
 
     static QCursor *m_measureCursor1;
     static QCursor *m_measureCursor2;
