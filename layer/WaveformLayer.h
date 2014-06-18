@@ -208,15 +208,15 @@ protected:
     const RangeSummarisableTimeValueModel *m_model; // I do not own this
 
     /// Return value is number of channels displayed
-    size_t getChannelArrangement(size_t &min, size_t &max,
+    int getChannelArrangement(int &min, int &max,
                                  bool &merging, bool &mixing) const;
 
-    int getYForValue(const View *v, float value, size_t channel) const;
+    int getYForValue(const View *v, float value, int channel) const;
 
-    float getValueForY(const View *v, int y, size_t &channel) const;
+    float getValueForY(const View *v, int y, int &channel) const;
 
-    bool getSourceFramesForX(View *v, int x, size_t modelZoomLevel,
-                             size_t &f0, size_t &f1) const;
+    bool getSourceFramesForX(View *v, int x, int modelZoomLevel,
+                             int &f0, int &f1) const;
 
     float getNormalizeGain(View *v, int channel) const;
 

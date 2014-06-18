@@ -57,7 +57,7 @@ public:
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(View *v, int &frame, 
-				    size_t &resolution,
+				    int &resolution,
 				    SnapType snap) const;
 
     virtual void setLayerDormant(const View *v, bool dormant);
@@ -166,17 +166,17 @@ public:
 
 protected slots:
     void cacheInvalid();
-    void cacheInvalid(size_t startFrame, size_t endFrame);
+    void cacheInvalid(int startFrame, int endFrame);
     void modelChanged();
-    void modelChanged(size_t, size_t);
+    void modelChanged(int, int);
 
 protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this
     
     mutable QImage *m_cache;
     mutable QImage *m_peaksCache;
-    mutable size_t m_cacheValidStart;
-    mutable size_t m_cacheValidEnd;
+    mutable int m_cacheValidStart;
+    mutable int m_cacheValidEnd;
 
     ColourScale m_colourScale;
     bool        m_colourScaleSet;
@@ -189,7 +189,7 @@ protected:
     bool        m_invertVertical;
     bool        m_opaque;
     bool        m_smooth;
-    size_t      m_peakResolution;
+    int         m_peakResolution;
 
     // Minimum and maximum bin numbers visible within the view. We
     // always snap to whole bins at view edges.
@@ -212,10 +212,10 @@ protected:
      */
     float getBinForY(View *, float y) const;
     
-    DenseThreeDimensionalModel::Column getColumn(size_t col) const;
+    DenseThreeDimensionalModel::Column getColumn(int col) const;
 
     int getColourScaleWidth(QPainter &) const;
-    void fillCache(size_t firstBin, size_t lastBin) const;
+    void fillCache(int firstBin, int lastBin) const;
     void paintDense(View *v, QPainter &paint, QRect rect) const;
 };
 

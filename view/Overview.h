@@ -41,13 +41,13 @@ public:
     virtual QString getPropertyContainerIconName() const { return "panner"; }
 
 public slots:
-    virtual void modelChanged(size_t startFrame, size_t endFrame);
+    virtual void modelChangedWithin(int startFrame, int endFrame);
     virtual void modelReplaced();
 
-    virtual void globalCentreFrameChanged(unsigned long);
-    virtual void viewCentreFrameChanged(View *, unsigned long);
-    virtual void viewZoomLevelChanged(View *, unsigned long, bool);
-    virtual void viewManagerPlaybackFrameChanged(unsigned long);
+    virtual void globalCentreFrameChanged(int);
+    virtual void viewCentreFrameChanged(View *, int);
+    virtual void viewZoomLevelChanged(View *, int, bool);
+    virtual void viewManagerPlaybackFrameChanged(int);
 
 protected:
     virtual void paintEvent(QPaintEvent *e);
@@ -62,7 +62,7 @@ protected:
     QPoint m_clickPos;
     QPoint m_mousePos;
     bool m_clickedInRange;
-    size_t m_dragCentreFrame;
+    int m_dragCentreFrame;
     QTime m_modelTestTime;
     
     typedef std::set<View *> ViewSet;

@@ -70,8 +70,8 @@ public:
 
     //!!! merge with PluginTransform::ExecutionContext
 
-    void getProcessingParameters(size_t &blockSize) const;
-    void getProcessingParameters(size_t &stepSize, size_t &blockSize,
+    void getProcessingParameters(int &blockSize) const;
+    void getProcessingParameters(int &stepSize, int &blockSize,
                                  WindowType &windowType) const;
 
     int exec();
@@ -96,8 +96,8 @@ protected:
     Vamp::PluginBase *m_plugin;
 
     int m_channel;
-    size_t m_stepSize;
-    size_t m_blockSize;
+    int m_stepSize;
+    int m_blockSize;
 
     WindowType m_windowType;
     PluginParameterBox *m_parameterBox;

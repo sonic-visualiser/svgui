@@ -50,7 +50,7 @@ TimeRulerLayer::setModel(Model *model)
 
 bool
 TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
-                                   size_t &resolution, SnapType snap) const
+                                   int &resolution, SnapType snap) const
 {
     if (!m_model) {
         resolution = 1;

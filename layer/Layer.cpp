@@ -51,8 +51,8 @@ Layer::connectSignals(const Model *model)
     connect(model, SIGNAL(modelChanged()),
             this, SIGNAL(modelChanged()));
 
-    connect(model, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SIGNAL(modelChanged(size_t, size_t)));
+    connect(model, SIGNAL(modelChangedWithin(int, int)),
+	    this, SIGNAL(modelChangedWithin(int, int)));
 
     connect(model, SIGNAL(completionChanged()),
 	    this, SIGNAL(modelCompletionChanged()));
@@ -165,8 +165,8 @@ Layer::getYScaleDifference(const View *v, int y0, int y1,
     return true;
 }
 
-size_t
-Layer::alignToReference(View *v, size_t frame) const
+int
+Layer::alignToReference(View *v, int frame) const
 {
     const Model *m = getModel();
     SVDEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
@@ -177,8 +177,8 @@ Layer::alignToReference(View *v, size_t frame) const
     }
 }
 
-size_t
-Layer::alignFromReference(View *v, size_t frame) const
+int
+Layer::alignFromReference(View *v, int frame) const
 {
     const Model *m = getModel();
     SVDEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
@@ -250,12 +250,12 @@ Layer::clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const
         // reference (i.e. having been copied from the reference
         // model).
         
-        long sourceFrame = i->getFrame();
-        long referenceFrame = sourceFrame;
+        int sourceFrame = i->getFrame();
+        int referenceFrame = sourceFrame;
         if (i->haveReferenceFrame()) {
             referenceFrame = i->getReferenceFrame();
         }
-        long myMappedFrame = alignToReference(v, sourceFrame);
+        int myMappedFrame = alignToReference(v, sourceFrame);
 
 //        cerr << "sourceFrame = " << sourceFrame << ", referenceFrame = " << referenceFrame << " (have = " << i->haveReferenceFrame() << "), myMappedFrame = " << myMappedFrame << endl;
 
@@ -320,8 +320,8 @@ Layer::addMeasurementRect(const QXmlAttributes &attributes)
     QString fs = attributes.value("startFrame");
     int x0 = 0, x1 = 0;
     if (fs != "") {
-        rect.startFrame = fs.toLong();
-        rect.endFrame = attributes.value("endFrame").toLong();
+        rect.startFrame = fs.toInt();
+        rect.endFrame = attributes.value("endFrame").toInt();
         rect.haveFrames = true;
     } else {
         x0 = attributes.value("startX").toInt();
@@ -405,7 +405,7 @@ Layer::measureEnd(View *v, QMouseEvent *e)
 }
 
 void
-Layer::measureDoubleClick(View *v, QMouseEvent *e)
+Layer::measureDoubleClick(View *, QMouseEvent *)
 {
     // nothing, in the base class
 }
@@ -470,8 +470,8 @@ Layer::nearestMeasurementRectChanged(View *v, QPoint prev, QPoint now) const
 void
 Layer::updateMeasurePixrects(View *v) const
 {
-    long sf = v->getStartFrame();
-    long ef = v->getEndFrame();
+    int sf = v->getStartFrame();
+    int ef = v->getEndFrame();
 
     for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
          i != m_measureRects.end(); ++i) {
@@ -495,7 +495,7 @@ Layer::updateMeasurePixrects(View *v) const
             if (i->startFrame >= v->getStartFrame()) {
                 x0 = v->getXForFrame(i->startFrame);
             }
-            if (i->endFrame <= long(v->getEndFrame())) {
+            if (i->endFrame <= int(v->getEndFrame())) {
                 x1 = v->getXForFrame(i->endFrame);
             }
         }
@@ -577,7 +577,7 @@ Layer::paintMeasurementRect(View *v, QPainter &paint,
         if (r.startFrame >= v->getStartFrame()) {
             x0 = v->getXForFrame(r.startFrame);
         }
-        if (r.endFrame <= long(v->getEndFrame())) {
+        if (r.endFrame <= v->getEndFrame()) {
             x1 = v->getXForFrame(r.endFrame);
         }
         

@@ -168,14 +168,14 @@ ModelDataTableDialog::~ModelDataTableDialog()
 }
 
 void
-ModelDataTableDialog::userScrolledToFrame(unsigned long frame)
+ModelDataTableDialog::userScrolledToFrame(int frame)
 {
     QModelIndex index = m_table->getModelIndexForFrame(frame);
     makeCurrent(index.row());
 }
 
 void
-ModelDataTableDialog::playbackScrolledToFrame(unsigned long frame)
+ModelDataTableDialog::playbackScrolledToFrame(int frame)
 {
     if (m_trackPlayback) {
         QModelIndex index = m_table->getModelIndexForFrame(frame);
@@ -248,14 +248,14 @@ ModelDataTableDialog::viewClicked(const QModelIndex &index)
 }
 
 void
-ModelDataTableDialog::viewPressed(const QModelIndex &index)
+ModelDataTableDialog::viewPressed(const QModelIndex &)
 {
 //    SVDEBUG << "ModelDataTableDialog::viewPressed: " << index.row() << ", " << index.column() << endl;
 }
 
 void
 ModelDataTableDialog::currentChanged(const QModelIndex &current,
-                                     const QModelIndex &previous)
+                                     const QModelIndex &)
 {
 //    SVDEBUG << "ModelDataTableDialog::currentChanged: from "
 //              << previous.row() << ", " << previous.column()

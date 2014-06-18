@@ -41,7 +41,6 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_model(0),
     m_cache(0),
     m_peaksCache(0),
-    m_peakResolution(256),
     m_cacheValidStart(0),
     m_cacheValidEnd(0),
     m_colourScale(LinearScale),
@@ -55,6 +54,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_invertVertical(false),
     m_opaque(false),
     m_smooth(false),
+    m_peakResolution(256),
     m_miny(0),
     m_maxy(0)
 {
@@ -78,8 +78,8 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
     connectSignals(m_model);
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(modelChanged()));
-    connect(m_model, SIGNAL(modelChanged(size_t, size_t)),
-	    this, SLOT(modelChanged(size_t, size_t)));
+    connect(m_model, SIGNAL(modelChanged(int, int)),
+	    this, SLOT(modelChanged(int, int)));
 
     m_peakResolution = 256;
     if (model->getResolution() > 512) {
@@ -107,13 +107,13 @@ Colour3DPlotLayer::cacheInvalid()
 }
 
 void
-Colour3DPlotLayer::cacheInvalid(size_t startFrame, size_t endFrame)
+Colour3DPlotLayer::cacheInvalid(int startFrame, int endFrame)
 {
     if (!m_cache) return;
 
-    size_t modelResolution = m_model->getResolution();
-    size_t start = startFrame / modelResolution;
-    size_t end = endFrame / modelResolution + 1;
+    int modelResolution = m_model->getResolution();
+    int start = startFrame / modelResolution;
+    int end = endFrame / modelResolution + 1;
     if (m_cacheValidStart < end) m_cacheValidStart = end;
     if (m_cacheValidEnd > start) m_cacheValidEnd = start;
     if (m_cacheValidStart > m_cacheValidEnd) m_cacheValidEnd = m_cacheValidStart;
@@ -135,7 +135,7 @@ Colour3DPlotLayer::modelChanged()
 }
 
 void
-Colour3DPlotLayer::modelChanged(size_t startFrame, size_t endFrame)
+Colour3DPlotLayer::modelChanged(int startFrame, int endFrame)
 {
     if (!m_colourScaleSet && m_colourScale == LinearScale) {
         if (m_model && m_model->getWidth() > 50) {
@@ -580,8 +580,8 @@ Colour3DPlotLayer::setDisplayExtents(float min, float max)
 }
 
 bool
-Colour3DPlotLayer::getYScaleValue(const View *v, int y,
-                                  float &value, QString &unit) const
+Colour3DPlotLayer::getYScaleValue(const View *, int,
+                                  float &, QString &) const
 {
     return false;//!!!
 }
@@ -679,8 +679,8 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
     int x = pos.x();
     int y = pos.y();
 
-    size_t modelStart = m_model->getStartFrame();
-    size_t modelResolution = m_model->getResolution();
+    int modelStart = m_model->getStartFrame();
+    int modelResolution = m_model->getResolution();
 
     float srRatio =
         float(v->getViewManager()->getMainModelSampleRate()) /
@@ -745,7 +745,7 @@ Colour3DPlotLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
     int tw = paint.fontMetrics().width(sampleText);
     bool another = false;
 
-    for (size_t i = 0; i < m_model->getHeight(); ++i) {
+    for (int i = 0; i < m_model->getHeight(); ++i) {
 	if (m_model->getBinName(i).length() > sampleText.length()) {
 	    sampleText = m_model->getBinName(i);
             another = true;
@@ -857,7 +857,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect
 
     int py = h;
 
-    for (size_t i = symin; i <= symax; ++i) {
+    for (int i = symin; i <= symax; ++i) {
 
         int y0;
 
@@ -884,7 +884,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect
 
         if (i > symin) {
 
-            size_t idx = i - 1;
+            int idx = i - 1;
             if (m_invertVertical) idx = m_model->getHeight() - idx - 1;
 
             QString text = m_model->getBinName(idx);
@@ -901,7 +901,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect
 }
 
 DenseThreeDimensionalModel::Column
-Colour3DPlotLayer::getColumn(size_t col) const
+Colour3DPlotLayer::getColumn(int col) const
 {
     DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
     while (values.size() < m_model->getHeight()) values.push_back(0.f);
@@ -913,13 +913,13 @@ Colour3DPlotLayer::getColumn(size_t col) const
     min = m_model->getMinimumLevel();
     max = m_model->getMaximumLevel();
 
-    for (size_t y = 0; y < values.size(); ++y) {
+    for (int y = 0; y < values.size(); ++y) {
         if (y == 0 || values.at(y) > colMax) colMax = values.at(y);
         if (y == 0 || values.at(y) < colMin) colMin = values.at(y);
     }
     if (colMin == colMax) colMax = colMin + 1;
     
-    for (size_t y = 0; y < values.size(); ++y) {
+    for (int y = 0; y < values.size(); ++y) {
     
         float value = values.at(y);
         float norm = (value - colMin) / (colMax - colMin);
@@ -930,7 +930,7 @@ Colour3DPlotLayer::getColumn(size_t col) const
 
     if (m_normalizeHybrid && (colMax > 0.0)) {
         float logmax = log10(colMax);
-        for (size_t y = 0; y < values.size(); ++y) {
+        for (int y = 0; y < values.size(); ++y) {
             values[y] *= logmax;
         }
     }
@@ -939,24 +939,24 @@ Colour3DPlotLayer::getColumn(size_t col) const
 }
     
 void
-Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
+Colour3DPlotLayer::fillCache(int firstBin, int lastBin) const
 {
     Profiler profiler("Colour3DPlotLayer::fillCache");
 
-    size_t modelStart = m_model->getStartFrame();
-    size_t modelEnd = m_model->getEndFrame();
-    size_t modelResolution = m_model->getResolution();
+    int modelStart = m_model->getStartFrame();
+    int modelEnd = m_model->getEndFrame();
+    int modelResolution = m_model->getResolution();
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     SVDEBUG << "Colour3DPlotLayer::fillCache: " << firstBin << " -> " << lastBin << endl;
 #endif
 
-    size_t modelStartBin = modelStart / modelResolution;
-    size_t modelEndBin = modelEnd / modelResolution;
+    int modelStartBin = modelStart / modelResolution;
+    int modelEndBin = modelEnd / modelResolution;
 
-    size_t cacheWidth = modelEndBin - modelStartBin + 1;
+    int cacheWidth = modelEndBin - modelStartBin + 1;
     if (lastBin > modelEndBin) cacheWidth = lastBin - modelStartBin + 1;
-    size_t cacheHeight = m_model->getHeight();
+    int cacheHeight = m_model->getHeight();
 
     if (m_cache && (m_cache->height() != int(cacheHeight))) {
         // height has changed: delete everything rather than resizing
@@ -1010,8 +1010,8 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         return;
     }
     
-    size_t fillStart = firstBin;
-    size_t fillEnd = lastBin;
+    int fillStart = firstBin;
+    int fillEnd = lastBin;
 
     if (fillStart < modelStartBin) fillStart = modelStartBin;
     if (fillStart > modelEndBin) fillStart = modelEndBin;
@@ -1083,13 +1083,13 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
 
     if (normalizeVisible) {
         
-        for (size_t c = fillStart; c <= fillEnd; ++c) {
+        for (int c = fillStart; c <= fillEnd; ++c) {
 	
             values = getColumn(c);
 
             float colMax = 0.f, colMin = 0.f;
 
-            for (size_t y = 0; y < cacheHeight; ++y) {
+            for (int y = 0; y < cacheHeight; ++y) {
                 if (y >= values.size()) break;
                 if (y == 0 || values[y] > colMax) colMax = values[y];
                 if (y == 0 || values[y] < colMin) colMin = values[y];
@@ -1125,7 +1125,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         }
     }
 
-    for (size_t c = fillStart; c <= fillEnd; ++c) {
+    for (int c = fillStart; c <= fillEnd; ++c) {
 	
         values = getColumn(c);
 
@@ -1135,7 +1135,7 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
             continue;
         }
 
-        for (size_t y = 0; y < cacheHeight; ++y) {
+        for (int y = 0; y < cacheHeight; ++y) {
 
             float value = min;
             if (y < values.size()) {
@@ -1172,16 +1172,16 @@ Colour3DPlotLayer::fillCache(size_t firstBin, size_t lastBin) const
         }
 
         if (peaks) {
-            size_t notch = (c % m_peakResolution);
+            int notch = (c % m_peakResolution);
             if (notch == m_peakResolution-1 || c == fillEnd) {
-                size_t pc = c / m_peakResolution;
+                int pc = c / m_peakResolution;
                 if (pc >= m_peaksCache->width()) {
                     cerr << "ERROR: peak column " << pc
                          << " (from col " << c << ") >= peaks cache width "
                          << m_peaksCache->width() << endl;
                     continue;
                 }
-                for (size_t y = 0; y < cacheHeight; ++y) {
+                for (int y = 0; y < cacheHeight; ++y) {
                     if (m_invertVertical) {
                         m_peaksCache->setPixel(pc, cacheHeight - y - 1, peaks[y]);
                     } else {
@@ -1228,9 +1228,9 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     if (m_normalizeVisibleArea && !m_normalizeColumns) rect = v->rect();
 
-    size_t modelStart = m_model->getStartFrame();
-    size_t modelEnd = m_model->getEndFrame();
-    size_t modelResolution = m_model->getResolution();
+    int modelStart = m_model->getStartFrame();
+    int modelEnd = m_model->getEndFrame();
+    int modelResolution = m_model->getResolution();
 
     // The cache is from the model's start frame to the model's end
     // frame at the model's window increment frames per pixel.  We
@@ -1585,7 +1585,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
 bool
 Colour3DPlotLayer::snapToFeatureFrame(View *v, int &frame,
-				      size_t &resolution,
+				      int &resolution,
 				      SnapType snap) const
 {
     if (!m_model) {

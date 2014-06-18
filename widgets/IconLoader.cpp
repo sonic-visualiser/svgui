@@ -80,8 +80,8 @@ IconLoader::loadPixmap(QString name)
     }
     if (pmap.isNull()) return pmap;
 
-    for (int i = 0; i < sizeof(autoInvertExceptions)/
-                        sizeof(autoInvertExceptions[0]); ++i) {
+    for (int i = 0; i < int(sizeof(autoInvertExceptions)/
+                            sizeof(autoInvertExceptions[0])); ++i) {
         if (autoInvertExceptions[i] == name) {
             return pmap;
         }
