@@ -55,7 +55,7 @@ View::View(QWidget *w, bool showProgress) :
     m_zoomLevel(1024),
     m_followPan(true),
     m_followZoom(true),
-    m_followPlay(PlaybackScrollPage),
+    m_followPlay(PlaybackScrollPageWithCentre),
     m_followPlayIsDetached(false),
     m_playPointerFrame(0),
     m_showProgress(showProgress),
@@ -117,8 +117,12 @@ View::getPropertyRangeAndValue(const PropertyContainer::PropertyName &name,
     if (name == "Follow Playback") {
 	if (min) *min = 0;
 	if (max) *max = 2;
-        if (deflt) *deflt = int(PlaybackScrollPage);
-	return int(m_followPlay);
+        if (deflt) *deflt = int(PlaybackScrollPageWithCentre);
+        switch (m_followPlay) {
+        case PlaybackScrollContinuous: return 0;
+        case PlaybackScrollPageWithCentre: case PlaybackScrollPage: return 1;
+        case PlaybackIgnore: return 2;
+        }
     }
     if (min) *min = 0;
     if (max) *max = 0;
@@ -152,7 +156,7 @@ View::setProperty(const PropertyContainer::PropertyName &name, int value)
 	switch (value) {
 	default:
 	case 0: setPlaybackFollow(PlaybackScrollContinuous); break;
-	case 1: setPlaybackFollow(PlaybackScrollPage); break;
+	case 1: setPlaybackFollow(PlaybackScrollPageWithCentre); break;
 	case 2: setPlaybackFollow(PlaybackIgnore); break;
 	}
     }
@@ -704,17 +708,22 @@ View::setViewManager(ViewManager *manager)
     connect(this, SIGNAL(zoomLevelChanged(int, bool)),
 	    m_manager, SLOT(viewZoomLevelChanged(int, bool)));
 
-//    setCentreFrame(m_manager->getViewInitialCentreFrame());
+    switch (m_followPlay) {
+        
+    case PlaybackScrollPage:
+    case PlaybackScrollPageWithCentre:
+        setCentreFrame(m_manager->getGlobalCentreFrame(), false);
+        break;
 
-    if (m_followPlay == PlaybackScrollPage) {
-//        SVDEBUG << "View::setViewManager: setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << endl;
-        setCentreFrame(m_manager->getGlobalCentreFrame(), false);
-    } else if (m_followPlay == PlaybackScrollContinuous) {
-//        SVDEBUG << "View::setViewManager: setting centre frame to playback frame: " << m_manager->getPlaybackFrame() << endl;
+    case PlaybackScrollContinuous:
         setCentreFrame(m_manager->getPlaybackFrame(), false);
-    } else if (m_followPan) {
-//        SVDEBUG << "View::setViewManager: (follow pan) setting centre frame to global centre frame: " << m_manager->getGlobalCentreFrame() << endl;
-        setCentreFrame(m_manager->getGlobalCentreFrame(), false);
+        break;
+
+    case PlaybackIgnore:
+        if (m_followPan) {
+            setCentreFrame(m_manager->getGlobalCentreFrame(), false);
+        }
+        break;
     }
 
     if (m_followZoom) setZoomLevel(m_manager->getGlobalZoom());
@@ -1016,6 +1025,7 @@ View::movePlayPointer(int newFrame)
 	break;
 
     case PlaybackScrollPage:
+    case PlaybackScrollPageWithCentre:
 
         if (!pointerInVisibleArea && somethingGoingOn) {
 
@@ -2459,7 +2469,9 @@ View::toXml(QTextStream &stream,
 	.arg(m_followPan)
 	.arg(m_followZoom)
 	.arg(m_followPlay == PlaybackScrollContinuous ? "scroll" :
-	     m_followPlay == PlaybackScrollPage ? "page" : "ignore")
+	     m_followPlay == PlaybackScrollPageWithCentre ? "page" :
+	     m_followPlay == PlaybackScrollPage ? "daw" :
+             "ignore")
 	.arg(extraAttributes);
 
     for (int i = 0; i < (int)m_layers.size(); ++i) {

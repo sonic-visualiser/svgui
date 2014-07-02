@@ -31,8 +31,31 @@ class AudioPlaySource;
 class Model;
 
 enum PlaybackFollowMode {
+
+    /**
+     * View scrolls continuously during playback, keeping the playback
+     * position at the centre.
+     */
     PlaybackScrollContinuous,
+
+    /**
+     * View follows playback page-by-page, but dragging the view
+     * relocates playback to the centre frame. This is the classic
+     * Sonic Visualiser behaviour.
+     */
+    PlaybackScrollPageWithCentre,
+
+    /**
+     * View follows playback page-by-page, and the play head is moved
+     * (by the user) separately from dragging the view. This is
+     * roughly the behaviour of a typical DAW or audio editor.
+     */
     PlaybackScrollPage,
+
+    /**
+     * View is detached from playback. It doesn't follow playback, and
+     * dragging the view does not affect the play head.
+     */
     PlaybackIgnore
 };
 
