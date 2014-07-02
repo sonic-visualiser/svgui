@@ -214,6 +214,13 @@ protected:
     
     DenseThreeDimensionalModel::Column getColumn(int col) const;
 
+    /**
+     * True if we have the opaque or smooth flag set, or if the cells
+     * are so small you can't see their borders. False for big,
+     * translucent cells.
+     */
+    bool shouldPaintDenseIn(const View *) const; 
+
     int getColourScaleWidth(QPainter &) const;
     void fillCache(int firstBin, int lastBin) const;
     void paintDense(View *v, QPainter &paint, QRect rect) const;
