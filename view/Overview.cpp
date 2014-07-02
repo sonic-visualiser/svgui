@@ -288,7 +288,12 @@ Overview::mouseMoveEvent(QMouseEvent *e)
 #ifdef DEBUG_OVERVIEW
         cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << endl;
 #endif
-	emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
+        if (m_followPlay == PlaybackScrollContinuous ||
+            m_followPlay == PlaybackScrollPageWithCentre) {
+            emit centreFrameChanged(rf, true, PlaybackScrollContinuous);
+        } else {
+            emit centreFrameChanged(rf, true, PlaybackIgnore);
+        }            
     }
 }
 
