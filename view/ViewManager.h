@@ -158,6 +158,7 @@ public:
 
     void setIlluminateLocalFeatures(bool i) { m_illuminateLocalFeatures = i; }
     void setShowWorkTitle(bool show) { m_showWorkTitle = show; }
+    void setShowDuration(bool show) { m_showDuration = show; }
 
     /**
      * The sample rate that is used for playback.  This is usually the
@@ -196,7 +197,7 @@ public:
     bool shouldShowCentreLine() const { return m_showCentreLine; }
 
     bool shouldShowDuration() const {
-        return m_overlayMode != NoOverlays;
+        return m_overlayMode != NoOverlays && m_showDuration;
     }
     bool shouldShowFrameCount() const {
         return m_showCentreLine && shouldShowDuration();
@@ -350,6 +351,7 @@ protected:
     bool m_showCentreLine;
     bool m_illuminateLocalFeatures;
     bool m_showWorkTitle;
+    bool m_showDuration;
 
     QPalette m_lightPalette;
     QPalette m_darkPalette;

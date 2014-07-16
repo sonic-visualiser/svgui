@@ -48,6 +48,7 @@ ViewManager::ViewManager() :
     m_showCentreLine(true),
     m_illuminateLocalFeatures(true),
     m_showWorkTitle(false),
+    m_showDuration(true),
     m_lightPalette(QApplication::palette()),
     m_darkPalette(QApplication::palette())
 {

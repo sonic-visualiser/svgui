@@ -62,6 +62,12 @@ public:
 
     static void registerShortcuts(KeyReference &kr);
 
+    enum PaneType {
+        Normal = 0,
+        TonyMain = 1,
+        TonySelection = 2
+    };
+
 signals:
     void paneInteractedWith();
     void rightButtonMenuRequested(QPoint position);
