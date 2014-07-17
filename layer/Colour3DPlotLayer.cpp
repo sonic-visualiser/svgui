@@ -78,8 +78,8 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
     connectSignals(m_model);
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(modelChanged()));
-    connect(m_model, SIGNAL(modelChanged(int, int)),
-	    this, SLOT(modelChanged(int, int)));
+    connect(m_model, SIGNAL(modelChangedWithin(int, int)),
+	    this, SLOT(modelChangedWithin(int, int)));
 
     m_peakResolution = 256;
     if (model->getResolution() > 512) {
@@ -135,7 +135,7 @@ Colour3DPlotLayer::modelChanged()
 }
 
 void
-Colour3DPlotLayer::modelChanged(int startFrame, int endFrame)
+Colour3DPlotLayer::modelChangedWithin(int startFrame, int endFrame)
 {
     if (!m_colourScaleSet && m_colourScale == LinearScale) {
         if (m_model && m_model->getWidth() > 50) {
