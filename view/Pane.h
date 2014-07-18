@@ -113,6 +113,10 @@ protected:
     virtual void dragEnterEvent(QDragEnterEvent *e);
     virtual void dropEvent(QDropEvent *e);
 
+    void wheelVertical(int sign, Qt::KeyboardModifiers);
+    void wheelHorizontal(int sign, Qt::KeyboardModifiers);
+    void wheelHorizontalFine(int pixels, Qt::KeyboardModifiers);
+
     void drawVerticalScale(QRect r, Layer *, QPainter &);
     void drawFeatureDescription(Layer *, QPainter &);
     void drawCentreLine(int, QPainter &, bool omitLine);
@@ -170,6 +174,8 @@ protected:
     Selection m_editingSelection;
     int m_editingSelectionEdge;
     mutable int m_scaleWidth;
+
+    int m_pendingWheelAngle;
 
     enum DragMode {
         UnresolvedDrag,
