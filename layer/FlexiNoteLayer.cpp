@@ -797,8 +797,7 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 //    Profiler profiler("FlexiNoteLayer::paint", true);
 
-    int x0 = rect.left(), x1 = rect.right();
-    int frame0 = v->getFrameForX(x0);
+    int x1 = rect.right();
     int frame1 = v->getFrameForX(x1);
 
     FlexiNoteModel::PointList points(m_model->getPoints(0, frame1));
