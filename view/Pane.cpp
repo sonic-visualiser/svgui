@@ -78,6 +78,7 @@ Pane::Pane(QWidget *w) :
     m_releasing(false),
     m_centreLineVisible(true),
     m_scaleWidth(0),
+    m_pendingWheelAngle(0),
     m_headsUpDisplay(0),
     m_vpan(0),
     m_hthumb(0),
@@ -2239,28 +2240,131 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-    //cerr << "wheelEvent, delta " << e->delta() << endl;
+    cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
 
-    int count = e->delta();
+    int dx = e->angleDelta().x();
+    int dy = e->angleDelta().y();
 
-    if (count > 0) {
-    if (count >= 120) count /= 120;
-    else count = 1;
-    } 
-
-    if (count < 0) {
-    if (count <= -120) count /= 120;
-    else count = -1;
+    if (dx == 0 && dy == 0) {
+        return;
     }
 
-    if (e->modifiers() & Qt::ControlModifier) {
+    int d = dy;
+    bool horizontal = false;
+
+    if (abs(dx) > abs(dy)) {
+        d = dx;
+        horizontal = true;
+    } else if (e->modifiers() & Qt::ControlModifier) {
+        // treat a vertical wheel as horizontal
+        horizontal = true;
+    }
+
+    if (e->phase() == Qt::ScrollBegin ||
+        fabs(d) >= 120 ||
+        (d > 0 && m_pendingWheelAngle < 0) ||
+        (d < 0 && m_pendingWheelAngle > 0)) {
+        m_pendingWheelAngle = d;
+    } else {
+        m_pendingWheelAngle += d;
+    }
+
+    if (horizontal && e->pixelDelta().x() != 0) {
+
+        // Have fine pixel information: use it
+
+        wheelHorizontalFine(e->pixelDelta().x(), e->modifiers());
+    
+        m_pendingWheelAngle = 0;
+
+    } else {
+
+        // Coarse wheel information (or vertical zoom, which is
+        // necessarily coarse itself)
+
+        while (abs(m_pendingWheelAngle) >= 120) {
+
+            int sign = (m_pendingWheelAngle < 0 ? -1 : 1);
+
+            if (horizontal) {
+                wheelHorizontal(sign, e->modifiers());
+            } else {
+                wheelVertical(sign, e->modifiers());
+            }
+
+            m_pendingWheelAngle -= sign * 120;
+        }
+    }
+}
+
+void
+Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
+{
+    cerr << "wheelVertical: sign = " << sign << endl;
+
+    if (mods & Qt::ShiftModifier) {
+
+        // Pan vertically
+
+        if (m_vpan) {
+            m_vpan->scroll(sign > 0);
+        }
+
+    } else if (mods & Qt::AltModifier) {
+
+        // Zoom vertically
+
+        if (m_vthumb) {
+            m_vthumb->scroll(sign > 0);
+        }
+
+    } else {
+
+        // Zoom in or out
+
+        int newZoomLevel = m_zoomLevel;
+  
+        if (sign > 0) {
+            if (newZoomLevel <= 2) {
+                newZoomLevel = 1;
+            } else {
+                newZoomLevel = getZoomConstraintBlockSize
+                    (newZoomLevel - 1, ZoomConstraint::RoundDown);
+            }
+        } else { // sign < 0
+            newZoomLevel = getZoomConstraintBlockSize
+                (newZoomLevel + 1, ZoomConstraint::RoundUp);
+        }
+    
+        if (newZoomLevel != m_zoomLevel) {
+            setZoomLevel(newZoomLevel);
+        }
+    }
+
+    emit paneInteractedWith();
+}
+
+void
+Pane::wheelHorizontal(int sign, Qt::KeyboardModifiers mods)
+{
+    cerr << "wheelHorizontal: sign = " << sign << endl;
 
     // Scroll left or right, rapidly
+
+    wheelHorizontalFine((width() / 4) * sign, mods);
+}
+
+void
+Pane::wheelHorizontalFine(int pixels, Qt::KeyboardModifiers)
+{
+    cerr << "wheelHorizontalFine: pixels = " << pixels << endl;
+
+    // Scroll left or right by a fixed number of pixels
 
     if (getStartFrame() < 0 && 
         getEndFrame() >= getModelsEndFrame()) return;
 
-    int delta = ((width() / 2) * count * m_zoomLevel);
+    int delta = (pixels * m_zoomLevel);
 
     if (m_centreFrame < delta) {
         setCentreFrame(0);
@@ -2268,49 +2372,6 @@ Pane::wheelEvent(QWheelEvent *e)
         setCentreFrame(getModelsEndFrame());
     } else {
         setCentreFrame(m_centreFrame - delta);
-    }
-
-    } else if (e->modifiers() & Qt::ShiftModifier) {
-
-        // Zoom vertically
-
-        if (m_vpan) {
-            m_vpan->scroll(e->delta() > 0);
-        }
-
-    } else if (e->modifiers() & Qt::AltModifier) {
-
-        // Zoom vertically
-
-        if (m_vthumb) {
-            m_vthumb->scroll(e->delta() > 0);
-        }
-
-    } else {
-
-    // Zoom in or out
-
-    int newZoomLevel = m_zoomLevel;
-  
-    while (count > 0) {
-        if (newZoomLevel <= 2) {
-        newZoomLevel = 1;
-        break;
-        }
-        newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
-                              ZoomConstraint::RoundDown);
-        --count;
-    }
-    
-    while (count < 0) {
-        newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
-                              ZoomConstraint::RoundUp);
-        ++count;
-    }
-    
-    if (newZoomLevel != m_zoomLevel) {
-        setZoomLevel(newZoomLevel);
-    }
     }
 
     emit paneInteractedWith();

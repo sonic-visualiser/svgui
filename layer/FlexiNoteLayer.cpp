@@ -797,11 +797,10 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 //    Profiler profiler("FlexiNoteLayer::paint", true);
 
-    int x0 = rect.left(), x1 = rect.right();
-    int frame0 = v->getFrameForX(x0);
+    int x1 = rect.right();
     int frame1 = v->getFrameForX(x1);
 
-    FlexiNoteModel::PointList points(m_model->getPoints(frame0, frame1));
+    FlexiNoteModel::PointList points(m_model->getPoints(0, frame1));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -828,9 +827,12 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
     
+    int noteNumber = 0;
+
     for (FlexiNoteModel::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
+        ++noteNumber;
         const FlexiNoteModel::Point &p(*i);
 
         int x = v->getXForFrame(p.frame);
@@ -882,6 +884,11 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
                                    x,
                                    y + h + 2 + paint.fontMetrics().descent(),
                                    llabel, View::OutlinedText);
+                QString nlabel = QString("%1").arg(noteNumber);
+                v->drawVisibleText(paint, 
+                                   x + paint.fontMetrics().averageCharWidth() / 2,
+                                   y + h/2 - paint.fontMetrics().descent(),
+                                   nlabel, View::OutlinedText);
         }
     
         paint.drawRect(x, y - h/2, w, h);

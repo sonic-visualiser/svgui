@@ -62,6 +62,12 @@ public:
 
     static void registerShortcuts(KeyReference &kr);
 
+    enum PaneType {
+        Normal = 0,
+        TonyMain = 1,
+        TonySelection = 2
+    };
+
 signals:
     void paneInteractedWith();
     void rightButtonMenuRequested(QPoint position);
@@ -106,6 +112,10 @@ protected:
     virtual void resizeEvent(QResizeEvent *e);
     virtual void dragEnterEvent(QDragEnterEvent *e);
     virtual void dropEvent(QDropEvent *e);
+
+    void wheelVertical(int sign, Qt::KeyboardModifiers);
+    void wheelHorizontal(int sign, Qt::KeyboardModifiers);
+    void wheelHorizontalFine(int pixels, Qt::KeyboardModifiers);
 
     void drawVerticalScale(QRect r, Layer *, QPainter &);
     void drawFeatureDescription(Layer *, QPainter &);
@@ -164,6 +174,8 @@ protected:
     Selection m_editingSelection;
     int m_editingSelectionEdge;
     mutable int m_scaleWidth;
+
+    int m_pendingWheelAngle;
 
     enum DragMode {
         UnresolvedDrag,
