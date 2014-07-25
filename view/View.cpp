@@ -44,9 +44,8 @@
 
 #include <unistd.h>
 
+//#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
-
-
 
 
 View::View(QWidget *w, bool showProgress) :
@@ -342,7 +341,7 @@ View::setCentreFrame(int f, bool e)
 
 	if (e) {
             int rf = alignToReference(f);
-#ifdef DEBUG_VIEW_WIDGET_PAINT
+#ifdef DEBUG_VIEW
             cerr << "View[" << this << "]::setCentreFrame(" << f
                       << "): emitting centreFrameChanged("
                       << rf << ")" << endl;
@@ -970,7 +969,7 @@ View::globalCentreFrameChanged(int rf)
 {
     if (m_followPan) {
         int f = alignFromReference(rf);
-#ifdef DEBUG_VIEW_WIDGET_PAINT
+#ifdef DEBUG_VIEW
         cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
                   << "): setting centre frame to " << f << endl;
 #endif
@@ -991,7 +990,15 @@ View::viewManagerPlaybackFrameChanged(int f)
 	if (sender() != m_manager) return;
     }
 
+#ifdef DEBUG_VIEW        
+    cerr << "View::viewManagerPlaybackFrameChanged(" << f << ")" << endl;
+#endif
+
     f = getAlignedPlaybackFrame();
+
+#ifdef DEBUG_VIEW
+    cerr << " -> aligned frame = " << af << endl;
+#endif
 
     movePlayPointer(f);
 }
@@ -999,6 +1006,10 @@ View::viewManagerPlaybackFrameChanged(int f)
 void
 View::movePlayPointer(int newFrame)
 {
+#ifdef DEBUG_VIEW
+    cerr << "View(" << this << ")::movePlayPointer(" << newFrame << ")" << endl;
+#endif
+
     if (m_playPointerFrame == newFrame) return;
     bool visibleChange =
         (getXForFrame(m_playPointerFrame) != getXForFrame(newFrame));
@@ -1294,19 +1305,9 @@ View::getAlignedPlaybackFrame() const
 
     Model *aligningModel = getAligningModel();
     if (!aligningModel) return pf;
-/*
-    Model *pm = m_manager->getPlaybackModel();
 
-//    cerr << "View[" << this << "]::getAlignedPlaybackFrame: pf = " << pf;
-
-    if (pm) {
-        pf = pm->alignToReference(pf);
-//        cerr << " -> " << pf;
-    }
-*/
     int af = aligningModel->alignFromReference(pf);
 
-//    cerr << ", aligned = " << af << endl;
     return af;
 }
 

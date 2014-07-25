@@ -25,8 +25,6 @@
 //#define DEBUG_OVERVIEW 1
 
 
-
-
 Overview::Overview(QWidget *w) :
     View(w, false),
     m_clickedInRange(false)
