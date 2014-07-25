@@ -1333,10 +1333,13 @@ Pane::mousePressEvent(QMouseEvent *e)
             m_dragStartMinValue = dmin;
         }
 
-        // Schedule a play-head move to the mouse frame location. This
-        // will happen only if nothing else of interest happens
-        // (double-click, drag) before the timeout.
-        schedulePlaybackFrameMove(getFrameForX(e->x()));
+        if (m_followPlay == PlaybackScrollPage) {
+            // Schedule a play-head move to the mouse frame
+            // location. This will happen only if nothing else of
+            // interest happens (double-click, drag) before the
+            // timeout.
+            schedulePlaybackFrameMove(getFrameForX(e->x()));
+        }
 
     } else if (mode == ViewManager::SelectMode) {
 
@@ -1381,11 +1384,13 @@ Pane::mousePressEvent(QMouseEvent *e)
 
             m_resizing = false;
 
-            // Schedule a play-head move to the mouse frame
-            // location. This will happen only if nothing else of
-            // interest happens (double-click, drag) before the
-            // timeout.
-            schedulePlaybackFrameMove(mouseFrame);
+            if (m_followPlay == PlaybackScrollPage) {
+                // Schedule a play-head move to the mouse frame
+                // location. This will happen only if nothing else of
+                // interest happens (double-click, drag) before the
+                // timeout.
+                schedulePlaybackFrameMove(mouseFrame);
+            }
         }
 
         update();
