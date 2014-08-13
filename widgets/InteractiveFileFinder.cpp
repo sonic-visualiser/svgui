@@ -34,7 +34,8 @@ InteractiveFileFinder::m_instance;
 
 InteractiveFileFinder::InteractiveFileFinder() :
     m_sessionExtension("sv"),
-    m_lastLocatedLocation("")
+    m_lastLocatedLocation(""),
+    m_parent(0)
 {
     SVDEBUG << "Registering interactive file finder" << endl;
     FileFinder::registerFileFinder(this);
@@ -42,6 +43,12 @@ InteractiveFileFinder::InteractiveFileFinder() :
 
 InteractiveFileFinder::~InteractiveFileFinder()
 {
+}
+
+void
+InteractiveFileFinder::setParentWidget(QWidget *parent)
+{
+    getInstance()->m_parent = parent;
 }
 
 void
@@ -162,7 +169,7 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     // Use our own QFileDialog just for symmetry with getSaveFileName below
 
-    QFileDialog dialog;
+    QFileDialog dialog(m_parent);
     dialog.setNameFilters(filter.split('\n'));
     dialog.setWindowTitle(title);
     dialog.setDirectory(lastPath);
@@ -306,7 +313,7 @@ InteractiveFileFinder::getSaveFileName(FileType type,
     // Use our own QFileDialog instead of static functions, as we may
     // need to adjust the file extension based on the selected filter
 
-    QFileDialog dialog;
+    QFileDialog dialog(m_parent);
 
     QStringList filters = filter.split('\n');
 
