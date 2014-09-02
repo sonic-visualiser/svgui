@@ -532,6 +532,7 @@ View::addLayer(Layer *layer)
     SingleColourLayer *scl = dynamic_cast<SingleColourLayer *>(layer);
     if (scl) scl->setDefaultColourFor(this);
 
+    m_fixedOrderLayers.push_back(layer);
     m_layerStack.push_back(layer);
 
     QProgressBar *pb = new QProgressBar(this);
@@ -599,7 +600,18 @@ View::removeLayer(Layer *layer)
     delete m_cache;
     m_cache = 0;
 
-    for (LayerList::iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
+    for (LayerList::iterator i = m_fixedOrderLayers.begin();
+         i != m_fixedOrderLayers.end();
+         ++i) {
+	if (*i == layer) {
+	    m_fixedOrderLayers.erase(i);
+            break;
+        }
+    }
+
+    for (LayerList::iterator i = m_layerStack.begin(); 
+         i != m_layerStack.end();
+         ++i) {
 	if (*i == layer) {
 	    m_layerStack.erase(i);
 	    if (m_progressBars.find(layer) != m_progressBars.end()) {
