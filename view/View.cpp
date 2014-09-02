@@ -670,15 +670,7 @@ Layer *
 View::getSelectedLayer()
 {
     if (m_haveSelectedLayer && !m_layerStack.empty()) {
-        int n = getLayerCount();
-        while (n > 0) {
-            --n;
-            Layer *layer = getLayer(n);
-            if (!(layer->isLayerDormant(this))) {
-                return layer;
-            }
-        }
-        return 0;
+        return getLayer(getLayerCount() - 1);
     } else {
 	return 0;
     }
