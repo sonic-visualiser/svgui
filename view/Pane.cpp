@@ -202,7 +202,7 @@ Pane::updateHeadsUpDisplay()
 
     //!!! pull out into function (presumably in View)
     bool haveConstraint = false;
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end();
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end();
          ++i) {
         if ((*i)->getZoomConstraint() && !(*i)->supportsOtherZoomLevels()) {
             haveConstraint = true;
@@ -347,7 +347,7 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
         return false;
     }
 
-    if (layer == getSelectedLayer() &&
+    if (layer == getInteractionLayer() &&
         !shouldIlluminateLocalSelection(discard, b0, b1)) {
 
         pos = m_identifyPoint;
@@ -372,7 +372,7 @@ Pane::shouldIlluminateLocalSelection(QPoint &pos,
                                    closeToLeft, closeToRight));
 
         if (!s.isEmpty()) {
-            if (getSelectedLayer() && getSelectedLayer()->isLayerEditable()) {
+            if (getInteractionLayer() && getInteractionLayer()->isLayerEditable()) {
             
                 pos = m_identifyPoint;
                 return true;
@@ -426,7 +426,7 @@ Pane::paintEvent(QPaintEvent *e)
         m_mouseInWidget &&
         toolMode == ViewManager::MeasureMode) {
 
-        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
             --vi;
 
             std::vector<QRect> crosshairExtents;
@@ -447,7 +447,7 @@ Pane::paintEvent(QPaintEvent *e)
     const Model *waveformModel = 0; // just for reporting purposes
     const Model *workModel = 0;
 
-    for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+    for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
         --vi;
         if (!haveSomeTimeXAxis && (*vi)->hasTimeXAxis()) {
             haveSomeTimeXAxis = true;
@@ -586,8 +586,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
             if (!hasValueExtents) {
 
-                for (LayerList::iterator vi = m_layers.end();
-                     vi != m_layers.begin(); ) {
+                for (LayerList::iterator vi = m_layerStack.end();
+                     vi != m_layerStack.begin(); ) {
                         
                     --vi;
                         
@@ -606,8 +606,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
                 QString requireUnit = unit;
 
-                for (LayerList::iterator vi = m_layers.end();
-                     vi != m_layers.begin(); ) {
+                for (LayerList::iterator vi = m_layerStack.end();
+                     vi != m_layerStack.begin(); ) {
                         
                     --vi;
                         
@@ -738,9 +738,9 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
     
     int y = height() - fontHeight + fontAscent - 6;
     
-    LayerList::iterator vi = m_layers.end();
+    LayerList::iterator vi = m_layerStack.end();
     
-    if (vi != m_layers.begin()) {
+    if (vi != m_layerStack.begin()) {
         
         switch ((*--vi)->getPreferredFrameCountPosition()) {
             
@@ -916,13 +916,13 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
         lly -= 20;
     }
 
-    if (r.y() + r.height() < lly - int(m_layers.size()) * fontHeight) {
+    if (r.y() + r.height() < lly - int(m_layerStack.size()) * fontHeight) {
         return;
     }
 
     QStringList texts;
     std::vector<QPixmap> pixmaps;
-    for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
         texts.push_back((*i)->getLayerPresentationName());
 //        cerr << "Pane " << this << ": Layer presentation name for " << *i << ": "
 //                  << texts[texts.size()-1] << endl;
@@ -1093,7 +1093,7 @@ Pane::render(QPainter &paint, int xorigin, int f0, int f1)
 
     if (m_scaleWidth > 0) {
 
-        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
             --vi;
             
             paint.save();
@@ -1127,7 +1127,7 @@ Pane::toNewImage(int f0, int f1)
     int formerScaleWidth = m_scaleWidth;
             
     if (m_manager && m_manager->shouldShowVerticalScale()) {
-        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
             --vi;
             QPainter paint(image);
             m_scaleWidth = (*vi)->getVerticalScaleWidth
@@ -1164,7 +1164,7 @@ Pane::getImageSize(int f0, int f1)
 
     int sw = 0;
     if (m_manager && m_manager->shouldShowVerticalScale()) {
-        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
             --vi;
             sw = (*vi)->getVerticalScaleWidth
                 (this, m_manager->shouldShowVerticalColourScale(), paint);
@@ -1277,10 +1277,10 @@ Pane::registerShortcuts(KeyReference &kr)
 Layer *
 Pane::getTopFlexiNoteLayer()
 {
-    for (int i = int(m_layers.size()) - 1; i >= 0; --i) {
-        if (LayerFactory::getInstance()->getLayerType(m_layers[i]) ==
+    for (int i = int(m_layerStack.size()) - 1; i >= 0; --i) {
+        if (LayerFactory::getInstance()->getLayerType(m_layerStack[i]) ==
             LayerFactory::FlexiNotes) {
-            return m_layers[i];
+            return m_layerStack[i];
         }
     }
     return 0;
@@ -1333,10 +1333,13 @@ Pane::mousePressEvent(QMouseEvent *e)
             m_dragStartMinValue = dmin;
         }
 
-        // Schedule a play-head move to the mouse frame location. This
-        // will happen only if nothing else of interest happens
-        // (double-click, drag) before the timeout.
-        schedulePlaybackFrameMove(getFrameForX(e->x()));
+        if (m_followPlay == PlaybackScrollPage) {
+            // Schedule a play-head move to the mouse frame
+            // location. This will happen only if nothing else of
+            // interest happens (double-click, drag) before the
+            // timeout.
+            schedulePlaybackFrameMove(getFrameForX(e->x()));
+        }
 
     } else if (mode == ViewManager::SelectMode) {
 
@@ -1364,7 +1367,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             int resolution = 1;
             int snapFrame = mouseFrame;
     
-            Layer *layer = getSelectedLayer();
+            Layer *layer = getInteractionLayer();
             if (layer && !m_shiftPressed) {
                 layer->snapToFeatureFrame(this, snapFrame,
                                           resolution, Layer::SnapLeft);
@@ -1381,25 +1384,27 @@ Pane::mousePressEvent(QMouseEvent *e)
 
             m_resizing = false;
 
-            // Schedule a play-head move to the mouse frame
-            // location. This will happen only if nothing else of
-            // interest happens (double-click, drag) before the
-            // timeout.
-            schedulePlaybackFrameMove(mouseFrame);
+            if (m_followPlay == PlaybackScrollPage) {
+                // Schedule a play-head move to the mouse frame
+                // location. This will happen only if nothing else of
+                // interest happens (double-click, drag) before the
+                // timeout.
+                schedulePlaybackFrameMove(mouseFrame);
+            }
         }
 
         update();
 
     } else if (mode == ViewManager::DrawMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->drawStart(this, e);
         }
 
     } else if (mode == ViewManager::EraseMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->eraseStart(this, e);
         }
@@ -1517,7 +1522,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::DrawMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->drawEnd(this, e);
             update();
@@ -1525,7 +1530,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EraseMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->eraseEnd(this, e);
             update();
@@ -1552,7 +1557,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         
         if (m_editing) {
             if (!editSelectionEnd(e)) {
-                Layer *layer = getSelectedLayer();
+                Layer *layer = getInteractionLayer();
                 if (layer && layer->isLayerEditable()) {
                     layer->editEnd(this, e);
                     update();
@@ -1633,7 +1638,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             bool updating = false;
 
-            if (getSelectedLayer() &&
+            if (getInteractionLayer() &&
                 m_manager->shouldIlluminateLocalFeatures()) {
 
                 bool previouslyIdentifying = m_identifyFeatures;
@@ -1680,14 +1685,14 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::DrawMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->drawDrag(this, e);
         }
 
     } else if (mode == ViewManager::EraseMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->eraseDrag(this, e);
         }
@@ -1737,7 +1742,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             if (!editSelectionDrag(e)) {
 
-                Layer *layer = getSelectedLayer();
+                Layer *layer = getInteractionLayer();
 
                 if (layer && layer->isLayerEditable()) {
 
@@ -1792,7 +1797,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                                        e->modifiers());
 
                 if (!editSelectionStart(&clickEvent)) {
-                    Layer *layer = getSelectedLayer();
+                    Layer *layer = getInteractionLayer();
                     if (layer && layer->isLayerEditable()) {
                         layer->editStart(this, &clickEvent);
                     }
@@ -1803,7 +1808,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             if (!editSelectionDrag(e)) {
 
-                Layer *layer = getSelectedLayer();
+                Layer *layer = getInteractionLayer();
 
                 if (layer && layer->isLayerEditable()) {
 
@@ -1875,8 +1880,8 @@ Pane::zoomToRegion(QRect r)
     float min, max;
     bool log;
     Layer *layer = 0;
-    for (LayerList::const_iterator i = m_layers.begin();
-         i != m_layers.end(); ++i) { 
+    for (LayerList::const_iterator i = m_layerStack.begin();
+         i != m_layerStack.end(); ++i) { 
         if ((*i)->getValueExtents(min, max, log, unit) &&
             (*i)->getDisplayExtents(min, max)) {
             layer = *i;
@@ -2074,7 +2079,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
     int snapFrameLeft = mouseFrame;
     int snapFrameRight = mouseFrame;
     
-    Layer *layer = getSelectedLayer();
+    Layer *layer = getInteractionLayer();
     if (layer && !m_shiftPressed) {
         layer->snapToFeatureFrame(this, snapFrameLeft,
                                   resolution, Layer::SnapLeft);
@@ -2176,7 +2181,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     if (mode == ViewManager::NavigateMode ||
         mode == ViewManager::EditMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             if (layer->editOpen(this, e)) relocate = false;
         }
@@ -2206,7 +2211,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     
     if (mode == ViewManager::NoteEditMode) {
         std::cerr << "double click in note edit mode" << std::endl;
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->addNote(this, e); 
         }
@@ -2388,7 +2393,7 @@ Pane::horizontalThumbwheelMoved(int value)
 
     //!!! pull out into function (presumably in View)
     bool haveConstraint = false;
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end();
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end();
          ++i) {
         if ((*i)->getZoomConstraint() && !(*i)->supportsOtherZoomLevels()) {
             haveConstraint = true;
@@ -2578,7 +2583,7 @@ Pane::editSelectionEnd(QMouseEvent *)
     if (m_editingSelection.isEmpty()) return false;
 
     int offset = m_mousePos.x() - m_clickPos.x();
-    Layer *layer = getSelectedLayer();
+    Layer *layer = getInteractionLayer();
 
     if (offset == 0 || !layer) {
         m_editingSelection = Selection();
@@ -2760,7 +2765,7 @@ Pane::updateContextHelp(const QPoint *pos)
     if (m_manager) mode = m_manager->getToolModeFor(this);
 
     bool editable = false;
-    Layer *layer = getSelectedLayer();
+    Layer *layer = getInteractionLayer();
     if (layer && layer->isLayerEditable()) {
         editable = true;
     }

@@ -76,6 +76,8 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 
     m_layout = new QGridLayout;
     m_layout->setMargin(0);
+    m_layout->setHorizontalSpacing(2);
+    m_layout->setVerticalSpacing(1);
     m_mainWidget->setLayout(m_layout);
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
