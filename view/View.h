@@ -195,6 +195,8 @@ public:
      */
     virtual Layer *getInteractionLayer();
 
+    virtual const Layer *getInteractionLayer() const;
+
     /**
      * Return the layer most recently selected by the user. This is
      * the layer that any non-tool-driven commands should operate on,
