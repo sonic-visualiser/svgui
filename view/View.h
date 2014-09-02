@@ -286,6 +286,8 @@ public:
 
     virtual int getPropertyContainerCount() const;
 
+    // The 0th property container is the view's own; the rest are the
+    // layers in fixed-order series
     virtual const PropertyContainer *getPropertyContainer(int i) const;
     virtual PropertyContainer *getPropertyContainer(int i);
 
