@@ -635,6 +635,26 @@ View::removeLayer(Layer *layer)
 }
 
 Layer *
+View::getInteractionLayer()
+{
+    Layer *sl = getSelectedLayer();
+    if (sl && !(sl->isLayerDormant(this))) {
+        return sl;
+    }
+    if (!m_layers.empty()) {
+        int n = getLayerCount();
+        while (n > 0) {
+            --n;
+            Layer *layer = getLayer(n);
+            if (!(layer->isLayerDormant(this))) {
+                return layer;
+            }
+        }
+    }
+    return 0;
+}
+
+Layer *
 View::getSelectedLayer()
 {
     if (m_haveSelectedLayer && !m_layers.empty()) {
