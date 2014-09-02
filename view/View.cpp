@@ -164,7 +164,7 @@ View::setProperty(const PropertyContainer::PropertyName &name, int value)
 int
 View::getPropertyContainerCount() const
 {
-    return m_layerStack.size() + 1; // the 1 is for me
+    return m_fixedOrderLayers.size() + 1; // the 1 is for me
 }
 
 const PropertyContainer *
@@ -178,7 +178,7 @@ PropertyContainer *
 View::getPropertyContainer(int i)
 {
     if (i == 0) return m_propertyContainer;
-    return m_layerStack[i-1];
+    return m_fixedOrderLayers[i-1];
 }
 
 bool
