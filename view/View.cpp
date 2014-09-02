@@ -2507,11 +2507,11 @@ View::toXml(QTextStream &stream,
              "ignore")
 	.arg(extraAttributes);
 
-    for (int i = 0; i < (int)m_layerStack.size(); ++i) {
-        bool visible = !m_layerStack[i]->isLayerDormant(this);
-        m_layerStack[i]->toBriefXml(stream, indent + "  ",
-                                QString("visible=\"%1\"")
-                                .arg(visible ? "true" : "false"));
+    for (int i = 0; i < (int)m_fixedOrderLayers.size(); ++i) {
+        bool visible = !m_fixedOrderLayers[i]->isLayerDormant(this);
+        m_fixedOrderLayers[i]->toBriefXml(stream, indent + "  ",
+                                          QString("visible=\"%1\"")
+                                          .arg(visible ? "true" : "false"));
     }
 
     stream << indent + "</view>\n";
