@@ -30,7 +30,7 @@
 
 #include <iostream>
 
-//#define DEBUG_PROPERTY_STACK 1
+#define DEBUG_PROPERTY_STACK 1
 
 PropertyStack::PropertyStack(QWidget *parent, View *client) :
     QTabWidget(parent),
@@ -85,7 +85,7 @@ PropertyStack::repopulate()
     blockSignals(true);
 
 #ifdef DEBUG_PROPERTY_STACK
-    SVDEBUG << "PropertyStack::repopulate" << endl;
+    cerr << "PropertyStack[" << this << "]::repopulate" << endl;
 #endif
     
     while (count() > 0) {
@@ -101,6 +101,12 @@ PropertyStack::repopulate()
 	PropertyContainer *container = m_client->getPropertyContainer(i);
 	QString name = container->getPropertyContainerName();
 	
+#ifdef DEBUG_PROPERTY_STACK
+        cerr << "PropertyStack[" << this << "]::repopulate: client " << m_client
+             << " returns container " << container << " (name " << name
+             << ") at position " << i << endl;
+#endif
+
 	PropertyBox *box = new PropertyBox(container);
 
 	connect(box, SIGNAL(showLayer(bool)), this, SLOT(showLayer(bool)));

@@ -52,8 +52,8 @@ Overview::modelChangedWithin(int startFrame, int endFrame)
 
     if (!zoomChanged) {
         if (m_modelTestTime.elapsed() < 1000) {
-            for (LayerList::const_iterator i = m_layers.begin();
-                 i != m_layers.end(); ++i) {
+            for (LayerList::const_iterator i = m_layerStack.begin();
+                 i != m_layerStack.end(); ++i) {
                 if ((*i)->getModel() &&
                     (!(*i)->getModel()->isOK() ||
                      !(*i)->getModel()->isReady())) {

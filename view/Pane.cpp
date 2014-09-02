@@ -202,7 +202,7 @@ Pane::updateHeadsUpDisplay()
 
     //!!! pull out into function (presumably in View)
     bool haveConstraint = false;
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end();
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end();
          ++i) {
         if ((*i)->getZoomConstraint() && !(*i)->supportsOtherZoomLevels()) {
             haveConstraint = true;
@@ -426,7 +426,7 @@ Pane::paintEvent(QPaintEvent *e)
         m_mouseInWidget &&
         toolMode == ViewManager::MeasureMode) {
 
-        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
             --vi;
 
             std::vector<QRect> crosshairExtents;
@@ -447,7 +447,7 @@ Pane::paintEvent(QPaintEvent *e)
     const Model *waveformModel = 0; // just for reporting purposes
     const Model *workModel = 0;
 
-    for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+    for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
         --vi;
         if (!haveSomeTimeXAxis && (*vi)->hasTimeXAxis()) {
             haveSomeTimeXAxis = true;
@@ -586,8 +586,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
             if (!hasValueExtents) {
 
-                for (LayerList::iterator vi = m_layers.end();
-                     vi != m_layers.begin(); ) {
+                for (LayerList::iterator vi = m_layerStack.end();
+                     vi != m_layerStack.begin(); ) {
                         
                     --vi;
                         
@@ -606,8 +606,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
                 QString requireUnit = unit;
 
-                for (LayerList::iterator vi = m_layers.end();
-                     vi != m_layers.begin(); ) {
+                for (LayerList::iterator vi = m_layerStack.end();
+                     vi != m_layerStack.begin(); ) {
                         
                     --vi;
                         
@@ -738,9 +738,9 @@ Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
     
     int y = height() - fontHeight + fontAscent - 6;
     
-    LayerList::iterator vi = m_layers.end();
+    LayerList::iterator vi = m_layerStack.end();
     
-    if (vi != m_layers.begin()) {
+    if (vi != m_layerStack.begin()) {
         
         switch ((*--vi)->getPreferredFrameCountPosition()) {
             
@@ -916,13 +916,13 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
         lly -= 20;
     }
 
-    if (r.y() + r.height() < lly - int(m_layers.size()) * fontHeight) {
+    if (r.y() + r.height() < lly - int(m_layerStack.size()) * fontHeight) {
         return;
     }
 
     QStringList texts;
     std::vector<QPixmap> pixmaps;
-    for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
         texts.push_back((*i)->getLayerPresentationName());
 //        cerr << "Pane " << this << ": Layer presentation name for " << *i << ": "
 //                  << texts[texts.size()-1] << endl;
@@ -1093,7 +1093,7 @@ Pane::render(QPainter &paint, int xorigin, int f0, int f1)
 
     if (m_scaleWidth > 0) {
 
-        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
             --vi;
             
             paint.save();
@@ -1127,7 +1127,7 @@ Pane::toNewImage(int f0, int f1)
     int formerScaleWidth = m_scaleWidth;
             
     if (m_manager && m_manager->shouldShowVerticalScale()) {
-        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
             --vi;
             QPainter paint(image);
             m_scaleWidth = (*vi)->getVerticalScaleWidth
@@ -1164,7 +1164,7 @@ Pane::getImageSize(int f0, int f1)
 
     int sw = 0;
     if (m_manager && m_manager->shouldShowVerticalScale()) {
-        for (LayerList::iterator vi = m_layers.end(); vi != m_layers.begin(); ) {
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
             --vi;
             sw = (*vi)->getVerticalScaleWidth
                 (this, m_manager->shouldShowVerticalColourScale(), paint);
@@ -1277,10 +1277,10 @@ Pane::registerShortcuts(KeyReference &kr)
 Layer *
 Pane::getTopFlexiNoteLayer()
 {
-    for (int i = int(m_layers.size()) - 1; i >= 0; --i) {
-        if (LayerFactory::getInstance()->getLayerType(m_layers[i]) ==
+    for (int i = int(m_layerStack.size()) - 1; i >= 0; --i) {
+        if (LayerFactory::getInstance()->getLayerType(m_layerStack[i]) ==
             LayerFactory::FlexiNotes) {
-            return m_layers[i];
+            return m_layerStack[i];
         }
     }
     return 0;
@@ -1880,8 +1880,8 @@ Pane::zoomToRegion(QRect r)
     float min, max;
     bool log;
     Layer *layer = 0;
-    for (LayerList::const_iterator i = m_layers.begin();
-         i != m_layers.end(); ++i) { 
+    for (LayerList::const_iterator i = m_layerStack.begin();
+         i != m_layerStack.end(); ++i) { 
         if ((*i)->getValueExtents(min, max, log, unit) &&
             (*i)->getDisplayExtents(min, max)) {
             layer = *i;
@@ -2393,7 +2393,7 @@ Pane::horizontalThumbwheelMoved(int value)
 
     //!!! pull out into function (presumably in View)
     bool haveConstraint = false;
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end();
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end();
          ++i) {
         if ((*i)->getZoomConstraint() && !(*i)->supportsOtherZoomLevels()) {
             haveConstraint = true;
