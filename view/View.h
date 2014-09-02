@@ -163,7 +163,7 @@ public:
      * Return the number of layers, regardless of whether visible or
      * dormant, i.e. invisible, in this view.
      */
-    virtual int getLayerCount() const { return m_layers.size(); }
+    virtual int getLayerCount() const { return m_layerStack.size(); }
 
     /**
      * Return the nth layer, counted in stacking order.  That is,
@@ -172,16 +172,20 @@ public:
      * dormant, i.e. invisible.
      */
     virtual Layer *getLayer(int n) {
-        if (n < int(m_layers.size())) return m_layers[n]; else return 0;
+        if (n < int(m_layerStack.size())) return m_layerStack[n];
+        else return 0;
     }
 
     /**
-     * Return the "top" layer in the view, whether visible or dormant.
-     * This is the same as getLayer(getLayerCount()-1) if there is at
-     * least one layer, and 0 otherwise.
+     * Return the nth layer, counted in the order they were
+     * added. Unlike the stacking order used in getLayer(), which
+     * changes each time a layer is selected, this ordering remains
+     * fixed. The returned layer may be visible or it may be dormant,
+     * i.e. invisible.
      */
-    virtual Layer *getTopLayer() {
-        return m_layers.empty() ? 0 : m_layers[m_layers.size()-1];
+    virtual Layer *getFixedOrderLayer(int n) {
+        if (n < int(m_fixedOrderLayers.size())) return m_fixedOrderLayers[n];
+        else return 0;
     }
 
     /**
@@ -192,10 +196,15 @@ public:
     virtual Layer *getInteractionLayer();
 
     /**
-     * Return the layer most recently selected by the user. If the
-     * user has selected the pane itself more recently than any of the
-     * layers on it, this function will return 0. It will also return
-     * 0 if there are no layers in the view.
+     * Return the layer most recently selected by the user. This is
+     * the layer that any non-tool-driven commands should operate on,
+     * in the case where this view is the "current" one.
+     *
+     * If the user has selected the view itself more recently than any
+     * of the layers on it, this function will return 0, and any
+     * non-tool-driven layer commands should be deactivated while this
+     * view is current. It will also return 0 if there are no layers
+     * in the view.
      *
      * Note that, unlike getInteractionLayer(), this could return an
      * invisible (dormant) layer.
@@ -203,6 +212,19 @@ public:
     virtual Layer *getSelectedLayer();
 
     virtual const Layer *getSelectedLayer() const;
+
+    /**
+     * Return the "top" layer in the view, whether visible or dormant.
+     * This is the same as getLayer(getLayerCount()-1) if there is at
+     * least one layer, and 0 otherwise.
+     *
+     * For most purposes involving interaction or commands, you
+     * probably want either getInteractionLayer() or
+     * getSelectedLayer() instead.
+     */
+    virtual Layer *getTopLayer() {
+        return m_layerStack.empty() ? 0 : m_layerStack[m_layerStack.size()-1];
+    }
 
     virtual void setViewManager(ViewManager *m);
     virtual void setViewManager(ViewManager *m, int initialFrame);
@@ -396,7 +418,8 @@ protected:
 
     bool                m_deleting;
 
-    LayerList           m_layers; // I don't own these, but see dtor note above
+    LayerList           m_layerStack; // I don't own these, but see dtor note above
+    LayerList           m_fixedOrderLayers;
     bool                m_haveSelectedLayer;
 
     QString             m_lastError;
