@@ -347,7 +347,7 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
         return false;
     }
 
-    if (layer == getSelectedLayer() &&
+    if (layer == getInteractionLayer() &&
         !shouldIlluminateLocalSelection(discard, b0, b1)) {
 
         pos = m_identifyPoint;
@@ -372,7 +372,7 @@ Pane::shouldIlluminateLocalSelection(QPoint &pos,
                                    closeToLeft, closeToRight));
 
         if (!s.isEmpty()) {
-            if (getSelectedLayer() && getSelectedLayer()->isLayerEditable()) {
+            if (getInteractionLayer() && getInteractionLayer()->isLayerEditable()) {
             
                 pos = m_identifyPoint;
                 return true;
@@ -1367,7 +1367,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             int resolution = 1;
             int snapFrame = mouseFrame;
     
-            Layer *layer = getSelectedLayer();
+            Layer *layer = getInteractionLayer();
             if (layer && !m_shiftPressed) {
                 layer->snapToFeatureFrame(this, snapFrame,
                                           resolution, Layer::SnapLeft);
@@ -1397,14 +1397,14 @@ Pane::mousePressEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::DrawMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->drawStart(this, e);
         }
 
     } else if (mode == ViewManager::EraseMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->eraseStart(this, e);
         }
@@ -1522,7 +1522,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::DrawMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->drawEnd(this, e);
             update();
@@ -1530,7 +1530,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::EraseMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->eraseEnd(this, e);
             update();
@@ -1557,7 +1557,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         
         if (m_editing) {
             if (!editSelectionEnd(e)) {
-                Layer *layer = getSelectedLayer();
+                Layer *layer = getInteractionLayer();
                 if (layer && layer->isLayerEditable()) {
                     layer->editEnd(this, e);
                     update();
@@ -1638,7 +1638,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             bool updating = false;
 
-            if (getSelectedLayer() &&
+            if (getInteractionLayer() &&
                 m_manager->shouldIlluminateLocalFeatures()) {
 
                 bool previouslyIdentifying = m_identifyFeatures;
@@ -1685,14 +1685,14 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
     } else if (mode == ViewManager::DrawMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->drawDrag(this, e);
         }
 
     } else if (mode == ViewManager::EraseMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->eraseDrag(this, e);
         }
@@ -1742,7 +1742,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             if (!editSelectionDrag(e)) {
 
-                Layer *layer = getSelectedLayer();
+                Layer *layer = getInteractionLayer();
 
                 if (layer && layer->isLayerEditable()) {
 
@@ -1797,7 +1797,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                                        e->modifiers());
 
                 if (!editSelectionStart(&clickEvent)) {
-                    Layer *layer = getSelectedLayer();
+                    Layer *layer = getInteractionLayer();
                     if (layer && layer->isLayerEditable()) {
                         layer->editStart(this, &clickEvent);
                     }
@@ -1808,7 +1808,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             if (!editSelectionDrag(e)) {
 
-                Layer *layer = getSelectedLayer();
+                Layer *layer = getInteractionLayer();
 
                 if (layer && layer->isLayerEditable()) {
 
@@ -2079,7 +2079,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
     int snapFrameLeft = mouseFrame;
     int snapFrameRight = mouseFrame;
     
-    Layer *layer = getSelectedLayer();
+    Layer *layer = getInteractionLayer();
     if (layer && !m_shiftPressed) {
         layer->snapToFeatureFrame(this, snapFrameLeft,
                                   resolution, Layer::SnapLeft);
@@ -2181,7 +2181,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     if (mode == ViewManager::NavigateMode ||
         mode == ViewManager::EditMode) {
 
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             if (layer->editOpen(this, e)) relocate = false;
         }
@@ -2211,7 +2211,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     
     if (mode == ViewManager::NoteEditMode) {
         std::cerr << "double click in note edit mode" << std::endl;
-        Layer *layer = getSelectedLayer();
+        Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->addNote(this, e); 
         }
@@ -2583,7 +2583,7 @@ Pane::editSelectionEnd(QMouseEvent *)
     if (m_editingSelection.isEmpty()) return false;
 
     int offset = m_mousePos.x() - m_clickPos.x();
-    Layer *layer = getSelectedLayer();
+    Layer *layer = getInteractionLayer();
 
     if (offset == 0 || !layer) {
         m_editingSelection = Selection();
@@ -2765,7 +2765,7 @@ Pane::updateContextHelp(const QPoint *pos)
     if (m_manager) mode = m_manager->getToolModeFor(this);
 
     bool editable = false;
-    Layer *layer = getSelectedLayer();
+    Layer *layer = getInteractionLayer();
     if (layer && layer->isLayerEditable()) {
         editable = true;
     }
