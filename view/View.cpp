@@ -666,6 +666,12 @@ View::getInteractionLayer()
     return 0;
 }
 
+const Layer *
+View::getInteractionLayer() const
+{
+    return const_cast<const Layer *>(const_cast<View *>(this)->getInteractionLayer());
+}
+
 Layer *
 View::getSelectedLayer()
 {
