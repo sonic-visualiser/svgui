@@ -237,6 +237,10 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     paint.save();
 
+    // Do not label time zero - we now overlay an opaque area over
+    // time < 0 which would cut it in half
+    int minlabel = 1; // ms
+
     while (1) {
 
         // frame is used to determine where to draw the lines, so it
@@ -262,7 +266,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
             break;
         }
 
-	if (x >= rect.x() - 50) {
+	if (x >= rect.x() - 50 && ms >= minlabel) {
 
             RealTime rt = RealTime::fromMilliseconds(ms);
 

@@ -190,15 +190,35 @@ ViewManager::setPlaybackModel(Model *model)
 int
 ViewManager::alignPlaybackFrameToReference(int frame) const
 {
-    if (!m_playbackModel) return frame;
-    else return m_playbackModel->alignToReference(frame);
+#ifdef DEBUG_VIEW_MANAGER
+    cerr << "ViewManager::alignPlaybackFrameToReference(" << frame << "): playback model is " << m_playbackModel << endl;
+#endif
+    if (!m_playbackModel) {
+        return frame;
+    } else {
+        int f = m_playbackModel->alignToReference(frame);
+#ifdef DEBUG_VIEW_MANAGER
+        cerr << "aligned frame = " << f << endl;
+#endif
+        return f;
+    }
 }
 
 int
 ViewManager::alignReferenceToPlaybackFrame(int frame) const
 {
-    if (!m_playbackModel) return frame;
-    else return m_playbackModel->alignFromReference(frame);
+#ifdef DEBUG_VIEW_MANAGER
+    cerr << "ViewManager::alignReferenceToPlaybackFrame(" << frame << "): playback model is " << m_playbackModel << endl;
+#endif
+    if (!m_playbackModel) {
+        return frame;
+    } else {
+        int f = m_playbackModel->alignFromReference(frame);
+#ifdef DEBUG_VIEW_MANAGER
+        cerr << "aligned frame = " << f << endl;
+#endif
+        return f;
+    }
 }
 
 bool

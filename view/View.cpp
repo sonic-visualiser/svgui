@@ -44,9 +44,8 @@
 
 #include <unistd.h>
 
+//#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
-
-
 
 
 View::View(QWidget *w, bool showProgress) :
@@ -165,7 +164,7 @@ View::setProperty(const PropertyContainer::PropertyName &name, int value)
 int
 View::getPropertyContainerCount() const
 {
-    return m_layers.size() + 1; // the 1 is for me
+    return m_fixedOrderLayers.size() + 1; // the 1 is for me
 }
 
 const PropertyContainer *
@@ -179,7 +178,7 @@ PropertyContainer *
 View::getPropertyContainer(int i)
 {
     if (i == 0) return m_propertyContainer;
-    return m_layers[i-1];
+    return m_fixedOrderLayers[i-1];
 }
 
 bool
@@ -187,8 +186,8 @@ View::getValueExtents(QString unit, float &min, float &max, bool &log) const
 {
     bool have = false;
 
-    for (LayerList::const_iterator i = m_layers.begin();
-         i != m_layers.end(); ++i) { 
+    for (LayerList::const_iterator i = m_layerStack.begin();
+         i != m_layerStack.end(); ++i) { 
 
         QString layerUnit;
         float layerMin = 0.0, layerMax = 0.0;
@@ -224,8 +223,8 @@ View::getTextLabelHeight(const Layer *layer, QPainter &paint) const
 {
     std::map<int, Layer *> sortedLayers;
 
-    for (LayerList::const_iterator i = m_layers.begin();
-         i != m_layers.end(); ++i) { 
+    for (LayerList::const_iterator i = m_layerStack.begin();
+         i != m_layerStack.end(); ++i) { 
         if ((*i)->needsTextLabelHeight()) {
             sortedLayers[getObjectExportId(*i)] = *i;
         }
@@ -260,17 +259,17 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
 
     Layer *selectedLayer = 0;
 
-    for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 	if (*i == pc) {
 	    selectedLayer = *i;
-	    m_layers.erase(i);
+	    m_layerStack.erase(i);
 	    break;
 	}
     }
 
     if (selectedLayer) {
 	m_haveSelectedLayer = true;
-	m_layers.push_back(selectedLayer);
+	m_layerStack.push_back(selectedLayer);
 	update();
     } else {
 	m_haveSelectedLayer = false;
@@ -342,7 +341,7 @@ View::setCentreFrame(int f, bool e)
 
 	if (e) {
             int rf = alignToReference(f);
-#ifdef DEBUG_VIEW_WIDGET_PAINT
+#ifdef DEBUG_VIEW
             cerr << "View[" << this << "]::setCentreFrame(" << f
                       << "): emitting centreFrameChanged("
                       << rf << ")" << endl;
@@ -469,8 +468,8 @@ View::hasLightBackground() const
     Layer::ColourSignificance maxSignificance = Layer::ColourAbsent;
     bool mostSignificantHasDarkBackground = false;
     
-    for (LayerList::const_iterator i = m_layers.begin();
-         i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin();
+         i != m_layerStack.end(); ++i) {
 
         Layer::ColourSignificance s = (*i)->getLayerColourSignificance();
         bool light = (*i)->hasLightBackground();
@@ -533,7 +532,8 @@ View::addLayer(Layer *layer)
     SingleColourLayer *scl = dynamic_cast<SingleColourLayer *>(layer);
     if (scl) scl->setDefaultColourFor(this);
 
-    m_layers.push_back(layer);
+    m_fixedOrderLayers.push_back(layer);
+    m_layerStack.push_back(layer);
 
     QProgressBar *pb = new QProgressBar(this);
     pb->setMinimum(0);
@@ -600,9 +600,20 @@ View::removeLayer(Layer *layer)
     delete m_cache;
     m_cache = 0;
 
-    for (LayerList::iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::iterator i = m_fixedOrderLayers.begin();
+         i != m_fixedOrderLayers.end();
+         ++i) {
 	if (*i == layer) {
-	    m_layers.erase(i);
+	    m_fixedOrderLayers.erase(i);
+            break;
+        }
+    }
+
+    for (LayerList::iterator i = m_layerStack.begin(); 
+         i != m_layerStack.end();
+         ++i) {
+	if (*i == layer) {
+	    m_layerStack.erase(i);
 	    if (m_progressBars.find(layer) != m_progressBars.end()) {
 		delete m_progressBars[layer].bar;
                 delete m_progressBars[layer].cancel;
@@ -636,9 +647,13 @@ View::removeLayer(Layer *layer)
 }
 
 Layer *
-View::getSelectedLayer()
+View::getInteractionLayer()
 {
-    if (m_haveSelectedLayer && !m_layers.empty()) {
+    Layer *sl = getSelectedLayer();
+    if (sl && !(sl->isLayerDormant(this))) {
+        return sl;
+    }
+    if (!m_layerStack.empty()) {
         int n = getLayerCount();
         while (n > 0) {
             --n;
@@ -647,7 +662,21 @@ View::getSelectedLayer()
                 return layer;
             }
         }
-        return 0;
+    }
+    return 0;
+}
+
+const Layer *
+View::getInteractionLayer() const
+{
+    return const_cast<const Layer *>(const_cast<View *>(this)->getInteractionLayer());
+}
+
+Layer *
+View::getSelectedLayer()
+{
+    if (m_haveSelectedLayer && !m_layerStack.empty()) {
+        return getLayer(getLayerCount() - 1);
     } else {
 	return 0;
     }
@@ -970,7 +999,7 @@ View::globalCentreFrameChanged(int rf)
 {
     if (m_followPan) {
         int f = alignFromReference(rf);
-#ifdef DEBUG_VIEW_WIDGET_PAINT
+#ifdef DEBUG_VIEW
         cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
                   << "): setting centre frame to " << f << endl;
 #endif
@@ -991,7 +1020,15 @@ View::viewManagerPlaybackFrameChanged(int f)
 	if (sender() != m_manager) return;
     }
 
+#ifdef DEBUG_VIEW        
+    cerr << "View::viewManagerPlaybackFrameChanged(" << f << ")" << endl;
+#endif
+
     f = getAlignedPlaybackFrame();
+
+#ifdef DEBUG_VIEW
+    cerr << " -> aligned frame = " << af << endl;
+#endif
 
     movePlayPointer(f);
 }
@@ -999,6 +1036,10 @@ View::viewManagerPlaybackFrameChanged(int f)
 void
 View::movePlayPointer(int newFrame)
 {
+#ifdef DEBUG_VIEW
+    cerr << "View(" << this << ")::movePlayPointer(" << newFrame << ")" << endl;
+#endif
+
     if (m_playPointerFrame == newFrame) return;
     bool visibleChange =
         (getXForFrame(m_playPointerFrame) != getXForFrame(newFrame));
@@ -1151,7 +1192,7 @@ View::getModelsStartFrame() const
     bool first = true;
     int startFrame = 0;
 
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
 	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 
@@ -1172,7 +1213,7 @@ View::getModelsEndFrame() const
     bool first = true;
     int endFrame = 0;
 
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
 	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 
@@ -1198,7 +1239,7 @@ View::getModelsSampleRate() const
 
     //!!! nah, this wants to always return the sr of the main model!
 
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 	    return (*i)->getModel()->getSampleRate();
 	}
@@ -1241,8 +1282,8 @@ View::getAligningModel() const
     Model *alignedModel = 0;
     Model *goodModel = 0;
 
-    for (LayerList::const_iterator i = m_layers.begin();
-         i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin();
+         i != m_layerStack.end(); ++i) {
 
         Layer *layer = *i;
 
@@ -1294,19 +1335,9 @@ View::getAlignedPlaybackFrame() const
 
     Model *aligningModel = getAligningModel();
     if (!aligningModel) return pf;
-/*
-    Model *pm = m_manager->getPlaybackModel();
 
-//    cerr << "View[" << this << "]::getAlignedPlaybackFrame: pf = " << pf;
-
-    if (pm) {
-        pf = pm->alignToReference(pf);
-//        cerr << " -> " << pf;
-    }
-*/
     int af = aligningModel->alignFromReference(pf);
 
-//    cerr << ", aligned = " << af << endl;
     return af;
 }
 
@@ -1314,7 +1345,7 @@ bool
 View::areLayersScrollable() const
 {
     // True iff all views are scrollable
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 	if (!(*i)->isLayerScrollable(this)) return false;
     }
     return true;
@@ -1331,7 +1362,7 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
     LayerList scrollables;
     bool metUnscrollable = false;
 
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 //        SVDEBUG << "View::getScrollableBackLayers: calling isLayerDormant on layer " << *i << endl;
 //        cerr << "(name is " << (*i)->objectName() << ")"
 //                  << endl;
@@ -1367,7 +1398,7 @@ View::getNonScrollableFrontLayers(bool testChanged, bool &changed) const
 
     bool started = false;
 
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 	if ((*i)->isLayerDormant(this)) continue;
 	if (!started && (*i)->isLayerScrollable(this)) {
 	    continue;
@@ -1398,7 +1429,7 @@ View::getZoomConstraintBlockSize(int blockSize,
 
     PowerOfSqrtTwoZoomConstraint defaultZoomConstraint;
 
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
 	const ZoomConstraint *zoomConstraint = (*i)->getZoomConstraint();
 	if (!zoomConstraint) zoomConstraint = &defaultZoomConstraint;
@@ -1422,7 +1453,7 @@ View::getZoomConstraintBlockSize(int blockSize,
 bool
 View::areLayerColoursSignificant() const
 {
-    for (LayerList::const_iterator i = m_layers.begin(); i != m_layers.end(); ++i) {
+    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 	if ((*i)->getLayerColourSignificance() ==
             Layer::ColourHasMeaningfulValue) return true;
         if ((*i)->isLayerOpaque()) break;
@@ -1433,8 +1464,8 @@ View::areLayerColoursSignificant() const
 bool
 View::hasTopLayerTimeXAxis() const
 {
-    LayerList::const_iterator i = m_layers.end();
-    if (i == m_layers.begin()) return false;
+    LayerList::const_iterator i = m_layerStack.end();
+    if (i == m_layerStack.begin()) return false;
     --i;
     return (*i)->hasTimeXAxis();
 }
@@ -1632,7 +1663,7 @@ View::paintEvent(QPaintEvent *e)
 //    Profiler prof("View::paintEvent", false);
 //    cerr << "View::paintEvent: centre frame is " << m_centreFrame << endl;
 
-    if (m_layers.empty()) {
+    if (m_layerStack.empty()) {
 	QFrame::paintEvent(e);
 	return;
     }
@@ -2312,8 +2343,8 @@ View::render(QPainter &paint, int xorigin, int f0, int f1)
 
     bool someLayersIncomplete = false;
 
-    for (LayerList::iterator i = m_layers.begin();
-         i != m_layers.end(); ++i) {
+    for (LayerList::iterator i = m_layerStack.begin();
+         i != m_layerStack.end(); ++i) {
 
         int c = (*i)->getCompletion(this);
         if (c < 100) {
@@ -2331,11 +2362,11 @@ View::render(QPainter &paint, int xorigin, int f0, int f1)
 
         while (layerCompletion < 100) {
 
-            for (LayerList::iterator i = m_layers.begin();
-                 i != m_layers.end(); ++i) {
+            for (LayerList::iterator i = m_layerStack.begin();
+                 i != m_layerStack.end(); ++i) {
 
                 int c = (*i)->getCompletion(this);
-                if (i == m_layers.begin() || c < layerCompletion) {
+                if (i == m_layerStack.begin() || c < layerCompletion) {
                     layerCompletion = c;
                 }
             }
@@ -2378,8 +2409,8 @@ View::render(QPainter &paint, int xorigin, int f0, int f1)
 	paint.setPen(getForeground());
 	paint.setBrush(Qt::NoBrush);
 
-	for (LayerList::iterator i = m_layers.begin();
-             i != m_layers.end(); ++i) {
+	for (LayerList::iterator i = m_layerStack.begin();
+             i != m_layerStack.end(); ++i) {
 		if(!((*i)->isLayerDormant(this))){
 
 		    paint.setRenderHint(QPainter::Antialiasing, false);
@@ -2474,11 +2505,11 @@ View::toXml(QTextStream &stream,
              "ignore")
 	.arg(extraAttributes);
 
-    for (int i = 0; i < (int)m_layers.size(); ++i) {
-        bool visible = !m_layers[i]->isLayerDormant(this);
-        m_layers[i]->toBriefXml(stream, indent + "  ",
-                                QString("visible=\"%1\"")
-                                .arg(visible ? "true" : "false"));
+    for (int i = 0; i < (int)m_fixedOrderLayers.size(); ++i) {
+        bool visible = !m_fixedOrderLayers[i]->isLayerDormant(this);
+        m_fixedOrderLayers[i]->toBriefXml(stream, indent + "  ",
+                                          QString("visible=\"%1\"")
+                                          .arg(visible ? "true" : "false"));
     }
 
     stream << indent + "</view>\n";

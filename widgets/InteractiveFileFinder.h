@@ -44,6 +44,8 @@ public:
 
     QString find(FileType type, QString location, QString lastKnownLocation = "");
 
+    static void setParentWidget(QWidget *);
+
     static InteractiveFileFinder *getInstance() { return &m_instance; }
 
 protected:
@@ -55,6 +57,8 @@ protected:
 
     QString m_sessionExtension;
     QString m_lastLocatedLocation;
+
+    QWidget *m_parent;
 };
 
 #endif
