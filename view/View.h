@@ -145,35 +145,63 @@ public:
      */
     virtual void scroll(bool right, bool lots, bool doEmit = true);
 
+    /**
+     * Add a layer to the view. (Normally this should be handled
+     * through some command abstraction instead of using this function
+     * directly.)
+     */
     virtual void addLayer(Layer *v);
-    virtual void removeLayer(Layer *v); // does not delete the layer
+
+    /**
+     * Remove a layer from the view. Does not delete the
+     * layer. (Normally this should be handled through some command
+     * abstraction instead of using this function directly.)
+     */
+    virtual void removeLayer(Layer *v);
+
+    /**
+     * Return the number of layers, regardless of whether visible or
+     * dormant, i.e. invisible, in this view.
+     */
     virtual int getLayerCount() const { return m_layers.size(); }
 
     /**
-     * Return a layer, counted in stacking order.  That is, layer 0 is
-     * the bottom layer and layer "getLayerCount()-1" is the top one.
+     * Return the nth layer, counted in stacking order.  That is,
+     * layer 0 is the bottom layer and layer "getLayerCount()-1" is
+     * the top one. The returned layer may be visible or it may be
+     * dormant, i.e. invisible.
      */
     virtual Layer *getLayer(int n) {
         if (n < int(m_layers.size())) return m_layers[n]; else return 0;
     }
 
     /**
-     * Return the top layer.  This is the same as
-     * getLayer(getLayerCount()-1) if there is at least one layer, and
-     * 0 otherwise.
+     * Return the "top" layer in the view, whether visible or dormant.
+     * This is the same as getLayer(getLayerCount()-1) if there is at
+     * least one layer, and 0 otherwise.
      */
     virtual Layer *getTopLayer() {
         return m_layers.empty() ? 0 : m_layers[m_layers.size()-1];
     }
 
     /**
-     * Return the layer last selected by the user.  This is normally
-     * the top layer, the same as getLayer(getLayerCount()-1).
-     * However, if the user has selected the pane itself more recently
-     * than any of the layers on it, this function will return 0.  It
-     * will also return 0 if there are no layers.
+     * Return the layer currently active for tool interaction. This is
+     * the topmost non-dormant (i.e. visible) layer in the view. If
+     * there are no visible layers in the view, return 0.
+     */
+    virtual Layer *getInteractionLayer();
+
+    /**
+     * Return the layer most recently selected by the user. If the
+     * user has selected the pane itself more recently than any of the
+     * layers on it, this function will return 0. It will also return
+     * 0 if there are no layers in the view.
+     *
+     * Note that, unlike getInteractionLayer(), this could return an
+     * invisible (dormant) layer.
      */
     virtual Layer *getSelectedLayer();
+
     virtual const Layer *getSelectedLayer() const;
 
     virtual void setViewManager(ViewManager *m);
