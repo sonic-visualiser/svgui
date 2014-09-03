@@ -396,7 +396,9 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     float max = 0.f;
     for (int bin = 0; bin < mh; ++bin) {
-        if (m_samplingMode == SampleMean) m_values[bin] /= divisor;
+        if (m_samplingMode == SampleMean && divisor > 0) {
+            m_values[bin] /= divisor;
+        }
         if (m_values[bin] > max) max = m_values[bin];
     }
     if (max != 0.f && m_normalize) {
