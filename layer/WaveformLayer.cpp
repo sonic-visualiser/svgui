@@ -46,7 +46,8 @@ WaveformLayer::WaveformLayer() :
     m_middleLineHeight(0.5),
     m_aggressive(false),
     m_cache(0),
-    m_cacheValid(false)
+    m_cacheValid(false),
+    m_cacheZoomLevel(0)
 {
     
 }
@@ -1042,7 +1043,7 @@ WaveformLayer::getYForValue(const View *v, float value, int channel) const
 
     channels = getChannelArrangement(minChannel, maxChannel,
                                      mergingChannels, mixingChannels);
-
+    if (channels == 0) return 0;
     if (maxChannel < minChannel || channel < minChannel) return 0;
 
     int h = v->height();
@@ -1085,7 +1086,7 @@ WaveformLayer::getValueForY(const View *v, int y, int &channel) const
 
     channels = getChannelArrangement(minChannel, maxChannel,
                                      mergingChannels, mixingChannels);
-
+    if (channels == 0) return 0;
     if (maxChannel < minChannel) return 0;
 
     int h = v->height();
