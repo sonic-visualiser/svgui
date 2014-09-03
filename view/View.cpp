@@ -1312,7 +1312,7 @@ View::getAligningModel() const
 int
 View::alignFromReference(int f) const
 {
-    if (!m_manager->getAlignMode()) return f;
+    if (!m_manager || !m_manager->getAlignMode()) return f;
     Model *aligningModel = getAligningModel();
     if (!aligningModel) return f;
     return aligningModel->alignFromReference(f);
@@ -1330,6 +1330,7 @@ View::alignToReference(int f) const
 int
 View::getAlignedPlaybackFrame() const
 {
+    if (!m_manager) return 0;
     int pf = m_manager->getPlaybackFrame();
     if (!m_manager->getAlignMode()) return pf;
 
