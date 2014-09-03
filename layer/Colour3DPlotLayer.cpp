@@ -109,7 +109,7 @@ Colour3DPlotLayer::cacheInvalid()
 void
 Colour3DPlotLayer::cacheInvalid(int startFrame, int endFrame)
 {
-    if (!m_cache) return;
+    if (!m_cache || !m_model) return;
 
     int modelResolution = m_model->getResolution();
     int start = startFrame / modelResolution;
@@ -1529,7 +1529,9 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
                 int sx0i = int(sx0 + epsilon);
                 if (sx0i >= sw) break;
 
-                float a, b, value;
+                float a = float(sourceLine[sx0i]);
+                float b = a;
+                float value;
 
                 float sx1 = sxa[x*2+1];
                 if (sx1 > sx0 + 1.f) {
