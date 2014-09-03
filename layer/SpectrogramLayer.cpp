@@ -1445,7 +1445,7 @@ const
 
             if (!fft->isColumnAvailable(s)) continue;
 
-	    float binfreq = (sr * q) / m_windowSize;
+	    float binfreq = (float(sr) * q) / m_windowSize;
 	    if (q == q0i) freqMin = binfreq;
 	    if (q == q1i) freqMax = binfreq;
 
@@ -2930,7 +2930,7 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
 //    SVDEBUG << "SpectrogramLayer::setDisplayExtents: " << min << "->" << max << endl;
 
     if (min < 0) min = 0;
-    if (max > m_model->getSampleRate()/2) max = m_model->getSampleRate()/2;
+    if (max > m_model->getSampleRate()/2.f) max = m_model->getSampleRate()/2.f;
     
     int minf = lrintf(min);
     int maxf = lrintf(max);
