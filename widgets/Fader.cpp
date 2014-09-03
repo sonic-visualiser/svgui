@@ -48,7 +48,9 @@ Fader::Fader(QWidget *parent, bool withoutKnob) :
     m_value(1.0),
     m_peakLeft(0.0),
     m_peakRight(0.0),
-    m_mousePressed(false)
+    m_mousePressed(false),
+    m_mousePressX(0),
+    m_mousePressValue(0)
 {
     setMinimumSize(116, 23);
     setMaximumSize(116, 23);

@@ -24,6 +24,7 @@
 #include <QDesktopWidget>
 
 KeyReference::KeyReference() :
+    m_text(0),
     m_dialog(0)
 {
 }
