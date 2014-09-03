@@ -419,10 +419,10 @@ Pane::paintEvent(QPaintEvent *e)
 
     if (e) paint.setClipRect(r);
 
-    ViewManager::ToolMode toolMode = m_manager->getToolModeFor(this);
+    ViewManager::ToolMode toolMode = ViewManager::NavigateMode;
+    if (m_manager) toolMode = m_manager->getToolModeFor(this);
 
     if (m_manager &&
-//        !m_manager->isPlaying() &&
         m_mouseInWidget &&
         toolMode == ViewManager::MeasureMode) {
 
@@ -495,6 +495,7 @@ Pane::paintEvent(QPaintEvent *e)
     paint.setPen(QColor(50, 50, 50));
 
     if (waveformModel &&
+        sampleRate &&
         m_manager &&
         m_manager->shouldShowDuration()) {
         drawDurationAndRate(r, waveformModel, sampleRate, paint);
@@ -1093,8 +1094,9 @@ Pane::render(QPainter &paint, int xorigin, int f0, int f1)
 
     if (m_scaleWidth > 0) {
 
-        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
-            --vi;
+        Layer *layer = getTopLayer();
+
+        if (layer) {
             
             paint.save();
             
@@ -1103,12 +1105,11 @@ Pane::render(QPainter &paint, int xorigin, int f0, int f1)
             paint.drawRect(xorigin, -1, m_scaleWidth, height()+1);
             
             paint.setBrush(Qt::NoBrush);
-            (*vi)->paintVerticalScale
+            layer->paintVerticalScale
                 (this, m_manager->shouldShowVerticalColourScale(),
                  paint, QRect(xorigin, 0, m_scaleWidth, height()));
             
             paint.restore();
-            break;
         }
     }
 
@@ -1127,12 +1128,11 @@ Pane::toNewImage(int f0, int f1)
     int formerScaleWidth = m_scaleWidth;
             
     if (m_manager && m_manager->shouldShowVerticalScale()) {
-        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
-            --vi;
+        Layer *layer = getTopLayer();
+        if (layer) {
             QPainter paint(image);
-            m_scaleWidth = (*vi)->getVerticalScaleWidth
+            m_scaleWidth = layer->getVerticalScaleWidth
                 (this, m_manager->shouldShowVerticalColourScale(), paint);
-            break;
         }
     } else {
         m_scaleWidth = 0;
@@ -1164,11 +1164,10 @@ Pane::getImageSize(int f0, int f1)
 
     int sw = 0;
     if (m_manager && m_manager->shouldShowVerticalScale()) {
-        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
-            --vi;
-            sw = (*vi)->getVerticalScaleWidth
+        Layer *layer = getTopLayer();
+        if (layer) {
+            sw = layer->getVerticalScaleWidth
                 (this, m_manager->shouldShowVerticalColourScale(), paint);
-            break;
         }
     }
     
@@ -1454,7 +1453,7 @@ Pane::playbackScheduleTimerElapsed()
 void
 Pane::mouseReleaseEvent(QMouseEvent *e)
 {
-    if (e->buttons() & Qt::RightButton) {
+    if (e && (e->buttons() & Qt::RightButton)) {
         return;
     }
 
@@ -1582,7 +1581,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 void
 Pane::mouseMoveEvent(QMouseEvent *e)
 {
-    if (e->buttons() & Qt::RightButton) {
+    if (!e || (e->buttons() & Qt::RightButton)) {
         return;
     }
 
@@ -1634,7 +1633,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             }
         }
 
-        if (!m_manager->isPlaying()) {
+        if (m_manager && !m_manager->isPlaying()) {
 
             bool updating = false;
 
@@ -1651,8 +1650,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                 }
             }
 
-            if (!updating && mode == ViewManager::MeasureMode &&
-                m_manager && !m_manager->isPlaying()) {
+            if (!updating && mode == ViewManager::MeasureMode) {
 
                 Layer *layer = getTopLayer();
                 if (layer && layer->nearestMeasurementRectChanged
@@ -2127,7 +2125,8 @@ Pane::edgeScrollMaybe(int x)
 
     bool doScroll = false;
     if (!m_manager) doScroll = true;
-    if (!m_manager->isPlaying()) doScroll = true;
+    else if (!m_manager->isPlaying()) doScroll = true;
+
     if (m_followPlay != PlaybackScrollContinuous) doScroll = true;
 
     if (doScroll) {
@@ -2173,7 +2172,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 
     if (mode == ViewManager::SelectMode) {
         m_clickedInRange = false;
-        m_manager->clearInProgressSelection();
+        if (m_manager) m_manager->clearInProgressSelection();
         emit doubleClickSelectInvoked(getFrameForX(e->x()));
         return;
     }
