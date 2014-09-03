@@ -99,10 +99,8 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     currentIndicator->setVisible(m_showAccessories);
 
     int initialCentreFrame = -1;
-    for (int i = 0; i < (int)m_panes.size(); ++i) {
-        int f = m_panes[i].pane->getCentreFrame();
-        initialCentreFrame = f;
-        break;
+    if (!m_panes.empty()) {
+        initialCentreFrame = m_panes[0].pane->getCentreFrame();
     }
 
     Pane *pane = new Pane(frame);
