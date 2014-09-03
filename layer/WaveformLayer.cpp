@@ -458,8 +458,8 @@ WaveformLayer::getNormalizeGain(View *v, int channel) const
     int minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
 
-    getChannelArrangement(minChannel, maxChannel,
-                          mergingChannels, mixingChannels);
+    (void)getChannelArrangement(minChannel, maxChannel,
+                                mergingChannels, mixingChannels);
 
     if (mergingChannels || mixingChannels) {
         RangeSummarisableTimeValueModel::Range otherRange =
