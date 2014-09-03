@@ -1796,7 +1796,10 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int /* frameOffset */,
                 (0, tr("Choose value calculation"),
                  text, options, prevSelection, &ok);
 
-            if (!ok) return false;
+            if (!ok) {
+                delete command;
+                return false;
+            }
             int selection = 0;
             generation = Labeller::ValueNone;
 
