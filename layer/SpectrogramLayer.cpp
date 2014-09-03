@@ -2479,7 +2479,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
 
     FFTModel::PeakSet peakfreqs;
 
-    int px = -1, psx = -1;
+    int psx = -1;
 
 #ifdef __GNUC__
     float values[maxbin - minbin + 1];
@@ -2500,7 +2500,6 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
 
         for (int sx = sx0; sx < sx1; ++sx) {
 
-            if (x == px && sx == psx) continue;
             if (sx < 0 || sx >= int(fft->getWidth())) continue;
 
             if (!m_synchronous) {
