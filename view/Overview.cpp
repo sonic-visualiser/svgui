@@ -27,7 +27,8 @@
 
 Overview::Overview(QWidget *w) :
     View(w, false),
-    m_clickedInRange(false)
+    m_clickedInRange(false),
+    m_dragCentreFrame(0)
 {
     setObjectName(tr("Overview"));
     m_followPan = false;

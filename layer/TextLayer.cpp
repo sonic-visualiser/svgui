@@ -336,7 +336,7 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     QPoint localPos;
     TextModel::Point illuminatePoint(0);
-    bool shouldIlluminate;
+    bool shouldIlluminate = false;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
         shouldIlluminate = getPointToDrag(v, localPos.x(), localPos.y(),

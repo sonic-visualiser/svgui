@@ -36,7 +36,9 @@ Panner::Panner(QWidget *parent) :
     m_thumbColour(palette().highlightedText().color()),
     m_backgroundAlpha(255),
     m_thumbAlpha(255),
-    m_clicked(false)
+    m_clicked(false),
+    m_dragStartX(0),
+    m_dragStartY(0)
 {
 }
 
