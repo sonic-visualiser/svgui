@@ -47,6 +47,10 @@ RegionLayer::RegionLayer() :
     SingleColourLayer(),
     m_model(0),
     m_editing(false),
+    m_dragPointX(0),
+    m_dragPointY(0),
+    m_dragStartX(0),
+    m_dragStartY(0),
     m_originalPoint(0, 0.0, 0, tr("New Region")),
     m_editingPoint(0, 0.0, 0, tr("New Region")),
     m_editingCommand(0),
@@ -564,13 +568,21 @@ RegionLayer::snapToSimilarFeature(View *v, int &frame,
     i = close.begin();
 
     // Scan through the close points first, then the more distant ones
-    // if no suitable close one is found
+    // if no suitable close one is found. So the while-termination
+    // condition here can only happen once i has passed through the
+    // whole of the close container and then the whole of the separate
+    // points container. The two iterators are totally distinct, but
+    // have the same type so we cheekily use the same variable and a
+    // single loop for both.
 
     while (i != points.end()) {
 
-        if (i == close.end()) {
-            i = points.begin();
-            distant = true;
+        if (!distant) {
+            if (i == close.end()) {
+                // switch from the close container to the points container
+                i = points.begin();
+                distant = true;
+            }
         }
 
 	if (snap == SnapRight) {
