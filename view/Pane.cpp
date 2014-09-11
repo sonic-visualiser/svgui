@@ -469,7 +469,7 @@ Pane::paintEvent(QPaintEvent *e)
 
     m_scaleWidth = 0;
 
-    if (workModel) {
+    if (workModel && hasTopLayerTimeXAxis()) {
         drawModelTimeExtents(r, paint, workModel);
     }
 
