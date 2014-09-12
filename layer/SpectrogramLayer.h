@@ -88,6 +88,8 @@ public:
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
+    virtual QString getPropertyValueIconName(const PropertyName &,
+                                             int value) const;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
     virtual void setProperty(const PropertyName &, int value);
 
@@ -170,27 +172,24 @@ public:
      */
     void setBinDisplay(BinDisplay);
     BinDisplay getBinDisplay() const;
- 
-    /**
-     * Normalize each column to its maximum value, independent of its
-     * neighbours.
-     */
-    void setNormalizeColumns(bool n);
-    bool getNormalizeColumns() const;
+
+    enum Normalization {
+        NoNormalization,
+        NormalizeColumns,
+        NormalizeVisibleArea,
+        NormalizeHybrid
+    };
 
     /**
-     * Normalize each value against the maximum in the visible region.
+     * Specify the normalization mode for bin values.
      */
-    void setNormalizeVisibleArea(bool n);
-    bool getNormalizeVisibleArea() const;
+    void setNormalization(Normalization);
+    Normalization getNormalization() const;
 
     /**
-     * Normalize each column to its maximum value, and then scale by
-     * the log of the (absolute) maximum value.
+     * Specify the colour map. See ColourMapper for the colour map
+     * values.
      */
-    void setNormalizeHybrid(bool n);
-    bool getNormalizeHybrid() const;
-    
     void setColourMap(int map);
     int getColourMap() const;
 
@@ -272,9 +271,7 @@ protected:
     QColor              m_crosshairColour;
     FrequencyScale      m_frequencyScale;
     BinDisplay          m_binDisplay;
-    bool                m_normalizeColumns;
-    bool                m_normalizeVisibleArea;
-    bool                m_normalizeHybrid;
+    Normalization       m_normalization;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
 
