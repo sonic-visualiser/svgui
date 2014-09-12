@@ -73,9 +73,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_colourMap(0),
     m_frequencyScale(LinearFrequencyScale),
     m_binDisplay(AllBins),
-    m_normalizeColumns(false),
-    m_normalizeVisibleArea(false),
-    m_normalizeHybrid(false),
+    m_normalization(NoNormalization),
     m_lastEmittedZoomStep(-1),
     m_synchronous(false),
     m_haveDetailedScale(false),
@@ -107,7 +105,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setFrequencyScale(LogFrequencyScale);
 	setColourScale(LinearColourScale);
 	setBinDisplay(PeakFrequencies);
-	setNormalizeColumns(true);
+        setNormalization(NormalizeColumns);
     }
 
     Preferences *prefs = Preferences::getInstance();
@@ -155,8 +153,7 @@ SpectrogramLayer::getProperties() const
     list.push_back("Colour Scale");
     list.push_back("Window Size");
     list.push_back("Window Increment");
-    list.push_back("Normalize Columns");
-    list.push_back("Normalize Visible Area");
+    list.push_back("Normalization");
     list.push_back("Bin Display");
     list.push_back("Threshold");
     list.push_back("Gain");
@@ -175,8 +172,7 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Colour Scale") return tr("Colour Scale");
     if (name == "Window Size") return tr("Window Size");
     if (name == "Window Increment") return tr("Window Overlap");
-    if (name == "Normalize Columns") return tr("Normalize Columns");
-    if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
+    if (name == "Normalization") return tr("Normalization");
     if (name == "Bin Display") return tr("Bin Display");
     if (name == "Threshold") return tr("Threshold");
     if (name == "Gain") return tr("Gain");
@@ -189,10 +185,8 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
 }
 
 QString
-SpectrogramLayer::getPropertyIconName(const PropertyName &name) const
+SpectrogramLayer::getPropertyIconName(const PropertyName &) const
 {
-    if (name == "Normalize Columns") return "normalise-columns";
-    if (name == "Normalize Visible Area") return "normalise";
     return "";
 }
 
@@ -201,8 +195,6 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Gain") return RangeProperty;
     if (name == "Colour Rotation") return RangeProperty;
-    if (name == "Normalize Columns") return ToggleProperty;
-    if (name == "Normalize Visible Area") return ToggleProperty;
     if (name == "Threshold") return RangeProperty;
     if (name == "Zero Padding") return ToggleProperty;
     return ValueProperty;
@@ -219,8 +211,7 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Colour" ||
 	name == "Threshold" ||
 	name == "Colour Rotation") return tr("Colour");
-    if (name == "Normalize Columns" ||
-        name == "Normalize Visible Area" ||
+    if (name == "Normalization" ||
         name == "Gain" ||
 	name == "Colour Scale") return tr("Scale");
     return QString();
@@ -365,15 +356,12 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
         *deflt = int(AllBins);
 	val = (int)m_binDisplay;
 
-    } else if (name == "Normalize Columns") {
+    } else if (name == "Normalization") {
 	
-        *deflt = 0;
-	val = (m_normalizeColumns ? 1 : 0);
-
-    } else if (name == "Normalize Visible Area") {
-	
-        *deflt = 0;
-	val = (m_normalizeVisibleArea ? 1 : 0);
+        *min = 0;
+        *max = 3;
+        *deflt = int(NoNormalization);
+        val = (int)m_normalization;
 
     } else {
 	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
@@ -398,6 +386,9 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 3: return tr("dBV");
 	case 4: return tr("Phase");
 	}
+    }
+    if (name == "Normalization") {
+        return ""; // icon only
     }
     if (name == "Window Size") {
 	return QString("%1").arg(32 << value);
@@ -463,6 +454,22 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	}
     }
     return tr("<unknown>");
+}
+
+QString
+SpectrogramLayer::getPropertyValueIconName(const PropertyName &name,
+                                           int value) const
+{
+    if (name == "Normalization") {
+        switch(value) {
+        default:
+        case 0: return "normalise-none";
+        case 1: return "normalise-columns";
+        case 2: return "normalise";
+        case 3: return "normalise-hybrid";
+        }
+    }
+    return "";
 }
 
 RangeMapper *
@@ -555,10 +562,14 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 1: setBinDisplay(PeakBins); break;
 	case 2: setBinDisplay(PeakFrequencies); break;
 	}
-    } else if (name == "Normalize Columns") {
-	setNormalizeColumns(value ? true : false);
-    } else if (name == "Normalize Visible Area") {
-	setNormalizeVisibleArea(value ? true : false);
+    } else if (name == "Normalization") {
+        switch (value) {
+        default:
+        case 0: setNormalization(NoNormalization); break;
+        case 1: setNormalization(NormalizeColumns); break;
+        case 2: setNormalization(NormalizeVisibleArea); break;
+        case 3: setNormalization(NormalizeHybrid); break;
+        }
     }
 }
 
@@ -934,60 +945,21 @@ SpectrogramLayer::getBinDisplay() const
 }
 
 void
-SpectrogramLayer::setNormalizeColumns(bool n)
+SpectrogramLayer::setNormalization(Normalization n)
 {
-    if (m_normalizeColumns == n) return;
+    if (m_normalization == n) return;
 
     invalidateImageCaches();
     invalidateMagnitudes();
-    m_normalizeColumns = n;
+    m_normalization = n;
 
     emit layerParametersChanged();
 }
 
-bool
-SpectrogramLayer::getNormalizeColumns() const
+SpectrogramLayer::Normalization
+SpectrogramLayer::getNormalization() const
 {
-    return m_normalizeColumns;
-}
-
-void
-SpectrogramLayer::setNormalizeHybrid(bool n)
-{
-    if (m_normalizeHybrid == n) return;
-
-    invalidateImageCaches();
-    invalidateMagnitudes();
-    m_normalizeHybrid = n;
-
-    emit layerParametersChanged();
-}
-
-bool
-SpectrogramLayer::getNormalizeHybrid() const
-{
-    return m_normalizeHybrid;
-}
-
-void
-SpectrogramLayer::setNormalizeVisibleArea(bool n)
-{
-    SVDEBUG << "SpectrogramLayer::setNormalizeVisibleArea(" << n
-              << ") (from " << m_normalizeVisibleArea << ")" << endl;
-
-    if (m_normalizeVisibleArea == n) return;
-
-    invalidateImageCaches();
-    invalidateMagnitudes();
-    m_normalizeVisibleArea = n;
-
-    emit layerParametersChanged();
-}
-
-bool
-SpectrogramLayer::getNormalizeVisibleArea() const
-{
-    return m_normalizeVisibleArea;
+    return m_normalization;
 }
 
 void
@@ -1188,10 +1160,10 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
     float min = 0.f;
     float max = 1.f;
 
-    if (m_normalizeVisibleArea) {
+    if (m_normalization == NormalizeVisibleArea) {
         min = m_viewMags[v].getMin();
         max = m_viewMags[v].getMax();
-    } else if (!m_normalizeColumns) {
+    } else if (m_normalization != NormalizeColumns) {
         if (m_colourScale == LinearColourScale //||
 //            m_colourScale == MeterColourScale) {
             ) {
@@ -1965,7 +1937,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "SpectrogramLayer: magnitude range changed to [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << endl;
 #endif
-        if (m_normalizeVisibleArea) {
+        if (m_normalization == NormalizeVisibleArea) {
             cache.validArea = QRect();
             recreateWholeImageCache = true;
         }
@@ -2404,7 +2376,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (!m_synchronous) {
 
-        if (!m_normalizeVisibleArea || !overallMagChanged) {
+        if ((m_normalization != NormalizeVisibleArea) || !overallMagChanged) {
     
             if (cache.validArea.x() > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2518,9 +2490,9 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                                                     minbin, maxbin - 1);
                 if (m_colourScale == PhaseColourScale) {
                     fft->getPhasesAt(sx, values, minbin, maxbin - minbin + 1);
-                } else if (m_normalizeColumns) {
+                } else if (m_normalization == NormalizeColumns) {
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
-                } else if (m_normalizeHybrid) {
+                } else if (m_normalization == NormalizeHybrid) {
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                     float max = fft->getMaximumMagnitudeAt(sx);
                     if (max > 0.f) {
@@ -2546,7 +2518,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                 float value = values[bin - minbin];
 
                 if (m_colourScale != PhaseColourScale) {
-                    if (!m_normalizeColumns && !m_normalizeHybrid) {
+                    if (m_normalization != NormalizeColumns) {
                         value /= (m_fftSize/2.f);
                     }
                     mag.sample(value);
@@ -2685,15 +2657,15 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 #endif
                     if (m_colourScale == PhaseColourScale) {
                         fft->getPhasesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                    } else if (m_normalizeColumns) {
+                    } else if (m_normalization == NormalizeColumns) {
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                    } else if (m_normalizeHybrid) {
+                    } else if (m_normalization == NormalizeHybrid) {
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                         float max = fft->getMaximumMagnitudeAt(sx);
+                        float scale = log10(max + 1.f);
+                        cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
                         for (int i = minbin; i <= maxbin; ++i) {
-                            if (max > 0.f) {
-                                autoarray[i - minbin] *= log10(max);
-                            }
+                            autoarray[i - minbin] *= scale;
                         }
                     } else {
                         fft->getMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
@@ -2703,7 +2675,8 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                     SVDEBUG << "Retrieving column " << sx << " from peaks cache" << endl;
 #endif
                     c = sourceModel->getColumn(sx);
-                    if (m_normalizeColumns || m_normalizeHybrid) {
+                    if (m_normalization == NormalizeColumns ||
+                        m_normalization == NormalizeHybrid) {
                         for (int y = 0; y < h; ++y) {
                             if (c[y] > columnMax) columnMax = c[y];
                         }
@@ -2746,7 +2719,8 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                     value = prop * v0 + (1.f - prop) * v1;
 
                     if (m_colourScale != PhaseColourScale) {
-                        if (!m_normalizeColumns) {
+                        if (m_normalization != NormalizeColumns &&
+                            m_normalization != NormalizeHybrid) {
                             value /= (m_fftSize/2.f);
                         }
                         mag.sample(value);
@@ -2771,7 +2745,8 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                         }
 
                         if (m_colourScale != PhaseColourScale) {
-                            if (!m_normalizeColumns) {
+                            if (m_normalization != NormalizeColumns &&
+                                m_normalization != NormalizeHybrid) {
                                 value /= (m_fftSize/2.f);
                             }
                             mag.sample(value);
@@ -2803,11 +2778,12 @@ SpectrogramLayer::paintDrawBuffer(View *v,
             float peak = peaks[y];
             
             if (m_colourScale != PhaseColourScale &&
-                (m_normalizeColumns || m_normalizeHybrid) && 
+                (m_normalization == NormalizeColumns ||
+                 m_normalization == NormalizeHybrid) &&
                 columnMax > 0.f) {
                 peak /= columnMax;
-                if (m_normalizeHybrid) {
-                    peak *= log10(columnMax);
+                if (m_normalization == NormalizeHybrid) {
+                    peak *= log10(columnMax + 1.f);
                 }
             }
             
@@ -3658,9 +3634,9 @@ SpectrogramLayer::toXml(QTextStream &stream,
     s += QString("normalizeColumns=\"%1\" "
                  "normalizeVisibleArea=\"%2\" "
                  "normalizeHybrid=\"%3\" ")
-	.arg(m_normalizeColumns ? "true" : "false")
-        .arg(m_normalizeVisibleArea ? "true" : "false")
-        .arg(m_normalizeHybrid ? "true" : "false");
+	.arg(m_normalization == NormalizeColumns ? "true" : "false")
+        .arg(m_normalization == NormalizeVisibleArea ? "true" : "false")
+        .arg(m_normalization == NormalizeHybrid ? "true" : "false");
 
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -3728,14 +3704,20 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 
     bool normalizeColumns =
 	(attributes.value("normalizeColumns").trimmed() == "true");
-    setNormalizeColumns(normalizeColumns);
+    if (normalizeColumns) {
+        setNormalization(NormalizeColumns);
+    }
 
     bool normalizeVisibleArea =
 	(attributes.value("normalizeVisibleArea").trimmed() == "true");
-    setNormalizeVisibleArea(normalizeVisibleArea);
+    if (normalizeVisibleArea) {
+        setNormalization(NormalizeVisibleArea);
+    }
 
     bool normalizeHybrid =
 	(attributes.value("normalizeHybrid").trimmed() == "true");
-    setNormalizeHybrid(normalizeHybrid);
+    if (normalizeHybrid) {
+        setNormalization(NormalizeHybrid);
+    }
 }
     
