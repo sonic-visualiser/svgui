@@ -46,7 +46,8 @@ LogColourScale::paintVertical(View *v,
     float val = minlog;
     float inc = (maxlog - val) / n;
 
-    char buffer[40];
+    const int buflen = 40;
+    char buffer[buflen];
 
     int boxx = 5, boxy = 5;
     if (layer->getScaleUnits() != "") {
@@ -85,7 +86,7 @@ LogColourScale::paintVertical(View *v,
 	int digits = trunc(log10f(dv));
 	int sf = dp + (digits > 0 ? digits : 0);
 	if (sf < 2) sf = 2;
-	sprintf(buffer, "%.*g", sf, dv);
+	snprintf(buffer, buflen, "%.*g", sf, dv);
 
 	QString label = QString(buffer);
 
