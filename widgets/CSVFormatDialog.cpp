@@ -118,6 +118,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     
     m_timingTypeCombo = new QComboBox;
     m_timingTypeCombo->addItem(tr("Explicitly, in seconds"));
+    m_timingTypeCombo->addItem(tr("Explicitly, in milliseconds"));
     m_timingTypeCombo->addItem(tr("Explicitly, in audio sample frames"));
     m_timingTypeCombo->addItem(tr("Implicitly: rows are equally spaced in time"));
     layout->addWidget(m_timingTypeCombo, row++, 1, 1, 2);
@@ -125,7 +126,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 	    this, SLOT(timingTypeChanged(int)));
     m_timingTypeCombo->setCurrentIndex
         (m_format.getTimingType() == CSVFormat::ExplicitTiming ?
-         m_format.getTimeUnits() == CSVFormat::TimeSeconds ? 0 : 1 : 2);
+         m_format.getTimeUnits() == CSVFormat::TimeSeconds ? 0 : 2 : 3);
 
     m_sampleRateLabel = new QLabel(tr("Audio sample rate (Hz):"));
     layout->addWidget(m_sampleRateLabel, row, 0);
@@ -240,7 +241,7 @@ CSVFormatDialog::timingTypeChanged(int type)
 
     case 1:
 	m_format.setTimingType(CSVFormat::ExplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
+	m_format.setTimeUnits(CSVFormat::TimeMilliseconds);
 	m_sampleRateCombo->setEnabled(true);
 	m_sampleRateLabel->setEnabled(true);
 	m_windowSizeCombo->setEnabled(false);
@@ -248,6 +249,15 @@ CSVFormatDialog::timingTypeChanged(int type)
 	break;
 
     case 2:
+	m_format.setTimingType(CSVFormat::ExplicitTiming);
+	m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
+	m_sampleRateCombo->setEnabled(true);
+	m_sampleRateLabel->setEnabled(true);
+	m_windowSizeCombo->setEnabled(false);
+	m_windowSizeLabel->setEnabled(false);
+	break;
+
+    case 3:
 	m_format.setTimingType(CSVFormat::ImplicitTiming);
 	m_format.setTimeUnits(CSVFormat::TimeWindows);
 	m_sampleRateCombo->setEnabled(true);
