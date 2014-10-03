@@ -99,6 +99,9 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
         cpc->setCurrentIndex(int(m_format.getColumnPurpose(i)));
 
         for (int j = 0; j < example.size() && j < 6; ++j) {
+            if (i >= example[j].size()) {
+                continue;
+            }
             QLabel *label = new QLabel;
             label->setTextFormat(Qt::PlainText);
             QString text = TextAbbrev::abbreviate(example[j][i], 35);
