@@ -40,6 +40,9 @@ protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual bool shouldLabelSelections() const { return false; }
 
+    std::vector<int> getKeyFrames();
+    std::vector<int> getDefaultKeyFrames();
+
     View *m_above;
     View *m_below;
 };
