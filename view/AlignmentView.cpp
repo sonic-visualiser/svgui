@@ -17,6 +17,10 @@
 
 #include <QPainter>
 
+#include "data/model/SparseOneDimensionalModel.h"
+
+#include "layer/TimeInstantLayer.h"
+
 using std::vector;
 
 AlignmentView::AlignmentView(QWidget *w) :
@@ -104,9 +108,6 @@ AlignmentView::paintEvent(QPaintEvent *)
 {
     if (m_above == 0 || m_below == 0 || !m_manager) return;
 
-    int rate = m_manager->getMainModelSampleRate();
-    if (rate == 0) return;
-
     bool darkPalette = false;
     if (m_manager) darkPalette = m_manager->getGlobalDarkBackground();
 
@@ -120,12 +121,7 @@ AlignmentView::paintEvent(QPaintEvent *)
 
     paint.fillRect(rect(), bg);
 
-    vector<int> keyFrames;
-    for (int f = m_above->getModelsStartFrame(); 
-	 f <= m_above->getModelsEndFrame(); 
-	 f += rate * 5) {
-	keyFrames.push_back(f);
-    }
+    vector<int> keyFrames = getKeyFrames();
 
     foreach (int f, keyFrames) {
 	int af = m_above->alignFromReference(f);
@@ -138,3 +134,61 @@ AlignmentView::paintEvent(QPaintEvent *)
     paint.end();
 }
 
+vector<int>
+AlignmentView::getKeyFrames()
+{
+    if (!m_above) {
+	return getDefaultKeyFrames();
+    }
+
+    SparseOneDimensionalModel *m = 0;
+
+    // get the topmost such
+    for (int i = 0; i < m_above->getLayerCount(); ++i) {
+	if (qobject_cast<TimeInstantLayer *>(m_above->getLayer(i))) {
+	    SparseOneDimensionalModel *mm = 
+		qobject_cast<SparseOneDimensionalModel *>
+		(m_above->getLayer(i)->getModel());
+	    if (mm) m = mm;
+	}
+    }
+
+    if (!m) {
+	return getDefaultKeyFrames();
+    }
+
+    vector<int> keyFrames;
+
+    const SparseOneDimensionalModel::PointList pp = m->getPoints();
+    for (SparseOneDimensionalModel::PointList::const_iterator pi = pp.begin();
+	 pi != pp.end(); ++pi) {
+	keyFrames.push_back(pi->frame);
+    }
+
+    return keyFrames;
+}
+
+vector<int>
+AlignmentView::getDefaultKeyFrames()
+{
+    vector<int> keyFrames;
+
+    if (!m_above || !m_manager) return keyFrames;
+
+    int rate = m_manager->getMainModelSampleRate();
+    if (rate == 0) return keyFrames;
+
+    for (int f = m_above->getModelsStartFrame(); 
+	 f <= m_above->getModelsEndFrame(); 
+	 f += rate * 5) {
+	keyFrames.push_back(f);
+    }
+    
+    return keyFrames;
+}
+
+
+
+
+
+    
