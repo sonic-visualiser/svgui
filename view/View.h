@@ -338,7 +338,7 @@ signals:
                             bool globalScroll,
                             PlaybackFollowMode followMode);
 
-    void zoomLevelChanged(int, bool);
+    void zoomLevelChanged(int level, bool locked);
 
     void contextHelpChanged(const QString &);
 
@@ -405,7 +405,7 @@ protected:
     void checkProgress(void *object);
     int getProgressBarWidth() const; // if visible
 
-    int              m_centreFrame;
+    int                 m_centreFrame;
     int                 m_zoomLevel;
     bool                m_followPan;
     bool                m_followZoom;

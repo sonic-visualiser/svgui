@@ -21,6 +21,7 @@
 #include "widgets/ClickableLabel.h"
 #include "layer/Layer.h"
 #include "ViewManager.h"
+#include "AlignmentView.h"
 
 #include <QApplication>
 #include <QHBoxLayout>
@@ -40,6 +41,7 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     QFrame(parent),
     m_currentPane(0),
     m_showAccessories(true),
+    m_showAlignmentViews(false),
     m_splitter(new QSplitter),
     m_propertyStackStack(new QStackedWidget),
     m_viewManager(viewManager),
@@ -65,6 +67,15 @@ void
 PaneStack::setShowPaneAccessories(bool show)
 {
     m_showAccessories = show;
+}
+
+void
+PaneStack::setShowAlignmentViews(bool show)
+{
+    m_showAlignmentViews = show;
+    foreach (const PaneRec &r, m_panes) {
+        r.alignmentView->setVisible(m_showAlignmentViews);
+    }
 }
 
 Pane *
@@ -112,6 +123,12 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     layout->addWidget(pane, 0, 1, 2, 1);
     layout->setColumnStretch(1, 20);
 
+    AlignmentView *av = new AlignmentView(frame);
+    av->setFixedHeight(40);//!!!
+    av->setVisible(m_showAlignmentViews);
+    av->setViewManager(m_viewManager);
+    layout->addWidget(av, 2, 1);
+
     QWidget *properties = 0;
     if (suppressPropertyBox) {
 	properties = new QFrame();
@@ -139,6 +156,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     rec.currentIndicator = currentIndicator;
     rec.frame = frame;
     rec.layout = layout;
+    rec.alignmentView = av;
     m_panes.push_back(rec);
 
     frame->setLayout(layout);
@@ -167,8 +185,31 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     }
 
     showOrHidePaneAccessories();
+    relinkAlignmentViews();
 
     return pane;
+}
+
+void
+PaneStack::relinkAlignmentViews()
+{
+    for (int i = 0; i < (int)m_panes.size(); ++i) {
+        m_panes[i].alignmentView->setViewAbove(m_panes[i].pane);
+        if (i + 1 < (int)m_panes.size()) {
+            m_panes[i].alignmentView->setViewBelow(m_panes[i+1].pane);
+        } else {
+            m_panes[i].alignmentView->setViewBelow(0);
+        }
+    }
+}
+
+void
+PaneStack::unlinkAlignmentViews()
+{
+    for (int i = 0; i < (int)m_panes.size(); ++i) {
+        m_panes[i].alignmentView->setViewAbove(0);
+        m_panes[i].alignmentView->setViewBelow(0);
+    }
 }
 
 void
@@ -279,6 +320,7 @@ PaneStack::deletePane(Pane *pane)
     }
 
     emit paneAboutToBeDeleted(pane);
+    unlinkAlignmentViews();
 
     cerr << "PaneStack::deletePane: about to delete parent " << pane->parent() << " of pane " << pane << endl;
 
@@ -303,6 +345,7 @@ PaneStack::deletePane(Pane *pane)
     }
 
     showOrHidePaneAccessories();
+    relinkAlignmentViews();
 
     emit paneDeleted();
 }
@@ -362,6 +405,8 @@ PaneStack::hidePane(Pane *pane)
 	++i;
     }
 
+    relinkAlignmentViews();
+
     cerr << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << endl;
 }
 
@@ -385,6 +430,8 @@ PaneStack::showPane(Pane *pane)
 	}
 	++i;
     }
+
+    relinkAlignmentViews();
 
     cerr << "WARNING: PaneStack::showPane(" << pane << "): Pane not found in hidden panes" << endl;
 }
