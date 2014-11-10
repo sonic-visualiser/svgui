@@ -43,8 +43,9 @@ LinearColourScale::paintVertical(View *v,
 
     float val = min;
     float inc = (max - val) / n;
-
-    char buffer[40];
+    
+    const int buflen = 40;
+    char buffer[buflen];
 
     int boxx = 5, boxy = 5;
     if (layer->getScaleUnits() != "") {
@@ -84,7 +85,7 @@ LinearColourScale::paintVertical(View *v,
 	ty = y - paint.fontMetrics().height() +
 	    paint.fontMetrics().ascent() + 2;
 
-	sprintf(buffer, "%.*f", dp, val);
+	snprintf(buffer, buflen, "%.*f", dp, val);
 	QString label = QString(buffer);
 
 	paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);

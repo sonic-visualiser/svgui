@@ -55,7 +55,8 @@ LogNumericalScale::paintVertical(View *v,
     cerr << "min = " << minlog << ", max = " << maxlog << ", inc = " << inc << ", minDispInc = " << minDispInc << endl;
 #endif
 
-    char buffer[40];
+    const int buflen = 40;
+    char buffer[buflen];
 
     float round = 1.f;
     int dp = 0;
@@ -104,7 +105,7 @@ LogNumericalScale::paintVertical(View *v,
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "sf = " << sf << endl;
 #endif
-	sprintf(buffer, "%.*g", sf, dispval);
+	snprintf(buffer, buflen, "%.*g", sf, dispval);
 
 	QString label = QString(buffer);
 
