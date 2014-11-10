@@ -1331,7 +1331,9 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     QPoint illuminatePos;
     bool illuminate = v->shouldIlluminateLocalFeatures(this, illuminatePos);
-    char labelbuf[10];
+    
+    const int buflen = 40;
+    char labelbuf[buflen];
 
     for (int sx = sx0; sx <= sx1; ++sx) {
 
@@ -1395,7 +1397,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 		if (sx >= 0 && sx < m_cache->width() &&
 		    sy >= 0 && sy < m_cache->height()) {
 		    float value = m_model->getValueAt(sx, sy);
-		    sprintf(labelbuf, "%06f", value);
+		    snprintf(labelbuf, buflen, "%06f", value);
 		    QString text(labelbuf);
 		    paint.setPen(v->getBackground());
 		    paint.drawText(rx0 + 2,

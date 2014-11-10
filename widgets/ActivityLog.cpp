@@ -30,7 +30,7 @@
 using std::cerr;
 using std::endl;
 
-#define PRINT_ACTIVITY 1
+//#define PRINT_ACTIVITY 1
 
 ActivityLog::ActivityLog() : QDialog()
 {

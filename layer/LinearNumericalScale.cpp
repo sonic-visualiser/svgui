@@ -42,7 +42,8 @@ LinearNumericalScale::paintVertical(View *v,
     float val = minf;
     float inc = (maxf - val) / n;
 
-    char buffer[40];
+    const int buflen = 40;
+    char buffer[buflen];
 
     int w = getWidth(v, paint) + x0;
 
@@ -86,7 +87,7 @@ LinearNumericalScale::paintVertical(View *v,
 	    continue;
         }
 
-	sprintf(buffer, "%.*f", dp, dispval);
+	snprintf(buffer, buflen, "%.*f", dp, dispval);
 
 	QString label = QString(buffer);
 
