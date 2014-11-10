@@ -59,6 +59,9 @@ protected:
     virtual void leaveEvent(QEvent *);
     virtual bool shouldLabelSelections() const { return false; }
 
+    QColor getFillWithin() const;
+    QColor getFillWithout() const;
+    
     QPoint m_clickPos;
     QPoint m_mousePos;
     bool m_clickedInRange;
