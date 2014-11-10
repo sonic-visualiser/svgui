@@ -2286,6 +2286,13 @@ Pane::wheelEvent(QWheelEvent *e)
         // Coarse wheel information (or vertical zoom, which is
         // necessarily coarse itself)
 
+        // Sometimes on Linux we're seeing absurdly extreme angles on
+        // the first wheel event -- discard those entirely
+        if (abs(m_pendingWheelAngle) > 1000) {
+            m_pendingWheelAngle = 0;
+            return;
+        }
+        
         while (abs(m_pendingWheelAngle) >= 120) {
 
             int sign = (m_pendingWheelAngle < 0 ? -1 : 1);
