@@ -1200,6 +1200,11 @@ FlexiNoteLayer::editEnd(View *v, QMouseEvent *e)
 
         QString newName = m_editingCommand->getName();
 
+        if (m_editMode == DragNote) {
+            //!!! command nesting is wrong?
+            emit materialiseReAnalysis();
+        }
+
         m_editingCommand->deletePoint(m_editingPoint);
         updateNoteValueFromPitchCurve(v, m_editingPoint);
         m_editingCommand->addPoint(m_editingPoint);
