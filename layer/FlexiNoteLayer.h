@@ -165,6 +165,7 @@ public:
 
 signals:
     void reAnalyseRegion(int, int, float, float);
+    void materialiseReAnalysis();
     
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
