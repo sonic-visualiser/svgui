@@ -1135,7 +1135,8 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
 
-    std::cerr << "edit mode: " << m_editMode << std::endl;
+    std::cerr << "edit mode: " << m_editMode << " intelligent actions = "
+              << m_intelligentActions << std::endl;
     
     switch (m_editMode) {
     case LeftBoundary : {
@@ -1210,7 +1211,7 @@ void
 FlexiNoteLayer::splitStart(View *v, QMouseEvent *e)
 {
     // GF: note splitting starts (!! remove printing soon)
-    std::cerr << "splitStart" << std::endl;
+    std::cerr << "splitStart (n.b. editStart will be called later, if the user drags the mouse)" << std::endl;
     if (!m_model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
@@ -1227,7 +1228,6 @@ FlexiNoteLayer::splitStart(View *v, QMouseEvent *e)
     m_editing = true;
     m_dragStartX = e->x();
     m_dragStartY = e->y();
-    
 }
 
 void
@@ -1339,22 +1339,23 @@ FlexiNoteLayer::getAssociatedPitchModel(View *v) const
 {
     // Better than we used to do, but still not very satisfactory
 
-    cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
+//    cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
 
     for (int i = 0; i < v->getLayerCount(); ++i) {
         Layer *layer = v->getLayer(i);
         if (layer &&
             layer->getLayerPresentationName() != "candidate") {
-            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
+//            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
             SparseTimeValueModel *model = qobject_cast<SparseTimeValueModel *>
                 (layer->getModel());
-            cerr << "FlexiNoteLayer::getAssociatedPitchModel: and its model is " << model << endl;
+//            cerr << "FlexiNoteLayer::getAssociatedPitchModel: and its model is " << model << endl;
             if (model && model->getScaleUnits() == "Hz") {
                 cerr << "FlexiNoteLayer::getAssociatedPitchModel: it's good, returning " << model << endl;
                 return model;
             }
         }
     }
+    cerr << "FlexiNoteLayer::getAssociatedPitchModel: failed to find a model" << endl;
     return 0;
 }
 
@@ -1492,21 +1493,31 @@ FlexiNoteLayer::mouseMoveEvent(View *v, QMouseEvent *e)
         return; 
     }
 
-    bool closeToLeft = false, closeToRight = false, closeToTop = false, closeToBottom = false;
-    getRelativeMousePosition(v, note, e->x(), e->y(), closeToLeft, closeToRight, closeToTop, closeToBottom);
-    // if (!closeToLeft) return;
-    // if (closeToTop) v->setCursor(Qt::SizeVerCursor);
+    bool closeToLeft = false, closeToRight = false,
+        closeToTop = false, closeToBottom = false;
+    getRelativeMousePosition(v, note, e->x(), e->y(),
+                             closeToLeft, closeToRight,
+                             closeToTop, closeToBottom);
     
-    if (closeToLeft) { v->setCursor(Qt::SizeHorCursor); m_editMode = LeftBoundary; return; }
-    if (closeToRight) { v->setCursor(Qt::SizeHorCursor); m_editMode = RightBoundary; return; }
-    if (closeToTop) { v->setCursor(Qt::CrossCursor);  m_editMode = DragNote; return; }
-    if (closeToBottom) { v->setCursor(Qt::UpArrowCursor); m_editMode = SplitNote; return; }
-
-    v->setCursor(Qt::ArrowCursor);
-
-    std::cerr << "Mouse moved in edit mode over FlexiNoteLayer" << std::endl;
-    // v->setCursor(Qt::SizeHorCursor);
-
+    if (closeToLeft) {
+        v->setCursor(Qt::SizeHorCursor);
+        m_editMode = LeftBoundary;
+        cerr << "edit mode -> LeftBoundary" << endl;
+    } else if (closeToRight) {
+        v->setCursor(Qt::SizeHorCursor);
+        m_editMode = RightBoundary;
+        cerr << "edit mode -> RightBoundary" << endl;
+    } else if (closeToTop) {
+        v->setCursor(Qt::CrossCursor);
+        m_editMode = DragNote;
+        cerr << "edit mode -> DragNote" << endl;
+    } else if (closeToBottom) {
+        v->setCursor(Qt::UpArrowCursor);
+        m_editMode = SplitNote;
+        cerr << "edit mode -> SplitNote" << endl;
+    } else {
+        v->setCursor(Qt::ArrowCursor);
+    }
 }
 
 void
