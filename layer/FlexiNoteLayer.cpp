@@ -1166,19 +1166,30 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
         }
         m_editingPoint.frame = dragFrame;
         m_editingPoint.value = value;
+
+        // Re-analyse region within +/- 1 semitone of the dragged value
+        float cents = 0;
+        int midiPitch = Pitch::getPitchForFrequency(m_editingPoint.value, &cents);
+        float lower = Pitch::getFrequencyForPitch(midiPitch - 1, cents);
+        float higher = Pitch::getFrequencyForPitch(midiPitch + 1, cents);
+        
+        emit reAnalyseRegion(m_editingPoint.frame,
+                             m_editingPoint.frame + m_editingPoint.duration,
+                             lower, higher);
         break;
     }
     case SplitNote: // nothing
         break;
     }
-    updateNoteValue(v, m_editingPoint);
+
+//    updateNoteValueFromPitchCurve(v, m_editingPoint);
     m_editingCommand->addPoint(m_editingPoint);
+
     std::cerr << "added new point(" << m_editingPoint.frame << "," << m_editingPoint.duration << ")" << std::endl;
-    
 }
 
 void
-FlexiNoteLayer::editEnd(View *, QMouseEvent *e)
+FlexiNoteLayer::editEnd(View *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
@@ -1188,6 +1199,10 @@ FlexiNoteLayer::editEnd(View *, QMouseEvent *e)
     if (m_editingCommand) {
 
         QString newName = m_editingCommand->getName();
+
+        m_editingCommand->deletePoint(m_editingPoint);
+        updateNoteValueFromPitchCurve(v, m_editingPoint);
+        m_editingCommand->addPoint(m_editingPoint);
 
         if (m_editingPoint.frame != m_originalPoint.frame) {
             if (m_editingPoint.value != m_originalPoint.value) {
@@ -1280,10 +1295,10 @@ FlexiNoteLayer::splitNotesAt(View *v, int frame, QMouseEvent *e)
                            note.level, note.label);
                        
         if (m_intelligentActions) {
-            if (updateNoteValue(v, newNote1)) {
+            if (updateNoteValueFromPitchCurve(v, newNote1)) {
                 command->addPoint(newNote1);
             }
-            if (updateNoteValue(v, newNote2)) {
+            if (updateNoteValueFromPitchCurve(v, newNote2)) {
                 command->addPoint(newNote2);
             }
         } else {
@@ -1389,7 +1404,7 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
 
         command->deletePoint(note);
 
-        if (updateNoteValue(v, newNote)) {
+        if (updateNoteValueFromPitchCurve(v, newNote)) {
             command->addPoint(newNote);
         }
     }
@@ -1435,13 +1450,14 @@ FlexiNoteLayer::mergeNotes(View *v, Selection s, bool inclusive)
         ++i;
     }
 
-    updateNoteValue(v, newNote);
+    updateNoteValueFromPitchCurve(v, newNote);
     command->addPoint(newNote);
     finish(command);
 }
 
 bool
-FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
+FlexiNoteLayer::updateNoteValueFromPitchCurve(View *v,
+                                              FlexiNoteModel::Point &note) const
 {
     SparseTimeValueModel *model = getAssociatedPitchModel(v);
     if (!model) return false;
@@ -1476,6 +1492,8 @@ FlexiNoteLayer::updateNoteValue(View *v, FlexiNoteModel::Point &note) const
     } else {
         median = pitchValues[size/2];
     }
+
+    std::cerr << "updateNoteValueFromPitchCurve: corrected from " << note.value << " to median " << median << std::endl;
     
     note.value = median;
 

@@ -1740,9 +1740,9 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             if (!editSelectionDrag(e)) {
 
-                Layer *layer = getInteractionLayer();
+                Layer *layer = getTopFlexiNoteLayer();
 
-                if (layer && layer->isLayerEditable()) {
+                if (layer) {
 
                     int x = e->x();
                     int y = e->y();

@@ -163,6 +163,9 @@ public:
     virtual float getValueForY(View *v, int y) const;
     virtual QString getScaleUnits() const;
 
+signals:
+    void reAnalyseRegion(int, int, float, float);
+    
 protected:
     void getScaleExtents(View *, float &min, float &max, bool &log) const;
     bool shouldConvertMIDIToHz() const;
@@ -173,9 +176,13 @@ protected:
 
     bool getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &) const;
     bool getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &) const;
-    void getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
+    void getRelativeMousePosition(View *v, FlexiNoteModel::Point &note,
+                                  int x, int y,
+                                  bool &closeToLeft, bool &closeToRight,
+                                  bool &closeToTop, bool &closeToBottom) const;
     SparseTimeValueModel *getAssociatedPitchModel(View *v) const;
-    bool updateNoteValue(View *v, FlexiNoteModel::Point &note) const;
+    bool updateNoteValueFromPitchCurve(View *v,
+                                       FlexiNoteModel::Point &note) const;
     void splitNotesAt(View *v, int frame, QMouseEvent *e);
 
     FlexiNoteModel *m_model;
