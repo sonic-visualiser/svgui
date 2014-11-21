@@ -716,6 +716,10 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
 void
 Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
 {
+    if (omitLine && m_manager->getMainModelSampleRate() == 0) {
+        return;
+    }
+    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
