@@ -111,8 +111,14 @@ AlignmentView::paintEvent(QPaintEvent *)
     bool darkPalette = false;
     if (m_manager) darkPalette = m_manager->getGlobalDarkBackground();
 
-    QColor fg = Qt::black, bg = Qt::white;
-    if (darkPalette) std::swap(fg, bg);
+    QColor fg, bg;
+    if (darkPalette) {
+        fg = Qt::gray;
+        bg = Qt::black;
+    } else {
+        fg = Qt::black;
+        bg = Qt::gray;
+    }
 
     QPainter paint(this);
     paint.setPen(QPen(fg, 2));
