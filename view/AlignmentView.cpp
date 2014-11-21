@@ -130,9 +130,9 @@ AlignmentView::paintEvent(QPaintEvent *)
     vector<int> keyFrames = getKeyFrames();
 
     foreach (int f, keyFrames) {
-	int af = m_above->alignFromReference(f);
-	int ax = m_above->getXForFrame(af);
-	int bf = m_below->alignFromReference(f);
+	int ax = m_above->getXForFrame(f);
+	int rf = m_above->alignToReference(f);
+	int bf = m_below->alignFromReference(rf);
 	int bx = m_below->getXForFrame(bf);
 	paint.drawLine(ax, 0, bx, height());
     }
