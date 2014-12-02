@@ -126,6 +126,9 @@ void
 UnitConverter::noteChanged(int note)
 {
     cerr << "noteChanged: " << note << endl;
+    int pitch = Pitch::getPitchForNoteAndOctave(m_note->currentIndex(),
+						m_octave->value());
+    m_hz->setValue(Pitch::getFrequencyForPitch(pitch, m_cents->value()));
 }
 
 void
@@ -153,15 +156,23 @@ UnitConverter::updateAllFromHz()
 {
     float cents = 0;
     int pitch = Pitch::getPitchForFrequency(m_hz->value(), &cents);
+    int note, octave;
+    Pitch::getNoteAndOctaveForPitch(pitch, note, octave);
 
     m_midi->blockSignals(true);
     m_cents->blockSignals(true);
+    m_note->blockSignals(true);
+    m_octave->blockSignals(true);
     
     m_midi->setValue(pitch);
     m_cents->setValue(cents);
-
+    m_note->setCurrentIndex(note);
+    m_octave->setValue(octave);
+    
     m_midi->blockSignals(false);
     m_cents->blockSignals(false);
+    m_note->blockSignals(false);
+    m_octave->blockSignals(false);
 }
 
 
