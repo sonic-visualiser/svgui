@@ -26,6 +26,11 @@
 
 using namespace std;
 
+static QString pianoNotes[] = {
+    "C", "C# / Db", "D", "D# / Eb", "E",
+    "F", "F# / Gb", "G", "G# / Ab", "A", "A# / Bb", "B"
+};
+
 UnitConverter::UnitConverter(QWidget *parent) :
     QDialog(parent)
 {
@@ -48,10 +53,17 @@ UnitConverter::UnitConverter(QWidget *parent) :
 	    this, SLOT(midiChanged(int)));
 
     m_note = new QComboBox;
-    //!!!
+    for (int i = 0; i < 12; ++i) {
+	m_note->addItem(pianoNotes[i]);
+    }
+    connect(m_note, SIGNAL(currentIndexChanged(int)),
+	    this, SLOT(noteChanged(int)));
 
     m_octave = new QSpinBox;
-    //!!!
+    m_octave->setMinimum(-4);
+    m_octave->setMaximum(12);
+    connect(m_octave, SIGNAL(valueChanged(int)),
+	    this, SLOT(octaveChanged(int)));
 
     m_cents = new QDoubleSpinBox;
     m_cents->setSuffix(tr(" cents"));
@@ -64,17 +76,28 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_piano = new QSpinBox;
     //!!!
     
-    grid->addWidget(m_hz, 1, 0);
-    grid->addWidget(new QLabel(tr("=")), 1, 1);
+    int row = 1;
+    
+    grid->addWidget(m_hz, row, 0);
+    grid->addWidget(new QLabel(tr("=")), row, 1);
 
-    grid->addWidget(new QLabel(tr("MIDI note")), 1, 2, 1, 2);
-    grid->addWidget(m_midi, 1, 4);
+    grid->addWidget(new QLabel(tr("+")), row, 7);
+    grid->addWidget(m_cents, row, 8);
 
-    grid->addWidget(new QLabel(tr("+")), 1, 5);
-    grid->addWidget(m_cents, 1, 6);
+    grid->addWidget(new QLabel(tr("Piano note")), row, 2, 1, 2);
+    grid->addWidget(m_note, row, 4);
+    grid->addWidget(new QLabel(tr("in octave")), row, 5);
+    grid->addWidget(m_octave, row, 6);
+
+    ++row;
+    
+    grid->addWidget(new QLabel(tr("MIDI note")), row, 2, 1, 2);
+    grid->addWidget(m_midi, row, 4);
+    
+    ++row;
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
-    grid->addWidget(bb, 2, 0, 1, 7);
+    grid->addWidget(bb, row, 0, 1, 9);
     connect(bb, SIGNAL(rejected()), this, SLOT(close()));
 
     updateAllFromHz();
