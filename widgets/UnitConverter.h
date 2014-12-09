@@ -17,9 +17,12 @@
 
 #include <QDialog>
 
+#include "base/PropertyContainer.h"
+
 class QSpinBox;
 class QDoubleSpinBox;
 class QComboBox;
+class QLabel;
 
 class UnitConverter : public QDialog
 {
@@ -37,6 +40,7 @@ private slots:
     void centsChanged(double);
     void pianoChanged(int);
 
+    void preferenceChanged(PropertyContainer::PropertyName);
     
 private:
     QDoubleSpinBox *m_freq;
@@ -45,8 +49,13 @@ private:
     QSpinBox *m_octave;
     QDoubleSpinBox *m_cents;
     QSpinBox *m_piano;
-
+    QLabel *m_pitchPrefsLabel;
     void updatePitchesFromFreq();
+    void updatePitchPrefsLabel();
+
+    QDoubleSpinBox *m_samples;
+    
+    void updateTempiFromSamples();
 };
 
 #endif
