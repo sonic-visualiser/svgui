@@ -20,6 +20,7 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 #include <QGridLayout>
+#include <QTabWidget>
 
 #include "base/Debug.h"
 #include "base/Pitch.h"
@@ -35,17 +36,30 @@ static QString pianoNotes[] = {
 UnitConverter::UnitConverter(QWidget *parent) :
     QDialog(parent)
 {
+    QGridLayout *maingrid = new QGridLayout;
+    setLayout(maingrid);
+    
+    QTabWidget *tabs = new QTabWidget;
+    maingrid->addWidget(tabs, 0, 0);
+    
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
+    maingrid->addWidget(bb, 1, 0);
+    connect(bb, SIGNAL(rejected()), this, SLOT(close()));
+    
+    QFrame *frame = new QFrame;
+    tabs->addTab(frame, tr("Pitch"));
+    
     QGridLayout *grid = new QGridLayout;
-    setLayout(grid);
+    frame->setLayout(grid);
 
-    m_hz = new QDoubleSpinBox;
-    m_hz->setSuffix(QString(" Hz"));
-    m_hz->setDecimals(6);
-    m_hz->setMinimum(1e-3);
-    m_hz->setMaximum(1e6);
-    m_hz->setValue(440);
-    connect(m_hz, SIGNAL(valueChanged(double)),
-	    this, SLOT(hzChanged(double)));
+    m_freq = new QDoubleSpinBox;
+    m_freq->setSuffix(QString(" Hz"));
+    m_freq->setDecimals(6);
+    m_freq->setMinimum(1e-3);
+    m_freq->setMaximum(1e6);
+    m_freq->setValue(440);
+    connect(m_freq, SIGNAL(valueChanged(double)),
+	    this, SLOT(freqChanged(double)));
 
     // The min and max range values for all the remaining controls are
     // determined by the min and max Hz above
@@ -82,11 +96,11 @@ UnitConverter::UnitConverter(QWidget *parent) :
     
     int row = 1;
     
-    grid->addWidget(m_hz, row, 0);
-    grid->addWidget(new QLabel(tr("=")), row, 1);
+    grid->addWidget(m_freq, row, 0, 2, 1);
+    grid->addWidget(new QLabel(tr("=")), row, 1, 2, 1);
 
-    grid->addWidget(new QLabel(tr("+")), row, 7);
-    grid->addWidget(m_cents, row, 8);
+    grid->addWidget(new QLabel(tr("+")), row, 7, 2, 1);
+    grid->addWidget(m_cents, row, 8, 2, 1);
 
     grid->addWidget(new QLabel(tr("Piano note")), row, 2, 1, 2);
     grid->addWidget(m_note, row, 4);
@@ -117,11 +131,13 @@ UnitConverter::UnitConverter(QWidget *parent) :
 
     ++row;
     
-    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
-    grid->addWidget(bb, row, 0, 1, 9);
-    connect(bb, SIGNAL(rejected()), this, SLOT(close()));
+    QFrame *frame = new QFrame;
+    tabs->addTab(frame, tr("Pitch"));
+    
+    QGridLayout *grid = new QGridLayout;
+    frame->setLayout(grid);
 
-    updateAllFromHz();
+    updatePitchesFromFreq();
 }
 
 UnitConverter::~UnitConverter()
@@ -129,19 +145,19 @@ UnitConverter::~UnitConverter()
 }
 
 void
-UnitConverter::hzChanged(double hz)
+UnitConverter::freqChanged(double freq)
 {
-    cerr << "hzChanged: " << hz << endl;
-    updateAllFromHz();
+    cerr << "freqChanged: " << freq << endl;
+    updatePitchesFromFreq();
 }
 
 void
 UnitConverter::midiChanged(int midi)
 {
     cerr << "midiChanged: " << midi << endl;
-    double hz = Pitch::getFrequencyForPitch(m_midi->value(), m_cents->value());
-    cerr << "hz -> " << hz << endl;
-    m_hz->setValue(hz);
+    double freq = Pitch::getFrequencyForPitch(m_midi->value(), m_cents->value());
+    cerr << "freq -> " << freq << endl;
+    m_freq->setValue(freq);
 }
 
 void
@@ -150,9 +166,9 @@ UnitConverter::noteChanged(int note)
     cerr << "noteChanged: " << note << endl;
     int pitch = Pitch::getPitchForNoteAndOctave(m_note->currentIndex(),
 						m_octave->value());
-    double hz = Pitch::getFrequencyForPitch(pitch, m_cents->value());
-    cerr << "hz -> " << hz << endl;
-    m_hz->setValue(hz);
+    double freq = Pitch::getFrequencyForPitch(pitch, m_cents->value());
+    cerr << "freq -> " << freq << endl;
+    m_freq->setValue(freq);
 }
 
 void
@@ -161,18 +177,18 @@ UnitConverter::octaveChanged(int oct)
     cerr << "octaveChanged: " << oct << endl;
     int pitch = Pitch::getPitchForNoteAndOctave(m_note->currentIndex(),
 						m_octave->value());
-    double hz = Pitch::getFrequencyForPitch(pitch, m_cents->value());
-    cerr << "hz -> " << hz << endl;
-    m_hz->setValue(hz);
+    double freq = Pitch::getFrequencyForPitch(pitch, m_cents->value());
+    cerr << "freq -> " << freq << endl;
+    m_freq->setValue(freq);
 }
 
 void
 UnitConverter::centsChanged(double cents)
 {
     cerr << "centsChanged: " << cents << endl;
-    double hz = Pitch::getFrequencyForPitch(m_midi->value(), m_cents->value());
-    cerr << "hz -> " << hz << endl;
-    m_hz->setValue(hz);
+    double freq = Pitch::getFrequencyForPitch(m_midi->value(), m_cents->value());
+    cerr << "freq -> " << freq << endl;
+    m_freq->setValue(freq);
 }
 
 void
@@ -182,10 +198,10 @@ UnitConverter::pianoChanged(int piano)
 }
 
 void
-UnitConverter::updateAllFromHz()
+UnitConverter::updatePitchesFromFreq()
 {
     float cents = 0;
-    int pitch = Pitch::getPitchForFrequency(m_hz->value(), &cents);
+    int pitch = Pitch::getPitchForFrequency(m_freq->value(), &cents);
     int note, octave;
     Pitch::getNoteAndOctaveForPitch(pitch, note, octave);
 
