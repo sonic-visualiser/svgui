@@ -114,13 +114,8 @@ UnitConverter::UnitConverter(QWidget *parent) :
     
     ++row;
 
-    grid->addWidget
-	(new QLabel(tr("With concert A tuning frequency at %1 Hz, and "
-		       "middle C residing in octave %2.\n"
-		       "(These can be changed in the application preferences.)")
-		    .arg(Preferences::getInstance()->getTuningFrequency())
-		    .arg(Preferences::getInstance()->getOctaveOfMiddleC())),
-	 row, 0, 1, 9);
+    m_pitchPrefsLabel = new QLabel;
+    grid->addWidget(m_pitchPrefsLabel, row, 0, 1, 9);
 
     ++row;
     
@@ -130,12 +125,42 @@ UnitConverter::UnitConverter(QWidget *parent) :
 	 row, 0, 1, 9);
 
     ++row;
+    
+    frame = new QFrame;
+    tabs->addTab(frame, tr("Tempo"));
+    
+    grid = new QGridLayout;
+    frame->setLayout(grid);
 
+    connect(Preferences::getInstance(),
+	    SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
+	    this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
+    
     updatePitchesFromFreq();
+    updatePitchPrefsLabel();
+    updateTempiFromSamples();
 }
 
 UnitConverter::~UnitConverter()
 {
+}
+
+void
+UnitConverter::preferenceChanged(PropertyContainer::PropertyName)
+{
+    updatePitchesFromFreq();
+    updatePitchPrefsLabel();
+}
+
+void
+UnitConverter::updatePitchPrefsLabel()
+{
+    m_pitchPrefsLabel->setText
+	(tr("With concert-A tuning frequency at %1 Hz, and "
+	    "middle C residing in octave %2.\n"
+	    "(These can be changed in the application preferences.)")
+	 .arg(Preferences::getInstance()->getTuningFrequency())
+	 .arg(Preferences::getInstance()->getOctaveOfMiddleC()));
 }
 
 void
@@ -217,6 +242,9 @@ UnitConverter::updatePitchesFromFreq()
     m_octave->blockSignals(false);
 }
 
-
+void
+UnitConverter::updateTempiFromSamples()
+{
+}
 
  
