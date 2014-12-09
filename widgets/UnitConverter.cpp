@@ -130,12 +130,6 @@ UnitConverter::UnitConverter(QWidget *parent) :
 	 row, 0, 1, 9);
 
     ++row;
-    
-    QFrame *frame = new QFrame;
-    tabs->addTab(frame, tr("Pitch"));
-    
-    QGridLayout *grid = new QGridLayout;
-    frame->setLayout(grid);
 
     updatePitchesFromFreq();
 }
