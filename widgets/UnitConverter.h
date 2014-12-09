@@ -38,8 +38,13 @@ private slots:
     void noteChanged(int);
     void octaveChanged(int);
     void centsChanged(double);
-    void pianoChanged(int);
 
+    void samplesChanged(double);
+    void periodChanged(double);
+    void bpmChanged(double);
+    void tempofreqChanged(double);
+    void samplerateChanged(QString);
+    
     void preferenceChanged(PropertyContainer::PropertyName);
     
 private:
@@ -48,14 +53,18 @@ private:
     QComboBox *m_note;
     QSpinBox *m_octave;
     QDoubleSpinBox *m_cents;
-    QSpinBox *m_piano;
     QLabel *m_pitchPrefsLabel;
     void updatePitchesFromFreq();
     void updatePitchPrefsLabel();
 
     QDoubleSpinBox *m_samples;
-    
+    QDoubleSpinBox *m_period;
+    QDoubleSpinBox *m_bpm;
+    QDoubleSpinBox *m_tempofreq;
+    QComboBox *m_samplerate;
     void updateTempiFromSamples();
+
+    double getSampleRate();
 };
 
 #endif

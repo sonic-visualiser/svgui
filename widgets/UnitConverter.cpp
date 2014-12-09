@@ -90,17 +90,14 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_cents->setMaximum(50);
     connect(m_cents, SIGNAL(valueChanged(double)),
 	    this, SLOT(centsChanged(double)));
-
-    m_piano = new QSpinBox;
-    //!!!
     
     int row = 1;
     
-    grid->addWidget(m_freq, row, 0, 2, 1);
-    grid->addWidget(new QLabel(tr("=")), row, 1, 2, 1);
+    grid->addWidget(m_freq, row, 0, 2, 1, Qt::AlignRight | Qt::AlignVCenter);
+    grid->addWidget(new QLabel(tr("=")), row, 1, 2, 1, Qt::AlignHCenter | Qt::AlignVCenter);
 
-    grid->addWidget(new QLabel(tr("+")), row, 7, 2, 1);
-    grid->addWidget(m_cents, row, 8, 2, 1);
+    grid->addWidget(new QLabel(tr("+")), row, 7, 2, 1, Qt::AlignHCenter | Qt::AlignVCenter);
+    grid->addWidget(m_cents, row, 8, 2, 1, Qt::AlignLeft | Qt::AlignVCenter);
 
     grid->addWidget(new QLabel(tr("Piano note")), row, 2, 1, 2);
     grid->addWidget(m_note, row, 4);
@@ -132,10 +129,78 @@ UnitConverter::UnitConverter(QWidget *parent) :
     grid = new QGridLayout;
     frame->setLayout(grid);
 
+    m_samples = new QDoubleSpinBox;
+    m_samples->setSuffix(QString(" samples"));
+    m_samples->setDecimals(3);
+    m_samples->setMinimum(2);
+    m_samples->setMaximum(1e10);
+    m_samples->setValue(22050);
+    connect(m_samples, SIGNAL(valueChanged(double)),
+	    this, SLOT(samplesChanged(double)));
+    
+    m_period = new QDoubleSpinBox;
+    m_period->setSuffix(QString(" ms"));
+    m_period->setDecimals(4);
+    m_period->setMinimum(1e-10);
+    m_period->setMaximum(1000);
+    m_period->setValue(500);
+    connect(m_period, SIGNAL(valueChanged(double)),
+	    this, SLOT(periodChanged(double)));
+
+    m_bpm = new QDoubleSpinBox;
+    m_bpm->setSuffix(QString(" bpm"));
+    m_bpm->setDecimals(4);
+    m_bpm->setMinimum(0.1);
+    m_bpm->setMaximum(1e6);
+    m_bpm->setValue(120);
+    connect(m_bpm, SIGNAL(valueChanged(double)),
+	    this, SLOT(bpmChanged(double)));
+
+    m_tempofreq = new QDoubleSpinBox;
+    m_tempofreq->setSuffix(QString(" beats/sec"));
+    m_tempofreq->setDecimals(4);
+    m_tempofreq->setMinimum(1e-4);
+    m_tempofreq->setMaximum(1e6);
+    m_tempofreq->setValue(0.5);
+    connect(m_tempofreq, SIGNAL(valueChanged(double)),
+	    this, SLOT(tempofreqChanged(double)));
+	
+    m_samplerate = new QComboBox;
+    QList<int> rates;
+    rates << 8000;
+    for (int i = 1; i <= 16; i *= 2) {
+	rates << 11025 * i << 12000 * i;
+    }
+    foreach (int r, rates) {
+	m_samplerate->addItem(QString("%1 Hz").arg(r));
+    }
+    connect(m_samplerate, SIGNAL(currentItemChanged(QString)),
+	    this, SLOT(samplerateChanged(QString)));
+    m_samplerate->setCurrentText("44100 Hz");
+    
     connect(Preferences::getInstance(),
 	    SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
 	    this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
+
+    row = 1;
+
+    grid->addWidget(new QLabel(tr("Beat period")), row, 0);
+    grid->addWidget(m_samples, row, 1);
+    grid->addWidget(new QLabel(tr("=")), row, 2);
+
+    grid->addWidget(new QLabel(tr("at sample rate")), row, 4);
+    grid->addWidget(m_samplerate, row, 5);
+
+    grid->addWidget(m_bpm, row, 3);
+
+    ++row;
     
+    grid->addWidget(m_period, row, 3);
+
+    ++row;
+    
+    grid->addWidget(m_tempofreq, row, 3);
+	
     updatePitchesFromFreq();
     updatePitchPrefsLabel();
     updateTempiFromSamples();
@@ -211,15 +276,9 @@ UnitConverter::centsChanged(double cents)
 }
 
 void
-UnitConverter::pianoChanged(int piano)
-{
-    cerr << "pianoChanged: " << piano << endl;
-}
-
-void
 UnitConverter::updatePitchesFromFreq()
 {
-    float cents = 0;
+    double cents = 0;
     int pitch = Pitch::getPitchForFrequency(m_freq->value(), &cents);
     int note, octave;
     Pitch::getNoteAndOctaveForPitch(pitch, note, octave);
@@ -243,8 +302,72 @@ UnitConverter::updatePitchesFromFreq()
 }
 
 void
+UnitConverter::samplesChanged(double)
+{
+    updateTempiFromSamples();
+}
+
+void
+UnitConverter::periodChanged(double)
+{
+    double rate = getSampleRate();
+    double sec = m_period->value() / 1000.0;
+    double samples = rate * sec;
+    m_samples->setValue(samples);
+}
+
+void
+UnitConverter::bpmChanged(double)
+{
+    double rate = getSampleRate();
+    double sec = 60.0 / m_bpm->value();
+    double samples = rate * sec;
+    m_samples->setValue(samples);
+}
+
+void
+UnitConverter::tempofreqChanged(double)
+{
+    double rate = getSampleRate();
+    double samples = rate / m_tempofreq->value();
+    m_samples->setValue(samples);
+}
+
+void
+UnitConverter::samplerateChanged(QString)
+{
+    updateTempiFromSamples();
+}
+
+double
+UnitConverter::getSampleRate()
+{
+    return double(atoi(m_samplerate->currentText().toLocal8Bit().data()));
+}
+
+void
 UnitConverter::updateTempiFromSamples()
 {
+    double samples = m_samples->value();
+    double rate = getSampleRate();
+
+    cerr << samples << " samples at rate " << rate << endl;
+
+    double sec = samples / rate;
+    double hz = rate / samples;
+    double bpm = 60.0 / sec;
+
+    m_bpm->blockSignals(true);
+    m_period->blockSignals(true);
+    m_tempofreq->blockSignals(true);
+
+    m_bpm->setValue(bpm);
+    m_period->setValue(sec * 1000.0);
+    m_tempofreq->setValue(hz);
+
+    m_bpm->blockSignals(false);
+    m_period->blockSignals(false);
+    m_tempofreq->blockSignals(false);
 }
 
  
