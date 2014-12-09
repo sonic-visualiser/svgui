@@ -30,22 +30,23 @@ public:
     virtual ~UnitConverter();
 
 private slots:
-    void hzChanged(double);
+    void freqChanged(double);
     void midiChanged(int);
     void noteChanged(int);
     void octaveChanged(int);
     void centsChanged(double);
     void pianoChanged(int);
+
     
 private:
-    QDoubleSpinBox *m_hz;
+    QDoubleSpinBox *m_freq;
     QSpinBox *m_midi;
     QComboBox *m_note;
     QSpinBox *m_octave;
     QDoubleSpinBox *m_cents;
     QSpinBox *m_piano;
 
-    void updateAllFromHz();
+    void updatePitchesFromFreq();
 };
 
 #endif
