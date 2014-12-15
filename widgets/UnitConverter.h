@@ -33,17 +33,17 @@ public:
     virtual ~UnitConverter();
 
 private slots:
-    void freqChanged(double);
-    void midiChanged(int);
-    void noteChanged(int);
-    void octaveChanged(int);
-    void centsChanged(double);
+    void freqChanged();
+    void midiChanged();
+    void noteChanged();
+    void octaveChanged();
+    void centsChanged();
 
-    void samplesChanged(double);
-    void periodChanged(double);
-    void bpmChanged(double);
-    void tempofreqChanged(double);
-    void samplerateChanged(QString);
+    void samplesChanged();
+    void periodChanged();
+    void bpmChanged();
+    void tempofreqChanged();
+    void samplerateChanged();
     
     void preferenceChanged(PropertyContainer::PropertyName);
     
@@ -65,6 +65,9 @@ private:
     void updateTempiFromSamples();
 
     double getSampleRate();
+
+    void setTo(QSpinBox *, int);
+    void setTo(QDoubleSpinBox *, double);
 };
 
 #endif
