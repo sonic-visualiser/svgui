@@ -306,7 +306,7 @@ RegionLayer::getLocalPoints(View *v, int x) const
 {
     if (!m_model) return RegionModel::PointList();
 
-    long frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     RegionModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -349,7 +349,7 @@ RegionLayer::getPointToDrag(View *v, int x, int y, RegionModel::Point &p) const
 {
     if (!m_model) return false;
 
-    long frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     RegionModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
@@ -1125,7 +1125,7 @@ RegionLayer::drawStart(View *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -1263,7 +1263,7 @@ RegionLayer::editDrag(View *v, QMouseEvent *e)
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
-    long frame = v->getFrameForX(newx);
+    sv_frame_t frame = v->getFrameForX(newx);
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
