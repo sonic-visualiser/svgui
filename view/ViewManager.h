@@ -184,6 +184,13 @@ public:
 
     void setMainModelSampleRate(int sr) { m_mainModelSampleRate = sr; }
 
+    /**
+     * Take a "design pixel" size and scale it for the actual
+     * display. This is relevant to hi-dpi systems that do not do
+     * pixel doubling (i.e. Windows and Linux rather than OS/X).
+     */
+    int scalePixelSize(int pixels);
+    
     enum OverlayMode {
         NoOverlays,
         GlobalOverlays,
