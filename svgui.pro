@@ -138,6 +138,7 @@ HEADERS += widgets/ActivityLog.h \
            widgets/Thumbwheel.h \
            widgets/TipDialog.h \
            widgets/TransformFinder.h \
+           widgets/UnitConverter.h \
            widgets/WindowShapePreview.h \
            widgets/WindowTypeSelector.h
 SOURCES += widgets/ActivityLog.cpp \
@@ -175,5 +176,6 @@ SOURCES += widgets/ActivityLog.cpp \
            widgets/Thumbwheel.cpp \
            widgets/TipDialog.cpp \
            widgets/TransformFinder.cpp \
+           widgets/UnitConverter.cpp \
            widgets/WindowShapePreview.cpp \
            widgets/WindowTypeSelector.cpp
