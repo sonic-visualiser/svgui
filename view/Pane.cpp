@@ -1945,7 +1945,7 @@ Pane::dragTopLayer(QMouseEvent *e)
          true, // can move horiz
          canTopLayerMoveVertical(), // can move vert
          canTopLayerMoveVertical() || (m_manager && m_manager->isPlaying()), // resist horiz
-         !(m_manager && m_manager->isPlaying())); // resist vert
+         true); // resist vert
 
     if (m_dragMode == HorizontalDrag ||
         m_dragMode == FreeDrag) {
