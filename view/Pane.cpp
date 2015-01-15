@@ -2028,6 +2028,11 @@ Pane::updateDragMode(DragMode dragMode,
 
     int smallThreshold = 10, bigThreshold = 80;
 
+    if (m_manager) {
+        smallThreshold = m_manager->scalePixelSize(smallThreshold);
+        bigThreshold = m_manager->scalePixelSize(bigThreshold);
+    }
+
 //    SVDEBUG << "Pane::updateDragMode: xdiff = " << xdiff << ", ydiff = "
 //              << ydiff << ", canMoveVertical = " << canMoveVertical << ", drag mode = " << m_dragMode << endl;
 
