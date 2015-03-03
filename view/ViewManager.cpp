@@ -720,3 +720,23 @@ ViewManager::getGlobalDarkBackground() const
     return dark;
 }
 
+int
+ViewManager::scalePixelSize(int pixels)
+{
+    static float ratio = 0.f;
+    if (ratio == 0.f) {
+        float baseEm;
+#ifdef Q_OS_MAC
+        baseEm = 17.f;
+#else
+        baseEm = 15.f;
+#endif
+        float em = QFontMetrics(QFont()).height();
+        ratio = em / baseEm;
+    }
+
+    int scaled = int(pixels * ratio + 0.5);
+    cerr << "scaledSize: " << pixels << " -> " << scaled << " at ratio " << ratio << endl;
+    if (pixels != 0 && scaled == 0) scaled = 1;
+    return scaled;
+}
