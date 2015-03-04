@@ -234,11 +234,11 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = -50;
 	*max = 50;
 
-        *deflt = lrintf(log10(1.f) * 20.0);;
+        *deflt = int(lrint(log10(1.0) * 20.0));
 	if (*deflt < *min) *deflt = *min;
 	if (*deflt > *max) *deflt = *max;
 
-	val = lrintf(log10(m_gain) * 20.0);
+	val = int(lrint(log10(m_gain) * 20.0));
 	if (val < *min) val = *min;
 	if (val > *max) val = *max;
 
@@ -336,7 +336,7 @@ void
 Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-	setGain(pow(10, float(value)/20.0));
+	setGain(float(pow(10, value/20.0)));
     } else if (name == "Colour Scale") {
 	switch (value) {
 	default:
@@ -547,7 +547,7 @@ Colour3DPlotLayer::getValueExtents(float &min, float &max,
     if (!m_model) return false;
 
     min = 0;
-    max = m_model->getHeight();
+    max = float(m_model->getHeight());
 
     logarithmic = false;
     unit = "";
@@ -560,14 +560,16 @@ Colour3DPlotLayer::getDisplayExtents(float &min, float &max) const
 {
     if (!m_model) return false;
 
-    min = m_miny;
-    max = m_maxy;
+    float hmax = float(m_model->getHeight());
+    
+    min = float(m_miny);
+    max = float(m_maxy);
     if (max <= min) {
         min = 0;
-        max = m_model->getHeight();
+        max = hmax;
     }
     if (min < 0) min = 0;
-    if (max > m_model->getHeight()) max = m_model->getHeight();
+    if (max > hmax) max = hmax;
 
     return true;
 }
@@ -577,8 +579,8 @@ Colour3DPlotLayer::setDisplayExtents(float min, float max)
 {
     if (!m_model) return false;
 
-    m_miny = lrintf(min);
-    m_maxy = lrintf(max);
+    m_miny = int(lrintf(min));
+    m_maxy = int(lrintf(max));
     
     emit layerParametersChanged();
     return true;
@@ -608,7 +610,7 @@ Colour3DPlotLayer::getCurrentVerticalZoomStep() const
 
     float min, max;
     getDisplayExtents(min, max);
-    return m_model->getHeight() - lrintf(max - min);
+    return m_model->getHeight() - int(lrintf(max - min));
 }
 
 void
@@ -620,8 +622,8 @@ Colour3DPlotLayer::setVerticalZoomStep(int step)
 
     int dist = m_model->getHeight() - step;
     if (dist < 1) dist = 1;
-    float centre = m_miny + (float(m_maxy) - float(m_miny)) / 2.f;
-    m_miny = lrintf(centre - float(dist)/2);
+    float centre = float(m_miny) + (float(m_maxy) - float(m_miny)) / 2.f;
+    m_miny = int(lrintf(centre - float(dist)/2));
     if (m_miny < 0) m_miny = 0;
     m_maxy = m_miny + dist;
     if (m_maxy > m_model->getHeight()) m_maxy = m_model->getHeight();
@@ -645,9 +647,9 @@ Colour3DPlotLayer::getYForBin(View *v, float bin) const
 {
     float y = bin;
     if (!m_model) return y;
-    float mn = 0, mx = m_model->getHeight();
+    float mn = 0, mx = float(m_model->getHeight());
     getDisplayExtents(mn, mx);
-    float h = v->height();
+    float h = float(v->height());
     if (m_binScale == LinearBinScale) {
         y = h - (((bin - mn) * h) / (mx - mn));
     } else {
@@ -663,9 +665,9 @@ Colour3DPlotLayer::getBinForY(View *v, float y) const
 {
     float bin = y;
     if (!m_model) return bin;
-    float mn = 0, mx = m_model->getHeight();
+    float mn = 0, mx = float(m_model->getHeight());
     getDisplayExtents(mn, mx);
-    float h = v->height();
+    float h = float(v->height());
     if (m_binScale == LinearBinScale) {
         bin = mn + ((h - y) * (mx - mn)) / h;
     } else {
@@ -684,14 +686,14 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
     int x = pos.x();
     int y = pos.y();
 
-    int modelStart = m_model->getStartFrame();
+    sv_frame_t modelStart = m_model->getStartFrame();
     int modelResolution = m_model->getResolution();
 
-    float srRatio =
-        float(v->getViewManager()->getMainModelSampleRate()) /
-        float(m_model->getSampleRate());
+    double srRatio =
+        v->getViewManager()->getMainModelSampleRate() /
+        m_model->getSampleRate();
 
-    int sx0 = int((v->getFrameForX(x) / srRatio - modelStart) /
+    int sx0 = int((double(v->getFrameForX(x)) / srRatio - double(modelStart)) /
                   modelResolution);
 
     int f0 = sx0 * modelResolution;
@@ -711,7 +713,7 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
  //    float binHeight = float(v->height()) / (symax - symin);
 //    int sy = int((v->height() - y) / binHeight) + symin;
 
-    int sy = getBinForY(v, y);
+    int sy = int(getBinForY(v, float(y)));
 
     if (sy < 0 || sy >= m_model->getHeight()) {
         return "";
@@ -801,14 +803,14 @@ Colour3DPlotLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect
             }
         }
     
-        if (max == min) max = min + 1.0;
-        if (mmax == mmin) mmax = mmin + 1.0;
+        if (max == min) max = min + 1.f;
+        if (mmax == mmin) mmax = mmin + 1.f;
     
         paint.setPen(v->getForeground());
         paint.drawRect(4, 10, cw - 8, ch+1);
 
         for (int y = 0; y < ch; ++y) {
-            float value = ((max - min) * (ch - y - 1)) / ch + min;
+            float value = ((max - min) * (float(ch-y) - 1.f)) / float(ch) + min;
             if (m_colourScale == LogScale) {
                 value = LogRange::map(value);
             }
@@ -870,7 +872,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect
 
         int y0;
 
-        y0 = lrintf(getYForBin(v, i));
+        y0 = int(lrint(getYForBin(v, float(i))));
         int h = py - y0;
 
         if (i > symin) {
@@ -940,7 +942,7 @@ Colour3DPlotLayer::getColumn(int col) const
     }
 
     if (m_normalizeHybrid && (colMax > 0.0)) {
-        float logmax = log10(colMax);
+        float logmax = log10f(colMax);
         for (int y = 0; y < values.size(); ++y) {
             values[y] *= logmax;
         }
@@ -954,12 +956,12 @@ Colour3DPlotLayer::fillCache(int firstBin, int lastBin) const
 {
     Profiler profiler("Colour3DPlotLayer::fillCache", true);
 
-    int modelStart = m_model->getStartFrame();
-    int modelEnd = m_model->getEndFrame();
+    sv_frame_t modelStart = m_model->getStartFrame();
+    sv_frame_t modelEnd = m_model->getEndFrame();
     int modelResolution = m_model->getResolution();
 
-    int modelStartBin = modelStart / modelResolution;
-    int modelEndBin = modelEnd / modelResolution;
+    int modelStartBin = int(modelStart / modelResolution);
+    int modelEndBin = int(modelEnd / modelResolution);
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
     cerr << "Colour3DPlotLayer::fillCache: range " << firstBin << " -> " << lastBin << " of model range " << modelStartBin << " -> " << modelEndBin << " (model resolution " << modelResolution << ")" << endl;
@@ -1088,7 +1090,7 @@ Colour3DPlotLayer::fillCache(int firstBin, int lastBin) const
         }
     }
     
-    if (max == min) max = min + 1.0;
+    if (max == min) max = min + 1.f;
     
     ColourMapper mapper(m_colourMap, 0.f, 255.f);
     
@@ -1235,9 +1237,8 @@ Colour3DPlotLayer::shouldPaintDenseIn(const View *v) const
     if (!m_model || !v || !(v->getViewManager())) {
         return false;
     }
-    float srRatio =
-        float(v->getViewManager()->getMainModelSampleRate()) /
-        float(m_model->getSampleRate());
+    double srRatio =
+        v->getViewManager()->getMainModelSampleRate() / m_model->getSampleRate();
     if (m_opaque || 
         m_smooth ||
         m_model->getHeight() >= v->height() ||
@@ -1271,8 +1272,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     if (m_normalizeVisibleArea && !m_normalizeColumns) rect = v->rect();
 
-    int modelStart = m_model->getStartFrame();
-    int modelEnd = m_model->getEndFrame();
+    sv_frame_t modelStart = m_model->getStartFrame();
+    sv_frame_t modelEnd = m_model->getEndFrame();
     int modelResolution = m_model->getResolution();
 
     // The cache is from the model's start frame to the model's end
@@ -1289,13 +1290,12 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int h = v->height();
 
-    float srRatio =
-        float(v->getViewManager()->getMainModelSampleRate()) /
-        float(m_model->getSampleRate());
+    double srRatio =
+        v->getViewManager()->getMainModelSampleRate() / m_model->getSampleRate();
 
-    int sx0 = int((v->getFrameForX(x0) / srRatio - modelStart)
+    int sx0 = int((double(v->getFrameForX(x0)) / srRatio - double(modelStart))
                   / modelResolution);
-    int sx1 = int((v->getFrameForX(x1) / srRatio - modelStart)
+    int sx1 = int((double(v->getFrameForX(x1)) / srRatio - double(modelStart))
                   / modelResolution);
     int sh = m_model->getHeight();
 
@@ -1337,12 +1337,12 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     for (int sx = sx0; sx <= sx1; ++sx) {
 
-	int fx = sx * modelResolution;
+	sv_frame_t fx = sx * modelResolution;
 
 	if (fx + modelResolution <= modelStart || fx > modelEnd) continue;
 
-        int rx0 = v->getXForFrame(int((fx + modelStart) * srRatio));
-	int rx1 = v->getXForFrame(int((fx + modelStart + modelResolution + 1) * srRatio));
+        int rx0 = v->getXForFrame(int(double(fx + modelStart) * srRatio));
+	int rx1 = v->getXForFrame(int(double(fx + modelStart + modelResolution + 1) * srRatio));
 
 	int rw = rx1 - rx0;
 	if (rw < 1) rw = 1;

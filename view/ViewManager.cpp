@@ -126,7 +126,7 @@ ViewManager::~ViewManager()
 {
 }
 
-int
+sv_frame_t
 ViewManager::getGlobalCentreFrame() const
 {
 #ifdef DEBUG_VIEW_MANAGER
@@ -136,7 +136,7 @@ ViewManager::getGlobalCentreFrame() const
 }
 
 void
-ViewManager::setGlobalCentreFrame(int f)
+ViewManager::setGlobalCentreFrame(sv_frame_t f)
 {
 #ifdef DEBUG_VIEW_MANAGER
     cerr << "ViewManager::setGlobalCentreFrame to " << f << endl;
@@ -154,7 +154,7 @@ ViewManager::getGlobalZoom() const
     return m_globalZoom;
 }
 
-int
+sv_frame_t
 ViewManager::getPlaybackFrame() const
 {
     if (m_playSource && m_playSource->isPlaying()) {
@@ -164,7 +164,7 @@ ViewManager::getPlaybackFrame() const
 }
 
 void
-ViewManager::setPlaybackFrame(int f)
+ViewManager::setPlaybackFrame(sv_frame_t f)
 {
     if (m_playbackFrame != f) {
 	m_playbackFrame = f;
@@ -187,8 +187,8 @@ ViewManager::setPlaybackModel(Model *model)
     m_playbackModel = model;
 }
 
-int
-ViewManager::alignPlaybackFrameToReference(int frame) const
+sv_frame_t
+ViewManager::alignPlaybackFrameToReference(sv_frame_t frame) const
 {
 #ifdef DEBUG_VIEW_MANAGER
     cerr << "ViewManager::alignPlaybackFrameToReference(" << frame << "): playback model is " << m_playbackModel << endl;
@@ -196,7 +196,7 @@ ViewManager::alignPlaybackFrameToReference(int frame) const
     if (!m_playbackModel) {
         return frame;
     } else {
-        int f = m_playbackModel->alignToReference(frame);
+        sv_frame_t f = m_playbackModel->alignToReference(frame);
 #ifdef DEBUG_VIEW_MANAGER
         cerr << "aligned frame = " << f << endl;
 #endif
@@ -204,8 +204,8 @@ ViewManager::alignPlaybackFrameToReference(int frame) const
     }
 }
 
-int
-ViewManager::alignReferenceToPlaybackFrame(int frame) const
+sv_frame_t
+ViewManager::alignReferenceToPlaybackFrame(sv_frame_t frame) const
 {
 #ifdef DEBUG_VIEW_MANAGER
     cerr << "ViewManager::alignReferenceToPlaybackFrame(" << frame << "): playback model is " << m_playbackModel << endl;
@@ -213,7 +213,7 @@ ViewManager::alignReferenceToPlaybackFrame(int frame) const
     if (!m_playbackModel) {
         return frame;
     } else {
-        int f = m_playbackModel->alignFromReference(frame);
+        sv_frame_t f = m_playbackModel->alignFromReference(frame);
 #ifdef DEBUG_VIEW_MANAGER
         cerr << "aligned frame = " << f << endl;
 #endif
@@ -313,8 +313,8 @@ ViewManager::setSelections(const MultiSelection &ms, bool quietly)
     }
 }
 
-int
-ViewManager::constrainFrameToSelection(int frame) const
+sv_frame_t
+ViewManager::constrainFrameToSelection(sv_frame_t frame) const
 {
     MultiSelection::SelectionList sl = getSelections();
     if (sl.empty()) return frame;
@@ -373,7 +373,7 @@ ViewManager::SetSelectionCommand::getName() const
 }
 
 Selection
-ViewManager::getContainingSelection(int frame, bool defaultToFollowing) const
+ViewManager::getContainingSelection(sv_frame_t frame, bool defaultToFollowing) const
 {
     return m_selections.getContainingSelection(frame, defaultToFollowing);
 }
@@ -478,7 +478,7 @@ ViewManager::setAlignMode(bool mode)
     }
 }
 
-int 
+sv_samplerate_t 
 ViewManager::getPlaybackSampleRate() const
 {
     if (m_playSource) {
@@ -487,7 +487,7 @@ ViewManager::getPlaybackSampleRate() const
     return 0;
 }
 
-int
+sv_samplerate_t
 ViewManager::getOutputSampleRate() const
 {
     if (m_playSource) {
@@ -559,7 +559,7 @@ ViewManager::isPlaying() const
 }
 
 void
-ViewManager::viewCentreFrameChanged(int f, bool locked,
+ViewManager::viewCentreFrameChanged(sv_frame_t f, bool locked,
                                     PlaybackFollowMode mode)
 {
     View *v = dynamic_cast<View *>(sender());
@@ -590,15 +590,15 @@ ViewManager::viewCentreFrameChanged(int f, bool locked,
 }
 
 void
-ViewManager::seek(int f)
+ViewManager::seek(sv_frame_t f)
 {
 #ifdef DEBUG_VIEW_MANAGER 
     cerr << "ViewManager::seek(" << f << ")" << endl;
 #endif
 
     if (m_playSource && m_playSource->isPlaying()) {
-	int playFrame = m_playSource->getCurrentPlayingFrame();
-	int diff = std::max(f, playFrame) - std::min(f, playFrame);
+	sv_frame_t playFrame = m_playSource->getCurrentPlayingFrame();
+	sv_frame_t diff = std::max(f, playFrame) - std::min(f, playFrame);
 	if (diff > 20000) {
 	    m_playbackFrame = f;
 	    m_playSource->play(f);
