@@ -23,6 +23,7 @@
 #include "base/PropertyContainer.h"
 #include "ViewManager.h"
 #include "base/XmlExportable.h"
+#include "base/BaseTypes.h"
 
 // #define DEBUG_VIEW_WIDGET_PAINT 1
 
@@ -64,13 +65,13 @@ public:
      * This is a calculated value based on the centre-frame, widget
      * width and zoom level.  The result may be negative.
      */
-    int getStartFrame() const;
+    sv_frame_t getStartFrame() const;
 
     /**
      * Set the widget pan based on the given first visible frame.  The
      * frame value may be negative.
      */
-    void setStartFrame(int);
+    void setStartFrame(sv_frame_t);
 
     /**
      * Return the centre frame of the visible widget.  This is an
@@ -78,30 +79,30 @@ public:
      * frame values (start, end) are calculated from this based on the
      * zoom and other factors.
      */
-    int getCentreFrame() const { return m_centreFrame; }
+    sv_frame_t getCentreFrame() const { return m_centreFrame; }
 
     /**
      * Set the centre frame of the visible widget.
      */
-    void setCentreFrame(int f) { setCentreFrame(f, true); }
+    void setCentreFrame(sv_frame_t f) { setCentreFrame(f, true); }
 
     /**
      * Retrieve the last visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
      * width and zoom level.
      */
-    int getEndFrame() const;
+    sv_frame_t getEndFrame() const;
 
     /**
      * Return the pixel x-coordinate corresponding to a given sample
      * frame (which may be negative).
      */
-    int getXForFrame(int frame) const;
+    int getXForFrame(sv_frame_t frame) const;
 
     /**
      * Return the closest frame to the given pixel x-coordinate.
      */
-    int getFrameForX(int x) const;
+    sv_frame_t getFrameForX(int x) const;
 
     /**
      * Return the pixel y-coordinate corresponding to a given
@@ -163,7 +164,7 @@ public:
      * Return the number of layers, regardless of whether visible or
      * dormant, i.e. invisible, in this view.
      */
-    virtual int getLayerCount() const { return m_layerStack.size(); }
+    virtual int getLayerCount() const { return int(m_layerStack.size()); }
 
     /**
      * Return the nth layer, counted in stacking order.  That is,
@@ -172,7 +173,7 @@ public:
      * dormant, i.e. invisible.
      */
     virtual Layer *getLayer(int n) {
-        if (n < int(m_layerStack.size())) return m_layerStack[n];
+        if (in_range_for(m_layerStack, n)) return m_layerStack[n];
         else return 0;
     }
 
@@ -308,20 +309,20 @@ public:
                        QString extraAttributes = "") const;
 
     // First frame actually in model, to right of scale, if present
-    virtual int getFirstVisibleFrame() const;
-    virtual int getLastVisibleFrame() const;
+    virtual sv_frame_t getFirstVisibleFrame() const;
+    virtual sv_frame_t getLastVisibleFrame() const;
 
-    int getModelsStartFrame() const;
-    int getModelsEndFrame() const;
+    sv_frame_t getModelsStartFrame() const;
+    sv_frame_t getModelsEndFrame() const;
 
     typedef std::set<Model *> ModelSet;
     ModelSet getModels();
 
     //!!!
     Model *getAligningModel() const;
-    int alignFromReference(int) const;
-    int alignToReference(int) const;
-    int getAlignedPlaybackFrame() const;
+    sv_frame_t alignFromReference(sv_frame_t) const;
+    sv_frame_t alignToReference(sv_frame_t) const;
+    sv_frame_t getAlignedPlaybackFrame() const;
 
 signals:
     void propertyContainerAdded(PropertyContainer *pc);
@@ -334,7 +335,7 @@ signals:
 
     void layerModelChanged();
 
-    void centreFrameChanged(int frame,
+    void centreFrameChanged(sv_frame_t frame,
                             bool globalScroll,
                             PlaybackFollowMode followMode);
 
@@ -344,7 +345,7 @@ signals:
 
 public slots:
     virtual void modelChanged();
-    virtual void modelChangedWithin(int startFrame, int endFrame);
+    virtual void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame);
     virtual void modelCompletionChanged();
     virtual void modelAlignmentCompletionChanged();
     virtual void modelReplaced();
@@ -353,9 +354,9 @@ public slots:
     virtual void layerMeasurementRectsChanged();
     virtual void layerNameChanged();
 
-    virtual void globalCentreFrameChanged(int);
-    virtual void viewCentreFrameChanged(View *, int);
-    virtual void viewManagerPlaybackFrameChanged(int);
+    virtual void globalCentreFrameChanged(sv_frame_t);
+    virtual void viewCentreFrameChanged(View *, sv_frame_t);
+    virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
     virtual void viewZoomLevelChanged(View *, int, bool);
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
@@ -398,25 +399,25 @@ protected:
     // false.
     bool hasTopLayerTimeXAxis() const;
 
-    bool setCentreFrame(int f, bool doEmit);
+    bool setCentreFrame(sv_frame_t f, bool doEmit);
 
-    void movePlayPointer(int f);
+    void movePlayPointer(sv_frame_t f);
 
     void checkProgress(void *object);
     int getProgressBarWidth() const; // if visible
 
-    int              m_centreFrame;
+    sv_frame_t          m_centreFrame;
     int                 m_zoomLevel;
     bool                m_followPan;
     bool                m_followZoom;
     PlaybackFollowMode  m_followPlay;
     bool                m_followPlayIsDetached;
-    int                 m_playPointerFrame;
+    sv_frame_t          m_playPointerFrame;
     bool                m_lightBackground;
     bool                m_showProgress;
 
     QPixmap            *m_cache;
-    int                 m_cacheCentreFrame;
+    sv_frame_t          m_cacheCentreFrame;
     int                 m_cacheZoomLevel;
     bool                m_selectionCached;
 
