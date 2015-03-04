@@ -3430,18 +3430,18 @@ SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QR
 class SpectrogramRangeMapper : public RangeMapper
 {
 public:
-    SpectrogramRangeMapper(int sr, int /* fftsize */) :
-        m_dist(float(sr) / 2),
-        m_s2(sqrtf(sqrtf(2))) { }
+    SpectrogramRangeMapper(sv_samplerate_t sr, int /* fftsize */) :
+        m_dist(sr / 2),
+        m_s2(sqrt(sqrt(2))) { }
     ~SpectrogramRangeMapper() { }
     
-    virtual int getPositionForValue(float value) const {
+    virtual int getPositionForValue(double value) const {
 
-        float dist = m_dist;
+        double dist = m_dist;
     
         int n = 0;
 
-        while (dist > (value + 0.00001) && dist > 0.1f) {
+        while (dist > (value + 0.00001) && dist > 0.1) {
             dist /= m_s2;
             ++n;
         }
@@ -3449,19 +3449,19 @@ public:
         return n;
     }
     
-    virtual int getPositionForValueUnclamped(float value) const {
+    virtual int getPositionForValueUnclamped(double value) const {
         // We don't really support this
         return getPositionForValue(value);
     }
 
-    virtual float getValueForPosition(int position) const {
+    virtual double getValueForPosition(int position) const {
 
         // Vertical zoom step 0 shows the entire range from DC ->
         // Nyquist frequency.  Step 1 shows 2^(1/4) of the range of
         // step 0, and so on until the visible range is smaller than
         // the frequency step between bins at the current fft size.
 
-        float dist = m_dist;
+        double dist = m_dist;
     
         int n = 0;
         while (n < position) {
@@ -3472,7 +3472,7 @@ public:
         return dist;
     }
     
-    virtual float getValueForPositionUnclamped(int position) const {
+    virtual double getValueForPositionUnclamped(int position) const {
         // We don't really support this
         return getValueForPosition(position);
     }
@@ -3480,8 +3480,8 @@ public:
     virtual QString getUnit() const { return "Hz"; }
 
 protected:
-    float m_dist;
-    float m_s2;
+    double m_dist;
+    double m_s2;
 };
 
 int
