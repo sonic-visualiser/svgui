@@ -205,12 +205,22 @@ protected:
     float getYForBin(View *, float bin) const;
 
     /**
+     * As getYForBin, but rounding to integer values.
+     */
+    int getIYForBin(View *, int bin) const;
+    
+    /**
      * Return the bin number, possibly fractional, at the given y
      * coordinate. Note that the whole numbers occur at the positions
      * at which the bins "start" (i.e. the bottom of the visible bin,
      * if the vertical scale is the usual way up).
      */
     float getBinForY(View *, float y) const;
+
+    /**
+     * As getBinForY, but rounding to integer values.
+     */
+    int getIBinForY(View *, int y) const;
     
     DenseThreeDimensionalModel::Column getColumn(int col) const;
 
