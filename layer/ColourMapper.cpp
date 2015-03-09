@@ -120,7 +120,7 @@ ColourMapper::map(double value) const
         v = norm * 2.0;
         if (v > 1.0) {
             v = 1.0;
-            s = 1.0 - (sqrtf(norm) - 0.707) * 3.413;
+            s = 1.0 - (sqrt(norm) - 0.707) * 3.413;
             if (s < 0.0) s = 0.0;
             if (s > 1.0) s = 1.0;
         }
@@ -188,7 +188,7 @@ ColourMapper::map(double value) const
         if (norm <= 1.0 / 256.0) {
             norm = 0.0;
         } else {
-            norm = 0.1f + (powf(((norm - 0.5) * 2.0), 3.0) + 1.0) / 2.081;
+            norm = 0.1f + (pow(((norm - 0.5) * 2.0), 3.0) + 1.0) / 2.081;
         }
         // now as for Sunset
         r = (norm - 0.24) * 2.38;

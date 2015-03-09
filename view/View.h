@@ -112,7 +112,7 @@ public:
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    float getYForFrequency(float frequency, float minFreq, float maxFreq, 
+    double getYForFrequency(double frequency, double minFreq, double maxFreq, 
 			   bool logarithmic) const;
 
     /**
@@ -121,7 +121,7 @@ public:
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    float getFrequencyForY(int y, float minFreq, float maxFreq,
+    double getFrequencyForY(int y, double minFreq, double maxFreq,
 			   bool logarithmic) const;
 
     /**
@@ -302,7 +302,7 @@ public:
 
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
 
-    virtual bool getValueExtents(QString unit, float &min, float &max,
+    virtual bool getValueExtents(QString unit, double &min, double &max,
                                  bool &log) const;
 
     virtual void toXml(QTextStream &stream, QString indent = "",

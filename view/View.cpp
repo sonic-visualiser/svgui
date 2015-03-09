@@ -182,7 +182,7 @@ View::getPropertyContainer(int i)
 }
 
 bool
-View::getValueExtents(QString unit, float &min, float &max, bool &log) const
+View::getValueExtents(QString unit, double &min, double &max, bool &log) const
 {
     bool have = false;
 
@@ -190,8 +190,8 @@ View::getValueExtents(QString unit, float &min, float &max, bool &log) const
          i != m_layerStack.end(); ++i) { 
 
         QString layerUnit;
-        float layerMin = 0.0, layerMax = 0.0;
-        float displayMin = 0.0, displayMax = 0.0;
+        double layerMin = 0.0, layerMax = 0.0;
+        double displayMin = 0.0, displayMax = 0.0;
         bool layerLog = false;
 
         if ((*i)->getValueExtents(layerMin, layerMax, layerLog, layerUnit) &&
@@ -373,10 +373,10 @@ View::getFrameForX(int x) const
     return frame + x * z;
 }
 
-float
-View::getYForFrequency(float frequency,
-		       float minf,
-		       float maxf, 
+double
+View::getYForFrequency(double frequency,
+		       double minf,
+		       double maxf, 
 		       bool logarithmic) const
 {
     Profiler profiler("View::getYForFrequency");
@@ -385,8 +385,8 @@ View::getYForFrequency(float frequency,
 
     if (logarithmic) {
 
-	static float lastminf = 0.0, lastmaxf = 0.0;
-	static float logminf = 0.0, logmaxf = 0.0;
+	static double lastminf = 0.0, lastmaxf = 0.0;
+	static double logminf = 0.0, logmaxf = 0.0;
 
 	if (lastminf != minf) {
 	    lastminf = (minf == 0.0 ? 1.0 : minf);
@@ -407,18 +407,18 @@ View::getYForFrequency(float frequency,
     }
 }
 
-float
+double
 View::getFrequencyForY(int y,
-		       float minf,
-		       float maxf,
+		       double minf,
+		       double maxf,
 		       bool logarithmic) const
 {
     int h = height();
 
     if (logarithmic) {
 
-	static float lastminf = 0.0, lastmaxf = 0.0;
-	static float logminf = 0.0, logmaxf = 0.0;
+	static double lastminf = 0.0, lastmaxf = 0.0;
+	static double logminf = 0.0, logmaxf = 0.0;
 
 	if (lastminf != minf) {
 	    lastminf = (minf == 0.0 ? 1.0 : minf);
@@ -2145,7 +2145,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
-    float v0, v1;
+    double v0, v1;
     QString u0, u1;
     bool b0 = false, b1 = false;
 
@@ -2217,7 +2217,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     }
 
     bool bd = false;
-    float dy = 0.f;
+    double dy = 0.f;
     QString du;
 
     // dimension, height
@@ -2228,7 +2228,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         if (du != "") {
             if (du == "Hz") {
                 int semis;
-                float cents;
+                double cents;
                 semis = Pitch::getPitchForFrequencyDifference(v0, v1, &cents);
                 dys = QString("[%1 %2 (%3)]")
                     .arg(dy).arg(du)
