@@ -525,7 +525,7 @@ signals:
     void modelChanged();
     void modelCompletionChanged();
     void modelAlignmentCompletionChanged();
-    void modelChangedWithin(int startFrame, int endFrame);
+    void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame);
     void modelReplaced();
 
     void layerParametersChanged();

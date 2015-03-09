@@ -141,8 +141,8 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     connectSignals(m_model);
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(cacheInvalid()));
-    connect(m_model, SIGNAL(modelChangedWithin(int, int)),
-	    this, SLOT(cacheInvalid(int, int)));
+    connect(m_model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
+	    this, SLOT(cacheInvalid(sv_frame_t, sv_frame_t)));
 
     emit modelReplaced();
 }
@@ -242,11 +242,11 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = -50;
 	*max = 50;
 
-        *deflt = lrintf(log10(m_initialGain) * 20.0);;
+        *deflt = int(lrint(log10(m_initialGain) * 20.0));
 	if (*deflt < *min) *deflt = *min;
 	if (*deflt > *max) *deflt = *max;
 
-	val = lrintf(log10(m_gain) * 20.0);
+	val = int(lrint(log10(m_gain) * 20.0));
 	if (val < *min) val = *min;
 	if (val > *max) val = *max;
 
@@ -255,11 +255,11 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = -50;
 	*max = 0;
 
-        *deflt = lrintf(AudioLevel::multiplier_to_dB(m_initialThreshold));
+        *deflt = int(lrint(AudioLevel::multiplier_to_dB(m_initialThreshold)));
 	if (*deflt < *min) *deflt = *min;
 	if (*deflt > *max) *deflt = *max;
 
-	val = lrintf(AudioLevel::multiplier_to_dB(m_threshold));
+	val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
 	if (val < *min) val = *min;
 	if (val > *max) val = *max;
 
@@ -481,10 +481,10 @@ void
 SpectrogramLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-	setGain(pow(10, float(value)/20.0));
+	setGain(float(pow(10, float(value)/20.0)));
     } else if (name == "Threshold") {
 	if (value == -50) setThreshold(0.0);
-	else setThreshold(AudioLevel::dB_to_multiplier(value));
+	else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
     } else if (name == "Colour Rotation") {
 	setColourRotation(value);
     } else if (name == "Colour") {
@@ -572,7 +572,7 @@ SpectrogramLayer::invalidateImageCaches()
 }
 
 void
-SpectrogramLayer::invalidateImageCaches(int startFrame, int endFrame)
+SpectrogramLayer::invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFrame)
 {
     for (ViewImageCache::iterator i = m_imageCaches.begin();
          i != m_imageCaches.end(); ++i) {
@@ -1049,7 +1049,7 @@ SpectrogramLayer::cacheInvalid()
 }
 
 void
-SpectrogramLayer::cacheInvalid(int from, int to)
+SpectrogramLayer::cacheInvalid(sv_frame_t from, sv_frame_t to)
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     SVDEBUG << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
@@ -1074,11 +1074,11 @@ SpectrogramLayer::fillTimerTimedOut()
          i != m_fftModels.end(); ++i) {
 
         const FFTModel *model = i->second.first;
-        int lastFill = i->second.second;
+        sv_frame_t lastFill = i->second.second;
 
         if (model) {
 
-            int fill = model->getFillExtent();
+            sv_frame_t fill = model->getFillExtent();
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
             SVDEBUG << "SpectrogramLayer::fillTimerTimedOut: extent for " << model << ": " << fill << ", last " << lastFill << ", total " << m_model->getEndFrame() << endl;

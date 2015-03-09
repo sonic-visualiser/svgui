@@ -243,7 +243,7 @@ public:
 
 protected slots:
     void cacheInvalid();
-    void cacheInvalid(int startFrame, int endFrame);
+    void cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame);
     
     void preferenceChanged(PropertyContainer::PropertyName name);
 
@@ -315,7 +315,7 @@ protected:
     };
     typedef std::map<const View *, ImageCache> ViewImageCache;
     void invalidateImageCaches();
-    void invalidateImageCaches(int startFrame, int endFrame);
+    void invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFrame);
     mutable ViewImageCache m_imageCaches;
 
     /**
@@ -328,7 +328,7 @@ protected:
 
     mutable QTimer *m_updateTimer;
 
-    mutable int m_candidateFillStartFrame;
+    mutable sv_frame_t m_candidateFillStartFrame;
     bool m_exiting;
 
     void initialisePalette();
@@ -342,13 +342,6 @@ protected:
 
     double getEffectiveMinFrequency() const;
     double getEffectiveMaxFrequency() const;
-
-    struct LayerRange {
-	int   startFrame;
-	int    zoomLevel;
-	int modelStart;
-	int modelEnd;
-    };
 
     // Note that the getYBin... methods return the nominal bin in the
     // un-smoothed spectrogram.  This is not necessarily the same bin
@@ -380,7 +373,7 @@ protected:
     Dense3DModelPeakCache *getPeakCache(const View *v) const;
     void invalidateFFTModels();
 
-    typedef std::pair<FFTModel *, int> FFTFillPair; // model, last fill
+    typedef std::pair<FFTModel *, sv_frame_t> FFTFillPair; // model, last fill
     typedef std::map<const View *, FFTFillPair> ViewFFTMap;
     typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
     mutable ViewFFTMap m_fftModels;
