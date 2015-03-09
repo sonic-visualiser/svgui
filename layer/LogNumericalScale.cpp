@@ -38,18 +38,18 @@ LogNumericalScale::paintVertical(View *v,
 				 const VerticalScaleLayer *layer,
 				 QPainter &paint,
 				 int x0,
-				 float minlog,
-				 float maxlog)
+				 double minlog,
+				 double maxlog)
 {
     int w = getWidth(v, paint) + x0;
 
     int n = 10;
 
-    float val = minlog;
-    float inc = (maxlog - val) / n; // even increments of log scale
+    double val = minlog;
+    double inc = (maxlog - val) / n; // even increments of log scale
 
     // smallest increment as displayed
-    float minDispInc = LogRange::unmap(minlog + inc) - LogRange::unmap(minlog);
+    double minDispInc = LogRange::unmap(minlog + inc) - LogRange::unmap(minlog);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "min = " << minlog << ", max = " << maxlog << ", inc = " << inc << ", minDispInc = " << minDispInc << endl;
@@ -58,7 +58,7 @@ LogNumericalScale::paintVertical(View *v,
     const int buflen = 40;
     char buffer[buflen];
 
-    float round = 1.f;
+    double round = 1.f;
     int dp = 0;
 
     if (minDispInc > 0) {
@@ -83,7 +83,7 @@ LogNumericalScale::paintVertical(View *v,
 	    if (layer->getScaleUnits() != "") drawText = false;
 	}
 
-        float dispval = LogRange::unmap(val);
+        double dispval = LogRange::unmap(val);
 	dispval = floor(dispval / round) * round;
 
 #ifdef DEBUG_TIME_VALUE_LAYER

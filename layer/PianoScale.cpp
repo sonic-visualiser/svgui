@@ -27,8 +27,8 @@ void
 PianoScale::paintPianoVertical(View *v,
 			       QPainter &paint,
 			       QRect r,
-			       float minf,
-			       float maxf)
+			       double minf,
+			       double maxf)
 {
     int x0 = r.x(), y0 = r.y(), x1 = r.x() + r.width(), y1 = r.y() + r.height();
 
@@ -39,7 +39,7 @@ PianoScale::paintPianoVertical(View *v,
 
     for (int i = 0; i < 128; ++i) {
 
-	float f = Pitch::getFrequencyForPitch(i);
+	double f = Pitch::getFrequencyForPitch(i);
 	int y = lrintf(v->getYForFrequency(f, minf, maxf, true));
 
 	if (y < y0 - 2) break;

@@ -139,34 +139,34 @@ Layer::showLayer(View *view, bool show)
 }
 
 bool
-Layer::getXScaleValue(const View *v, int x, float &value, QString &unit) const
+Layer::getXScaleValue(const View *v, int x, double &value, QString &unit) const
 {
     if (!hasTimeXAxis()) return false;
 
     const Model *m = getModel();
     if (!m) return false;
 
-    value = float(v->getFrameForX(x)) / m->getSampleRate();
+    value = double(v->getFrameForX(x)) / m->getSampleRate();
     unit = "s";
     return true;
 }
 
 bool
 Layer::getYScaleDifference(const View *v, int y0, int y1,
-                           float &diff, QString &unit) const
+                           double &diff, QString &unit) const
 {
-    float v0, v1;
+    double v0, v1;
     if (!getYScaleValue(v, y0, v0, unit) ||
         !getYScaleValue(v, y1, v1, unit)) {
         diff = 0.f;
         return false;
     }
-    diff = fabsf(v1 - v0);
+    diff = fabs(v1 - v0);
     return true;
 }
 
-int
-Layer::alignToReference(View *v, int frame) const
+sv_frame_t
+Layer::alignToReference(View *v, sv_frame_t frame) const
 {
     const Model *m = getModel();
     SVDEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
@@ -177,8 +177,8 @@ Layer::alignToReference(View *v, int frame) const
     }
 }
 
-int
-Layer::alignFromReference(View *v, int frame) const
+sv_frame_t
+Layer::alignFromReference(View *v, sv_frame_t frame) const
 {
     const Model *m = getModel();
     SVDEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
@@ -541,7 +541,7 @@ Layer::setMeasureRectFromPixrect(View *v, MeasureRect &r, QRect pixrect) const
 Layer::MeasureRectSet::const_iterator
 Layer::findFocusedMeasureRect(QPoint focusPoint) const
 {
-    float frDist = 0;
+    double frDist = 0;
     MeasureRectSet::const_iterator focusRectItr = m_measureRects.end();
 
     for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
@@ -554,7 +554,7 @@ Layer::findFocusedMeasureRect(QPoint focusPoint) const
         int xd = focusPoint.x() - cx;
         int yd = focusPoint.y() - cy;
         
-        float d = sqrt(float(xd * xd + yd * yd));
+        double d = sqrt(double(xd * xd + yd * yd));
         
         if (focusRectItr == m_measureRects.end() || d < frDist) {
             focusRectItr = i;

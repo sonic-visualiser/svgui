@@ -28,7 +28,7 @@
 #include <float.h> // for FLT_MIN/MAX
 
 
-ItemEditDialog::ItemEditDialog(int sampleRate, int options,
+ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
                                QString valueUnits, QWidget *parent) :
     QDialog(parent),
     m_sampleRate(sampleRate),
@@ -76,7 +76,7 @@ ItemEditDialog::ItemEditDialog(int sampleRate, int options,
         m_frameTimeSpinBox->setSuffix(tr(" frames"));
         subgrid->addWidget(m_frameTimeSpinBox, subrow, 1, 1, 2);
         connect(m_frameTimeSpinBox, SIGNAL(valueChanged(int)),
-                this, SLOT(frameTimeChanged(int)));
+                this, SLOT(frameTimeChanged(sv_frame_t)));
 
         ++subrow;
 
@@ -107,7 +107,7 @@ ItemEditDialog::ItemEditDialog(int sampleRate, int options,
         m_frameDurationSpinBox->setSuffix(tr(" frames"));
         subgrid->addWidget(m_frameDurationSpinBox, subrow, 1, 1, 2);
         connect(m_frameDurationSpinBox, SIGNAL(valueChanged(int)),
-                this, SLOT(frameDurationChanged(int)));
+                this, SLOT(frameDurationChanged(sv_frame_t)));
 
         ++subrow;
 
@@ -193,7 +193,7 @@ ItemEditDialog::ItemEditDialog(int sampleRate, int options,
 }
 
 void
-ItemEditDialog::setFrameTime(int frame)
+ItemEditDialog::setFrameTime(sv_frame_t frame)
 {
     if (!m_frameTimeSpinBox) return;
 
@@ -205,7 +205,7 @@ ItemEditDialog::setFrameTime(int frame)
     m_resetButton->setEnabled(false);
 }
 
-int
+sv_frame_t
 ItemEditDialog::getFrameTime() const
 {
     return m_frameTimeSpinBox->value();
@@ -224,7 +224,7 @@ ItemEditDialog::getRealTime() const
 }
 
 void
-ItemEditDialog::setFrameDuration(int duration)
+ItemEditDialog::setFrameDuration(sv_frame_t duration)
 {
     if (!m_frameDurationSpinBox) return;
 
@@ -236,7 +236,7 @@ ItemEditDialog::setFrameDuration(int duration)
     m_resetButton->setEnabled(false);
 }
 
-int
+sv_frame_t
 ItemEditDialog::getFrameDuration() const
 {
     return m_frameDurationSpinBox->value();
@@ -287,7 +287,7 @@ ItemEditDialog::getText() const
 }
 
 void
-ItemEditDialog::frameTimeChanged(int i)
+ItemEditDialog::frameTimeChanged(sv_frame_t i)
 {
     m_realTimeSecsSpinBox->blockSignals(true);
     m_realTimeUSecsSpinBox->blockSignals(true);
@@ -306,7 +306,7 @@ ItemEditDialog::realTimeSecsChanged(int i)
 {
     RealTime rt = getRealTime();
     rt.sec = i;
-    int frame = RealTime::realTime2Frame(rt, m_sampleRate);
+    sv_frame_t frame = RealTime::realTime2Frame(rt, m_sampleRate);
     m_frameTimeSpinBox->setValue(frame);
     m_resetButton->setEnabled(true);
 }
@@ -316,13 +316,13 @@ ItemEditDialog::realTimeUSecsChanged(int i)
 {
     RealTime rt = getRealTime();
     rt.nsec = i * 1000;
-    int frame = RealTime::realTime2Frame(rt, m_sampleRate);
+    sv_frame_t frame = RealTime::realTime2Frame(rt, m_sampleRate);
     m_frameTimeSpinBox->setValue(frame);
     m_resetButton->setEnabled(true);
 }
 
 void
-ItemEditDialog::frameDurationChanged(int i)
+ItemEditDialog::frameDurationChanged(sv_frame_t i)
 {
     m_realDurationSecsSpinBox->blockSignals(true);
     m_realDurationUSecsSpinBox->blockSignals(true);
@@ -341,7 +341,7 @@ ItemEditDialog::realDurationSecsChanged(int i)
 {
     RealTime rt = getRealDuration();
     rt.sec = i;
-    int frame = RealTime::realTime2Frame(rt, m_sampleRate);
+    sv_frame_t frame = RealTime::realTime2Frame(rt, m_sampleRate);
     m_frameDurationSpinBox->setValue(frame);
     m_resetButton->setEnabled(true);
 }
@@ -351,7 +351,7 @@ ItemEditDialog::realDurationUSecsChanged(int i)
 {
     RealTime rt = getRealDuration();
     rt.nsec = i * 1000;
-    int frame = RealTime::realTime2Frame(rt, m_sampleRate);
+    sv_frame_t frame = RealTime::realTime2Frame(rt, m_sampleRate);
     m_frameDurationSpinBox->setValue(frame);
     m_resetButton->setEnabled(true);
 }
