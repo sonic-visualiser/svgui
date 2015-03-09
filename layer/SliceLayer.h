@@ -144,8 +144,8 @@ protected:
     mutable std::map<const View *, int> m_xorigins;
     mutable std::map<const View *, int> m_yorigins;
     mutable std::map<const View *, int> m_heights;
-    mutable int                    m_currentf0;
-    mutable int                    m_currentf1;
+    mutable sv_frame_t                m_currentf0;
+    mutable sv_frame_t                m_currentf1;
     mutable std::vector<float>        m_values;
 };
 
