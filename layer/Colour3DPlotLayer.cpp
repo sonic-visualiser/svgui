@@ -34,6 +34,8 @@
 #include <alloca.h>
 #endif
 
+using std::vector;
+
 //#define DEBUG_COLOUR_3D_PLOT_LAYER_PAINT 1
 
 
@@ -660,6 +662,12 @@ Colour3DPlotLayer::getYForBin(View *v, float bin) const
     return y;
 }
 
+int
+Colour3DPlotLayer::getIYForBin(View *v, int bin) const
+{
+    return int(roundf(getYForBin(v, float(bin))));
+}
+
 float
 Colour3DPlotLayer::getBinForY(View *v, float y) const
 {
@@ -676,6 +684,12 @@ Colour3DPlotLayer::getBinForY(View *v, float y) const
         bin = LogRange::unmap(logmin + ((h - y) * (logmax - logmin)) / h) - 1;
     }
     return bin;
+}
+
+int
+Colour3DPlotLayer::getIBinForY(View *v, int y) const
+{
+    return int(floorf(getBinForY(v, float(y))));
 }
 
 QString
@@ -713,7 +727,7 @@ Colour3DPlotLayer::getFeatureDescription(View *v, QPoint &pos) const
  //    float binHeight = float(v->height()) / (symax - symin);
 //    int sy = int((v->height() - y) / binHeight) + symin;
 
-    int sy = int(getBinForY(v, float(y)));
+    int sy = getIBinForY(v, y);
 
     if (sy < 0 || sy >= m_model->getHeight()) {
         return "";
@@ -872,7 +886,7 @@ Colour3DPlotLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect
 
         int y0;
 
-        y0 = int(lrint(getYForBin(v, float(i))));
+        y0 = getIYForBin(v, i);
         int h = py - y0;
 
         if (i > symin) {
@@ -1353,8 +1367,8 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
         
 	for (int sy = symin; sy < symax; ++sy) {
 
-            int ry0 = getYForBin(v, sy);
-            int ry1 = getYForBin(v, sy + 1);
+            int ry0 = getIYForBin(v, sy);
+            int ry1 = getIYForBin(v, sy + 1);
             QRect r(rx0, ry1, rw, ry0 - ry1);
 
 	    QRgb pixel = qRgb(255, 255, 255);
@@ -1415,12 +1429,12 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
     Profiler profiler("Colour3DPlotLayer::paintDense", true);
     if (!m_cache) return;
 
-    float modelStart = m_model->getStartFrame();
-    float modelResolution = m_model->getResolution();
+    double modelStart = double(m_model->getStartFrame());
+    double modelResolution = double(m_model->getResolution());
 
-    int mmsr = v->getViewManager()->getMainModelSampleRate();
-    int msr = m_model->getSampleRate();
-    float srRatio = float(mmsr) / float(msr);
+    sv_samplerate_t mmsr = v->getViewManager()->getMainModelSampleRate();
+    sv_samplerate_t msr = m_model->getSampleRate();
+    double srRatio = mmsr / msr;
 
     int x0 = rect.left();
     int x1 = rect.right() + 1;
@@ -1476,29 +1490,26 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
     int sw = source->width();
     
-    int xf = -1;
-    int nxf = v->getFrameForX(x0);
+    sv_frame_t xf = -1;
+    sv_frame_t nxf = v->getFrameForX(x0);
 
-    float epsilon = 0.000001;
+    double epsilon = 0.000001;
 
-#ifdef __GNUC__
-    float sxa[w * 2];
-#else
-    float *sxa = (float *)alloca(w * 2 * sizeof(float));
-#endif
+    vector<double> sxa(w*2);
+    
     for (int x = 0; x < w; ++x) {
 
         xf = nxf;
         nxf = xf + zoomLevel;
 
-        float sx0 = (float(xf) / srRatio - modelStart) / modelResolution;
-        float sx1 = (float(nxf) / srRatio - modelStart) / modelResolution;
+        double sx0 = (double(xf) / srRatio - modelStart) / modelResolution;
+        double sx1 = (double(nxf) / srRatio - modelStart) / modelResolution;
 
         sxa[x*2] = sx0;
         sxa[x*2 + 1] = sx1;
     }
 
-    float logmin = symin+1, logmax = symax+1;
+    float logmin = float(symin+1), logmax = float(symax+1);
     LogRange::mapRange(logmin, logmax);
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
@@ -1509,7 +1520,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
         
         for (int y = 0; y < h; ++y) {
 
-            float sy = getBinForY(v, y) - 0.5;
+            double sy = getBinForY(v, float(y)) - 0.5;
             int syi = int(sy + epsilon);
             if (syi < 0 || syi >= source->height()) continue;
 
@@ -1526,52 +1537,52 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
 
                 targetLine[x] = 0;
 
-                float sx0 = sxa[x*2];
+                double sx0 = sxa[x*2];
                 if (sx0 < 0) continue;
                 int sx0i = int(sx0 + epsilon);
                 if (sx0i >= sw) break;
 
-                float a = float(sourceLine[sx0i]);
-                float b = a;
-                float value;
+                double a = sourceLine[sx0i];
+                double b = a;
+                double value;
 
-                float sx1 = sxa[x*2+1];
+                double sx1 = sxa[x*2+1];
                 if (sx1 > sx0 + 1.f) {
                     int sx1i = int(sx1);
                     bool have = false;
                     for (int sx = sx0i; sx <= sx1i; ++sx) {
                         if (sx < 0 || sx >= sw) continue;
                         if (!have) {
-                            a = float(sourceLine[sx]);
-                            b = float(nextSource[sx]);
+                            a = sourceLine[sx];
+                            b = nextSource[sx];
                             have = true;
                         } else {
-                            a = std::max(a, float(sourceLine[sx]));
-                            b = std::max(b, float(nextSource[sx]));
+                            a = std::max(a, double(sourceLine[sx]));
+                            b = std::max(b, double(nextSource[sx]));
                         }
                     }
-                    float yprop = sy - syi;
+                    double yprop = sy - syi;
                     value = (a * (1.f - yprop) + b * yprop);
                 } else {
-                    a = float(sourceLine[sx0i]);
-                    b = float(nextSource[sx0i]);
-                    float yprop = sy - syi;
+                    a = sourceLine[sx0i];
+                    b = nextSource[sx0i];
+                    double yprop = sy - syi;
                     value = (a * (1.f - yprop) + b * yprop);
                     int oi = sx0i + 1;
-                    float xprop = sx0 - sx0i;
+                    double xprop = sx0 - sx0i;
                     xprop -= 0.5;
                     if (xprop < 0) {
                         oi = sx0i - 1;
                         xprop = -xprop;
                     }
                     if (oi < 0 || oi >= sw) oi = sx0i;
-                    a = float(sourceLine[oi]);
-                    b = float(nextSource[oi]);
+                    a = sourceLine[oi];
+                    b = nextSource[oi];
                     value = (value * (1.f - xprop) +
                              (a * (1.f - yprop) + b * yprop) * xprop);
                 }
                 
-                int vi = lrintf(value);
+                int vi = int(lrint(value));
                 if (vi > 255) vi = 255;
                 if (vi < 0) vi = 0;
                 targetLine[x] = uchar(vi);
@@ -1586,7 +1597,7 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
         for (int y = 0; y < h; ++y) {
 
             float sy1 = sy0;
-            sy0 = getBinForY(v, y + 1);
+            sy0 = getBinForY(v, float(y + 1));
 
             int sy0i = int(sy0 + epsilon);
             int sy1i = int(sy1);
@@ -1613,11 +1624,11 @@ Colour3DPlotLayer::paintDense(View *v, QPainter &paint, QRect rect) const
             
                 for (int x = 0; x < w; ++x) {
 
-                    float sx1 = sxa[x*2 + 1];
+                    double sx1 = sxa[x*2 + 1];
                     if (sx1 < 0) continue;
                     int sx1i = int(sx1);
 
-                    float sx0 = sxa[x*2];
+                    double sx0 = sxa[x*2];
                     if (sx0 < 0) continue;
                     int sx0i = int(sx0 + epsilon);
                     if (sx0i >= sw) break;
