@@ -70,7 +70,7 @@ public:
 
     virtual bool editOpen(View *v, QMouseEvent *);
 
-    virtual void moveSelection(Selection s, int newStartFrame);
+    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
     virtual void deleteSelectionInclusive(Selection s);

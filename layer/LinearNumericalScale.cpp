@@ -47,13 +47,13 @@ LinearNumericalScale::paintVertical(View *v,
 
     int w = getWidth(v, paint) + x0;
 
-    double round = 1.f;
+    double round = 1.0;
     int dp = 0;
     if (inc > 0) {
-        int prec = trunc(log10f(inc));
+        int prec = int(trunc(log10(inc)));
         prec -= 1;
         if (prec < 0) dp = -prec;
-        round = powf(10.f, prec);
+        round = pow(10.0, prec);
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << endl;
 #endif
@@ -72,7 +72,7 @@ LinearNumericalScale::paintVertical(View *v,
 	    v->height() < paint.fontMetrics().height() * (n*2)) {
 	    if (layer->getScaleUnits() != "") drawText = false;
 	}
-	dispval = lrintf(val / round) * round;
+	dispval = int(rint(val / round) * round);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
 	cerr << "val = " << val << ", dispval = " << dispval << endl;

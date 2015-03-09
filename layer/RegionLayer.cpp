@@ -275,7 +275,7 @@ RegionLayer::recalcSpacing()
 }
 
 bool
-RegionLayer::getValueExtents(float &min, float &max,
+RegionLayer::getValueExtents(double &min, double &max,
                            bool &logarithmic, QString &unit) const
 {
     if (!m_model) return false;
@@ -289,7 +289,7 @@ RegionLayer::getValueExtents(float &min, float &max,
 }
 
 bool
-RegionLayer::getDisplayExtents(float &min, float &max) const
+RegionLayer::getDisplayExtents(double &min, double &max) const
 {
     if (!m_model ||
         m_verticalScale == AutoAlignScale ||
@@ -453,7 +453,7 @@ RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-RegionLayer::snapToFeatureFrame(View *v, int &frame,
+RegionLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
                                 int &resolution,
                                 SnapType snap) const
 {
@@ -473,7 +473,7 @@ RegionLayer::snapToFeatureFrame(View *v, int &frame,
     }    
 
     points = m_model->getPoints(frame, frame);
-    int snapped = frame;
+    sv_frame_t snapped = frame;
     bool found = false;
 
     for (RegionModel::PointList::const_iterator i = points.begin();
@@ -536,7 +536,7 @@ RegionLayer::snapToFeatureFrame(View *v, int &frame,
 }
 
 bool
-RegionLayer::snapToSimilarFeature(View *v, int &frame,
+RegionLayer::snapToSimilarFeature(View *v, sv_frame_t &frame,
                                   int &resolution,
                                   SnapType snap) const
 {
@@ -551,8 +551,8 @@ RegionLayer::snapToSimilarFeature(View *v, int &frame,
 
     RegionModel::PointList::const_iterator i;
 
-    int matchframe = frame;
-    float matchvalue = 0.f;
+    sv_frame_t matchframe = frame;
+    double matchvalue = 0.f;
 
     for (i = close.begin(); i != close.end(); ++i) {
         if (i->frame > frame) break;
@@ -560,10 +560,10 @@ RegionLayer::snapToSimilarFeature(View *v, int &frame,
         matchframe = i->frame;
     }
 
-    int snapped = frame;
+    sv_frame_t snapped = frame;
     bool found = false;
     bool distant = false;
-    float epsilon = 0.0001;
+    double epsilon = 0.0001;
 
     i = close.begin();
 
@@ -588,7 +588,7 @@ RegionLayer::snapToSimilarFeature(View *v, int &frame,
 	if (snap == SnapRight) {
 
 	    if (i->frame > matchframe &&
-                fabsf(i->value - matchvalue) < epsilon) {
+                fabs(i->value - matchvalue) < epsilon) {
 		snapped = i->frame;
 		found = true;
 		break;
@@ -597,7 +597,7 @@ RegionLayer::snapToSimilarFeature(View *v, int &frame,
 	} else if (snap == SnapLeft) {
 
 	    if (i->frame < matchframe) {
-                if (fabsf(i->value - matchvalue) < epsilon) {
+                if (fabs(i->value - matchvalue) < epsilon) {
                     snapped = i->frame;
                     found = true; // don't break, as the next may be better
                 }
@@ -624,7 +624,7 @@ RegionLayer::getScaleUnits() const
 }
 
 void
-RegionLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
+RegionLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -679,28 +679,28 @@ int
 RegionLayer::spacingIndexToY(View *v, int i) const
 {
     int h = v->height();
-    int n = m_spacingMap.size();
+    int n = int(m_spacingMap.size());
     // this maps from i (spacing of the value from the spacing
     // map) and n (number of region types) to y
     int y = h - (((h * i) / n) + (h / (2 * n)));
     return y;
 }
 
-float
+double
 RegionLayer::yToSpacingIndex(View *v, int y) const
 {
-    // we return an inexact result here (float rather than int)
+    // we return an inexact result here (double rather than int)
     int h = v->height();
-    int n = m_spacingMap.size();
+    int n = int(m_spacingMap.size());
     // from y = h - ((h * i) / n) + (h / (2 * n)) as above (vh taking place of i)
-    float vh = float(2*h*n - h - 2*n*y) / float(2*h);
+    double vh = double(2*h*n - h - 2*n*y) / double(2*h);
     return vh;
 }
 
 int
-RegionLayer::getYForValue(View *v, float val) const
+RegionLayer::getYForValue(View *v, double val) const
 {
-    float min = 0.0, max = 0.0;
+    double min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->height();
 
@@ -732,16 +732,16 @@ RegionLayer::getYForValue(View *v, float val) const
     }
 }
 
-float
+double
 RegionLayer::getValueForY(View *v, int y) const
 {
     return getValueForY(v, y, -1);
 }
 
-float
+double
 RegionLayer::getValueForY(View *v, int y, int avoid) const
 {
-    float min = 0.0, max = 0.0;
+    double min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->height();
 
@@ -757,14 +757,14 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
         // one of the m/n divisions in the y scale, we should snap to
         // the value of the mth region.
 
-        float vh = yToSpacingIndex(v, y);
+        double vh = yToSpacingIndex(v, y);
 
         // spacings in the map are integral, so find the closest one,
         // map it back to its y coordinate, and see how far we are
         // from it
 
-        int n = m_spacingMap.size();
-        int ivh = lrintf(vh);
+        int n = int(m_spacingMap.size());
+        int ivh = int(lrint(vh));
         if (ivh < 0) ivh = 0;
         if (ivh > n-1) ivh = n-1;
         int iy = spacingIndexToY(v, ivh);
@@ -783,7 +783,7 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
 
 //        cerr << "nearest existing value = " << i->first << " at " << iy << endl;
 
-        float val = 0;
+        double val = 0;
 
 //        cerr << "note: avoid = " << avoid << ", i->second = " << i->second << endl;
 
@@ -825,10 +825,10 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
 
         getScaleExtents(v, min, max, logarithmic);
 
-        float val = min + (float(h - y) * float(max - min)) / h;
+        double val = min + (double(h - y) * double(max - min)) / h;
 
         if (logarithmic) {
-            val = powf(10.f, val);
+            val = pow(10.0, val);
         }
 
         return val;
@@ -836,9 +836,9 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
 }
 
 QColor
-RegionLayer::getColourForValue(View *v, float val) const
+RegionLayer::getColourForValue(View *v, double val) const
 {
-    float min, max;
+    double min, max;
     bool log;
     getScaleExtents(v, min, max, log);
 
@@ -870,14 +870,14 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
-    int sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("RegionLayer::paint", true);
 
     int x0 = rect.left() - 40, x1 = rect.right();
-    long frame0 = v->getFrameForX(x0);
-    long frame1 = v->getFrameForX(x1);
+    sv_frame_t frame0 = v->getFrameForX(x0);
+    sv_frame_t frame1 = v->getFrameForX(x1);
 
     RegionModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
@@ -890,8 +890,8 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    SVDEBUG << "RegionLayer::paint: resolution is "
 //	      << m_model->getResolution() << " frames" << endl;
 
-    float min = m_model->getValueMinimum();
-    float max = m_model->getValueMaximum();
+    double min = m_model->getValueMinimum();
+    double max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
@@ -1083,7 +1083,7 @@ RegionLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     if (!m_model || m_model->getPoints().empty()) return;
 
     QString unit;
-    float min, max;
+    double min, max;
     bool logarithmic;
 
     int w = getVerticalScaleWidth(v, false, paint);
@@ -1129,9 +1129,9 @@ RegionLayer::drawStart(View *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->y());
 
-    m_editingPoint = RegionModel::Point(frame, value, 0, "");
+    m_editingPoint = RegionModel::Point(frame, float(value), 0, "");
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
@@ -1149,15 +1149,15 @@ RegionLayer::drawDrag(View *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float newValue = m_editingPoint.value;
+    double newValue = m_editingPoint.value;
     if (m_verticalScale != EqualSpaced) newValue = getValueForY(v, e->y());
 
-    long newFrame = m_editingPoint.frame;
-    long newDuration = frame - newFrame;
+    sv_frame_t newFrame = m_editingPoint.frame;
+    sv_frame_t newDuration = frame - newFrame;
     if (newDuration < 0) {
         newFrame = frame;
         newDuration = -newDuration;
@@ -1167,7 +1167,7 @@ RegionLayer::drawDrag(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = newFrame;
-    m_editingPoint.value = newValue;
+    m_editingPoint.value = float(newValue);
     m_editingPoint.duration = newDuration;
     m_editingCommand->addPoint(m_editingPoint);
 
@@ -1274,7 +1274,7 @@ RegionLayer::editDrag(View *v, QMouseEvent *e)
     // ... unless there are other points with the same value
     if (m_distributionMap[m_editingPoint.value] > 1) avoid = -1;
 
-    float value = getValueForY(v, newy, avoid);
+    double value = getValueForY(v, newy, avoid);
 
     if (!m_editingCommand) {
 	m_editingCommand = new RegionModel::EditCommand(m_model,
@@ -1283,7 +1283,7 @@ RegionLayer::editDrag(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
-    m_editingPoint.value = value;
+    m_editingPoint.value = float(value);
     m_editingCommand->addPoint(m_editingPoint);
     recalcSpacing();
 }
@@ -1358,7 +1358,7 @@ RegionLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::moveSelection(Selection s, int newStartFrame)
+RegionLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
@@ -1403,13 +1403,13 @@ RegionLayer::resizeSelection(Selection s, Selection newSize)
 
 	if (s.contains(i->frame)) {
 
-	    double targetStart = i->frame;
-	    targetStart = newSize.getStartFrame() + 
-		double(targetStart - s.getStartFrame()) * ratio;
+	    double targetStart = double(i->frame);
+	    targetStart = double(newSize.getStartFrame()) +
+		targetStart - double(s.getStartFrame()) * ratio;
 
-	    double targetEnd = i->frame + i->duration;
-	    targetEnd = newSize.getStartFrame() +
-		double(targetEnd - s.getStartFrame()) * ratio;
+	    double targetEnd = double(i->frame + i->duration);
+	    targetEnd = double(newSize.getStartFrame()) +
+		targetEnd - double(s.getStartFrame()) * ratio;
 
 	    RegionModel::Point newPoint(*i);
 	    newPoint.frame = lrint(targetStart);
@@ -1465,7 +1465,7 @@ RegionLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-RegionLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* interactive */)
+RegionLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1497,7 +1497,7 @@ RegionLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
-        int frame = 0;
+        sv_frame_t frame = 0;
 
         if (!realign) {
             
@@ -1521,7 +1521,7 @@ RegionLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /
                                m_model->getValueMaximum()) / 2;
         if (i->haveDuration()) newPoint.duration = i->getDuration();
         else {
-            int nextFrame = frame;
+            sv_frame_t nextFrame = frame;
             Clipboard::PointList::const_iterator j = i;
             for (; j != points.end(); ++j) {
                 if (!j->haveFrame()) continue;

@@ -250,12 +250,12 @@ Layer::clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const
         // reference (i.e. having been copied from the reference
         // model).
         
-        int sourceFrame = i->getFrame();
-        int referenceFrame = sourceFrame;
+        sv_frame_t sourceFrame = i->getFrame();
+        sv_frame_t referenceFrame = sourceFrame;
         if (i->haveReferenceFrame()) {
             referenceFrame = i->getReferenceFrame();
         }
-        int myMappedFrame = alignToReference(v, sourceFrame);
+        sv_frame_t myMappedFrame = alignToReference(v, sourceFrame);
 
 //        cerr << "sourceFrame = " << sourceFrame << ", referenceFrame = " << referenceFrame << " (have = " << i->haveReferenceFrame() << "), myMappedFrame = " << myMappedFrame << endl;
 
@@ -470,8 +470,8 @@ Layer::nearestMeasurementRectChanged(View *v, QPoint prev, QPoint now) const
 void
 Layer::updateMeasurePixrects(View *v) const
 {
-    int sf = v->getStartFrame();
-    int ef = v->getEndFrame();
+    sv_frame_t sf = v->getStartFrame();
+    sv_frame_t ef = v->getEndFrame();
 
     for (MeasureRectSet::const_iterator i = m_measureRects.begin(); 
          i != m_measureRects.end(); ++i) {
@@ -509,8 +509,8 @@ Layer::updateMeasurePixrects(View *v) const
 void
 Layer::updateMeasureRectYCoords(View *v, const MeasureRect &r) const
 {
-    int y0 = lrint(r.startY * v->height());
-    int y1 = lrint(r.endY * v->height());
+    int y0 = int(lrint(r.startY * v->height()));
+    int y1 = int(lrint(r.endY * v->height()));
     r.pixrect = QRect(r.pixrect.x(), y0, r.pixrect.width(), y1 - y0);
 }
 
