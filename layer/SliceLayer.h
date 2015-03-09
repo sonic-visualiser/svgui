@@ -62,7 +62,7 @@ public:
     virtual void setProperty(const PropertyName &, int value);
     virtual void setProperties(const QXmlAttributes &);
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
     virtual bool hasTimeXAxis() const { return false; }
@@ -93,7 +93,7 @@ public:
     BinScale getBinScale() const { return m_binScale; }
 
     void setThreshold(float);
-    int getThreshold() const { return m_threshold; }
+    float getThreshold() const { return m_threshold; }
 
     void setGain(float gain);
     float getGain() const;
@@ -109,11 +109,11 @@ public slots:
     void modelAboutToBeDeleted(Model *);
 
 protected:
-    virtual float getXForBin(int bin, int totalBins, float w) const;
-    virtual int getBinForX(float x, int totalBins, float w) const;
+    virtual double getXForBin(int bin, int totalBins, double w) const;
+    virtual int getBinForX(double x, int totalBins, double w) const;
 
-    virtual float getYForValue(float value, const View *v, float &norm) const;
-    virtual float getValueForY(float y, const View *v) const;
+    virtual double getYForValue(double value, const View *v, double &norm) const;
+    virtual double getValueForY(double y, const View *v) const;
     
     virtual QString getFeatureDescriptionAux(View *v, QPoint &,
                                              bool includeBinDescription,

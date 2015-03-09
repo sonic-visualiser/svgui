@@ -254,7 +254,7 @@ public:
      */
     virtual bool editOpen(View *, QMouseEvent *) { return false; }
 
-    virtual void moveSelection(Selection, int /* newStartFrame */) { }
+    virtual void moveSelection(Selection, sv_frame_t /* newStartFrame */) { }
     virtual void resizeSelection(Selection, Selection /* newSize */) { }
     virtual void deleteSelection(Selection) { }
 
@@ -546,8 +546,8 @@ protected:
 
         mutable QRect pixrect;
         bool haveFrames;
-        int startFrame; // only valid if haveFrames
-        int endFrame;   // ditto
+        sv_frame_t startFrame; // only valid if haveFrames
+        sv_frame_t endFrame;   // ditto
         double startY;
         double endY;
 

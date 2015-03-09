@@ -40,7 +40,7 @@ PianoScale::paintPianoVertical(View *v,
     for (int i = 0; i < 128; ++i) {
 
 	double f = Pitch::getFrequencyForPitch(i);
-	int y = lrintf(v->getYForFrequency(f, minf, maxf, true));
+	int y = int(lrint(v->getYForFrequency(f, minf, maxf, true)));
 
 	if (y < y0 - 2) break;
 	if (y > y1 + 2) {

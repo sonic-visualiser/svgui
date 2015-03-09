@@ -209,7 +209,7 @@ NoteLayer::shouldConvertMIDIToHz() const
 }
 
 bool
-NoteLayer::getValueExtents(float &min, float &max,
+NoteLayer::getValueExtents(double &min, double &max,
                            bool &logarithmic, QString &unit) const
 {
     if (!m_model) return false;
@@ -218,8 +218,8 @@ NoteLayer::getValueExtents(float &min, float &max,
 
     if (shouldConvertMIDIToHz()) {
         unit = "Hz";
-        min = Pitch::getFrequencyForPitch(lrintf(min));
-        max = Pitch::getFrequencyForPitch(lrintf(max + 1));
+        min = Pitch::getFrequencyForPitch(int(lrint(min)));
+        max = Pitch::getFrequencyForPitch(int(lrint(max + 1)));
     } else unit = getScaleUnits();
 
     if (m_verticalScale == MIDIRangeScale ||
@@ -229,7 +229,7 @@ NoteLayer::getValueExtents(float &min, float &max,
 }
 
 bool
-NoteLayer::getDisplayExtents(float &min, float &max) const
+NoteLayer::getDisplayExtents(double &min, double &max) const
 {
     if (!m_model || shouldAutoAlign()) return false;
 
@@ -248,8 +248,8 @@ NoteLayer::getDisplayExtents(float &min, float &max) const
     }
 
     if (shouldConvertMIDIToHz()) {
-        min = Pitch::getFrequencyForPitch(lrintf(min));
-        max = Pitch::getFrequencyForPitch(lrintf(max + 1));
+        min = Pitch::getFrequencyForPitch(int(lrint(min)));
+        max = Pitch::getFrequencyForPitch(int(lrint(max + 1)));
     }
 
 #ifdef DEBUG_NOTE_LAYER
@@ -260,7 +260,7 @@ NoteLayer::getDisplayExtents(float &min, float &max) const
 }
 
 bool
-NoteLayer::setDisplayExtents(float min, float max)
+NoteLayer::setDisplayExtents(double min, double max)
 {
     if (!m_model) return false;
 
@@ -302,7 +302,7 @@ NoteLayer::getCurrentVerticalZoomStep() const
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return 0;
 
-    float dmin, dmax;
+    double dmin, dmax;
     getDisplayExtents(dmin, dmax);
 
     int nr = mapper->getPositionForValue(dmax - dmin);
@@ -323,29 +323,29 @@ NoteLayer::setVerticalZoomStep(int step)
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return;
     
-    float min, max;
+    double min, max;
     bool logarithmic;
     QString unit;
     getValueExtents(min, max, logarithmic, unit);
     
-    float dmin, dmax;
+    double dmin, dmax;
     getDisplayExtents(dmin, dmax);
 
-    float newdist = mapper->getValueForPosition(100 - step);
+    double newdist = mapper->getValueForPosition(100 - step);
 
-    float newmin, newmax;
+    double newmin, newmax;
 
     if (logarithmic) {
 
         // see SpectrogramLayer::setVerticalZoomStep
 
-        newmax = (newdist + sqrtf(newdist*newdist + 4*dmin*dmax)) / 2;
+        newmax = (newdist + sqrt(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
 //        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
-        float dmid = (dmax + dmin) / 2;
+        double dmid = (dmax + dmin) / 2;
         newmin = dmid - newdist / 2;
         newmax = dmid + newdist / 2;
     }
@@ -372,7 +372,7 @@ NoteLayer::getNewVerticalZoomRangeMapper() const
     
     RangeMapper *mapper;
 
-    float min, max;
+    double min, max;
     bool logarithmic;
     QString unit;
     getValueExtents(min, max, logarithmic, unit);
@@ -393,7 +393,7 @@ NoteLayer::getLocalPoints(View *v, int x) const
 {
     if (!m_model) return NoteModel::PointList();
 
-    int frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     NoteModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -436,7 +436,7 @@ NoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
 {
     if (!m_model) return false;
 
-    int frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     NoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
@@ -506,9 +506,9 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     if (shouldConvertMIDIToHz()) {
 
-        int mnote = lrintf(note.value);
-        int cents = lrintf((note.value - mnote) * 100);
-        float freq = Pitch::getFrequencyForPitch(mnote, cents);
+        int mnote = int(lrint(note.value));
+        int cents = int(lrint((note.value - float(mnote)) * 100));
+        double freq = Pitch::getFrequencyForPitch(mnote, cents);
         pitchText = tr("%1 (%2, %3 Hz)")
             .arg(Pitch::getPitchLabel(mnote, cents))
             .arg(mnote)
@@ -547,7 +547,7 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-NoteLayer::snapToFeatureFrame(View *v, int &frame,
+NoteLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 			      int &resolution,
 			      SnapType snap) const
 {
@@ -567,7 +567,7 @@ NoteLayer::snapToFeatureFrame(View *v, int &frame,
     }    
 
     points = m_model->getPoints(frame, frame);
-    int snapped = frame;
+    sv_frame_t snapped = frame;
     bool found = false;
 
     for (NoteModel::PointList::const_iterator i = points.begin();
@@ -619,7 +619,7 @@ NoteLayer::snapToFeatureFrame(View *v, int &frame,
 }
 
 void
-NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
+NoteLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -637,8 +637,8 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
             max = m_model->getValueMaximum();
 
             if (shouldConvertMIDIToHz()) {
-                min = Pitch::getFrequencyForPitch(lrintf(min));
-                max = Pitch::getFrequencyForPitch(lrintf(max + 1));
+                min = Pitch::getFrequencyForPitch(int(lrint(min)));
+                max = Pitch::getFrequencyForPitch(int(lrint(max + 1)));
             }
 
 #ifdef DEBUG_NOTE_LAYER
@@ -663,8 +663,8 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
             min = Pitch::getFrequencyForPitch(0);
             max = Pitch::getFrequencyForPitch(127);
         } else if (shouldConvertMIDIToHz()) {
-            min = Pitch::getFrequencyForPitch(lrintf(min));
-            max = Pitch::getFrequencyForPitch(lrintf(max + 1));
+            min = Pitch::getFrequencyForPitch(int(lrint(min)));
+            max = Pitch::getFrequencyForPitch(int(lrint(max + 1)));
         }
 
         if (m_verticalScale == LogScale || m_verticalScale == MIDIRangeScale) {
@@ -677,9 +677,9 @@ NoteLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
 }
 
 int
-NoteLayer::getYForValue(View *v, float val) const
+NoteLayer::getYForValue(View *v, double val) const
 {
-    float min = 0.0, max = 0.0;
+    double min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->height();
 
@@ -690,8 +690,8 @@ NoteLayer::getYForValue(View *v, float val) const
 #endif
 
     if (shouldConvertMIDIToHz()) {
-        val = Pitch::getFrequencyForPitch(lrintf(val),
-                                          lrintf((val - lrintf(val)) * 100));
+        val = Pitch::getFrequencyForPitch(int(lrint(val)),
+                                          int(lrint((val - rint(val)) * 100)));
 #ifdef DEBUG_NOTE_LAYER
         cerr << "shouldConvertMIDIToHz true, val now = " << val << endl;
 #endif
@@ -711,19 +711,19 @@ NoteLayer::getYForValue(View *v, float val) const
     return y;
 }
 
-float
+double
 NoteLayer::getValueForY(View *v, int y) const
 {
-    float min = 0.0, max = 0.0;
+    double min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->height();
 
     getScaleExtents(v, min, max, logarithmic);
 
-    float val = min + (float(h - y) * float(max - min)) / h;
+    double val = min + (double(h - y) * double(max - min)) / h;
 
     if (logarithmic) {
-        val = powf(10.f, val);
+        val = pow(10.0, val);
     }
 
     if (shouldConvertMIDIToHz()) {
@@ -745,14 +745,14 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
-    int sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("NoteLayer::paint", true);
 
     int x0 = rect.left(), x1 = rect.right();
-    int frame0 = v->getFrameForX(x0);
-    int frame1 = v->getFrameForX(x1);
+    sv_frame_t frame0 = v->getFrameForX(x0);
+    sv_frame_t frame1 = v->getFrameForX(x1);
 
     NoteModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
@@ -765,8 +765,8 @@ NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    SVDEBUG << "NoteLayer::paint: resolution is "
 //	      << m_model->getResolution() << " frames" << endl;
 
-    float min = m_model->getValueMinimum();
-    float max = m_model->getValueMaximum();
+    double min = m_model->getValueMinimum();
+    double max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
@@ -849,7 +849,7 @@ NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     if (!m_model || m_model->getPoints().empty()) return;
 
     QString unit;
-    float min, max;
+    double min, max;
     bool logarithmic;
 
     int w = getVerticalScaleWidth(v, false, paint);
@@ -888,13 +888,13 @@ NoteLayer::drawStart(View *v, QMouseEvent *e)
 
     if (!m_model) return;
 
-    int frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->y());
 
-    m_editingPoint = NoteModel::Point(frame, value, 0, 0.8, tr("New Point"));
+    m_editingPoint = NoteModel::Point(frame, float(value), 0, 0.8f, tr("New Point"));
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
@@ -912,14 +912,14 @@ NoteLayer::drawDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    int frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float newValue = getValueForY(v, e->y());
+    double newValue = getValueForY(v, e->y());
 
-    int newFrame = m_editingPoint.frame;
-    int newDuration = frame - newFrame;
+    sv_frame_t newFrame = m_editingPoint.frame;
+    sv_frame_t newDuration = frame - newFrame;
     if (newDuration < 0) {
         newFrame = frame;
         newDuration = -newDuration;
@@ -929,7 +929,7 @@ NoteLayer::drawDrag(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = newFrame;
-    m_editingPoint.value = newValue;
+    m_editingPoint.value = float(newValue);
     m_editingPoint.duration = newDuration;
     m_editingCommand->addPoint(m_editingPoint);
 }
@@ -1019,11 +1019,11 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
-    int frame = v->getFrameForX(newx);
+    sv_frame_t frame = v->getFrameForX(newx);
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(v, newy);
+    double value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
 	m_editingCommand = new NoteModel::EditCommand(m_model,
@@ -1032,7 +1032,7 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
-    m_editingPoint.value = value;
+    m_editingPoint.value = float(value);
     m_editingCommand->addPoint(m_editingPoint);
 }
 
@@ -1107,7 +1107,7 @@ NoteLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::moveSelection(Selection s, int newStartFrame)
+NoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
@@ -1151,13 +1151,13 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
 
 	if (s.contains(i->frame)) {
 
-	    double targetStart = i->frame;
-	    targetStart = newSize.getStartFrame() + 
-		double(targetStart - s.getStartFrame()) * ratio;
+	    double targetStart = double(i->frame);
+	    targetStart = double(newSize.getStartFrame()) +
+		targetStart - double(s.getStartFrame()) * ratio;
 
-	    double targetEnd = i->frame + i->duration;
-	    targetEnd = newSize.getStartFrame() +
-		double(targetEnd - s.getStartFrame()) * ratio;
+	    double targetEnd = double(i->frame + i->duration);
+	    targetEnd = double(newSize.getStartFrame()) +
+		targetEnd - double(s.getStartFrame()) * ratio;
 
 	    NoteModel::Point newPoint(*i);
 	    newPoint.frame = lrint(targetStart);
@@ -1211,7 +1211,7 @@ NoteLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-NoteLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* interactive */)
+NoteLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1243,7 +1243,7 @@ NoteLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* 
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
-        int frame = 0;
+        sv_frame_t frame = 0;
 
         if (!realign) {
             
@@ -1268,7 +1268,7 @@ NoteLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* 
         if (i->haveLevel()) newPoint.level = i->getLevel();
         if (i->haveDuration()) newPoint.duration = i->getDuration();
         else {
-            int nextFrame = frame;
+            sv_frame_t nextFrame = frame;
             Clipboard::PointList::const_iterator j = i;
             for (; j != points.end(); ++j) {
                 if (!j->haveFrame()) continue;
@@ -1292,13 +1292,13 @@ NoteLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* 
 }
 
 void
-NoteLayer::addNoteOn(int frame, int pitch, int velocity)
+NoteLayer::addNoteOn(sv_frame_t frame, int pitch, int velocity)
 {
-    m_pendingNoteOns.insert(Note(frame, pitch, 0, float(velocity) / 127.0, ""));
+    m_pendingNoteOns.insert(Note(frame, float(pitch), 0, float(velocity) / 127.f, ""));
 }
 
 void
-NoteLayer::addNoteOff(int frame, int pitch)
+NoteLayer::addNoteOff(sv_frame_t frame, int pitch)
 {
     for (NoteSet::iterator i = m_pendingNoteOns.begin();
          i != m_pendingNoteOns.end(); ++i) {

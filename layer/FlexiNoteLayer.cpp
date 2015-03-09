@@ -1582,7 +1582,7 @@ FlexiNoteLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::moveSelection(Selection s, int newStartFrame)
+FlexiNoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 

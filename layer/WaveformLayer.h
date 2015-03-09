@@ -156,8 +156,8 @@ public:
      * bottom; the default value of 0.5 indicates that it occupies the
      * whole layer, centred at the middle.
      */
-    void setMiddleLineHeight(float height);
-    float getMiddleLineHeight() const { return m_middleLineHeight; }
+    void setMiddleLineHeight(double);
+    double getMiddleLineHeight() const { return m_middleLineHeight; }
 
     /**
      * Enable or disable aggressive pixmap cacheing.  If enabled,
@@ -184,14 +184,14 @@ public:
 
     virtual int getCompletion(View *) const;
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const;
 
     virtual bool getYScaleValue(const View *v, int y,
-                                float &value, QString &unit) const;
+                                double &value, QString &unit) const;
     
     virtual bool getYScaleDifference(const View *v, int y0, int y1,
-                                     float &diff, QString &unit) const;
+                                     double &diff, QString &unit) const;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
@@ -211,9 +211,9 @@ protected:
     int getChannelArrangement(int &min, int &max,
                                  bool &merging, bool &mixing) const;
 
-    int getYForValue(const View *v, float value, int channel) const;
+    int getYForValue(const View *v, double value, int channel) const;
 
-    float getValueForY(const View *v, int y, int &channel) const;
+    double getValueForY(const View *v, int y, int &channel) const;
 
     bool getSourceFramesForX(View *v, int x, int modelZoomLevel,
                              int &f0, int &f1) const;
@@ -229,7 +229,7 @@ protected:
     ChannelMode  m_channelMode;
     int          m_channel;
     Scale        m_scale;
-    float        m_middleLineHeight;
+    double       m_middleLineHeight;
     bool         m_aggressive;
 
     mutable std::vector<float> m_effectiveGains;

@@ -1263,11 +1263,11 @@ SpectrogramLayer::getDisplayValue(View *v, float input) const
     return value;
 }
 
-float
+double
 SpectrogramLayer::getEffectiveMinFrequency() const
 {
     int sr = m_model->getSampleRate();
-    float minf = float(sr) / m_fftSize;
+    double minf = double(sr) / m_fftSize;
 
     if (m_minFrequency > 0.0) {
 	int minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.01);
@@ -1278,11 +1278,11 @@ SpectrogramLayer::getEffectiveMinFrequency() const
     return minf;
 }
 
-float
+double
 SpectrogramLayer::getEffectiveMaxFrequency() const
 {
     int sr = m_model->getSampleRate();
-    float maxf = float(sr) / 2;
+    double maxf = double(sr) / 2;
 
     if (m_maxFrequency > 0.0) {
 	int maxbin = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
@@ -1294,7 +1294,7 @@ SpectrogramLayer::getEffectiveMaxFrequency() const
 }
 
 bool
-SpectrogramLayer::getYBinRange(View *v, int y, float &q0, float &q1) const
+SpectrogramLayer::getYBinRange(View *v, int y, double &q0, double &q1) const
 {
     Profiler profiler("SpectrogramLayer::getYBinRange");
     
@@ -1302,8 +1302,8 @@ SpectrogramLayer::getYBinRange(View *v, int y, float &q0, float &q1) const
     if (y < 0 || y >= h) return false;
 
     int sr = m_model->getSampleRate();
-    float minf = getEffectiveMinFrequency();
-    float maxf = getEffectiveMaxFrequency();
+    double minf = getEffectiveMinFrequency();
+    double maxf = getEffectiveMaxFrequency();
 
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
@@ -1320,7 +1320,7 @@ SpectrogramLayer::getYBinRange(View *v, int y, float &q0, float &q1) const
 }
 
 bool
-SpectrogramLayer::getSmoothedYBinRange(View *v, int y, float &q0, float &q1) const
+SpectrogramLayer::getSmoothedYBinRange(View *v, int y, double &q0, double &q1) const
 {
     Profiler profiler("SpectrogramLayer::getSmoothedYBinRange");
 
@@ -1328,8 +1328,8 @@ SpectrogramLayer::getSmoothedYBinRange(View *v, int y, float &q0, float &q1) con
     if (y < 0 || y >= h) return false;
 
     int sr = m_model->getSampleRate();
-    float minf = getEffectiveMinFrequency();
-    float maxf = getEffectiveMaxFrequency();
+    double minf = getEffectiveMinFrequency();
+    double maxf = getEffectiveMaxFrequency();
 
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 
@@ -1346,7 +1346,7 @@ SpectrogramLayer::getSmoothedYBinRange(View *v, int y, float &q0, float &q1) con
 }
     
 bool
-SpectrogramLayer::getXBinRange(View *v, int x, float &s0, float &s1) const
+SpectrogramLayer::getXBinRange(View *v, int x, double &s0, double &s1) const
 {
     int modelStart = m_model->getStartFrame();
     int modelEnd = m_model->getEndFrame();
@@ -1363,8 +1363,8 @@ SpectrogramLayer::getXBinRange(View *v, int x, float &s0, float &s1) const
     // range of spectrogram windows:
 
     int windowIncrement = getWindowIncrement();
-    s0 = float(f0) / windowIncrement;
-    s1 = float(f1) / windowIncrement;
+    s0 = double(f0) / windowIncrement;
+    s1 = double(f1) / windowIncrement;
 
     return true;
 }
@@ -1372,7 +1372,7 @@ SpectrogramLayer::getXBinRange(View *v, int x, float &s0, float &s1) const
 bool
 SpectrogramLayer::getXBinSourceRange(View *v, int x, RealTime &min, RealTime &max) const
 {
-    float s0 = 0, s1 = 0;
+    double s0 = 0, s1 = 0;
     if (!getXBinRange(v, x, s0, s1)) return false;
     
     int s0i = int(s0 + 0.001);
@@ -1389,10 +1389,10 @@ SpectrogramLayer::getXBinSourceRange(View *v, int x, RealTime &min, RealTime &ma
 }
 
 bool
-SpectrogramLayer::getYBinSourceRange(View *v, int y, float &freqMin, float &freqMax)
+SpectrogramLayer::getYBinSourceRange(View *v, int y, double &freqMin, double &freqMax)
 const
 {
-    float q0 = 0, q1 = 0;
+    double q0 = 0, q1 = 0;
     if (!getYBinRange(v, y, q0, q1)) return false;
 
     int q0i = int(q0 + 0.001);
@@ -1409,8 +1409,8 @@ const
 
 bool
 SpectrogramLayer::getAdjustedYBinSourceRange(View *v, int x, int y,
-					     float &freqMin, float &freqMax,
-					     float &adjFreqMin, float &adjFreqMax)
+					     double &freqMin, double &freqMax,
+					     double &adjFreqMin, double &adjFreqMax)
 const
 {
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
@@ -1420,10 +1420,10 @@ const
     FFTModel *fft = getFFTModel(v);
     if (!fft) return false;
 
-    float s0 = 0, s1 = 0;
+    double s0 = 0, s1 = 0;
     if (!getXBinRange(v, x, s0, s1)) return false;
 
-    float q0 = 0, q1 = 0;
+    double q0 = 0, q1 = 0;
     if (!getYBinRange(v, y, q0, q1)) return false;
 
     int s0i = int(s0 + 0.001);
@@ -1445,7 +1445,7 @@ const
 
             if (!fft->isColumnAvailable(s)) continue;
 
-	    float binfreq = (float(sr) * q) / m_windowSize;
+	    double binfreq = (double(sr) * q) / m_windowSize;
 	    if (q == q0i) freqMin = binfreq;
 	    if (q == q1i) freqMax = binfreq;
 
@@ -1453,7 +1453,7 @@ const
 
 	    if (!fft->isOverThreshold(s, q, m_threshold * (m_fftSize/2))) continue;
 
-	    float freq = binfreq;
+	    double freq = binfreq;
 	    
 	    if (s < int(fft->getWidth()) - 1) {
 
@@ -1476,17 +1476,17 @@ const
     
 bool
 SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
-				      float &min, float &max,
-				      float &phaseMin, float &phaseMax) const
+				      double &min, double &max,
+				      double &phaseMin, double &phaseMax) const
 {
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
 	return false;
     }
 
-    float q0 = 0, q1 = 0;
+    double q0 = 0, q1 = 0;
     if (!getYBinRange(v, y, q0, q1)) return false;
 
-    float s0 = 0, s1 = 0;
+    double s0 = 0, s1 = 0;
     if (!getXBinRange(v, x, s0, s1)) return false;
     
     int q0i = int(q0 + 0.001);
@@ -1520,7 +1520,7 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 
                     if (!fft->isColumnAvailable(s)) continue;
                     
-                    float value;
+                    double value;
 
                     value = fft->getPhaseAt(s, q);
                     if (!have || value < phaseMin) { phaseMin = value; }
@@ -1573,9 +1573,9 @@ SpectrogramLayer::getZeroPadLevel(const View *v) const
 	if (minbin >= maxbin) minbin = maxbin - 1;
     }
 
-    float perPixel =
-        float(v->height()) /
-        float((maxbin - minbin) / (m_zeroPadLevel + 1));
+    double perPixel =
+        double(v->height()) /
+        double((maxbin - minbin) / (m_zeroPadLevel + 1));
 
     if (perPixel > 2.8) {
         return 3; // 4x oversampling
@@ -1724,7 +1724,7 @@ SpectrogramLayer::updateViewMagnitudes(View *v) const
     MagnitudeRange mag;
 
     int x0 = 0, x1 = v->width();
-    float s00 = 0, s01 = 0, s10 = 0, s11 = 0;
+    double s00 = 0, s01 = 0, s10 = 0, s11 = 0;
     
     if (!getXBinRange(v, x0, s00, s01)) {
         s00 = s01 = m_model->getStartFrame() / getWindowIncrement();
@@ -1830,7 +1830,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     x0 = rect.left();
     x1 = rect.right() + 1;
 /*
-    float xPixelRatio = float(fft->getResolution()) / float(zoomLevel);
+    double xPixelRatio = double(fft->getResolution()) / double(zoomLevel);
     cerr << "xPixelRatio = " << xPixelRatio << endl;
     if (xPixelRatio < 1.f) xPixelRatio = 1.f;
 */
@@ -2137,11 +2137,11 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     minbin = minbin * zpl;
     maxbin = (maxbin + 1) * zpl - 1;
 
-    float minFreq = (float(minbin) * sr) / fftSize;
-    float maxFreq = (float(maxbin) * sr) / fftSize;
+    double minFreq = (double(minbin) * sr) / fftSize;
+    double maxFreq = (double(maxbin) * sr) / fftSize;
 
-    float displayMinFreq = minFreq;
-    float displayMaxFreq = maxFreq;
+    double displayMinFreq = minFreq;
+    double displayMaxFreq = maxFreq;
 
     if (fftSize != m_fftSize) {
         displayMinFreq = getEffectiveMinFrequency();
@@ -2154,10 +2154,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
 /*
-    float yforbin[maxbin - minbin + 1];
+    double yforbin[maxbin - minbin + 1];
 
     for (int q = minbin; q <= maxbin; ++q) {
-        float f0 = (float(q) * sr) / fftSize;
+        double f0 = (double(q) * sr) / fftSize;
         yforbin[q - minbin] =
             v->getYForFrequency(f0, displayMinFreq, displayMaxFreq,
                                 logarithmic);
@@ -2167,7 +2167,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     bool overallMagChanged = false;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << ((float(v->getFrameForX(1) - v->getFrameForX(0))) / increment) << " bin(s) per pixel" << endl;
+    cerr << ((double(v->getFrameForX(1) - v->getFrameForX(0))) / increment) << " bin(s) per pixel" << endl;
 #endif
 
     if (w == 0) {
@@ -2231,10 +2231,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
 #ifdef __GNUC__
     int binforx[bufwid];
-    float binfory[h];
+    double binfory[h];
 #else
     int *binforx = (int *)alloca(bufwid * sizeof(int));
-    float *binfory = (float *)alloca(h * sizeof(float));
+    double *binfory = (double *)alloca(h * sizeof(double));
 #endif
 
     bool usePeaksCache = false;
@@ -2247,7 +2247,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
     } else {
         for (int x = 0; x < bufwid; ++x) {
-            float s0 = 0, s1 = 0;
+            double s0 = 0, s1 = 0;
             if (getXBinRange(v, x + x0, s0, s1)) {
                 binforx[x] = int(s0 + 0.0001);
             } else {
@@ -2271,7 +2271,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     if (m_binDisplay != PeakFrequencies) {
 
         for (int y = 0; y < h; ++y) {
-            float q0 = 0, q1 = 0;
+            double q0 = 0, q1 = 0;
             if (!getSmoothedYBinRange(v, h-y-1, q0, q1)) {
                 binfory[y] = -1;
             } else {
@@ -2460,8 +2460,8 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                                                  int *binforx,
                                                  int minbin,
                                                  int maxbin,
-                                                 float displayMinFreq,
-                                                 float displayMaxFreq,
+                                                 double displayMinFreq,
+                                                 double displayMaxFreq,
                                                  bool logarithmic,
                                                  MagnitudeRange &overallMag,
                                                  bool &overallMagChanged) const
@@ -2522,7 +2522,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                 } else if (m_normalizeHybrid) {
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
-                    float max = fft->getMaximumMagnitudeAt(sx);
+                    double max = fft->getMaximumMagnitudeAt(sx);
                     if (max > 0.f) {
                         for (int i = minbin; i <= maxbin; ++i) {
                             values[i - minbin] *= log10(max);
@@ -2553,7 +2553,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
                     value *= m_gain;
                 }
 
-                float y = v->getYForFrequency
+                double y = v->getYForFrequency
                     (freq, displayMinFreq, displayMaxFreq, logarithmic);
 
                 int iy = int(y + 0.5);
@@ -2586,7 +2586,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                                   int w,
                                   int h,
                                   int *binforx,
-                                  float *binfory,
+                                  double *binfory,
                                   bool usePeaksCache,
                                   MagnitudeRange &overallMag,
                                   bool &overallMagChanged) const
@@ -2689,7 +2689,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                     } else if (m_normalizeHybrid) {
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                        float max = fft->getMaximumMagnitudeAt(sx);
+                        double max = fft->getMaximumMagnitudeAt(sx);
                         for (int i = minbin; i <= maxbin; ++i) {
                             if (max > 0.f) {
                                 autoarray[i - minbin] *= log10(max);
@@ -2715,25 +2715,25 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 
             for (int y = 0; y < h; ++y) {
 
-                float sy0 = binfory[y];
-                float sy1 = sy0 + 1;
+                double sy0 = binfory[y];
+                double sy1 = sy0 + 1;
                 if (y+1 < h) sy1 = binfory[y+1];
 
-                float value = 0.f;
+                double value = 0.f;
 
                 if (interpolate && fabsf(sy1 - sy0) < 1.f) {
 
-                    float centre = (sy0 + sy1) / 2;
-                    float dist = (centre - 0.5) - lrintf(centre - 0.5);
+                    double centre = (sy0 + sy1) / 2;
+                    double dist = (centre - 0.5) - lrintf(centre - 0.5);
                     int bin = int(centre);
                     int other = (dist < 0 ? (bin-1) : (bin+1));
                     if (bin < minbin) bin = minbin;
                     if (bin > maxbin) bin = maxbin;
                     if (other < minbin || other > maxbin) other = bin;
-                    float prop = 1.f - fabsf(dist);
+                    double prop = 1.f - fabsf(dist);
 
-                    float v0 = values[bin - minbin];
-                    float v1 = values[other - minbin];
+                    double v0 = values[bin - minbin];
+                    double v1 = values[other - minbin];
                     if (m_binDisplay == PeakBins) {
                         if (bin == minbin || bin == maxbin ||
                             v0 < values[bin-minbin-1] ||
@@ -2800,7 +2800,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 
         for (int y = 0; y < h; ++y) {
 
-            float peak = peaks[y];
+            double peak = peaks[y];
             
             if (m_colourScale != PhaseColourScale &&
                 (m_normalizeColumns || m_normalizeHybrid) && 
@@ -2833,8 +2833,8 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
 //    cerr << "SpectrogramLayer: illuminateLocalFeatures("
 //              << localPos.x() << "," << localPos.y() << ")" << endl;
 
-    float s0, s1;
-    float f0, f1;
+    double s0, s1;
+    double f0, f1;
 
     if (getXBinRange(v, localPos.x(), s0, s1) &&
         getYBinSourceRange(v, localPos.y(), f0, f1)) {
@@ -2859,8 +2859,8 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
     }
 }
 
-float
-SpectrogramLayer::getYForFrequency(const View *v, float frequency) const
+double
+SpectrogramLayer::getYForFrequency(const View *v, double frequency) const
 {
     return v->getYForFrequency(frequency,
 			       getEffectiveMinFrequency(),
@@ -2868,7 +2868,7 @@ SpectrogramLayer::getYForFrequency(const View *v, float frequency) const
 			       m_frequencyScale == LogFrequencyScale);
 }
 
-float
+double
 SpectrogramLayer::getFrequencyForY(const View *v, int y) const
 {
     return v->getFrequencyForY(y,
@@ -2898,14 +2898,14 @@ SpectrogramLayer::getError(View *v) const
 }
 
 bool
-SpectrogramLayer::getValueExtents(float &min, float &max,
+SpectrogramLayer::getValueExtents(double &min, double &max,
                                   bool &logarithmic, QString &unit) const
 {
     if (!m_model) return false;
 
     int sr = m_model->getSampleRate();
-    min = float(sr) / m_fftSize;
-    max = float(sr) / 2;
+    min = double(sr) / m_fftSize;
+    max = double(sr) / 2;
     
     logarithmic = (m_frequencyScale == LogFrequencyScale);
     unit = "Hz";
@@ -2913,7 +2913,7 @@ SpectrogramLayer::getValueExtents(float &min, float &max,
 }
 
 bool
-SpectrogramLayer::getDisplayExtents(float &min, float &max) const
+SpectrogramLayer::getDisplayExtents(double &min, double &max) const
 {
     min = getEffectiveMinFrequency();
     max = getEffectiveMaxFrequency();
@@ -2923,7 +2923,7 @@ SpectrogramLayer::getDisplayExtents(float &min, float &max) const
 }    
 
 bool
-SpectrogramLayer::setDisplayExtents(float min, float max)
+SpectrogramLayer::setDisplayExtents(double min, double max)
 {
     if (!m_model) return false;
 
@@ -2956,7 +2956,7 @@ SpectrogramLayer::setDisplayExtents(float min, float max)
 
 bool
 SpectrogramLayer::getYScaleValue(const View *v, int y,
-                                 float &value, QString &unit) const
+                                 double &value, QString &unit) const
 {
     value = getFrequencyForY(v, y);
     unit = "Hz";
@@ -3062,7 +3062,7 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
     paint.drawLine(0, cursorPos.y(), cursorPos.x() - 1, cursorPos.y());
     paint.drawLine(cursorPos.x(), 0, cursorPos.x(), v->height());
     
-    float fundamental = getFrequencyForY(v, cursorPos.y());
+    double fundamental = getFrequencyForY(v, cursorPos.y());
 
     v->drawVisibleText(paint,
                        sw + 2,
@@ -3098,7 +3098,7 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
 
     while (harmonic < 100) {
 
-        float hy = lrintf(getYForFrequency(v, fundamental * harmonic));
+        double hy = lrintf(getYForFrequency(v, fundamental * harmonic));
         if (hy < 0 || hy > v->height()) break;
         
         int len = 7;
@@ -3130,10 +3130,10 @@ SpectrogramLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     if (!m_model || !m_model->isOK()) return "";
 
-    float magMin = 0, magMax = 0;
-    float phaseMin = 0, phaseMax = 0;
-    float freqMin = 0, freqMax = 0;
-    float adjFreqMin = 0, adjFreqMax = 0;
+    double magMin = 0, magMax = 0;
+    double phaseMin = 0, phaseMax = 0;
+    double freqMin = 0, freqMax = 0;
+    double adjFreqMin = 0, adjFreqMax = 0;
     QString pitchMin, pitchMax;
     RealTime rtMin, rtMax;
 
@@ -3205,8 +3205,8 @@ SpectrogramLayer::getFeatureDescription(View *v, QPoint &pos) const
     }	
 
     if (haveValues) {
-	float dbMin = AudioLevel::multiplier_to_dB(magMin);
-	float dbMax = AudioLevel::multiplier_to_dB(magMax);
+	double dbMin = AudioLevel::multiplier_to_dB(magMin);
+	double dbMax = AudioLevel::multiplier_to_dB(magMax);
 	QString dbMinString;
 	QString dbMaxString;
 	if (dbMin == AudioLevel::DB_FLOOR) {
@@ -3308,11 +3308,11 @@ SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QR
 	paint.drawRect(4 + cw - cbw, textHeight * topLines + 4, cbw - 1, ch + 1);
 
 	QString top, bottom;
-        float min = m_viewMags[v].getMin();
-        float max = m_viewMags[v].getMax();
+        double min = m_viewMags[v].getMin();
+        double max = m_viewMags[v].getMax();
 
-        float dBmin = AudioLevel::multiplier_to_dB(min);
-        float dBmax = AudioLevel::multiplier_to_dB(max);
+        double dBmin = AudioLevel::multiplier_to_dB(min);
+        double dBmax = AudioLevel::multiplier_to_dB(max);
 
         if (dBmax < -60.f) dBmax = -60.f;
         else top = QString("%1").arg(lrintf(dBmax));
@@ -3342,10 +3342,10 @@ SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QR
 
 	for (int i = 0; i < ch; ++i) {
 
-            float dBval = dBmin + (((dBmax - dBmin) * i) / (ch - 1));
+            double dBval = dBmin + (((dBmax - dBmin) * i) / (ch - 1));
             int idb = int(dBval);
 
-            float value = AudioLevel::dB_to_multiplier(dBval);
+            double value = AudioLevel::dB_to_multiplier(dBval);
             int colour = getDisplayValue(v, value * m_gain);
 
 	    paint.setPen(m_palette.getColour(colour));
@@ -3382,7 +3382,7 @@ SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QR
 
     for (int y = 0; y < v->height(); ++y) {
 
-	float q0, q1;
+	double q0, q1;
 	if (!getYBinRange(v, v->height() - y, q0, q1)) continue;
 
 	int vy;
@@ -3493,9 +3493,9 @@ SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
 
     SpectrogramRangeMapper mapper(sr, m_fftSize);
 
-//    int maxStep = mapper.getPositionForValue((float(sr) / m_fftSize) + 0.001);
+//    int maxStep = mapper.getPositionForValue((double(sr) / m_fftSize) + 0.001);
     int maxStep = mapper.getPositionForValue(0);
-    int minStep = mapper.getPositionForValue(float(sr) / 2);
+    int minStep = mapper.getPositionForValue(double(sr) / 2);
 
     int initialMax = m_initialMaxFrequency;
     if (initialMax == 0) initialMax = sr / 2;
@@ -3512,7 +3512,7 @@ SpectrogramLayer::getCurrentVerticalZoomStep() const
 {
     if (!m_model) return 0;
 
-    float dmin, dmax;
+    double dmin, dmax;
     getDisplayExtents(dmin, dmax);
     
     SpectrogramRangeMapper mapper(m_model->getSampleRate(), m_fftSize);
@@ -3526,16 +3526,16 @@ SpectrogramLayer::setVerticalZoomStep(int step)
 {
     if (!m_model) return;
 
-    float dmin = m_minFrequency, dmax = m_maxFrequency;
+    double dmin = m_minFrequency, dmax = m_maxFrequency;
 //    getDisplayExtents(dmin, dmax);
 
 //    cerr << "current range " << dmin << " -> " << dmax << ", range " << dmax-dmin << ", mid " << (dmax + dmin)/2 << endl;
     
     int sr = m_model->getSampleRate();
     SpectrogramRangeMapper mapper(sr, m_fftSize);
-    float newdist = mapper.getValueForPosition(step);
+    double newdist = mapper.getValueForPosition(step);
 
-    float newmin, newmax;
+    double newmin, newmax;
 
     if (m_frequencyScale == LogFrequencyScale) {
 
@@ -3566,14 +3566,14 @@ SpectrogramLayer::setVerticalZoomStep(int step)
 //        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
-        float dmid = (dmax + dmin) / 2;
+        double dmid = (dmax + dmin) / 2;
         newmin = dmid - newdist / 2;
         newmax = dmid + newdist / 2;
     }
 
-    float mmin, mmax;
+    double mmin, mmax;
     mmin = 0;
-    mmax = float(sr) / 2;
+    mmax = double(sr) / 2;
     
     if (newmin < mmin) {
         newmax += (mmin - newmin);

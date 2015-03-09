@@ -62,9 +62,9 @@ LogNumericalScale::paintVertical(View *v,
     int dp = 0;
 
     if (minDispInc > 0) {
-        int prec = trunc(log10f(minDispInc));
+        int prec = int(trunc(log10(minDispInc)));
         if (prec < 0) dp = -prec;
-        round = powf(10.f, prec);
+        round = pow(10.0, prec);
         if (dp > 4) dp = 4;
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "round = " << round << ", prec = " << prec << ", dp = " << dp << endl;
@@ -99,7 +99,7 @@ LogNumericalScale::paintVertical(View *v,
 	    continue;
         }
 
-	int digits = trunc(log10f(dispval));
+	int digits = int(trunc(log10(dispval)));
 	int sf = dp + (digits > 0 ? digits : 0);
 	if (sf < 4) sf = 4;
 #ifdef DEBUG_TIME_VALUE_LAYER
