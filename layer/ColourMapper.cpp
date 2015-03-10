@@ -78,8 +78,7 @@ ColourMapper::map(double value) const
     double h = 0.0, s = 0.0, v = 0.0, r = 0.0, g = 0.0, b = 0.0;
     bool hsv = true;
 
-//    double red = 0.0, green = 0.3333;
-    double blue = 0.6666f, pieslice = 0.3333;
+    double blue = 0.6666, pieslice = 0.3333;
 
     if (m_map >= getColourMapCount()) return Qt::black;
     StandardMap map = (StandardMap)m_map;
