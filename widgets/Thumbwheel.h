@@ -41,7 +41,7 @@ public:
 
     void setRangeMapper(RangeMapper *mapper); // I take ownership, will delete
     const RangeMapper *getRangeMapper() const { return m_rangeMapper; }
-    float getMappedValue() const;
+    double getMappedValue() const;
 
     void setShowToolTip(bool show);
 
@@ -61,7 +61,7 @@ public slots:
     void setTracking(bool tracking);
     void setShowScale(bool show);
     void setValue(int value);
-    void setMappedValue(float mappedValue);
+    void setMappedValue(double mappedValue);
     void scroll(bool up);
     void resetToDefault();
 
@@ -82,7 +82,7 @@ protected:
     int m_max;
     int m_default;
     int m_value;
-    float m_mappedValue;
+    double m_mappedValue;
     bool m_noMappedUpdate;
     float m_rotation;
     Qt::Orientation m_orientation;

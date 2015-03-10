@@ -230,7 +230,7 @@ public:
     }
 
     virtual void setViewManager(ViewManager *m);
-    virtual void setViewManager(ViewManager *m, int initialFrame);
+    virtual void setViewManager(ViewManager *m, sv_frame_t initialFrame);
     virtual ViewManager *getViewManager() const { return m_manager; }
 
     virtual void setFollowGlobalPan(bool f);
@@ -295,9 +295,9 @@ public:
     virtual PropertyContainer *getPropertyContainer(int i);
 
     // Render the contents on a wide canvas
-    virtual QImage *toNewImage(int f0, int f1);
+    virtual QImage *toNewImage(sv_frame_t f0, sv_frame_t f1);
     virtual QImage *toNewImage();
-    virtual QSize getImageSize(int f0, int f1);
+    virtual QSize getImageSize(sv_frame_t f0, sv_frame_t f1);
     virtual QSize getImageSize();
 
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
@@ -375,12 +375,12 @@ protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
-    virtual bool render(QPainter &paint, int x0, int f0, int f1);
+    virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
     virtual void setPaintFont(QPainter &paint);
     
     typedef std::vector<Layer *> LayerList;
 
-    int getModelsSampleRate() const;
+    sv_samplerate_t getModelsSampleRate() const;
     bool areLayersScrollable() const;
     LayerList getScrollableBackLayers(bool testChanged, bool &changed) const;
     LayerList getNonScrollableFrontLayers(bool testChanged, bool &changed) const;

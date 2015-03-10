@@ -51,8 +51,8 @@ Layer::connectSignals(const Model *model)
     connect(model, SIGNAL(modelChanged()),
             this, SIGNAL(modelChanged()));
 
-    connect(model, SIGNAL(modelChangedWithin(int, int)),
-	    this, SIGNAL(modelChangedWithin(int, int)));
+    connect(model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
+	    this, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)));
 
     connect(model, SIGNAL(completionChanged()),
 	    this, SIGNAL(modelCompletionChanged()));

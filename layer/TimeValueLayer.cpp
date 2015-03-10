@@ -329,7 +329,7 @@ TimeValueLayer::isLayerScrollable(const View *v) const
 }
 
 bool
-TimeValueLayer::getValueExtents(float &min, float &max,
+TimeValueLayer::getValueExtents(double &min, double &max,
                                 bool &logarithmic, QString &unit) const
 {
     if (!m_model) return false;
@@ -342,7 +342,7 @@ TimeValueLayer::getValueExtents(float &min, float &max,
     unit = getScaleUnits();
 
     if (m_derivative) {
-        max = std::max(fabsf(min), fabsf(max));
+        max = std::max(fabs(min), fabs(max));
         min = -max;
     }
 
@@ -356,7 +356,7 @@ TimeValueLayer::getValueExtents(float &min, float &max,
             max = max + 0.5;
             min = min - 0.5;
         } else {
-            float margin = (max - min) / 10.0;
+            double margin = (max - min) / 10.0;
             max = max + margin;
             min = min - margin;
         }
@@ -370,7 +370,7 @@ TimeValueLayer::getValueExtents(float &min, float &max,
 }
 
 bool
-TimeValueLayer::getDisplayExtents(float &min, float &max) const
+TimeValueLayer::getDisplayExtents(double &min, double &max) const
 {
     if (!m_model || shouldAutoAlign()) return false;
 
@@ -384,7 +384,7 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
     }
 
     if (m_derivative) {
-        max = std::max(fabsf(min), fabsf(max));
+        max = std::max(fabs(min), fabs(max));
         min = -max;
     }
 
@@ -396,7 +396,7 @@ TimeValueLayer::getDisplayExtents(float &min, float &max) const
 }
 
 bool
-TimeValueLayer::setDisplayExtents(float min, float max)
+TimeValueLayer::setDisplayExtents(double min, double max)
 {
     if (!m_model) return false;
 
@@ -438,7 +438,7 @@ TimeValueLayer::getCurrentVerticalZoomStep() const
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return 0;
 
-    float dmin, dmax;
+    double dmin, dmax;
     getDisplayExtents(dmin, dmax);
 
     int nr = mapper->getPositionForValue(dmax - dmin);
@@ -461,23 +461,23 @@ TimeValueLayer::setVerticalZoomStep(int step)
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return;
     
-    float min, max;
+    double min, max;
     bool logarithmic;
     QString unit;
     getValueExtents(min, max, logarithmic, unit);
     
-    float dmin, dmax;
+    double dmin, dmax;
     getDisplayExtents(dmin, dmax);
 
-    float newdist = mapper->getValueForPosition(100 - step);
+    double newdist = mapper->getValueForPosition(100 - step);
 
-    float newmin, newmax;
+    double newmin, newmax;
 
     if (logarithmic) {
 
         // see SpectrogramLayer::setVerticalZoomStep
 
-        newmax = (newdist + sqrtf(newdist*newdist + 4*dmin*dmax)) / 2;
+        newmax = (newdist + sqrt(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
 #ifdef DEBUG_TIME_VALUE_LAYER
@@ -485,7 +485,7 @@ TimeValueLayer::setVerticalZoomStep(int step)
 #endif
 
     } else {
-        float dmid = (dmax + dmin) / 2;
+        double dmid = (dmax + dmin) / 2;
         newmin = dmid - newdist / 2;
         newmax = dmid + newdist / 2;
     }
@@ -512,7 +512,7 @@ TimeValueLayer::getNewVerticalZoomRangeMapper() const
     
     RangeMapper *mapper;
 
-    float min, max;
+    double min, max;
     bool logarithmic;
     QString unit;
     getValueExtents(min, max, logarithmic, unit);
@@ -533,7 +533,7 @@ TimeValueLayer::getLocalPoints(View *v, int x) const
 {
     if (!m_model) return SparseTimeValueModel::PointList();
 
-    long frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     SparseTimeValueModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -553,7 +553,7 @@ TimeValueLayer::getLocalPoints(View *v, int x) const
 	usePoints = nextPoints;
     } else if (nextPoints.empty()) {
         // stick with prevPoints
-    } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
+    } else if (prevPoints.begin()->frame < v->getStartFrame() &&
 	       !(nextPoints.begin()->frame > v->getEndFrame())) {
 	usePoints = nextPoints;
     } else if (nextPoints.begin()->frame - frame <
@@ -602,7 +602,7 @@ TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
 	}
     }
 
-    long useFrame = points.begin()->frame;
+    sv_frame_t useFrame = points.begin()->frame;
 
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
     
@@ -629,7 +629,7 @@ TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-TimeValueLayer::snapToFeatureFrame(View *v, int &frame,
+TimeValueLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 				   int &resolution,
 				   SnapType snap) const
 {
@@ -649,7 +649,7 @@ TimeValueLayer::snapToFeatureFrame(View *v, int &frame,
     }    
 
     points = m_model->getPoints(frame, frame);
-    int snapped = frame;
+    sv_frame_t snapped = frame;
     bool found = false;
 
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
@@ -701,7 +701,7 @@ TimeValueLayer::snapToFeatureFrame(View *v, int &frame,
 }
 
 bool
-TimeValueLayer::snapToSimilarFeature(View *v, int &frame,
+TimeValueLayer::snapToSimilarFeature(View *v, sv_frame_t &frame,
                                      int &resolution,
                                      SnapType snap) const
 {
@@ -716,8 +716,8 @@ TimeValueLayer::snapToSimilarFeature(View *v, int &frame,
 
     SparseTimeValueModel::PointList::const_iterator i;
 
-    int matchframe = frame;
-    float matchvalue = 0.f;
+    sv_frame_t matchframe = frame;
+    double matchvalue = 0.0;
 
     for (i = close.begin(); i != close.end(); ++i) {
         if (i->frame > frame) break;
@@ -725,10 +725,10 @@ TimeValueLayer::snapToSimilarFeature(View *v, int &frame,
         matchframe = i->frame;
     }
 
-    int snapped = frame;
+    sv_frame_t snapped = frame;
     bool found = false;
     bool distant = false;
-    float epsilon = 0.0001;
+    double epsilon = 0.0001;
 
     i = close.begin();
 
@@ -753,7 +753,7 @@ TimeValueLayer::snapToSimilarFeature(View *v, int &frame,
 	if (snap == SnapRight) {
 
 	    if (i->frame > matchframe &&
-                fabsf(i->value - matchvalue) < epsilon) {
+                fabs(i->value - matchvalue) < epsilon) {
 		snapped = i->frame;
 		found = true;
 		break;
@@ -762,7 +762,7 @@ TimeValueLayer::snapToSimilarFeature(View *v, int &frame,
 	} else if (snap == SnapLeft) {
 
 	    if (i->frame < matchframe) {
-                if (fabsf(i->value - matchvalue) < epsilon) {
+                if (fabs(i->value - matchvalue) < epsilon) {
                     snapped = i->frame;
                     found = true; // don't break, as the next may be better
                 }
@@ -782,7 +782,7 @@ TimeValueLayer::snapToSimilarFeature(View *v, int &frame,
 }
 
 void
-TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) const
+TimeValueLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -818,9 +818,9 @@ TimeValueLayer::getScaleExtents(View *v, float &min, float &max, bool &log) cons
 }
 
 int
-TimeValueLayer::getYForValue(View *v, float val) const
+TimeValueLayer::getYForValue(View *v, double val) const
 {
-    float min = 0.0, max = 0.0;
+    double min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->height();
 
@@ -838,16 +838,16 @@ TimeValueLayer::getYForValue(View *v, float val) const
     return int(h - ((val - min) * h) / (max - min));
 }
 
-float
+double
 TimeValueLayer::getValueForY(View *v, int y) const
 {
-    float min = 0.0, max = 0.0;
+    double min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->height();
 
     getScaleExtents(v, min, max, logarithmic);
 
-    float val = min + (float(h - y) * float(max - min)) / h;
+    double val = min + (double(h - y) * double(max - min)) / h;
 
     if (logarithmic) {
         val = LogRange::map(val);
@@ -865,9 +865,9 @@ TimeValueLayer::shouldAutoAlign() const
 }
 
 QColor
-TimeValueLayer::getColourForValue(View *v, float val) const
+TimeValueLayer::getColourForValue(View *v, double val) const
 {
-    float min, max;
+    double min, max;
     bool log;
     getScaleExtents(v, min, max, log);
 
@@ -900,7 +900,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
-    int sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
     paint.setRenderHint(QPainter::Antialiasing, false);
@@ -908,8 +908,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    Profiler profiler("TimeValueLayer::paint", true);
 
     int x0 = rect.left(), x1 = rect.right();
-    long frame0 = v->getFrameForX(x0);
-    long frame1 = v->getFrameForX(x1);
+    sv_frame_t frame0 = v->getFrameForX(x0);
+    sv_frame_t frame1 = v->getFrameForX(x1);
     if (m_derivative) --frame0;
 
     SparseTimeValueModel::PointList points(m_model->getPoints
@@ -927,15 +927,15 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	      << m_model->getResolution() << " frames" << endl;
 #endif
 
-    float min = m_model->getValueMinimum();
-    float max = m_model->getValueMaximum();
+    double min = m_model->getValueMinimum();
+    double max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
     int origin = int(nearbyint(v->height() -
 			       (-min * v->height()) / (max - min)));
 
     QPoint localPos;
-    long illuminateFrame = -1;
+    sv_frame_t illuminateFrame = -1;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
 	SparseTimeValueModel::PointList localPoints =
@@ -974,7 +974,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
     }
     
-    int prevFrame = 0;
+    sv_frame_t prevFrame = 0;
 
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
@@ -983,7 +983,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	const SparseTimeValueModel::Point &p(*i);
 
-        float value = p.value;
+        double value = p.value;
         if (m_derivative) {
             SparseTimeValueModel::PointList::const_iterator j = i;
             --j;
@@ -1012,8 +1012,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         }
 
 	bool haveNext = false;
-        float nvalue = 0.f;
-        int nf = v->getModelsEndFrame();
+        double nvalue = 0.f;
+        sv_frame_t nf = v->getModelsEndFrame();
 	int nx = v->getXForFrame(nf);
 	int ny = y;
 
@@ -1122,11 +1122,11 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 		} else {
 
-		    float x0 = x + float(w)/2;
-		    float x1 = nx + float(w)/2;
+		    double x0 = x + double(w)/2;
+		    double x1 = nx + double(w)/2;
 		    
-		    float y0 = y;
-		    float y1 = ny;
+		    double y0 = y;
+		    double y1 = ny;
 
                     if (m_plotStyle == PlotDiscreteCurves) {
                         bool nextGap =
@@ -1255,7 +1255,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     if (!m_model || m_model->getPoints().empty()) return;
 
     QString unit;
-    float min, max;
+    double min, max;
     bool logarithmic;
 
     int w = getVerticalScaleWidth(v, false, paint);
@@ -1310,12 +1310,12 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
 
     if (!m_model) return;
 
-    long frame = v->getFrameForX(e->x());
-    long resolution = m_model->getResolution();
+    sv_frame_t frame = v->getFrameForX(e->x());
+    int resolution = m_model->getResolution();
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
-    float value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->y());
 
     bool havePoint = false;
 
@@ -1336,7 +1336,7 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
 
     if (!havePoint) {
         m_editingPoint = SparseTimeValueModel::Point
-            (frame, value, tr("New Point"));
+            (frame, float(value), tr("New Point"));
     }
 
     m_originalPoint = m_editingPoint;
@@ -1360,12 +1360,12 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
-    long resolution = m_model->getResolution();
+    sv_frame_t frame = v->getFrameForX(e->x());
+    int resolution = m_model->getResolution();
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
-    float value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->y());
 
     SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
 
@@ -1409,7 +1409,7 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 
 //    m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
-    m_editingPoint.value = value;
+    m_editingPoint.value = float(value);
     m_editingCommand->addPoint(m_editingPoint);
 }
 
@@ -1502,11 +1502,11 @@ TimeValueLayer::editDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->y());
 
     if (!m_editingCommand) {
 	m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
@@ -1515,7 +1515,7 @@ TimeValueLayer::editDrag(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
-    m_editingPoint.value = value;
+    m_editingPoint.value = float(value);
     m_editingCommand->addPoint(m_editingPoint);
 }
 
@@ -1589,7 +1589,7 @@ TimeValueLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::moveSelection(Selection s, int newStartFrame)
+TimeValueLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
@@ -1635,9 +1635,9 @@ TimeValueLayer::resizeSelection(Selection s, Selection newSize)
 
 	if (s.contains(i->frame)) {
 
-	    double target = i->frame;
-	    target = newSize.getStartFrame() + 
-		double(target - s.getStartFrame()) * ratio;
+	    double target = double(i->frame);
+	    target = double(newSize.getStartFrame()) +
+		target - double(s.getStartFrame()) * ratio;
 
 	    SparseTimeValueModel::Point newPoint(*i);
 	    newPoint.frame = lrint(target);
@@ -1691,7 +1691,7 @@ TimeValueLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-TimeValueLayer::paste(View *v, const Clipboard &from, int /* frameOffset */,
+TimeValueLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */,
                       bool interactive)
 {
     if (!m_model) return false;
@@ -1834,7 +1834,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, int /* frameOffset */,
         
         if (!i->haveFrame()) continue;
 
-        int frame = 0;
+        sv_frame_t frame = 0;
 
         if (!realign) {
             

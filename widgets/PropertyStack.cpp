@@ -172,7 +172,7 @@ PropertyStack::getContainerIndex(PropertyContainer *pc) const
     // remain in the same order. So we must find this container in the
     // box list, not in the view.
 
-    for (size_t i = 0; i < m_boxes.size(); ++i) {
+    for (int i = 0; in_range_for(m_boxes, i); ++i) {
 	PropertyContainer *container = m_boxes[i]->getContainer();
 	if (pc == container) {
             return i;

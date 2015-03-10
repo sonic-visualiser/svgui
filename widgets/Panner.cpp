@@ -65,7 +65,7 @@ Panner::scroll(bool up)
     float unit = m_scrollUnit;
     if (unit == 0.f) {
         unit = float(m_rectHeight) / (6 * float(height()));
-        if (unit < 0.01) unit = 0.01;
+        if (unit < 0.01f) unit = 0.01f;
     }
 
     if (!up) {
@@ -165,24 +165,24 @@ Panner::paintEvent(QPaintEvent *)
 
     paint.setBrush(hl);
 
-    int rw = lrintf((width() - 1) * m_rectWidth);
-    int rh = lrintf((height() - 1) * m_rectHeight);
+    int rw = int(lrintf(float(width() - 1) * m_rectWidth));
+    int rh = int(lrintf(float(height() - 1) * m_rectHeight));
     if (rw < 2) rw = 2;
     if (rh < 2) rh = 2;
 
-    paint.drawRect(lrintf(width() * m_rectX),
-                   lrintf(height() * m_rectY),
+    paint.drawRect(int(lrintf(float(width()) * m_rectX)),
+                   int(lrintf(float(height()) * m_rectY)),
                    rw, rh);
 }
 
 void
 Panner::normalise()
 {
-    if (m_rectWidth > 1.0) m_rectWidth = 1.0;
-    if (m_rectHeight > 1.0) m_rectHeight = 1.0;
-    if (m_rectX + m_rectWidth > 1.0) m_rectX = 1.0 - m_rectWidth;
+    if (m_rectWidth > 1.f) m_rectWidth = 1.f;
+    if (m_rectHeight > 1.f) m_rectHeight = 1.f;
+    if (m_rectX + m_rectWidth > 1.f) m_rectX = 1.f - m_rectWidth;
     if (m_rectX < 0) m_rectX = 0;
-    if (m_rectY + m_rectHeight > 1.0) m_rectY = 1.0 - m_rectHeight;
+    if (m_rectY + m_rectHeight > 1.f) m_rectY = 1.f - m_rectHeight;
     if (m_rectY < 0) m_rectY = 0;
 
     if (!m_defaultsSet) {

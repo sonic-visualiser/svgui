@@ -53,7 +53,7 @@ SubdividingMenu::setEntries(const std::set<QString> &entries)
 {
     m_entriesSet = true;
 
-    int total = entries.size();
+    int total = int(entries.size());
         
     if (total < m_upperLimit) return;
 

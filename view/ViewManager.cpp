@@ -723,15 +723,15 @@ ViewManager::getGlobalDarkBackground() const
 int
 ViewManager::scalePixelSize(int pixels)
 {
-    static float ratio = 0.f;
-    if (ratio == 0.f) {
-        float baseEm;
+    static double ratio = 0.0;
+    if (ratio == 0.0) {
+        double baseEm;
 #ifdef Q_OS_MAC
-        baseEm = 17.f;
+        baseEm = 17.0;
 #else
-        baseEm = 15.f;
+        baseEm = 15.0;
 #endif
-        float em = QFontMetrics(QFont()).height();
+        double em = QFontMetrics(QFont()).height();
         ratio = em / baseEm;
     }
 
