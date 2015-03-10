@@ -736,7 +736,7 @@ ViewManager::scalePixelSize(int pixels)
     }
 
     int scaled = int(pixels * ratio + 0.5);
-    cerr << "scaledSize: " << pixels << " -> " << scaled << " at ratio " << ratio << endl;
+//    cerr << "scaledSize: " << pixels << " -> " << scaled << " at ratio " << ratio << endl;
     if (pixels != 0 && scaled == 0) scaled = 1;
     return scaled;
 }
