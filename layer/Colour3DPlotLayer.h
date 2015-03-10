@@ -166,9 +166,9 @@ public:
 
 protected slots:
     void cacheInvalid();
-    void cacheInvalid(int startFrame, int endFrame);
+    void cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame);
     void modelChanged();
-    void modelChangedWithin(int, int);
+    void modelChangedWithin(sv_frame_t, sv_frame_t);
 
 protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this

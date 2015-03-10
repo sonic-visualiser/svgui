@@ -22,9 +22,23 @@
 
 #include "base/Preferences.h"
 
-WindowTypeSelector::WindowTypeSelector(WindowType defaultType, QWidget *parent) :
-    QFrame(parent),
-    m_windowType(WindowType(999))
+WindowTypeSelector::WindowTypeSelector(WindowType defaultType)
+{
+    init(defaultType);
+}
+
+WindowTypeSelector::WindowTypeSelector()
+{
+    Preferences *prefs = Preferences::getInstance();
+    int min = 0, max = 0, deflt = 0;
+    WindowType type =
+        WindowType(prefs->getPropertyRangeAndValue("Window Type", &min, &max,
+                                                   &deflt));
+    init(type);
+}
+
+void
+WindowTypeSelector::init(WindowType defaultType)
 {
     QVBoxLayout *layout = new QVBoxLayout;
     layout->setMargin(0);
@@ -48,15 +62,10 @@ WindowTypeSelector::WindowTypeSelector(WindowType defaultType, QWidget *parent) 
     m_windowShape = new WindowShapePreview;
 
     m_windowCombo = new QComboBox;
-    int min = 0, max = 0, deflt = 0, i = 0;
     int window = int(defaultType);
-    if (window == 999) {
-        window = prefs->getPropertyRangeAndValue("Window Type", &min, &max,
-                                                 &deflt);
-    }
     int index = 0;
     
-    for (i = 0; i <= 8; ++i) {
+    for (int i = 0; i <= 8; ++i) {
         m_windowCombo->addItem(prefs->getPropertyValueLabel("Window Type",
                                                             m_windows[i]));
         if (m_windows[i] == window) index = i;

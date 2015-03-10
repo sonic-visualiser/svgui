@@ -249,7 +249,7 @@ TimeInstantLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-TimeInstantLayer::snapToFeatureFrame(View *v, int &frame,
+TimeInstantLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 				     int &resolution,
 				     SnapType snap) const
 {
@@ -269,7 +269,7 @@ TimeInstantLayer::snapToFeatureFrame(View *v, int &frame,
     }    
 
     points = m_model->getPoints(frame, frame);
-    int snapped = frame;
+    sv_frame_t snapped = frame;
     bool found = false;
 
     for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
@@ -666,7 +666,7 @@ TimeInstantLayer::editOpen(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::moveSelection(Selection s, int newStartFrame)
+TimeInstantLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
@@ -712,9 +712,9 @@ TimeInstantLayer::resizeSelection(Selection s, Selection newSize)
 
 	if (s.contains(i->frame)) {
 
-	    double target = i->frame;
-	    target = newSize.getStartFrame() + 
-		double(target - s.getStartFrame()) * ratio;
+	    double target = double(i->frame);
+	    target = double(newSize.getStartFrame()) +
+		target - double(s.getStartFrame()) * ratio;
 
 	    SparseOneDimensionalModel::Point newPoint(*i);
 	    newPoint.frame = lrint(target);
@@ -765,7 +765,7 @@ TimeInstantLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-TimeInstantLayer::paste(View *v, const Clipboard &from, int frameOffset, bool)
+TimeInstantLayer::paste(View *v, const Clipboard &from, sv_frame_t frameOffset, bool)
 {
     if (!m_model) return false;
 
@@ -798,7 +798,7 @@ TimeInstantLayer::paste(View *v, const Clipboard &from, int frameOffset, bool)
         
         if (!i->haveFrame()) continue;
 
-        int frame = 0;
+        sv_frame_t frame = 0;
 
         if (!realign) {
             

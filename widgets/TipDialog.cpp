@@ -105,7 +105,7 @@ void
 TipDialog::previous()
 {
     if (--m_tipNumber < 0) {
-        m_tipNumber = m_tips.size() - 1;
+        m_tipNumber = int(m_tips.size()) - 1;
     }
 
     showTip();

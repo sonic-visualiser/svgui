@@ -96,7 +96,7 @@ TextLayer::setProperty(const PropertyName &name, int value)
 }
 
 bool
-TextLayer::getValueExtents(float &, float &, bool &, QString &) const
+TextLayer::getValueExtents(double &, double &, bool &, QString &) const
 {
     return false;
 }
@@ -114,8 +114,8 @@ TextLayer::getLocalPoints(View *v, int x, int y) const
 {
     if (!m_model) return TextModel::PointList();
 
-    long frame0 = v->getFrameForX(-150);
-    long frame1 = v->getFrameForX(v->width() + 150);
+    sv_frame_t frame0 = v->getFrameForX(-150);
+    sv_frame_t frame1 = v->getFrameForX(v->width() + 150);
     
     TextModel::PointList points(m_model->getPoints(frame0, frame1));
 
@@ -158,19 +158,19 @@ TextLayer::getPointToDrag(View *v, int x, int y, TextModel::Point &p) const
 {
     if (!m_model) return false;
 
-    long a = v->getFrameForX(x - 120);
-    long b = v->getFrameForX(x + 10);
+    sv_frame_t a = v->getFrameForX(x - 120);
+    sv_frame_t b = v->getFrameForX(x + 10);
     TextModel::PointList onPoints = m_model->getPoints(a, b);
     if (onPoints.empty()) return false;
 
-    float nearestDistance = -1;
+    double nearestDistance = -1;
 
     for (TextModel::PointList::const_iterator i = onPoints.begin();
          i != onPoints.end(); ++i) {
 
-        int yd = getYForHeight(v, (*i).height) - y;
-        int xd = v->getXForFrame((*i).frame) - x;
-        float distance = sqrtf(yd*yd + xd*xd);
+        double yd = getYForHeight(v, (*i).height) - y;
+        double xd = v->getXForFrame((*i).frame) - x;
+        double distance = sqrt(yd*yd + xd*xd);
 
         if (nearestDistance == -1 || distance < nearestDistance) {
             nearestDistance = distance;
@@ -198,7 +198,7 @@ TextLayer::getFeatureDescription(View *v, QPoint &pos) const
 	}
     }
 
-    long useFrame = points.begin()->frame;
+    sv_frame_t useFrame = points.begin()->frame;
 
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
     
@@ -220,7 +220,7 @@ TextLayer::getFeatureDescription(View *v, QPoint &pos) const
 //!!! too much overlap with TimeValueLayer/TimeInstantLayer
 
 bool
-TextLayer::snapToFeatureFrame(View *v, int &frame,
+TextLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 			      int &resolution,
 			      SnapType snap) const
 {
@@ -240,7 +240,7 @@ TextLayer::snapToFeatureFrame(View *v, int &frame,
     }    
 
     points = m_model->getPoints(frame, frame);
-    int snapped = frame;
+    sv_frame_t snapped = frame;
     bool found = false;
 
     for (TextModel::PointList::const_iterator i = points.begin();
@@ -292,17 +292,17 @@ TextLayer::snapToFeatureFrame(View *v, int &frame,
 }
 
 int
-TextLayer::getYForHeight(View *v, float height) const
+TextLayer::getYForHeight(View *v, double height) const
 {
     int h = v->height();
     return h - int(height * h);
 }
 
-float
+double
 TextLayer::getHeightForY(View *v, int y) const
 {
     int h = v->height();
-    return float(h - y) / h;
+    return double(h - y) / h;
 }
 
 void
@@ -310,14 +310,14 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
-    int sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("TextLayer::paint", true);
 
     int x0 = rect.left(), x1 = rect.right();
-    long frame0 = v->getFrameForX(x0);
-    long frame1 = v->getFrameForX(x1);
+    sv_frame_t frame0 = v->getFrameForX(x0);
+    sv_frame_t frame1 = v->getFrameForX(x1);
 
     TextModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
@@ -420,13 +420,13 @@ TextLayer::drawStart(View *v, QMouseEvent *e)
 	return;
     }
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float height = getHeightForY(v, e->y());
+    double height = getHeightForY(v, e->y());
 
-    m_editingPoint = TextModel::Point(frame, height, "");
+    m_editingPoint = TextModel::Point(frame, float(height), "");
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
@@ -443,15 +443,15 @@ TextLayer::drawDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
-    float height = getHeightForY(v, e->y());
+    double height = getHeightForY(v, e->y());
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
-    m_editingPoint.height = height;
+    m_editingPoint.height = float(height);
     m_editingCommand->addPoint(m_editingPoint);
 }
 
@@ -547,17 +547,17 @@ TextLayer::editDrag(View *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
-    long frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
-    float heightDiff = getHeightForY(v, e->y()) - getHeightForY(v, m_editOrigin.y());
+    sv_frame_t frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
+    double heightDiff = getHeightForY(v, e->y()) - getHeightForY(v, m_editOrigin.y());
 
-    long frame = m_originalPoint.frame + frameDiff;
-    float height = m_originalPoint.height + heightDiff;
+    sv_frame_t frame = m_originalPoint.frame + frameDiff;
+    double height = m_originalPoint.height + heightDiff;
 
-//    long frame = v->getFrameForX(e->x());
+//    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = (frame / m_model->getResolution()) * m_model->getResolution();
 
-//    float height = getHeightForY(v, e->y());
+//    double height = getHeightForY(v, e->y());
 
     if (!m_editingCommand) {
 	m_editingCommand = new TextModel::EditCommand(m_model, tr("Drag Label"));
@@ -565,7 +565,7 @@ TextLayer::editDrag(View *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
     m_editingPoint.frame = frame;
-    m_editingPoint.height = height;
+    m_editingPoint.height = float(height);
     m_editingCommand->addPoint(m_editingPoint);
 }
 
@@ -621,7 +621,7 @@ TextLayer::editOpen(View *v, QMouseEvent *e)
 }    
 
 void
-TextLayer::moveSelection(Selection s, int newStartFrame)
+TextLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
@@ -665,9 +665,9 @@ TextLayer::resizeSelection(Selection s, Selection newSize)
 
 	if (s.contains(i->frame)) {
 
-	    double target = i->frame;
-	    target = newSize.getStartFrame() + 
-		double(target - s.getStartFrame()) * ratio;
+	    double target = double(i->frame);
+	    target = double(newSize.getStartFrame()) + 
+		target - double(s.getStartFrame()) * ratio;
 
 	    TextModel::Point newPoint(*i);
 	    newPoint.frame = lrint(target);
@@ -717,7 +717,7 @@ TextLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-TextLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* interactive */)
+TextLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -745,7 +745,7 @@ TextLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* 
     TextModel::EditCommand *command =
 	new TextModel::EditCommand(m_model, tr("Paste"));
 
-    float valueMin = 0.0, valueMax = 1.0;
+    double valueMin = 0.0, valueMax = 1.0;
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
         if (i->haveValue()) {
@@ -759,7 +759,7 @@ TextLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* 
          i != points.end(); ++i) {
         
         if (!i->haveFrame()) continue;
-        int frame = 0;
+        sv_frame_t frame = 0;
         
         if (!realign) {
             
@@ -778,9 +778,9 @@ TextLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* 
         TextModel::Point newPoint(frame);
 
         if (i->haveValue()) {
-            newPoint.height = (i->getValue() - valueMin) / (valueMax - valueMin);
+            newPoint.height = float((i->getValue() - valueMin) / (valueMax - valueMin));
         } else {
-            newPoint.height = 0.5;
+            newPoint.height = 0.5f;
         }
 
         if (i->haveLabel()) {

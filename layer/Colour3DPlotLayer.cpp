@@ -80,8 +80,8 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
     connectSignals(m_model);
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(modelChanged()));
-    connect(m_model, SIGNAL(modelChangedWithin(int, int)),
-	    this, SLOT(modelChangedWithin(int, int)));
+    connect(m_model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
+	    this, SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
 
     m_peakResolution = 256;
     if (model->getResolution() > 512) {
@@ -109,13 +109,13 @@ Colour3DPlotLayer::cacheInvalid()
 }
 
 void
-Colour3DPlotLayer::cacheInvalid(int startFrame, int endFrame)
+Colour3DPlotLayer::cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame)
 {
     if (!m_cache || !m_model) return;
 
     int modelResolution = m_model->getResolution();
-    int start = startFrame / modelResolution;
-    int end = endFrame / modelResolution + 1;
+    int start = int(startFrame / modelResolution);
+    int end = int(endFrame / modelResolution + 1);
     if (m_cacheValidStart < end) m_cacheValidStart = end;
     if (m_cacheValidEnd > start) m_cacheValidEnd = start;
     if (m_cacheValidStart > m_cacheValidEnd) m_cacheValidEnd = m_cacheValidStart;
@@ -137,7 +137,7 @@ Colour3DPlotLayer::modelChanged()
 }
 
 void
-Colour3DPlotLayer::modelChangedWithin(int startFrame, int endFrame)
+Colour3DPlotLayer::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 {
     if (!m_colourScaleSet && m_colourScale == LinearScale) {
         if (m_model && m_model->getWidth() > 50) {

@@ -203,7 +203,7 @@ public:
     virtual void setVerticalZoomStep(int);
 
 protected:
-    int dBscale(float sample, int m) const;
+    int dBscale(double sample, int m) const;
 
     const RangeSummarisableTimeValueModel *m_model; // I do not own this
 
@@ -216,7 +216,7 @@ protected:
     double getValueForY(const View *v, int y, int &channel) const;
 
     bool getSourceFramesForX(View *v, int x, int modelZoomLevel,
-                             int &f0, int &f1) const;
+                             sv_frame_t &f0, sv_frame_t &f1) const;
 
     float getNormalizeGain(View *v, int channel) const;
 
