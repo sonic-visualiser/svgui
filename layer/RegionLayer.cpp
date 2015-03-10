@@ -371,7 +371,7 @@ RegionLayer::getPointToDrag(View *v, int x, int y, RegionModel::Point &p) const
 }
 
 QString
-RegionLayer::getLabelPreceding(int frame) const
+RegionLayer::getLabelPreceding(sv_frame_t frame) const
 {
     if (!m_model) return "";
     RegionModel::PointList points = m_model->getPreviousPoints(frame);

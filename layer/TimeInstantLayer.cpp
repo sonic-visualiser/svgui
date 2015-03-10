@@ -201,7 +201,7 @@ TimeInstantLayer::getLocalPoints(View *v, int x) const
 }
 
 QString
-TimeInstantLayer::getLabelPreceding(int frame) const
+TimeInstantLayer::getLabelPreceding(sv_frame_t frame) const
 {
     if (!m_model) return "";
     SparseOneDimensionalModel::PointList points = m_model->getPreviousPoints(frame);

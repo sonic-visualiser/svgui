@@ -150,7 +150,7 @@ public:
 	return "";
     }
 
-    virtual QString getLabelPreceding(int /* frame */) const {
+    virtual QString getLabelPreceding(sv_frame_t /* frame */) const {
         return "";
     }
 
