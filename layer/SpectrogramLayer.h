@@ -310,7 +310,7 @@ protected:
     {
         QImage image;
         QRect validArea;
-        int startFrame;
+        sv_frame_t startFrame;
         int zoomLevel;
     };
     typedef std::map<const View *, ImageCache> ViewImageCache;
@@ -334,7 +334,7 @@ protected:
     void initialisePalette();
     void rotatePalette(int distance);
 
-    unsigned char getDisplayValue(View *v, float input) const;
+    unsigned char getDisplayValue(View *v, double input) const;
 
     int getColourScaleWidth(QPainter &) const;
 
@@ -428,12 +428,13 @@ protected:
     void invalidateMagnitudes();
     bool updateViewMagnitudes(View *v) const;
     bool paintDrawBuffer(View *v, int w, int h,
-                         int *binforx, double *binfory,
+                         const std::vector<int> &binforx,
+                         const std::vector<double> &binfory,
                          bool usePeaksCache,
                          MagnitudeRange &overallMag,
                          bool &overallMagChanged) const;
     bool paintDrawBufferPeakFrequencies(View *v, int w, int h,
-                                        int *binforx,
+                                        const std::vector<int> &binforx,
                                         int minbin,
                                         int maxbin,
                                         double displayMinFreq,
