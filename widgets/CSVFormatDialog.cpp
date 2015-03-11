@@ -30,6 +30,7 @@
 #include <QDialogButtonBox>
 
 #include <iostream>
+#include <cmath>
 
 #include "base/Debug.h"
 
