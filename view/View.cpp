@@ -58,6 +58,7 @@ View::View(QWidget *w, bool showProgress) :
     m_followPlayIsDetached(false),
     m_playPointerFrame(0),
     m_showProgress(showProgress),
+    m_paintScale(1),
     m_cache(0),
     m_cacheCentreFrame(0),
     m_cacheZoomLevel(1024),
@@ -1658,6 +1659,14 @@ View::setPaintFont(QPainter &paint)
     paint.setFont(font);
 }
 
+QRect
+View::getPaintRect() const
+{
+    QRect r(rect());
+    return QRect(r.x() * m_paintScale, r.y() * m_paintScale, 
+                 r.width() * m_paintScale, r.height() * m_paintScale);
+}
+
 void
 View::paintEvent(QPaintEvent *e)
 {
@@ -1838,9 +1847,11 @@ View::paintEvent(QPaintEvent *e)
 	if (repaintCache) {
             paint.begin(m_cache);
             rectToPaint = scaledCacheRect;
+            m_paintScale = dpratio;
         } else {
             paint.begin(this);
             rectToPaint = cacheRect;
+            m_paintScale = 1;
         }
 
         setPaintFont(paint);

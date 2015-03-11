@@ -315,6 +315,18 @@ public:
     sv_frame_t getModelsStartFrame() const;
     sv_frame_t getModelsEndFrame() const;
 
+    /**
+     * To be called from a layer, to obtain the extent of the surface
+     * that the layer is currently painting to. This may be the extent
+     * of the view (if 1x display scaling is in effect) or of a larger
+     * cached pixmap (if greater display scaling is in effect).
+     */
+    QRect getPaintRect() const;
+
+    QSize getPaintSize() const { return getPaintRect().size(); }
+    int getPaintWidth() const { return getPaintRect().width(); }
+    int getPaintHeight() const { return getPaintRect().height(); }
+
     typedef std::set<Model *> ModelSet;
     ModelSet getModels();
 
@@ -415,6 +427,7 @@ protected:
     sv_frame_t          m_playPointerFrame;
     bool                m_lightBackground;
     bool                m_showProgress;
+    int                 m_paintScale;
 
     QPixmap            *m_cache;
     sv_frame_t          m_cacheCentreFrame;
