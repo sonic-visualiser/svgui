@@ -494,8 +494,8 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                                      mergingChannels, mixingChannels);
     if (channels == 0) return;
 
-    int w = v->width();
-    int h = v->height();
+    int w = v->getPaintWidth();
+    int h = v->getPaintHeight();
 
     bool ready = m_model->isReady();
     QPainter *paint;
@@ -559,7 +559,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
     y1 = rect.bottom();
 
     if (x0 > 0) --x0;
-    if (x1 < v->width()) ++x1;
+    if (x1 < w) ++x1;
 
     // Our zoom level may differ from that at which the underlying
     // model has its blocks.
@@ -939,7 +939,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
     if (m_aggressive) {
 
-	if (ready && rect == v->rect()) {
+	if (ready && rect == v->getPaintRect()) {
 	    m_cacheValid = true;
 	    m_cacheZoomLevel = zoomLevel;
 	}
