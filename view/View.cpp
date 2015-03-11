@@ -1741,6 +1741,12 @@ View::paintEvent(QPaintEvent *e)
 	m_selectionCached = false;
     }
 
+    int dpratio = devicePixelRatio();
+    
+    QSize scaledCacheSize(width() * dpratio, height() * dpratio);
+    QRect scaledCacheRect(cacheRect.x() * dpratio, cacheRect.y() * dpratio,
+                          cacheRect.width() * dpratio, cacheRect.height() * dpratio);
+
     if (!scrollables.empty()) {
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -1750,8 +1756,7 @@ View::paintEvent(QPaintEvent *e)
 
 	if (!m_cache ||
 	    m_cacheZoomLevel != m_zoomLevel ||
-	    width() != m_cache->width() ||
-	    height() != m_cache->height()) {
+            scaledCacheSize != m_cache->size()) {
 
 	    // cache is not valid
 
@@ -1763,7 +1768,7 @@ View::paintEvent(QPaintEvent *e)
 #endif
 	    } else {
 		delete m_cache;
-		m_cache = new QPixmap(width(), height());
+		m_cache = new QPixmap(scaledCacheSize);
 #ifdef DEBUG_VIEW_WIDGET_PAINT
 		cerr << "View(" << this << ")::paintEvent: recreated cache" << endl;
 #endif
@@ -1778,24 +1783,10 @@ View::paintEvent(QPaintEvent *e)
 		getXForFrame(m_centreFrame);
 
 	    if (dx > -width() && dx < width()) {
-#ifdef PIXMAP_COPY_TO_SELF
-                // This is not normally defined. Copying a pixmap to
-		// itself doesn't work properly on Windows, Mac, or
-		// X11 with the raster backend (it only works when
-		// moving in one direction and then presumably only by
-		// accident).  It does actually seem to be fine on X11
-		// with the native backend, but we prefer not to use
-		// that anyway
-		paint.begin(m_cache);
-		paint.drawPixmap(dx, 0, *m_cache);
-		paint.end();
-#else
 		static QPixmap *tmpPixmap = 0;
-		if (!tmpPixmap ||
-		    tmpPixmap->width() != width() ||
-		    tmpPixmap->height() != height()) {
+		if (!tmpPixmap || tmpPixmap->size() != scaledCacheSize) {
 		    delete tmpPixmap;
-		    tmpPixmap = new QPixmap(width(), height());
+		    tmpPixmap = new QPixmap(scaledCacheSize);
 		}
 		paint.begin(tmpPixmap);
 		paint.drawPixmap(0, 0, *m_cache);
@@ -1803,7 +1794,6 @@ View::paintEvent(QPaintEvent *e)
 		paint.begin(m_cache);
 		paint.drawPixmap(dx, 0, *tmpPixmap);
 		paint.end();
-#endif
 		if (dx < 0) {
 		    cacheRect = QRect(width() + dx, 0, -dx, height());
 		} else {
@@ -1825,7 +1815,7 @@ View::paintEvent(QPaintEvent *e)
 	    cerr << "View(" << this << ")::paintEvent: cache is good" << endl;
 #endif
 	    paint.begin(this);
-	    paint.drawPixmap(cacheRect, *m_cache, cacheRect);
+	    paint.drawPixmap(cacheRect, *m_cache, scaledCacheRect);
 	    paint.end();
 	    QFrame::paintEvent(e);
 	    paintedCacheRect = true;
@@ -1843,14 +1833,22 @@ View::paintEvent(QPaintEvent *e)
 
     if (!paintedCacheRect) {
 
-	if (repaintCache) paint.begin(m_cache);
-	else paint.begin(this);
+        QRect rectToPaint;
+
+	if (repaintCache) {
+            paint.begin(m_cache);
+            rectToPaint = scaledCacheRect;
+        } else {
+            paint.begin(this);
+            rectToPaint = cacheRect;
+        }
+
         setPaintFont(paint);
-	paint.setClipRect(cacheRect);
+	paint.setClipRect(rectToPaint);
 
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
-	paint.drawRect(cacheRect);
+	paint.drawRect(rectToPaint);
 
 	paint.setPen(getForeground());
 	paint.setBrush(Qt::NoBrush);
@@ -1858,7 +1856,7 @@ View::paintEvent(QPaintEvent *e)
 	for (LayerList::iterator i = scrollables.begin(); i != scrollables.end(); ++i) {
 	    paint.setRenderHint(QPainter::Antialiasing, false);
 	    paint.save();
-	    (*i)->paint(this, paint, cacheRect);
+            (*i)->paint(this, paint, rectToPaint);
 	    paint.restore();
 	}
 
@@ -1872,7 +1870,7 @@ View::paintEvent(QPaintEvent *e)
 	if (repaintCache) {
 	    cacheRect |= (e ? e->rect() : rect());
 	    paint.begin(this);
-	    paint.drawPixmap(cacheRect, *m_cache, cacheRect);
+	    paint.drawPixmap(cacheRect, *m_cache, scaledCacheRect);
 	    paint.end();
 	}
     }
