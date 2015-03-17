@@ -25,10 +25,10 @@ class VerticalScaleLayer;
 class LogNumericalScale
 {
 public:
-    int getWidth(View *v, QPainter &paint);
+    int getWidth(LayerGeometryProvider *v, QPainter &paint);
 
     void paintVertical
-    (View *v, const VerticalScaleLayer *layer, QPainter &paint, int x0,
+    (LayerGeometryProvider *v, const VerticalScaleLayer *layer, QPainter &paint, int x0,
      double minlog, double maxlog);
 };
 
