@@ -38,50 +38,50 @@ class FlexiNoteLayer : public SingleColourLayer,
 public:
     FlexiNoteLayer();
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
-    virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
+    virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                     int &resolution,
                     SnapType snap) const;
 
-    virtual void drawStart(View *v, QMouseEvent *);
-    virtual void drawDrag(View *v, QMouseEvent *);
-    virtual void drawEnd(View *v, QMouseEvent *);
+    virtual void drawStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void eraseStart(View *v, QMouseEvent *);
-    virtual void eraseDrag(View *v, QMouseEvent *);
-    virtual void eraseEnd(View *v, QMouseEvent *);
+    virtual void eraseStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void eraseDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void eraseEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void editStart(View *v, QMouseEvent *);
-    virtual void editDrag(View *v, QMouseEvent *);
-    virtual void editEnd(View *v, QMouseEvent *);
+    virtual void editStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void splitStart(View *v, QMouseEvent *);
-    virtual void splitEnd(View *v, QMouseEvent *);
+    virtual void splitStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void splitEnd(LayerGeometryProvider *v, QMouseEvent *);
     
-    virtual void addNote(View *v, QMouseEvent *e);
+    virtual void addNote(LayerGeometryProvider *v, QMouseEvent *e);
 
-    virtual void mouseMoveEvent(View *v, QMouseEvent *);
+    virtual void mouseMoveEvent(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual bool editOpen(View *v, QMouseEvent *);
+    virtual bool editOpen(LayerGeometryProvider *v, QMouseEvent *);
 
     virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
     virtual void deleteSelectionInclusive(Selection s);
 
-    virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
+    virtual void copy(LayerGeometryProvider *v, Selection s, Clipboard &to);
+    virtual bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
-    void splitNotesAt(View *v, sv_frame_t frame);
-    void snapSelectedNotesToPitchTrack(View *v, Selection s);
-    void mergeNotes(View *v, Selection s, bool inclusive);
+    void splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame);
+    void snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selection s);
+    void mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive);
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(FlexiNoteModel *model);
@@ -116,11 +116,11 @@ public:
     void setVerticalScale(VerticalScale scale);
     VerticalScale getVerticalScale() const { return m_verticalScale; }
 
-    virtual bool isLayerScrollable(const View *v) const;
+    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
 
     virtual bool isLayerEditable() const { return true; }
 
-    virtual int getCompletion(View *) const { return m_model->getCompletion(); }
+    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
 
     virtual bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const;
@@ -156,27 +156,27 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
     
-    void setVerticalRangeToNoteRange(View *v);
+    void setVerticalRangeToNoteRange(LayerGeometryProvider *v);
 
     /// VerticalScaleLayer methods
-    virtual int getYForValue(View *v, double value) const;
-    virtual double getValueForY(View *v, int y) const;
+    virtual int getYForValue(LayerGeometryProvider *v, double value) const;
+    virtual double getValueForY(LayerGeometryProvider *v, int y) const;
     virtual QString getScaleUnits() const;
 
 protected:
-    void getScaleExtents(View *, double &min, double &max, bool &log) const;
+    void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     bool shouldConvertMIDIToHz() const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    FlexiNoteModel::PointList getLocalPoints(View *v, int) const;
+    FlexiNoteModel::PointList getLocalPoints(LayerGeometryProvider *v, int) const;
 
-    bool getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &) const;
-    bool getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &) const;
-    void getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
-    SparseTimeValueModel *getAssociatedPitchModel(View *v) const;
-    bool updateNoteValue(View *v, FlexiNoteModel::Point &note) const;
-    void splitNotesAt(View *v, sv_frame_t frame, QMouseEvent *e);
+    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, FlexiNoteModel::Point &) const;
+    bool getNoteToEdit(LayerGeometryProvider *v, int x, int y, FlexiNoteModel::Point &) const;
+    void getRelativeMousePosition(LayerGeometryProvider *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
+    SparseTimeValueModel *getAssociatedPitchModel(LayerGeometryProvider *v) const;
+    bool updateNoteValue(LayerGeometryProvider *v, FlexiNoteModel::Point &note) const;
+    void splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseEvent *e);
 
     FlexiNoteModel *m_model;
     bool m_editing;

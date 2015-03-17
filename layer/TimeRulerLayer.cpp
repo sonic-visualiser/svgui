@@ -192,7 +192,7 @@ TimeRulerLayer::getMajorTickSpacing(View *v, bool &quarterTicks) const
 }
 
 void
-TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
+TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
 #ifdef DEBUG_TIME_RULER_LAYER
     SVDEBUG << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()

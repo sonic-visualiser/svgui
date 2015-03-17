@@ -33,7 +33,7 @@ public:
     TimeInstantLayer();
     virtual ~TimeInstantLayer();
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     virtual QString getLabelPreceding(sv_frame_t) const;
     virtual QString getFeatureDescription(View *v, QPoint &) const;

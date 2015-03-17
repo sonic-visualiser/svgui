@@ -650,7 +650,7 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
 }
 
 void
-SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
+SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_originModel || !m_originModel->isOK() ||
         !m_originModel->isReady()) {

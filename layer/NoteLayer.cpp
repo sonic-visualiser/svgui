@@ -741,7 +741,7 @@ NoteLayer::shouldAutoAlign() const
 }
 
 void
-NoteLayer::paint(View *v, QPainter &paint, QRect rect) const
+NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 

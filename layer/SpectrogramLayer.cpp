@@ -1767,7 +1767,7 @@ SpectrogramLayer::setSynchronousPainting(bool synchronous)
 }
 
 void
-SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
+SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     // What a lovely, old-fashioned function this is.
     // It's practically FORTRAN 77 in its clarity and linearity.

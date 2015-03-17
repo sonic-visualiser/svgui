@@ -19,6 +19,8 @@
 #include <QFrame>
 #include <QProgressBar>
 
+#include "LayerGeometryProvider.h"
+
 #include "base/ZoomConstraint.h"
 #include "base/PropertyContainer.h"
 #include "ViewManager.h"
@@ -49,7 +51,8 @@ class QPushButton;
  */
 
 class View : public QFrame,
-	     public XmlExportable
+	     public XmlExportable,
+             public LayerGeometryProvider
 {
     Q_OBJECT
 
@@ -242,12 +245,6 @@ public:
     virtual bool hasLightBackground() const;
     virtual QColor getForeground() const;
     virtual QColor getBackground() const;
-
-    enum TextStyle {
-	BoxedText,
-	OutlinedText,
-        OutlinedItalicText
-    };
 
     virtual void drawVisibleText(QPainter &p, int x, int y,
 				 QString text, TextStyle style) const;

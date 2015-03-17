@@ -57,7 +57,7 @@ public:
 
     virtual const ZoomConstraint *getZoomConstraint() const { return this; }
     virtual const Model *getModel() const { return m_model; }
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
     virtual void setSynchronousPainting(bool synchronous);
 
     virtual int getVerticalScaleWidth(View *v, bool detailed, QPainter &) const;

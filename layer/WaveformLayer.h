@@ -38,7 +38,7 @@ public:
         return m_model ? m_model->getZoomConstraint() : 0;
     }
     virtual const Model *getModel() const { return m_model; }
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 

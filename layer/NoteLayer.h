@@ -35,7 +35,7 @@ class NoteLayer : public SingleColourLayer,
 public:
     NoteLayer();
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
     virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;

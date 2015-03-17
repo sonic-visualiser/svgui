@@ -32,7 +32,7 @@ class TimeRulerLayer : public SingleColourLayer
 public:
     TimeRulerLayer();
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     void setModel(Model *);
     virtual const Model *getModel() const { return m_model; }

@@ -45,7 +45,7 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     virtual VerticalPosition getPreferredFrameCountPosition() const {
 	return PositionTop;

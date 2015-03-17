@@ -896,7 +896,7 @@ TimeValueLayer::getDefaultColourHint(bool darkbg, bool &impose)
 }
 
 void
-TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
+TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 

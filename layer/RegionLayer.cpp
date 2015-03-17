@@ -866,7 +866,7 @@ RegionLayer::getDefaultColourHint(bool darkbg, bool &impose)
 }
 
 void
-RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
+RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 

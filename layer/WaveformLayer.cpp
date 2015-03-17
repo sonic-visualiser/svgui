@@ -473,7 +473,7 @@ WaveformLayer::getNormalizeGain(View *v, int channel) const
 }
 
 void
-WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
+WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
 	return;
