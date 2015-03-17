@@ -313,7 +313,7 @@ SliceLayer::getValueForY(double y, const View *v) const
 }
 
 void
-SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
+SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_sliceableModel || !m_sliceableModel->isOK() ||
         !m_sliceableModel->isReady()) return;

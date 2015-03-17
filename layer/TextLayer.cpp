@@ -306,7 +306,7 @@ TextLayer::getHeightForY(View *v, int y) const
 }
 
 void
-TextLayer::paint(View *v, QPainter &paint, QRect rect) const
+TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 

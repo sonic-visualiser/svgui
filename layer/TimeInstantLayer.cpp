@@ -321,7 +321,7 @@ TimeInstantLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 void
-TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
+TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 

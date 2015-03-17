@@ -280,7 +280,7 @@ ImageLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 void
-ImageLayer::paint(View *v, QPainter &paint, QRect rect) const
+ImageLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 

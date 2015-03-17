@@ -38,7 +38,7 @@ public:
 
     void setSliceableModel(const Model *model);    
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
