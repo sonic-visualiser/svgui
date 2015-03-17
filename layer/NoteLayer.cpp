@@ -191,7 +191,7 @@ NoteLayer::setVerticalScale(VerticalScale scale)
 }
 
 bool
-NoteLayer::isLayerScrollable(const View *v) const
+NoteLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
@@ -389,7 +389,7 @@ NoteLayer::getNewVerticalZoomRangeMapper() const
 }
 
 NoteModel::PointList
-NoteLayer::getLocalPoints(View *v, int x) const
+NoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
     if (!m_model) return NoteModel::PointList();
 
@@ -432,7 +432,7 @@ NoteLayer::getLocalPoints(View *v, int x) const
 }
 
 bool
-NoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
+NoteLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, NoteModel::Point &p) const
 {
     if (!m_model) return false;
 
@@ -460,7 +460,7 @@ NoteLayer::getPointToDrag(View *v, int x, int y, NoteModel::Point &p) const
 }
 
 QString
-NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
+NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
@@ -547,7 +547,7 @@ NoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-NoteLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
+NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 			      int &resolution,
 			      SnapType snap) const
 {
@@ -619,7 +619,7 @@ NoteLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 void
-NoteLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
+NoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -677,11 +677,11 @@ NoteLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
 }
 
 int
-NoteLayer::getYForValue(View *v, double val) const
+NoteLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     getScaleExtents(v, min, max, logarithmic);
 
@@ -712,11 +712,11 @@ NoteLayer::getYForValue(View *v, double val) const
 }
 
 double
-NoteLayer::getValueForY(View *v, int y) const
+NoteLayer::getValueForY(LayerGeometryProvider *v, int y) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     getScaleExtents(v, min, max, logarithmic);
 
@@ -830,7 +830,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 }
 
 int
-NoteLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
+NoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
     if (!m_model || shouldAutoAlign()) {
         return 0;
@@ -844,7 +844,7 @@ NoteLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 }
 
 void
-NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
+NoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
     if (!m_model || m_model->getPoints().empty()) return;
 
@@ -853,7 +853,7 @@ NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     bool logarithmic;
 
     int w = getVerticalScaleWidth(v, false, paint);
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     getScaleExtents(v, min, max, logarithmic);
 
@@ -882,7 +882,7 @@ NoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 }
 
 void
-NoteLayer::drawStart(View *v, QMouseEvent *e)
+NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -906,7 +906,7 @@ NoteLayer::drawStart(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::drawDrag(View *v, QMouseEvent *e)
+NoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -935,7 +935,7 @@ NoteLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::drawEnd(View *, QMouseEvent *)
+NoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
@@ -945,7 +945,7 @@ NoteLayer::drawEnd(View *, QMouseEvent *)
 }
 
 void
-NoteLayer::eraseStart(View *v, QMouseEvent *e)
+NoteLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
@@ -960,12 +960,12 @@ NoteLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::eraseDrag(View *, QMouseEvent *)
+NoteLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 {
 }
 
 void
-NoteLayer::eraseEnd(View *v, QMouseEvent *e)
+NoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -985,7 +985,7 @@ NoteLayer::eraseEnd(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::editStart(View *v, QMouseEvent *e)
+NoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -1008,7 +1008,7 @@ NoteLayer::editStart(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::editDrag(View *v, QMouseEvent *e)
+NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -1037,7 +1037,7 @@ NoteLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-NoteLayer::editEnd(View *, QMouseEvent *)
+NoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
@@ -1065,7 +1065,7 @@ NoteLayer::editEnd(View *, QMouseEvent *)
 }
 
 bool
-NoteLayer::editOpen(View *v, QMouseEvent *e)
+NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
@@ -1193,7 +1193,7 @@ NoteLayer::deleteSelection(Selection s)
 }    
 
 void
-NoteLayer::copy(View *v, Selection s, Clipboard &to)
+NoteLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -1211,7 +1211,7 @@ NoteLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-NoteLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1222,7 +1222,7 @@ NoteLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, b
     if (clipboardHasDifferentAlignment(v, from)) {
 
         QMessageBox::StandardButton button =
-            QMessageBox::question(v, tr("Re-align pasted items?"),
+            QMessageBox::question(v->getView(), tr("Re-align pasted items?"),
                                   tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Yes);

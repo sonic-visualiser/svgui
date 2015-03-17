@@ -60,20 +60,20 @@ public:
     virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
     virtual void setSynchronousPainting(bool synchronous);
 
-    virtual int getVerticalScaleWidth(View *v, bool detailed, QPainter &) const;
-    virtual void paintVerticalScale(View *v, bool detailed, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool detailed, QPainter &) const;
+    virtual void paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const;
 
-    virtual bool getCrosshairExtents(View *, QPainter &, QPoint cursorPos,
+    virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint cursorPos,
                                      std::vector<QRect> &extents) const;
-    virtual void paintCrosshairs(View *, QPainter &, QPoint) const;
+    virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
 
-    virtual void measureDoubleClick(View *, QMouseEvent *);
+    virtual void measureDoubleClick(LayerGeometryProvider *, QMouseEvent *);
 
     virtual bool hasLightBackground() const;
 
@@ -210,11 +210,11 @@ public:
         return ColourHasMeaningfulValue;
     }
 
-    double getYForFrequency(const View *v, double frequency) const;
-    double getFrequencyForY(const View *v, int y) const;
+    double getYForFrequency(const LayerGeometryProvider *v, double frequency) const;
+    double getFrequencyForY(const LayerGeometryProvider *v, int y) const;
 
-    virtual int getCompletion(View *v) const;
-    virtual QString getError(View *v) const;
+    virtual int getCompletion(LayerGeometryProvider *v) const;
+    virtual QString getError(LayerGeometryProvider *v) const;
 
     virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
@@ -223,16 +223,16 @@ public:
 
     virtual bool setDisplayExtents(double min, double max);
 
-    virtual bool getYScaleValue(const View *, int, double &, QString &) const;
+    virtual bool getYScaleValue(const LayerGeometryProvider *, int, double &, QString &) const;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 
     void setProperties(const QXmlAttributes &attributes);
 
-    virtual void setLayerDormant(const View *v, bool dormant);
+    virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
 
-    virtual bool isLayerScrollable(const View *) const { return false; }
+    virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
@@ -313,7 +313,7 @@ protected:
         sv_frame_t startFrame;
         int zoomLevel;
     };
-    typedef std::map<const View *, ImageCache> ViewImageCache;
+    typedef std::map<const LayerGeometryProvider *, ImageCache> ViewImageCache;
     void invalidateImageCaches();
     void invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFrame);
     mutable ViewImageCache m_imageCaches;
@@ -334,11 +334,11 @@ protected:
     void initialisePalette();
     void rotatePalette(int distance);
 
-    unsigned char getDisplayValue(View *v, double input) const;
+    unsigned char getDisplayValue(LayerGeometryProvider *v, double input) const;
 
     int getColourScaleWidth(QPainter &) const;
 
-    void illuminateLocalFeatures(View *v, QPainter &painter) const;
+    void illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &painter) const;
 
     double getEffectiveMinFrequency() const;
     double getEffectiveMaxFrequency() const;
@@ -349,16 +349,16 @@ protected:
     // position, if the spectrogram has oversampling smoothing.  Use
     // getSmoothedYBinRange to obtain that.
 
-    bool getXBinRange(View *v, int x, double &windowMin, double &windowMax) const;
-    bool getYBinRange(View *v, int y, double &freqBinMin, double &freqBinMax) const;
-    bool getSmoothedYBinRange(View *v, int y, double &freqBinMin, double &freqBinMax) const;
+    bool getXBinRange(LayerGeometryProvider *v, int x, double &windowMin, double &windowMax) const;
+    bool getYBinRange(LayerGeometryProvider *v, int y, double &freqBinMin, double &freqBinMax) const;
+    bool getSmoothedYBinRange(LayerGeometryProvider *v, int y, double &freqBinMin, double &freqBinMax) const;
 
-    bool getYBinSourceRange(View *v, int y, double &freqMin, double &freqMax) const;
-    bool getAdjustedYBinSourceRange(View *v, int x, int y,
+    bool getYBinSourceRange(LayerGeometryProvider *v, int y, double &freqMin, double &freqMax) const;
+    bool getAdjustedYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 				    double &freqMin, double &freqMax,
 				    double &adjFreqMin, double &adjFreqMax) const;
-    bool getXBinSourceRange(View *v, int x, RealTime &timeMin, RealTime &timeMax) const;
-    bool getXYBinSourceRange(View *v, int x, int y, double &min, double &max,
+    bool getXBinSourceRange(LayerGeometryProvider *v, int x, RealTime &timeMin, RealTime &timeMax) const;
+    bool getXYBinSourceRange(LayerGeometryProvider *v, int x, int y, double &min, double &max,
 			     double &phaseMin, double &phaseMax) const;
 
     int getWindowIncrement() const {
@@ -367,15 +367,15 @@ protected:
         else return m_windowSize / (1 << (m_windowHopLevel - 1));
     }
 
-    int getZeroPadLevel(const View *v) const;
-    int getFFTSize(const View *v) const;
-    FFTModel *getFFTModel(const View *v) const;
-    Dense3DModelPeakCache *getPeakCache(const View *v) const;
+    int getZeroPadLevel(const LayerGeometryProvider *v) const;
+    int getFFTSize(const LayerGeometryProvider *v) const;
+    FFTModel *getFFTModel(const LayerGeometryProvider *v) const;
+    Dense3DModelPeakCache *getPeakCache(const LayerGeometryProvider *v) const;
     void invalidateFFTModels();
 
     typedef std::pair<FFTModel *, sv_frame_t> FFTFillPair; // model, last fill
-    typedef std::map<const View *, FFTFillPair> ViewFFTMap;
-    typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
+    typedef std::map<const LayerGeometryProvider *, FFTFillPair> ViewFFTMap;
+    typedef std::map<const LayerGeometryProvider *, Dense3DModelPeakCache *> PeakCacheMap;
     mutable ViewFFTMap m_fftModels;
     mutable PeakCacheMap m_peakCaches;
     mutable Model *m_sliceableModel;
@@ -422,18 +422,18 @@ protected:
         float m_max;
     };
 
-    typedef std::map<const View *, MagnitudeRange> ViewMagMap;
+    typedef std::map<const LayerGeometryProvider *, MagnitudeRange> ViewMagMap;
     mutable ViewMagMap m_viewMags;
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
-    bool updateViewMagnitudes(View *v) const;
-    bool paintDrawBuffer(View *v, int w, int h,
+    bool updateViewMagnitudes(LayerGeometryProvider *v) const;
+    bool paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
                          const std::vector<int> &binforx,
                          const std::vector<double> &binfory,
                          bool usePeaksCache,
                          MagnitudeRange &overallMag,
                          bool &overallMagChanged) const;
-    bool paintDrawBufferPeakFrequencies(View *v, int w, int h,
+    bool paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
                                         const std::vector<int> &binforx,
                                         int minbin,
                                         int maxbin,
@@ -443,8 +443,8 @@ protected:
                                         MagnitudeRange &overallMag,
                                         bool &overallMagChanged) const;
 
-    virtual void updateMeasureRectYCoords(View *v, const MeasureRect &r) const;
-    virtual void setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const;
+    virtual void updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const;
+    virtual void setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const;
 };
 
 #endif

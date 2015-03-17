@@ -34,33 +34,33 @@ public:
 
     virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
 
-    virtual void drawStart(View *v, QMouseEvent *);
-    virtual void drawDrag(View *v, QMouseEvent *);
-    virtual void drawEnd(View *v, QMouseEvent *);
+    virtual void drawStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void eraseStart(View *v, QMouseEvent *);
-    virtual void eraseDrag(View *v, QMouseEvent *);
-    virtual void eraseEnd(View *v, QMouseEvent *);
+    virtual void eraseStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void eraseDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void eraseEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void editStart(View *v, QMouseEvent *);
-    virtual void editDrag(View *v, QMouseEvent *);
-    virtual void editEnd(View *v, QMouseEvent *);
+    virtual void editStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editEnd(LayerGeometryProvider *v, QMouseEvent *);
 
     virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
-    virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
+    virtual void copy(LayerGeometryProvider *v, Selection s, Clipboard &to);
+    virtual bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
-    virtual bool editOpen(View *, QMouseEvent *); // on double-click
+    virtual bool editOpen(LayerGeometryProvider *, QMouseEvent *); // on double-click
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(TextModel *model);
@@ -74,16 +74,16 @@ public:
 					  int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
-    virtual bool isLayerScrollable(const View *v) const;
+    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
 
     virtual bool isLayerEditable() const { return true; }
 
-    virtual int getCompletion(View *) const { return m_model->getCompletion(); }
+    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
 
     virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
@@ -91,14 +91,14 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
 protected:
-    int getYForHeight(View *v, double height) const;
-    double getHeightForY(View *v, int y) const;
+    int getYForHeight(LayerGeometryProvider *v, double height) const;
+    double getHeightForY(LayerGeometryProvider *v, int y) const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    TextModel::PointList getLocalPoints(View *v, int x, int y) const;
+    TextModel::PointList getLocalPoints(LayerGeometryProvider *v, int x, int y) const;
 
-    bool getPointToDrag(View *v, int x, int y, TextModel::Point &) const;
+    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, TextModel::Point &) const;
 
     TextModel *m_model;
     bool m_editing;

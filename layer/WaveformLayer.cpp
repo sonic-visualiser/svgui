@@ -326,7 +326,7 @@ WaveformLayer::setAggressiveCacheing(bool aggressive)
 }
 
 int
-WaveformLayer::getCompletion(View *) const
+WaveformLayer::getCompletion(LayerGeometryProvider *) const
 {
     int completion = 100;
     if (!m_model || !m_model->isOK()) return completion;
@@ -399,7 +399,7 @@ WaveformLayer::getChannelArrangement(int &min, int &max,
 }    
 
 bool
-WaveformLayer::isLayerScrollable(const View *) const
+WaveformLayer::isLayerScrollable(const LayerGeometryProvider *) const
 {
     return !m_autoNormalize;
 }
@@ -408,7 +408,7 @@ static float meterdbs[] = { -40, -30, -20, -15, -10,
                             -5, -3, -2, -1, -0.5, 0 };
 
 bool
-WaveformLayer::getSourceFramesForX(View *v, int x, int modelZoomLevel,
+WaveformLayer::getSourceFramesForX(LayerGeometryProvider *v, int x, int modelZoomLevel,
                                    sv_frame_t &f0, sv_frame_t &f1) const
 {
     sv_frame_t viewFrame = v->getFrameForX(x);
@@ -433,7 +433,7 @@ WaveformLayer::getSourceFramesForX(View *v, int x, int modelZoomLevel,
 }
 
 float
-WaveformLayer::getNormalizeGain(View *v, int channel) const
+WaveformLayer::getNormalizeGain(LayerGeometryProvider *v, int channel) const
 {
     sv_frame_t startFrame = v->getStartFrame();
     sv_frame_t endFrame = v->getEndFrame();
@@ -953,7 +953,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
 }
 
 QString
-WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
+WaveformLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
@@ -1036,7 +1036,7 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 int
-WaveformLayer::getYForValue(const View *v, double value, int channel) const
+WaveformLayer::getYForValue(const LayerGeometryProvider *v, double value, int channel) const
 {
     int channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
@@ -1046,7 +1046,7 @@ WaveformLayer::getYForValue(const View *v, double value, int channel) const
     if (channels == 0) return 0;
     if (maxChannel < minChannel || channel < minChannel) return 0;
 
-    int h = v->height();
+    int h = v->getPaintHeight();
     int m = (h / channels) / 2;
 	
     if ((m_scale == dBScale || m_scale == MeterScale) &&
@@ -1079,7 +1079,7 @@ WaveformLayer::getYForValue(const View *v, double value, int channel) const
 }
 
 double
-WaveformLayer::getValueForY(const View *v, int y, int &channel) const
+WaveformLayer::getValueForY(const LayerGeometryProvider *v, int y, int &channel) const
 {
     int channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
@@ -1089,7 +1089,7 @@ WaveformLayer::getValueForY(const View *v, int y, int &channel) const
     if (channels == 0) return 0;
     if (maxChannel < minChannel) return 0;
 
-    int h = v->height();
+    int h = v->getPaintHeight();
     int m = (h / channels) / 2;
 
     if ((m_scale == dBScale || m_scale == MeterScale) &&
@@ -1125,7 +1125,7 @@ WaveformLayer::getValueForY(const View *v, int y, int &channel) const
 }
 
 bool
-WaveformLayer::getYScaleValue(const View *v, int y,
+WaveformLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
                               double &value, QString &unit) const
 {
     int channel;
@@ -1151,7 +1151,7 @@ WaveformLayer::getYScaleValue(const View *v, int y,
 }
 
 bool
-WaveformLayer::getYScaleDifference(const View *v, int y0, int y1,
+WaveformLayer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
                                    double &diff, QString &unit) const
 {
     int c0, c1;
@@ -1189,7 +1189,7 @@ WaveformLayer::getYScaleDifference(const View *v, int y0, int y1,
 }
 
 int
-WaveformLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
+WaveformLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint) const
 {
     if (m_scale == LinearScale) {
 	return paint.fontMetrics().width("0.0") + 13;
@@ -1200,7 +1200,7 @@ WaveformLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 }
 
 void
-WaveformLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const
+WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
 	return;
