@@ -41,7 +41,7 @@ public:
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
-    virtual bool snapToFeatureFrame(View *, sv_frame_t &, int &, SnapType) const;
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *, sv_frame_t &, int &, SnapType) const;
 
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourIrrelevant;
@@ -53,7 +53,7 @@ public:
 
     virtual QString getLayerPresentationName() const;
 
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
@@ -66,7 +66,7 @@ protected:
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    int getMajorTickSpacing(View *, bool &quarterTicks) const;
+    int getMajorTickSpacing(LayerGeometryProvider *, bool &quarterTicks) const;
 };
 
 #endif

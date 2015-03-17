@@ -19,11 +19,13 @@
 #include <QString>
 #include <QColor>
 
+class LayerGeometryProvider;
+
 class ColourScaleLayer
 {
 public:
     virtual QString getScaleUnits() const = 0;
-    virtual QColor getColourForValue(View *v, double value) const = 0;
+    virtual QColor getColourForValue(LayerGeometryProvider *v, double value) const = 0;
 };
 
 #endif

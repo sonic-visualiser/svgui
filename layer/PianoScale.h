@@ -19,7 +19,7 @@
 #include <QRect>
 
 class QPainter;
-class View;
+class LayerGeometryProvider;
 
 class PianoScale
 {

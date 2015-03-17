@@ -18,6 +18,7 @@
 #include "base/BaseTypes.h"
 
 class ViewManager;
+class View;
 class Layer;
 
 class LayerGeometryProvider
@@ -76,6 +77,11 @@ public:
     virtual double getFrequencyForY(int y, double minFreq, double maxFreq,
 			   bool logarithmic) const = 0;
 
+    virtual int getTextLabelHeight(const Layer *layer, QPainter &) const = 0;
+
+    virtual bool getValueExtents(QString unit, double &min, double &max,
+                                 bool &log) const = 0;
+
     /**
      * Return the zoom level, i.e. the number of frames per pixel
      */
@@ -113,7 +119,8 @@ public:
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const = 0;
 
-    virtual QWidget *getWidget() const = 0;
+    virtual View *getView() = 0;
+    virtual const View *getView() const = 0;
 };
 
 #endif

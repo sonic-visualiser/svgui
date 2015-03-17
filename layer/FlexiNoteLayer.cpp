@@ -1341,8 +1341,8 @@ FlexiNoteLayer::getAssociatedPitchModel(LayerGeometryProvider *v) const
 
     cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
 
-    for (int i = 0; i < v->getLayerCount(); ++i) {
-        Layer *layer = v->getLayer(i);
+    for (int i = 0; i < v->getView()->getLayerCount(); ++i) {
+        Layer *layer = v->getView()->getLayer(i);
         if (layer &&
             layer->getLayerPresentationName() != "candidate") {
             cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
@@ -1485,27 +1485,27 @@ void
 FlexiNoteLayer::mouseMoveEvent(LayerGeometryProvider *v, QMouseEvent *e)
 {
     // GF: context sensitive cursors
-    // v->setCursor(Qt::ArrowCursor);
+    // v->getView()->setCursor(Qt::ArrowCursor);
     FlexiNoteModel::Point note(0);
     if (!getNoteToEdit(v, e->x(), e->y(), note)) { 
-        // v->setCursor(Qt::UpArrowCursor);
+        // v->getView()->setCursor(Qt::UpArrowCursor);
         return; 
     }
 
     bool closeToLeft = false, closeToRight = false, closeToTop = false, closeToBottom = false;
     getRelativeMousePosition(v, note, e->x(), e->y(), closeToLeft, closeToRight, closeToTop, closeToBottom);
     // if (!closeToLeft) return;
-    // if (closeToTop) v->setCursor(Qt::SizeVerCursor);
+    // if (closeToTop) v->getView()->setCursor(Qt::SizeVerCursor);
     
-    if (closeToLeft) { v->setCursor(Qt::SizeHorCursor); m_editMode = LeftBoundary; return; }
-    if (closeToRight) { v->setCursor(Qt::SizeHorCursor); m_editMode = RightBoundary; return; }
-    if (closeToTop) { v->setCursor(Qt::CrossCursor);  m_editMode = DragNote; return; }
-    if (closeToBottom) { v->setCursor(Qt::UpArrowCursor); m_editMode = SplitNote; return; }
+    if (closeToLeft) { v->getView()->setCursor(Qt::SizeHorCursor); m_editMode = LeftBoundary; return; }
+    if (closeToRight) { v->getView()->setCursor(Qt::SizeHorCursor); m_editMode = RightBoundary; return; }
+    if (closeToTop) { v->getView()->setCursor(Qt::CrossCursor);  m_editMode = DragNote; return; }
+    if (closeToBottom) { v->getView()->setCursor(Qt::UpArrowCursor); m_editMode = SplitNote; return; }
 
-    v->setCursor(Qt::ArrowCursor);
+    v->getView()->setCursor(Qt::ArrowCursor);
 
     std::cerr << "Mouse moved in edit mode over FlexiNoteLayer" << std::endl;
-    // v->setCursor(Qt::SizeHorCursor);
+    // v->getView()->setCursor(Qt::SizeHorCursor);
 
 }
 
@@ -1722,7 +1722,7 @@ FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
     if (clipboardHasDifferentAlignment(v, from)) {
 
         QMessageBox::StandardButton button =
-            QMessageBox::question(v->getWidget(), tr("Re-align pasted items?"),
+            QMessageBox::question(v->getView(), tr("Re-align pasted items?"),
                                   tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Yes);
@@ -1875,7 +1875,7 @@ FlexiNoteLayer::setVerticalRangeToNoteRange(LayerGeometryProvider *v)
     std::cerr << "min frequency:" << minf << ", max frequency: " << maxf << std::endl;
     
     if (hasNotes) {
-        v->getLayer(1)->setDisplayExtents(minf*0.66,maxf*1.5); 
+        v->getView()->getLayer(1)->setDisplayExtents(minf*0.66,maxf*1.5); 
         // MM: this is a hack because we rely on 
         // * this layer being automatically aligned to layer 1
         // * layer one is a log frequency layer.

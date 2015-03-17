@@ -25,21 +25,21 @@
 #include "view/View.h"
 
 int
-LogColourScale::getWidth(View *,
+LogColourScale::getWidth(LayerGeometryProvider *,
 			    QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 15;
 }
 
 void
-LogColourScale::paintVertical(View *v,
+LogColourScale::paintVertical(LayerGeometryProvider *v,
 			      const ColourScaleLayer *layer,
 			      QPainter &paint,
 			      int /* x0 */,
 			      double minlog,
 			      double maxlog)
 {
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     int n = 10;
 

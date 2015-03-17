@@ -92,14 +92,14 @@ SliceLayer::modelAboutToBeDeleted(Model *m)
 }
 
 QString
-SliceLayer::getFeatureDescription(View *v, QPoint &p) const
+SliceLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
 {
     int minbin, maxbin, range;
     return getFeatureDescriptionAux(v, p, true, minbin, maxbin, range);
 }
 
 QString
-SliceLayer::getFeatureDescriptionAux(View *v, QPoint &p,
+SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
                                      bool includeBinDescription,
                                      int &minbin, int &maxbin, int &range) const
 {
@@ -108,7 +108,7 @@ SliceLayer::getFeatureDescriptionAux(View *v, QPoint &p,
     if (!m_sliceableModel) return "";
 
     int xorigin = m_xorigins[v];
-    int w = v->width() - xorigin - 1;
+    int w = v->getPaintWidth() - xorigin - 1;
     
     int mh = m_sliceableModel->getHeight();
     minbin = getBinForX(p.x() - xorigin, mh, w);
@@ -226,7 +226,7 @@ SliceLayer::getBinForX(double x, int count, double w) const
 }
 
 double
-SliceLayer::getYForValue(double value, const View *v, double &norm) const
+SliceLayer::getYForValue(double value, const LayerGeometryProvider *v, double &norm) const
 {
     norm = 0.0;
 
@@ -276,7 +276,7 @@ SliceLayer::getYForValue(double value, const View *v, double &norm) const
 }
 
 double
-SliceLayer::getValueForY(double y, const View *v) const
+SliceLayer::getValueForY(double y, const LayerGeometryProvider *v) const
 {
     double value = 0.0;
 
@@ -334,11 +334,11 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     paint.setPen(getBaseQColor());
 
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
-    int w = v->width() - xorigin - 1;
+    int w = v->getPaintWidth() - xorigin - 1;
 
     m_xorigins[v] = xorigin; // for use in getFeatureDescription
     
-    int yorigin = v->height() - 20 - paint.fontMetrics().height() - 7;
+    int yorigin = v->getPaintHeight() - 20 - paint.fontMetrics().height() - 7;
     int h = yorigin - paint.fontMetrics().height() - 8;
 
     m_yorigins[v] = yorigin; // for getYForValue etc
@@ -501,7 +501,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 }
 
 int
-SliceLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
+SliceLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint) const
 {
     if (m_energyScale == LinearScale || m_energyScale == AbsoluteScale) {
 	return std::max(paint.fontMetrics().width("0.0") + 13,
@@ -513,7 +513,7 @@ SliceLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 }
 
 void
-SliceLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const
+SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const
 {
     double thresh = m_threshold;
     if (m_energyScale != LinearScale && m_energyScale != AbsoluteScale) {
@@ -523,7 +523,7 @@ SliceLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const
 //    int h = (rect.height() * 3) / 4;
 //    int y = (rect.height() / 2) - (h / 2);
     
-    int yorigin = v->height() - 20 - paint.fontMetrics().height() - 6;
+    int yorigin = v->getPaintHeight() - 20 - paint.fontMetrics().height() - 6;
     int h = yorigin - paint.fontMetrics().height() - 8;
     if (h < 0) return;
 

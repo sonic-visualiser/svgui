@@ -333,6 +333,9 @@ public:
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
 
+    View *getView() { return this; } 
+    const View *getView() const { return this; } 
+    
 signals:
     void propertyContainerAdded(PropertyContainer *pc);
     void propertyContainerRemoved(PropertyContainer *pc);
