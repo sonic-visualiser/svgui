@@ -427,7 +427,6 @@ protected:
     sv_frame_t          m_playPointerFrame;
     bool                m_lightBackground;
     bool                m_showProgress;
-    int                 m_paintScale;
 
     QPixmap            *m_cache;
     sv_frame_t          m_cacheCentreFrame;

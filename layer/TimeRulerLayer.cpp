@@ -309,7 +309,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             if (v->getViewManager() && v->getViewManager()->getOverlayMode() !=
                 ViewManager::NoOverlays) {
 
-                if (v->getLayer(0) == this) {
+                if (v->getView()->getLayer(0) == this) {
                     // backmost layer, don't worry about outlining the text
                     paint.drawText(x+2 - tw/2, y, text);
                 } else {
