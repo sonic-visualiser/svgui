@@ -57,6 +57,9 @@ public:
      */
     virtual sv_frame_t getFrameForX(int x) const = 0;
 
+    virtual sv_frame_t getModelsStartFrame() const = 0;
+    virtual sv_frame_t getModelsEndFrame() const = 0;
+
     /**
      * Return the pixel y-coordinate corresponding to a given
      * frequency, if the frequency range is as specified.  This does
@@ -106,6 +109,7 @@ public:
     virtual ViewManager *getViewManager() const = 0;
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const = 0;
+    virtual bool shouldShowFeatureLabels() const = 0;
 
     enum TextStyle {
 	BoxedText,

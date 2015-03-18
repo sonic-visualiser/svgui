@@ -20,6 +20,7 @@
 #include "base/Profiler.h"
 #include "base/Pitch.h"
 #include "base/Preferences.h"
+#include "ViewProxy.h"
 
 #include "layer/TimeRulerLayer.h"
 #include "layer/SingleColourLayer.h"
@@ -58,7 +59,6 @@ View::View(QWidget *w, bool showProgress) :
     m_followPlayIsDetached(false),
     m_playPointerFrame(0),
     m_showProgress(showProgress),
-    m_paintScale(1),
     m_cache(0),
     m_cacheCentreFrame(0),
     m_cacheZoomLevel(1024),
@@ -1662,9 +1662,7 @@ View::setPaintFont(QPainter &paint)
 QRect
 View::getPaintRect() const
 {
-    QRect r(rect());
-    return QRect(r.x() * m_paintScale, r.y() * m_paintScale, 
-                 r.width() * m_paintScale, r.height() * m_paintScale);
+    return rect();
 }
 
 void
@@ -1840,6 +1838,8 @@ View::paintEvent(QPaintEvent *e)
 
     // Scrollable (cacheable) items first
 
+    ViewProxy proxy(this, dpratio);
+    
     if (!paintedCacheRect) {
 
         QRect rectToPaint;
@@ -1847,11 +1847,9 @@ View::paintEvent(QPaintEvent *e)
 	if (repaintCache) {
             paint.begin(m_cache);
             rectToPaint = scaledCacheRect;
-            m_paintScale = dpratio;
         } else {
             paint.begin(this);
             rectToPaint = cacheRect;
-            m_paintScale = 1;
         }
 
         setPaintFont(paint);
@@ -1867,7 +1865,7 @@ View::paintEvent(QPaintEvent *e)
 	for (LayerList::iterator i = scrollables.begin(); i != scrollables.end(); ++i) {
 	    paint.setRenderHint(QPainter::Antialiasing, false);
 	    paint.save();
-            (*i)->paint(this, paint, rectToPaint);
+            (*i)->paint(&proxy, paint, rectToPaint);
 	    paint.restore();
 	}
 
@@ -1906,7 +1904,7 @@ View::paintEvent(QPaintEvent *e)
 	
     for (LayerList::iterator i = nonScrollables.begin(); i != nonScrollables.end(); ++i) {
 //        Profiler profiler2("View::paintEvent non-cacheable");
-	(*i)->paint(this, paint, nonCacheRect);
+	(*i)->paint(&proxy, paint, nonCacheRect);
     }
 	
     paint.end();
@@ -2421,23 +2419,23 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 
 	for (LayerList::iterator i = m_layerStack.begin();
              i != m_layerStack.end(); ++i) {
-		if(!((*i)->isLayerDormant(this))){
+            if (!((*i)->isLayerDormant(this))){
 
-		    paint.setRenderHint(QPainter::Antialiasing, false);
+                paint.setRenderHint(QPainter::Antialiasing, false);
 
-		    paint.save();
-	            paint.translate(xorigin + x, 0);
+                paint.save();
+                paint.translate(xorigin + x, 0);
 
-	            cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
+                cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
 
-	            (*i)->setSynchronousPainting(true);
+                (*i)->setSynchronousPainting(true);
 
-		    (*i)->paint(this, paint, chunk);
+                (*i)->paint(this, paint, chunk);
 
-	            (*i)->setSynchronousPainting(false);
+                (*i)->setSynchronousPainting(false);
 
-		    paint.restore();
-		}
+                paint.restore();
+            }
 	}
     }
 
