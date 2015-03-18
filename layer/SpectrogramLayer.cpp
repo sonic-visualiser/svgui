@@ -1006,12 +1006,14 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 
         Layer::setLayerDormant(v, true);
 
+        const View *view = v->getView();
+        
 	invalidateImageCaches();
-        m_imageCaches.erase(v);
+        m_imageCaches.erase(view);
 
-        if (m_fftModels.find(v) != m_fftModels.end()) {
+        if (m_fftModels.find(view) != m_fftModels.end()) {
 
-            if (m_sliceableModel == m_fftModels[v].first) {
+            if (m_sliceableModel == m_fftModels[view].first) {
                 bool replaced = false;
                 for (ViewFFTMap::iterator i = m_fftModels.begin();
                      i != m_fftModels.end(); ++i) {
@@ -1024,11 +1026,11 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
                 if (!replaced) emit sliceableModelReplaced(m_sliceableModel, 0);
             }
 
-            delete m_fftModels[v].first;
-            m_fftModels.erase(v);
+            delete m_fftModels[view].first;
+            m_fftModels.erase(view);
 
-            delete m_peakCaches[v];
-            m_peakCaches.erase(v);
+            delete m_peakCaches[view];
+            m_peakCaches.erase(view);
         }
 	
     } else {
@@ -1599,30 +1601,32 @@ SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
 
     int fftSize = getFFTSize(v);
 
-    if (m_fftModels.find(v) != m_fftModels.end()) {
-        if (m_fftModels[v].first == 0) {
+    const View *view = v->getView();
+    
+    if (m_fftModels.find(view) != m_fftModels.end()) {
+        if (m_fftModels[view].first == 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
             SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found null model" << endl;
 #endif
             return 0;
         }
-        if (m_fftModels[v].first->getHeight() != fftSize / 2 + 1) {
+        if (m_fftModels[view].first->getHeight() != fftSize / 2 + 1) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[v].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
+            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[view].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
 #endif
-            delete m_fftModels[v].first;
-            m_fftModels.erase(v);
-            delete m_peakCaches[v];
-            m_peakCaches.erase(v);
+            delete m_fftModels[view].first;
+            m_fftModels.erase(view);
+            delete m_peakCaches[view];
+            m_peakCaches.erase(view);
         } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[v].first->getHeight() << endl;
+            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[view].first->getHeight() << endl;
 #endif
-            return m_fftModels[v].first;
+            return m_fftModels[view].first;
         }
     }
 
-    if (m_fftModels.find(v) == m_fftModels.end()) {
+    if (m_fftModels.find(view) == m_fftModels.end()) {
 
         FFTModel *model = new FFTModel(m_model,
                                        m_channel,
@@ -1640,7 +1644,7 @@ SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
                  tr("Failed to create the FFT model for this spectrogram.\n"
                     "There may be insufficient memory or disc space to continue."));
             delete model;
-            m_fftModels[v] = FFTFillPair(0, 0);
+            m_fftModels[view] = FFTFillPair(0, 0);
             return 0;
         }
 
@@ -1652,7 +1656,7 @@ SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
             m_sliceableModel = model;
         }
 
-        m_fftModels[v] = FFTFillPair(model, 0);
+        m_fftModels[view] = FFTFillPair(model, 0);
 
         model->resume();
         
@@ -1663,18 +1667,19 @@ SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
         m_updateTimer->start(200);
     }
 
-    return m_fftModels[v].first;
+    return m_fftModels[view].first;
 }
 
 Dense3DModelPeakCache *
 SpectrogramLayer::getPeakCache(const LayerGeometryProvider *v) const
 {
-    if (!m_peakCaches[v]) {
+    const View *view = v->getView();
+    if (!m_peakCaches[view]) {
         FFTModel *f = getFFTModel(v);
         if (!f) return 0;
-        m_peakCaches[v] = new Dense3DModelPeakCache(f, 8);
+        m_peakCaches[view] = new Dense3DModelPeakCache(f, 8);
     }
-    return m_peakCaches[v];
+    return m_peakCaches[view];
 }
 
 const Model *
@@ -1807,7 +1812,10 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 	return;
     }
 */
-    ImageCache &cache = m_imageCaches[v];
+
+    const View *view = v->getView();
+    
+    ImageCache &cache = m_imageCaches[view];
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     SVDEBUG << "SpectrogramLayer::paint(): image cache valid area " << cache.
@@ -2879,9 +2887,12 @@ int
 SpectrogramLayer::getCompletion(LayerGeometryProvider *v) const
 {
     if (m_updateTimer == 0) return 100;
-    if (m_fftModels.find(v) == m_fftModels.end()) return 100;
 
-    int completion = m_fftModels[v].first->getCompletion();
+    const View *view = v->getView();
+    
+    if (m_fftModels.find(view) == m_fftModels.end()) return 100;
+
+    int completion = m_fftModels[view].first->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     SVDEBUG << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
@@ -2891,8 +2902,9 @@ SpectrogramLayer::getCompletion(LayerGeometryProvider *v) const
 QString
 SpectrogramLayer::getError(LayerGeometryProvider *v) const
 {
-    if (m_fftModels.find(v) == m_fftModels.end()) return "";
-    return m_fftModels[v].first->getError();
+    const View *view = v->getView();
+    if (m_fftModels.find(view) == m_fftModels.end()) return "";
+    return m_fftModels[view].first->getError();
 }
 
 bool
@@ -2987,10 +2999,11 @@ SpectrogramLayer::snapToFeatureFrame(LayerGeometryProvider *,
 void
 SpectrogramLayer::measureDoubleClick(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    ImageCache &cache = m_imageCaches[v];
+    const View *view = v->getView();
+    ImageCache &cache = m_imageCaches[view];
 
     cerr << "cache width: " << cache.image.width() << ", height: "
-              << cache.image.height() << endl;
+         << cache.image.height() << endl;
 
     QImage image = cache.image;
 

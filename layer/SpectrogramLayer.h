@@ -313,7 +313,7 @@ protected:
         sv_frame_t startFrame;
         int zoomLevel;
     };
-    typedef std::map<const LayerGeometryProvider *, ImageCache> ViewImageCache;
+    typedef std::map<const View *, ImageCache> ViewImageCache;
     void invalidateImageCaches();
     void invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFrame);
     mutable ViewImageCache m_imageCaches;
@@ -374,8 +374,8 @@ protected:
     void invalidateFFTModels();
 
     typedef std::pair<FFTModel *, sv_frame_t> FFTFillPair; // model, last fill
-    typedef std::map<const LayerGeometryProvider *, FFTFillPair> ViewFFTMap;
-    typedef std::map<const LayerGeometryProvider *, Dense3DModelPeakCache *> PeakCacheMap;
+    typedef std::map<const View *, FFTFillPair> ViewFFTMap;
+    typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
     mutable ViewFFTMap m_fftModels;
     mutable PeakCacheMap m_peakCaches;
     mutable Model *m_sliceableModel;
