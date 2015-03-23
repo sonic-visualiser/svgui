@@ -43,12 +43,12 @@ public:
     virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
-    virtual QString getLabelPreceding(int) const;
+    virtual QString getLabelPreceding(sv_frame_t) const;
 
-    virtual bool snapToFeatureFrame(View *v, int &frame,
+    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
-    virtual bool snapToSimilarFeature(View *v, int &frame,
+    virtual bool snapToSimilarFeature(View *v, sv_frame_t &frame,
                                       int &resolution,
                                       SnapType snap) const;
 
@@ -66,12 +66,12 @@ public:
 
     virtual bool editOpen(View *v, QMouseEvent *);
 
-    virtual void moveSelection(Selection s, int newStartFrame);
+    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
     virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
+    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
@@ -130,11 +130,11 @@ public:
         return m_plotStyle == PlotSegmentation && m_model->hasTextLabels();
     }
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
-    virtual bool getDisplayExtents(float &min, float &max) const;
-    virtual bool setDisplayExtents(float min, float max);
+    virtual bool getDisplayExtents(double &min, double &max) const;
+    virtual bool setDisplayExtents(double min, double max);
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
@@ -155,13 +155,13 @@ public:
     }
 
     /// VerticalScaleLayer and ColourScaleLayer methods
-    virtual int getYForValue(View *, float value) const;
-    virtual float getValueForY(View *, int y) const;
+    virtual int getYForValue(View *, double value) const;
+    virtual double getValueForY(View *, int y) const;
     virtual QString getScaleUnits() const;
-    virtual QColor getColourForValue(View *v, float value) const;
+    virtual QColor getColourForValue(View *v, double value) const;
 
 protected:
-    void getScaleExtents(View *, float &min, float &max, bool &log) const;
+    void getScaleExtents(View *, double &min, double &max, bool &log) const;
     bool shouldAutoAlign() const;
 
     SparseTimeValueModel::PointList getLocalPoints(View *v, int) const;
@@ -179,8 +179,8 @@ protected:
     bool m_drawSegmentDivisions;
     bool m_derivative;
 
-    mutable float m_scaleMinimum;
-    mutable float m_scaleMaximum;
+    mutable double m_scaleMinimum;
+    mutable double m_scaleMaximum;
 
     void finish(SparseTimeValueModel::EditCommand *command) {
         Command *c = command->finish();

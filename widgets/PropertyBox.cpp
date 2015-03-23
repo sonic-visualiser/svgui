@@ -689,7 +689,7 @@ PropertyBox::playAudibleButtonChanged(bool audible)
 void
 PropertyBox::playGainChanged(float gain)
 {
-    int dialValue = lrint(log10(gain) * 20.0);
+    int dialValue = int(lrint(log10(gain) * 20.0));
     if (dialValue < -50) dialValue = -50;
     if (dialValue >  50) dialValue =  50;
     emit changePlayGainDial(dialValue);
@@ -703,7 +703,7 @@ PropertyBox::playGainDialChanged(int dialValue)
     PlayParameters *params = m_container->getPlayParameters();
     if (!params) return;
 
-    float gain = pow(10, float(dialValue) / 20.0);
+    float gain = float(pow(10, float(dialValue) / 20.0));
 
     if (params->getPlayGain() != gain) {
         PlayParameterRepository::EditCommand *command =
@@ -718,7 +718,7 @@ PropertyBox::playGainDialChanged(int dialValue)
 void
 PropertyBox::playPanChanged(float pan)
 {
-    int dialValue = lrint(pan * 50.0);
+    int dialValue = int(lrint(pan * 50.0));
     if (dialValue < -50) dialValue = -50;
     if (dialValue >  50) dialValue =  50;
     emit changePlayPanDial(dialValue);
@@ -732,9 +732,9 @@ PropertyBox::playPanDialChanged(int dialValue)
     PlayParameters *params = m_container->getPlayParameters();
     if (!params) return;
 
-    float pan = float(dialValue) / 50.0;
-    if (pan < -1.0) pan = -1.0;
-    if (pan >  1.0) pan =  1.0;
+    float pan = float(dialValue) / 50.f;
+    if (pan < -1.f) pan = -1.f;
+    if (pan >  1.f) pan =  1.f;
 
     if (params->getPlayPan() != pan) {
         PlayParameterRepository::EditCommand *command =
@@ -832,7 +832,7 @@ PropertyBox::updateContextHelp(QObject *o)
     QString extraText;
     AudioDial *dial = dynamic_cast<AudioDial *>(w);
     if (dial) {
-        float mv = dial->mappedValue();
+        double mv = dial->mappedValue();
         QString unit = "";
         if (dial->rangeMapper()) unit = dial->rangeMapper()->getUnit();
         if (unit != "") {

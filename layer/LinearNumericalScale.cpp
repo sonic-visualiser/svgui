@@ -34,26 +34,26 @@ LinearNumericalScale::paintVertical(View *v,
 				    const VerticalScaleLayer *layer,
 				    QPainter &paint,
 				    int x0,
-				    float minf,
-				    float maxf)
+				    double minf,
+				    double maxf)
 {
     int n = 10;
 
-    float val = minf;
-    float inc = (maxf - val) / n;
+    double val = minf;
+    double inc = (maxf - val) / n;
 
     const int buflen = 40;
     char buffer[buflen];
 
     int w = getWidth(v, paint) + x0;
 
-    float round = 1.f;
+    double round = 1.0;
     int dp = 0;
     if (inc > 0) {
-        int prec = trunc(log10f(inc));
+        int prec = int(trunc(log10(inc)));
         prec -= 1;
         if (prec < 0) dp = -prec;
-        round = powf(10.f, prec);
+        round = pow(10.0, prec);
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << endl;
 #endif
@@ -66,13 +66,13 @@ LinearNumericalScale::paintVertical(View *v,
 	int y, ty;
         bool drawText = true;
 
-        float dispval = val;
+        double dispval = val;
 
 	if (i == n-1 &&
 	    v->height() < paint.fontMetrics().height() * (n*2)) {
 	    if (layer->getScaleUnits() != "") drawText = false;
 	}
-	dispval = lrintf(val / round) * round;
+	dispval = int(rint(val / round) * round);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
 	cerr << "val = " << val << ", dispval = " << dispval << endl;

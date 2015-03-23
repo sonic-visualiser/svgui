@@ -48,13 +48,13 @@ public:
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
 
-    virtual int getFirstVisibleFrame() const;
+    virtual sv_frame_t getFirstVisibleFrame() const;
 
     virtual int getVerticalScaleWidth() const;
 
-    virtual QImage *toNewImage(int f0, int f1);
+    virtual QImage *toNewImage(sv_frame_t f0, sv_frame_t f1);
     virtual QImage *toNewImage() { return View::toNewImage(); }
-    virtual QSize getImageSize(int f0, int f1);
+    virtual QSize getImageSize(sv_frame_t f0, sv_frame_t f1);
     virtual QSize getImageSize() { return View::getImageSize(); }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
@@ -73,7 +73,7 @@ signals:
     void rightButtonMenuRequested(QPoint position);
     void dropAccepted(QStringList uriList);
     void dropAccepted(QString text);
-    void doubleClickSelectInvoked(int frame);
+    void doubleClickSelectInvoked(sv_frame_t frame);
     void regionOutlined(QRect rect);
 
 public slots:
@@ -119,15 +119,15 @@ protected:
 
     void drawVerticalScale(QRect r, Layer *, QPainter &);
     void drawFeatureDescription(Layer *, QPainter &);
-    void drawCentreLine(int, QPainter &, bool omitLine);
+    void drawCentreLine(sv_samplerate_t, QPainter &, bool omitLine);
     void drawModelTimeExtents(QRect, QPainter &, const Model *);
-    void drawDurationAndRate(QRect, const Model *, int, QPainter &);
+    void drawDurationAndRate(QRect, const Model *, sv_samplerate_t, QPainter &);
     void drawWorkTitle(QRect, QPainter &, const Model *);
     void drawLayerNames(QRect, QPainter &);
     void drawEditingSelection(QPainter &);
     void drawAlignmentStatus(QRect, QPainter &, const Model *, bool down);
 
-    virtual bool render(QPainter &paint, int x0, int f0, int f1);
+    virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
 
     Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight) const;
 
@@ -140,10 +140,10 @@ protected:
     void updateVerticalPanner();
 
     bool canTopLayerMoveVertical();
-    bool getTopLayerDisplayExtents(float &valueMin, float &valueMax,
-                                   float &displayMin, float &displayMax,
+    bool getTopLayerDisplayExtents(double &valueMin, double &valueMax,
+                                   double &displayMin, double &displayMax,
                                    QString *unit = 0);
-    bool setTopLayerDisplayExtents(float displayMin, float displayMax);
+    bool setTopLayerDisplayExtents(double displayMin, double displayMax);
 
     void dragTopLayer(QMouseEvent *e);
     void dragExtendSelection(QMouseEvent *e);
@@ -152,7 +152,7 @@ protected:
 
     Layer *getTopFlexiNoteLayer();
 
-    void schedulePlaybackFrameMove(int frame);
+    void schedulePlaybackFrameMove(sv_frame_t frame);
 
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
@@ -167,10 +167,10 @@ protected:
     bool m_resizing;
     bool m_editing;
     bool m_releasing;
-    int m_dragCentreFrame;
-    float m_dragStartMinValue;
+    sv_frame_t m_dragCentreFrame;
+    double m_dragStartMinValue;
     bool m_centreLineVisible;
-    int m_selectionStartFrame;
+    sv_frame_t m_selectionStartFrame;
     Selection m_editingSelection;
     int m_editingSelectionEdge;
     mutable int m_scaleWidth;
@@ -202,7 +202,7 @@ protected:
     bool m_mouseInWidget;
 
     bool m_playbackFrameMoveScheduled;
-    int m_playbackFrameMoveTo;
+    sv_frame_t m_playbackFrameMoveTo;
 
     static QCursor *m_measureCursor1;
     static QCursor *m_measureCursor2;

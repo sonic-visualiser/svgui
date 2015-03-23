@@ -41,13 +41,13 @@ public:
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
-    virtual bool snapToFeatureFrame(View *, int &, int &, SnapType) const;
+    virtual bool snapToFeatureFrame(View *, sv_frame_t &, int &, SnapType) const;
 
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourIrrelevant;
     }
 
-    virtual bool getValueExtents(float &, float &, bool &, QString &) const {
+    virtual bool getValueExtents(double &, double &, bool &, QString &) const {
         return false;
     }
 

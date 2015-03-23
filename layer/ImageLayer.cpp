@@ -110,7 +110,7 @@ ImageLayer::setProperty(const PropertyName &name, int value)
 }
 
 bool
-ImageLayer::getValueExtents(float &, float &, bool &, QString &) const
+ImageLayer::getValueExtents(double &, double &, bool &, QString &) const
 {
     return false;
 }
@@ -208,7 +208,7 @@ ImageLayer::getFeatureDescription(View *v, QPoint &pos) const
 //!!! too much overlap with TimeValueLayer/TimeInstantLayer/TextLayer
 
 bool
-ImageLayer::snapToFeatureFrame(View *v, int &frame,
+ImageLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 			      int &resolution,
 			      SnapType snap) const
 {
@@ -228,7 +228,7 @@ ImageLayer::snapToFeatureFrame(View *v, int &frame,
     }    
 
     points = m_model->getPoints(frame, frame);
-    int snapped = frame;
+    sv_frame_t snapped = frame;
     bool found = false;
 
     for (ImageModel::PointList::const_iterator i = points.begin();
@@ -284,7 +284,7 @@ ImageLayer::paint(View *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
-    int sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("ImageLayer::paint", true);
@@ -292,8 +292,8 @@ ImageLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    int x0 = rect.left(), x1 = rect.right();
     int x0 = 0, x1 = v->width();
 
-    int frame0 = v->getFrameForX(x0);
-    int frame1 = v->getFrameForX(x1);
+    sv_frame_t frame0 = v->getFrameForX(x0);
+    sv_frame_t frame1 = v->getFrameForX(x1);
 
     ImageModel::PointList points(m_model->getPoints(frame0, frame1));
     if (points.empty()) return;
@@ -563,7 +563,7 @@ ImageLayer::drawStart(View *v, QMouseEvent *e)
 	return;
     }
 
-    int frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -584,7 +584,7 @@ ImageLayer::drawDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    int frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -619,7 +619,7 @@ ImageLayer::drawEnd(View *, QMouseEvent *)
 }
 
 bool
-ImageLayer::addImage(int frame, QString url)
+ImageLayer::addImage(sv_frame_t frame, QString url)
 {
     QImage image(getLocalFilename(url));
     if (image.isNull()) {
@@ -664,8 +664,8 @@ ImageLayer::editDrag(View *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
-    int frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
-    int frame = m_originalPoint.frame + frameDiff;
+    sv_frame_t frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
+    sv_frame_t frame = m_originalPoint.frame + frameDiff;
 
     if (frame < 0) frame = 0;
     frame = (frame / m_model->getResolution()) * m_model->getResolution();
@@ -723,7 +723,7 @@ ImageLayer::editOpen(View *v, QMouseEvent *e)
 }    
 
 void
-ImageLayer::moveSelection(Selection s, int newStartFrame)
+ImageLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
@@ -767,9 +767,9 @@ ImageLayer::resizeSelection(Selection s, Selection newSize)
 
 	if (s.contains(i->frame)) {
 
-	    double target = i->frame;
-	    target = newSize.getStartFrame() + 
-		double(target - s.getStartFrame()) * ratio;
+	    double target = double(i->frame);
+	    target = double(newSize.getStartFrame()) +
+		target - double(s.getStartFrame()) * ratio;
 
 	    ImageModel::Point newPoint(*i);
 	    newPoint.frame = lrint(target);
@@ -819,7 +819,7 @@ ImageLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-ImageLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /* interactive */)
+ImageLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -852,7 +852,7 @@ ImageLayer::paste(View *v, const Clipboard &from, int /* frameOffset */, bool /*
         
         if (!i->haveFrame()) continue;
 
-        int frame = 0;
+        sv_frame_t frame = 0;
 
         if (!realign) {
             

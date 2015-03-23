@@ -119,21 +119,21 @@ SliceLayer::getFeatureDescriptionAux(View *v, QPoint &p,
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = 0;
     
-    int sampleRate = m_sliceableModel->getSampleRate();
+    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
 
-    int f0 = m_currentf0;
-    int f1 = m_currentf1;
+    sv_frame_t f0 = m_currentf0;
+    sv_frame_t f1 = m_currentf1;
 
     RealTime rt0 = RealTime::frame2RealTime(f0, sampleRate);
     RealTime rt1 = RealTime::frame2RealTime(f1, sampleRate);
     
-    range = f1 - f0 + 1;
+    range = int(f1 - f0 + 1);
 
     QString rtrangestr = QString("%1 s").arg((rt1 - rt0).toText().c_str());
 
     if (includeBinDescription) {
 
-        float minvalue = 0.f;
+        float minvalue = 0.0;
         if (minbin < int(m_values.size())) minvalue = m_values[minbin];
 
         float maxvalue = minvalue;
@@ -179,23 +179,23 @@ SliceLayer::getFeatureDescriptionAux(View *v, QPoint &p,
     }
 }
 
-float
-SliceLayer::getXForBin(int bin, int count, float w) const
+double
+SliceLayer::getXForBin(int bin, int count, double w) const
 {
-    float x = 0;
+    double x = 0;
 
     switch (m_binScale) {
 
     case LinearBins:
-        x = (float(w) * bin) / count;
+        x = (w * bin) / count;
         break;
         
     case LogBins:
-        x = (float(w) * log10f(bin + 1)) / log10f(count + 1);
+        x = (w * log10(bin + 1)) / log10(count + 1);
         break;
         
     case InvertedLogBins:
-        x = w - (float(w) * log10f(count - bin - 1)) / log10f(count);
+        x = w - (w * log10(count - bin - 1)) / log10(count);
         break;
     }
 
@@ -203,7 +203,7 @@ SliceLayer::getXForBin(int bin, int count, float w) const
 }
 
 int
-SliceLayer::getBinForX(float x, int count, float w) const
+SliceLayer::getBinForX(double x, int count, double w) const
 {
     int bin = 0;
 
@@ -214,21 +214,21 @@ SliceLayer::getBinForX(float x, int count, float w) const
         break;
         
     case LogBins:
-        bin = int(powf(10.f, (x * log10f(count + 1)) / w) - 1 + 0.0001);
+        bin = int(pow(10.0, (x * log10(count + 1)) / w) - 1 + 0.0001);
         break;
 
     case InvertedLogBins:
-        bin = count + 1 - int(powf(10.f, (log10f(count) * (w - x)) / float(w)) + 0.0001);
+        bin = count + 1 - int(pow(10.0, (log10(count) * (w - x)) / double(w)) + 0.0001);
         break;
     }
 
     return bin;
 }
 
-float
-SliceLayer::getYForValue(float value, const View *v, float &norm) const
+double
+SliceLayer::getYForValue(double value, const View *v, double &norm) const
 {
-    norm = 0.f;
+    norm = 0.0;
 
     if (m_yorigins.find(v) == m_yorigins.end()) return 0;
 
@@ -236,9 +236,9 @@ SliceLayer::getYForValue(float value, const View *v, float &norm) const
 
     int yorigin = m_yorigins[v];
     int h = m_heights[v];
-    float thresh = getThresholdDb();
+    double thresh = getThresholdDb();
 
-    float y = 0.f;
+    double y = 0.0;
 
     if (h <= 0) return y;
 
@@ -246,45 +246,45 @@ SliceLayer::getYForValue(float value, const View *v, float &norm) const
 
     case dBScale:
     {
-        float db = thresh;
-        if (value > 0.f) db = 10.f * log10f(fabsf(value));
+        double db = thresh;
+        if (value > 0.0) db = 10.0 * log10(fabs(value));
         if (db < thresh) db = thresh;
         norm = (db - thresh) / -thresh;
-        y = yorigin - (float(h) * norm);
+        y = yorigin - (double(h) * norm);
         break;
     }
     
     case MeterScale:
         y = AudioLevel::multiplier_to_preview(value, h);
-        norm = float(y) / float(h);
+        norm = double(y) / double(h);
         y = yorigin - y;
         break;
         
     case AbsoluteScale:
-        value = fabsf(value);
+        value = fabs(value);
         // and fall through
         
     case LinearScale:
     default:
         norm = (value - m_threshold);
         if (norm < 0) norm = 0;
-        y = yorigin - (float(h) * norm);
+        y = yorigin - (double(h) * norm);
         break;
     }
     
     return y;
 }
 
-float
-SliceLayer::getValueForY(float y, const View *v) const
+double
+SliceLayer::getValueForY(double y, const View *v) const
 {
-    float value = 0.f;
+    double value = 0.0;
 
     if (m_yorigins.find(v) == m_yorigins.end()) return value;
 
     int yorigin = m_yorigins[v];
     int h = m_heights[v];
-    float thresh = getThresholdDb();
+    double thresh = getThresholdDb();
 
     if (h <= 0) return value;
 
@@ -294,13 +294,13 @@ SliceLayer::getValueForY(float y, const View *v) const
 
     case dBScale:
     {
-        float db = ((y / h) * -thresh) + thresh;
-        value = powf(10.f, db/10.f);
+        double db = ((y / h) * -thresh) + thresh;
+        value = pow(10.0, db/10.0);
         break;
     }
 
     case MeterScale:
-        value = AudioLevel::preview_to_multiplier(lrintf(y), h);
+        value = AudioLevel::preview_to_multiplier(int(lrint(y)), h);
         break;
 
     case LinearScale:
@@ -354,21 +354,21 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     m_values.clear();
     for (int bin = 0; bin < mh; ++bin) {
-        m_values.push_back(0.f);
+        m_values.push_back(0.0);
     }
 
-    int f0 = v->getCentreFrame();
+    sv_frame_t f0 = v->getCentreFrame();
     int f0x = v->getXForFrame(f0);
     f0 = v->getFrameForX(f0x);
-    int f1 = v->getFrameForX(f0x + 1);
+    sv_frame_t f1 = v->getFrameForX(f0x + 1);
     if (f1 > f0) --f1;
 
 //    cerr << "centre frame " << v->getCentreFrame() << ", x " << f0x << ", f0 " << f0 << ", f1 " << f1 << endl;
 
     int res = m_sliceableModel->getResolution();
-    int col0 = f0 / res;
+    int col0 = int(f0 / res);
     int col1 = col0;
-    if (m_samplingMode != NearestSample) col1 = f1 / res;
+    if (m_samplingMode != NearestSample) col1 = int(f1 / res);
     f0 = col0 * res;
     f1 = (col1 + 1) * res - 1;
 
@@ -379,7 +379,7 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     BiasCurve curve;
     getBiasCurve(curve);
-    int cs = curve.size();
+    int cs = int(curve.size());
 
     for (int col = col0; col <= col1; ++col) {
         for (int bin = 0; bin < mh; ++bin) {
@@ -394,31 +394,31 @@ SliceLayer::paint(View *v, QPainter &paint, QRect rect) const
         ++divisor;
     }
 
-    float max = 0.f;
+    float max = 0.0;
     for (int bin = 0; bin < mh; ++bin) {
         if (m_samplingMode == SampleMean && divisor > 0) {
-            m_values[bin] /= divisor;
+            m_values[bin] /= float(divisor);
         }
         if (m_values[bin] > max) max = m_values[bin];
     }
-    if (max != 0.f && m_normalize) {
+    if (max != 0.0 && m_normalize) {
         for (int bin = 0; bin < mh; ++bin) {
             m_values[bin] /= max;
         }
     }
 
-    float nx = xorigin;
+    double nx = xorigin;
 
     ColourMapper mapper(m_colourMap, 0, 1);
 
     for (int bin = 0; bin < mh; ++bin) {
 
-        float x = nx;
+        double x = nx;
         nx = xorigin + getXForBin(bin + 1, mh, w);
 
-        float value = m_values[bin];
-        float norm = 0.f;
-        float y = getYForValue(value, v, norm);
+        double value = m_values[bin];
+        double norm = 0.0;
+        double y = getYForValue(value, v, norm);
 
         if (m_plotStyle == PlotLines) {
 
@@ -515,7 +515,7 @@ SliceLayer::getVerticalScaleWidth(View *, bool, QPainter &paint) const
 void
 SliceLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const
 {
-    float thresh = m_threshold;
+    double thresh = m_threshold;
     if (m_energyScale != LinearScale && m_energyScale != AbsoluteScale) {
         thresh = AudioLevel::dB_to_multiplier(getThresholdDb());
     }
@@ -538,7 +538,7 @@ SliceLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const
          const_cast<std::vector<int> *>(&m_scalePoints));
 
     if (mult != 1 && mult != 0) {
-        int log = lrintf(log10f(mult));
+        int log = int(lrint(log10(mult)));
         QString a = tr("x10");
         QString b = QString("%1").arg(-log);
         paint.drawText(3, 8 + paint.fontMetrics().ascent(), a);
@@ -627,7 +627,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
         cerr << "gain is " << m_gain << ", mode is " << m_samplingMode << endl;
 
-	val = lrint(log10(m_gain) * 20.0);
+	val = int(lrint(log10(m_gain) * 20.0));
 	if (val < *min) val = *min;
 	if (val > *max) val = *max;
 
@@ -636,11 +636,11 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*min = -80;
 	*max = 0;
 
-        *deflt = lrintf(AudioLevel::multiplier_to_dB(m_initialThreshold));
+        *deflt = int(lrint(AudioLevel::multiplier_to_dB(m_initialThreshold)));
 	if (*deflt < *min) *deflt = *min;
 	if (*deflt > *max) *deflt = *max;
 
-	val = lrintf(AudioLevel::multiplier_to_dB(m_threshold));
+	val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
 	if (val < *min) val = *min;
 	if (val > *max) val = *max;
 
@@ -757,10 +757,10 @@ void
 SliceLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-	setGain(pow(10, float(value)/20.0));
+	setGain(powf(10, float(value)/20.0f));
     } else if (name == "Threshold") {
-	if (value == -80) setThreshold(0.0);
-	else setThreshold(AudioLevel::dB_to_multiplier(value));
+	if (value == -80) setThreshold(0.0f);
+	else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
     } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
         setFillColourMap(value);
     } else if (name == "Scale") {
@@ -867,7 +867,7 @@ float
 SliceLayer::getThresholdDb() const
 {
     if (m_threshold == 0.0) return -80.f;
-    float db = AudioLevel::multiplier_to_dB(m_threshold);
+    float db = float(AudioLevel::multiplier_to_dB(m_threshold));
     return db;
 }
 
@@ -942,7 +942,7 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
 }
 
 bool
-SliceLayer::getValueExtents(float &, float &, bool &, QString &) const
+SliceLayer::getValueExtents(double &, double &, bool &, QString &) const
 {
     return false;
 }

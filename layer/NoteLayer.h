@@ -42,7 +42,7 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, int &frame,
+    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
 
@@ -60,12 +60,12 @@ public:
 
     virtual bool editOpen(View *v, QMouseEvent *);
 
-    virtual void moveSelection(Selection s, int newStartFrame);
+    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
     virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
+    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
@@ -97,11 +97,11 @@ public:
 
     virtual int getCompletion(View *) const { return m_model->getCompletion(); }
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const;
 
-    virtual bool getDisplayExtents(float &min, float &max) const;
-    virtual bool setDisplayExtents(float min, float max);
+    virtual bool getDisplayExtents(double &min, double &max) const;
+    virtual bool setDisplayExtents(double min, double max);
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
@@ -113,13 +113,13 @@ public:
      * not be finally added to the layer until the corresponding
      * note-off.
      */
-    void addNoteOn(int frame, int pitch, int velocity);
+    void addNoteOn(sv_frame_t frame, int pitch, int velocity);
     
     /**
      * Add a note-off.  This will cause a note to appear, if and only
      * if there is a matching pending note-on.
      */
-    void addNoteOff(int frame, int pitch);
+    void addNoteOff(sv_frame_t frame, int pitch);
 
     /**
      * Abandon all pending note-on events.
@@ -132,12 +132,12 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
     /// VerticalScaleLayer methods
-    virtual int getYForValue(View *v, float value) const;
-    virtual float getValueForY(View *v, int y) const;
+    virtual int getYForValue(View *v, double value) const;
+    virtual double getValueForY(View *v, int y) const;
     virtual QString getScaleUnits() const;
 
 protected:
-    void getScaleExtents(View *, float &min, float &max, bool &log) const;
+    void getScaleExtents(View *, double &min, double &max, bool &log) const;
     bool shouldConvertMIDIToHz() const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
@@ -160,8 +160,8 @@ protected:
     typedef std::set<NoteModel::Point, NoteModel::Point::Comparator> NoteSet;
     NoteSet m_pendingNoteOns;
 
-    mutable float m_scaleMinimum;
-    mutable float m_scaleMaximum;
+    mutable double m_scaleMinimum;
+    mutable double m_scaleMaximum;
 
     bool shouldAutoAlign() const;
 

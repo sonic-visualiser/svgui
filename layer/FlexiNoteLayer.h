@@ -45,7 +45,7 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, int &frame,
+    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
                     int &resolution,
                     SnapType snap) const;
 
@@ -70,16 +70,16 @@ public:
 
     virtual bool editOpen(View *v, QMouseEvent *);
 
-    virtual void moveSelection(Selection s, int newStartFrame);
+    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
     virtual void deleteSelectionInclusive(Selection s);
 
     virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
+    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
-    void splitNotesAt(View *v, int frame);
+    void splitNotesAt(View *v, sv_frame_t frame);
     void snapSelectedNotesToPitchTrack(View *v, Selection s);
     void mergeNotes(View *v, Selection s, bool inclusive);
 
@@ -122,11 +122,11 @@ public:
 
     virtual int getCompletion(View *) const { return m_model->getCompletion(); }
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const;
 
-    virtual bool getDisplayExtents(float &min, float &max) const;
-    virtual bool setDisplayExtents(float min, float max);
+    virtual bool getDisplayExtents(double &min, double &max) const;
+    virtual bool setDisplayExtents(double min, double max);
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
@@ -138,13 +138,13 @@ public:
      * not be finally added to the layer until the corresponding
      * note-off.
      */
-    void addNoteOn(int frame, int pitch, int velocity);
+    void addNoteOn(sv_frame_t frame, int pitch, int velocity);
     
     /**
      * Add a note-off.  This will cause a note to appear, if and only
      * if there is a matching pending note-on.
      */
-    void addNoteOff(int frame, int pitch);
+    void addNoteOff(sv_frame_t frame, int pitch);
 
     /**
      * Abandon all pending note-on events.
@@ -159,16 +159,16 @@ public:
     void setVerticalRangeToNoteRange(View *v);
 
     /// VerticalScaleLayer methods
-    virtual int getYForValue(View *v, float value) const;
-    virtual float getValueForY(View *v, int y) const;
+    virtual int getYForValue(View *v, double value) const;
+    virtual double getValueForY(View *v, int y) const;
     virtual QString getScaleUnits() const;
 
 signals:
-    void reAnalyseRegion(int, int, float, float);
+    void reAnalyseRegion(sv_frame_t, sv_frame_t, float, float);
     void materialiseReAnalysis();
     
 protected:
-    void getScaleExtents(View *, float &min, float &max, bool &log) const;
+    void getScaleExtents(View *, double &min, double &max, bool &log) const;
     bool shouldConvertMIDIToHz() const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
@@ -184,7 +184,7 @@ protected:
     SparseTimeValueModel *getAssociatedPitchModel(View *v) const;
     bool updateNoteValueFromPitchCurve(View *v,
                                        FlexiNoteModel::Point &note) const;
-    void splitNotesAt(View *v, int frame, QMouseEvent *e);
+    void splitNotesAt(View *v, sv_frame_t frame, QMouseEvent *e);
 
     FlexiNoteModel *m_model;
     bool m_editing;
@@ -195,8 +195,8 @@ protected:
     int m_dragStartY;
     FlexiNoteModel::Point m_originalPoint;
     FlexiNoteModel::Point m_editingPoint;
-    int m_greatestLeftNeighbourFrame;
-    int m_smallestRightNeighbourFrame;
+    sv_frame_t m_greatestLeftNeighbourFrame;
+    sv_frame_t m_smallestRightNeighbourFrame;
     FlexiNoteModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
     EditMode m_editMode;
@@ -204,8 +204,8 @@ protected:
     typedef std::set<FlexiNoteModel::Point, FlexiNoteModel::Point::Comparator> FlexiNoteSet;
     FlexiNoteSet m_pendingNoteOns;
 
-    mutable float m_scaleMinimum;
-    mutable float m_scaleMaximum;
+    mutable double m_scaleMinimum;
+    mutable double m_scaleMaximum;
 
     bool shouldAutoAlign() const;
 

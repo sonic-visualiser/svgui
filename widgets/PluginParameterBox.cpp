@@ -70,12 +70,12 @@ PluginParameterBox::populate()
 
         m_programCombo = new QComboBox;
         m_programCombo->setMaxVisibleItems
-            (m_programs.size() < 25 ? m_programs.size() : 20);
+            (int(m_programs.size() < 25 ? m_programs.size() : 20));
 
-        for (size_t i = 0; i < m_programs.size(); ++i) {
+        for (int i = 0; in_range_for(m_programs, i); ++i) {
             m_programCombo->addItem(m_programs[i].c_str());
             if (m_programs[i] == currentProgram) {
-                m_programCombo->setCurrentIndex(i);
+                m_programCombo->setCurrentIndex(int(i));
             }
         }
 
@@ -88,7 +88,7 @@ PluginParameterBox::populate()
         offset = 1;
     }
 
-    for (size_t i = 0; i < params.size(); ++i) {
+    for (int i = 0; in_range_for(params, i); ++i) {
 
         QString identifier = params[i].identifier.c_str();
         QString name = params[i].name.c_str();
@@ -120,9 +120,9 @@ PluginParameterBox::populate()
 
         if (!(hint & PortHint::Logarithmic)) {
             if (qtz > 0.0) {
-                imax = lrintf((max - min) / qtz);
+                imax = int(lrintf((max - min) / qtz));
             } else {
-                qtz = (max - min) / 100.0;
+                qtz = (max - min) / 100.f;
             }
         }
 
@@ -245,19 +245,19 @@ PluginParameterBox::dialChanged(int ival)
     
     if (ad && ad->rangeMapper()) {
         
-        newValue = ad->mappedValue();
+        newValue = float(ad->mappedValue());
         if (newValue < min) newValue = min;
         if (newValue > max) newValue = max;
         if (qtz != 0.0) {
-            ival = lrintf((newValue - min) / qtz);
-            newValue = min + ival * qtz;
+            ival = int(lrintf((newValue - min) / qtz));
+            newValue = min + float(ival) * qtz;
         }
 
     } else {
-        if (qtz == 0.0) {
-            qtz = (max - min) / 100.0;
+        if (qtz == 0.f) {
+            qtz = (max - min) / 100.f;
         }
-        newValue = min + ival * qtz;
+        newValue = min + float(ival) * qtz;
     }
 
 //    SVDEBUG << "PluginParameterBox::dialChanged: newValue = " << newValue << endl;
@@ -329,8 +329,8 @@ PluginParameterBox::spinBoxChanged(double value)
     if (params.isQuantized) qtz = params.quantizeStep;
     
     if (qtz > 0.0) {
-        int step = lrintf((value - min) / qtz);
-        value = min + step * qtz;
+        int step = int(lrintf(float(value - min) / qtz));
+        value = min + float(step) * qtz;
     }
 
 //    int imax = 100;
@@ -338,10 +338,10 @@ PluginParameterBox::spinBoxChanged(double value)
     if (qtz > 0.0) {
 //        imax = lrintf((max - min) / qtz);
     } else {
-        qtz = (max - min) / 100.0;
+        qtz = (max - min) / 100.f;
     }
 
-    int ival = lrintf((value - min) / qtz);
+    int ival = int(lrintf(float(value - min) / qtz));
 
     AudioDial *dial = m_params[identifier].dial;
     if (dial) {
@@ -356,7 +356,7 @@ PluginParameterBox::spinBoxChanged(double value)
 
     SVDEBUG << "setting plugin parameter \"" << identifier << "\" to value " << value << endl;
 
-    m_plugin->setParameter(identifier.toStdString(), value);
+    m_plugin->setParameter(identifier.toStdString(), float(value));
 
     updateProgramCombo();
 
@@ -389,17 +389,17 @@ PluginParameterBox::programComboChanged(const QString &newProgram)
             if (param.isQuantized) qtz = param.quantizeStep;
 
             if (qtz == 0.0) {
-                qtz = (max - min) / 100.0;
+                qtz = (max - min) / 100.f;
             }
 
             i->second.dial->blockSignals(true);
-            i->second.dial->setValue(lrintf((value - min) / qtz));
+            i->second.dial->setValue(int(lrintf(float(value - min) / qtz)));
             i->second.dial->blockSignals(false);
         }
 
         if (i->second.combo) {
             i->second.combo->blockSignals(true);
-            i->second.combo->setCurrentIndex(lrintf(value));
+            i->second.combo->setCurrentIndex(int(lrintf(value)));
             i->second.combo->blockSignals(false);
         }
 
@@ -420,7 +420,7 @@ PluginParameterBox::updateProgramCombo()
 
     std::string currentProgram = m_plugin->getCurrentProgram();
 
-    for (size_t i = 0; i < m_programs.size(); ++i) {
+    for (int i = 0; in_range_for(m_programs, i); ++i) {
         if (m_programs[i] == currentProgram) {
             m_programCombo->setCurrentIndex(i);
         }
