@@ -25,7 +25,7 @@ class PianoScale
 {
 public:
     void paintPianoVertical
-    (View *v, QPainter &paint, QRect rect, float minf, float maxf);
+    (View *v, QPainter &paint, QRect rect, double minf, double maxf);
 };
 
 #endif

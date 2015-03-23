@@ -64,17 +64,17 @@ public:
     virtual void setProperty(const PropertyName &, int value);
     virtual void setProperties(const QXmlAttributes &);
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
     virtual bool getXScaleValue(const View *v, int x,
-                                float &value, QString &unit) const;
+                                double &value, QString &unit) const;
 
     virtual bool getYScaleValue(const View *, int y,
-                                float &value, QString &unit) const;
+                                double &value, QString &unit) const;
 
     virtual bool getYScaleDifference(const View *, int y0, int y1,
-                                     float &diff, QString &unit) const;
+                                     double &diff, QString &unit) const;
 
     virtual bool isLayerScrollable(const View *) const { return false; }
 
@@ -123,11 +123,11 @@ protected:
     virtual void getBiasCurve(BiasCurve &) const;
     BiasCurve m_biasCurve;
 
-    virtual float getXForBin(int bin, int totalBins, float w) const;
-    virtual int getBinForX(float x, int totalBins, float w) const;
+    virtual double getXForBin(int bin, int totalBins, double w) const;
+    virtual int getBinForX(double x, int totalBins, double w) const;
 
-    float getFrequencyForX(float x, float w) const;
-    float getXForFrequency(float freq, float w) const;
+    double getFrequencyForX(double x, double w) const;
+    double getXForFrequency(double freq, double w) const;
 
     int getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;

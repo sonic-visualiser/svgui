@@ -20,6 +20,8 @@
 
 #include <map>
 
+#include "base/BaseTypes.h"
+
 class QWidget;
 class QLabel;
 class QStackedWidget;
@@ -93,7 +95,7 @@ signals:
 
     void paneDeleteButtonClicked(Pane *pane);
 
-    void doubleClickSelectInvoked(int frame);
+    void doubleClickSelectInvoked(sv_frame_t frame);
 
 public slots:
     void propertyContainerAdded(PropertyContainer *);

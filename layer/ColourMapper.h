@@ -29,7 +29,7 @@ class ColourMapper : public QObject
     Q_OBJECT
 
 public:
-    ColourMapper(int map, float minValue, float maxValue);
+    ColourMapper(int map, double minValue, double maxValue);
     virtual ~ColourMapper();
 
     enum StandardMap {
@@ -48,21 +48,21 @@ public:
     };
 
     int getMap() const { return m_map; }
-    float getMinValue() const { return m_min; }
-    float getMaxValue() const { return m_max; }
+    double getMinValue() const { return m_min; }
+    double getMaxValue() const { return m_max; }
 
     static int getColourMapCount();
     static QString getColourMapName(int n);
 
-    QColor map(float value) const;
+    QColor map(double value) const;
 
     QColor getContrastingColour() const; // for cursors etc
     bool hasLightBackground() const;
 
 protected:
     int m_map;
-    float m_min;
-    float m_max;
+    double m_min;
+    double m_max;
 };
 
 #endif

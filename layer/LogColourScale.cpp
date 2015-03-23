@@ -36,15 +36,15 @@ LogColourScale::paintVertical(View *v,
 			      const ColourScaleLayer *layer,
 			      QPainter &paint,
 			      int /* x0 */,
-			      float minlog,
-			      float maxlog)
+			      double minlog,
+			      double maxlog)
 {
     int h = v->height();
 
     int n = 10;
 
-    float val = minlog;
-    float inc = (maxlog - val) / n;
+    double val = minlog;
+    double inc = (maxlog - val) / n;
 
     const int buflen = 40;
     char buffer[buflen];
@@ -60,7 +60,7 @@ LogColourScale::paintVertical(View *v,
 
     paint.save();
     for (int y = 0; y < boxh; ++y) {
-	float val = ((boxh - y) * (maxlog - minlog)) / boxh + minlog;
+	double val = ((boxh - y) * (maxlog - minlog)) / boxh + minlog;
 	paint.setPen(layer->getColourForValue(v, LogRange::unmap(val)));
 	paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
     }
@@ -68,7 +68,7 @@ LogColourScale::paintVertical(View *v,
 
     int dp = 0;
     if (inc > 0) {
-        int prec = trunc(log10f(inc));
+        int prec = int(trunc(log10(inc)));
         prec -= 1;
         if (prec < 0) dp = -prec;
     }
@@ -83,7 +83,7 @@ LogColourScale::paintVertical(View *v,
 	    paint.fontMetrics().ascent() + 2;
 
 	double dv = LogRange::unmap(val);
-	int digits = trunc(log10f(dv));
+	int digits = int(trunc(log10(dv)));
 	int sf = dp + (digits > 0 ? digits : 0);
 	if (sf < 2) sf = 2;
 	snprintf(buffer, buflen, "%.*g", sf, dv);

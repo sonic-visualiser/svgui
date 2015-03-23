@@ -34,15 +34,15 @@ LinearColourScale::paintVertical(View *v,
 				 const ColourScaleLayer *layer,
 				 QPainter &paint,
 				 int /* x0 */,
-				 float min,
-				 float max)
+				 double min,
+				 double max)
 {
     int h = v->height();
 
     int n = 10;
 
-    float val = min;
-    float inc = (max - val) / n;
+    double val = min;
+    double inc = (max - val) / n;
     
     const int buflen = 40;
     char buffer[buflen];
@@ -58,16 +58,16 @@ LinearColourScale::paintVertical(View *v,
 
     paint.save();
     for (int y = 0; y < boxh; ++y) {
-	float val = ((boxh - y) * (max - min)) / boxh + min;
+	double val = ((boxh - y) * (max - min)) / boxh + min;
 	paint.setPen(layer->getColourForValue(v, val));
 	paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
     }
     paint.restore();
 
-//    float round = 1.f;
+//    double round = 1.f;
     int dp = 0;
     if (inc > 0) {
-        int prec = trunc(log10f(inc));
+        int prec = int(trunc(log10(inc)));
         prec -= 1;
         if (prec < 0) dp = -prec;
 //        round = powf(10.f, prec);

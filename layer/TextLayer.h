@@ -36,7 +36,7 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, int &frame,
+    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
 
@@ -52,12 +52,12 @@ public:
     virtual void editDrag(View *v, QMouseEvent *);
     virtual void editEnd(View *v, QMouseEvent *);
 
-    virtual void moveSelection(Selection s, int newStartFrame);
+    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
     virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
+    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
     virtual bool editOpen(View *, QMouseEvent *); // on double-click
@@ -80,7 +80,7 @@ public:
 
     virtual int getCompletion(View *) const { return m_model->getCompletion(); }
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
     virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
@@ -91,8 +91,8 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
 protected:
-    int getYForHeight(View *v, float height) const;
-    float getHeightForY(View *v, int y) const;
+    int getYForHeight(View *v, double height) const;
+    double getHeightForY(View *v, int y) const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 

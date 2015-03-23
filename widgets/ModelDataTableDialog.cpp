@@ -168,14 +168,14 @@ ModelDataTableDialog::~ModelDataTableDialog()
 }
 
 void
-ModelDataTableDialog::userScrolledToFrame(int frame)
+ModelDataTableDialog::userScrolledToFrame(sv_frame_t frame)
 {
     QModelIndex index = m_table->getModelIndexForFrame(frame);
     makeCurrent(index.row());
 }
 
 void
-ModelDataTableDialog::playbackScrolledToFrame(int frame)
+ModelDataTableDialog::playbackScrolledToFrame(sv_frame_t frame)
 {
     if (m_trackPlayback) {
         QModelIndex index = m_table->getModelIndexForFrame(frame);

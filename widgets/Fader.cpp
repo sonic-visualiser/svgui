@@ -110,7 +110,7 @@ Fader::mouseMoveEvent(QMouseEvent *ev)
     if (vx > getMaxX()) vx = getMaxX();
     if (vx < 0) vx = 0;
 
-    float fval = AudioLevel::fader_to_multiplier
+    float fval = (float)AudioLevel::fader_to_multiplier
 	(vx, getMaxX(), AudioLevel::LongFader);
 
     setValue(fval);
@@ -132,20 +132,20 @@ void
 Fader::mouseDoubleClickEvent(QMouseEvent *)
 {
     bool ok = false;
-    float min = AudioLevel::fader_to_dB
+    float min = (float)AudioLevel::fader_to_dB
         (0, getMaxX(), AudioLevel::LongFader);
-    float max = AudioLevel::fader_to_dB
+    float max = (float)AudioLevel::fader_to_dB
         (getMaxX(), getMaxX(), AudioLevel::LongFader);
-    float deft = AudioLevel::multiplier_to_dB(m_value);
+    float deft = (float)AudioLevel::multiplier_to_dB(m_value);
 
-    float dB = QInputDialog::getDouble
+    float dB = (float)QInputDialog::getDouble
         (this,
          tr("Enter new fader level"),
          tr("New fader level, from %1 to %2 dBFS:").arg(min).arg(max),
          deft, min, max, 3, &ok);
 
     if (ok) {
-        float value = AudioLevel::dB_to_multiplier(dB);
+        float value = (float)AudioLevel::dB_to_multiplier(dB);
         setValue(value);
         emit valueChanged(value);
         update();
@@ -179,9 +179,9 @@ Fader::wheelEvent(QWheelEvent *ev)
     //!!! needs improvement
 
     if (ev->delta() > 0) {
-	setValue(m_value * 1.1);
+	setValue(m_value * 1.f);
     } else {
-	setValue(m_value / 1.1);
+	setValue(m_value / 1.f);
     }
 
     update();
@@ -203,7 +203,7 @@ Fader::leaveEvent(QEvent *)
 void
 Fader::setValue(float v)
 {
-    float max = AudioLevel::dB_to_multiplier(10.0);
+    float max = (float)AudioLevel::dB_to_multiplier(10.0);
 
     if (v > max) {
 	v = max;
@@ -213,7 +213,7 @@ Fader::setValue(float v)
 
     if (m_value != v) {
 	m_value = v;
-	float db = AudioLevel::multiplier_to_dB(m_value);
+	float db = (float)AudioLevel::multiplier_to_dB(m_value);
         QString text;
 	if (db <= AudioLevel::DB_FLOOR) {
             text = tr("Level: Off");
