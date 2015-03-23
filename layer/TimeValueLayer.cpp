@@ -1151,6 +1151,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 			// path.quadTo(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
 
 		    } else {
+                        path.lineTo(x0, y0);
 			path.lineTo((x0 + x1) / 2, (y0 + y1) / 2);
 		    }
 		}

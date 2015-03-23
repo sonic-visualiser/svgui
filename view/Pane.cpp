@@ -2024,6 +2024,11 @@ Pane::updateDragMode(DragMode dragMode,
 
     int smallThreshold = 10, bigThreshold = 80;
 
+    if (m_manager) {
+        smallThreshold = m_manager->scalePixelSize(smallThreshold);
+        bigThreshold = m_manager->scalePixelSize(bigThreshold);
+    }
+
 //    SVDEBUG << "Pane::updateDragMode: xdiff = " << xdiff << ", ydiff = "
 //              << ydiff << ", canMoveVertical = " << canMoveVertical << ", drag mode = " << m_dragMode << endl;
 
@@ -2288,7 +2293,7 @@ Pane::wheelEvent(QWheelEvent *e)
 
         // Sometimes on Linux we're seeing absurdly extreme angles on
         // the first wheel event -- discard those entirely
-        if (abs(m_pendingWheelAngle) >= 600) {
+        if (abs(m_pendingWheelAngle) > 1000) {
             m_pendingWheelAngle = 0;
             return;
         }
