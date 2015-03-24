@@ -22,6 +22,7 @@
 #include "base/AudioLevel.h"
 
 #include <iostream>
+#include <cmath>
 
 using std::cerr;
 using std::endl;
