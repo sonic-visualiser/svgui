@@ -176,7 +176,7 @@ LevelPanWidget::toCell(QPointF loc, int &level, int &pan) const
     int npan = maxPan * 2 + 1;
     int nlevel = maxLevel + 1;
     double wcell = w / npan, hcell = h / nlevel;
-    level = int((h - loc.y()) / hcell) + 1;
+    level = int((h - loc.y()) / hcell);
     if (level < 0) level = 0;
     if (level > maxLevel) level = maxLevel;
     pan = int(loc.x() / wcell) - maxPan;
