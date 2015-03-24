@@ -25,7 +25,7 @@
 using std::cerr;
 using std::endl;
 
-static const int maxLevel = 5;
+static const int maxLevel = 4;
 static const int maxPan = 2; // range is -maxPan to maxPan
 
 LevelPanWidget::LevelPanWidget(QWidget *parent) :
@@ -163,9 +163,10 @@ LevelPanWidget::toCell(QPointF loc, int &level, int &pan) const
 {
     double w = width(), h = height();
     int npan = maxPan * 2 + 1;
-    double wcell = w / npan, hcell = h / maxLevel;
+    int nlevel = maxLevel + 1;
+    double wcell = w / npan, hcell = h / nlevel;
     level = int((h - loc.y()) / hcell) + 1;
-    if (level < 1) level = 1;
+    if (level < 0) level = 0;
     if (level > maxLevel) level = maxLevel;
     pan = int(loc.x() / wcell) - maxPan;
     if (pan < -maxPan) pan = -maxPan;
@@ -177,7 +178,8 @@ LevelPanWidget::cellSize() const
 {
     double w = width(), h = height();
     int npan = maxPan * 2 + 1;
-    double wcell = w / npan, hcell = h / maxLevel;
+    int nlevel = maxLevel + 1;
+    double wcell = w / npan, hcell = h / nlevel;
     return QSizeF(wcell, hcell);
 }
 
@@ -186,7 +188,7 @@ LevelPanWidget::cellCentre(int level, int pan) const
 {
     QSizeF cs = cellSize();
     return QPointF(cs.width() * (pan + maxPan) + cs.width() / 2.,
-		   height() - cs.height() * level + cs.height() / 2.);
+		   height() - cs.height() * (level + 1) + cs.height() / 2.);
 }
 
 QSizeF
@@ -235,18 +237,30 @@ LevelPanWidget::paintEvent(QPaintEvent *)
     paint.setPen(pen);
 
     for (int pan = -maxPan; pan <= maxPan; ++pan) {
-	paint.drawLine(cellCentre(1, pan), cellCentre(maxLevel, pan));
+	paint.drawLine(cellCentre(0, pan), cellCentre(maxLevel, pan));
+    }
+
+    if (isEnabled()) {
+	pen.setColor(Qt::black);
+    } else {
+	pen.setColor(Qt::darkGray);
     }
     
-    pen.setColor(Qt::black);
     pen.setWidthF(thin);
     pen.setCapStyle(Qt::FlatCap);
     paint.setPen(pen);
     
-    for (int level = 1; level <= m_level; ++level) {
-	// level starts at 1 because we handle mute separately
-	paint.setBrush(mapper.map(level));
-	paint.drawEllipse(cellLightRect(level, m_pan));
+    for (int level = 0; level <= m_level; ++level) {
+	if (isEnabled()) {
+	    paint.setBrush(mapper.map(level));
+	}
+	QRectF clr = cellLightRect(level, m_pan);
+	if (m_level == 0) {
+	    paint.drawLine(clr.topLeft(), clr.bottomRight());
+	    paint.drawLine(clr.bottomLeft(), clr.topRight());
+	} else {
+	    paint.drawEllipse(clr);
+	}
     }
 }
 
