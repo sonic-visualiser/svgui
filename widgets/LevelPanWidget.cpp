@@ -19,6 +19,7 @@
 #include <QWheelEvent>
 
 #include "layer/ColourMapper.h"
+#include "base/AudioLevel.h"
 
 #include <iostream>
 
@@ -41,12 +42,20 @@ LevelPanWidget::~LevelPanWidget()
 }
 
 void
-LevelPanWidget::setLevel(float level)
+LevelPanWidget::setLevel(float flevel)
 {
-    m_level = int(round(level * maxLevel));
-    if (m_level < 0) m_level = 0;
-    if (m_level > maxLevel) m_level = maxLevel;
-    update();
+    int level = AudioLevel::multiplier_to_fader
+	(flevel, maxLevel, AudioLevel::ShortFader);
+    if (level < 0) level = 0;
+    if (level > maxLevel) level = maxLevel;
+    if (level != m_level) {
+	m_level = level;
+	float convertsTo = getLevel();
+	if (fabsf(convertsTo - flevel) > 1e-5) {
+	    emitLevelChanged();
+	}
+	update();
+    }
 }
 
 void
@@ -68,7 +77,8 @@ LevelPanWidget::setEditable(bool editable)
 float
 LevelPanWidget::getLevel() const
 {
-    return float(m_level) / float(maxLevel);
+    return float(AudioLevel::fader_to_multiplier
+		 (m_level, maxLevel, AudioLevel::ShortFader));
 }
 
 float
