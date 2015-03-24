@@ -24,6 +24,7 @@
 #include "widgets/TextAbbrev.h"
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
+#include "layer/TimeRulerLayer.h"
 
 // GF: added so we can propagate the mouse move event to the note layer for context handling.
 #include "layer/LayerFactory.h"
@@ -1367,7 +1368,8 @@ Pane::mousePressEvent(QMouseEvent *e)
             sv_frame_t snapFrame = mouseFrame;
     
             Layer *layer = getInteractionLayer();
-            if (layer && !m_shiftPressed) {
+            if (layer && !m_shiftPressed &&
+                !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
                 layer->snapToFeatureFrame(this, snapFrame,
                                           resolution, Layer::SnapLeft);
             }
@@ -2083,7 +2085,8 @@ Pane::dragExtendSelection(QMouseEvent *e)
     sv_frame_t snapFrameRight = mouseFrame;
     
     Layer *layer = getInteractionLayer();
-    if (layer && !m_shiftPressed) {
+    if (layer && !m_shiftPressed &&
+        !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
         layer->snapToFeatureFrame(this, snapFrameLeft,
                                   resolution, Layer::SnapLeft);
         layer->snapToFeatureFrame(this, snapFrameRight,
