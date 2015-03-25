@@ -19,10 +19,6 @@
 
 /**
  * A simple widget for coarse level and pan control.
- *
- * For this initial implementation at least, pan is in five steps only
- * (hard left, mid-left, centre, mid-right, hard right) and level is
- * in five plus mute.
  */
 
 class LevelPanWidget : public QWidget
@@ -42,6 +38,11 @@ public:
     /// Find out whether the widget is editable
     bool isEditable() const;
 
+    /// Draw a suitably sized copy of the widget's contents to the given device
+    void renderTo(QPaintDevice *, QRectF, bool asIfEditable) const;
+
+    QSize sizeHint() const;
+                                               
 public slots:
     /// Set level in the range [0,1] -- will be rounded
     void setLevel(float);
@@ -70,12 +71,12 @@ protected:
     int m_pan;
     bool m_editable;
 
-    QSizeF cellSize() const;
-    QPointF cellCentre(int level, int pan) const;
-    QSizeF cellLightSize() const;
-    QRectF cellLightRect(int level, int pan) const;
-    double thinLineWidth() const;
-    void toCell(QPointF loc, int &level, int &pan) const;
+    QSizeF cellSize(QRectF) const;
+    QPointF cellCentre(QRectF, int level, int pan) const;
+    QSizeF cellLightSize(QRectF) const;
+    QRectF cellLightRect(QRectF, int level, int pan) const;
+    double thinLineWidth(QRectF) const;
+    void toCell(QRectF, QPointF loc, int &level, int &pan) const;
 };
 
 #endif
