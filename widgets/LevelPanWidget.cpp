@@ -200,11 +200,11 @@ LevelPanWidget::toCell(QRectF rect, QPointF loc, int &level, int &pan) const
 
     double wcell = w / npan, hcell = h / nlevel;
 
-    level = int((h - loc.y()) / hcell);
+    level = int((h - (loc.y() - rect.y())) / hcell);
     if (level < 0) level = 0;
     if (level > maxLevel) level = maxLevel;
 
-    pan = int(loc.x() / wcell) - maxPan;
+    pan = int((loc.x() - rect.x()) / wcell) - maxPan;
     if (pan < -maxPan) pan = -maxPan;
     if (pan > maxPan) pan = maxPan;
 }
@@ -223,8 +223,8 @@ QPointF
 LevelPanWidget::cellCentre(QRectF rect, int level, int pan) const
 {
     QSizeF cs = cellSize(rect);
-    return QPointF(cs.width() * (pan + maxPan) + cs.width() / 2.,
-		   rect.height() - cs.height() * (level + 1) + cs.height() / 2.);
+    return QPointF(rect.x() + cs.width() * (pan + maxPan) + cs.width() / 2.,
+		   rect.y() + rect.height() - cs.height() * (level + 1) + cs.height() / 2.);
 }
 
 QSizeF
