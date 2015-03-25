@@ -286,8 +286,10 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
         pen.setWidthF(thin * 2);
         pen.setCapStyle(Qt::RoundCap);
         paint.setPen(pen);
-        paint.drawLine(rect.topLeft(), rect.bottomRight());
-        paint.drawLine(rect.bottomLeft(), rect.topRight());
+        paint.drawLine(cellCentre(rect, 0, -maxPan),
+                       cellCentre(rect, maxLevel, maxPan));
+        paint.drawLine(cellCentre(rect, maxLevel, -maxPan),
+                       cellCentre(rect, 0, maxPan));
         return;
     }
     

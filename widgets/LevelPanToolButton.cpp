@@ -25,15 +25,19 @@ using std::endl;
 
 LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
     QToolButton(parent),
-    m_pixels(32)
+    m_pixels(32),
+    m_muted(false),
+    m_savedLevel(1.f)
 {
     m_lpw = new LevelPanWidget();
 
     connect(m_lpw, SIGNAL(levelChanged(float)), this, SIGNAL(levelChanged(float)));
-    connect(m_lpw, SIGNAL(levelChanged(float)), this, SLOT(redraw()));
+    connect(m_lpw, SIGNAL(levelChanged(float)), this, SLOT(selfLevelChanged(float)));
 
     connect(m_lpw, SIGNAL(panChanged(float)), this, SIGNAL(panChanged(float)));
     connect(m_lpw, SIGNAL(panChanged(float)), this, SLOT(redraw()));
+
+    connect(this, SIGNAL(clicked(bool)), this, SLOT(selfClicked()));
     
     QMenu *menu = new QMenu();
     QWidgetAction *wa = new QWidgetAction(menu);
@@ -42,7 +46,6 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
 
     setPopupMode(MenuButtonPopup);
     setMenu(menu);
-    setCheckable(true);
 
     redraw();
 }
@@ -74,12 +77,42 @@ void
 LevelPanToolButton::setLevel(float level)
 {
     m_lpw->setLevel(level);
+    redraw();
 }
 
 void
 LevelPanToolButton::setPan(float pan)
 {
     m_lpw->setPan(pan);
+    redraw();
+}
+
+void
+LevelPanToolButton::selfLevelChanged(float level)
+{
+    if (level > 0.f) {
+	m_muted = false;
+    } else {
+	m_muted = true;
+	m_savedLevel = 1.f;
+    }
+    redraw();
+}
+
+void
+LevelPanToolButton::selfClicked()
+{
+    cerr << "selfClicked" << endl;
+    
+    if (m_muted) {
+	m_muted = false;
+	m_lpw->setLevel(m_savedLevel);
+    } else {
+	m_savedLevel = m_lpw->getLevel();
+	m_muted = true;
+	m_lpw->setLevel(0.f);
+    }
+    redraw();
 }
 
 void

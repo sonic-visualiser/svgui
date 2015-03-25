@@ -49,9 +49,15 @@ signals:
     void levelChanged(float);
     void panChanged(float);
 
+private slots:
+    void selfLevelChanged(float);
+    void selfClicked();
+    
 protected:
     LevelPanWidget *m_lpw;
     int m_pixels;
+    bool m_muted;
+    float m_savedLevel;
 };
 
 #endif
