@@ -42,6 +42,27 @@ LevelPanWidget::~LevelPanWidget()
 {
 }
 
+QSize
+LevelPanWidget::sizeHint() const
+{
+    static double ratio = 0.0;
+    if (ratio == 0.0) {
+        double baseEm;
+#ifdef Q_OS_MAC
+        baseEm = 17.0;
+#else
+        baseEm = 15.0;
+#endif
+        double em = QFontMetrics(QFont()).height();
+        ratio = em / baseEm;
+    }
+
+    int pixels = 40;
+    int scaled = int(pixels * ratio + 0.5);
+    if (pixels != 0 && scaled == 0) scaled = 1;
+    return QSize(scaled, scaled);
+}
+
 void
 LevelPanWidget::setLevel(float flevel)
 {
@@ -114,7 +135,7 @@ LevelPanWidget::mouseMoveEvent(QMouseEvent *e)
     if (!m_editable) return;
     
     int level, pan;
-    toCell(e->pos(), level, pan);
+    toCell(rect(), e->pos(), level, pan);
     if (level == m_level && pan == m_pan) {
 	return;
     }
@@ -170,24 +191,28 @@ LevelPanWidget::wheelEvent(QWheelEvent *e)
 }
 
 void
-LevelPanWidget::toCell(QPointF loc, int &level, int &pan) const
+LevelPanWidget::toCell(QRectF rect, QPointF loc, int &level, int &pan) const
 {
-    double w = width(), h = height();
+    double w = rect.width(), h = rect.height();
+
     int npan = maxPan * 2 + 1;
     int nlevel = maxLevel + 1;
+
     double wcell = w / npan, hcell = h / nlevel;
+
     level = int((h - loc.y()) / hcell);
     if (level < 0) level = 0;
     if (level > maxLevel) level = maxLevel;
+
     pan = int(loc.x() / wcell) - maxPan;
     if (pan < -maxPan) pan = -maxPan;
     if (pan > maxPan) pan = maxPan;
 }
 
 QSizeF
-LevelPanWidget::cellSize() const
+LevelPanWidget::cellSize(QRectF rect) const
 {
-    double w = width(), h = height();
+    double w = rect.width(), h = rect.height();
     int npan = maxPan * 2 + 1;
     int nlevel = maxLevel + 1;
     double wcell = w / npan, hcell = h / nlevel;
@@ -195,27 +220,27 @@ LevelPanWidget::cellSize() const
 }
 
 QPointF
-LevelPanWidget::cellCentre(int level, int pan) const
+LevelPanWidget::cellCentre(QRectF rect, int level, int pan) const
 {
-    QSizeF cs = cellSize();
+    QSizeF cs = cellSize(rect);
     return QPointF(cs.width() * (pan + maxPan) + cs.width() / 2.,
-		   height() - cs.height() * (level + 1) + cs.height() / 2.);
+		   rect.height() - cs.height() * (level + 1) + cs.height() / 2.);
 }
 
 QSizeF
-LevelPanWidget::cellLightSize() const
+LevelPanWidget::cellLightSize(QRectF rect) const
 {
     double extent = 3. / 4.;
-    QSizeF cs = cellSize();
+    QSizeF cs = cellSize(rect);
     double m = std::min(cs.width(), cs.height());
     return QSizeF(m * extent, m * extent);
 }
 
 QRectF
-LevelPanWidget::cellLightRect(int level, int pan) const
+LevelPanWidget::cellLightRect(QRectF rect, int level, int pan) const
 {
-    QSizeF cls = cellLightSize();
-    QPointF cc = cellCentre(level, pan);
+    QSizeF cls = cellLightSize(rect);
+    QPointF cc = cellCentre(rect, level, pan);
     return QRectF(cc.x() - cls.width() / 2., 
 		  cc.y() - cls.height() / 2.,
 		  cls.width(),
@@ -223,38 +248,47 @@ LevelPanWidget::cellLightRect(int level, int pan) const
 }
 
 double
-LevelPanWidget::thinLineWidth() const
+LevelPanWidget::thinLineWidth(QRectF rect) const
 {
-    double tw = ceil(width() / (maxPan * 2. * 10.));
-    double th = ceil(height() / (maxLevel * 10.));
+    double tw = ceil(rect.width() / (maxPan * 2. * 10.));
+    double th = ceil(rect.height() / (maxLevel * 10.));
     return std::min(th, tw);
 }
 
 void
-LevelPanWidget::paintEvent(QPaintEvent *)
+LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) const
 {
-    QPainter paint(this);
+    QPainter paint(dev);
     ColourMapper mapper(ColourMapper::Sunset, 0, maxLevel);
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
     QPen pen;
 
-    double thin = thinLineWidth();
+    double thin = thinLineWidth(rect);
     
     pen.setColor(QColor(127, 127, 127, 127));
-    pen.setWidthF(cellLightSize().width() + thin);
+    pen.setWidthF(cellLightSize(rect).width() + thin);
     pen.setCapStyle(Qt::RoundCap);
     paint.setPen(pen);
 
     for (int pan = -maxPan; pan <= maxPan; ++pan) {
-	paint.drawLine(cellCentre(0, pan), cellCentre(maxLevel, pan));
+	paint.drawLine(cellCentre(rect, 0, pan), cellCentre(rect, maxLevel, pan));
     }
 
     if (isEnabled()) {
 	pen.setColor(Qt::black);
     } else {
 	pen.setColor(Qt::darkGray);
+    }
+
+    if (!asIfEditable && m_level == 0) {
+        pen.setWidthF(thin * 2);
+        pen.setCapStyle(Qt::RoundCap);
+        paint.setPen(pen);
+        paint.drawLine(rect.topLeft(), rect.bottomRight());
+        paint.drawLine(rect.bottomLeft(), rect.topRight());
+        return;
     }
     
     pen.setWidthF(thin);
@@ -265,7 +299,7 @@ LevelPanWidget::paintEvent(QPaintEvent *)
 	if (isEnabled()) {
 	    paint.setBrush(mapper.map(level));
 	}
-	QRectF clr = cellLightRect(level, m_pan);
+	QRectF clr = cellLightRect(rect, level, m_pan);
 	if (m_level == 0) {
 	    paint.drawLine(clr.topLeft(), clr.bottomRight());
 	    paint.drawLine(clr.bottomLeft(), clr.topRight());
@@ -274,5 +308,12 @@ LevelPanWidget::paintEvent(QPaintEvent *)
 	}
     }
 }
+
+void
+LevelPanWidget::paintEvent(QPaintEvent *)
+{
+    renderTo(this, rect(), m_editable);
+}
+
 
 

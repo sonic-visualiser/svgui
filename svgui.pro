@@ -116,6 +116,7 @@ HEADERS += widgets/ActivityLog.h \
            widgets/LayerTree.h \
            widgets/LayerTreeDialog.h \
            widgets/LEDButton.h \
+           widgets/LevelPanToolButton.h \
            widgets/LevelPanWidget.h \
            widgets/ListInputDialog.h \
            widgets/MIDIFileImportDialog.h \
@@ -155,6 +156,7 @@ SOURCES += widgets/ActivityLog.cpp \
            widgets/LayerTree.cpp \
            widgets/LayerTreeDialog.cpp \
            widgets/LEDButton.cpp \
+           widgets/LevelPanToolButton.cpp \
            widgets/LevelPanWidget.cpp \
            widgets/ListInputDialog.cpp \
            widgets/MIDIFileImportDialog.cpp \
