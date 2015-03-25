@@ -134,6 +134,9 @@ void
 LevelPanToolButton::paintEvent(QPaintEvent *e)
 {
     QToolButton::paintEvent(e);
+    if (m_pixels >= height()) {
+        setImageSize(height()-1);
+    }
     double margin = (double(height()) - m_pixels) / 2.0;
     m_lpw->renderTo(this, QRectF(margin, margin, m_pixels, m_pixels), false);
 }
