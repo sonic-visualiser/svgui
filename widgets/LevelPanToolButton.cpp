@@ -107,10 +107,12 @@ LevelPanToolButton::selfClicked()
     if (m_muted) {
 	m_muted = false;
 	m_lpw->setLevel(m_savedLevel);
+	emit levelChanged(m_savedLevel);
     } else {
 	m_savedLevel = m_lpw->getLevel();
 	m_muted = true;
 	m_lpw->setLevel(0.f);
+	emit levelChanged(0.f);
     }
     redraw();
 }
