@@ -75,8 +75,8 @@ LevelPanToolButton::setImageSize(int pixels)
     px.fill(Qt::transparent);
     setIcon(px);
 
-    m_lpw->setFixedWidth(m_pixels * 4);
-    m_lpw->setFixedHeight(m_pixels * 4);
+    m_lpw->setFixedWidth(m_pixels * 3);
+    m_lpw->setFixedHeight(m_pixels * 3);
 }
 
 void
@@ -91,6 +91,13 @@ LevelPanToolButton::setPan(float pan)
 {
     m_lpw->setPan(pan);
     update();
+}
+
+void
+LevelPanToolButton::setEnabled(bool enabled)
+{
+    m_lpw->setEnabled(enabled);
+    QToolButton::setEnabled(enabled);
 }
 
 void

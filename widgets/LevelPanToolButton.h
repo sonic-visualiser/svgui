@@ -42,6 +42,8 @@ public slots:
     /// Set pan in the range [-1,1] -- will be rounded
     void setPan(float);
 
+    void setEnabled(bool enabled);
+
 signals:
     void levelChanged(float);
     void panChanged(float);
