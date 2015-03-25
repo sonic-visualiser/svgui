@@ -42,9 +42,6 @@ public slots:
     /// Set pan in the range [-1,1] -- will be rounded
     void setPan(float);
 
-    /// Redraw icon for toolbar button based on level-pan widget contents
-    void redraw();
-
 signals:
     void levelChanged(float);
     void panChanged(float);
@@ -54,6 +51,8 @@ private slots:
     void selfClicked();
     
 protected:
+    void paintEvent(QPaintEvent *);
+    
     LevelPanWidget *m_lpw;
     int m_pixels;
     bool m_muted;

@@ -35,7 +35,7 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
     connect(m_lpw, SIGNAL(levelChanged(float)), this, SLOT(selfLevelChanged(float)));
 
     connect(m_lpw, SIGNAL(panChanged(float)), this, SIGNAL(panChanged(float)));
-    connect(m_lpw, SIGNAL(panChanged(float)), this, SLOT(redraw()));
+    connect(m_lpw, SIGNAL(panChanged(float)), this, SLOT(update()));
 
     connect(this, SIGNAL(clicked(bool)), this, SLOT(selfClicked()));
     
@@ -47,7 +47,7 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
     setPopupMode(MenuButtonPopup);
     setMenu(menu);
 
-    redraw();
+    setImageSize(m_pixels);
 }
 
 LevelPanToolButton::~LevelPanToolButton()
@@ -70,21 +70,27 @@ void
 LevelPanToolButton::setImageSize(int pixels)
 {
     m_pixels = pixels;
-    redraw();
+
+    QPixmap px(m_pixels, m_pixels);
+    px.fill(Qt::transparent);
+    setIcon(px);
+
+    m_lpw->setFixedWidth(m_pixels * 4);
+    m_lpw->setFixedHeight(m_pixels * 4);
 }
 
 void
 LevelPanToolButton::setLevel(float level)
 {
     m_lpw->setLevel(level);
-    redraw();
+    update();
 }
 
 void
 LevelPanToolButton::setPan(float pan)
 {
     m_lpw->setPan(pan);
-    redraw();
+    update();
 }
 
 void
@@ -96,7 +102,7 @@ LevelPanToolButton::selfLevelChanged(float level)
 	m_muted = true;
 	m_savedLevel = 1.f;
     }
-    redraw();
+    update();
 }
 
 void
@@ -114,20 +120,15 @@ LevelPanToolButton::selfClicked()
 	m_lpw->setLevel(0.f);
 	emit levelChanged(0.f);
     }
-    redraw();
+    update();
 }
 
 void
-LevelPanToolButton::redraw()
+LevelPanToolButton::paintEvent(QPaintEvent *e)
 {
-    QSize sz(m_pixels, m_pixels);
-
-    m_lpw->setFixedWidth(m_pixels * 4);
-    m_lpw->setFixedHeight(m_pixels * 4);
-    
-    QPixmap px(sz);
-    px.fill(Qt::transparent);
-    m_lpw->renderTo(&px, QRectF(QPointF(), sz), false);
-    setIcon(px);
+    QToolButton::paintEvent(e);
+    double margin = (double(height()) - m_pixels) / 2.0;
+    m_lpw->renderTo(this, QRectF(margin, margin, m_pixels, m_pixels), false);
 }
+
 
