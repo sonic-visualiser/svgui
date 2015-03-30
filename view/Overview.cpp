@@ -235,13 +235,14 @@ Overview::paintEvent(QPaintEvent *e)
 	int x0 = getXForFrame(f0);
 	int x1 = getXForFrame(f1);
 
+
 	if (x1 <= x0) x1 = x0 + 1;
 
         std::pair<int, int> extent(x0, x1);
 
         if (extents.find(extent) == extents.end()) {
 
-	    y += height() / 10 + 1;
+    	    y += height() / 10 + 1;
             extents.insert(extent);
 
             QRect vr(x0, y, x1 - x0, height() - 2 * y);
@@ -251,19 +252,19 @@ Overview::paintEvent(QPaintEvent *e)
     }
 
     QPainterPath without;
-    without.addRoundedRect(primary, 8, 8);
+    without.addRoundedRect(primary, 4, 4);
     without.addRect(rect());
     paint.setPen(Qt::NoPen);
     paint.setBrush(getFillWithout());
     paint.drawPath(without);
 
     paint.setBrush(getFillWithin());
-    paint.drawRoundedRect(primary, 8, 8);
+    paint.drawRoundedRect(primary, 4, 4);
     
     foreach (QRect vr, rects) {
         paint.setBrush(Qt::NoBrush);
-        paint.setPen(QPen(getForeground(), 2));
-        paint.drawRoundedRect(vr, 8, 8);
+        paint.setPen(QPen(Qt::gray, 2));
+        paint.drawRoundedRect(vr, 4, 4);
     }
 
     paint.end();
