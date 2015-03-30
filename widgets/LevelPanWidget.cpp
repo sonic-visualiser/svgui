@@ -266,7 +266,7 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
     QPen pen;
 
     double thin = thinLineWidth(rect);
-    
+
     pen.setColor(QColor(127, 127, 127, 127));
     pen.setWidthF(cellLightSize(rect).width() + thin);
     pen.setCapStyle(Qt::RoundCap);
