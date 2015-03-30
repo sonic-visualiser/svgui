@@ -59,10 +59,10 @@ public:
     QString getText() const;
 
 protected slots:
-    void frameTimeChanged(sv_frame_t);
+    void frameTimeChanged(int); // must be int as invoked from int signal
     void realTimeSecsChanged(int);
     void realTimeUSecsChanged(int);
-    void frameDurationChanged(sv_frame_t);
+    void frameDurationChanged(int); // must be int as invoked from int signal
     void realDurationSecsChanged(int);
     void realDurationUSecsChanged(int);
     void valueChanged(double);

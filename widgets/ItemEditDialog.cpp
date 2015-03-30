@@ -76,7 +76,7 @@ ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
         m_frameTimeSpinBox->setSuffix(tr(" frames"));
         subgrid->addWidget(m_frameTimeSpinBox, subrow, 1, 1, 2);
         connect(m_frameTimeSpinBox, SIGNAL(valueChanged(int)),
-                this, SLOT(frameTimeChanged(sv_frame_t)));
+                this, SLOT(frameTimeChanged(int)));
 
         ++subrow;
 
@@ -107,7 +107,7 @@ ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
         m_frameDurationSpinBox->setSuffix(tr(" frames"));
         subgrid->addWidget(m_frameDurationSpinBox, subrow, 1, 1, 2);
         connect(m_frameDurationSpinBox, SIGNAL(valueChanged(int)),
-                this, SLOT(frameDurationChanged(sv_frame_t)));
+                this, SLOT(frameDurationChanged(int)));
 
         ++subrow;
 
@@ -287,7 +287,7 @@ ItemEditDialog::getText() const
 }
 
 void
-ItemEditDialog::frameTimeChanged(sv_frame_t i)
+ItemEditDialog::frameTimeChanged(int i)
 {
     m_realTimeSecsSpinBox->blockSignals(true);
     m_realTimeUSecsSpinBox->blockSignals(true);
@@ -322,7 +322,7 @@ ItemEditDialog::realTimeUSecsChanged(int i)
 }
 
 void
-ItemEditDialog::frameDurationChanged(sv_frame_t i)
+ItemEditDialog::frameDurationChanged(int i)
 {
     m_realDurationSecsSpinBox->blockSignals(true);
     m_realDurationUSecsSpinBox->blockSignals(true);
