@@ -18,6 +18,8 @@
 #include <QMenu>
 #include <QWidgetAction>
 #include <QImage>
+#include <QStylePainter>
+#include <QStyleOptionToolButton>
 
 #include <iostream>
 using std::cerr;
@@ -44,7 +46,7 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
     wa->setDefaultWidget(m_lpw);
     menu->addAction(wa);
 
-    setPopupMode(MenuButtonPopup);
+    setPopupMode(InstantPopup);
     setMenu(menu);
 
     setImageSize(m_pixels);
@@ -131,12 +133,18 @@ LevelPanToolButton::selfClicked()
 }
 
 void
-LevelPanToolButton::paintEvent(QPaintEvent *e)
+LevelPanToolButton::paintEvent(QPaintEvent *)
 {
-    QToolButton::paintEvent(e);
+    QStylePainter p(this);
+    QStyleOptionToolButton opt;
+    initStyleOption(&opt);
+    opt.features &= (~QStyleOptionToolButton::HasMenu);
+    p.drawComplexControl(QStyle::CC_ToolButton, opt);
+    
     if (m_pixels >= height()) {
         setImageSize(height()-1);
     }
+    
     double margin = (double(height()) - m_pixels) / 2.0;
     m_lpw->renderTo(this, QRectF(margin, margin, m_pixels, m_pixels), false);
 }
