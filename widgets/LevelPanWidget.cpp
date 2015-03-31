@@ -312,11 +312,21 @@ LevelPanWidget::thinLineWidth(QRectF rect) const
     return std::min(th, tw);
 }
 
+static QColor
+level_to_colour(int level)
+{
+    assert(maxLevel == 4);
+    if (level == 0) return Qt::black;
+    else if (level == 1) return QColor(80, 0, 0);
+    else if (level == 2) return QColor(160, 0, 0);
+    else if (level == 3) return QColor(255, 0, 0);
+    else return QColor(255, 255, 0);
+}
+
 void
 LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) const
 {
     QPainter paint(dev);
-    ColourMapper mapper(ColourMapper::Sunset, 0, maxLevel);
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
@@ -356,7 +366,7 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
     
     for (int level = 0; level <= m_level; ++level) {
 	if (isEnabled()) {
-	    paint.setBrush(mapper.map(level));
+	    paint.setBrush(level_to_colour(level));
 	}
 	QRectF clr = cellLightRect(rect, level, m_pan);
 	if (m_includeMute && m_level == 0) {
