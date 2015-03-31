@@ -23,18 +23,20 @@
 
 #include <iostream>
 #include <cmath>
+#include <cassert>
 
 using std::cerr;
 using std::endl;
 
-static const int maxLevel = 4;
+static const int maxLevel = 4; // min is 0, may be mute or not depending on m_includeMute
 static const int maxPan = 2; // range is -maxPan to maxPan
 
 LevelPanWidget::LevelPanWidget(QWidget *parent) :
     QWidget(parent),
     m_level(maxLevel),
     m_pan(0),
-    m_editable(true)
+    m_editable(true),
+    m_includeMute(true)
 {
 }
 
@@ -63,11 +65,42 @@ LevelPanWidget::sizeHint() const
     return QSize(scaled, scaled);
 }
 
+static int
+db_to_level(double db)
+{
+    // Only if !m_includeMute, otherwise AudioLevel is used.
+    // Levels are: +6 0 -6 -12 -20
+    assert(maxLevel == 4);
+    if (db > 3.) return 4;
+    else if (db > -3.) return 3;
+    else if (db > -9.) return 2;
+    else if (db > -16.) return 1;
+    else return 0;
+}
+
+static double
+level_to_db(int level)
+{
+    // Only if !m_includeMute, otherwise AudioLevel is used.
+    // Levels are: +6 0 -6 -12 -20
+    assert(maxLevel == 4);
+    if (level >= 4) return 6.;
+    else if (level == 3) return 0.;
+    else if (level == 2) return -6.;
+    else if (level == 1) return -12.;
+    else return -20.;
+}
+
 void
 LevelPanWidget::setLevel(float flevel)
 {
-    int level = AudioLevel::multiplier_to_fader
-	(flevel, maxLevel, AudioLevel::ShortFader);
+    int level;
+    if (m_includeMute) {
+        level = AudioLevel::multiplier_to_fader
+            (flevel, maxLevel, AudioLevel::ShortFader);
+    } else {
+        level = db_to_level(AudioLevel::multiplier_to_dB(flevel));
+    }
     if (level < 0) level = 0;
     if (level > maxLevel) level = maxLevel;
     if (level != m_level) {
@@ -80,6 +113,17 @@ LevelPanWidget::setLevel(float flevel)
     }
 }
 
+float
+LevelPanWidget::getLevel() const
+{
+    if (m_includeMute) {
+        return float(AudioLevel::fader_to_multiplier
+                     (m_level, maxLevel, AudioLevel::ShortFader));
+    } else {
+        return float(AudioLevel::dB_to_multiplier(level_to_db(m_level)));
+    }
+}
+
 void
 LevelPanWidget::setPan(float pan)
 {
@@ -89,6 +133,18 @@ LevelPanWidget::setPan(float pan)
     update();
 }
 
+bool
+LevelPanWidget::isEditable() const
+{
+    return m_editable;
+}
+
+bool
+LevelPanWidget::includesMute() const
+{
+    return m_includeMute;
+}
+
 void
 LevelPanWidget::setEditable(bool editable)
 {
@@ -96,11 +152,12 @@ LevelPanWidget::setEditable(bool editable)
     update();
 }
 
-float
-LevelPanWidget::getLevel() const
+void
+LevelPanWidget::setIncludeMute(bool include)
 {
-    return float(AudioLevel::fader_to_multiplier
-		 (m_level, maxLevel, AudioLevel::ShortFader));
+    m_includeMute = include;
+    emitLevelChanged();
+    update();
 }
 
 float
@@ -282,7 +339,7 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
 	pen.setColor(Qt::darkGray);
     }
 
-    if (!asIfEditable && m_level == 0) {
+    if (!asIfEditable && m_includeMute && m_level == 0) {
         pen.setWidthF(thin * 2);
         pen.setCapStyle(Qt::RoundCap);
         paint.setPen(pen);
@@ -302,7 +359,7 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
 	    paint.setBrush(mapper.map(level));
 	}
 	QRectF clr = cellLightRect(rect, level, m_pan);
-	if (m_level == 0) {
+	if (m_includeMute && m_level == 0) {
 	    paint.drawLine(clr.topLeft(), clr.bottomRight());
 	    paint.drawLine(clr.bottomLeft(), clr.topRight());
 	} else {
