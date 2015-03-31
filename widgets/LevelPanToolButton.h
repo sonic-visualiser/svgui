@@ -38,6 +38,8 @@ public:
 
     void setImageSize(int pixels);
 			
+    void setBigImageSize(int pixels);
+			
 public slots:
     /// Set level in the range [0,1] -- will be rounded
     void setLevel(float);
@@ -63,6 +65,7 @@ protected:
     
     LevelPanWidget *m_lpw;
     int m_pixels;
+    int m_pixelsBig;
     bool m_muted;
     float m_savedLevel;
 };
