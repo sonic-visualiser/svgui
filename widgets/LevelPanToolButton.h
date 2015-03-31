@@ -33,6 +33,9 @@ public:
     /// Return pan as a value in the range [-1,1]
     float getPan() const;
 
+    /// Discover whether the level range includes muting or not
+    bool includesMute() const;
+
     void setImageSize(int pixels);
 			
 public slots:
@@ -42,8 +45,11 @@ public slots:
     /// Set pan in the range [-1,1] -- will be rounded
     void setPan(float);
 
-    void setEnabled(bool enabled);
+    /// Specify whether the level range should include muting or not
+    void setIncludeMute(bool);
 
+    void setEnabled(bool enabled);
+    
 signals:
     void levelChanged(float);
     void panChanged(float);

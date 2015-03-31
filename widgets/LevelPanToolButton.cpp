@@ -68,6 +68,12 @@ LevelPanToolButton::getPan() const
     return m_lpw->getPan();
 }
 
+bool
+LevelPanToolButton::includesMute() const
+{
+    return m_lpw->includesMute();
+}
+
 void
 LevelPanToolButton::setImageSize(int pixels)
 {
@@ -92,6 +98,13 @@ void
 LevelPanToolButton::setPan(float pan)
 {
     m_lpw->setPan(pan);
+    update();
+}
+
+void
+LevelPanToolButton::setIncludeMute(bool include)
+{
+    m_lpw->setIncludeMute(include);
     update();
 }
 

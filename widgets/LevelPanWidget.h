@@ -38,6 +38,9 @@ public:
     /// Find out whether the widget is editable
     bool isEditable() const;
 
+    /// Discover whether the level range includes muting or not
+    bool includesMute() const;
+
     /// Draw a suitably sized copy of the widget's contents to the given device
     void renderTo(QPaintDevice *, QRectF, bool asIfEditable) const;
 
@@ -52,6 +55,9 @@ public slots:
 
     /// Specify whether the widget is editable or read-only (default editable)
     void setEditable(bool);
+
+    /// Specify whether the level range should include muting or not
+    void setIncludeMute(bool);
     
 signals:
     void levelChanged(float);
@@ -70,6 +76,7 @@ protected:
     int m_level;
     int m_pan;
     bool m_editable;
+    bool m_includeMute;
 
     QSizeF cellSize(QRectF) const;
     QPointF cellCentre(QRectF, int level, int pan) const;
