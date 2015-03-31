@@ -28,6 +28,7 @@ using std::endl;
 LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
     QToolButton(parent),
     m_pixels(32),
+    m_pixelsBig(32 * 3),
     m_muted(false),
     m_savedLevel(1.f)
 {
@@ -50,6 +51,7 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
     setMenu(menu);
 
     setImageSize(m_pixels);
+    setBigImageSize(m_pixelsBig);
 }
 
 LevelPanToolButton::~LevelPanToolButton()
@@ -82,9 +84,15 @@ LevelPanToolButton::setImageSize(int pixels)
     QPixmap px(m_pixels, m_pixels);
     px.fill(Qt::transparent);
     setIcon(px);
+}
 
-    m_lpw->setFixedWidth(m_pixels * 3);
-    m_lpw->setFixedHeight(m_pixels * 3);
+void
+LevelPanToolButton::setBigImageSize(int pixels)
+{
+    m_pixelsBig = pixels;
+
+    m_lpw->setFixedWidth(m_pixelsBig);
+    m_lpw->setFixedHeight(m_pixelsBig);
 }
 
 void
