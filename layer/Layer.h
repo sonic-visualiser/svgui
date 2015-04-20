@@ -63,7 +63,7 @@ public:
     Model *getModel() {
 	return const_cast<Model *>(const_cast<const Layer *>(this)->getModel());
     }
-
+    
     /**
      * Return a zoom constraint object defining the supported zoom
      * levels for this layer.  If this returns zero, the layer will
@@ -519,6 +519,13 @@ public:
      * the caller.
      */
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const { return 0; }
+
+    /**
+     * Return true if this layer type can function without a model
+     * being set. If false (the default), the layer will not be loaded
+     * from a session if its model cannot be found.
+     */
+    virtual bool canExistWithoutModel() const { return false; }
 
 public slots:
     void showLayer(LayerGeometryProvider *, bool show);
