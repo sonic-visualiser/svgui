@@ -452,6 +452,8 @@ View::getZoomLevel() const
 void
 View::setZoomLevel(int z)
 {
+    int dpratio = devicePixelRatio();
+    if (z < dpratio) return;
     if (z < 1) z = 1;
     if (m_zoomLevel != int(z)) {
 	m_zoomLevel = z;
