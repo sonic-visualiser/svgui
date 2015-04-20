@@ -69,7 +69,7 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, int &frame,
+    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
 
@@ -210,20 +210,20 @@ public:
         return ColourHasMeaningfulValue;
     }
 
-    float getYForFrequency(const View *v, float frequency) const;
-    float getFrequencyForY(const View *v, int y) const;
+    double getYForFrequency(const View *v, double frequency) const;
+    double getFrequencyForY(const View *v, int y) const;
 
     virtual int getCompletion(View *v) const;
     virtual QString getError(View *v) const;
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
-    virtual bool getDisplayExtents(float &min, float &max) const;
+    virtual bool getDisplayExtents(double &min, double &max) const;
 
-    virtual bool setDisplayExtents(float min, float max);
+    virtual bool setDisplayExtents(double min, double max);
 
-    virtual bool getYScaleValue(const View *, int, float &, QString &) const;
+    virtual bool getYScaleValue(const View *, int, double &, QString &) const;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
@@ -243,7 +243,7 @@ public:
 
 protected slots:
     void cacheInvalid();
-    void cacheInvalid(int startFrame, int endFrame);
+    void cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame);
     
     void preferenceChanged(PropertyContainer::PropertyName name);
 
@@ -310,12 +310,12 @@ protected:
     {
         QImage image;
         QRect validArea;
-        int startFrame;
+        sv_frame_t startFrame;
         int zoomLevel;
     };
     typedef std::map<const View *, ImageCache> ViewImageCache;
     void invalidateImageCaches();
-    void invalidateImageCaches(int startFrame, int endFrame);
+    void invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFrame);
     mutable ViewImageCache m_imageCaches;
 
     /**
@@ -328,27 +328,20 @@ protected:
 
     mutable QTimer *m_updateTimer;
 
-    mutable int m_candidateFillStartFrame;
+    mutable sv_frame_t m_candidateFillStartFrame;
     bool m_exiting;
 
     void initialisePalette();
     void rotatePalette(int distance);
 
-    unsigned char getDisplayValue(View *v, float input) const;
+    unsigned char getDisplayValue(View *v, double input) const;
 
     int getColourScaleWidth(QPainter &) const;
 
     void illuminateLocalFeatures(View *v, QPainter &painter) const;
 
-    float getEffectiveMinFrequency() const;
-    float getEffectiveMaxFrequency() const;
-
-    struct LayerRange {
-	int   startFrame;
-	int    zoomLevel;
-	int modelStart;
-	int modelEnd;
-    };
+    double getEffectiveMinFrequency() const;
+    double getEffectiveMaxFrequency() const;
 
     // Note that the getYBin... methods return the nominal bin in the
     // un-smoothed spectrogram.  This is not necessarily the same bin
@@ -356,17 +349,17 @@ protected:
     // position, if the spectrogram has oversampling smoothing.  Use
     // getSmoothedYBinRange to obtain that.
 
-    bool getXBinRange(View *v, int x, float &windowMin, float &windowMax) const;
-    bool getYBinRange(View *v, int y, float &freqBinMin, float &freqBinMax) const;
-    bool getSmoothedYBinRange(View *v, int y, float &freqBinMin, float &freqBinMax) const;
+    bool getXBinRange(View *v, int x, double &windowMin, double &windowMax) const;
+    bool getYBinRange(View *v, int y, double &freqBinMin, double &freqBinMax) const;
+    bool getSmoothedYBinRange(View *v, int y, double &freqBinMin, double &freqBinMax) const;
 
-    bool getYBinSourceRange(View *v, int y, float &freqMin, float &freqMax) const;
+    bool getYBinSourceRange(View *v, int y, double &freqMin, double &freqMax) const;
     bool getAdjustedYBinSourceRange(View *v, int x, int y,
-				    float &freqMin, float &freqMax,
-				    float &adjFreqMin, float &adjFreqMax) const;
+				    double &freqMin, double &freqMax,
+				    double &adjFreqMin, double &adjFreqMax) const;
     bool getXBinSourceRange(View *v, int x, RealTime &timeMin, RealTime &timeMax) const;
-    bool getXYBinSourceRange(View *v, int x, int y, float &min, float &max,
-			     float &phaseMin, float &phaseMax) const;
+    bool getXYBinSourceRange(View *v, int x, int y, double &min, double &max,
+			     double &phaseMin, double &phaseMax) const;
 
     int getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;
@@ -380,7 +373,7 @@ protected:
     Dense3DModelPeakCache *getPeakCache(const View *v) const;
     void invalidateFFTModels();
 
-    typedef std::pair<FFTModel *, int> FFTFillPair; // model, last fill
+    typedef std::pair<FFTModel *, sv_frame_t> FFTFillPair; // model, last fill
     typedef std::map<const View *, FFTFillPair> ViewFFTMap;
     typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
     mutable ViewFFTMap m_fftModels;
@@ -393,20 +386,19 @@ protected:
         bool operator==(const MagnitudeRange &r) {
             return r.m_min == m_min && r.m_max == m_max;
         }
-        bool isSet() const { return (m_min != 0 || m_max != 0); }
+        bool isSet() const { return (m_min != 0.f || m_max != 0.f); }
         void set(float min, float max) {
-            m_min = convert(min);
-            m_max = convert(max);
+            m_min = min;
+            m_max = max;
             if (m_max < m_min) m_max = m_min;
         }
         bool sample(float f) {
-            unsigned int ui = convert(f);
             bool changed = false;
             if (isSet()) {
-                if (ui < m_min) { m_min = ui; changed = true; }
-                if (ui > m_max) { m_max = ui; changed = true; }
+                if (f < m_min) { m_min = f; changed = true; }
+                if (f > m_max) { m_max = f; changed = true; }
             } else {
-                m_max = m_min = ui;
+                m_max = m_min = f;
                 changed = true;
             }
             return changed;
@@ -423,16 +415,11 @@ protected:
             }
             return changed;
         }            
-        float getMin() const { return float(m_min) / UINT_MAX; }
-        float getMax() const { return float(m_max) / UINT_MAX; }
+        float getMin() const { return m_min; }
+        float getMax() const { return m_max; }
     private:
-        unsigned int m_min;
-        unsigned int m_max;
-        unsigned int convert(float f) {
-            if (f < 0.f) f = 0.f;
-            if (f > 1.f) f = 1.f;
-            return (unsigned int)(f * UINT_MAX);
-        }
+        float m_min;
+        float m_max;
     };
 
     typedef std::map<const View *, MagnitudeRange> ViewMagMap;
@@ -441,16 +428,17 @@ protected:
     void invalidateMagnitudes();
     bool updateViewMagnitudes(View *v) const;
     bool paintDrawBuffer(View *v, int w, int h,
-                         int *binforx, float *binfory,
+                         const std::vector<int> &binforx,
+                         const std::vector<double> &binfory,
                          bool usePeaksCache,
                          MagnitudeRange &overallMag,
                          bool &overallMagChanged) const;
     bool paintDrawBufferPeakFrequencies(View *v, int w, int h,
-                                        int *binforx,
+                                        const std::vector<int> &binforx,
                                         int minbin,
                                         int maxbin,
-                                        float displayMinFreq,
-                                        float displayMaxFreq,
+                                        double displayMinFreq,
+                                        double displayMaxFreq,
                                         bool logarithmic,
                                         MagnitudeRange &overallMag,
                                         bool &overallMagChanged) const;

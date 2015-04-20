@@ -49,7 +49,7 @@ TimeRulerLayer::setModel(Model *model)
 }
 
 bool
-TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
+TimeRulerLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
                                    int &resolution, SnapType snap) const
 {
     if (!m_model) {
@@ -60,7 +60,7 @@ TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
     bool q;
     int tick = getMajorTickSpacing(v, q);
     RealTime rtick = RealTime::fromMilliseconds(tick);
-    int rate = m_model->getSampleRate();
+    sv_samplerate_t rate = m_model->getSampleRate();
     
     RealTime rt = RealTime::frame2RealTime(frame, rate);
     double ratio = rt / rtick;
@@ -68,9 +68,9 @@ TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
     int rounded = int(ratio);
     RealTime rdrt = rtick * rounded;
 
-    int left = RealTime::realTime2Frame(rdrt, rate);
-    resolution = RealTime::realTime2Frame(rtick, rate);
-    int right = left + resolution;
+    sv_frame_t left = RealTime::realTime2Frame(rdrt, rate);
+    resolution = int(RealTime::realTime2Frame(rtick, rate));
+    sv_frame_t right = left + resolution;
 
 //    SVDEBUG << "TimeRulerLayer::snapToFeatureFrame: type "
 //              << int(snap) << ", frame " << frame << " (time "
@@ -88,7 +88,7 @@ TimeRulerLayer::snapToFeatureFrame(View *v, int &frame,
         
     case SnapNearest:
     {
-        if (abs(frame - left) > abs(right - frame)) {
+        if (labs(frame - left) > labs(right - frame)) {
             frame = right;
         } else {
             frame = left;
@@ -147,11 +147,11 @@ TimeRulerLayer::getMajorTickSpacing(View *v, bool &quarterTicks) const
 
     if (!m_model || !v) return 1000;
 
-    int sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = m_model->getSampleRate();
     if (!sampleRate) return 1000;
 
-    long startFrame = v->getStartFrame();
-    long endFrame = v->getEndFrame();
+    sv_frame_t startFrame = v->getStartFrame();
+    sv_frame_t endFrame = v->getEndFrame();
 
     int minPixelSpacing = 50;
 
@@ -201,10 +201,10 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
     
     if (!m_model || !m_model->isOK()) return;
 
-    int sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = m_model->getSampleRate();
     if (!sampleRate) return;
 
-    long startFrame = v->getFrameForX(rect.x() - 50);
+    sv_frame_t startFrame = v->getFrameForX(rect.x() - 50);
 
 #ifdef DEBUG_TIME_RULER_LAYER
     cerr << "start frame = " << startFrame << endl;
@@ -213,7 +213,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
     bool quarter = false;
     int incms = getMajorTickSpacing(v, quarter);
 
-    int ms = lrint(1000.0 * (double(startFrame) / double(sampleRate)));
+    int ms = int(lrint(1000.0 * (double(startFrame) / double(sampleRate))));
     ms = (ms / incms) * incms - incms;
 
 #ifdef DEBUG_TIME_RULER_LAYER
@@ -226,8 +226,8 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
     // draw the actual ticks or lines.
 
     int minPixelSpacing = 50;
-    long incFrame = (incms * sampleRate) / 1000;
-    int incX = incFrame / v->getZoomLevel();
+    sv_frame_t incFrame = lrint((incms * sampleRate) / 1000);
+    int incX = int(incFrame / v->getZoomLevel());
     int ticks = 10;
     if (incX < minPixelSpacing * 2) {
 	ticks = quarter ? 4 : 5;
@@ -249,7 +249,7 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
         // re-drawing with a different start frame).
 
         double dms = ms;
-        long frame = lrint((dms * sampleRate) / 1000.0);
+        sv_frame_t frame = lrint((dms * sampleRate) / 1000.0);
         frame /= v->getZoomLevel();
         frame *= v->getZoomLevel(); // so frame corresponds to an exact pixel
 

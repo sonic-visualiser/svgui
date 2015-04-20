@@ -150,7 +150,7 @@ public:
 	return "";
     }
 
-    virtual QString getLabelPreceding(int /* frame */) const {
+    virtual QString getLabelPreceding(sv_frame_t /* frame */) const {
         return "";
     }
 
@@ -180,8 +180,8 @@ public:
      * (and leave frame unmodified).  If returning true, also return
      * the resolution of the model in this layer in sample frames.
      */
-    virtual bool snapToFeatureFrame(View *   /* v */,
-				    int &    /* frame */,
+    virtual bool snapToFeatureFrame(View * /* v */,
+				    sv_frame_t & /* frame */,
 				    int &resolution,
 				    SnapType /* snap */) const {
 	resolution = 1;
@@ -204,8 +204,8 @@ public:
      * (and leave frame unmodified).  If returning true, also return
      * the resolution of the model in this layer in sample frames.
      */
-    virtual bool snapToSimilarFeature(View *   /* v */,
-                                      int &    /* source frame */,
+    virtual bool snapToSimilarFeature(View * /* v */,
+                                      sv_frame_t & /* source frame */,
                                       int &resolution,
                                       SnapType /* snap */) const {
 	resolution = 1;
@@ -254,7 +254,7 @@ public:
      */
     virtual bool editOpen(View *, QMouseEvent *) { return false; }
 
-    virtual void moveSelection(Selection, int /* newStartFrame */) { }
+    virtual void moveSelection(Selection, sv_frame_t /* newStartFrame */) { }
     virtual void resizeSelection(Selection, Selection /* newSize */) { }
     virtual void deleteSelection(Selection) { }
 
@@ -269,7 +269,7 @@ public:
      */
     virtual bool paste(View *,
                        const Clipboard & /* from */,
-                       int /* frameOffset */,
+                       sv_frame_t /* frameOffset */,
                        bool /* interactive */) { return false; }
 
     // Text mode:
@@ -423,7 +423,7 @@ public:
      * This function returns the "normal" extents for the layer, not
      * necessarily the extents actually in use in the display.
      */
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const = 0;
 
     /**
@@ -434,8 +434,8 @@ public:
      * extent (using the normal layer extents or deferring to whatever
      * is in use for the same units elsewhere in the view).
      */
-    virtual bool getDisplayExtents(float & /* min */,
-                                   float & /* max */) const {
+    virtual bool getDisplayExtents(double & /* min */,
+                                   double & /* max */) const {
         return false;
     }
 
@@ -446,8 +446,8 @@ public:
      * return false for getDisplayExtents should also return false for
      * this function.
      */
-    virtual bool setDisplayExtents(float /* min */,
-                                   float /* max */) {
+    virtual bool setDisplayExtents(double /* min */,
+                                   double /* max */) {
         return false;
     }
 
@@ -458,14 +458,14 @@ public:
      * if the layer hasTimeXAxis().
      */
     virtual bool getXScaleValue(const View *v, int x,
-                                float &value, QString &unit) const;
+                                double &value, QString &unit) const;
 
     /** 
      * Return the value and unit at the given y coordinate in the
      * given view.
      */
     virtual bool getYScaleValue(const View *, int /* y */,
-                                float &/* value */, QString &/* unit */) const {
+                                double &/* value */, QString &/* unit */) const {
         return false;
     }
 
@@ -476,7 +476,7 @@ public:
      * returns the difference, with the same unit.
      */
     virtual bool getYScaleDifference(const View *v, int y0, int y1,
-                                     float &diff, QString &unit) const;
+                                     double &diff, QString &unit) const;
         
     /**
      * Get the number of vertical zoom steps available for this layer.
@@ -525,7 +525,7 @@ signals:
     void modelChanged();
     void modelCompletionChanged();
     void modelAlignmentCompletionChanged();
-    void modelChangedWithin(int startFrame, int endFrame);
+    void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame);
     void modelReplaced();
 
     void layerParametersChanged();
@@ -538,16 +538,16 @@ signals:
 protected:
     void connectSignals(const Model *);
 
-    virtual int alignToReference(View *v, int frame) const;
-    virtual int alignFromReference(View *v, int frame) const;
+    virtual sv_frame_t alignToReference(View *v, sv_frame_t frame) const;
+    virtual sv_frame_t alignFromReference(View *v, sv_frame_t frame) const;
     bool clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const;
 
     struct MeasureRect {
 
         mutable QRect pixrect;
         bool haveFrames;
-        int startFrame; // only valid if haveFrames
-        int endFrame;   // ditto
+        sv_frame_t startFrame; // only valid if haveFrames
+        sv_frame_t endFrame;   // ditto
         double startY;
         double endY;
 

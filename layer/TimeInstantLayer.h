@@ -35,10 +35,10 @@ public:
 
     virtual void paint(View *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getLabelPreceding(int) const;
+    virtual QString getLabelPreceding(sv_frame_t) const;
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, int &frame,
+    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
 
@@ -56,12 +56,12 @@ public:
 
     virtual bool editOpen(View *, QMouseEvent *);
 
-    virtual void moveSelection(Selection s, int newStartFrame);
+    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
     virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
+    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
@@ -92,7 +92,7 @@ public:
 
     virtual bool needsTextLabelHeight() const { return m_model->hasTextLabels(); }
 
-    virtual bool getValueExtents(float &, float &, bool &, QString &) const {
+    virtual bool getValueExtents(double &, double &, bool &, QString &) const {
         return false;
     }
 

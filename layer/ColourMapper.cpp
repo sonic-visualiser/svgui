@@ -21,7 +21,7 @@
 
 #include "base/Debug.h"
 
-ColourMapper::ColourMapper(int map, float min, float max) :
+ColourMapper::ColourMapper(int map, double min, double max) :
     QObject(),
     m_map(map),
     m_min(min),
@@ -69,17 +69,16 @@ ColourMapper::getColourMapName(int n)
 }
 
 QColor
-ColourMapper::map(float value) const
+ColourMapper::map(double value) const
 {
-    float norm = (value - m_min) / (m_max - m_min);
-    if (norm < 0.f) norm = 0.f;
-    if (norm > 1.f) norm = 1.f;
+    double norm = (value - m_min) / (m_max - m_min);
+    if (norm < 0.0) norm = 0.0;
+    if (norm > 1.0) norm = 1.0;
     
-    float h = 0.f, s = 0.f, v = 0.f, r = 0.f, g = 0.f, b = 0.f;
+    double h = 0.0, s = 0.0, v = 0.0, r = 0.0, g = 0.0, b = 0.0;
     bool hsv = true;
 
-//    float red = 0.f, green = 0.3333f;
-    float blue = 0.6666f, pieslice = 0.3333f;
+    double blue = 0.6666, pieslice = 0.3333;
 
     if (m_map >= getColourMapCount()) return Qt::black;
     StandardMap map = (StandardMap)m_map;
@@ -87,8 +86,8 @@ ColourMapper::map(float value) const
     switch (map) {
 
     case DefaultColours:
-        h = blue - norm * 2.f * pieslice;
-        s = 0.5f + norm/2.f;
+        h = blue - norm * 2.0 * pieslice;
+        s = 0.5f + norm/2.0;
         v = norm;
         break;
 
@@ -98,53 +97,53 @@ ColourMapper::map(float value) const
         break;
 
     case BlackOnWhite:
-        r = g = b = 1.f - norm;
+        r = g = b = 1.0 - norm;
         hsv = false;
         break;
 
     case RedOnBlue:
-        h = blue - pieslice/4.f + norm * (pieslice + pieslice/4.f);
-        s = 1.f;
+        h = blue - pieslice/4.0 + norm * (pieslice + pieslice/4.0);
+        s = 1.0;
         v = norm;
         break;
 
     case YellowOnBlack:
-        h = 0.15f;
-        s = 1.f;
+        h = 0.15;
+        s = 1.0;
         v = norm;
         break;
 
     case BlueOnBlack:
         h = blue;
-        s = 1.f;
-        v = norm * 2.f;
-        if (v > 1.f) {
-            v = 1.f;
-            s = 1.f - (sqrtf(norm) - 0.707f) * 3.413f;
-            if (s < 0.f) s = 0.f;
-            if (s > 1.f) s = 1.f;
+        s = 1.0;
+        v = norm * 2.0;
+        if (v > 1.0) {
+            v = 1.0;
+            s = 1.0 - (sqrt(norm) - 0.707) * 3.413;
+            if (s < 0.0) s = 0.0;
+            if (s > 1.0) s = 1.0;
         }
         break;
 
     case Sunset:
-        r = (norm - 0.24f) * 2.38f;
-        if (r > 1.f) r = 1.f;
-        if (r < 0.f) r = 0.f;
-        g = (norm - 0.64f) * 2.777f;
-        if (g > 1.f) g = 1.f;
-        if (g < 0.f) g = 0.f;
+        r = (norm - 0.24) * 2.38;
+        if (r > 1.0) r = 1.0;
+        if (r < 0.0) r = 0.0;
+        g = (norm - 0.64) * 2.777;
+        if (g > 1.0) g = 1.0;
+        if (g < 0.0) g = 0.0;
         b = (3.6f * norm);
-        if (norm > 0.277f) b = 2.f - b;
-        if (b > 1.f) b = 1.f;
-        if (b < 0.f) b = 0.f;
+        if (norm > 0.277) b = 2.0 - b;
+        if (b > 1.0) b = 1.0;
+        if (b < 0.0) b = 0.0;
         hsv = false;
         break;
 
     case FruitSalad:
-        h = blue + (pieslice/6.f) - norm;
-        if (h < 0.f) h += 1.f;
-        s = 1.f;
-        v = 1.f;
+        h = blue + (pieslice/6.0) - norm;
+        if (h < 0.0) h += 1.0;
+        s = 1.0;
+        v = 1.0;
         break;
 
     case Banded:
@@ -164,47 +163,47 @@ ColourMapper::map(float value) const
 
     case Printer:
         if (norm > 0.8) {
-            r = 1.f;
+            r = 1.0;
         } else if (norm > 0.7) {
-            r = 0.9f;
+            r = 0.9;
         } else if (norm > 0.6) {
-            r = 0.8f;
+            r = 0.8;
         } else if (norm > 0.5) {
-            r = 0.7f;
+            r = 0.7;
         } else if (norm > 0.4) {
-            r = 0.6f;
+            r = 0.6;
         } else if (norm > 0.3) {
-            r = 0.5f;
+            r = 0.5;
         } else if (norm > 0.2) {
-            r = 0.4f;
+            r = 0.4;
         } else {
-            r = 0.f;
+            r = 0.0;
         }
-        r = g = b = 1.f - r;
+        r = g = b = 1.0 - r;
         hsv = false;
         break;
 
     case HighGain:
-        if (norm <= 1.f / 256.f) {
-            norm = 0.f;
+        if (norm <= 1.0 / 256.0) {
+            norm = 0.0;
         } else {
-            norm = 0.1f + (powf(((norm - 0.5f) * 2.f), 3.f) + 1.f) / 2.081f;
+            norm = 0.1f + (pow(((norm - 0.5) * 2.0), 3.0) + 1.0) / 2.081;
         }
         // now as for Sunset
-        r = (norm - 0.24f) * 2.38f;
-        if (r > 1.f) r = 1.f;
-        if (r < 0.f) r = 0.f;
-        g = (norm - 0.64f) * 2.777f;
-        if (g > 1.f) g = 1.f;
-        if (g < 0.f) g = 0.f;
+        r = (norm - 0.24) * 2.38;
+        if (r > 1.0) r = 1.0;
+        if (r < 0.0) r = 0.0;
+        g = (norm - 0.64) * 2.777;
+        if (g > 1.0) g = 1.0;
+        if (g < 0.0) g = 0.0;
         b = (3.6f * norm);
-        if (norm > 0.277f) b = 2.f - b;
-        if (b > 1.f) b = 1.f;
-        if (b < 0.f) b = 0.f;
+        if (norm > 0.277) b = 2.0 - b;
+        if (b > 1.0) b = 1.0;
+        if (b < 0.0) b = 0.0;
         hsv = false;
 /*
-        if (r > 1.f) r = 1.f;
-        r = g = b = 1.f - r;
+        if (r > 1.0) r = 1.0;
+        r = g = b = 1.0 - r;
         hsv = false;
 */
         break;

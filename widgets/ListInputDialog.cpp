@@ -67,7 +67,7 @@ ListInputDialog::getCurrentString() const
 {
     for (size_t i = 0; i < m_radioButtons.size(); ++i) {
         if (m_radioButtons[i]->isChecked()) {
-            return m_strings[i];
+            return m_strings[int(i)];
         }
     }
     return "";

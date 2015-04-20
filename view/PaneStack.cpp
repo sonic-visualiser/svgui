@@ -109,7 +109,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     currentIndicator->setScaledContents(true);
     currentIndicator->setVisible(m_showAccessories);
 
-    int initialCentreFrame = -1;
+    sv_frame_t initialCentreFrame = -1;
     if (!m_panes.empty()) {
         initialCentreFrame = m_panes[0].pane->getCentreFrame();
     }
@@ -174,8 +174,8 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
             this, SLOT(paneDropAccepted(QStringList)));
     connect(pane, SIGNAL(dropAccepted(QString)),
             this, SLOT(paneDropAccepted(QString)));
-    connect(pane, SIGNAL(doubleClickSelectInvoked(int)),
-            this, SIGNAL(doubleClickSelectInvoked(int)));
+    connect(pane, SIGNAL(doubleClickSelectInvoked(sv_frame_t)),
+            this, SIGNAL(doubleClickSelectInvoked(sv_frame_t)));
 
     emit paneAdded(pane);
     emit paneAdded();
@@ -366,13 +366,13 @@ PaneStack::showOrHidePaneAccessories()
 int
 PaneStack::getPaneCount() const
 {
-    return m_panes.size();
+    return int(m_panes.size());
 }
 
 int
 PaneStack::getHiddenPaneCount() const
 {
-    return m_hiddenPanes.size();
+    return int(m_hiddenPanes.size());
 }
 
 void

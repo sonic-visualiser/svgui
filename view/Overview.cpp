@@ -38,12 +38,12 @@ Overview::Overview(QWidget *w) :
 }
 
 void
-Overview::modelChangedWithin(int startFrame, int endFrame)
+Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 {
     bool zoomChanged = false;
 
-    int frameCount = getModelsEndFrame() - getModelsStartFrame();
-    int zoomLevel = frameCount / width();
+    sv_frame_t frameCount = getModelsEndFrame() - getModelsStartFrame();
+    int zoomLevel = int(frameCount / width());
     if (zoomLevel < 1) zoomLevel = 1;
     zoomLevel = getZoomConstraintBlockSize(zoomLevel,
 					   ZoomConstraint::RoundUp);
@@ -91,7 +91,7 @@ Overview::unregisterView(View *view)
 }
 
 void
-Overview::globalCentreFrameChanged(int 
+Overview::globalCentreFrameChanged(sv_frame_t 
 #ifdef DEBUG_OVERVIEW
                                    f
 #endif
@@ -104,7 +104,7 @@ Overview::globalCentreFrameChanged(int
 }
 
 void
-Overview::viewCentreFrameChanged(View *v, int
+Overview::viewCentreFrameChanged(View *v, sv_frame_t
 #ifdef DEBUG_OVERVIEW
                                  f
 #endif
@@ -128,7 +128,7 @@ Overview::viewZoomLevelChanged(View *v, int, bool)
 }
 
 void
-Overview::viewManagerPlaybackFrameChanged(int f)
+Overview::viewManagerPlaybackFrameChanged(sv_frame_t f)
 {
 #ifdef DEBUG_OVERVIEW
     cerr << "Overview[" << this << "]::viewManagerPlaybackFrameChanged(" << f << "): " << f << endl;
@@ -144,6 +144,20 @@ Overview::viewManagerPlaybackFrameChanged(int f)
     if (changed) update();
 }
 
+QColor
+Overview::getFillWithin() const
+{
+    return Qt::transparent;
+}
+
+QColor
+Overview::getFillWithout() const
+{
+    QColor c = palette().window().color();
+    c.setAlpha(100);
+    return c;
+}
+
 void
 Overview::paintEvent(QPaintEvent *e)
 {
@@ -153,9 +167,9 @@ Overview::paintEvent(QPaintEvent *e)
     cerr << "Overview::paintEvent: width is " << width() << ", centre frame " << m_centreFrame << endl;
 #endif
 
-    int startFrame = getModelsStartFrame();
-    int frameCount = getModelsEndFrame() - getModelsStartFrame();
-    int zoomLevel = frameCount / width();
+    sv_frame_t startFrame = getModelsStartFrame();
+    sv_frame_t frameCount = getModelsEndFrame() - getModelsStartFrame();
+    int zoomLevel = int(frameCount / width());
     if (zoomLevel < 1) zoomLevel = 1;
     zoomLevel = getZoomConstraintBlockSize(zoomLevel,
 					   ZoomConstraint::RoundUp);
@@ -164,7 +178,7 @@ Overview::paintEvent(QPaintEvent *e)
 	emit zoomLevelChanged(m_zoomLevel, m_followZoom);
     }
 
-    int centreFrame = startFrame + m_zoomLevel * (width() / 2);
+    sv_frame_t centreFrame = startFrame + m_zoomLevel * (width() / 2);
     if (centreFrame > (startFrame + getModelsEndFrame())/2) {
 	centreFrame = (startFrame + getModelsEndFrame())/2;
     }
@@ -184,50 +198,73 @@ Overview::paintEvent(QPaintEvent *e)
 
     QPainter paint;
     paint.begin(this);
-
+    paint.setClipRegion(e->region());
+    paint.setRenderHints(QPainter::Antialiasing);
+    
     QRect r(rect());
 
-    if (e) {
-	r = e->rect();
-	paint.setClipRect(r);
-    }
+    // We paint a rounded rect for each distinct set of view extents,
+    // and we colour in the inside and outside of the rect that
+    // corresponds to the current view. (One small caveat -- we don't
+    // know which rect that is yet. We'll have to figure it out
+    // somehow...)
 
-    paint.setPen(getForeground());
+    std::set<std::pair<int, int> > extents;
+    std::vector<QRect> rects;
+    QRect primary;
 
     int y = 0;
-
-    int prevx0 = -10;
-    int prevx1 = -10;
 
     for (ViewSet::iterator i = m_views.begin(); i != m_views.end(); ++i) {
 	if (!*i) continue;
 
 	View *w = (View *)*i;
 
-	int f0 = w->getFrameForX(0);
-	int f1 = w->getFrameForX(w->width());
+	sv_frame_t f0 = w->getFrameForX(0);
+	sv_frame_t f1 = w->getFrameForX(w->width());
 
         if (f0 >= 0) {
-            int rf0 = w->alignToReference(f0);
+            sv_frame_t rf0 = w->alignToReference(f0);
             f0 = alignFromReference(rf0);
         }
         if (f1 >= 0) {
-            int rf1 = w->alignToReference(f1);
+            sv_frame_t rf1 = w->alignToReference(f1);
             f1 = alignFromReference(rf1);
         }
 
 	int x0 = getXForFrame(f0);
 	int x1 = getXForFrame(f1);
 
-	if (x0 != prevx0 || x1 != prevx1) {
-	    y += height() / 10 + 1;
-	    prevx0 = x0;
-	    prevx1 = x1;
-	}
 
 	if (x1 <= x0) x1 = x0 + 1;
-	
-	paint.drawRect(x0, y, x1 - x0, height() - 2 * y);
+
+        std::pair<int, int> extent(x0, x1);
+
+        if (extents.find(extent) == extents.end()) {
+
+    	    y += height() / 10 + 1;
+            extents.insert(extent);
+
+            QRect vr(x0, y, x1 - x0, height() - 2 * y);
+            rects.push_back(vr);
+            primary = vr; //!!! for now
+        }
+    }
+
+    QPainterPath without;
+    without.addRoundedRect(primary, 4, 4);
+    without.addRect(rect());
+    paint.setPen(Qt::NoPen);
+    paint.setBrush(getFillWithout());
+    paint.drawPath(without);
+
+    paint.setBrush(getFillWithin());
+    paint.drawRoundedRect(primary, 4, 4);
+    
+    foreach (QRect vr, rects) {
+        paint.setBrush(Qt::NoBrush);
+        paint.setPen(QPen(Qt::gray, 2));
+        paint.drawRoundedRect(vr, 4, 4);
     }
 
     paint.end();
@@ -237,7 +274,7 @@ void
 Overview::mousePressEvent(QMouseEvent *e)
 {
     m_clickPos = e->pos();
-    int clickFrame = getFrameForX(m_clickPos.x());
+    sv_frame_t clickFrame = getFrameForX(m_clickPos.x());
     if (clickFrame > 0) m_dragCentreFrame = clickFrame;
     else m_dragCentreFrame = 0;
     m_clickedInRange = true;
@@ -265,12 +302,12 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     if (!m_clickedInRange) return;
 
     int xoff = int(e->x()) - int(m_clickPos.x());
-    int frameOff = xoff * m_zoomLevel;
+    sv_frame_t frameOff = xoff * m_zoomLevel;
     
-    int newCentreFrame = m_dragCentreFrame;
+    sv_frame_t newCentreFrame = m_dragCentreFrame;
     if (frameOff > 0) {
 	newCentreFrame += frameOff;
-    } else if (newCentreFrame >= int(-frameOff)) {
+    } else if (newCentreFrame >= -frameOff) {
 	newCentreFrame += frameOff;
     } else {
 	newCentreFrame = 0;
@@ -282,8 +319,8 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     }
     
     if (std::max(m_centreFrame, newCentreFrame) -
-	std::min(m_centreFrame, newCentreFrame) > int(m_zoomLevel)) {
-        int rf = alignToReference(newCentreFrame);
+	std::min(m_centreFrame, newCentreFrame) > m_zoomLevel) {
+        sv_frame_t rf = alignToReference(newCentreFrame);
 #ifdef DEBUG_OVERVIEW
         cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << endl;
 #endif
@@ -299,8 +336,8 @@ Overview::mouseMoveEvent(QMouseEvent *e)
 void
 Overview::mouseDoubleClickEvent(QMouseEvent *e)
 {
-    int frame = getFrameForX(e->x());
-    int rf = 0;
+    sv_frame_t frame = getFrameForX(e->x());
+    sv_frame_t rf = 0;
     if (frame > 0) rf = alignToReference(frame);
 #ifdef DEBUG_OVERVIEW
     cerr << "Overview::mouseDoubleClickEvent: frame " << frame << " -> rf " << rf << endl;

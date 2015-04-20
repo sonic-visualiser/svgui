@@ -34,29 +34,28 @@ ColourDatabase::ColourDatabase()
 int
 ColourDatabase::getColourCount() const
 {
-    return m_colours.size();
+    return int(m_colours.size());
 }
 
 QString
 ColourDatabase::getColourName(int c) const
 {
-    if (c < 0 || size_t(c) >= m_colours.size()) return "";
+    if (!in_range_for(m_colours, c)) return "";
     return m_colours[c].name;
 }
 
 QColor
 ColourDatabase::getColour(int c) const
 {
-    if (c < 0 || size_t(c) >= m_colours.size()) return Qt::black;
+    if (!in_range_for(m_colours, c)) return Qt::black;
     return m_colours[c].colour;
 }
 
 QColor
 ColourDatabase::getColour(QString name) const
 {
-    for (ColourList::const_iterator i = m_colours.begin();
-         i != m_colours.end(); ++i) {
-        if (i->name == name) return i->colour;
+    for (auto &c: m_colours) {
+        if (c.name == name) return c.colour;
     }
 
     return Qt::black;
@@ -66,9 +65,8 @@ int
 ColourDatabase::getColourIndex(QString name) const
 {
     int index = 0;
-    for (ColourList::const_iterator i = m_colours.begin();
-         i != m_colours.end(); ++i) {
-        if (i->name == name) return index;
+    for (auto &c: m_colours) {
+        if (c.name == name) return index;
         ++index;
     }
 
@@ -76,12 +74,11 @@ ColourDatabase::getColourIndex(QString name) const
 }
 
 int
-ColourDatabase::getColourIndex(QColor c) const
+ColourDatabase::getColourIndex(QColor col) const
 {
     int index = 0;
-    for (ColourList::const_iterator i = m_colours.begin();
-         i != m_colours.end(); ++i) {
-        if (i->colour == c) return index;
+    for (auto &c: m_colours) {
+        if (c.colour == col) return index;
         ++index;
     }
 
@@ -91,14 +88,14 @@ ColourDatabase::getColourIndex(QColor c) const
 bool
 ColourDatabase::useDarkBackground(int c) const
 {
-    if (c < 0 || size_t(c) >= m_colours.size()) return false;
+    if (!in_range_for(m_colours, c)) return false;
     return m_colours[c].darkbg;
 }
 
 void
 ColourDatabase::setUseDarkBackground(int c, bool dark)
 {
-    if (c < 0 || size_t(c) >= m_colours.size()) return;
+    if (!in_range_for(m_colours, c)) return;
     if (m_colours[c].darkbg != dark) {
         m_colours[c].darkbg = dark;
         emit colourDatabaseChanged();
@@ -109,6 +106,7 @@ int
 ColourDatabase::addColour(QColor c, QString name)
 {
     int index = 0;
+
     for (ColourList::iterator i = m_colours.begin();
          i != m_colours.end(); ++i) {
         if (i->name == name) {
@@ -147,7 +145,7 @@ ColourDatabase::getStringValues(int index,
 {
     colourName = "";
     colourSpec = "";
-    if (index < 0 || size_t(index) >= m_colours.size()) return;
+    if (!in_range_for(m_colours, index)) return;
 
     colourName = getColourName(index);
     QColor c = getColour(index);
