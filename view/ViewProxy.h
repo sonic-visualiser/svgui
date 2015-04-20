@@ -33,11 +33,14 @@ public:
 	return m_view->getEndFrame();
     }
     virtual int getXForFrame(sv_frame_t frame) const {
+        //!!! not actually correct, if frame lies between view's pixels
 	return m_scaleFactor * m_view->getXForFrame(frame);
     }
     virtual sv_frame_t getFrameForX(int x) const {
-	//!!! todo: interpolate
-	return m_view->getFrameForX(x / m_scaleFactor);
+        sv_frame_t f0 = m_view->getFrameForX(x / m_scaleFactor);
+        if (m_scaleFactor == 1) return f0;
+        sv_frame_t f1 = m_view->getFrameForX((x / m_scaleFactor) + 1);
+        return f0 + ((f1 - f0) * (x % m_scaleFactor)) / m_scaleFactor;
     }
     virtual sv_frame_t getModelsStartFrame() const {
 	return m_view->getModelsStartFrame();
@@ -53,8 +56,12 @@ public:
     }
     virtual double getFrequencyForY(int y, double minFreq, double maxFreq,
 				    bool logarithmic) const {
-	//!!! todo: interpolate
-	return m_view->getFrequencyForY(y / m_scaleFactor, minFreq, maxFreq, logarithmic);
+        double f0 = m_view->getFrequencyForY
+            (y / m_scaleFactor, minFreq, maxFreq, logarithmic);
+        if (m_scaleFactor == 1) return f0;
+        double f1 = m_view->getFrequencyForY
+            ((y / m_scaleFactor) + 1, minFreq, maxFreq, logarithmic);
+        return f0 + ((f1 - f0) * (y % m_scaleFactor)) / m_scaleFactor;
     }
     virtual int getTextLabelHeight(const Layer *layer, QPainter &paint) const {
 	return m_scaleFactor * m_view->getTextLabelHeight(layer, paint);
