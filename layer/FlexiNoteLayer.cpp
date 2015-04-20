@@ -1190,7 +1190,7 @@ FlexiNoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *e)
+FlexiNoteLayer::editEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
