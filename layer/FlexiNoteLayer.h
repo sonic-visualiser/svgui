@@ -163,6 +163,10 @@ public:
     virtual double getValueForY(LayerGeometryProvider *v, int y) const;
     virtual QString getScaleUnits() const;
 
+signals:
+    void reAnalyseRegion(sv_frame_t, sv_frame_t, float, float);
+    void materialiseReAnalysis();
+    
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     bool shouldConvertMIDIToHz() const;
@@ -175,7 +179,7 @@ protected:
     bool getNoteToEdit(LayerGeometryProvider *v, int x, int y, FlexiNoteModel::Point &) const;
     void getRelativeMousePosition(LayerGeometryProvider *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
     SparseTimeValueModel *getAssociatedPitchModel(LayerGeometryProvider *v) const;
-    bool updateNoteValue(LayerGeometryProvider *v, FlexiNoteModel::Point &note) const;
+    bool updateNoteValueFromPitchCurve(LayerGeometryProvider *v, FlexiNoteModel::Point &note) const;
     void splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseEvent *e);
 
     FlexiNoteModel *m_model;
