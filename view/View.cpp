@@ -45,8 +45,8 @@
 
 #include <unistd.h>
 
-//#define DEBUG_VIEW 1
-//#define DEBUG_VIEW_WIDGET_PAINT 1
+#define DEBUG_VIEW 1
+#define DEBUG_VIEW_WIDGET_PAINT 1
 
 
 View::View(QWidget *w, bool showProgress) :
@@ -1030,7 +1030,7 @@ View::viewManagerPlaybackFrameChanged(sv_frame_t f)
     f = getAlignedPlaybackFrame();
 
 #ifdef DEBUG_VIEW
-    cerr << " -> aligned frame = " << af << endl;
+    cerr << " -> aligned frame = " << f << endl;
 #endif
 
     movePlayPointer(f);
@@ -1867,6 +1867,9 @@ View::paintEvent(QPaintEvent *e)
 	for (LayerList::iterator i = scrollables.begin(); i != scrollables.end(); ++i) {
 	    paint.setRenderHint(QPainter::Antialiasing, false);
 	    paint.save();
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+            cerr << "Painting scrollable layer " << *i << " using proxy with repaintCache = " << repaintCache << ", dpratio = " << dpratio << ", rectToPaint = " << rectToPaint.x() << "," << rectToPaint.y() << " " << rectToPaint.width() << "x" << rectToPaint.height() << endl;
+#endif
             (*i)->paint(&proxy, paint, rectToPaint);
 	    paint.restore();
 	}
@@ -1906,7 +1909,10 @@ View::paintEvent(QPaintEvent *e)
 	
     for (LayerList::iterator i = nonScrollables.begin(); i != nonScrollables.end(); ++i) {
 //        Profiler profiler2("View::paintEvent non-cacheable");
-	(*i)->paint(&proxy, paint, nonCacheRect);
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+        cerr << "Painting non-scrollable layer " << *i << " without proxy with repaintCache = " << repaintCache << ", dpratio = " << dpratio << ", rectToPaint = " << nonCacheRect.x() << "," << nonCacheRect.y() << " " << nonCacheRect.width() << "x" << nonCacheRect.height() << endl;
+#endif
+	(*i)->paint(this, paint, nonCacheRect);
     }
 	
     paint.end();
