@@ -121,10 +121,10 @@ void AudioDial::paintEvent(QPaintEvent *)
 
     QPainter paint;
 
-    float angle = AUDIO_DIAL_MIN // offset
+    double angle = AUDIO_DIAL_MIN // offset
 	+ (AUDIO_DIAL_RANGE *
-	   (float(QDial::value() - QDial::minimum()) /
-	    (float(QDial::maximum() - QDial::minimum()))));
+	   (double(QDial::value() - QDial::minimum()) /
+	    (double(QDial::maximum() - QDial::minimum()))));
     int degrees = int(angle * 180.0 / M_PI);
 
     int ns = notchSize();
@@ -268,15 +268,15 @@ void AudioDial::paintEvent(QPaintEvent *)
 
     // Pointer notch...
 
-    float hyp = float(width) / 2.0;
-    float len = hyp - indent;
+    double hyp = double(width) / 2.0;
+    double len = hyp - indent;
     --len;
 
-    float x0 = hyp;
-    float y0 = hyp;
+    double x0 = hyp;
+    double y0 = hyp;
 
-    float x = hyp - len * sin(angle);
-    float y = hyp + len * cos(angle);
+    double x = hyp - len * sin(angle);
+    double y = hyp + len * cos(angle);
 
     c = palette().dark().color();
     pen.setColor(isEnabled() ? c.dark(130) : c);
@@ -289,27 +289,27 @@ void AudioDial::paintEvent(QPaintEvent *)
 
 
 void AudioDial::drawTick(QPainter &paint,
-			 float angle, int size, bool internal)
+			 double angle, int size, bool internal)
 {
-    float hyp = float(size) / 2.0;
-    float x0 = hyp - (hyp - 1) * sin(angle);
-    float y0 = hyp + (hyp - 1) * cos(angle);
+    double hyp = double(size) / 2.0;
+    double x0 = hyp - (hyp - 1) * sin(angle);
+    double y0 = hyp + (hyp - 1) * cos(angle);
 
 //    cerr << "drawTick: angle " << angle << ", size " << size << ", internal " << internal << endl;
     
     if (internal) {
 
-	float len = hyp / 4;
-	float x1 = hyp - (hyp - len) * sin(angle);
-	float y1 = hyp + (hyp - len) * cos(angle);
+	double len = hyp / 4;
+	double x1 = hyp - (hyp - len) * sin(angle);
+	double y1 = hyp + (hyp - len) * cos(angle);
 		
 	paint.drawLine(int(x0), int(y0), int(x1), int(y1));
 
     } else {
 
-	float len = hyp / 4;
-	float x1 = hyp - (hyp + len) * sin(angle);
-	float y1 = hyp + (hyp + len) * cos(angle);
+	double len = hyp / 4;
+	double x1 = hyp - (hyp + len) * sin(angle);
+	double y1 = hyp + (hyp + len) * cos(angle);
 
 	paint.drawLine(int(x0), int(y0), int(x1), int(y1));
     }
@@ -350,7 +350,7 @@ void AudioDial::setValue(int value)
     updateMappedValue(value);
 }
 
-void AudioDial::setDefaultMappedValue(float value)
+void AudioDial::setDefaultMappedValue(double value)
 {
     m_defaultMappedValue = value;
     if (m_rangeMapper) {
@@ -358,7 +358,7 @@ void AudioDial::setDefaultMappedValue(float value)
     }
 }
 
-void AudioDial::setMappedValue(float mappedValue)
+void AudioDial::setMappedValue(double mappedValue)
 {
     if (m_rangeMapper) {
         int newPosition = m_rangeMapper->getPositionForValue(mappedValue);
@@ -387,7 +387,7 @@ void AudioDial::setShowToolTip(bool show)
 }
 
 
-float AudioDial::mappedValue() const
+double AudioDial::mappedValue() const
 {
     if (m_rangeMapper) {
 //        SVDEBUG << "AudioDial::mappedValue(): value = " << value() << ", mappedValue = " << m_mappedValue << endl;
@@ -464,11 +464,11 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
 
     if (m_rangeMapper) {
         
-        float min = m_rangeMapper->getValueForPosition(minimum());
-        float max = m_rangeMapper->getValueForPosition(maximum());
+        double min = m_rangeMapper->getValueForPosition(minimum());
+        double max = m_rangeMapper->getValueForPosition(maximum());
         
         if (min > max) { 
-            float tmp = min;
+            double tmp = min;
             min = max;
             max = tmp;
         }
@@ -494,7 +494,7 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
             }
         }
         
-        float newValue = QInputDialog::getDouble
+        double newValue = QInputDialog::getDouble
             (this,
              tr("Enter new value"),
              text,

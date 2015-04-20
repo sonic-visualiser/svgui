@@ -253,7 +253,7 @@ ModelMetadataModel::parent(const QModelIndex &) const
 int
 ModelMetadataModel::rowCount(const QModelIndex &parent) const
 {
-    if (!parent.isValid()) return m_models.size();
+    if (!parent.isValid()) return int(m_models.size());
     return 0;
 }
 

@@ -25,7 +25,7 @@ exists(config.pri) {
     DEFINES += HAVE_BZ2 HAVE_FFTW3 HAVE_FFTW3F HAVE_SNDFILE HAVE_SAMPLERATE HAVE_VAMP HAVE_VAMPHOSTSDK HAVE_RUBBERBAND HAVE_LIBLO HAVE_MAD HAVE_ID3TAG
 }
 
-CONFIG += staticlib qt thread warn_on stl rtti exceptions
+CONFIG += staticlib qt thread warn_on stl rtti exceptions c++11
 QT += network xml gui widgets
 
 TARGET = svgui
@@ -118,6 +118,8 @@ HEADERS += widgets/ActivityLog.h \
            widgets/LayerTree.h \
            widgets/LayerTreeDialog.h \
            widgets/LEDButton.h \
+           widgets/LevelPanToolButton.h \
+           widgets/LevelPanWidget.h \
            widgets/ListInputDialog.h \
            widgets/MIDIFileImportDialog.h \
            widgets/ModelDataTableDialog.h \
@@ -156,6 +158,8 @@ SOURCES += widgets/ActivityLog.cpp \
            widgets/LayerTree.cpp \
            widgets/LayerTreeDialog.cpp \
            widgets/LEDButton.cpp \
+           widgets/LevelPanToolButton.cpp \
+           widgets/LevelPanWidget.cpp \
            widgets/ListInputDialog.cpp \
            widgets/MIDIFileImportDialog.cpp \
            widgets/ModelDataTableDialog.cpp \

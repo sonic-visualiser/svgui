@@ -301,42 +301,42 @@ SpectrumLayer::preferenceChanged(PropertyContainer::PropertyName name)
 }
 
 bool
-SpectrumLayer::getValueExtents(float &, float &, bool &, QString &) const
+SpectrumLayer::getValueExtents(double &, double &, bool &, QString &) const
 {
     return false;
 }
 
-float
-SpectrumLayer::getXForBin(int bin, int totalBins, float w) const
+double
+SpectrumLayer::getXForBin(int bin, int totalBins, double w) const
 {
     if (!m_sliceableModel) return SliceLayer::getXForBin(bin, totalBins, w);
 
-    float sampleRate = m_sliceableModel->getSampleRate();
-    float binfreq = (sampleRate * bin) / (totalBins * 2);
+    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
+    double binfreq = (sampleRate * bin) / (totalBins * 2);
     
     return getXForFrequency(binfreq, w);
 }
 
 int
-SpectrumLayer::getBinForX(float x, int totalBins, float w) const
+SpectrumLayer::getBinForX(double x, int totalBins, double w) const
 {
     if (!m_sliceableModel) return SliceLayer::getBinForX(x, totalBins, w);
 
-    float sampleRate = m_sliceableModel->getSampleRate();
-    float binfreq = getFrequencyForX(x, w);
+    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
+    double binfreq = getFrequencyForX(x, w);
 
     return int((binfreq * totalBins * 2) / sampleRate);
 }
 
-float
-SpectrumLayer::getFrequencyForX(float x, float w) const
+double
+SpectrumLayer::getFrequencyForX(double x, double w) const
 {
-    float freq = 0;
+    double freq = 0;
     if (!m_sliceableModel) return 0;
 
-    int sampleRate = m_sliceableModel->getSampleRate();
+    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
 
-    float maxfreq = float(sampleRate) / 2;
+    double maxfreq = double(sampleRate) / 2;
 
     switch (m_binScale) {
 
@@ -345,26 +345,26 @@ SpectrumLayer::getFrequencyForX(float x, float w) const
         break;
         
     case LogBins:
-        freq = powf(10.f, (x * log10f(maxfreq)) / w);
+        freq = pow(10.0, (x * log10(maxfreq)) / w);
         break;
 
     case InvertedLogBins:
-        freq = maxfreq - powf(10.f, ((w - x) * log10f(maxfreq)) / w);
+        freq = maxfreq - pow(10.0, ((w - x) * log10(maxfreq)) / w);
         break;
     }
 
     return freq;
 }
 
-float
-SpectrumLayer::getXForFrequency(float freq, float w) const
+double
+SpectrumLayer::getXForFrequency(double freq, double w) const
 {
-    float x = 0;
+    double x = 0;
     if (!m_sliceableModel) return x;
 
-    int sampleRate = m_sliceableModel->getSampleRate();
+    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
 
-    float maxfreq = float(sampleRate) / 2;
+    double maxfreq = double(sampleRate) / 2;
 
     switch (m_binScale) {
 
@@ -373,12 +373,12 @@ SpectrumLayer::getXForFrequency(float freq, float w) const
         break;
         
     case LogBins:
-        x = (log10f(freq) * w) / log10f(maxfreq);
+        x = (log10(freq) * w) / log10(maxfreq);
         break;
 
     case InvertedLogBins:
         if (maxfreq == freq) x = w;
-        else x = w - (log10f(maxfreq - freq) * w) / log10f(maxfreq);
+        else x = w - (log10(maxfreq - freq) * w) / log10(maxfreq);
         break;
     }
 
@@ -387,7 +387,7 @@ SpectrumLayer::getXForFrequency(float freq, float w) const
 
 bool
 SpectrumLayer::getXScaleValue(const View *v, int x, 
-                              float &value, QString &unit) const
+                              double &value, QString &unit) const
 {
     if (m_xorigins.find(v) == m_xorigins.end()) return false;
     int xorigin = m_xorigins.find(v)->second;
@@ -398,14 +398,14 @@ SpectrumLayer::getXScaleValue(const View *v, int x,
 
 bool
 SpectrumLayer::getYScaleValue(const View *v, int y,
-                              float &value, QString &unit) const
+                              double &value, QString &unit) const
 {
     value = getValueForY(y, v);
 
     if (m_energyScale == dBScale || m_energyScale == MeterScale) {
 
-        if (value > 0.f) {
-            value = 10.f * log10f(value);
+        if (value > 0.0) {
+            value = 10.0 * log10(value);
             if (value < m_threshold) value = m_threshold;
         } else value = m_threshold;
 
@@ -420,7 +420,7 @@ SpectrumLayer::getYScaleValue(const View *v, int y,
 
 bool
 SpectrumLayer::getYScaleDifference(const View *v, int y0, int y1,
-                                   float &diff, QString &unit) const
+                                   double &diff, QString &unit) const
 {
     bool rv = SliceLayer::getYScaleDifference(v, y0, y1, diff, unit);
     if (rv && (unit == "dBV")) unit = "dB";
@@ -492,7 +492,7 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
     paint.drawLine(xorigin, cursorPos.y(), v->width(), cursorPos.y());
     paint.drawLine(cursorPos.x(), cursorPos.y(), cursorPos.x(), v->height());
     
-    float fundamental = getFrequencyForX(cursorPos.x() - xorigin, w);
+    double fundamental = getFrequencyForX(cursorPos.x() - xorigin, w);
 
     int hoffset = 2;
     if (m_binScale == LogBins) hoffset = 13;
@@ -512,10 +512,10 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
                            View::OutlinedText);
     }
 
-    float value = getValueForY(cursorPos.y(), v);
-    float thresh = m_threshold;
-    float db = thresh;
-    if (value > 0.f) db = 10.f * log10f(value);
+    double value = getValueForY(cursorPos.y(), v);
+    double thresh = m_threshold;
+    double db = thresh;
+    if (value > 0.0) db = 10.0 * log10(value);
     if (db < thresh) db = thresh;
 
     v->drawVisibleText(paint,
@@ -534,7 +534,7 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
 
     while (harmonic < 100) {
 
-        float hx = lrintf(getXForFrequency(fundamental * harmonic, w));
+        int hx = int(lrint(getXForFrequency(fundamental * harmonic, w)));
         hx += xorigin;
 
         if (hx < xorigin || hx > v->width()) break;
@@ -549,9 +549,9 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
             }
         }
 
-        paint.drawLine(int(hx),
+        paint.drawLine(hx,
                        cursorPos.y(),
-                       int(hx),
+                       hx,
                        cursorPos.y() + len);
 
         ++harmonic;
@@ -571,21 +571,21 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
 
     if (genericDesc == "") return "";
 
-    float minvalue = 0.f;
+    double minvalue = 0.f;
     if (minbin < int(m_values.size())) minvalue = m_values[minbin];
 
-    float maxvalue = minvalue;
+    double maxvalue = minvalue;
     if (maxbin < int(m_values.size())) maxvalue = m_values[maxbin];
         
     if (minvalue > maxvalue) std::swap(minvalue, maxvalue);
     
     QString binstr;
     QString hzstr;
-    int minfreq = lrintf((minbin * m_sliceableModel->getSampleRate()) /
-                         m_windowSize);
-    int maxfreq = lrintf((std::max(maxbin, minbin+1)
-                           * m_sliceableModel->getSampleRate()) /
-                          m_windowSize);
+    int minfreq = int(lrint((minbin * m_sliceableModel->getSampleRate()) /
+                            m_windowSize));
+    int maxfreq = int(lrint((std::max(maxbin, minbin+1)
+                             * m_sliceableModel->getSampleRate()) /
+                            m_windowSize));
 
     if (maxbin != minbin) {
         binstr = tr("%1 - %2").arg(minbin+1).arg(maxbin+1);
@@ -606,21 +606,21 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
     }
     
     QString dbstr;
-    float mindb = AudioLevel::multiplier_to_dB(minvalue);
-    float maxdb = AudioLevel::multiplier_to_dB(maxvalue);
+    double mindb = AudioLevel::multiplier_to_dB(minvalue);
+    double maxdb = AudioLevel::multiplier_to_dB(maxvalue);
     QString mindbstr;
     QString maxdbstr;
     if (mindb == AudioLevel::DB_FLOOR) {
         mindbstr = tr("-Inf");
     } else {
-        mindbstr = QString("%1").arg(lrintf(mindb));
+        mindbstr = QString("%1").arg(lrint(mindb));
     }
     if (maxdb == AudioLevel::DB_FLOOR) {
         maxdbstr = tr("-Inf");
     } else {
-        maxdbstr = QString("%1").arg(lrintf(maxdb));
+        maxdbstr = QString("%1").arg(lrint(maxdb));
     }
-    if (lrintf(mindb) != lrintf(maxdb)) {
+    if (lrint(mindb) != lrint(maxdb)) {
         dbstr = tr("%1 - %2").arg(mindbstr).arg(maxdbstr);
     } else {
         dbstr = tr("%1").arg(mindbstr);
@@ -666,7 +666,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
     FFTModel *fft = dynamic_cast<FFTModel *>
         (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
 
-    float thresh = (powf(10, -6) / m_gain) * (m_windowSize / 2.f); // -60dB adj
+    double thresh = (pow(10, -6) / m_gain) * (m_windowSize / 2.0); // -60dB adj
 
     int xorigin = getVerticalScaleWidth(v, false, paint) + 1;
     int w = v->width() - xorigin - 1;
@@ -684,7 +684,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 //        SVDEBUG << "Showing peaks..." << endl;
 
-        int col = v->getCentreFrame() / fft->getResolution();
+        int col = int(v->getCentreFrame() / fft->getResolution());
 
         paint.save();
         paint.setRenderHint(QPainter::Antialiasing, false);
@@ -692,8 +692,8 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         int peakminbin = 0;
         int peakmaxbin = fft->getHeight() - 1;
-        float peakmaxfreq = Pitch::getFrequencyForPitch(128);
-        peakmaxbin = ((peakmaxfreq * fft->getHeight() * 2) / fft->getSampleRate());
+        double peakmaxfreq = Pitch::getFrequencyForPitch(128);
+        peakmaxbin = int(((peakmaxfreq * fft->getHeight() * 2) / fft->getSampleRate()));
         
         FFTModel::PeakSet peaks = fft->getPeakFrequencies
             (FFTModel::MajorPitchAdaptivePeaks, col, peakminbin, peakmaxbin);
@@ -702,12 +702,12 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
         BiasCurve curve;
         getBiasCurve(curve);
-        int cs = curve.size();
+        int cs = int(curve.size());
 
-        std::vector<float> values;
+        std::vector<double> values;
         
         for (int bin = 0; bin < fft->getHeight(); ++bin) {
-            float value = m_sliceableModel->getValueAt(col, bin);
+            double value = m_sliceableModel->getValueAt(col, bin);
             if (bin < cs) value *= curve[bin];
             values.push_back(value);
         }
@@ -719,13 +719,13 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
             
 //            cerr << "bin = " << bin << ", thresh = " << thresh << ", value = " << fft->getMagnitudeAt(col, bin) << endl;
 
-            if (!fft->isOverThreshold(col, bin, thresh)) continue;
+            if (!fft->isOverThreshold(col, bin, float(thresh))) continue;
             
-            float freq = i->second;
+            double freq = i->second;
           
-            int x = lrintf(getXForFrequency(freq, w));
+            int x = int(lrint(getXForFrequency(freq, w)));
 
-            float norm = 0.f;
+            double norm = 0.f;
             (void)getYForValue(values[bin], v, norm); // don't need return value, need norm
 
             paint.setPen(mapper.map(norm));
@@ -762,8 +762,8 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 
 	for (int i = 0; i < 128; ++i) {
 
-	    float f = Pitch::getFrequencyForPitch(i);
-	    int x = lrintf(getXForFrequency(f, w));
+	    double f = Pitch::getFrequencyForPitch(i);
+	    int x = int(lrint(getXForFrequency(f, w)));
                            
             x += xorigin;
 
@@ -805,7 +805,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
 		// black notes
 		paint.drawLine(x, h - pkh, x, h);
-		int rw = lrintf(float(x - px) / 4) * 2;
+		int rw = int(lrint(double(x - px) / 4) * 2);
 		if (rw < 2) rw = 2;
 		paint.drawRect(x - rw/2, h - pkh, rw, pkh/2);
 	    } else if (n == 0 || n == 5) {

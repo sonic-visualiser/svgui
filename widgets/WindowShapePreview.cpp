@@ -32,7 +32,7 @@
 
 WindowShapePreview::WindowShapePreview(QWidget *parent) :
     QFrame(parent),
-    m_windowType(WindowType(999))
+    m_windowType(HanningWindow)
 {
     QHBoxLayout *layout = new QHBoxLayout;
     layout->setMargin(0);
@@ -51,7 +51,7 @@ void
 WindowShapePreview::updateLabels()
 {
     int step = 24;
-    int peak = 48;
+    float peak = 48;
     int w = step * 4, h = 64;
     WindowType type = m_windowType;
     Window<float> windower = Window<float>(type, step * 2);
@@ -62,8 +62,8 @@ WindowShapePreview::updateLabels()
 
     QPainterPath path;
 
-    path.moveTo(0, h - peak + 1);
-    path.lineTo(w, h - peak + 1);
+    path.moveTo(0, float(h) - peak + 1);
+    path.lineTo(w, float(h) - peak + 1);
 
     timePainter.setPen(Qt::gray);
     timePainter.setRenderHint(QPainter::Antialiasing, true);
@@ -84,7 +84,7 @@ WindowShapePreview::updateLabels()
         }
     }
     for (int i = 0; i < w; ++i) {
-        int y = h - int(peak * acc[i] + 0.001) + 1;
+        int y = h - int(peak * acc[i] + 0.001f) + 1;
         if (i == 0) path.moveTo(i, y);
         else path.lineTo(i, y);
     }
@@ -150,7 +150,7 @@ WindowShapePreview::updateLabels()
         float power = output[i][0] * output[i][0] + output[i][1] * output[i][1];
         float db = mindb;
         if (power > 0) {
-            db = 20 * log10(power);
+            db = 20.f * log10f(power);
             if (first || db > maxdb) maxdb = db;
             if (first || db < mindb) mindb = db;
             first = false;
@@ -167,8 +167,8 @@ WindowShapePreview::updateLabels()
 
 //    float ly = h - ((-80.f + -mindb) / maxval) * peak + 1;
 
-    path.moveTo(0, h - peak + 1);
-    path.lineTo(fw, h - peak + 1);
+    path.moveTo(0, float(h) - peak + 1);
+    path.lineTo(fw, float(h) - peak + 1);
 
     freqPainter.setPen(Qt::gray);
     freqPainter.setRenderHint(QPainter::Antialiasing, true);
@@ -181,12 +181,12 @@ WindowShapePreview::updateLabels()
 
     for (int i = 0; i < fftsize/2; ++i) {
         float power = output[i][0] * output[i][0] + output[i][1] * output[i][1];
-        float db = 20 * log10(power);
+        float db = 20.f * log10f(power);
         float val = db + -mindb;
         if (val < 0) val = 0;
         float norm = val / maxval;
-        float x = (fw / float(fftsize/2)) * i;
-        float y = h - norm * peak + 1;
+        float x = (float(fw) / float(fftsize/2)) * float(i);
+        float y = float(h) - norm * peak + 1;
         if (i == 0) path.moveTo(x, y);
         else path.lineTo(x, y);
     }

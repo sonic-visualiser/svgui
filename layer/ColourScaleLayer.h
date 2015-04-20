@@ -23,7 +23,7 @@ class ColourScaleLayer
 {
 public:
     virtual QString getScaleUnits() const = 0;
-    virtual QColor getColourForValue(View *v, float value) const = 0;
+    virtual QColor getColourForValue(View *v, double value) const = 0;
 };
 
 #endif
