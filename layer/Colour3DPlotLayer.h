@@ -56,7 +56,7 @@ public:
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, int &frame, 
+    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame, 
 				    int &resolution,
 				    SnapType snap) const;
 
@@ -145,14 +145,14 @@ public:
     void setSmooth(bool i);
     bool getSmooth() const;
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
-    virtual bool getDisplayExtents(float &min, float &max) const;
-    virtual bool setDisplayExtents(float min, float max);
+    virtual bool getDisplayExtents(double &min, double &max) const;
+    virtual bool setDisplayExtents(double min, double max);
 
     virtual bool getYScaleValue(const View *, int /* y */,
-                                float &/* value */, QString &/* unit */) const;
+                                double &/* value */, QString &/* unit */) const;
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
@@ -166,9 +166,9 @@ public:
 
 protected slots:
     void cacheInvalid();
-    void cacheInvalid(int startFrame, int endFrame);
+    void cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame);
     void modelChanged();
-    void modelChangedWithin(int, int);
+    void modelChangedWithin(sv_frame_t, sv_frame_t);
 
 protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this
@@ -202,15 +202,25 @@ protected:
      * and the vertical scale is the usual way up). Bin number may be
      * fractional, to obtain a position part-way through a bin.
      */
-    float getYForBin(View *, float bin) const;
+    double getYForBin(View *, double bin) const;
 
+    /**
+     * As getYForBin, but rounding to integer values.
+     */
+    int getIYForBin(View *, int bin) const;
+    
     /**
      * Return the bin number, possibly fractional, at the given y
      * coordinate. Note that the whole numbers occur at the positions
      * at which the bins "start" (i.e. the bottom of the visible bin,
      * if the vertical scale is the usual way up).
      */
-    float getBinForY(View *, float y) const;
+    double getBinForY(View *, double y) const;
+
+    /**
+     * As getBinForY, but rounding to integer values.
+     */
+    int getIBinForY(View *, int y) const;
     
     DenseThreeDimensionalModel::Column getColumn(int col) const;
 

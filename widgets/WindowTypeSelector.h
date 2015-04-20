@@ -28,8 +28,8 @@ class WindowTypeSelector : public QFrame
     Q_OBJECT
 
 public:
-    WindowTypeSelector(WindowType defaultType = WindowType(999), // 999 -> get from preferences
-                       QWidget *parent = 0);
+    WindowTypeSelector(WindowType defaultType);
+    WindowTypeSelector(); // get window type from preferences
     virtual ~WindowTypeSelector();
 
     WindowType getWindowType() const;
@@ -48,6 +48,8 @@ protected:
     WindowShapePreview *m_windowShape;
     WindowType *m_windows;
     WindowType m_windowType;
+
+    void init(WindowType type);
 };
 
 #endif

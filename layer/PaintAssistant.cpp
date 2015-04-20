@@ -25,11 +25,11 @@
 
 void
 PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
-					float minVal, float maxVal,
+					double minVal, double maxVal,
                                         Scale scale, int &mult,
                                         std::vector<int> *vy)
 {
-    static float meterdbs[] = { -40, -30, -20, -15, -10,
+    static double meterdbs[] = { -40, -30, -20, -15, -10,
                                 -5, -3, -2, -1, -0.5, 0 };
 
     int h = rect.height(), w = rect.width();
@@ -41,7 +41,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
     int n = 10;
     if (vy) vy->clear();
 
-    float step = 0;
+    double step = 0;
     mult = 1;
     if (scale == LinearScale) {
         step = (maxVal - minVal) / n;
@@ -53,8 +53,8 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         if (round) {
             mult /= 10;
 //            cerr << "\n\nstep goes from " << step;
-            step = float(round) / mult;
-            n = lrintf((maxVal - minVal) / step);
+            step = double(round) / mult;
+            n = int(lrint((maxVal - minVal) / step));
             if (mult > 1) {
                 mult /= 10;
             }
@@ -64,7 +64,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 
     for (int i = 0; i <= n; ++i) {
         
-        float val = 0.0, nval = 0.0;
+        double val = 0.0, nval = 0.0;
         QString text = "";
 
         switch (scale) {
@@ -166,20 +166,20 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 }
 
 static int
-dBscale(float sample, int m, float maxVal, float minVal) 
+dBscale(double sample, int m, double maxVal, double minVal) 
 {
     if (sample < 0.0) return dBscale(-sample, m, maxVal, minVal);
-    float dB = AudioLevel::multiplier_to_dB(sample);
-    float mindB = AudioLevel::multiplier_to_dB(minVal);
-    float maxdB = AudioLevel::multiplier_to_dB(maxVal);
+    double dB = AudioLevel::multiplier_to_dB(sample);
+    double mindB = AudioLevel::multiplier_to_dB(minVal);
+    double maxdB = AudioLevel::multiplier_to_dB(maxVal);
     if (dB < mindB) return 0;
     if (dB > 0.0) return m;
     return int(((dB - mindB) * m) / (maxdB - mindB) + 0.1);
 }
 
 int
-PaintAssistant::getYForValue(Scale scale, float value, 
-                             float minVal, float maxVal,
+PaintAssistant::getYForValue(Scale scale, double value, 
+                             double minVal, double maxVal,
                              int minY, int height)
 {
     int vy = 0;

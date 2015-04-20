@@ -24,6 +24,7 @@
 #include "widgets/TextAbbrev.h"
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
+#include "layer/TimeRulerLayer.h"
 
 // GF: added so we can propagate the mouse move event to the note layer for context handling.
 #include "layer/LayerFactory.h"
@@ -143,7 +144,7 @@ Pane::updateHeadsUpDisplay()
         m_hthumb->setFixedWidth(70);
         m_hthumb->setFixedHeight(16);
         m_hthumb->setDefaultValue(0);
-        m_hthumb->setSpeed(0.6);
+        m_hthumb->setSpeed(0.6f);
         connect(m_hthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(horizontalThumbwheelMoved(int)));
         connect(m_hthumb, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
@@ -320,12 +321,12 @@ Pane::updateVerticalPanner()
         return;
     }
 
-    float vmin, vmax, dmin, dmax;
+    double vmin, vmax, dmin, dmax;
     if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax) && vmax != vmin) {
-        float y0 = (dmin - vmin) / (vmax - vmin);
-        float y1 = (dmax - vmin) / (vmax - vmin);
+        double y0 = (dmin - vmin) / (vmax - vmin);
+        double y1 = (dmax - vmin) / (vmax - vmin);
         m_vpan->blockSignals(true);
-        m_vpan->setRectExtents(0, 1.0 - y1, 1, y1 - y0);
+        m_vpan->setRectExtents(0, float(1.0 - y1), 1, float(y1 - y0));
         m_vpan->blockSignals(false);
         m_vpan->show();
     } else {
@@ -483,7 +484,7 @@ Pane::paintEvent(QPaintEvent *e)
         drawFeatureDescription(topLayer, paint);
     }
     
-    int sampleRate = getModelsSampleRate();
+    sv_samplerate_t sampleRate = getModelsSampleRate();
     paint.setBrush(Qt::NoBrush);
 
     if (m_centreLineVisible &&
@@ -560,7 +561,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 {
     Layer *scaleLayer = 0;
 
-    float min, max;
+    double min, max;
     bool log;
     QString unit;
 
@@ -714,7 +715,7 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
 }
 
 void
-Pane::drawCentreLine(int sampleRate, QPainter &paint, bool omitLine)
+Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
 {
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
@@ -969,7 +970,7 @@ Pane::drawEditingSelection(QPainter &paint)
 {
     int offset = m_mousePos.x() - m_clickPos.x();
 
-    int origStart = m_editingSelection.getStartFrame();
+    sv_frame_t origStart = m_editingSelection.getStartFrame();
 
     int p0 = getXForFrame(origStart) + offset;
     int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
@@ -980,15 +981,15 @@ Pane::drawEditingSelection(QPainter &paint)
         p0 = getXForFrame(m_editingSelection.getStartFrame());
     }
     
-    int newStart = getFrameForX(p0);
-    int newEnd = getFrameForX(p1);
+    sv_frame_t newStart = getFrameForX(p0);
+    sv_frame_t newEnd = getFrameForX(p1);
     
     paint.save();
     paint.setPen(QPen(getForeground(), 2));
 
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
-    int sampleRate = getModelsSampleRate();
+    sv_samplerate_t sampleRate = getModelsSampleRate();
     QString startText, endText, offsetText;
     startText = QString("%1").arg(newStart);
     endText = QString("%1").arg(newEnd);
@@ -1037,17 +1038,17 @@ Pane::drawEditingSelection(QPainter &paint)
 
 void
 Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
-                          int sampleRate, QPainter &paint)
+                          sv_samplerate_t sampleRate, QPainter &paint)
 {
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
     if (r.y() + r.height() < height() - fontHeight - 6) return;
 
-    int modelRate = waveformModel->getSampleRate();
-    int nativeRate = waveformModel->getNativeRate();
-    int playbackRate = m_manager->getPlaybackSampleRate();
-    int outputRate = m_manager->getOutputSampleRate();
+    sv_samplerate_t modelRate = waveformModel->getSampleRate();
+    sv_samplerate_t nativeRate = waveformModel->getNativeRate();
+    sv_samplerate_t playbackRate = m_manager->getPlaybackSampleRate();
+    sv_samplerate_t outputRate = m_manager->getOutputSampleRate();
         
     QString srNote = "";
 
@@ -1086,7 +1087,7 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
 }
 
 bool
-Pane::render(QPainter &paint, int xorigin, int f0, int f1)
+Pane::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 {
     if (!View::render(paint, xorigin + m_scaleWidth, f0, f1)) {
         return false;
@@ -1117,10 +1118,10 @@ Pane::render(QPainter &paint, int xorigin, int f0, int f1)
 }
 
 QImage *
-Pane::toNewImage(int f0, int f1)
+Pane::toNewImage(sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = f0 / getZoomLevel();
-    int x1 = f1 / getZoomLevel();
+    int x0 = int(f0 / getZoomLevel());
+    int x1 = int(f1 / getZoomLevel());
 
     QImage *image = new QImage(x1 - x0 + m_scaleWidth,
                                height(), QImage::Format_RGB32);
@@ -1156,7 +1157,7 @@ Pane::toNewImage(int f0, int f1)
 }
 
 QSize
-Pane::getImageSize(int f0, int f1)
+Pane::getImageSize(sv_frame_t f0, sv_frame_t f1)
 {
     QSize s = View::getImageSize(f0, f1);
     QImage *image = new QImage(100, 100, QImage::Format_RGB32);
@@ -1174,12 +1175,12 @@ Pane::getImageSize(int f0, int f1)
     return QSize(sw + s.width(), s.height());
 }
 
-int
+sv_frame_t
 Pane::getFirstVisibleFrame() const
 {
-    int f0 = getFrameForX(m_scaleWidth);
-    int f = View::getFirstVisibleFrame();
-    if (f0 < 0 || f0 < long(f)) return f;
+    sv_frame_t f0 = getFrameForX(m_scaleWidth);
+    sv_frame_t f = View::getFirstVisibleFrame();
+    if (f0 < 0 || f0 < f) return f;
     return f0;
 }
 
@@ -1190,10 +1191,10 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
 
     if (!m_manager) return Selection();
 
-    int testFrame = getFrameForX(x - 5);
+    sv_frame_t testFrame = getFrameForX(x - 5);
     if (testFrame < 0) {
-    testFrame = getFrameForX(x);
-    if (testFrame < 0) return Selection();
+        testFrame = getFrameForX(x);
+        if (testFrame < 0) return Selection();
     }
 
     Selection selection = m_manager->getContainingSelection(testFrame, true);
@@ -1219,15 +1220,15 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
 bool
 Pane::canTopLayerMoveVertical()
 {
-    float vmin, vmax, dmin, dmax;
+    double vmin, vmax, dmin, dmax;
     if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) return false;
     if (dmin <= vmin && dmax >= vmax) return false;
     return true;
 }
 
 bool
-Pane::getTopLayerDisplayExtents(float &vmin, float &vmax,
-                                float &dmin, float &dmax,
+Pane::getTopLayerDisplayExtents(double &vmin, double &vmax,
+                                double &dmin, double &dmax,
                                 QString *unit) 
 {
     Layer *layer = getTopLayer();
@@ -1241,7 +1242,7 @@ Pane::getTopLayerDisplayExtents(float &vmin, float &vmax,
 }
 
 bool
-Pane::setTopLayerDisplayExtents(float dmin, float dmax)
+Pane::setTopLayerDisplayExtents(double dmin, double dmax)
 {
     Layer *layer = getTopLayer();
     if (!layer) return false;
@@ -1327,7 +1328,7 @@ Pane::mousePressEvent(QMouseEvent *e)
         m_dragCentreFrame = m_centreFrame;
         m_dragStartMinValue = 0;
         
-        float vmin, vmax, dmin, dmax;
+        double vmin, vmax, dmin, dmax;
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
             m_dragStartMinValue = dmin;
         }
@@ -1362,12 +1363,13 @@ Pane::mousePressEvent(QMouseEvent *e)
             
         } else {
             
-            int mouseFrame = getFrameForX(e->x());
+            sv_frame_t mouseFrame = getFrameForX(e->x());
             int resolution = 1;
-            int snapFrame = mouseFrame;
+            sv_frame_t snapFrame = mouseFrame;
     
             Layer *layer = getInteractionLayer();
-            if (layer && !m_shiftPressed) {
+            if (layer && !m_shiftPressed &&
+                !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
                 layer->snapToFeatureFrame(this, snapFrame,
                                           resolution, Layer::SnapLeft);
             }
@@ -1433,7 +1435,7 @@ Pane::mousePressEvent(QMouseEvent *e)
 }
 
 void
-Pane::schedulePlaybackFrameMove(int frame)
+Pane::schedulePlaybackFrameMove(sv_frame_t frame)
 {
     m_playbackFrameMoveTo = frame;
     m_playbackFrameMoveScheduled = true;
@@ -1468,7 +1470,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         mouseMoveEvent(e);
     }
 
-    int mouseFrame = e ? getFrameForX(e->x()) : 0;
+    sv_frame_t mouseFrame = e ? getFrameForX(e->x()) : 0;
     if (mouseFrame < 0) mouseFrame = 0;
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
@@ -1740,9 +1742,9 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
             if (!editSelectionDrag(e)) {
 
-                Layer *layer = getInteractionLayer();
+                Layer *layer = getTopFlexiNoteLayer();
 
-                if (layer && layer->isLayerEditable()) {
+                if (layer) {
 
                     int x = e->x();
                     int y = e->y();
@@ -1854,18 +1856,18 @@ Pane::zoomToRegion(QRect r)
 
     int w = x1 - x0;
         
-    int newStartFrame = getFrameForX(x0);
+    sv_frame_t newStartFrame = getFrameForX(x0);
         
-    int visibleFrames = getEndFrame() - getStartFrame();
+    sv_frame_t visibleFrames = getEndFrame() - getStartFrame();
     if (newStartFrame <= -visibleFrames) {
         newStartFrame  = -visibleFrames + 1;
     }
         
-    if (newStartFrame >= long(getModelsEndFrame())) {
+    if (newStartFrame >= getModelsEndFrame()) {
         newStartFrame  = getModelsEndFrame() - 1;
     }
         
-    float ratio = float(w) / float(width());
+    double ratio = double(w) / double(width());
 //	cerr << "ratio: " << ratio << endl;
     int newZoomLevel = (int)nearbyint(m_zoomLevel * ratio);
     if (newZoomLevel < 1) newZoomLevel = 1;
@@ -1875,7 +1877,7 @@ Pane::zoomToRegion(QRect r)
     setStartFrame(newStartFrame);
 
     QString unit;
-    float min, max;
+    double min, max;
     bool log;
     Layer *layer = 0;
     for (LayerList::const_iterator i = m_layerStack.begin();
@@ -1889,15 +1891,15 @@ Pane::zoomToRegion(QRect r)
             
     if (layer) {
         if (log) {
-            min = (min < 0.0) ? -log10f(-min) : (min == 0.0) ? 0.0 : log10f(min);
-            max = (max < 0.0) ? -log10f(-max) : (max == 0.0) ? 0.0 : log10f(max);
+            min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
+            max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
         }
-        float rmin = min + ((max - min) * (height() - y1)) / height();
-        float rmax = min + ((max - min) * (height() - y0)) / height();
+        double rmin = min + ((max - min) * (height() - y1)) / height();
+        double rmax = min + ((max - min) * (height() - y0)) / height();
         cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << endl;
         if (log) {
-            rmin = powf(10, rmin);
-            rmax = powf(10, rmax);
+            rmin = pow(10, rmin);
+            rmax = pow(10, rmax);
         }
         cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << endl;
 
@@ -1946,8 +1948,8 @@ Pane::dragTopLayer(QMouseEvent *e)
     if (m_dragMode == HorizontalDrag ||
         m_dragMode == FreeDrag) {
 
-        int frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
-        int newCentreFrame = m_dragCentreFrame;
+        sv_frame_t frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
+        sv_frame_t newCentreFrame = m_dragCentreFrame;
         
         if (frameOff < 0) {
             newCentreFrame -= frameOff;
@@ -1975,24 +1977,24 @@ Pane::dragTopLayer(QMouseEvent *e)
     if (m_dragMode == VerticalDrag ||
         m_dragMode == FreeDrag) {
 
-        float vmin = 0.f, vmax = 0.f;
-        float dmin = 0.f, dmax = 0.f;
+        double vmin = 0.f, vmax = 0.f;
+        double dmin = 0.f, dmax = 0.f;
 
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
 
 //            cerr << "ydiff = " << ydiff << endl;
 
             int ydiff = e->y() - m_clickPos.y();
-            float perpix = (dmax - dmin) / height();
-            float valdiff = ydiff * perpix;
+            double perpix = (dmax - dmin) / height();
+            double valdiff = ydiff * perpix;
 //            cerr << "valdiff = " << valdiff << endl;
 
             if (m_dragMode == UnresolvedDrag && ydiff != 0) {
                 m_dragMode = VerticalDrag;
             }
 
-            float newmin = m_dragStartMinValue + valdiff;
-            float newmax = m_dragStartMinValue + (dmax - dmin) + valdiff;
+            double newmin = m_dragStartMinValue + valdiff;
+            double newmax = m_dragStartMinValue + (dmax - dmin) + valdiff;
             if (newmin < vmin) {
                 newmax += vmin - newmin;
                 newmin += vmin - newmin;
@@ -2077,13 +2079,14 @@ Pane::updateDragMode(DragMode dragMode,
 void
 Pane::dragExtendSelection(QMouseEvent *e)
 {
-    int mouseFrame = getFrameForX(e->x());
+    sv_frame_t mouseFrame = getFrameForX(e->x());
     int resolution = 1;
-    int snapFrameLeft = mouseFrame;
-    int snapFrameRight = mouseFrame;
+    sv_frame_t snapFrameLeft = mouseFrame;
+    sv_frame_t snapFrameRight = mouseFrame;
     
     Layer *layer = getInteractionLayer();
-    if (layer && !m_shiftPressed) {
+    if (layer && !m_shiftPressed &&
+        !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
         layer->snapToFeatureFrame(this, snapFrameLeft,
                                   resolution, Layer::SnapLeft);
         layer->snapToFeatureFrame(this, snapFrameRight,
@@ -2095,7 +2098,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
     if (snapFrameLeft < 0) snapFrameLeft = 0;
     if (snapFrameRight < 0) snapFrameRight = 0;
     
-    int min, max;
+    sv_frame_t min, max;
     
     if (m_selectionStartFrame > snapFrameLeft) {
         min = snapFrameLeft;
@@ -2126,7 +2129,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
 void
 Pane::edgeScrollMaybe(int x)
 {
-    int mouseFrame = getFrameForX(x);
+    sv_frame_t mouseFrame = getFrameForX(x);
 
     bool doScroll = false;
     if (!m_manager) doScroll = true;
@@ -2135,14 +2138,14 @@ Pane::edgeScrollMaybe(int x)
     if (m_followPlay != PlaybackScrollContinuous) doScroll = true;
 
     if (doScroll) {
-        int offset = mouseFrame - getStartFrame();
-        int available = getEndFrame() - getStartFrame();
-        int move = 0;
-        if (offset >= available * 0.95) {
-            move = int(offset - available * 0.95) + 1;
-        } else if (offset <= available * 0.10) {
-             move = int(available * 0.10 - offset) + 1;
-             move = -move;
+        sv_frame_t offset = mouseFrame - getStartFrame();
+        sv_frame_t available = getEndFrame() - getStartFrame();
+        sv_frame_t move = 0;
+        if (offset >= double(available) * 0.95) {
+            move = sv_frame_t(double(offset - available) * 0.95) + 1;
+        } else if (offset <= double(available) * 0.10) {
+            move = sv_frame_t(double(available) * 0.10 - double(offset)) + 1;
+            move = -move;
         }
         if (move != 0) {
             setCentreFrame(m_centreFrame + move);
@@ -2199,7 +2202,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 
     if (relocate) {
 
-        int f = getFrameForX(e->x());
+        sv_frame_t f = getFrameForX(e->x());
 
         setCentreFrame(f);
 
@@ -2207,7 +2210,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         m_dragStartMinValue = 0;
         m_dragMode = UnresolvedDrag;
 
-        float vmin, vmax, dmin, dmax;
+        double vmin, vmax, dmin, dmax;
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
             m_dragStartMinValue = dmin;
         }
@@ -2293,7 +2296,7 @@ Pane::wheelEvent(QWheelEvent *e)
 
         // Sometimes on Linux we're seeing absurdly extreme angles on
         // the first wheel event -- discard those entirely
-        if (abs(m_pendingWheelAngle) > 1000) {
+        if (abs(m_pendingWheelAngle) >= 600) {
             m_pendingWheelAngle = 0;
             return;
         }
@@ -2468,11 +2471,11 @@ Pane::verticalThumbwheelMoved(int value)
 void
 Pane::verticalPannerMoved(float , float y0, float , float h)
 {
-    float vmin, vmax, dmin, dmax;
+    double vmin, vmax, dmin, dmax;
     if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) return;
-    float y1 = y0 + h;
-    float newmax = vmin + ((1.0 - y0) * (vmax - vmin));
-    float newmin = vmin + ((1.0 - y1) * (vmax - vmin));
+    double y1 = y0 + h;
+    double newmax = vmin + ((1.0 - y0) * (vmax - vmin));
+    double newmin = vmin + ((1.0 - y1) * (vmax - vmin));
 //    cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
 //              << "," << h << ") -> (" << newmin << "," << newmax << ")" << endl;
     setTopLayerDisplayExtents(newmin, newmax);
@@ -2483,7 +2486,7 @@ Pane::editVerticalPannerExtents()
 {
     if (!m_vpan || !m_manager || !m_manager->getZoomWheelsEnabled()) return;
 
-    float vmin, vmax, dmin, dmax;
+    double vmin, vmax, dmin, dmax;
     QString unit;
     if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax, &unit)
         || vmax == vmin) {
@@ -2493,12 +2496,13 @@ Pane::editVerticalPannerExtents()
     RangeInputDialog dialog(tr("Enter new range"),
                             tr("New vertical display range, from %1 to %2 %4:")
                             .arg(vmin).arg(vmax).arg(unit),
-                            unit, vmin, vmax, this);
-    dialog.setRange(dmin, dmax);
+                            unit, float(vmin), float(vmax), this);
+    dialog.setRange(float(dmin), float(dmax));
 
     if (dialog.exec() == QDialog::Accepted) {
-        dialog.getRange(dmin, dmax);
-        setTopLayerDisplayExtents(dmin, dmax);
+        float newmin, newmax;
+        dialog.getRange(newmin, newmax);
+        setTopLayerDisplayExtents(newmin, newmax);
         updateVerticalPanner();
     }
 }
@@ -2604,8 +2608,8 @@ Pane::editSelectionEnd(QMouseEvent *)
     int p0 = getXForFrame(m_editingSelection.getStartFrame()) + offset;
     int p1 = getXForFrame(m_editingSelection.getEndFrame()) + offset;
 
-    int f0 = getFrameForX(p0);
-    int f1 = getFrameForX(p1);
+    sv_frame_t f0 = getFrameForX(p0);
+    sv_frame_t f1 = getFrameForX(p1);
 
     Selection newSelection(f0, f1);
     

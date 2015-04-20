@@ -27,12 +27,12 @@ public:
     enum Scale { LinearScale, MeterScale, dBScale };
 
     static void paintVerticalLevelScale(QPainter &p, QRect rect,
-                                        float minVal, float maxVal,
+                                        double minVal, double maxVal,
                                         Scale scale, int &multRtn,
                                         std::vector<int> *markCoordRtns = 0);
 
-    static int getYForValue(Scale scale, float value,
-                            float minVal, float maxVal,
+    static int getYForValue(Scale scale, double value,
+                            double minVal, double maxVal,
                             int minY, int height);
 };
 

@@ -135,7 +135,7 @@ Thumbwheel::setDefaultValue(int deft)
 }
 
 void
-Thumbwheel::setMappedValue(float mappedValue)
+Thumbwheel::setMappedValue(double mappedValue)
 {
     if (m_rangeMapper) {
         int newValue = m_rangeMapper->getPositionForValue(mappedValue);
@@ -202,7 +202,7 @@ Thumbwheel::getValue() const
     return m_value;
 }
 
-float
+double
 Thumbwheel::getMappedValue() const
 {
     if (m_rangeMapper) {
@@ -240,7 +240,7 @@ Thumbwheel::updateMappedValue(int value)
 void
 Thumbwheel::scroll(bool up)
 {
-    int step = lrintf(m_speed);
+    int step = int(lrintf(m_speed));
     if (step == 0) step = 1;
 
     if (up) {
@@ -327,11 +327,11 @@ Thumbwheel::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
 
     if (m_rangeMapper) {
         
-        float min = m_rangeMapper->getValueForPosition(m_min);
-        float max = m_rangeMapper->getValueForPosition(m_max);
+        double min = m_rangeMapper->getValueForPosition(m_min);
+        double max = m_rangeMapper->getValueForPosition(m_max);
                 
         if (min > max) { 
-            float tmp = min;
+            double tmp = min;
             min = max;
             max = tmp;
         }
@@ -357,7 +357,7 @@ Thumbwheel::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
             }
         }
         
-        float newValue = QInputDialog::getDouble
+        double newValue = QInputDialog::getDouble
             (this,
              tr("Enter new value"),
              text,
@@ -398,10 +398,10 @@ Thumbwheel::mouseMoveEvent(QMouseEvent *e)
         dist = e->y() - m_clickPos.y();
     }
 
-    float rotation = m_clickRotation + (m_speed * dist) / 100;
+    float rotation = m_clickRotation + (m_speed * float(dist)) / 100;
     if (rotation < 0.f) rotation = 0.f;
     if (rotation > 1.f) rotation = 1.f;
-    int value = lrintf(m_min + (m_max - m_min) * m_rotation);
+    int value = int(lrintf(float(m_min) + float(m_max - m_min) * m_rotation));
     if (value != m_value) {
         setValue(value);
         if (m_tracking) emit valueChanged(getValue());
@@ -426,7 +426,7 @@ Thumbwheel::mouseReleaseEvent(QMouseEvent *e)
 void
 Thumbwheel::wheelEvent(QWheelEvent *e)
 {
-    int step = lrintf(m_speed);
+    int step = int(lrintf(m_speed));
     if (step == 0) step = 1;
 
     if (e->delta() > 0) {
@@ -469,13 +469,13 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
-    float w  = width();
-    float w0 = 0.5;
-    float w1 = w - 0.5;
+    double w  = width();
+    double w0 = 0.5;
+    double w1 = w - 0.5;
 
-    float h  = height();
-    float h0 = 0.5;
-    float h1 = h - 0.5;
+    double h  = height();
+    double h0 = 0.5;
+    double h1 = h - 0.5;
 
     for (int i = bw-1; i >= 0; --i) {
 
@@ -504,7 +504,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
     paint.setClipRect(subclip);
 
-    float radians = m_rotation * 1.5f * M_PI;
+    double radians = m_rotation * 1.5f * M_PI;
 
 //    cerr << "value = " << m_value << ", min = " << m_min << ", max = " << m_max << ", rotation = " << rotation << endl;
 
@@ -518,16 +518,16 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
     for (int i = 0; i < notches; ++i) {
 
-        float a0 = (2.f * M_PI * i) / notches + radians;
-        float a1 = a0 + M_PI / (notches * 2);
-        float a2 = (2.f * M_PI * (i + 1)) / notches + radians;
+        double a0 = (2.0 * M_PI * i) / notches + radians;
+        double a1 = a0 + M_PI / (notches * 2);
+        double a2 = (2.0 * M_PI * (i + 1)) / notches + radians;
 
-        float depth = cosf((a0 + a2) / 2);
+        double depth = cos((a0 + a2) / 2);
         if (depth < 0) continue;
 
-        float x0 = radius * sinf(a0) + w/2;
-        float x1 = radius * sinf(a1) + w/2;
-        float x2 = radius * sinf(a2) + w/2;
+        double x0 = radius * sin(a0) + w/2;
+        double x1 = radius * sin(a1) + w/2;
+        double x2 = radius * sin(a2) + w/2;
         if (x2 < 0 || x0 > w) continue;
 
         if (x0 < 0) x0 = 0;
@@ -537,7 +537,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
         x1 += bw;
         x2 += bw;
 
-        int grey = lrintf(120 * depth);
+        int grey = int(lrint(120 * depth));
 
         QColor fc = QColor(grey, grey, grey);
         QColor oc = palette().highlight().color();
@@ -548,9 +548,9 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
             paint.setBrush(oc);
 
-            float prop;
+            double prop;
             if (i >= notches / 4) {
-                prop = float(notches - (((i - float(notches) / 4.f) * 4.f) / 3.f))
+                prop = double(notches - (((i - double(notches) / 4.f) * 4.f) / 3.f))
                     / notches;
             } else {
                 prop = 0.f;

@@ -73,7 +73,7 @@ public:
 
     void setRangeMapper(RangeMapper *mapper); // I take ownership, will delete
     const RangeMapper *rangeMapper() const { return m_rangeMapper; }
-    float mappedValue() const;
+    double mappedValue() const;
 
     int defaultValue() const { return m_defaultValue; }
 
@@ -107,14 +107,14 @@ public slots:
 
     void setValue(int value);
 
-    void setDefaultMappedValue(float mappedValue);
+    void setDefaultMappedValue(double mappedValue);
 
-    void setMappedValue(float mappedValue);
+    void setMappedValue(double mappedValue);
 
     void setToDefault();
 
 protected:
-    void drawTick(QPainter &paint, float angle, int size, bool internal);
+    void drawTick(QPainter &paint, double angle, int size, bool internal);
     virtual void paintEvent(QPaintEvent *);
 
     // Alternate mouse behavior event handlers.
@@ -133,8 +133,8 @@ private:
     QColor m_meterColor;
     
     int m_defaultValue;
-    float m_defaultMappedValue;
-    float m_mappedValue;
+    double m_defaultMappedValue;
+    double m_mappedValue;
     bool m_noMappedUpdate;
 
     // Alternate mouse behavior tracking.

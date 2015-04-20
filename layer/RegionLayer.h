@@ -45,12 +45,12 @@ public:
     virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
 
     virtual QString getFeatureDescription(View *v, QPoint &) const;
-    virtual QString getLabelPreceding(int) const;
+    virtual QString getLabelPreceding(sv_frame_t) const;
 
-    virtual bool snapToFeatureFrame(View *v, int &frame,
+    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
-    virtual bool snapToSimilarFeature(View *v, int &frame,
+    virtual bool snapToSimilarFeature(View *v, sv_frame_t &frame,
                                       int &resolution,
                                       SnapType snap) const;
 
@@ -68,12 +68,12 @@ public:
 
     virtual bool editOpen(View *v, QMouseEvent *);
 
-    virtual void moveSelection(Selection s, int newStartFrame);
+    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
     virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, int frameOffset,
+    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
@@ -116,10 +116,10 @@ public:
 
     virtual int getCompletion(View *) const { return m_model->getCompletion(); }
 
-    virtual bool getValueExtents(float &min, float &max,
+    virtual bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const;
 
-    virtual bool getDisplayExtents(float &min, float &max) const;
+    virtual bool getDisplayExtents(double &min, double &max) const;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
@@ -127,17 +127,17 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
     /// VerticalScaleLayer and ColourScaleLayer methods
-    int getYForValue(View *v, float value) const;
-    float getValueForY(View *v, int y) const;
+    int getYForValue(View *v, double value) const;
+    double getValueForY(View *v, int y) const;
     virtual QString getScaleUnits() const;
-    QColor getColourForValue(View *v, float value) const;
+    QColor getColourForValue(View *v, double value) const;
 
 protected slots:
     void recalcSpacing();
 
 protected:
-    float getValueForY(View *v, int y, int avoid) const;
-    void getScaleExtents(View *, float &min, float &max, bool &log) const;
+    double getValueForY(View *v, int y, int avoid) const;
+    void getScaleExtents(View *, double &min, double &max, bool &log) const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
@@ -158,7 +158,7 @@ protected:
     int m_colourMap;
     PlotStyle m_plotStyle;
 
-    typedef std::map<float, int> SpacingMap;
+    typedef std::map<double, int> SpacingMap;
 
     // region value -> ordering
     SpacingMap m_spacingMap;
@@ -167,7 +167,7 @@ protected:
     SpacingMap m_distributionMap;
 
     int spacingIndexToY(View *v, int i) const;
-    float yToSpacingIndex(View *v, int y) const;
+    double yToSpacingIndex(View *v, int y) const;
 
     void finish(RegionModel::EditCommand *command) {
         Command *c = command->finish();

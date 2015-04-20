@@ -164,7 +164,7 @@ View::setProperty(const PropertyContainer::PropertyName &name, int value)
 int
 View::getPropertyContainerCount() const
 {
-    return m_fixedOrderLayers.size() + 1; // the 1 is for me
+    return int(m_fixedOrderLayers.size()) + 1; // the 1 is for me
 }
 
 const PropertyContainer *
@@ -182,7 +182,7 @@ View::getPropertyContainer(int i)
 }
 
 bool
-View::getValueExtents(QString unit, float &min, float &max, bool &log) const
+View::getValueExtents(QString unit, double &min, double &max, bool &log) const
 {
     bool have = false;
 
@@ -190,8 +190,8 @@ View::getValueExtents(QString unit, float &min, float &max, bool &log) const
          i != m_layerStack.end(); ++i) { 
 
         QString layerUnit;
-        float layerMin = 0.0, layerMax = 0.0;
-        float displayMin = 0.0, displayMax = 0.0;
+        double layerMin = 0.0, layerMax = 0.0;
+        double displayMin = 0.0, displayMax = 0.0;
         bool layerLog = false;
 
         if ((*i)->getValueExtents(layerMin, layerMax, layerLog, layerUnit) &&
@@ -298,36 +298,36 @@ View::zoomWheelsEnabledChanged()
     // subclass might override this
 }
 
-int
+sv_frame_t
 View::getStartFrame() const
 {
     return getFrameForX(0);
 }
 
-int
+sv_frame_t
 View::getEndFrame() const
 {
     return getFrameForX(width()) - 1;
 }
 
 void
-View::setStartFrame(int f)
+View::setStartFrame(sv_frame_t f)
 {
     setCentreFrame(f + m_zoomLevel * (width() / 2));
 }
 
 bool
-View::setCentreFrame(int f, bool e)
+View::setCentreFrame(sv_frame_t f, bool e)
 {
     bool changeVisible = false;
 
     if (m_centreFrame != f) {
 
-	int formerPixel = m_centreFrame / m_zoomLevel;
+	int formerPixel = int(m_centreFrame / m_zoomLevel);
 
 	m_centreFrame = f;
 
-	int newPixel = m_centreFrame / m_zoomLevel;
+	int newPixel = int(m_centreFrame / m_zoomLevel);
 	
 	if (newPixel != formerPixel) {
 
@@ -340,7 +340,7 @@ View::setCentreFrame(int f, bool e)
 	}
 
 	if (e) {
-            int rf = alignToReference(f);
+            sv_frame_t rf = alignToReference(f);
 #ifdef DEBUG_VIEW
             cerr << "View[" << this << "]::setCentreFrame(" << f
                       << "): emitting centreFrameChanged("
@@ -354,16 +354,16 @@ View::setCentreFrame(int f, bool e)
 }
 
 int
-View::getXForFrame(int frame) const
+View::getXForFrame(sv_frame_t frame) const
 {
-    return (frame - getStartFrame()) / m_zoomLevel;
+    return int((frame - getStartFrame()) / m_zoomLevel);
 }
 
-int
+sv_frame_t
 View::getFrameForX(int x) const
 {
     int z = m_zoomLevel;
-    int frame = m_centreFrame - (width()/2) * z;
+    sv_frame_t frame = m_centreFrame - (width()/2) * z;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     SVDEBUG << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << endl;
@@ -373,10 +373,10 @@ View::getFrameForX(int x) const
     return frame + x * z;
 }
 
-float
-View::getYForFrequency(float frequency,
-		       float minf,
-		       float maxf, 
+double
+View::getYForFrequency(double frequency,
+		       double minf,
+		       double maxf, 
 		       bool logarithmic) const
 {
     Profiler profiler("View::getYForFrequency");
@@ -385,20 +385,20 @@ View::getYForFrequency(float frequency,
 
     if (logarithmic) {
 
-	static float lastminf = 0.0, lastmaxf = 0.0;
-	static float logminf = 0.0, logmaxf = 0.0;
+	static double lastminf = 0.0, lastmaxf = 0.0;
+	static double logminf = 0.0, logmaxf = 0.0;
 
 	if (lastminf != minf) {
 	    lastminf = (minf == 0.0 ? 1.0 : minf);
-	    logminf = log10f(minf);
+	    logminf = log10(minf);
 	}
 	if (lastmaxf != maxf) {
 	    lastmaxf = (maxf < lastminf ? lastminf : maxf);
-	    logmaxf = log10f(maxf);
+	    logmaxf = log10(maxf);
 	}
 
 	if (logminf == logmaxf) return 0;
-	return h - (h * (log10f(frequency) - logminf)) / (logmaxf - logminf);
+	return h - (h * (log10(frequency) - logminf)) / (logmaxf - logminf);
 
     } else {
 	
@@ -407,30 +407,30 @@ View::getYForFrequency(float frequency,
     }
 }
 
-float
+double
 View::getFrequencyForY(int y,
-		       float minf,
-		       float maxf,
+		       double minf,
+		       double maxf,
 		       bool logarithmic) const
 {
     int h = height();
 
     if (logarithmic) {
 
-	static float lastminf = 0.0, lastmaxf = 0.0;
-	static float logminf = 0.0, logmaxf = 0.0;
+	static double lastminf = 0.0, lastmaxf = 0.0;
+	static double logminf = 0.0, logmaxf = 0.0;
 
 	if (lastminf != minf) {
 	    lastminf = (minf == 0.0 ? 1.0 : minf);
-	    logminf = log10f(minf);
+	    logminf = log10(minf);
 	}
 	if (lastmaxf != maxf) {
 	    lastmaxf = (maxf < lastminf ? lastminf : maxf);
-	    logmaxf = log10f(maxf);
+	    logmaxf = log10(maxf);
 	}
 
 	if (logminf == logmaxf) return 0;
-	return pow(10.f, logminf + ((logmaxf - logminf) * (h - y)) / h);
+	return pow(10.0, logminf + ((logmaxf - logminf) * (h - y)) / h);
 
     } else {
 
@@ -580,8 +580,8 @@ View::addLayer(Layer *layer)
 	    this,    SLOT(modelCompletionChanged()));
     connect(layer, SIGNAL(modelAlignmentCompletionChanged()),
 	    this,    SLOT(modelAlignmentCompletionChanged()));
-    connect(layer, SIGNAL(modelChangedWithin(int, int)),
-	    this,    SLOT(modelChangedWithin(int, int)));
+    connect(layer, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
+	    this,    SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
     connect(layer, SIGNAL(modelReplaced()),
 	    this,    SLOT(modelReplaced()));
 
@@ -636,8 +636,8 @@ View::removeLayer(Layer *layer)
                this,    SLOT(modelCompletionChanged()));
     disconnect(layer, SIGNAL(modelAlignmentCompletionChanged()),
                this,    SLOT(modelAlignmentCompletionChanged()));
-    disconnect(layer, SIGNAL(modelChangedWithin(int, int)),
-               this,    SLOT(modelChangedWithin(int, int)));
+    disconnect(layer, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
+               this,    SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
     disconnect(layer, SIGNAL(modelReplaced()),
                this,    SLOT(modelReplaced()));
 
@@ -692,26 +692,26 @@ void
 View::setViewManager(ViewManager *manager)
 {
     if (m_manager) {
-	m_manager->disconnect(this, SLOT(globalCentreFrameChanged(int)));
-	m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, int)));
-	m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(int)));
+	m_manager->disconnect(this, SLOT(globalCentreFrameChanged(sv_frame_t)));
+	m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, sv_frame_t)));
+	m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
 	m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, int, bool)));
         m_manager->disconnect(this, SLOT(toolModeChanged()));
         m_manager->disconnect(this, SLOT(selectionChanged()));
         m_manager->disconnect(this, SLOT(overlayModeChanged()));
         m_manager->disconnect(this, SLOT(zoomWheelsEnabledChanged()));
-        disconnect(m_manager, SLOT(viewCentreFrameChanged(int, bool, PlaybackFollowMode)));
+        disconnect(m_manager, SLOT(viewCentreFrameChanged(sv_frame_t, bool, PlaybackFollowMode)));
 	disconnect(m_manager, SLOT(zoomLevelChanged(int, bool)));
     }
 
     m_manager = manager;
 
-    connect(m_manager, SIGNAL(globalCentreFrameChanged(int)),
-	    this, SLOT(globalCentreFrameChanged(int)));
-    connect(m_manager, SIGNAL(viewCentreFrameChanged(View *, int)),
-	    this, SLOT(viewCentreFrameChanged(View *, int)));
-    connect(m_manager, SIGNAL(playbackFrameChanged(int)),
-	    this, SLOT(viewManagerPlaybackFrameChanged(int)));
+    connect(m_manager, SIGNAL(globalCentreFrameChanged(sv_frame_t)),
+	    this, SLOT(globalCentreFrameChanged(sv_frame_t)));
+    connect(m_manager, SIGNAL(viewCentreFrameChanged(View *, sv_frame_t)),
+	    this, SLOT(viewCentreFrameChanged(View *, sv_frame_t)));
+    connect(m_manager, SIGNAL(playbackFrameChanged(sv_frame_t)),
+	    this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
 
     connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, int, bool)),
 	    this, SLOT(viewZoomLevelChanged(View *, int, bool)));
@@ -729,9 +729,9 @@ View::setViewManager(ViewManager *manager)
     connect(m_manager, SIGNAL(zoomWheelsEnabledChanged()),
             this, SLOT(zoomWheelsEnabledChanged()));
 
-    connect(this, SIGNAL(centreFrameChanged(int, bool,
+    connect(this, SIGNAL(centreFrameChanged(sv_frame_t, bool,
                                             PlaybackFollowMode)),
-            m_manager, SLOT(viewCentreFrameChanged(int, bool,
+            m_manager, SLOT(viewCentreFrameChanged(sv_frame_t, bool,
                                                    PlaybackFollowMode)));
 
     connect(this, SIGNAL(zoomLevelChanged(int, bool)),
@@ -763,7 +763,7 @@ View::setViewManager(ViewManager *manager)
 }
 
 void
-View::setViewManager(ViewManager *vm, int initialCentreFrame)
+View::setViewManager(ViewManager *vm, sv_frame_t initialCentreFrame)
 {
     setViewManager(vm);
     setCentreFrame(initialCentreFrame, false);
@@ -877,18 +877,18 @@ View::modelChanged()
 }
 
 void
-View::modelChangedWithin(int startFrame, int endFrame)
+View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 {
     QObject *obj = sender();
 
-    int myStartFrame = getStartFrame();
-    int myEndFrame = getEndFrame();
+    sv_frame_t myStartFrame = getStartFrame();
+    sv_frame_t myEndFrame = getEndFrame();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr << "View(" << this << ")::modelChangedWithin(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << endl;
 #endif
 
-    if (myStartFrame > 0 && endFrame < int(myStartFrame)) {
+    if (myStartFrame > 0 && endFrame < myStartFrame) {
 	checkProgress(obj);
 	return;
     }
@@ -995,10 +995,10 @@ View::layerNameChanged()
 }
 
 void
-View::globalCentreFrameChanged(int rf)
+View::globalCentreFrameChanged(sv_frame_t rf)
 {
     if (m_followPan) {
-        int f = alignFromReference(rf);
+        sv_frame_t f = alignFromReference(rf);
 #ifdef DEBUG_VIEW
         cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
                   << "): setting centre frame to " << f << endl;
@@ -1008,13 +1008,13 @@ View::globalCentreFrameChanged(int rf)
 }
 
 void
-View::viewCentreFrameChanged(View *, int )
+View::viewCentreFrameChanged(View *, sv_frame_t )
 {
     // We do nothing with this, but a subclass might
 }
 
 void
-View::viewManagerPlaybackFrameChanged(int f)
+View::viewManagerPlaybackFrameChanged(sv_frame_t f)
 {
     if (m_manager) {
 	if (sender() != m_manager) return;
@@ -1034,7 +1034,7 @@ View::viewManagerPlaybackFrameChanged(int f)
 }
 
 void
-View::movePlayPointer(int newFrame)
+View::movePlayPointer(sv_frame_t newFrame)
 {
 #ifdef DEBUG_VIEW
     cerr << "View(" << this << ")::movePlayPointer(" << newFrame << ")" << endl;
@@ -1043,7 +1043,7 @@ View::movePlayPointer(int newFrame)
     if (m_playPointerFrame == newFrame) return;
     bool visibleChange =
         (getXForFrame(m_playPointerFrame) != getXForFrame(newFrame));
-    int oldPlayPointerFrame = m_playPointerFrame;
+    sv_frame_t oldPlayPointerFrame = m_playPointerFrame;
     m_playPointerFrame = newFrame;
     if (!visibleChange) return;
 
@@ -1081,16 +1081,16 @@ View::movePlayPointer(int newFrame)
             int xold = getXForFrame(oldPlayPointerFrame);
             update(xold - 4, 0, 9, height());
 
-            int w = getEndFrame() - getStartFrame();
+            sv_frame_t w = getEndFrame() - getStartFrame();
             w -= w/5;
-            int sf = (m_playPointerFrame / w) * w - w/8;
+            sv_frame_t sf = (m_playPointerFrame / w) * w - w/8;
 
             if (m_manager &&
                 m_manager->isPlaying() &&
                 m_manager->getPlaySelectionMode()) {
                 MultiSelection::SelectionList selections = m_manager->getSelections();
                 if (!selections.empty()) {
-                    int selectionStart = selections.begin()->getStartFrame();
+                    sv_frame_t selectionStart = selections.begin()->getStartFrame();
                     if (sf < selectionStart - w / 10) {
                         sf = selectionStart - w / 10;
                     }
@@ -1124,8 +1124,8 @@ View::movePlayPointer(int newFrame)
             }
 
             if (!somethingGoingOn && shouldScroll) {
-                int offset = getFrameForX(width()/2) - getStartFrame();
-                int newCentre = sf + offset;
+                sv_frame_t offset = getFrameForX(width()/2) - getStartFrame();
+                sv_frame_t newCentre = sf + offset;
                 bool changed = setCentreFrame(newCentre, false);
                 if (changed) {
                     xold = getXForFrame(oldPlayPointerFrame);
@@ -1168,35 +1168,35 @@ View::selectionChanged()
     update();
 }
 
-int
+sv_frame_t
 View::getFirstVisibleFrame() const
 {
-    int f0 = getStartFrame();
-    int f = getModelsStartFrame();
+    sv_frame_t f0 = getStartFrame();
+    sv_frame_t f = getModelsStartFrame();
     if (f0 < 0 || f0 < f) return f;
     return f0;
 }
 
-int 
+sv_frame_t 
 View::getLastVisibleFrame() const
 {
-    int f0 = getEndFrame();
-    int f = getModelsEndFrame();
+    sv_frame_t f0 = getEndFrame();
+    sv_frame_t f = getModelsEndFrame();
     if (f0 > f) return f;
     return f0;
 }
 
-int
+sv_frame_t
 View::getModelsStartFrame() const
 {
     bool first = true;
-    int startFrame = 0;
+    sv_frame_t startFrame = 0;
 
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
 	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 
-	    int thisStartFrame = (*i)->getModel()->getStartFrame();
+	    sv_frame_t thisStartFrame = (*i)->getModel()->getStartFrame();
 
 	    if (first || thisStartFrame < startFrame) {
 		startFrame = thisStartFrame;
@@ -1207,17 +1207,17 @@ View::getModelsStartFrame() const
     return startFrame;
 }
 
-int
+sv_frame_t
 View::getModelsEndFrame() const
 {
     bool first = true;
-    int endFrame = 0;
+    sv_frame_t endFrame = 0;
 
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
 	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 
-	    int thisEndFrame = (*i)->getModel()->getEndFrame();
+	    sv_frame_t thisEndFrame = (*i)->getModel()->getEndFrame();
 
 	    if (first || thisEndFrame > endFrame) {
 		endFrame = thisEndFrame;
@@ -1230,7 +1230,7 @@ View::getModelsEndFrame() const
     return endFrame;
 }
 
-int
+sv_samplerate_t
 View::getModelsSampleRate() const
 {
     //!!! Just go for the first, for now.  If we were supporting
@@ -1309,8 +1309,8 @@ View::getAligningModel() const
     else return anyModel;
 }
 
-int
-View::alignFromReference(int f) const
+sv_frame_t
+View::alignFromReference(sv_frame_t f) const
 {
     if (!m_manager || !m_manager->getAlignMode()) return f;
     Model *aligningModel = getAligningModel();
@@ -1318,8 +1318,8 @@ View::alignFromReference(int f) const
     return aligningModel->alignFromReference(f);
 }
 
-int
-View::alignToReference(int f) const
+sv_frame_t
+View::alignToReference(sv_frame_t f) const
 {
     if (!m_manager->getAlignMode()) return f;
     Model *aligningModel = getAligningModel();
@@ -1327,17 +1327,17 @@ View::alignToReference(int f) const
     return aligningModel->alignToReference(f);
 }
 
-int
+sv_frame_t
 View::getAlignedPlaybackFrame() const
 {
     if (!m_manager) return 0;
-    int pf = m_manager->getPlaybackFrame();
+    sv_frame_t pf = m_manager->getPlaybackFrame();
     if (!m_manager->getAlignMode()) return pf;
 
     Model *aligningModel = getAligningModel();
     if (!aligningModel) return pf;
 
-    int af = aligningModel->alignFromReference(pf);
+    sv_frame_t af = aligningModel->alignFromReference(pf);
 
     return af;
 }
@@ -1492,7 +1492,7 @@ View::zoom(bool in)
 void
 View::scroll(bool right, bool lots, bool e)
 {
-    int delta;
+    sv_frame_t delta;
     if (lots) {
 	delta = (getEndFrame() - getStartFrame()) / 2;
     } else {
@@ -1500,9 +1500,9 @@ View::scroll(bool right, bool lots, bool e)
     }
     if (right) delta = -delta;
 
-    if (int(m_centreFrame) < delta) {
+    if (m_centreFrame < delta) {
 	setCentreFrame(0, e);
-    } else if (int(m_centreFrame) - delta >= int(getModelsEndFrame())) {
+    } else if (m_centreFrame - delta >= getModelsEndFrame()) {
 	setCentreFrame(getModelsEndFrame(), e);
     } else {
 	setCentreFrame(m_centreFrame - delta, e);
@@ -1974,10 +1974,10 @@ View::drawSelections(QPainter &paint)
         paint.setBrush(Qt::NoBrush);
     }
 
-    int sampleRate = getModelsSampleRate();
+    sv_samplerate_t sampleRate = getModelsSampleRate();
 
     QPoint localPos;
-    int illuminateFrame = -1;
+    sv_frame_t illuminateFrame = -1;
     bool closeToLeft, closeToRight;
 
     if (shouldIlluminateLocalSelection(localPos, closeToLeft, closeToRight)) {
@@ -2145,7 +2145,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
-    float v0, v1;
+    double v0, v1;
     QString u0, u1;
     bool b0 = false, b1 = false;
 
@@ -2217,7 +2217,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     }
 
     bool bd = false;
-    float dy = 0.f;
+    double dy = 0.f;
     QString du;
 
     // dimension, height
@@ -2228,7 +2228,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         if (du != "") {
             if (du == "Hz") {
                 int semis;
-                float cents;
+                double cents;
                 semis = Pitch::getPitchForFrequencyDifference(v0, v1, &cents);
                 dys = QString("[%1 %2 (%3)]")
                     .arg(dy).arg(du)
@@ -2333,14 +2333,14 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 }
 
 bool
-View::render(QPainter &paint, int xorigin, int f0, int f1)
+View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = f0 / m_zoomLevel;
-    int x1 = f1 / m_zoomLevel;
+    int x0 = int(f0 / m_zoomLevel);
+    int x1 = int(f1 / m_zoomLevel);
 
     int w = x1 - x0;
 
-    int origCentreFrame = m_centreFrame;
+    sv_frame_t origCentreFrame = m_centreFrame;
 
     bool someLayersIncomplete = false;
 
@@ -2440,17 +2440,17 @@ View::render(QPainter &paint, int xorigin, int f0, int f1)
 QImage *
 View::toNewImage()
 {
-    int f0 = getModelsStartFrame();
-    int f1 = getModelsEndFrame();
+    sv_frame_t f0 = getModelsStartFrame();
+    sv_frame_t f1 = getModelsEndFrame();
 
     return toNewImage(f0, f1);
 }
 
 QImage *
-View::toNewImage(int f0, int f1)
+View::toNewImage(sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = f0 / getZoomLevel();
-    int x1 = f1 / getZoomLevel();
+    int x0 = int(f0 / getZoomLevel());
+    int x1 = int(f1 / getZoomLevel());
     
     QImage *image = new QImage(x1 - x0, height(), QImage::Format_RGB32);
 
@@ -2468,17 +2468,17 @@ View::toNewImage(int f0, int f1)
 QSize
 View::getImageSize()
 {
-    int f0 = getModelsStartFrame();
-    int f1 = getModelsEndFrame();
+    sv_frame_t f0 = getModelsStartFrame();
+    sv_frame_t f1 = getModelsEndFrame();
 
     return getImageSize(f0, f1);
 }
     
 QSize
-View::getImageSize(int f0, int f1)
+View::getImageSize(sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = f0 / getZoomLevel();
-    int x1 = f1 / getZoomLevel();
+    int x0 = int(f0 / getZoomLevel());
+    int x1 = int(f1 / getZoomLevel());
 
     return QSize(x1 - x0, height());
 }

@@ -225,11 +225,11 @@ TransformFinder::timeout()
         if (m_sortedResults.size() < sorted.size()) {
             m_infoLabel->setText
                 (tr("Found %n description(s) containing <b>%1</b>, showing the first %2 only",
-                    0, sorted.size()).arg(text).arg(m_sortedResults.size()));
+                    0, int(sorted.size())).arg(text).arg(m_sortedResults.size()));
         } else {
             m_infoLabel->setText
                 (tr("Found %n description(s) containing <b>%1</b>",
-                    0, sorted.size()).arg(text));
+                    0, int(sorted.size())).arg(text));
         }
 
         return;

@@ -153,7 +153,7 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 50;
         *deflt = 0;
 
-	val = lrint(log10(m_gain) * 20.0);
+	val = int(lrint(log10(m_gain) * 20.0));
 	if (val < *min) val = *min;
 	if (val > *max) val = *max;
 
@@ -222,7 +222,7 @@ void
 WaveformLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-	setGain(pow(10, float(value)/20.0));
+	setGain(float(pow(10, float(value)/20.0)));
     } else if (name == "Normalize Visible Area") {
         setAutoNormalize(value ? true : false);
     } else if (name == "Channels") {
@@ -308,7 +308,7 @@ WaveformLayer::setScale(Scale scale)
 }
 
 void
-WaveformLayer::setMiddleLineHeight(float height)
+WaveformLayer::setMiddleLineHeight(double height)
 {
     if (m_middleLineHeight == height) return;
     m_middleLineHeight = height;
@@ -335,7 +335,7 @@ WaveformLayer::getCompletion(View *) const
 }
 
 bool
-WaveformLayer::getValueExtents(float &min, float &max,
+WaveformLayer::getValueExtents(double &min, double &max,
                                bool &, QString &unit) const
 {
     if (m_scale == LinearScale) {
@@ -353,10 +353,10 @@ WaveformLayer::getValueExtents(float &min, float &max,
 }
 
 int
-WaveformLayer::dBscale(float sample, int m) const
+WaveformLayer::dBscale(double sample, int m) const
 {
     if (sample < 0.0) return dBscale(-sample, m);
-    float dB = AudioLevel::multiplier_to_dB(sample);
+    double dB = AudioLevel::multiplier_to_dB(sample);
     if (dB < -50.0) return 0;
     if (dB > 0.0) return m;
     return int(((dB + 50.0) * m) / 50.0 + 0.1);
@@ -409,9 +409,9 @@ static float meterdbs[] = { -40, -30, -20, -15, -10,
 
 bool
 WaveformLayer::getSourceFramesForX(View *v, int x, int modelZoomLevel,
-                                   int &f0, int &f1) const
+                                   sv_frame_t &f0, sv_frame_t &f1) const
 {
-    int viewFrame = v->getFrameForX(x);
+    sv_frame_t viewFrame = v->getFrameForX(x);
     if (viewFrame < 0) {
         f0 = 0;
         f1 = 0;
@@ -435,13 +435,13 @@ WaveformLayer::getSourceFramesForX(View *v, int x, int modelZoomLevel,
 float
 WaveformLayer::getNormalizeGain(View *v, int channel) const
 {
-    int startFrame = v->getStartFrame();
-    int endFrame = v->getEndFrame();
+    sv_frame_t startFrame = v->getStartFrame();
+    sv_frame_t endFrame = v->getEndFrame();
 
-    int modelStart = m_model->getStartFrame();
-    int modelEnd = m_model->getEndFrame();
+    sv_frame_t modelStart = m_model->getStartFrame();
+    sv_frame_t modelEnd = m_model->getEndFrame();
     
-    int rangeStart, rangeEnd;
+    sv_frame_t rangeStart, rangeEnd;
             
     if (startFrame < modelStart) rangeStart = modelStart;
     else rangeStart = startFrame;
@@ -469,7 +469,7 @@ WaveformLayer::getNormalizeGain(View *v, int channel) const
         range.setAbsmean(std::min(range.absmean(), otherRange.absmean()));
     }
 
-    return 1.0 / std::max(fabsf(range.max()), fabsf(range.min()));
+    return float(1.0 / std::max(fabs(range.max()), fabs(range.min())));
 }
 
 void
@@ -543,9 +543,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
     if (m_middleLineHeight != 0.5) {
         paint->save();
-        float space = m_middleLineHeight * 2;
+        double space = m_middleLineHeight * 2;
         if (space > 1.0) space = 2.0 - space;
-        float yt = h * (m_middleLineHeight - space/2);
+        double yt = h * (m_middleLineHeight - space/2);
         paint->translate(QPointF(0, yt));
         paint->scale(1.0, space);
     }
@@ -572,9 +572,9 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
             
     int modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
 
-    int frame0;
-    int frame1;
-    int spare;
+    sv_frame_t frame0;
+    sv_frame_t frame1;
+    sv_frame_t spare;
 
     getSourceFramesForX(v, x0, modelZoomLevel, frame0, spare);
     getSourceFramesForX(v, x1, modelZoomLevel, spare, frame1);
@@ -616,7 +616,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
             m_effectiveGains[ch] = getNormalizeGain(v, ch);
         }
 
-        float gain = m_effectiveGains[ch];
+        double gain = m_effectiveGains[ch];
 
 	int m = (h / channels) / 2;
 	int my = m + (((ch - minChannel) * h) / channels);
@@ -647,7 +647,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
             for (int i = 1; i < n; ++i) {
                 
-                float val = 0.0, nval = 0.0;
+                double val = 0.0, nval = 0.0;
 
                 switch (m_scale) {
 
@@ -710,7 +710,7 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 
 	    range = RangeSummarisableTimeValueModel::Range();
 
-            int f0, f1;
+            sv_frame_t f0, f1;
             if (!getSourceFramesForX(v, x, modelZoomLevel, f0, f1)) continue;
             f1 = f1 - 1;
 
@@ -719,8 +719,8 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
                 continue;
             }
 
-            int i0 = (f0 - frame0) / modelZoomLevel;
-            int i1 = (f1 - frame0) / modelZoomLevel;
+            sv_frame_t i0 = (f0 - frame0) / modelZoomLevel;
+            sv_frame_t i1 = (f1 - frame0) / modelZoomLevel;
 
 #ifdef DEBUG_WAVEFORM_PAINT
             cerr << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
@@ -784,10 +784,10 @@ WaveformLayer::paint(View *v, QPainter &viewPainter, QRect rect) const
 	    switch (m_scale) {
 
 	    case LinearScale:
-		rangeBottom = int( m * greyLevels * range.min() * gain);
-		rangeTop    = int( m * greyLevels * range.max() * gain);
-		meanBottom  = int(-m * range.absmean() * gain);
-		meanTop     = int( m * range.absmean() * gain);
+		rangeBottom = int(double(m * greyLevels) * range.min() * gain);
+		rangeTop    = int(double(m * greyLevels) * range.max() * gain);
+		meanBottom  = int(double(-m) * range.absmean() * gain);
+		meanTop     = int(double(m) * range.absmean() * gain);
 		break;
 
 	    case dBScale:
@@ -963,7 +963,7 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     int modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
 
-    int f0, f1;
+    sv_frame_t f0, f1;
     if (!getSourceFramesForX(v, x, modelZoomLevel, f0, f1)) return "";
     
     QString text;
@@ -1005,18 +1005,18 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 	}
 
         bool singleValue = false;
-        float min, max;
+        double min, max;
 
         if (fabs(range.min()) < 0.01) {
             min = range.min();
             max = range.max();
             singleValue = (min == max);
         } else {
-            int imin = lrint(range.min() * 10000);
-            int imax = lrint(range.max() * 10000);
+            int imin = int(lrint(range.min() * 10000));
+            int imax = int(lrint(range.max() * 10000));
             singleValue = (imin == imax);
-            min = float(imin)/10000;
-            max = float(imax)/10000;
+            min = double(imin)/10000;
+            max = double(imax)/10000;
         }
 
 	int db = int(AudioLevel::multiplier_to_dB(std::max(fabsf(range.min()),
@@ -1025,10 +1025,10 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 
 	if (!singleValue) {
 	    text += tr("\n%1\t%2 - %3 (%4 dB peak)")
-		.arg(label).arg(min).arg(max).arg(float(db)/100);
+		.arg(label).arg(min).arg(max).arg(double(db)/100);
 	} else {
 	    text += tr("\n%1\t%2 (%3 dB peak)")
-		.arg(label).arg(min).arg(float(db)/100);
+		.arg(label).arg(min).arg(double(db)/100);
 	}
     }
 
@@ -1036,7 +1036,7 @@ WaveformLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 int
-WaveformLayer::getYForValue(const View *v, float value, int channel) const
+WaveformLayer::getYForValue(const View *v, double value, int channel) const
 {
     int channels = 0, minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
@@ -1078,7 +1078,7 @@ WaveformLayer::getYForValue(const View *v, float value, int channel) const
     return my - vy;
 }
 
-float
+double
 WaveformLayer::getValueForY(const View *v, int y, int &channel) const
 {
     int channels = 0, minChannel = 0, maxChannel = 0;
@@ -1102,13 +1102,13 @@ WaveformLayer::getValueForY(const View *v, int y, int &channel) const
     int my = m + (((channel - minChannel) * h) / channels);
 
     int vy = my - y;
-    float value = 0;
-    float thresh = -50.f;
+    double value = 0;
+    double thresh = -50.f;
 
     switch (m_scale) {
 
     case LinearScale:
-        value = float(vy) / m;
+        value = double(vy) / m;
         break;
 
     case MeterScale:
@@ -1116,7 +1116,7 @@ WaveformLayer::getValueForY(const View *v, int y, int &channel) const
         break;
 
     case dBScale:
-        value = (-thresh * float(vy)) / m + thresh;
+        value = (-thresh * double(vy)) / m + thresh;
         value = AudioLevel::dB_to_multiplier(value);
         break;
     }
@@ -1126,7 +1126,7 @@ WaveformLayer::getValueForY(const View *v, int y, int &channel) const
 
 bool
 WaveformLayer::getYScaleValue(const View *v, int y,
-                              float &value, QString &unit) const
+                              double &value, QString &unit) const
 {
     int channel;
 
@@ -1134,10 +1134,10 @@ WaveformLayer::getYScaleValue(const View *v, int y,
 
     if (m_scale == dBScale || m_scale == MeterScale) {
 
-        float thresh = -50.f;
+        double thresh = -50.f;
         
-        if (value > 0.f) {
-            value = 10.f * log10f(value);
+        if (value > 0.0) {
+            value = 10.0 * log10(value);
             if (value < thresh) value = thresh;
         } else value = thresh;
 
@@ -1152,36 +1152,36 @@ WaveformLayer::getYScaleValue(const View *v, int y,
 
 bool
 WaveformLayer::getYScaleDifference(const View *v, int y0, int y1,
-                                   float &diff, QString &unit) const
+                                   double &diff, QString &unit) const
 {
     int c0, c1;
-    float v0 = getValueForY(v, y0, c0);
-    float v1 = getValueForY(v, y1, c1);
+    double v0 = getValueForY(v, y0, c0);
+    double v1 = getValueForY(v, y1, c1);
 
     if (c0 != c1) {
         // different channels, not comparable
-        diff = 0.f;
+        diff = 0.0;
         unit = "";
         return false;
     }
 
     if (m_scale == dBScale || m_scale == MeterScale) {
 
-        float thresh = -50.f;
+        double thresh = -50.0;
 
         if (v1 == v0) diff = thresh;
         else {
             if (v1 > v0) diff = v0 / v1;
             else diff = v1 / v0;
 
-            diff = 10.f * log10f(diff);
+            diff = 10.0 * log10(diff);
             if (diff < thresh) diff = thresh;
         }
 
         unit = "dBV";
 
     } else {
-        diff = fabsf(v1 - v0);
+        diff = fabs(v1 - v0);
         unit = "V";
     }
 
@@ -1217,7 +1217,7 @@ WaveformLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) co
     int textHeight = paint.fontMetrics().height();
     int toff = -textHeight/2 + paint.fontMetrics().ascent() + 1;
 
-    float gain = m_gain;
+    double gain = m_gain;
 
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
 
@@ -1229,14 +1229,14 @@ WaveformLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) co
 
 	for (int i = 0; i <= n; ++i) {
 
-            float val = 0.0, nval = 0.0;
+            double val = 0.0, nval = 0.0;
 	    QString text = "";
 
             switch (m_scale) {
                 
             case LinearScale:
                 val = (i * gain) / n;
-		text = QString("%1").arg(float(i) / n);
+		text = QString("%1").arg(double(i) / n);
 		if (i == 0) text = "0.0";
                 else {
                     nval = -val;
@@ -1402,7 +1402,7 @@ WaveformLayer::getVerticalZoomSteps(int &defaultStep) const
 int
 WaveformLayer::getCurrentVerticalZoomStep() const
 {
-    int val = lrint(log10(m_gain) * 20.0) + 50;
+    int val = int(lrint(log10(m_gain) * 20.0) + 50);
     if (val < 0) val = 0;
     if (val > 100) val = 100;
     return val;
@@ -1411,6 +1411,6 @@ WaveformLayer::getCurrentVerticalZoomStep() const
 void
 WaveformLayer::setVerticalZoomStep(int step)
 {
-    setGain(pow(10, float(step - 50) / 20.0));
+    setGain(powf(10, float(step - 50) / 20.f));
 }
 
