@@ -386,10 +386,10 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
         int size = 1024;
         int increment = 1024;
         if (fePlugin) {
-            size = fePlugin->getPreferredBlockSize();
+            size = int(fePlugin->getPreferredBlockSize());
             cerr << "Feature extraction plugin \"" << fePlugin->getName() << "\" reports preferred block size as " << size << endl;
             if (size == 0) size = 1024;
-            increment = fePlugin->getPreferredStepSize();
+            increment = int(fePlugin->getPreferredStepSize());
             if (increment == 0) {
                 if (fePlugin->getInputDomain() == Vamp::Plugin::TimeDomain) {
                     increment = size;

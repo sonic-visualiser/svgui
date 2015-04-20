@@ -30,6 +30,7 @@
 #include <QDialogButtonBox>
 
 #include <iostream>
+#include <cmath>
 
 #include "base/Debug.h"
 
@@ -62,7 +63,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     exampleFrame->setPalette(palette);
 
     QFont fp;
-    fp.setPointSize(fp.pointSize() * 0.9);
+    fp.setPointSize(int(floor(fp.pointSize() * 0.9)));
 //    fp.setFixedPitch(true);
 //    fp.setStyleHint(QFont::TypeWriter);
 //    fp.setFamily("Monospaced");

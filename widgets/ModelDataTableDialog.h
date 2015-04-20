@@ -18,6 +18,8 @@
 
 #include <QMainWindow>
 
+#include "base/BaseTypes.h"
+
 class TabularModel;
 class ModelDataTableModel;
 class QTableView;
@@ -38,11 +40,11 @@ public:
     QToolBar *getPlayToolbar() { return m_playToolbar; }
 
 signals:
-    void scrollToFrame(int frame);
+    void scrollToFrame(sv_frame_t frame);
 
 public slots:
-    void userScrolledToFrame(int frame);
-    void playbackScrolledToFrame(int frame);
+    void userScrolledToFrame(sv_frame_t frame);
+    void playbackScrolledToFrame(sv_frame_t frame);
     void addCommand(Command *);
 
 protected slots:

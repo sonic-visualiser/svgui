@@ -107,9 +107,9 @@ ImageRegionFinder::similar(QRgb a, QRgb b) const
         return false;
     }
 
-    float ar = float(qRed(a) / 255.f);
-    float ag = float(qGreen(a) / 255.f);
-    float ab = float(qBlue(a) / 255.f);
+    float ar = float(qRed(a)) / 255.f;
+    float ag = float(qGreen(a)) / 255.f;
+    float ab = float(qBlue(a)) / 255.f;
     float amag = sqrtf(ar * ar + ag * ag + ab * ab);
     float thresh = amag / 2;
 
