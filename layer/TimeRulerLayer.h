@@ -60,6 +60,8 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    virtual bool canExistWithoutModel() const { return true; }
+
 protected:
     Model *m_model;
     LabelHeight m_labelHeight;
