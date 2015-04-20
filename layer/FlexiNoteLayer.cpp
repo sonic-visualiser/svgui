@@ -1135,7 +1135,8 @@ FlexiNoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 
     m_editingCommand->deletePoint(m_editingPoint);
 
-    std::cerr << "edit mode: " << m_editMode << std::endl;
+    std::cerr << "edit mode: " << m_editMode << " intelligent actions = "
+              << m_intelligentActions << std::endl;
     
     switch (m_editMode) {
     case LeftBoundary : {
@@ -1164,16 +1165,28 @@ FlexiNoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
             dragFrame = m_smallestRightNeighbourFrame - m_originalPoint.duration;
         }
         m_editingPoint.frame = dragFrame;
+
         m_editingPoint.value = float(value);
+
+        // Re-analyse region within +/- 1 semitone of the dragged value
+        float cents = 0;
+        int midiPitch = Pitch::getPitchForFrequency(m_editingPoint.value, &cents);
+        double lower = Pitch::getFrequencyForPitch(midiPitch - 1, cents);
+        double higher = Pitch::getFrequencyForPitch(midiPitch + 1, cents);
+        
+        emit reAnalyseRegion(m_editingPoint.frame,
+                             m_editingPoint.frame + m_editingPoint.duration,
+                             float(lower), float(higher));
         break;
     }
     case SplitNote: // nothing
         break;
     }
-    updateNoteValue(v, m_editingPoint);
+
+//    updateNoteValueFromPitchCurve(v, m_editingPoint);
     m_editingCommand->addPoint(m_editingPoint);
+
     std::cerr << "added new point(" << m_editingPoint.frame << "," << m_editingPoint.duration << ")" << std::endl;
-    
 }
 
 void
@@ -1187,6 +1200,15 @@ FlexiNoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *e)
     if (m_editingCommand) {
 
         QString newName = m_editingCommand->getName();
+
+        if (m_editMode == DragNote) {
+            //!!! command nesting is wrong?
+            emit materialiseReAnalysis();
+        }
+
+        m_editingCommand->deletePoint(m_editingPoint);
+        updateNoteValueFromPitchCurve(v, m_editingPoint);
+        m_editingCommand->addPoint(m_editingPoint);
 
         if (m_editingPoint.frame != m_originalPoint.frame) {
             if (m_editingPoint.value != m_originalPoint.value) {
@@ -1210,7 +1232,7 @@ void
 FlexiNoteLayer::splitStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     // GF: note splitting starts (!! remove printing soon)
-    std::cerr << "splitStart" << std::endl;
+    std::cerr << "splitStart (n.b. editStart will be called later, if the user drags the mouse)" << std::endl;
     if (!m_model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
@@ -1227,7 +1249,6 @@ FlexiNoteLayer::splitStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_editing = true;
     m_dragStartX = e->x();
     m_dragStartY = e->y();
-    
 }
 
 void
@@ -1280,10 +1301,10 @@ FlexiNoteLayer::splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseE
                            note.level, note.label);
                        
         if (m_intelligentActions) {
-            if (updateNoteValue(v, newNote1)) {
+            if (updateNoteValueFromPitchCurve(v, newNote1)) {
                 command->addPoint(newNote1);
             }
-            if (updateNoteValue(v, newNote2)) {
+            if (updateNoteValueFromPitchCurve(v, newNote2)) {
                 command->addPoint(newNote2);
             }
         } else {
@@ -1339,22 +1360,23 @@ FlexiNoteLayer::getAssociatedPitchModel(LayerGeometryProvider *v) const
 {
     // Better than we used to do, but still not very satisfactory
 
-    cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
+//    cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
 
     for (int i = 0; i < v->getView()->getLayerCount(); ++i) {
         Layer *layer = v->getView()->getLayer(i);
         if (layer &&
             layer->getLayerPresentationName() != "candidate") {
-            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
+//            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
             SparseTimeValueModel *model = qobject_cast<SparseTimeValueModel *>
                 (layer->getModel());
-            cerr << "FlexiNoteLayer::getAssociatedPitchModel: and its model is " << model << endl;
+//            cerr << "FlexiNoteLayer::getAssociatedPitchModel: and its model is " << model << endl;
             if (model && model->getScaleUnits() == "Hz") {
                 cerr << "FlexiNoteLayer::getAssociatedPitchModel: it's good, returning " << model << endl;
                 return model;
             }
         }
     }
+    cerr << "FlexiNoteLayer::getAssociatedPitchModel: failed to find a model" << endl;
     return 0;
 }
 
@@ -1388,7 +1410,7 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selectio
 
         command->deletePoint(note);
 
-        if (updateNoteValue(v, newNote)) {
+        if (updateNoteValueFromPitchCurve(v, newNote)) {
             command->addPoint(newNote);
         }
     }
@@ -1434,13 +1456,13 @@ FlexiNoteLayer::mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive
         ++i;
     }
 
-    updateNoteValue(v, newNote);
+    updateNoteValueFromPitchCurve(v, newNote);
     command->addPoint(newNote);
     finish(command);
 }
 
 bool
-FlexiNoteLayer::updateNoteValue(LayerGeometryProvider *v, FlexiNoteModel::Point &note) const
+FlexiNoteLayer::updateNoteValueFromPitchCurve(LayerGeometryProvider *v, FlexiNoteModel::Point &note) const
 {
     SparseTimeValueModel *model = getAssociatedPitchModel(v);
     if (!model) return false;
@@ -1475,6 +1497,8 @@ FlexiNoteLayer::updateNoteValue(LayerGeometryProvider *v, FlexiNoteModel::Point 
     } else {
         median = pitchValues[size/2];
     }
+
+    std::cerr << "updateNoteValueFromPitchCurve: corrected from " << note.value << " to median " << median << std::endl;
     
     note.value = float(median);
 
@@ -1492,21 +1516,31 @@ FlexiNoteLayer::mouseMoveEvent(LayerGeometryProvider *v, QMouseEvent *e)
         return; 
     }
 
-    bool closeToLeft = false, closeToRight = false, closeToTop = false, closeToBottom = false;
-    getRelativeMousePosition(v, note, e->x(), e->y(), closeToLeft, closeToRight, closeToTop, closeToBottom);
-    // if (!closeToLeft) return;
-    // if (closeToTop) v->getView()->setCursor(Qt::SizeVerCursor);
+    bool closeToLeft = false, closeToRight = false,
+        closeToTop = false, closeToBottom = false;
+    getRelativeMousePosition(v, note, e->x(), e->y(),
+                             closeToLeft, closeToRight,
+                             closeToTop, closeToBottom);
     
-    if (closeToLeft) { v->getView()->setCursor(Qt::SizeHorCursor); m_editMode = LeftBoundary; return; }
-    if (closeToRight) { v->getView()->setCursor(Qt::SizeHorCursor); m_editMode = RightBoundary; return; }
-    if (closeToTop) { v->getView()->setCursor(Qt::CrossCursor);  m_editMode = DragNote; return; }
-    if (closeToBottom) { v->getView()->setCursor(Qt::UpArrowCursor); m_editMode = SplitNote; return; }
-
-    v->getView()->setCursor(Qt::ArrowCursor);
-
-    std::cerr << "Mouse moved in edit mode over FlexiNoteLayer" << std::endl;
-    // v->getView()->setCursor(Qt::SizeHorCursor);
-
+    if (closeToLeft) {
+        v->getView()->setCursor(Qt::SizeHorCursor);
+        m_editMode = LeftBoundary;
+        cerr << "edit mode -> LeftBoundary" << endl;
+    } else if (closeToRight) {
+        v->getView()->setCursor(Qt::SizeHorCursor);
+        m_editMode = RightBoundary;
+        cerr << "edit mode -> RightBoundary" << endl;
+    } else if (closeToTop) {
+        v->getView()->setCursor(Qt::CrossCursor);
+        m_editMode = DragNote;
+        cerr << "edit mode -> DragNote" << endl;
+    } else if (closeToBottom) {
+        v->getView()->setCursor(Qt::UpArrowCursor);
+        m_editMode = SplitNote;
+        cerr << "edit mode -> SplitNote" << endl;
+    } else {
+        v->getView()->setCursor(Qt::ArrowCursor);
+    }
 }
 
 void

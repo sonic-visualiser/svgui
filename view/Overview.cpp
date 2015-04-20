@@ -144,6 +144,20 @@ Overview::viewManagerPlaybackFrameChanged(sv_frame_t f)
     if (changed) update();
 }
 
+QColor
+Overview::getFillWithin() const
+{
+    return Qt::transparent;
+}
+
+QColor
+Overview::getFillWithout() const
+{
+    QColor c = palette().window().color();
+    c.setAlpha(100);
+    return c;
+}
+
 void
 Overview::paintEvent(QPaintEvent *e)
 {
@@ -184,20 +198,22 @@ Overview::paintEvent(QPaintEvent *e)
 
     QPainter paint;
     paint.begin(this);
-
+    paint.setClipRegion(e->region());
+    paint.setRenderHints(QPainter::Antialiasing);
+    
     QRect r(rect());
 
-    if (e) {
-	r = e->rect();
-	paint.setClipRect(r);
-    }
+    // We paint a rounded rect for each distinct set of view extents,
+    // and we colour in the inside and outside of the rect that
+    // corresponds to the current view. (One small caveat -- we don't
+    // know which rect that is yet. We'll have to figure it out
+    // somehow...)
 
-    paint.setPen(getForeground());
+    std::set<std::pair<int, int> > extents;
+    std::vector<QRect> rects;
+    QRect primary;
 
     int y = 0;
-
-    sv_frame_t prevx0 = -10;
-    sv_frame_t prevx1 = -10;
 
     for (ViewSet::iterator i = m_views.begin(); i != m_views.end(); ++i) {
 	if (!*i) continue;
@@ -219,15 +235,36 @@ Overview::paintEvent(QPaintEvent *e)
 	int x0 = getXForFrame(f0);
 	int x1 = getXForFrame(f1);
 
-	if (x0 != prevx0 || x1 != prevx1) {
-	    y += height() / 10 + 1;
-	    prevx0 = x0;
-	    prevx1 = x1;
-	}
 
 	if (x1 <= x0) x1 = x0 + 1;
-	
-	paint.drawRect(x0, y, x1 - x0, height() - 2 * y);
+
+        std::pair<int, int> extent(x0, x1);
+
+        if (extents.find(extent) == extents.end()) {
+
+    	    y += height() / 10 + 1;
+            extents.insert(extent);
+
+            QRect vr(x0, y, x1 - x0, height() - 2 * y);
+            rects.push_back(vr);
+            primary = vr; //!!! for now
+        }
+    }
+
+    QPainterPath without;
+    without.addRoundedRect(primary, 4, 4);
+    without.addRect(rect());
+    paint.setPen(Qt::NoPen);
+    paint.setBrush(getFillWithout());
+    paint.drawPath(without);
+
+    paint.setBrush(getFillWithin());
+    paint.drawRoundedRect(primary, 4, 4);
+    
+    foreach (QRect vr, rects) {
+        paint.setBrush(Qt::NoBrush);
+        paint.setPen(QPen(Qt::gray, 2));
+        paint.drawRoundedRect(vr, 4, 4);
     }
 
     paint.end();
