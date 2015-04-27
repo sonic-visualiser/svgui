@@ -389,6 +389,14 @@ protected:
     virtual bool shouldLabelSelections() const { return true; }
     virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
     virtual void setPaintFont(QPainter &paint);
+
+    QSize scaledSize(const QSize &s, int factor) {
+        return QSize(s.width() * factor, s.height() * factor);
+    }
+    QRect scaledRect(const QRect &r, int factor) {
+        return QRect(r.x() * factor, r.y() * factor,
+                     r.width() * factor, r.height() * factor);
+    }
     
     typedef std::vector<Layer *> LayerList;
 
@@ -429,6 +437,7 @@ protected:
     bool                m_showProgress;
 
     QPixmap            *m_cache;
+    QPixmap            *m_buffer;
     sv_frame_t          m_cacheCentreFrame;
     int                 m_cacheZoomLevel;
     bool                m_selectionCached;
