@@ -1657,8 +1657,18 @@ View::getProgressBarWidth() const
 void
 View::setPaintFont(QPainter &paint)
 {
+    int scaleFactor = 1;
+    int dpratio = devicePixelRatio();
+    if (dpratio > 1) {
+        QPaintDevice *dev = paint.device();
+        if (dynamic_cast<QPixmap *>(dev) || dynamic_cast<QImage *>(dev)) {
+            scaleFactor = dpratio;
+        }
+    }
+
     QFont font(paint.font());
-    font.setPointSize(Preferences::getInstance()->getViewFontSize());
+    font.setPointSize(Preferences::getInstance()->getViewFontSize()
+                      * scaleFactor);
     paint.setFont(font);
 }
 
