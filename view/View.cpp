@@ -1704,6 +1704,8 @@ View::paintEvent(QPaintEvent *e)
 
     QRect nonCacheRect(cacheRect);
 
+    int dpratio = devicePixelRatio();
+
     // If not all layers are scrollable, but some of the back layers
     // are, we should store only those in the cache.
 
@@ -1715,25 +1717,34 @@ View::paintEvent(QPaintEvent *e)
 
     // If all the non-scrollable layers are non-opaque, then we draw
     // the selection rectangle behind them and cache it.  If any are
-    // opaque, however, we can't cache.
+    // opaque, however, or if our device-pixel ratio is not 1 (so we
+    // need to paint direct to the widget), then we can't cache.
     //
-    if (!selectionCacheable) {
-	selectionCacheable = true;
-	for (LayerList::const_iterator i = nonScrollables.begin();
-	     i != nonScrollables.end(); ++i) {
-	    if ((*i)->isLayerOpaque()) {
-		selectionCacheable = false;
-		break;
-	    }
-	}
-    }
+    if (dpratio == 1) {
 
-    if (selectionCacheable) {
-	QPoint localPos;
-	bool closeToLeft, closeToRight;
-	if (shouldIlluminateLocalSelection(localPos, closeToLeft, closeToRight)) {
-	    selectionCacheable = false;
-	}
+        if (!selectionCacheable) {
+            selectionCacheable = true;
+            for (LayerList::const_iterator i = nonScrollables.begin();
+                 i != nonScrollables.end(); ++i) {
+                if ((*i)->isLayerOpaque()) {
+                    selectionCacheable = false;
+                    break;
+                }
+            }
+        }
+
+        if (selectionCacheable) {
+            QPoint localPos;
+            bool closeToLeft, closeToRight;
+            if (shouldIlluminateLocalSelection
+                (localPos, closeToLeft, closeToRight)) {
+                selectionCacheable = false;
+            }
+        }
+
+    } else {
+
+        selectionCacheable = false;
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -1751,8 +1762,6 @@ View::paintEvent(QPaintEvent *e)
 	m_selectionCached = false;
     }
 
-    int dpratio = devicePixelRatio();
-    
     QSize scaledCacheSize(scaledSize(size(), dpratio));
     QRect scaledCacheRect(scaledRect(cacheRect, dpratio));
 
@@ -1924,10 +1933,15 @@ View::paintEvent(QPaintEvent *e)
     }
 	
     paint.end();
+    
+    paint.begin(this);
+    QRect finalPaintRect = e ? e->rect() : rect();
+    paint.drawPixmap(finalPaintRect, *m_buffer, scaledRect(finalPaintRect, dpratio));
+    paint.end();
 
-    paint.begin(m_buffer);
+    paint.begin(this);
     setPaintFont(paint);
-    if (e) paint.setClipRect(scaledRect(e->rect(), dpratio));
+    if (e) paint.setClipRect(e->rect());
     if (!m_selectionCached) {
 	drawSelections(paint);
     }
@@ -1948,11 +1962,6 @@ View::paintEvent(QPaintEvent *e)
             showPlayPointer = false;
         }
     }
-    
-    paint.begin(this);
-    QRect finalPaintRect = e ? e->rect() : rect();
-    paint.drawPixmap(finalPaintRect, *m_buffer, scaledRect(finalPaintRect, dpratio));
-    paint.end();
     
     if (showPlayPointer) {
 
