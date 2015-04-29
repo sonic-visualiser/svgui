@@ -426,6 +426,8 @@ protected:
     void checkProgress(void *object);
     int getProgressBarWidth() const; // if visible
 
+    int effectiveDevicePixelRatio() const;
+
     sv_frame_t          m_centreFrame;
     int                 m_zoomLevel;
     bool                m_followPan;
