@@ -38,6 +38,7 @@
 #include <QFont>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSettings>
 
 #include <iostream>
 #include <cassert>
@@ -450,10 +451,29 @@ View::getZoomLevel() const
     return m_zoomLevel;
 }
 
+int
+View::effectiveDevicePixelRatio() const
+{
+#ifdef Q_OS_MAC
+    int dpratio = devicePixelRatio();
+    if (dpratio > 1) {
+        QSettings settings;
+        settings.beginGroup("Preferences");
+        if (!settings.value("scaledHiDpi", true).toBool()) {
+            dpratio = 1;
+        }
+        settings.endGroup();
+    }
+    return dpratio;
+#else
+    return 1;
+#endif
+}
+
 void
 View::setZoomLevel(int z)
 {
-    int dpratio = devicePixelRatio();
+    int dpratio = effectiveDevicePixelRatio();
     if (z < dpratio) return;
     if (z < 1) z = 1;
     if (m_zoomLevel != int(z)) {
@@ -1658,7 +1678,7 @@ void
 View::setPaintFont(QPainter &paint)
 {
     int scaleFactor = 1;
-    int dpratio = devicePixelRatio();
+    int dpratio = effectiveDevicePixelRatio();
     if (dpratio > 1) {
         QPaintDevice *dev = paint.device();
         if (dynamic_cast<QPixmap *>(dev) || dynamic_cast<QImage *>(dev)) {
@@ -1714,7 +1734,7 @@ View::paintEvent(QPaintEvent *e)
 
     QRect nonCacheRect(cacheRect);
 
-    int dpratio = devicePixelRatio();
+    int dpratio = effectiveDevicePixelRatio();
 
     // If not all layers are scrollable, but some of the back layers
     // are, we should store only those in the cache.
