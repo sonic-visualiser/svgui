@@ -85,9 +85,15 @@ public:
 		     r.width() * m_scaleFactor,
 		     r.height() * m_scaleFactor);
     }
-    virtual QSize getPaintSize() const { return getPaintRect().size(); }
-    virtual int getPaintWidth() const { return getPaintRect().width(); }
-    virtual int getPaintHeight() const { return getPaintRect().height(); }
+    virtual QSize getPaintSize() const {
+        return getPaintRect().size();
+    }
+    virtual int getPaintWidth() const { 
+        return getPaintRect().width();
+    }
+    virtual int getPaintHeight() const { 
+        return getPaintRect().height();
+    }
     virtual bool hasLightBackground() const {
 	return m_view->hasLightBackground();
     }
@@ -101,9 +107,14 @@ public:
 	return m_view->getViewManager();
     }
 	
-    virtual bool shouldIlluminateLocalFeatures(const Layer *layer, QPoint &point) const {
-	return m_view->shouldIlluminateLocalFeatures(layer, point);
+    virtual bool shouldIlluminateLocalFeatures(const Layer *layer,
+                                               QPoint &point) const {
+        QPoint p;
+	bool should = m_view->shouldIlluminateLocalFeatures(layer, p);
+        point = QPoint(p.x() * m_scaleFactor, p.y() * m_scaleFactor);
+        return should;
     }
+
     virtual bool shouldShowFeatureLabels() const {
 	return m_view->shouldShowFeatureLabels();
     }
