@@ -92,26 +92,33 @@ QPixmap
 IconLoader::loadPixmap(QString name, int size)
 {
     bool invert = shouldInvert();
-/*
-    QString nonScalableName = makeNonScalableFilename(name, size, invert);
-    QPixmap pmap(nonScalableName);
+
+    QString scalableName, nonScalableName;
+    QPixmap pmap;
+
+    nonScalableName = makeNonScalableFilename(name, size, invert);
+    pmap = QPixmap(nonScalableName);
     if (!pmap.isNull()) return pmap;
-*/
-    QString scalableName = makeScalableFilename(name, invert);
-   QPixmap pmap = loadScalable(scalableName, size);
-    if (!pmap.isNull()) return pmap;
-    /*
+
+    if (size > 0) {
+        scalableName = makeScalableFilename(name, invert);
+        pmap = loadScalable(scalableName, size);
+        if (!pmap.isNull()) return pmap;
+    }
+
     if (invert && shouldAutoInvert(name)) {
 
         nonScalableName = makeNonScalableFilename(name, size, false);
         pmap = QPixmap(nonScalableName);
         if (!pmap.isNull()) return invertPixmap(pmap);
 
-        scalableName = makeScalableFilename(name, false);
-        pmap = loadScalable(scalableName, size);
-        if (!pmap.isNull()) return invertPixmap(pmap);
+        if (size > 0) {
+            scalableName = makeScalableFilename(name, false);
+            pmap = loadScalable(scalableName, size);
+            if (!pmap.isNull()) return invertPixmap(pmap);
+        }
     }
-    */                
+
     return QPixmap();
 }
 
@@ -124,9 +131,13 @@ IconLoader::loadScalable(QString name, int size)
     }
     QPixmap pmap(size, size);
     pmap.fill(Qt::transparent);
-    QPainter painter(&pmap);
     QSvgRenderer renderer(name);
+    QPainter painter;
+    painter.begin(&pmap);
+    cerr << "calling renderer for " << name << " at size " << size << "..." << endl;
     renderer.render(&painter);
+    cerr << "renderer completed" << endl;
+    painter.end();
     return pmap;
 }
 
