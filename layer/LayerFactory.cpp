@@ -198,7 +198,10 @@ LayerFactory::getValidEmptyLayerTypes()
     LayerTypeSet types;
     types.insert(TimeInstants);
     types.insert(TimeValues);
-    types.insert(FlexiNotes);
+    // Because this is strictly a UI function -- list the layer types
+    // to show in a menu -- it should not contain FlexiNotes; the
+    // layer isn't meaningfully editable in SV
+//    types.insert(FlexiNotes);
     types.insert(Notes);
     types.insert(Regions);
     types.insert(Text);

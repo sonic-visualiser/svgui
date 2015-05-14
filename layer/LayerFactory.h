@@ -57,6 +57,11 @@ public:
 
     typedef std::set<LayerType> LayerTypeSet;
     LayerTypeSet getValidLayerTypes(Model *model);
+
+    /**
+     * Return the set of layer types that an end user should be
+     * allowed to create, empty, for subsequent editing.
+     */
     LayerTypeSet getValidEmptyLayerTypes();
 
     LayerType getLayerType(const Layer *);
