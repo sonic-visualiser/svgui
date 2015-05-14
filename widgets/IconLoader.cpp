@@ -19,8 +19,17 @@
 #include <QApplication>
 #include <QPainter>
 #include <QPalette>
+#include <QFile>
+#include <QSvgRenderer>
 
-static const char *autoInvertExceptions[] = {
+#include <vector>
+#include <set>
+
+#include "base/Debug.h"
+
+using namespace std;
+
+static set<QString> autoInvertExceptions {
     // These are the icons that look OK in their default colours, even
     // in a colour scheme with a black background.  (They may also be
     // icons that would look worse if we tried to auto-invert them.)
@@ -29,16 +38,13 @@ static const char *autoInvertExceptions[] = {
     // supply inverted versions -- the loader will load xx_inverse.png
     // in preference to xx.png if a dark background is found.)
     "fileclose",
-    "filenew-22",
     "filenew",
-    "fileopen-22",
     "fileopen",
     "fileopenaudio",
     "fileopensession",
-    "filesave-22",
     "filesave",
-    "filesaveas-22",
     "filesaveas",
+    "filesaveas-sv",
     "help",
     "editcut",
     "editcopy",
@@ -51,42 +57,121 @@ static const char *autoInvertExceptions[] = {
     "zoom"
 };
 
+static vector<int> sizes { 0, 16, 22, 24, 32, 48, 64, 128 };
+
 QIcon
 IconLoader::load(QString name)
 {
-    QPixmap pmap(loadPixmap(name));
-    if (pmap.isNull()) return QIcon();
-    else return QIcon(pmap);
+    QIcon icon;
+    for (int sz: sizes) {
+        QPixmap pmap(loadPixmap(name, sz));
+        if (!pmap.isNull()) icon.addPixmap(pmap);
+    }
+    return icon;
+}
+
+bool
+IconLoader::shouldInvert() const
+{
+    QColor bg = QApplication::palette().window().color();
+    bool darkBackground = (bg.red() + bg.green() + bg.blue() <= 384);
+    return darkBackground;
+}
+
+bool
+IconLoader::shouldAutoInvert(QString name) const
+{
+    if (shouldInvert()) {
+        return (autoInvertExceptions.find(name) == autoInvertExceptions.end());
+    } else {
+        return false;
+    }
 }
 
 QPixmap
-IconLoader::loadPixmap(QString name)
+IconLoader::loadPixmap(QString name, int size)
 {
-    QColor bg = QApplication::palette().window().color();
-    if (bg.red() + bg.green() + bg.blue() > 384) { // light background
-        QPixmap pmap(QString(":icons/%1").arg(name));
-        if (pmap.isNull()) {
-            pmap = QPixmap(QString(":icons/%1.png").arg(name));
-        }
-        return pmap;
+    bool invert = shouldInvert();
+
+    QString scalableName, nonScalableName;
+    QPixmap pmap;
+
+    nonScalableName = makeNonScalableFilename(name, size, invert);
+    pmap = QPixmap(nonScalableName);
+    if (!pmap.isNull()) return pmap;
+
+    if (size > 0) {
+        scalableName = makeScalableFilename(name, invert);
+        pmap = loadScalable(scalableName, size);
+        if (!pmap.isNull()) return pmap;
     }
 
-    QPixmap pmap(QString(":icons/%1").arg(name));
-    if (pmap.isNull()) {
-        pmap = QPixmap(QString(":icons/%1_inverse.png").arg(name));
-        if (pmap.isNull()) {
-            pmap = QPixmap(QString(":icons/%1.png").arg(name));
-        }
-    }
-    if (pmap.isNull()) return pmap;
+    if (invert && shouldAutoInvert(name)) {
 
-    for (int i = 0; i < int(sizeof(autoInvertExceptions)/
-                            sizeof(autoInvertExceptions[0])); ++i) {
-        if (autoInvertExceptions[i] == name) {
-            return pmap;
+        nonScalableName = makeNonScalableFilename(name, size, false);
+        pmap = QPixmap(nonScalableName);
+        if (!pmap.isNull()) return invertPixmap(pmap);
+
+        if (size > 0) {
+            scalableName = makeScalableFilename(name, false);
+            pmap = loadScalable(scalableName, size);
+            if (!pmap.isNull()) return invertPixmap(pmap);
         }
     }
 
+    return QPixmap();
+}
+
+QPixmap
+IconLoader::loadScalable(QString name, int size)
+{
+    if (!QFile(name).exists()) {
+        cerr << "loadScalable: no such file as: \"" << name << "\"" << endl;
+        return QPixmap();
+    }
+    QPixmap pmap(size, size);
+    pmap.fill(Qt::transparent);
+    QSvgRenderer renderer(name);
+    QPainter painter;
+    painter.begin(&pmap);
+    cerr << "calling renderer for " << name << " at size " << size << "..." << endl;
+    renderer.render(&painter);
+    cerr << "renderer completed" << endl;
+    painter.end();
+    return pmap;
+}
+
+QString
+IconLoader::makeNonScalableFilename(QString name, int size, bool invert)
+{
+    if (invert) {
+        if (size == 0) {
+            return QString(":icons/%1_inverse.png").arg(name);
+        } else {
+            return QString(":icons/%1-%2_inverse.png").arg(name).arg(size);
+        }
+    } else {
+        if (size == 0) {
+            return QString(":icons/%1.png").arg(name);
+        } else {
+            return QString(":icons/%1-%2.png").arg(name).arg(size);
+        }
+    }
+}
+
+QString
+IconLoader::makeScalableFilename(QString name, bool invert)
+{
+    if (invert) {
+        return QString(":icons/scalable/%1_inverse.svg").arg(name);
+    } else {
+        return QString(":icons/scalable/%1.svg").arg(name);
+    }
+}
+
+QPixmap
+IconLoader::invertPixmap(QPixmap pmap)
+{
     // No suitable inverted icon found for black background; try to
     // auto-invert the default one
 
