@@ -2152,11 +2152,12 @@ Pane::edgeScrollMaybe(int x)
         sv_frame_t offset = mouseFrame - getStartFrame();
         sv_frame_t available = getEndFrame() - getStartFrame();
         sv_frame_t move = 0;
-        if (offset >= double(available) * 0.95) {
-            move = sv_frame_t(double(offset - available) * 0.95) + 1;
-        } else if (offset <= double(available) * 0.10) {
-            move = sv_frame_t(double(available) * 0.10 - double(offset)) + 1;
-            move = -move;
+        sv_frame_t rightEdge = available - (available / 20);
+        sv_frame_t leftEdge = (available / 10);
+        if (offset >= rightEdge) {
+            move = offset - rightEdge + 1;
+        } else if (offset <= leftEdge) {
+            move = offset - leftEdge - 1;
         }
         if (move != 0) {
             setCentreFrame(m_centreFrame + move);
