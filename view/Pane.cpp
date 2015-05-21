@@ -388,10 +388,10 @@ bool
 Pane::selectionIsBeingEdited() const
 {
     if (!m_editingSelection.isEmpty()) {
-    if (m_mousePos != m_clickPos &&
-        getFrameForX(m_mousePos.x()) != getFrameForX(m_clickPos.x())) {
-        return true;
-    }
+        if (m_mousePos != m_clickPos &&
+            getFrameForX(m_mousePos.x()) != getFrameForX(m_clickPos.x())) {
+            return true;
+        }
     }
     return false;
 }
@@ -2111,13 +2111,24 @@ Pane::dragExtendSelection(QMouseEvent *e)
         max = snapFrameRight;
     }
 
-    if (m_manager) {
-        m_manager->setInProgressSelection(Selection(alignToReference(min),
-                                                    alignToReference(max)),
-                                          !m_resizing && !m_ctrlPressed);
-    }
+    sv_frame_t end = getModelsEndFrame();
+    if (min > end) min = end;
+    if (max > end) max = end;
 
-    edgeScrollMaybe(e->x());
+    if (m_manager) {
+
+        Selection sel(alignToReference(min), alignToReference(max));
+
+        bool exc;
+        bool same = (m_manager->haveInProgressSelection() &&
+                     m_manager->getInProgressSelection(exc) == sel);
+        
+        m_manager->setInProgressSelection(sel, !m_resizing && !m_ctrlPressed);
+
+        if (!same) {
+            edgeScrollMaybe(e->x());
+        }
+    }
 
     update();
 
