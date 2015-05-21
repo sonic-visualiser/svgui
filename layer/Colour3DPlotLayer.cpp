@@ -755,9 +755,10 @@ Colour3DPlotLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) 
 }
 
 int
-Colour3DPlotLayer::getColourScaleWidth(QPainter &) const
+Colour3DPlotLayer::getColourScaleWidth(QPainter &p) const
 {
-    int cw = 20;
+    // Font is rotated
+    int cw = p.fontMetrics().height();
     return cw;
 }
 
@@ -844,7 +845,7 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
         paint.save();
 
         QFont font = paint.font();
-        font.setPixelSize(10);
+        font.setPixelSize(font.pixelSize() * 0.65);
         paint.setFont(font);
 
         int msw = paint.fontMetrics().width(maxstr);
@@ -882,6 +883,8 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 
     int py = h;
 
+    int defaultFontHeight = paint.fontMetrics().height();
+    
     for (int i = symin; i <= symax; ++i) {
 
         int y0;
@@ -891,9 +894,9 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 
         if (i > symin) {
             if (paint.fontMetrics().height() >= h) {
-                if (h >= 8) {
+                if (h >= defaultFontHeight * 0.8) {
                     QFont tf = paint.font();
-                    tf.setPixelSize(h-2);
+                    tf.setPixelSize(h * 0.8);
                     paint.setFont(tf);
                 } else {
                     continue;
