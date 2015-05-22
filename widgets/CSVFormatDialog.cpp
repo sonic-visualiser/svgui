@@ -252,15 +252,17 @@ CSVFormatDialog::updateModelLabel()
 void
 CSVFormatDialog::applyStartTimePurpose()
 {
-    // First check if we already have any
-    for (int i = 0; i < m_format.getColumnCount(); ++i) {
+    // First check if we already have any. NB there may be fewer than
+    // m_format.getColumnCount() elements in m_columnPurposeCombos
+    // (because of the fuzzy column behaviour)
+    for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
         QComboBox *cb = m_columnPurposeCombos[i];
         if (cb->currentIndex() == int(CSVFormat::ColumnStartTime)) {
             return;
         }
     }
     // and if not, select one
-    for (int i = 0; i < m_format.getColumnCount(); ++i) {
+    for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
         QComboBox *cb = m_columnPurposeCombos[i];
         if (cb->currentIndex() == int(CSVFormat::ColumnValue)) {
             cb->setCurrentIndex(int(CSVFormat::ColumnStartTime));
@@ -272,7 +274,10 @@ CSVFormatDialog::applyStartTimePurpose()
 void
 CSVFormatDialog::removeStartTimePurpose()
 {
-    for (int i = 0; i < m_format.getColumnCount(); ++i) {
+    // NB there may be fewer than m_format.getColumnCount() elements
+    // in m_columnPurposeCombos (because of the fuzzy column
+    // behaviour)
+    for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
         QComboBox *cb = m_columnPurposeCombos[i];
         if (cb->currentIndex() == int(CSVFormat::ColumnStartTime)) {
             cb->setCurrentIndex(int(CSVFormat::ColumnValue));
