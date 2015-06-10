@@ -869,7 +869,7 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
         paint.save();
 
         QFont font = paint.font();
-        font.setPixelSize(font.pixelSize() * 0.65);
+        font.setPixelSize(int(font.pixelSize() * 0.65));
         paint.setFont(font);
 
         int msw = paint.fontMetrics().width(maxstr);
@@ -920,7 +920,7 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
             if (paint.fontMetrics().height() >= h) {
                 if (h >= defaultFontHeight * 0.8) {
                     QFont tf = paint.font();
-                    tf.setPixelSize(h * 0.8);
+                    tf.setPixelSize(int(h * 0.8));
                     paint.setFont(tf);
                 } else {
                     continue;
