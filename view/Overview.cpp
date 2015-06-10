@@ -35,6 +35,10 @@ Overview::Overview(QWidget *w) :
     m_followZoom = false;
     setPlaybackFollow(PlaybackIgnore);
     m_modelTestTime.start();
+
+    bool light = hasLightBackground();
+    if (light) m_boxColour = Qt::darkGray;
+    else m_boxColour = Qt::lightGray;
 }
 
 void
@@ -159,6 +163,12 @@ Overview::getFillWithout() const
 }
 
 void
+Overview::setBoxColour(QColor c)
+{
+    m_boxColour = c;
+}
+
+void
 Overview::paintEvent(QPaintEvent *e)
 {
     // Recalculate zoom in case the size of the widget has changed.
@@ -263,7 +273,7 @@ Overview::paintEvent(QPaintEvent *e)
     
     foreach (QRect vr, rects) {
         paint.setBrush(Qt::NoBrush);
-        paint.setPen(QPen(Qt::gray, 2));
+        paint.setPen(QPen(m_boxColour, 2));
         paint.drawRoundedRect(vr, 4, 4);
     }
 
