@@ -49,6 +49,8 @@ public slots:
     virtual void viewZoomLevelChanged(View *, int, bool);
     virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
 
+    virtual void setBoxColour(QColor);
+    
 protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void mousePressEvent(QMouseEvent *e);
@@ -67,6 +69,7 @@ protected:
     bool m_clickedInRange;
     sv_frame_t m_dragCentreFrame;
     QTime m_modelTestTime;
+    QColor m_boxColour;
     
     typedef std::set<View *> ViewSet;
     ViewSet m_views;
