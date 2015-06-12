@@ -209,7 +209,6 @@ WindowShapePreview::updateLabels()
 void
 WindowShapePreview::setWindowType(WindowType type)
 {
-    if (m_windowType == type) return;
     m_windowType = type;
     updateLabels();
 }
