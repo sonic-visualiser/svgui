@@ -20,6 +20,7 @@
 #include "base/Profiler.h"
 #include "base/LogRange.h"
 #include "base/RangeMapper.h"
+#include "base/Pitch.h"
 #include "ColourDatabase.h"
 #include "view/View.h"
 
@@ -606,20 +607,31 @@ TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
 
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
     
-    QString text;
+    QString valueText;
+    float value = points.begin()->value;
     QString unit = getScaleUnits();
-    if (unit != "") unit = " " + unit;
+
+    if (unit == "Hz") {
+        valueText = tr("%1 Hz (%2, %3)")
+            .arg(value)
+            .arg(Pitch::getPitchLabelForFrequency(value))
+            .arg(Pitch::getPitchForFrequency(value));
+    } else if (unit != "") {
+        valueText = tr("%1 %2").arg(value).arg(unit);
+    } else {
+        valueText = tr("%1").arg(value);
+    }
+    
+    QString text;
 
     if (points.begin()->label == "") {
-	text = QString(tr("Time:\t%1\nValue:\t%2%3\nNo label"))
+	text = QString(tr("Time:\t%1\nValue:\t%2\nNo label"))
 	    .arg(rt.toText(true).c_str())
-	    .arg(points.begin()->value)
-            .arg(unit);
+	    .arg(valueText);
     } else {
-	text = QString(tr("Time:\t%1\nValue:\t%2%3\nLabel:\t%4"))
+	text = QString(tr("Time:\t%1\nValue:\t%2\nLabel:\t%4"))
 	    .arg(rt.toText(true).c_str())
-	    .arg(points.begin()->value)
-            .arg(unit)
+	    .arg(valueText)
 	    .arg(points.begin()->label);
     }
 

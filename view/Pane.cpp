@@ -388,10 +388,10 @@ bool
 Pane::selectionIsBeingEdited() const
 {
     if (!m_editingSelection.isEmpty()) {
-    if (m_mousePos != m_clickPos &&
-        getFrameForX(m_mousePos.x()) != getFrameForX(m_clickPos.x())) {
-        return true;
-    }
+        if (m_mousePos != m_clickPos &&
+            getFrameForX(m_mousePos.x()) != getFrameForX(m_clickPos.x())) {
+            return true;
+        }
     }
     return false;
 }
@@ -2115,13 +2115,24 @@ Pane::dragExtendSelection(QMouseEvent *e)
         max = snapFrameRight;
     }
 
-    if (m_manager) {
-        m_manager->setInProgressSelection(Selection(alignToReference(min),
-                                                    alignToReference(max)),
-                                          !m_resizing && !m_ctrlPressed);
-    }
+    sv_frame_t end = getModelsEndFrame();
+    if (min > end) min = end;
+    if (max > end) max = end;
 
-    edgeScrollMaybe(e->x());
+    if (m_manager) {
+
+        Selection sel(alignToReference(min), alignToReference(max));
+
+        bool exc;
+        bool same = (m_manager->haveInProgressSelection() &&
+                     m_manager->getInProgressSelection(exc) == sel);
+        
+        m_manager->setInProgressSelection(sel, !m_resizing && !m_ctrlPressed);
+
+        if (!same) {
+            edgeScrollMaybe(e->x());
+        }
+    }
 
     update();
 
@@ -2145,11 +2156,12 @@ Pane::edgeScrollMaybe(int x)
         sv_frame_t offset = mouseFrame - getStartFrame();
         sv_frame_t available = getEndFrame() - getStartFrame();
         sv_frame_t move = 0;
-        if (offset >= double(available) * 0.95) {
-            move = sv_frame_t(double(offset - available) * 0.95) + 1;
-        } else if (offset <= double(available) * 0.10) {
-            move = sv_frame_t(double(available) * 0.10 - double(offset)) + 1;
-            move = -move;
+        sv_frame_t rightEdge = available - (available / 20);
+        sv_frame_t leftEdge = (available / 10);
+        if (offset >= rightEdge) {
+            move = offset - rightEdge + 1;
+        } else if (offset <= leftEdge) {
+            move = offset - leftEdge - 1;
         }
         if (move != 0) {
             setCentreFrame(m_centreFrame + move);

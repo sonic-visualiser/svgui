@@ -166,6 +166,7 @@ ViewManager::getPlaybackFrame() const
 void
 ViewManager::setPlaybackFrame(sv_frame_t f)
 {
+    if (f < 0) f = 0;
     if (m_playbackFrame != f) {
 	m_playbackFrame = f;
 	emit playbackFrameChanged(f);

@@ -202,6 +202,8 @@ public:
     virtual int getCurrentVerticalZoomStep() const;
     virtual void setVerticalZoomStep(int);
 
+    virtual bool canExistWithoutModel() const { return true; }
+
 protected:
     int dBscale(double sample, int m) const;
 
