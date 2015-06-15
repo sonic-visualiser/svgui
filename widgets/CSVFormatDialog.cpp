@@ -121,16 +121,37 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     layout->addWidget(new QLabel(tr("Timing is specified:")), row, 0);
     
     m_timingTypeCombo = new QComboBox;
-    m_timingTypeCombo->addItem(tr("Explicitly, in seconds"));
-    m_timingTypeCombo->addItem(tr("Explicitly, in milliseconds"));
-    m_timingTypeCombo->addItem(tr("Explicitly, in audio sample frames"));
-    m_timingTypeCombo->addItem(tr("Implicitly: rows are equally spaced in time"));
+
+    m_timingLabels = {
+        { TimingExplicitSeconds, tr("Explicitly, in seconds") },
+        { TimingExplicitMsec, tr("Explicitly, in milliseconds") },
+        { TimingExplicitSamples, tr("Explicitly, in audio sample frames") },
+        { TimingImplicit, tr("Implicitly: rows are equally spaced in time") }
+    };
+
+    for (auto &l: m_timingLabels) {
+        m_timingTypeCombo->addItem(l.second);
+    }
+
     layout->addWidget(m_timingTypeCombo, row++, 1, 1, 2);
+
     connect(m_timingTypeCombo, SIGNAL(activated(int)),
 	    this, SLOT(timingTypeChanged(int)));
-    m_timingTypeCombo->setCurrentIndex
-        (m_format.getTimingType() == CSVFormat::ExplicitTiming ?
-         m_format.getTimeUnits() == CSVFormat::TimeSeconds ? 0 : 2 : 3);
+
+    m_initialTimingOption = TimingImplicit;
+    if (m_format.getTimingType() == CSVFormat::ExplicitTiming) {
+        switch (m_format.getTimeUnits()) {
+        case CSVFormat::TimeSeconds:
+            m_initialTimingOption = TimingExplicitSeconds; break;
+        case CSVFormat::TimeMilliseconds:
+            m_initialTimingOption = TimingExplicitMsec; break;
+        case CSVFormat::TimeAudioFrames:
+            m_initialTimingOption = TimingExplicitSamples; break;
+        case CSVFormat::TimeWindows:
+            m_initialTimingOption = TimingImplicit; break;
+        }
+    }
+    m_timingTypeCombo->setCurrentIndex(int(m_initialTimingOption));
 
     m_sampleRateLabel = new QLabel(tr("Audio sample rate (Hz):"));
     layout->addWidget(m_sampleRateLabel, row, 0);
@@ -189,7 +210,6 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     setLayout(layout);
 
     timingTypeChanged(m_timingTypeCombo->currentIndex());
-    updateModelLabel();
 }
 
 CSVFormatDialog::~CSVFormatDialog()
@@ -230,46 +250,66 @@ CSVFormatDialog::updateModelLabel()
 }
 
 void
+CSVFormatDialog::applyStartTimePurpose()
+{
+    // First check if we already have any. NB there may be fewer than
+    // m_format.getColumnCount() elements in m_columnPurposeCombos
+    // (because of the fuzzy column behaviour)
+    for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
+        QComboBox *cb = m_columnPurposeCombos[i];
+        if (cb->currentIndex() == int(CSVFormat::ColumnStartTime)) {
+            return;
+        }
+    }
+    // and if not, select one
+    for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
+        QComboBox *cb = m_columnPurposeCombos[i];
+        if (cb->currentIndex() == int(CSVFormat::ColumnValue)) {
+            cb->setCurrentIndex(int(CSVFormat::ColumnStartTime));
+            return;
+        }
+    }
+}
+
+void
+CSVFormatDialog::removeStartTimePurpose()
+{
+    // NB there may be fewer than m_format.getColumnCount() elements
+    // in m_columnPurposeCombos (because of the fuzzy column
+    // behaviour)
+    for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
+        QComboBox *cb = m_columnPurposeCombos[i];
+        if (cb->currentIndex() == int(CSVFormat::ColumnStartTime)) {
+            cb->setCurrentIndex(int(CSVFormat::ColumnValue));
+        }
+    }
+}
+
+void
+CSVFormatDialog::updateComboVisibility()
+{
+    bool wantRate = (m_format.getTimingType() == CSVFormat::ImplicitTiming ||
+                     m_format.getTimeUnits() == CSVFormat::TimeAudioFrames);
+    bool wantWindow = (m_format.getTimingType() == CSVFormat::ImplicitTiming);
+    
+    m_sampleRateCombo->setEnabled(wantRate);
+    m_sampleRateLabel->setEnabled(wantRate);
+
+    m_windowSizeCombo->setEnabled(wantWindow);
+    m_windowSizeLabel->setEnabled(wantWindow);
+}
+
+void
 CSVFormatDialog::timingTypeChanged(int type)
 {
-    switch (type) {
-
-    case 0:
-	m_format.setTimingType(CSVFormat::ExplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeSeconds);
-	m_sampleRateCombo->setEnabled(false);
-	m_sampleRateLabel->setEnabled(false);
-	m_windowSizeCombo->setEnabled(false);
-	m_windowSizeLabel->setEnabled(false);
-	break;
-
-    case 1:
-	m_format.setTimingType(CSVFormat::ExplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeMilliseconds);
-	m_sampleRateCombo->setEnabled(true);
-	m_sampleRateLabel->setEnabled(true);
-	m_windowSizeCombo->setEnabled(false);
-	m_windowSizeLabel->setEnabled(false);
-	break;
-
-    case 2:
-	m_format.setTimingType(CSVFormat::ExplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
-	m_sampleRateCombo->setEnabled(true);
-	m_sampleRateLabel->setEnabled(true);
-	m_windowSizeCombo->setEnabled(false);
-	m_windowSizeLabel->setEnabled(false);
-	break;
-
-    case 3:
-	m_format.setTimingType(CSVFormat::ImplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeWindows);
-	m_sampleRateCombo->setEnabled(true);
-	m_sampleRateLabel->setEnabled(true);
-	m_windowSizeCombo->setEnabled(true);
-	m_windowSizeLabel->setEnabled(true);
-	break;
+    // Update any column purpose combos
+    if (TimingOption(type) == TimingImplicit) {
+        removeStartTimePurpose();
+    } else {
+        applyStartTimePurpose();
     }
+    updateFormatFromDialog();
+    updateComboVisibility();
 }
 
 void
@@ -292,43 +332,26 @@ void
 CSVFormatDialog::columnPurposeChanged(int p)
 {
     QObject *o = sender();
-
     QComboBox *cb = qobject_cast<QComboBox *>(o);
     if (!cb) return;
 
     CSVFormat::ColumnPurpose purpose = (CSVFormat::ColumnPurpose)p;
 
-    bool haveStartTime = false;
-    bool haveDuration = false;
-    bool havePitch = false;
-    int valueCount = 0;
-
+    bool haveStartTime = false; // so as to update timing type combo appropriately
+    
+    // Ensure the column purpose combos are consistent with one
+    // another, without reference to m_format (which we'll update
+    // separately)
+    
     for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
 
-        CSVFormat::ColumnPurpose cp = m_format.getColumnPurpose(i);
-
-        bool thisChanged = (cb == m_columnPurposeCombos[i]);
+        QComboBox *thisCombo = m_columnPurposeCombos[i];
         
-        if (thisChanged) {
-
-            cerr << "i == " << i << ", fuzzy == " << m_fuzzyColumn
-                      << ", p == " << p << endl;
-
-            if (i == m_fuzzyColumn) {
-                for (int j = i; j < m_format.getColumnCount(); ++j) {
-                    if (p == 0) { // Ignore
-                        m_format.setColumnPurpose(j, CSVFormat::ColumnUnknown);
-                    } else { // Value
-                        m_format.setColumnPurpose(j, CSVFormat::ColumnValue);
-                        ++valueCount;
-                    }
-                }
-                continue;
-            }
-
-            cp = purpose;
-
-        } else {
+        CSVFormat::ColumnPurpose cp = (CSVFormat::ColumnPurpose)
+            (thisCombo->currentIndex());
+        bool thisChanged = (cb == thisCombo);
+        
+        if (!thisChanged) {
 
             if (i == m_fuzzyColumn) continue;
 
@@ -353,29 +376,98 @@ CSVFormatDialog::columnPurposeChanged(int p)
                     cp = CSVFormat::ColumnUnknown;
                 }
             }
-        }
 
-        if (cp == CSVFormat::ColumnStartTime) {
-            haveStartTime = true;
-        }
-        if (cp == CSVFormat::ColumnEndTime ||
-            cp == CSVFormat::ColumnDuration) {
-            haveDuration = true;
-        }
-        if (cp == CSVFormat::ColumnPitch) {
-            havePitch = true;
-        }
-        if (cp == CSVFormat::ColumnValue) {
-            ++valueCount;
-        }
+            if (cp == CSVFormat::ColumnStartTime) {
+                haveStartTime = true;
+            }
+        
+            thisCombo->setCurrentIndex(int(cp));
 
-        m_columnPurposeCombos[i]->setCurrentIndex(int(cp));
-        m_format.setColumnPurpose(i, cp);
+        } else {
+            if (purpose == CSVFormat::ColumnStartTime) {
+                haveStartTime = true;
+            }
+        }
     }
 
     if (!haveStartTime) {
-        m_timingTypeCombo->setCurrentIndex(2);
-        timingTypeChanged(2);
+        m_timingTypeCombo->setCurrentIndex(int(TimingImplicit));
+    } else if (m_timingTypeCombo->currentIndex() == int(TimingImplicit)) {
+        if (m_initialTimingOption == TimingImplicit) {
+            m_timingTypeCombo->setCurrentIndex(TimingExplicitSeconds);
+        } else {
+            m_timingTypeCombo->setCurrentIndex(m_initialTimingOption);
+        }
+    }
+
+    updateFormatFromDialog();
+    updateComboVisibility();
+}
+
+void
+CSVFormatDialog::updateFormatFromDialog()
+{
+    switch (TimingOption(m_timingTypeCombo->currentIndex())) {
+
+    case TimingExplicitSeconds:
+	m_format.setTimingType(CSVFormat::ExplicitTiming);
+	m_format.setTimeUnits(CSVFormat::TimeSeconds);
+	break;
+
+    case TimingExplicitMsec:
+	m_format.setTimingType(CSVFormat::ExplicitTiming);
+	m_format.setTimeUnits(CSVFormat::TimeMilliseconds);
+	break;
+
+    case TimingExplicitSamples:
+	m_format.setTimingType(CSVFormat::ExplicitTiming);
+	m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
+	break;
+
+    case TimingImplicit:
+	m_format.setTimingType(CSVFormat::ImplicitTiming);
+	m_format.setTimeUnits(CSVFormat::TimeWindows);
+	break;
+    }
+
+    bool haveStartTime = false;
+    bool haveDuration = false;
+    bool havePitch = false;
+    int valueCount = 0;
+
+    for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
+
+        QComboBox *thisCombo = m_columnPurposeCombos[i];
+        
+        CSVFormat::ColumnPurpose purpose = (CSVFormat::ColumnPurpose)
+            (thisCombo->currentIndex());
+
+        if (purpose == CSVFormat::ColumnStartTime) {
+            haveStartTime = true;
+        }
+        if (purpose == CSVFormat::ColumnEndTime ||
+            purpose == CSVFormat::ColumnDuration) {
+            haveDuration = true;
+        }
+        if (purpose == CSVFormat::ColumnPitch) {
+            havePitch = true;
+        }
+        if (purpose == CSVFormat::ColumnValue) {
+            ++valueCount;
+        }
+
+        m_format.setColumnPurpose(i, purpose);
+
+        if (i == m_fuzzyColumn) {
+            for (int j = i + 1; j < m_format.getColumnCount(); ++j) {
+                if (purpose == CSVFormat::ColumnUnknown) {
+                    m_format.setColumnPurpose(j, CSVFormat::ColumnUnknown);
+                } else { // Value
+                    m_format.setColumnPurpose(j, CSVFormat::ColumnValue);
+                    ++valueCount;
+                }
+            }
+        }
     }
 
     if (haveStartTime && haveDuration) {
@@ -396,5 +488,6 @@ CSVFormatDialog::columnPurposeChanged(int p)
 
     updateModelLabel();
 }
+
 
 

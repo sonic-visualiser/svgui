@@ -30,18 +30,18 @@ public:
     void setViewBelow(View *view);
 
 public slots:
-    virtual void globalCentreFrameChanged(int);
-    virtual void viewCentreFrameChanged(View *, int);
+    virtual void globalCentreFrameChanged(sv_frame_t);
+    virtual void viewCentreFrameChanged(View *, sv_frame_t);
     virtual void viewAboveZoomLevelChanged(int, bool);
     virtual void viewBelowZoomLevelChanged(int, bool);
-    virtual void viewManagerPlaybackFrameChanged(int);
+    virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
 
 protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual bool shouldLabelSelections() const { return false; }
 
-    std::vector<int> getKeyFrames();
-    std::vector<int> getDefaultKeyFrames();
+    std::vector<sv_frame_t> getKeyFrames();
+    std::vector<sv_frame_t> getDefaultKeyFrames();
 
     View *m_above;
     View *m_below;

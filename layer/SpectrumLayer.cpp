@@ -112,11 +112,7 @@ SpectrumLayer::setupFFT()
                                     m_windowType,
                                     m_windowSize,
                                     getWindowIncrement(),
-                                    m_windowSize,
-                                    false,
-                                    StorageAdviser::Criteria
-                                    (StorageAdviser::SpeedCritical |
-                                     StorageAdviser::FrequentLookupLikely));
+                                    m_windowSize);
 
     setSliceableModel(newFFT);
 
@@ -124,8 +120,6 @@ SpectrumLayer::setupFFT()
     for (int i = 0; i < m_windowSize; ++i) {
         m_biasCurve.push_back(1.f / (float(m_windowSize)/2.f));
     }
-
-    newFFT->resume();
 
     m_newFFTNeeded = false;
 }

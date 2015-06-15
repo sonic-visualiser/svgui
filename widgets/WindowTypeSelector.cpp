@@ -78,7 +78,9 @@ WindowTypeSelector::init(WindowType defaultType)
 
     connect(m_windowCombo, SIGNAL(currentIndexChanged(int)),
             this, SLOT(windowIndexChanged(int)));
-    windowIndexChanged(index);
+
+    m_windowType = defaultType;
+    m_windowShape->setWindowType(m_windowType);
 }
 
 WindowTypeSelector::~WindowTypeSelector()

@@ -32,14 +32,14 @@ AlignmentView::AlignmentView(QWidget *w) :
 }
 
 void
-AlignmentView::globalCentreFrameChanged(int f)
+AlignmentView::globalCentreFrameChanged(sv_frame_t f)
 {
     View::globalCentreFrameChanged(f);
     update();
 }
 
 void
-AlignmentView::viewCentreFrameChanged(View *v, int f)
+AlignmentView::viewCentreFrameChanged(View *v, sv_frame_t f)
 {
     View::viewCentreFrameChanged(v, f);
     if (v == m_above) {
@@ -51,7 +51,7 @@ AlignmentView::viewCentreFrameChanged(View *v, int f)
 }
 
 void
-AlignmentView::viewManagerPlaybackFrameChanged(int)
+AlignmentView::viewManagerPlaybackFrameChanged(sv_frame_t)
 {
     update();
 }
@@ -127,12 +127,12 @@ AlignmentView::paintEvent(QPaintEvent *)
 
     paint.fillRect(rect(), bg);
 
-    vector<int> keyFrames = getKeyFrames();
+    vector<sv_frame_t> keyFrames = getKeyFrames();
 
-    foreach (int f, keyFrames) {
+    foreach (sv_frame_t f, keyFrames) {
 	int ax = m_above->getXForFrame(f);
-	int rf = m_above->alignToReference(f);
-	int bf = m_below->alignFromReference(rf);
+	sv_frame_t rf = m_above->alignToReference(f);
+	sv_frame_t bf = m_below->alignFromReference(rf);
 	int bx = m_below->getXForFrame(bf);
 	paint.drawLine(ax, 0, bx, height());
     }
@@ -140,7 +140,7 @@ AlignmentView::paintEvent(QPaintEvent *)
     paint.end();
 }
 
-vector<int>
+vector<sv_frame_t>
 AlignmentView::getKeyFrames()
 {
     if (!m_above) {
@@ -163,7 +163,7 @@ AlignmentView::getKeyFrames()
 	return getDefaultKeyFrames();
     }
 
-    vector<int> keyFrames;
+    vector<sv_frame_t> keyFrames;
 
     const SparseOneDimensionalModel::PointList pp = m->getPoints();
     for (SparseOneDimensionalModel::PointList::const_iterator pi = pp.begin();
@@ -174,19 +174,19 @@ AlignmentView::getKeyFrames()
     return keyFrames;
 }
 
-vector<int>
+vector<sv_frame_t>
 AlignmentView::getDefaultKeyFrames()
 {
-    vector<int> keyFrames;
+    vector<sv_frame_t> keyFrames;
 
     if (!m_above || !m_manager) return keyFrames;
 
-    int rate = m_manager->getMainModelSampleRate();
+    sv_samplerate_t rate = m_manager->getMainModelSampleRate();
     if (rate == 0) return keyFrames;
 
-    for (int f = m_above->getModelsStartFrame(); 
+    for (sv_frame_t f = m_above->getModelsStartFrame(); 
 	 f <= m_above->getModelsEndFrame(); 
-	 f += rate * 5) {
+	 f += sv_frame_t(rate * 5 + 0.5)) {
 	keyFrames.push_back(f);
     }
     
