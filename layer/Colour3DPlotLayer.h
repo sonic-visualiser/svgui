@@ -49,20 +49,20 @@ public:
         return m_model ? m_model->getZoomConstraint() : 0;
     }
     virtual const Model *getModel() const { return m_model; }
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
-    virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
+    virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame, 
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame, 
 				    int &resolution,
 				    SnapType snap) const;
 
-    virtual void setLayerDormant(const View *v, bool dormant);
+    virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
 
-    virtual bool isLayerScrollable(const View *v) const;
+    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
 
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourHasMeaningfulValue;
@@ -70,7 +70,7 @@ public:
 
     void setModel(const DenseThreeDimensionalModel *model);
 
-    virtual int getCompletion(View *) const { return m_model->getCompletion(); }
+    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
 
     virtual PropertyList getProperties() const;
     virtual PropertyType getPropertyType(const PropertyName &) const;
@@ -154,7 +154,7 @@ public:
     virtual bool getDisplayExtents(double &min, double &max) const;
     virtual bool setDisplayExtents(double min, double max);
 
-    virtual bool getYScaleValue(const View *, int /* y */,
+    virtual bool getYScaleValue(const LayerGeometryProvider *, int /* y */,
                                 double &/* value */, QString &/* unit */) const;
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
@@ -206,12 +206,12 @@ protected:
      * and the vertical scale is the usual way up). Bin number may be
      * fractional, to obtain a position part-way through a bin.
      */
-    double getYForBin(View *, double bin) const;
+    double getYForBin(LayerGeometryProvider *, double bin) const;
 
     /**
      * As getYForBin, but rounding to integer values.
      */
-    int getIYForBin(View *, int bin) const;
+    int getIYForBin(LayerGeometryProvider *, int bin) const;
     
     /**
      * Return the bin number, possibly fractional, at the given y
@@ -219,12 +219,12 @@ protected:
      * at which the bins "start" (i.e. the bottom of the visible bin,
      * if the vertical scale is the usual way up).
      */
-    double getBinForY(View *, double y) const;
+    double getBinForY(LayerGeometryProvider *, double y) const;
 
     /**
      * As getBinForY, but rounding to integer values.
      */
-    int getIBinForY(View *, int y) const;
+    int getIBinForY(LayerGeometryProvider *, int y) const;
     
     DenseThreeDimensionalModel::Column getColumn(int col) const;
 
@@ -233,11 +233,11 @@ protected:
      * are so small you can't see their borders. False for big,
      * translucent cells.
      */
-    bool shouldPaintDenseIn(const View *) const; 
+    bool shouldPaintDenseIn(const LayerGeometryProvider *) const; 
 
     int getColourScaleWidth(QPainter &) const;
     void fillCache(int firstBin, int lastBin) const;
-    void paintDense(View *v, QPainter &paint, QRect rect) const;
+    void paintDense(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 };
 
 #endif

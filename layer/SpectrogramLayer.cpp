@@ -578,7 +578,7 @@ SpectrogramLayer::invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFra
          i != m_imageCaches.end(); ++i) {
 
         //!!! when are views removed from the map? on setLayerDormant?
-        const View *v = i->first;
+        const LayerGeometryProvider *v = i->first;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
         SVDEBUG << "SpectrogramLayer::invalidateImageCaches(" 
@@ -605,7 +605,7 @@ SpectrogramLayer::invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFra
 #endif
             if (x > 1) {
                 i->second.validArea &=
-                    QRect(0, 0, x-1, v->height());
+                    QRect(0, 0, x-1, v->getPaintHeight());
             } else {
                 i->second.validArea = QRect();
             }
@@ -618,12 +618,12 @@ SpectrogramLayer::invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFra
             }
             int x = v->getXForFrame(endFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "clipping from " << x+1 << " to " << v->width()
+            SVDEBUG << "clipping from " << x+1 << " to " << v->getPaintWidth()
                       << endl;
 #endif
-            if (x < v->width()) {
+            if (x < v->getPaintWidth()) {
                 i->second.validArea &=
-                    QRect(x+1, 0, v->width()-(x+1), v->height());
+                    QRect(x+1, 0, v->getPaintWidth()-(x+1), v->getPaintHeight());
             } else {
                 i->second.validArea = QRect();
             }
@@ -991,7 +991,7 @@ SpectrogramLayer::getNormalizeVisibleArea() const
 }
 
 void
-SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
+SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 {
     if (dormant) {
 
@@ -1006,12 +1006,14 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
 
         Layer::setLayerDormant(v, true);
 
+        const View *view = v->getView();
+        
 	invalidateImageCaches();
-        m_imageCaches.erase(v);
+        m_imageCaches.erase(view);
 
-        if (m_fftModels.find(v) != m_fftModels.end()) {
+        if (m_fftModels.find(view) != m_fftModels.end()) {
 
-            if (m_sliceableModel == m_fftModels[v].first) {
+            if (m_sliceableModel == m_fftModels[view].first) {
                 bool replaced = false;
                 for (ViewFFTMap::iterator i = m_fftModels.begin();
                      i != m_fftModels.end(); ++i) {
@@ -1024,11 +1026,11 @@ SpectrogramLayer::setLayerDormant(const View *v, bool dormant)
                 if (!replaced) emit sliceableModelReplaced(m_sliceableModel, 0);
             }
 
-            delete m_fftModels[v].first;
-            m_fftModels.erase(v);
+            delete m_fftModels[view].first;
+            m_fftModels.erase(view);
 
-            delete m_peakCaches[v];
-            m_peakCaches.erase(v);
+            delete m_peakCaches[view];
+            m_peakCaches.erase(view);
         }
 	
     } else {
@@ -1181,7 +1183,7 @@ SpectrogramLayer::rotatePalette(int distance)
 }
 
 unsigned char
-SpectrogramLayer::getDisplayValue(View *v, double input) const
+SpectrogramLayer::getDisplayValue(LayerGeometryProvider *v, double input) const
 {
     int value;
 
@@ -1294,11 +1296,11 @@ SpectrogramLayer::getEffectiveMaxFrequency() const
 }
 
 bool
-SpectrogramLayer::getYBinRange(View *v, int y, double &q0, double &q1) const
+SpectrogramLayer::getYBinRange(LayerGeometryProvider *v, int y, double &q0, double &q1) const
 {
     Profiler profiler("SpectrogramLayer::getYBinRange");
     
-    int h = v->height();
+    int h = v->getPaintHeight();
     if (y < 0 || y >= h) return false;
 
     sv_samplerate_t sr = m_model->getSampleRate();
@@ -1320,11 +1322,11 @@ SpectrogramLayer::getYBinRange(View *v, int y, double &q0, double &q1) const
 }
 
 bool
-SpectrogramLayer::getSmoothedYBinRange(View *v, int y, double &q0, double &q1) const
+SpectrogramLayer::getSmoothedYBinRange(LayerGeometryProvider *v, int y, double &q0, double &q1) const
 {
     Profiler profiler("SpectrogramLayer::getSmoothedYBinRange");
 
-    int h = v->height();
+    int h = v->getPaintHeight();
     if (y < 0 || y >= h) return false;
 
     sv_samplerate_t sr = m_model->getSampleRate();
@@ -1346,7 +1348,7 @@ SpectrogramLayer::getSmoothedYBinRange(View *v, int y, double &q0, double &q1) c
 }
     
 bool
-SpectrogramLayer::getXBinRange(View *v, int x, double &s0, double &s1) const
+SpectrogramLayer::getXBinRange(LayerGeometryProvider *v, int x, double &s0, double &s1) const
 {
     sv_frame_t modelStart = m_model->getStartFrame();
     sv_frame_t modelEnd = m_model->getEndFrame();
@@ -1370,7 +1372,7 @@ SpectrogramLayer::getXBinRange(View *v, int x, double &s0, double &s1) const
 }
  
 bool
-SpectrogramLayer::getXBinSourceRange(View *v, int x, RealTime &min, RealTime &max) const
+SpectrogramLayer::getXBinSourceRange(LayerGeometryProvider *v, int x, RealTime &min, RealTime &max) const
 {
     double s0 = 0, s1 = 0;
     if (!getXBinRange(v, x, s0, s1)) return false;
@@ -1389,7 +1391,7 @@ SpectrogramLayer::getXBinSourceRange(View *v, int x, RealTime &min, RealTime &ma
 }
 
 bool
-SpectrogramLayer::getYBinSourceRange(View *v, int y, double &freqMin, double &freqMax)
+SpectrogramLayer::getYBinSourceRange(LayerGeometryProvider *v, int y, double &freqMin, double &freqMax)
 const
 {
     double q0 = 0, q1 = 0;
@@ -1408,7 +1410,7 @@ const
 }
 
 bool
-SpectrogramLayer::getAdjustedYBinSourceRange(View *v, int x, int y,
+SpectrogramLayer::getAdjustedYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 					     double &freqMin, double &freqMax,
 					     double &adjFreqMin, double &adjFreqMax)
 const
@@ -1475,7 +1477,7 @@ const
 }
     
 bool
-SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
+SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 				      double &min, double &max,
 				      double &phaseMin, double &phaseMax) const
 {
@@ -1544,7 +1546,7 @@ SpectrogramLayer::getXYBinSourceRange(View *v, int x, int y,
 }
    
 int
-SpectrogramLayer::getZeroPadLevel(const View *v) const
+SpectrogramLayer::getZeroPadLevel(const LayerGeometryProvider *v) const
 {
     //!!! tidy all this stuff
 
@@ -1574,7 +1576,7 @@ SpectrogramLayer::getZeroPadLevel(const View *v) const
     }
 
     double perPixel =
-        double(v->height()) /
+        double(v->getPaintHeight()) /
         double((maxbin - minbin) / (m_zeroPadLevel + 1));
 
     if (perPixel > 2.8) {
@@ -1587,42 +1589,44 @@ SpectrogramLayer::getZeroPadLevel(const View *v) const
 }
 
 int
-SpectrogramLayer::getFFTSize(const View *v) const
+SpectrogramLayer::getFFTSize(const LayerGeometryProvider *v) const
 {
     return m_fftSize * (getZeroPadLevel(v) + 1);
 }
 	
 FFTModel *
-SpectrogramLayer::getFFTModel(const View *v) const
+SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
 {
     if (!m_model) return 0;
 
     int fftSize = getFFTSize(v);
 
-    if (m_fftModels.find(v) != m_fftModels.end()) {
-        if (m_fftModels[v].first == 0) {
+    const View *view = v->getView();
+    
+    if (m_fftModels.find(view) != m_fftModels.end()) {
+        if (m_fftModels[view].first == 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
             SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found null model" << endl;
 #endif
             return 0;
         }
-        if (m_fftModels[v].first->getHeight() != fftSize / 2 + 1) {
+        if (m_fftModels[view].first->getHeight() != fftSize / 2 + 1) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[v].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
+            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[view].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
 #endif
-            delete m_fftModels[v].first;
-            m_fftModels.erase(v);
-            delete m_peakCaches[v];
-            m_peakCaches.erase(v);
+            delete m_fftModels[view].first;
+            m_fftModels.erase(view);
+            delete m_peakCaches[view];
+            m_peakCaches.erase(view);
         } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[v].first->getHeight() << endl;
+            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[view].first->getHeight() << endl;
 #endif
-            return m_fftModels[v].first;
+            return m_fftModels[view].first;
         }
     }
 
-    if (m_fftModels.find(v) == m_fftModels.end()) {
+    if (m_fftModels.find(view) == m_fftModels.end()) {
 
         FFTModel *model = new FFTModel(m_model,
                                        m_channel,
@@ -1637,7 +1641,7 @@ SpectrogramLayer::getFFTModel(const View *v) const
                  tr("Failed to create the FFT model for this spectrogram.\n"
                     "There may be insufficient memory or disc space to continue."));
             delete model;
-            m_fftModels[v] = FFTFillPair(0, 0);
+            m_fftModels[view] = FFTFillPair(0, 0);
             return 0;
         }
 
@@ -1649,7 +1653,7 @@ SpectrogramLayer::getFFTModel(const View *v) const
             m_sliceableModel = model;
         }
 
-        m_fftModels[v] = FFTFillPair(model, 0);
+        m_fftModels[view] = FFTFillPair(model, 0);
 
         delete m_updateTimer;
         m_updateTimer = new QTimer((SpectrogramLayer *)this);
@@ -1658,18 +1662,19 @@ SpectrogramLayer::getFFTModel(const View *v) const
         m_updateTimer->start(200);
     }
 
-    return m_fftModels[v].first;
+    return m_fftModels[view].first;
 }
 
 Dense3DModelPeakCache *
-SpectrogramLayer::getPeakCache(const View *v) const
+SpectrogramLayer::getPeakCache(const LayerGeometryProvider *v) const
 {
-    if (!m_peakCaches[v]) {
+    const View *view = v->getView();
+    if (!m_peakCaches[view]) {
         FFTModel *f = getFFTModel(v);
         if (!f) return 0;
-        m_peakCaches[v] = new Dense3DModelPeakCache(f, 8);
+        m_peakCaches[view] = new Dense3DModelPeakCache(f, 8);
     }
-    return m_peakCaches[v];
+    return m_peakCaches[view];
 }
 
 const Model *
@@ -1714,11 +1719,11 @@ SpectrogramLayer::invalidateMagnitudes()
 }
 
 bool
-SpectrogramLayer::updateViewMagnitudes(View *v) const
+SpectrogramLayer::updateViewMagnitudes(LayerGeometryProvider *v) const
 {
     MagnitudeRange mag;
 
-    int x0 = 0, x1 = v->width();
+    int x0 = 0, x1 = v->getPaintWidth();
     double s00 = 0, s01 = 0, s10 = 0, s11 = 0;
     
     if (!getXBinRange(v, x0, s00, s01)) {
@@ -1762,7 +1767,7 @@ SpectrogramLayer::setSynchronousPainting(bool synchronous)
 }
 
 void
-SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
+SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     // What a lovely, old-fashioned function this is.
     // It's practically FORTRAN 77 in its clarity and linearity.
@@ -1802,7 +1807,10 @@ SpectrogramLayer::paint(View *v, QPainter &paint, QRect rect) const
 	return;
     }
 */
-    ImageCache &cache = m_imageCaches[v];
+
+    const View *view = v->getView();
+    
+    ImageCache &cache = m_imageCaches[view];
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     SVDEBUG << "SpectrogramLayer::paint(): image cache valid area " << cache.
@@ -1818,7 +1826,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     int zoomLevel = v->getZoomLevel();
 
     int x0 = 0;
-    int x1 = v->width();
+    int x1 = v->getPaintWidth();
 
     bool recreateWholeImageCache = true;
 
@@ -1835,8 +1843,8 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         int ch = cache.image.height();
         
 	if (int(cache.zoomLevel) == zoomLevel &&
-	    cw == v->width() &&
-	    ch == v->height()) {
+	    cw == v->getPaintWidth() &&
+	    ch == v->getPaintHeight()) {
 
 	    if (v->getXForFrame(cache.startFrame) ==
 		v->getXForFrame(startFrame) &&
@@ -1942,13 +1950,13 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                 cerr << "(cache zoomLevel " << cache.zoomLevel
                           << " != " << zoomLevel << ")" << endl;
             }
-            if (cw != v->width()) {
+            if (cw != v->getPaintWidth()) {
                 cerr << "(cache width " << cw
-                          << " != " << v->width();
+                          << " != " << v->getPaintWidth();
             }
-            if (ch != v->height()) {
+            if (ch != v->getPaintHeight()) {
                 cerr << "(cache height " << ch
-                          << " != " << v->height();
+                          << " != " << v->getPaintHeight();
             }
 #endif
             cache.validArea = QRect();
@@ -1972,7 +1980,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (recreateWholeImageCache) {
         x0 = 0;
-        x1 = v->width();
+        x1 = v->getPaintWidth();
     }
 
     struct timeval tv;
@@ -2016,7 +2024,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     // is coherent without having to worry about vertical matching of
     // required and valid areas as well as horizontal.
 
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     if (cache.validArea.width() > 0) {
 
@@ -2323,10 +2331,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (recreateWholeImageCache) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        SVDEBUG << "Recreating image cache: width = " << v->width()
+        SVDEBUG << "Recreating image cache: width = " << v->getPaintWidth()
                   << ", height = " << h << endl;
 #endif
-	cache.image = QImage(v->width(), h, QImage::Format_ARGB32_Premultiplied);
+	cache.image = QImage(v->getPaintWidth(), h, QImage::Format_ARGB32_Premultiplied);
     }
 
     if (w > 0) {
@@ -2402,7 +2410,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                 SVDEBUG << "SpectrogramLayer::paint() updating left (0, "
                           << cache.validArea.x() << ")" << endl;
 #endif
-                v->update(0, 0, cache.validArea.x(), h);
+                v->getView()->update(0, 0, cache.validArea.x(), h);
             }
             
             if (cache.validArea.x() + cache.validArea.width() <
@@ -2415,7 +2423,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                                                      cache.validArea.width())
                           << ")" << endl;
 #endif
-                v->update(cache.validArea.x() + cache.validArea.width(),
+                v->getView()->update(cache.validArea.x() + cache.validArea.width(),
                           0,
                           cache.image.width() - (cache.validArea.x() +
                                                   cache.validArea.width()),
@@ -2425,7 +2433,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             // overallMagChanged
             cerr << "\noverallMagChanged - updating all\n" << endl;
             cache.validArea = QRect();
-            v->update();
+            v->getView()->update();
         }
     }
 
@@ -2443,7 +2451,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 }
 
 bool
-SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
+SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                                                  int w,
                                                  int h,
                                                  const vector<int> &binforx,
@@ -2571,7 +2579,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(View *v,
 }
 
 bool
-SpectrogramLayer::paintDrawBuffer(View *v,
+SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                                   int w,
                                   int h,
                                   const vector<int> &binforx,
@@ -2812,7 +2820,7 @@ SpectrogramLayer::paintDrawBuffer(View *v,
 }
 
 void
-SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
+SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &paint) const
 {
     Profiler profiler("SpectrogramLayer::illuminateLocalFeatures");
 
@@ -2851,7 +2859,7 @@ SpectrogramLayer::illuminateLocalFeatures(View *v, QPainter &paint) const
 }
 
 double
-SpectrogramLayer::getYForFrequency(const View *v, double frequency) const
+SpectrogramLayer::getYForFrequency(const LayerGeometryProvider *v, double frequency) const
 {
     return v->getYForFrequency(frequency,
 			       getEffectiveMinFrequency(),
@@ -2860,7 +2868,7 @@ SpectrogramLayer::getYForFrequency(const View *v, double frequency) const
 }
 
 double
-SpectrogramLayer::getFrequencyForY(const View *v, int y) const
+SpectrogramLayer::getFrequencyForY(const LayerGeometryProvider *v, int y) const
 {
     return v->getFrequencyForY(y,
 			       getEffectiveMinFrequency(),
@@ -2869,12 +2877,15 @@ SpectrogramLayer::getFrequencyForY(const View *v, int y) const
 }
 
 int
-SpectrogramLayer::getCompletion(View *v) const
+SpectrogramLayer::getCompletion(LayerGeometryProvider *v) const
 {
     if (m_updateTimer == 0) return 100;
-    if (m_fftModels.find(v) == m_fftModels.end()) return 100;
 
-    int completion = m_fftModels[v].first->getCompletion();
+    const View *view = v->getView();
+    
+    if (m_fftModels.find(view) == m_fftModels.end()) return 100;
+
+    int completion = m_fftModels[view].first->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     SVDEBUG << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
@@ -2882,10 +2893,11 @@ SpectrogramLayer::getCompletion(View *v) const
 }
 
 QString
-SpectrogramLayer::getError(View *v) const
+SpectrogramLayer::getError(LayerGeometryProvider *v) const
 {
-    if (m_fftModels.find(v) == m_fftModels.end()) return "";
-    return m_fftModels[v].first->getError();
+    const View *view = v->getView();
+    if (m_fftModels.find(view) == m_fftModels.end()) return "";
+    return m_fftModels[view].first->getError();
 }
 
 bool
@@ -2946,7 +2958,7 @@ SpectrogramLayer::setDisplayExtents(double min, double max)
 }
 
 bool
-SpectrogramLayer::getYScaleValue(const View *v, int y,
+SpectrogramLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
                                  double &value, QString &unit) const
 {
     value = getFrequencyForY(v, y);
@@ -2955,7 +2967,7 @@ SpectrogramLayer::getYScaleValue(const View *v, int y,
 }
 
 bool
-SpectrogramLayer::snapToFeatureFrame(View *,
+SpectrogramLayer::snapToFeatureFrame(LayerGeometryProvider *,
                                      sv_frame_t &frame,
 				     int &resolution,
 				     SnapType snap) const
@@ -2978,12 +2990,13 @@ SpectrogramLayer::snapToFeatureFrame(View *,
 } 
 
 void
-SpectrogramLayer::measureDoubleClick(View *v, QMouseEvent *e)
+SpectrogramLayer::measureDoubleClick(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    ImageCache &cache = m_imageCaches[v];
+    const View *view = v->getView();
+    ImageCache &cache = m_imageCaches[view];
 
     cerr << "cache width: " << cache.image.width() << ", height: "
-              << cache.image.height() << endl;
+         << cache.image.height() << endl;
 
     QImage image = cache.image;
 
@@ -2998,11 +3011,11 @@ SpectrogramLayer::measureDoubleClick(View *v, QMouseEvent *e)
 }
 
 bool
-SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
+SpectrogramLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
                                       QPoint cursorPos,
                                       std::vector<QRect> &extents) const
 {
-    QRect vertical(cursorPos.x() - 12, 0, 12, v->height());
+    QRect vertical(cursorPos.x() - 12, 0, 12, v->getPaintHeight());
     extents.push_back(vertical);
 
     QRect horizontal(0, cursorPos.y(), cursorPos.x(), 1);
@@ -3021,14 +3034,14 @@ SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
     extents.push_back(pitch);
 
     QRect rt(cursorPos.x(),
-             v->height() - paint.fontMetrics().height() - 2,
+             v->getPaintHeight() - paint.fontMetrics().height() - 2,
              paint.fontMetrics().width("1234.567 s"),
              paint.fontMetrics().height());
     extents.push_back(rt);
 
     int w(paint.fontMetrics().width("1234567890") + 2);
     QRect frame(cursorPos.x() - w - 2,
-                v->height() - paint.fontMetrics().height() - 2,
+                v->getPaintHeight() - paint.fontMetrics().height() - 2,
                 w,
                 paint.fontMetrics().height());
     extents.push_back(frame);
@@ -3037,7 +3050,7 @@ SpectrogramLayer::getCrosshairExtents(View *v, QPainter &paint,
 }
 
 void
-SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
+SpectrogramLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                                   QPoint cursorPos) const
 {
     paint.save();
@@ -3052,7 +3065,7 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
     paint.setPen(m_crosshairColour);
 
     paint.drawLine(0, cursorPos.y(), cursorPos.x() - 1, cursorPos.y());
-    paint.drawLine(cursorPos.x(), 0, cursorPos.x(), v->height());
+    paint.drawLine(cursorPos.x(), 0, cursorPos.x(), v->getPaintHeight());
     
     double fundamental = getFrequencyForY(v, cursorPos.y());
 
@@ -3077,12 +3090,12 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
     QString frameLabel = QString("%1").arg(frame);
     v->drawVisibleText(paint,
                        cursorPos.x() - paint.fontMetrics().width(frameLabel) - 2,
-                       v->height() - 2,
+                       v->getPaintHeight() - 2,
                        frameLabel,
                        View::OutlinedText);
     v->drawVisibleText(paint,
                        cursorPos.x() + 2,
-                       v->height() - 2,
+                       v->getPaintHeight() - 2,
                        rtLabel,
                        View::OutlinedText);
 
@@ -3091,7 +3104,7 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
     while (harmonic < 100) {
 
         int hy = int(lrint(getYForFrequency(v, fundamental * harmonic)));
-        if (hy < 0 || hy > v->height()) break;
+        if (hy < 0 || hy > v->getPaintHeight()) break;
         
         int len = 7;
 
@@ -3115,7 +3128,7 @@ SpectrogramLayer::paintCrosshairs(View *v, QPainter &paint,
 }
 
 QString
-SpectrogramLayer::getFeatureDescription(View *v, QPoint &pos) const
+SpectrogramLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
     int y = pos.y();
@@ -3237,7 +3250,7 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 }
 
 int
-SpectrogramLayer::getVerticalScaleWidth(View *, bool detailed, QPainter &paint) const
+SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, QPainter &paint) const
 {
     if (!m_model || !m_model->isOK()) return 0;
 
@@ -3258,7 +3271,7 @@ SpectrogramLayer::getVerticalScaleWidth(View *, bool detailed, QPainter &paint) 
 }
 
 void
-SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QRect rect) const
+SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
 	return;
@@ -3372,10 +3385,10 @@ SpectrogramLayer::paintVerticalScale(View *v, bool detailed, QPainter &paint, QR
 
     int bin = -1;
 
-    for (int y = 0; y < v->height(); ++y) {
+    for (int y = 0; y < v->getPaintHeight(); ++y) {
 
 	double q0, q1;
-	if (!getYBinRange(v, v->height() - y, q0, q1)) continue;
+	if (!getYBinRange(v, v->getPaintHeight() - y, q0, q1)) continue;
 
 	int vy;
 
@@ -3589,7 +3602,7 @@ SpectrogramLayer::getNewVerticalZoomRangeMapper() const
 }
 
 void
-SpectrogramLayer::updateMeasureRectYCoords(View *v, const MeasureRect &r) const
+SpectrogramLayer::updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const
 {
     int y0 = 0;
     if (r.startY > 0.0) y0 = int(getYForFrequency(v, r.startY));
@@ -3603,7 +3616,7 @@ SpectrogramLayer::updateMeasureRectYCoords(View *v, const MeasureRect &r) const
 }
 
 void
-SpectrogramLayer::setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const
+SpectrogramLayer::setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const
 {
     if (start) {
         r.startY = getFrequencyForY(v, y);
