@@ -443,7 +443,16 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             if (type == PropertyContainer::ValueProperty) {
 
                 for (int i = min; i <= max; ++i) {
-                    cb->addItem(m_container->getPropertyValueLabel(name, i));
+
+                    QString label = m_container->getPropertyValueLabel(name, i);
+                    QString iname = m_container->getPropertyValueIconName(name, i);
+
+                    if (iname != "") {
+                        QIcon icon(IconLoader().load(iname));
+                        cb->addItem(icon, label);
+                    } else {
+                        cb->addItem(label);
+                    }
                 }
 
             } else if (type == PropertyContainer::UnitsProperty) {
