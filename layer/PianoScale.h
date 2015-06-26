@@ -19,13 +19,13 @@
 #include <QRect>
 
 class QPainter;
-class View;
+class LayerGeometryProvider;
 
 class PianoScale
 {
 public:
     void paintPianoVertical
-    (View *v, QPainter &paint, QRect rect, double minf, double maxf);
+    (LayerGeometryProvider *v, QPainter &paint, QRect rect, double minf, double maxf);
 };
 
 #endif

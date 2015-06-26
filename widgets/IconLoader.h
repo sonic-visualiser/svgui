@@ -25,7 +25,15 @@ public:
     virtual ~IconLoader() { }
 
     QIcon load(QString name);
-    QPixmap loadPixmap(QString name);
+
+private:
+    bool shouldInvert() const;
+    bool shouldAutoInvert(QString) const;
+    QPixmap loadPixmap(QString, int);
+    QPixmap loadScalable(QString, int);
+    QPixmap invertPixmap(QPixmap);
+    QString makeScalableFilename(QString, bool);
+    QString makeNonScalableFilename(QString, int, bool);
 };
 
 #endif

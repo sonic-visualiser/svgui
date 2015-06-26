@@ -38,12 +38,12 @@ public:
 
     void setSliceableModel(const Model *model);    
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
-    virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
-    virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
+    virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
 
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourAndBackgroundSignificant;
@@ -67,7 +67,7 @@ public:
 
     virtual bool hasTimeXAxis() const { return false; }
 
-    virtual bool isLayerScrollable(const View *) const { return false; }
+    virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
 
     enum EnergyScale { LinearScale, MeterScale, dBScale, AbsoluteScale };
 
@@ -112,10 +112,10 @@ protected:
     virtual double getXForBin(int bin, int totalBins, double w) const;
     virtual int getBinForX(double x, int totalBins, double w) const;
 
-    virtual double getYForValue(double value, const View *v, double &norm) const;
-    virtual double getValueForY(double y, const View *v) const;
+    virtual double getYForValue(double value, const LayerGeometryProvider *v, double &norm) const;
+    virtual double getValueForY(double y, const LayerGeometryProvider *v) const;
     
-    virtual QString getFeatureDescriptionAux(View *v, QPoint &,
+    virtual QString getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &,
                                              bool includeBinDescription,
                                              int &minbin, int &maxbin,
                                              int &range) const;
@@ -141,9 +141,9 @@ protected:
     float                             m_initialThreshold;
     float                             m_gain;
     mutable std::vector<int>          m_scalePoints;
-    mutable std::map<const View *, int> m_xorigins;
-    mutable std::map<const View *, int> m_yorigins;
-    mutable std::map<const View *, int> m_heights;
+    mutable std::map<const LayerGeometryProvider *, int> m_xorigins;
+    mutable std::map<const LayerGeometryProvider *, int> m_yorigins;
+    mutable std::map<const LayerGeometryProvider *, int> m_heights;
     mutable sv_frame_t                m_currentf0;
     mutable sv_frame_t                m_currentf1;
     mutable std::vector<float>        m_values;

@@ -19,6 +19,8 @@
 #include <QFrame>
 #include <QProgressBar>
 
+#include "LayerGeometryProvider.h"
+
 #include "base/ZoomConstraint.h"
 #include "base/PropertyContainer.h"
 #include "ViewManager.h"
@@ -49,7 +51,8 @@ class QPushButton;
  */
 
 class View : public QFrame,
-	     public XmlExportable
+	     public XmlExportable,
+             public LayerGeometryProvider
 {
     Q_OBJECT
 
@@ -243,12 +246,6 @@ public:
     virtual QColor getForeground() const;
     virtual QColor getBackground() const;
 
-    enum TextStyle {
-	BoxedText,
-	OutlinedText,
-        OutlinedItalicText
-    };
-
     virtual void drawVisibleText(QPainter &p, int x, int y,
 				 QString text, TextStyle style) const;
 
@@ -315,6 +312,18 @@ public:
     sv_frame_t getModelsStartFrame() const;
     sv_frame_t getModelsEndFrame() const;
 
+    /**
+     * To be called from a layer, to obtain the extent of the surface
+     * that the layer is currently painting to. This may be the extent
+     * of the view (if 1x display scaling is in effect) or of a larger
+     * cached pixmap (if greater display scaling is in effect).
+     */
+    QRect getPaintRect() const;
+
+    QSize getPaintSize() const { return getPaintRect().size(); }
+    int getPaintWidth() const { return getPaintRect().width(); }
+    int getPaintHeight() const { return getPaintRect().height(); }
+
     typedef std::set<Model *> ModelSet;
     ModelSet getModels();
 
@@ -324,6 +333,9 @@ public:
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
 
+    View *getView() { return this; } 
+    const View *getView() const { return this; } 
+    
 signals:
     void propertyContainerAdded(PropertyContainer *pc);
     void propertyContainerRemoved(PropertyContainer *pc);
@@ -377,6 +389,14 @@ protected:
     virtual bool shouldLabelSelections() const { return true; }
     virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
     virtual void setPaintFont(QPainter &paint);
+
+    QSize scaledSize(const QSize &s, int factor) {
+        return QSize(s.width() * factor, s.height() * factor);
+    }
+    QRect scaledRect(const QRect &r, int factor) {
+        return QRect(r.x() * factor, r.y() * factor,
+                     r.width() * factor, r.height() * factor);
+    }
     
     typedef std::vector<Layer *> LayerList;
 
@@ -406,6 +426,8 @@ protected:
     void checkProgress(void *object);
     int getProgressBarWidth() const; // if visible
 
+    int effectiveDevicePixelRatio() const;
+
     sv_frame_t          m_centreFrame;
     int                 m_zoomLevel;
     bool                m_followPan;
@@ -417,6 +439,7 @@ protected:
     bool                m_showProgress;
 
     QPixmap            *m_cache;
+    QPixmap            *m_buffer;
     sv_frame_t          m_cacheCentreFrame;
     int                 m_cacheZoomLevel;
     bool                m_selectionCached;
