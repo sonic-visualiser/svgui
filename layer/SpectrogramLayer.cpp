@@ -1629,10 +1629,7 @@ SpectrogramLayer::getFFTModel(const View *v) const
                                        m_windowType,
                                        m_windowSize,
                                        getWindowIncrement(),
-                                       fftSize,
-                                       true, // polar
-                                       StorageAdviser::SpeedCritical,
-                                       m_candidateFillStartFrame);
+                                       fftSize);
 
         if (!model->isOK()) {
             QMessageBox::critical
@@ -1654,8 +1651,6 @@ SpectrogramLayer::getFFTModel(const View *v) const
 
         m_fftModels[v] = FFTFillPair(model, 0);
 
-        model->resume();
-        
         delete m_updateTimer;
         m_updateTimer = new QTimer((SpectrogramLayer *)this);
         connect(m_updateTimer, SIGNAL(timeout()),
@@ -2445,8 +2440,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         (void)gettimeofday(&tv, 0);
         m_lastPaintTime = RealTime::fromTimeval(tv) - mainPaintStart;
     }
-
-//!!!    if (fftSuspended) fft->resume();
 }
 
 bool
