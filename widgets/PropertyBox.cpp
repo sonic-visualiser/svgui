@@ -518,8 +518,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         cb->blockSignals(false);
 
 #ifdef Q_OS_MAC
-	// Crashes on startup without this, for some reason
-	cb->setMinimumSize(QSize(10, 10));
+	// Crashes on startup without this, for some reason; also
+	// prevents combo boxes from getting weirdly squished
+	// vertically
+	cb->setMinimumSize(QSize(10, cb->font().pixelSize() * 2));
 #endif
 
 	break;
