@@ -50,7 +50,7 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
     tabBar()->setUsesScrollButtons(true); 
     tabBar()->setIconSize(QSize(16, 16));
 #endif
-    
+
     repopulate();
 
     connect(this, SIGNAL(currentChanged(int)),
