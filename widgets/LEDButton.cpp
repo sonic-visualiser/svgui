@@ -174,6 +174,8 @@ LEDButton::paintEvent(QPaintEvent *)
 	pos++; light_width--;
     }
 
+    paint.drawPoint(pos, pos);
+
     // Drawing of bright spot finished, now draw a thin border
     // around the LED which resembles a shadow with light coming
     // from the upper left.
