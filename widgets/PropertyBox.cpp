@@ -63,6 +63,12 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     m_mainBox = new QVBoxLayout;
     setLayout(m_mainBox);
 
+#ifdef Q_OS_MAC
+    QMargins mm = m_mainBox->contentsMargins();
+    QMargins mmhalf(mm.left()/2, mm.top()/3, mm.right()/2, mm.bottom()/3);
+    m_mainBox->setContentsMargins(mmhalf);
+#endif
+
 //    m_nameWidget = new QLabel;
 //    m_mainBox->addWidget(m_nameWidget);
 //    m_nameWidget->setText(container->objectName());
