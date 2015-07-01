@@ -162,7 +162,7 @@ TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 
     if (!m_model) return SparseOneDimensionalModel::PointList();
 
-    long frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     SparseOneDimensionalModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -229,7 +229,7 @@ TimeInstantLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
 	}
     }
 
-    long useFrame = points.begin()->frame;
+    sv_frame_t useFrame = points.begin()->frame;
 
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
     
@@ -329,8 +329,8 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
     int x0 = rect.left(), x1 = rect.right();
 
-    long frame0 = v->getFrameForX(x0);
-    long frame1 = v->getFrameForX(x1);
+    sv_frame_t frame0 = v->getFrameForX(x0);
+    sv_frame_t frame1 = v->getFrameForX(x1);
 
     SparseOneDimensionalModel::PointList points(m_model->getPoints
 						(frame0, frame1));
@@ -367,7 +367,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 //	      << m_model->getResolution() << " frames" << endl;
 
     QPoint localPos;
-    long illuminateFrame = -1;
+    sv_frame_t illuminateFrame = -1;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
 	SparseOneDimensionalModel::PointList localPoints =
@@ -474,7 +474,7 @@ TimeInstantLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (!m_model) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -497,7 +497,7 @@ TimeInstantLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
     m_editingCommand->deletePoint(m_editingPoint);
@@ -597,7 +597,7 @@ TimeInstantLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
