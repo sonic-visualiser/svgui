@@ -88,7 +88,7 @@ TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
         
     case SnapNearest:
     {
-        if (labs(frame - left) > labs(right - frame)) {
+        if (llabs(frame - left) > llabs(right - frame)) {
             frame = right;
         } else {
             frame = left;

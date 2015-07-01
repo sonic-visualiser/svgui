@@ -730,14 +730,17 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
                 cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << modelZoomLevel << ")" << endl;
             }
 
-	    if (ranges && i0 < (int)ranges->size()) {
+	    if (ranges && i0 < (sv_frame_t)ranges->size()) {
 
-		range = (*ranges)[i0];
+		range = (*ranges)[size_t(i0)];
 
 		if (i1 > i0 && i1 < (int)ranges->size()) {
-		    range.setMax(std::max(range.max(), (*ranges)[i1].max()));
-		    range.setMin(std::min(range.min(), (*ranges)[i1].min()));
-		    range.setAbsmean((range.absmean() + (*ranges)[i1].absmean()) / 2);
+		    range.setMax(std::max(range.max(),
+                                          (*ranges)[size_t(i1)].max()));
+		    range.setMin(std::min(range.min(),
+                                          (*ranges)[size_t(i1)].min()));
+		    range.setAbsmean((range.absmean()
+                                      + (*ranges)[size_t(i1)].absmean()) / 2);
 		}
 
 	    } else {
@@ -751,30 +754,33 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
 
 	    if (mergingChannels) {
 
-		if (otherChannelRanges && i0 < (int)otherChannelRanges->size()) {
+		if (otherChannelRanges && i0 < (sv_frame_t)otherChannelRanges->size()) {
 
 		    range.setMax(fabsf(range.max()));
-		    range.setMin(-fabsf((*otherChannelRanges)[i0].max()));
+		    range.setMin(-fabsf((*otherChannelRanges)[size_t(i0)].max()));
 		    range.setAbsmean
                         ((range.absmean() +
-                          (*otherChannelRanges)[i0].absmean()) / 2);
+                          (*otherChannelRanges)[size_t(i0)].absmean()) / 2);
 
-		    if (i1 > i0 && i1 < (int)otherChannelRanges->size()) {
+		    if (i1 > i0 && i1 < (sv_frame_t)otherChannelRanges->size()) {
 			// let's not concern ourselves about the mean
 			range.setMin
                             (std::min
                              (range.min(),
-                              -fabsf((*otherChannelRanges)[i1].max())));
+                              -fabsf((*otherChannelRanges)[size_t(i1)].max())));
 		    }
 		}
 
 	    } else if (mixingChannels) {
 
-		if (otherChannelRanges && i0 < (int)otherChannelRanges->size()) {
+		if (otherChannelRanges && i0 < (sv_frame_t)otherChannelRanges->size()) {
 
-                    range.setMax((range.max() + (*otherChannelRanges)[i0].max()) / 2);
-                    range.setMin((range.min() + (*otherChannelRanges)[i0].min()) / 2);
-                    range.setAbsmean((range.absmean() + (*otherChannelRanges)[i0].absmean()) / 2);
+                    range.setMax((range.max()
+                                  + (*otherChannelRanges)[size_t(i0)].max()) / 2);
+                    range.setMin((range.min()
+                                  + (*otherChannelRanges)[size_t(i0)].min()) / 2);
+                    range.setAbsmean((range.absmean()
+                                      + (*otherChannelRanges)[size_t(i0)].absmean()) / 2);
                 }
             }
 
