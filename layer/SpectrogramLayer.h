@@ -247,8 +247,6 @@ protected slots:
     
     void preferenceChanged(PropertyContainer::PropertyName name);
 
-    void fillTimerTimedOut();
-
 protected:
     const DenseTimeValueModel *m_model; // I do not own this
 
@@ -326,9 +324,6 @@ protected:
      */
     mutable QImage m_drawBuffer;
 
-    mutable QTimer *m_updateTimer;
-
-    mutable sv_frame_t m_candidateFillStartFrame;
     bool m_exiting;
 
     void initialisePalette();
@@ -373,8 +368,7 @@ protected:
     Dense3DModelPeakCache *getPeakCache(const View *v) const;
     void invalidateFFTModels();
 
-    typedef std::pair<FFTModel *, sv_frame_t> FFTFillPair; // model, last fill
-    typedef std::map<const View *, FFTFillPair> ViewFFTMap;
+    typedef std::map<const View *, FFTModel *> ViewFFTMap;
     typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
     mutable ViewFFTMap m_fftModels;
     mutable PeakCacheMap m_peakCaches;
