@@ -63,6 +63,12 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     m_mainBox = new QVBoxLayout;
     setLayout(m_mainBox);
 
+#ifdef Q_OS_MAC
+    QMargins mm = m_mainBox->contentsMargins();
+    QMargins mmhalf(mm.left()/2, mm.top()/3, mm.right()/2, mm.bottom()/3);
+    m_mainBox->setContentsMargins(mmhalf);
+#endif
+
 //    m_nameWidget = new QLabel;
 //    m_mainBox->addWidget(m_nameWidget);
 //    m_nameWidget->setText(container->objectName());
@@ -521,8 +527,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         cb->blockSignals(false);
 
 #ifdef Q_OS_MAC
-	// Crashes on startup without this, for some reason
-	cb->setMinimumSize(QSize(10, 10));
+	// Crashes on startup without this, for some reason; also
+	// prevents combo boxes from getting weirdly squished
+	// vertically
+	cb->setMinimumSize(QSize(10, cb->font().pixelSize() * 2));
 #endif
 
 	break;
