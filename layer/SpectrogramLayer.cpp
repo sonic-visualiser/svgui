@@ -78,8 +78,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_synchronous(false),
     m_haveDetailedScale(false),
     m_lastPaintBlockWidth(0),
-    m_updateTimer(0),
-    m_candidateFillStartFrame(0),
     m_exiting(false),
     m_sliceableModel(0)
 {
@@ -118,9 +116,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 
 SpectrogramLayer::~SpectrogramLayer()
 {
-    delete m_updateTimer;
-    m_updateTimer = 0;
-    
     invalidateFFTModels();
 }
 
@@ -592,7 +587,7 @@ SpectrogramLayer::invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFra
         const LayerGeometryProvider *v = i->first;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        SVDEBUG << "SpectrogramLayer::invalidateImageCaches(" 
+        cerr << "SpectrogramLayer::invalidateImageCaches(" 
                   << startFrame << ", " << endFrame << "): view range is "
                   << v->getStartFrame() << ", " << v->getEndFrame()
                   << endl;
@@ -612,7 +607,7 @@ SpectrogramLayer::invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFra
             }
             int x = v->getXForFrame(startFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "clipping from 0 to " << x-1 << endl;
+            cerr << "clipping from 0 to " << x-1 << endl;
 #endif
             if (x > 1) {
                 i->second.validArea &=
@@ -629,7 +624,7 @@ SpectrogramLayer::invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFra
             }
             int x = v->getXForFrame(endFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "clipping from " << x+1 << " to " << v->getPaintWidth()
+            cerr << "clipping from " << x+1 << " to " << v->getPaintWidth()
                       << endl;
 #endif
             if (x < v->getPaintWidth()) {
@@ -968,7 +963,7 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
     if (dormant) {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        SVDEBUG << "SpectrogramLayer::setLayerDormant(" << dormant << ")"
+        cerr << "SpectrogramLayer::setLayerDormant(" << dormant << ")"
                   << endl;
 #endif
 
@@ -981,16 +976,17 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
         const View *view = v->getView();
         
 	invalidateImageCaches();
+
         m_imageCaches.erase(view);
 
         if (m_fftModels.find(view) != m_fftModels.end()) {
 
-            if (m_sliceableModel == m_fftModels[view].first) {
+            if (m_sliceableModel == m_fftModels[view]) {
                 bool replaced = false;
                 for (ViewFFTMap::iterator i = m_fftModels.begin();
                      i != m_fftModels.end(); ++i) {
-                    if (i->second.first != m_sliceableModel) {
-                        emit sliceableModelReplaced(m_sliceableModel, i->second.first);
+                    if (i->second != m_sliceableModel) {
+                        emit sliceableModelReplaced(m_sliceableModel, i->second);
                         replaced = true;
                         break;
                     }
@@ -998,7 +994,7 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
                 if (!replaced) emit sliceableModelReplaced(m_sliceableModel, 0);
             }
 
-            delete m_fftModels[view].first;
+            delete m_fftModels[view];
             m_fftModels.erase(view);
 
             delete m_peakCaches[view];
@@ -1015,7 +1011,7 @@ void
 SpectrogramLayer::cacheInvalid()
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::cacheInvalid()" << endl;
+    cerr << "SpectrogramLayer::cacheInvalid()" << endl;
 #endif
 
     invalidateImageCaches();
@@ -1026,79 +1022,11 @@ void
 SpectrogramLayer::cacheInvalid(sv_frame_t from, sv_frame_t to)
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
+    cerr << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
 #endif
 
     invalidateImageCaches(from, to);
     invalidateMagnitudes();
-}
-
-void
-SpectrogramLayer::fillTimerTimedOut()
-{
-    if (!m_model) return;
-
-    bool allDone = true;
-
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::fillTimerTimedOut: have " << m_fftModels.size() << " FFT models associated with views" << endl;
-#endif
-
-    for (ViewFFTMap::iterator i = m_fftModels.begin();
-         i != m_fftModels.end(); ++i) {
-
-        const FFTModel *model = i->second.first;
-        sv_frame_t lastFill = i->second.second;
-
-        if (model) {
-
-            sv_frame_t fill = model->getFillExtent();
-
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "SpectrogramLayer::fillTimerTimedOut: extent for " << model << ": " << fill << ", last " << lastFill << ", total " << m_model->getEndFrame() << endl;
-#endif
-
-            if (fill >= lastFill) {
-                if (fill >= m_model->getEndFrame() && lastFill > 0) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "complete!" << endl;
-#endif
-                    invalidateImageCaches();
-                    i->second.second = -1;
-                    emit modelChanged();
-
-                } else if (fill > lastFill) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "SpectrogramLayer: emitting modelChanged("
-                              << lastFill << "," << fill << ")" << endl;
-#endif
-                    invalidateImageCaches(lastFill, fill);
-                    i->second.second = fill;
-                    emit modelChangedWithin(lastFill, fill);
-                }
-            } else {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-                cerr << "SpectrogramLayer: going backwards, emitting modelChanged("
-                          << m_model->getStartFrame() << "," << m_model->getEndFrame() << ")" << endl;
-#endif
-                invalidateImageCaches();
-                i->second.second = fill;
-                emit modelChangedWithin(m_model->getStartFrame(), m_model->getEndFrame());
-            }
-
-            if (i->second.second >= 0) {
-                allDone = false;
-            }
-        }
-    }
-
-    if (allDone) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "SpectrogramLayer: all complete!" << endl;
-#endif
-        delete m_updateTimer;
-        m_updateTimer = 0;
-    }
 }
 
 bool
@@ -1576,25 +1504,25 @@ SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
     const View *view = v->getView();
     
     if (m_fftModels.find(view) != m_fftModels.end()) {
-        if (m_fftModels[view].first == 0) {
+        if (m_fftModels[view] == 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found null model" << endl;
+            cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found null model" << endl;
 #endif
             return 0;
         }
-        if (m_fftModels[view].first->getHeight() != fftSize / 2 + 1) {
+        if (m_fftModels[view]->getHeight() != fftSize / 2 + 1) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[view].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
+            cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[view].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
 #endif
-            delete m_fftModels[view].first;
+            delete m_fftModels[view];
             m_fftModels.erase(view);
             delete m_peakCaches[view];
             m_peakCaches.erase(view);
         } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[view].first->getHeight() << endl;
+            cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[view]->getHeight() << endl;
 #endif
-            return m_fftModels[view].first;
+            return m_fftModels[view];
         }
     }
 
@@ -1613,7 +1541,7 @@ SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
                  tr("Failed to create the FFT model for this spectrogram.\n"
                     "There may be insufficient memory or disc space to continue."));
             delete model;
-            m_fftModels[view] = FFTFillPair(0, 0);
+            m_fftModels[view] = 0;
             return 0;
         }
 
@@ -1625,16 +1553,10 @@ SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
             m_sliceableModel = model;
         }
 
-        m_fftModels[view] = FFTFillPair(model, 0);
-
-        delete m_updateTimer;
-        m_updateTimer = new QTimer((SpectrogramLayer *)this);
-        connect(m_updateTimer, SIGNAL(timeout()),
-                this, SLOT(fillTimerTimedOut()));
-        m_updateTimer->start(200);
+        m_fftModels[view] = model;
     }
 
-    return m_fftModels[view].first;
+    return m_fftModels[view];
 }
 
 Dense3DModelPeakCache *
@@ -1654,7 +1576,7 @@ SpectrogramLayer::getSliceableModel() const
 {
     if (m_sliceableModel) return m_sliceableModel;
     if (m_fftModels.empty()) return 0;
-    m_sliceableModel = m_fftModels.begin()->second.first;
+    m_sliceableModel = m_fftModels.begin()->second;
     return m_sliceableModel;
 }
 
@@ -1663,7 +1585,7 @@ SpectrogramLayer::invalidateFFTModels()
 {
     for (ViewFFTMap::iterator i = m_fftModels.begin();
          i != m_fftModels.end(); ++i) {
-        delete i->second.first;
+        delete i->second;
     }
     for (PeakCacheMap::iterator i = m_peakCaches.begin();
          i != m_peakCaches.end(); ++i) {
@@ -1722,7 +1644,7 @@ SpectrogramLayer::updateViewMagnitudes(LayerGeometryProvider *v) const
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::updateViewMagnitudes returning from cols "
+    cerr << "SpectrogramLayer::updateViewMagnitudes returning from cols "
               << s0 << " -> " << s1 << " inclusive" << endl;
 #endif
 
@@ -1747,14 +1669,12 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     Profiler profiler("SpectrogramLayer::paint", false);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", m_updateTimer " << m_updateTimer << endl;
+    cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
     
     cerr << "rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
 #endif
 
     sv_frame_t startFrame = v->getStartFrame();
-    if (startFrame < 0) m_candidateFillStartFrame = 0;
-    else m_candidateFillStartFrame = startFrame;
 
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
 	return;
@@ -1785,14 +1705,9 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     ImageCache &cache = m_imageCaches[view];
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::paint(): image cache valid area " << cache.
+    cerr << "SpectrogramLayer::paint(): image cache valid area " << cache.
 
 validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() << "x" << cache.validArea.height() << endl;
-#endif
-
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-    bool stillCacheing = (m_updateTimer != 0);
-    SVDEBUG << "SpectrogramLayer::paint(): Still cacheing = " << stillCacheing << endl;
 #endif
 
     int zoomLevel = v->getZoomLevel();
@@ -2149,10 +2064,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         SVDEBUG << "*** NOTE: w == 0" << endl;
     }
 
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-    int pixels = 0;
-#endif
-
     Profiler outerprof("SpectrogramLayer::paint: all cols");
 
     // The draw buffer contains a fragment at either our pixel
@@ -2303,7 +2214,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (recreateWholeImageCache) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        SVDEBUG << "Recreating image cache: width = " << v->getPaintWidth()
+        cerr << "Recreating image cache: width = " << v->getPaintWidth()
                   << ", height = " << h << endl;
 #endif
 	cache.image = QImage(v->getPaintWidth(), h, QImage::Format_ARGB32_Premultiplied);
@@ -2311,7 +2222,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (w > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        SVDEBUG << "Painting " << w << "x" << h
+        cerr << "Painting " << w << "x" << h
                   << " from draw buffer at " << 0 << "," << 0
                   << " to " << w << "x" << h << " on cache at "
                   << x0 << "," << 0 << endl;
@@ -2323,7 +2234,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             int scaledLeft = v->getXForFrame(leftBoundaryFrame);
             int scaledRight = v->getXForFrame(rightBoundaryFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "Rescaling image from " << bufwid
+            cerr << "Rescaling image from " << bufwid
                  << "x" << h << " to "
                  << scaledRight-scaledLeft << "x" << h << endl;
 #endif
@@ -2338,7 +2249,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             int scaledLeftCrop = v->getXForFrame(leftCropFrame);
             int scaledRightCrop = v->getXForFrame(rightCropFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            SVDEBUG << "Drawing image region of width " << scaledRightCrop - scaledLeftCrop << " to "
+            cerr << "Drawing image region of width " << scaledRightCrop - scaledLeftCrop << " to "
                  << scaledLeftCrop << " from " << scaledLeftCrop - scaledLeft << endl;
 #endif
             cachePainter.drawImage
@@ -2359,7 +2270,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     QRect pr = rect & cache.validArea;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "Painting " << pr.width() << "x" << pr.height()
+    cerr << "Painting " << pr.width() << "x" << pr.height()
               << " from cache at " << pr.x() << "," << pr.y()
               << " to window" << endl;
 #endif
@@ -2379,7 +2290,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     
             if (cache.validArea.x() > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                SVDEBUG << "SpectrogramLayer::paint() updating left (0, "
+                cerr << "SpectrogramLayer::paint() updating left (0, "
                           << cache.validArea.x() << ")" << endl;
 #endif
                 v->getView()->update(0, 0, cache.validArea.x(), h);
@@ -2388,7 +2299,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             if (cache.validArea.x() + cache.validArea.width() <
                 cache.image.width()) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                SVDEBUG << "SpectrogramLayer::paint() updating right ("
+                cerr << "SpectrogramLayer::paint() updating right ("
                           << cache.validArea.x() + cache.validArea.width()
                           << ", "
                           << cache.image.width() - (cache.validArea.x() +
@@ -2412,7 +2323,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     illuminateLocalFeatures(v, paint);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::paint() returning" << endl;
+    cerr << "SpectrogramLayer::paint() returning" << endl;
 #endif
 
     if (!m_synchronous) {
@@ -2650,7 +2561,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
             if (sx != psx) {
                 if (fft) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    SVDEBUG << "Retrieving column " << sx << " from fft directly" << endl;
+                    cerr << "Retrieving column " << sx << " from fft directly" << endl;
 #endif
                     if (m_colourScale == PhaseColourScale) {
                         fft->getPhasesAt(sx, autoarray, minbin, maxbin - minbin + 1);
@@ -2658,8 +2569,8 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                     } else if (m_normalization == NormalizeHybrid) {
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                        double max = fft->getMaximumMagnitudeAt(sx);
-                        float scale = log10(max + 1.f);
+                        float max = fft->getMaximumMagnitudeAt(sx);
+                        float scale = log10f(max + 1.f);
                         cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
                         for (int i = minbin; i <= maxbin; ++i) {
                             autoarray[i - minbin] *= scale;
@@ -2669,7 +2580,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                     }
                 } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    SVDEBUG << "Retrieving column " << sx << " from peaks cache" << endl;
+                    cerr << "Retrieving column " << sx << " from peaks cache" << endl;
 #endif
                     c = sourceModel->getColumn(sx);
                     if (m_normalization == NormalizeColumns ||
@@ -2855,15 +2766,13 @@ SpectrogramLayer::getFrequencyForY(const LayerGeometryProvider *v, int y) const
 int
 SpectrogramLayer::getCompletion(LayerGeometryProvider *v) const
 {
-    if (m_updateTimer == 0) return 100;
-
     const View *view = v->getView();
     
     if (m_fftModels.find(view) == m_fftModels.end()) return 100;
 
-    int completion = m_fftModels[view].first->getCompletion();
+    int completion = m_fftModels[view]->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
+    cerr << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
     return completion;
 }
@@ -2873,7 +2782,7 @@ SpectrogramLayer::getError(LayerGeometryProvider *v) const
 {
     const View *view = v->getView();
     if (m_fftModels.find(view) == m_fftModels.end()) return "";
-    return m_fftModels[view].first->getError();
+    return m_fftModels[view]->getError();
 }
 
 bool
