@@ -48,7 +48,7 @@
 #include <alloca.h>
 #endif
 
-#define DEBUG_SPECTROGRAM_REPAINT 1
+//#define DEBUG_SPECTROGRAM_REPAINT 1
 
 using std::vector;
 
