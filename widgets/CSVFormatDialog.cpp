@@ -254,8 +254,12 @@ CSVFormatDialog::applyStartTimePurpose()
 {
     // First check if we already have any. NB there may be fewer than
     // m_format.getColumnCount() elements in m_columnPurposeCombos
-    // (because of the fuzzy column behaviour)
+    // (because of the fuzzy column behaviour). Note also that the
+    // fuzzy column (which is the one just showing how many more
+    // columns there are) has a different combo with only two items
+    // (ignore or Values)
     for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
+        if (i == m_fuzzyColumn) continue;
         QComboBox *cb = m_columnPurposeCombos[i];
         if (cb->currentIndex() == int(CSVFormat::ColumnStartTime)) {
             return;
@@ -263,6 +267,7 @@ CSVFormatDialog::applyStartTimePurpose()
     }
     // and if not, select one
     for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
+        if (i == m_fuzzyColumn) continue;
         QComboBox *cb = m_columnPurposeCombos[i];
         if (cb->currentIndex() == int(CSVFormat::ColumnValue)) {
             cb->setCurrentIndex(int(CSVFormat::ColumnStartTime));
@@ -278,6 +283,7 @@ CSVFormatDialog::removeStartTimePurpose()
     // in m_columnPurposeCombos (because of the fuzzy column
     // behaviour)
     for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
+        if (i == m_fuzzyColumn) continue;
         QComboBox *cb = m_columnPurposeCombos[i];
         if (cb->currentIndex() == int(CSVFormat::ColumnStartTime)) {
             cb->setCurrentIndex(int(CSVFormat::ColumnValue));
@@ -345,6 +351,11 @@ CSVFormatDialog::columnPurposeChanged(int p)
     
     for (int i = 0; i < m_columnPurposeCombos.size(); ++i) {
 
+        // The fuzzy column combo only has the entries <ignore> or
+        // Values, so it can't affect the timing type and none of this
+        // logic affects it
+        if (i == m_fuzzyColumn) continue;
+
         QComboBox *thisCombo = m_columnPurposeCombos[i];
         
         CSVFormat::ColumnPurpose cp = (CSVFormat::ColumnPurpose)
@@ -352,8 +363,6 @@ CSVFormatDialog::columnPurposeChanged(int p)
         bool thisChanged = (cb == thisCombo);
         
         if (!thisChanged) {
-
-            if (i == m_fuzzyColumn) continue;
 
             // We can only have one ColumnStartTime column, and only
             // one of either ColumnDuration or ColumnEndTime
@@ -442,24 +451,8 @@ CSVFormatDialog::updateFormatFromDialog()
         CSVFormat::ColumnPurpose purpose = (CSVFormat::ColumnPurpose)
             (thisCombo->currentIndex());
 
-        if (purpose == CSVFormat::ColumnStartTime) {
-            haveStartTime = true;
-        }
-        if (purpose == CSVFormat::ColumnEndTime ||
-            purpose == CSVFormat::ColumnDuration) {
-            haveDuration = true;
-        }
-        if (purpose == CSVFormat::ColumnPitch) {
-            havePitch = true;
-        }
-        if (purpose == CSVFormat::ColumnValue) {
-            ++valueCount;
-        }
-
-        m_format.setColumnPurpose(i, purpose);
-
         if (i == m_fuzzyColumn) {
-            for (int j = i + 1; j < m_format.getColumnCount(); ++j) {
+            for (int j = i; j < m_format.getColumnCount(); ++j) {
                 if (purpose == CSVFormat::ColumnUnknown) {
                     m_format.setColumnPurpose(j, CSVFormat::ColumnUnknown);
                 } else { // Value
@@ -467,6 +460,23 @@ CSVFormatDialog::updateFormatFromDialog()
                     ++valueCount;
                 }
             }
+        } else {
+        
+            if (purpose == CSVFormat::ColumnStartTime) {
+                haveStartTime = true;
+            }
+            if (purpose == CSVFormat::ColumnEndTime ||
+                purpose == CSVFormat::ColumnDuration) {
+                haveDuration = true;
+            }
+            if (purpose == CSVFormat::ColumnPitch) {
+                havePitch = true;
+            }
+            if (purpose == CSVFormat::ColumnValue) {
+                ++valueCount;
+            }
+
+            m_format.setColumnPurpose(i, purpose);
         }
     }
 
