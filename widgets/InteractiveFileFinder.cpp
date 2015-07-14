@@ -107,6 +107,12 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
         filter = tr("Comma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nText files (*.txt)\nAll files (*.*)");
         break;
 
+    case IMAFile:
+        settingsKey = "imafpath";
+        title = "Select an IMAF file";
+        filter = tr("IMAF files (*.ima)\nAll files (*.*)");
+        break;
+
     case AnyFile:
         settingsKey = "lastpath";
         filter = tr("All supported files (*.sv %1 %2 %3)\nSonic Visualiser session files (*.sv)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")

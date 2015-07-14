@@ -230,6 +230,8 @@ PropertyBox::populateViewPlayFrame()
         playGainChanged(params->getPlayGain());
 	layout->setAlignment(gainDial, Qt::AlignVCenter);
 
+
+/*
 //code added by Jesus
 
 if (isIMAF){
@@ -283,6 +285,7 @@ if (isWaveform == true){
 } // end if isWaveform
 } // end if isIMAF
 // end code added by Jesus
+*/
 
 	AudioDial *panDial = new AudioDial;
 	layout->addWidget(panDial);
