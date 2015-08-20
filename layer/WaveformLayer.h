@@ -38,16 +38,16 @@ public:
         return m_model ? m_model->getZoomConstraint() : 0;
     }
     virtual const Model *getModel() const { return m_model; }
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourAndBackgroundSignificant;
     }
 
-    virtual int getVerticalScaleWidth(View *v, bool detailed, QPainter &) const;
-    virtual void paintVerticalScale(View *v, bool detailed, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool detailed, QPainter &) const;
+    virtual void paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const;
 
     void setModel(const RangeSummarisableTimeValueModel *model);
 
@@ -180,17 +180,17 @@ public:
     void setAggressiveCacheing(bool);
     bool getAggressiveCacheing() const { return m_aggressive; }
 
-    virtual bool isLayerScrollable(const View *) const;
+    virtual bool isLayerScrollable(const LayerGeometryProvider *) const;
 
-    virtual int getCompletion(View *) const;
+    virtual int getCompletion(LayerGeometryProvider *) const;
 
     virtual bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const;
 
-    virtual bool getYScaleValue(const View *v, int y,
+    virtual bool getYScaleValue(const LayerGeometryProvider *v, int y,
                                 double &value, QString &unit) const;
     
-    virtual bool getYScaleDifference(const View *v, int y0, int y1,
+    virtual bool getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
                                      double &diff, QString &unit) const;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
@@ -202,6 +202,8 @@ public:
     virtual int getCurrentVerticalZoomStep() const;
     virtual void setVerticalZoomStep(int);
 
+    virtual bool canExistWithoutModel() const { return true; }
+
 protected:
     int dBscale(double sample, int m) const;
 
@@ -211,14 +213,14 @@ protected:
     int getChannelArrangement(int &min, int &max,
                                  bool &merging, bool &mixing) const;
 
-    int getYForValue(const View *v, double value, int channel) const;
+    int getYForValue(const LayerGeometryProvider *v, double value, int channel) const;
 
-    double getValueForY(const View *v, int y, int &channel) const;
+    double getValueForY(const LayerGeometryProvider *v, int y, int &channel) const;
 
-    bool getSourceFramesForX(View *v, int x, int modelZoomLevel,
+    bool getSourceFramesForX(LayerGeometryProvider *v, int x, int modelZoomLevel,
                              sv_frame_t &f0, sv_frame_t &f1) const;
 
-    float getNormalizeGain(View *v, int channel) const;
+    float getNormalizeGain(LayerGeometryProvider *v, int channel) const;
 
     virtual void flagBaseColourChanged() { m_cacheValid = false; }
 

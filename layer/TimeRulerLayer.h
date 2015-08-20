@@ -32,7 +32,7 @@ class TimeRulerLayer : public SingleColourLayer
 public:
     TimeRulerLayer();
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     void setModel(Model *);
     virtual const Model *getModel() const { return m_model; }
@@ -41,7 +41,7 @@ public:
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
-    virtual bool snapToFeatureFrame(View *, sv_frame_t &, int &, SnapType) const;
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *, sv_frame_t &, int &, SnapType) const;
 
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourIrrelevant;
@@ -53,12 +53,14 @@ public:
 
     virtual QString getLayerPresentationName() const;
 
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 
     void setProperties(const QXmlAttributes &attributes);
+
+    virtual bool canExistWithoutModel() const { return true; }
 
 protected:
     Model *m_model;
@@ -66,7 +68,7 @@ protected:
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    int getMajorTickSpacing(View *, bool &quarterTicks) const;
+    int getMajorTickSpacing(LayerGeometryProvider *, bool &quarterTicks) const;
 };
 
 #endif

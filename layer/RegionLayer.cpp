@@ -244,7 +244,7 @@ RegionLayer::setVerticalScale(VerticalScale scale)
 }
 
 bool
-RegionLayer::isLayerScrollable(const View *v) const
+RegionLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
@@ -302,11 +302,11 @@ RegionLayer::getDisplayExtents(double &min, double &max) const
 }
 
 RegionModel::PointList
-RegionLayer::getLocalPoints(View *v, int x) const
+RegionLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
     if (!m_model) return RegionModel::PointList();
 
-    long frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     RegionModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -345,11 +345,11 @@ RegionLayer::getLocalPoints(View *v, int x) const
 }
 
 bool
-RegionLayer::getPointToDrag(View *v, int x, int y, RegionModel::Point &p) const
+RegionLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, RegionModel::Point &p) const
 {
     if (!m_model) return false;
 
-    long frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     RegionModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return false;
@@ -383,7 +383,7 @@ RegionLayer::getLabelPreceding(sv_frame_t frame) const
 }
 
 QString
-RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
+RegionLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
@@ -453,7 +453,7 @@ RegionLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-RegionLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
+RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                 int &resolution,
                                 SnapType snap) const
 {
@@ -536,7 +536,7 @@ RegionLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 bool
-RegionLayer::snapToSimilarFeature(View *v, sv_frame_t &frame,
+RegionLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                                   int &resolution,
                                   SnapType snap) const
 {
@@ -624,7 +624,7 @@ RegionLayer::getScaleUnits() const
 }
 
 void
-RegionLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
+RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -676,9 +676,9 @@ RegionLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
 }
 
 int
-RegionLayer::spacingIndexToY(View *v, int i) const
+RegionLayer::spacingIndexToY(LayerGeometryProvider *v, int i) const
 {
-    int h = v->height();
+    int h = v->getPaintHeight();
     int n = int(m_spacingMap.size());
     // this maps from i (spacing of the value from the spacing
     // map) and n (number of region types) to y
@@ -687,10 +687,10 @@ RegionLayer::spacingIndexToY(View *v, int i) const
 }
 
 double
-RegionLayer::yToSpacingIndex(View *v, int y) const
+RegionLayer::yToSpacingIndex(LayerGeometryProvider *v, int y) const
 {
     // we return an inexact result here (double rather than int)
-    int h = v->height();
+    int h = v->getPaintHeight();
     int n = int(m_spacingMap.size());
     // from y = h - ((h * i) / n) + (h / (2 * n)) as above (vh taking place of i)
     double vh = double(2*h*n - h - 2*n*y) / double(2*h);
@@ -698,11 +698,11 @@ RegionLayer::yToSpacingIndex(View *v, int y) const
 }
 
 int
-RegionLayer::getYForValue(View *v, double val) const
+RegionLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     if (m_verticalScale == EqualSpaced) {
 
@@ -733,17 +733,17 @@ RegionLayer::getYForValue(View *v, double val) const
 }
 
 double
-RegionLayer::getValueForY(View *v, int y) const
+RegionLayer::getValueForY(LayerGeometryProvider *v, int y) const
 {
     return getValueForY(v, y, -1);
 }
 
 double
-RegionLayer::getValueForY(View *v, int y, int avoid) const
+RegionLayer::getValueForY(LayerGeometryProvider *v, int y, int avoid) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     if (m_verticalScale == EqualSpaced) {
 
@@ -836,7 +836,7 @@ RegionLayer::getValueForY(View *v, int y, int avoid) const
 }
 
 QColor
-RegionLayer::getColourForValue(View *v, double val) const
+RegionLayer::getColourForValue(LayerGeometryProvider *v, double val) const
 {
     double min, max;
     bool log;
@@ -866,7 +866,7 @@ RegionLayer::getDefaultColourHint(bool darkbg, bool &impose)
 }
 
 void
-RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
+RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
@@ -942,7 +942,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 	if (w < 1) w = 1;
 
 	if (m_plotStyle == PlotSegmentation) {
-            paint.setPen(getForegroundQColor(v));
+            paint.setPen(getForegroundQColor(v->getView()));
             paint.setBrush(getColourForValue(v, p.value));
         } else {
             paint.setPen(getBaseQColor());
@@ -958,15 +958,15 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
                 RegionModel::Point::Comparator()(illuminatePoint, p) ||
                 RegionModel::Point::Comparator()(p, illuminatePoint)) {
 
-                paint.setPen(QPen(getForegroundQColor(v), 1));
-                paint.drawLine(x, 0, x, v->height());
+                paint.setPen(QPen(getForegroundQColor(v->getView()), 1));
+                paint.drawLine(x, 0, x, v->getPaintHeight());
                 paint.setPen(Qt::NoPen);
 
             } else {
-                paint.setPen(QPen(getForegroundQColor(v), 2));
+                paint.setPen(QPen(getForegroundQColor(v->getView()), 2));
             }
 
-	    paint.drawRect(x, -1, ex - x, v->height() + 2);
+	    paint.drawRect(x, -1, ex - x, v->getPaintHeight() + 2);
 
 	} else {
 
@@ -1040,7 +1040,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
                 labelX = x + 5;
                 labelY = v->getTextLabelHeight(this, paint);
                 if (labelX < nextLabelMinX) {
-                    if (lastLabelY < v->height()/2) {
+                    if (lastLabelY < v->getPaintHeight()/2) {
                         labelY = lastLabelY + fontHeight;
                     }
                 }
@@ -1056,7 +1056,7 @@ RegionLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-RegionLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
+RegionLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
     if (!m_model || 
         m_verticalScale == AutoAlignScale || 
@@ -1078,7 +1078,7 @@ RegionLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 }
 
 void
-RegionLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
+RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
     if (!m_model || m_model->getPoints().empty()) return;
 
@@ -1121,11 +1121,11 @@ RegionLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 }
 
 void
-RegionLayer::drawStart(View *v, QMouseEvent *e)
+RegionLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -1145,7 +1145,7 @@ RegionLayer::drawStart(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::drawDrag(View *v, QMouseEvent *e)
+RegionLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -1175,7 +1175,7 @@ RegionLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::drawEnd(View *, QMouseEvent *)
+RegionLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
@@ -1186,7 +1186,7 @@ RegionLayer::drawEnd(View *, QMouseEvent *)
 }
 
 void
-RegionLayer::eraseStart(View *v, QMouseEvent *e)
+RegionLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
@@ -1202,12 +1202,12 @@ RegionLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::eraseDrag(View *, QMouseEvent *)
+RegionLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 {
 }
 
 void
-RegionLayer::eraseEnd(View *v, QMouseEvent *e)
+RegionLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -1229,7 +1229,7 @@ RegionLayer::eraseEnd(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::editStart(View *v, QMouseEvent *e)
+RegionLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
@@ -1254,7 +1254,7 @@ RegionLayer::editStart(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::editDrag(View *v, QMouseEvent *e)
+RegionLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -1263,7 +1263,7 @@ RegionLayer::editDrag(View *v, QMouseEvent *e)
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
-    long frame = v->getFrameForX(newx);
+    sv_frame_t frame = v->getFrameForX(newx);
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -1289,7 +1289,7 @@ RegionLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-RegionLayer::editEnd(View *, QMouseEvent *)
+RegionLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
     if (!m_model || !m_editing) return;
 
@@ -1317,7 +1317,7 @@ RegionLayer::editEnd(View *, QMouseEvent *)
 }
 
 bool
-RegionLayer::editOpen(View *v, QMouseEvent *e)
+RegionLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
@@ -1447,7 +1447,7 @@ RegionLayer::deleteSelection(Selection s)
 }    
 
 void
-RegionLayer::copy(View *v, Selection s, Clipboard &to)
+RegionLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -1465,7 +1465,7 @@ RegionLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-RegionLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1476,7 +1476,7 @@ RegionLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */,
     if (clipboardHasDifferentAlignment(v, from)) {
 
         QMessageBox::StandardButton button =
-            QMessageBox::question(v, tr("Re-align pasted items?"),
+            QMessageBox::question(v->getView(), tr("Re-align pasted items?"),
                                   tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Yes);

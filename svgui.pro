@@ -26,7 +26,7 @@ exists(config.pri) {
 }
 
 CONFIG += staticlib qt thread warn_on stl rtti exceptions c++11
-QT += network xml gui widgets
+QT += network xml gui widgets svg
 
 TARGET = svgui
 
@@ -93,7 +93,8 @@ HEADERS += view/Overview.h \
            view/Pane.h \
            view/PaneStack.h \
            view/View.h \
-           view/ViewManager.h
+           view/ViewManager.h \
+           view/ViewProxy.h
 SOURCES += view/Overview.cpp \
            view/Pane.cpp \
            view/PaneStack.cpp \

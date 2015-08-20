@@ -40,11 +40,26 @@ protected slots:
     void sampleRateChanged(QString);
     void windowSizeChanged(QString);
     void columnPurposeChanged(int purpose);
+
+    void updateFormatFromDialog();
     void updateModelLabel();
 
 protected:
     CSVFormat m_format;
     int m_maxDisplayCols;
+
+    enum TimingOption {
+        TimingExplicitSeconds = 0,
+        TimingExplicitMsec,
+        TimingExplicitSamples,
+        TimingImplicit
+    };
+    std::map<TimingOption, QString> m_timingLabels;
+    TimingOption m_initialTimingOption;
+
+    void updateComboVisibility();
+    void applyStartTimePurpose();
+    void removeStartTimePurpose();
     
     QComboBox *m_timingTypeCombo;
     QLabel *m_sampleRateLabel;
