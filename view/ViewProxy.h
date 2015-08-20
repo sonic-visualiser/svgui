@@ -76,6 +76,7 @@ public:
 	cerr << "getZoomLevel: from " << z << " to ";
 	z = z / m_scaleFactor;
 	cerr << z << endl;
+        if (z < 1) z = 1;
 	return z;
     }
     virtual QRect getPaintRect() const {
