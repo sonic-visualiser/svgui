@@ -2571,7 +2571,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                         float max = fft->getMaximumMagnitudeAt(sx);
                         float scale = log10f(max + 1.f);
-                        cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
+//                        cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
                         for (int i = minbin; i <= maxbin; ++i) {
                             autoarray[i - minbin] *= scale;
                         }
