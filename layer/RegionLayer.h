@@ -39,41 +39,41 @@ class RegionLayer : public SingleColourLayer,
 public:
     RegionLayer();
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    virtual int getVerticalScaleWidth(View *v, bool, QPainter &) const;
-    virtual void paintVerticalScale(View *v, bool, QPainter &paint, QRect rect) const;
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
+    virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
     virtual QString getLabelPreceding(sv_frame_t) const;
 
-    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
-    virtual bool snapToSimilarFeature(View *v, sv_frame_t &frame,
+    virtual bool snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                                       int &resolution,
                                       SnapType snap) const;
 
-    virtual void drawStart(View *v, QMouseEvent *);
-    virtual void drawDrag(View *v, QMouseEvent *);
-    virtual void drawEnd(View *v, QMouseEvent *);
+    virtual void drawStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void eraseStart(View *v, QMouseEvent *);
-    virtual void eraseDrag(View *v, QMouseEvent *);
-    virtual void eraseEnd(View *v, QMouseEvent *);
+    virtual void eraseStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void eraseDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void eraseEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void editStart(View *v, QMouseEvent *);
-    virtual void editDrag(View *v, QMouseEvent *);
-    virtual void editEnd(View *v, QMouseEvent *);
+    virtual void editStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual bool editOpen(View *v, QMouseEvent *);
+    virtual bool editOpen(LayerGeometryProvider *v, QMouseEvent *);
 
     virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
-    virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
+    virtual void copy(LayerGeometryProvider *v, Selection s, Clipboard &to);
+    virtual bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
@@ -110,11 +110,11 @@ public:
     void setPlotStyle(PlotStyle style);
     PlotStyle getPlotStyle() const { return m_plotStyle; }
 
-    virtual bool isLayerScrollable(const View *v) const;
+    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
 
     virtual bool isLayerEditable() const { return true; }
 
-    virtual int getCompletion(View *) const { return m_model->getCompletion(); }
+    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
 
     virtual bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const;
@@ -127,23 +127,23 @@ public:
     void setProperties(const QXmlAttributes &attributes);
 
     /// VerticalScaleLayer and ColourScaleLayer methods
-    int getYForValue(View *v, double value) const;
-    double getValueForY(View *v, int y) const;
+    int getYForValue(LayerGeometryProvider *v, double value) const;
+    double getValueForY(LayerGeometryProvider *v, int y) const;
     virtual QString getScaleUnits() const;
-    QColor getColourForValue(View *v, double value) const;
+    QColor getColourForValue(LayerGeometryProvider *v, double value) const;
 
 protected slots:
     void recalcSpacing();
 
 protected:
-    double getValueForY(View *v, int y, int avoid) const;
-    void getScaleExtents(View *, double &min, double &max, bool &log) const;
+    double getValueForY(LayerGeometryProvider *v, int y, int avoid) const;
+    void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    RegionModel::PointList getLocalPoints(View *v, int x) const;
+    RegionModel::PointList getLocalPoints(LayerGeometryProvider *v, int x) const;
 
-    bool getPointToDrag(View *v, int x, int y, RegionModel::Point &) const;
+    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, RegionModel::Point &) const;
 
     RegionModel *m_model;
     bool m_editing;
@@ -166,8 +166,8 @@ protected:
     // region value -> number of regions with this value
     SpacingMap m_distributionMap;
 
-    int spacingIndexToY(View *v, int i) const;
-    double yToSpacingIndex(View *v, int y) const;
+    int spacingIndexToY(LayerGeometryProvider *v, int i) const;
+    double yToSpacingIndex(LayerGeometryProvider *v, int y) const;
 
     void finish(RegionModel::EditCommand *command) {
         Command *c = command->finish();

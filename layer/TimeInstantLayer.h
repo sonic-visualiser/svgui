@@ -33,35 +33,35 @@ public:
     TimeInstantLayer();
     virtual ~TimeInstantLayer();
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     virtual QString getLabelPreceding(sv_frame_t) const;
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
 
-    virtual void drawStart(View *v, QMouseEvent *);
-    virtual void drawDrag(View *v, QMouseEvent *);
-    virtual void drawEnd(View *v, QMouseEvent *);
+    virtual void drawStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void eraseStart(View *v, QMouseEvent *);
-    virtual void eraseDrag(View *v, QMouseEvent *);
-    virtual void eraseEnd(View *v, QMouseEvent *);
+    virtual void eraseStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void eraseDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void eraseEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void editStart(View *v, QMouseEvent *);
-    virtual void editDrag(View *v, QMouseEvent *);
-    virtual void editEnd(View *v, QMouseEvent *);
+    virtual void editStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual bool editOpen(View *, QMouseEvent *);
+    virtual bool editOpen(LayerGeometryProvider *, QMouseEvent *);
 
     virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
-    virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
+    virtual void copy(LayerGeometryProvider *v, Selection s, Clipboard &to);
+    virtual bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
     virtual const Model *getModel() const { return m_model; }
@@ -84,11 +84,11 @@ public:
     void setPlotStyle(PlotStyle style);
     PlotStyle getPlotStyle() const { return m_plotStyle; }
 
-    virtual bool isLayerScrollable(const View *v) const;
+    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
 
     virtual bool isLayerEditable() const { return true; }
 
-    virtual int getCompletion(View *) const { return m_model->getCompletion(); }
+    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
 
     virtual bool needsTextLabelHeight() const { return m_model->hasTextLabels(); }
 
@@ -109,14 +109,14 @@ public:
         }
     }
 
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
 
 protected:
-    SparseOneDimensionalModel::PointList getLocalPoints(View *v, int) const;
+    SparseOneDimensionalModel::PointList getLocalPoints(LayerGeometryProvider *v, int) const;
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    bool clipboardAlignmentDiffers(View *v, const Clipboard &) const;
+    bool clipboardAlignmentDiffers(LayerGeometryProvider *v, const Clipboard &) const;
 
     SparseOneDimensionalModel *m_model;
     bool m_editing;

@@ -147,14 +147,14 @@ TimeInstantLayer::setPlotStyle(PlotStyle style)
 }
 
 bool
-TimeInstantLayer::isLayerScrollable(const View *v) const
+TimeInstantLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 SparseOneDimensionalModel::PointList
-TimeInstantLayer::getLocalPoints(View *v, int x) const
+TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
     // Return a set of points that all have the same frame number, the
     // nearest to the given x coordinate, and that are within a
@@ -162,7 +162,7 @@ TimeInstantLayer::getLocalPoints(View *v, int x) const
 
     if (!m_model) return SparseOneDimensionalModel::PointList();
 
-    long frame = v->getFrameForX(x);
+    sv_frame_t frame = v->getFrameForX(x);
 
     SparseOneDimensionalModel::PointList onPoints =
 	m_model->getPoints(frame);
@@ -213,7 +213,7 @@ TimeInstantLayer::getLabelPreceding(sv_frame_t frame) const
 }
 
 QString
-TimeInstantLayer::getFeatureDescription(View *v, QPoint &pos) const
+TimeInstantLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
@@ -229,7 +229,7 @@ TimeInstantLayer::getFeatureDescription(View *v, QPoint &pos) const
 	}
     }
 
-    long useFrame = points.begin()->frame;
+    sv_frame_t useFrame = points.begin()->frame;
 
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
     
@@ -249,7 +249,7 @@ TimeInstantLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-TimeInstantLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
+TimeInstantLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 				     int &resolution,
 				     SnapType snap) const
 {
@@ -321,7 +321,7 @@ TimeInstantLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 void
-TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
+TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
@@ -329,8 +329,8 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     int x0 = rect.left(), x1 = rect.right();
 
-    long frame0 = v->getFrameForX(x0);
-    long frame1 = v->getFrameForX(x1);
+    sv_frame_t frame0 = v->getFrameForX(x0);
+    sv_frame_t frame1 = v->getFrameForX(x1);
 
     SparseOneDimensionalModel::PointList points(m_model->getPoints
 						(frame0, frame1));
@@ -367,7 +367,7 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 //	      << m_model->getResolution() << " frames" << endl;
 
     QPoint localPos;
-    long illuminateFrame = -1;
+    sv_frame_t illuminateFrame = -1;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
 	SparseOneDimensionalModel::PointList localPoints =
@@ -403,16 +403,16 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 	}
 		
 	if (p.frame == illuminateFrame) {
-	    paint.setPen(getForegroundQColor(v));
+	    paint.setPen(getForegroundQColor(v->getView()));
 	} else {
 	    paint.setPen(brushColour);
 	}
 
 	if (m_plotStyle == PlotInstants) {
 	    if (iw > 1) {
-		paint.drawRect(x, 0, iw - 1, v->height() - 1);
+		paint.drawRect(x, 0, iw - 1, v->getPaintHeight() - 1);
 	    } else {
-		paint.drawLine(x, 0, x, v->height() - 1);
+		paint.drawLine(x, 0, x, v->getPaintHeight() - 1);
 	    }
 	} else {
 
@@ -431,11 +431,11 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    if (nx >= x) {
 		
 		if (illuminateFrame != p.frame &&
-		    (nx < x + 5 || x >= v->width() - 1)) {
+		    (nx < x + 5 || x >= v->getPaintWidth() - 1)) {
 		    paint.setPen(Qt::NoPen);
 		}
 
-                paint.drawRect(x, -1, nx - x, v->height() + 1);
+                paint.drawRect(x, -1, nx - x, v->getPaintHeight() + 1);
 	    }
 
 	    odd = !odd;
@@ -466,7 +466,7 @@ TimeInstantLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 void
-TimeInstantLayer::drawStart(View *v, QMouseEvent *e)
+TimeInstantLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::drawStart(" << e->x() << ")" << endl;
@@ -474,7 +474,7 @@ TimeInstantLayer::drawStart(View *v, QMouseEvent *e)
 
     if (!m_model) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -489,7 +489,7 @@ TimeInstantLayer::drawStart(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
+TimeInstantLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::drawDrag(" << e->x() << ")" << endl;
@@ -497,7 +497,7 @@ TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
     m_editingCommand->deletePoint(m_editingPoint);
@@ -506,7 +506,7 @@ TimeInstantLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::drawEnd(View *, QMouseEvent *)
+TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << endl;
@@ -523,7 +523,7 @@ TimeInstantLayer::drawEnd(View *, QMouseEvent *)
 }
 
 void
-TimeInstantLayer::eraseStart(View *v, QMouseEvent *e)
+TimeInstantLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
@@ -541,12 +541,12 @@ TimeInstantLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::eraseDrag(View *, QMouseEvent *)
+TimeInstantLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 {
 }
 
 void
-TimeInstantLayer::eraseEnd(View *v, QMouseEvent *e)
+TimeInstantLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -567,7 +567,7 @@ TimeInstantLayer::eraseEnd(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::editStart(View *v, QMouseEvent *e)
+TimeInstantLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::editStart(" << e->x() << ")" << endl;
@@ -589,7 +589,7 @@ TimeInstantLayer::editStart(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
+TimeInstantLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::editDrag(" << e->x() << ")" << endl;
@@ -597,7 +597,7 @@ TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
 
     if (!m_model || !m_editing) return;
 
-    long frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
@@ -612,7 +612,7 @@ TimeInstantLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::editEnd(View *, QMouseEvent *)
+TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << endl;
@@ -631,7 +631,7 @@ TimeInstantLayer::editEnd(View *, QMouseEvent *)
 }
 
 bool
-TimeInstantLayer::editOpen(View *v, QMouseEvent *e)
+TimeInstantLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
@@ -747,7 +747,7 @@ TimeInstantLayer::deleteSelection(Selection s)
 }
 
 void
-TimeInstantLayer::copy(View *v, Selection s, Clipboard &to)
+TimeInstantLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -765,7 +765,7 @@ TimeInstantLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-TimeInstantLayer::paste(View *v, const Clipboard &from, sv_frame_t frameOffset, bool)
+TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset, bool)
 {
     if (!m_model) return false;
 
@@ -776,7 +776,7 @@ TimeInstantLayer::paste(View *v, const Clipboard &from, sv_frame_t frameOffset, 
     if (clipboardHasDifferentAlignment(v, from)) {
 
         QMessageBox::StandardButton button =
-            QMessageBox::question(v, tr("Re-align pasted instants?"),
+            QMessageBox::question(v->getView(), tr("Re-align pasted instants?"),
                                   tr("The instants you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Yes);

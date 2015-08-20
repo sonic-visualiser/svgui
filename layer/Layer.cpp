@@ -115,7 +115,7 @@ Layer::getPlayParameters()
 }
 
 void
-Layer::setLayerDormant(const View *v, bool dormant)
+Layer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 {
     const void *vv = (const void *)v;
     QMutexLocker locker(&m_dormancyMutex);
@@ -123,7 +123,7 @@ Layer::setLayerDormant(const View *v, bool dormant)
 }
 
 bool
-Layer::isLayerDormant(const View *v) const
+Layer::isLayerDormant(const LayerGeometryProvider *v) const
 {
     const void *vv = (const void *)v;
     QMutexLocker locker(&m_dormancyMutex);
@@ -132,14 +132,14 @@ Layer::isLayerDormant(const View *v) const
 }
 
 void
-Layer::showLayer(View *view, bool show)
+Layer::showLayer(LayerGeometryProvider *view, bool show)
 {
     setLayerDormant(view, !show);
     emit layerParametersChanged();
 }
 
 bool
-Layer::getXScaleValue(const View *v, int x, double &value, QString &unit) const
+Layer::getXScaleValue(const LayerGeometryProvider *v, int x, double &value, QString &unit) const
 {
     if (!hasTimeXAxis()) return false;
 
@@ -152,7 +152,7 @@ Layer::getXScaleValue(const View *v, int x, double &value, QString &unit) const
 }
 
 bool
-Layer::getYScaleDifference(const View *v, int y0, int y1,
+Layer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
                            double &diff, QString &unit) const
 {
     double v0, v1;
@@ -166,31 +166,31 @@ Layer::getYScaleDifference(const View *v, int y0, int y1,
 }
 
 sv_frame_t
-Layer::alignToReference(View *v, sv_frame_t frame) const
+Layer::alignToReference(LayerGeometryProvider *v, sv_frame_t frame) const
 {
     const Model *m = getModel();
     SVDEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
     if (m && m->getAlignmentReference()) {
         return m->alignToReference(frame);
     } else {
-        return v->alignToReference(frame);
+        return v->getView()->alignToReference(frame);
     }
 }
 
 sv_frame_t
-Layer::alignFromReference(View *v, sv_frame_t frame) const
+Layer::alignFromReference(LayerGeometryProvider *v, sv_frame_t frame) const
 {
     const Model *m = getModel();
     SVDEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
     if (m && m->getAlignmentReference()) {
         return m->alignFromReference(frame);
     } else {
-        return v->alignFromReference(frame);
+        return v->getView()->alignFromReference(frame);
     }
 }
 
 bool
-Layer::clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const
+Layer::clipboardHasDifferentAlignment(LayerGeometryProvider *v, const Clipboard &clip) const
 {
     // Notes on pasting to an aligned layer:
     // 
@@ -371,7 +371,7 @@ Layer::DeleteMeasurementRectCommand::unexecute()
 }
 
 void
-Layer::measureStart(View *v, QMouseEvent *e)
+Layer::measureStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     setMeasureRectFromPixrect(v, m_draggingRect,
                               QRect(e->x(), e->y(), 0, 0));
@@ -379,7 +379,7 @@ Layer::measureStart(View *v, QMouseEvent *e)
 }
 
 void
-Layer::measureDrag(View *v, QMouseEvent *e)
+Layer::measureDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_haveDraggingRect) return;
 
@@ -391,7 +391,7 @@ Layer::measureDrag(View *v, QMouseEvent *e)
 }
 
 void
-Layer::measureEnd(View *v, QMouseEvent *e)
+Layer::measureEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_haveDraggingRect) return;
     measureDrag(v, e);
@@ -405,7 +405,7 @@ Layer::measureEnd(View *v, QMouseEvent *e)
 }
 
 void
-Layer::measureDoubleClick(View *, QMouseEvent *)
+Layer::measureDoubleClick(LayerGeometryProvider *, QMouseEvent *)
 {
     // nothing, in the base class
 }
@@ -425,7 +425,7 @@ Layer::deleteCurrentMeasureRect()
 }
 
 void
-Layer::paintMeasurementRects(View *v, QPainter &paint,
+Layer::paintMeasurementRects(LayerGeometryProvider *v, QPainter &paint,
                              bool showFocus, QPoint focusPoint) const
 {
     updateMeasurePixrects(v);
@@ -457,7 +457,7 @@ Layer::paintMeasurementRects(View *v, QPainter &paint,
 }
 
 bool
-Layer::nearestMeasurementRectChanged(View *v, QPoint prev, QPoint now) const
+Layer::nearestMeasurementRectChanged(LayerGeometryProvider *v, QPoint prev, QPoint now) const
 {
     updateMeasurePixrects(v);
     
@@ -468,7 +468,7 @@ Layer::nearestMeasurementRectChanged(View *v, QPoint prev, QPoint now) const
 }
 
 void
-Layer::updateMeasurePixrects(View *v) const
+Layer::updateMeasurePixrects(LayerGeometryProvider *v) const
 {
     sv_frame_t sf = v->getStartFrame();
     sv_frame_t ef = v->getEndFrame();
@@ -507,26 +507,26 @@ Layer::updateMeasurePixrects(View *v) const
 }
 
 void
-Layer::updateMeasureRectYCoords(View *v, const MeasureRect &r) const
+Layer::updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const
 {
-    int y0 = int(lrint(r.startY * v->height()));
-    int y1 = int(lrint(r.endY * v->height()));
+    int y0 = int(lrint(r.startY * v->getPaintHeight()));
+    int y1 = int(lrint(r.endY * v->getPaintHeight()));
     r.pixrect = QRect(r.pixrect.x(), y0, r.pixrect.width(), y1 - y0);
 }
 
 void
-Layer::setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const
+Layer::setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const
 {
     if (start) {
-        r.startY = double(y) / double(v->height());
+        r.startY = double(y) / double(v->getPaintHeight());
         r.endY = r.startY;
     } else {
-        r.endY = double(y) / double(v->height());
+        r.endY = double(y) / double(v->getPaintHeight());
     }
 }
 
 void
-Layer::setMeasureRectFromPixrect(View *v, MeasureRect &r, QRect pixrect) const
+Layer::setMeasureRectFromPixrect(LayerGeometryProvider *v, MeasureRect &r, QRect pixrect) const
 {
     r.pixrect = pixrect;
     r.haveFrames = hasTimeXAxis();
@@ -566,13 +566,13 @@ Layer::findFocusedMeasureRect(QPoint focusPoint) const
 }
 
 void
-Layer::paintMeasurementRect(View *v, QPainter &paint,
+Layer::paintMeasurementRect(LayerGeometryProvider *v, QPainter &paint,
                             const MeasureRect &r, bool focus) const
 {
     if (r.haveFrames) {
         
         int x0 = -1;
-        int x1 = v->width() + 1;
+        int x1 = v->getPaintWidth() + 1;
         
         if (r.startFrame >= v->getStartFrame()) {
             x0 = v->getXForFrame(r.startFrame);
