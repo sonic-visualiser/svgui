@@ -71,11 +71,10 @@ public:
 	return m_view->getValueExtents(unit, min, max, log);
     }
     virtual int getZoomLevel() const {
-	//!!! aarg, what if it's already 1?
 	int z = m_view->getZoomLevel();
-	cerr << "getZoomLevel: from " << z << " to ";
+//	cerr << "getZoomLevel: from " << z << " to ";
 	z = z / m_scaleFactor;
-	cerr << z << endl;
+//	cerr << z << endl;
         if (z < 1) z = 1;
 	return z;
     }
