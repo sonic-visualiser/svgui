@@ -126,7 +126,7 @@ QPixmap
 IconLoader::loadScalable(QString name, int size)
 {
     if (!QFile(name).exists()) {
-        cerr << "loadScalable: no such file as: \"" << name << "\"" << endl;
+//        cerr << "loadScalable: no such file as: \"" << name << "\"" << endl;
         return QPixmap();
     }
     QPixmap pmap(size, size);
@@ -134,9 +134,9 @@ IconLoader::loadScalable(QString name, int size)
     QSvgRenderer renderer(name);
     QPainter painter;
     painter.begin(&pmap);
-    cerr << "calling renderer for " << name << " at size " << size << "..." << endl;
+//    cerr << "calling renderer for " << name << " at size " << size << "..." << endl;
     renderer.render(&painter);
-    cerr << "renderer completed" << endl;
+//    cerr << "renderer completed" << endl;
     painter.end();
     return pmap;
 }

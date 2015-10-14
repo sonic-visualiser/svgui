@@ -46,8 +46,8 @@
 
 #include <unistd.h>
 
-#define DEBUG_VIEW 1
-#define DEBUG_VIEW_WIDGET_PAINT 1
+//#define DEBUG_VIEW 1
+//#define DEBUG_VIEW_WIDGET_PAINT 1
 
 
 View::View(QWidget *w, bool showProgress) :
