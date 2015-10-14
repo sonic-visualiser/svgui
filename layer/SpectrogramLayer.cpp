@@ -1512,7 +1512,7 @@ SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
         }
         if (m_fftModels[view]->getHeight() != fftSize / 2 + 1) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[view].first->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
+            cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[view]->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
 #endif
             delete m_fftModels[view];
             m_fftModels.erase(view);
@@ -2571,7 +2571,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                         float max = fft->getMaximumMagnitudeAt(sx);
                         float scale = log10f(max + 1.f);
-                        cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
+//                        cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
                         for (int i = minbin; i <= maxbin; ++i) {
                             autoarray[i - minbin] *= scale;
                         }
