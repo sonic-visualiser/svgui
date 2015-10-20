@@ -2401,11 +2401,11 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                 } else if (m_normalization == NormalizeColumns) {
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                 } else if (m_normalization == NormalizeHybrid) {
-                    fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
-                    double max = fft->getMaximumMagnitudeAt(sx);
+                    float max = fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                     if (max > 0.f) {
                         for (int i = minbin; i <= maxbin; ++i) {
-                            values[i - minbin] = float(values[i - minbin] * log10(max));
+                            values[i - minbin] = float(values[i - minbin] *
+                                                       log10f(max));
                         }
                     }
                 } else {
@@ -2568,8 +2568,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                     } else if (m_normalization == NormalizeColumns) {
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                     } else if (m_normalization == NormalizeHybrid) {
-                        fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                        float max = fft->getMaximumMagnitudeAt(sx);
+                        float max = fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                         float scale = log10f(max + 1.f);
 //                        cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
                         for (int i = minbin; i <= maxbin; ++i) {
