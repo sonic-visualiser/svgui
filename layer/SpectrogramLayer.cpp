@@ -3544,13 +3544,29 @@ SpectrogramLayer::toXml(QTextStream &stream,
 	.arg(m_frequencyScale)
 	.arg(m_binDisplay);
 
-    s += QString("normalizeColumns=\"%1\" "
-                 "normalizeVisibleArea=\"%2\" "
-                 "normalizeHybrid=\"%3\" ")
-	.arg(m_normalization == NormalizeColumns ? "true" : "false")
-        .arg(m_normalization == NormalizeVisibleArea ? "true" : "false")
-        .arg(m_normalization == NormalizeHybrid ? "true" : "false");
+    // New-style normalization attributes, allowing for more types of
+    // normalization in future: write out the column normalization
+    // type separately, and then whether we are normalizing visible
+    // area as well afterwards
+    
+    s += QString("columnNormalization=\"%1\" ")
+        .arg(m_normalization == NormalizeColumns ? "peak" :
+             m_normalization == NormalizeHybrid ? "hybrid" : "none");
 
+    // Old-style normalization attribute. We *don't* write out
+    // normalizeHybrid here because the only release that would accept
+    // it (Tony v1.0) has a totally different scale factor for
+    // it. We'll just have to accept that session files from Tony
+    // v2.0+ will look odd in Tony v1.0
+    
+    s += QString("normalizeColumns=\"%1\" ")
+	.arg(m_normalization == NormalizeColumns ? "true" : "false");
+
+    // And this applies to both old- and new-style attributes
+    
+    s += QString("normalizeVisibleArea=\"%1\" ")
+        .arg(m_normalization == NormalizeVisibleArea ? "true" : "false");
+    
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
@@ -3615,10 +3631,39 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 	attributes.value("binDisplay").toInt(&ok);
     if (ok) setBinDisplay(binDisplay);
 
-    bool normalizeColumns =
-	(attributes.value("normalizeColumns").trimmed() == "true");
-    if (normalizeColumns) {
-        setNormalization(NormalizeColumns);
+    bool haveNewStyleNormalization = false;
+    
+    QString columnNormalization = attributes.value("columnNormalization");
+
+    if (columnNormalization != "") {
+
+        haveNewStyleNormalization = true;
+
+        if (columnNormalization == "peak") {
+            setNormalization(NormalizeColumns);
+        } else if (columnNormalization == "hybrid") {
+            setNormalization(NormalizeHybrid);
+        } else if (columnNormalization == "none") {
+            // do nothing
+        } else {
+            cerr << "NOTE: Unknown or unsupported columnNormalization attribute \""
+                 << columnNormalization << "\"" << endl;
+        }
+    }
+
+    if (!haveNewStyleNormalization) {
+
+        bool normalizeColumns =
+            (attributes.value("normalizeColumns").trimmed() == "true");
+        if (normalizeColumns) {
+            setNormalization(NormalizeColumns);
+        }
+
+        bool normalizeHybrid =
+            (attributes.value("normalizeHybrid").trimmed() == "true");
+        if (normalizeHybrid) {
+            setNormalization(NormalizeHybrid);
+        }
     }
 
     bool normalizeVisibleArea =
@@ -3627,10 +3672,13 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         setNormalization(NormalizeVisibleArea);
     }
 
-    bool normalizeHybrid =
-	(attributes.value("normalizeHybrid").trimmed() == "true");
-    if (normalizeHybrid) {
-        setNormalization(NormalizeHybrid);
+    if (!haveNewStyleNormalization && m_normalization == NormalizeHybrid) {
+        // Tony v1.0 is (and hopefully will remain!) the only released
+        // SV-a-like to use old-style attributes when saving sessions
+        // that ask for hybrid normalization. It saves them with the
+        // wrong gain factor, so hack in a fix for that here -- this
+        // gives us backward but not forward compatibility.
+        setGain(m_gain / float(m_fftSize / 2));
     }
 }
     
