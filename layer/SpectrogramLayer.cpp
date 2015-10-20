@@ -1887,7 +1887,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         } else {
             RealTime lastTime = m_lastPaintTime;
             while (lastTime > RealTime::fromMilliseconds(200) &&
-                   paintBlockWidth > 50) {
+                   paintBlockWidth > 100) {
                 paintBlockWidth /= 2;
                 lastTime = lastTime / 2;
             }
@@ -1898,7 +1898,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             }
         }
         
-        if (paintBlockWidth < 20) paintBlockWidth = 20;
+        if (paintBlockWidth < 50) paintBlockWidth = 50;
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
