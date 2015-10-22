@@ -139,9 +139,6 @@ public:
     void setInvertVertical(bool i);
     bool getInvertVertical() const;
 
-    void setShowRectified(bool);
-    bool getShowRectified() const { return m_rectified; }
-
     void setOpaque(bool i);
     bool getOpaque() const;
 
@@ -190,7 +187,6 @@ protected:
     bool        m_normalizeVisibleArea;
     bool        m_normalizeHybrid;
     bool        m_invertVertical;
-    bool        m_rectified;
     bool        m_opaque;
     bool        m_smooth;
     int         m_peakResolution;

@@ -54,7 +54,6 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_normalizeVisibleArea(false),
     m_normalizeHybrid(false),
     m_invertVertical(false),
-    m_rectified(false),
     m_opaque(false),
     m_smooth(false),
     m_peakResolution(256),
@@ -163,7 +162,6 @@ Colour3DPlotLayer::getProperties() const
     list.push_back("Gain");
     list.push_back("Bin Scale");
     list.push_back("Invert Vertical Scale");
-    list.push_back("Show Rectified");
     list.push_back("Opaque");
     list.push_back("Smooth");
     return list;
@@ -177,7 +175,6 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Normalize Columns") return tr("Normalize Columns");
     if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
     if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
-    if (name == "Show Rectified") return tr("Half-Wave Rectify");
     if (name == "Gain") return tr("Gain");
     if (name == "Opaque") return tr("Always Opaque");
     if (name == "Smooth") return tr("Smooth");
@@ -191,7 +188,6 @@ Colour3DPlotLayer::getPropertyIconName(const PropertyName &name) const
     if (name == "Normalize Columns") return "normalise-columns";
     if (name == "Normalize Visible Area") return "normalise";
     if (name == "Invert Vertical Scale") return "invert-vertical";
-    if (name == "Show Rectified") return "derivative";
     if (name == "Opaque") return "opaque";
     if (name == "Smooth") return "smooth";
     return "";
@@ -204,7 +200,6 @@ Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
     if (name == "Normalize Columns") return ToggleProperty;
     if (name == "Normalize Visible Area") return ToggleProperty;
     if (name == "Invert Vertical Scale") return ToggleProperty;
-    if (name == "Show Rectified") return ToggleProperty;
     if (name == "Opaque") return ToggleProperty;
     if (name == "Smooth") return ToggleProperty;
     return ValueProperty;
@@ -216,7 +211,6 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Normalize Columns" ||
         name == "Normalize Visible Area" ||
 	name == "Colour Scale" ||
-        name == "Show Rectified" ||
         name == "Gain") return tr("Scale");
     if (name == "Bin Scale" ||
         name == "Invert Vertical Scale") return tr("Bins");
@@ -280,13 +274,6 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 	
         *deflt = 0;
 	val = (m_invertVertical ? 1 : 0);
-
-    } else if (name == "Show Rectified") {
-
-        if (min) *min = 0;
-        if (max) *max = 0;
-        if (deflt) *deflt = 0;
-        val = (m_rectified ? 1.0 : 0.0);
 
     } else if (name == "Bin Scale") {
 
@@ -368,8 +355,6 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	setNormalizeVisibleArea(value ? true : false);
     } else if (name == "Invert Vertical Scale") {
 	setInvertVertical(value ? true : false);
-    } else if (name == "Show Rectified") {
-        setShowRectified(value > 0.5);
     } else if (name == "Opaque") {
 	setOpaque(value ? true : false);
     } else if (name == "Smooth") {
@@ -482,15 +467,6 @@ Colour3DPlotLayer::setInvertVertical(bool n)
 {
     if (m_invertVertical == n) return;
     m_invertVertical = n;
-    cacheInvalid();
-    emit layerParametersChanged();
-}
-
-void
-Colour3DPlotLayer::setShowRectified(bool show)
-{
-    if (m_rectified == show) return;
-    m_rectified = show;
     cacheInvalid();
     emit layerParametersChanged();
 }
@@ -954,20 +930,7 @@ Colour3DPlotLayer::getColumn(int col) const
 {
     Profiler profiler("Colour3DPlotLayer::getColumn");
 
-    DenseThreeDimensionalModel::Column prev;
-    if (m_rectified && (col > m_model->getStartFrame())) {
-        prev = m_model->getColumn(col - 1);
-    }
-    
     DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
-
-    if (m_rectified && !prev.empty()) {
-        for (int y = 0; y < values.size(); ++y) {
-            if (values[y] < prev[y]) values[y] = 0;
-            else values[y] -= prev[y];
-        }
-    }
-    
     while (values.size() < m_model->getHeight()) values.push_back(0.f);
     if (!m_normalizeColumns && !m_normalizeHybrid) return values;
 
