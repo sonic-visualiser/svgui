@@ -44,7 +44,8 @@ public:
         Banded,
         Highlight,
         Printer,
-        HighGain
+        HighGain,
+        YlGnBu,
     };
 
     int getMap() const { return m_map; }

@@ -21,6 +21,47 @@
 
 #include "base/Debug.h"
 
+#include <vector>
+
+using namespace std;
+
+static vector<QString> ylGnBuS {
+// this is ylGnBu 9
+//    "#f7fcf0","#e0f3db","#ccebc5","#a8ddb5","#7bccc4","#4eb3d3","#2b8cbe","#0868ac","#084081"
+
+    "#ffffff", "#ffff00", "#f7fcf0","#e0f3db","#ccebc5","#a8ddb5","#7bccc4","#4eb3d3","#2b8cbe","#0868ac","#084081","#042040"
+
+// this is PuOr 11
+//    "#7f3b08","#b35806","#e08214","#fdb863","#fee0b6","#f7f7f7","#d8daeb","#b2abd2","#8073ac","#542788","#2d004b"
+        };
+
+    
+static vector<QColor> convertStrings(const vector<QString> &strs)
+{
+    vector<QColor> converted;
+    for (const auto &s: strs) converted.push_back(QColor(s));
+    reverse(converted.begin(), converted.end());
+    return converted;
+}
+
+static vector<QColor> ylGnBu = convertStrings(ylGnBuS);
+
+static void
+mapDiscrete(double norm, vector<QColor> &colours, double &r, double &g, double &b)
+{
+    int n = colours.size();
+    double m = norm * (n-1);
+    if (m >= n-1) { colours[n-1].getRgbF(&r, &g, &b, 0); return; }
+    if (m <= 0) { colours[0].getRgbF(&r, &g, &b, 0); return; }
+    int base(int(floor(m)));
+    double prop0 = (base + 1.0) - m, prop1 = m - base;
+    QColor c0(colours[base]), c1(colours[base+1]);
+    r = c0.redF() * prop0 + c1.redF() * prop1;
+    g = c0.greenF() * prop0 + c1.greenF() * prop1;
+    b = c0.blueF() * prop0 + c1.blueF() * prop1;
+    cerr << "mapDiscrete: norm " << norm << " -> " << r << "," << g << "," << b << endl;
+}
+
 ColourMapper::ColourMapper(int map, double min, double max) :
     QObject(),
     m_map(map),
@@ -41,7 +82,7 @@ ColourMapper::~ColourMapper()
 int
 ColourMapper::getColourMapCount()
 {
-    return 12;
+    return 13;
 }
 
 QString
@@ -63,6 +104,7 @@ ColourMapper::getColourMapName(int n)
     case Highlight:        return tr("Highlight");
     case Printer:          return tr("Printer");
     case HighGain:         return tr("High Gain");
+    case YlGnBu:           return tr("YlGnBu");
     }
 
     return tr("<unknown>");
@@ -207,6 +249,10 @@ ColourMapper::map(double value) const
         hsv = false;
 */
         break;
+
+    case YlGnBu:
+        hsv = false;
+        mapDiscrete(norm, ylGnBu, r, g, b);
     }
 
     if (hsv) {
