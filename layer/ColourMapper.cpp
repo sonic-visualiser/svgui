@@ -51,7 +51,6 @@ mapDiscrete(double norm, vector<QColor> &colours, double &r, double &g, double &
     r = c0.redF() * prop0 + c1.redF() * prop1;
     g = c0.greenF() * prop0 + c1.greenF() * prop1;
     b = c0.blueF() * prop0 + c1.blueF() * prop1;
-    cerr << "mapDiscrete: norm " << norm << " -> " << r << "," << g << "," << b << endl;
 }
 
 ColourMapper::ColourMapper(int map, double min, double max) :
