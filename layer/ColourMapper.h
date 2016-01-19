@@ -37,15 +37,14 @@ public:
         Sunset,
         WhiteOnBlack,
         BlackOnWhite,
-        RedOnBlue,
+        CherryPie,
         YellowOnBlack,
-        BlueOnBlack,
+        XRay,
         FruitSalad,
         Banded,
         Highlight,
         Printer,
-        HighGain,
-        XRay,
+        HighGain
     };
 
     int getMap() const { return m_map; }
