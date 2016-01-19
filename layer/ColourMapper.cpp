@@ -40,20 +40,8 @@ static vector<QColor> xRay = convertStrings({
         });
 
 static vector<QColor> cherryPie = convertStrings({
-"#f7f7f7",
-"#fddbc7",
-"#f4a582",
-"#d6604d",
-        "#b2182b",
-    "#dd3497",
-    "#ae017e",
-    "#7a0177",
-"#49006a"
-    //           "#d1e5f0",
-    //       "#92c5de",
-    //       "#4393c3",
-    //       "#2166ac",
-
+        "#f7f7f7", "#fddbc7", "#f4a582", "#d6604d", "#b2182b", "#dd3497",
+        "#ae017e", "#7a0177", "#49006a"
         });
     
 static void
