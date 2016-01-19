@@ -25,17 +25,6 @@
 
 using namespace std;
 
-static vector<QString> ylGnBuS {
-// this is ylGnBu 9
-//    "#f7fcf0","#e0f3db","#ccebc5","#a8ddb5","#7bccc4","#4eb3d3","#2b8cbe","#0868ac","#084081"
-
-    "#ffffff", "#ffff00", "#f7fcf0","#e0f3db","#ccebc5","#a8ddb5","#7bccc4","#4eb3d3","#2b8cbe","#0868ac","#084081","#042040"
-
-// this is PuOr 11
-//    "#7f3b08","#b35806","#e08214","#fdb863","#fee0b6","#f7f7f7","#d8daeb","#b2abd2","#8073ac","#542788","#2d004b"
-        };
-
-    
 static vector<QColor> convertStrings(const vector<QString> &strs)
 {
     vector<QColor> converted;
@@ -44,7 +33,10 @@ static vector<QColor> convertStrings(const vector<QString> &strs)
     return converted;
 }
 
-static vector<QColor> ylGnBu = convertStrings(ylGnBuS);
+static vector<QColor> xRay = convertStrings({
+        // Based on ColorBrewer ylGnBu scale
+        "#ffffff", "#ffff00", "#f7fcf0","#e0f3db","#ccebc5","#a8ddb5","#7bccc4","#4eb3d3","#2b8cbe","#0868ac","#084081","#042040"
+        });
 
 static void
 mapDiscrete(double norm, vector<QColor> &colours, double &r, double &g, double &b)
@@ -104,7 +96,7 @@ ColourMapper::getColourMapName(int n)
     case Highlight:        return tr("Highlight");
     case Printer:          return tr("Printer");
     case HighGain:         return tr("High Gain");
-    case YlGnBu:           return tr("YlGnBu");
+    case XRay:             return tr("X-Ray");
     }
 
     return tr("<unknown>");
@@ -250,9 +242,9 @@ ColourMapper::map(double value) const
 */
         break;
 
-    case YlGnBu:
+    case XRay:
         hsv = false;
-        mapDiscrete(norm, ylGnBu, r, g, b);
+        mapDiscrete(norm, xRay, r, g, b);
     }
 
     if (hsv) {

@@ -45,7 +45,7 @@ public:
         Highlight,
         Printer,
         HighGain,
-        YlGnBu,
+        XRay,
     };
 
     int getMap() const { return m_map; }
