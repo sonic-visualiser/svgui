@@ -34,14 +34,32 @@ static vector<QColor> convertStrings(const vector<QString> &strs)
 }
 
 static vector<QColor> xRay = convertStrings({
-        // Based on ColorBrewer ylGnBu scale
-        "#ffffff", "#ffff00", "#f7fcf0","#e0f3db","#ccebc5","#a8ddb5","#7bccc4","#4eb3d3","#2b8cbe","#0868ac","#084081","#042040"
+        // Based on ColorBrewer ylGnBu
+        "#ffffff", "#ffff00", "#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5",
+        "#7bccc4", "#4eb3d3", "#2b8cbe", "#0868ac", "#084081", "#042040"
         });
 
+static vector<QColor> cherryPie = convertStrings({
+"#f7f7f7",
+"#fddbc7",
+"#f4a582",
+"#d6604d",
+        "#b2182b",
+    "#dd3497",
+    "#ae017e",
+    "#7a0177",
+"#49006a"
+    //           "#d1e5f0",
+    //       "#92c5de",
+    //       "#4393c3",
+    //       "#2166ac",
+
+        });
+    
 static void
 mapDiscrete(double norm, vector<QColor> &colours, double &r, double &g, double &b)
 {
-    int n = colours.size();
+    int n = int(colours.size());
     double m = norm * (n-1);
     if (m >= n-1) { colours[n-1].getRgbF(&r, &g, &b, 0); return; }
     if (m <= 0) { colours[0].getRgbF(&r, &g, &b, 0); return; }
@@ -73,7 +91,7 @@ ColourMapper::~ColourMapper()
 int
 ColourMapper::getColourMapCount()
 {
-    return 13;
+    return 12;
 }
 
 QString
@@ -83,19 +101,18 @@ ColourMapper::getColourMapName(int n)
     StandardMap map = (StandardMap)n;
 
     switch (map) {
-    case DefaultColours:   return tr("Default");
+    case DefaultColours:   return tr("Green");
     case WhiteOnBlack:     return tr("White on Black");
     case BlackOnWhite:     return tr("Black on White");
-    case RedOnBlue:        return tr("Red on Blue");
-    case YellowOnBlack:    return tr("Yellow on Black");
-    case BlueOnBlack:      return tr("Blue on Black");
+    case CherryPie:        return tr("Cherry");
+    case YellowOnBlack:    return tr("Wasp");
+    case XRay:             return tr("X-Ray");
     case Sunset:           return tr("Sunset");
     case FruitSalad:       return tr("Fruit Salad");
     case Banded:           return tr("Banded");
     case Highlight:        return tr("Highlight");
     case Printer:          return tr("Printer");
     case HighGain:         return tr("High Gain");
-    case XRay:             return tr("X-Ray");
     }
 
     return tr("<unknown>");
@@ -134,28 +151,15 @@ ColourMapper::map(double value) const
         hsv = false;
         break;
 
-    case RedOnBlue:
-        h = blue - pieslice/4.0 + norm * (pieslice + pieslice/4.0);
-        s = 1.0;
-        v = norm;
+    case CherryPie:
+        hsv = false;
+        mapDiscrete(norm, cherryPie, r, g, b);
         break;
 
     case YellowOnBlack:
         h = 0.15;
         s = 1.0;
         v = norm;
-        break;
-
-    case BlueOnBlack:
-        h = blue;
-        s = 1.0;
-        v = norm * 2.0;
-        if (v > 1.0) {
-            v = 1.0;
-            s = 1.0 - (sqrt(norm) - 0.707) * 3.413;
-            if (s < 0.0) s = 0.0;
-            if (s > 1.0) s = 1.0;
-        }
         break;
 
     case Sunset:
@@ -270,13 +274,13 @@ ColourMapper::getContrastingColour() const
     case BlackOnWhite:
         return Qt::darkGreen;
 
-    case RedOnBlue:
+    case CherryPie:
         return Qt::green;
 
     case YellowOnBlack:
         return QColor::fromHsv(240, 255, 255);
 
-    case BlueOnBlack:
+    case XRay:
         return Qt::red;
 
     case Sunset:
@@ -317,9 +321,9 @@ ColourMapper::hasLightBackground() const
     case DefaultColours:
     case Sunset:
     case WhiteOnBlack:
-    case RedOnBlue:
+    case CherryPie:
     case YellowOnBlack:
-    case BlueOnBlack:
+    case XRay:
     case FruitSalad:
     case Banded:
     case Highlight:
