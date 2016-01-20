@@ -33,13 +33,13 @@ public:
     virtual ~ColourMapper();
 
     enum StandardMap {
-        DefaultColours,
+        Green,
         Sunset,
         WhiteOnBlack,
         BlackOnWhite,
-        CherryPie,
-        YellowOnBlack,
-        XRay,
+        Cherry,
+        Wasp,
+        Ice,
         FruitSalad,
         Banded,
         Highlight,
