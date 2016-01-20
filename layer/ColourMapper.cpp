@@ -33,13 +33,13 @@ static vector<QColor> convertStrings(const vector<QString> &strs)
     return converted;
 }
 
-static vector<QColor> xRay = convertStrings({
+static vector<QColor> ice = convertStrings({
         // Based on ColorBrewer ylGnBu
         "#ffffff", "#ffff00", "#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5",
         "#7bccc4", "#4eb3d3", "#2b8cbe", "#0868ac", "#084081", "#042040"
         });
 
-static vector<QColor> cherryPie = convertStrings({
+static vector<QColor> cherry = convertStrings({
         "#f7f7f7", "#fddbc7", "#f4a582", "#d6604d", "#b2182b", "#dd3497",
         "#ae017e", "#7a0177", "#49006a"
         });
@@ -89,12 +89,12 @@ ColourMapper::getColourMapName(int n)
     StandardMap map = (StandardMap)n;
 
     switch (map) {
-    case DefaultColours:   return tr("Green");
+    case Green:            return tr("Green");
     case WhiteOnBlack:     return tr("White on Black");
     case BlackOnWhite:     return tr("Black on White");
-    case CherryPie:        return tr("Cherry");
-    case YellowOnBlack:    return tr("Wasp");
-    case XRay:             return tr("X-Ray");
+    case Cherry:           return tr("Cherry");
+    case Wasp:             return tr("Wasp");
+    case Ice:              return tr("Ice");
     case Sunset:           return tr("Sunset");
     case FruitSalad:       return tr("Fruit Salad");
     case Banded:           return tr("Banded");
@@ -123,7 +123,7 @@ ColourMapper::map(double value) const
 
     switch (map) {
 
-    case DefaultColours:
+    case Green:
         h = blue - norm * 2.0 * pieslice;
         s = 0.5f + norm/2.0;
         v = norm;
@@ -139,12 +139,12 @@ ColourMapper::map(double value) const
         hsv = false;
         break;
 
-    case CherryPie:
+    case Cherry:
         hsv = false;
-        mapDiscrete(norm, cherryPie, r, g, b);
+        mapDiscrete(norm, cherry, r, g, b);
         break;
 
-    case YellowOnBlack:
+    case Wasp:
         h = 0.15;
         s = 1.0;
         v = norm;
@@ -233,9 +233,9 @@ ColourMapper::map(double value) const
 */
         break;
 
-    case XRay:
+    case Ice:
         hsv = false;
-        mapDiscrete(norm, xRay, r, g, b);
+        mapDiscrete(norm, ice, r, g, b);
     }
 
     if (hsv) {
@@ -253,7 +253,7 @@ ColourMapper::getContrastingColour() const
 
     switch (map) {
 
-    case DefaultColours:
+    case Green:
         return QColor(255, 150, 50);
 
     case WhiteOnBlack:
@@ -262,13 +262,13 @@ ColourMapper::getContrastingColour() const
     case BlackOnWhite:
         return Qt::darkGreen;
 
-    case CherryPie:
+    case Cherry:
         return Qt::green;
 
-    case YellowOnBlack:
+    case Wasp:
         return QColor::fromHsv(240, 255, 255);
 
-    case XRay:
+    case Ice:
         return Qt::red;
 
     case Sunset:
@@ -306,12 +306,12 @@ ColourMapper::hasLightBackground() const
     case HighGain:
         return true;
 
-    case DefaultColours:
+    case Green:
     case Sunset:
     case WhiteOnBlack:
-    case CherryPie:
-    case YellowOnBlack:
-    case XRay:
+    case Cherry:
+    case Wasp:
+    case Ice:
     case FruitSalad:
     case Banded:
     case Highlight:

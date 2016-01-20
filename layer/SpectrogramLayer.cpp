@@ -38,6 +38,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QTextStream>
+#include <QSettings>
 
 #include <iostream>
 
@@ -81,6 +82,9 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_exiting(false),
     m_sliceableModel(0)
 {
+    QString colourConfigName = "spectrogram-colour";
+    int colourConfigDefault = int(ColourMapper::Green);
+    
     if (config == FullRangeDb) {
         m_initialMaxFrequency = 0;
         setMaxFrequency(0);
@@ -93,6 +97,8 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setColourScale(LinearColourScale);
         setColourMap(ColourMapper::Sunset);
         setFrequencyScale(LogFrequencyScale);
+        colourConfigName = "spectrogram-melodic-colour";
+        colourConfigDefault = int(ColourMapper::Sunset);
 //        setGain(20);
     } else if (config == MelodicPeaks) {
 	setWindowSize(4096);
@@ -104,8 +110,15 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setColourScale(LinearColourScale);
 	setBinDisplay(PeakFrequencies);
         setNormalization(NormalizeColumns);
+        colourConfigName = "spectrogram-melodic-colour";
+        colourConfigDefault = int(ColourMapper::Sunset);
     }
 
+    QSettings settings;
+    settings.beginGroup("Preferences");
+    setColourMap(settings.value(colourConfigName, colourConfigDefault).toInt());
+    settings.endGroup();
+    
     Preferences *prefs = Preferences::getInstance();
     connect(prefs, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
             this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
