@@ -25,6 +25,7 @@
 #include <QImage>
 #include <QRect>
 #include <QTextStream>
+#include <QSettings>
 
 #include <iostream>
 
@@ -60,7 +61,10 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_miny(0),
     m_maxy(0)
 {
-    
+    QSettings settings;
+    settings.beginGroup("Preferences");
+    setColourMap(settings.value("colour-3d-plot-colour", ColourMapper::Green).toInt());
+    settings.endGroup();
 }
 
 Colour3DPlotLayer::~Colour3DPlotLayer()
