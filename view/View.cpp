@@ -49,7 +49,6 @@
 //#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
 
-
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
     m_centreFrame(0),
@@ -365,15 +364,17 @@ View::getXForFrame(sv_frame_t frame) const
 sv_frame_t
 View::getFrameForX(int x) const
 {
-    int z = m_zoomLevel;
+    sv_frame_t z = m_zoomLevel; // nb not just int, or multiplication may overflow
     sv_frame_t frame = m_centreFrame - (width()/2) * z;
 
+    frame = (frame / z) * z; // this is start frame
+    frame = frame + x * z;
+
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    SVDEBUG << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << endl;
+    cerr << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << endl;
 #endif
 
-    frame = (frame / z) * z; // this is start frame
-    return frame + x * z;
+    return frame;
 }
 
 double
