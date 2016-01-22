@@ -2602,7 +2602,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                             if (c[y] > columnMax) columnMax = c[y];
                         }
                     }
-                    values = c.constData() + minbin;
+                    values = c.data() + minbin;
                 }
                 psx = sx;
             }
