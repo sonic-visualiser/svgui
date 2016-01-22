@@ -49,7 +49,7 @@
 #include <alloca.h>
 #endif
 
-#define DEBUG_SPECTROGRAM_REPAINT 1
+//#define DEBUG_SPECTROGRAM_REPAINT 1
 
 using std::vector;
 
@@ -1731,6 +1731,13 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         }
     }
 
+    if (cache.zoomLevel != zoomLevel) {
+        // no matter what we do with the cache, we'll need to
+        // recalculate our paint width again because each block will
+        // take a different time to render from previously
+        m_lastPaintBlockWidth = 0;
+    }
+    
     if (cache.validArea.width() > 0) {
 
         int cw = cache.image.width();
@@ -1868,9 +1875,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         x1 = v->getPaintWidth();
     }
 
-    struct timeval tv;
-    (void)gettimeofday(&tv, 0);
-    RealTime mainPaintStart = RealTime::fromTimeval(tv);
+    auto mainPaintStart = std::chrono::steady_clock::now();
 
     int paintBlockWidth = m_lastPaintBlockWidth;
 
@@ -1883,13 +1888,14 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         if (paintBlockWidth == 0) {
             paintBlockWidth = (300000 / zoomLevel);
         } else {
-            RealTime lastTime = m_lastPaintTime;
-            while (lastTime > RealTime::fromMilliseconds(200) &&
-                   paintBlockWidth > 50) {
+            double lastTime = m_lastPaintTime;
+            while (lastTime > 0.2 &&
+                   paintBlockWidth > 30) {
                 paintBlockWidth /= 2;
                 lastTime = lastTime / 2;
             }
-            while (lastTime < RealTime::fromMilliseconds(90) &&
+            while (lastTime < 0.09 &&
+                   paintBlockWidth < std::max(50, 1200000 / zoomLevel) &&
                    paintBlockWidth < 1500) {
                 paintBlockWidth *= 2;
                 lastTime = lastTime * 2;
@@ -1899,9 +1905,9 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         if (paintBlockWidth < 20) paintBlockWidth = 20;
     }
 
-#ifdef DEBUG_SPECTROGRAM_REPAINT
+//#ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "[" << this << "]: last paint width: " << m_lastPaintBlockWidth << ", last paint time: " << m_lastPaintTime << ", new paint width: " << paintBlockWidth << endl;
-#endif
+//#endif
 
     // We always paint the full height when refreshing the cache.
     // Smaller heights can be used when painting direct from cache
@@ -2156,7 +2162,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                 binfory[y] = -1;
             } else {
                 binfory[y] = q0;
-//                cerr << "binfory[" << y << "] = " << binfory[y] << endl;
             }
         }
 
@@ -2172,37 +2177,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                                        overallMag, overallMagChanged);
     }
 
-/*
-    for (int x = 0; x < w / xPixelRatio; ++x) {
-
-        Profiler innerprof("SpectrogramLayer::paint: 1 pixel column");
-
-        runOutOfData = !paintColumnValues(v, fft, x0, x,
-                                          minbin, maxbin,
-                                          displayMinFreq, displayMaxFreq,
-                                          xPixelRatio,
-                                          h, yforbin);
-
-        if (runOutOfData) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "Run out of data -- dropping out of loop" << endl;
-#endif
-            break;
-        }
-    }
-*/
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-//    cerr << pixels << " pixels drawn" << endl;
-#endif
-
     if (overallMagChanged) {
         m_viewMags[v] = overallMag;
 #ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "Overall mag is now [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "] - will be updating" << endl;
-#endif
-    } else {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Overall mag unchanged at [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "]" << endl;
 #endif
     }
 
@@ -2275,9 +2253,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     paint.drawImage(pr.x(), pr.y(), cache.image,
                     pr.x(), pr.y(), pr.width(), pr.height());
-    //!!!
-//    paint.drawImage(v->rect(), cache.image,
-//                    QRect(QPoint(0, 0), cache.image.size()));
 
     cache.startFrame = startFrame;
     cache.zoomLevel = zoomLevel;
@@ -2325,9 +2300,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #endif
 
     if (!m_synchronous) {
+        auto mainPaintEnd = std::chrono::steady_clock::now();
+        auto diff = mainPaintEnd - mainPaintStart;
+        m_lastPaintTime = std::chrono::duration<double>(diff).count();
         m_lastPaintBlockWidth = paintBlockWidth;
-        (void)gettimeofday(&tv, 0);
-        m_lastPaintTime = RealTime::fromTimeval(tv) - mainPaintStart;
     }
 }
 
@@ -2464,7 +2440,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     int maxbin = int(binfory[h-1]);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "minbin " << minbin << ", maxbin " << maxbin << "; w " << w << ", h " << h << endl;
+    cerr << "paintDrawBuffer: minbin " << minbin << ", maxbin " << maxbin << "; w " << w << ", h " << h << endl;
 #endif
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
