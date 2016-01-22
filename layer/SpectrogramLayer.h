@@ -418,13 +418,13 @@ protected:
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(LayerGeometryProvider *v) const;
-    bool paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
+    void paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
                          const std::vector<int> &binforx,
                          const std::vector<double> &binfory,
                          bool usePeaksCache,
                          MagnitudeRange &overallMag,
                          bool &overallMagChanged) const;
-    bool paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
+    void paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
                                         const std::vector<int> &binforx,
                                         int minbin,
                                         int maxbin,
