@@ -250,20 +250,20 @@ protected:
     const DenseTimeValueModel *m_model; // I do not own this
 
     int                 m_channel;
-    int              m_windowSize;
+    int                 m_windowSize;
     WindowType          m_windowType;
-    int              m_windowHopLevel;
-    int              m_zeroPadLevel;
-    int              m_fftSize;
+    int                 m_windowHopLevel;
+    int                 m_zeroPadLevel;
+    int                 m_fftSize;
     float               m_gain;
     float               m_initialGain;
     float               m_threshold;
     float               m_initialThreshold;
     int                 m_colourRotation;
     int                 m_initialRotation;
-    int              m_minFrequency;
-    int              m_maxFrequency;
-    int              m_initialMaxFrequency;
+    int                 m_minFrequency;
+    int                 m_maxFrequency;
+    int                 m_initialMaxFrequency;
     ColourScale         m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
@@ -275,7 +275,7 @@ protected:
 
     mutable bool        m_haveDetailedScale;
     mutable int         m_lastPaintBlockWidth;
-    mutable RealTime    m_lastPaintTime;
+    mutable double      m_lastPaintTime; // seconds
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 
