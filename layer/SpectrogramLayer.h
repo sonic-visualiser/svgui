@@ -274,8 +274,6 @@ protected:
     bool                m_synchronous;
 
     mutable bool        m_haveDetailedScale;
-    mutable int         m_lastPaintBlockWidth;
-    mutable double      m_lastPaintTime; // seconds
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 

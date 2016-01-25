@@ -33,7 +33,6 @@
 #include <QImage>
 #include <QPixmap>
 #include <QRect>
-#include <QTimer>
 #include <QApplication>
 #include <QMessageBox>
 #include <QMouseEvent>
@@ -49,9 +48,9 @@
 #include <alloca.h>
 #endif
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
-using std::vector;
+using namespace std;
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_model(0),
@@ -78,7 +77,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_lastEmittedZoomStep(-1),
     m_synchronous(false),
     m_haveDetailedScale(false),
-    m_lastPaintBlockWidth(0),
     m_exiting(false),
     m_sliceableModel(0)
 {
@@ -1615,7 +1613,7 @@ void
 SpectrogramLayer::invalidateMagnitudes()
 {
     m_viewMags.clear();
-    for (std::vector<MagnitudeRange>::iterator i = m_columnMags.begin();
+    for (vector<MagnitudeRange>::iterator i = m_columnMags.begin();
          i != m_columnMags.end(); ++i) {
         *i = MagnitudeRange();
     }
@@ -1637,8 +1635,8 @@ SpectrogramLayer::updateViewMagnitudes(LayerGeometryProvider *v) const
         s10 = s11 = double(m_model->getEndFrame()) / getWindowIncrement();
     }
 
-    int s0 = int(std::min(s00, s10) + 0.0001);
-    int s1 = int(std::max(s01, s11) + 0.0001);
+    int s0 = int(min(s00, s10) + 0.0001);
+    int s1 = int(max(s01, s11) + 0.0001);
 
 //    SVDEBUG << "SpectrogramLayer::updateViewMagnitudes: x0 = " << x0 << ", x1 = " << x1 << ", s00 = " << s00 << ", s11 = " << s11 << " s0 = " << s0 << ", s1 = " << s1 << endl;
 
@@ -1729,13 +1727,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         if (m_normalization == NormalizeVisibleArea) {
             cache.validArea = QRect();
         }
-    }
-
-    if (cache.zoomLevel != zoomLevel) {
-        // no matter what we do with the cache, we'll need to
-        // recalculate our paint width again because each block will
-        // take a different time to render from previously
-        m_lastPaintBlockWidth = 0;
     }
     
     if (cache.validArea.width() > 0) {
@@ -1875,40 +1866,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         x1 = v->getPaintWidth();
     }
 
-    auto mainPaintStart = std::chrono::steady_clock::now();
-
-    int paintBlockWidth = m_lastPaintBlockWidth;
-
-    if (m_synchronous) {
-        if (paintBlockWidth < x1 - x0) {
-            // always paint full width
-            paintBlockWidth = x1 - x0;
-        }
-    } else {
-        if (paintBlockWidth == 0) {
-            paintBlockWidth = (300000 / zoomLevel);
-        } else {
-            double lastTime = m_lastPaintTime;
-            while (lastTime > 0.2 &&
-                   paintBlockWidth > 30) {
-                paintBlockWidth /= 2;
-                lastTime = lastTime / 2;
-            }
-            while (lastTime < 0.09 &&
-                   paintBlockWidth < std::max(50, 1200000 / zoomLevel) &&
-                   paintBlockWidth < 1500) {
-                paintBlockWidth *= 2;
-                lastTime = lastTime * 2;
-            }
-        }
-        
-        if (paintBlockWidth < 20) paintBlockWidth = 20;
-    }
-
-//#ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "[" << this << "]: last paint width: " << m_lastPaintBlockWidth << ", last paint time: " << m_lastPaintTime << ", new paint width: " << paintBlockWidth << endl;
-//#endif
-
     // We always paint the full height when refreshing the cache.
     // Smaller heights can be used when painting direct from cache
     // (further up in this function), but we want to ensure the cache
@@ -1916,6 +1873,12 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     // required and valid areas as well as horizontal.
 
     int h = v->getPaintHeight();
+
+    /*
+    auto mainPaintStart = chrono::steady_clock::now();
+
+    //!!! nb full-width case goes like
+                paintBlockWidth = x1 - x0;
 
     if (cache.validArea.width() > 0) {
 
@@ -1931,7 +1894,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         vx1 = cache.validArea.x() + cache.validArea.width();
         
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "x0 " << x0 << ", x1 " << x1 << ", vx0 " << vx0 << ", vx1 " << vx1 << ", paintBlockWidth " << paintBlockWidth << endl;
+        cerr << "x0 " << x0 << ", x1 " << x1 << ", vx0 " << vx0 << ", vx1 " << vx1 << endl;
 #endif         
         if (x0 < vx0) {
             if (x0 + paintBlockWidth < vx0) {
@@ -1969,11 +1932,13 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             }
         }
     }
-
+    */
+    
     int repaintWidth = x1 - x0;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "x0 " << x0 << ", x1 " << x1 << ", w " << w << ", h " << h << endl;
+    cerr << "x0 " << x0 << ", x1 " << x1
+         << ", repaintWidth " << repaintWidth << ", h " << h << endl;
 #endif
 
     sv_samplerate_t sr = m_model->getSampleRate();
@@ -2163,7 +2128,12 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     }
 
     int failedToRepaint = bufwid - attainedBufwid;
-    if (failedToRepaint < 0) {
+    if (failedToRepaint > 0) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        cerr << "Failed to repaint " << failedToRepaint << " of " << bufwid
+             << " columns in time" << endl;
+#endif
+    } else if (failedToRepaint < 0) {
         cerr << "WARNING: failedToRepaint < 0 (= " << failedToRepaint << ")"
              << endl;
         failedToRepaint = 0;
@@ -2241,33 +2211,31 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     // update cache valid area based on painted area
     if (cache.validArea.width() > 0) {
         
-        int left = std::min(cache.validArea.x(), x0);
+        int left = min(cache.validArea.x(), x0);
 
-        int wid  = std::max(cache.validArea.x() + cache.validArea.width() - left,
-                            x1 - left);
-
+        int wid = max(cache.validArea.x() + cache.validArea.width() - left,
+                      x1 - left);
         wid = wid - failedToRepaint;
         if (wid < 0) wid = 0;
         
         cache.validArea = QRect
             (left, cache.validArea.y(), wid, cache.validArea.height());
 
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Valid area becomes " << cache.validArea.x()
-                  << ", " << cache.validArea.y() << ", "
-                  << cache.validArea.width() << "x"
-                  << cache.validArea.height() << endl;
-#endif
-
     } else {
 
-        cache.validArea = QRect(x0, 0, x1 - x0, h);
+        int wid = x1 - x0;
+        wid = wid - failedToRepaint;
+        if (wid < 0) wid = 0;
+        
+        cache.validArea = QRect(x0, 0, wid, h);
+    }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Valid area becomes " << x0 << ", 0, " << (x1-x0)
-                  << "x" << h << endl;
+    cerr << "Cache valid area becomes " << cache.validArea.x()
+         << ", " << cache.validArea.y() << ", "
+         << cache.validArea.width() << "x"
+         << cache.validArea.height() << endl;
 #endif
-    }
 
     QRect pr = rect & cache.validArea;
 
@@ -2325,13 +2293,13 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::paint() returning" << endl;
 #endif
-
+/*!!!
     if (!m_synchronous) {
-        auto mainPaintEnd = std::chrono::steady_clock::now();
+        auto mainPaintEnd = chrono::steady_clock::now();
         auto diff = mainPaintEnd - mainPaintStart;
-        m_lastPaintTime = std::chrono::duration<double>(diff).count();
-        m_lastPaintBlockWidth = paintBlockWidth;
+        m_lastPaintTime = chrono::duration<double>(diff).count();
     }
+*/
 }
 
 int
@@ -2465,6 +2433,13 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
 {
     Profiler profiler("SpectrogramLayer::paintDrawBuffer");
 
+    //!!! todo: propagate to paintDrawBufferPeakFrequencies
+
+    int minColumns = 4;
+    double maxTime = 0.1; // seconds; only for non-synchronous drawing
+
+    auto startTime = chrono::steady_clock::now();
+    
     int minbin = int(binfory[0] + 0.0001);
     int maxbin = int(binfory[h-1]);
 
@@ -2684,6 +2659,20 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
 
             m_drawBuffer.setPixel(x, h-y-1, peakpix);
         }
+
+        if (!m_synchronous) {
+            if (x >= minColumns) {
+                auto t = chrono::steady_clock::now();
+                double diff = chrono::duration<double>(t - startTime).count();
+                if (diff > maxTime) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                    cerr << "Max time " << maxTime << " sec exceeded after "
+                         << x << " columns with time " << diff << endl;
+#endif
+                    return x;
+                }
+            }
+        }
     }
 
     return w;
@@ -2881,7 +2870,7 @@ SpectrogramLayer::measureDoubleClick(LayerGeometryProvider *v, QMouseEvent *e)
 bool
 SpectrogramLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
                                       QPoint cursorPos,
-                                      std::vector<QRect> &extents) const
+                                      vector<QRect> &extents) const
 {
     QRect vertical(cursorPos.x() - 12, 0, 12, v->getPaintHeight());
     extents.push_back(vertical);
@@ -3281,7 +3270,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
 	paint.drawLine(cw + 7, h - vy, w - pkw - 1, h - vy);
 
 	if (h - vy - textHeight >= -2) {
-	    int tx = w - 3 - paint.fontMetrics().width(text) - std::max(tickw, pkw);
+	    int tx = w - 3 - paint.fontMetrics().width(text) - max(tickw, pkw);
 	    paint.drawText(tx, h - vy + toff, text);
 	}
 
