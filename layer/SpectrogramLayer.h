@@ -418,21 +418,21 @@ protected:
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(LayerGeometryProvider *v) const;
-    void paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
-                         const std::vector<int> &binforx,
-                         const std::vector<double> &binfory,
-                         bool usePeaksCache,
-                         MagnitudeRange &overallMag,
-                         bool &overallMagChanged) const;
-    void paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
-                                        const std::vector<int> &binforx,
-                                        int minbin,
-                                        int maxbin,
-                                        double displayMinFreq,
-                                        double displayMaxFreq,
-                                        bool logarithmic,
-                                        MagnitudeRange &overallMag,
-                                        bool &overallMagChanged) const;
+    int paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
+                        const std::vector<int> &binforx,
+                        const std::vector<double> &binfory,
+                        bool usePeaksCache,
+                        MagnitudeRange &overallMag,
+                        bool &overallMagChanged) const;
+    int paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
+                                       const std::vector<int> &binforx,
+                                       int minbin,
+                                       int maxbin,
+                                       double displayMinFreq,
+                                       double displayMaxFreq,
+                                       bool logarithmic,
+                                       MagnitudeRange &overallMag,
+                                       bool &overallMagChanged) const;
 
     virtual void updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const;
     virtual void setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const;

@@ -1954,19 +1954,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                 x1 = x0; // it's all valid, paint nothing
             }
         }
-         
-        cache.validArea = QRect
-            (std::min(vx0, x0), cache.validArea.y(),
-             std::max(vx1 - std::min(vx0, x0),
-                       x1 - std::min(vx0, x0)),
-             cache.validArea.height());
-
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Valid area becomes " << cache.validArea.x()
-                  << ", " << cache.validArea.y() << ", "
-                  << cache.validArea.width() << "x"
-                  << cache.validArea.height() << endl;
-#endif
             
     } else {
         if (x1 > x0 + paintBlockWidth) {
@@ -1981,20 +1968,9 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                 x1 = x0 + paintBlockWidth;
             }
         }
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Valid area becomes " << x0 << ", 0, " << (x1-x0)
-                  << "x" << h << endl;
-#endif
-        cache.validArea = QRect(x0, 0, x1 - x0, h);
     }
 
-/*
-    if (xPixelRatio != 1.f) {
-        x0 = int((int(x0 / xPixelRatio) - 4) * xPixelRatio + 0.0001);
-        x1 = int((int(x1 / xPixelRatio) + 4) * xPixelRatio + 0.0001);
-    }
-*/
-    int w = x1 - x0;
+    int repaintWidth = x1 - x0;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "x0 " << x0 << ", x1 " << x1 << ", w " << w << ", h " << h << endl;
@@ -2064,8 +2040,8 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     cerr << ((double(v->getFrameForX(1) - v->getFrameForX(0))) / increment) << " bin(s) per pixel" << endl;
 #endif
 
-    if (w == 0) {
-        SVDEBUG << "*** NOTE: w == 0" << endl;
+    if (repaintWidth == 0) {
+        SVDEBUG << "*** NOTE: repaintWidth == 0" << endl;
     }
 
     Profiler outerprof("SpectrogramLayer::paint: all cols");
@@ -2097,14 +2073,20 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             sv_frame_t f = v->getFrameForX(x);
             if ((f / increment) * increment == f) {
                 if (leftCropFrame == -1) leftCropFrame = f;
-                else if (x < x0 - 2) { leftBoundaryFrame = f; break; }
+                else if (x < x0 - 2) {
+                    leftBoundaryFrame = f;
+                    break;
+                }
             }
         }
-        for (int x = x0 + w; ; ++x) {
+        for (int x = x0 + repaintWidth; ; ++x) {
             sv_frame_t f = v->getFrameForX(x);
             if ((f / increment) * increment == f) {
                 if (rightCropFrame == -1) rightCropFrame = f;
-                else if (x > x0 + w + 2) { rightBoundaryFrame = f; break; }
+                else if (x > x0 + repaintWidth + 2) {
+                    rightBoundaryFrame = f;
+                    break;
+                }
             }
         }
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2116,7 +2098,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     } else {
         
-        bufwid = w;
+        bufwid = repaintWidth;
     }
 
     vector<int> binforx(bufwid);
@@ -2153,6 +2135,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     }
 
     m_drawBuffer.fill(0);
+    int attainedBufwid = bufwid;
     
     if (m_binDisplay != PeakFrequencies) {
 
@@ -2165,18 +2148,27 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             }
         }
 
-        paintDrawBuffer(v, bufwid, h, binforx, binfory, usePeaksCache,
-                        overallMag, overallMagChanged);
+        attainedBufwid = 
+            paintDrawBuffer(v, bufwid, h, binforx, binfory, usePeaksCache,
+                            overallMag, overallMagChanged);
 
     } else {
 
-        paintDrawBufferPeakFrequencies(v, bufwid, h, binforx,
-                                       minbin, maxbin,
-                                       displayMinFreq, displayMaxFreq,
-                                       logarithmic,
-                                       overallMag, overallMagChanged);
+        attainedBufwid = 
+            paintDrawBufferPeakFrequencies(v, bufwid, h, binforx,
+                                           minbin, maxbin,
+                                           displayMinFreq, displayMaxFreq,
+                                           logarithmic,
+                                           overallMag, overallMagChanged);
     }
 
+    int failedToRepaint = bufwid - attainedBufwid;
+    if (failedToRepaint < 0) {
+        cerr << "WARNING: failedToRepaint < 0 (= " << failedToRepaint << ")"
+             << endl;
+        failedToRepaint = 0;
+    }
+    
     if (overallMagChanged) {
         m_viewMags[v] = overallMag;
 #ifdef DEBUG_SPECTROGRAM_REPAINT
@@ -2196,11 +2188,12 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 	cache.image = QImage(v->getPaintWidth(), h, QImage::Format_ARGB32_Premultiplied);
     }
 
-    if (w > 0) {
+    if (repaintWidth > 0) {
+
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Painting " << w << "x" << h
+        cerr << "Painting " << repaintWidth << "x" << h
                   << " from draw buffer at " << 0 << "," << 0
-                  << " to " << w << "x" << h << " on cache at "
+                  << " to " << repaintWidth << "x" << h << " on cache at "
                   << x0 << "," << 0 << endl;
 #endif
 
@@ -2234,13 +2227,46 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                  scaled,
                  QRect(scaledLeftCrop - scaledLeft, 0,
                        scaledRightCrop - scaledLeftCrop, h));
+
         } else {
-            cachePainter.drawImage(QRect(x0, 0, w, h),
+
+            cachePainter.drawImage(QRect(x0, 0, repaintWidth, h),
                                    m_drawBuffer,
-                                   QRect(0, 0, w, h));
+                                   QRect(0, 0, repaintWidth, h));
         }
 
         cachePainter.end();
+    }
+
+    // update cache valid area based on painted area
+    if (cache.validArea.width() > 0) {
+        
+        int left = std::min(cache.validArea.x(), x0);
+
+        int wid  = std::max(cache.validArea.x() + cache.validArea.width() - left,
+                            x1 - left);
+
+        wid = wid - failedToRepaint;
+        if (wid < 0) wid = 0;
+        
+        cache.validArea = QRect
+            (left, cache.validArea.y(), wid, cache.validArea.height());
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        cerr << "Valid area becomes " << cache.validArea.x()
+                  << ", " << cache.validArea.y() << ", "
+                  << cache.validArea.width() << "x"
+                  << cache.validArea.height() << endl;
+#endif
+
+    } else {
+
+        cache.validArea = QRect(x0, 0, x1 - x0, h);
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        cerr << "Valid area becomes " << x0 << ", 0, " << (x1-x0)
+                  << "x" << h << endl;
+#endif
     }
 
     QRect pr = rect & cache.validArea;
@@ -2279,11 +2305,12 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                                                      cache.validArea.width())
                           << ")" << endl;
 #endif
-                v->getView()->update(cache.validArea.x() + cache.validArea.width(),
-                          0,
-                          cache.image.width() - (cache.validArea.x() +
-                                                  cache.validArea.width()),
-                          h);
+                v->getView()->update
+                    (cache.validArea.x() + cache.validArea.width(),
+                     0,
+                     cache.image.width() - (cache.validArea.x() +
+                                            cache.validArea.width()),
+                     h);
             }
         } else {
             // overallMagChanged
@@ -2307,7 +2334,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     }
 }
 
-void
+int
 SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                                                  int w,
                                                  int h,
@@ -2329,7 +2356,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     if (maxbin < 0) maxbin = minbin+1;
 
     FFTModel *fft = getFFTModel(v);
-    if (!fft) return;
+    if (!fft) return 0;
 
     FFTModel::PeakSet peakfreqs;
 
@@ -2422,9 +2449,11 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
             }
         }
     }
+
+    return w;
 }
 
-void
+int
 SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                                   int w,
                                   int h,
@@ -2460,7 +2489,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
         sourceModel = fft = getFFTModel(v);
     }
 
-    if (!sourceModel) return;
+    if (!sourceModel) return 0;
 
     bool interpolate = false;
     Preferences::SpectrogramSmoothing smoothing = 
@@ -2656,6 +2685,8 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
             m_drawBuffer.setPixel(x, h-y-1, peakpix);
         }
     }
+
+    return w;
 }
 
 void
