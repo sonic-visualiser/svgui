@@ -1676,9 +1676,9 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     Profiler profiler("SpectrogramLayer::paint", false);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
+    cerr << "SpectrogramLayer::paint() entering: m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
     
-    cerr << "rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
+    cerr << "SpectrogramLayer::paint(): rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
 #endif
 
     sv_frame_t startFrame = v->getStartFrame();
@@ -1705,9 +1705,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     ImageCache &cache = m_imageCaches[view];
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::paint(): image cache valid area " << cache.
-
-validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() << "x" << cache.validArea.height() << endl;
+    cerr << "SpectrogramLayer::paint(): image cache valid area from " << cache.validArea.x() << "," << cache.validArea.y() << ", " << cache.validArea.width() << "x" << cache.validArea.height() << endl;
 #endif
 
     int zoomLevel = v->getZoomLevel();
@@ -1798,31 +1796,43 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                     int px = cache.validArea.x();
                     int pw = cache.validArea.width();
 
+                    // so px and pw will be updated to the new x and
+                    // width of the valid area of cache;
+
+                    // x0 and x1 will be the left and right extents of
+                    // the area needing repainted
+
+                    px += dx;
+
 		    if (dx < 0) {
-			x0 = cw + dx;
-			x1 = cw;
-                        px += dx;
+                        // we scrolled left
                         if (px < 0) {
                             pw += px;
                             px = 0;
-                            if (pw < 0) pw = 0;
+                            if (pw < 0) {
+                                pw = 0;
+                            }
                         }
-		    } else {
-			x0 = 0;
-			x1 = dx;
-                        px += dx;
+                        x0 = px + pw;
+                        x1 = cw;
+                    } else {
+                        // we scrolled right
                         if (px + pw > cw) {
-                            pw = int(cw) - px;
-                            if (pw < 0) pw = 0;
+                            pw = cw - px;
+                            if (pw < 0) {
+                                pw = 0;
+                            }
                         }
-		    }
-                    
+                        x0 = 0;
+                        x1 = px;
+                    }
+
                     cache.validArea =
                         QRect(px, cache.validArea.y(),
                               pw, cache.validArea.height());
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "valid area now "
+                    cerr << "SpectrogramLayer: valid area now "
                               << px << "," << cache.validArea.y()
                               << " " << pw << "x" << cache.validArea.height()
                               << endl;
@@ -1834,7 +1844,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                     // to be of use
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "dx == " << dx << ": scrolled too far for cache to be useful" << endl;
+                    cerr << "SpectrogramLayer: dx == " << dx << ": scrolled too far for cache to be useful" << endl;
 #endif
 
                     cache.validArea = QRect();
@@ -1873,72 +1883,23 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     // required and valid areas as well as horizontal.
 
     int h = v->getPaintHeight();
-
-    /*
-    auto mainPaintStart = chrono::steady_clock::now();
-
-    //!!! nb full-width case goes like
-                paintBlockWidth = x1 - x0;
-
-    if (cache.validArea.width() > 0) {
-
-        // If part of the cache is known to be valid, select a strip
-        // immediately to left or right of the valid part
-
-        //!!! this really needs to be coordinated with the selection
-        //!!! of m_drawBuffer boundaries in the bufferBinResolution
-        //!!! case below
-
-        int vx0 = 0, vx1 = 0;
-        vx0 = cache.validArea.x();
-        vx1 = cache.validArea.x() + cache.validArea.width();
-        
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "x0 " << x0 << ", x1 " << x1 << ", vx0 " << vx0 << ", vx1 " << vx1 << endl;
-#endif         
-        if (x0 < vx0) {
-            if (x0 + paintBlockWidth < vx0) {
-                x0 = vx0 - paintBlockWidth;
-            }
-            x1 = vx0;
-        } else if (x0 >= vx1) {
-            x0 = vx1;
-            if (x1 > x0 + paintBlockWidth) {
-                x1 = x0 + paintBlockWidth;
-            }
-        } else {
-            // x0 is within the valid area
-            if (x1 > vx1) {
-                x0 = vx1;
-                if (x0 + paintBlockWidth < x1) {
-                    x1 = x0 + paintBlockWidth;
-                }
-            } else {
-                x1 = x0; // it's all valid, paint nothing
-            }
-        }
-            
-    } else {
-        if (x1 > x0 + paintBlockWidth) {
-            int sfx = x1;
-            if (startFrame < 0) sfx = v->getXForFrame(0);
-            if (sfx >= x0 && sfx + paintBlockWidth <= x1) {
-                x0 = sfx;
-                x1 = x0 + paintBlockWidth;
-            } else {
-                int mid = (x1 + x0) / 2;
-                x0 = mid - paintBlockWidth/2;
-                x1 = x0 + paintBlockWidth;
-            }
-        }
-    }
-    */
     
     int repaintWidth = x1 - x0;
 
+    // If we are painting a section to the left of a valid area of
+    // cache, then we must paint it "backwards", right-to-left. This
+    // is because painting may be interrupted by a timeout, leaving us
+    // with a partially painted area, and we have no way to record
+    // that the union of the existing cached area and this new
+    // partially painted bit is a valid cache area unless they are
+    // adjacent (because our valid extent is a single x,width range).
+    
+    bool rightToLeft = (x0 == 0 && x1 < v->getPaintWidth());
+    
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "x0 " << x0 << ", x1 " << x1
-         << ", repaintWidth " << repaintWidth << ", h " << h << endl;
+    cerr << "SpectrogramLayer: x0 " << x0 << ", x1 " << x1
+         << ", repaintWidth " << repaintWidth << ", h " << h
+         << ", rightToLeft " << rightToLeft << endl;
 #endif
 
     sv_samplerate_t sr = m_model->getSampleRate();
@@ -1988,21 +1949,12 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     int increment = getWindowIncrement();
     
     bool logarithmic = (m_frequencyScale == LogFrequencyScale);
-/*
-    double yforbin[maxbin - minbin + 1];
 
-    for (int q = minbin; q <= maxbin; ++q) {
-        double f0 = (double(q) * sr) / fftSize;
-        yforbin[q - minbin] =
-            v->getYForFrequency(f0, displayMinFreq, displayMaxFreq,
-                                logarithmic);
-    }
-*/
     MagnitudeRange overallMag = m_viewMags[v];
     bool overallMagChanged = false;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << ((double(v->getFrameForX(1) - v->getFrameForX(0))) / increment) << " bin(s) per pixel" << endl;
+    cerr << "SpectrogramLayer: " << ((double(v->getFrameForX(1) - v->getFrameForX(0))) / increment) << " bin(s) per pixel" << endl;
 #endif
 
     if (repaintWidth == 0) {
@@ -2074,7 +2026,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     if (bufferBinResolution) {
         for (int x = 0; x < bufwid; ++x) {
             binforx[x] = int(leftBoundaryFrame / increment) + x;
-//            cerr << "binforx[" << x << "] = " << binforx[x] << endl;
         }
         m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
     } else {
@@ -2093,7 +2044,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         if (m_colourScale == PhaseColourScale) usePeaksCache = false;
     }
 
-// No longer exists in Qt5:    m_drawBuffer.setNumColors(256);
     for (int pixel = 0; pixel < 256; ++pixel) {
         m_drawBuffer.setColor((unsigned char)pixel,
                               m_palette.getColour((unsigned char)pixel).rgb());
@@ -2114,8 +2064,10 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
         }
 
         attainedBufwid = 
-            paintDrawBuffer(v, bufwid, h, binforx, binfory, usePeaksCache,
-                            overallMag, overallMagChanged);
+            paintDrawBuffer(v, bufwid, h, binforx, binfory,
+                            usePeaksCache,
+                            overallMag, overallMagChanged,
+                            rightToLeft);
 
     } else {
 
@@ -2124,13 +2076,14 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
                                            minbin, maxbin,
                                            displayMinFreq, displayMaxFreq,
                                            logarithmic,
-                                           overallMag, overallMagChanged);
+                                           overallMag, overallMagChanged,
+                                           rightToLeft);
     }
 
     int failedToRepaint = bufwid - attainedBufwid;
     if (failedToRepaint > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Failed to repaint " << failedToRepaint << " of " << bufwid
+        cerr << "SpectrogramLayer::paint(): Failed to repaint " << failedToRepaint << " of " << bufwid
              << " columns in time" << endl;
 #endif
     } else if (failedToRepaint < 0) {
@@ -2142,7 +2095,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     if (overallMagChanged) {
         m_viewMags[v] = overallMag;
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Overall mag is now [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "] - will be updating" << endl;
+        cerr << "SpectrogramLayer: Overall mag is now [" << m_viewMags[v].getMin() << "->" << m_viewMags[v].getMax() << "] - will be updating" << endl;
 #endif
     }
 
@@ -2152,7 +2105,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 
     if (recreateWholeImageCache) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Recreating image cache: width = " << v->getPaintWidth()
+        cerr << "SpectrogramLayer: Recreating image cache: width = " << v->getPaintWidth()
                   << ", height = " << h << endl;
 #endif
 	cache.image = QImage(v->getPaintWidth(), h, QImage::Format_ARGB32_Premultiplied);
@@ -2161,7 +2114,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     if (repaintWidth > 0) {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "Painting " << repaintWidth << "x" << h
+        cerr << "SpectrogramLayer: Copying " << repaintWidth << "x" << h
                   << " from draw buffer at " << 0 << "," << 0
                   << " to " << repaintWidth << "x" << h << " on cache at "
                   << x0 << "," << 0 << endl;
@@ -2173,22 +2126,23 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
             int scaledLeft = v->getXForFrame(leftBoundaryFrame);
             int scaledRight = v->getXForFrame(rightBoundaryFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "Rescaling image from " << bufwid
+            cerr << "SpectrogramLayer: Rescaling image from " << bufwid
                  << "x" << h << " to "
                  << scaledRight-scaledLeft << "x" << h << endl;
 #endif
             Preferences::SpectrogramXSmoothing xsmoothing = 
                 Preferences::getInstance()->getSpectrogramXSmoothing();
-//            SVDEBUG << "xsmoothing == " << xsmoothing << endl;
+
             QImage scaled = m_drawBuffer.scaled
                 (scaledRight - scaledLeft, h,
                  Qt::IgnoreAspectRatio,
                  ((xsmoothing == Preferences::SpectrogramXInterpolated) ?
                   Qt::SmoothTransformation : Qt::FastTransformation));
+            
             int scaledLeftCrop = v->getXForFrame(leftCropFrame);
             int scaledRightCrop = v->getXForFrame(rightCropFrame);
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "Drawing image region of width " << scaledRightCrop - scaledLeftCrop << " to "
+            cerr << "SpectrogramLayer: Drawing image region of width " << scaledRightCrop - scaledLeftCrop << " to "
                  << scaledLeftCrop << " from " << scaledLeftCrop - scaledLeft << endl;
 #endif
             cachePainter.drawImage
@@ -2209,29 +2163,37 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     }
 
     // update cache valid area based on painted area
-    if (cache.validArea.width() > 0) {
         
-        int left = min(cache.validArea.x(), x0);
+    int left = min(cache.validArea.x(), x0);
 
-        int wid = max(cache.validArea.x() + cache.validArea.width() - left,
-                      x1 - left);
-        wid = wid - failedToRepaint;
-        if (wid < 0) wid = 0;
-        
-        cache.validArea = QRect
-            (left, cache.validArea.y(), wid, cache.validArea.height());
-
-    } else {
-
-        int wid = x1 - x0;
-        wid = wid - failedToRepaint;
-        if (wid < 0) wid = 0;
-        
-        cache.validArea = QRect(x0, 0, wid, h);
+    if (cache.validArea.width() == 0) {
+        left = 0; // cache was not valid at all
     }
 
+    int wid = max(cache.validArea.x() + cache.validArea.width() - left,
+                  x1 - left);
+
+    if (failedToRepaint > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "Cache valid area becomes " << cache.validArea.x()
+        cerr << "SpectrogramLayer: Reduced painted extent from "
+             << left << "," << wid;
+#endif
+        if (rightToLeft) {
+            left += failedToRepaint;
+        }
+        wid -= failedToRepaint;
+
+        if (wid < 0) wid = 0;
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        cerr << " to " << left << "," << wid << endl;
+#endif
+    }
+    
+    cache.validArea = QRect(left, 0, wid, h);
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    cerr << "SpectrogramLayer: Cache valid area becomes " << cache.validArea.x()
          << ", " << cache.validArea.y() << ", "
          << cache.validArea.width() << "x"
          << cache.validArea.height() << endl;
@@ -2240,7 +2202,7 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
     QRect pr = rect & cache.validArea;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "Painting " << pr.width() << "x" << pr.height()
+    cerr << "SpectrogramLayer: Copying " << pr.width() << "x" << pr.height()
               << " from cache at " << pr.x() << "," << pr.y()
               << " to window" << endl;
 #endif
@@ -2293,13 +2255,6 @@ validArea.x() << ", " << cache.validArea.y() << ", " << cache.validArea.width() 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::paint() returning" << endl;
 #endif
-/*!!!
-    if (!m_synchronous) {
-        auto mainPaintEnd = chrono::steady_clock::now();
-        auto diff = mainPaintEnd - mainPaintStart;
-        m_lastPaintTime = chrono::duration<double>(diff).count();
-    }
-*/
 }
 
 int
@@ -2313,12 +2268,13 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                                                  double displayMaxFreq,
                                                  bool logarithmic,
                                                  MagnitudeRange &overallMag,
-                                                 bool &overallMagChanged) const
+                                                 bool &overallMagChanged,
+                                                 bool rightToLeft) const
 {
     Profiler profiler("SpectrogramLayer::paintDrawBufferPeakFrequencies");
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "minbin " << minbin << ", maxbin " << maxbin << "; w " << w << ", h " << h << endl;
+    cerr << "SpectrogramLayer::paintDrawBufferPeakFrequencies: minbin " << minbin << ", maxbin " << maxbin << "; w " << w << ", h " << h << endl;
 #endif
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
@@ -2336,7 +2292,17 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     float *values = (float *)alloca((maxbin - minbin + 1) * sizeof(float));
 #endif
 
-    for (int x = 0; x < w; ++x) {
+    int start = 0;
+    int finish = w;
+    int step = 1;
+
+    if (rightToLeft) {
+        start = w-1;
+        finish = -1;
+        step = -1;
+    }
+    
+    for (int x = start; x != finish; x += step) {
         
         if (binforx[x] < 0) continue;
 
@@ -2429,7 +2395,8 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                                   const vector<double> &binfory,
                                   bool usePeaksCache,
                                   MagnitudeRange &overallMag,
-                                  bool &overallMagChanged) const
+                                  bool &overallMagChanged,
+                                  bool rightToLeft) const
 {
     Profiler profiler("SpectrogramLayer::paintDrawBuffer");
 
@@ -2444,7 +2411,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     int maxbin = int(binfory[h-1]);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "paintDrawBuffer: minbin " << minbin << ", maxbin " << maxbin << "; w " << w << ", h " << h << endl;
+    cerr << "SpectrogramLayer::paintDrawBuffer: minbin " << minbin << ", maxbin " << maxbin << "; w " << w << ", h " << h << endl;
 #endif
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
@@ -2453,7 +2420,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     FFTModel *fft = 0;
     int divisor = 1;
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "Note: bin display = " << m_binDisplay << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
+    cerr << "SpectrogramLayer::paintDrawBuffer: Note: bin display = " << m_binDisplay << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
 #endif
     if (usePeaksCache) { //!!!
         sourceModel = getPeakCache(v);
@@ -2490,7 +2457,17 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     const float *values = autoarray;
     DenseThreeDimensionalModel::Column c;
 
-    for (int x = 0; x < w; ++x) {
+    int start = 0;
+    int finish = w;
+    int step = 1;
+
+    if (rightToLeft) {
+        start = w-1;
+        finish = -1;
+        step = -1;
+    }
+    
+    for (int x = start; x != finish; x += step) {
         
         if (binforx[x] < 0) continue;
 
@@ -2519,7 +2496,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
             if (sx != psx) {
                 if (fft) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "Retrieving column " << sx << " from fft directly" << endl;
+//                    cerr << "Retrieving column " << sx << " from fft directly" << endl;
 #endif
                     if (m_colourScale == PhaseColourScale) {
                         fft->getPhasesAt(sx, autoarray, minbin, maxbin - minbin + 1);
@@ -2538,7 +2515,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                     }
                 } else {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "Retrieving column " << sx << " from peaks cache" << endl;
+//                    cerr << "Retrieving column " << sx << " from peaks cache" << endl;
 #endif
                     c = sourceModel->getColumn(sx);
                     if (m_normalization == NormalizeColumns ||
@@ -2666,7 +2643,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                 double diff = chrono::duration<double>(t - startTime).count();
                 if (diff > maxTime) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "Max time " << maxTime << " sec exceeded after "
+                    cerr << "SpectrogramLayer::paintDrawBuffer: Max time " << maxTime << " sec exceeded after "
                          << x << " columns with time " << diff << endl;
 #endif
                     return x;
