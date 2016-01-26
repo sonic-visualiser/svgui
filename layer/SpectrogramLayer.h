@@ -421,7 +421,8 @@ protected:
                         const std::vector<double> &binfory,
                         bool usePeaksCache,
                         MagnitudeRange &overallMag,
-                        bool &overallMagChanged) const;
+                        bool &overallMagChanged,
+                        bool rightToLeft) const;
     int paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
                                        const std::vector<int> &binforx,
                                        int minbin,
@@ -430,7 +431,8 @@ protected:
                                        double displayMaxFreq,
                                        bool logarithmic,
                                        MagnitudeRange &overallMag,
-                                       bool &overallMagChanged) const;
+                                       bool &overallMagChanged,
+                                       bool rightToLeft) const;
 
     virtual void updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const;
     virtual void setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const;
