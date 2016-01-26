@@ -2292,6 +2292,10 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     float *values = (float *)alloca((maxbin - minbin + 1) * sizeof(float));
 #endif
 
+    int minColumns = 4;
+    double maxTime = 0.15; // seconds; only for non-synchronous drawing
+    auto startTime = chrono::steady_clock::now();
+    
     int start = 0;
     int finish = w;
     int step = 1;
@@ -2302,7 +2306,11 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
         step = -1;
     }
     
+    int columnCount = 0;
+    
     for (int x = start; x != finish; x += step) {
+        
+        ++columnCount;
         
         if (binforx[x] < 0) continue;
 
@@ -2382,9 +2390,23 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                 }
             }
         }
+
+        if (!m_synchronous) {
+            if (columnCount >= minColumns) {
+                auto t = chrono::steady_clock::now();
+                double diff = chrono::duration<double>(t - startTime).count();
+                if (diff > maxTime) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                    cerr << "SpectrogramLayer::paintDrawBufferPeakFrequencies: Max time " << maxTime << " sec exceeded after "
+                         << x << " columns with time " << diff << endl;
+#endif
+                    return columnCount;
+                }
+            }
+        }
     }
 
-    return w;
+    return columnCount;
 }
 
 int
@@ -2400,13 +2422,6 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
 {
     Profiler profiler("SpectrogramLayer::paintDrawBuffer");
 
-    //!!! todo: propagate to paintDrawBufferPeakFrequencies
-
-    int minColumns = 4;
-    double maxTime = 0.1; // seconds; only for non-synchronous drawing
-
-    auto startTime = chrono::steady_clock::now();
-    
     int minbin = int(binfory[0] + 0.0001);
     int maxbin = int(binfory[h-1]);
 
@@ -2457,6 +2472,10 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     const float *values = autoarray;
     DenseThreeDimensionalModel::Column c;
 
+    int minColumns = 4;
+    double maxTime = 0.1; // seconds; only for non-synchronous drawing
+    auto startTime = chrono::steady_clock::now();
+    
     int start = 0;
     int finish = w;
     int step = 1;
@@ -2466,8 +2485,12 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
         finish = -1;
         step = -1;
     }
+
+    int columnCount = 0;
     
     for (int x = start; x != finish; x += step) {
+
+        ++columnCount;
         
         if (binforx[x] < 0) continue;
 
@@ -2638,7 +2661,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
         }
 
         if (!m_synchronous) {
-            if (x >= minColumns) {
+            if (columnCount >= minColumns) {
                 auto t = chrono::steady_clock::now();
                 double diff = chrono::duration<double>(t - startTime).count();
                 if (diff > maxTime) {
@@ -2646,13 +2669,13 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                     cerr << "SpectrogramLayer::paintDrawBuffer: Max time " << maxTime << " sec exceeded after "
                          << x << " columns with time " << diff << endl;
 #endif
-                    return x;
+                    return columnCount;
                 }
             }
         }
     }
 
-    return w;
+    return columnCount;
 }
 
 void
