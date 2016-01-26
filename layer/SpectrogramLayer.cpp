@@ -1831,6 +1831,10 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
                         QRect(px, cache.validArea.y(),
                               pw, cache.validArea.height());
 
+                    if (cache.validArea.width() == 0) {
+                        recreateWholeImageCache = true;
+                    }
+                    
 #ifdef DEBUG_SPECTROGRAM_REPAINT
                     cerr << "SpectrogramLayer: valid area now "
                               << px << "," << cache.validArea.y()
@@ -1872,7 +1876,13 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     }
 
     if (recreateWholeImageCache) {
-        x0 = 0;
+        if (!m_synchronous) {
+            // When rendering the whole thing, start from somewhere near
+            // the middle so that the region of interest appears first
+            x0 = int(v->getPaintWidth() * 0.4);
+        } else {
+            x0 = 0;
+        }
         x1 = v->getPaintWidth();
     }
 
@@ -2164,15 +2174,9 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
     // update cache valid area based on painted area
         
-    int left = min(cache.validArea.x(), x0);
-
-    if (cache.validArea.width() == 0) {
-        left = 0; // cache was not valid at all
-    }
-
-    int wid = max(cache.validArea.x() + cache.validArea.width() - left,
-                  x1 - left);
-
+    int left = x0;
+    int wid = x1 - x0;
+    
     if (failedToRepaint > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "SpectrogramLayer: Reduced painted extent from "
@@ -2190,6 +2194,11 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 #endif
     }
     
+    if (cache.validArea.width() > 0) {
+        left = min(left, cache.validArea.x());
+        wid = cache.validArea.width() + wid;
+    }
+
     cache.validArea = QRect(left, 0, wid, h);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
