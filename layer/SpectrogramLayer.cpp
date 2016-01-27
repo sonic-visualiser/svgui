@@ -1853,6 +1853,20 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
                     cache.validArea = QRect();
                     recreateWholeImageCache = true;
+
+                } else {
+
+                    // dx == 0, we haven't scrolled but the cache is
+                    // only partly valid
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                    cerr << "SpectrogramLayer: haven't scrolled, but cache is not complete" << endl;
+#endif
+                    if (cache.validArea.x() == 0) {
+                        x0 = cache.validArea.width();
+                    } else {
+                        x1 = cache.validArea.x();
+                    }
                 }
 	    }
 	} else {
@@ -1909,7 +1923,8 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer: x0 " << x0 << ", x1 " << x1
          << ", repaintWidth " << repaintWidth << ", h " << h
-         << ", rightToLeft " << rightToLeft << endl;
+         << ", rightToLeft " << rightToLeft
+         << ", recreateWholeImageCache " << recreateWholeImageCache << endl;
 #endif
 
     sv_samplerate_t sr = m_model->getSampleRate();
@@ -2094,7 +2109,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     if (failedToRepaint > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "SpectrogramLayer::paint(): Failed to repaint " << failedToRepaint << " of " << bufwid
-             << " columns in time" << endl;
+             << " columns in time (so managed to repaint " << bufwid - failedToRepaint << ")" << endl;
 #endif
     } else if (failedToRepaint < 0) {
         cerr << "WARNING: failedToRepaint < 0 (= " << failedToRepaint << ")"
@@ -2205,7 +2220,9 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     cerr << "SpectrogramLayer: Cache valid area becomes " << cache.validArea.x()
          << ", " << cache.validArea.y() << ", "
          << cache.validArea.width() << "x"
-         << cache.validArea.height() << endl;
+         << cache.validArea.height() << " (size = "
+         << cache.image.width() << "x" << cache.image.height() << ")"
+         << endl;
 #endif
 
     QRect pr = rect & cache.validArea;
