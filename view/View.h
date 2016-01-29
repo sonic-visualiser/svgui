@@ -62,7 +62,7 @@ public:
      * be managed elsewhere (e.g. by the Document).
      */
     virtual ~View();
-
+    
     /**
      * Retrieve the first visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
@@ -106,6 +106,20 @@ public:
      * Return the closest frame to the given pixel x-coordinate.
      */
     sv_frame_t getFrameForX(int x) const;
+
+    /**
+     * Return the closest pixel x-coordinate corresponding to a given
+     * view x-coordinate. Default is no scaling, ViewProxy handles
+     * scaling case.
+     */
+    int getXForViewX(int viewx) const { return viewx; }
+
+    /**
+     * Return the closest view x-coordinate corresponding to a given
+     * pixel x-coordinate. Default is no scaling, ViewProxy handles
+     * scaling case.
+     */
+    int getViewXForX(int x) const { return x; }
 
     /**
      * Return the pixel y-coordinate corresponding to a given
@@ -333,6 +347,8 @@ public:
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
 
+    void updatePaintRect(QRect r) { update(r); }
+    
     View *getView() { return this; } 
     const View *getView() const { return this; } 
     
@@ -384,6 +400,9 @@ public slots:
 
 protected:
     View(QWidget *, bool showProgress);
+
+    int m_id;
+    
     virtual void paintEvent(QPaintEvent *e);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }

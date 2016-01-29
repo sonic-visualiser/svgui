@@ -52,6 +52,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/PaintAssistant.h \
            layer/PianoScale.h \
            layer/RegionLayer.h \
+           layer/ScrollableImageCache.h \
            layer/SingleColourLayer.h \
            layer/SliceableLayer.h \
            layer/SliceLayer.h \
