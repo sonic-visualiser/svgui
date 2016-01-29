@@ -53,11 +53,6 @@ public:
 	return m_width > 0;
     }
 
-    bool spans(int left, int right) const {
-	return (getValidLeft() <= left &&
-		getValidRight() >= right);
-    }
-    
     QSize getSize() const {
 	return m_image.size();
     }
@@ -86,169 +81,57 @@ public:
     int getZoomLevel() const {
 	return m_zoomLevel;
     }
+    
+    void setZoomLevel(int zoom) {
+	m_zoomLevel = zoom;
+	invalidate();
+    }
 
     sv_frame_t getStartFrame() const {
 	return m_startFrame;
     }
-    
-    void setZoomLevel(int zoom) {
-	m_zoomLevel = zoom;
+
+    /**
+     * Set the start frame and invalidate the cache. To scroll,
+     * i.e. to set the start frame while retaining cache validity
+     * where possible, use scrollTo() instead.
+     */
+    void setStartFrame(sv_frame_t frame) {
+	m_startFrame = frame;
 	invalidate();
     }
     
     const QImage &getImage() const {
 	return m_image;
     }
-    
-    void scrollTo(sv_frame_t newStartFrame) {
 
-	if (!m_v) throw std::logic_error("ScrollableImageCache: not associated with a LayerGeometryProvider");
-	
-	int dx = (m_v->getXForFrame(m_startFrame) -
-		  m_v->getXForFrame(newStartFrame));
+    /**
+     * Set the new start frame for the cache, if possible also moving
+     * along any existing valid data within the cache so that it
+     * continues to be valid for the new start frame.
+     */
+    void scrollTo(sv_frame_t newStartFrame);
 
-	m_startFrame = newStartFrame;
-	
-	if (!isValid()) {
-	    return;
-	}
-
-	int w = m_image.width();
-
-	if (dx == 0) {
-	    // haven't moved
-	    return;
-	}
-
-	if (dx <= -w || dx >= w) {
-	    // scrolled entirely off
-	    invalidate();
-	    return;
-	}
-	
-	// dx is in range, cache is scrollable
-
-	int dxp = dx;
-	if (dxp < 0) dxp = -dxp;
-
-	int copylen = (w - dxp) * int(sizeof(QRgb));
-	for (int y = 0; y < m_image.height(); ++y) {
-	    QRgb *line = (QRgb *)m_image.scanLine(y);
-	    if (dx < 0) {
-		memmove(line, line + dxp, copylen);
-	    } else {
-		memmove(line + dxp, line, copylen);
-	    }
-	}
-	
-	// update valid area
-        
-	int px = m_left;
-	int pw = m_width;
-	
-	px += dx;
-	
-	if (dx < 0) {
-	    // we scrolled left
-	    if (px < 0) {
-		pw += px;
-		px = 0;
-		if (pw < 0) {
-		    pw = 0;
-		}
-	    }
-	} else {
-	    // we scrolled right
-	    if (px + pw > w) {
-		pw = w - px;
-		if (pw < 0) {
-		    pw = 0;
-		}
-	    }
-	}
-
-	m_left = px;
-	m_width = pw;
-    }
-
-    void resizeToTouchValidArea(int &left, int &width,
-				bool &isLeftOfValidArea) const {
-	if (left < m_left) {
-	    isLeftOfValidArea = true;
-	    if (left + width < m_left + m_width) {
-		width = m_left - left;
-	    }
-	} else {
-	    isLeftOfValidArea = false;
-	    width = left + width - (m_left + m_width);
-	    left = m_left + m_width;
-	    if (width < 0) width = 0;
-	}
-    }
-    
+    /**
+     * Take a left coordinate and width describing a region, and
+     * adjust them so that they are contiguous with the cache valid
+     * region and so that the union of the adjusted region with the
+     * cache valid region contains the supplied region.
+     */
+    void adjustToTouchValidArea(int &left, int &width,
+				bool &isLeftOfValidArea) const;
+    /**
+     * Draw from an image onto the cache. The supplied image must have
+     * the same height as the cache and the full height is always
+     * drawn. The left and width parameters determine the target
+     * region of the cache, the imageLeft and imageWidth parameters
+     * the source region of the image.
+     */
     void drawImage(int left,
 		   int width,
 		   QImage image,
 		   int imageLeft,
-		   int imageWidth) {
-
-	if (image.height() != m_image.height()) {
-	    throw std::logic_error("Image height must match cache height in ScrollableImageCache::drawImage");
-	}
-	if (left < 0 || left + width > m_image.width()) {
-	    throw std::logic_error("Drawing area out of bounds in ScrollableImageCache::drawImage");
-	}
-	
-	QPainter painter(&m_image);
-	painter.drawImage(QRect(left, 0, width, m_image.height()),
-			  image,
-			  QRect(imageLeft, 0, imageWidth, image.height()));
-	painter.end();
-
-	if (!isValid()) {
-	    m_left = left;
-	    m_width = width;
-	    return;
-	}
-	
-	if (left < m_left) {
-	    if (left + width > m_left + m_width) {
-		// new image completely contains the old valid area --
-		// use the new area as is
-		m_left = left;
-		m_width = width;
-	    } else if (left + width < m_left) {
-		// new image completely off left of old valid area --
-		// we can't extend the valid area because the bit in
-		// between is not valid, so must use the new area only
-		m_left = left;
-		m_width = width;
-	    } else {
-		// new image overlaps old valid area on left side --
-		// use new left edge, and extend width to existing
-		// right edge
-		m_width = (m_left + m_width) - left;
-		m_left = left;
-	    }
-	} else {
-	    if (left > m_left + m_width) {
-		// new image completely off right of old valid area --
-		// we can't extend the valid area because the bit in
-		// between is not valid, so must use the new area only
-		m_left = left;
-		m_width = width;
-	    } else if (left + width > m_left + m_width) {
-		// new image overlaps old valid area on right side --
-		// use existing left edge, and extend width to new
-		// right edge
-		m_width = (left + width) - m_left;
-		// (m_left unchanged)
-	    } else {
-		// new image completely contained within old valid
-		// area -- leave the old area unchanged
-	    }
-	}
-    }
+		   int imageWidth);
     
 private:
     const LayerGeometryProvider *m_v;

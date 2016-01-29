@@ -19,6 +19,7 @@
 
 #include <QMutex>
 #include <QMutexLocker>
+#include <QPainter>
 
 class ViewManager;
 class View;

@@ -80,6 +80,7 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/PaintAssistant.cpp \
            layer/PianoScale.cpp \
            layer/RegionLayer.cpp \
+           layer/ScrollableImageCache.cpp \
            layer/SingleColourLayer.cpp \
            layer/SliceLayer.cpp \
            layer/SpectrogramLayer.cpp \
