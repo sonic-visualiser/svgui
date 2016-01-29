@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SPECTROGRAM_LAYER_H_
-#define _SPECTROGRAM_LAYER_H_
+#ifndef SPECTROGRAM_LAYER_H
+#define SPECTROGRAM_LAYER_H
 
 #include "SliceableLayer.h"
 #include "base/Window.h"
@@ -24,6 +24,8 @@
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h"
 #include "data/model/DenseTimeValueModel.h"
 #include "data/model/FFTModel.h"
+
+#include "ScrollableImageCache.h"
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -294,22 +296,10 @@ protected:
 
     Palette m_palette;
 
-    /**
-     * ImageCache covers the area of the view, at view resolution.
-     * Not all of it is necessarily valid at once (it is refreshed
-     * in parts when scrolling, for example).
-     */
-    struct ImageCache
-    {
-        QImage image;
-        QRect validArea;
-        sv_frame_t startFrame;
-        int zoomLevel;
-    };
-    typedef std::map<const View *, ImageCache> ViewImageCache;
+    typedef std::map<int, ScrollableImageCache> ViewImageCache; // key is view id
     void invalidateImageCaches();
-    void invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFrame);
     mutable ViewImageCache m_imageCaches;
+    ScrollableImageCache &getImageCacheReference(const LayerGeometryProvider *) const;
 
     /**
      * When painting, we draw directly onto the draw buffer and then
@@ -363,8 +353,8 @@ protected:
     Dense3DModelPeakCache *getPeakCache(const LayerGeometryProvider *v) const;
     void invalidateFFTModels();
 
-    typedef std::map<const View *, FFTModel *> ViewFFTMap;
-    typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
+    typedef std::map<int, FFTModel *> ViewFFTMap; // key is view id
+    typedef std::map<int, Dense3DModelPeakCache *> PeakCacheMap; // key is view id
     mutable ViewFFTMap m_fftModels;
     mutable PeakCacheMap m_peakCaches;
     mutable Model *m_sliceableModel;
@@ -411,7 +401,7 @@ protected:
         float m_max;
     };
 
-    typedef std::map<const LayerGeometryProvider *, MagnitudeRange> ViewMagMap;
+    typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
