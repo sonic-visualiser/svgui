@@ -100,16 +100,28 @@ void
 ScrollableImageCache::adjustToTouchValidArea(int &left, int &width,
 					     bool &isLeftOfValidArea) const
 {
+#ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
+    cerr << "ScrollableImageCache::adjustToTouchValidArea: left " << left
+         << ", width " << width << endl;
+    cerr << "ScrollableImageCache: my left " << m_left
+         << ", width " << m_width << " so right " << (m_left + m_width) << endl;
+#endif
     if (left < m_left) {
 	isLeftOfValidArea = true;
-	if (left + width < m_left + m_width) {
+	if (left + width <= m_left + m_width) {
 	    width = m_left - left;
 	}
+#ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
+        cerr << "ScrollableImageCache: we're left of valid area, adjusted width to " << width << endl;
+#endif
     } else {
 	isLeftOfValidArea = false;
 	width = left + width - (m_left + m_width);
 	left = m_left + m_width;
 	if (width < 0) width = 0;
+#ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
+        cerr << "ScrollableImageCache: we're right of valid area, adjusted left to " << left << ", width to " << width << endl;
+#endif
     }
 }
     
