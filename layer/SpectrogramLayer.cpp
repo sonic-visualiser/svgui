@@ -1855,15 +1855,15 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     // such boundaries at either side of the draw buffer -- one which
     // we draw up to, and one which we subsequently crop at.
 
-    bool bufferBinResolution = false;
-    if (increment > zoomLevel) bufferBinResolution = true;
+    bool bufferIsBinResolution = false;
+    if (increment > zoomLevel) bufferIsBinResolution = true;
 
     sv_frame_t leftBoundaryFrame = -1, leftCropFrame = -1;
     sv_frame_t rightBoundaryFrame = -1, rightCropFrame = -1;
 
     int bufwid;
 
-    if (bufferBinResolution) {
+    if (bufferIsBinResolution) {
 
         for (int x = x0; ; --x) {
             sv_frame_t f = v->getFrameForX(x);
@@ -1902,7 +1902,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     
     bool usePeaksCache = false;
 
-    if (bufferBinResolution) {
+    if (bufferIsBinResolution) {
         for (int x = 0; x < bufwid; ++x) {
             binforx[x] = int(leftBoundaryFrame / increment) + x;
         }
@@ -1930,7 +1930,33 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
     m_drawBuffer.fill(0);
     int attainedBufwid = bufwid;
-    
+
+    double softTimeLimit;
+
+    if (m_synchronous) {
+
+        // must paint the whole thing for synchronous mode, so give
+        // "no timeout"
+        softTimeLimit = 0.0;
+        
+    } else if (bufferIsBinResolution) {
+        
+        // calculating boundaries later will be too fiddly for partial
+        // paints, and painting should be fast anyway when this is the
+        // case because it means we're well zoomed in
+        softTimeLimit = 0.0;
+
+    } else {
+
+        // neither limitation applies, so use a short soft limit
+
+        if (m_binDisplay == PeakFrequencies) {
+            softTimeLimit = 0.15;
+        } else {
+            softTimeLimit = 0.1;
+        }
+    }
+
     if (m_binDisplay != PeakFrequencies) {
 
         for (int y = 0; y < h; ++y) {
@@ -1946,7 +1972,8 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
             paintDrawBuffer(v, bufwid, h, binforx, binfory,
                             usePeaksCache,
                             overallMag, overallMagChanged,
-                            rightToLeft);
+                            rightToLeft,
+                            softTimeLimit);
 
     } else {
 
@@ -1956,7 +1983,8 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
                                            displayMinFreq, displayMaxFreq,
                                            logarithmic,
                                            overallMag, overallMagChanged,
-                                           rightToLeft);
+                                           rightToLeft,
+                                           softTimeLimit);
     }
 
     int failedToRepaint = bufwid - attainedBufwid;
@@ -2007,7 +2035,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
                   << x0 << "," << 0 << endl;
 #endif
 
-        if (bufferBinResolution) {
+        if (bufferIsBinResolution) {
 
             int scaledLeft = v->getXForFrame(leftBoundaryFrame);
             int scaledRight = v->getXForFrame(rightBoundaryFrame);
@@ -2138,7 +2166,8 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                                                  bool logarithmic,
                                                  MagnitudeRange &overallMag,
                                                  bool &overallMagChanged,
-                                                 bool rightToLeft) const
+                                                 bool rightToLeft,
+                                                 double softTimeLimit) const
 {
     Profiler profiler("SpectrogramLayer::paintDrawBufferPeakFrequencies");
 
@@ -2162,7 +2191,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
 #endif
 
     int minColumns = 4;
-    double softTimeLimit = 0.15; // seconds; only for non-synchronous drawing
+    bool haveTimeLimits = (softTimeLimit > 0.0);
     double hardTimeLimit = softTimeLimit * 2.0;
     bool overridingSoftLimit = false;
     auto startTime = chrono::steady_clock::now();
@@ -2262,7 +2291,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
             }
         }
 
-        if (!m_synchronous) {
+        if (haveTimeLimits) {
             if (columnCount >= minColumns) {
                 auto t = chrono::steady_clock::now();
                 double diff = chrono::duration<double>(t - startTime).count();
@@ -2303,7 +2332,8 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                                   bool usePeaksCache,
                                   MagnitudeRange &overallMag,
                                   bool &overallMagChanged,
-                                  bool rightToLeft) const
+                                  bool rightToLeft,
+                                  double softTimeLimit) const
 {
     Profiler profiler("SpectrogramLayer::paintDrawBuffer");
 
@@ -2358,7 +2388,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     DenseThreeDimensionalModel::Column c;
 
     int minColumns = 4;
-    double softTimeLimit = 0.1; // seconds; only for non-synchronous drawing
+    bool haveTimeLimits = (softTimeLimit > 0.0);
     double hardTimeLimit = softTimeLimit * 2.0;
     bool overridingSoftLimit = false;
     auto startTime = chrono::steady_clock::now();
@@ -2547,7 +2577,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
             m_drawBuffer.setPixel(x, h-y-1, peakpix);
         }
 
-        if (!m_synchronous) {
+        if (haveTimeLimits) {
             if (columnCount >= minColumns) {
                 auto t = chrono::steady_clock::now();
                 double diff = chrono::duration<double>(t - startTime).count();
