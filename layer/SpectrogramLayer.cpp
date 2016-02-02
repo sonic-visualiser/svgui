@@ -1736,6 +1736,10 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         if (!m_synchronous) {
             // When rendering the whole thing, start from somewhere near
             // the middle so that the region of interest appears first
+
+            //!!! (perhaps we should have some cunning test to avoid
+            //!!! doing this if past repaints have appeared fast
+            //!!! enough to do the whole width in one shot)
             if (x0 == 0 && x1 == v->getPaintWidth()) {
                 x0 = int(x1 * 0.3);
             }
