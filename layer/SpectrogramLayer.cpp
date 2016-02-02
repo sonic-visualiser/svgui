@@ -48,7 +48,7 @@
 #include <alloca.h>
 #endif
 
-#define DEBUG_SPECTROGRAM_REPAINT 1
+//#define DEBUG_SPECTROGRAM_REPAINT 1
 
 using namespace std;
 
@@ -963,7 +963,13 @@ SpectrogramLayer::cacheInvalid()
 }
 
 void
-SpectrogramLayer::cacheInvalid(sv_frame_t from, sv_frame_t to)
+SpectrogramLayer::cacheInvalid(
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    sv_frame_t from, sv_frame_t to
+#else 
+    sv_frame_t     , sv_frame_t
+#endif
+    )
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
@@ -1731,7 +1737,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
             // When rendering the whole thing, start from somewhere near
             // the middle so that the region of interest appears first
             if (x0 == 0 && x1 == v->getPaintWidth()) {
-                x0 = int(x1 * 0.4);
+                x0 = int(x1 * 0.3);
             }
         }
     } else {
@@ -2152,7 +2158,9 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
 #endif
 
     int minColumns = 4;
-    double maxTime = 0.15; // seconds; only for non-synchronous drawing
+    double softTimeLimit = 0.15; // seconds; only for non-synchronous drawing
+    double hardTimeLimit = softTimeLimit * 2.0;
+    bool overridingSoftLimit = false;
     auto startTime = chrono::steady_clock::now();
     
     int start = 0;
@@ -2254,13 +2262,27 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
             if (columnCount >= minColumns) {
                 auto t = chrono::steady_clock::now();
                 double diff = chrono::duration<double>(t - startTime).count();
-                if (diff > maxTime) {
+                if (diff > hardTimeLimit) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "SpectrogramLayer::paintDrawBufferPeakFrequencies: Max time " << maxTime << " sec exceeded after "
+                    cerr << "SpectrogramLayer::paintDrawBufferPeakFrequencies: hard limit " << hardTimeLimit << " sec exceeded after "
                          << columnCount << " columns with time " << diff << endl;
 #endif
                     return columnCount;
-                }
+                } else if (diff > softTimeLimit && !overridingSoftLimit) {
+                    // If we're more than half way through by the time
+                    // we reach the soft limit, ignore it (though
+                    // still respect the hard limit, above). Otherwise
+                    // respect the soft limit and return now.
+                    if (columnCount > w/2) {
+                        overridingSoftLimit = true;
+                    } else {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                        cerr << "SpectrogramLayer::paintDrawBufferPeakFrequencies: soft limit " << softTimeLimit << " sec exceeded after "
+                             << columnCount << " columns with time " << diff << endl;
+#endif
+                        return columnCount;
+                    }
+                }                        
             }
         }
     }
@@ -2332,7 +2354,9 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     DenseThreeDimensionalModel::Column c;
 
     int minColumns = 4;
-    double maxTime = 0.1; // seconds; only for non-synchronous drawing
+    double softTimeLimit = 0.1; // seconds; only for non-synchronous drawing
+    double hardTimeLimit = softTimeLimit * 2.0;
+    bool overridingSoftLimit = false;
     auto startTime = chrono::steady_clock::now();
     
     int start = 0;
@@ -2523,13 +2547,27 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
             if (columnCount >= minColumns) {
                 auto t = chrono::steady_clock::now();
                 double diff = chrono::duration<double>(t - startTime).count();
-                if (diff > maxTime) {
+                if (diff > hardTimeLimit) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-                    cerr << "SpectrogramLayer::paintDrawBuffer: Max time " << maxTime << " sec exceeded after "
+                    cerr << "SpectrogramLayer::paintDrawBuffer: hard limit " << hardTimeLimit << " sec exceeded after "
                          << columnCount << " columns with time " << diff << endl;
 #endif
                     return columnCount;
-                }
+                } else if (diff > softTimeLimit && !overridingSoftLimit) {
+                    // If we're more than half way through by the time
+                    // we reach the soft limit, ignore it (though
+                    // still respect the hard limit, above). Otherwise
+                    // respect the soft limit and return now.
+                    if (columnCount > w/2) {
+                        overridingSoftLimit = true;
+                    } else {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+                        cerr << "SpectrogramLayer::paintDrawBuffer: soft limit " << softTimeLimit << " sec exceeded after "
+                             << columnCount << " columns with time " << diff << endl;
+#endif
+                        return columnCount;
+                    }
+                }                        
             }
         }
     }
