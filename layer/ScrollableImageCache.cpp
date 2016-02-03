@@ -17,7 +17,7 @@
 #include <iostream>
 using namespace std;
 
-#define DEBUG_SCROLLABLE_IMAGE_CACHE 1
+//#define DEBUG_SCROLLABLE_IMAGE_CACHE 1
 
 void
 ScrollableImageCache::scrollTo(sv_frame_t newStartFrame)
@@ -140,15 +140,15 @@ ScrollableImageCache::drawImage(int left,
     }
     if (left < 0 || width < 0 || left + width > m_image.width()) {
 	cerr << "ScrollableImageCache::drawImage: ERROR: Target area (left = "
-	     << left << ", width = " << width << ") out of bounds for cache of "
-	     << "width " << m_image.width() << endl;
+	     << left << ", width = " << width << ", so right = " << left + width
+             << ") out of bounds for cache of width " << m_image.width() << endl;
 	throw std::logic_error("Target area out of bounds in ScrollableImageCache::drawImage");
     }
     if (imageLeft < 0 || imageWidth < 0 ||
 	imageLeft + imageWidth > image.width()) {
 	cerr << "ScrollableImageCache::drawImage: ERROR: Source area (left = "
-	     << imageLeft << ", width = " << imageWidth
-	     << ") out of bounds for image of "
+	     << imageLeft << ", width = " << imageWidth << ", so right = "
+             << imageLeft + imageWidth << ") out of bounds for image of "
 	     << "width " << image.width() << endl;
 	throw std::logic_error("Source area out of bounds in ScrollableImageCache::drawImage");
     }
