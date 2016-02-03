@@ -2063,14 +2063,31 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
                  << scaledLeftCrop << " from " << scaledLeftCrop - scaledLeft << endl;
 #endif
 
-            //!!! Update this for failedToRepaint logic
+            int targetLeft = scaledLeftCrop;
+            if (targetLeft < 0) {
+                targetLeft = 0;
+            }
+
+            int targetWidth = scaledRightCrop - targetLeft;
+            if (targetLeft + targetWidth > cache.getSize().width()) {
+                targetWidth = cache.getSize().width() - targetLeft;
+            }
             
-            cache.drawImage
-                (scaledLeftCrop,
-                 scaledRightCrop - scaledLeftCrop,
-                 scaled,
-                 scaledLeftCrop - scaledLeft,
-                 scaledRightCrop - scaledLeftCrop);
+            int sourceLeft = targetLeft - scaledLeft;
+            if (sourceLeft < 0) {
+                sourceLeft = 0;
+            }
+            
+            int sourceWidth = targetWidth;
+
+            if (targetWidth > 0) {
+                cache.drawImage
+                    (targetLeft,
+                     targetWidth,
+                     scaled,
+                     sourceLeft,
+                     sourceWidth);
+            }
 
         } else {
 
