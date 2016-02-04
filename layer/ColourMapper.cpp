@@ -21,6 +21,44 @@
 
 #include "base/Debug.h"
 
+#include <vector>
+
+using namespace std;
+
+static vector<QColor> convertStrings(const vector<QString> &strs)
+{
+    vector<QColor> converted;
+    for (const auto &s: strs) converted.push_back(QColor(s));
+    reverse(converted.begin(), converted.end());
+    return converted;
+}
+
+static vector<QColor> ice = convertStrings({
+        // Based on ColorBrewer ylGnBu
+        "#ffffff", "#ffff00", "#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5",
+        "#7bccc4", "#4eb3d3", "#2b8cbe", "#0868ac", "#084081", "#042040"
+        });
+
+static vector<QColor> cherry = convertStrings({
+        "#f7f7f7", "#fddbc7", "#f4a582", "#d6604d", "#b2182b", "#dd3497",
+        "#ae017e", "#7a0177", "#49006a"
+        });
+    
+static void
+mapDiscrete(double norm, vector<QColor> &colours, double &r, double &g, double &b)
+{
+    int n = int(colours.size());
+    double m = norm * (n-1);
+    if (m >= n-1) { colours[n-1].getRgbF(&r, &g, &b, 0); return; }
+    if (m <= 0) { colours[0].getRgbF(&r, &g, &b, 0); return; }
+    int base(int(floor(m)));
+    double prop0 = (base + 1.0) - m, prop1 = m - base;
+    QColor c0(colours[base]), c1(colours[base+1]);
+    r = c0.redF() * prop0 + c1.redF() * prop1;
+    g = c0.greenF() * prop0 + c1.greenF() * prop1;
+    b = c0.blueF() * prop0 + c1.blueF() * prop1;
+}
+
 ColourMapper::ColourMapper(int map, double min, double max) :
     QObject(),
     m_map(map),
@@ -51,12 +89,12 @@ ColourMapper::getColourMapName(int n)
     StandardMap map = (StandardMap)n;
 
     switch (map) {
-    case DefaultColours:   return tr("Default");
+    case Green:            return tr("Green");
     case WhiteOnBlack:     return tr("White on Black");
     case BlackOnWhite:     return tr("Black on White");
-    case RedOnBlue:        return tr("Red on Blue");
-    case YellowOnBlack:    return tr("Yellow on Black");
-    case BlueOnBlack:      return tr("Blue on Black");
+    case Cherry:           return tr("Cherry");
+    case Wasp:             return tr("Wasp");
+    case Ice:              return tr("Ice");
     case Sunset:           return tr("Sunset");
     case FruitSalad:       return tr("Fruit Salad");
     case Banded:           return tr("Banded");
@@ -85,7 +123,7 @@ ColourMapper::map(double value) const
 
     switch (map) {
 
-    case DefaultColours:
+    case Green:
         h = blue - norm * 2.0 * pieslice;
         s = 0.5f + norm/2.0;
         v = norm;
@@ -101,28 +139,15 @@ ColourMapper::map(double value) const
         hsv = false;
         break;
 
-    case RedOnBlue:
-        h = blue - pieslice/4.0 + norm * (pieslice + pieslice/4.0);
-        s = 1.0;
-        v = norm;
+    case Cherry:
+        hsv = false;
+        mapDiscrete(norm, cherry, r, g, b);
         break;
 
-    case YellowOnBlack:
+    case Wasp:
         h = 0.15;
         s = 1.0;
         v = norm;
-        break;
-
-    case BlueOnBlack:
-        h = blue;
-        s = 1.0;
-        v = norm * 2.0;
-        if (v > 1.0) {
-            v = 1.0;
-            s = 1.0 - (sqrt(norm) - 0.707) * 3.413;
-            if (s < 0.0) s = 0.0;
-            if (s > 1.0) s = 1.0;
-        }
         break;
 
     case Sunset:
@@ -207,6 +232,10 @@ ColourMapper::map(double value) const
         hsv = false;
 */
         break;
+
+    case Ice:
+        hsv = false;
+        mapDiscrete(norm, ice, r, g, b);
     }
 
     if (hsv) {
@@ -224,7 +253,7 @@ ColourMapper::getContrastingColour() const
 
     switch (map) {
 
-    case DefaultColours:
+    case Green:
         return QColor(255, 150, 50);
 
     case WhiteOnBlack:
@@ -233,13 +262,13 @@ ColourMapper::getContrastingColour() const
     case BlackOnWhite:
         return Qt::darkGreen;
 
-    case RedOnBlue:
+    case Cherry:
         return Qt::green;
 
-    case YellowOnBlack:
+    case Wasp:
         return QColor::fromHsv(240, 255, 255);
 
-    case BlueOnBlack:
+    case Ice:
         return Qt::red;
 
     case Sunset:
@@ -277,12 +306,12 @@ ColourMapper::hasLightBackground() const
     case HighGain:
         return true;
 
-    case DefaultColours:
+    case Green:
     case Sunset:
     case WhiteOnBlack:
-    case RedOnBlue:
-    case YellowOnBlack:
-    case BlueOnBlack:
+    case Cherry:
+    case Wasp:
+    case Ice:
     case FruitSalad:
     case Banded:
     case Highlight:

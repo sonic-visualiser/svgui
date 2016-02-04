@@ -52,6 +52,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/PaintAssistant.h \
            layer/PianoScale.h \
            layer/RegionLayer.h \
+           layer/ScrollableImageCache.h \
            layer/SingleColourLayer.h \
            layer/SliceableLayer.h \
            layer/SliceLayer.h \
@@ -79,6 +80,7 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/PaintAssistant.cpp \
            layer/PianoScale.cpp \
            layer/RegionLayer.cpp \
+           layer/ScrollableImageCache.cpp \
            layer/SingleColourLayer.cpp \
            layer/SliceLayer.cpp \
            layer/SpectrogramLayer.cpp \

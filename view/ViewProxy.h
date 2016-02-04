@@ -42,6 +42,12 @@ public:
         sv_frame_t f1 = m_view->getFrameForX((x / m_scaleFactor) + 1);
         return f0 + ((f1 - f0) * (x % m_scaleFactor)) / m_scaleFactor;
     }
+    virtual int getXForViewX(int viewx) const {
+        return viewx * m_scaleFactor;
+    }
+    virtual int getViewXForX(int x) const {
+        return x / m_scaleFactor;
+    }
     virtual sv_frame_t getModelsStartFrame() const {
 	return m_view->getModelsStartFrame();
     }
@@ -129,6 +135,13 @@ public:
 	m_view->drawMeasurementRect(p, layer, rect, focus);
     }
 
+    virtual void updatePaintRect(QRect r) {
+        m_view->update(r.x() / m_scaleFactor,
+                       r.y() / m_scaleFactor,
+                       r.width() / m_scaleFactor,
+                       r.height() / m_scaleFactor);
+    }
+    
     virtual View *getView() { return m_view; }
     virtual const View *getView() const { return m_view; }
 
