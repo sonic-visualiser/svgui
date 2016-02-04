@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SPECTROGRAM_LAYER_H_
-#define _SPECTROGRAM_LAYER_H_
+#ifndef SPECTROGRAM_LAYER_H
+#define SPECTROGRAM_LAYER_H
 
 #include "SliceableLayer.h"
 #include "base/Window.h"
@@ -24,6 +24,8 @@
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h"
 #include "data/model/DenseTimeValueModel.h"
 #include "data/model/FFTModel.h"
+
+#include "ScrollableImageCache.h"
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -250,20 +252,20 @@ protected:
     const DenseTimeValueModel *m_model; // I do not own this
 
     int                 m_channel;
-    int              m_windowSize;
+    int                 m_windowSize;
     WindowType          m_windowType;
-    int              m_windowHopLevel;
-    int              m_zeroPadLevel;
-    int              m_fftSize;
+    int                 m_windowHopLevel;
+    int                 m_zeroPadLevel;
+    int                 m_fftSize;
     float               m_gain;
     float               m_initialGain;
     float               m_threshold;
     float               m_initialThreshold;
     int                 m_colourRotation;
     int                 m_initialRotation;
-    int              m_minFrequency;
-    int              m_maxFrequency;
-    int              m_initialMaxFrequency;
+    int                 m_minFrequency;
+    int                 m_maxFrequency;
+    int                 m_initialMaxFrequency;
     ColourScale         m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
@@ -274,8 +276,6 @@ protected:
     bool                m_synchronous;
 
     mutable bool        m_haveDetailedScale;
-    mutable int         m_lastPaintBlockWidth;
-    mutable RealTime    m_lastPaintTime;
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 
@@ -296,22 +296,10 @@ protected:
 
     Palette m_palette;
 
-    /**
-     * ImageCache covers the area of the view, at view resolution.
-     * Not all of it is necessarily valid at once (it is refreshed
-     * in parts when scrolling, for example).
-     */
-    struct ImageCache
-    {
-        QImage image;
-        QRect validArea;
-        sv_frame_t startFrame;
-        int zoomLevel;
-    };
-    typedef std::map<const View *, ImageCache> ViewImageCache;
+    typedef std::map<int, ScrollableImageCache> ViewImageCache; // key is view id
     void invalidateImageCaches();
-    void invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFrame);
     mutable ViewImageCache m_imageCaches;
+    ScrollableImageCache &getImageCacheReference(const LayerGeometryProvider *) const;
 
     /**
      * When painting, we draw directly onto the draw buffer and then
@@ -365,8 +353,8 @@ protected:
     Dense3DModelPeakCache *getPeakCache(const LayerGeometryProvider *v) const;
     void invalidateFFTModels();
 
-    typedef std::map<const View *, FFTModel *> ViewFFTMap;
-    typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
+    typedef std::map<int, FFTModel *> ViewFFTMap; // key is view id
+    typedef std::map<int, Dense3DModelPeakCache *> PeakCacheMap; // key is view id
     mutable ViewFFTMap m_fftModels;
     mutable PeakCacheMap m_peakCaches;
     mutable Model *m_sliceableModel;
@@ -413,26 +401,30 @@ protected:
         float m_max;
     };
 
-    typedef std::map<const LayerGeometryProvider *, MagnitudeRange> ViewMagMap;
+    typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(LayerGeometryProvider *v) const;
-    bool paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
-                         const std::vector<int> &binforx,
-                         const std::vector<double> &binfory,
-                         bool usePeaksCache,
-                         MagnitudeRange &overallMag,
-                         bool &overallMagChanged) const;
-    bool paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
-                                        const std::vector<int> &binforx,
-                                        int minbin,
-                                        int maxbin,
-                                        double displayMinFreq,
-                                        double displayMaxFreq,
-                                        bool logarithmic,
-                                        MagnitudeRange &overallMag,
-                                        bool &overallMagChanged) const;
+    int paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
+                        const std::vector<int> &binforx,
+                        const std::vector<double> &binfory,
+                        bool usePeaksCache,
+                        MagnitudeRange &overallMag,
+                        bool &overallMagChanged,
+                        bool rightToLeft,
+                        double softTimeLimit) const;
+    int paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
+                                       const std::vector<int> &binforx,
+                                       int minbin,
+                                       int maxbin,
+                                       double displayMinFreq,
+                                       double displayMaxFreq,
+                                       bool logarithmic,
+                                       MagnitudeRange &overallMag,
+                                       bool &overallMagChanged,
+                                       bool rightToLeft,
+                                       double softTimeLimit) const;
 
     virtual void updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const;
     virtual void setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const;

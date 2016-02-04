@@ -17,6 +17,10 @@
 
 #include "base/BaseTypes.h"
 
+#include <QMutex>
+#include <QMutexLocker>
+#include <QPainter>
+
 class ViewManager;
 class View;
 class Layer;
@@ -24,6 +28,20 @@ class Layer;
 class LayerGeometryProvider
 {
 public:
+    LayerGeometryProvider() {
+        static QMutex idMutex;
+        static int nextId = 1;
+        QMutexLocker locker(&idMutex);
+        m_id = nextId;
+        nextId++;
+    }
+    
+    /**
+     * Retrieve the id of this object. Each LayerGeometryProvider has
+     * a separate id.
+     */
+    int getId() const { return m_id; }
+
     /**
      * Retrieve the first visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
@@ -60,6 +78,18 @@ public:
     virtual sv_frame_t getModelsStartFrame() const = 0;
     virtual sv_frame_t getModelsEndFrame() const = 0;
 
+    /**
+     * Return the closest pixel x-coordinate corresponding to a given
+     * view x-coordinate.
+     */
+    virtual int getXForViewX(int viewx) const = 0;
+    
+    /**
+     * Return the closest view x-coordinate corresponding to a given
+     * pixel x-coordinate.
+     */
+    virtual int getViewXForX(int x) const = 0;
+    
     /**
      * Return the pixel y-coordinate corresponding to a given
      * frequency, if the frequency range is as specified.  This does
@@ -123,8 +153,13 @@ public:
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const = 0;
 
+    virtual void updatePaintRect(QRect r) = 0;
+    
     virtual View *getView() = 0;
     virtual const View *getView() const = 0;
+
+private:
+    int m_id;
 };
 
 #endif

@@ -26,10 +26,9 @@
 
 #include <iostream>
 #include <cmath>
+#include <stdexcept>
 
 //#define DEBUG_TIME_RULER_LAYER 1
-
-
 
 
 TimeRulerLayer::TimeRulerLayer() :
@@ -182,6 +181,8 @@ TimeRulerLayer::getMajorTickSpacing(LayerGeometryProvider *v, bool &quarterTicks
     } else {
 	incms = 1;
 	int ms = rtGap.msec();
+//        cerr << "rtGap.msec = " << ms << ", rtGap = " << rtGap << ", count = " << count << endl;
+//        cerr << "startFrame = " << startFrame << ", endFrame = " << endFrame << " rtStart = " << rtStart << ", rtEnd = " << rtEnd << endl;
 	if (ms > 0) { incms *= 10; ms /= 10; }
 	if (ms > 0) { incms *= 10; ms /= 10; }
 	if (ms > 0) { incms *= 5; ms /= 5; }
@@ -241,6 +242,9 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     // time < 0 which would cut it in half
     int minlabel = 1; // ms
 
+    // used for a sanity check
+    sv_frame_t prevframe = 0;
+    
     while (1) {
 
         // frame is used to determine where to draw the lines, so it
@@ -253,10 +257,17 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
         frame /= v->getZoomLevel();
         frame *= v->getZoomLevel(); // so frame corresponds to an exact pixel
 
+        if (frame == prevframe && prevframe != 0) {
+            cerr << "ERROR: frame == prevframe (== " << frame
+                 << ") in TimeRulerLayer::paint" << endl;
+            throw std::logic_error("frame == prevframe in TimeRulerLayer::paint");
+        }
+        prevframe = frame;
+        
         int x = v->getXForFrame(frame);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-        SVDEBUG << "Considering frame = " << frame << ", x = " << x << endl;
+        cerr << "Considering frame = " << frame << ", x = " << x << endl;
 #endif
 
         if (x >= rect.x() + rect.width() + 50) {

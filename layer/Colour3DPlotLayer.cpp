@@ -25,6 +25,7 @@
 #include <QImage>
 #include <QRect>
 #include <QTextStream>
+#include <QSettings>
 
 #include <iostream>
 
@@ -60,7 +61,10 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_miny(0),
     m_maxy(0)
 {
-    
+    QSettings settings;
+    settings.beginGroup("Preferences");
+    setColourMap(settings.value("colour-3d-plot-colour", ColourMapper::Green).toInt());
+    settings.endGroup();
 }
 
 Colour3DPlotLayer::~Colour3DPlotLayer()
@@ -934,22 +938,24 @@ Colour3DPlotLayer::getColumn(int col) const
     Profiler profiler("Colour3DPlotLayer::getColumn");
 
     DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
-    while (values.size() < m_model->getHeight()) values.push_back(0.f);
+    values.resize(m_model->getHeight(), 0.f);
     if (!m_normalizeColumns && !m_normalizeHybrid) return values;
 
     double colMax = 0.f, colMin = 0.f;
     double min = 0.f, max = 0.f;
 
+    int nv = int(values.size());
+    
     min = m_model->getMinimumLevel();
     max = m_model->getMaximumLevel();
 
-    for (int y = 0; y < values.size(); ++y) {
+    for (int y = 0; y < nv; ++y) {
         if (y == 0 || values.at(y) > colMax) colMax = values.at(y);
         if (y == 0 || values.at(y) < colMin) colMin = values.at(y);
     }
     if (colMin == colMax) colMax = colMin + 1;
     
-    for (int y = 0; y < values.size(); ++y) {
+    for (int y = 0; y < nv; ++y) {
     
         double value = values.at(y);
         double norm = (value - colMin) / (colMax - colMin);
@@ -960,7 +966,7 @@ Colour3DPlotLayer::getColumn(int col) const
 
     if (m_normalizeHybrid && (colMax > 0.0)) {
         double logmax = log10(colMax);
-        for (int y = 0; y < values.size(); ++y) {
+        for (int y = 0; y < nv; ++y) {
             values[y] = float(values[y] * logmax);
         }
     }
@@ -1132,7 +1138,7 @@ Colour3DPlotLayer::fillCache(int firstBin, int lastBin) const
             double colMax = 0.f, colMin = 0.f;
 
             for (int y = 0; y < cacheHeight; ++y) {
-                if (y >= values.size()) break;
+                if (!in_range_for(values, y)) break;
                 if (y == 0 || values[y] > colMax) colMax = values[y];
                 if (y == 0 || values[y] < colMin) colMin = values[y];
             }
@@ -1182,7 +1188,7 @@ Colour3DPlotLayer::fillCache(int firstBin, int lastBin) const
         for (int y = 0; y < cacheHeight; ++y) {
 
             double value = min;
-            if (y < values.size()) {
+            if (in_range_for(values, y)) {
                 value = values.at(y);
             }
 
