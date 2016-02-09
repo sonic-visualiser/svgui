@@ -23,6 +23,9 @@ public:
     ViewProxy(View *view, int scaleFactor) :
 	m_view(view), m_scaleFactor(scaleFactor) { }
 
+    virtual int getId() const {
+        return m_view->getId();
+    }
     virtual sv_frame_t getStartFrame() const {
 	return m_view->getStartFrame();
     }

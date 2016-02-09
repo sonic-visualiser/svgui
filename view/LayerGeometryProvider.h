@@ -27,20 +27,32 @@ class Layer;
 
 class LayerGeometryProvider
 {
-public:
-    LayerGeometryProvider() {
+protected:
+    static int getNextId() {
         static QMutex idMutex;
         static int nextId = 1;
+        static int maxId = INT_MAX;
         QMutexLocker locker(&idMutex);
-        m_id = nextId;
-        nextId++;
-    }
+        int id = nextId;
+        if (nextId == maxId) {
+            // we don't expect this to happen in the lifetime of a
+            // process, but it would be undefined behaviour if it did
+            // since we're using a signed int, so we should really
+            // guard for it...
+            nextId = 1;
+        } else {
+            nextId++;
+        }
+        return id;
+    }            
+    
+public:
+    LayerGeometryProvider() { }
     
     /**
-     * Retrieve the id of this object. Each LayerGeometryProvider has
-     * a separate id.
+     * Retrieve the id of this object.
      */
-    int getId() const { return m_id; }
+    virtual int getId() const = 0;
 
     /**
      * Retrieve the first visible sample frame on the widget.
@@ -157,9 +169,6 @@ public:
     
     virtual View *getView() = 0;
     virtual const View *getView() const = 0;
-
-private:
-    int m_id;
 };
 
 #endif

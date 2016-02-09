@@ -51,6 +51,7 @@
 
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
+    m_id(getNextId()),
     m_centreFrame(0),
     m_zoomLevel(1024),
     m_followPan(true),
