@@ -62,6 +62,12 @@ public:
      * be managed elsewhere (e.g. by the Document).
      */
     virtual ~View();
+
+    /**
+     * Retrieve the id of this object. Views have their own unique
+     * ids, but ViewProxy objects share the id of their View.
+     */
+    int getId() const { return m_id; }
     
     /**
      * Retrieve the first visible sample frame on the widget.

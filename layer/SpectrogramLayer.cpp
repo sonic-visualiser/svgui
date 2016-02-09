@@ -48,7 +48,7 @@
 #include <alloca.h>
 #endif
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 using namespace std;
 
@@ -582,6 +582,9 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 void
 SpectrogramLayer::invalidateImageCaches()
 {
+#ifdef DEBUG_SPECTROGRAM
+    cerr << "SpectrogramLayer::invalidateImageCaches called" << endl;
+#endif
     for (ViewImageCache::iterator i = m_imageCaches.begin();
          i != m_imageCaches.end(); ++i) {
         i->second.invalidate();
@@ -1535,6 +1538,9 @@ SpectrogramLayer::getSliceableModel() const
 void
 SpectrogramLayer::invalidateFFTModels()
 {
+#ifdef DEBUG_SPECTROGRAM
+    cerr << "SpectrogramLayer::invalidateFFTModels called" << endl;
+#endif
     for (ViewFFTMap::iterator i = m_fftModels.begin();
          i != m_fftModels.end(); ++i) {
         delete i->second;
@@ -1557,6 +1563,9 @@ SpectrogramLayer::invalidateFFTModels()
 void
 SpectrogramLayer::invalidateMagnitudes()
 {
+#ifdef DEBUG_SPECTROGRAM
+    cerr << "SpectrogramLayer::invalidateMagnitudes called" << endl;
+#endif
     m_viewMags.clear();
     for (vector<MagnitudeRange>::iterator i = m_columnMags.begin();
          i != m_columnMags.end(); ++i) {
@@ -1597,7 +1606,9 @@ SpectrogramLayer::updateViewMagnitudes(LayerGeometryProvider *v) const
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::updateViewMagnitudes returning from cols "
-              << s0 << " -> " << s1 << " inclusive" << endl;
+         << s0 << " -> " << s1 << " inclusive" << endl;
+    cerr << "SpectrogramLayer::updateViewMagnitudes: for view id " << v->getId()
+         << ": min is " << mag.getMin() << ", max is " << mag.getMax() << endl;
 #endif
 
     if (!mag.isSet()) return false;
@@ -3123,6 +3134,12 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
         double dBmin = AudioLevel::multiplier_to_dB(min);
         double dBmax = AudioLevel::multiplier_to_dB(max);
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        cerr << "paintVerticalScale: for view id " << v->getId()
+             << ": min = " << min << ", max = " << max
+             << ", dBmin = " << dBmin << ", dBmax = " << dBmax << endl;
+#endif
+        
         if (dBmax < -60.f) dBmax = -60.f;
         else top = QString("%1").arg(lrint(dBmax));
 
