@@ -20,6 +20,7 @@
 #include "base/Profiler.h"
 #include "base/Pitch.h"
 #include "base/Preferences.h"
+#include "ViewProxy.h"
 
 #include "layer/TimeRulerLayer.h"
 #include "layer/SingleColourLayer.h"
@@ -37,6 +38,7 @@
 #include <QFont>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSettings>
 
 #include <iostream>
 #include <cassert>
@@ -47,9 +49,9 @@
 //#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
 
-
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
+    m_id(getNextId()),
     m_centreFrame(0),
     m_zoomLevel(1024),
     m_followPan(true),
@@ -59,6 +61,7 @@ View::View(QWidget *w, bool showProgress) :
     m_playPointerFrame(0),
     m_showProgress(showProgress),
     m_cache(0),
+    m_buffer(0),
     m_cacheCentreFrame(0),
     m_cacheZoomLevel(1024),
     m_selectionCached(false),
@@ -362,15 +365,17 @@ View::getXForFrame(sv_frame_t frame) const
 sv_frame_t
 View::getFrameForX(int x) const
 {
-    int z = m_zoomLevel;
+    sv_frame_t z = m_zoomLevel; // nb not just int, or multiplication may overflow
     sv_frame_t frame = m_centreFrame - (width()/2) * z;
 
+    frame = (frame / z) * z; // this is start frame
+    frame = frame + x * z;
+
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    SVDEBUG << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << endl;
+    cerr << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << endl;
 #endif
 
-    frame = (frame / z) * z; // this is start frame
-    return frame + x * z;
+    return frame;
 }
 
 double
@@ -448,9 +453,30 @@ View::getZoomLevel() const
     return m_zoomLevel;
 }
 
+int
+View::effectiveDevicePixelRatio() const
+{
+#ifdef Q_OS_MAC
+    int dpratio = devicePixelRatio();
+    if (dpratio > 1) {
+        QSettings settings;
+        settings.beginGroup("Preferences");
+        if (!settings.value("scaledHiDpi", true).toBool()) {
+            dpratio = 1;
+        }
+        settings.endGroup();
+    }
+    return dpratio;
+#else
+    return 1;
+#endif
+}
+
 void
 View::setZoomLevel(int z)
 {
+    int dpratio = effectiveDevicePixelRatio();
+    if (z < dpratio) return;
     if (z < 1) z = 1;
     if (m_zoomLevel != int(z)) {
 	m_zoomLevel = z;
@@ -1027,7 +1053,7 @@ View::viewManagerPlaybackFrameChanged(sv_frame_t f)
     f = getAlignedPlaybackFrame();
 
 #ifdef DEBUG_VIEW
-    cerr << " -> aligned frame = " << af << endl;
+    cerr << " -> aligned frame = " << f << endl;
 #endif
 
     movePlayPointer(f);
@@ -1653,9 +1679,25 @@ View::getProgressBarWidth() const
 void
 View::setPaintFont(QPainter &paint)
 {
+    int scaleFactor = 1;
+    int dpratio = effectiveDevicePixelRatio();
+    if (dpratio > 1) {
+        QPaintDevice *dev = paint.device();
+        if (dynamic_cast<QPixmap *>(dev) || dynamic_cast<QImage *>(dev)) {
+            scaleFactor = dpratio;
+        }
+    }
+
     QFont font(paint.font());
-    font.setPointSize(Preferences::getInstance()->getViewFontSize());
+    font.setPointSize(Preferences::getInstance()->getViewFontSize()
+                      * scaleFactor);
     paint.setFont(font);
+}
+
+QRect
+View::getPaintRect() const
+{
+    return rect();
 }
 
 void
@@ -1694,6 +1736,8 @@ View::paintEvent(QPaintEvent *e)
 
     QRect nonCacheRect(cacheRect);
 
+    int dpratio = effectiveDevicePixelRatio();
+
     // If not all layers are scrollable, but some of the back layers
     // are, we should store only those in the cache.
 
@@ -1705,25 +1749,34 @@ View::paintEvent(QPaintEvent *e)
 
     // If all the non-scrollable layers are non-opaque, then we draw
     // the selection rectangle behind them and cache it.  If any are
-    // opaque, however, we can't cache.
+    // opaque, however, or if our device-pixel ratio is not 1 (so we
+    // need to paint direct to the widget), then we can't cache.
     //
-    if (!selectionCacheable) {
-	selectionCacheable = true;
-	for (LayerList::const_iterator i = nonScrollables.begin();
-	     i != nonScrollables.end(); ++i) {
-	    if ((*i)->isLayerOpaque()) {
-		selectionCacheable = false;
-		break;
-	    }
-	}
-    }
+    if (dpratio == 1) {
 
-    if (selectionCacheable) {
-	QPoint localPos;
-	bool closeToLeft, closeToRight;
-	if (shouldIlluminateLocalSelection(localPos, closeToLeft, closeToRight)) {
-	    selectionCacheable = false;
-	}
+        if (!selectionCacheable) {
+            selectionCacheable = true;
+            for (LayerList::const_iterator i = nonScrollables.begin();
+                 i != nonScrollables.end(); ++i) {
+                if ((*i)->isLayerOpaque()) {
+                    selectionCacheable = false;
+                    break;
+                }
+            }
+        }
+
+        if (selectionCacheable) {
+            QPoint localPos;
+            bool closeToLeft, closeToRight;
+            if (shouldIlluminateLocalSelection
+                (localPos, closeToLeft, closeToRight)) {
+                selectionCacheable = false;
+            }
+        }
+
+    } else {
+
+        selectionCacheable = false;
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -1741,6 +1794,14 @@ View::paintEvent(QPaintEvent *e)
 	m_selectionCached = false;
     }
 
+    QSize scaledCacheSize(scaledSize(size(), dpratio));
+    QRect scaledCacheRect(scaledRect(cacheRect, dpratio));
+
+    if (!m_buffer || scaledCacheSize != m_buffer->size()) {
+        delete m_buffer;
+        m_buffer = new QPixmap(scaledCacheSize);
+    }
+    
     if (!scrollables.empty()) {
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -1750,8 +1811,7 @@ View::paintEvent(QPaintEvent *e)
 
 	if (!m_cache ||
 	    m_cacheZoomLevel != m_zoomLevel ||
-	    width() != m_cache->width() ||
-	    height() != m_cache->height()) {
+            scaledCacheSize != m_cache->size()) {
 
 	    // cache is not valid
 
@@ -1763,7 +1823,7 @@ View::paintEvent(QPaintEvent *e)
 #endif
 	    } else {
 		delete m_cache;
-		m_cache = new QPixmap(width(), height());
+		m_cache = new QPixmap(scaledCacheSize);
 #ifdef DEBUG_VIEW_WIDGET_PAINT
 		cerr << "View(" << this << ")::paintEvent: recreated cache" << endl;
 #endif
@@ -1778,24 +1838,10 @@ View::paintEvent(QPaintEvent *e)
 		getXForFrame(m_centreFrame);
 
 	    if (dx > -width() && dx < width()) {
-#ifdef PIXMAP_COPY_TO_SELF
-                // This is not normally defined. Copying a pixmap to
-		// itself doesn't work properly on Windows, Mac, or
-		// X11 with the raster backend (it only works when
-		// moving in one direction and then presumably only by
-		// accident).  It does actually seem to be fine on X11
-		// with the native backend, but we prefer not to use
-		// that anyway
-		paint.begin(m_cache);
-		paint.drawPixmap(dx, 0, *m_cache);
-		paint.end();
-#else
 		static QPixmap *tmpPixmap = 0;
-		if (!tmpPixmap ||
-		    tmpPixmap->width() != width() ||
-		    tmpPixmap->height() != height()) {
+		if (!tmpPixmap || tmpPixmap->size() != scaledCacheSize) {
 		    delete tmpPixmap;
-		    tmpPixmap = new QPixmap(width(), height());
+		    tmpPixmap = new QPixmap(scaledCacheSize);
 		}
 		paint.begin(tmpPixmap);
 		paint.drawPixmap(0, 0, *m_cache);
@@ -1803,7 +1849,6 @@ View::paintEvent(QPaintEvent *e)
 		paint.begin(m_cache);
 		paint.drawPixmap(dx, 0, *tmpPixmap);
 		paint.end();
-#endif
 		if (dx < 0) {
 		    cacheRect = QRect(width() + dx, 0, -dx, height());
 		} else {
@@ -1824,8 +1869,8 @@ View::paintEvent(QPaintEvent *e)
 #ifdef DEBUG_VIEW_WIDGET_PAINT
 	    cerr << "View(" << this << ")::paintEvent: cache is good" << endl;
 #endif
-	    paint.begin(this);
-	    paint.drawPixmap(cacheRect, *m_cache, cacheRect);
+	    paint.begin(m_buffer);
+	    paint.drawPixmap(scaledCacheRect, *m_cache, scaledCacheRect);
 	    paint.end();
 	    QFrame::paintEvent(e);
 	    paintedCacheRect = true;
@@ -1841,16 +1886,26 @@ View::paintEvent(QPaintEvent *e)
 
     // Scrollable (cacheable) items first
 
+    ViewProxy proxy(this, dpratio);
+    
     if (!paintedCacheRect) {
 
-	if (repaintCache) paint.begin(m_cache);
-	else paint.begin(this);
+        QRect rectToPaint;
+
+	if (repaintCache) {
+            paint.begin(m_cache);
+            rectToPaint = scaledCacheRect;
+        } else {
+            paint.begin(m_buffer);
+            rectToPaint = scaledCacheRect;
+        }
+
         setPaintFont(paint);
-	paint.setClipRect(cacheRect);
+	paint.setClipRect(rectToPaint);
 
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
-	paint.drawRect(cacheRect);
+	paint.drawRect(rectToPaint);
 
 	paint.setPen(getForeground());
 	paint.setBrush(Qt::NoBrush);
@@ -1858,7 +1913,10 @@ View::paintEvent(QPaintEvent *e)
 	for (LayerList::iterator i = scrollables.begin(); i != scrollables.end(); ++i) {
 	    paint.setRenderHint(QPainter::Antialiasing, false);
 	    paint.save();
-	    (*i)->paint(this, paint, cacheRect);
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+            cerr << "Painting scrollable layer " << *i << " using proxy with repaintCache = " << repaintCache << ", dpratio = " << dpratio << ", rectToPaint = " << rectToPaint.x() << "," << rectToPaint.y() << " " << rectToPaint.width() << "x" << rectToPaint.height() << endl;
+#endif
+            (*i)->paint(&proxy, paint, rectToPaint);
 	    paint.restore();
 	}
 
@@ -1871,8 +1929,9 @@ View::paintEvent(QPaintEvent *e)
 
 	if (repaintCache) {
 	    cacheRect |= (e ? e->rect() : rect());
-	    paint.begin(this);
-	    paint.drawPixmap(cacheRect, *m_cache, cacheRect);
+            scaledCacheRect = scaledRect(cacheRect, dpratio);
+	    paint.begin(m_buffer);
+	    paint.drawPixmap(scaledCacheRect, *m_cache, scaledCacheRect);
 	    paint.end();
 	}
     }
@@ -1883,13 +1942,15 @@ View::paintEvent(QPaintEvent *e)
 
     nonCacheRect |= cacheRect;
 
-    paint.begin(this);
-    paint.setClipRect(nonCacheRect);
+    QRect scaledNonCacheRect = scaledRect(nonCacheRect, dpratio);
+    
+    paint.begin(m_buffer);
+    paint.setClipRect(scaledNonCacheRect);
     setPaintFont(paint);
     if (scrollables.empty()) {
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
-	paint.drawRect(nonCacheRect);
+	paint.drawRect(scaledNonCacheRect);
     }
 	
     paint.setPen(getForeground());
@@ -1897,9 +1958,17 @@ View::paintEvent(QPaintEvent *e)
 	
     for (LayerList::iterator i = nonScrollables.begin(); i != nonScrollables.end(); ++i) {
 //        Profiler profiler2("View::paintEvent non-cacheable");
-	(*i)->paint(this, paint, nonCacheRect);
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+        cerr << "Painting non-scrollable layer " << *i << " without proxy with repaintCache = " << repaintCache << ", dpratio = " << dpratio << ", rectToPaint = " << nonCacheRect.x() << "," << nonCacheRect.y() << " " << nonCacheRect.width() << "x" << nonCacheRect.height() << endl;
+#endif
+	(*i)->paint(&proxy, paint, scaledNonCacheRect);
     }
 	
+    paint.end();
+    
+    paint.begin(this);
+    QRect finalPaintRect = e ? e->rect() : rect();
+    paint.drawPixmap(finalPaintRect, *m_buffer, scaledRect(finalPaintRect, dpratio));
     paint.end();
 
     paint.begin(this);
@@ -1925,7 +1994,7 @@ View::paintEvent(QPaintEvent *e)
             showPlayPointer = false;
         }
     }
-
+    
     if (showPlayPointer) {
 
 	paint.begin(this);
@@ -2412,23 +2481,23 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 
 	for (LayerList::iterator i = m_layerStack.begin();
              i != m_layerStack.end(); ++i) {
-		if(!((*i)->isLayerDormant(this))){
+            if (!((*i)->isLayerDormant(this))){
 
-		    paint.setRenderHint(QPainter::Antialiasing, false);
+                paint.setRenderHint(QPainter::Antialiasing, false);
 
-		    paint.save();
-	            paint.translate(xorigin + x, 0);
+                paint.save();
+                paint.translate(xorigin + x, 0);
 
-	            cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
+                cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
 
-	            (*i)->setSynchronousPainting(true);
+                (*i)->setSynchronousPainting(true);
 
-		    (*i)->paint(this, paint, chunk);
+                (*i)->paint(this, paint, chunk);
 
-	            (*i)->setSynchronousPainting(false);
+                (*i)->setSynchronousPainting(false);
 
-		    paint.restore();
-		}
+                paint.restore();
+            }
 	}
     }
 

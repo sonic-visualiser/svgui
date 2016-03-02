@@ -19,17 +19,17 @@
 #include <QRect>
 
 class QPainter;
-class View;
+class LayerGeometryProvider;
 class VerticalScaleLayer;
 
 class LinearNumericalScale
 {
 public:
-    int getWidth(View *v, QPainter &paint);
+    int getWidth(LayerGeometryProvider *v, QPainter &paint);
 
     void paintVertical
-    (View *v, const VerticalScaleLayer *layer, QPainter &paint, int x0,
-     double minf, double maxf);
+    (LayerGeometryProvider *v, const VerticalScaleLayer *layer,
+     QPainter &paint, int x0, double minf, double maxf);
 };
 
 #endif

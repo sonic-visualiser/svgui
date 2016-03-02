@@ -102,7 +102,7 @@ TextLayer::getValueExtents(double &, double &, bool &, QString &) const
 }
 
 bool
-TextLayer::isLayerScrollable(const View *v) const
+TextLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
@@ -110,12 +110,12 @@ TextLayer::isLayerScrollable(const View *v) const
 
 
 TextModel::PointList
-TextLayer::getLocalPoints(View *v, int x, int y) const
+TextLayer::getLocalPoints(LayerGeometryProvider *v, int x, int y) const
 {
     if (!m_model) return TextModel::PointList();
 
     sv_frame_t frame0 = v->getFrameForX(-150);
-    sv_frame_t frame1 = v->getFrameForX(v->width() + 150);
+    sv_frame_t frame1 = v->getFrameForX(v->getPaintWidth() + 150);
     
     TextModel::PointList points(m_model->getPoints(frame0, frame1));
 
@@ -139,9 +139,9 @@ TextLayer::getLocalPoints(View *v, int x, int y) const
 	    (QRect(0, 0, 150, 200),
 	     Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, label);
 
-	if (py + rect.height() > v->height()) {
-	    if (rect.height() > v->height()) py = 0;
-	    else py = v->height() - rect.height() - 1;
+	if (py + rect.height() > v->getPaintHeight()) {
+	    if (rect.height() > v->getPaintHeight()) py = 0;
+	    else py = v->getPaintHeight() - rect.height() - 1;
 	}
 
 	if (x >= px && x < px + rect.width() &&
@@ -154,7 +154,7 @@ TextLayer::getLocalPoints(View *v, int x, int y) const
 }
 
 bool
-TextLayer::getPointToDrag(View *v, int x, int y, TextModel::Point &p) const
+TextLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, TextModel::Point &p) const
 {
     if (!m_model) return false;
 
@@ -182,7 +182,7 @@ TextLayer::getPointToDrag(View *v, int x, int y, TextModel::Point &p) const
 }
 
 QString
-TextLayer::getFeatureDescription(View *v, QPoint &pos) const
+TextLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
@@ -220,7 +220,7 @@ TextLayer::getFeatureDescription(View *v, QPoint &pos) const
 //!!! too much overlap with TimeValueLayer/TimeInstantLayer
 
 bool
-TextLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
+TextLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 			      int &resolution,
 			      SnapType snap) const
 {
@@ -292,21 +292,21 @@ TextLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 int
-TextLayer::getYForHeight(View *v, double height) const
+TextLayer::getYForHeight(LayerGeometryProvider *v, double height) const
 {
-    int h = v->height();
+    int h = v->getPaintHeight();
     return h - int(height * h);
 }
 
 double
-TextLayer::getHeightForY(View *v, int y) const
+TextLayer::getHeightForY(LayerGeometryProvider *v, int y) const
 {
-    int h = v->height();
+    int h = v->getPaintHeight();
     return double(h - y) / h;
 }
 
 void
-TextLayer::paint(View *v, QPainter &paint, QRect rect) const
+TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
@@ -347,7 +347,7 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
     int boxMaxHeight = 200;
 
     paint.save();
-    paint.setClipRect(rect.x(), 0, rect.width() + boxMaxWidth, v->height());
+    paint.setClipRect(rect.x(), 0, rect.width() + boxMaxWidth, v->getPaintHeight());
     
     for (TextModel::PointList::const_iterator i = points.begin();
 	 i != points.end(); ++i) {
@@ -380,9 +380,9 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 	QRect textRect = QRect(3, 2, boxRect.width(), boxRect.height());
 	boxRect = QRect(0, 0, boxRect.width() + 6, boxRect.height() + 2);
 
-	if (y + boxRect.height() > v->height()) {
-	    if (boxRect.height() > v->height()) y = 0;
-	    else y = v->height() - boxRect.height() - 1;
+	if (y + boxRect.height() > v->getPaintHeight()) {
+	    if (boxRect.height() > v->getPaintHeight()) y = 0;
+	    else y = v->getPaintHeight() - boxRect.height() - 1;
 	}
 
 	boxRect = QRect(x, y, boxRect.width(), boxRect.height());
@@ -411,7 +411,7 @@ TextLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 void
-TextLayer::drawStart(View *v, QMouseEvent *e)
+TextLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -437,7 +437,7 @@ TextLayer::drawStart(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::drawDrag(View *v, QMouseEvent *e)
+TextLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "TextLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -456,13 +456,13 @@ TextLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::drawEnd(View *v, QMouseEvent *)
+TextLayer::drawEnd(LayerGeometryProvider *v, QMouseEvent *)
 {
 //    SVDEBUG << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
 
     bool ok = false;
-    QString label = QInputDialog::getText(v, tr("Enter label"),
+    QString label = QInputDialog::getText(v->getView(), tr("Enter label"),
 					  tr("Please enter a new label:"),
 					  QLineEdit::Normal, "", &ok);
 
@@ -480,7 +480,7 @@ TextLayer::drawEnd(View *v, QMouseEvent *)
 }
 
 void
-TextLayer::eraseStart(View *v, QMouseEvent *e)
+TextLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
@@ -495,12 +495,12 @@ TextLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::eraseDrag(View *, QMouseEvent *)
+TextLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 {
 }
 
 void
-TextLayer::eraseEnd(View *v, QMouseEvent *e)
+TextLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -521,7 +521,7 @@ TextLayer::eraseEnd(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::editStart(View *v, QMouseEvent *e)
+TextLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -543,7 +543,7 @@ TextLayer::editStart(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::editDrag(View *v, QMouseEvent *e)
+TextLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -570,7 +570,7 @@ TextLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-TextLayer::editEnd(View *, QMouseEvent *)
+TextLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
@@ -598,7 +598,7 @@ TextLayer::editEnd(View *, QMouseEvent *)
 }
 
 bool
-TextLayer::editOpen(View *v, QMouseEvent *e)
+TextLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
@@ -608,7 +608,7 @@ TextLayer::editOpen(View *v, QMouseEvent *e)
     QString label = text.label;
 
     bool ok = false;
-    label = QInputDialog::getText(v, tr("Enter label"),
+    label = QInputDialog::getText(v->getView(), tr("Enter label"),
 				  tr("Please enter a new label:"),
 				  QLineEdit::Normal, label, &ok);
     if (ok && label != text.label) {
@@ -699,7 +699,7 @@ TextLayer::deleteSelection(Selection s)
 }
 
 void
-TextLayer::copy(View *v, Selection s, Clipboard &to)
+TextLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -717,7 +717,7 @@ TextLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-TextLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -728,7 +728,7 @@ TextLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, b
     if (clipboardHasDifferentAlignment(v, from)) {
 
         QMessageBox::StandardButton button =
-            QMessageBox::question(v, tr("Re-align pasted items?"),
+            QMessageBox::question(v->getView(), tr("Re-align pasted items?"),
                                   tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Yes);

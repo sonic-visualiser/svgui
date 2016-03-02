@@ -20,24 +20,24 @@
 
 #include <cmath>
 
-#include "view/View.h"
+#include "view/LayerGeometryProvider.h"
 
 int
-LinearColourScale::getWidth(View *,
+LinearColourScale::getWidth(LayerGeometryProvider *,
 			    QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 15;
 }
 
 void
-LinearColourScale::paintVertical(View *v,
+LinearColourScale::paintVertical(LayerGeometryProvider *v,
 				 const ColourScaleLayer *layer,
 				 QPainter &paint,
 				 int /* x0 */,
 				 double min,
 				 double max)
 {
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     int n = 10;
 

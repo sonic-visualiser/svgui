@@ -26,7 +26,7 @@ exists(config.pri) {
 }
 
 CONFIG += staticlib qt thread warn_on stl rtti exceptions c++11
-QT += network xml gui widgets
+QT += network xml gui widgets svg
 
 TARGET = svgui
 
@@ -52,6 +52,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/PaintAssistant.h \
            layer/PianoScale.h \
            layer/RegionLayer.h \
+           layer/ScrollableImageCache.h \
            layer/SingleColourLayer.h \
            layer/SliceableLayer.h \
            layer/SliceLayer.h \
@@ -79,6 +80,7 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/PaintAssistant.cpp \
            layer/PianoScale.cpp \
            layer/RegionLayer.cpp \
+           layer/ScrollableImageCache.cpp \
            layer/SingleColourLayer.cpp \
            layer/SliceLayer.cpp \
            layer/SpectrogramLayer.cpp \
@@ -94,7 +96,9 @@ HEADERS += view/AlignmentView.h \
            view/Pane.h \
            view/PaneStack.h \
            view/View.h \
-           view/ViewManager.h
+           view/ViewManager.h \
+           view/ViewProxy.h
+           
 SOURCES += view/AlignmentView.cpp \
            view/Overview.cpp \
            view/Pane.cpp \
