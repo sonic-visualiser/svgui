@@ -19,16 +19,16 @@
 #include <QRect>
 
 class QPainter;
-class View;
+class LayerGeometryProvider;
 class ColourScaleLayer;
 
 class LinearColourScale
 {
 public:
-    int getWidth(View *v, QPainter &paint);
+    int getWidth(LayerGeometryProvider *v, QPainter &paint);
 
     void paintVertical
-    (View *v, const ColourScaleLayer *layer, QPainter &paint, int x0,
+    (LayerGeometryProvider *v, const ColourScaleLayer *layer, QPainter &paint, int x0,
      double minf, double maxf);
 };
 

@@ -19,8 +19,8 @@
 class VerticalScaleLayer
 {
 public:
-    virtual int getYForValue(View *, double value) const = 0;
-    virtual double getValueForY(View *, int y) const = 0;
+    virtual int getYForValue(LayerGeometryProvider *, double value) const = 0;
+    virtual double getValueForY(LayerGeometryProvider *, int y) const = 0;
     virtual QString getScaleUnits() const = 0;
 };
 

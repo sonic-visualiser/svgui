@@ -88,7 +88,7 @@ SV_MODULE_REQUIRED([vamphostsdk],[vamp-hostsdk >= 2.5],[vamp-hostsdk/PluginLoade
 SV_MODULE_REQUIRED([rubberband],[rubberband],[rubberband/RubberBandStretcher.h],[rubberband],[rubberband_new])
 
 SV_MODULE_OPTIONAL([liblo],[],[lo/lo.h],[lo],[lo_address_new])
-SV_MODULE_OPTIONAL([portaudio_2_0],[portaudio-2.0 >= 19],[portaudio.h],[portaudio],[Pa_IsFormatSupported])
+SV_MODULE_OPTIONAL([portaudio],[portaudio-2.0 >= 19],[portaudio.h],[portaudio],[Pa_IsFormatSupported])
 SV_MODULE_OPTIONAL([JACK],[jack >= 0.100],[jack/jack.h],[jack],[jack_client_open])
 SV_MODULE_OPTIONAL([libpulse],[libpulse >= 0.9],[pulse/pulseaudio.h],[pulse],[pa_stream_new])
 SV_MODULE_OPTIONAL([lrdf],[lrdf >= 0.2],[lrdf.h],[lrdf],[lrdf_init])
