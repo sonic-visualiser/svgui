@@ -1416,10 +1416,12 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 		    double value = m_model->getValueAt(sx, sy);
 		    snprintf(labelbuf, buflen, "%06f", value);
 		    QString text(labelbuf);
-		    paint.setPen(v->getBackground());
-		    paint.drawText(rx0 + 2,
-				   ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
-				   text);
+		    v->drawVisibleText
+                        (paint,
+                         rx0 + 2,
+                         ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
+                         text,
+                         View::OutlinedText);
 		}
 	    }
 	}
