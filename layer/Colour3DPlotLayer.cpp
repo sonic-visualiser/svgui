@@ -1309,6 +1309,7 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
     double srRatio =
         v->getViewManager()->getMainModelSampleRate() / m_model->getSampleRate();
 
+    // the s-prefix values are source, i.e. model, column and bin numbers
     int sx0 = int((double(v->getFrameForX(x0)) / srRatio - double(modelStart))
                   / modelResolution);
     int sx1 = int((double(v->getFrameForX(x1)) / srRatio - double(modelStart))
@@ -1353,12 +1354,12 @@ Colour3DPlotLayer::paint(View *v, QPainter &paint, QRect rect) const
 
     for (int sx = sx0; sx <= sx1; ++sx) {
 
-	sv_frame_t fx = sx * modelResolution;
+	sv_frame_t fx = sx * modelResolution + modelStart;
 
 	if (fx + modelResolution <= modelStart || fx > modelEnd) continue;
 
-        int rx0 = v->getXForFrame(int(double(fx + modelStart) * srRatio));
-	int rx1 = v->getXForFrame(int(double(fx + modelStart + modelResolution + 1) * srRatio));
+        int rx0 = v->getXForFrame(int(double(fx) * srRatio));
+	int rx1 = v->getXForFrame(int(double(fx + modelResolution + 1) * srRatio));
 
 	int rw = rx1 - rx0;
 	if (rw < 1) rw = 1;
