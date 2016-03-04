@@ -975,24 +975,26 @@ Colour3DPlotLayer::getColumn(int col) const
 }
     
 void
-Colour3DPlotLayer::fillCache(int firstBin, int lastBin) const
+Colour3DPlotLayer::fillCache(int firstColumn, int lastColumn) const
 {
+    // This call requests a (perhaps partial) fill of the cache
+    // between model columns firstColumn and lastColumn inclusive.
+    // The cache itself always has size sufficient to contain the
+    // whole model, but its validity may be less, depending on which
+    // regions have been requested via calls to this function.  Note
+    // that firstColumn and lastColumn are *model* column numbers. If
+    // the model starts at a frame > 0, a firstColumn of zero still
+    // corresponds to the first column in the model, not the first
+    // column on the resulting rendered layer.
+
     Profiler profiler("Colour3DPlotLayer::fillCache", true);
 
-    sv_frame_t modelStart = m_model->getStartFrame();
-    sv_frame_t modelEnd = m_model->getEndFrame();
-    int modelResolution = m_model->getResolution();
-
-    int modelStartBin = int(modelStart / modelResolution);
-    int modelEndBin = int(modelEnd / modelResolution);
+    int cacheWidth = m_model->getWidth();
+    int cacheHeight = m_model->getHeight();
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    cerr << "Colour3DPlotLayer::fillCache: range " << firstBin << " -> " << lastBin << " of model range " << modelStartBin << " -> " << modelEndBin << " (model resolution " << modelResolution << ")" << endl;
+    cerr << "Colour3DPlotLayer::fillCache: range " << firstColumn << " -> " << lastColumn << " (cache size will be " << cacheWidth << " x " << cacheHeight << ")" << endl;
 #endif
-
-    int cacheWidth = modelEndBin - modelStartBin + 1;
-    if (lastBin > modelEndBin) cacheWidth = lastBin - modelStartBin + 1;
-    int cacheHeight = m_model->getHeight();
 
     if (m_cache && m_cache->height() != cacheHeight) {
         // height has changed: delete everything rather than resizing
@@ -1027,8 +1029,7 @@ Colour3DPlotLayer::fillCache(int firstBin, int lastBin) const
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
         cerr << "Colour3DPlotLayer::fillCache: Have no cache, making one" << endl;
 #endif
-        m_cache = new QImage
-            (cacheWidth, cacheHeight, QImage::Format_Indexed8);
+        m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
         m_cache->setColorCount(256);
         m_cache->fill(0);
         if (!m_normalizeVisibleArea) {
@@ -1050,20 +1051,21 @@ Colour3DPlotLayer::fillCache(int firstBin, int lastBin) const
          << " peaks cache size = " << m_peaksCache->width() << "x" << m_peaksCache->height() << endl;
 #endif
 
-    if (m_cacheValidStart <= firstBin && m_cacheValidEnd >= lastBin) {
+    if (m_cacheValidStart <= firstColumn && m_cacheValidEnd >= lastColumn) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
         cerr << "Cache is valid in this region already" << endl;
 #endif
         return;
     }
     
-    int fillStart = firstBin;
-    int fillEnd = lastBin;
+    int fillStart = firstColumn;
+    int fillEnd = lastColumn;
 
-    if (fillStart < modelStartBin) fillStart = modelStartBin;
-    if (fillStart > modelEndBin) fillStart = modelEndBin;
-    if (fillEnd < modelStartBin) fillEnd = modelStartBin;
-    if (fillEnd > modelEndBin) fillEnd = modelEndBin;
+    if (fillStart >= cacheWidth) fillStart = cacheWidth-1;
+    if (fillStart < 0) fillStart = 0;
+    if (fillEnd >= cacheWidth) fillEnd = cacheWidth-1;
+    if (fillEnd < 0) fillEnd = 0;
+    if (fillEnd < fillStart) fillEnd = fillStart;
 
     bool normalizeVisible = (m_normalizeVisibleArea && !m_normalizeColumns);
 
@@ -1316,6 +1318,7 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
     double srRatio =
         v->getViewManager()->getMainModelSampleRate() / m_model->getSampleRate();
 
+    // the s-prefix values are source, i.e. model, column and bin numbers
     int sx0 = int((double(v->getFrameForX(x0)) / srRatio - double(modelStart))
                   / modelResolution);
     int sx1 = int((double(v->getFrameForX(x1)) / srRatio - double(modelStart))
@@ -1360,12 +1363,12 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 
     for (int sx = sx0; sx <= sx1; ++sx) {
 
-	sv_frame_t fx = sx * modelResolution;
+	sv_frame_t fx = sx * modelResolution + modelStart;
 
 	if (fx + modelResolution <= modelStart || fx > modelEnd) continue;
 
-        int rx0 = v->getXForFrame(int(double(fx + modelStart) * srRatio));
-	int rx1 = v->getXForFrame(int(double(fx + modelStart + modelResolution + 1) * srRatio));
+        int rx0 = v->getXForFrame(int(double(fx) * srRatio));
+	int rx1 = v->getXForFrame(int(double(fx + modelResolution + 1) * srRatio));
 
 	int rw = rx1 - rx0;
 	if (rw < 1) rw = 1;
@@ -1422,10 +1425,12 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 		    double value = m_model->getValueAt(sx, sy);
 		    snprintf(labelbuf, buflen, "%06f", value);
 		    QString text(labelbuf);
-		    paint.setPen(v->getBackground());
-		    paint.drawText(rx0 + 2,
-				   ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
-				   text);
+		    v->drawVisibleText
+                        (paint,
+                         rx0 + 2,
+                         ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
+                         text,
+                         View::OutlinedText);
 		}
 	    }
 	}
