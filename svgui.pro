@@ -1,6 +1,9 @@
 
 TEMPLATE = lib
 
+INCLUDEPATH += ../vamp-plugin-sdk
+DEFINES += HAVE_VAMP HAVE_VAMPHOSTSDK
+
 exists(config.pri) {
     include(config.pri)
 }
@@ -22,7 +25,7 @@ exists(config.pri) {
         LIBS += -L../sv-dependency-builds/osx/lib
     }
 
-    DEFINES += HAVE_BZ2 HAVE_FFTW3 HAVE_FFTW3F HAVE_SNDFILE HAVE_SAMPLERATE HAVE_VAMP HAVE_VAMPHOSTSDK HAVE_RUBBERBAND HAVE_LIBLO HAVE_MAD HAVE_ID3TAG
+    DEFINES += HAVE_BZ2 HAVE_FFTW3 HAVE_FFTW3F HAVE_SNDFILE HAVE_SAMPLERATE HAVE_RUBBERBAND HAVE_LIBLO HAVE_MAD HAVE_ID3TAG
 }
 
 CONFIG += staticlib qt thread warn_on stl rtti exceptions c++11
