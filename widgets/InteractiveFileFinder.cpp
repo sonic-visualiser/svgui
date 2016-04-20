@@ -140,6 +140,12 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
         filter = tr("Comma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nText files (*.txt)\nAll files (*.*)");
         break;
 
+    case IMAFile:
+        settingsKeyStub = "imaf";
+        title = "Select an IMAF file";
+        filter = tr("IMAF files (*.ima)\nAll files (*.*)");
+        break;
+
     case AnyFile:
         settingsKeyStub = "last";
         filter = tr("All supported files (*.sv %1 %2 %3)\n%4 session files (*.%5)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
@@ -288,6 +294,10 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         title = tr("Select a file to export to");
         filter = tr("Comma-separated data files (*.csv)\nText files (*.txt)\nAll files (*.*)");
         break;
+
+    case IMAFile:
+        cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: IMAFile cannot be used here" << endl;
+        abort();
 
     case AnyFile:
         cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: AnyFile cannot be used here" << endl;
@@ -453,6 +463,10 @@ InteractiveFileFinder::registerLastOpenedFilePath(FileType type, QString path)
 
     case CSVFile:
         settingsKeyStub = "layer";
+        break;
+
+    case IMAFile:
+        settingsKeyStub = "imaf";
         break;
 
     case AnyFile:

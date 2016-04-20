@@ -236,10 +236,10 @@ TimeInstantLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
     QString text;
 
     if (points.begin()->label == "") {
-	text = QString(tr("Time:\t%1\nNo label"))
+    text = QString(tr("Time:\t%1\nNo label"))
 	    .arg(rt.toText(true).c_str());
     } else {
-	text = QString(tr("Time:\t%1\nLabel:\t%2"))
+    text = QString(tr("Time:\t%1\nLabel:\t%2"))
 	    .arg(rt.toText(true).c_str())
 	    .arg(points.begin()->label);
     }
