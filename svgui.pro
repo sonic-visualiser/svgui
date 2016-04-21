@@ -94,13 +94,16 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/TimeValueLayer.cpp \
            layer/WaveformLayer.cpp
 
-HEADERS += view/Overview.h \
+HEADERS += view/AlignmentView.h \
+           view/Overview.h \
            view/Pane.h \
            view/PaneStack.h \
            view/View.h \
            view/ViewManager.h \
            view/ViewProxy.h
-SOURCES += view/Overview.cpp \
+           
+SOURCES += view/AlignmentView.cpp \
+           view/Overview.cpp \
            view/Pane.cpp \
            view/PaneStack.cpp \
            view/View.cpp \

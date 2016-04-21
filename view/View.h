@@ -373,7 +373,7 @@ signals:
                             bool globalScroll,
                             PlaybackFollowMode followMode);
 
-    void zoomLevelChanged(int, bool);
+    void zoomLevelChanged(int level, bool locked);
 
     void contextHelpChanged(const QString &);
 

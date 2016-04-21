@@ -717,6 +717,10 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
 void
 Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
 {
+    if (omitLine && m_manager->getMainModelSampleRate() == 0) {
+        return;
+    }
+    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
@@ -1943,7 +1947,7 @@ Pane::dragTopLayer(QMouseEvent *e)
          true, // can move horiz
          canTopLayerMoveVertical(), // can move vert
          canTopLayerMoveVertical() || (m_manager && m_manager->isPlaying()), // resist horiz
-         !(m_manager && m_manager->isPlaying())); // resist vert
+         true); // resist vert
 
     if (m_dragMode == HorizontalDrag ||
         m_dragMode == FreeDrag) {
@@ -2312,7 +2316,7 @@ Pane::wheelEvent(QWheelEvent *e)
             m_pendingWheelAngle = 0;
             return;
         }
-        
+
         while (abs(m_pendingWheelAngle) >= 120) {
 
             int sign = (m_pendingWheelAngle < 0 ? -1 : 1);
