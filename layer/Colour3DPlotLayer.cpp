@@ -849,8 +849,12 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
         paint.save();
 
         QFont font = paint.font();
-        font.setPixelSize(int(font.pixelSize() * 0.65));
-        paint.setFont(font);
+        if (font.pixelSize() > 0) {
+            int newSize = int(font.pixelSize() * 0.65);
+            if (newSize < 6) newSize = 6;
+            font.setPixelSize(newSize);
+            paint.setFont(font);
+        }
 
         int msw = paint.fontMetrics().width(maxstr);
 
@@ -1295,6 +1299,14 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 	return;
     }
 
+    if (m_model->getWidth() == 0) {
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+        cerr << "Colour3DPlotLayer::paint(): model width == 0, "
+             << "nothing to paint (yet)" << endl;
+#endif
+        return;
+    }
+    
     if (m_normalizeVisibleArea && !m_normalizeColumns) rect = v->getPaintRect();
 
     sv_frame_t modelStart = m_model->getStartFrame();
