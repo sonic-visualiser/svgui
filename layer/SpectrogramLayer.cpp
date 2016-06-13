@@ -2436,11 +2436,13 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     
     for (int x = start; x != finish; x += step) {
 
+        // x is the on-canvas pixel coord; sx (later) will be the
+        // source column index
+        
         ++columnCount;
         
         if (binforx[x] < 0) continue;
 
-//        float columnGain = m_gain;
         float columnMax = 0.f;
 
         int sx0 = binforx[x] / divisor;
@@ -2472,9 +2474,9 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                     } else if (m_normalization == NormalizeColumns) {
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                     } else if (m_normalization == NormalizeHybrid) {
-                        float max = fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
+                        float max = fft->getNormalizedMagnitudesAt
+                            (sx, autoarray, minbin, maxbin - minbin + 1);
                         float scale = log10f(max + 1.f);
-//                        cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
                         for (int i = minbin; i <= maxbin; ++i) {
                             autoarray[i - minbin] *= scale;
                         }
@@ -2586,6 +2588,13 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
             }
         }
 
+        // at this point we have updated m_columnMags and overallMag
+        // -- used elsewhere for calculating the overall view range
+        // for NormalizeVisibleArea mode -- and calculated "peaks"
+        // (the possibly scaled and interpolated value array from
+        // which we actually draw the column) and "columnMax" (maximum
+        // value used for normalisation)
+        
         for (int y = 0; y < h; ++y) {
 
             double peak = peaks[y];
