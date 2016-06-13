@@ -78,6 +78,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_synchronous(false),
     m_haveDetailedScale(false),
     m_exiting(false),
+    m_peakCacheDivisor(8),
     m_sliceableModel(0)
 {
     QString colourConfigName = "spectrogram-colour";
@@ -1521,7 +1522,8 @@ SpectrogramLayer::getPeakCache(const LayerGeometryProvider *v) const
     if (!m_peakCaches[view->getId()]) {
         FFTModel *f = getFFTModel(v);
         if (!f) return 0;
-        m_peakCaches[view->getId()] = new Dense3DModelPeakCache(f, 8);
+        m_peakCaches[view->getId()] =
+            new Dense3DModelPeakCache(f, m_peakCacheDivisor);
     }
     return m_peakCaches[view->getId()];
 }
@@ -1930,7 +1932,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         if (m_drawBuffer.width() < bufwid || m_drawBuffer.height() != h) {
             m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
         }
-        usePeaksCache = (increment * 8) < zoomLevel;
+        usePeaksCache = (increment * m_peakCacheDivisor) < zoomLevel;
         if (m_colourScale == PhaseColourScale) usePeaksCache = false;
     }
 
@@ -2380,9 +2382,9 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::paintDrawBuffer: Note: bin display = " << m_binDisplay << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
 #endif
-    if (usePeaksCache) { //!!!
+    if (usePeaksCache) {
         sourceModel = getPeakCache(v);
-        divisor = 8;//!!!
+        divisor = m_peakCacheDivisor;
         minbin = 0;
         maxbin = sourceModel->getHeight();
     } else {
