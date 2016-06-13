@@ -48,7 +48,7 @@
 #include <alloca.h>
 #endif
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1
 
 using namespace std;
 
@@ -78,6 +78,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_synchronous(false),
     m_haveDetailedScale(false),
     m_exiting(false),
+    m_peakCacheDivisor(8),
     m_sliceableModel(0)
 {
     QString colourConfigName = "spectrogram-colour";
@@ -582,6 +583,9 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 void
 SpectrogramLayer::invalidateImageCaches()
 {
+#ifdef DEBUG_SPECTROGRAM
+    cerr << "SpectrogramLayer::invalidateImageCaches called" << endl;
+#endif
     for (ViewImageCache::iterator i = m_imageCaches.begin();
          i != m_imageCaches.end(); ++i) {
         i->second.invalidate();
@@ -1518,7 +1522,8 @@ SpectrogramLayer::getPeakCache(const LayerGeometryProvider *v) const
     if (!m_peakCaches[view->getId()]) {
         FFTModel *f = getFFTModel(v);
         if (!f) return 0;
-        m_peakCaches[view->getId()] = new Dense3DModelPeakCache(f, 8);
+        m_peakCaches[view->getId()] =
+            new Dense3DModelPeakCache(f, m_peakCacheDivisor);
     }
     return m_peakCaches[view->getId()];
 }
@@ -1535,6 +1540,9 @@ SpectrogramLayer::getSliceableModel() const
 void
 SpectrogramLayer::invalidateFFTModels()
 {
+#ifdef DEBUG_SPECTROGRAM
+    cerr << "SpectrogramLayer::invalidateFFTModels called" << endl;
+#endif
     for (ViewFFTMap::iterator i = m_fftModels.begin();
          i != m_fftModels.end(); ++i) {
         delete i->second;
@@ -1557,6 +1565,9 @@ SpectrogramLayer::invalidateFFTModels()
 void
 SpectrogramLayer::invalidateMagnitudes()
 {
+#ifdef DEBUG_SPECTROGRAM
+    cerr << "SpectrogramLayer::invalidateMagnitudes called" << endl;
+#endif
     m_viewMags.clear();
     for (vector<MagnitudeRange>::iterator i = m_columnMags.begin();
          i != m_columnMags.end(); ++i) {
@@ -1597,7 +1608,9 @@ SpectrogramLayer::updateViewMagnitudes(LayerGeometryProvider *v) const
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::updateViewMagnitudes returning from cols "
-              << s0 << " -> " << s1 << " inclusive" << endl;
+         << s0 << " -> " << s1 << " inclusive" << endl;
+    cerr << "SpectrogramLayer::updateViewMagnitudes: for view id " << v->getId()
+         << ": min is " << mag.getMin() << ", max is " << mag.getMax() << endl;
 #endif
 
     if (!mag.isSet()) return false;
@@ -1919,7 +1932,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         if (m_drawBuffer.width() < bufwid || m_drawBuffer.height() != h) {
             m_drawBuffer = QImage(bufwid, h, QImage::Format_Indexed8);
         }
-        usePeaksCache = (increment * 8) < zoomLevel;
+        usePeaksCache = (increment * m_peakCacheDivisor) < zoomLevel;
         if (m_colourScale == PhaseColourScale) usePeaksCache = false;
     }
 
@@ -2252,12 +2265,11 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                 } else if (m_normalization == NormalizeColumns) {
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                 } else if (m_normalization == NormalizeHybrid) {
-                    fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
-                    double max = fft->getMaximumMagnitudeAt(sx);
-                    if (max > 0.f) {
-                        for (int i = minbin; i <= maxbin; ++i) {
-                            values[i - minbin] = float(values[i - minbin] * log10(max));
-                        }
+                    float max = fft->getNormalizedMagnitudesAt
+                        (sx, values, minbin, maxbin - minbin + 1);
+                    float scale = log10f(max + 1.f);
+                    for (int i = minbin; i <= maxbin; ++i) {
+                        values[i - minbin] *= scale;
                     }
                 } else {
                     fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
@@ -2369,9 +2381,9 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::paintDrawBuffer: Note: bin display = " << m_binDisplay << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
 #endif
-    if (usePeaksCache) { //!!!
+    if (usePeaksCache) {
         sourceModel = getPeakCache(v);
-        divisor = 8;//!!!
+        divisor = m_peakCacheDivisor;
         minbin = 0;
         maxbin = sourceModel->getHeight();
     } else {
@@ -2424,11 +2436,13 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     
     for (int x = start; x != finish; x += step) {
 
+        // x is the on-canvas pixel coord; sx (later) will be the
+        // source column index
+        
         ++columnCount;
         
         if (binforx[x] < 0) continue;
 
-//        float columnGain = m_gain;
         float columnMax = 0.f;
 
         int sx0 = binforx[x] / divisor;
@@ -2460,10 +2474,9 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                     } else if (m_normalization == NormalizeColumns) {
                         fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
                     } else if (m_normalization == NormalizeHybrid) {
-                        fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                        float max = fft->getMaximumMagnitudeAt(sx);
+                        float max = fft->getNormalizedMagnitudesAt
+                            (sx, autoarray, minbin, maxbin - minbin + 1);
                         float scale = log10f(max + 1.f);
-//                        cout << "sx = " << sx << ", max = " << max << ", log10(max) = " << log10(max) << ", scale = " << scale << endl;
                         for (int i = minbin; i <= maxbin; ++i) {
                             autoarray[i - minbin] *= scale;
                         }
@@ -2575,6 +2588,13 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
             }
         }
 
+        // at this point we have updated m_columnMags and overallMag
+        // -- used elsewhere for calculating the overall view range
+        // for NormalizeVisibleArea mode -- and calculated "peaks"
+        // (the possibly scaled and interpolated value array from
+        // which we actually draw the column) and "columnMax" (maximum
+        // value used for normalisation)
+        
         for (int y = 0; y < h; ++y) {
 
             double peak = peaks[y];
@@ -3124,6 +3144,12 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
         double dBmin = AudioLevel::multiplier_to_dB(min);
         double dBmax = AudioLevel::multiplier_to_dB(max);
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        cerr << "paintVerticalScale: for view id " << v->getId()
+             << ": min = " << min << ", max = " << max
+             << ", dBmin = " << dBmin << ", dBmax = " << dBmax << endl;
+#endif
+        
         if (dBmax < -60.f) dBmax = -60.f;
         else top = QString("%1").arg(lrint(dBmax));
 
@@ -3465,13 +3491,29 @@ SpectrogramLayer::toXml(QTextStream &stream,
 	.arg(m_frequencyScale)
 	.arg(m_binDisplay);
 
-    s += QString("normalizeColumns=\"%1\" "
-                 "normalizeVisibleArea=\"%2\" "
-                 "normalizeHybrid=\"%3\" ")
-	.arg(m_normalization == NormalizeColumns ? "true" : "false")
-        .arg(m_normalization == NormalizeVisibleArea ? "true" : "false")
-        .arg(m_normalization == NormalizeHybrid ? "true" : "false");
+    // New-style normalization attributes, allowing for more types of
+    // normalization in future: write out the column normalization
+    // type separately, and then whether we are normalizing visible
+    // area as well afterwards
+    
+    s += QString("columnNormalization=\"%1\" ")
+        .arg(m_normalization == NormalizeColumns ? "peak" :
+             m_normalization == NormalizeHybrid ? "hybrid" : "none");
 
+    // Old-style normalization attribute. We *don't* write out
+    // normalizeHybrid here because the only release that would accept
+    // it (Tony v1.0) has a totally different scale factor for
+    // it. We'll just have to accept that session files from Tony
+    // v2.0+ will look odd in Tony v1.0
+    
+    s += QString("normalizeColumns=\"%1\" ")
+	.arg(m_normalization == NormalizeColumns ? "true" : "false");
+
+    // And this applies to both old- and new-style attributes
+    
+    s += QString("normalizeVisibleArea=\"%1\" ")
+        .arg(m_normalization == NormalizeVisibleArea ? "true" : "false");
+    
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
@@ -3536,10 +3578,39 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
 	attributes.value("binDisplay").toInt(&ok);
     if (ok) setBinDisplay(binDisplay);
 
-    bool normalizeColumns =
-	(attributes.value("normalizeColumns").trimmed() == "true");
-    if (normalizeColumns) {
-        setNormalization(NormalizeColumns);
+    bool haveNewStyleNormalization = false;
+    
+    QString columnNormalization = attributes.value("columnNormalization");
+
+    if (columnNormalization != "") {
+
+        haveNewStyleNormalization = true;
+
+        if (columnNormalization == "peak") {
+            setNormalization(NormalizeColumns);
+        } else if (columnNormalization == "hybrid") {
+            setNormalization(NormalizeHybrid);
+        } else if (columnNormalization == "none") {
+            // do nothing
+        } else {
+            cerr << "NOTE: Unknown or unsupported columnNormalization attribute \""
+                 << columnNormalization << "\"" << endl;
+        }
+    }
+
+    if (!haveNewStyleNormalization) {
+
+        bool normalizeColumns =
+            (attributes.value("normalizeColumns").trimmed() == "true");
+        if (normalizeColumns) {
+            setNormalization(NormalizeColumns);
+        }
+
+        bool normalizeHybrid =
+            (attributes.value("normalizeHybrid").trimmed() == "true");
+        if (normalizeHybrid) {
+            setNormalization(NormalizeHybrid);
+        }
     }
 
     bool normalizeVisibleArea =
@@ -3548,10 +3619,13 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         setNormalization(NormalizeVisibleArea);
     }
 
-    bool normalizeHybrid =
-	(attributes.value("normalizeHybrid").trimmed() == "true");
-    if (normalizeHybrid) {
-        setNormalization(NormalizeHybrid);
+    if (!haveNewStyleNormalization && m_normalization == NormalizeHybrid) {
+        // Tony v1.0 is (and hopefully will remain!) the only released
+        // SV-a-like to use old-style attributes when saving sessions
+        // that ask for hybrid normalization. It saves them with the
+        // wrong gain factor, so hack in a fix for that here -- this
+        // gives us backward but not forward compatibility.
+        setGain(m_gain / float(m_fftSize / 2));
     }
 }
     
