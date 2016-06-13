@@ -2352,6 +2352,187 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     return columnCount;
 }
 
+void
+SpectrogramLayer::normalise(vector<float> &values, Normalization norm) const
+{
+    if (norm == NormalizeColumns ||
+        norm == NormalizeHybrid) {
+        
+        float max = 0.f;
+        for (int i = 0; in_range_for(i, values); ++i) {
+            if (i == 0 || values[i] > max) {
+                max = values[i];
+            }
+        }
+        if (max > 0.f) {
+            float scale = 1.f / max;
+            if (norm == NormalizeHybrid) {
+                scale = scale * log10f(max + 1.f);
+            }
+            for (int i = 0; in_range_for(i, values); ++i) {
+                values[i] *= scale;
+            }
+        }
+    }
+}
+
+vector<float>
+SpectrogramLayer::getColumnFromFFTModel(FFTModel *fft,
+                                        int sx, // column number in model
+                                        int minbin,
+                                        int bincount) const
+{
+    vector<float> values(bincount, 0.f);
+    
+    if (m_colourScale == PhaseColourScale) {
+        fft->getPhasesAt(sx, values.data(), minbin, bincount);
+    } else {
+        fft->getMagnitudesAt(sx, values.data(), minbin, bincount);
+    }
+
+    return move(values);
+}
+
+vector<float>
+SpectrogramLayer::getColumnFromGenericModel(DenseThreeDimensionalModel *model,
+                                            int sx, // column number in model
+                                            int minbin,
+                                            int bincount) const
+{
+    if (m_colourScale == PhaseColourScale) {
+        throw std::logic_error("can't use phase scale with generic 3d model");
+    }
+
+    auto col = model->getColumn(sx);
+        
+    return move(vector<float>(col.data() + minbin,
+                              col.data() + minbin + bincount));
+}
+
+void
+SpectrogramLayer::scaleColumn(vector<float> &col)
+{
+    if (m_normalization != NormalizeColumns &&
+        m_normalization != NormalizeHybrid) {
+        float scale = 2.f / float(m_fftSize);
+        int n = int(col.size());
+        for (int i = 0; i < n; ++i) {
+            col[i] *= scale;
+        }
+    }            
+}
+
+static bool
+is_peak(const vector<float> &values, int ix)
+{
+    if (!in_range_for(ix-1, values)) return false;
+    if (!in_range_for(ix+1, values)) return false;
+    if (values[ix] < values[ix+1]) return false;
+    if (values[ix] < values[ix-1]) return false;
+    return true;
+}
+
+vector<float>
+SpectrogramLayer::distributeColumn(const vector<float> &in,
+                                   int h,
+                                   const vector<double> &binfory,
+                                   int minbin,
+                                   bool interpolate)
+{
+    vector<float> out(h, 0.f);
+    int bins = int(in.size());
+
+    for (int y = 0; y < h; ++y) {
+        
+        double sy0 = binfory[y] - minbin;
+        double sy1 = sy0 + 1;
+        if (y+1 < h) {
+            sy1 = binfory[y+1] - minbin;
+        }
+        
+        if (interpolate && fabs(sy1 - sy0) < 1.0) {
+            
+            double centre = (sy0 + sy1) / 2;
+            double dist = (centre - 0.5) - rint(centre - 0.5);
+            int bin = int(centre);
+
+            int other = (dist < 0 ? (bin-1) : (bin+1));
+
+            if (bin < 0) bin = 0;
+            if (bin >= bins) bin = bins-1;
+
+            if (other < 0 || other >= bins) {
+                other = bin;
+            }
+
+            if (m_binDisplay == PeakBins) {
+
+                if (is_peak(in, bin)) {
+                    out[y] = in[bin];
+                } else if (other != bin && is_peak(in, other)) {
+                    out[y] = in[other];
+                }
+                
+            } else {
+
+                double prop = 1.0 - fabs(dist);
+
+                double v0 = in[bin];
+                double v1 = in[other];
+                
+                out[y] = float(prop * v0 + (1.0 - prop) * v1);
+            }
+
+        } else { // not interpolating this one
+
+            int by0 = int(sy0 + 0.0001);
+            int by1 = int(sy1 + 0.0001);
+            if (by1 < by0 + 1) by1 = by0 + 1;
+
+            for (int bin = by0; bin < by1; ++bin) {
+
+                if (m_binDisplay == PeakBins && !is_peak(in, bin)) {
+                    continue;
+                }
+                
+                float value = in[bin];
+
+                if (value > out[y] || m_colourScale == PhaseColourScale) {
+                    out[y] = value;
+                }
+            }
+        }
+    }
+
+    return out;
+}
+
+void
+SpectrogramLayer::recordColumnExtents(const vector<float> &col,
+                                      int sx, // column index, for m_columnMags
+                                      MagnitudeRange &overallMag,
+                                      bool &overallMagChanged)
+{
+    //!!! this differs from previous logic when in peak mode - as the
+    //!!! zeros between peaks are now sampled, where they were not
+    //!!! before
+    
+    if (!in_range_for(sx, m_columnMags)) {
+        throw logic_error("sx out of range for m_columnMags");
+    }
+    MagnitudeRange mr;
+    for (auto v: col) {
+        mr.sample(v);
+    }
+    m_columnMags[sx] = mr;
+    if (overallMag.sample(mr)) {
+        overallMagChanged = true;
+    }
+}
+
+// order:
+// get column -> scale -> distribute/interpolate -> record extents -> normalise -> apply display gain
+
 int
 SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                                   int w,

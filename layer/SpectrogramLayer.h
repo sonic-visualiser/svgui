@@ -18,6 +18,7 @@
 
 #include "SliceableLayer.h"
 #include "base/Window.h"
+#include "base/MagnitudeRange.h"
 #include "base/RealTime.h"
 #include "base/Thread.h"
 #include "base/PropertyContainer.h"
@@ -360,53 +361,12 @@ protected:
     const int m_peakCacheDivisor;
     mutable Model *m_sliceableModel;
 
-    class MagnitudeRange {
-    public:
-        MagnitudeRange() : m_min(0), m_max(0) { }
-        bool operator==(const MagnitudeRange &r) {
-            return r.m_min == m_min && r.m_max == m_max;
-        }
-        bool isSet() const { return (m_min != 0.f || m_max != 0.f); }
-        void set(float min, float max) {
-            m_min = min;
-            m_max = max;
-            if (m_max < m_min) m_max = m_min;
-        }
-        bool sample(float f) {
-            bool changed = false;
-            if (isSet()) {
-                if (f < m_min) { m_min = f; changed = true; }
-                if (f > m_max) { m_max = f; changed = true; }
-            } else {
-                m_max = m_min = f;
-                changed = true;
-            }
-            return changed;
-        }            
-        bool sample(const MagnitudeRange &r) {
-            bool changed = false;
-            if (isSet()) {
-                if (r.m_min < m_min) { m_min = r.m_min; changed = true; }
-                if (r.m_max > m_max) { m_max = r.m_max; changed = true; }
-            } else {
-                m_min = r.m_min;
-                m_max = r.m_max;
-                changed = true;
-            }
-            return changed;
-        }            
-        float getMin() const { return m_min; }
-        float getMax() const { return m_max; }
-    private:
-        float m_min;
-        float m_max;
-    };
-
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(LayerGeometryProvider *v) const;
+    
     int paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
                         const std::vector<int> &binforx,
                         const std::vector<double> &binfory,
@@ -427,8 +387,24 @@ protected:
                                        bool rightToLeft,
                                        double softTimeLimit) const;
 
-    virtual void updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const;
-    virtual void setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const;
+    void normalise(std::vector<float> &, Normalization norm) const;
+    
+    std::vector<float> getColumnFromFFTModel(FFTModel *model,
+                                             int sx,
+                                             int minbin,
+                                             int bincount) const;
+
+    std::vector<float> getColumnFromGenericModel(DenseThreeDimensionalModel *model,
+                                                 int sx,
+                                                 int minbin,
+                                                 int bincount) const;
+
+    void scaleColumn(std::vector<float> &col) const;
+    
+    virtual void updateMeasureRectYCoords(LayerGeometryProvider *v,
+                                          const MeasureRect &r) const;
+    virtual void setMeasureRectYCoord(LayerGeometryProvider *v,
+                                      MeasureRect &r, bool start, int y) const;
 };
 
 #endif
