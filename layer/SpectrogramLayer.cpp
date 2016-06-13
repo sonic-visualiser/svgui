@@ -2265,12 +2265,11 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                 } else if (m_normalization == NormalizeColumns) {
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                 } else if (m_normalization == NormalizeHybrid) {
-                    float max = fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
-                    if (max > 0.f) {
-                        for (int i = minbin; i <= maxbin; ++i) {
-                            values[i - minbin] = float(values[i - minbin] *
-                                                       log10f(max));
-                        }
+                    float max = fft->getNormalizedMagnitudesAt
+                        (sx, values, minbin, maxbin - minbin + 1);
+                    float scale = log10f(max + 1.f);
+                    for (int i = minbin; i <= maxbin; ++i) {
+                        values[i - minbin] *= scale;
                     }
                 } else {
                     fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
