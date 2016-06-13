@@ -357,6 +357,7 @@ protected:
     typedef std::map<int, Dense3DModelPeakCache *> PeakCacheMap; // key is view id
     mutable ViewFFTMap m_fftModels;
     mutable PeakCacheMap m_peakCaches;
+    const int m_peakCacheDivisor;
     mutable Model *m_sliceableModel;
 
     class MagnitudeRange {
