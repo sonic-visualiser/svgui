@@ -2262,6 +2262,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                                                     minbin, maxbin - 1);
                 if (m_colourScale == PhaseColourScale) {
                     fft->getPhasesAt(sx, values, minbin, maxbin - minbin + 1);
+                    /*!!!
                 } else if (m_normalization == NormalizeColumns) {
                     fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                 } else if (m_normalization == NormalizeHybrid) {
@@ -2270,7 +2271,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                     float scale = log10f(max + 1.f);
                     for (int i = minbin; i <= maxbin; ++i) {
                         values[i - minbin] *= scale;
-                    }
+                        }*/
                 } else {
                     fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
                 }
@@ -2352,30 +2353,6 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     return columnCount;
 }
 
-void
-SpectrogramLayer::normalise(vector<float> &values, Normalization norm) const
-{
-    if (norm == NormalizeColumns ||
-        norm == NormalizeHybrid) {
-        
-        float max = 0.f;
-        for (int i = 0; in_range_for(i, values); ++i) {
-            if (i == 0 || values[i] > max) {
-                max = values[i];
-            }
-        }
-        if (max > 0.f) {
-            float scale = 1.f / max;
-            if (norm == NormalizeHybrid) {
-                scale = scale * log10f(max + 1.f);
-            }
-            for (int i = 0; in_range_for(i, values); ++i) {
-                values[i] *= scale;
-            }
-        }
-    }
-}
-
 vector<float>
 SpectrogramLayer::getColumnFromFFTModel(FFTModel *fft,
                                         int sx, // column number in model
@@ -2409,24 +2386,27 @@ SpectrogramLayer::getColumnFromGenericModel(DenseThreeDimensionalModel *model,
                               col.data() + minbin + bincount));
 }
 
-void
-SpectrogramLayer::scaleColumn(vector<float> &col) const
+vector<float> 
+SpectrogramLayer::scaleColumn(const vector<float> &in) const
 {
-    if (m_normalization != NormalizeColumns &&
-        m_normalization != NormalizeHybrid) {
-        float scale = 2.f / float(m_fftSize);
-        int n = int(col.size());
-        for (int i = 0; i < n; ++i) {
-            col[i] *= scale;
-        }
-    }            
+    if (m_normalization == NormalizeColumns ||
+        m_normalization == NormalizeHybrid) {
+        return in;
+    }
+    vector<float> out;
+    out.reserve(in.size());
+    float scale = 2.f / float(m_fftSize);
+    for (auto v: in) {
+        out.push_back(v * scale);
+    }
+    return move(out);
 }
 
 static bool
 is_peak(const vector<float> &values, int ix)
 {
-    if (!in_range_for(ix-1, values)) return false;
-    if (!in_range_for(ix+1, values)) return false;
+    if (!in_range_for(values, ix-1)) return false;
+    if (!in_range_for(values, ix+1)) return false;
     if (values[ix] < values[ix+1]) return false;
     if (values[ix] < values[ix-1]) return false;
     return true;
@@ -2498,7 +2478,7 @@ SpectrogramLayer::recordColumnExtents(const vector<float> &col,
                                       MagnitudeRange &overallMag,
                                       bool &overallMagChanged) const
 {
-    if (!in_range_for(sx, m_columnMags)) {
+    if (!in_range_for(m_columnMags, sx)) {
         throw logic_error("sx out of range for m_columnMags");
     }
     MagnitudeRange mr;
@@ -2512,13 +2492,48 @@ SpectrogramLayer::recordColumnExtents(const vector<float> &col,
 }
 
 vector<float>
+SpectrogramLayer::normalizeColumn(const vector<float> &in) const
+{
+    if (m_normalization == NoNormalization ||
+        m_normalization == NormalizeVisibleArea) {
+        // NormalizeVisibleArea is handled through adjustment to m_gain
+        return in;
+    }
+
+    float max = *max_element(in.begin(), in.end());
+
+    if (m_normalization == NormalizeColumns && max == 0.f) {
+        return in;
+    }
+
+    if (m_normalization == NormalizeHybrid && max <= 0.f) {
+        return in;
+    }
+    
+    vector<float> out;
+    out.reserve(in.size());
+
+    float scale;
+    if (m_normalization == NormalizeHybrid) {
+        scale = log10f(max + 1.f) / max;
+    } else {
+        scale = 1.f / max;
+    }
+    
+    for (auto v: in) {
+        out.push_back(v * scale);
+    }
+    return move(out);
+}
+
+vector<float>
 SpectrogramLayer::peakPickColumn(const vector<float> &in) const
 {
     if (m_binDisplay != PeakBins) return in;
 
     vector<float> out(in.size(), 0.f);
     
-    for (int i = 0; in_range_for(i, in); ++i) {
+    for (int i = 0; in_range_for(in, i); ++i) {
         if (is_peak(in, i)) {
             out[i] = in[i];
         }
@@ -2566,19 +2581,22 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
 
+    DenseThreeDimensionalModel *peakCacheModel = 0;
+    FFTModel *fftModel = 0;
     DenseThreeDimensionalModel *sourceModel = 0;
-    FFTModel *fft = 0;
-    int divisor = 1;
+    
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::paintDrawBuffer: Note: bin display = " << m_binDisplay << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
 #endif
+
+    int divisor = 1;
     if (usePeaksCache) {
-        sourceModel = getPeakCache(v);
+        peakCacheModel = getPeakCache(v);
         divisor = m_peakCacheDivisor;
-        minbin = 0;
-        maxbin = sourceModel->getHeight();
+        sourceModel = peakCacheModel;
     } else {
-        sourceModel = fft = getFFTModel(v);
+        fftModel = getFFTModel(v);
+        sourceModel = fftModel;
     }
 
     if (!sourceModel) return 0;
@@ -2595,17 +2613,6 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     }
 
     int psx = -1;
-
-#ifdef __GNUC__
-    float autoarray[maxbin - minbin + 1];
-    float peaks[h];
-#else
-    float *autoarray = (float *)alloca((maxbin - minbin + 1) * sizeof(float));
-    float *peaks = (float *)alloca(h * sizeof(float));
-#endif
-
-    const float *values = autoarray;
-    DenseThreeDimensionalModel::Column c;
 
     int minColumns = 4;
     bool haveTimeLimits = (softTimeLimit > 0.0);
@@ -2625,6 +2632,8 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
 
     int columnCount = 0;
     
+    vector<float> preparedColumn;
+            
     for (int x = start; x != finish; x += step) {
 
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -2643,166 +2652,56 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
         if (sx0 < 0) continue;
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
-        for (int y = 0; y < h; ++y) peaks[y] = 0.f;
-            
         for (int sx = sx0; sx < sx1; ++sx) {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
 //            cerr << "sx = " << sx << endl;
 #endif
 
-            if (sx < 0 || sx >= int(sourceModel->getWidth())) continue;
+            if (sx < 0 || sx >= sourceModel->getWidth()) continue;
 
             MagnitudeRange mag;
 
             if (sx != psx) {
-                if (fft) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-//                    cerr << "Retrieving column " << sx << " from fft directly" << endl;
-#endif
-                    if (m_colourScale == PhaseColourScale) {
-                        fft->getPhasesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                    } else if (m_normalization == NormalizeColumns) {
-                        fft->getNormalizedMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                    } else if (m_normalization == NormalizeHybrid) {
-                        float max = fft->getNormalizedMagnitudesAt
-                            (sx, autoarray, minbin, maxbin - minbin + 1);
-                        float scale = log10f(max + 1.f);
-                        for (int i = minbin; i <= maxbin; ++i) {
-                            autoarray[i - minbin] *= scale;
-                        }
-                    } else {
-                        fft->getMagnitudesAt(sx, autoarray, minbin, maxbin - minbin + 1);
-                    }
+
+                vector<float> column;
+                if (peakCacheModel) {
+                    column = getColumnFromGenericModel(peakCacheModel,
+                                                       sx,
+                                                       minbin,
+                                                       maxbin - minbin + 1);
                 } else {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-//                    cerr << "Retrieving column " << sx << " from peaks cache" << endl;
-#endif
-                    c = sourceModel->getColumn(sx);
-                    if (m_normalization == NormalizeColumns ||
-                        m_normalization == NormalizeHybrid) {
-                        for (int y = 0; y < h; ++y) {
-                            if (c[y] > columnMax) columnMax = c[y];
-                        }
-                    }
-                    values = c.data() + minbin;
+                    column = getColumnFromFFTModel(fftModel,
+                                                   sx,
+                                                   minbin,
+                                                   maxbin - minbin + 1);
                 }
+
+                vector<float> distributed =
+                    distributeColumn(scaleColumn(column),
+                                     h,
+                                     binfory,
+                                     minbin,
+                                     interpolate);
+
+                recordColumnExtents(distributed,
+                                    sx,
+                                    overallMag,
+                                    overallMagChanged);
+                
+                preparedColumn =
+                    applyDisplayGain(peakPickColumn
+                                     (normalizeColumn(distributed)));
+                
                 psx = sx;
             }
 
-            for (int y = 0; y < h; ++y) {
-
-                double sy0 = binfory[y];
-                double sy1 = sy0 + 1;
-                if (y+1 < h) sy1 = binfory[y+1];
-
-                double value = 0.0;
-
-                if (interpolate && fabs(sy1 - sy0) < 1.0) {
-
-                    double centre = (sy0 + sy1) / 2;
-                    double dist = (centre - 0.5) - rint(centre - 0.5);
-                    int bin = int(centre);
-                    int other = (dist < 0 ? (bin-1) : (bin+1));
-                    if (bin < minbin) bin = minbin;
-                    if (bin > maxbin) bin = maxbin;
-                    if (other < minbin || other > maxbin) other = bin;
-                    double prop = 1.0 - fabs(dist);
-
-                    double v0 = values[bin - minbin];
-                    double v1 = values[other - minbin];
-                    if (m_binDisplay == PeakBins) {
-                        if (bin == minbin || bin == maxbin ||
-                            v0 < values[bin-minbin-1] ||
-                            v0 < values[bin-minbin+1]) v0 = 0.0;
-                        if (other == minbin || other == maxbin ||
-                            v1 < values[other-minbin-1] ||
-                            v1 < values[other-minbin+1]) v1 = 0.0;
-                    }
-                    if (v0 == 0.0 && v1 == 0.0) continue;
-                    value = prop * v0 + (1.0 - prop) * v1;
-
-                    if (m_colourScale != PhaseColourScale) {
-                        if (m_normalization != NormalizeColumns &&
-                            m_normalization != NormalizeHybrid) {
-                            value /= (m_fftSize/2.0);
-                        }
-                        mag.sample(float(value));
-                        value *= m_gain;
-                    }
-
-                    peaks[y] = float(value);
-
-                } else {                    
-
-                    int by0 = int(sy0 + 0.0001);
-                    int by1 = int(sy1 + 0.0001);
-                    if (by1 < by0 + 1) by1 = by0 + 1;
-
-                    for (int bin = by0; bin < by1; ++bin) {
-
-                        value = values[bin - minbin];
-                        if (m_binDisplay == PeakBins) {
-                            if (bin == minbin || bin == maxbin ||
-                                value < values[bin-minbin-1] ||
-                                value < values[bin-minbin+1]) continue;
-                        }
-
-                        if (m_colourScale != PhaseColourScale) {
-                            if (m_normalization != NormalizeColumns &&
-                                m_normalization != NormalizeHybrid) {
-                                value /= (m_fftSize/2.0);
-                            }
-                            mag.sample(float(value));
-                            value *= m_gain;
-                        }
-
-                        if (value > peaks[y]) {
-                            peaks[y] = float(value); //!!! not right for phase!
-                        }
-                    }
-                }
-            }
-
-            if (mag.isSet()) {
-                if (sx >= int(m_columnMags.size())) {
-#ifdef DEBUG_SPECTROGRAM
-                    cerr << "INTERNAL ERROR: " << sx << " >= "
-                              << m_columnMags.size()
-                              << " at SpectrogramLayer.cpp::paintDrawBuffer"
-                              << endl;
-#endif
-                } else {
-                    m_columnMags[sx].sample(mag);
-                    if (overallMag.sample(mag)) overallMagChanged = true;
-                }
-            }
+            //!!! now peak of all preparedColumns for this pixel
         }
 
-        // at this point we have updated m_columnMags and overallMag
-        // -- used elsewhere for calculating the overall view range
-        // for NormalizeVisibleArea mode -- and calculated "peaks"
-        // (the possibly scaled and interpolated value array from
-        // which we actually draw the column) and "columnMax" (maximum
-        // value used for normalisation)
-        
         for (int y = 0; y < h; ++y) {
-
-            double peak = peaks[y];
-            
-            if (m_colourScale != PhaseColourScale &&
-                (m_normalization == NormalizeColumns ||
-                 m_normalization == NormalizeHybrid) &&
-                columnMax > 0.f) {
-                peak /= columnMax;
-                if (m_normalization == NormalizeHybrid) {
-                    peak *= log10(columnMax + 1.f);
-                }
-            }
-            
-            unsigned char peakpix = getDisplayValue(v, peak);
-
-            m_drawBuffer.setPixel(x, h-y-1, peakpix);
+            unsigned char pixel = getDisplayValue(v, preparedColumn[y]);
+            m_drawBuffer.setPixel(x, h-y-1, pixel);
         }
 
         if (haveTimeLimits) {
