@@ -400,6 +400,21 @@ protected:
                                                  int bincount) const;
 
     void scaleColumn(std::vector<float> &col) const;
+
+    std::vector<float> distributeColumn(const std::vector<float> &in,
+                                        int h,
+                                        const std::vector<double> &binfory,
+                                        int minbin,
+                                        bool interpolate) const;
+
+    void recordColumnExtents(const std::vector<float> &col,
+                             int sx,
+                             MagnitudeRange &overallMag,
+                             bool &overallMagChanged) const;
+
+    std::vector<float> peakPickColumn(const std::vector<float> &in) const;
+
+    std::vector<float> applyDisplayGain(const std::vector<float> &in) const;
     
     virtual void updateMeasureRectYCoords(LayerGeometryProvider *v,
                                           const MeasureRect &r) const;

@@ -2410,7 +2410,7 @@ SpectrogramLayer::getColumnFromGenericModel(DenseThreeDimensionalModel *model,
 }
 
 void
-SpectrogramLayer::scaleColumn(vector<float> &col)
+SpectrogramLayer::scaleColumn(vector<float> &col) const
 {
     if (m_normalization != NormalizeColumns &&
         m_normalization != NormalizeHybrid) {
@@ -2437,7 +2437,7 @@ SpectrogramLayer::distributeColumn(const vector<float> &in,
                                    int h,
                                    const vector<double> &binfory,
                                    int minbin,
-                                   bool interpolate)
+                                   bool interpolate) const
 {
     vector<float> out(h, 0.f);
     int bins = int(in.size());
@@ -2465,23 +2465,12 @@ SpectrogramLayer::distributeColumn(const vector<float> &in,
                 other = bin;
             }
 
-            if (m_binDisplay == PeakBins) {
+            double prop = 1.0 - fabs(dist);
 
-                if (is_peak(in, bin)) {
-                    out[y] = in[bin];
-                } else if (other != bin && is_peak(in, other)) {
-                    out[y] = in[other];
-                }
+            double v0 = in[bin];
+            double v1 = in[other];
                 
-            } else {
-
-                double prop = 1.0 - fabs(dist);
-
-                double v0 = in[bin];
-                double v1 = in[other];
-                
-                out[y] = float(prop * v0 + (1.0 - prop) * v1);
-            }
+            out[y] = float(prop * v0 + (1.0 - prop) * v1);
 
         } else { // not interpolating this one
 
@@ -2491,10 +2480,6 @@ SpectrogramLayer::distributeColumn(const vector<float> &in,
 
             for (int bin = by0; bin < by1; ++bin) {
 
-                if (m_binDisplay == PeakBins && !is_peak(in, bin)) {
-                    continue;
-                }
-                
                 float value = in[bin];
 
                 if (value > out[y] || m_colourScale == PhaseColourScale) {
@@ -2511,12 +2496,8 @@ void
 SpectrogramLayer::recordColumnExtents(const vector<float> &col,
                                       int sx, // column index, for m_columnMags
                                       MagnitudeRange &overallMag,
-                                      bool &overallMagChanged)
+                                      bool &overallMagChanged) const
 {
-    //!!! this differs from previous logic when in peak mode - as the
-    //!!! zeros between peaks are now sampled, where they were not
-    //!!! before
-    
     if (!in_range_for(sx, m_columnMags)) {
         throw logic_error("sx out of range for m_columnMags");
     }
@@ -2530,8 +2511,37 @@ SpectrogramLayer::recordColumnExtents(const vector<float> &col,
     }
 }
 
+vector<float>
+SpectrogramLayer::peakPickColumn(const vector<float> &in) const
+{
+    if (m_binDisplay != PeakBins) return in;
+
+    vector<float> out(in.size(), 0.f);
+    
+    for (int i = 0; in_range_for(i, in); ++i) {
+        if (is_peak(in, i)) {
+            out[i] = in[i];
+        }
+    }
+
+    return move(out);
+}
+
+vector<float>
+SpectrogramLayer::applyDisplayGain(const vector<float> &in) const
+{
+    if (m_gain == 1.0) return in;
+
+    vector<float> out;
+    out.reserve(in.size());
+    for (auto v: in) {
+        out.push_back(v * m_gain);
+    }
+    return move(out);
+}
+
 // order:
-// get column -> scale -> distribute/interpolate -> record extents -> normalise -> apply display gain
+// get column -> scale -> distribute/interpolate -> record extents -> normalise -> peak pick -> apply display gain
 
 int
 SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
