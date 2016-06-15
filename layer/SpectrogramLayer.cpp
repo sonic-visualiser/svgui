@@ -2367,7 +2367,7 @@ SpectrogramLayer::getColumnFromFFTModel(FFTModel *fft,
         fft->getMagnitudesAt(sx, values.data(), minbin, bincount);
     }
 
-    return move(values);
+    return values;
 }
 
 vector<float>
@@ -2382,8 +2382,8 @@ SpectrogramLayer::getColumnFromGenericModel(DenseThreeDimensionalModel *model,
 
     auto col = model->getColumn(sx);
         
-    return move(vector<float>(col.data() + minbin,
-                              col.data() + minbin + bincount));
+    return vector<float>(col.data() + minbin,
+                         col.data() + minbin + bincount);
 }
 
 vector<float> 
@@ -2399,7 +2399,7 @@ SpectrogramLayer::scaleColumn(const vector<float> &in) const
     for (auto v: in) {
         out.push_back(v * scale);
     }
-    return move(out);
+    return out;
 }
 
 static bool
@@ -2523,13 +2523,13 @@ SpectrogramLayer::normalizeColumn(const vector<float> &in) const
     for (auto v: in) {
         out.push_back(v * scale);
     }
-    return move(out);
+    return out;
 }
 
 vector<float>
 SpectrogramLayer::peakPickColumn(const vector<float> &in) const
 {
-    if (m_binDisplay != PeakBins) return in;
+    if (m_binDisplay == AllBins) return in;
 
     vector<float> out(in.size(), 0.f);
     
@@ -2539,7 +2539,7 @@ SpectrogramLayer::peakPickColumn(const vector<float> &in) const
         }
     }
 
-    return move(out);
+    return out;
 }
 
 vector<float>
@@ -2552,7 +2552,7 @@ SpectrogramLayer::applyDisplayGain(const vector<float> &in) const
     for (auto v: in) {
         out.push_back(v * m_gain);
     }
-    return move(out);
+    return out;
 }
 
 // order:
