@@ -387,8 +387,6 @@ protected:
                                        bool rightToLeft,
                                        double softTimeLimit) const;
 
-    void normalise(std::vector<float> &, Normalization norm) const;
-    
     std::vector<float> getColumnFromFFTModel(FFTModel *model,
                                              int sx,
                                              int minbin,
@@ -399,7 +397,7 @@ protected:
                                                  int minbin,
                                                  int bincount) const;
 
-    void scaleColumn(std::vector<float> &col) const;
+    std::vector<float> scaleColumn(const std::vector<float> &in) const;
 
     std::vector<float> distributeColumn(const std::vector<float> &in,
                                         int h,
@@ -411,6 +409,8 @@ protected:
                              int sx,
                              MagnitudeRange &overallMag,
                              bool &overallMagChanged) const;
+
+    std::vector<float> normalizeColumn(const std::vector<float> &in) const;
 
     std::vector<float> peakPickColumn(const std::vector<float> &in) const;
 
