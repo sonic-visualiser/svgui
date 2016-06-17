@@ -2556,7 +2556,7 @@ SpectrogramLayer::applyDisplayGain(const vector<float> &in) const
 }
 
 // order:
-// get column -> scale -> distribute/interpolate -> record extents -> normalise -> peak pick -> apply display gain
+// get column -> scale -> record extents -> normalise -> peak pick -> apply display gain -> distribute/interpolate
 
 int
 SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
@@ -2677,21 +2677,22 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                                                    maxbin - minbin + 1);
                 }
 
-                vector<float> distributed =
-                    distributeColumn(scaleColumn(column),
+                column = scaleColumn(column);
+                
+                recordColumnExtents(column,
+                                    sx,
+                                    overallMag,
+                                    overallMagChanged);
+
+                preparedColumn =
+                    distributeColumn(applyDisplayGain
+                                     (peakPickColumn
+                                      (normalizeColumn
+                                       (column))),
                                      h,
                                      binfory,
                                      minbin,
                                      interpolate);
-
-                recordColumnExtents(distributed,
-                                    sx,
-                                    overallMag,
-                                    overallMagChanged);
-                
-                preparedColumn =
-                    applyDisplayGain(peakPickColumn
-                                     (normalizeColumn(distributed)));
                 
                 psx = sx;
             }
