@@ -2212,14 +2212,9 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     if (!fft) return 0;
 
     FFTModel::PeakSet peakfreqs;
-
+    vector<float> preparedColumn;
+            
     int psx = -1;
-
-#ifdef __GNUC__
-    float values[maxbin - minbin + 1];
-#else
-    float *values = (float *)alloca((maxbin - minbin + 1) * sizeof(float));
-#endif
 
     int minColumns = 4;
     bool haveTimeLimits = (softTimeLimit > 0.0);
@@ -2252,74 +2247,71 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
         if (sx0 < 0) continue;
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
+        vector<float> pixelPeakColumn;
+        
         for (int sx = sx0; sx < sx1; ++sx) {
 
-            if (sx < 0 || sx >= int(fft->getWidth())) continue;
-
-            MagnitudeRange mag;
+            if (sx < 0 || sx >= int(fft->getWidth())) {
+                continue;
+            }
 
             if (sx != psx) {
-                peakfreqs = fft->getPeakFrequencies(FFTModel::AllPeaks, sx,
-                                                    minbin, maxbin - 1);
-                if (m_colourScale == PhaseColourScale) {
-                    fft->getPhasesAt(sx, values, minbin, maxbin - minbin + 1);
-                    /*!!!
-                } else if (m_normalization == ColumnOp::NormalizeColumns) {
-                    fft->getNormalizedMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
-                } else if (m_normalization == ColumnOp::NormalizeHybrid) {
-                    float max = fft->getNormalizedMagnitudesAt
-                        (sx, values, minbin, maxbin - minbin + 1);
-                    float scale = log10f(max + 1.f);
-                    for (int i = minbin; i <= maxbin; ++i) {
-                        values[i - minbin] *= scale;
-                        }*/
-                } else {
-                    fft->getMagnitudesAt(sx, values, minbin, maxbin - minbin + 1);
+
+                ColumnOp::Column column;
+
+                column = getColumnFromFFTModel(fft,
+                                               sx,
+                                               minbin,
+                                               maxbin - minbin + 1);
+
+                if (m_colourScale != PhaseColourScale) {
+                    column = ColumnOp::fftScale(column, m_fftSize);
                 }
+
+                recordColumnExtents(column,
+                                    sx,
+                                    overallMag,
+                                    overallMagChanged);
+
+                if (m_colourScale != PhaseColourScale) {
+                    column = ColumnOp::normalize(column, m_normalization);
+                }
+
+                preparedColumn = ColumnOp::applyGain(column, m_gain);
+                
                 psx = sx;
             }
 
-            for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
-                 pi != peakfreqs.end(); ++pi) {
-
-                int bin = pi->first;
-                double freq = pi->second;
-
-                if (bin < minbin) continue;
-                if (bin > maxbin) break;
-
-                double value = values[bin - minbin];
-
-                if (m_colourScale != PhaseColourScale) {
-                    if (m_normalization != ColumnOp::NormalizeColumns) {
-                        value /= (m_fftSize/2.0);
-                    }
-                    mag.sample(float(value));
-                    value *= m_gain;
-                }
-
-                double y = v->getYForFrequency
-                    (freq, displayMinFreq, displayMaxFreq, logarithmic);
-
-                int iy = int(y + 0.5);
-                if (iy < 0 || iy >= h) continue;
-
-                m_drawBuffer.setPixel(x, iy, getDisplayValue(v, value));
-            }
-
-            if (mag.isSet()) {
-                if (sx >= int(m_columnMags.size())) {
-#ifdef DEBUG_SPECTROGRAM
-                    cerr << "INTERNAL ERROR: " << sx << " >= "
-                              << m_columnMags.size()
-                              << " at SpectrogramLayer.cpp::paintDrawBuffer"
-                              << endl;
-#endif
-                } else {
-                    m_columnMags[sx].sample(mag);
-                    if (overallMag.sample(mag)) overallMagChanged = true;
+            if (sx == sx0) {
+                pixelPeakColumn = preparedColumn;
+                peakfreqs = fft->getPeakFrequencies(FFTModel::AllPeaks, sx,
+                                                    minbin, maxbin - 1);
+            } else {
+                for (int i = 0; in_range_for(pixelPeakColumn, i); ++i) {
+                    pixelPeakColumn[i] = std::max(pixelPeakColumn[i],
+                                                  preparedColumn[i]);
                 }
             }
+        }
+        
+        for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
+             pi != peakfreqs.end(); ++pi) {
+
+            int bin = pi->first;
+            double freq = pi->second;
+
+            if (bin < minbin) continue;
+            if (bin > maxbin) break;
+            
+            double value = pixelPeakColumn[bin - minbin];
+            
+            double y = v->getYForFrequency
+                (freq, displayMinFreq, displayMaxFreq, logarithmic);
+            
+            int iy = int(y + 0.5);
+            if (iy < 0 || iy >= h) continue;
+
+            m_drawBuffer.setPixel(x, iy, getDisplayValue(v, value));
         }
 
         if (haveTimeLimits) {
@@ -2491,8 +2483,6 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
         
         if (binforx[x] < 0) continue;
 
-        float columnMax = 0.f;
-
         int sx0 = binforx[x] / divisor;
         int sx1 = sx0;
         if (x+1 < w) sx1 = binforx[x+1] / divisor;
@@ -2500,19 +2490,22 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
         if (sx0 < 0) continue;
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
+        vector<float> pixelPeakColumn;
+        
         for (int sx = sx0; sx < sx1; ++sx) {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
 //            cerr << "sx = " << sx << endl;
 #endif
 
-            if (sx < 0 || sx >= sourceModel->getWidth()) continue;
-
-            MagnitudeRange mag;
+            if (sx < 0 || sx >= sourceModel->getWidth()) {
+                continue;
+            }
 
             if (sx != psx) {
 
-                // order: get column -> scale -> record extents ->
+                // order:
+                // get column -> scale -> record extents ->
                 // normalise -> peak pick -> apply display gain ->
                 // distribute/interpolate
 
@@ -2530,36 +2523,47 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                                                    maxbin - minbin + 1);
                 }
 
-                column = ColumnOp::fftScale(column, m_fftSize);
+                if (m_colourScale != PhaseColourScale) {
+                    column = ColumnOp::fftScale(column, m_fftSize);
+                }
 
                 recordColumnExtents(column,
                                     sx,
                                     overallMag,
                                     overallMagChanged);
 
-                column = ColumnOp::normalize(column, m_normalization);
+                if (m_colourScale != PhaseColourScale) {
+                    column = ColumnOp::normalize(column, m_normalization);
+                }
 
                 if (m_binDisplay == PeakBins) {
                     column = ColumnOp::peakPick(column);
                 }
 
                 preparedColumn =
-                    ColumnOp::distribute
-                    (ColumnOp::applyGain(column, m_gain),
-                     h,
-                     binfory,
-                     minbin,
-                     interpolate);
+                    ColumnOp::distribute(ColumnOp::applyGain(column, m_gain),
+                                         h,
+                                         binfory,
+                                         minbin,
+                                         interpolate);
                 
                 psx = sx;
             }
 
-            //!!! now peak of all preparedColumns for this pixel
+            if (sx == sx0) {
+                pixelPeakColumn = preparedColumn;
+            } else {
+                for (int i = 0; in_range_for(pixelPeakColumn, i); ++i) {
+                    pixelPeakColumn[i] = std::max(pixelPeakColumn[i],
+                                                  preparedColumn[i]);
+                }
+            }
         }
 
         for (int y = 0; y < h; ++y) {
-            unsigned char pixel = getDisplayValue(v, preparedColumn[y]);
-            m_drawBuffer.setPixel(x, h-y-1, pixel);
+            m_drawBuffer.setPixel(x,
+                                  h-y-1,
+                                  getDisplayValue(v, pixelPeakColumn[y]));
         }
 
         if (haveTimeLimits) {
