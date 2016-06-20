@@ -176,18 +176,11 @@ public:
     void setBinDisplay(BinDisplay);
     BinDisplay getBinDisplay() const;
 
-    enum Normalization {
-        NoNormalization,
-        NormalizeColumns,
-        NormalizeVisibleArea,
-        NormalizeHybrid
-    };
-
     /**
      * Specify the normalization mode for bin values.
      */
-    void setNormalization(Normalization);
-    Normalization getNormalization() const;
+    void setNormalization(ColumnOp::Normalization);
+    ColumnOp::Normalization getNormalization() const;
 
     /**
      * Specify the colour map. See ColourMapper for the colour map
@@ -272,7 +265,7 @@ protected:
     QColor              m_crosshairColour;
     FrequencyScale      m_frequencyScale;
     BinDisplay          m_binDisplay;
-    Normalization       m_normalization;
+    ColumnOp::Normalization m_normalization;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
 
@@ -397,24 +390,10 @@ protected:
                                                  int minbin,
                                                  int bincount) const;
 
-    std::vector<float> scaleColumn(const std::vector<float> &in) const;
-
-    std::vector<float> distributeColumn(const std::vector<float> &in,
-                                        int h,
-                                        const std::vector<double> &binfory,
-                                        int minbin,
-                                        bool interpolate) const;
-
     void recordColumnExtents(const std::vector<float> &col,
                              int sx,
                              MagnitudeRange &overallMag,
                              bool &overallMagChanged) const;
-
-    std::vector<float> normalizeColumn(const std::vector<float> &in) const;
-
-    std::vector<float> peakPickColumn(const std::vector<float> &in) const;
-
-    std::vector<float> applyDisplayGain(const std::vector<float> &in) const;
     
     virtual void updateMeasureRectYCoords(LayerGeometryProvider *v,
                                           const MeasureRect &r) const;
