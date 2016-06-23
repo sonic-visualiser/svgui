@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _COLOUR_3D_PLOT_H_
-#define _COLOUR_3D_PLOT_H_
+#ifndef COLOUR_3D_PLOT_LAYER_H
+#define COLOUR_3D_PLOT_LAYER_H
 
 #include "SliceableLayer.h"
 
@@ -30,13 +30,10 @@ class QImage;
  * colour range.  Its source is a DenseThreeDimensionalModel.
  *
  * This was the original implementation for the spectrogram view, but
- * it was replaced with a more efficient implementation that derived
- * the spectrogram itself from a DenseTimeValueModel instead of using
- * a three-dimensional model.  This class is retained in case it
- * becomes useful, but it will probably need some cleaning up if it's
- * ever actually used.
+ * it was replaced for that purpose with a more efficient
+ * implementation that derived the spectrogram itself from a
+ * DenseTimeValueModel instead of using a three-dimensional model.
  */
-
 class Colour3DPlotLayer : public SliceableLayer
 {
     Q_OBJECT
