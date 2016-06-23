@@ -41,6 +41,7 @@ MOC_DIR = o
 HEADERS += layer/Colour3DPlotLayer.h \
 	   layer/ColourDatabase.h \
 	   layer/ColourMapper.h \
+           layer/ColourScale.h \
            layer/ColourScaleLayer.h \
            layer/FlexiNoteLayer.h \
            layer/ImageLayer.h \
@@ -70,6 +71,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
 SOURCES += layer/Colour3DPlotLayer.cpp \
 	   layer/ColourDatabase.cpp \
 	   layer/ColourMapper.cpp \
+	   layer/ColourScale.cpp \
            layer/FlexiNoteLayer.cpp \
            layer/ImageLayer.cpp \
            layer/ImageRegionFinder.cpp \
