@@ -39,6 +39,7 @@ OBJECTS_DIR = o
 MOC_DIR = o
 
 HEADERS += layer/Colour3DPlotLayer.h \
+	   layer/Colour3DPlotRenderer.h \
 	   layer/ColourDatabase.h \
 	   layer/ColourMapper.h \
            layer/ColourScale.h \
@@ -69,6 +70,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/VerticalScaleLayer.h \
            layer/WaveformLayer.h
 SOURCES += layer/Colour3DPlotLayer.cpp \
+	   layer/Colour3DPlotRenderer.cpp \
 	   layer/ColourDatabase.cpp \
 	   layer/ColourMapper.cpp \
 	   layer/ColourScale.cpp \

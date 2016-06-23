@@ -60,7 +60,6 @@ mapDiscrete(double norm, vector<QColor> &colours, double &r, double &g, double &
 }
 
 ColourMapper::ColourMapper(int map, double min, double max) :
-    QObject(),
     m_map(map),
     m_min(min),
     m_max(max)
@@ -85,25 +84,25 @@ ColourMapper::getColourMapCount()
 QString
 ColourMapper::getColourMapName(int n)
 {
-    if (n >= getColourMapCount()) return tr("<unknown>");
+    if (n >= getColourMapCount()) return QObject::tr("<unknown>");
     StandardMap map = (StandardMap)n;
 
     switch (map) {
-    case Green:            return tr("Green");
-    case WhiteOnBlack:     return tr("White on Black");
-    case BlackOnWhite:     return tr("Black on White");
-    case Cherry:           return tr("Cherry");
-    case Wasp:             return tr("Wasp");
-    case Ice:              return tr("Ice");
-    case Sunset:           return tr("Sunset");
-    case FruitSalad:       return tr("Fruit Salad");
-    case Banded:           return tr("Banded");
-    case Highlight:        return tr("Highlight");
-    case Printer:          return tr("Printer");
-    case HighGain:         return tr("High Gain");
+    case Green:            return QObject::tr("Green");
+    case WhiteOnBlack:     return QObject::tr("White on Black");
+    case BlackOnWhite:     return QObject::tr("Black on White");
+    case Cherry:           return QObject::tr("Cherry");
+    case Wasp:             return QObject::tr("Wasp");
+    case Ice:              return QObject::tr("Ice");
+    case Sunset:           return QObject::tr("Sunset");
+    case FruitSalad:       return QObject::tr("Fruit Salad");
+    case Banded:           return QObject::tr("Banded");
+    case Highlight:        return QObject::tr("Highlight");
+    case Printer:          return QObject::tr("Printer");
+    case HighGain:         return QObject::tr("High Gain");
     }
 
-    return tr("<unknown>");
+    return QObject::tr("<unknown>");
 }
 
 QColor
