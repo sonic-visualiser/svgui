@@ -22,36 +22,27 @@
 
 int ColourScale::m_maxPixel = 255;
 
-ColourScale::ColourScale(int colourMap,
-			 Scale scale,
-			 double minValue,
-			 double maxValue,
-			 double threshold,
-			 double gain) :
-    m_mapper(colourMap, 1.f, double(m_maxPixel)),
-    m_scale(scale),
-    m_min(minValue),
-    m_max(maxValue),
-    m_threshold(threshold),
-    m_gain(gain)
+ColourScale::ColourScale(Parameters parameters) :
+    m_params(parameters),
+    m_mapper(m_params.colourMap, 1.f, double(m_maxPixel))
 {
-    if (minValue >= maxValue) {
+    if (m_params.minValue >= m_params.maxValue) {
 	throw std::logic_error("maxValue must be greater than minValue");
     }
 
-    m_mappedMin = m_min;
-    m_mappedMax = m_max;
+    m_mappedMin = m_params.minValue;
+    m_mappedMax = m_params.maxValue;
 
-    if (m_scale == LogColourScale) {
+    if (m_params.scale == LogColourScale) {
 
 	LogRange::mapRange(m_mappedMin, m_mappedMax);
 	
-    } else if (m_scale == PlusMinusOneScale) {
+    } else if (m_params.scale == PlusMinusOneScale) {
 	
 	m_mappedMin = -1.0;
 	m_mappedMax =  1.0;
 
-    } else if (m_scale == AbsoluteScale) {
+    } else if (m_params.scale == AbsoluteScale) {
 
 	m_mappedMin = fabs(m_mappedMin);
 	m_mappedMax = fabs(m_mappedMax);
@@ -70,23 +61,23 @@ ColourScale::getPixel(double value)
 {
     double maxPixF = m_maxPixel;
 
-    if (m_scale == PhaseColourScale) {
+    if (m_params.scale == PhaseColourScale) {
 	double half = (maxPixF - 1.f) / 2.f;
 	return 1 + int((value * half) / M_PI + half);
     }
     
-    value *= m_gain;
+    value *= m_params.gain;
 
-    if (value < m_threshold) return 0;
+    if (value < m_params.threshold) return 0;
 
     double mapped = value;
 
-    if (m_scale == LogColourScale) {
+    if (m_params.scale == LogColourScale) {
 	mapped = LogRange::map(value);
-    } else if (m_scale == PlusMinusOneScale) {
+    } else if (m_params.scale == PlusMinusOneScale) {
 	if (mapped < -1.f) mapped = -1.f;
 	if (mapped > 1.f) mapped = 1.f;
-    } else if (m_scale == AbsoluteScale) {
+    } else if (m_params.scale == AbsoluteScale) {
 	if (mapped < 0.f) mapped = -mapped;
     }
 	
@@ -101,14 +92,18 @@ ColourScale::getPixel(double value)
 
     int pixel = 0;
 
-    if (m_scale == MeterColourScale) {
+    if (m_params.scale == MeterColourScale) {
 	pixel = AudioLevel::multiplier_to_preview(proportion, m_maxPixel-1) + 1;
     } else {
 	pixel = int(proportion * maxPixF) + 1;
     }
 
-    if (pixel > m_maxPixel) pixel = m_maxPixel;
-    if (pixel < 0) pixel = 0;
+    if (pixel < 0) {
+	pixel = 0;
+    }
+    if (pixel > m_maxPixel) {
+	pixel = m_maxPixel;
+    }
     return pixel;
 }
 

@@ -34,28 +34,40 @@ public:
         AbsoluteScale
     };
 
+    struct Parameters {
+	Parameters() : colourMap(0), scale(LinearColourScale),
+		       minValue(0.0), maxValue(1.0),
+		       threshold(0.0), gain(1.0) { }
+
+	/** A colour map index as used by ColourMapper */
+	int colourMap;
+	
+	/** Distribution for the scale */
+	Scale scale;
+	
+	/** Minimum value in source range */
+	double minValue;
+	
+	/** Maximum value in source range. Must be > minValue */
+	double maxValue;
+
+	/** Threshold below which every value is mapped to background
+	    pixel 0 */
+	double threshold;
+
+	/** Gain to apply before clamping and mapping */
+	double gain;
+    };
+    
     /**
-     * Create a ColourScale with the given parameters:
-     * 
-     * @param colourMap A colour map index as used by ColourMapper
-     * @param scale Distribution for the scale
-     * @param minValue Minimum value in range
-     * @param maxValue Maximum value in range. Must be > minValue
-     * @param threshold Threshold below which every value is mapped to
-     *   background pixel 0
-     * @param gain Gain to apply before clamping and mapping, typically 1
+     * Create a ColourScale with the given parameters.
      *
      * Note that some parameters may be ignored for some scale
      * distribution settings. For example, min and max are ignored for
      * PlusMinusOneScale and PhaseColourScale and threshold and gain
      * are ignored for PhaseColourScale.
      */
-    ColourScale(int colourMap,
-		Scale scale,
-		double minValue,
-		double maxValue,
-		double threshold,
-		double gain);
+    ColourScale(Parameters parameters);
 
     /**
      * Return a pixel number (in the range 0-255 inclusive)
@@ -82,14 +94,10 @@ public:
     }
 
 private:
+    Parameters m_params;
     ColourMapper m_mapper;
-    Scale m_scale;
-    double m_min;
-    double m_max;
     double m_mappedMin;
     double m_mappedMax;
-    double m_threshold;
-    double m_gain;
     static int m_maxPixel;
 };
 
