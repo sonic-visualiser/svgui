@@ -16,6 +16,11 @@
 #ifndef VERTICAL_SCALE_LAYER_H
 #define VERTICAL_SCALE_LAYER_H
 
+/**
+ * Interface for layers in which the Y axis represents (or can
+ * sometimes represent, depending on the display mode) the sample
+ * value. For example, TimeValueLayer in point mode.
+ */
 class VerticalScaleLayer
 {
 public:

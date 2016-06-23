@@ -21,6 +21,13 @@
 
 class LayerGeometryProvider;
 
+/**
+ * Interface for layers in which a colour scale represents (or can
+ * sometimes represent, depending on the display mode) the sample
+ * value. For example, TimeValueLayer uses colour scale when in
+ * segment mode and so provides this interface for use by the
+ * LogColourScale or LinearColourScale scale renderers.
+ */
 class ColourScaleLayer
 {
 public:
