@@ -68,7 +68,11 @@ public:
      * are ignored for PhaseColourScale.
      */
     ColourScale(Parameters parameters);
+    ~ColourScale();
 
+    ColourScale(const ColourScale &) = default;
+    ColourScale &operator=(const ColourScale &) = default;
+    
     /**
      * Return a pixel number (in the range 0-255 inclusive)
      * corresponding to the given value.  The pixel 0 is used only for

@@ -56,6 +56,10 @@ ColourScale::ColourScale(Parameters parameters) :
     }
 }
 
+ColourScale::~ColourScale()
+{
+}
+
 int
 ColourScale::getPixel(double value)
 {
