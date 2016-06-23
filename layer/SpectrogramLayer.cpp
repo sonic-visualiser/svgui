@@ -2293,27 +2293,29 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                 }
             }
         }
-        
-        for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
-             pi != peakfreqs.end(); ++pi) {
 
-            int bin = pi->first;
-            double freq = pi->second;
+        if (!pixelPeakColumn.empty()) {
+            for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
+                 pi != peakfreqs.end(); ++pi) {
 
-            if (bin < minbin) continue;
-            if (bin > maxbin) break;
-            
-            double value = pixelPeakColumn[bin - minbin];
-            
-            double y = v->getYForFrequency
-                (freq, displayMinFreq, displayMaxFreq, logarithmic);
-            
-            int iy = int(y + 0.5);
-            if (iy < 0 || iy >= h) continue;
+                int bin = pi->first;
+                double freq = pi->second;
 
-            m_drawBuffer.setPixel(x, iy, getDisplayValue(v, value));
+                if (bin < minbin) continue;
+                if (bin > maxbin) break;
+            
+                double value = pixelPeakColumn[bin - minbin];
+            
+                double y = v->getYForFrequency
+                    (freq, displayMinFreq, displayMaxFreq, logarithmic);
+            
+                int iy = int(y + 0.5);
+                if (iy < 0 || iy >= h) continue;
+
+                m_drawBuffer.setPixel(x, iy, getDisplayValue(v, value));
+            }
         }
-
+        
         if (haveTimeLimits) {
             if (columnCount >= minColumns) {
                 auto t = chrono::steady_clock::now();
@@ -2560,10 +2562,12 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
             }
         }
 
-        for (int y = 0; y < h; ++y) {
-            m_drawBuffer.setPixel(x,
-                                  h-y-1,
-                                  getDisplayValue(v, pixelPeakColumn[y]));
+        if (!pixelPeakColumn.empty()) {
+            for (int y = 0; y < h; ++y) {
+                m_drawBuffer.setPixel(x,
+                                      h-y-1,
+                                      getDisplayValue(v, pixelPeakColumn[y]));
+            }
         }
 
         if (haveTimeLimits) {
