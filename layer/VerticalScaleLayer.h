@@ -19,7 +19,8 @@
 /**
  * Interface for layers in which the Y axis represents (or can
  * sometimes represent, depending on the display mode) the sample
- * value. For example, TimeValueLayer in point mode.
+ * value. For example, TimeValueLayer uses vertical scale when in
+ * point mode and so provides this interface.
  */
 class VerticalScaleLayer
 {
