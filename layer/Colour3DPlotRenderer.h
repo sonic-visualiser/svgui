@@ -24,6 +24,8 @@ class DenseThreeDimensionalModel;
 class Dense3DModelPeakCache;
 class FFTModel;
 
+// We will have one of these per view, for each layer
+
 class Colour3DPlotRenderer
 {
 public:
@@ -66,6 +68,13 @@ public:
 
 private:
     Parameters m_params;
+
+    //!!! we do not have the ScrollableImageCache here; in
+    //!!! SpectrogramLayer terms we render onto the draw buffer
+
+    //!!! fft model scaling?
+    
+    //!!! should we own the Dense3DModelPeakCache here? or should it persist
 };
 
 #endif
