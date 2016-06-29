@@ -14,6 +14,7 @@
 */
 
 #include "Colour3DPlotRenderer.h"
+#include "RenderTimer.h"
 
 Colour3DPlotRenderer::RenderResult
 Colour3DPlotRenderer::render(QPainter &paint,
@@ -25,5 +26,9 @@ Colour3DPlotRenderer::render(QPainter &paint,
     //!!! todo: peak frequency style
 
     //!!! todo: transparent style from Colour3DPlot
+
+    //!!! todo: bin boundary alignment when in BinResolution
+
+    return { rect, {} };
 }
 
