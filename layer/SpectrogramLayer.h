@@ -299,7 +299,9 @@ protected:
      * When painting, we draw directly onto the draw buffer and then
      * copy this to the part of the image cache that needed refreshing
      * before copying the image cache onto the window.  (Remind me why
-     * we don't draw directly onto the cache?)
+     * we don't draw directly onto the cache?) (Answer: it's because
+     * we usually apply scaling and smoothing in the x axis when
+     * copying from draw buffer to cache)
      */
     mutable QImage m_drawBuffer;
 
