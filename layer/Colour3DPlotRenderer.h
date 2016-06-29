@@ -17,14 +17,19 @@
 #define COLOUR_3D_PLOT_RENDERER_H
 
 #include "ColourScale.h"
+#include "ScrollableImageCache.h"
 
 #include "base/ColumnOp.h"
+#include "base/MagnitudeRange.h"
 
+#include <QRect>
+#include <QPainter>
+#include <QImage>
+
+class LayerGeometryProvider;
 class DenseThreeDimensionalModel;
 class Dense3DModelPeakCache;
 class FFTModel;
-
-// We will have one of these per view, for each layer
 
 class Colour3DPlotRenderer
 {
@@ -39,19 +44,26 @@ public:
 	LinearBinScale,
 	LogBinScale
     };
-    
-    struct Parameters {
 
+    struct Sources {
+        Sources() : geometryProvider(0), source(0), peaks(0), fft(0) { }
+        
+        // These must all outlive this class
+        LayerGeometryProvider *geometryProvider; // always
+	DenseThreeDimensionalModel *source;      // always
+	Dense3DModelPeakCache *peaks;	         // optionally
+	FFTModel *fft;			         // optionally
+    };        
+
+    struct Parameters {
 	Parameters() :
-	    source(0), peaks(0), fft(0),
 	    colourScale(ColourScale::Parameters()),
 	    normalization(ColumnOp::NoNormalization),
-	    binDisplay(AllBins), binScale(LinearBinScale),
-	    alwaysOpaque(false), interpolate(false), invertVertical(false) { }
-	
-	DenseThreeDimensionalModel *source;    // always
-	Dense3DModelPeakCache *peaks;	       // optionally
-	FFTModel *fft;			       // optionally
+	    binDisplay(AllBins),
+            binScale(LinearBinScale),
+	    alwaysOpaque(false),
+            interpolate(false),
+            invertVertical(false) { }
 
 	ColourScale colourScale;       // complete ColourScale object by value
 	ColumnOp::Normalization normalization;
@@ -61,17 +73,77 @@ public:
 	bool interpolate;
 	bool invertVertical;
     };
-
-    Colour3DPlotRenderer(Parameters parameters) :
-	m_params(parameters)
+    
+    Colour3DPlotRenderer(Sources sources, Parameters parameters) :
+        m_sources(sources),
+	m_params(parameters),
+        m_bufferResolution(PixelResolution)
     { }
 
+    struct RenderResult {
+        /**
+         * The rect that was actually rendered. May be equal to the
+         * rect that was requested to render, or may be smaller if
+         * time ran out and the complete flag was not set.
+         */
+        QRect rendered;
+
+        /**
+         * The magnitude range of the data in the rendered area.
+         */
+        MagnitudeRange range;
+    };
+
+    /**
+     * Render the requested area using the given painter, obtaining
+     * geometry (e.g. start frame) from the stored
+     * LayerGeometryProvider.
+     *
+     * If complete is false, as much of the rect will be rendered as
+     * can be managed given internal time constraints. The returned
+     * QRect (the rendered field in the RenderResult struct) will
+     * contain the area that was rendered. Note that we always render
+     * the full requested height, it's only width that is
+     * time-constrained.
+     *
+     * If complete is true, the whole rect will be rendered and the
+     * returned QRect will be equal to the passed QRect.
+     */
+    RenderResult render(QPainter &paint,
+                        QRect rect,
+                        bool complete);
+    
 private:
+    Sources m_sources;
     Parameters m_params;
 
-    //!!! we do not have the ScrollableImageCache here; in
-    //!!! SpectrogramLayer terms we render onto the draw buffer
+    // Draw buffer is the target of each partial repaint. It is always
+    // at view height (not model height) and is cleared and repainted
+    // on each fragment render. The only reason it's stored as a data
+    // member is to avoid reallocation.
+    QImage m_drawBuffer;
 
+    // Indicates whether the draw buffer is rendered at bin resolution
+    // or at pixel resolution. Pixel resolution is used when the zoom
+    // level is such that each pixel is backed by more than one bin;
+    // bin resolution is used when the zoom level is such that each
+    // bin is drawn to more than one pixel.
+    enum BufferResolution {
+        BinResolution,
+        PixelResolution
+    };
+    BufferResolution m_bufferResolution;
+
+    // Image cache is our persistent record of the visible area. It is
+    // always the same size as the view (i.e. the paint size reported
+    // by the LayerGeometryProvider) and is scrolled and partially
+    // repainted internally as appropriate. A render request is
+    // carried out by repainting to cache (via the draw buffer) any
+    // area that is being requested but is not valid in the cache, and
+    // then repainting from cache to the requested painter.
+    ScrollableImageCache m_cache;
+
+                      
     //!!! fft model scaling?
     
     //!!! should we own the Dense3DModelPeakCache here? or should it persist

@@ -15,3 +15,15 @@
 
 #include "Colour3DPlotRenderer.h"
 
+Colour3DPlotRenderer::RenderResult
+Colour3DPlotRenderer::render(QPainter &paint,
+			     QRect rect,
+			     bool complete)
+{
+    //!!! todo: timing/incomplete paint
+
+    //!!! todo: peak frequency style
+
+    //!!! todo: transparent style from Colour3DPlot
+}
+
