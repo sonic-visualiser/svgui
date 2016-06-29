@@ -108,6 +108,12 @@ public:
      *
      * If complete is true, the whole rect will be rendered and the
      * returned QRect will be equal to the passed QRect.
+     *
+     * If the model to render from is not ready, this will throw a
+     * std::logic_error exception. The model must be ready and the
+     * layer requesting the render must not be dormant in its view, so
+     * that the LayerGeometryProvider returns valid results; it is the
+     * caller's responsibility to ensure these.
      */
     RenderResult render(QPainter &paint,
                         QRect rect,
