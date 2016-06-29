@@ -16,11 +16,30 @@
 #include "Colour3DPlotRenderer.h"
 #include "RenderTimer.h"
 
+#include "data/model/DenseThreeDimensionalModel.h"
+#include "data/model/Dense3DModelPeakCache.h"
+#include "data/model/FFTModel.h"
+
+#include "view/LayerGeometryProvider.h"
+
 Colour3DPlotRenderer::RenderResult
 Colour3DPlotRenderer::render(QPainter &paint,
 			     QRect rect,
 			     bool complete)
 {
+    LayerGeometryProvider *v = m_sources.geometryProvider;
+    if (!v) {
+	throw std::logic_error("no LayerGeometryProvider provided");
+    }
+
+    DenseThreeDimensionalModel *model = m_sources.source;
+    if (!model || !model->isOK() || !model->isReady()) {
+	throw std::logic_error("no source model provided, or model not ready");
+    }
+	
+    sv_frame_t startFrame = v->getStartFrame();
+
+    
     //!!! todo: timing/incomplete paint
 
     //!!! todo: peak frequency style
