@@ -21,6 +21,7 @@
 
 #include "ColourMapper.h"
 #include "LayerGeometryProvider.h"
+#include "PaintAssistant.h"
 
 #include "view/ViewManager.h"
 
@@ -867,12 +868,12 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 
         paint.setWorldMatrix(m);
 
-        v->drawVisibleText(paint, 2, 0, minstr, LayerGeometryProvider::OutlinedText);
+        PaintAssistant::drawVisibleText(v, paint, 2, 0, minstr, PaintAssistant::OutlinedText);
 
         m.translate(ch - msw - 2, 0);
         paint.setWorldMatrix(m);
 
-        v->drawVisibleText(paint, 0, 0, maxstr, LayerGeometryProvider::OutlinedText);
+        PaintAssistant::drawVisibleText(v, paint, 0, 0, maxstr, PaintAssistant::OutlinedText);
 
         paint.restore();
     }
@@ -1440,12 +1441,13 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 		    double value = m_model->getValueAt(sx, sy);
 		    snprintf(labelbuf, buflen, "%06f", value);
 		    QString text(labelbuf);
-		    v->drawVisibleText
-                        (paint,
+                    PaintAssistant::drawVisibleText
+                        (v,
+                         paint,
                          rx0 + 2,
                          ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
                          text,
-                         LayerGeometryProvider::OutlinedText);
+                         PaintAssistant::OutlinedText);
 		}
 	    }
 	}

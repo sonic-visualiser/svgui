@@ -24,6 +24,8 @@
 
 #include "layer/TimeRulerLayer.h"
 #include "layer/SingleColourLayer.h"
+#include "layer/PaintAssistant.h"
+
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h"
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
@@ -807,56 +809,6 @@ View::setFollowGlobalZoom(bool f)
 {
     m_followZoom = f;
     emit propertyContainerPropertyChanged(m_propertyContainer);
-}
-
-void
-View::drawVisibleText(QPainter &paint, int x, int y, QString text, TextStyle style) const
-{
-    if (style == OutlinedText || style == OutlinedItalicText) {
-
-        paint.save();
-
-        if (style == OutlinedItalicText) {
-            QFont f(paint.font());
-            f.setItalic(true);
-            paint.setFont(f);
-        }
-
-        QColor penColour, surroundColour, boxColour;
-
-        penColour = getForeground();
-        surroundColour = getBackground();
-        boxColour = surroundColour;
-        boxColour.setAlpha(127);
-
-        paint.setPen(Qt::NoPen);
-        paint.setBrush(boxColour);
-        
-        QRect r = paint.fontMetrics().boundingRect(text);
-        r.translate(QPoint(x, y));
-//        cerr << "drawVisibleText: r = " << r.x() << "," <<r.y() << " " << r.width() << "x" << r.height() << endl;
-        paint.drawRect(r);
-        paint.setBrush(Qt::NoBrush);
-
-	paint.setPen(surroundColour);
-
-	for (int dx = -1; dx <= 1; ++dx) {
-	    for (int dy = -1; dy <= 1; ++dy) {
-		if (!(dx || dy)) continue;
-		paint.drawText(x + dx, y + dy, text);
-	    }
-	}
-
-	paint.setPen(penColour);
-
-	paint.drawText(x, y, text);
-
-        paint.restore();
-
-    } else {
-
-	cerr << "ERROR: View::drawVisibleText: Boxed style not yet implemented!" << endl;
-    }
 }
 
 void
@@ -2369,32 +2321,32 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     }
     
     if (axs != "") {
-        drawVisibleText(paint, axx, axy, axs, OutlinedText);
+        PaintAssistant::drawVisibleText(this, paint, axx, axy, axs, PaintAssistant::OutlinedText);
         axy += fontHeight;
     }
     
     if (ays != "") {
-        drawVisibleText(paint, axx, axy, ays, OutlinedText);
+        PaintAssistant::drawVisibleText(this, paint, axx, axy, ays, PaintAssistant::OutlinedText);
         axy += fontHeight;
     }
 
     if (bxs != "") {
-        drawVisibleText(paint, bxx, bxy, bxs, OutlinedText);
+        PaintAssistant::drawVisibleText(this, paint, bxx, bxy, bxs, PaintAssistant::OutlinedText);
         bxy += fontHeight;
     }
 
     if (bys != "") {
-        drawVisibleText(paint, bxx, bxy, bys, OutlinedText);
+        PaintAssistant::drawVisibleText(this, paint, bxx, bxy, bys, PaintAssistant::OutlinedText);
         bxy += fontHeight;
     }
 
     if (dxs != "") {
-        drawVisibleText(paint, dxx, dxy, dxs, OutlinedText);
+        PaintAssistant::drawVisibleText(this, paint, dxx, dxy, dxs, PaintAssistant::OutlinedText);
         dxy += fontHeight;
     }
 
     if (dys != "") {
-        drawVisibleText(paint, dxx, dxy, dys, OutlinedText);
+        PaintAssistant::drawVisibleText(this, paint, dxx, dxy, dys, PaintAssistant::OutlinedText);
         dxy += fontHeight;
     }
 

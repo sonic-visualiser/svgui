@@ -128,11 +128,6 @@ public:
 	return m_view->shouldShowFeatureLabels();
     }
 
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const {
-	m_view->drawVisibleText(p, x, y, text, style);
-    }
-
     virtual void drawMeasurementRect(QPainter &p, const Layer *layer,
                                      QRect rect, bool focus) const {
 	m_view->drawMeasurementRect(p, layer, rect, focus);
