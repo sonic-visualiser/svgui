@@ -23,9 +23,19 @@
 #include "view/LayerGeometryProvider.h"
 
 Colour3DPlotRenderer::RenderResult
-Colour3DPlotRenderer::render(QPainter &paint,
-			     QRect rect,
-			     bool complete)
+Colour3DPlotRenderer::render(QPainter &paint, QRect rect)
+{
+    return render(paint, rect, false);
+}
+
+Colour3DPlotRenderer::RenderResult
+Colour3DPlotRenderer::renderTimeConstrained(QPainter &paint, QRect rect)
+{
+    return render(paint, rect, true);
+}
+
+Colour3DPlotRenderer::RenderResult
+Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
 {
     LayerGeometryProvider *v = m_sources.geometryProvider;
     if (!v) {

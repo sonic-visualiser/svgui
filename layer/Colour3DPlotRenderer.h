@@ -99,15 +99,11 @@ public:
      * geometry (e.g. start frame) from the stored
      * LayerGeometryProvider.
      *
-     * If complete is false, as much of the rect will be rendered as
-     * can be managed given internal time constraints. The returned
-     * QRect (the rendered field in the RenderResult struct) will
-     * contain the area that was rendered. Note that we always render
-     * the full requested height, it's only width that is
-     * time-constrained.
-     *
-     * If complete is true, the whole rect will be rendered and the
-     * returned QRect will be equal to the passed QRect.
+     * The whole rect will be rendered and the returned QRect will be
+     * equal to the passed QRect. (See renderTimeConstrained for an
+     * alternative that may render only part of the rect in cases
+     * where obtaining source data is slow and retaining
+     * responsiveness is important.)
      *
      * If the model to render from is not ready, this will throw a
      * std::logic_error exception. The model must be ready and the
@@ -115,9 +111,27 @@ public:
      * that the LayerGeometryProvider returns valid results; it is the
      * caller's responsibility to ensure these.
      */
-    RenderResult render(QPainter &paint,
-                        QRect rect,
-                        bool complete);
+    RenderResult render(QPainter &paint, QRect rect);
+    
+    /**
+     * Render the requested area using the given painter, obtaining
+     * geometry (e.g. start frame) from the stored
+     * LayerGeometryProvider.
+     *
+     * As much of the rect will be rendered as can be managed given
+     * internal time constraints (using a RenderTimer object
+     * internally). The returned QRect (the rendered field in the
+     * RenderResult struct) will contain the area that was
+     * rendered. Note that we always render the full requested height,
+     * it's only width that is time-constrained.
+     *
+     * If the model to render from is not ready, this will throw a
+     * std::logic_error exception. The model must be ready and the
+     * layer requesting the render must not be dormant in its view, so
+     * that the LayerGeometryProvider returns valid results; it is the
+     * caller's responsibility to ensure these.
+     */
+    RenderResult renderTimeConstrained(QPainter &paint, QRect rect);
     
 private:
     Sources m_sources;
@@ -149,6 +163,7 @@ private:
     // then repainting from cache to the requested painter.
     ScrollableImageCache m_cache;
 
+    RenderResult render(QPainter &paint, QRect rect, bool timeConstrained);
                       
     //!!! fft model scaling?
     
