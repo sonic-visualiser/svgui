@@ -21,7 +21,7 @@
 
 #include "base/Pitch.h"
 
-#include "view/LayerGeometryProvider.h"
+#include "LayerGeometryProvider.h"
 
 void
 PianoScale::paintPianoVertical(LayerGeometryProvider *v,

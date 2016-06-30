@@ -983,14 +983,14 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                                    x - paint.fontMetrics().width(vlabel) - 2,
                                    y + paint.fontMetrics().height()/2
                                    - paint.fontMetrics().descent(), 
-                                   vlabel, View::OutlinedText);
+                                   vlabel, LayerGeometryProvider::OutlinedText);
                 
                 QString hlabel = RealTime::frame2RealTime
                     (p.frame, m_model->getSampleRate()).toText(true).c_str();
                 v->drawVisibleText(paint, 
                                    x,
                                    y - h/2 - paint.fontMetrics().descent() - 2,
-                                   hlabel, View::OutlinedText);
+                                   hlabel, LayerGeometryProvider::OutlinedText);
             }
             
             paint.drawLine(x, y-1, x + w, y-1);
@@ -1048,7 +1048,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                 nextLabelMinX = labelX + paint.fontMetrics().width(label);
             }
 
-            v->drawVisibleText(paint, labelX, labelY, label, View::OutlinedText);
+            v->drawVisibleText(paint, labelX, labelY, label, LayerGeometryProvider::OutlinedText);
         }
     }
 

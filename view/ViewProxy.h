@@ -15,7 +15,7 @@
 #ifndef VIEW_PROXY_H
 #define VIEW_PROXY_H
 
-#include "LayerGeometryProvider.h"
+#include "layer/LayerGeometryProvider.h"
 
 class ViewProxy : public LayerGeometryProvider
 {

@@ -17,7 +17,7 @@
 
 #include "base/BaseTypes.h"
 
-#include "view/LayerGeometryProvider.h"
+#include "LayerGeometryProvider.h"
 
 #include <QImage>
 #include <QRect>

@@ -49,6 +49,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/ImageRegionFinder.h \
            layer/Layer.h \
            layer/LayerFactory.h \
+           layer/LayerGeometryProvider.h \
            layer/LinearNumericalScale.h \
            layer/LogNumericalScale.h \
            layer/LinearColourScale.h \

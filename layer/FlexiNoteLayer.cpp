@@ -23,13 +23,15 @@
 #include "base/LogRange.h"
 #include "base/RangeMapper.h"
 #include "ColourDatabase.h"
-#include "view/View.h"
+#include "LayerGeometryProvider.h"
 
 #include "PianoScale.h"
 #include "LinearNumericalScale.h"
 #include "LogNumericalScale.h"
 
 #include "data/model/FlexiNoteModel.h"
+
+#include "view/View.h"
 
 #include "widgets/ItemEditDialog.h"
 #include "widgets/TextAbbrev.h"
@@ -871,30 +873,30 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 //                    x - paint.fontMetrics().width(vlabel) - 2,
                 //                    y + paint.fontMetrics().height()/2
                 //                      - paint.fontMetrics().descent(), 
-                //                    vlabel, View::OutlinedText);
+                //                    vlabel, LayerGeometryProvider::OutlinedText);
                 v->drawVisibleText(paint, 
                                    x,
                                    y - h/2 - 2 - paint.fontMetrics().height()
                                      - paint.fontMetrics().descent(), 
-                                   vlabel, View::OutlinedText);
+                                   vlabel, LayerGeometryProvider::OutlinedText);
 
                 QString hlabel = "dur: " + QString(RealTime::frame2RealTime
                     (p.duration, m_model->getSampleRate()).toText(true).c_str());
                 v->drawVisibleText(paint, 
                                    x,
                                    y - h/2 - paint.fontMetrics().descent() - 2,
-                                   hlabel, View::OutlinedText);
+                                   hlabel, LayerGeometryProvider::OutlinedText);
 
                 QString llabel = QString("%1").arg(p.label);
                 v->drawVisibleText(paint, 
                                    x,
                                    y + h + 2 + paint.fontMetrics().descent(),
-                                   llabel, View::OutlinedText);
+                                   llabel, LayerGeometryProvider::OutlinedText);
                 QString nlabel = QString("%1").arg(noteNumber);
                 v->drawVisibleText(paint, 
                                    x + paint.fontMetrics().averageCharWidth() / 2,
                                    y + h/2 - paint.fontMetrics().descent(),
-                                   nlabel, View::OutlinedText);
+                                   nlabel, LayerGeometryProvider::OutlinedText);
         }
     
         paint.drawRect(x, y - h/2, w, h);
