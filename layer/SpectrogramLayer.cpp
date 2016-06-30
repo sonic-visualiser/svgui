@@ -25,10 +25,12 @@
 #include "base/LogRange.h"
 #include "base/ColumnOp.h"
 #include "widgets/CommandHistory.h"
+#include "data/model/Dense3DModelPeakCache.h"
+
 #include "ColourMapper.h"
 #include "ImageRegionFinder.h"
-#include "data/model/Dense3DModelPeakCache.h"
 #include "PianoScale.h"
+#include "PaintAssistant.h"
 
 #include <QPainter>
 #include <QImage>
@@ -2850,35 +2852,35 @@ SpectrogramLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     
     double fundamental = getFrequencyForY(v, cursorPos.y());
 
-    v->drawVisibleText(paint,
+    PaintAssistant::drawVisibleText(v, paint,
                        sw + 2,
                        cursorPos.y() - 2,
                        QString("%1 Hz").arg(fundamental),
-                       View::OutlinedText);
+                       PaintAssistant::OutlinedText);
 
     if (Pitch::isFrequencyInMidiRange(fundamental)) {
         QString pitchLabel = Pitch::getPitchLabelForFrequency(fundamental);
-        v->drawVisibleText(paint,
+        PaintAssistant::drawVisibleText(v, paint,
                            sw + 2,
                            cursorPos.y() + paint.fontMetrics().ascent() + 2,
                            pitchLabel,
-                           View::OutlinedText);
+                           PaintAssistant::OutlinedText);
     }
 
     sv_frame_t frame = v->getFrameForX(cursorPos.x());
     RealTime rt = RealTime::frame2RealTime(frame, m_model->getSampleRate());
     QString rtLabel = QString("%1 s").arg(rt.toText(true).c_str());
     QString frameLabel = QString("%1").arg(frame);
-    v->drawVisibleText(paint,
+    PaintAssistant::drawVisibleText(v, paint,
                        cursorPos.x() - paint.fontMetrics().width(frameLabel) - 2,
                        v->getPaintHeight() - 2,
                        frameLabel,
-                       View::OutlinedText);
-    v->drawVisibleText(paint,
+                       PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText(v, paint,
                        cursorPos.x() + 2,
                        v->getPaintHeight() - 2,
                        rtLabel,
-                       View::OutlinedText);
+                       PaintAssistant::OutlinedText);
 
     int harmonic = 2;
 

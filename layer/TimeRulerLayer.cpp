@@ -19,8 +19,10 @@
 
 #include "data/model/Model.h"
 #include "base/RealTime.h"
-#include "ColourDatabase.h"
 #include "view/View.h"
+
+#include "ColourDatabase.h"
+#include "PaintAssistant.h"
 
 #include <QPainter>
 
@@ -324,7 +326,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                     // backmost layer, don't worry about outlining the text
                     paint.drawText(x+2 - tw/2, y, text);
                 } else {
-                    v->drawVisibleText(paint, x+2 - tw/2, y, text, View::OutlinedText);
+                    PaintAssistant::drawVisibleText(v, paint, x+2 - tw/2, y, text, PaintAssistant::OutlinedText);
                 }
             }
         }

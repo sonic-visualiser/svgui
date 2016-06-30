@@ -266,9 +266,6 @@ public:
     virtual QColor getForeground() const;
     virtual QColor getBackground() const;
 
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const;
-
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const;
 

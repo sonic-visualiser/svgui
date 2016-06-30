@@ -153,15 +153,6 @@ public:
     virtual bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const = 0;
     virtual bool shouldShowFeatureLabels() const = 0;
 
-    enum TextStyle {
-	BoxedText,
-	OutlinedText,
-        OutlinedItalicText
-    };
-
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const = 0;
-
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const = 0;
 
