@@ -47,7 +47,6 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
     }
 
     sv_frame_t startFrame = v->getStartFrame();
-    int zoomLevel = v->getZoomLevel();
     
     int x0 = v->getXForViewX(rect.x());
     int x1 = v->getXForViewX(rect.x() + rect.width());
@@ -126,9 +125,7 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
         rightToLeft = isLeftOfValidArea;
     }
     
-    int repaintWidth = x1 - x0;
-
-    QRect rendered = renderToCache(x0, repaintWidth, timeConstrained);
+    renderToCache(x0, x1 - x0, rightToLeft, timeConstrained);
 
     QRect pr = rect & m_cache.getValidArea();
     paint.drawImage(pr.x(), pr.y(), m_cache.getImage(),
@@ -163,8 +160,9 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
     //!!! should we own the Dense3DModelPeakCache here? or should it persist
 }
 
-QRect
-Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth, bool timeConstrained)
+void
+Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
+                                    bool rightToLeft, bool timeConstrained)
 {
     // Draw to the draw buffer, and then scale-copy from there.
 
@@ -241,9 +239,16 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth, bool timeConstrain
     int binsPerPeak = 1;
 
     if (bufferIsBinResolution) {
+
         for (int x = 0; x < drawWidth; ++x) {
             binforx[x] = int(leftBoundaryFrame / binResolution) + x;
         }
+
+        // calculating boundaries later will be too fiddly for partial
+        // paints, and painting should be fast anyway when this is the
+        // case because it means we're well zoomed in
+        timeConstrained = false;
+
     } else {
         for (int x = 0; x < drawWidth; ++x) {
             sv_frame_t f0 = v->getFrameForX(x);
@@ -262,11 +267,25 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth, bool timeConstrain
             }
         }
     }
+    /*!!!
+    for (int y = 0; y < h; ++y) {
+        double q0 = 0, q1 = 0;
+        if (!getSmoothedYBinRange(v, h-y-1, q0, q1)) {
+            binfory[y] = -1;
+        } else {
+            binfory[y] = q0;
+        }
+    }
 
-    int attainedDrawWidth = drawWidth;
-
-    //!!! todo: all
-    
+    int attainedWidth = renderDrawBuffer(v,
+                                         repaintWidth,
+                                         h,
+                                         binforx,
+                                         binfory,
+                                         usePeaksCache,
+                                         rightToLeft,
+                                         timeConstrained);
+    */    
 }
  
 void
