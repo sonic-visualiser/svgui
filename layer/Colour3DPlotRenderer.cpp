@@ -74,9 +74,9 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
             m_cache.scrollTo(startFrame);
 
             // if we are not time-constrained, then we want to paint
-            // the whole area in one go, and we're not going to
-            // provide the more complex logic to handle that if there
-            // are discontiguous areas involved. So if the only valid
+            // the whole area in one go; we don't return a partial
+            // paint. To avoid providing the more complex logic to
+            // handle painting discontiguous areas, if the only valid
             // part of cache is in the middle, just make the whole
             // thing invalid and start again.
             if (!timeConstrained) {
@@ -91,10 +91,9 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
     bool rightToLeft = false;
 
     if (!m_cache.isValid() && timeConstrained) {
-        // When rendering the whole thing in a context where we
-        // might not be able to complete the work, start from
-        // somewhere near the middle so that the region of
-        // interest appears first
+        // When rendering the whole area, in a context where we might
+        // not be able to complete the work, start from somewhere near
+        // the middle so that the region of interest appears first
 
         //!!! (perhaps we should avoid doing this if past repaints
         //!!! have been fast enough to do the whole in one shot)
