@@ -19,7 +19,7 @@
 #include <QFrame>
 #include <QProgressBar>
 
-#include "LayerGeometryProvider.h"
+#include "layer/LayerGeometryProvider.h"
 
 #include "base/ZoomConstraint.h"
 #include "base/PropertyContainer.h"

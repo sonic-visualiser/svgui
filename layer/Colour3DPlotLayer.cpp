@@ -15,11 +15,14 @@
 
 #include "Colour3DPlotLayer.h"
 
-#include "view/View.h"
 #include "base/Profiler.h"
 #include "base/LogRange.h"
 #include "base/RangeMapper.h"
+
 #include "ColourMapper.h"
+#include "LayerGeometryProvider.h"
+
+#include "view/ViewManager.h"
 
 #include <QPainter>
 #include <QImage>
@@ -864,12 +867,12 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 
         paint.setWorldMatrix(m);
 
-        v->drawVisibleText(paint, 2, 0, minstr, View::OutlinedText);
+        v->drawVisibleText(paint, 2, 0, minstr, LayerGeometryProvider::OutlinedText);
 
         m.translate(ch - msw - 2, 0);
         paint.setWorldMatrix(m);
 
-        v->drawVisibleText(paint, 0, 0, maxstr, View::OutlinedText);
+        v->drawVisibleText(paint, 0, 0, maxstr, LayerGeometryProvider::OutlinedText);
 
         paint.restore();
     }
@@ -1442,7 +1445,7 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
                          rx0 + 2,
                          ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
                          text,
-                         View::OutlinedText);
+                         LayerGeometryProvider::OutlinedText);
 		}
 	    }
 	}

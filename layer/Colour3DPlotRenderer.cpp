@@ -20,7 +20,7 @@
 #include "data/model/Dense3DModelPeakCache.h"
 #include "data/model/FFTModel.h"
 
-#include "view/LayerGeometryProvider.h"
+#include "LayerGeometryProvider.h"
 
 Colour3DPlotRenderer::RenderResult
 Colour3DPlotRenderer::render(QPainter &paint, QRect rect)
