@@ -122,10 +122,12 @@ public:
      * Take a left coordinate and width describing a region, and
      * adjust them so that they are contiguous with the cache valid
      * region and so that the union of the adjusted region with the
-     * cache valid region contains the supplied region.
+     * cache valid region contains the supplied region.  Does not
+     * modify anything about the cache, only about the arguments.
      */
     void adjustToTouchValidArea(int &left, int &width,
 				bool &isLeftOfValidArea) const;
+    
     /**
      * Draw from an image onto the cache. The supplied image must have
      * the same height as the cache and the full height is always
