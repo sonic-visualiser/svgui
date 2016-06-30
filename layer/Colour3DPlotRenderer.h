@@ -152,7 +152,8 @@ private:
     ScrollableImageCache m_cache;
 
     RenderResult render(QPainter &paint, QRect rect, bool timeConstrained);
-    QRect renderToCache(int x0, int repaintWidth, bool timeConstrained);
+    void renderToCache(int x0, int repaintWidth,
+                       bool rightToLeft, bool timeConstrained);
     void clearDrawBuffer(int w, int h);
 };
 
