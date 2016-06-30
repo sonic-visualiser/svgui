@@ -58,8 +58,10 @@ public:
     }
     
     void resize(QSize newSize) {
-	m_image = QImage(newSize, QImage::Format_ARGB32_Premultiplied);
-	invalidate();
+        if (getSize() != newSize) {
+            m_image = QImage(newSize, QImage::Format_ARGB32_Premultiplied);
+            invalidate();
+        }
     }
 	
     int getValidLeft() const {
@@ -83,8 +85,10 @@ public:
     }
     
     void setZoomLevel(int zoom) {
-	m_zoomLevel = zoom;
-	invalidate();
+        if (m_zoomLevel != zoom) {
+            m_zoomLevel = zoom;
+            invalidate();
+        }
     }
 
     sv_frame_t getStartFrame() const {
@@ -97,8 +101,10 @@ public:
      * where possible, use scrollTo() instead.
      */
     void setStartFrame(sv_frame_t frame) {
-	m_startFrame = frame;
-	invalidate();
+        if (m_startFrame != frame) {
+            m_startFrame = frame;
+            invalidate();
+        }
     }
     
     const QImage &getImage() const {

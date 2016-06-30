@@ -60,8 +60,14 @@ ColourScale::~ColourScale()
 {
 }
 
+ColourScale::Scale
+ColourScale::getScale() const
+{
+    return m_params.scale;
+}
+
 int
-ColourScale::getPixel(double value)
+ColourScale::getPixel(double value) const
 {
     double maxPixF = m_maxPixel;
 
@@ -112,7 +118,7 @@ ColourScale::getPixel(double value)
 }
 
 QColor
-ColourScale::getColourForPixel(int pixel, int rotation)
+ColourScale::getColourForPixel(int pixel, int rotation) const
 {
     if (pixel < 0) {
 	pixel = 0;

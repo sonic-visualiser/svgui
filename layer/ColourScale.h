@@ -72,6 +72,11 @@ public:
 
     ColourScale(const ColourScale &) = default;
     ColourScale &operator=(const ColourScale &) = default;
+
+    /**
+     * Return the general type of scale this is.
+     */
+    Scale getScale() const;
     
     /**
      * Return a pixel number (in the range 0-255 inclusive)
@@ -79,7 +84,7 @@ public:
      * values below the threshold supplied in the constructor. All
      * other values are mapped onto the range 1-255.
      */
-    int getPixel(double value);
+    int getPixel(double value) const;
 
     /**
      * Return the colour for the given pixel number (which must be in
@@ -87,13 +92,13 @@ public:
      * colour. Other pixels are mapped taking into account the given
      * colourmap rotation (which is also a value in the range 0-255).
      */
-    QColor getColourForPixel(int pixel, int rotation);
+    QColor getColourForPixel(int pixel, int rotation) const;
     
     /**
      * Return the colour corresponding to the given value. This is
      * equivalent to getColourForPixel(getPixel(value), rotation).
      */
-    QColor getColour(double value, int rotation) {
+    QColor getColour(double value, int rotation) const {
 	return getColourForPixel(getPixel(value), rotation);
     }
 

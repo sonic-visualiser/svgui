@@ -76,8 +76,7 @@ public:
     
     Colour3DPlotRenderer(Sources sources, Parameters parameters) :
         m_sources(sources),
-	m_params(parameters),
-        m_bufferResolution(PixelResolution)
+	m_params(parameters)
     { }
 
     struct RenderResult {
@@ -143,17 +142,6 @@ private:
     // member is to avoid reallocation.
     QImage m_drawBuffer;
 
-    // Indicates whether the draw buffer is rendered at bin resolution
-    // or at pixel resolution. Pixel resolution is used when the zoom
-    // level is such that each pixel is backed by more than one bin;
-    // bin resolution is used when the zoom level is such that each
-    // bin is drawn to more than one pixel.
-    enum BufferResolution {
-        BinResolution,
-        PixelResolution
-    };
-    BufferResolution m_bufferResolution;
-
     // Image cache is our persistent record of the visible area. It is
     // always the same size as the view (i.e. the paint size reported
     // by the LayerGeometryProvider) and is scrolled and partially
@@ -164,10 +152,8 @@ private:
     ScrollableImageCache m_cache;
 
     RenderResult render(QPainter &paint, QRect rect, bool timeConstrained);
-                      
-    //!!! fft model scaling?
-    
-    //!!! should we own the Dense3DModelPeakCache here? or should it persist
+    QRect renderToCache(int x0, int repaintWidth, bool timeConstrained);
+    void clearDrawBuffer(int w, int h);
 };
 
 #endif

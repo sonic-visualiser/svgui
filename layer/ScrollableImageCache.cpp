@@ -23,6 +23,11 @@ void
 ScrollableImageCache::scrollTo(sv_frame_t newStartFrame)
 {
     if (!m_v) throw std::logic_error("ScrollableImageCache: not associated with a LayerGeometryProvider");
+
+    if (m_startFrame == newStartFrame) {
+	// haven't moved
+        return;
+    }
 	
     int dx = (m_v->getXForFrame(m_startFrame) -
 	      m_v->getXForFrame(newStartFrame));
@@ -41,7 +46,7 @@ ScrollableImageCache::scrollTo(sv_frame_t newStartFrame)
     int w = m_image.width();
 
     if (dx == 0) {
-	// haven't moved
+	// haven't moved visibly
 	return;
     }
 
