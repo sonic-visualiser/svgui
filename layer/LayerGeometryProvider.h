@@ -120,7 +120,7 @@ public:
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
     virtual double getFrequencyForY(int y, double minFreq, double maxFreq,
-			   bool logarithmic) const = 0;
+                                    bool logarithmic) const = 0;
 
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const = 0;
 

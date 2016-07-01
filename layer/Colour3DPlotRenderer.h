@@ -27,6 +27,7 @@
 #include <QImage>
 
 class LayerGeometryProvider;
+class VerticalBinLayer;
 class DenseThreeDimensionalModel;
 class Dense3DModelPeakCache;
 class FFTModel;
@@ -46,10 +47,12 @@ public:
     };
 
     struct Sources {
-        Sources() : geometryProvider(0), source(0), peaks(0), fft(0) { }
+        Sources() : geometryProvider(0), verticalBinLayer(0),
+                    source(0), peaks(0), fft(0) { }
         
         // These must all outlive this class
         LayerGeometryProvider *geometryProvider; // always
+        VerticalBinLayer *verticalBinLayer;      // always
 	DenseThreeDimensionalModel *source;      // always
 	Dense3DModelPeakCache *peaks;	         // optionally
 	FFTModel *fft;			         // optionally

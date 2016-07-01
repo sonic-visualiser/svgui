@@ -17,6 +17,7 @@
 #define COLOUR_3D_PLOT_LAYER_H
 
 #include "SliceableLayer.h"
+#include "VerticalBinLayer.h"
 
 #include "data/model/DenseThreeDimensionalModel.h"
 
@@ -34,7 +35,8 @@ class QImage;
  * implementation that derived the spectrogram itself from a
  * DenseTimeValueModel instead of using a three-dimensional model.
  */
-class Colour3DPlotLayer : public SliceableLayer
+class Colour3DPlotLayer : public SliceableLayer,
+                          public VerticalBinLayer
 {
     Q_OBJECT
 

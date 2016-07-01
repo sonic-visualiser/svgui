@@ -21,6 +21,7 @@
 #include "data/model/FFTModel.h"
 
 #include "LayerGeometryProvider.h"
+#include "VerticalBinLayer.h"
 
 #include <vector>
 
@@ -266,16 +267,13 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
             }
         }
     }
-    /*!!!
+
     for (int y = 0; y < h; ++y) {
-        double q0 = 0, q1 = 0;
-        if (!getSmoothedYBinRange(v, h-y-1, q0, q1)) {
-            binfory[y] = -1;
-        } else {
-            binfory[y] = q0;
-        }
+        binfory[y] =
+            m_sources.verticalBinLayer->getBinForY(m_sources.geometryProvider, y);
     }
 
+    /*
     int attainedWidth = renderDrawBuffer(v,
                                          repaintWidth,
                                          h,
