@@ -670,12 +670,6 @@ Colour3DPlotLayer::getYForBin(LayerGeometryProvider *v, double bin) const
     return y;
 }
 
-int
-Colour3DPlotLayer::getIYForBin(LayerGeometryProvider *v, int bin) const
-{
-    return int(round(getYForBin(v, bin)));
-}
-
 double
 Colour3DPlotLayer::getBinForY(LayerGeometryProvider *v, double y) const
 {
@@ -692,12 +686,6 @@ Colour3DPlotLayer::getBinForY(LayerGeometryProvider *v, double y) const
         bin = LogRange::unmap(logmin + ((h - y) * (logmax - logmin)) / h) - 1;
     }
     return bin;
-}
-
-int
-Colour3DPlotLayer::getIBinForY(LayerGeometryProvider *v, int y) const
-{
-    return int(floor(getBinForY(v, y)));
 }
 
 QString

@@ -1209,7 +1209,38 @@ SpectrogramLayer::getSmoothedYBinRange(LayerGeometryProvider *v, int y, double &
 
     return true;
 }
+
+double
+SpectrogramLayer::getYForBin(LayerGeometryProvider *, double bin) const {
+    //!!! not implemented
+    throw std::logic_error("not implemented");
+}
+
+double
+SpectrogramLayer::getBinForY(LayerGeometryProvider *v, double y) const
+{
+    //!!! overlap with range methods above (but using double arg)
+    //!!! tidy this
     
+    int h = v->getPaintHeight();
+    if (y < 0 || y >= h) return false;
+
+    sv_samplerate_t sr = m_model->getSampleRate();
+    double minf = getEffectiveMinFrequency();
+    double maxf = getEffectiveMaxFrequency();
+
+    bool logarithmic = (m_frequencyScale == LogFrequencyScale);
+
+    double q = v->getFrequencyForY(y, minf, maxf, logarithmic);
+
+    // Now map on to ("proportions of") actual bins, using raw FFT
+    // size (unsmoothed)
+
+    q = (q * getFFTSize(v)) / sr;
+
+    return q;
+}
+
 bool
 SpectrogramLayer::getXBinRange(LayerGeometryProvider *v, int x, double &s0, double &s1) const
 {

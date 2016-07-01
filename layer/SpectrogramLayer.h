@@ -27,6 +27,7 @@
 #include "data/model/FFTModel.h"
 
 #include "ScrollableImageCache.h"
+#include "VerticalBinLayer.h"
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -48,6 +49,7 @@ class Dense3DModelPeakCache;
  */
 
 class SpectrogramLayer : public SliceableLayer,
+                         public VerticalBinLayer,
 			 public PowerOfSqrtTwoZoomConstraint
 {
     Q_OBJECT
@@ -208,6 +210,10 @@ public:
     double getYForFrequency(const LayerGeometryProvider *v, double frequency) const;
     double getFrequencyForY(const LayerGeometryProvider *v, int y) const;
 
+    //!!! VerticalBinLayer methods. Note overlap with get*BinRange()
+    double getYForBin(LayerGeometryProvider *, double bin) const;
+    double getBinForY(LayerGeometryProvider *, double y) const;
+    
     virtual int getCompletion(LayerGeometryProvider *v) const;
     virtual QString getError(LayerGeometryProvider *v) const;
 

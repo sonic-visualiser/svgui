@@ -144,8 +144,8 @@ public:
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    double getFrequencyForY(int y, double minFreq, double maxFreq,
-			   bool logarithmic) const;
+    double getFrequencyForY(double y, double minFreq, double maxFreq,
+                            bool logarithmic) const;
 
     /**
      * Return the zoom level, i.e. the number of frames per pixel
