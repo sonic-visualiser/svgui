@@ -202,11 +202,6 @@ protected:
      * fractional, to obtain a position part-way through a bin.
      */
     double getYForBin(LayerGeometryProvider *, double bin) const;
-
-    /**
-     * As getYForBin, but rounding to integer values.
-     */
-    int getIYForBin(LayerGeometryProvider *, int bin) const;
     
     /**
      * Return the bin number, possibly fractional, at the given y
@@ -215,11 +210,6 @@ protected:
      * if the vertical scale is the usual way up).
      */
     double getBinForY(LayerGeometryProvider *, double y) const;
-
-    /**
-     * As getBinForY, but rounding to integer values.
-     */
-    int getIBinForY(LayerGeometryProvider *, int y) const;
     
     DenseThreeDimensionalModel::Column getColumn(int col) const;
 

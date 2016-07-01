@@ -103,23 +103,26 @@ public:
     virtual int getViewXForX(int x) const = 0;
     
     /**
-     * Return the pixel y-coordinate corresponding to a given
-     * frequency, if the frequency range is as specified.  This does
-     * not imply any policy about layer frequency ranges, but it might
-     * be useful for layers to match theirs up if desired.
+     * Return the (maybe fractional) pixel y-coordinate corresponding
+     * to a given frequency, if the frequency range is as specified.
+     * This does not imply any policy about layer frequency ranges,
+     * but it might be useful for layers to match theirs up if
+     * desired.
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    virtual double getYForFrequency(double frequency, double minFreq, double maxFreq, 
+    virtual double getYForFrequency(double frequency,
+                                    double minFreq, double maxFreq, 
                                     bool logarithmic) const = 0;
 
     /**
-     * Return the closest frequency to the given pixel y-coordinate,
-     * if the frequency range is as specified.
+     * Return the closest frequency to the given (maybe fractional)
+     * pixel y-coordinate, if the frequency range is as specified.
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    virtual double getFrequencyForY(int y, double minFreq, double maxFreq,
+    virtual double getFrequencyForY(double y,
+                                    double minFreq, double maxFreq,
                                     bool logarithmic) const = 0;
 
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const = 0;

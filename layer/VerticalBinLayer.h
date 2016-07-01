@@ -36,7 +36,9 @@ public:
     /**
      * As getYForBin, but rounding to integer values.
      */
-    virtual int getIYForBin(LayerGeometryProvider *, int bin) const = 0;
+    virtual int getIYForBin(LayerGeometryProvider *v, int bin) const {
+        return int(round(getYForBin(v, bin)));
+    }
     
     /**
      * Return the bin number, possibly fractional, at the given y
@@ -49,7 +51,9 @@ public:
     /**
      * As getBinForY, but rounding to integer values.
      */
-    virtual int getIBinForY(LayerGeometryProvider *, int y) const = 0;
+    virtual int getIBinForY(LayerGeometryProvider *v, int y) const {
+        return int(floor(getBinForY(v, y)));
+    }
 };
 
 #endif

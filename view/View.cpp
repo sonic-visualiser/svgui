@@ -415,12 +415,12 @@ View::getYForFrequency(double frequency,
 }
 
 double
-View::getFrequencyForY(int y,
+View::getFrequencyForY(double y,
 		       double minf,
 		       double maxf,
 		       bool logarithmic) const
 {
-    int h = height();
+    double h = height();
 
     if (logarithmic) {
 
