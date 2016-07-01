@@ -282,6 +282,57 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
                                          timeConstrained);
 
     //!!! now scale-copy to cache
+
+    if (attainedWidth == 0) return;
+    
+    int paintedLeft = x0;
+    if (rightToLeft) {
+        paintedLeft += (repaintWidth - attainedWidth);
+    }
+
+    if (bufferIsBinResolution) {
+
+        int scaledLeft = v->getXForFrame(leftBoundaryFrame);
+        int scaledRight = v->getXForFrame(rightBoundaryFrame);
+
+        QImage scaled = m_drawBuffer.scaled
+            (scaledRight - scaledLeft, h,
+             Qt::IgnoreAspectRatio, (m_params.interpolate ?
+                                     Qt::SmoothTransformation :
+                                     Qt::FastTransformation));
+            
+        int scaledLeftCrop = v->getXForFrame(leftCropFrame);
+        int scaledRightCrop = v->getXForFrame(rightCropFrame);
+
+        int targetLeft = scaledLeftCrop;
+        if (targetLeft < 0) {
+            targetLeft = 0;
+        }
+
+        int targetWidth = scaledRightCrop - targetLeft;
+        if (targetLeft + targetWidth > m_cache.getSize().width()) {
+            targetWidth = m_cache.getSize().width() - targetLeft;
+        }
+            
+        int sourceLeft = targetLeft - scaledLeft;
+        if (sourceLeft < 0) {
+            sourceLeft = 0;
+        }
+            
+        int sourceWidth = targetWidth;
+
+        if (targetWidth > 0) {
+            m_cache.drawImage(targetLeft, targetWidth,
+                              scaled,
+                              sourceLeft, sourceWidth);
+        }
+
+    } else {
+
+        m_cache.drawImage(paintedLeft, attainedWidth,
+                          m_drawBuffer,
+                          paintedLeft - x0, attainedWidth);
+    }
 }
 
 
