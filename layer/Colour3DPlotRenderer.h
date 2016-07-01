@@ -157,6 +157,12 @@ private:
     RenderResult render(QPainter &paint, QRect rect, bool timeConstrained);
     void renderToCache(int x0, int repaintWidth,
                        bool rightToLeft, bool timeConstrained);
+    int renderDrawBuffer(int w, int h,
+                         const std::vector<int> &binforx,
+                         const std::vector<double> &binfory,
+                         bool usePeaksCache,
+                         bool rightToLeft,
+                         bool timeConstrained);
     void clearDrawBuffer(int w, int h);
 };
 

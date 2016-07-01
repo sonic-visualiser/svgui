@@ -273,18 +273,157 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
             m_sources.verticalBinLayer->getBinForY(m_sources.geometryProvider, y);
     }
 
-    /*
-    int attainedWidth = renderDrawBuffer(v,
-                                         repaintWidth,
+    int attainedWidth = renderDrawBuffer(repaintWidth,
                                          h,
                                          binforx,
                                          binfory,
                                          usePeaksCache,
                                          rightToLeft,
                                          timeConstrained);
-    */    
+
+    //!!! now scale-copy to cache
 }
- 
+
+
+int
+Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
+                                       const vector<int> &binforx,
+                                       const vector<double> &binfory,
+                                       bool usePeaksCache,
+                                       bool rightToLeft,
+                                       bool timeConstrained)
+{
+    // Callers must have checked that the appropriate subset of
+    // Sources data members are set for the supplied flags (e.g. that
+    // peaks model exists if usePeaksCache)
+    
+    RenderTimer timer(timeConstrained ?
+                      RenderTimer::FastRender :
+                      RenderTimer::NoTimeout);
+    
+    int minbin = int(binfory[0] + 0.0001);
+    int maxbin = int(binfory[h-1]);
+    if (minbin < 0) minbin = 0;
+    if (maxbin < 0) maxbin = minbin+1;
+
+    int divisor = 1;
+    DenseThreeDimensionalModel *sourceModel = m_sources.source;
+    if (usePeaksCache) {
+        divisor = m_sources.peaks->getColumnsPerPeak();
+        sourceModel = m_sources.peaks;
+    }
+
+    int psx = -1;
+
+    int start = 0;
+    int finish = w;
+    int step = 1;
+
+    if (rightToLeft) {
+        start = w-1;
+        finish = -1;
+        step = -1;
+    }
+
+    int columnCount = 0;
+    
+    vector<float> preparedColumn;
+            
+    for (int x = start; x != finish; x += step) {
+
+        // x is the on-canvas pixel coord; sx (later) will be the
+        // source column index
+        
+        ++columnCount;
+        
+        if (binforx[x] < 0) continue;
+
+        int sx0 = binforx[x] / divisor;
+        int sx1 = sx0;
+        if (x+1 < w) sx1 = binforx[x+1] / divisor;
+        if (sx0 < 0) sx0 = sx1 - 1;
+        if (sx0 < 0) continue;
+        if (sx1 <= sx0) sx1 = sx0 + 1;
+
+        vector<float> pixelPeakColumn;
+        
+        for (int sx = sx0; sx < sx1; ++sx) {
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+//            cerr << "sx = " << sx << endl;
+#endif
+
+            if (sx < 0 || sx >= sourceModel->getWidth()) {
+                continue;
+            }
+
+            if (sx != psx) {
+
+                // order:
+                // get column -> scale -> record extents ->
+                // normalise -> peak pick -> apply display gain ->
+                // distribute/interpolate
+
+                ColumnOp::Column fullColumn = sourceModel->getColumn(sx);
+                ColumnOp::Column column =
+                    vector<float>(fullColumn.data() + minbin,
+                                  fullColumn.data() + maxbin + 1);
+
+//!!! fft scale                if (m_colourScale != PhaseColourScale) {
+//                    column = ColumnOp::fftScale(column, m_fftSize);
+//                }
+
+//!!! extents                recordColumnExtents(column,
+//                                    sx,
+//                                    overallMag,
+//                                    overallMagChanged);
+
+//                if (m_colourScale != PhaseColourScale) {
+                    column = ColumnOp::normalize(column, m_params.normalization);
+//                }
+
+                if (m_params.binDisplay == PeakBins) {
+                    column = ColumnOp::peakPick(column);
+                }
+
+                preparedColumn =
+                    ColumnOp::distribute(column, //!!! gain? ColumnOp::applyGain(column, m_gain),
+                                         h,
+                                         binfory,
+                                         minbin,
+                                         m_params.interpolate);
+                
+                psx = sx;
+            }
+
+            if (sx == sx0) {
+                pixelPeakColumn = preparedColumn;
+            } else {
+                for (int i = 0; in_range_for(pixelPeakColumn, i); ++i) {
+                    pixelPeakColumn[i] = std::max(pixelPeakColumn[i],
+                                                  preparedColumn[i]);
+                }
+            }
+        }
+
+        if (!pixelPeakColumn.empty()) {
+            for (int y = 0; y < h; ++y) {
+                m_drawBuffer.setPixel
+                    (x,
+                     h-y-1,
+                     m_params.colourScale.getPixel(pixelPeakColumn[y]));
+            }
+        }
+
+        double fractionComplete = double(columnCount) / double(w);
+        if (timer.outOfTime(fractionComplete)) {
+            return columnCount;
+        }
+    }
+
+    return columnCount;
+}
+
 void
 Colour3DPlotRenderer::clearDrawBuffer(int w, int h)
 {

@@ -19,6 +19,8 @@
 /**
  * Interface for layers in which the Y axis corresponds to bin number
  * rather than scale value. Colour3DPlotLayer is the obvious example.
+ *!!! should just be a mapper interface, not a layer one?
+ *!!! or even an application of RangeMapper
  */
 class VerticalBinLayer
 {
