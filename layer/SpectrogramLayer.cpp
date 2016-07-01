@@ -61,7 +61,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_windowSize(1024),
     m_windowType(HanningWindow),
     m_windowHopLevel(2),
-    m_zeroPadLevel(0),
     m_fftSize(1024),
     m_gain(1.0),
     m_initialGain(1.0),
@@ -171,7 +170,6 @@ SpectrogramLayer::getProperties() const
 //    list.push_back("Min Frequency");
 //    list.push_back("Max Frequency");
     list.push_back("Frequency Scale");
-////    list.push_back("Zero Padding");
     return list;
 }
 
@@ -190,7 +188,6 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Min Frequency") return tr("Min Frequency");
     if (name == "Max Frequency") return tr("Max Frequency");
     if (name == "Frequency Scale") return tr("Frequency Scale");
-    if (name == "Zero Padding") return tr("Smoothing");
     return "";
 }
 
@@ -206,7 +203,6 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
     if (name == "Gain") return RangeProperty;
     if (name == "Colour Rotation") return RangeProperty;
     if (name == "Threshold") return RangeProperty;
-    if (name == "Zero Padding") return ToggleProperty;
     return ValueProperty;
 }
 
@@ -216,8 +212,7 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Bin Display" ||
         name == "Frequency Scale") return tr("Bins");
     if (name == "Window Size" ||
-	name == "Window Increment" ||
-        name == "Zero Padding") return tr("Window");
+	name == "Window Increment") return tr("Window");
     if (name == "Colour" ||
 	name == "Threshold" ||
 	name == "Colour Rotation") return tr("Colour");
@@ -305,14 +300,6 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
         *deflt = 2;
 
         val = m_windowHopLevel;
-    
-    } else if (name == "Zero Padding") {
-	
-	*min = 0;
-	*max = 1;
-        *deflt = 0;
-	
-        val = m_zeroPadLevel > 0 ? 1 : 0;
     
     } else if (name == "Min Frequency") {
 
@@ -414,10 +401,6 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	case 5: return tr("93.75 %");
 	}
     }
-    if (name == "Zero Padding") {
-        if (value == 0) return tr("None");
-        return QString("%1x").arg(value + 1);
-    }
     if (name == "Min Frequency") {
 	switch (value) {
 	default:
@@ -510,8 +493,6 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	setWindowSize(32 << value);
     } else if (name == "Window Increment") {
         setWindowHopLevel(value);
-    } else if (name == "Zero Padding") {
-        setZeroPadLevel(value > 0.1 ? 3 : 0);
     } else if (name == "Min Frequency") {
 	switch (value) {
 	default:
@@ -605,6 +586,7 @@ SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
         return;
     }
     if (name == "Spectrogram Y Smoothing") {
+        setWindowSize(m_windowSize);
         invalidateImageCaches();
         invalidateMagnitudes();
         emit layerParametersChanged();
@@ -637,15 +619,35 @@ SpectrogramLayer::getChannel() const
     return m_channel;
 }
 
+int
+SpectrogramLayer::getFFTOversampling() const
+{
+    if (m_binDisplay != AllBins) {
+        return 1;
+    }
+
+    Preferences::SpectrogramSmoothing smoothing = 
+        Preferences::getInstance()->getSpectrogramSmoothing();
+    
+    if (smoothing == Preferences::NoSpectrogramSmoothing ||
+        smoothing == Preferences::SpectrogramInterpolated) {
+        return 1;
+    }
+
+    return 4;
+}
+
 void
 SpectrogramLayer::setWindowSize(int ws)
 {
-    if (m_windowSize == ws) return;
+    int fftSize = ws * getFFTOversampling();
+
+    if (m_windowSize == ws && m_fftSize == fftSize) return;
 
     invalidateImageCaches();
     
     m_windowSize = ws;
-    m_fftSize = ws * (m_zeroPadLevel + 1);
+    m_fftSize = fftSize;
     
     invalidateFFTModels();
 
@@ -678,27 +680,6 @@ int
 SpectrogramLayer::getWindowHopLevel() const
 {
     return m_windowHopLevel;
-}
-
-void
-SpectrogramLayer::setZeroPadLevel(int v)
-{
-    if (m_zeroPadLevel == v) return;
-
-    invalidateImageCaches();
-    
-    m_zeroPadLevel = v;
-    m_fftSize = m_windowSize * (v + 1);
-
-    invalidateFFTModels();
-
-    emit layerParametersChanged();
-}
-
-int
-SpectrogramLayer::getZeroPadLevel() const
-{
-    return m_zeroPadLevel;
 }
 
 void
@@ -1175,37 +1156,10 @@ SpectrogramLayer::getYBinRange(LayerGeometryProvider *v, int y, double &q0, doub
     q0 = v->getFrequencyForY(y, minf, maxf, logarithmic);
     q1 = v->getFrequencyForY(y - 1, minf, maxf, logarithmic);
 
-    // Now map these on to ("proportions of") actual bins, using raw
-    // FFT size (unsmoothed)
+    // Now map these on to ("proportions of") actual bins
 
     q0 = (q0 * m_fftSize) / sr;
     q1 = (q1 * m_fftSize) / sr;
-
-    return true;
-}
-
-bool
-SpectrogramLayer::getSmoothedYBinRange(LayerGeometryProvider *v, int y, double &q0, double &q1) const
-{
-    Profiler profiler("SpectrogramLayer::getSmoothedYBinRange");
-
-    int h = v->getPaintHeight();
-    if (y < 0 || y >= h) return false;
-
-    sv_samplerate_t sr = m_model->getSampleRate();
-    double minf = getEffectiveMinFrequency();
-    double maxf = getEffectiveMaxFrequency();
-
-    bool logarithmic = (m_frequencyScale == LogFrequencyScale);
-
-    q0 = v->getFrequencyForY(y, minf, maxf, logarithmic);
-    q1 = v->getFrequencyForY(y - 1, minf, maxf, logarithmic);
-
-    // Now map these on to ("proportions of") actual bins, using raw
-    // FFT size (unsmoothed)
-
-    q0 = (q0 * getFFTSize(v)) / sr;
-    q1 = (q1 * getFFTSize(v)) / sr;
 
     return true;
 }
@@ -1233,8 +1187,7 @@ SpectrogramLayer::getBinForY(LayerGeometryProvider *v, double y) const
 
     double q = v->getFrequencyForY(y, minf, maxf, logarithmic);
 
-    // Now map on to ("proportions of") actual bins, using raw FFT
-    // size (unsmoothed)
+    // Now map on to ("proportions of") actual bins
 
     q = (q * getFFTSize(v)) / sr;
 
@@ -1345,7 +1298,10 @@ const
 
 	    if (peaksOnly && !fft->isLocalPeak(s, q)) continue;
 
-	    if (!fft->isOverThreshold(s, q, float(m_threshold * double(m_fftSize)/2.0))) continue;
+	    if (!fft->isOverThreshold
+                (s, q, float(m_threshold * double(m_fftSize)/2.0))) {
+                continue;
+            }
 
             double freq = binfreq;
 	    
@@ -1391,10 +1347,6 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 
     bool rv = false;
 
-    int zp = getZeroPadLevel(v);
-    q0i *= zp + 1;
-    q1i *= zp + 1;
-
     FFTModel *fft = getFFTModel(v);
 
     if (fft) {
@@ -1436,52 +1388,10 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 }
    
 int
-SpectrogramLayer::getZeroPadLevel(const LayerGeometryProvider *v) const
+SpectrogramLayer::getFFTSize(const LayerGeometryProvider *) const
 {
-    //!!! tidy all this stuff
-
-    if (m_binDisplay != AllBins) return 0;
-
-    Preferences::SpectrogramSmoothing smoothing = 
-        Preferences::getInstance()->getSpectrogramSmoothing();
-    
-    if (smoothing == Preferences::NoSpectrogramSmoothing ||
-        smoothing == Preferences::SpectrogramInterpolated) return 0;
-
-    if (m_frequencyScale == LogFrequencyScale) return 3;
-
-    sv_samplerate_t sr = m_model->getSampleRate();
-    
-    int maxbin = m_fftSize / 2;
-    if (m_maxFrequency > 0) {
-	maxbin = int((double(m_maxFrequency) * m_fftSize) / sr + 0.1);
-	if (maxbin > m_fftSize / 2) maxbin = m_fftSize / 2;
-    }
-
-    int minbin = 1;
-    if (m_minFrequency > 0) {
-	minbin = int((double(m_minFrequency) * m_fftSize) / sr + 0.1);
-	if (minbin < 1) minbin = 1;
-	if (minbin >= maxbin) minbin = maxbin - 1;
-    }
-
-    double perPixel =
-        double(v->getPaintHeight()) /
-        double((maxbin - minbin) / (m_zeroPadLevel + 1));
-
-    if (perPixel > 2.8) {
-        return 3; // 4x oversampling
-    } else if (perPixel > 1.5) {
-        return 1; // 2x
-    } else {
-        return 0; // 1x
-    }
-}
-
-int
-SpectrogramLayer::getFFTSize(const LayerGeometryProvider *v) const
-{
-    return m_fftSize * (getZeroPadLevel(v) + 1);
+    //!!!
+    return m_fftSize;
 }
 	
 FFTModel *
@@ -1834,12 +1744,10 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     // zero-padded visible bin range, and displayMinFreq and displayMaxFreq
     // to the actual scale frequency extents (presumably not zero padded).
 
-    // If we are zero padding, we want to use the zero-padded
-    // equivalents of the bins that we would be using if not zero
-    // padded, to avoid spaces at the top and bottom of the display.
-
-    // Note fftSize is the actual zero-padded fft size, m_fftSize the
-    // nominal fft size.
+    // If we are zero padding (i.e. oversampling) we want to use the
+    // zero-padded equivalents of the bins that we would be using if
+    // not zero padded, to avoid spaces at the top and bottom of the
+    // display.
     
     int maxbin = m_fftSize / 2;
     if (m_maxFrequency > 0) {
@@ -1855,9 +1763,9 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 	if (minbin >= maxbin) minbin = maxbin - 1;
     }
 
-    int zpl = getZeroPadLevel(v) + 1;
-    minbin = minbin * zpl;
-    maxbin = (maxbin + 1) * zpl - 1;
+    int over = getFFTOversampling();
+    minbin = minbin * over;
+    maxbin = (maxbin + 1) * over - 1;
 
     double minFreq = (double(minbin) * sr) / fftSize;
     double maxFreq = (double(maxbin) * sr) / fftSize;
@@ -2008,7 +1916,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
         for (int y = 0; y < h; ++y) {
             double q0 = 0, q1 = 0;
-            if (!getSmoothedYBinRange(v, h-y-1, q0, q1)) {
+            if (!getYBinRange(v, h-y-1, q0, q1)) {
                 binfory[y] = -1;
             } else {
                 binfory[y] = q0;

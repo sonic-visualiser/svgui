@@ -115,9 +115,6 @@ public:
     void setWindowType(WindowType type);
     WindowType getWindowType() const;
 
-    void setZeroPadLevel(int level);
-    int getZeroPadLevel() const;
-
     /**
      * Set the gain multiplier for sample values in this view.
      * The default is 1.0.
@@ -255,8 +252,7 @@ protected:
     int                 m_windowSize;
     WindowType          m_windowType;
     int                 m_windowHopLevel;
-    int                 m_zeroPadLevel;
-    int                 m_fftSize;
+    int                 m_fftSize; // m_windowSize * oversampling level
     float               m_gain;
     float               m_initialGain;
     float               m_threshold;
@@ -325,15 +321,8 @@ protected:
     double getEffectiveMinFrequency() const;
     double getEffectiveMaxFrequency() const;
 
-    // Note that the getYBin... methods return the nominal bin in the
-    // un-smoothed spectrogram.  This is not necessarily the same bin
-    // as is pulled from the spectrogram and drawn at the given
-    // position, if the spectrogram has oversampling smoothing.  Use
-    // getSmoothedYBinRange to obtain that.
-
     bool getXBinRange(LayerGeometryProvider *v, int x, double &windowMin, double &windowMax) const;
     bool getYBinRange(LayerGeometryProvider *v, int y, double &freqBinMin, double &freqBinMax) const;
-    bool getSmoothedYBinRange(LayerGeometryProvider *v, int y, double &freqBinMin, double &freqBinMax) const;
 
     bool getYBinSourceRange(LayerGeometryProvider *v, int y, double &freqMin, double &freqMax) const;
     bool getAdjustedYBinSourceRange(LayerGeometryProvider *v, int x, int y,
@@ -349,7 +338,7 @@ protected:
         else return m_windowSize / (1 << (m_windowHopLevel - 1));
     }
 
-    int getZeroPadLevel(const LayerGeometryProvider *v) const;
+    int getFFTOversampling() const;
     int getFFTSize(const LayerGeometryProvider *v) const;
     FFTModel *getFFTModel(const LayerGeometryProvider *v) const;
     Dense3DModelPeakCache *getPeakCache(const LayerGeometryProvider *v) const;
