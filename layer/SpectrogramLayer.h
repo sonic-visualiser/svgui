@@ -252,7 +252,6 @@ protected:
     int                 m_windowSize;
     WindowType          m_windowType;
     int                 m_windowHopLevel;
-    int                 m_fftSize; // m_windowSize * oversampling level
     float               m_gain;
     float               m_initialGain;
     float               m_threshold;
@@ -339,7 +338,8 @@ protected:
     }
 
     int getFFTOversampling() const;
-    int getFFTSize(const LayerGeometryProvider *v) const;
+    int getFFTSize() const; // m_windowSize * getFFTOversampling()
+    
     FFTModel *getFFTModel(const LayerGeometryProvider *v) const;
     Dense3DModelPeakCache *getPeakCache(const LayerGeometryProvider *v) const;
     void invalidateFFTModels();
