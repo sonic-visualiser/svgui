@@ -37,8 +37,7 @@
 class ScrollableImageCache
 {
 public:
-    ScrollableImageCache(const LayerGeometryProvider *v = 0) :
-	m_v(v),
+    ScrollableImageCache() :
 	m_left(0),
 	m_width(0),
 	m_startFrame(0),
@@ -112,11 +111,12 @@ public:
     }
 
     /**
-     * Set the new start frame for the cache, if possible also moving
-     * along any existing valid data within the cache so that it
-     * continues to be valid for the new start frame.
+     * Set the new start frame for the cache, according to the
+     * geometry of the supplied LayerGeometryProvider, if possible
+     * also moving along any existing valid data within the cache so
+     * that it continues to be valid for the new start frame.
      */
-    void scrollTo(sv_frame_t newStartFrame);
+    void scrollTo(LayerGeometryProvider *v, sv_frame_t newStartFrame);
 
     /**
      * Take a left coordinate and width describing a region, and
@@ -142,7 +142,6 @@ public:
 		   int imageWidth);
     
 private:
-    const LayerGeometryProvider *m_v;
     QImage m_image;
     int m_left;  // of valid region
     int m_width; // of valid region

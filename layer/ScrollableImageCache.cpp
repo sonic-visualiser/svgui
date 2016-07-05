@@ -17,20 +17,18 @@
 #include <iostream>
 using namespace std;
 
-//#define DEBUG_SCROLLABLE_IMAGE_CACHE 1
+#define DEBUG_SCROLLABLE_IMAGE_CACHE 1
 
 void
-ScrollableImageCache::scrollTo(sv_frame_t newStartFrame)
+ScrollableImageCache::scrollTo(LayerGeometryProvider *v, sv_frame_t newStartFrame)
 {
-    if (!m_v) throw std::logic_error("ScrollableImageCache: not associated with a LayerGeometryProvider");
-
     if (m_startFrame == newStartFrame) {
 	// haven't moved
         return;
     }
 	
-    int dx = (m_v->getXForFrame(m_startFrame) -
-	      m_v->getXForFrame(newStartFrame));
+    int dx = (v->getXForFrame(m_startFrame) -
+	      v->getXForFrame(newStartFrame));
 
 #ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
     cerr << "ScrollableImageCache::scrollTo: start frame " << m_startFrame

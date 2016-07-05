@@ -25,6 +25,22 @@ class ViewManager;
 class View;
 class Layer;
 
+/**
+ * Interface for classes that provide geometry information (such as
+ * size, start frame, and a large number of other properties) about
+ * the disposition of a layer. The main implementor of this interface
+ * is the View class, but other implementations may be used in
+ * different circumstances, e.g. as a proxy to handle hi-dpi
+ * coordinate mapping.
+ *
+ * Note it is expected that some implementations of this may be
+ * disposable, created on-the-fly for a single use. Code that receives
+ * a LayerGeometryProvider pointer as an argument to something should
+ * not, in general, store that pointer as it may be invalidated before
+ * the next use. Use getId() to instead obtain a persistent identifier
+ * for a LayerGeometryProvider, for example to establish whether the
+ * same one is being provided in two separate calls.
+ */
 class LayerGeometryProvider
 {
 protected:

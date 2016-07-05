@@ -52,6 +52,7 @@
 #include <alloca.h>
 #endif
 
+#define DEBUG_SPECTROGRAM 1
 #define DEBUG_SPECTROGRAM_REPAINT 1
 
 using namespace std;
@@ -1158,7 +1159,7 @@ SpectrogramLayer::getYBinRange(LayerGeometryProvider *v, int y, double &q0, doub
 }
 
 double
-SpectrogramLayer::getYForBin(LayerGeometryProvider *, double bin) const {
+SpectrogramLayer::getYForBin(LayerGeometryProvider *, double) const {
     //!!! not implemented
     throw std::logic_error("not implemented");
 }
@@ -1525,7 +1526,7 @@ ScrollableImageCache &
 SpectrogramLayer::getImageCacheReference(const LayerGeometryProvider *view) const
 {
     if (m_imageCaches.find(view->getId()) == m_imageCaches.end()) {
-        m_imageCaches[view->getId()] = ScrollableImageCache(view);
+        m_imageCaches[view->getId()] = ScrollableImageCache();
     }
     return m_imageCaches.at(view->getId());
 }
@@ -1535,7 +1536,11 @@ SpectrogramLayer::paintAlternative(LayerGeometryProvider *v, QPainter &paint, QR
 {
     Colour3DPlotRenderer *renderer = getRenderer(v);
 
-    
+    //!!! not time-constrained for now
+    Colour3DPlotRenderer::RenderResult result = renderer->render(v, paint, rect);
+
+    //!!! do
+    (void)result;
 }
 
 Colour3DPlotRenderer *
@@ -1544,11 +1549,10 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
     if (m_renderers.find(v->getId()) == m_renderers.end()) {
 
         Colour3DPlotRenderer::Sources sources;
-        sources.geometryProvider = v;
         sources.verticalBinLayer = this;
-        sources.source = m_fftModel;
-        sources.peaks = m_peakCache;
-        sources.fft = m_fftModel;
+        sources.fft = getFFTModel();
+        sources.source = sources.fft;
+        sources.peaks = getPeakCache();
 
         ::ColourScale::Parameters cparams;
         //!!! todo 
@@ -1588,8 +1592,8 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 	SVDEBUG << "SpectrogramLayer::paint(): Layer is dormant, making it undormant again" << endl;
     }
 
-//    paintAlternative(v, paint, rect);
-//    return;
+    paintAlternative(v, paint, rect);
+    return;
 
     //!!!
     
@@ -1671,7 +1675,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
             cerr << "SpectrogramLayer: scrolling the image cache if applicable" << endl;
 #endif
 
-            cache.scrollTo(startFrame);
+            cache.scrollTo(v, startFrame);
             
 #ifdef DEBUG_SPECTROGRAM_REPAINT
             cerr << "SpectrogramLayer: after scrolling, cache valid from "
@@ -2595,7 +2599,7 @@ SpectrogramLayer::getFrequencyForY(const LayerGeometryProvider *v, int y) const
 }
 
 int
-SpectrogramLayer::getCompletion(LayerGeometryProvider *v) const
+SpectrogramLayer::getCompletion(LayerGeometryProvider *) const
 {
     if (!m_fftModel) return 100;
     int completion = m_fftModel->getCompletion();
@@ -2606,9 +2610,8 @@ SpectrogramLayer::getCompletion(LayerGeometryProvider *v) const
 }
 
 QString
-SpectrogramLayer::getError(LayerGeometryProvider *v) const
+SpectrogramLayer::getError(LayerGeometryProvider *) const
 {
-    const View *view = v->getView();
     if (!m_fftModel) return "";
     return m_fftModel->getError();
 }
