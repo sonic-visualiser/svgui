@@ -79,8 +79,9 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_synchronous(false),
     m_haveDetailedScale(false),
     m_exiting(false),
-    m_peakCacheDivisor(8),
-    m_sliceableModel(0)
+    m_fftModel(0),
+    m_peakCache(0),
+    m_peakCacheDivisor(8)
 {
     QString colourConfigName = "spectrogram-colour";
     int colourConfigDefault = int(ColourMapper::Green);
@@ -129,7 +130,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 
 SpectrogramLayer::~SpectrogramLayer()
 {
-    invalidateFFTModels();
+    invalidateFFTModel();
 }
 
 void
@@ -140,7 +141,7 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     if (model == m_model) return;
 
     m_model = model;
-    invalidateFFTModels();
+    invalidateFFTModel();
 
     if (!m_model || !m_model->isOK()) return;
 
@@ -607,7 +608,7 @@ SpectrogramLayer::setChannel(int ch)
 
     invalidateImageCaches();
     m_channel = ch;
-    invalidateFFTModels();
+    invalidateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -651,7 +652,7 @@ SpectrogramLayer::setWindowSize(int ws)
     
     m_windowSize = ws;
     
-    invalidateFFTModels();
+    invalidateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -671,7 +672,7 @@ SpectrogramLayer::setWindowHopLevel(int v)
     
     m_windowHopLevel = v;
     
-    invalidateFFTModels();
+    invalidateFFTModel();
 
     emit layerParametersChanged();
 
@@ -693,7 +694,7 @@ SpectrogramLayer::setWindowType(WindowType w)
     
     m_windowType = w;
 
-    invalidateFFTModels();
+    invalidateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -913,27 +914,9 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 
         m_imageCaches.erase(view->getId());
 
-        if (m_fftModels.find(view->getId()) != m_fftModels.end()) {
-
-            if (m_sliceableModel == m_fftModels[view->getId()]) {
-                bool replaced = false;
-                for (ViewFFTMap::iterator i = m_fftModels.begin();
-                     i != m_fftModels.end(); ++i) {
-                    if (i->second != m_sliceableModel) {
-                        emit sliceableModelReplaced(m_sliceableModel, i->second);
-                        replaced = true;
-                        break;
-                    }
-                }
-                if (!replaced) emit sliceableModelReplaced(m_sliceableModel, 0);
-            }
-
-            delete m_fftModels[view->getId()];
-            m_fftModels.erase(view->getId());
-
-            delete m_peakCaches[view->getId()];
-            m_peakCaches.erase(view->getId());
-        }
+        //!!! in theory we should call invalidateFFTModel() if and
+        //!!! only if there are no remaining views in which we are not
+        //!!! dormant
 	
     } else {
 
@@ -1268,7 +1251,7 @@ const
 	return false;
     }
 
-    FFTModel *fft = getFFTModel(v);
+    FFTModel *fft = getFFTModel();
     if (!fft) return false;
 
     double s0 = 0, s1 = 0;
@@ -1349,7 +1332,7 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 
     bool rv = false;
 
-    FFTModel *fft = getFFTModel(v);
+    FFTModel *fft = getFFTModel();
 
     if (fft) {
 
@@ -1390,115 +1373,81 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 }
 	
 FFTModel *
-SpectrogramLayer::getFFTModel(const LayerGeometryProvider *v) const
+SpectrogramLayer::getFFTModel() const
 {
     if (!m_model) return 0;
 
     int fftSize = getFFTSize();
 
-    const View *view = v->getView();
+    //!!! it is now surely slower to do this on every getFFTModel()
+    //!!! request than it would be to recreate the model immediately
+    //!!! when something changes instead of just invalidating it
     
-    if (m_fftModels.find(view->getId()) != m_fftModels.end()) {
-        if (m_fftModels[view->getId()] == 0) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found null model" << endl;
-#endif
-            return 0;
-        }
-        if (m_fftModels[view->getId()]->getHeight() != fftSize / 2 + 1) {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found a model with the wrong height (" << m_fftModels[view->getId()]->getHeight() << ", wanted " << (fftSize / 2 + 1) << ")" << endl;
-#endif
-            delete m_fftModels[view->getId()];
-            m_fftModels.erase(view->getId());
-            delete m_peakCaches[view->getId()];
-            m_peakCaches.erase(view->getId());
-        } else {
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "SpectrogramLayer::getFFTModel(" << v << "): Found a good model of height " << m_fftModels[view->getId()]->getHeight() << endl;
-#endif
-            return m_fftModels[view->getId()];
-        }
+    if (m_fftModel &&
+        m_fftModel->getHeight() == fftSize / 2 + 1 &&
+        m_fftModel->getWindowIncrement() == getWindowIncrement()) {
+        return m_fftModel;
+    }
+    
+    delete m_peakCache;
+    m_peakCache = 0;
+
+    delete m_fftModel;
+    m_fftModel = new FFTModel(m_model,
+                              m_channel,
+                              m_windowType,
+                              m_windowSize,
+                              getWindowIncrement(),
+                              fftSize);
+
+    if (!m_fftModel->isOK()) {
+        QMessageBox::critical
+            (0, tr("FFT cache failed"),
+             tr("Failed to create the FFT model for this spectrogram.\n"
+                "There may be insufficient memory or disc space to continue."));
+        delete m_fftModel;
+        m_fftModel = 0;
+        return 0;
     }
 
-    if (m_fftModels.find(view->getId()) == m_fftModels.end()) {
+    ((SpectrogramLayer *)this)->sliceableModelReplaced(0, m_fftModel);
 
-        FFTModel *model = new FFTModel(m_model,
-                                       m_channel,
-                                       m_windowType,
-                                       m_windowSize,
-                                       getWindowIncrement(),
-                                       fftSize);
-
-        if (!model->isOK()) {
-            QMessageBox::critical
-                (0, tr("FFT cache failed"),
-                 tr("Failed to create the FFT model for this spectrogram.\n"
-                    "There may be insufficient memory or disc space to continue."));
-            delete model;
-            m_fftModels[view->getId()] = 0;
-            return 0;
-        }
-
-        if (!m_sliceableModel) {
-#ifdef DEBUG_SPECTROGRAM
-            cerr << "SpectrogramLayer: emitting sliceableModelReplaced(0, " << model << ")" << endl;
-#endif
-            ((SpectrogramLayer *)this)->sliceableModelReplaced(0, model);
-            m_sliceableModel = model;
-        }
-
-        m_fftModels[view->getId()] = model;
-    }
-
-    return m_fftModels[view->getId()];
+    return m_fftModel;
 }
 
 Dense3DModelPeakCache *
-SpectrogramLayer::getPeakCache(const LayerGeometryProvider *v) const
+SpectrogramLayer::getPeakCache() const
 {
-    const View *view = v->getView();
-    if (!m_peakCaches[view->getId()]) {
-        FFTModel *f = getFFTModel(v);
+    //!!! see comment in getFFTModel
+    
+    if (!m_peakCache) {
+        FFTModel *f = getFFTModel();
         if (!f) return 0;
-        m_peakCaches[view->getId()] =
-            new Dense3DModelPeakCache(f, m_peakCacheDivisor);
+        m_peakCache = new Dense3DModelPeakCache(f, m_peakCacheDivisor);
     }
-    return m_peakCaches[view->getId()];
+    return m_peakCache;
 }
 
 const Model *
 SpectrogramLayer::getSliceableModel() const
 {
-    if (m_sliceableModel) return m_sliceableModel;
-    if (m_fftModels.empty()) return 0;
-    m_sliceableModel = m_fftModels.begin()->second;
-    return m_sliceableModel;
+    return m_fftModel;
 }
 
 void
-SpectrogramLayer::invalidateFFTModels()
+SpectrogramLayer::invalidateFFTModel()
 {
 #ifdef DEBUG_SPECTROGRAM
-    cerr << "SpectrogramLayer::invalidateFFTModels called" << endl;
+    cerr << "SpectrogramLayer::invalidateFFTModel called" << endl;
 #endif
-    for (ViewFFTMap::iterator i = m_fftModels.begin();
-         i != m_fftModels.end(); ++i) {
-        delete i->second;
-    }
-    for (PeakCacheMap::iterator i = m_peakCaches.begin();
-         i != m_peakCaches.end(); ++i) {
-        delete i->second;
-    }
-    
-    m_fftModels.clear();
-    m_peakCaches.clear();
 
-    if (m_sliceableModel) {
-        cerr << "SpectrogramLayer: emitting sliceableModelReplaced(" << m_sliceableModel << ", 0)" << endl;
-        emit sliceableModelReplaced(m_sliceableModel, 0);
-        m_sliceableModel = 0;
-    }
+    emit sliceableModelReplaced(m_fftModel, 0);
+
+    delete m_fftModel;
+    delete m_peakCache;
+
+    m_fftModel = 0;
+    m_peakCache = 0;
 }
 
 void
@@ -2144,7 +2093,7 @@ SpectrogramLayer::paintDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
 
-    FFTModel *fft = getFFTModel(v);
+    FFTModel *fft = getFFTModel();
     if (!fft) return 0;
 
     FFTModel::PeakSet peakfreqs;
@@ -2369,11 +2318,11 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
 
     int divisor = 1;
     if (usePeaksCache) {
-        peakCacheModel = getPeakCache(v);
+        peakCacheModel = getPeakCache();
         divisor = m_peakCacheDivisor;
         sourceModel = peakCacheModel;
     } else {
-        fftModel = getFFTModel(v);
+        fftModel = getFFTModel();
         sourceModel = fftModel;
     }
 
@@ -2598,11 +2547,8 @@ SpectrogramLayer::getFrequencyForY(const LayerGeometryProvider *v, int y) const
 int
 SpectrogramLayer::getCompletion(LayerGeometryProvider *v) const
 {
-    const View *view = v->getView();
-    
-    if (m_fftModels.find(view->getId()) == m_fftModels.end()) return 100;
-
-    int completion = m_fftModels[view->getId()]->getCompletion();
+    if (!m_fftModel) return 100;
+    int completion = m_fftModel->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
@@ -2613,8 +2559,8 @@ QString
 SpectrogramLayer::getError(LayerGeometryProvider *v) const
 {
     const View *view = v->getView();
-    if (m_fftModels.find(view->getId()) == m_fftModels.end()) return "";
-    return m_fftModels[view->getId()]->getError();
+    if (!m_fftModel) return "";
+    return m_fftModel->getError();
 }
 
 bool
