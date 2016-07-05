@@ -47,11 +47,9 @@ public:
     };
 
     struct Sources {
-        Sources() : geometryProvider(0), verticalBinLayer(0),
-                    source(0), peaks(0), fft(0) { }
+        Sources() : verticalBinLayer(0), source(0), peaks(0), fft(0) { }
         
         // These must all outlive this class
-        LayerGeometryProvider *geometryProvider;   // always
         const VerticalBinLayer *verticalBinLayer;  // always
 	DenseThreeDimensionalModel *source;        // always
 	Dense3DModelPeakCache *peaks;	           // optionally
@@ -98,14 +96,21 @@ public:
 
     /**
      * Render the requested area using the given painter, obtaining
-     * geometry (e.g. start frame) from the stored
+     * geometry (e.g. start frame) from the given
      * LayerGeometryProvider.
      *
-     * The whole rect will be rendered and the returned QRect will be
-     * equal to the passed QRect. (See renderTimeConstrained for an
-     * alternative that may render only part of the rect in cases
-     * where obtaining source data is slow and retaining
-     * responsiveness is important.)
+     * The whole of the supplied rect will be rendered and the
+     * returned QRect will be equal to the supplied QRect. (See
+     * renderTimeConstrained for an alternative that may render only
+     * part of the rect in cases where obtaining source data is slow
+     * and retaining responsiveness is important.)
+     *
+     * Note that Colour3DPlotRenderer retains internal cache state
+     * related to the size and position of the supplied
+     * LayerGeometryProvider. Although it is valid to call render()
+     * successively on the same Colour3DPlotRenderer with different
+     * LayerGeometryProviders, it will be much faster to use a
+     * dedicated Colour3DPlotRenderer for each LayerGeometryProvider.
      *
      * If the model to render from is not ready, this will throw a
      * std::logic_error exception. The model must be ready and the
@@ -113,7 +118,7 @@ public:
      * that the LayerGeometryProvider returns valid results; it is the
      * caller's responsibility to ensure these.
      */
-    RenderResult render(QPainter &paint, QRect rect);
+    RenderResult render(LayerGeometryProvider *v, QPainter &paint, QRect rect);
     
     /**
      * Render the requested area using the given painter, obtaining
@@ -127,13 +132,21 @@ public:
      * rendered. Note that we always render the full requested height,
      * it's only width that is time-constrained.
      *
+     * Note that Colour3DPlotRenderer retains internal cache state
+     * related to the size and position of the supplied
+     * LayerGeometryProvider. Although it is valid to call render()
+     * successively on the same Colour3DPlotRenderer with different
+     * LayerGeometryProviders, it will be much faster to use a
+     * dedicated Colour3DPlotRenderer for each LayerGeometryProvider.
+     *
      * If the model to render from is not ready, this will throw a
      * std::logic_error exception. The model must be ready and the
      * layer requesting the render must not be dormant in its view, so
      * that the LayerGeometryProvider returns valid results; it is the
      * caller's responsibility to ensure these.
      */
-    RenderResult renderTimeConstrained(QPainter &paint, QRect rect);
+    RenderResult renderTimeConstrained(LayerGeometryProvider *v,
+                                       QPainter &paint, QRect rect);
     
 private:
     Sources m_sources;
@@ -154,8 +167,9 @@ private:
     // then repainting from cache to the requested painter.
     ScrollableImageCache m_cache;
 
-    RenderResult render(QPainter &paint, QRect rect, bool timeConstrained);
-    void renderToCache(int x0, int repaintWidth,
+    RenderResult render(LayerGeometryProvider *v,
+                        QPainter &paint, QRect rect, bool timeConstrained);
+    void renderToCache(LayerGeometryProvider *v, int x0, int repaintWidth,
                        bool rightToLeft, bool timeConstrained);
     int renderDrawBuffer(int w, int h,
                          const std::vector<int> &binforx,

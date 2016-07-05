@@ -28,25 +28,22 @@
 using namespace std;
 
 Colour3DPlotRenderer::RenderResult
-Colour3DPlotRenderer::render(QPainter &paint, QRect rect)
+Colour3DPlotRenderer::render(LayerGeometryProvider *v, QPainter &paint, QRect rect)
 {
-    return render(paint, rect, false);
+    return render(v, paint, rect, false);
 }
 
 Colour3DPlotRenderer::RenderResult
-Colour3DPlotRenderer::renderTimeConstrained(QPainter &paint, QRect rect)
+Colour3DPlotRenderer::renderTimeConstrained(LayerGeometryProvider *v,
+                                            QPainter &paint, QRect rect)
 {
-    return render(paint, rect, true);
+    return render(v, paint, rect, true);
 }
 
 Colour3DPlotRenderer::RenderResult
-Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
+Colour3DPlotRenderer::render(LayerGeometryProvider *v,
+                             QPainter &paint, QRect rect, bool timeConstrained)
 {
-    LayerGeometryProvider *v = m_sources.geometryProvider;
-    if (!v) {
-	throw std::logic_error("no LayerGeometryProvider provided");
-    }
-
     sv_frame_t startFrame = v->getStartFrame();
     
     int x0 = v->getXForViewX(rect.x());
@@ -57,22 +54,35 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
     m_cache.resize(v->getPaintSize());
     m_cache.setZoomLevel(v->getZoomLevel());
 
+    cerr << "cache start " << m_cache.getStartFrame()
+         << " view start " << startFrame
+         << " valid left " << m_cache.getValidLeft()
+         << " valid right " << m_cache.getValidRight()
+         << " x0 " << x0
+         << " x1 " << x1
+         << endl;
+
+    
     if (m_cache.isValid()) { // some part of the cache is valid
 
         if (v->getXForFrame(m_cache.getStartFrame()) ==
             v->getXForFrame(startFrame) &&
             m_cache.getValidLeft() <= x0 &&
             m_cache.getValidRight() >= x1) {
-                
+
+            cerr << "cache hit" << endl;
+            
             // cache is valid for the complete requested area
             paint.drawImage(rect, m_cache.getImage(), rect);
             return { rect, {} };
 
         } else {
+            cerr << "cache partial hit" << endl;
+            
             // cache doesn't begin at the right frame or doesn't
             // contain the complete view, but might be scrollable or
             // partially usable
-            m_cache.scrollTo(startFrame);
+            m_cache.scrollTo(v, startFrame);
 
             // if we are not time-constrained, then we want to paint
             // the whole area in one go; we don't return a partial
@@ -87,6 +97,9 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
                 }
             }
         }
+    } else {
+        // cache completely invalid
+        m_cache.setStartFrame(startFrame);
     }
 
     bool rightToLeft = false;
@@ -104,6 +117,8 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
     }
 
     if (m_cache.isValid()) {
+            cerr << "cache somewhat valid" << endl;
+            
         // When rendering only a part of the cache, we need to make
         // sure that the part we're rendering is adjacent to (or
         // overlapping) a valid area of cache, if we have one. The
@@ -125,7 +140,7 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
         rightToLeft = isLeftOfValidArea;
     }
     
-    renderToCache(x0, x1 - x0, rightToLeft, timeConstrained);
+    renderToCache(v, x0, x1 - x0, rightToLeft, timeConstrained);
 
     QRect pr = rect & m_cache.getValidArea();
     paint.drawImage(pr.x(), pr.y(), m_cache.getImage(),
@@ -161,7 +176,8 @@ Colour3DPlotRenderer::render(QPainter &paint, QRect rect, bool timeConstrained)
 }
 
 void
-Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
+Colour3DPlotRenderer::renderToCache(LayerGeometryProvider *v,
+                                    int x0, int repaintWidth,
                                     bool rightToLeft, bool timeConstrained)
 {
     // Draw to the draw buffer, and then scale-copy from there.
@@ -170,8 +186,6 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
     if (!model || !model->isOK() || !model->isReady()) {
 	throw std::logic_error("no source model provided, or model not ready");
     }
-
-    LayerGeometryProvider *v = m_sources.geometryProvider; // already checked
 
     // The draw buffer contains a fragment at either our pixel
     // resolution (if there is more than one time-bin per pixel) or
@@ -251,7 +265,7 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
 
     } else {
         for (int x = 0; x < drawWidth; ++x) {
-            sv_frame_t f0 = v->getFrameForX(x);
+            sv_frame_t f0 = v->getFrameForX(x0 + x);
             double s0 = double(f0 - model->getStartFrame()) / binResolution;
             binforx[x] = int(s0 + 0.0001);
         }
@@ -269,8 +283,7 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
     }
 
     for (int y = 0; y < h; ++y) {
-        binfory[y] =
-            m_sources.verticalBinLayer->getBinForY(m_sources.geometryProvider, y);
+        binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
     }
 
     int attainedWidth = renderDrawBuffer(repaintWidth,
@@ -334,7 +347,6 @@ Colour3DPlotRenderer::renderToCache(int x0, int repaintWidth,
                           paintedLeft - x0, attainedWidth);
     }
 }
-
 
 int
 Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
@@ -416,6 +428,10 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 // distribute/interpolate
 
                 ColumnOp::Column fullColumn = sourceModel->getColumn(sx);
+
+                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
+                     << ", minbin " << minbin << ", maxbin " << maxbin << endl;
+                
                 ColumnOp::Column column =
                     vector<float>(fullColumn.data() + minbin,
                                   fullColumn.data() + maxbin + 1);
