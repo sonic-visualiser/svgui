@@ -51,11 +51,11 @@ public:
                     source(0), peaks(0), fft(0) { }
         
         // These must all outlive this class
-        LayerGeometryProvider *geometryProvider; // always
-        VerticalBinLayer *verticalBinLayer;      // always
-	DenseThreeDimensionalModel *source;      // always
-	Dense3DModelPeakCache *peaks;	         // optionally
-	FFTModel *fft;			         // optionally
+        LayerGeometryProvider *geometryProvider;   // always
+        const VerticalBinLayer *verticalBinLayer;  // always
+	DenseThreeDimensionalModel *source;        // always
+	Dense3DModelPeakCache *peaks;	           // optionally
+	FFTModel *fft;			           // optionally
     };        
 
     struct Parameters {
