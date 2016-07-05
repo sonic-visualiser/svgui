@@ -41,7 +41,7 @@ class QPixmap;
 class QTimer;
 class FFTModel;
 class Dense3DModelPeakCache;
-
+class Colour3DPlotRenderer;
 
 /**
  * SpectrogramLayer represents waveform data (obtained from a
@@ -340,7 +340,7 @@ protected:
     int getFFTOversampling() const;
     int getFFTSize() const; // m_windowSize * getFFTOversampling()
 
-    mutable FFTModel *m_fftModel; //!!! should not be mutable, see getFFTModel()
+    mutable FFTModel *m_fftModel; //!!! should not be mutable, see getFFTModel()?
     mutable Dense3DModelPeakCache *m_peakCache;
     const int m_peakCacheDivisor;
 
@@ -349,10 +349,16 @@ protected:
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(LayerGeometryProvider *v) const;
+
+    typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
+    mutable ViewRendererMap m_renderers;
+    Colour3DPlotRenderer *getRenderer(LayerGeometryProvider *) const;
     
     FFTModel *getFFTModel() const;
     Dense3DModelPeakCache *getPeakCache() const;
     void invalidateFFTModel();
+
+    void paintAlternative(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
     
     int paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
                         const std::vector<int> &binforx,

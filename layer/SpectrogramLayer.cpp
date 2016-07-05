@@ -31,6 +31,7 @@
 #include "ImageRegionFinder.h"
 #include "PianoScale.h"
 #include "PaintAssistant.h"
+#include "Colour3DPlotRenderer.h"
 
 #include <QPainter>
 #include <QImage>
@@ -574,6 +575,13 @@ SpectrogramLayer::invalidateImageCaches()
          i != m_imageCaches.end(); ++i) {
         i->second.invalidate();
     }
+
+    //!!!
+    for (ViewRendererMap::iterator i = m_renderers.begin();
+         i != m_renderers.end(); ++i) {
+        delete i->second;
+    }
+    m_renderers.clear();
 }
 
 void
@@ -1523,6 +1531,43 @@ SpectrogramLayer::getImageCacheReference(const LayerGeometryProvider *view) cons
 }
 
 void
+SpectrogramLayer::paintAlternative(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
+{
+    Colour3DPlotRenderer *renderer = getRenderer(v);
+
+    
+}
+
+Colour3DPlotRenderer *
+SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
+{
+    if (m_renderers.find(v->getId()) == m_renderers.end()) {
+
+        Colour3DPlotRenderer::Sources sources;
+        sources.geometryProvider = v;
+        sources.verticalBinLayer = this;
+        sources.source = m_fftModel;
+        sources.peaks = m_peakCache;
+        sources.fft = m_fftModel;
+
+        ::ColourScale::Parameters cparams;
+        //!!! todo 
+        
+        Colour3DPlotRenderer::Parameters params;
+        params.colourScale = ::ColourScale(cparams);
+        params.normalization = m_normalization;
+        //!!! map properly:
+        params.binDisplay = (Colour3DPlotRenderer::BinDisplay)(int)m_binDisplay;
+        params.binScale = (Colour3DPlotRenderer::BinScale)(int)m_frequencyScale;
+        //!!! and the rest
+
+        m_renderers[v->getId()] = new Colour3DPlotRenderer(sources, params);
+    }
+
+    return m_renderers[v->getId()];
+}
+
+void
 SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     Profiler profiler("SpectrogramLayer::paint", false);
@@ -1543,6 +1588,11 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 	SVDEBUG << "SpectrogramLayer::paint(): Layer is dormant, making it undormant again" << endl;
     }
 
+//    paintAlternative(v, paint, rect);
+//    return;
+
+    //!!!
+    
     // Need to do this even if !isLayerDormant, as that could mean v
     // is not in the dormancy map at all -- we need it to be present
     // and accountable for when determining whether we need the cache
