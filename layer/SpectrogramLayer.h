@@ -339,23 +339,20 @@ protected:
 
     int getFFTOversampling() const;
     int getFFTSize() const; // m_windowSize * getFFTOversampling()
-    
-    FFTModel *getFFTModel(const LayerGeometryProvider *v) const;
-    Dense3DModelPeakCache *getPeakCache(const LayerGeometryProvider *v) const;
-    void invalidateFFTModels();
 
-    typedef std::map<int, FFTModel *> ViewFFTMap; // key is view id
-    typedef std::map<int, Dense3DModelPeakCache *> PeakCacheMap; // key is view id
-    mutable ViewFFTMap m_fftModels;
-    mutable PeakCacheMap m_peakCaches;
+    mutable FFTModel *m_fftModel; //!!! should not be mutable, see getFFTModel()
+    mutable Dense3DModelPeakCache *m_peakCache;
     const int m_peakCacheDivisor;
-    mutable Model *m_sliceableModel;
 
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
     mutable std::vector<MagnitudeRange> m_columnMags;
     void invalidateMagnitudes();
     bool updateViewMagnitudes(LayerGeometryProvider *v) const;
+    
+    FFTModel *getFFTModel() const;
+    Dense3DModelPeakCache *getPeakCache() const;
+    void invalidateFFTModel();
     
     int paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
                         const std::vector<int> &binforx,
