@@ -29,6 +29,7 @@
 #include "ScrollableImageCache.h"
 #include "VerticalBinLayer.h"
 #include "ColourScale.h"
+#include "Colour3DPlotRenderer.h"
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -42,7 +43,6 @@ class QPixmap;
 class QTimer;
 class FFTModel;
 class Dense3DModelPeakCache;
-class Colour3DPlotRenderer;
 
 /**
  * SpectrogramLayer represents waveform data (obtained from a
@@ -146,28 +146,17 @@ public:
     void setColourScale(ColourScale::Scale);
     ColourScale::Scale getColourScale() const;
 
-    enum FrequencyScale {
-	LinearFrequencyScale,
-	LogFrequencyScale
-    };
-    
     /**
      * Specify the scale for the y axis.
      */
-    void setFrequencyScale(FrequencyScale);
-    FrequencyScale getFrequencyScale() const;
+    void setBinScale(Colour3DPlotRenderer::BinScale);
+    Colour3DPlotRenderer::BinScale getBinScale() const;
 
-    enum BinDisplay {
-	AllBins,
-	PeakBins,
-	PeakFrequencies
-    };
-    
     /**
      * Specify the processing of frequency bins for the y axis.
      */
-    void setBinDisplay(BinDisplay);
-    BinDisplay getBinDisplay() const;
+    void setBinDisplay(Colour3DPlotRenderer::BinDisplay);
+    Colour3DPlotRenderer::BinDisplay getBinDisplay() const;
 
     /**
      * Specify the normalization mode for bin values.
@@ -258,8 +247,8 @@ protected:
     ColourScale::Scale  m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
-    FrequencyScale      m_frequencyScale;
-    BinDisplay          m_binDisplay;
+    Colour3DPlotRenderer::BinScale m_binScale;
+    Colour3DPlotRenderer::BinDisplay m_binDisplay;
     ColumnOp::Normalization m_normalization;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
