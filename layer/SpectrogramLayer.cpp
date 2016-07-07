@@ -1536,11 +1536,53 @@ SpectrogramLayer::paintAlternative(LayerGeometryProvider *v, QPainter &paint, QR
 {
     Colour3DPlotRenderer *renderer = getRenderer(v);
 
-    //!!! not time-constrained for now
-    Colour3DPlotRenderer::RenderResult result = renderer->render(v, paint, rect);
+    if (m_synchronous) {
+        (void)renderer->render(v, paint, rect);
+        return;
+    }
+    
+    Colour3DPlotRenderer::RenderResult result =
+        renderer->renderTimeConstrained(v, paint, rect);
 
-    //!!! do
-    (void)result;
+    //!!! + mag range
+
+    QRect rendered = result.rendered;
+    if (rendered == rect) return;
+
+    int rLeft = rendered.x();
+    int rRight = rendered.x() + rendered.width();
+
+    if (rLeft < rect.x()) {
+        rLeft = rect.x();
+    }
+    if (rRight > rect.x() + rect.width()) {
+        rRight = rect.x() + rect.width();
+    }
+    
+    QRect areaLeft(rect.x(), rect.y(),
+                   rLeft - rect.x(), rect.height());
+
+    QRect areaRight(rRight, rect.y(),
+                    rect.x() + rect.width() - rRight, rect.height());
+    
+    bool updateLeft = (areaLeft.width() > 0);
+    bool updateRight = (areaRight.width() > 0);
+            
+    if (updateLeft) {
+        if (updateRight) {
+            if (areaLeft.width() > areaRight.width()) {
+                v->updatePaintRect(areaLeft);
+                v->updatePaintRect(areaRight);
+            } else {
+                v->updatePaintRect(areaRight);
+                v->updatePaintRect(areaLeft);
+            }
+        } else {
+            v->updatePaintRect(areaLeft);
+        }
+    } else {
+        v->updatePaintRect(areaRight);
+    }        
 }
 
 Colour3DPlotRenderer *
