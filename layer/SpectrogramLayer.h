@@ -28,6 +28,7 @@
 
 #include "ScrollableImageCache.h"
 #include "VerticalBinLayer.h"
+#include "ColourScale.h"
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -137,20 +138,13 @@ public:
     void setMaxFrequency(int); // 0 -> no maximum
     int getMaxFrequency() const;
 
-    enum ColourScale {
-	LinearColourScale,
-	MeterColourScale,
-        dBSquaredColourScale,
-	dBColourScale,
-	PhaseColourScale
-    };
-
     /**
-     * Specify the scale for sample levels.  See WaveformLayer for
-     * details of meter and dB scaling.  The default is dBColourScale.
+     * Specify the scale for sample levels.  See ColourScale and
+     * WaveformLayer for comparison and details of meter and dB
+     * scaling.  The default is LogColourScale.
      */
-    void setColourScale(ColourScale);
-    ColourScale getColourScale() const;
+    void setColourScale(ColourScale::Scale);
+    ColourScale::Scale getColourScale() const;
 
     enum FrequencyScale {
 	LinearFrequencyScale,
@@ -261,7 +255,7 @@ protected:
     int                 m_minFrequency;
     int                 m_maxFrequency;
     int                 m_initialMaxFrequency;
-    ColourScale         m_colourScale;
+    ColourScale::Scale  m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
     FrequencyScale      m_frequencyScale;
