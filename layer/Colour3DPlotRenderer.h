@@ -63,7 +63,7 @@ public:
 	    binDisplay(AllBins),
             binScale(LinearBinScale),
 	    alwaysOpaque(false),
-            interpolate(false),
+            interpolate(false), //!!! separate out x-interpolate and y-interpolate? the spectrogram actually does (or used to)
             invertVertical(false) { }
 
 	ColourScale colourScale;       // complete ColourScale object by value
@@ -167,10 +167,15 @@ private:
     // then repainting from cache to the requested painter.
     ScrollableImageCache m_cache;
 
+    bool useBinResolutionForDrawBuffer(LayerGeometryProvider *) const;
+
     RenderResult render(LayerGeometryProvider *v,
                         QPainter &paint, QRect rect, bool timeConstrained);
-    void renderToCache(LayerGeometryProvider *v, int x0, int repaintWidth,
-                       bool rightToLeft, bool timeConstrained);
+    void renderToCachePixelResolution(LayerGeometryProvider *v, int x0,
+                                      int repaintWidth, bool rightToLeft,
+                                      bool timeConstrained);
+    void renderToCacheBinResolution(LayerGeometryProvider *v, int x0,
+                                    int repaintWidth);
     int renderDrawBuffer(int w, int h,
                          const std::vector<int> &binforx,
                          const std::vector<double> &binfory,

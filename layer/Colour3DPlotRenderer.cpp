@@ -25,6 +25,8 @@
 
 #include <vector>
 
+//#define DEBUG_SPECTROGRAM_REPAINT 1
+
 using namespace std;
 
 Colour3DPlotRenderer::RenderResult
@@ -55,13 +57,23 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
     m_cache.setZoomLevel(v->getZoomLevel());
 
     cerr << "cache start " << m_cache.getStartFrame()
-         << " view start " << startFrame
          << " valid left " << m_cache.getValidLeft()
          << " valid right " << m_cache.getValidRight()
+         << endl;
+    cerr << " view start " << startFrame
          << " x0 " << x0
          << " x1 " << x1
          << endl;
 
+    bool bufferIsBinResolution = useBinResolutionForDrawBuffer(v);
+    
+    if (bufferIsBinResolution) {
+        // Rendering should be fast in this situation because we are
+        // quite well zoomed-in, and the sums are easier this
+        // way. Calculating boundaries later will be fiddly for
+        // partial paints otherwise.
+        timeConstrained = false;
+    }
     
     if (m_cache.isValid()) { // some part of the cache is valid
 
@@ -140,7 +152,18 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
         rightToLeft = isLeftOfValidArea;
     }
     
-    renderToCache(v, x0, x1 - x0, rightToLeft, timeConstrained);
+    // Note, we always paint the full height.  Smaller heights can be
+    // used when painting direct from cache (outside this function),
+    // but we want to ensure the cache is coherent without having to
+    // worry about vertical matching of required and valid areas as
+    // well as horizontal. That's why this function didn't take any
+    // y/height parameters.
+
+    if (bufferIsBinResolution) {
+        renderToCacheBinResolution(v, x0, x1 - x0);
+    } else {
+        renderToCachePixelResolution(v, x0, x1 - x0, rightToLeft, timeConstrained);
+    }
 
     QRect pr = rect & m_cache.getValidArea();
     paint.drawImage(pr.x(), pr.y(), m_cache.getImage(),
@@ -175,113 +198,69 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
     //!!! should we own the Dense3DModelPeakCache here? or should it persist
 }
 
-void
-Colour3DPlotRenderer::renderToCache(LayerGeometryProvider *v,
-                                    int x0, int repaintWidth,
-                                    bool rightToLeft, bool timeConstrained)
+bool
+Colour3DPlotRenderer::useBinResolutionForDrawBuffer(LayerGeometryProvider *v) const
 {
-    // Draw to the draw buffer, and then scale-copy from there.
+    DenseThreeDimensionalModel *model = m_sources.source;
+    if (!model) return false;
+    int binResolution = model->getResolution();
+    int zoomLevel = v->getZoomLevel();
+    return (binResolution > zoomLevel);
+}
+
+void
+Colour3DPlotRenderer::renderToCachePixelResolution(LayerGeometryProvider *v,
+                                                   int x0, int repaintWidth,
+                                                   bool rightToLeft,
+                                                   bool timeConstrained)
+{
+    cerr << "renderToCachePixelResolution" << endl;
+    
+    // Draw to the draw buffer, and then copy from there. The draw
+    // buffer is at the same resolution as the target in the cache, so
+    // no extra scaling needed.
 
     DenseThreeDimensionalModel *model = m_sources.source;
     if (!model || !model->isOK() || !model->isReady()) {
 	throw std::logic_error("no source model provided, or model not ready");
     }
 
-    // The draw buffer contains a fragment at either our pixel
-    // resolution (if there is more than one time-bin per pixel) or
-    // time-bin resolution (if a time-bin spans more than one pixel).
-    // We need to ensure that it starts and ends at points where a
-    // time-bin boundary occurs at an exact pixel boundary, and with a
-    // certain amount of overlap across existing pixels so that we can
-    // scale and draw from it without smoothing errors at the edges.
-
-    // If (getFrameForX(x) / increment) * increment ==
-    // getFrameForX(x), then x is a time-bin boundary.  We want two
-    // such boundaries at either side of the draw buffer -- one which
-    // we draw up to, and one which we subsequently crop at.
-
-    bool bufferIsBinResolution = false;
-    int binResolution = model->getResolution();
-    int zoomLevel = v->getZoomLevel();
-    if (binResolution > zoomLevel) bufferIsBinResolution = true;
-
-    sv_frame_t leftBoundaryFrame = -1, leftCropFrame = -1;
-    sv_frame_t rightBoundaryFrame = -1, rightCropFrame = -1;
-
-    int drawWidth;
-
-    if (bufferIsBinResolution) {
-        for (int x = x0; ; --x) {
-            sv_frame_t f = v->getFrameForX(x);
-            if ((f / binResolution) * binResolution == f) {
-                if (leftCropFrame == -1) leftCropFrame = f;
-                else if (x < x0 - 2) {
-                    leftBoundaryFrame = f;
-                    break;
-                }
-            }
-        }
-        for (int x = x0 + repaintWidth; ; ++x) {
-            sv_frame_t f = v->getFrameForX(x);
-            if ((f / binResolution) * binResolution == f) {
-                if (rightCropFrame == -1) rightCropFrame = f;
-                else if (x > x0 + repaintWidth + 2) {
-                    rightBoundaryFrame = f;
-                    break;
-                }
-            }
-        }
-        drawWidth = int((rightBoundaryFrame - leftBoundaryFrame) / binResolution);
-    } else {
-        drawWidth = repaintWidth;
-    }
-    
-    // We always paint the full height.  Smaller heights can be used
-    // when painting direct from cache (outside this function), but we
-    // want to ensure the cache is coherent without having to worry
-    // about vertical matching of required and valid areas as well as
-    // horizontal. That's why this function didn't take any y/height
-    // parameters.
     int h = v->getPaintHeight();
 
-    clearDrawBuffer(drawWidth, h);
+    clearDrawBuffer(repaintWidth, h);
 
-    vector<int> binforx(drawWidth);
+    vector<int> binforx(repaintWidth);
     vector<double> binfory(h);
     
     bool usePeaksCache = false;
     int binsPerPeak = 1;
+    int zoomLevel = v->getZoomLevel();
+    int binResolution = model->getResolution();
 
-    if (bufferIsBinResolution) {
+    for (int x = 0; x < repaintWidth; ++x) {
+        sv_frame_t f0 = v->getFrameForX(x0 + x);
+        double s0 = double(f0 - model->getStartFrame()) / binResolution;
+        binforx[x] = int(s0 + 0.0001);
+    }
 
-        for (int x = 0; x < drawWidth; ++x) {
-            binforx[x] = int(leftBoundaryFrame / binResolution) + x;
-        }
+    if (m_sources.peaks) { // peaks cache exists
 
-        // calculating boundaries later will be too fiddly for partial
-        // paints, and painting should be fast anyway when this is the
-        // case because it means we're well zoomed in
-        timeConstrained = false;
-
-    } else {
-        for (int x = 0; x < drawWidth; ++x) {
-            sv_frame_t f0 = v->getFrameForX(x0 + x);
-            double s0 = double(f0 - model->getStartFrame()) / binResolution;
-            binforx[x] = int(s0 + 0.0001);
-        }
-
-        if (m_sources.peaks) { // peaks cache exists
-
-            binsPerPeak = m_sources.peaks->getColumnsPerPeak();
-            usePeaksCache = (binResolution * binsPerPeak) < zoomLevel;
-
-            if (m_params.colourScale.getScale() ==
-                ColourScale::PhaseColourScale) {
-                usePeaksCache = false;
-            }
+        binsPerPeak = m_sources.peaks->getColumnsPerPeak();
+        usePeaksCache = (binResolution * binsPerPeak) < zoomLevel;
+        
+        if (m_params.colourScale.getScale() ==
+            ColourScale::PhaseColourScale) {
+            usePeaksCache = false;
         }
     }
 
+    cerr << "[PIX] zoomLevel = " << zoomLevel
+         << ", binResolution " << binResolution 
+         << ", binsPerPeak " << binsPerPeak
+         << ", peak cache " << m_sources.peaks
+         << ", usePeaksCache = " << usePeaksCache
+         << endl;
+    
     for (int y = 0; y < h; ++y) {
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
     }
@@ -294,57 +273,139 @@ Colour3DPlotRenderer::renderToCache(LayerGeometryProvider *v,
                                          rightToLeft,
                                          timeConstrained);
 
-    //!!! now scale-copy to cache
-
     if (attainedWidth == 0) return;
+
+    // draw buffer is pixel resolution, no scaling factors or padding involved
     
     int paintedLeft = x0;
     if (rightToLeft) {
         paintedLeft += (repaintWidth - attainedWidth);
     }
 
-    if (bufferIsBinResolution) {
+    m_cache.drawImage(paintedLeft, attainedWidth,
+                      m_drawBuffer,
+                      paintedLeft - x0, attainedWidth);
+}
 
-        int scaledLeft = v->getXForFrame(leftBoundaryFrame);
-        int scaledRight = v->getXForFrame(rightBoundaryFrame);
+void
+Colour3DPlotRenderer::renderToCacheBinResolution(LayerGeometryProvider *v,
+                                                 int x0, int repaintWidth)
+{
+    cerr << "renderToCacheBinResolution" << endl;
+    
+    // Draw to the draw buffer, and then scale-copy from there. Draw
+    // buffer is at bin resolution, i.e. buffer x == source column
+    // number. We use toolkit smooth scaling for interpolation.
 
-        QImage scaled = m_drawBuffer.scaled
-            (scaledRight - scaledLeft, h,
-             Qt::IgnoreAspectRatio, (m_params.interpolate ?
-                                     Qt::SmoothTransformation :
-                                     Qt::FastTransformation));
+    DenseThreeDimensionalModel *model = m_sources.source;
+    if (!model || !model->isOK() || !model->isReady()) {
+	throw std::logic_error("no source model provided, or model not ready");
+    }
+
+    // The draw buffer will contain a fragment at bin resolution. We
+    // need to ensure that it starts and ends at points where a
+    // time-bin boundary occurs at an exact pixel boundary, and with a
+    // certain amount of overlap across existing pixels so that we can
+    // scale and draw from it without smoothing errors at the edges.
+
+    // If (getFrameForX(x) / increment) * increment ==
+    // getFrameForX(x), then x is a time-bin boundary.  We want two
+    // such boundaries at either side of the draw buffer -- one which
+    // we draw up to, and one which we subsequently crop at.
+
+    sv_frame_t leftBoundaryFrame = -1, leftCropFrame = -1;
+    sv_frame_t rightBoundaryFrame = -1, rightCropFrame = -1;
+
+    int drawBufferWidth;
+    int binResolution = model->getResolution();
+
+    for (int x = x0; ; --x) {
+        sv_frame_t f = v->getFrameForX(x);
+        if ((f / binResolution) * binResolution == f) {
+            if (leftCropFrame == -1) leftCropFrame = f;
+            else if (x < x0 - 2) {
+                leftBoundaryFrame = f;
+                break;
+            }
+        }
+    }
+    for (int x = x0 + repaintWidth; ; ++x) {
+        sv_frame_t f = v->getFrameForX(x);
+        if ((f / binResolution) * binResolution == f) {
+            if (rightCropFrame == -1) rightCropFrame = f;
+            else if (x > x0 + repaintWidth + 2) {
+                rightBoundaryFrame = f;
+                break;
+            }
+        }
+    }
+    drawBufferWidth = int
+        ((rightBoundaryFrame - leftBoundaryFrame) / binResolution);
+    
+    int h = v->getPaintHeight();
+
+    clearDrawBuffer(drawBufferWidth, h);
+
+    vector<int> binforx(drawBufferWidth);
+    vector<double> binfory(h);
+    
+    for (int x = 0; x < drawBufferWidth; ++x) {
+        binforx[x] = int(leftBoundaryFrame / binResolution) + x;
+    }
+
+    cerr << "[BIN] binResolution " << binResolution 
+         << endl;
+    
+    for (int y = 0; y < h; ++y) {
+        binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
+    }
+
+    int attainedWidth = renderDrawBuffer(drawBufferWidth,
+                                         h,
+                                         binforx,
+                                         binfory,
+                                         false,
+                                         false,
+                                         false);
+
+    if (attainedWidth == 0) return;
+
+    int scaledLeft = v->getXForFrame(leftBoundaryFrame);
+    int scaledRight = v->getXForFrame(rightBoundaryFrame);
+    
+    QImage scaled = m_drawBuffer.scaled
+        (scaledRight - scaledLeft, h,
+         Qt::IgnoreAspectRatio, (m_params.interpolate ?
+                                 Qt::SmoothTransformation :
+                                 Qt::FastTransformation));
             
-        int scaledLeftCrop = v->getXForFrame(leftCropFrame);
-        int scaledRightCrop = v->getXForFrame(rightCropFrame);
-
-        int targetLeft = scaledLeftCrop;
-        if (targetLeft < 0) {
-            targetLeft = 0;
-        }
-
-        int targetWidth = scaledRightCrop - targetLeft;
-        if (targetLeft + targetWidth > m_cache.getSize().width()) {
-            targetWidth = m_cache.getSize().width() - targetLeft;
-        }
-            
-        int sourceLeft = targetLeft - scaledLeft;
-        if (sourceLeft < 0) {
-            sourceLeft = 0;
-        }
-            
-        int sourceWidth = targetWidth;
-
-        if (targetWidth > 0) {
-            m_cache.drawImage(targetLeft, targetWidth,
-                              scaled,
-                              sourceLeft, sourceWidth);
-        }
-
-    } else {
-
-        m_cache.drawImage(paintedLeft, attainedWidth,
-                          m_drawBuffer,
-                          paintedLeft - x0, attainedWidth);
+    int scaledLeftCrop = v->getXForFrame(leftCropFrame);
+    int scaledRightCrop = v->getXForFrame(rightCropFrame);
+    
+    int targetLeft = scaledLeftCrop;
+    if (targetLeft < 0) {
+        targetLeft = 0;
+    }
+    
+    int targetWidth = scaledRightCrop - targetLeft;
+    if (targetLeft + targetWidth > m_cache.getSize().width()) {
+        targetWidth = m_cache.getSize().width() - targetLeft;
+    }
+    
+    int sourceLeft = targetLeft - scaledLeft;
+    if (sourceLeft < 0) {
+        sourceLeft = 0;
+    }
+    
+    int sourceWidth = targetWidth;
+    
+    cerr << "repaintWidth = " << repaintWidth
+         << ", targetWidth = " << targetWidth << endl;
+    
+    if (targetWidth > 0) {
+        m_cache.drawImage(targetLeft, targetWidth,
+                          scaled,
+                          sourceLeft, sourceWidth);
     }
 }
 
@@ -391,6 +452,9 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     int columnCount = 0;
     
     vector<float> preparedColumn;
+
+    int modelWidth = sourceModel->getWidth();
+    cerr << "modelWidth " << modelWidth << endl;
             
     for (int x = start; x != finish; x += step) {
 
@@ -413,10 +477,10 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         for (int sx = sx0; sx < sx1; ++sx) {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-//            cerr << "sx = " << sx << endl;
+            cerr << "sx = " << sx << endl;
 #endif
 
-            if (sx < 0 || sx >= sourceModel->getWidth()) {
+            if (sx < 0 || sx >= modelWidth) {
                 continue;
             }
 
@@ -429,8 +493,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
                 ColumnOp::Column fullColumn = sourceModel->getColumn(sx);
 
-                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
-                     << ", minbin " << minbin << ", maxbin " << maxbin << endl;
+//                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
+//                     << ", minbin " << minbin << ", maxbin " << maxbin << endl;
                 
                 ColumnOp::Column column =
                     vector<float>(fullColumn.data() + minbin,
