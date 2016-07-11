@@ -190,12 +190,21 @@ private:
                                       bool timeConstrained);
     void renderToCacheBinResolution(LayerGeometryProvider *v, int x0,
                                     int repaintWidth);
+
     int renderDrawBuffer(int w, int h,
                          const std::vector<int> &binforx,
                          const std::vector<double> &binfory,
                          bool usePeaksCache,
                          bool rightToLeft,
                          bool timeConstrained);
+
+    int renderDrawBufferPeakFrequencies(LayerGeometryProvider *v,
+                                        int w, int h,
+                                        const std::vector<int> &binforx,
+                                        const std::vector<double> &binfory,
+                                        bool rightToLeft,
+                                        bool timeConstrained);
+    
     void recreateDrawBuffer(int w, int h);
     void clearDrawBuffer(int w, int h);
 };
