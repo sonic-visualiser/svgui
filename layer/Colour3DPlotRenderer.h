@@ -147,6 +147,20 @@ public:
      */
     RenderResult renderTimeConstrained(LayerGeometryProvider *v,
                                        QPainter &paint, QRect rect);
+
+    /**
+     * Return the area of the largest rectangle within the entire area
+     * of the cache that is unavailable in the cache. This is only
+     * valid in relation to a preceding render() call which is
+     * presumed to have set the area, start frame, and zoom level for
+     * the cache. It could be used to establish a suitable region for
+     * a subsequent paint request (because if an area is not in the
+     * cache, it cannot have been rendered since the cache was
+     * cleared).
+     *
+     * Returns an empty QRect if the cache is entirely valid.
+     */
+    QRect getLargestUncachedRect();
     
 private:
     Sources m_sources;

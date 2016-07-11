@@ -42,6 +42,22 @@ Colour3DPlotRenderer::renderTimeConstrained(LayerGeometryProvider *v,
     return render(v, paint, rect, true);
 }
 
+QRect
+Colour3DPlotRenderer::getLargestUncachedRect()
+{
+    int h = m_cache.getSize().height();
+
+    QRect areaLeft(0, 0, m_cache.getValidLeft(), h);
+    QRect areaRight(m_cache.getValidRight(), 0,
+                    m_cache.getSize().width() - m_cache.getValidRight(), h);
+
+    if (areaRight.width() > areaLeft.width()) {
+        return areaRight;
+    } else {
+        return areaLeft;
+    }
+}
+
 Colour3DPlotRenderer::RenderResult
 Colour3DPlotRenderer::render(LayerGeometryProvider *v,
                              QPainter &paint, QRect rect, bool timeConstrained)
@@ -183,8 +199,6 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
     //!!! todo: peak frequency style
 
     //!!! todo: transparent style from Colour3DPlot
-
-    //!!! todo: bin boundary alignment when in BinResolution
 
     //!!! todo: view magnitudes / normalise visible area
 
