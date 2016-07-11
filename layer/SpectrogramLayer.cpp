@@ -1551,8 +1551,7 @@ SpectrogramLayer::paintAlternative(LayerGeometryProvider *v, QPainter &paint, QR
     ++depth;
     cerr << "paint depth " << depth << endl;
     
-    Colour3DPlotRenderer::RenderResult result =
-        renderer->renderTimeConstrained(v, paint, rect);
+    (void)renderer->renderTimeConstrained(v, paint, rect);
 
     //!!! + mag range
 
