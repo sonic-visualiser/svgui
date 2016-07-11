@@ -1556,54 +1556,11 @@ SpectrogramLayer::paintAlternative(LayerGeometryProvider *v, QPainter &paint, QR
 
     //!!! + mag range
 
-    QRect rendered = result.rendered;
-    if (rendered == rect) {
-        cerr << "exiting paint depth " << depth << endl;
-        --depth;
-        return;
-    }
-
-    int rLeft = rendered.x();
-    int rRight = rendered.x() + rendered.width();
-
-    if (rLeft < rect.x()) {
-        rLeft = rect.x();
-    }
-    if (rRight > rect.x() + rect.width()) {
-        rRight = rect.x() + rect.width();
-    }
-    
-    QRect areaLeft(rect.x(), rect.y(),
-                   rLeft - rect.x(), rect.height());
-
-    QRect areaRight(rRight, rect.y(),
-                    rect.x() + rect.width() - rRight, rect.height());
-    
-    bool updateLeft = (areaLeft.width() > 0);
-    bool updateRight = (areaRight.width() > 0);
-
-    if (updateLeft) {
-        if (updateRight) {
-            if (areaLeft.width() > areaRight.width()) {
-                cerr << "update left then right, widths "
-                     << areaLeft.width() << " and "
-                     << areaRight.width() << endl;
-                v->updatePaintRect(areaLeft);
-                v->updatePaintRect(areaRight);
-            } else {
-                cerr << "update right then left, widths "
-                     << areaLeft.width() << " and "
-                     << areaRight.width() << endl;
-                v->updatePaintRect(areaRight);
-                v->updatePaintRect(areaLeft);
-            }
-        } else {
-            cerr << "update left, width " << areaLeft.width() << endl;
-            v->updatePaintRect(areaLeft);
-        }
-    } else {
-        cerr << "update right, width " << areaRight.width() << endl;
-        v->updatePaintRect(areaRight);
+    QRect uncached = renderer->getLargestUncachedRect();
+    if (uncached.width() > 0) {
+        cerr << "updating rect at " << uncached.x() << " width "
+             << uncached.width() << endl;
+        v->updatePaintRect(uncached);
     }
 
     cerr << "exiting paint depth " << depth << endl;
