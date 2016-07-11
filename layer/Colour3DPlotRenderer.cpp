@@ -279,13 +279,26 @@ Colour3DPlotRenderer::renderToCachePixelResolution(LayerGeometryProvider *v,
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
     }
 
-    int attainedWidth = renderDrawBuffer(repaintWidth,
+    int attainedWidth;
+
+    if (m_params.binDisplay == PeakFrequencies) {
+        attainedWidth = renderDrawBufferPeakFrequencies(v,
+                                                        repaintWidth,
+                                                        h,
+                                                        binforx,
+                                                        binfory,
+                                                        rightToLeft,
+                                                        timeConstrained);
+
+    } else {
+        attainedWidth = renderDrawBuffer(repaintWidth,
                                          h,
                                          binforx,
                                          binfory,
                                          usePeaksCache,
                                          rightToLeft,
                                          timeConstrained);
+    }
 
     if (attainedWidth == 0) return;
 
@@ -564,6 +577,152 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                     (x,
                      h-y-1,
                      m_params.colourScale.getPixel(pixelPeakColumn[y]));
+            }
+        }
+
+        double fractionComplete = double(columnCount) / double(w);
+        if (timer.outOfTime(fractionComplete)) {
+            return columnCount;
+        }
+    }
+
+    return columnCount;
+}
+
+int
+Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(LayerGeometryProvider *v,
+                                                      int w, int h,
+                                                      const vector<int> &binforx,
+                                                      const vector<double> &binfory,
+                                                      bool rightToLeft,
+                                                      bool timeConstrained)
+{
+    // Callers must have checked that the appropriate subset of
+    // Sources data members are set for the supplied flags (e.g. that
+    // fft model exists)
+    
+    RenderTimer timer(timeConstrained ?
+                      RenderTimer::FastRender :
+                      RenderTimer::NoTimeout);
+
+    int minbin = int(binfory[0] + 0.0001);
+    int maxbin = int(binfory[h-1]);
+    if (minbin < 0) minbin = 0;
+    if (maxbin < 0) maxbin = minbin+1;
+
+    FFTModel *fft = m_sources.fft;
+
+    FFTModel::PeakSet peakfreqs;
+
+    int psx = -1;
+    
+    int start = 0;
+    int finish = w;
+    int step = 1;
+
+    if (rightToLeft) {
+        start = w-1;
+        finish = -1;
+        step = -1;
+    }
+    
+    int columnCount = 0;
+    
+    vector<float> preparedColumn;
+
+    int modelWidth = fft->getWidth();
+    cerr << "modelWidth " << modelWidth << endl;
+
+    double minFreq = (double(minbin) * fft->getSampleRate()) / fft->getFFTSize();
+    double maxFreq = (double(maxbin) * fft->getSampleRate()) / fft->getFFTSize();
+
+    bool logarithmic = (m_params.binScale == LogBinScale);
+    
+    for (int x = start; x != finish; x += step) {
+        
+        // x is the on-canvas pixel coord; sx (later) will be the
+        // source column index
+        
+        ++columnCount;
+        
+        if (binforx[x] < 0) continue;
+
+        int sx0 = binforx[x];
+        int sx1 = sx0;
+        if (x+1 < w) sx1 = binforx[x+1];
+        if (sx0 < 0) sx0 = sx1 - 1;
+        if (sx0 < 0) continue;
+        if (sx1 <= sx0) sx1 = sx0 + 1;
+
+        vector<float> pixelPeakColumn;
+        
+        for (int sx = sx0; sx < sx1; ++sx) {
+
+            if (sx < 0 || sx >= modelWidth) {
+                continue;
+            }
+
+            if (sx != psx) {
+
+                ColumnOp::Column fullColumn = fft->getColumn(sx);
+                
+                ColumnOp::Column column =
+                    vector<float>(fullColumn.data() + minbin,
+                                  fullColumn.data() + maxbin + 1);
+
+//!!! fft scale                if (m_colourScale != ColourScale::PhaseColourScale) {
+//                    column = ColumnOp::fftScale(column, getFFTSize());
+//                }
+
+//!!! extents                recordColumnExtents(column,
+//                                    sx,
+//                                    overallMag,
+//                                    overallMagChanged);
+
+//!!!                if (m_colourScale != ColourScale::PhaseColourScale) {
+                    column = ColumnOp::normalize(column, m_params.normalization);
+//!!!                }
+
+                    preparedColumn = column;
+//!!! gain?                preparedColumn = ColumnOp::applyGain(column, m_params.gain);
+                
+                psx = sx;
+            }
+
+            if (sx == sx0) {
+                pixelPeakColumn = preparedColumn;
+                peakfreqs = fft->getPeakFrequencies(FFTModel::AllPeaks, sx,
+                                                    minbin, maxbin - 1);
+            } else {
+                for (int i = 0; in_range_for(pixelPeakColumn, i); ++i) {
+                    pixelPeakColumn[i] = std::max(pixelPeakColumn[i],
+                                                  preparedColumn[i]);
+                }
+            }
+        }
+
+        if (!pixelPeakColumn.empty()) {
+            for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
+                 pi != peakfreqs.end(); ++pi) {
+
+                int bin = pi->first;
+                double freq = pi->second;
+
+                if (bin < minbin) continue;
+                if (bin > maxbin) break;
+            
+                double value = pixelPeakColumn[bin - minbin];
+            
+                double y = v->getYForFrequency
+                    (freq, minFreq, maxFreq, logarithmic);
+            
+                int iy = int(y + 0.5);
+                if (iy < 0 || iy >= h) continue;
+
+                m_drawBuffer.setPixel
+                    (x,
+                     iy,
+                     m_params.colourScale.getPixel(value));
             }
         }
 

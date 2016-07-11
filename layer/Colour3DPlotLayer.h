@@ -19,6 +19,9 @@
 #include "SliceableLayer.h"
 #include "VerticalBinLayer.h"
 
+#include "ColourScale.h"
+#include "Colour3DPlotRenderer.h"
+
 #include "data/model/DenseThreeDimensionalModel.h"
 
 class View;
@@ -194,7 +197,7 @@ protected:
     // always snap to whole bins at view edges.
     int         m_miny;
     int         m_maxy;
-
+    
     /**
      * Return the y coordinate at which the given bin "starts"
      * (i.e. at the bottom of the bin, if the given bin is an integer
