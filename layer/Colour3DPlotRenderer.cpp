@@ -344,7 +344,10 @@ Colour3DPlotRenderer::renderToCacheBinResolution(LayerGeometryProvider *v,
     
     int h = v->getPaintHeight();
 
-    clearDrawBuffer(drawBufferWidth, h);
+    // For our purposes here, the draw buffer needs to be exactly our
+    // target size (so we recreate always rather than just clear it)
+    
+    recreateDrawBuffer(drawBufferWidth, h);
 
     vector<int> binforx(drawBufferWidth);
     vector<double> binfory(h);
@@ -372,6 +375,10 @@ Colour3DPlotRenderer::renderToCacheBinResolution(LayerGeometryProvider *v,
 
     int scaledLeft = v->getXForFrame(leftBoundaryFrame);
     int scaledRight = v->getXForFrame(rightBoundaryFrame);
+
+    cerr << "scaling draw buffer from width " << m_drawBuffer.width()
+         << " to " << (scaledRight - scaledLeft) << " (nb drawBufferWidth = "
+         << drawBufferWidth << ")" << endl;
     
     QImage scaled = m_drawBuffer.scaled
         (scaledRight - scaledLeft, h,
@@ -556,21 +563,28 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 }
 
 void
-Colour3DPlotRenderer::clearDrawBuffer(int w, int h)
+Colour3DPlotRenderer::recreateDrawBuffer(int w, int h)
 {
-    if (m_drawBuffer.width() < w || m_drawBuffer.height() != h) {
+    m_drawBuffer = QImage(w, h, QImage::Format_Indexed8);
 
-        m_drawBuffer = QImage(w, h, QImage::Format_Indexed8);
-
-        for (int pixel = 0; pixel < 256; ++pixel) {
-            //!!! todo: colour rotation (here 0)
-            m_drawBuffer.setColor
-                ((unsigned char)pixel,
-                 m_params.colourScale.getColourForPixel(pixel, 0).rgb());
-        }
+    for (int pixel = 0; pixel < 256; ++pixel) {
+        //!!! todo: colour rotation (here 0)
+        m_drawBuffer.setColor
+            ((unsigned char)pixel,
+             m_params.colourScale.getColourForPixel(pixel, 0).rgb());
     }
 
     m_drawBuffer.fill(0);
+}
+
+void
+Colour3DPlotRenderer::clearDrawBuffer(int w, int h)
+{
+    if (m_drawBuffer.width() < w || m_drawBuffer.height() != h) {
+        recreateDrawBuffer(w, h);
+    } else {
+        m_drawBuffer.fill(0);
+    }
 }
 
 

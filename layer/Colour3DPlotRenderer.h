@@ -182,6 +182,7 @@ private:
                          bool usePeaksCache,
                          bool rightToLeft,
                          bool timeConstrained);
+    void recreateDrawBuffer(int w, int h);
     void clearDrawBuffer(int w, int h);
 };
 
