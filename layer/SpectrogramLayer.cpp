@@ -271,6 +271,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == "Colour Scale") {
 
+        // linear, meter, db^2, db, phase
 	*min = 0;
 	*max = 4;
         *deflt = 2;
@@ -3569,7 +3570,7 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     }
 
     bool normalizeVisibleArea =
-	(attributes.value("normalizeVisibleArea").trimmed() == "true");
+        (attributes.value("normalizeVisibleArea").trimmed() == "true");
     if (normalizeVisibleArea) {
         setNormalization(ColumnOp::NormalizeVisibleArea);
     }

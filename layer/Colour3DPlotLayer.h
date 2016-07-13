@@ -83,19 +83,14 @@ public:
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
 					  int value) const;
+    virtual QString getPropertyValueIconName(const PropertyName &,
+                                             int value) const;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
     virtual void setProperty(const PropertyName &, int value);
     virtual void setProperties(const QXmlAttributes &);
     
-    enum ColourScale {
-        LinearScale,
-        LogScale,
-        PlusMinusOneScale,
-        AbsoluteScale
-    };
-
-    void setColourScale(ColourScale);
-    ColourScale getColourScale() const { return m_colourScale; }
+    void setColourScale(ColourScale::Scale);
+    ColourScale::Scale getColourScale() const { return m_colourScale; }
 
     void setColourMap(int map);
     int getColourMap() const;
@@ -106,37 +101,18 @@ public:
      */
     void setGain(float gain);
     float getGain() const;
-
-    enum BinScale {
-	LinearBinScale,
-	LogBinScale
-    };
     
     /**
      * Specify the scale for the y axis.
      */
-    void setBinScale(BinScale);
-    BinScale getBinScale() const;
+    void setBinScale(Colour3DPlotRenderer::BinScale);
+    Colour3DPlotRenderer::BinScale getBinScale() const;
 
     /**
-     * Normalize each column to its maximum value, independent of its
-     * neighbours.
+     * Specify the normalization mode for bin values.
      */
-    void setNormalizeColumns(bool n);
-    bool getNormalizeColumns() const;
-
-    /**
-     * Normalize each value against the maximum in the visible region.
-     */
-    void setNormalizeVisibleArea(bool n);
-    bool getNormalizeVisibleArea() const;
-
-    /**
-     * Normalize each column to its maximum value, and then scale by
-     * the log of the (absolute) maximum value.
-     */
-    void setNormalizeHybrid(bool n);
-    bool getNormalizeHybrid() const;
+    void setNormalization(ColumnOp::Normalization);
+    ColumnOp::Normalization getNormalization() const;
 
     void setInvertVertical(bool i);
     bool getInvertVertical() const;
@@ -180,14 +156,12 @@ protected:
     mutable int m_cacheValidStart;
     mutable int m_cacheValidEnd;
 
-    ColourScale m_colourScale;
+    ColourScale::Scale m_colourScale;
     bool        m_colourScaleSet;
     int         m_colourMap;
     float       m_gain;
-    BinScale    m_binScale;
-    bool        m_normalizeColumns;
-    bool        m_normalizeVisibleArea;
-    bool        m_normalizeHybrid;
+    Colour3DPlotRenderer::BinScale m_binScale;
+    ColumnOp::Normalization m_normalization;
     bool        m_invertVertical;
     bool        m_opaque;
     bool        m_smooth;
