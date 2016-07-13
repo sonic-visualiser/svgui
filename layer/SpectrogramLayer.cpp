@@ -132,6 +132,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 
 SpectrogramLayer::~SpectrogramLayer()
 {
+    invalidateImageCaches();
     invalidateFFTModel();
 }
 
