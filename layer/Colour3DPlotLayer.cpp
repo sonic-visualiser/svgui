@@ -64,6 +64,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_peakResolution(256),
     m_miny(0),
     m_maxy(0),
+    m_synchronous(false),
     m_peakCache(0),
     m_peakCacheDivisor(8)
 {
@@ -78,6 +79,12 @@ Colour3DPlotLayer::~Colour3DPlotLayer()
     delete m_cache;
     delete m_peaksCache; //!!! this one is to go...
     delete m_peakCache;
+}
+
+void
+Colour3DPlotLayer::setSynchronousPainting(bool synchronous)
+{
+    m_synchronous = synchronous;
 }
 
 void
@@ -1318,6 +1325,36 @@ Colour3DPlotLayer::getRenderer(LayerGeometryProvider *v) const
 }
 
 void
+Colour3DPlotLayer::paintAlternative(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
+{
+    static int depth = 0;
+    
+    Colour3DPlotRenderer *renderer = getRenderer(v);
+
+    if (m_synchronous) {
+        (void)renderer->render(v, paint, rect);
+        return;
+    }
+
+    ++depth;
+    cerr << "paint depth " << depth << endl;
+    
+    (void)renderer->renderTimeConstrained(v, paint, rect);
+
+    //!!! + mag range
+
+    QRect uncached = renderer->getLargestUncachedRect();
+    if (uncached.width() > 0) {
+        cerr << "updating rect at " << uncached.x() << " width "
+             << uncached.width() << endl;
+        v->updatePaintRect(uncached);
+    }
+
+    cerr << "exiting paint depth " << depth << endl;
+    --depth;
+}
+
+void
 Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
 /*
@@ -1346,6 +1383,15 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 #endif
         return;
     }
+
+    //!!! why is the setLayerDormant(false) found here in
+    //!!! SpectrogramLayer not present in Colour3DPlotLayer?
+    //!!! unnecessary? vestigial? forgotten?
+
+    paintAlternative(v, paint, rect);
+    return;
+
+    //!!!???
     
     if (m_normalization == ColumnOp::NormalizeVisibleArea) {
         rect = v->getPaintRect();

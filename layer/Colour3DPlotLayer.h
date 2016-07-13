@@ -52,6 +52,7 @@ public:
     }
     virtual const Model *getModel() const { return m_model; }
     virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    virtual void setSynchronousPainting(bool synchronous);
 
     virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
     virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
@@ -172,6 +173,8 @@ protected:
     int         m_miny;
     int         m_maxy;
 
+    bool        m_synchronous;
+
     mutable Dense3DModelPeakCache *m_peakCache;
     const int m_peakCacheDivisor;
     Dense3DModelPeakCache *getPeakCache() const;
@@ -208,6 +211,9 @@ protected:
     int getColourScaleWidth(QPainter &) const;
     void fillCache(int firstBin, int lastBin) const;
     void paintDense(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+
+    void paintAlternative(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+
 };
 
 #endif

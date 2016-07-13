@@ -1531,6 +1531,7 @@ SpectrogramLayer::setSynchronousPainting(bool synchronous)
 ScrollableImageCache &
 SpectrogramLayer::getImageCacheReference(const LayerGeometryProvider *view) const
 {
+    //!!! to go?
     if (m_imageCaches.find(view->getId()) == m_imageCaches.end()) {
         m_imageCaches[view->getId()] = ScrollableImageCache();
     }
