@@ -23,6 +23,8 @@
 #include "LayerGeometryProvider.h"
 #include "PaintAssistant.h"
 
+#include "data/model/Dense3DModelPeakCache.h"
+
 #include "view/ViewManager.h"
 
 #include <QPainter>
@@ -61,7 +63,9 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_smooth(false),
     m_peakResolution(256),
     m_miny(0),
-    m_maxy(0)
+    m_maxy(0),
+    m_peakCache(0),
+    m_peakCacheDivisor(8)
 {
     QSettings settings;
     settings.beginGroup("Preferences");
@@ -72,7 +76,8 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
 Colour3DPlotLayer::~Colour3DPlotLayer()
 {
     delete m_cache;
-    delete m_peaksCache;
+    delete m_peaksCache; //!!! this one is to go...
+    delete m_peakCache;
 }
 
 void
@@ -97,6 +102,10 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
     } else if (model->getResolution() > 2) {
         m_peakResolution = 128;
     }
+
+    delete m_peakCache;
+    m_peakCache = 0;
+
     cacheInvalid();
 
     emit modelReplaced();
@@ -106,6 +115,8 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 void
 Colour3DPlotLayer::cacheInvalid()
 {
+    //!!! to go
+    
     delete m_cache;
     delete m_peaksCache;
     m_cache = 0;
@@ -117,6 +128,8 @@ Colour3DPlotLayer::cacheInvalid()
 void
 Colour3DPlotLayer::cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame)
 {
+    //!!! to go
+    
     if (!m_cache || !m_model) return;
 
     int modelResolution = m_model->getResolution();
@@ -125,6 +138,15 @@ Colour3DPlotLayer::cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame)
     if (m_cacheValidStart < end) m_cacheValidStart = end;
     if (m_cacheValidEnd > start) m_cacheValidEnd = start;
     if (m_cacheValidStart > m_cacheValidEnd) m_cacheValidEnd = m_cacheValidStart;
+}
+
+Dense3DModelPeakCache *
+Colour3DPlotLayer::getPeakCache() const
+{
+    if (!m_peakCache) {
+        m_peakCache = new Dense3DModelPeakCache(m_model, m_peakCacheDivisor);
+    }
+    return m_peakCache;
 }
 
 void
@@ -1263,6 +1285,36 @@ Colour3DPlotLayer::shouldPaintDenseIn(const LayerGeometryProvider *v) const
         return true;
     }
     return false;
+}
+
+Colour3DPlotRenderer *
+Colour3DPlotLayer::getRenderer(LayerGeometryProvider *v) const
+{
+    if (m_renderers.find(v->getId()) == m_renderers.end()) {
+
+        Colour3DPlotRenderer::Sources sources;
+        sources.verticalBinLayer = this;
+        sources.fft = 0;
+        sources.source = m_model;
+        sources.peaks = getPeakCache();
+
+        ColourScale::Parameters cparams;
+        cparams.colourMap = m_colourMap;
+        cparams.scale = m_colourScale;
+        cparams.gain = m_gain;
+
+        Colour3DPlotRenderer::Parameters params;
+        params.colourScale = ColourScale(cparams);
+        params.normalization = m_normalization;
+        params.binScale = m_binScale;
+        params.alwaysOpaque = m_opaque;
+        params.invertVertical = m_invertVertical;
+        params.interpolate = m_smooth;
+
+        m_renderers[v->getId()] = new Colour3DPlotRenderer(sources, params);
+    }
+
+    return m_renderers[v->getId()];
 }
 
 void
