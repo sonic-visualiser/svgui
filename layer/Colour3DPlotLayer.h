@@ -171,7 +171,15 @@ protected:
     // always snap to whole bins at view edges.
     int         m_miny;
     int         m_maxy;
-    
+
+    mutable Dense3DModelPeakCache *m_peakCache;
+    const int m_peakCacheDivisor;
+    Dense3DModelPeakCache *getPeakCache() const;
+
+    typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
+    mutable ViewRendererMap m_renderers;
+    Colour3DPlotRenderer *getRenderer(LayerGeometryProvider *) const;
+        
     /**
      * Return the y coordinate at which the given bin "starts"
      * (i.e. at the bottom of the bin, if the given bin is an integer

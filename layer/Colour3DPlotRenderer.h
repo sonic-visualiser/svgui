@@ -51,9 +51,9 @@ public:
         
         // These must all outlive this class
         const VerticalBinLayer *verticalBinLayer;  // always
-	DenseThreeDimensionalModel *source;        // always
-	Dense3DModelPeakCache *peaks;	           // optionally
-	FFTModel *fft;			           // optionally
+	const DenseThreeDimensionalModel *source;  // always
+	const Dense3DModelPeakCache *peaks;        // optionally
+	const FFTModel *fft;                       // optionally
     };        
 
     struct Parameters {

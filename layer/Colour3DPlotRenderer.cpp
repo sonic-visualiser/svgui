@@ -215,7 +215,7 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
 bool
 Colour3DPlotRenderer::useBinResolutionForDrawBuffer(LayerGeometryProvider *v) const
 {
-    DenseThreeDimensionalModel *model = m_sources.source;
+    const DenseThreeDimensionalModel *model = m_sources.source;
     if (!model) return false;
     int binResolution = model->getResolution();
     int zoomLevel = v->getZoomLevel();
@@ -234,7 +234,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(LayerGeometryProvider *v,
     // buffer is at the same resolution as the target in the cache, so
     // no extra scaling needed.
 
-    DenseThreeDimensionalModel *model = m_sources.source;
+    const DenseThreeDimensionalModel *model = m_sources.source;
     if (!model || !model->isOK() || !model->isReady()) {
 	throw std::logic_error("no source model provided, or model not ready");
     }
@@ -324,7 +324,7 @@ Colour3DPlotRenderer::renderToCacheBinResolution(LayerGeometryProvider *v,
     // buffer is at bin resolution, i.e. buffer x == source column
     // number. We use toolkit smooth scaling for interpolation.
 
-    DenseThreeDimensionalModel *model = m_sources.source;
+    const DenseThreeDimensionalModel *model = m_sources.source;
     if (!model || !model->isOK() || !model->isReady()) {
 	throw std::logic_error("no source model provided, or model not ready");
     }
@@ -465,7 +465,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     if (maxbin < 0) maxbin = minbin+1;
 
     int divisor = 1;
-    DenseThreeDimensionalModel *sourceModel = m_sources.source;
+    const DenseThreeDimensionalModel *sourceModel = m_sources.source;
     if (usePeaksCache) {
         divisor = m_sources.peaks->getColumnsPerPeak();
         sourceModel = m_sources.peaks;
@@ -610,7 +610,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = minbin+1;
 
-    FFTModel *fft = m_sources.fft;
+    const FFTModel *fft = m_sources.fft;
 
     FFTModel::PeakSet peakfreqs;
 
