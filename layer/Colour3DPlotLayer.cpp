@@ -79,6 +79,8 @@ Colour3DPlotLayer::~Colour3DPlotLayer()
     delete m_cache;
     delete m_peaksCache; //!!! this one is to go...
     delete m_peakCache;
+
+    cacheInvalid(); //!!! dup with above?
 }
 
 void
@@ -130,6 +132,13 @@ Colour3DPlotLayer::cacheInvalid()
     m_peaksCache = 0;
     m_cacheValidStart = 0;
     m_cacheValidEnd = 0;
+
+    //!!!
+    for (ViewRendererMap::iterator i = m_renderers.begin();
+         i != m_renderers.end(); ++i) {
+        delete i->second;
+    }
+    m_renderers.clear();
 }
 
 void
