@@ -175,7 +175,7 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
     // well as horizontal. That's why this function didn't take any
     // y/height parameters.
 
-    if (bufferIsBinResolution) {
+    if (bufferIsBinResolution && (m_params.binDisplay != PeakFrequencies)) {
         renderToCacheBinResolution(v, x0, x1 - x0);
     } else {
         renderToCachePixelResolution(v, x0, x1 - x0, rightToLeft, timeConstrained);
