@@ -263,7 +263,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(LayerGeometryProvider *v,
         usePeaksCache = (binResolution * binsPerPeak) < zoomLevel;
         
         if (m_params.colourScale.getScale() ==
-            ColourScale::PhaseColourScale) {
+            ColourScaleType::Phase) {
             usePeaksCache = false;
         }
     }
@@ -534,7 +534,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                     vector<float>(fullColumn.data() + minbin,
                                   fullColumn.data() + maxbin + 1);
 
-//!!! fft scale                if (m_colourScale != PhaseColourScale) {
+//!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
 //                    column = ColumnOp::fftScale(column, m_fftSize);
 //                }
 
@@ -543,7 +543,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 //                                    overallMag,
 //                                    overallMagChanged);
 
-//                if (m_colourScale != PhaseColourScale) {
+//                if (m_colourScale != ColourScaleType::Phase) {
                     column = ColumnOp::normalize(column, m_params.normalization);
 //                }
 
@@ -670,7 +670,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(LayerGeometryProvider *v,
                     vector<float>(fullColumn.data() + minbin,
                                   fullColumn.data() + maxbin + 1);
 
-//!!! fft scale                if (m_colourScale != ColourScale::PhaseColourScale) {
+//!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
 //                    column = ColumnOp::fftScale(column, getFFTSize());
 //                }
 
@@ -679,7 +679,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(LayerGeometryProvider *v,
 //                                    overallMag,
 //                                    overallMagChanged);
 
-//!!!                if (m_colourScale != ColourScale::PhaseColourScale) {
+//!!!                if (m_colourScale != ColourScaleType::Phase) {
                     column = ColumnOp::normalize(column, m_params.normalization);
 //!!!                }
 

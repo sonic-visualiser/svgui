@@ -18,6 +18,15 @@
 
 #include "ColourMapper.h"
 
+enum class ColourScaleType {
+    Linear,
+    Meter,
+    Log,
+    Phase,
+    PlusMinusOne,
+    Absolute
+};
+
 /**
  * Map values within a range onto a set of colours, with a given
  * distribution (linear, log etc) and optional colourmap rotation.
@@ -25,17 +34,8 @@
 class ColourScale
 {
 public:
-    enum Scale {
-	LinearColourScale,
-	MeterColourScale,
-	LogColourScale,
-	PhaseColourScale,
-        PlusMinusOneScale,
-        AbsoluteScale
-    };
-
     struct Parameters {
-	Parameters() : colourMap(0), scale(LinearColourScale),
+	Parameters() : colourMap(0), scale(ColourScaleType::Linear),
 		       minValue(0.0), maxValue(1.0),
 		       threshold(0.0), gain(1.0) { }
 
@@ -43,7 +43,7 @@ public:
 	int colourMap;
 	
 	/** Distribution for the scale */
-	Scale scale;
+	ColourScaleType scale;
 	
 	/** Minimum value in source range */
 	double minValue;
@@ -76,7 +76,7 @@ public:
     /**
      * Return the general type of scale this is.
      */
-    Scale getScale() const;
+    ColourScaleType getScale() const;
     
     /**
      * Return a pixel number (in the range 0-255 inclusive)

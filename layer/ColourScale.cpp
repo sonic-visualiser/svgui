@@ -33,16 +33,16 @@ ColourScale::ColourScale(Parameters parameters) :
     m_mappedMin = m_params.minValue;
     m_mappedMax = m_params.maxValue;
 
-    if (m_params.scale == LogColourScale) {
+    if (m_params.scale == ColourScaleType::Log) {
 
 	LogRange::mapRange(m_mappedMin, m_mappedMax);
 	
-    } else if (m_params.scale == PlusMinusOneScale) {
+    } else if (m_params.scale == ColourScaleType::PlusMinusOne) {
 	
 	m_mappedMin = -1.0;
 	m_mappedMax =  1.0;
 
-    } else if (m_params.scale == AbsoluteScale) {
+    } else if (m_params.scale == ColourScaleType::Absolute) {
 
 	m_mappedMin = fabs(m_mappedMin);
 	m_mappedMax = fabs(m_mappedMax);
@@ -60,7 +60,7 @@ ColourScale::~ColourScale()
 {
 }
 
-ColourScale::Scale
+ColourScaleType
 ColourScale::getScale() const
 {
     return m_params.scale;
@@ -71,7 +71,7 @@ ColourScale::getPixel(double value) const
 {
     double maxPixF = m_maxPixel;
 
-    if (m_params.scale == PhaseColourScale) {
+    if (m_params.scale == ColourScaleType::Phase) {
 	double half = (maxPixF - 1.f) / 2.f;
 	return 1 + int((value * half) / M_PI + half);
     }
@@ -82,12 +82,12 @@ ColourScale::getPixel(double value) const
 
     double mapped = value;
 
-    if (m_params.scale == LogColourScale) {
+    if (m_params.scale == ColourScaleType::Log) {
 	mapped = LogRange::map(value);
-    } else if (m_params.scale == PlusMinusOneScale) {
+    } else if (m_params.scale == ColourScaleType::PlusMinusOne) {
 	if (mapped < -1.f) mapped = -1.f;
 	if (mapped > 1.f) mapped = 1.f;
-    } else if (m_params.scale == AbsoluteScale) {
+    } else if (m_params.scale == ColourScaleType::Absolute) {
 	if (mapped < 0.f) mapped = -mapped;
     }
 	
@@ -102,7 +102,7 @@ ColourScale::getPixel(double value) const
 
     int pixel = 0;
 
-    if (m_params.scale == MeterColourScale) {
+    if (m_params.scale == ColourScaleType::Meter) {
 	pixel = AudioLevel::multiplier_to_preview(proportion, m_maxPixel-1) + 1;
     } else {
 	pixel = int(proportion * maxPixF) + 1;

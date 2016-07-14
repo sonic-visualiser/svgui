@@ -52,7 +52,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_peaksCache(0),
     m_cacheValidStart(0),
     m_cacheValidEnd(0),
-    m_colourScale(ColourScale::LinearColourScale),
+    m_colourScale(ColourScaleType::Linear),
     m_colourScaleSet(false),
     m_colourMap(0),
     m_gain(1.0),
@@ -84,29 +84,29 @@ Colour3DPlotLayer::~Colour3DPlotLayer()
     cacheInvalid(); //!!! dup with above?
 }
 
-ColourScale::Scale
+ColourScaleType
 Colour3DPlotLayer::convertToColourScale(int value)
 {
     switch (value) {
     default:
-    case 0: return ColourScale::LinearColourScale;
-    case 1: return ColourScale::LogColourScale;
-    case 2: return ColourScale::PlusMinusOneScale;
-    case 3: return ColourScale::AbsoluteScale;
+    case 0: return ColourScaleType::Linear;
+    case 1: return ColourScaleType::Log;
+    case 2: return ColourScaleType::PlusMinusOne;
+    case 3: return ColourScaleType::Absolute;
     }
 }
 
 int
-Colour3DPlotLayer::convertFromColourScale(ColourScale::Scale scale)
+Colour3DPlotLayer::convertFromColourScale(ColourScaleType scale)
 {
     switch (scale) {
-    case ColourScale::LinearColourScale: return 0;
-    case ColourScale::LogColourScale: return 1;
-    case ColourScale::PlusMinusOneScale: return 2;
-    case ColourScale::AbsoluteScale: return 3;
+    case ColourScaleType::Linear: return 0;
+    case ColourScaleType::Log: return 1;
+    case ColourScaleType::PlusMinusOne: return 2;
+    case ColourScaleType::Absolute: return 3;
 
-    case ColourScale::MeterColourScale:
-    case ColourScale::PhaseColourScale:
+    case ColourScaleType::Meter:
+    case ColourScaleType::Phase:
     default: return 0;
     }
 }
@@ -222,10 +222,10 @@ Colour3DPlotLayer::getPeakCache() const
 void
 Colour3DPlotLayer::modelChanged()
 {
-    if (!m_colourScaleSet && m_colourScale == ColourScale::LinearColourScale) {
+    if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
         if (m_model) {
             if (m_model->shouldUseLogValueScale()) {
-                setColourScale(ColourScale::LogColourScale);
+                setColourScale(ColourScaleType::Log);
             } else {
                 m_colourScaleSet = true;
             }
@@ -237,10 +237,10 @@ Colour3DPlotLayer::modelChanged()
 void
 Colour3DPlotLayer::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 {
-    if (!m_colourScaleSet && m_colourScale == ColourScale::LinearColourScale) {
+    if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
         if (m_model && m_model->getWidth() > 50) {
             if (m_model->shouldUseLogValueScale()) {
-                setColourScale(ColourScale::LogColourScale);
+                setColourScale(ColourScaleType::Log);
             } else {
                 m_colourScaleSet = true;
             }
@@ -472,7 +472,7 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 }
 
 void
-Colour3DPlotLayer::setColourScale(ColourScale::Scale scale)
+Colour3DPlotLayer::setColourScale(ColourScaleType scale)
 {
     if (m_colourScale == scale) return;
     m_colourScale = scale;
@@ -882,12 +882,12 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
         double mmin = min;
         double mmax = max;
 
-        if (m_colourScale == ColourScale::LogColourScale) {
+        if (m_colourScale == ColourScaleType::Log) {
             LogRange::mapRange(mmin, mmax);
-        } else if (m_colourScale == ColourScale::PlusMinusOneScale) {
+        } else if (m_colourScale == ColourScaleType::PlusMinusOne) {
             mmin = -1.f;
             mmax = 1.f;
-        } else if (m_colourScale == ColourScale::AbsoluteScale) {
+        } else if (m_colourScale == ColourScaleType::Absolute) {
             if (mmin < 0) {
                 if (fabs(mmin) > fabs(mmax)) mmax = fabs(mmin);
                 else mmax = fabs(mmax);
@@ -906,7 +906,7 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 
         for (int y = 0; y < ch; ++y) {
             double value = ((max - min) * (double(ch-y) - 1.0)) / double(ch) + min;
-            if (m_colourScale == ColourScale::LogColourScale) {
+            if (m_colourScale == ColourScaleType::Log) {
                 value = LogRange::map(value);
             }
             int pixel = int(((value - mmin) * 256) / (mmax - mmin));
@@ -1183,12 +1183,12 @@ Colour3DPlotLayer::fillCache(int firstColumn, int lastColumn) const
     double min = m_model->getMinimumLevel();
     double max = m_model->getMaximumLevel();
 
-    if (m_colourScale == ColourScale::LogColourScale) {
+    if (m_colourScale == ColourScaleType::Log) {
         LogRange::mapRange(min, max);
-    } else if (m_colourScale == ColourScale::PlusMinusOneScale) {
+    } else if (m_colourScale == ColourScaleType::PlusMinusOne) {
         min = -1.f;
         max = 1.f;
-    } else if (m_colourScale == ColourScale::AbsoluteScale) {
+    } else if (m_colourScale == ColourScaleType::Absolute) {
         if (min < 0) {
             if (fabs(min) > fabs(max)) max = fabs(min);
             else max = fabs(max);
@@ -1233,11 +1233,11 @@ Colour3DPlotLayer::fillCache(int firstColumn, int lastColumn) const
             if (c == fillStart || colMin < visibleMin) visibleMin = colMin;
         }
 
-        if (m_colourScale == ColourScale::LogColourScale) {
+        if (m_colourScale == ColourScaleType::Log) {
             visibleMin = LogRange::map(visibleMin);
             visibleMax = LogRange::map(visibleMax);
             if (visibleMin > visibleMax) std::swap(visibleMin, visibleMax);
-        } else if (m_colourScale == ColourScale::AbsoluteScale) {
+        } else if (m_colourScale == ColourScaleType::Absolute) {
             if (visibleMin < 0) {
                 if (fabs(visibleMin) > fabs(visibleMax)) visibleMax = fabs(visibleMin);
                 else visibleMax = fabs(visibleMax);
@@ -1280,9 +1280,9 @@ Colour3DPlotLayer::fillCache(int firstColumn, int lastColumn) const
 
             value = value * m_gain;
 
-            if (m_colourScale == ColourScale::LogColourScale) {
+            if (m_colourScale == ColourScaleType::Log) {
                 value = LogRange::map(value);
-            } else if (m_colourScale == ColourScale::AbsoluteScale) {
+            } else if (m_colourScale == ColourScaleType::Absolute) {
                 value = fabs(value);
             }
             
@@ -1906,7 +1906,7 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
 {
     bool ok = false, alsoOk = false;
 
-    ColourScale::Scale colourScale = convertToColourScale
+    ColourScaleType colourScale = convertToColourScale
         (attributes.value("colourScale").toInt(&ok));
     if (ok) setColourScale(colourScale);
 

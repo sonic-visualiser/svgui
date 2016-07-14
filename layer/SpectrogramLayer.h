@@ -143,8 +143,8 @@ public:
      * WaveformLayer for comparison and details of meter and dB
      * scaling.  The default is LogColourScale.
      */
-    void setColourScale(ColourScale::Scale);
-    ColourScale::Scale getColourScale() const;
+    void setColourScale(ColourScaleType);
+    ColourScaleType getColourScale() const;
 
     /**
      * Specify the scale for the y axis.
@@ -250,7 +250,7 @@ protected:
     int                 m_minFrequency;
     int                 m_maxFrequency;
     int                 m_initialMaxFrequency;
-    ColourScale::Scale  m_colourScale;
+    ColourScaleType  m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
     BinScale            m_binScale;
@@ -262,8 +262,8 @@ protected:
 
     mutable bool        m_haveDetailedScale;
 
-    static ColourScale::Scale convertToColourScale(int value);
-    static int convertFromColourScale(ColourScale::Scale);
+    static ColourScaleType convertToColourScale(int value);
+    static int convertFromColourScale(ColourScaleType);
     static std::pair<ColumnNormalization, bool> convertToColumnNorm(int value);
     static int convertFromColumnNorm(ColumnNormalization norm, bool visible);
 
