@@ -149,14 +149,14 @@ public:
     /**
      * Specify the scale for the y axis.
      */
-    void setBinScale(Colour3DPlotRenderer::BinScale);
-    Colour3DPlotRenderer::BinScale getBinScale() const;
+    void setBinScale(BinScale);
+    BinScale getBinScale() const;
 
     /**
      * Specify the processing of frequency bins for the y axis.
      */
-    void setBinDisplay(Colour3DPlotRenderer::BinDisplay);
-    Colour3DPlotRenderer::BinDisplay getBinDisplay() const;
+    void setBinDisplay(BinDisplay);
+    BinDisplay getBinDisplay() const;
 
     /**
      * Specify the normalization mode for bin values.
@@ -247,8 +247,8 @@ protected:
     ColourScale::Scale  m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
-    Colour3DPlotRenderer::BinScale m_binScale;
-    Colour3DPlotRenderer::BinDisplay m_binDisplay;
+    BinScale m_binScale;
+    BinDisplay m_binDisplay;
     ColumnOp::Normalization m_normalization;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
