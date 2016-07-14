@@ -159,10 +159,16 @@ public:
     BinDisplay getBinDisplay() const;
 
     /**
-     * Specify the normalization mode for bin values.
+     * Specify the normalization mode for individual columns.
      */
-    void setNormalization(ColumnOp::Normalization);
-    ColumnOp::Normalization getNormalization() const;
+    void setNormalization(ColumnNormalization);
+    ColumnNormalization getNormalization() const;
+
+    /**
+     * Specify whether to normalize the visible area.
+     */
+    void setNormalizeVisibleArea(bool);
+    bool getNormalizeVisibleArea() const;
 
     /**
      * Specify the colour map. See ColourMapper for the colour map
@@ -247,13 +253,19 @@ protected:
     ColourScale::Scale  m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
-    BinScale m_binScale;
-    BinDisplay m_binDisplay;
-    ColumnOp::Normalization m_normalization;
+    BinScale            m_binScale;
+    BinDisplay          m_binDisplay;
+    ColumnNormalization m_normalization; // of individual columns
+    bool                m_normalizeVisibleArea;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
 
     mutable bool        m_haveDetailedScale;
+
+    static ColourScale::Scale convertToColourScale(int value);
+    static int convertFromColourScale(ColourScale::Scale);
+    static std::pair<ColumnNormalization, bool> convertToColumnNorm(int value);
+    static int convertFromColumnNorm(ColumnNormalization norm, bool visible);
 
     enum { NO_VALUE = 0 }; // colour index for unused pixels
 

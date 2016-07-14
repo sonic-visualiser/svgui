@@ -57,7 +57,8 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_colourMap(0),
     m_gain(1.0),
     m_binScale(BinScale::Linear),
-    m_normalization(ColumnOp::NoNormalization),
+    m_normalization(ColumnNormalization::None),
+    m_normalizeVisibleArea(false),
     m_invertVertical(false),
     m_opaque(false),
     m_smooth(false),
@@ -81,6 +82,59 @@ Colour3DPlotLayer::~Colour3DPlotLayer()
     delete m_peakCache;
 
     cacheInvalid(); //!!! dup with above?
+}
+
+ColourScale::Scale
+Colour3DPlotLayer::convertToColourScale(int value)
+{
+    switch (value) {
+    default:
+    case 0: return ColourScale::LinearColourScale;
+    case 1: return ColourScale::LogColourScale;
+    case 2: return ColourScale::PlusMinusOneScale;
+    case 3: return ColourScale::AbsoluteScale;
+    }
+}
+
+int
+Colour3DPlotLayer::convertFromColourScale(ColourScale::Scale scale)
+{
+    switch (scale) {
+    case ColourScale::LinearColourScale: return 0;
+    case ColourScale::LogColourScale: return 1;
+    case ColourScale::PlusMinusOneScale: return 2;
+    case ColourScale::AbsoluteScale: return 3;
+
+    case ColourScale::MeterColourScale:
+    case ColourScale::PhaseColourScale:
+    default: return 0;
+    }
+}
+
+std::pair<ColumnNormalization, bool>
+Colour3DPlotLayer::convertToColumnNorm(int value)
+{
+    switch (value) {
+    default:
+    case 0: return { ColumnNormalization::None, false };
+    case 1: return { ColumnNormalization::Max1, false };
+    case 2: return { ColumnNormalization::None, true }; // visible area
+    case 3: return { ColumnNormalization::Hybrid, false };
+    }
+}
+
+int
+Colour3DPlotLayer::convertFromColumnNorm(ColumnNormalization norm, bool visible)
+{
+    if (visible) return 2;
+    switch (norm) {
+    case ColumnNormalization::None: return 0;
+    case ColumnNormalization::Max1: return 1;
+    case ColumnNormalization::Hybrid: return 3;
+
+    case ColumnNormalization::Sum1:
+    default: return 0;
+    }
 }
 
 void
@@ -201,8 +255,7 @@ Colour3DPlotLayer::getProperties() const
     PropertyList list;
     list.push_back("Colour");
     list.push_back("Colour Scale");
-    list.push_back("Normalize Columns");
-    list.push_back("Normalize Visible Area");
+    list.push_back("Normalization");
     list.push_back("Gain");
     list.push_back("Bin Scale");
     list.push_back("Invert Vertical Scale");
@@ -216,8 +269,7 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Colour") return tr("Colour");
     if (name == "Colour Scale") return tr("Scale");
-    if (name == "Normalize Columns") return tr("Normalize Columns");
-    if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
+    if (name == "Normalization") return tr("Normalization");
     if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
     if (name == "Gain") return tr("Gain");
     if (name == "Opaque") return tr("Always Opaque");
@@ -229,8 +281,6 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
 QString
 Colour3DPlotLayer::getPropertyIconName(const PropertyName &name) const
 {
-    if (name == "Normalize Columns") return "normalise-columns";
-    if (name == "Normalize Visible Area") return "normalise";
     if (name == "Invert Vertical Scale") return "invert-vertical";
     if (name == "Opaque") return "opaque";
     if (name == "Smooth") return "smooth";
@@ -241,8 +291,6 @@ Layer::PropertyType
 Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Gain") return RangeProperty;
-    if (name == "Normalize Columns") return ToggleProperty;
-    if (name == "Normalize Visible Area") return ToggleProperty;
     if (name == "Invert Vertical Scale") return ToggleProperty;
     if (name == "Opaque") return ToggleProperty;
     if (name == "Smooth") return ToggleProperty;
@@ -252,9 +300,8 @@ Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
 QString
 Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
 {
-    if (name == "Normalize Columns" ||
-        name == "Normalize Visible Area" ||
-	name == "Colour Scale" ||
+    if (name == "Normalization" ||
+        name == "Colour Scale" ||
         name == "Gain") return tr("Scale");
     if (name == "Bin Scale" ||
         name == "Invert Vertical Scale") return tr("Bins");
@@ -295,7 +342,7 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 3;
         *deflt = 0;
 
-	val = (int)m_colourScale;
+	val = convertFromColourScale(m_colourScale);
 
     } else if (name == "Colour") {
 
@@ -309,8 +356,9 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 	
         *min = 0;
         *max = 3;
-        *deflt = int(ColumnOp::NoNormalization);
-        val = (int)m_normalization;
+        *deflt = 0;
+
+        val = convertFromColumnNorm(m_normalization, m_normalizeVisibleArea);
 
     } else if (name == "Invert Vertical Scale") {
 	
@@ -351,7 +399,6 @@ Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
     if (name == "Colour Scale") {
 	switch (value) {
 	default:
-            //!!! yuck
 	case 0: return tr("Linear");
 	case 1: return tr("Log");
 	case 2: return tr("+/-1");
@@ -402,13 +449,7 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
     if (name == "Gain") {
 	setGain(float(pow(10, value/20.0)));
     } else if (name == "Colour Scale") {
-	switch (value) {
-	default:
-	case 0: setColourScale(ColourScale::LinearColourScale); break;
-	case 1: setColourScale(ColourScale::LogColourScale); break;
-	case 2: setColourScale(ColourScale::PlusMinusOneScale); break;
-	case 3: setColourScale(ColourScale::AbsoluteScale); break;
-	}
+        setColourScale(convertToColourScale(value));
     } else if (name == "Colour") {
         setColourMap(value);
     } else if (name == "Invert Vertical Scale") {
@@ -424,13 +465,9 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 	case 1: setBinScale(BinScale::Log); break;
 	}
     } else if (name == "Normalization") {
-        switch (value) {
-        default:
-        case 0: setNormalization(ColumnOp::NoNormalization); break;
-        case 1: setNormalization(ColumnOp::NormalizeColumns); break;
-        case 2: setNormalization(ColumnOp::NormalizeVisibleArea); break;
-        case 3: setNormalization(ColumnOp::NormalizeHybrid); break;
-        }
+        auto n = convertToColumnNorm(value);
+        setNormalization(n.first);
+        setNormalizeVisibleArea(n.second);
     }
 }
 
@@ -484,7 +521,7 @@ Colour3DPlotLayer::getBinScale() const
 }
 
 void
-Colour3DPlotLayer::setNormalization(ColumnOp::Normalization n)
+Colour3DPlotLayer::setNormalization(ColumnNormalization n)
 {
     if (m_normalization == n) return;
 
@@ -494,10 +531,27 @@ Colour3DPlotLayer::setNormalization(ColumnOp::Normalization n)
     emit layerParametersChanged();
 }
 
-ColumnOp::Normalization
+ColumnNormalization
 Colour3DPlotLayer::getNormalization() const
 {
     return m_normalization;
+}
+
+void
+Colour3DPlotLayer::setNormalizeVisibleArea(bool n)
+{
+    if (m_normalizeVisibleArea == n) return;
+
+    m_normalizeVisibleArea = n;
+    cacheInvalid();
+    
+    emit layerParametersChanged();
+}
+
+bool
+Colour3DPlotLayer::getNormalizeVisibleArea() const
+{
+    return m_normalizeVisibleArea;
 }
 
 void
@@ -570,7 +624,7 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 bool
 Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
-    if (m_normalization == ColumnOp::NormalizeVisibleArea) {
+    if (m_normalizeVisibleArea) {
         return false;
     }
     if (shouldPaintDenseIn(v)) {
@@ -965,8 +1019,8 @@ Colour3DPlotLayer::getColumn(int col) const
 
     DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
     values.resize(m_model->getHeight(), 0.f);
-    if (m_normalization != ColumnOp::NormalizeColumns &&
-        m_normalization != ColumnOp::NormalizeHybrid) {
+    if (m_normalization != ColumnNormalization::Max1 &&
+        m_normalization != ColumnNormalization::Hybrid) {
         return values;
     }
 
@@ -993,7 +1047,7 @@ Colour3DPlotLayer::getColumn(int col) const
         if (value != newvalue) values[y] = float(newvalue);
     }
 
-    if (m_normalization == ColumnOp::NormalizeHybrid
+    if (m_normalization == ColumnNormalization::Hybrid
         && (colMax > 0.0)) {
         double logmax = log10(colMax);
         for (int y = 0; y < nv; ++y) {
@@ -1062,7 +1116,7 @@ Colour3DPlotLayer::fillCache(int firstColumn, int lastColumn) const
         m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
         m_cache->setColorCount(256);
         m_cache->fill(0);
-        if (m_normalization != ColumnOp::NormalizeVisibleArea) {
+        if (!m_normalizeVisibleArea) {
             m_peaksCache = new QImage
                 (cacheWidth / m_peakResolution + 1, cacheHeight,
                  QImage::Format_Indexed8);
@@ -1097,7 +1151,7 @@ Colour3DPlotLayer::fillCache(int firstColumn, int lastColumn) const
     if (fillEnd < 0) fillEnd = 0;
     if (fillEnd < fillStart) fillEnd = fillStart;
 
-    bool normalizeVisible = (m_normalization == ColumnOp::NormalizeVisibleArea);
+    bool normalizeVisible = (m_normalizeVisibleArea);
 
     if (!normalizeVisible && (m_cacheValidStart < m_cacheValidEnd)) {
         
@@ -1402,7 +1456,7 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 
     //!!!???
     
-    if (m_normalization == ColumnOp::NormalizeVisibleArea) {
+    if (m_normalizeVisibleArea) {
         rect = v->getPaintRect();
     }
 
@@ -1804,36 +1858,6 @@ Colour3DPlotLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &fram
     return true;
 }
 
-static ColourScale::Scale
-convertInColourScale(int fileScale)
-{
-    //!!! this is very badly handled, switching the enum directly for
-    //!!! the ColourScale one did not work out well!
-    
-    switch (fileScale) {
-    default:
-    case 0: return ColourScale::LinearColourScale;
-    case 1: return ColourScale::LogColourScale;
-    case 2: return ColourScale::PlusMinusOneScale;
-    case 3: return ColourScale::AbsoluteScale;
-    }
-}
-
-static int
-convertOutColourScale(ColourScale::Scale scale)
-{
-    switch (scale) {
-    case ColourScale::LinearColourScale: return 0;
-    case ColourScale::LogColourScale: return 1;
-    case ColourScale::PlusMinusOneScale: return 2;
-    case ColourScale::AbsoluteScale: return 3;
-
-    case ColourScale::MeterColourScale:
-    case ColourScale::PhaseColourScale:
-    default: return 0;
-    }
-}
-
 void
 Colour3DPlotLayer::toXml(QTextStream &stream,
                          QString indent, QString extraAttributes) const
@@ -1844,7 +1868,7 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
                         "maxY=\"%4\" "
                         "invertVertical=\"%5\" "
                         "opaque=\"%6\" %7")
-	.arg(convertOutColourScale(m_colourScale))
+	.arg(convertFromColourScale(m_colourScale))
         .arg(m_colourMap)
         .arg(m_miny)
         .arg(m_maxy)
@@ -1861,18 +1885,18 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
     // area as well afterwards
     
     s += QString("columnNormalization=\"%1\" ")
-        .arg(m_normalization == ColumnOp::NormalizeColumns ? "peak" :
-             m_normalization == ColumnOp::NormalizeHybrid ? "hybrid" : "none");
+        .arg(m_normalization == ColumnNormalization::Max1 ? "peak" :
+             m_normalization == ColumnNormalization::Hybrid ? "hybrid" : "none");
 
     // Old-style normalization attribute, for backward compatibility
     
     s += QString("normalizeColumns=\"%1\" ")
-	.arg(m_normalization == ColumnOp::NormalizeColumns ? "true" : "false");
+	.arg(m_normalization == ColumnNormalization::Max1 ? "true" : "false");
 
     // And this applies to both old- and new-style attributes
     
     s += QString("normalizeVisibleArea=\"%1\" ")
-        .arg(m_normalization == ColumnOp::NormalizeVisibleArea ? "true" : "false");
+        .arg(m_normalizeVisibleArea ? "true" : "false");
     
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -1882,7 +1906,7 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
 {
     bool ok = false, alsoOk = false;
 
-    ColourScale::Scale colourScale = convertInColourScale
+    ColourScale::Scale colourScale = convertToColourScale
         (attributes.value("colourScale").toInt(&ok));
     if (ok) setColourScale(colourScale);
 
@@ -1921,11 +1945,11 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
         haveNewStyleNormalization = true;
 
         if (columnNormalization == "peak") {
-            setNormalization(ColumnOp::NormalizeColumns);
+            setNormalization(ColumnNormalization::Max1);
         } else if (columnNormalization == "hybrid") {
-            setNormalization(ColumnOp::NormalizeHybrid);
+            setNormalization(ColumnNormalization::Hybrid);
         } else if (columnNormalization == "none") {
-            // do nothing
+            setNormalization(ColumnNormalization::None);
         } else {
             cerr << "NOTE: Unknown or unsupported columnNormalization attribute \""
                  << columnNormalization << "\"" << endl;
@@ -1934,24 +1958,24 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
 
     if (!haveNewStyleNormalization) {
 
+        setNormalization(ColumnNormalization::None);
+
         bool normalizeColumns =
             (attributes.value("normalizeColumns").trimmed() == "true");
         if (normalizeColumns) {
-            setNormalization(ColumnOp::NormalizeColumns);
+            setNormalization(ColumnNormalization::Max1);
         }
 
         bool normalizeHybrid =
             (attributes.value("normalizeHybrid").trimmed() == "true");
         if (normalizeHybrid) {
-            setNormalization(ColumnOp::NormalizeHybrid);
+            setNormalization(ColumnNormalization::Hybrid);
         }
     }
     
     bool normalizeVisibleArea =
         (attributes.value("normalizeVisibleArea").trimmed() == "true");
-    if (normalizeVisibleArea) {
-        setNormalization(ColumnOp::NormalizeVisibleArea);
-    }
+    setNormalizeVisibleArea(normalizeVisibleArea);
 
     //!!! todo: check save/reload scaling, compare with
     //!!! SpectrogramLayer, compare with prior SV versions, compare

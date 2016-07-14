@@ -110,10 +110,16 @@ public:
     BinScale getBinScale() const;
 
     /**
-     * Specify the normalization mode for bin values.
+     * Specify the normalization mode for individual columns.
      */
-    void setNormalization(ColumnOp::Normalization);
-    ColumnOp::Normalization getNormalization() const;
+    void setNormalization(ColumnNormalization);
+    ColumnNormalization getNormalization() const;
+
+    /**
+     * Specify whether to normalize the visible area.
+     */
+    void setNormalizeVisibleArea(bool);
+    bool getNormalizeVisibleArea() const;
 
     void setInvertVertical(bool i);
     bool getInvertVertical() const;
@@ -158,22 +164,28 @@ protected:
     mutable int m_cacheValidEnd;
 
     ColourScale::Scale m_colourScale;
-    bool        m_colourScaleSet;
-    int         m_colourMap;
-    float       m_gain;
+    bool m_colourScaleSet;
+    int m_colourMap;
+    float m_gain;
     BinScale m_binScale;
-    ColumnOp::Normalization m_normalization;
-    bool        m_invertVertical;
-    bool        m_opaque;
-    bool        m_smooth;
-    int         m_peakResolution;
+    ColumnNormalization m_normalization; // of individual columns
+    bool m_normalizeVisibleArea;
+    bool m_invertVertical;
+    bool m_opaque;
+    bool m_smooth;
+    int m_peakResolution;
 
     // Minimum and maximum bin numbers visible within the view. We
     // always snap to whole bins at view edges.
-    int         m_miny;
-    int         m_maxy;
+    int m_miny;
+    int m_maxy;
 
-    bool        m_synchronous;
+    bool m_synchronous;
+
+    static ColourScale::Scale convertToColourScale(int value);
+    static int convertFromColourScale(ColourScale::Scale);
+    static std::pair<ColumnNormalization, bool> convertToColumnNorm(int value);
+    static int convertFromColumnNorm(ColumnNormalization norm, bool visible);
 
     mutable Dense3DModelPeakCache *m_peakCache;
     const int m_peakCacheDivisor;
