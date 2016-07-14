@@ -74,8 +74,8 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_initialMaxFrequency(8000),
     m_colourScale(ColourScale::LogColourScale),
     m_colourMap(0),
-    m_binScale(Colour3DPlotRenderer::LinearBinScale),
-    m_binDisplay(Colour3DPlotRenderer::AllBins),
+    m_binScale(BinScale::Linear),
+    m_binDisplay(BinDisplay::AllBins),
     m_normalization(ColumnOp::NoNormalization),
     m_lastEmittedZoomStep(-1),
     m_synchronous(false),
@@ -99,7 +99,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
         setMinFrequency(40);
 	setColourScale(ColourScale::LinearColourScale);
         setColourMap(ColourMapper::Sunset);
-        setBinScale(Colour3DPlotRenderer::LogBinScale);
+        setBinScale(BinScale::Log);
         colourConfigName = "spectrogram-melodic-colour";
         colourConfigDefault = int(ColourMapper::Sunset);
 //        setGain(20);
@@ -109,9 +109,9 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
         m_initialMaxFrequency = 2000;
 	setMaxFrequency(2000);
 	setMinFrequency(40);
-	setBinScale(Colour3DPlotRenderer::LogBinScale);
+	setBinScale(BinScale::Log);
 	setColourScale(ColourScale::LinearColourScale);
-	setBinDisplay(Colour3DPlotRenderer::PeakFrequencies);
+	setBinDisplay(BinDisplay::PeakFrequencies);
         setNormalization(ColumnOp::NormalizeColumns);
         colourConfigName = "spectrogram-melodic-colour";
         colourConfigDefault = int(ColourMapper::Sunset);
@@ -347,14 +347,14 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 	*min = 0;
 	*max = 1;
-        *deflt = int(Colour3DPlotRenderer::LinearBinScale);
+        *deflt = int(BinScale::Linear);
 	val = (int)m_binScale;
 
     } else if (name == "Bin Display") {
 
 	*min = 0;
 	*max = 2;
-        *deflt = int(Colour3DPlotRenderer::AllBins);
+        *deflt = int(BinDisplay::AllBins);
 	val = (int)m_binDisplay;
 
     } else if (name == "Normalization") {
@@ -547,15 +547,15 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Frequency Scale") {
 	switch (value) {
 	default:
-	case 0: setBinScale(Colour3DPlotRenderer::LinearBinScale); break;
-	case 1: setBinScale(Colour3DPlotRenderer::LogBinScale); break;
+	case 0: setBinScale(BinScale::Linear); break;
+	case 1: setBinScale(BinScale::Log); break;
 	}
     } else if (name == "Bin Display") {
 	switch (value) {
 	default:
-	case 0: setBinDisplay(Colour3DPlotRenderer::AllBins); break;
-	case 1: setBinDisplay(Colour3DPlotRenderer::PeakBins); break;
-	case 2: setBinDisplay(Colour3DPlotRenderer::PeakFrequencies); break;
+	case 0: setBinDisplay(BinDisplay::AllBins); break;
+	case 1: setBinDisplay(BinDisplay::PeakBins); break;
+	case 2: setBinDisplay(BinDisplay::PeakFrequencies); break;
 	}
     } else if (name == "Normalization") {
         switch (value) {
@@ -633,7 +633,7 @@ SpectrogramLayer::getChannel() const
 int
 SpectrogramLayer::getFFTOversampling() const
 {
-    if (m_binDisplay != Colour3DPlotRenderer::AllBins) {
+    if (m_binDisplay != BinDisplay::AllBins) {
         return 1;
     }
 
@@ -852,7 +852,7 @@ SpectrogramLayer::getColourMap() const
 }
 
 void
-SpectrogramLayer::setBinScale(Colour3DPlotRenderer::BinScale binScale)
+SpectrogramLayer::setBinScale(BinScale binScale)
 {
     if (m_binScale == binScale) return;
 
@@ -862,14 +862,14 @@ SpectrogramLayer::setBinScale(Colour3DPlotRenderer::BinScale binScale)
     emit layerParametersChanged();
 }
 
-Colour3DPlotRenderer::BinScale
+BinScale
 SpectrogramLayer::getBinScale() const
 {
     return m_binScale;
 }
 
 void
-SpectrogramLayer::setBinDisplay(Colour3DPlotRenderer::BinDisplay binDisplay)
+SpectrogramLayer::setBinDisplay(BinDisplay binDisplay)
 {
     if (m_binDisplay == binDisplay) return;
 
@@ -879,7 +879,7 @@ SpectrogramLayer::setBinDisplay(Colour3DPlotRenderer::BinDisplay binDisplay)
     emit layerParametersChanged();
 }
 
-Colour3DPlotRenderer::BinDisplay
+BinDisplay
 SpectrogramLayer::getBinDisplay() const
 {
     return m_binDisplay;
@@ -1152,7 +1152,7 @@ SpectrogramLayer::getYBinRange(LayerGeometryProvider *v, int y, double &q0, doub
     double minf = getEffectiveMinFrequency();
     double maxf = getEffectiveMaxFrequency();
 
-    bool logarithmic = (m_binScale == Colour3DPlotRenderer::LogBinScale);
+    bool logarithmic = (m_binScale == BinScale::Log);
 
     q0 = v->getFrequencyForY(y, minf, maxf, logarithmic);
     q1 = v->getFrequencyForY(y - 1, minf, maxf, logarithmic);
@@ -1184,7 +1184,7 @@ SpectrogramLayer::getBinForY(LayerGeometryProvider *v, double y) const
     double minf = getEffectiveMinFrequency();
     double maxf = getEffectiveMaxFrequency();
 
-    bool logarithmic = (m_binScale == Colour3DPlotRenderer::LogBinScale);
+    bool logarithmic = (m_binScale == BinScale::Log);
 
     double q = v->getFrequencyForY(y, minf, maxf, logarithmic);
 
@@ -1286,8 +1286,8 @@ const
 
     bool haveAdj = false;
 
-    bool peaksOnly = (m_binDisplay == Colour3DPlotRenderer::PeakBins ||
-		      m_binDisplay == Colour3DPlotRenderer::PeakFrequencies);
+    bool peaksOnly = (m_binDisplay == BinDisplay::PeakBins ||
+		      m_binDisplay == BinDisplay::PeakFrequencies);
 
     for (int q = q0i; q <= q1i; ++q) {
 
@@ -1820,7 +1820,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
     int increment = getWindowIncrement();
     
-    bool logarithmic = (m_binScale == Colour3DPlotRenderer::LogBinScale);
+    bool logarithmic = (m_binScale == BinScale::Log);
 
     MagnitudeRange overallMag = m_viewMags[v->getId()];
     bool overallMagChanged = false;
@@ -1943,14 +1943,14 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
         // neither limitation applies, so use a short soft limit
 
-        if (m_binDisplay == Colour3DPlotRenderer::PeakFrequencies) {
+        if (m_binDisplay == BinDisplay::PeakFrequencies) {
             softTimeLimit = 0.15;
         } else {
             softTimeLimit = 0.1;
         }
     }
 
-    if (m_binDisplay != Colour3DPlotRenderer::PeakFrequencies) {
+    if (m_binDisplay != BinDisplay::PeakFrequencies) {
 
         for (int y = 0; y < h; ++y) {
             double q0 = 0, q1 = 0;
@@ -2407,7 +2407,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
     DenseThreeDimensionalModel *sourceModel = 0;
     
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::paintDrawBuffer: Note: bin display = " << m_binDisplay << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
+    cerr << "SpectrogramLayer::paintDrawBuffer: Note: bin display = " << int(m_binDisplay) << ", w = " << w << ", binforx[" << w-1 << "] = " << binforx[w-1] << ", binforx[0] = " << binforx[0] << endl;
 #endif
 
     int divisor = 1;
@@ -2427,8 +2427,8 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
         Preferences::getInstance()->getSpectrogramSmoothing();
     if (smoothing == Preferences::SpectrogramInterpolated ||
         smoothing == Preferences::SpectrogramZeroPaddedAndInterpolated) {
-        if (m_binDisplay != Colour3DPlotRenderer::PeakBins &&
-            m_binDisplay != Colour3DPlotRenderer::PeakFrequencies) {
+        if (m_binDisplay != BinDisplay::PeakBins &&
+            m_binDisplay != BinDisplay::PeakFrequencies) {
             interpolate = true;
         }
     }
@@ -2517,7 +2517,7 @@ SpectrogramLayer::paintDrawBuffer(LayerGeometryProvider *v,
                     column = ColumnOp::normalize(column, m_normalization);
                 }
 
-                if (m_binDisplay == Colour3DPlotRenderer::PeakBins) {
+                if (m_binDisplay == BinDisplay::PeakBins) {
                     column = ColumnOp::peakPick(column);
                 }
 
@@ -2626,7 +2626,7 @@ SpectrogramLayer::getYForFrequency(const LayerGeometryProvider *v, double freque
     return v->getYForFrequency(frequency,
 			       getEffectiveMinFrequency(),
 			       getEffectiveMaxFrequency(),
-			       m_binScale == Colour3DPlotRenderer::LogBinScale);
+			       m_binScale == BinScale::Log);
 }
 
 double
@@ -2635,7 +2635,7 @@ SpectrogramLayer::getFrequencyForY(const LayerGeometryProvider *v, int y) const
     return v->getFrequencyForY(y,
 			       getEffectiveMinFrequency(),
 			       getEffectiveMaxFrequency(),
-			       m_binScale == Colour3DPlotRenderer::LogBinScale);
+			       m_binScale == BinScale::Log);
 }
 
 int
@@ -2666,7 +2666,7 @@ SpectrogramLayer::getValueExtents(double &min, double &max,
     min = double(sr) / getFFTSize();
     max = double(sr) / 2;
     
-    logarithmic = (m_binScale == Colour3DPlotRenderer::LogBinScale);
+    logarithmic = (m_binScale == BinScale::Log);
     unit = "Hz";
     return true;
 }
@@ -2909,7 +2909,7 @@ SpectrogramLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
 
     QString adjFreqText = "", adjPitchText = "";
 
-    if (m_binDisplay == Colour3DPlotRenderer::PeakFrequencies) {
+    if (m_binDisplay == BinDisplay::PeakFrequencies) {
 
 	if (!getAdjustedYBinSourceRange(v, x, y, freqMin, freqMax,
 					adjFreqMin, adjFreqMax)) {
@@ -3021,7 +3021,7 @@ SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, 
     int fw = paint.fontMetrics().width(tr("43Hz"));
     if (tw < fw) tw = fw;
 
-    int tickw = (m_binScale == Colour3DPlotRenderer::LogBinScale ? 10 : 4);
+    int tickw = (m_binScale == BinScale::Log ? 10 : 4);
     
     return cw + tickw + tw + 13;
 }
@@ -3039,8 +3039,8 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
 
     int h = rect.height(), w = rect.width();
 
-    int tickw = (m_binScale == Colour3DPlotRenderer::LogBinScale ? 10 : 4);
-    int pkw = (m_binScale == Colour3DPlotRenderer::LogBinScale ? 10 : 0);
+    int tickw = (m_binScale == BinScale::Log ? 10 : 4);
+    int pkw = (m_binScale == BinScale::Log ? 10 : 0);
 
     int bins = getFFTSize() / 2;
     sv_samplerate_t sr = m_model->getSampleRate();
@@ -3164,7 +3164,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
 	int freq = int((sr * bin) / getFFTSize());
 
 	if (py >= 0 && (vy - py) < textHeight - 1) {
-	    if (m_binScale == Colour3DPlotRenderer::LinearBinScale) {
+	    if (m_binScale == BinScale::Linear) {
 		paint.drawLine(w - tickw, h - vy, w, h - vy);
 	    }
 	    continue;
@@ -3182,7 +3182,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
 	py = vy;
     }
 
-    if (m_binScale == Colour3DPlotRenderer::LogBinScale) {
+    if (m_binScale == BinScale::Log) {
 
         // piano keyboard
 
@@ -3304,7 +3304,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
 
     double newmin, newmax;
 
-    if (m_binScale == Colour3DPlotRenderer::LogBinScale) {
+    if (m_binScale == BinScale::Log) {
 
         // need to pick newmin and newmax such that
         //
@@ -3446,8 +3446,8 @@ SpectrogramLayer::toXml(QTextStream &stream,
 	.arg(convertOutColourScale(m_colourScale))
 	.arg(m_colourMap)
 	.arg(m_colourRotation)
-	.arg(m_binScale)
-	.arg(m_binDisplay);
+	.arg(int(m_binScale))
+	.arg(int(m_binDisplay));
 
     // New-style normalization attributes, allowing for more types of
     // normalization in future: write out the column normalization
@@ -3528,11 +3528,11 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     int colourRotation = attributes.value("colourRotation").toInt(&ok);
     if (ok) setColourRotation(colourRotation);
 
-    Colour3DPlotRenderer::BinScale binScale = (Colour3DPlotRenderer::BinScale)
+    BinScale binScale = (BinScale)
 	attributes.value("frequencyScale").toInt(&ok);
     if (ok) setBinScale(binScale);
 
-    Colour3DPlotRenderer::BinDisplay binDisplay = (Colour3DPlotRenderer::BinDisplay)
+    BinDisplay binDisplay = (BinDisplay)
 	attributes.value("binDisplay").toInt(&ok);
     if (ok) setBinDisplay(binDisplay);
 

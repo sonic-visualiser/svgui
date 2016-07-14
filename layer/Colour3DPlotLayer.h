@@ -106,8 +106,8 @@ public:
     /**
      * Specify the scale for the y axis.
      */
-    void setBinScale(Colour3DPlotRenderer::BinScale);
-    Colour3DPlotRenderer::BinScale getBinScale() const;
+    void setBinScale(BinScale);
+    BinScale getBinScale() const;
 
     /**
      * Specify the normalization mode for bin values.
@@ -161,7 +161,7 @@ protected:
     bool        m_colourScaleSet;
     int         m_colourMap;
     float       m_gain;
-    Colour3DPlotRenderer::BinScale m_binScale;
+    BinScale m_binScale;
     ColumnOp::Normalization m_normalization;
     bool        m_invertVertical;
     bool        m_opaque;

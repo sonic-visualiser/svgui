@@ -56,7 +56,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_colourScaleSet(false),
     m_colourMap(0),
     m_gain(1.0),
-    m_binScale(Colour3DPlotRenderer::LinearBinScale),
+    m_binScale(BinScale::Linear),
     m_normalization(ColumnOp::NoNormalization),
     m_invertVertical(false),
     m_opaque(false),
@@ -321,7 +321,7 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 	*min = 0;
 	*max = 1;
-        *deflt = int(Colour3DPlotRenderer::LinearBinScale);
+        *deflt = int(BinScale::Linear);
 	val = (int)m_binScale;
 
     } else if (name == "Opaque") {
@@ -420,8 +420,8 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Bin Scale") {
 	switch (value) {
 	default:
-	case 0: setBinScale(Colour3DPlotRenderer::LinearBinScale); break;
-	case 1: setBinScale(Colour3DPlotRenderer::LogBinScale); break;
+	case 0: setBinScale(BinScale::Linear); break;
+	case 1: setBinScale(BinScale::Log); break;
 	}
     } else if (name == "Normalization") {
         switch (value) {
@@ -469,7 +469,7 @@ Colour3DPlotLayer::getGain() const
 }
 
 void
-Colour3DPlotLayer::setBinScale(Colour3DPlotRenderer::BinScale binScale)
+Colour3DPlotLayer::setBinScale(BinScale binScale)
 {
     if (m_binScale == binScale) return;
     m_binScale = binScale;
@@ -477,7 +477,7 @@ Colour3DPlotLayer::setBinScale(Colour3DPlotRenderer::BinScale binScale)
     emit layerParametersChanged();
 }
 
-Colour3DPlotRenderer::BinScale
+BinScale
 Colour3DPlotLayer::getBinScale() const
 {
     return m_binScale;
@@ -690,7 +690,7 @@ Colour3DPlotLayer::getYForBin(LayerGeometryProvider *v, double bin) const
     double mn = 0, mx = m_model->getHeight();
     getDisplayExtents(mn, mx);
     double h = v->getPaintHeight();
-    if (m_binScale == Colour3DPlotRenderer::LinearBinScale) {
+    if (m_binScale == BinScale::Linear) {
         y = h - (((bin - mn) * h) / (mx - mn));
     } else {
         double logmin = mn + 1, logmax = mx + 1;
@@ -708,7 +708,7 @@ Colour3DPlotLayer::getBinForY(LayerGeometryProvider *v, double y) const
     double mn = 0, mx = m_model->getHeight();
     getDisplayExtents(mn, mx);
     double h = v->getPaintHeight();
-    if (m_binScale == Colour3DPlotRenderer::LinearBinScale) {
+    if (m_binScale == BinScale::Linear) {
         bin = mn + ((h - y) * (mx - mn)) / h;
     } else {
         double logmin = mn + 1, logmax = mx + 1;
@@ -1851,7 +1851,7 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
         .arg(m_invertVertical ? "true" : "false")
         .arg(m_opaque ? "true" : "false")
         .arg(QString("binScale=\"%1\" smooth=\"%2\" gain=\"%3\" ")
-             .arg((int)m_binScale)
+             .arg(int(m_binScale))
              .arg(m_smooth ? "true" : "false")
              .arg(m_gain));
     
@@ -1889,7 +1889,7 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
     int colourMap = attributes.value("colourScheme").toInt(&ok);
     if (ok) setColourMap(colourMap);
 
-    Colour3DPlotRenderer::BinScale binScale = (Colour3DPlotRenderer::BinScale)
+    BinScale binScale = (BinScale)
 	attributes.value("binScale").toInt(&ok);
     if (ok) setBinScale(binScale);
 

@@ -32,20 +32,20 @@ class DenseThreeDimensionalModel;
 class Dense3DModelPeakCache;
 class FFTModel;
 
+enum class BinDisplay {
+    AllBins,
+    PeakBins,
+    PeakFrequencies
+};
+
+enum class BinScale {
+    Linear,
+    Log
+};
+
 class Colour3DPlotRenderer
 {
 public:
-    enum BinDisplay {
-	AllBins,
-	PeakBins,
-	PeakFrequencies
-    };
-
-    enum BinScale {
-	LinearBinScale,
-	LogBinScale
-    };
-
     struct Sources {
         Sources() : verticalBinLayer(0), source(0), peaks(0), fft(0) { }
         
@@ -60,8 +60,8 @@ public:
 	Parameters() :
 	    colourScale(ColourScale::Parameters()),
 	    normalization(ColumnOp::NoNormalization),
-	    binDisplay(AllBins),
-            binScale(LinearBinScale),
+	    binDisplay(BinDisplay::AllBins),
+            binScale(BinScale::Linear),
 	    alwaysOpaque(false),
             interpolate(false), //!!! separate out x-interpolate and y-interpolate? the spectrogram actually does (or used to)
             invertVertical(false) { }

@@ -175,7 +175,7 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
     // well as horizontal. That's why this function didn't take any
     // y/height parameters.
 
-    if (bufferIsBinResolution && (m_params.binDisplay != PeakFrequencies)) {
+    if (bufferIsBinResolution && (m_params.binDisplay != BinDisplay::PeakFrequencies)) {
         renderToCacheBinResolution(v, x0, x1 - x0);
     } else {
         renderToCachePixelResolution(v, x0, x1 - x0, rightToLeft, timeConstrained);
@@ -281,7 +281,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(LayerGeometryProvider *v,
 
     int attainedWidth;
 
-    if (m_params.binDisplay == PeakFrequencies) {
+    if (m_params.binDisplay == BinDisplay::PeakFrequencies) {
         attainedWidth = renderDrawBufferPeakFrequencies(v,
                                                         repaintWidth,
                                                         h,
@@ -547,7 +547,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                     column = ColumnOp::normalize(column, m_params.normalization);
 //                }
 
-                if (m_params.binDisplay == PeakBins) {
+                if (m_params.binDisplay == BinDisplay::PeakBins) {
                     column = ColumnOp::peakPick(column);
                 }
 
@@ -636,7 +636,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(LayerGeometryProvider *v,
     double minFreq = (double(minbin) * fft->getSampleRate()) / fft->getFFTSize();
     double maxFreq = (double(maxbin) * fft->getSampleRate()) / fft->getFFTSize();
 
-    bool logarithmic = (m_params.binScale == LogBinScale);
+    bool logarithmic = (m_params.binScale == BinScale::Log);
     
     for (int x = start; x != finish; x += step) {
         
