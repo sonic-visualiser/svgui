@@ -59,7 +59,7 @@ public:
     struct Parameters {
 	Parameters() :
 	    colourScale(ColourScale::Parameters()),
-	    normalization(ColumnOp::NoNormalization),
+	    normalization(ColumnNormalization::None),
 	    binDisplay(BinDisplay::AllBins),
             binScale(BinScale::Linear),
 	    alwaysOpaque(false),
@@ -67,7 +67,7 @@ public:
             invertVertical(false) { }
 
 	ColourScale colourScale;       // complete ColourScale object by value
-	ColumnOp::Normalization normalization;
+	ColumnNormalization normalization;
 	BinDisplay binDisplay;
 	BinScale binScale;
 	bool alwaysOpaque;

@@ -76,7 +76,8 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_colourMap(0),
     m_binScale(BinScale::Linear),
     m_binDisplay(BinDisplay::AllBins),
-    m_normalization(ColumnOp::NoNormalization),
+    m_normalization(ColumnNormalization::None),
+    m_normalizeVisibleArea(false),
     m_lastEmittedZoomStep(-1),
     m_synchronous(false),
     m_haveDetailedScale(false),
@@ -112,7 +113,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 	setBinScale(BinScale::Log);
 	setColourScale(ColourScale::LinearColourScale);
 	setBinDisplay(BinDisplay::PeakFrequencies);
-        setNormalization(ColumnOp::NormalizeColumns);
+        setNormalization(ColumnNormalization::Max1);
         colourConfigName = "spectrogram-melodic-colour";
         colourConfigDefault = int(ColourMapper::Sunset);
     }
@@ -134,6 +135,60 @@ SpectrogramLayer::~SpectrogramLayer()
 {
     invalidateImageCaches();
     invalidateFFTModel();
+}
+
+ColourScale::Scale
+SpectrogramLayer::convertToColourScale(int value)
+{
+    switch (value) {
+    case 0: return ColourScale::LinearColourScale;
+    case 1: return ColourScale::MeterColourScale;
+    case 2: return ColourScale::LogColourScale; //!!! db^2
+    case 3: return ColourScale::LogColourScale;
+    case 4: return ColourScale::PhaseColourScale;
+    default: return ColourScale::LinearColourScale;
+    }
+}
+
+int
+SpectrogramLayer::convertFromColourScale(ColourScale::Scale scale)
+{
+    switch (scale) {
+    case ColourScale::LinearColourScale: return 0;
+    case ColourScale::MeterColourScale: return 1;
+    case ColourScale::LogColourScale: return 3; //!!! + db^2
+    case ColourScale::PhaseColourScale: return 4;
+
+    case ColourScale::PlusMinusOneScale:
+    case ColourScale::AbsoluteScale:
+    default: return 0;
+    }
+}
+
+std::pair<ColumnNormalization, bool>
+SpectrogramLayer::convertToColumnNorm(int value)
+{
+    switch (value) {
+    default:
+    case 0: return { ColumnNormalization::None, false };
+    case 1: return { ColumnNormalization::Max1, false };
+    case 2: return { ColumnNormalization::None, true }; // visible area
+    case 3: return { ColumnNormalization::Hybrid, false };
+    }
+}
+
+int
+SpectrogramLayer::convertFromColumnNorm(ColumnNormalization norm, bool visible)
+{
+    if (visible) return 2;
+    switch (norm) {
+    case ColumnNormalization::None: return 0;
+    case ColumnNormalization::Max1: return 1;
+    case ColumnNormalization::Hybrid: return 3;
+
+    case ColumnNormalization::Sum1:
+    default: return 0;
+    }
 }
 
 void
@@ -277,7 +332,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 4;
         *deflt = 2;
 
-	val = (int)m_colourScale;
+	val = convertFromColourScale(m_colourScale);
 
     } else if (name == "Colour") {
 
@@ -361,8 +416,9 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	
         *min = 0;
         *max = 3;
-        *deflt = int(ColumnOp::NoNormalization);
-        val = (int)m_normalization;
+        *deflt = 0;
+        
+        val = convertFromColumnNorm(m_normalization, m_normalizeVisibleArea);
 
     } else {
 	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
@@ -558,13 +614,9 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
 	case 2: setBinDisplay(BinDisplay::PeakFrequencies); break;
 	}
     } else if (name == "Normalization") {
-        switch (value) {
-        default:
-        case 0: setNormalization(ColumnOp::NoNormalization); break;
-        case 1: setNormalization(ColumnOp::NormalizeColumns); break;
-        case 2: setNormalization(ColumnOp::NormalizeVisibleArea); break;
-        case 3: setNormalization(ColumnOp::NormalizeHybrid); break;
-        }
+        auto n = convertToColumnNorm(value);
+        setNormalization(n.first);
+        setNormalizeVisibleArea(n.second);
     }
 }
 
@@ -886,7 +938,7 @@ SpectrogramLayer::getBinDisplay() const
 }
 
 void
-SpectrogramLayer::setNormalization(ColumnOp::Normalization n)
+SpectrogramLayer::setNormalization(ColumnNormalization n)
 {
     if (m_normalization == n) return;
 
@@ -897,10 +949,28 @@ SpectrogramLayer::setNormalization(ColumnOp::Normalization n)
     emit layerParametersChanged();
 }
 
-ColumnOp::Normalization
+ColumnNormalization
 SpectrogramLayer::getNormalization() const
 {
     return m_normalization;
+}
+
+void
+SpectrogramLayer::setNormalizeVisibleArea(bool n)
+{
+    if (m_normalizeVisibleArea == n) return;
+
+    invalidateImageCaches();
+    invalidateMagnitudes();
+    m_normalizeVisibleArea = n;
+    
+    emit layerParametersChanged();
+}
+
+bool
+SpectrogramLayer::getNormalizeVisibleArea() const
+{
+    return m_normalizeVisibleArea;
 }
 
 void
@@ -1030,10 +1100,10 @@ SpectrogramLayer::getDisplayValue(LayerGeometryProvider *v, double input) const
     double min = 0.0;
     double max = 1.0;
 
-    if (m_normalization == ColumnOp::NormalizeVisibleArea) {
+    if (m_normalizeVisibleArea) {
         min = m_viewMags[v->getId()].getMin();
         max = m_viewMags[v->getId()].getMax();
-    } else if (m_normalization != ColumnOp::NormalizeColumns) {
+    } else if (m_normalization != ColumnNormalization::Max1) {
         if (m_colourScale == ColourScale::LinearColourScale //||
 //            m_colourScale == MeterColourScale) {
             ) {
@@ -1587,7 +1657,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         cparams.gain = m_gain;
 
         if (m_colourScale != ColourScale::PhaseColourScale &&
-            m_normalization == ColumnOp::NoNormalization) {
+            m_normalization == ColumnNormalization::None) {
             cparams.gain *= 2.f / float(getFFTSize());
         }
         
@@ -1668,7 +1738,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 #ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "SpectrogramLayer: magnitude range changed to [" << m_viewMags[v->getId()].getMin() << "->" << m_viewMags[v->getId()].getMax() << "]" << endl;
 #endif
-        if (m_normalization == ColumnOp::NormalizeVisibleArea) {
+        if (m_normalizeVisibleArea) {
             cache.invalidate();
         }
     }
@@ -2109,7 +2179,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
     if (!m_synchronous) {
 
-        if ((m_normalization != ColumnOp::NormalizeVisibleArea) || !overallMagChanged) {
+        if (!m_normalizeVisibleArea || !overallMagChanged) {
 
             QRect areaLeft(0, 0, cache.getValidLeft(), h);
             QRect areaRight(cache.getValidRight(), 0,
@@ -3390,33 +3460,6 @@ SpectrogramLayer::setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r,
 
 }
 
-static ColourScale::Scale
-convertInColourScale(int fileScale)
-{
-    switch (fileScale) {
-    case 0: return ColourScale::LinearColourScale;
-    case 1: return ColourScale::MeterColourScale;
-    case 2: return ColourScale::LogColourScale; //!!!
-    case 3: return ColourScale::LogColourScale;
-    case 4: return ColourScale::PhaseColourScale;
-    default: return ColourScale::LinearColourScale;
-    }
-}
-
-static int
-convertOutColourScale(ColourScale::Scale scale)
-{
-    switch (scale) {
-    case ColourScale::LinearColourScale: return 0;
-    case ColourScale::MeterColourScale: return 1;
-    case ColourScale::LogColourScale: return 3; //!!!
-    case ColourScale::PhaseColourScale: return 4;
-    case ColourScale::PlusMinusOneScale:
-    case ColourScale::AbsoluteScale:
-    default: return 0;
-    }
-}
-
 void
 SpectrogramLayer::toXml(QTextStream &stream,
                         QString indent, QString extraAttributes) const
@@ -3443,7 +3486,7 @@ SpectrogramLayer::toXml(QTextStream &stream,
 		 "binDisplay=\"%7\" ")
 	.arg(m_minFrequency)
 	.arg(m_maxFrequency)
-	.arg(convertOutColourScale(m_colourScale))
+	.arg(convertFromColourScale(m_colourScale))
 	.arg(m_colourMap)
 	.arg(m_colourRotation)
 	.arg(int(m_binScale))
@@ -3455,8 +3498,8 @@ SpectrogramLayer::toXml(QTextStream &stream,
     // area as well afterwards
     
     s += QString("columnNormalization=\"%1\" ")
-        .arg(m_normalization == ColumnOp::NormalizeColumns ? "peak" :
-             m_normalization == ColumnOp::NormalizeHybrid ? "hybrid" : "none");
+        .arg(m_normalization == ColumnNormalization::Max1 ? "peak" :
+             m_normalization == ColumnNormalization::Hybrid ? "hybrid" : "none");
 
     // Old-style normalization attribute. We *don't* write out
     // normalizeHybrid here because the only release that would accept
@@ -3465,12 +3508,12 @@ SpectrogramLayer::toXml(QTextStream &stream,
     // v2.0+ will look odd in Tony v1.0
     
     s += QString("normalizeColumns=\"%1\" ")
-	.arg(m_normalization == ColumnOp::NormalizeColumns ? "true" : "false");
+	.arg(m_normalization == ColumnNormalization::Max1 ? "true" : "false");
 
     // And this applies to both old- and new-style attributes
     
     s += QString("normalizeVisibleArea=\"%1\" ")
-        .arg(m_normalization == ColumnOp::NormalizeVisibleArea ? "true" : "false");
+        .arg(m_normalizeVisibleArea ? "true" : "false");
     
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -3518,7 +3561,7 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         setMaxFrequency(maxFrequency);
     }
 
-    ColourScale::Scale colourScale = convertInColourScale
+    ColourScale::Scale colourScale = convertToColourScale
         (attributes.value("colourScale").toInt(&ok));
     if (ok) setColourScale(colourScale);
 
@@ -3545,11 +3588,11 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         haveNewStyleNormalization = true;
 
         if (columnNormalization == "peak") {
-            setNormalization(ColumnOp::NormalizeColumns);
+            setNormalization(ColumnNormalization::Max1);
         } else if (columnNormalization == "hybrid") {
-            setNormalization(ColumnOp::NormalizeHybrid);
+            setNormalization(ColumnNormalization::Hybrid);
         } else if (columnNormalization == "none") {
-            // do nothing
+            setNormalization(ColumnNormalization::None);
         } else {
             cerr << "NOTE: Unknown or unsupported columnNormalization attribute \""
                  << columnNormalization << "\"" << endl;
@@ -3561,23 +3604,21 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         bool normalizeColumns =
             (attributes.value("normalizeColumns").trimmed() == "true");
         if (normalizeColumns) {
-            setNormalization(ColumnOp::NormalizeColumns);
+            setNormalization(ColumnNormalization::Max1);
         }
 
         bool normalizeHybrid =
             (attributes.value("normalizeHybrid").trimmed() == "true");
         if (normalizeHybrid) {
-            setNormalization(ColumnOp::NormalizeHybrid);
+            setNormalization(ColumnNormalization::Hybrid);
         }
     }
 
     bool normalizeVisibleArea =
         (attributes.value("normalizeVisibleArea").trimmed() == "true");
-    if (normalizeVisibleArea) {
-        setNormalization(ColumnOp::NormalizeVisibleArea);
-    }
+    setNormalizeVisibleArea(normalizeVisibleArea);
 
-    if (!haveNewStyleNormalization && m_normalization == ColumnOp::NormalizeHybrid) {
+    if (!haveNewStyleNormalization && m_normalization == ColumnNormalization::Hybrid) {
         // Tony v1.0 is (and hopefully will remain!) the only released
         // SV-a-like to use old-style attributes when saving sessions
         // that ask for hybrid normalization. It saves them with the
