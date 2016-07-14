@@ -90,8 +90,8 @@ public:
     virtual void setProperty(const PropertyName &, int value);
     virtual void setProperties(const QXmlAttributes &);
     
-    void setColourScale(ColourScale::Scale);
-    ColourScale::Scale getColourScale() const { return m_colourScale; }
+    void setColourScale(ColourScaleType);
+    ColourScaleType getColourScale() const { return m_colourScale; }
 
     void setColourMap(int map);
     int getColourMap() const;
@@ -163,7 +163,7 @@ protected:
     mutable int m_cacheValidStart;
     mutable int m_cacheValidEnd;
 
-    ColourScale::Scale m_colourScale;
+    ColourScaleType m_colourScale;
     bool m_colourScaleSet;
     int m_colourMap;
     float m_gain;
@@ -182,8 +182,8 @@ protected:
 
     bool m_synchronous;
 
-    static ColourScale::Scale convertToColourScale(int value);
-    static int convertFromColourScale(ColourScale::Scale);
+    static ColourScaleType convertToColourScale(int value);
+    static int convertFromColourScale(ColourScaleType);
     static std::pair<ColumnNormalization, bool> convertToColumnNorm(int value);
     static int convertFromColumnNorm(ColumnNormalization norm, bool visible);
 
