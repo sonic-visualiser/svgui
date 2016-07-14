@@ -180,6 +180,8 @@ Colour3DPlotLayer::cacheInvalid(sv_frame_t /* startFrame */,
 {
     //!!! should do this only if the range is visible
     delete m_peakCache;
+    m_peakCache = 0;
+    
     invalidateRenderers();
 }
 
