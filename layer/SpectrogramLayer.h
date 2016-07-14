@@ -26,7 +26,6 @@
 #include "data/model/DenseTimeValueModel.h"
 #include "data/model/FFTModel.h"
 
-#include "ScrollableImageCache.h"
 #include "VerticalBinLayer.h"
 #include "ColourScale.h"
 #include "Colour3DPlotRenderer.h"
