@@ -158,11 +158,6 @@ protected slots:
 protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this
     
-    mutable QImage *m_cache;
-    mutable QImage *m_peaksCache;
-    mutable int m_cacheValidStart;
-    mutable int m_cacheValidEnd;
-
     ColourScaleType m_colourScale;
     bool m_colourScaleSet;
     int m_colourMap;
@@ -194,6 +189,7 @@ protected:
     typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
     mutable ViewRendererMap m_renderers;
     Colour3DPlotRenderer *getRenderer(LayerGeometryProvider *) const;
+    void invalidateRenderers();
         
     /**
      * Return the y coordinate at which the given bin "starts"
@@ -218,14 +214,11 @@ protected:
      * are so small you can't see their borders. False for big,
      * translucent cells.
      */
-    bool shouldPaintDenseIn(const LayerGeometryProvider *) const; 
+//!!!    bool shouldPaintDenseIn(const LayerGeometryProvider *) const; 
 
     int getColourScaleWidth(QPainter &) const;
-    void fillCache(int firstBin, int lastBin) const;
-    void paintDense(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    void paintAlternative(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
-
+    void paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 };
 
 #endif

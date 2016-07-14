@@ -48,10 +48,6 @@ using std::vector;
 
 Colour3DPlotLayer::Colour3DPlotLayer() :
     m_model(0),
-    m_cache(0),
-    m_peaksCache(0),
-    m_cacheValidStart(0),
-    m_cacheValidEnd(0),
     m_colourScale(ColourScaleType::Linear),
     m_colourScaleSet(false),
     m_colourMap(0),
@@ -77,11 +73,8 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
 
 Colour3DPlotLayer::~Colour3DPlotLayer()
 {
-    delete m_cache;
-    delete m_peaksCache; //!!! this one is to go...
+    invalidateRenderers();
     delete m_peakCache;
-
-    cacheInvalid(); //!!! dup with above?
 }
 
 ColourScaleType
@@ -169,7 +162,7 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
     delete m_peakCache;
     m_peakCache = 0;
 
-    cacheInvalid();
+    invalidateRenderers();
 
     emit modelReplaced();
     emit sliceableModelReplaced(oldModel, model);
@@ -178,36 +171,26 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 void
 Colour3DPlotLayer::cacheInvalid()
 {
-    //!!! to go
-    
-    delete m_cache;
-    delete m_peaksCache;
-    m_cache = 0;
-    m_peaksCache = 0;
-    m_cacheValidStart = 0;
-    m_cacheValidEnd = 0;
+    invalidateRenderers();
+}
 
-    //!!!
+void
+Colour3DPlotLayer::cacheInvalid(sv_frame_t /* startFrame */,
+                                sv_frame_t /* endFrame */)
+{
+    //!!! should do this only if the range is visible
+    delete m_peakCache;
+    invalidateRenderers();
+}
+
+void
+Colour3DPlotLayer::invalidateRenderers()
+{
     for (ViewRendererMap::iterator i = m_renderers.begin();
          i != m_renderers.end(); ++i) {
         delete i->second;
     }
     m_renderers.clear();
-}
-
-void
-Colour3DPlotLayer::cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame)
-{
-    //!!! to go
-    
-    if (!m_cache || !m_model) return;
-
-    int modelResolution = m_model->getResolution();
-    int start = int(startFrame / modelResolution);
-    int end = int(endFrame / modelResolution + 1);
-    if (m_cacheValidStart < end) m_cacheValidStart = end;
-    if (m_cacheValidEnd > start) m_cacheValidEnd = start;
-    if (m_cacheValidStart > m_cacheValidEnd) m_cacheValidEnd = m_cacheValidStart;
 }
 
 Dense3DModelPeakCache *
@@ -477,7 +460,7 @@ Colour3DPlotLayer::setColourScale(ColourScaleType scale)
     if (m_colourScale == scale) return;
     m_colourScale = scale;
     m_colourScaleSet = true;
-    cacheInvalid();
+    invalidateRenderers();
     emit layerParametersChanged();
 }
 
@@ -486,7 +469,7 @@ Colour3DPlotLayer::setColourMap(int map)
 {
     if (m_colourMap == map) return;
     m_colourMap = map;
-    cacheInvalid();
+    invalidateRenderers();
     emit layerParametersChanged();
 }
 
@@ -495,7 +478,7 @@ Colour3DPlotLayer::setGain(float gain)
 {
     if (m_gain == gain) return;
     m_gain = gain;
-    cacheInvalid();
+    invalidateRenderers();
     emit layerParametersChanged();
 }
 
@@ -510,7 +493,7 @@ Colour3DPlotLayer::setBinScale(BinScale binScale)
 {
     if (m_binScale == binScale) return;
     m_binScale = binScale;
-    cacheInvalid();
+    invalidateRenderers();
     emit layerParametersChanged();
 }
 
@@ -526,7 +509,7 @@ Colour3DPlotLayer::setNormalization(ColumnNormalization n)
     if (m_normalization == n) return;
 
     m_normalization = n;
-    cacheInvalid();
+    invalidateRenderers();
     
     emit layerParametersChanged();
 }
@@ -543,7 +526,7 @@ Colour3DPlotLayer::setNormalizeVisibleArea(bool n)
     if (m_normalizeVisibleArea == n) return;
 
     m_normalizeVisibleArea = n;
-    cacheInvalid();
+    invalidateRenderers();
     
     emit layerParametersChanged();
 }
@@ -559,7 +542,7 @@ Colour3DPlotLayer::setInvertVertical(bool n)
 {
     if (m_invertVertical == n) return;
     m_invertVertical = n;
-    cacheInvalid();
+    invalidateRenderers();
     emit layerParametersChanged();
 }
 
@@ -568,6 +551,7 @@ Colour3DPlotLayer::setOpaque(bool n)
 {
     if (m_opaque == n) return;
     m_opaque = n;
+    invalidateRenderers();
     emit layerParametersChanged();
 }
 
@@ -576,6 +560,7 @@ Colour3DPlotLayer::setSmooth(bool n)
 {
     if (m_smooth == n) return;
     m_smooth = n;
+    invalidateRenderers();
     emit layerParametersChanged();
 }
 
@@ -627,9 +612,9 @@ Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider *v) const
     if (m_normalizeVisibleArea) {
         return false;
     }
-    if (shouldPaintDenseIn(v)) {
-        return true;
-    }
+//!!!    if (shouldPaintDenseIn(v)) {
+//        return true;
+//    }
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
@@ -874,7 +859,7 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
     int cw = getColourScaleWidth(paint);
     
     int ch = h - 20;
-    if (ch > 20 && m_cache) {
+    if (ch > 20) {
 
         double min = m_model->getMinimumLevel();
         double max = m_model->getMaximumLevel();
@@ -911,8 +896,9 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
             }
             int pixel = int(((value - mmin) * 256) / (mmax - mmin));
             if (pixel >= 0 && pixel < 256) {
-                QRgb c = m_cache->color(pixel);
-                paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
+//!!! replace this
+                // QRgb c = m_cache->color(pixel);
+                // paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
                 paint.drawLine(5, 11 + y, cw - 5, 11 + y);
             } else {
                 cerr << "WARNING: Colour3DPlotLayer::paintVerticalScale: value " << value << ", mmin " << mmin << ", mmax " << mmax << " leads to invalid pixel " << pixel << endl;
@@ -1057,289 +1043,7 @@ Colour3DPlotLayer::getColumn(int col) const
 
     return values;
 }
-    
-void
-Colour3DPlotLayer::fillCache(int firstColumn, int lastColumn) const
-{
-    // This call requests a (perhaps partial) fill of the cache
-    // between model columns firstColumn and lastColumn inclusive.
-    // The cache itself always has size sufficient to contain the
-    // whole model, but its validity may be less, depending on which
-    // regions have been requested via calls to this function.  Note
-    // that firstColumn and lastColumn are *model* column numbers. If
-    // the model starts at a frame > 0, a firstColumn of zero still
-    // corresponds to the first column in the model, not the first
-    // column on the resulting rendered layer.
-
-    Profiler profiler("Colour3DPlotLayer::fillCache", true);
-
-    int cacheWidth = m_model->getWidth();
-    int cacheHeight = m_model->getHeight();
-
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    cerr << "Colour3DPlotLayer::fillCache: range " << firstColumn << " -> " << lastColumn << " (cache size will be " << cacheWidth << " x " << cacheHeight << ")" << endl;
-#endif
-
-    if (m_cache && m_cache->height() != cacheHeight) {
-        // height has changed: delete everything rather than resizing
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        cerr << "Colour3DPlotLayer::fillCache: Cache height has changed, recreating" << endl;
-#endif
-        delete m_cache;
-        delete m_peaksCache;
-        m_cache = 0;
-        m_peaksCache = 0;
-    } 
-
-    if (m_cache && m_cache->width() != cacheWidth) {
-        // width has changed and we have an existing cache: resize it
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        cerr << "Colour3DPlotLayer::fillCache: Cache width has changed, resizing existing cache" << endl;
-#endif
-        QImage *newCache =
-            new QImage(m_cache->copy(0, 0, cacheWidth, cacheHeight));
-        delete m_cache;
-        m_cache = newCache;
-        if (m_peaksCache) {
-            QImage *newPeaksCache =
-                new QImage(m_peaksCache->copy
-                           (0, 0, cacheWidth / m_peakResolution + 1, cacheHeight));
-            delete m_peaksCache;
-            m_peaksCache = newPeaksCache;
-        }
-    }
-
-    if (!m_cache) {
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        cerr << "Colour3DPlotLayer::fillCache: Have no cache, making one" << endl;
-#endif
-        m_cache = new QImage(cacheWidth, cacheHeight, QImage::Format_Indexed8);
-        m_cache->setColorCount(256);
-        m_cache->fill(0);
-        if (!m_normalizeVisibleArea) {
-            m_peaksCache = new QImage
-                (cacheWidth / m_peakResolution + 1, cacheHeight,
-                 QImage::Format_Indexed8);
-            m_peaksCache->setColorCount(256);
-            m_peaksCache->fill(0);
-        } else if (m_peaksCache) {
-            delete m_peaksCache;
-            m_peaksCache = 0;
-        }
-        m_cacheValidStart = 0;
-        m_cacheValidEnd = 0;
-    }
-
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    cerr << "cache size = " << m_cache->width() << "x" << m_cache->height()
-         << " peaks cache size = " << m_peaksCache->width() << "x" << m_peaksCache->height() << endl;
-#endif
-
-    if (m_cacheValidStart <= firstColumn && m_cacheValidEnd >= lastColumn) {
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        cerr << "Cache is valid in this region already" << endl;
-#endif
-        return;
-    }
-    
-    int fillStart = firstColumn;
-    int fillEnd = lastColumn;
-
-    if (fillStart >= cacheWidth) fillStart = cacheWidth-1;
-    if (fillStart < 0) fillStart = 0;
-    if (fillEnd >= cacheWidth) fillEnd = cacheWidth-1;
-    if (fillEnd < 0) fillEnd = 0;
-    if (fillEnd < fillStart) fillEnd = fillStart;
-
-    bool normalizeVisible = (m_normalizeVisibleArea);
-
-    if (!normalizeVisible && (m_cacheValidStart < m_cacheValidEnd)) {
-        
-        if (m_cacheValidEnd < fillStart) {
-            fillStart = m_cacheValidEnd + 1;
-        }
-        if (m_cacheValidStart > fillEnd) {
-            fillEnd = m_cacheValidStart - 1;
-        }
-        
-        m_cacheValidStart = std::min(fillStart, m_cacheValidStart);
-        m_cacheValidEnd = std::max(fillEnd, m_cacheValidEnd);
-
-    } else {
-
-        // when normalising the visible area, the only valid area,
-        // ever, is the currently visible one
-
-        m_cacheValidStart = fillStart;
-        m_cacheValidEnd = fillEnd;
-    }
-
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    cerr << "Cache size " << cacheWidth << "x" << cacheHeight << " will be valid from " << m_cacheValidStart << " to " << m_cacheValidEnd << " (fillStart = " << fillStart << ", fillEnd = " << fillEnd << ")" << endl;
-#endif
-
-    DenseThreeDimensionalModel::Column values;
-
-    double min = m_model->getMinimumLevel();
-    double max = m_model->getMaximumLevel();
-
-    if (m_colourScale == ColourScaleType::Log) {
-        LogRange::mapRange(min, max);
-    } else if (m_colourScale == ColourScaleType::PlusMinusOne) {
-        min = -1.f;
-        max = 1.f;
-    } else if (m_colourScale == ColourScaleType::Absolute) {
-        if (min < 0) {
-            if (fabs(min) > fabs(max)) max = fabs(min);
-            else max = fabs(max);
-            min = 0;
-        } else {
-            min = fabs(min);
-            max = fabs(max);
-        }
-    }
-    
-    if (max == min) max = min + 1.f;
-    
-    ColourMapper mapper(m_colourMap, 0.f, 255.f);
-    
-    for (int index = 0; index < 256; ++index) {
-        QColor colour = mapper.map(index);
-        m_cache->setColor
-            (index, qRgb(colour.red(), colour.green(), colour.blue()));
-        if (m_peaksCache) {
-            m_peaksCache->setColor
-                (index, qRgb(colour.red(), colour.green(), colour.blue()));
-        }
-    }
-    
-    double visibleMax = 0.f, visibleMin = 0.f;
-
-    if (normalizeVisible) {
-        
-        for (int c = fillStart; c <= fillEnd; ++c) {
-	
-            values = getColumn(c);
-
-            double colMax = 0.f, colMin = 0.f;
-
-            for (int y = 0; y < cacheHeight; ++y) {
-                if (!in_range_for(values, y)) break;
-                if (y == 0 || values[y] > colMax) colMax = values[y];
-                if (y == 0 || values[y] < colMin) colMin = values[y];
-            }
-
-            if (c == fillStart || colMax > visibleMax) visibleMax = colMax;
-            if (c == fillStart || colMin < visibleMin) visibleMin = colMin;
-        }
-
-        if (m_colourScale == ColourScaleType::Log) {
-            visibleMin = LogRange::map(visibleMin);
-            visibleMax = LogRange::map(visibleMax);
-            if (visibleMin > visibleMax) std::swap(visibleMin, visibleMax);
-        } else if (m_colourScale == ColourScaleType::Absolute) {
-            if (visibleMin < 0) {
-                if (fabs(visibleMin) > fabs(visibleMax)) visibleMax = fabs(visibleMin);
-                else visibleMax = fabs(visibleMax);
-                visibleMin = 0;
-            } else {
-                visibleMin = fabs(visibleMin);
-                visibleMax = fabs(visibleMax);
-            }
-        }
-    }
-    
-    if (visibleMin == visibleMax) visibleMax = visibleMin + 1;
-
-    int *peaks = 0;
-    if (m_peaksCache) {
-        peaks = new int[cacheHeight];
-        for (int y = 0; y < cacheHeight; ++y) {
-            peaks[y] = 0;
-        }
-    }
-
-    Profiler profiler2("Colour3DPlotLayer::fillCache: filling", true);
-
-    for (int c = fillStart; c <= fillEnd; ++c) {
-	
-        values = getColumn(c);
-
-        if (c >= m_cache->width()) {
-            cerr << "ERROR: column " << c << " >= cache width "
-                 << m_cache->width() << endl;
-            continue;
-        }
-
-        for (int y = 0; y < cacheHeight; ++y) {
-
-            double value = min;
-            if (in_range_for(values, y)) {
-                value = values.at(y);
-            }
-
-            value = value * m_gain;
-
-            if (m_colourScale == ColourScaleType::Log) {
-                value = LogRange::map(value);
-            } else if (m_colourScale == ColourScaleType::Absolute) {
-                value = fabs(value);
-            }
-            
-            if (normalizeVisible) {
-                double norm = (value - visibleMin) / (visibleMax - visibleMin);
-                value = min + (max - min) * norm;
-            }
-
-            int pixel = int(((value - min) * 256) / (max - min));
-            if (pixel < 0) pixel = 0;
-            if (pixel > 255) pixel = 255;
-            if (peaks && (pixel > peaks[y])) peaks[y] = pixel;
-
-            if (m_invertVertical) {
-                m_cache->setPixel(c, cacheHeight - y - 1, pixel);
-            } else {
-                if (y >= m_cache->height()) {
-                    cerr << "ERROR: row " << y << " >= cache height " << m_cache->height() << endl;
-                } else {
-                    m_cache->setPixel(c, y, pixel);
-                }
-            }
-        }
-
-        if (peaks) {
-            int notch = (c % m_peakResolution);
-            if (notch == m_peakResolution-1 || c == fillEnd) {
-                int pc = c / m_peakResolution;
-                if (pc >= m_peaksCache->width()) {
-                    cerr << "ERROR: peak column " << pc
-                         << " (from col " << c << ") >= peaks cache width "
-                         << m_peaksCache->width() << endl;
-                    continue;
-                }
-                for (int y = 0; y < cacheHeight; ++y) {
-                    if (m_invertVertical) {
-                        m_peaksCache->setPixel(pc, cacheHeight - y - 1, peaks[y]);
-                    } else {
-                        if (y >= m_peaksCache->height()) {
-                            cerr << "ERROR: row " << y
-                                 << " >= peaks cache height "
-                                 << m_peaksCache->height() << endl;
-                        } else {
-                            m_peaksCache->setPixel(pc, y, peaks[y]);
-                        }
-                    }
-                }
-                for (int y = 0; y < cacheHeight; ++y) {
-                    peaks[y] = 0;
-                }
-            }
-        }
-    }
-
-    delete[] peaks;
-}
-
+/*!!! replace this    
 bool
 Colour3DPlotLayer::shouldPaintDenseIn(const LayerGeometryProvider *v) const
 {
@@ -1356,7 +1060,7 @@ Colour3DPlotLayer::shouldPaintDenseIn(const LayerGeometryProvider *v) const
     }
     return false;
 }
-
+*/
 Colour3DPlotRenderer *
 Colour3DPlotLayer::getRenderer(LayerGeometryProvider *v) const
 {
@@ -1388,7 +1092,8 @@ Colour3DPlotLayer::getRenderer(LayerGeometryProvider *v) const
 }
 
 void
-Colour3DPlotLayer::paintAlternative(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
+Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
+                                     QPainter &paint, QRect rect) const
 {
     static int depth = 0;
     
@@ -1447,18 +1152,20 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
         return;
     }
 
-    //!!! why is the setLayerDormant(false) found here in
-    //!!! SpectrogramLayer not present in Colour3DPlotLayer?
-    //!!! unnecessary? vestigial? forgotten?
-
-    paintAlternative(v, paint, rect);
-    return;
-
     //!!!???
     
     if (m_normalizeVisibleArea) {
         rect = v->getPaintRect();
     }
+
+    //!!! why is the setLayerDormant(false) found here in
+    //!!! SpectrogramLayer not present in Colour3DPlotLayer?
+    //!!! unnecessary? vestigial? forgotten?
+
+    paintWithRenderer(v, paint, rect);
+}
+
+/*!!! This will be needed in some form still.
 
     sv_frame_t modelStart = m_model->getStartFrame();
     sv_frame_t modelEnd = m_model->getEndFrame();
@@ -1600,237 +1307,8 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 	}
     }
 }
+*/
 
-void
-Colour3DPlotLayer::paintDense(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
-{
-    Profiler profiler("Colour3DPlotLayer::paintDense", true);
-    if (!m_cache) return;
-
-    double modelStart = double(m_model->getStartFrame());
-    double modelResolution = double(m_model->getResolution());
-
-    sv_samplerate_t mmsr = v->getViewManager()->getMainModelSampleRate();
-    sv_samplerate_t msr = m_model->getSampleRate();
-    double srRatio = mmsr / msr;
-
-    int x0 = rect.left();
-    int x1 = rect.right() + 1;
-
-    const int w = x1 - x0; // const so it can be used as array size below
-    int h = v->getPaintHeight(); // we always paint full height
-    int sh = m_model->getHeight();
-
-    int symin = m_miny;
-    int symax = m_maxy;
-    if (symax <= symin) {
-        symin = 0;
-        symax = sh;
-    }
-    if (symin < 0) symin = 0;
-    if (symax > sh) symax = sh;
-
-    QImage img(w, h, QImage::Format_Indexed8);
-    img.setColorTable(m_cache->colorTable());
-
-    uchar *peaks = new uchar[w];
-    memset(peaks, 0, w);
-
-    int zoomLevel = v->getZoomLevel();
-    
-    QImage *source = m_cache;
-
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT    
-    cerr << "modelResolution " << modelResolution << ", srRatio "
-         << srRatio << ", m_peakResolution " << m_peakResolution
-         << ", zoomLevel " << zoomLevel << ", result "
-         << ((modelResolution * srRatio * m_peakResolution) / zoomLevel)
-         << endl;
-#endif
-
-    if (m_peaksCache) {
-        if (((modelResolution * srRatio * m_peakResolution) / zoomLevel) < 1) {
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT    
-            cerr << "using peaks cache" << endl;
-#endif
-            source = m_peaksCache;
-            modelResolution *= m_peakResolution;
-        } else {
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT    
-            cerr << "not using peaks cache" << endl;
-#endif
-        }
-    } else {
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT    
-        cerr << "have no peaks cache" << endl;
-#endif
-    }
-
-    int sw = source->width();
-    
-    sv_frame_t xf = -1;
-    sv_frame_t nxf = v->getFrameForX(x0);
-
-    double epsilon = 0.000001;
-
-    vector<double> sxa(w*2);
-    
-    for (int x = 0; x < w; ++x) {
-
-        xf = nxf;
-        nxf = xf + zoomLevel;
-
-        double sx0 = (double(xf) / srRatio - modelStart) / modelResolution;
-        double sx1 = (double(nxf) / srRatio - modelStart) / modelResolution;
-
-        sxa[x*2] = sx0;
-        sxa[x*2 + 1] = sx1;
-    }
-
-    double logmin = symin+1, logmax = symax+1;
-    LogRange::mapRange(logmin, logmax);
-
-#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    cerr << "m_smooth = " << m_smooth << ", w = " << w << ", h = " << h << endl;
-#endif
-
-    if (m_smooth) {
-        
-        for (int y = 0; y < h; ++y) {
-
-            double sy = getBinForY(v, y) - 0.5;
-            int syi = int(sy + epsilon);
-            if (syi < 0 || syi >= source->height()) continue;
-
-            uchar *targetLine = img.scanLine(y);
-            uchar *sourceLine = source->scanLine(syi);
-            uchar *nextSource;
-            if (syi + 1 < source->height()) {
-                nextSource = source->scanLine(syi + 1);
-            } else {
-                nextSource = sourceLine;
-            }
-
-            for (int x = 0; x < w; ++x) {
-
-                targetLine[x] = 0;
-
-                double sx0 = sxa[x*2];
-                if (sx0 < 0) continue;
-                int sx0i = int(sx0 + epsilon);
-                if (sx0i >= sw) break;
-
-                double a = sourceLine[sx0i];
-                double b = a;
-                double value;
-
-                double sx1 = sxa[x*2+1];
-                if (sx1 > sx0 + 1.f) {
-                    int sx1i = int(sx1);
-                    bool have = false;
-                    for (int sx = sx0i; sx <= sx1i; ++sx) {
-                        if (sx < 0 || sx >= sw) continue;
-                        if (!have) {
-                            a = sourceLine[sx];
-                            b = nextSource[sx];
-                            have = true;
-                        } else {
-                            a = std::max(a, double(sourceLine[sx]));
-                            b = std::max(b, double(nextSource[sx]));
-                        }
-                    }
-                    double yprop = sy - syi;
-                    value = (a * (1.f - yprop) + b * yprop);
-                } else {
-                    a = sourceLine[sx0i];
-                    b = nextSource[sx0i];
-                    double yprop = sy - syi;
-                    value = (a * (1.f - yprop) + b * yprop);
-                    int oi = sx0i + 1;
-                    double xprop = sx0 - sx0i;
-                    xprop -= 0.5;
-                    if (xprop < 0) {
-                        oi = sx0i - 1;
-                        xprop = -xprop;
-                    }
-                    if (oi < 0 || oi >= sw) oi = sx0i;
-                    a = sourceLine[oi];
-                    b = nextSource[oi];
-                    value = (value * (1.f - xprop) +
-                             (a * (1.f - yprop) + b * yprop) * xprop);
-                }
-                
-                int vi = int(lrint(value));
-                if (vi > 255) vi = 255;
-                if (vi < 0) vi = 0;
-                targetLine[x] = uchar(vi);
-            }
-        }
-    } else {
-
-        double sy0 = getBinForY(v, 0);
-
-        int psy0i = -1, psy1i = -1;
-
-        for (int y = 0; y < h; ++y) {
-
-            double sy1 = sy0;
-            sy0 = getBinForY(v, double(y + 1));
-
-            int sy0i = int(sy0 + epsilon);
-            int sy1i = int(sy1);
-
-            uchar *targetLine = img.scanLine(y);
-
-            if (sy0i == psy0i && sy1i == psy1i) {
-                // same source scan line as just computed
-                goto copy;
-            }
-
-            psy0i = sy0i;
-            psy1i = sy1i;
-
-            for (int x = 0; x < w; ++x) {
-                peaks[x] = 0;
-            }
-        
-            for (int sy = sy0i; sy <= sy1i; ++sy) {
-
-                if (sy < 0 || sy >= source->height()) continue;
-
-                uchar *sourceLine = source->scanLine(sy);
-            
-                for (int x = 0; x < w; ++x) {
-
-                    double sx1 = sxa[x*2 + 1];
-                    if (sx1 < 0) continue;
-                    int sx1i = int(sx1);
-
-                    double sx0 = sxa[x*2];
-                    if (sx0 < 0) continue;
-                    int sx0i = int(sx0 + epsilon);
-                    if (sx0i >= sw) break;
-
-                    uchar peak = 0;
-                    for (int sx = sx0i; sx <= sx1i; ++sx) {
-                        if (sx < 0 || sx >= sw) continue;
-                        if (sourceLine[sx] > peak) peak = sourceLine[sx];
-                    }
-                    peaks[x] = peak;
-                }
-            }
-        
-        copy:
-            for (int x = 0; x < w; ++x) {
-                targetLine[x] = peaks[x];
-            }
-        }
-    }
-
-    delete[] peaks;
-
-    paint.drawImage(x0, 0, img);
-}
 
 bool
 Colour3DPlotLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
