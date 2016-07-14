@@ -250,7 +250,7 @@ protected:
     int                 m_minFrequency;
     int                 m_maxFrequency;
     int                 m_initialMaxFrequency;
-    ColourScaleType  m_colourScale;
+    ColourScaleType     m_colourScale;
     int                 m_colourMap;
     QColor              m_crosshairColour;
     BinScale            m_binScale;
@@ -267,46 +267,7 @@ protected:
     static std::pair<ColumnNormalization, bool> convertToColumnNorm(int value);
     static int convertFromColumnNorm(ColumnNormalization norm, bool visible);
 
-    enum { NO_VALUE = 0 }; // colour index for unused pixels
-
-    class Palette
-    {
-    public:
-        QColor getColour(unsigned char index) const {
-            return m_colours[index];
-        }
-    
-        void setColour(unsigned char index, QColor colour) {
-            m_colours[index] = colour;
-        }
-
-    private:
-        QColor m_colours[256];
-    };
-
-    Palette m_palette;
-
-    typedef std::map<int, ScrollableImageCache> ViewImageCache; // key is view id
-    void invalidateImageCaches();
-    mutable ViewImageCache m_imageCaches;
-    ScrollableImageCache &getImageCacheReference(const LayerGeometryProvider *) const;
-
-    /**
-     * When painting, we draw directly onto the draw buffer and then
-     * copy this to the part of the image cache that needed refreshing
-     * before copying the image cache onto the window.  (Remind me why
-     * we don't draw directly onto the cache?) (Answer: it's because
-     * we usually apply scaling and smoothing in the x axis when
-     * copying from draw buffer to cache)
-     */
-    mutable QImage m_drawBuffer;
-
     bool m_exiting;
-
-    void initialisePalette();
-    void rotatePalette(int distance);
-
-    unsigned char getDisplayValue(LayerGeometryProvider *v, double input) const;
 
     int getColourScaleWidth(QPainter &) const;
 
@@ -348,47 +309,13 @@ protected:
     typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
     mutable ViewRendererMap m_renderers;
     Colour3DPlotRenderer *getRenderer(LayerGeometryProvider *) const;
+    void invalidateRenderers();
     
     FFTModel *getFFTModel() const;
     Dense3DModelPeakCache *getPeakCache() const;
     void invalidateFFTModel();
 
-    void paintAlternative(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
-    
-    int paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
-                        const std::vector<int> &binforx,
-                        const std::vector<double> &binfory,
-                        bool usePeaksCache,
-                        MagnitudeRange &overallMag,
-                        bool &overallMagChanged,
-                        bool rightToLeft,
-                        double softTimeLimit) const;
-    int paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
-                                       const std::vector<int> &binforx,
-                                       int minbin,
-                                       int maxbin,
-                                       double displayMinFreq,
-                                       double displayMaxFreq,
-                                       bool logarithmic,
-                                       MagnitudeRange &overallMag,
-                                       bool &overallMagChanged,
-                                       bool rightToLeft,
-                                       double softTimeLimit) const;
-
-    std::vector<float> getColumnFromFFTModel(FFTModel *model,
-                                             int sx,
-                                             int minbin,
-                                             int bincount) const;
-
-    std::vector<float> getColumnFromGenericModel(DenseThreeDimensionalModel *model,
-                                                 int sx,
-                                                 int minbin,
-                                                 int bincount) const;
-
-    void recordColumnExtents(const std::vector<float> &col,
-                             int sx,
-                             MagnitudeRange &overallMag,
-                             bool &overallMagChanged) const;
+    void paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
     
     virtual void updateMeasureRectYCoords(LayerGeometryProvider *v,
                                           const MeasureRect &r) const;
