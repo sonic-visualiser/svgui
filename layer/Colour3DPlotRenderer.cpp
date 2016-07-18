@@ -22,6 +22,9 @@
 
 #include "LayerGeometryProvider.h"
 #include "VerticalBinLayer.h"
+#include "PaintAssistant.h"
+
+#include "view/ViewManager.h" // for main model sample rate. Pity
 
 #include <vector>
 
@@ -62,6 +65,21 @@ Colour3DPlotRenderer::RenderResult
 Colour3DPlotRenderer::render(LayerGeometryProvider *v,
                              QPainter &paint, QRect rect, bool timeConstrained)
 {
+    RenderType renderType = decideRenderType(v);
+
+    if (renderType != DrawBufferPixelResolution) {
+        // Rendering should be fast in bin-resolution and direct draw
+        // cases because we are quite well zoomed-in, and the sums are
+        // easier this way. Calculating boundaries later will be
+        // fiddly for partial paints otherwise.
+        timeConstrained = false;
+    }
+    
+    if (renderType == DirectTranslucent) {
+        renderDirectTranslucent(v, paint, rect);
+        return { rect, {} }; //!!! this return arg is not very useful
+    }
+
     sv_frame_t startFrame = v->getStartFrame();
     
     int x0 = v->getXForViewX(rect.x());
@@ -80,16 +98,6 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
          << " x0 " << x0
          << " x1 " << x1
          << endl;
-
-    bool bufferIsBinResolution = useBinResolutionForDrawBuffer(v);
-    
-    if (bufferIsBinResolution) {
-        // Rendering should be fast in this situation because we are
-        // quite well zoomed-in, and the sums are easier this
-        // way. Calculating boundaries later will be fiddly for
-        // partial paints otherwise.
-        timeConstrained = false;
-    }
     
     if (m_cache.isValid()) { // some part of the cache is valid
 
@@ -145,7 +153,6 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
     }
 
     if (m_cache.isValid()) {
-            cerr << "cache somewhat valid" << endl;
             
         // When rendering only a part of the cache, we need to make
         // sure that the part we're rendering is adjacent to (or
@@ -168,16 +175,17 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
         rightToLeft = isLeftOfValidArea;
     }
     
-    // Note, we always paint the full height.  Smaller heights can be
-    // used when painting direct from cache (outside this function),
-    // but we want to ensure the cache is coherent without having to
-    // worry about vertical matching of required and valid areas as
-    // well as horizontal. That's why this function didn't take any
-    // y/height parameters.
+    // Note, we always paint the full height to cache. We want to
+    // ensure the cache is coherent without having to worry about
+    // vertical matching of required and valid areas as well as
+    // horizontal.
 
-    if (bufferIsBinResolution && (m_params.binDisplay != BinDisplay::PeakFrequencies)) {
+    if (renderType == DrawBufferBinResolution) {
+
         renderToCacheBinResolution(v, x0, x1 - x0);
-    } else {
+
+    } else { // must be DrawBufferPixelResolution, handled DirectTranslucent earlier
+
         renderToCachePixelResolution(v, x0, x1 - x0, rightToLeft, timeConstrained);
     }
 
@@ -212,14 +220,201 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
     //!!! should we own the Dense3DModelPeakCache here? or should it persist
 }
 
-bool
-Colour3DPlotRenderer::useBinResolutionForDrawBuffer(LayerGeometryProvider *v) const
+Colour3DPlotRenderer::RenderType
+Colour3DPlotRenderer::decideRenderType(LayerGeometryProvider *v) const
 {
     const DenseThreeDimensionalModel *model = m_sources.source;
-    if (!model) return false;
+    if (!model || !v || !(v->getViewManager())) {
+        return DrawBufferPixelResolution; // or anything
+    }
+
     int binResolution = model->getResolution();
     int zoomLevel = v->getZoomLevel();
-    return (binResolution > zoomLevel);
+    sv_samplerate_t modelRate = model->getSampleRate();
+
+    double rateRatio = v->getViewManager()->getMainModelSampleRate() / modelRate;
+    double relativeBinResolution = binResolution * rateRatio;
+
+    if (m_params.binDisplay == BinDisplay::PeakFrequencies) {
+        // no alternative works here
+        return DrawBufferPixelResolution;
+    }
+
+    if (!m_params.alwaysOpaque && !m_params.interpolate) {
+
+        // consider translucent option -- only if not smoothing & not
+        // explicitly requested opaque & sufficiently zoomed-in
+        
+        if (model->getHeight() < v->getPaintHeight() &&
+            relativeBinResolution >= 2 * zoomLevel) {
+            return DirectTranslucent;
+        }
+    }
+
+    if (relativeBinResolution > zoomLevel) {
+        return DrawBufferBinResolution;
+    } else {
+        return DrawBufferPixelResolution;
+    }
+}
+
+void
+Colour3DPlotRenderer::renderDirectTranslucent(LayerGeometryProvider *v,
+                                              QPainter &paint,
+                                              QRect rect)
+{
+//!!!    QPoint illuminatePos;
+//    bool illuminate = v->shouldIlluminateLocalFeatures
+//        (m_sources.verticalBinLayer, illuminatePos);
+
+    const DenseThreeDimensionalModel *model = m_sources.source;
+    
+    int x0 = rect.left();
+    int x1 = rect.right() + 1;
+
+    int h = v->getPaintHeight();
+
+    sv_frame_t modelStart = model->getStartFrame();
+    sv_frame_t modelEnd = model->getEndFrame();
+    int modelResolution = model->getResolution();
+
+    double rateRatio =
+        v->getViewManager()->getMainModelSampleRate() / model->getSampleRate();
+
+    // the s-prefix values are source, i.e. model, column and bin numbers
+    int sx0 = int((double(v->getFrameForX(x0)) / rateRatio - double(modelStart))
+                  / modelResolution);
+    int sx1 = int((double(v->getFrameForX(x1)) / rateRatio - double(modelStart))
+                  / modelResolution);
+
+    int sh = model->getHeight();
+
+    const int buflen = 40;
+    char labelbuf[buflen];
+
+    int minbin = 0;
+    int maxbin = sh - 1; //!!!
+    
+    int psx = -1;
+
+    vector<float> preparedColumn;
+
+    int modelWidth = model->getWidth();
+
+    for (int sx = sx0; sx <= sx1; ++sx) {
+
+        if (sx < 0 || sx >= modelWidth) {
+            continue;
+        }
+
+        if (sx != psx) {
+
+            //!!! this is in common with renderDrawBuffer - pull it out
+
+            // order:
+            // get column -> scale -> record extents ->
+            // normalise -> peak pick -> apply display gain ->
+            // distribute/interpolate
+
+            ColumnOp::Column fullColumn = model->getColumn(sx);
+
+//                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
+//                     << ", minbin " << minbin << ", maxbin " << maxbin << endl;
+                
+            ColumnOp::Column column =
+                vector<float>(fullColumn.data() + minbin,
+                              fullColumn.data() + maxbin + 1);
+
+//!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
+//                    column = ColumnOp::fftScale(column, m_fftSize);
+//                }
+
+//!!! extents                recordColumnExtents(column,
+//                                    sx,
+//                                    overallMag,
+//                                    overallMagChanged);
+
+//                if (m_colourScale != ColourScaleType::Phase) {
+            column = ColumnOp::normalize(column, m_params.normalization);
+//                }
+
+            if (m_params.binDisplay == BinDisplay::PeakBins) {
+                column = ColumnOp::peakPick(column);
+            }
+
+            preparedColumn = column; //!!! unnecessary dup
+                
+            psx = sx;
+        }
+
+	sv_frame_t fx = sx * modelResolution + modelStart;
+
+	if (fx + modelResolution <= modelStart || fx > modelEnd) continue;
+
+        int rx0 = v->getXForFrame(int(double(fx) * rateRatio));
+	int rx1 = v->getXForFrame(int(double(fx + modelResolution + 1) * rateRatio));
+
+	int rw = rx1 - rx0;
+	if (rw < 1) rw = 1;
+
+	bool showLabel = (rw > 10 &&
+			  paint.fontMetrics().width("0.000000") < rw - 3 &&
+			  paint.fontMetrics().height() < (h / sh));
+        
+	for (int sy = minbin; sy <= maxbin; ++sy) {
+
+            int ry0 = m_sources.verticalBinLayer->getIYForBin(v, sy);
+            int ry1 = m_sources.verticalBinLayer->getIYForBin(v, sy + 1);
+            QRect r(rx0, ry1, rw, ry0 - ry1);
+
+            float value = preparedColumn[sy - minbin];
+            QColor colour = m_params.colourScale.getColour(value, 0);//!!! +rotation
+
+            if (rw == 1) {
+                paint.setPen(colour);
+                paint.setBrush(Qt::NoBrush);
+                paint.drawLine(r.x(), r.y(), r.x(), r.y() + r.height() - 1);
+                continue;
+            }
+
+	    QColor pen(255, 255, 255, 80);
+	    QColor brush(colour);
+
+            if (rw > 3 && r.height() > 3) {
+                brush.setAlpha(160);
+            }
+
+	    paint.setPen(Qt::NoPen);
+	    paint.setBrush(brush);
+
+//!!!	    if (illuminate) {
+//		if (r.contains(illuminatePos)) {
+//		    paint.setPen(v->getForeground());
+//		}
+//	    }
+            
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+//            cerr << "rect " << r.x() << "," << r.y() << " "
+//                      << r.width() << "x" << r.height() << endl;
+#endif
+
+	    paint.drawRect(r);
+
+	    if (showLabel) {
+                double value = model->getValueAt(sx, sy);
+                snprintf(labelbuf, buflen, "%06f", value);
+                QString text(labelbuf);
+                PaintAssistant::drawVisibleText
+                    (v,
+                     paint,
+                     rx0 + 2,
+                     ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
+                     text,
+                     PaintAssistant::OutlinedText);
+	    }
+	}
+    }
+   
 }
 
 void

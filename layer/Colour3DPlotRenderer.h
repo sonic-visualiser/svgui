@@ -181,13 +181,16 @@ private:
     // then repainting from cache to the requested painter.
     ScrollableImageCache m_cache;
 
-    bool useBinResolutionForDrawBuffer(LayerGeometryProvider *) const;
-
     RenderResult render(LayerGeometryProvider *v,
                         QPainter &paint, QRect rect, bool timeConstrained);
+
+    void renderDirectTranslucent(LayerGeometryProvider *v,
+                                 QPainter &paint, QRect rect);
+    
     void renderToCachePixelResolution(LayerGeometryProvider *v, int x0,
                                       int repaintWidth, bool rightToLeft,
                                       bool timeConstrained);
+
     void renderToCacheBinResolution(LayerGeometryProvider *v, int x0,
                                     int repaintWidth);
 
@@ -207,6 +210,14 @@ private:
     
     void recreateDrawBuffer(int w, int h);
     void clearDrawBuffer(int w, int h);
+
+    enum RenderType {
+        DrawBufferPixelResolution,
+        DrawBufferBinResolution,
+        DirectTranslucent
+    };
+
+    RenderType decideRenderType(LayerGeometryProvider *) const;
 };
 
 #endif
