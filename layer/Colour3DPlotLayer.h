@@ -187,7 +187,7 @@ protected:
 
     typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
     mutable ViewRendererMap m_renderers;
-    Colour3DPlotRenderer *getRenderer(LayerGeometryProvider *) const;
+    Colour3DPlotRenderer *getRenderer(const LayerGeometryProvider *) const;
     void invalidateRenderers();
         
     /**
@@ -196,7 +196,7 @@ protected:
      * and the vertical scale is the usual way up). Bin number may be
      * fractional, to obtain a position part-way through a bin.
      */
-    double getYForBin(LayerGeometryProvider *, double bin) const;
+    double getYForBin(const LayerGeometryProvider *, double bin) const;
     
     /**
      * Return the bin number, possibly fractional, at the given y
@@ -204,7 +204,7 @@ protected:
      * at which the bins "start" (i.e. the bottom of the visible bin,
      * if the vertical scale is the usual way up).
      */
-    double getBinForY(LayerGeometryProvider *, double y) const;
+    double getBinForY(const LayerGeometryProvider *, double y) const;
     
     DenseThreeDimensionalModel::Column getColumn(int col) const;
 

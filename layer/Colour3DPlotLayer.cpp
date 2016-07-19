@@ -614,9 +614,9 @@ Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider *v) const
     if (m_normalizeVisibleArea) {
         return false;
     }
-//!!!    if (shouldPaintDenseIn(v)) {
-//        return true;
-//    }
+    if (getRenderer(v)->willRenderOpaque(v)) {
+        return true;
+    }
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
@@ -724,7 +724,7 @@ Colour3DPlotLayer::getNewVerticalZoomRangeMapper() const
 }
 
 double
-Colour3DPlotLayer::getYForBin(LayerGeometryProvider *v, double bin) const
+Colour3DPlotLayer::getYForBin(const LayerGeometryProvider *v, double bin) const
 {
     double y = bin;
     if (!m_model) return y;
@@ -742,7 +742,7 @@ Colour3DPlotLayer::getYForBin(LayerGeometryProvider *v, double bin) const
 }
 
 double
-Colour3DPlotLayer::getBinForY(LayerGeometryProvider *v, double y) const
+Colour3DPlotLayer::getBinForY(const LayerGeometryProvider *v, double y) const
 {
     double bin = y;
     if (!m_model) return bin;
@@ -1064,7 +1064,7 @@ Colour3DPlotLayer::shouldPaintDenseIn(const LayerGeometryProvider *v) const
 }
 */
 Colour3DPlotRenderer *
-Colour3DPlotLayer::getRenderer(LayerGeometryProvider *v) const
+Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
 {
     if (m_renderers.find(v->getId()) == m_renderers.end()) {
 

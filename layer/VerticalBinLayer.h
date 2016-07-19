@@ -33,12 +33,12 @@ public:
      * and the vertical scale is the usual way up). Bin number may be
      * fractional, to obtain a position part-way through a bin.
      */
-    virtual double getYForBin(LayerGeometryProvider *, double bin) const = 0;
+    virtual double getYForBin(const LayerGeometryProvider *, double bin) const = 0;
 
     /**
      * As getYForBin, but rounding to integer values.
      */
-    virtual int getIYForBin(LayerGeometryProvider *v, int bin) const {
+    virtual int getIYForBin(const LayerGeometryProvider *v, int bin) const {
         return int(round(getYForBin(v, bin)));
     }
     
@@ -48,12 +48,12 @@ public:
      * at which the bins "start" (i.e. the bottom of the visible bin,
      * if the vertical scale is the usual way up).
      */
-    virtual double getBinForY(LayerGeometryProvider *, double y) const = 0;
+    virtual double getBinForY(const LayerGeometryProvider *, double y) const = 0;
 
     /**
      * As getBinForY, but rounding to integer values.
      */
-    virtual int getIBinForY(LayerGeometryProvider *v, int y) const {
+    virtual int getIBinForY(const LayerGeometryProvider *v, int y) const {
         return int(floor(getBinForY(v, y)));
     }
 };

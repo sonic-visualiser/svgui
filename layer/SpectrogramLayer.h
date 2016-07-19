@@ -195,8 +195,8 @@ public:
     double getFrequencyForY(const LayerGeometryProvider *v, int y) const;
 
     //!!! VerticalBinLayer methods. Note overlap with get*BinRange()
-    double getYForBin(LayerGeometryProvider *, double bin) const;
-    double getBinForY(LayerGeometryProvider *, double y) const;
+    double getYForBin(const LayerGeometryProvider *, double bin) const;
+    double getBinForY(const LayerGeometryProvider *, double y) const;
     
     virtual int getCompletion(LayerGeometryProvider *v) const;
     virtual QString getError(LayerGeometryProvider *v) const;
