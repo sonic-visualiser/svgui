@@ -1017,6 +1017,7 @@ SpectrogramLayer::cacheInvalid(
     cerr << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
 #endif
 
+    //!!! now in common with Colour3DPlotLayer:
     // We used to call invalidateMagnitudes(from, to) to invalidate
     // only those caches whose views contained some of the (from, to)
     // range. That's the right thing to do; it has been lost in
@@ -1067,60 +1068,43 @@ bool
 SpectrogramLayer::getYBinRange(LayerGeometryProvider *v, int y, double &q0, double &q1) const
 {
     Profiler profiler("SpectrogramLayer::getYBinRange");
-    
     int h = v->getPaintHeight();
     if (y < 0 || y >= h) return false;
-
-    sv_samplerate_t sr = m_model->getSampleRate();
-    double minf = getEffectiveMinFrequency();
-    double maxf = getEffectiveMaxFrequency();
-
-    bool logarithmic = (m_binScale == BinScale::Log);
-
-    q0 = v->getFrequencyForY(y, minf, maxf, logarithmic);
-    q1 = v->getFrequencyForY(y - 1, minf, maxf, logarithmic);
-
-    // Now map these on to ("proportions of") actual bins
-
-    q0 = (q0 * getFFTSize()) / sr;
-    q1 = (q1 * getFFTSize()) / sr;
-
+    q0 = getBinForY(v, y);
+    q1 = getBinForY(v, y-1);
     return true;
 }
 
 double
-SpectrogramLayer::getYForBin(const LayerGeometryProvider *, double) const {
-    //!!! not implemented -- needed for non-opaque render
+SpectrogramLayer::getYForBin(const LayerGeometryProvider *v, double bin) const
+{
+    double minf = getEffectiveMinFrequency();
+    double maxf = getEffectiveMaxFrequency();
+    bool logarithmic = (m_binScale == BinScale::Log);
+    sv_samplerate_t sr = m_model->getSampleRate();
 
-    //!!! this will crash, as it stands, when a spectrogram without
-    //!!! smoothing is zoomed in
+    double freq = (bin * sr) / getFFTSize();
     
-    //!!! overlap with range methods
-    throw std::logic_error("not implemented");
+    double y = v->getYForFrequency(freq, minf, maxf, logarithmic);
+    
+    return y;
 }
 
 double
 SpectrogramLayer::getBinForY(const LayerGeometryProvider *v, double y) const
 {
-    //!!! overlap with range methods above (but using double arg)
-    //!!! tidy this
-    
-    int h = v->getPaintHeight();
-    if (y < 0 || y >= h) return false;
-
     sv_samplerate_t sr = m_model->getSampleRate();
     double minf = getEffectiveMinFrequency();
     double maxf = getEffectiveMaxFrequency();
 
     bool logarithmic = (m_binScale == BinScale::Log);
 
-    double q = v->getFrequencyForY(y, minf, maxf, logarithmic);
+    double freq = v->getFrequencyForY(y, minf, maxf, logarithmic);
 
-    // Now map on to ("proportions of") actual bins
+    // Now map on to ("proportion of") actual bins
+    double bin = (freq * getFFTSize()) / sr;
 
-    q = (q * getFFTSize()) / sr;
-
-    return q;
+    return bin;
 }
 
 bool
