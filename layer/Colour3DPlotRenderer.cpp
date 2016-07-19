@@ -215,6 +215,8 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
 
     //!!! todo, here or in caller: illuminateLocalFeatures
 
+    //!!! todo: colourmap rotation
+    
     //!!! fft model scaling?
     
     //!!! should we own the Dense3DModelPeakCache here? or should it persist

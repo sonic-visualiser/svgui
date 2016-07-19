@@ -48,8 +48,7 @@ class Dense3DModelPeakCache;
  * DenseTimeValueModel) in spectrogram form.
  */
 
-class SpectrogramLayer : public SliceableLayer,
-                         public VerticalBinLayer,
+class SpectrogramLayer : public VerticalBinLayer,
 			 public PowerOfSqrtTwoZoomConstraint
 {
     Q_OBJECT

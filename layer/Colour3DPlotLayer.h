@@ -38,8 +38,7 @@ class QImage;
  * implementation that derived the spectrogram itself from a
  * DenseTimeValueModel instead of using a three-dimensional model.
  */
-class Colour3DPlotLayer : public SliceableLayer,
-                          public VerticalBinLayer
+class Colour3DPlotLayer : public VerticalBinLayer
 {
     Q_OBJECT
 
