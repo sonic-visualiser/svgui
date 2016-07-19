@@ -116,7 +116,7 @@ public:
      * also moving along any existing valid data within the cache so
      * that it continues to be valid for the new start frame.
      */
-    void scrollTo(LayerGeometryProvider *v, sv_frame_t newStartFrame);
+    void scrollTo(const LayerGeometryProvider *v, sv_frame_t newStartFrame);
 
     /**
      * Take a left coordinate and width describing a region, and

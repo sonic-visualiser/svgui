@@ -1089,13 +1089,13 @@ SpectrogramLayer::getYBinRange(LayerGeometryProvider *v, int y, double &q0, doub
 }
 
 double
-SpectrogramLayer::getYForBin(LayerGeometryProvider *, double) const {
+SpectrogramLayer::getYForBin(const LayerGeometryProvider *, double) const {
     //!!! not implemented
     throw std::logic_error("not implemented");
 }
 
 double
-SpectrogramLayer::getBinForY(LayerGeometryProvider *v, double y) const
+SpectrogramLayer::getBinForY(const LayerGeometryProvider *v, double y) const
 {
     //!!! overlap with range methods above (but using double arg)
     //!!! tidy this

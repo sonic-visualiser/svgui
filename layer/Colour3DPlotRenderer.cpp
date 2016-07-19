@@ -33,13 +33,13 @@
 using namespace std;
 
 Colour3DPlotRenderer::RenderResult
-Colour3DPlotRenderer::render(LayerGeometryProvider *v, QPainter &paint, QRect rect)
+Colour3DPlotRenderer::render(const LayerGeometryProvider *v, QPainter &paint, QRect rect)
 {
     return render(v, paint, rect, false);
 }
 
 Colour3DPlotRenderer::RenderResult
-Colour3DPlotRenderer::renderTimeConstrained(LayerGeometryProvider *v,
+Colour3DPlotRenderer::renderTimeConstrained(const LayerGeometryProvider *v,
                                             QPainter &paint, QRect rect)
 {
     return render(v, paint, rect, true);
@@ -62,7 +62,7 @@ Colour3DPlotRenderer::getLargestUncachedRect()
 }
 
 Colour3DPlotRenderer::RenderResult
-Colour3DPlotRenderer::render(LayerGeometryProvider *v,
+Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
                              QPainter &paint, QRect rect, bool timeConstrained)
 {
     RenderType renderType = decideRenderType(v);
@@ -223,7 +223,7 @@ Colour3DPlotRenderer::render(LayerGeometryProvider *v,
 }
 
 Colour3DPlotRenderer::RenderType
-Colour3DPlotRenderer::decideRenderType(LayerGeometryProvider *v) const
+Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 {
     const DenseThreeDimensionalModel *model = m_sources.source;
     if (!model || !v || !(v->getViewManager())) {
@@ -261,7 +261,7 @@ Colour3DPlotRenderer::decideRenderType(LayerGeometryProvider *v) const
 }
 
 void
-Colour3DPlotRenderer::renderDirectTranslucent(LayerGeometryProvider *v,
+Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                                               QPainter &paint,
                                               QRect rect)
 {
@@ -421,7 +421,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(LayerGeometryProvider *v,
 }
 
 void
-Colour3DPlotRenderer::renderToCachePixelResolution(LayerGeometryProvider *v,
+Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *v,
                                                    int x0, int repaintWidth,
                                                    bool rightToLeft,
                                                    bool timeConstrained)
@@ -513,7 +513,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(LayerGeometryProvider *v,
 }
 
 void
-Colour3DPlotRenderer::renderToCacheBinResolution(LayerGeometryProvider *v,
+Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
                                                  int x0, int repaintWidth)
 {
     cerr << "renderToCacheBinResolution" << endl;
@@ -788,7 +788,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 }
 
 int
-Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(LayerGeometryProvider *v,
+Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvider *v,
                                                       int w, int h,
                                                       const vector<int> &binforx,
                                                       const vector<double> &binfory,

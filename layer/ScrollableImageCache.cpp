@@ -20,7 +20,8 @@ using namespace std;
 #define DEBUG_SCROLLABLE_IMAGE_CACHE 1
 
 void
-ScrollableImageCache::scrollTo(LayerGeometryProvider *v, sv_frame_t newStartFrame)
+ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
+                               sv_frame_t newStartFrame)
 {
     if (m_startFrame == newStartFrame) {
 	// haven't moved

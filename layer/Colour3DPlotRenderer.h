@@ -120,7 +120,7 @@ public:
      * that the LayerGeometryProvider returns valid results; it is the
      * caller's responsibility to ensure these.
      */
-    RenderResult render(LayerGeometryProvider *v, QPainter &paint, QRect rect);
+    RenderResult render(const LayerGeometryProvider *v, QPainter &paint, QRect rect);
     
     /**
      * Render the requested area using the given painter, obtaining
@@ -147,7 +147,7 @@ public:
      * that the LayerGeometryProvider returns valid results; it is the
      * caller's responsibility to ensure these.
      */
-    RenderResult renderTimeConstrained(LayerGeometryProvider *v,
+    RenderResult renderTimeConstrained(const LayerGeometryProvider *v,
                                        QPainter &paint, QRect rect);
 
     /**
@@ -163,6 +163,15 @@ public:
      * Returns an empty QRect if the cache is entirely valid.
      */
     QRect getLargestUncachedRect();
+
+    /**
+     * Return true if the rendering will be opaque. This may be used
+     * by the calling layer to determine whether it can scroll
+     * directly without regard to any other layers beneath.
+     */
+    bool willRenderOpaque(const LayerGeometryProvider *v) {
+        return decideRenderType(v) != DirectTranslucent;
+    }
     
 private:
     Sources m_sources;
@@ -183,17 +192,17 @@ private:
     // then repainting from cache to the requested painter.
     ScrollableImageCache m_cache;
 
-    RenderResult render(LayerGeometryProvider *v,
+    RenderResult render(const LayerGeometryProvider *v,
                         QPainter &paint, QRect rect, bool timeConstrained);
 
-    void renderDirectTranslucent(LayerGeometryProvider *v,
+    void renderDirectTranslucent(const LayerGeometryProvider *v,
                                  QPainter &paint, QRect rect);
     
-    void renderToCachePixelResolution(LayerGeometryProvider *v, int x0,
+    void renderToCachePixelResolution(const LayerGeometryProvider *v, int x0,
                                       int repaintWidth, bool rightToLeft,
                                       bool timeConstrained);
 
-    void renderToCacheBinResolution(LayerGeometryProvider *v, int x0,
+    void renderToCacheBinResolution(const LayerGeometryProvider *v, int x0,
                                     int repaintWidth);
 
     int renderDrawBuffer(int w, int h,
@@ -203,7 +212,7 @@ private:
                          bool rightToLeft,
                          bool timeConstrained);
 
-    int renderDrawBufferPeakFrequencies(LayerGeometryProvider *v,
+    int renderDrawBufferPeakFrequencies(const LayerGeometryProvider *v,
                                         int w, int h,
                                         const std::vector<int> &binforx,
                                         const std::vector<double> &binfory,
@@ -219,7 +228,7 @@ private:
         DirectTranslucent
     };
 
-    RenderType decideRenderType(LayerGeometryProvider *) const;
+    RenderType decideRenderType(const LayerGeometryProvider *) const;
 };
 
 #endif
