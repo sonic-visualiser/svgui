@@ -845,8 +845,6 @@ SpectrogramLayer::getMaxFrequency() const
 void
 SpectrogramLayer::setColourRotation(int r)
 {
-    invalidateRenderers();
-
     if (r < 0) r = 0;
     if (r > 256) r = 256;
     int distance = r - m_colourRotation;
@@ -855,6 +853,8 @@ SpectrogramLayer::setColourRotation(int r)
 //!!!	rotatePalette(-distance);
 	m_colourRotation = r;
     }
+    
+    invalidateRenderers(); //!!! in theory we shouldn't have to do this... but...
     
     emit layerParametersChanged();
 }
@@ -1481,6 +1481,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         params.binScale = m_binScale;
         params.alwaysOpaque = true;
         params.invertVertical = false;
+        params.colourRotation = m_colourRotation;
 
         Preferences::SpectrogramSmoothing smoothing = 
             Preferences::getInstance()->getSpectrogramSmoothing();
