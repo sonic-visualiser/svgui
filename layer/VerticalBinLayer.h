@@ -21,8 +21,8 @@
 /**
  * Interface for layers in which the Y axis corresponds to bin number
  * rather than scale value. Colour3DPlotLayer is the obvious example.
- *!!! should just be a mapper interface, not a layer one?
- *!!! or even an application of RangeMapper
+ * Conceptually these are always SliceableLayers as well, and this
+ * subclasses from SliceableLayer to avoid a big inheritance mess.
  */
 class VerticalBinLayer : public SliceableLayer
 {
