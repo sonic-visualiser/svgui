@@ -16,13 +16,15 @@
 #ifndef VERTICAL_BIN_LAYER_H
 #define VERTICAL_BIN_LAYER_H
 
+#include "SliceableLayer.h"
+
 /**
  * Interface for layers in which the Y axis corresponds to bin number
  * rather than scale value. Colour3DPlotLayer is the obvious example.
  *!!! should just be a mapper interface, not a layer one?
  *!!! or even an application of RangeMapper
  */
-class VerticalBinLayer
+class VerticalBinLayer : public SliceableLayer
 {
 public:
     /**
