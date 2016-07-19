@@ -370,7 +370,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(LayerGeometryProvider *v,
             QRect r(rx0, ry1, rw, ry0 - ry1);
 
             float value = preparedColumn[sy - minbin];
-            QColor colour = m_params.colourScale.getColour(value, 0);//!!! +rotation
+            QColor colour = m_params.colourScale.getColour(value,
+                                                           m_params.colourRotation);
 
             if (rw == 1) {
                 paint.setPen(colour);
@@ -938,10 +939,10 @@ Colour3DPlotRenderer::recreateDrawBuffer(int w, int h)
     m_drawBuffer = QImage(w, h, QImage::Format_Indexed8);
 
     for (int pixel = 0; pixel < 256; ++pixel) {
-        //!!! todo: colour rotation (here 0)
         m_drawBuffer.setColor
             ((unsigned char)pixel,
-             m_params.colourScale.getColourForPixel(pixel, 0).rgb());
+             m_params.colourScale.getColourForPixel
+             (pixel, m_params.colourRotation).rgb());
     }
 
     m_drawBuffer.fill(0);

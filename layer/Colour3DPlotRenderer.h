@@ -64,7 +64,8 @@ public:
             binScale(BinScale::Linear),
 	    alwaysOpaque(false),
             interpolate(false), //!!! separate out x-interpolate and y-interpolate? the spectrogram actually does (or used to)
-            invertVertical(false) { }
+            invertVertical(false),
+            colourRotation(0) { }
 
 	ColourScale colourScale;       // complete ColourScale object by value
 	ColumnNormalization normalization;
@@ -73,6 +74,7 @@ public:
 	bool alwaysOpaque;
 	bool interpolate;
 	bool invertVertical;
+        int colourRotation;
     };
     
     Colour3DPlotRenderer(Sources sources, Parameters parameters) :
