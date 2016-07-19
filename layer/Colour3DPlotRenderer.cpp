@@ -365,6 +365,12 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 
             int ry0 = m_sources.verticalBinLayer->getIYForBin(v, sy);
             int ry1 = m_sources.verticalBinLayer->getIYForBin(v, sy + 1);
+
+            if (m_params.invertVertical) {
+                ry0 = h - ry0 - 1;
+                ry1 = h - ry1 - 1;
+            }
+                    
             QRect r(rx0, ry1, rw, ry0 - ry1);
 
             float value = preparedColumn[sy - minbin];
@@ -769,9 +775,15 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
         if (!pixelPeakColumn.empty()) {
             for (int y = 0; y < h; ++y) {
+                int py;
+                if (m_params.invertVertical) {
+                    py = y;
+                } else {
+                    py = h - y - 1;
+                }
                 m_drawBuffer.setPixel
                     (x,
-                     h-y-1,
+                     py,
                      m_params.colourScale.getPixel(pixelPeakColumn[y]));
             }
         }
