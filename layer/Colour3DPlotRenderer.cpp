@@ -265,9 +265,9 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                                               QPainter &paint,
                                               QRect rect)
 {
-//!!!    QPoint illuminatePos;
-//    bool illuminate = v->shouldIlluminateLocalFeatures
-//        (m_sources.verticalBinLayer, illuminatePos);
+    QPoint illuminatePos;
+    bool illuminate = v->shouldIlluminateLocalFeatures
+        (m_sources.verticalBinLayer, illuminatePos);
 
     const DenseThreeDimensionalModel *model = m_sources.source;
     
@@ -294,7 +294,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
     const int buflen = 40;
     char labelbuf[buflen];
 
-    int minbin = 0;
+    int minbin = 0; //!!!
     int maxbin = sh - 1; //!!!
     
     int psx = -1;
@@ -337,15 +337,13 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 //                                    overallMagChanged);
 
 //                if (m_colourScale != ColourScaleType::Phase) {
-            column = ColumnOp::normalize(column, m_params.normalization);
+            preparedColumn = ColumnOp::normalize(column, m_params.normalization);
 //                }
 
             if (m_params.binDisplay == BinDisplay::PeakBins) {
-                column = ColumnOp::peakPick(column);
+                preparedColumn = ColumnOp::peakPick(preparedColumn);
             }
 
-            preparedColumn = column; //!!! unnecessary dup
-                
             psx = sx;
         }
 
@@ -390,11 +388,11 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 	    paint.setPen(Qt::NoPen);
 	    paint.setBrush(brush);
 
-//!!!	    if (illuminate) {
-//		if (r.contains(illuminatePos)) {
-//		    paint.setPen(v->getForeground());
-//		}
-//	    }
+	    if (illuminate) {
+		if (r.contains(illuminatePos)) {
+		    paint.setPen(v->getForeground());
+		}
+	    }
             
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
 //            cerr << "rect " << r.x() << "," << r.y() << " "
