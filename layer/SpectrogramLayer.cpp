@@ -1090,7 +1090,12 @@ SpectrogramLayer::getYBinRange(LayerGeometryProvider *v, int y, double &q0, doub
 
 double
 SpectrogramLayer::getYForBin(const LayerGeometryProvider *, double) const {
-    //!!! not implemented
+    //!!! not implemented -- needed for non-opaque render
+
+    //!!! this will crash, as it stands, when a spectrogram without
+    //!!! smoothing is zoomed in
+    
+    //!!! overlap with range methods
     throw std::logic_error("not implemented");
 }
 
@@ -1479,7 +1484,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         params.normalization = m_normalization;
         params.binDisplay = m_binDisplay;
         params.binScale = m_binScale;
-        params.alwaysOpaque = true;
+        params.alwaysOpaque = false;
         params.invertVertical = false;
         params.colourRotation = m_colourRotation;
 
