@@ -16,6 +16,8 @@
 #include "Colour3DPlotRenderer.h"
 #include "RenderTimer.h"
 
+#include "base/Profiler.h"
+
 #include "data/model/DenseThreeDimensionalModel.h"
 #include "data/model/Dense3DModelPeakCache.h"
 #include "data/model/FFTModel.h"
@@ -247,8 +249,8 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
         // consider translucent option -- only if not smoothing & not
         // explicitly requested opaque & sufficiently zoomed-in
         
-        if (model->getHeight() < v->getPaintHeight() &&
-            relativeBinResolution >= 2 * zoomLevel) {
+        if (model->getHeight() * 3 < v->getPaintHeight() &&
+            relativeBinResolution >= 3 * zoomLevel) {
             return DirectTranslucent;
         }
     }
@@ -265,6 +267,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                                               QPainter &paint,
                                               QRect rect)
 {
+    Profiler profiler("Colour3DPlotRenderer::renderDirectTranslucent");
+
     QPoint illuminatePos;
     bool illuminate = v->shouldIlluminateLocalFeatures
         (m_sources.verticalBinLayer, illuminatePos);
@@ -430,6 +434,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
                                                    bool rightToLeft,
                                                    bool timeConstrained)
 {
+    Profiler profiler("Colour3DPlotRenderer::renderToCachePixelResolution");
     cerr << "renderToCachePixelResolution" << endl;
     
     // Draw to the draw buffer, and then copy from there. The draw
@@ -520,6 +525,7 @@ void
 Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
                                                  int x0, int repaintWidth)
 {
+    Profiler profiler("Colour3DPlotRenderer::renderToCacheBinResolution");
     cerr << "renderToCacheBinResolution" << endl;
     
     // Draw to the draw buffer, and then scale-copy from there. Draw
