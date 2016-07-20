@@ -45,7 +45,7 @@ ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
     int w = m_image.width();
 
     if (dx == 0) {
-	// haven't moved visibly
+	// haven't moved visibly (even though start frame may have changed)
 	return;
     }
 
@@ -72,8 +72,8 @@ ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
 	
     // update valid area
         
-    int px = m_left;
-    int pw = m_width;
+    int px = m_validLeft;
+    int pw = m_validWidth;
 	
     px += dx;
 	
@@ -96,8 +96,8 @@ ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
 	}
     }
 
-    m_left = px;
-    m_width = pw;
+    m_validLeft = px;
+    m_validWidth = pw;
 }
 
 void
@@ -107,21 +107,21 @@ ScrollableImageCache::adjustToTouchValidArea(int &left, int &width,
 #ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
     cerr << "ScrollableImageCache::adjustToTouchValidArea: left " << left
          << ", width " << width << endl;
-    cerr << "ScrollableImageCache: my left " << m_left
-         << ", width " << m_width << " so right " << (m_left + m_width) << endl;
+    cerr << "ScrollableImageCache: my left " << m_validLeft
+         << ", width " << m_validWidth << " so right " << (m_validLeft + m_validWidth) << endl;
 #endif
-    if (left < m_left) {
+    if (left < m_validLeft) {
 	isLeftOfValidArea = true;
-	if (left + width <= m_left + m_width) {
-	    width = m_left - left;
+	if (left + width <= m_validLeft + m_validWidth) {
+	    width = m_validLeft - left;
 	}
 #ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
         cerr << "ScrollableImageCache: we're left of valid area, adjusted width to " << width << endl;
 #endif
     } else {
 	isLeftOfValidArea = false;
-	width = left + width - (m_left + m_width);
-	left = m_left + m_width;
+	width = left + width - (m_validLeft + m_validWidth);
+	left = m_validLeft + m_validWidth;
 	if (width < 0) width = 0;
 #ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
         cerr << "ScrollableImageCache: we're right of valid area, adjusted left to " << left << ", width to " << width << endl;
@@ -164,43 +164,43 @@ ScrollableImageCache::drawImage(int left,
     painter.end();
 
     if (!isValid()) {
-	m_left = left;
-	m_width = width;
+	m_validLeft = left;
+	m_validWidth = width;
 	return;
     }
 	
-    if (left < m_left) {
-	if (left + width > m_left + m_width) {
+    if (left < m_validLeft) {
+	if (left + width > m_validLeft + m_validWidth) {
 	    // new image completely contains the old valid area --
 	    // use the new area as is
-	    m_left = left;
-	    m_width = width;
-	} else if (left + width < m_left) {
+	    m_validLeft = left;
+	    m_validWidth = width;
+	} else if (left + width < m_validLeft) {
 	    // new image completely off left of old valid area --
 	    // we can't extend the valid area because the bit in
 	    // between is not valid, so must use the new area only
-	    m_left = left;
-	    m_width = width;
+	    m_validLeft = left;
+	    m_validWidth = width;
 	} else {
 	    // new image overlaps old valid area on left side --
 	    // use new left edge, and extend width to existing
 	    // right edge
-	    m_width = (m_left + m_width) - left;
-	    m_left = left;
+	    m_validWidth = (m_validLeft + m_validWidth) - left;
+	    m_validLeft = left;
 	}
     } else {
-	if (left > m_left + m_width) {
+	if (left > m_validLeft + m_validWidth) {
 	    // new image completely off right of old valid area --
 	    // we can't extend the valid area because the bit in
 	    // between is not valid, so must use the new area only
-	    m_left = left;
-	    m_width = width;
-	} else if (left + width > m_left + m_width) {
+	    m_validLeft = left;
+	    m_validWidth = width;
+	} else if (left + width > m_validLeft + m_validWidth) {
 	    // new image overlaps old valid area on right side --
 	    // use existing left edge, and extend width to new
 	    // right edge
-	    m_width = (left + width) - m_left;
-	    // (m_left unchanged)
+	    m_validWidth = (left + width) - m_validLeft;
+	    // (m_validLeft unchanged)
 	} else {
 	    // new image completely contained within old valid
 	    // area -- leave the old area unchanged

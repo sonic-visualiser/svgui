@@ -136,7 +136,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             }
         }
     } else {
-        // cache completely invalid
+        // cache is completely invalid
         m_cache.setStartFrame(startFrame);
     }
 

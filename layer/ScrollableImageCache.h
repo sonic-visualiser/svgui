@@ -24,7 +24,7 @@
 #include <QPainter>
 
 /**
- * A cached image for a view that scrolls horizontally, primarily the
+ * A cached image for a view that scrolls horizontally, such as a
  * spectrogram. The cache object holds an image, reports the size of
  * the image (likely the same as the underlying view, but it's the
  * caller's responsibility to set the size appropriately), can scroll
@@ -38,24 +38,28 @@ class ScrollableImageCache
 {
 public:
     ScrollableImageCache() :
-	m_left(0),
-	m_width(0),
+	m_validLeft(0),
+	m_validWidth(0),
 	m_startFrame(0),
 	m_zoomLevel(0)
     {}
 
     void invalidate() {
-	m_width = 0;
+	m_validWidth = 0;
     }
     
     bool isValid() const {
-	return m_width > 0;
+	return m_validWidth > 0;
     }
 
     QSize getSize() const {
 	return m_image.size();
     }
-    
+
+    /**
+     * Set the size of the cache. If the new size differs from the
+     * current size, the cache is invalidated.
+     */
     void resize(QSize newSize) {
         if (getSize() != newSize) {
             m_image = QImage(newSize, QImage::Format_ARGB32_Premultiplied);
@@ -64,25 +68,31 @@ public:
     }
 	
     int getValidLeft() const {
-	return m_left;
+	return m_validLeft;
     }
     
     int getValidWidth() const {
-	return m_width;
+	return m_validWidth;
     }
 
     int getValidRight() const {
-	return m_left + m_width;
+	return m_validLeft + m_validWidth;
     }
 
     QRect getValidArea() const {
-	return QRect(m_left, 0, m_width, m_image.height());
+	return QRect(m_validLeft, 0, m_validWidth, m_image.height());
     }
     
     int getZoomLevel() const {
 	return m_zoomLevel;
     }
-    
+
+    /**
+     * Set the zoom level. If the new zoom level differs from the
+     * current one, the cache is invalidated. (Determining whether to
+     * invalidate the cache here is the only thing the zoom level is
+     * used for.)
+     */
     void setZoomLevel(int zoom) {
         if (m_zoomLevel != zoom) {
             m_zoomLevel = zoom;
@@ -95,9 +105,10 @@ public:
     }
 
     /**
-     * Set the start frame and invalidate the cache. To scroll,
-     * i.e. to set the start frame while retaining cache validity
-     * where possible, use scrollTo() instead.
+     * Set the start frame. If the new start frame differs from the
+     * current one, the cache is invalidated. To scroll, i.e. to set
+     * the start frame while retaining cache validity where possible,
+     * use scrollTo() instead.
      */
     void setStartFrame(sv_frame_t frame) {
         if (m_startFrame != frame) {
@@ -143,8 +154,8 @@ public:
     
 private:
     QImage m_image;
-    int m_left;  // of valid region
-    int m_width; // of valid region
+    int m_validLeft;
+    int m_validWidth;
     sv_frame_t m_startFrame;
     int m_zoomLevel;
 };

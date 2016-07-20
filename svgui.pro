@@ -60,6 +60,7 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/RegionLayer.h \
            layer/RenderTimer.h \
            layer/ScrollableImageCache.h \
+           layer/ScrollableMagRangeCache.h \
            layer/SingleColourLayer.h \
            layer/SliceableLayer.h \
            layer/SliceLayer.h \
@@ -90,6 +91,7 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/PianoScale.cpp \
            layer/RegionLayer.cpp \
            layer/ScrollableImageCache.cpp \
+           layer/ScrollableMagRangeCache.cpp \
            layer/SingleColourLayer.cpp \
            layer/SliceLayer.cpp \
            layer/SpectrogramLayer.cpp \
