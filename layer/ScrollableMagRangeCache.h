@@ -130,11 +130,11 @@ public:
     void scrollTo(const LayerGeometryProvider *v, sv_frame_t newStartFrame);
     
     /**
-     * Update a column in the cache, by column number.
+     * Update a column in the cache, by column index. (Column zero is
+     * the first column in the cache, it has nothing to do with any
+     * underlying model that the cache may be used with.)
      */
-    void sampleColumn(int column, const MagnitudeRange &r) {
-	m_ranges[column].sample(r);
-    }
+    void sampleColumn(int column, const MagnitudeRange &r);
     
     /**
      * Update a column in the cache, by frame.
