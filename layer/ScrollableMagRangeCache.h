@@ -95,11 +95,32 @@ public:
     bool isColumnSet(int column) const {
 	return in_range_for(m_ranges, column) && m_ranges.at(column).isSet();
     }
+
+    bool areColumnsSet(int x, int count) const {
+	for (int i = 0; i < count; ++i) {
+	    if (!isColumnSet(x + i)) return false;
+	}
+	return true;
+    }
     
-    const MagnitudeRange &getRange(int column) const {
+    /**
+     * Get the magnitude range for a single column.
+     */
+    MagnitudeRange getRange(int column) const {
 	return m_ranges.at(column);
     }
 
+    /**
+     * Get the magnitude range for a range of columns.
+     */
+    MagnitudeRange getRange(int x, int count) const {
+	MagnitudeRange r;
+	for (int i = 0; i < count; ++i) {
+	    r.sample(m_ranges.at(x + i));
+	}
+	return r;
+    }
+    
     /**
      * Set the new start frame for the cache, according to the
      * geometry of the supplied LayerGeometryProvider, if possible

@@ -18,6 +18,7 @@
 
 #include "ColourScale.h"
 #include "ScrollableImageCache.h"
+#include "ScrollableMagRangeCache.h"
 
 #include "base/ColumnOp.h"
 #include "base/MagnitudeRange.h"
@@ -183,15 +184,24 @@ private:
     // member is to avoid reallocation.
     QImage m_drawBuffer;
 
-    // Image cache is our persistent record of the visible area. It is
-    // always the same size as the view (i.e. the paint size reported
-    // by the LayerGeometryProvider) and is scrolled and partially
-    // repainted internally as appropriate. A render request is
-    // carried out by repainting to cache (via the draw buffer) any
+    // The image cache is our persistent record of the visible
+    // area. It is always the same size as the view (i.e. the paint
+    // size reported by the LayerGeometryProvider) and is scrolled and
+    // partially repainted internally as appropriate. A render request
+    // is carried out by repainting to cache (via the draw buffer) any
     // area that is being requested but is not valid in the cache, and
     // then repainting from cache to the requested painter.
     ScrollableImageCache m_cache;
 
+    // The mag range cache is our record of the column magnitude
+    // ranges for each of the columns in the cache. It always has the
+    // same start frame and width as the image cache, and the column
+    // indices match up across both. Our cache update mechanism
+    // guarantees that every valid column in the image cache has a
+    // valid range in the magnitude cache, but not necessarily vice
+    // versa (as the image cache is limited to contiguous ranges).
+    ScrollableMagRangeCache m_magCache;
+    
     RenderResult render(const LayerGeometryProvider *v,
                         QPainter &paint, QRect rect, bool timeConstrained);
 

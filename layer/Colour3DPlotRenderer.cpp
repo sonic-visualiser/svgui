@@ -92,6 +92,9 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     m_cache.resize(v->getPaintSize());
     m_cache.setZoomLevel(v->getZoomLevel());
 
+    m_magCache.resize(v->getPaintSize().width());
+    m_magCache.setZoomLevel(v->getZoomLevel());
+    
     cerr << "cache start " << m_cache.getStartFrame()
          << " valid left " << m_cache.getValidLeft()
          << " valid right " << m_cache.getValidRight()
@@ -112,7 +115,17 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             
             // cache is valid for the complete requested area
             paint.drawImage(rect, m_cache.getImage(), rect);
-            return { rect, {} };
+
+            //!!! a dev debug check
+            if (!m_magCache.areColumnsSet(x0, x1 - x0)) {
+                cerr << "Columns (" << x0 << " -> " << x1-x0
+                     << ") not set in mag cache" << endl;
+                throw std::logic_error("Columns not set in mag cache");
+            }
+            
+            MagnitudeRange range = m_magCache.getRange(x0, x1-x0);
+
+            return { rect, range };
 
         } else {
             cerr << "cache partial hit" << endl;
@@ -121,6 +134,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             // contain the complete view, but might be scrollable or
             // partially usable
             m_cache.scrollTo(v, startFrame);
+            m_magCache.scrollTo(v, startFrame);
 
             // if we are not time-constrained, then we want to paint
             // the whole area in one go; we don't return a partial
@@ -138,6 +152,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     } else {
         // cache is completely invalid
         m_cache.setStartFrame(startFrame);
+        m_magCache.setStartFrame(startFrame);
     }
 
     bool rightToLeft = false;
