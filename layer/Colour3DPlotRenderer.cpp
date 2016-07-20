@@ -30,7 +30,7 @@
 
 #include <vector>
 
-//#define DEBUG_SPECTROGRAM_REPAINT 1
+#define DEBUG_SPECTROGRAM_REPAINT 1 //!!! name
 
 using namespace std;
 
@@ -76,24 +76,36 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
         // fiddly for partial paints otherwise.
         timeConstrained = false;
     }
-    
-    if (renderType == DirectTranslucent) {
-        renderDirectTranslucent(v, paint, rect);
-        return { rect, {} }; //!!! this return arg is not very useful
-    }
 
-    sv_frame_t startFrame = v->getStartFrame();
-    
     int x0 = v->getXForViewX(rect.x());
     int x1 = v->getXForViewX(rect.x() + rect.width());
     if (x0 < 0) x0 = 0;
     if (x1 > v->getPaintWidth()) x1 = v->getPaintWidth();
 
+    sv_frame_t startFrame = v->getStartFrame();
+    
     m_cache.resize(v->getPaintSize());
     m_cache.setZoomLevel(v->getZoomLevel());
 
     m_magCache.resize(v->getPaintSize().width());
     m_magCache.setZoomLevel(v->getZoomLevel());
+    
+    if (renderType == DirectTranslucent) {
+        renderDirectTranslucent(v, paint, rect);
+        //!!! mag range!
+
+        //!!! a dev debug check
+        if (!m_magCache.areColumnsSet(x0, x1 - x0)) {
+            cerr << "Columns (" << x0 << " -> " << x1-x0
+                 << ") not set in mag cache" << endl;
+            throw std::logic_error("Columns not set in mag cache");
+        }
+
+        //!!! this is wrong
+        MagnitudeRange range = m_magCache.getRange(x0, x1-x0);
+
+        return { rect, range }; //!!! this return arg is not very useful
+    }
     
     cerr << "cache start " << m_cache.getStartFrame()
          << " valid left " << m_cache.getValidLeft()
@@ -216,8 +228,17 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
         //!!! then fix
         throw std::logic_error("internal error: failed to render entire requested rect even when not time-constrained");
     }
+
+    //!!! a dev debug check
+    if (!m_magCache.areColumnsSet(x0, x1 - x0)) {
+        cerr << "Columns (" << x0 << " -> " << x1-x0
+             << ") not set in mag cache" << endl;
+        throw std::logic_error("Columns not set in mag cache");
+    }
     
-    return { pr, {} };
+    MagnitudeRange range = m_magCache.getRange(x0, x1-x0);
+    
+    return { pr, range };
 
     //!!! todo: timing/incomplete paint
 
@@ -719,6 +740,10 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         // source column index
         
         ++columnCount;
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        cerr << "x = " << x << endl;
+#endif
         
         if (binforx[x] < 0) continue;
 
@@ -761,6 +786,13 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 //                    column = ColumnOp::fftScale(column, m_fftSize);
 //                }
 
+                MagnitudeRange r;
+                r.sample(column);
+                int magColIndex = sx - int(m_magCache.getStartFrame() /
+                                           sourceModel->getResolution());
+                cerr << "magColIndex = " << magColIndex << endl;
+                m_magCache.sampleColumn(magColIndex, r);
+                
 //!!! extents                recordColumnExtents(column,
 //                                    sx,
 //                                    overallMag,
