@@ -185,8 +185,12 @@ protected:
     const int m_peakCacheDivisor;
     Dense3DModelPeakCache *getPeakCache() const;
 
+    typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
+    mutable ViewMagMap m_viewMags;
+
     typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
     mutable ViewRendererMap m_renderers;
+    
     Colour3DPlotRenderer *getRenderer(const LayerGeometryProvider *) const;
     void invalidateRenderers();
         

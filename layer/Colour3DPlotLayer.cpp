@@ -609,16 +609,19 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 }
 
 bool
-Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider *v) const
+Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider */* v */) const
 {
     if (m_normalizeVisibleArea) {
         return false;
     }
-    if (getRenderer(v)->willRenderOpaque(v)) {
-        return true;
-    }
-    QPoint discard;
-    return !v->shouldIlluminateLocalFeatures(this, discard);
+    //!!! ah hang on, if we're potentially rendering incrementally
+    //!!! they we can't be scrollable
+    return false;
+//    if (getRenderer(v)->willRenderOpaque(v)) {
+//        return true;
+//    }
+//    QPoint discard;
+//    return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 bool
@@ -1080,31 +1083,39 @@ void
 Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
                                      QPainter &paint, QRect rect) const
 {
-    static int depth = 0;
-    
     Colour3DPlotRenderer *renderer = getRenderer(v);
 
-    if (m_synchronous) {
-        (void)renderer->render(v, paint, rect);
-        return;
-    }
-
-    ++depth;
-    cerr << "paint depth " << depth << endl;
+    Colour3DPlotRenderer::RenderResult result;
     
-    (void)renderer->renderTimeConstrained(v, paint, rect);
+    if (m_synchronous) {
 
-    //!!! + mag range
+        result = renderer->render(v, paint, rect);
 
-    QRect uncached = renderer->getLargestUncachedRect();
-    if (uncached.width() > 0) {
-        cerr << "updating rect at " << uncached.x() << " width "
-             << uncached.width() << endl;
-        v->updatePaintRect(uncached);
+    } else {
+
+        result = renderer->renderTimeConstrained(v, paint, rect);
+
+        //!!! + mag range
+
+        QRect uncached = renderer->getLargestUncachedRect(v);
+        if (uncached.width() > 0) {
+            cerr << "updating rect at " << uncached.x() << " width "
+                 << uncached.width() << endl;
+            v->updatePaintRect(uncached);
+        }
     }
+    
+    //!!! at the mo this measures the range of the whole thing, not
+    //!!! just the view - need to reset it when view extents change
 
-    cerr << "exiting paint depth " << depth << endl;
-    --depth;
+    m_viewMags[v->getId()].sample(result.range);
+    
+    cerr << "mag range in this view: "
+         << m_viewMags[v->getId()].getMin()
+         << " -> "
+         << m_viewMags[v->getId()].getMax()
+         << endl;
+        
 }
 
 void

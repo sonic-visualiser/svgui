@@ -1385,12 +1385,13 @@ SpectrogramLayer::invalidateMagnitudes()
     cerr << "SpectrogramLayer::invalidateMagnitudes called" << endl;
 #endif
     m_viewMags.clear();
-    for (vector<MagnitudeRange>::iterator i = m_columnMags.begin();
+/*!!!    for (vector<MagnitudeRange>::iterator i = m_columnMags.begin();
          i != m_columnMags.end(); ++i) {
         *i = MagnitudeRange();
     }
+*/
 }
-
+/*!!!
 bool
 SpectrogramLayer::updateViewMagnitudes(LayerGeometryProvider *v) const
 {
@@ -1434,7 +1435,7 @@ SpectrogramLayer::updateViewMagnitudes(LayerGeometryProvider *v) const
     m_viewMags[v->getId()] = mag;
     return true;
 }
-
+*/
 void
 SpectrogramLayer::setSynchronousPainting(bool synchronous)
 {
@@ -1487,31 +1488,42 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
 void
 SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    static int depth = 0;
-    
     Colour3DPlotRenderer *renderer = getRenderer(v);
 
-    if (m_synchronous) {
-        (void)renderer->render(v, paint, rect);
-        return;
-    }
-
-    ++depth;
-    cerr << "paint depth " << depth << endl;
+    Colour3DPlotRenderer::RenderResult result;
     
-    (void)renderer->renderTimeConstrained(v, paint, rect);
+    if (m_synchronous) {
 
-    //!!! + mag range
+        result = renderer->render(v, paint, rect);
 
-    QRect uncached = renderer->getLargestUncachedRect();
-    if (uncached.width() > 0) {
-        cerr << "updating rect at " << uncached.x() << " width "
-             << uncached.width() << endl;
-        v->updatePaintRect(uncached);
+    } else {
+
+        result = renderer->renderTimeConstrained(v, paint, rect);
+
+        cerr << "mag range in this paint: " << result.range.getMin() << " -> "
+             << result.range.getMax() << endl;
+        
+        //!!!
+
+        QRect uncached = renderer->getLargestUncachedRect(v);
+        if (uncached.width() > 0) {
+            cerr << "updating rect at " << uncached.x() << " width "
+                 << uncached.width() << endl;
+            v->updatePaintRect(uncached);
+        }
     }
 
-    cerr << "exiting paint depth " << depth << endl;
-    --depth;
+    //!!! at the mo this measures the range of the whole thing, not
+    //!!! just the view - need to reset it when view extents change
+
+    m_viewMags[v->getId()].sample(result.range);
+    
+    cerr << "mag range in this view: "
+         << m_viewMags[v->getId()].getMin()
+         << " -> "
+         << m_viewMags[v->getId()].getMax()
+         << endl;
+        
 }
 
 void
