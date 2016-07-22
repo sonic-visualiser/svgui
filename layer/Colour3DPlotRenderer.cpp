@@ -30,7 +30,7 @@
 
 #include <vector>
 
-#define DEBUG_SPECTROGRAM_REPAINT 1 //!!! name
+#define DEBUG_COLOUR_PLOT_REPAINT 1
 
 using namespace std;
 
@@ -119,6 +119,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
         return { rect, range };
     }
     
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "cache start " << m_cache.getStartFrame()
          << " valid left " << m_cache.getValidLeft()
          << " valid right " << m_cache.getValidRight()
@@ -127,6 +128,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
          << " x0 " << x0
          << " x1 " << x1
          << endl;
+#endif
     
     if (m_cache.isValid()) { // some part of the cache is valid
 
@@ -135,24 +137,21 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             m_cache.getValidLeft() <= x0 &&
             m_cache.getValidRight() >= x1) {
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
             cerr << "cache hit" << endl;
+#endif
             
             // cache is valid for the complete requested area
             paint.drawImage(rect, m_cache.getImage(), rect);
 
-            //!!! a dev debug check
-            if (!m_magCache.areColumnsSet(x0, x1 - x0)) {
-                cerr << "NB Columns (" << x0 << " -> " << x1-x0
-                     << ") not set in mag cache" << endl;
-//                throw std::logic_error("Columns not set in mag cache");
-            }
-            
             MagnitudeRange range = m_magCache.getRange(x0, x1 - x0);
 
             return { rect, range };
 
         } else {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
             cerr << "cache partial hit" << endl;
+#endif
             
             // cache doesn't begin at the right frame or doesn't
             // contain the complete view, but might be scrollable or
@@ -248,24 +247,11 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     
     return { pr, range };
 
-    //!!! todo: timing/incomplete paint
-
-    //!!! todo: peak frequency style
-
-    //!!! todo: transparent style from Colour3DPlot
-
-    //!!! todo: view magnitudes / normalise visible area
-
-    //!!! todo: alter documentation for view mag stuff (cached paints
-    //!!! do not update MagnitudeRange)
-
     //!!! todo, here or in caller: illuminateLocalFeatures
 
-    //!!! todo: colourmap rotation
+    //!!! todo: handle vertical range other than full range of column
     
     //!!! fft model scaling?
-    
-    //!!! should we own the Dense3DModelPeakCache here? or should it persist
 }
 
 Colour3DPlotRenderer::RenderType
@@ -369,9 +355,6 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             // distribute/interpolate
 
             ColumnOp::Column fullColumn = model->getColumn(sx);
-
-//                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
-//                     << ", minbin " << minbin << ", maxbin " << maxbin << endl;
                 
             ColumnOp::Column column =
                 vector<float>(fullColumn.data() + minbin,
@@ -382,11 +365,6 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 //!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
 //                    column = ColumnOp::fftScale(column, m_fftSize);
 //                }
-
-//!!! extents                recordColumnExtents(column,
-//                                    sx,
-//                                    overallMag,
-//                                    overallMagChanged);
 
 //                if (m_colourScale != ColourScaleType::Phase) {
             preparedColumn = ColumnOp::normalize(column, m_params.normalization);
@@ -766,7 +744,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         
         ++columnCount;
 
-#ifdef DEBUG_SPECTROGRAM_REPAINT
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
         cerr << "x = " << x << ", binforx[x] = " << binforx[x] << endl;
 #endif
         
@@ -784,7 +762,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         
         for (int sx = sx0; sx < sx1; ++sx) {
 
-#ifdef DEBUG_SPECTROGRAM_REPAINT
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
             cerr << "sx = " << sx << endl;
 #endif
 
@@ -813,11 +791,6 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 //                }
 
                 magRange.sample(column);
-                
-//!!! extents                recordColumnExtents(column,
-//                                    sx,
-//                                    overallMag,
-//                                    overallMagChanged);
 
 //                if (m_colourScale != ColourScaleType::Phase) {
                     column = ColumnOp::normalize(column, m_params.normalization);
@@ -962,11 +935,6 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 //!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
 //                    column = ColumnOp::fftScale(column, getFFTSize());
 //                }
-
-//!!! extents                recordColumnExtents(column,
-//                                    sx,
-//                                    overallMag,
-//                                    overallMagChanged);
 
 //!!!                if (m_colourScale != ColourScaleType::Phase) {
                     column = ColumnOp::normalize(column, m_params.normalization);

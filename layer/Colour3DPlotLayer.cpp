@@ -1086,6 +1086,12 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
     Colour3DPlotRenderer *renderer = getRenderer(v);
 
     Colour3DPlotRenderer::RenderResult result;
+    MagnitudeRange magRange;
+    int viewId = v->getId();
+
+    if (!renderer->geometryChanged(v)) {
+        magRange = m_viewMags[viewId];
+    }
     
     if (m_synchronous) {
 
@@ -1095,20 +1101,20 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
 
         result = renderer->renderTimeConstrained(v, paint, rect);
 
-        //!!! + mag range
-
         QRect uncached = renderer->getLargestUncachedRect(v);
         if (uncached.width() > 0) {
-            cerr << "updating rect at " << uncached.x() << " width "
-                 << uncached.width() << endl;
             v->updatePaintRect(uncached);
         }
     }
     
-    //!!! at the mo this measures the range of the whole thing, not
-    //!!! just the view - need to reset it when view extents change
+    magRange.sample(result.range);
 
-    m_viewMags[v->getId()].sample(result.range);
+    if (magRange.isSet()) {
+        if (!(m_viewMags[viewId] == magRange)) {
+            m_viewMags[viewId] = magRange;
+    //!!! now need to do the normalise-visible thing
+        }
+    }
     
     cerr << "mag range in this view: "
          << m_viewMags[v->getId()].getMin()
