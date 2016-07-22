@@ -163,7 +163,7 @@ public:
      *
      * Returns an empty QRect if the cache is entirely valid.
      */
-    QRect getLargestUncachedRect();
+    QRect getLargestUncachedRect(const LayerGeometryProvider *v);
 
     /**
      * Return true if the rendering will be opaque. This may be used
@@ -184,6 +184,12 @@ private:
     // member is to avoid reallocation.
     QImage m_drawBuffer;
 
+    // A temporary store of magnitude ranges per-column, used when
+    // rendering to the draw buffer. This always has the same length
+    // as the width of the draw buffer, and the x coordinates of the
+    // two containers are equivalent.
+    std::vector<MagnitudeRange> m_magRanges;
+    
     // The image cache is our persistent record of the visible
     // area. It is always the same size as the view (i.e. the paint
     // size reported by the LayerGeometryProvider) and is scrolled and
@@ -205,8 +211,8 @@ private:
     RenderResult render(const LayerGeometryProvider *v,
                         QPainter &paint, QRect rect, bool timeConstrained);
 
-    void renderDirectTranslucent(const LayerGeometryProvider *v,
-                                 QPainter &paint, QRect rect);
+    MagnitudeRange renderDirectTranslucent(const LayerGeometryProvider *v,
+                                           QPainter &paint, QRect rect);
     
     void renderToCachePixelResolution(const LayerGeometryProvider *v, int x0,
                                       int repaintWidth, bool rightToLeft,

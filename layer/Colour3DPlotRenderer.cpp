@@ -48,8 +48,14 @@ Colour3DPlotRenderer::renderTimeConstrained(const LayerGeometryProvider *v,
 }
 
 QRect
-Colour3DPlotRenderer::getLargestUncachedRect()
+Colour3DPlotRenderer::getLargestUncachedRect(const LayerGeometryProvider *v)
 {
+    RenderType renderType = decideRenderType(v);
+
+    if (renderType == DirectTranslucent) {
+        return QRect(); // never cached
+    }
+
     int h = m_cache.getSize().height();
 
     QRect areaLeft(0, 0, m_cache.getValidLeft(), h);
@@ -91,20 +97,8 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     m_magCache.setZoomLevel(v->getZoomLevel());
     
     if (renderType == DirectTranslucent) {
-        renderDirectTranslucent(v, paint, rect);
-        //!!! mag range!
-
-        //!!! a dev debug check
-        if (!m_magCache.areColumnsSet(x0, x1 - x0)) {
-            cerr << "Columns (" << x0 << " -> " << x1-x0
-                 << ") not set in mag cache" << endl;
-            throw std::logic_error("Columns not set in mag cache");
-        }
-
-        //!!! this is wrong
-        MagnitudeRange range = m_magCache.getRange(x0, x1-x0);
-
-        return { rect, range }; //!!! this return arg is not very useful
+        MagnitudeRange range = renderDirectTranslucent(v, paint, rect);
+        return { rect, range };
     }
     
     cerr << "cache start " << m_cache.getStartFrame()
@@ -130,9 +124,9 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
             //!!! a dev debug check
             if (!m_magCache.areColumnsSet(x0, x1 - x0)) {
-                cerr << "Columns (" << x0 << " -> " << x1-x0
+                cerr << "NB Columns (" << x0 << " -> " << x1-x0
                      << ") not set in mag cache" << endl;
-                throw std::logic_error("Columns not set in mag cache");
+//                throw std::logic_error("Columns not set in mag cache");
             }
             
             MagnitudeRange range = m_magCache.getRange(x0, x1-x0);
@@ -231,9 +225,9 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
     //!!! a dev debug check
     if (!m_magCache.areColumnsSet(x0, x1 - x0)) {
-        cerr << "Columns (" << x0 << " -> " << x1-x0
+        cerr << "NB Columns (" << x0 << " -> " << x1-x0
              << ") not set in mag cache" << endl;
-        throw std::logic_error("Columns not set in mag cache");
+//        throw std::logic_error("Columns not set in mag cache");
     }
     
     MagnitudeRange range = m_magCache.getRange(x0, x1-x0);
@@ -298,13 +292,15 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
     }
 }
 
-void
+MagnitudeRange
 Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                                               QPainter &paint,
                                               QRect rect)
 {
     Profiler profiler("Colour3DPlotRenderer::renderDirectTranslucent");
 
+    MagnitudeRange magRange;
+    
     QPoint illuminatePos;
     bool illuminate = v->shouldIlluminateLocalFeatures
         (m_sources.verticalBinLayer, illuminatePos);
@@ -366,6 +362,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             ColumnOp::Column column =
                 vector<float>(fullColumn.data() + minbin,
                               fullColumn.data() + maxbin + 1);
+
+            magRange.sample(column);
 
 //!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
 //                    column = ColumnOp::fftScale(column, m_fftSize);
@@ -461,7 +459,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 	    }
 	}
     }
-   
+
+    return magRange;
 }
 
 void
@@ -555,6 +554,10 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     m_cache.drawImage(paintedLeft, attainedWidth,
                       m_drawBuffer,
                       paintedLeft - x0, attainedWidth);
+
+    for (int i = 0; in_range_for(m_magRanges, i); ++i) {
+        m_magCache.sampleColumn(i, m_magRanges.at(i));
+    }
 }
 
 void
@@ -685,6 +688,13 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
                           scaled,
                           sourceLeft, sourceWidth);
     }
+    
+    for (int i = 0; i < targetWidth; ++i) {
+        int sourceIx = int((double(i) / targetWidth) * sourceWidth);
+        if (in_range_for(m_magRanges, sourceIx)) {
+            m_magCache.sampleColumn(i, m_magRanges.at(sourceIx));
+        }
+    }
 }
 
 int
@@ -732,8 +742,9 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     vector<float> preparedColumn;
 
     int modelWidth = sourceModel->getWidth();
-    cerr << "modelWidth " << modelWidth << endl;
-            
+
+    cerr << "modelWidth " << modelWidth << ", divisor " << divisor << endl;
+
     for (int x = start; x != finish; x += step) {
 
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -742,7 +753,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         ++columnCount;
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "x = " << x << endl;
+        cerr << "x = " << x << ", binforx[x] = " << binforx[x] << endl;
 #endif
         
         if (binforx[x] < 0) continue;
@@ -755,6 +766,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
         vector<float> pixelPeakColumn;
+        MagnitudeRange magRange;
         
         for (int sx = sx0; sx < sx1; ++sx) {
 
@@ -786,12 +798,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 //                    column = ColumnOp::fftScale(column, m_fftSize);
 //                }
 
-                MagnitudeRange r;
-                r.sample(column);
-                int magColIndex = sx - int(m_magCache.getStartFrame() /
-                                           sourceModel->getResolution());
-                cerr << "magColIndex = " << magColIndex << endl;
-                m_magCache.sampleColumn(magColIndex, r);
+                magRange.sample(column);
                 
 //!!! extents                recordColumnExtents(column,
 //                                    sx,
@@ -827,6 +834,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         }
 
         if (!pixelPeakColumn.empty()) {
+
             for (int y = 0; y < h; ++y) {
                 int py;
                 if (m_params.invertVertical) {
@@ -839,10 +847,13 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                      py,
                      m_params.colourScale.getPixel(pixelPeakColumn[y]));
             }
+            
+            m_magRanges.push_back(magRange);
         }
 
         double fractionComplete = double(columnCount) / double(w);
         if (timer.outOfTime(fractionComplete)) {
+            cerr << "out of time" << endl;
             return columnCount;
         }
     }
@@ -916,6 +927,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
         vector<float> pixelPeakColumn;
+        MagnitudeRange magRange;
         
         for (int sx = sx0; sx < sx1; ++sx) {
 
@@ -931,6 +943,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                     vector<float>(fullColumn.data() + minbin,
                                   fullColumn.data() + maxbin + 1);
 
+                magRange.sample(column);
+                
 //!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
 //                    column = ColumnOp::fftScale(column, getFFTSize());
 //                }
@@ -963,6 +977,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         }
 
         if (!pixelPeakColumn.empty()) {
+            
             for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
                  pi != peakfreqs.end(); ++pi) {
 
@@ -985,6 +1000,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                      iy,
                      m_params.colourScale.getPixel(value));
             }
+
+            m_magRanges.push_back(magRange);
         }
 
         double fractionComplete = double(columnCount) / double(w);
@@ -1009,6 +1026,7 @@ Colour3DPlotRenderer::recreateDrawBuffer(int w, int h)
     }
 
     m_drawBuffer.fill(0);
+    m_magRanges.clear();
 }
 
 void
@@ -1018,6 +1036,7 @@ Colour3DPlotRenderer::clearDrawBuffer(int w, int h)
         recreateDrawBuffer(w, h);
     } else {
         m_drawBuffer.fill(0);
+        m_magRanges.clear();
     }
 }
 
