@@ -1495,10 +1495,7 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
     int viewId = v->getId();
 
     if (!renderer->geometryChanged(v)) {
-        cerr << "geometry unchanged, extending view mag range" << endl;
         magRange = m_viewMags[viewId];
-    } else {
-        cerr << "geometry changed!! creating new view mag range" << endl;
     }
     
     if (m_synchronous) {
@@ -1513,12 +1510,8 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
              << ", mag range in this paint: " << result.range.getMin() << " -> "
              << result.range.getMax() << endl;
         
-        //!!!
-
         QRect uncached = renderer->getLargestUncachedRect(v);
         if (uncached.width() > 0) {
-            cerr << "updating rect at " << uncached.x() << " width "
-                 << uncached.width() << endl;
             v->updatePaintRect(uncached);
         }
     }
@@ -1526,11 +1519,9 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
     magRange.sample(result.range);
 
     if (magRange.isSet()) {
-        if (m_viewMags[viewId] == magRange) {
-            cerr << "mag range unchanged" << endl;
-        } else {
-            cerr << "mag range changed!!" << endl;
+        if (!(m_viewMags[viewId] == magRange)) {
             m_viewMags[viewId] = magRange;
+    //!!! now need to do the normalise-visible thing
         }
     }
     
