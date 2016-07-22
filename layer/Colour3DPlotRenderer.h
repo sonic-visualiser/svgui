@@ -166,6 +166,14 @@ public:
     QRect getLargestUncachedRect(const LayerGeometryProvider *v);
 
     /**
+     * Return true if the provider's geometry differs from the cache,
+     * or if we are not using a cache. i.e. if the cache will be
+     * regenerated for the next render, or the next render performed
+     * from scratch.
+     */
+    bool geometryChanged(const LayerGeometryProvider *v);
+    
+    /**
      * Return true if the rendering will be opaque. This may be used
      * by the calling layer to determine whether it can scroll
      * directly without regard to any other layers beneath.

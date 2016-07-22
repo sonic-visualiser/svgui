@@ -22,12 +22,7 @@ using namespace std;
 void
 ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
 				  sv_frame_t newStartFrame)
-{
-    if (m_startFrame == newStartFrame) {
-	// haven't moved
-        return;
-    }
-	
+{	
     int dx = (v->getXForFrame(m_startFrame) -
 	      v->getXForFrame(newStartFrame));
 
@@ -35,6 +30,11 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
     cerr << "ScrollableMagRangeCache::scrollTo: start frame " << m_startFrame
 	 << " -> " << newStartFrame << ", dx = " << dx << endl;
 #endif
+
+    if (m_startFrame == newStartFrame) {
+	// haven't moved
+        return;
+    }
     
     m_startFrame = newStartFrame;
 
@@ -61,7 +61,7 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
 
 	auto newRanges = vector<MagnitudeRange>(-dx);
 	newRanges.insert(newRanges.end(),
-			 m_ranges.begin(), m_ranges.begin() + w + dx);
+			 m_ranges.begin(), m_ranges.begin() + (w + dx));
 	m_ranges = newRanges;
 	
     } else {
@@ -75,6 +75,25 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
 			 m_ranges.begin() + dx, m_ranges.end());
 	m_ranges = newRanges;
     }
+
+    cerr << "maxes now: ";
+    for (int i = 0; in_range_for(m_ranges, i); ++i) {
+	cerr << m_ranges[i].getMax() << " ";
+    }
+    cerr << endl;
+}
+
+MagnitudeRange
+ScrollableMagRangeCache::getRange(int x, int count) const
+{
+    MagnitudeRange r;
+#ifdef DEBUG_SCROLLABLE_MAG_RANGE_CACHE
+    cerr << "ScrollableMagRangeCache::getRange(" << x << ", " << count << ")" << endl;
+#endif
+    for (int i = 0; i < count; ++i) {
+	r.sample(m_ranges.at(x + i));
+    }
+    return r;
 }
 
 void
@@ -90,6 +109,7 @@ ScrollableMagRangeCache::sampleColumn(int column, const MagnitudeRange &r)
     }
 }
 
+//!!! unneeded?
 void
 ScrollableMagRangeCache::sampleColumn(const LayerGeometryProvider *v,
 				      sv_frame_t frame,

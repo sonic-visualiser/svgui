@@ -1491,6 +1491,15 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
     Colour3DPlotRenderer *renderer = getRenderer(v);
 
     Colour3DPlotRenderer::RenderResult result;
+    MagnitudeRange magRange;
+    int viewId = v->getId();
+
+    if (!renderer->geometryChanged(v)) {
+        cerr << "geometry unchanged, extending view mag range" << endl;
+        magRange = m_viewMags[viewId];
+    } else {
+        cerr << "geometry changed!! creating new view mag range" << endl;
+    }
     
     if (m_synchronous) {
 
@@ -1500,7 +1509,8 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
 
         result = renderer->renderTimeConstrained(v, paint, rect);
 
-        cerr << "mag range in this paint: " << result.range.getMin() << " -> "
+        cerr << "rect width from this paint: " << result.rendered.width()
+             << ", mag range in this paint: " << result.range.getMin() << " -> "
              << result.range.getMax() << endl;
         
         //!!!
@@ -1513,17 +1523,22 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
         }
     }
 
-    //!!! at the mo this measures the range of the whole thing, not
-    //!!! just the view - need to reset it when view extents change
+    magRange.sample(result.range);
 
-    m_viewMags[v->getId()].sample(result.range);
+    if (magRange.isSet()) {
+        if (m_viewMags[viewId] == magRange) {
+            cerr << "mag range unchanged" << endl;
+        } else {
+            cerr << "mag range changed!!" << endl;
+            m_viewMags[viewId] = magRange;
+        }
+    }
     
     cerr << "mag range in this view: "
-         << m_viewMags[v->getId()].getMin()
+         << m_viewMags[viewId].getMin()
          << " -> "
-         << m_viewMags[v->getId()].getMax()
+         << m_viewMags[viewId].getMax()
          << endl;
-        
 }
 
 void

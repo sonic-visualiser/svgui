@@ -113,13 +113,7 @@ public:
     /**
      * Get the magnitude range for a range of columns.
      */
-    MagnitudeRange getRange(int x, int count) const {
-	MagnitudeRange r;
-	for (int i = 0; i < count; ++i) {
-	    r.sample(m_ranges.at(x + i));
-	}
-	return r;
-    }
+    MagnitudeRange getRange(int x, int count) const;
     
     /**
      * Set the new start frame for the cache, according to the

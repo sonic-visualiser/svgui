@@ -69,6 +69,24 @@ Colour3DPlotRenderer::getLargestUncachedRect(const LayerGeometryProvider *v)
     }
 }
 
+bool
+Colour3DPlotRenderer::geometryChanged(const LayerGeometryProvider *v)
+{
+    RenderType renderType = decideRenderType(v);
+
+    if (renderType == DirectTranslucent) {
+        return true; // never cached
+    }
+
+    if (m_cache.getSize() == v->getPaintSize() &&
+        m_cache.getZoomLevel() == v->getZoomLevel() &&
+        m_cache.getStartFrame() == v->getStartFrame()) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
 Colour3DPlotRenderer::RenderResult
 Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
                              QPainter &paint, QRect rect, bool timeConstrained)
@@ -129,7 +147,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 //                throw std::logic_error("Columns not set in mag cache");
             }
             
-            MagnitudeRange range = m_magCache.getRange(x0, x1-x0);
+            MagnitudeRange range = m_magCache.getRange(x0, x1 - x0);
 
             return { rect, range };
 
@@ -163,6 +181,9 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
     bool rightToLeft = false;
 
+    int reqx0 = x0;
+    int reqx1 = x1;
+    
     if (!m_cache.isValid() && timeConstrained) {
         // When rendering the whole area, in a context where we might
         // not be able to complete the work, start from somewhere near
@@ -223,14 +244,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
         throw std::logic_error("internal error: failed to render entire requested rect even when not time-constrained");
     }
 
-    //!!! a dev debug check
-    if (!m_magCache.areColumnsSet(x0, x1 - x0)) {
-        cerr << "NB Columns (" << x0 << " -> " << x1-x0
-             << ") not set in mag cache" << endl;
-//        throw std::logic_error("Columns not set in mag cache");
-    }
-    
-    MagnitudeRange range = m_magCache.getRange(x0, x1-x0);
+    MagnitudeRange range = m_magCache.getRange(reqx0, reqx1 - reqx0);
     
     return { pr, range };
 

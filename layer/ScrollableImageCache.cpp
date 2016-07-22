@@ -23,19 +23,19 @@ void
 ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
                                sv_frame_t newStartFrame)
 {
+    int dx = (v->getXForFrame(m_startFrame) -
+	      v->getXForFrame(newStartFrame));
+    
+#ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
+    cerr << "ScrollableImageCache::scrollTo: start frame " << m_startFrame
+	 << " -> " << newStartFrame << ", dx = " << dx << endl;
+#endif
+
     if (m_startFrame == newStartFrame) {
 	// haven't moved
         return;
     }
 	
-    int dx = (v->getXForFrame(m_startFrame) -
-	      v->getXForFrame(newStartFrame));
-
-#ifdef DEBUG_SCROLLABLE_IMAGE_CACHE
-    cerr << "ScrollableImageCache::scrollTo: start frame " << m_startFrame
-	 << " -> " << newStartFrame << ", dx = " << dx << endl;
-#endif
-    
     m_startFrame = newStartFrame;
 	
     if (!isValid()) {
