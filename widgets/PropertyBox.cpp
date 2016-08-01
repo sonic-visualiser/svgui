@@ -212,10 +212,10 @@ PropertyBox::populateViewPlayFrame()
 	gainDial->setFixedWidth(24);
 	gainDial->setFixedHeight(24);
 	gainDial->setNotchesVisible(false);
-	gainDial->setDefaultValue(0);
         gainDial->setObjectName(tr("Playback Gain"));
         gainDial->setRangeMapper(new LinearRangeMapper
                                  (-50, 50, -25, 25, tr("dB")));
+	gainDial->setDefaultValue(0);
         gainDial->setShowToolTip(true);
 	connect(gainDial, SIGNAL(valueChanged(int)),
 		this, SLOT(playGainDialChanged(int)));
@@ -384,8 +384,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	    dial->setMaximum(max);
 	    dial->setPageStep(1);
 	    dial->setNotchesVisible((max - min) <= 12);
-	    dial->setDefaultValue(deflt);
+            // important to set the range mapper before the default,
+            // because the range mapper is used to map the default
             dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
+	    dial->setDefaultValue(deflt);
             dial->setShowToolTip(true);
 	    connect(dial, SIGNAL(valueChanged(int)),
 		    this, SLOT(propertyControllerChanged(int)));
