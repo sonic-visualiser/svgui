@@ -125,7 +125,7 @@ public:
      * Set the threshold for sample values to qualify for being shown
      * in the FFT, in voltage units.
      *
-     * The default is 0.0.
+     * The default is 10^-8 (-80dB).
      */
     void setThreshold(float threshold);
     float getThreshold() const;
