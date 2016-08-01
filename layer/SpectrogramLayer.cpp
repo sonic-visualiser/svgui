@@ -1459,9 +1459,10 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         cparams.threshold = m_threshold;
         cparams.gain = m_gain;
 
-        if (m_colourScale != ColourScaleType::Phase &&
+        if (m_colourScale == ColourScaleType::Linear &&
             m_normalization == ColumnNormalization::None) {
-            cparams.gain *= 2.f / float(getFFTSize());
+            //!!! This should not be necessary -- what is the actual range
+            cparams.maxValue = 0.1;
         }
         
         Colour3DPlotRenderer::Parameters params;
@@ -1469,9 +1470,15 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         params.normalization = m_normalization;
         params.binDisplay = m_binDisplay;
         params.binScale = m_binScale;
-        params.alwaysOpaque = false;
+        params.alwaysOpaque = false; //!!! should be true though
         params.invertVertical = false;
+        params.scaleFactor = 1.0;
         params.colourRotation = m_colourRotation;
+
+        if (m_colourScale != ColourScaleType::Phase &&
+            m_normalization == ColumnNormalization::None) {
+            params.scaleFactor *= 2.f / float(getFFTSize());
+        }
 
         Preferences::SpectrogramSmoothing smoothing = 
             Preferences::getInstance()->getSpectrogramSmoothing();
@@ -2063,6 +2070,11 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
         if (dBmin < dBmax - 60.f) dBmin = dBmax - 60.f;
         bottom = QString("%1").arg(lrint(dBmin));
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+        cerr << "adjusted dB range to min = " << dBmin << ", max = " << dBmax
+             << endl;
+#endif
+        
         //!!! & phase etc
 
         if (m_colourScale != ColourScaleType::Phase) {
@@ -2088,10 +2100,10 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
             double dBval = dBmin + (((dBmax - dBmin) * i) / (ch - 1));
             int idb = int(dBval);
 
-//!!! replace this
-            // double value = AudioLevel::dB_to_multiplier(dBval);
-            // int colour = getDisplayValue(v, value * m_gain);
-	    // paint.setPen(m_palette.getColour((unsigned char)colour));
+            //!!!
+            double value = AudioLevel::dB_to_multiplier(dBval);
+            cerr << "dBval = " << dBval << ", value = " << value << endl;
+            paint.setPen(getRenderer(v)->getColour(value));
 
             int y = textHeight * topLines + 4 + ch - i;
 

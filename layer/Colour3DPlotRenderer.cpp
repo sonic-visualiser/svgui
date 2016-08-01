@@ -359,6 +359,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                 vector<float>(fullColumn.data() + minbin,
                               fullColumn.data() + maxbin + 1);
 
+            column = ColumnOp::applyGain(column, m_params.scaleFactor);
+            
             magRange.sample(column);
 
 //!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
@@ -788,6 +790,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                     vector<float>(fullColumn.data() + minbin,
                                   fullColumn.data() + maxbin + 1);
 
+                column = ColumnOp::applyGain(column, m_params.scaleFactor);
+
 //!!! fft scale                if (m_colourScale != ColourScaleType::Phase) {
 //                    column = ColumnOp::fftScale(column, m_fftSize);
 //                }
@@ -934,6 +938,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                 ColumnOp::Column column =
                     vector<float>(fullColumn.data() + minbin,
                                   fullColumn.data() + maxbin + 1);
+
+                column = ColumnOp::applyGain(column, m_params.scaleFactor);
 
                 magRange.sample(column);
                 

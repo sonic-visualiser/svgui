@@ -64,17 +64,48 @@ public:
 	    binDisplay(BinDisplay::AllBins),
             binScale(BinScale::Linear),
 	    alwaysOpaque(false),
-            interpolate(false), //!!! separate out x-interpolate and y-interpolate? the spectrogram actually does (or used to)
+            interpolate(false),
             invertVertical(false),
+            scaleFactor(1.0),
             colourRotation(0) { }
 
-	ColourScale colourScale;       // complete ColourScale object by value
+        /** A complete ColourScale object by value, used for colour
+         *  map conversion. Note that the final display gain setting is
+         *  also encapsulated here. */
+	ColourScale colourScale;
+
+        /** Type of column normalization. */
 	ColumnNormalization normalization;
+
+        /** Selection of bins to display. */
 	BinDisplay binDisplay;
+
+        /** Scale for vertical bin spacing (linear or logarithmic). */
 	BinScale binScale;
+
+        /** Whether cells should always be opaque. If false, then
+         *  large cells (when zoomed in a long way) will be rendered
+         *  translucent in order not to obscure anything in a layer
+         *  beneath. */
 	bool alwaysOpaque;
+
+        /** Whether to apply smoothing when rendering cells at more
+         *  than one pixel per cell.  !!! todo: decide about separating
+         *  out x-interpolate and y-interpolate as the spectrogram
+         *  actually does (or used to)
+         */
 	bool interpolate;
+
+        /** Whether to render the whole caboodle upside-down. */
 	bool invertVertical;
+
+        /** Initial scale factor (e.g. for FFT scaling). This factor
+         *  is applied to all values read from the underlying model
+         *  *before* magnitude ranges are calculated, in contrast to
+         *  the display gain found in the ColourScale parameter. */
+        double scaleFactor;
+
+        /** Colourmap rotation, in the range 0-255. */
         int colourRotation;
     };
     
@@ -121,7 +152,8 @@ public:
      * that the LayerGeometryProvider returns valid results; it is the
      * caller's responsibility to ensure these.
      */
-    RenderResult render(const LayerGeometryProvider *v, QPainter &paint, QRect rect);
+    RenderResult render(const LayerGeometryProvider *v,
+                        QPainter &paint, QRect rect);
     
     /**
      * Render the requested area using the given painter, obtaining
@@ -180,6 +212,15 @@ public:
      */
     bool willRenderOpaque(const LayerGeometryProvider *v) {
         return decideRenderType(v) != DirectTranslucent;
+    }
+    
+    /**
+     * Return the colour corresponding to the given value.
+     * \see ColourScale::getPixel
+     * \see ColourScale::getColour
+     */
+    QColor getColour(double value) const {
+        return m_params.colourScale.getColour(value, m_params.colourRotation);
     }
     
 private:
