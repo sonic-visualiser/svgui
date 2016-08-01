@@ -33,6 +33,10 @@ ColourScale::ColourScale(Parameters parameters) :
     m_mappedMin = m_params.minValue;
     m_mappedMax = m_params.maxValue;
 
+    if (m_mappedMin < m_params.threshold) {
+        m_mappedMin = m_params.threshold;
+    }
+    
     if (m_params.scale == ColourScaleType::Log) {
 
 	LogRange::mapRange(m_mappedMin, m_mappedMax);

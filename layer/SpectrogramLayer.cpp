@@ -65,8 +65,8 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_windowHopLevel(2),
     m_gain(1.0),
     m_initialGain(1.0),
-    m_threshold(0.0),
-    m_initialThreshold(0.0),
+    m_threshold(1.0e-8),
+    m_initialThreshold(1.0e-8),
     m_colourRotation(0),
     m_initialRotation(0),
     m_minFrequency(10),
@@ -304,8 +304,8 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == "Threshold") {
 
-	*min = -50;
-	*max = 0;
+	*min = -81;
+	*max = -1;
 
         *deflt = int(lrint(AudioLevel::multiplier_to_dB(m_initialThreshold)));
 	if (*deflt < *min) *deflt = *min;
@@ -530,7 +530,7 @@ SpectrogramLayer::getNewPropertyRangeMapper(const PropertyName &name) const
         return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
     }
     if (name == "Threshold") {
-        return new LinearRangeMapper(-50, 0, -50, 0, tr("dB"));
+        return new LinearRangeMapper(-81, -1, -81, -1, tr("dB"));
     }
     return 0;
 }
@@ -541,7 +541,7 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
     if (name == "Gain") {
 	setGain(float(pow(10, float(value)/20.0)));
     } else if (name == "Threshold") {
-	if (value == -50) setThreshold(0.0);
+	if (value == -81) setThreshold(0.0);
 	else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
     } else if (name == "Colour Rotation") {
 	setColourRotation(value);
@@ -2055,6 +2055,9 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
         double min = m_viewMags[v->getId()].getMin();
         double max = m_viewMags[v->getId()].getMax();
 
+        if (min < m_threshold) min = m_threshold;
+        if (max < min) max = min;
+        
         double dBmin = AudioLevel::multiplier_to_dB(min);
         double dBmax = AudioLevel::multiplier_to_dB(max);
 
