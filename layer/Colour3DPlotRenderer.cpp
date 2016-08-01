@@ -351,9 +351,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 
             // order:
             // get column -> scale -> record extents ->
-            // normalise -> peak pick -> apply display gain ->
-            // distribute/interpolate
-
+            // normalise -> peak pick -> apply display gain
+            
             ColumnOp::Column fullColumn = model->getColumn(sx);
                 
             ColumnOp::Column column =
@@ -373,6 +372,9 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             if (m_params.binDisplay == BinDisplay::PeakBins) {
                 preparedColumn = ColumnOp::peakPick(preparedColumn);
             }
+
+            // Display gain belongs to the colour scale and is
+            // applied by the colour scale object when mapping it
 
             psx = sx;
         }
@@ -774,8 +776,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
                 // order:
                 // get column -> scale -> record extents ->
-                // normalise -> peak pick -> apply display gain ->
-                // distribute/interpolate
+                // normalise -> peak pick -> distribute/interpolate ->
+                // apply display gain
 
                 ColumnOp::Column fullColumn = sourceModel->getColumn(sx);
 
@@ -801,11 +803,14 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 }
 
                 preparedColumn =
-                    ColumnOp::distribute(column, //!!! gain? ColumnOp::applyGain(column, m_gain),
+                    ColumnOp::distribute(column,
                                          h,
                                          binfory,
                                          minbin,
                                          m_params.interpolate);
+
+                // Display gain belongs to the colour scale and is
+                // applied by the colour scale object when mapping it
                 
                 psx = sx;
             }
@@ -937,12 +942,10 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 //                }
 
 //!!!                if (m_colourScale != ColourScaleType::Phase) {
-                    column = ColumnOp::normalize(column, m_params.normalization);
+                preparedColumn = ColumnOp::normalize
+                    (column, m_params.normalization);
 //!!!                }
 
-                    preparedColumn = column;
-//!!! gain?                preparedColumn = ColumnOp::applyGain(column, m_params.gain);
-                
                 psx = sx;
             }
 
