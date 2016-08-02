@@ -866,48 +866,18 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
     int ch = h - 20;
     if (ch > 20) {
 
-        double min = m_model->getMinimumLevel();
-        double max = m_model->getMaximumLevel();
+        double min = m_viewMags[v->getId()].getMin();
+        double max = m_viewMags[v->getId()].getMax();
 
-        double mmin = min;
-        double mmax = max;
+        if (max <= min) max = min + 0.1;
 
-        if (m_colourScale == ColourScaleType::Log) {
-            LogRange::mapRange(mmin, mmax);
-        } else if (m_colourScale == ColourScaleType::PlusMinusOne) {
-            mmin = -1.f;
-            mmax = 1.f;
-        } else if (m_colourScale == ColourScaleType::Absolute) {
-            if (mmin < 0) {
-                if (fabs(mmin) > fabs(mmax)) mmax = fabs(mmin);
-                else mmax = fabs(mmax);
-                mmin = 0;
-            } else {
-                mmin = fabs(mmin);
-                mmax = fabs(mmax);
-            }
-        }
-    
-        if (max == min) max = min + 1.f;
-        if (mmax == mmin) mmax = mmin + 1.f;
-    
         paint.setPen(v->getForeground());
         paint.drawRect(4, 10, cw - 8, ch+1);
 
         for (int y = 0; y < ch; ++y) {
             double value = ((max - min) * (double(ch-y) - 1.0)) / double(ch) + min;
-            if (m_colourScale == ColourScaleType::Log) {
-                value = LogRange::map(value);
-            }
-            int pixel = int(((value - mmin) * 256) / (mmax - mmin));
-            if (pixel >= 0 && pixel < 256) {
-//!!! replace this
-                // QRgb c = m_cache->color(pixel);
-                // paint.setPen(QColor(qRed(c), qGreen(c), qBlue(c)));
-                paint.drawLine(5, 11 + y, cw - 5, 11 + y);
-            } else {
-                cerr << "WARNING: Colour3DPlotLayer::paintVerticalScale: value " << value << ", mmin " << mmin << ", mmax " << mmax << " leads to invalid pixel " << pixel << endl;
-            }
+            paint.setPen(getRenderer(v)->getColour(value));
+            paint.drawLine(5, 11 + y, cw - 5, 11 + y);
         }
 
         QString minstr = QString("%1").arg(min);
@@ -1065,6 +1035,18 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         cparams.scale = m_colourScale;
         cparams.gain = m_gain;
 
+        if (m_normalization == ColumnNormalization::None) {
+            cparams.minValue = m_model->getMinimumLevel();
+            cparams.maxValue = m_model->getMaximumLevel();
+        } else if (m_normalization == ColumnNormalization::Hybrid) {
+            cparams.minValue = 0;
+            cparams.maxValue = log10(m_model->getMaximumLevel() + 1.0);
+        }
+
+        if (cparams.maxValue <= cparams.minValue) {
+            cparams.maxValue = cparams.minValue + 0.1;
+        }
+        
         Colour3DPlotRenderer::Parameters params;
         params.colourScale = ColourScale(cparams);
         params.normalization = m_normalization;

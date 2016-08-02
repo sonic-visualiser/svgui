@@ -30,7 +30,7 @@
 
 #include <vector>
 
-#define DEBUG_COLOUR_PLOT_REPAINT 1
+//#define DEBUG_COLOUR_PLOT_REPAINT 1
 
 using namespace std;
 
@@ -360,12 +360,12 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                               fullColumn.data() + maxbin + 1);
 
             column = ColumnOp::applyGain(column, m_params.scaleFactor);
-            
-            magRange.sample(column);
 
 //                if (m_colourScale != ColourScaleType::Phase) {
             preparedColumn = ColumnOp::normalize(column, m_params.normalization);
 //                }
+            
+            magRange.sample(preparedColumn);
 
             if (m_params.binDisplay == BinDisplay::PeakBins) {
                 preparedColumn = ColumnOp::peakPick(preparedColumn);
@@ -788,11 +788,11 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
                 column = ColumnOp::applyGain(column, m_params.scaleFactor);
 
-                magRange.sample(column);
-
 //                if (m_colourScale != ColourScaleType::Phase) {
                     column = ColumnOp::normalize(column, m_params.normalization);
 //                }
+
+                magRange.sample(column);
 
                 if (m_params.binDisplay == BinDisplay::PeakBins) {
                     column = ColumnOp::peakPick(column);
@@ -932,13 +932,13 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                                   fullColumn.data() + maxbin + 1);
 
                 column = ColumnOp::applyGain(column, m_params.scaleFactor);
-
-                magRange.sample(column);
                 
 //!!!                if (m_colourScale != ColourScaleType::Phase) {
                 preparedColumn = ColumnOp::normalize
                     (column, m_params.normalization);
 //!!!                }
+
+                magRange.sample(preparedColumn);
 
                 psx = sx;
             }

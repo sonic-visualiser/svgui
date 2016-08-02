@@ -2061,7 +2061,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
         double max = m_viewMags[v->getId()].getMax();
 
         if (min < m_threshold) min = m_threshold;
-        if (max < min) max = min;
+        if (max <= min) max = min + 0.1;
         
         double dBmin = AudioLevel::multiplier_to_dB(min);
         double dBmax = AudioLevel::multiplier_to_dB(max);
