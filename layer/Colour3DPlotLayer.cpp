@@ -666,6 +666,8 @@ Colour3DPlotLayer::setDisplayExtents(double min, double max)
     m_miny = int(lrint(min));
     m_maxy = int(lrint(max));
     
+    invalidateRenderers();
+    
     emit layerParametersChanged();
     return true;
 }
@@ -712,6 +714,8 @@ Colour3DPlotLayer::setVerticalZoomStep(int step)
     m_maxy = m_miny + dist;
     if (m_maxy > m_model->getHeight()) m_maxy = m_model->getHeight();
 
+    invalidateRenderers();
+    
 //    SVDEBUG << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"):  after: miny = " << m_miny << ", maxy = " << m_maxy << endl;
     
     emit layerParametersChanged();

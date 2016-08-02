@@ -330,9 +330,9 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
     const int buflen = 40;
     char labelbuf[buflen];
 
-    int minbin = 0; //!!!
-    int maxbin = sh - 1; //!!!
-    
+    int minbin = m_sources.verticalBinLayer->getIBinForY(v, h);
+    int maxbin = m_sources.verticalBinLayer->getIBinForY(v, 0) + 1;
+
     int psx = -1;
 
     vector<float> preparedColumn;
