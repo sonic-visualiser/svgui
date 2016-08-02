@@ -1385,57 +1385,8 @@ SpectrogramLayer::invalidateMagnitudes()
     cerr << "SpectrogramLayer::invalidateMagnitudes called" << endl;
 #endif
     m_viewMags.clear();
-/*!!!    for (vector<MagnitudeRange>::iterator i = m_columnMags.begin();
-         i != m_columnMags.end(); ++i) {
-        *i = MagnitudeRange();
-    }
-*/
 }
-/*!!!
-bool
-SpectrogramLayer::updateViewMagnitudes(LayerGeometryProvider *v) const
-{
-    MagnitudeRange mag;
 
-    int x0 = 0, x1 = v->getPaintWidth();
-    double s00 = 0, s01 = 0, s10 = 0, s11 = 0;
-    
-    if (!getXBinRange(v, x0, s00, s01)) {
-        s00 = s01 = double(m_model->getStartFrame()) / getWindowIncrement();
-    }
-
-    if (!getXBinRange(v, x1, s10, s11)) {
-        s10 = s11 = double(m_model->getEndFrame()) / getWindowIncrement();
-    }
-
-    int s0 = int(min(s00, s10) + 0.0001);
-    int s1 = int(max(s01, s11) + 0.0001);
-
-//    SVDEBUG << "SpectrogramLayer::updateViewMagnitudes: x0 = " << x0 << ", x1 = " << x1 << ", s00 = " << s00 << ", s11 = " << s11 << " s0 = " << s0 << ", s1 = " << s1 << endl;
-
-    if (int(m_columnMags.size()) <= s1) {
-        m_columnMags.resize(s1 + 1);
-    }
-
-    for (int s = s0; s <= s1; ++s) {
-        if (m_columnMags[s].isSet()) {
-            mag.sample(m_columnMags[s]);
-        }
-    }
-
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::updateViewMagnitudes returning from cols "
-         << s0 << " -> " << s1 << " inclusive" << endl;
-    cerr << "SpectrogramLayer::updateViewMagnitudes: for view id " << v->getId()
-         << ": min is " << mag.getMin() << ", max is " << mag.getMax() << endl;
-#endif
-
-    if (!mag.isSet()) return false;
-    if (mag == m_viewMags[v->getId()]) return false;
-    m_viewMags[v->getId()] = mag;
-    return true;
-}
-*/
 void
 SpectrogramLayer::setSynchronousPainting(bool synchronous)
 {
@@ -1576,8 +1527,8 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
         return;
     }
 
-//    cerr << "SpectrogramLayer: illuminateLocalFeatures("
-//              << localPos.x() << "," << localPos.y() << ")" << endl;
+    cerr << "SpectrogramLayer: illuminateLocalFeatures("
+              << localPos.x() << "," << localPos.y() << ")" << endl;
 
     double s0, s1;
     double f0, f1;
@@ -1594,8 +1545,8 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
         int y1 = int(getYForFrequency(v, f1));
         int y0 = int(getYForFrequency(v, f0));
         
-//        cerr << "SpectrogramLayer: illuminate "
-//                  << x0 << "," << y1 << " -> " << x1 << "," << y0 << endl;
+        cerr << "SpectrogramLayer: illuminate "
+                  << x0 << "," << y1 << " -> " << x1 << "," << y0 << endl;
         
         paint.setPen(v->getForeground());
 
