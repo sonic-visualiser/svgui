@@ -19,6 +19,9 @@
 #include "base/LogRange.h"
 
 #include <cmath>
+#include <iostream>
+
+using namespace std;
 
 int ColourScale::m_maxPixel = 255;
 
@@ -27,6 +30,8 @@ ColourScale::ColourScale(Parameters parameters) :
     m_mapper(m_params.colourMap, 1.f, double(m_maxPixel))
 {
     if (m_params.minValue >= m_params.maxValue) {
+        cerr << "ERROR: ColourScale::ColourScale: minValue = "
+             << m_params.minValue << ", maxValue = " << m_params.maxValue << endl;
 	throw std::logic_error("maxValue must be greater than minValue");
     }
 
@@ -56,6 +61,12 @@ ColourScale::ColourScale(Parameters parameters) :
     }
 
     if (m_mappedMin >= m_mappedMax) {
+        cerr << "ERROR: ColourScale::ColourScale: minValue = " << m_params.minValue
+             << ", maxValue = " << m_params.maxValue
+             << ", threshold = " << m_params.threshold
+             << ", scale = " << int(m_params.scale)
+             << " resulting in mapped minValue = " << m_mappedMin
+             << ", mapped maxValue = " << m_mappedMax << endl;
 	throw std::logic_error("maxValue must be greater than minValue [after mapping]");
     }
 }

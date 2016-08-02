@@ -1456,15 +1456,21 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
         cparams.scale = m_colourScale;
-        cparams.threshold = m_threshold;
-        cparams.gain = m_gain;
+
+        if (m_colourScale != ColourScaleType::Phase) {
+            cparams.gain = m_gain;
+            cparams.threshold = m_threshold;
+        }
 
         if (m_colourScale == ColourScaleType::Linear &&
             m_normalization == ColumnNormalization::None) {
             //!!! This should not be necessary -- what is the actual range
             cparams.maxValue = 0.1;
+            if (cparams.maxValue <= m_threshold) {
+                cparams.maxValue = m_threshold + 0.1;
+            }
         }
-        
+
         Colour3DPlotRenderer::Parameters params;
         params.colourScale = ColourScale(cparams);
         params.normalization = m_normalization;
@@ -1475,8 +1481,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         params.scaleFactor = 1.0;
         params.colourRotation = m_colourRotation;
 
-        if (m_colourScale != ColourScaleType::Phase &&
-            m_normalization == ColumnNormalization::None) {
+        if (m_colourScale != ColourScaleType::Phase) {
             params.scaleFactor *= 2.f / float(getFFTSize());
         }
 
@@ -2103,9 +2108,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
             double dBval = dBmin + (((dBmax - dBmin) * i) / (ch - 1));
             int idb = int(dBval);
 
-            //!!!
             double value = AudioLevel::dB_to_multiplier(dBval);
-            cerr << "dBval = " << dBval << ", value = " << value << endl;
             paint.setPen(getRenderer(v)->getColour(value));
 
             int y = textHeight * topLines + 4 + ch - i;
