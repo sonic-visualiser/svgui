@@ -76,11 +76,11 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
 	m_ranges = newRanges;
     }
 
-    cerr << "maxes now: ";
-    for (int i = 0; in_range_for(m_ranges, i); ++i) {
-	cerr << m_ranges[i].getMax() << " ";
-    }
-    cerr << endl;
+//!!!    cerr << "maxes now: ";
+//    for (int i = 0; in_range_for(m_ranges, i); ++i) {
+//	cerr << m_ranges[i].getMax() << " ";
+//    }
+//    cerr << endl;
 }
 
 MagnitudeRange
