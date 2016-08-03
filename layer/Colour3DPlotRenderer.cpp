@@ -331,7 +331,11 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
     char labelbuf[buflen];
 
     int minbin = m_sources.verticalBinLayer->getIBinForY(v, h);
-    int maxbin = m_sources.verticalBinLayer->getIBinForY(v, 0) + 1;
+    if (minbin >= sh) minbin = sh - 1;
+    if (minbin < 0) minbin = 0;
+    
+    int nbins  = m_sources.verticalBinLayer->getIBinForY(v, 0) - minbin + 1;
+    if (minbin + nbins > sh) nbins = sh - minbin;
 
     int psx = -1;
 
@@ -357,7 +361,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                 
             ColumnOp::Column column =
                 vector<float>(fullColumn.data() + minbin,
-                              fullColumn.data() + maxbin + 1);
+                              fullColumn.data() + minbin + nbins);
 
             column = ColumnOp::applyGain(column, m_params.scaleFactor);
 
@@ -391,7 +395,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 			  paint.fontMetrics().width("0.000000") < rw - 3 &&
 			  paint.fontMetrics().height() < (h / sh));
         
-	for (int sy = minbin; sy <= maxbin; ++sy) {
+	for (int sy = minbin; sy < minbin + nbins; ++sy) {
 
             int ry0 = m_sources.verticalBinLayer->getIYForBin(v, sy);
             int ry1 = m_sources.verticalBinLayer->getIYForBin(v, sy + 1);
@@ -704,11 +708,6 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     RenderTimer timer(timeConstrained ?
                       RenderTimer::FastRender :
                       RenderTimer::NoTimeout);
-    
-    int minbin = int(binfory[0] + 0.0001);
-    int maxbin = int(binfory[h-1]);
-    if (minbin < 0) minbin = 0;
-    if (maxbin < 0) maxbin = minbin+1;
 
     int divisor = 1;
     const DenseThreeDimensionalModel *sourceModel = m_sources.source;
@@ -717,6 +716,15 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         sourceModel = m_sources.peaks;
     }
 
+    int sh = sourceModel->getHeight();
+    
+    int minbin = int(binfory[0] + 0.0001);
+    if (minbin >= sh) minbin = sh - 1;
+    if (minbin < 0) minbin = 0;
+
+    int nbins  = int(binfory[h-1]) - minbin + 1;
+    if (minbin + nbins > sh) nbins = sh - minbin;
+    
     int psx = -1;
 
     int start = 0;
@@ -779,12 +787,12 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
                 ColumnOp::Column fullColumn = sourceModel->getColumn(sx);
 
-//                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
-//                     << ", minbin " << minbin << ", maxbin " << maxbin << endl;
+                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
+                     << ", minbin " << minbin << ", nbins " << nbins << endl;
                 
                 ColumnOp::Column column =
                     vector<float>(fullColumn.data() + minbin,
-                                  fullColumn.data() + maxbin + 1);
+                                  fullColumn.data() + minbin + nbins);
 
                 column = ColumnOp::applyGain(column, m_params.scaleFactor);
 
@@ -865,12 +873,16 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                       RenderTimer::FastRender :
                       RenderTimer::NoTimeout);
 
-    int minbin = int(binfory[0] + 0.0001);
-    int maxbin = int(binfory[h-1]);
-    if (minbin < 0) minbin = 0;
-    if (maxbin < 0) maxbin = minbin+1;
-
     const FFTModel *fft = m_sources.fft;
+
+    int sh = fft->getHeight();
+    
+    int minbin = int(binfory[0] + 0.0001);
+    if (minbin >= sh) minbin = sh - 1;
+    if (minbin < 0) minbin = 0;
+
+    int nbins  = int(binfory[h-1]) - minbin + 1;
+    if (minbin + nbins > sh) nbins = sh - minbin;
 
     FFTModel::PeakSet peakfreqs;
 
@@ -893,8 +905,10 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
     int modelWidth = fft->getWidth();
     cerr << "modelWidth " << modelWidth << endl;
 
-    double minFreq = (double(minbin) * fft->getSampleRate()) / fft->getFFTSize();
-    double maxFreq = (double(maxbin) * fft->getSampleRate()) / fft->getFFTSize();
+    double minFreq =
+        (double(minbin) * fft->getSampleRate()) / fft->getFFTSize();
+    double maxFreq =
+        (double(minbin + nbins - 1) * fft->getSampleRate()) / fft->getFFTSize();
 
     bool logarithmic = (m_params.binScale == BinScale::Log);
     
@@ -929,7 +943,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                 
                 ColumnOp::Column column =
                     vector<float>(fullColumn.data() + minbin,
-                                  fullColumn.data() + maxbin + 1);
+                                  fullColumn.data() + minbin + nbins + 1);
 
                 column = ColumnOp::applyGain(column, m_params.scaleFactor);
                 
@@ -946,7 +960,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             if (sx == sx0) {
                 pixelPeakColumn = preparedColumn;
                 peakfreqs = fft->getPeakFrequencies(FFTModel::AllPeaks, sx,
-                                                    minbin, maxbin - 1);
+                                                    minbin, minbin + nbins - 1);
             } else {
                 for (int i = 0; in_range_for(pixelPeakColumn, i); ++i) {
                     pixelPeakColumn[i] = std::max(pixelPeakColumn[i],
@@ -964,7 +978,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                 double freq = pi->second;
 
                 if (bin < minbin) continue;
-                if (bin > maxbin) break;
+                if (bin >= minbin + nbins) break;
             
                 double value = pixelPeakColumn[bin - minbin];
             
