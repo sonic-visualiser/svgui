@@ -1396,7 +1396,9 @@ SpectrogramLayer::setSynchronousPainting(bool synchronous)
 Colour3DPlotRenderer *
 SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
 {
-    if (m_renderers.find(v->getId()) == m_renderers.end()) {
+    int viewId = v->getId();
+    
+    if (m_renderers.find(viewId) == m_renderers.end()) {
 
         Colour3DPlotRenderer::Sources sources;
         sources.verticalBinLayer = this;
@@ -1413,14 +1415,29 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
             cparams.threshold = m_threshold;
         }
 
-        if (m_colourScale == ColourScaleType::Linear &&
-            m_normalization == ColumnNormalization::None) {
+        float minValue = 0.0f;
+        float maxValue = 1.0f;
+        
+        if (m_normalizeVisibleArea && m_viewMags[viewId].isSet()) {
+            minValue = m_viewMags[viewId].getMin();
+            maxValue = m_viewMags[viewId].getMax();
+        } else if (m_colourScale == ColourScaleType::Linear &&
+                   m_normalization == ColumnNormalization::None) {
             //!!! This should not be necessary -- what is the actual range
-            cparams.maxValue = 0.1;
-            if (cparams.maxValue <= m_threshold) {
-                cparams.maxValue = m_threshold + 0.1;
-            }
+            maxValue = 0.1f;
         }
+
+        if (maxValue <= minValue) {
+            maxValue = minValue + 0.1f;
+        }
+        if (maxValue <= m_threshold) {
+            maxValue = m_threshold + 0.1f;
+        }
+
+        cparams.minValue = minValue;
+        cparams.maxValue = maxValue;
+
+        m_lastRenderedMags[viewId] = MagnitudeRange(minValue, maxValue);
 
         Colour3DPlotRenderer::Parameters params;
         params.colourScale = ColourScale(cparams);
@@ -1457,7 +1474,9 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
     MagnitudeRange magRange;
     int viewId = v->getId();
 
-    if (!renderer->geometryChanged(v)) {
+    bool continuingPaint = !renderer->geometryChanged(v);
+    
+    if (continuingPaint) {
         magRange = m_viewMags[viewId];
     }
     
@@ -1482,17 +1501,21 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
     magRange.sample(result.range);
 
     if (magRange.isSet()) {
-        if (!(m_viewMags[viewId] == magRange)) {
+        if (m_viewMags[viewId] != magRange) {
             m_viewMags[viewId] = magRange;
-    //!!! now need to do the normalise-visible thing
+            cerr << "mag range in this view has changed: "
+                 << magRange.getMin() << " -> " << magRange.getMax() << endl;
         }
     }
-    
-    cerr << "mag range in this view: "
-         << m_viewMags[viewId].getMin()
-         << " -> "
-         << m_viewMags[viewId].getMax()
-         << endl;
+
+    if (!continuingPaint && m_normalizeVisibleArea &&
+        m_viewMags[viewId] != m_lastRenderedMags[viewId]) {
+        cerr << "mag range has changed from last rendered range: re-rendering"
+             << endl;
+        delete m_renderers[viewId];
+        m_renderers.erase(viewId);
+        v->updatePaintRect(v->getPaintRect());
+    }
 }
 
 void
