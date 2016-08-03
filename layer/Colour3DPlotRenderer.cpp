@@ -674,19 +674,24 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         sourceLeft = 0;
     }
     
-    int sourceWidth = targetWidth;
-    
     cerr << "repaintWidth = " << repaintWidth
          << ", targetWidth = " << targetWidth << endl;
     
     if (targetWidth > 0) {
+        // we are copying from an image that has already been scaled,
+        // hence using the same width in both geometries
         m_cache.drawImage(targetLeft, targetWidth,
                           scaled,
-                          sourceLeft, sourceWidth);
+                          sourceLeft, targetWidth);
     }
     
     for (int i = 0; i < targetWidth; ++i) {
-        int sourceIx = int((double(i) / targetWidth) * sourceWidth);
+        // but the mag range vector has not been scaled
+        int sourceIx = int((double(i + sourceLeft) / scaled.width())
+                           * int(m_magRanges.size()));
+//        int sourceIx = int((double(i) / targetWidth) * sourceWidth);
+        cerr << "mag range target ix = " << i << ", source ix = "
+             << sourceIx << ", of " << m_magRanges.size() << endl;
         if (in_range_for(m_magRanges, sourceIx)) {
             m_magCache.sampleColumn(i, m_magRanges.at(sourceIx));
         }
@@ -787,8 +792,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
                 ColumnOp::Column fullColumn = sourceModel->getColumn(sx);
 
-                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
-                     << ", minbin " << minbin << ", nbins " << nbins << endl;
+//                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
+//                     << ", minbin " << minbin << ", nbins " << nbins << endl;
                 
                 ColumnOp::Column column =
                     vector<float>(fullColumn.data() + minbin,
