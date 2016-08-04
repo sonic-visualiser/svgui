@@ -73,6 +73,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_maxFrequency(8000),
     m_initialMaxFrequency(8000),
     m_colourScale(ColourScaleType::Log),
+    m_colourScaleMultiple(1.0),
     m_colourMap(0),
     m_binScale(BinScale::Linear),
     m_binDisplay(BinDisplay::AllBins),
@@ -135,28 +136,27 @@ SpectrogramLayer::~SpectrogramLayer()
     invalidateFFTModel();
 }
 
-ColourScaleType
+pair<ColourScaleType, double>
 SpectrogramLayer::convertToColourScale(int value)
 {
     switch (value) {
-    case 0: return ColourScaleType::Linear;
-    case 1: return ColourScaleType::Meter;
-    case 2: return ColourScaleType::Log; //!!! db^2
-    case 3: return ColourScaleType::Log;
-    case 4: return ColourScaleType::Phase;
-    default: return ColourScaleType::Linear;
+    case 0: return { ColourScaleType::Linear, 1.0 };
+    case 1: return { ColourScaleType::Meter, 1.0 };
+    case 2: return { ColourScaleType::Log, 2.0 }; // dB^2 (i.e. log of power)
+    case 3: return { ColourScaleType::Log, 1.0 }; // dB   (of magnitude)
+    case 4: return { ColourScaleType::Phase, 1.0 };
+    default: return { ColourScaleType::Linear, 1.0 };
     }
 }
 
 int
-SpectrogramLayer::convertFromColourScale(ColourScaleType scale)
+SpectrogramLayer::convertFromColourScale(ColourScaleType scale, double multiple)
 {
     switch (scale) {
     case ColourScaleType::Linear: return 0;
     case ColourScaleType::Meter: return 1;
-    case ColourScaleType::Log: return 3; //!!! + db^2
+    case ColourScaleType::Log: return (multiple > 1.5 ? 2 : 3);
     case ColourScaleType::Phase: return 4;
-
     case ColourScaleType::PlusMinusOne:
     case ColourScaleType::Absolute:
     default: return 0;
@@ -330,7 +330,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 	*max = 4;
         *deflt = 2;
 
-	val = convertFromColourScale(m_colourScale);
+	val = convertFromColourScale(m_colourScale, m_colourScaleMultiple);
 
     } else if (name == "Colour") {
 
@@ -590,11 +590,15 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
             m_lastEmittedZoomStep = vs;
         }
     } else if (name == "Colour Scale") {
+        setColourScaleMultiple(1.0);
 	switch (value) {
 	default:
 	case 0: setColourScale(ColourScaleType::Linear); break;
 	case 1: setColourScale(ColourScaleType::Meter); break;
-	case 2: setColourScale(ColourScaleType::Log); break; //!!! dB^2
+	case 2:
+            setColourScale(ColourScaleType::Log);
+            setColourScaleMultiple(2.0);
+            break;
 	case 3: setColourScale(ColourScaleType::Log); break;
 	case 4: setColourScale(ColourScaleType::Phase); break;
 	}
@@ -875,6 +879,24 @@ ColourScaleType
 SpectrogramLayer::getColourScale() const
 {
     return m_colourScale;
+}
+
+void
+SpectrogramLayer::setColourScaleMultiple(double multiple)
+{
+    if (m_colourScaleMultiple == multiple) return;
+
+    invalidateRenderers();
+    
+    m_colourScaleMultiple = multiple;
+    
+    emit layerParametersChanged();
+}
+
+double
+SpectrogramLayer::getColourScaleMultiple() const
+{
+    return m_colourScaleMultiple;
 }
 
 void
@@ -1408,7 +1430,8 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
-        cparams.scale = m_colourScale;
+        cparams.scaleType = m_colourScale;
+        cparams.multiple = m_colourScaleMultiple;
 
         if (m_colourScale != ColourScaleType::Phase) {
             cparams.gain = m_gain;
@@ -1423,7 +1446,6 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
             maxValue = m_viewMags[viewId].getMax();
         } else if (m_colourScale == ColourScaleType::Linear &&
                    m_normalization == ColumnNormalization::None) {
-            //!!! This should not be necessary -- what is the actual range
             maxValue = 0.1f;
         }
 
@@ -2384,7 +2406,7 @@ SpectrogramLayer::toXml(QTextStream &stream,
 		 "binDisplay=\"%7\" ")
 	.arg(m_minFrequency)
 	.arg(m_maxFrequency)
-	.arg(convertFromColourScale(m_colourScale))
+	.arg(convertFromColourScale(m_colourScale, m_colourScaleMultiple))
 	.arg(m_colourMap)
 	.arg(m_colourRotation)
 	.arg(int(m_binScale))
@@ -2459,9 +2481,12 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         setMaxFrequency(maxFrequency);
     }
 
-    ColourScaleType colourScale = convertToColourScale
+    auto colourScale = convertToColourScale
         (attributes.value("colourScale").toInt(&ok));
-    if (ok) setColourScale(colourScale);
+    if (ok) {
+        setColourScale(colourScale.first);
+        setColourScaleMultiple(colourScale.second);
+    }
 
     int colourMap = attributes.value("colourScheme").toInt(&ok);
     if (ok) setColourMap(colourMap);

@@ -35,15 +35,15 @@ class ColourScale
 {
 public:
     struct Parameters {
-	Parameters() : colourMap(0), scale(ColourScaleType::Linear),
+	Parameters() : colourMap(0), scaleType(ColourScaleType::Linear),
 		       minValue(0.0), maxValue(1.0),
-		       threshold(0.0), gain(1.0) { }
+		       threshold(0.0), gain(1.0), multiple(1.0) { }
 
 	/** A colour map index as used by ColourMapper */
 	int colourMap;
 	
 	/** Distribution for the scale */
-	ColourScaleType scale;
+	ColourScaleType scaleType;
 	
 	/** Minimum value in source range */
 	double minValue;
@@ -55,8 +55,15 @@ public:
 	    pixel 0 */
 	double threshold;
 
-	/** Gain to apply before clamping and mapping */
+	/** Gain to apply before thresholding, mapping, and clamping */
 	double gain;
+
+        /** Multiple to apply after thresholding and mapping. In most
+         *  cases the gain parameter is the one you want instead of
+         *  this, but this can be used for example with Log scale to
+         *  produce the log of some power of the original value,
+         *  e.g. multiple = 2 gives log(x^2). */
+        double multiple;
     };
     
     /**
