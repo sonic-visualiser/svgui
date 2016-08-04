@@ -28,7 +28,6 @@
 #include "data/model/Dense3DModelPeakCache.h"
 
 #include "ColourMapper.h"
-#include "ImageRegionFinder.h"
 #include "PianoScale.h"
 #include "PaintAssistant.h"
 #include "Colour3DPlotRenderer.h"
@@ -1727,27 +1726,18 @@ SpectrogramLayer::snapToFeatureFrame(LayerGeometryProvider *,
 } 
 
 void
-SpectrogramLayer::measureDoubleClick(LayerGeometryProvider *, QMouseEvent *)
+SpectrogramLayer::measureDoubleClick(LayerGeometryProvider *v, QMouseEvent *e)
 {
-/*!!! replace this
-    const View *view = v->getView();
+    const Colour3DPlotRenderer *renderer = getRenderer(v);
+    if (!renderer) return;
 
-    ScrollableImageCache &cache = getImageCacheReference(view);
-
-    cerr << "cache width: " << cache.getSize().width() << ", height: "
-         << cache.getSize().height() << endl;
-
-    QImage image = cache.getImage();
-
-    ImageRegionFinder finder;
-    QRect rect = finder.findRegionExtents(&image, e->pos());
+    QRect rect = renderer->findSimilarRegionExtents(e->pos());
     if (rect.isValid()) {
         MeasureRect mr;
         setMeasureRectFromPixrect(v, mr, rect);
         CommandHistory::getInstance()->addCommand
             (new AddMeasurementRectCommand(this, mr));
     }
-*/
 }
 
 bool

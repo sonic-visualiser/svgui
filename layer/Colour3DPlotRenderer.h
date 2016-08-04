@@ -222,6 +222,13 @@ public:
     QColor getColour(double value) const {
         return m_params.colourScale.getColour(value, m_params.colourRotation);
     }
+
+    /**
+     * Return the enclosing rectangle for the region of similar colour
+     * to the given point within the cache. Return an empty QRect if
+     * this is not possible. \see ImageRegionFinder
+     */
+    QRect findSimilarRegionExtents(QPoint point) const;
     
 private:
     Sources m_sources;
