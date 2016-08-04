@@ -294,6 +294,8 @@ private:
     };
 
     RenderType decideRenderType(const LayerGeometryProvider *) const;
+
+    ColumnOp::Column getColumn(int sx, int minbin, int nbins) const;
 };
 
 #endif

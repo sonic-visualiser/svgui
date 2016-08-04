@@ -292,6 +292,41 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
     }
 }
 
+ColumnOp::Column
+Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins) const
+{
+    // order:
+    // get column -> scale -> normalise -> record extents ->
+    // peak pick -> distribute/interpolate -> apply display gain
+
+    // we do the first bit here:
+    // get column -> scale -> normalise
+
+    ColumnOp::Column column;
+                
+    if (m_params.colourScale.getScale() == ColourScaleType::Phase &&
+        m_sources.fft) {
+
+        ColumnOp::Column fullColumn = m_sources.fft->getPhases(sx);
+
+        column = vector<float>(fullColumn.data() + minbin,
+                               fullColumn.data() + minbin + nbins);
+
+    } else {
+                    
+        ColumnOp::Column fullColumn = m_sources.source->getColumn(sx);
+                
+        column = vector<float>(fullColumn.data() + minbin,
+                               fullColumn.data() + minbin + nbins);
+
+        column = ColumnOp::applyGain(column, m_params.scaleFactor);
+
+        column = ColumnOp::normalize(column, m_params.normalization);
+    }
+
+    return column;
+}
+
 MagnitudeRange
 Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                                               QPainter &paint,
@@ -351,23 +386,12 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 
         if (sx != psx) {
 
-            //!!! this is in common with renderDrawBuffer - pull it out
-
             // order:
-            // get column -> scale -> record extents ->
-            // normalise -> peak pick -> apply display gain
-            
-            ColumnOp::Column fullColumn = model->getColumn(sx);
-                
-            ColumnOp::Column column =
-                vector<float>(fullColumn.data() + minbin,
-                              fullColumn.data() + minbin + nbins);
+            // get column -> scale -> normalise -> record extents ->
+            // peak pick -> distribute/interpolate -> apply display gain
 
-            column = ColumnOp::applyGain(column, m_params.scaleFactor);
-
-//                if (m_colourScale != ColourScaleType::Phase) {
-            preparedColumn = ColumnOp::normalize(column, m_params.normalization);
-//                }
+            // this does the first three:
+            preparedColumn = getColumn(sx, minbin, nbins);
             
             magRange.sample(preparedColumn);
 
@@ -784,29 +808,16 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
             }
 
             if (sx != psx) {
-
-                // order:
-                // get column -> scale -> record extents ->
-                // normalise -> peak pick -> distribute/interpolate ->
-                // apply display gain
-
-                ColumnOp::Column fullColumn = sourceModel->getColumn(sx);
-
-//                cerr << "x " << x << ", sx " << sx << ", col height " << fullColumn.size()
-//                     << ", minbin " << minbin << ", nbins " << nbins << endl;
                 
-                ColumnOp::Column column =
-                    vector<float>(fullColumn.data() + minbin,
-                                  fullColumn.data() + minbin + nbins);
+                // order:
+                // get column -> scale -> normalise -> record extents ->
+                // peak pick -> distribute/interpolate -> apply display gain
 
-                column = ColumnOp::applyGain(column, m_params.scaleFactor);
-
-//                if (m_colourScale != ColourScaleType::Phase) {
-                    column = ColumnOp::normalize(column, m_params.normalization);
-//                }
+                // this does the first three:
+                ColumnOp::Column column = getColumn(sx, minbin, nbins);
 
                 magRange.sample(column);
-
+                
                 if (m_params.binDisplay == BinDisplay::PeakBins) {
                     column = ColumnOp::peakPick(column);
                 }
@@ -943,22 +954,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             }
 
             if (sx != psx) {
-
-                ColumnOp::Column fullColumn = fft->getColumn(sx);
-                
-                ColumnOp::Column column =
-                    vector<float>(fullColumn.data() + minbin,
-                                  fullColumn.data() + minbin + nbins + 1);
-
-                column = ColumnOp::applyGain(column, m_params.scaleFactor);
-                
-//!!!                if (m_colourScale != ColourScaleType::Phase) {
-                preparedColumn = ColumnOp::normalize
-                    (column, m_params.normalization);
-//!!!                }
-
+                preparedColumn = getColumn(sx, minbin, nbins);
                 magRange.sample(preparedColumn);
-
                 psx = sx;
             }
 

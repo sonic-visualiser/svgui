@@ -88,7 +88,8 @@ ColourScale::getPixel(double value) const
 
     if (m_params.scaleType == ColourScaleType::Phase) {
 	double half = (maxPixF - 1.f) / 2.f;
-	return 1 + int((value * half) / M_PI + half);
+        int pixel = 1 + int((value * half) / M_PI + half);
+        return pixel;
     }
     
     value *= m_params.gain;
