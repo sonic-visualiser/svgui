@@ -25,6 +25,7 @@
 #include "LayerGeometryProvider.h"
 #include "VerticalBinLayer.h"
 #include "PaintAssistant.h"
+#include "ImageRegionFinder.h"
 
 #include "view/ViewManager.h" // for main model sample rate. Pity
 
@@ -1035,4 +1036,11 @@ Colour3DPlotRenderer::clearDrawBuffer(int w, int h)
     }
 }
 
-
+QRect
+Colour3DPlotRenderer::findSimilarRegionExtents(QPoint p) const
+{
+    QImage image = m_cache.getImage();
+    ImageRegionFinder finder;
+    QRect rect = finder.findRegionExtents(&image, p);
+    return rect;
+}
