@@ -145,6 +145,13 @@ public:
     ColourScaleType getColourScale() const;
 
     /**
+     * Specify multiple factor for colour scale. This is 2.0 for
+     * log-power spectrogram and 1.0 otherwise.
+     */
+    void setColourScaleMultiple(double);
+    double getColourScaleMultiple() const;
+    
+    /**
      * Specify the scale for the y axis.
      */
     void setBinScale(BinScale);
@@ -249,6 +256,7 @@ protected:
     int                 m_maxFrequency;
     int                 m_initialMaxFrequency;
     ColourScaleType     m_colourScale;
+    double              m_colourScaleMultiple;
     int                 m_colourMap;
     QColor              m_crosshairColour;
     BinScale            m_binScale;
@@ -260,8 +268,8 @@ protected:
 
     mutable bool        m_haveDetailedScale;
 
-    static ColourScaleType convertToColourScale(int value);
-    static int convertFromColourScale(ColourScaleType);
+    static std::pair<ColourScaleType, double> convertToColourScale(int value);
+    static int convertFromColourScale(ColourScaleType type, double multiple);
     static std::pair<ColumnNormalization, bool> convertToColumnNorm(int value);
     static int convertFromColumnNorm(ColumnNormalization norm, bool visible);
 

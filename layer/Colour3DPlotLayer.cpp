@@ -1036,7 +1036,7 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
-        cparams.scale = m_colourScale;
+        cparams.scaleType = m_colourScale;
         cparams.gain = m_gain;
 
         if (m_normalization == ColumnNormalization::None) {
