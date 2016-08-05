@@ -238,21 +238,13 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
                     pr.x(), pr.y(), pr.width(), pr.height());
 
     if (!timeConstrained && (pr != rect)) {
-        //!!! on a first cut, there is a risk that this will happen
-        //!!! when we are at start/end of model -- trap, report, and
-        //!!! then fix
-        throw std::logic_error("internal error: failed to render entire requested rect even when not time-constrained");
+        cerr << "WARNING: failed to render entire requested rect "
+             << "even when not time-constrained" << endl;
     }
 
     MagnitudeRange range = m_magCache.getRange(reqx0, reqx1 - reqx0);
     
     return { pr, range };
-
-    //!!! todo, here or in caller: illuminateLocalFeatures
-
-    //!!! todo: handle vertical range other than full range of column
-    
-    //!!! fft model scaling?
 }
 
 Colour3DPlotRenderer::RenderType
