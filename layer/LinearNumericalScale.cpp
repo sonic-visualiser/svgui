@@ -20,7 +20,7 @@
 
 #include <cmath>
 
-#include "view/View.h"
+#include "LayerGeometryProvider.h"
 
 int
 LinearNumericalScale::getWidth(LayerGeometryProvider *,

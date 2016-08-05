@@ -19,7 +19,9 @@
 #include "view/View.h"
 #include "base/Profiler.h"
 #include "base/RangeMapper.h"
+
 #include "ColourDatabase.h"
+#include "PaintAssistant.h"
 
 #include <QPainter>
 #include <QPixmap>

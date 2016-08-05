@@ -20,7 +20,9 @@
 #include "view/View.h"
 #include "base/Profiler.h"
 #include "base/Clipboard.h"
+
 #include "ColourDatabase.h"
+#include "PaintAssistant.h"
 
 #include "data/model/SparseOneDimensionalModel.h"
 
@@ -456,7 +458,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 	    }
 
 	    if (good) {
-                v->drawVisibleText(paint, x + iw + 2, textY, p.label, View::OutlinedText);
+                PaintAssistant::drawVisibleText(v, paint, x + iw + 2, textY, p.label, PaintAssistant::OutlinedText);
 //		paint.drawText(x + iw + 2, textY, p.label);
 	    }
 	}

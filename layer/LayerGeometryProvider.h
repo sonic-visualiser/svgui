@@ -25,6 +25,22 @@ class ViewManager;
 class View;
 class Layer;
 
+/**
+ * Interface for classes that provide geometry information (such as
+ * size, start frame, and a large number of other properties) about
+ * the disposition of a layer. The main implementor of this interface
+ * is the View class, but other implementations may be used in
+ * different circumstances, e.g. as a proxy to handle hi-dpi
+ * coordinate mapping.
+ *
+ * Note it is expected that some implementations of this may be
+ * disposable, created on-the-fly for a single use. Code that receives
+ * a LayerGeometryProvider pointer as an argument to something should
+ * not, in general, store that pointer as it may be invalidated before
+ * the next use. Use getId() to instead obtain a persistent identifier
+ * for a LayerGeometryProvider, for example to establish whether the
+ * same one is being provided in two separate calls.
+ */
 class LayerGeometryProvider
 {
 protected:
@@ -103,24 +119,27 @@ public:
     virtual int getViewXForX(int x) const = 0;
     
     /**
-     * Return the pixel y-coordinate corresponding to a given
-     * frequency, if the frequency range is as specified.  This does
-     * not imply any policy about layer frequency ranges, but it might
-     * be useful for layers to match theirs up if desired.
+     * Return the (maybe fractional) pixel y-coordinate corresponding
+     * to a given frequency, if the frequency range is as specified.
+     * This does not imply any policy about layer frequency ranges,
+     * but it might be useful for layers to match theirs up if
+     * desired.
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    virtual double getYForFrequency(double frequency, double minFreq, double maxFreq, 
+    virtual double getYForFrequency(double frequency,
+                                    double minFreq, double maxFreq, 
                                     bool logarithmic) const = 0;
 
     /**
-     * Return the closest frequency to the given pixel y-coordinate,
-     * if the frequency range is as specified.
+     * Return the closest frequency to the given (maybe fractional)
+     * pixel y-coordinate, if the frequency range is as specified.
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    virtual double getFrequencyForY(int y, double minFreq, double maxFreq,
-			   bool logarithmic) const = 0;
+    virtual double getFrequencyForY(double y,
+                                    double minFreq, double maxFreq,
+                                    bool logarithmic) const = 0;
 
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const = 0;
 
@@ -152,15 +171,6 @@ public:
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const = 0;
     virtual bool shouldShowFeatureLabels() const = 0;
-
-    enum TextStyle {
-	BoxedText,
-	OutlinedText,
-        OutlinedItalicText
-    };
-
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const = 0;
 
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const = 0;

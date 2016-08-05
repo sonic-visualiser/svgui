@@ -15,7 +15,7 @@
 #ifndef VIEW_PROXY_H
 #define VIEW_PROXY_H
 
-#include "LayerGeometryProvider.h"
+#include "layer/LayerGeometryProvider.h"
 
 class ViewProxy : public LayerGeometryProvider
 {
@@ -63,14 +63,10 @@ public:
 	return m_scaleFactor *
 	    m_view->getYForFrequency(frequency, minFreq, maxFreq, logarithmic);
     }
-    virtual double getFrequencyForY(int y, double minFreq, double maxFreq,
+    virtual double getFrequencyForY(double y, double minFreq, double maxFreq,
 				    bool logarithmic) const {
-        double f0 = m_view->getFrequencyForY
+        return m_view->getFrequencyForY
             (y / m_scaleFactor, minFreq, maxFreq, logarithmic);
-        if (m_scaleFactor == 1) return f0;
-        double f1 = m_view->getFrequencyForY
-            ((y / m_scaleFactor) + 1, minFreq, maxFreq, logarithmic);
-        return f0 + ((f1 - f0) * (y % m_scaleFactor)) / m_scaleFactor;
     }
     virtual int getTextLabelHeight(const Layer *layer, QPainter &paint) const {
 	return m_scaleFactor * m_view->getTextLabelHeight(layer, paint);
@@ -126,11 +122,6 @@ public:
 
     virtual bool shouldShowFeatureLabels() const {
 	return m_view->shouldShowFeatureLabels();
-    }
-
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const {
-	m_view->drawVisibleText(p, x, y, text, style);
     }
 
     virtual void drawMeasurementRect(QPainter &p, const Layer *layer,
