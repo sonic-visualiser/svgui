@@ -2152,7 +2152,6 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     paint.drawText((cw + 6 - paint.fontMetrics().width("dBFS")) / 2,
                    2 + textHeight + toff, "dBFS");
 
-//	paint.drawText((cw + 6 - paint.fontMetrics().width(top)) / 2,
     paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
                    2 + textHeight * topLines + toff + textHeight/2, top);
 
@@ -2176,7 +2175,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
         int y = textHeight * topLines + 4 + ch - i;
 
         paint.drawLine(5 + cw - cbw, y, cw + 2, y);
-
+        
         if (i == 0) {
             lasty = y;
             lastdb = idb;
@@ -2186,11 +2185,10 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
                      idb % 10 == 0) ||
                     (abs(y - lasty) > paint.fontMetrics().ascent() && 
                      idb % 5 == 0))) {
-            paint.setPen(v->getBackground());
+            paint.setPen(v->getForeground());
             QString text = QString("%1").arg(idb);
             paint.drawText(3 + cw - cbw - paint.fontMetrics().width(text),
                            y + toff + textHeight/2, text);
-            paint.setPen(v->getForeground());
             paint.drawLine(5 + cw - cbw, y, 8 + cw - cbw, y);
             lasty = y;
             lastdb = idb;
