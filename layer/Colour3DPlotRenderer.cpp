@@ -483,7 +483,9 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
                                                    bool timeConstrained)
 {
     Profiler profiler("Colour3DPlotRenderer::renderToCachePixelResolution");
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "renderToCachePixelResolution" << endl;
+#endif
     
     // Draw to the draw buffer, and then copy from there. The draw
     // buffer is at the same resolution as the target in the cache, so
@@ -523,12 +525,14 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
         }
     }
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "[PIX] zoomLevel = " << zoomLevel
          << ", binResolution " << binResolution 
          << ", binsPerPeak " << binsPerPeak
          << ", peak cache " << m_sources.peaks
          << ", usePeaksCache = " << usePeaksCache
          << endl;
+#endif
     
     for (int y = 0; y < h; ++y) {
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
@@ -578,7 +582,9 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
                                                  int x0, int repaintWidth)
 {
     Profiler profiler("Colour3DPlotRenderer::renderToCacheBinResolution");
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "renderToCacheBinResolution" << endl;
+#endif
     
     // Draw to the draw buffer, and then scale-copy from there. Draw
     // buffer is at bin resolution, i.e. buffer x == source column
@@ -643,8 +649,10 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         binforx[x] = int(leftBoundaryFrame / binResolution) + x;
     }
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "[BIN] binResolution " << binResolution 
          << endl;
+#endif
     
     for (int y = 0; y < h; ++y) {
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
@@ -663,9 +671,11 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     int scaledLeft = v->getXForFrame(leftBoundaryFrame);
     int scaledRight = v->getXForFrame(rightBoundaryFrame);
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "scaling draw buffer from width " << m_drawBuffer.width()
          << " to " << (scaledRight - scaledLeft) << " (nb drawBufferWidth = "
          << drawBufferWidth << ")" << endl;
+#endif
     
     QImage scaled = m_drawBuffer.scaled
         (scaledRight - scaledLeft, h,
@@ -691,8 +701,10 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         sourceLeft = 0;
     }
     
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "repaintWidth = " << repaintWidth
          << ", targetWidth = " << targetWidth << endl;
+#endif
     
     if (targetWidth > 0) {
         // we are copying from an image that has already been scaled,
@@ -706,9 +718,6 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         // but the mag range vector has not been scaled
         int sourceIx = int((double(i + sourceLeft) / scaled.width())
                            * int(m_magRanges.size()));
-//        int sourceIx = int((double(i) / targetWidth) * sourceWidth);
-        cerr << "mag range target ix = " << i << ", source ix = "
-             << sourceIx << ", of " << m_magRanges.size() << endl;
         if (in_range_for(m_magRanges, sourceIx)) {
             m_magCache.sampleColumn(i, m_magRanges.at(sourceIx));
         }
@@ -765,8 +774,10 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
     int modelWidth = sourceModel->getWidth();
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "modelWidth " << modelWidth << ", divisor " << divisor << endl;
-
+#endif
+    
     for (int x = start; x != finish; x += step) {
 
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -912,8 +923,10 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
     vector<float> preparedColumn;
 
     int modelWidth = fft->getWidth();
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "modelWidth " << modelWidth << endl;
-
+#endif
+    
     double minFreq =
         (double(minbin) * fft->getSampleRate()) / fft->getFFTSize();
     double maxFreq =

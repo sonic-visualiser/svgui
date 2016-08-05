@@ -17,7 +17,7 @@
 #include <iostream>
 using namespace std;
 
-#define DEBUG_SCROLLABLE_MAG_RANGE_CACHE 1
+//#define DEBUG_SCROLLABLE_MAG_RANGE_CACHE 1
 
 void
 ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
@@ -76,11 +76,13 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
 	m_ranges = newRanges;
     }
 
+#ifdef DEBUG_SCROLLABLE_MAG_RANGE_CACHE
     cerr << "maxes (" << m_ranges.size() << ") now: ";
     for (int i = 0; in_range_for(m_ranges, i); ++i) {
 	cerr << m_ranges[i].getMax() << " ";
     }
     cerr << endl;
+#endif
 }
 
 MagnitudeRange
@@ -106,26 +108,6 @@ ScrollableMagRangeCache::sampleColumn(int column, const MagnitudeRange &r)
 	throw logic_error("column out of range");
     } else {
 	m_ranges[column].sample(r);
-    }
-}
-
-//!!! unneeded?
-void
-ScrollableMagRangeCache::sampleColumn(const LayerGeometryProvider *v,
-				      sv_frame_t frame,
-				      const MagnitudeRange &r)
-{
-    int x = (v->getXForFrame(frame) -
-	     v->getXForFrame(m_startFrame));
-
-    if (!in_range_for(m_ranges, x)) {
-	cerr << "WARNING: ScrollableMagRangeCache::sampleColumn: column " << x
-	     << " arising from frame " << frame << " is out of range for cache "
-	     << "of width " << m_ranges.size()
-	     << " (with start frame " << m_startFrame << ")" << endl;
-	throw logic_error("column out of range");
-    } else {
-	sampleColumn(x, r);
     }
 }
 
