@@ -1468,7 +1468,8 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         params.scaleFactor = 1.0;
         params.colourRotation = m_colourRotation;
 
-        if (m_colourScale != ColourScaleType::Phase) {
+        if (m_colourScale != ColourScaleType::Phase &&
+            m_normalization != ColumnNormalization::Hybrid) {
             params.scaleFactor *= 2.f / float(getFFTSize());
         }
 
