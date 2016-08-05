@@ -19,6 +19,7 @@
 #include "view/View.h"
 #include "base/Profiler.h"
 #include "base/RangeMapper.h"
+#include "base/Strings.h"
 
 #include "ColourDatabase.h"
 #include "PaintAssistant.h"
@@ -1203,7 +1204,7 @@ WaveformLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &pa
 	return paint.fontMetrics().width("0.0") + 13;
     } else {
 	return std::max(paint.fontMetrics().width(tr("0dB")),
-			paint.fontMetrics().width(tr("-Inf"))) + 13;
+			paint.fontMetrics().width(Strings::minus_infinity)) + 13;
     }
 }
 
@@ -1257,7 +1258,7 @@ WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pain
 		text = QString("%1").arg(meterdbs[i]);
 		if (i == n) text = tr("0dB");
 		if (i == 0) {
-                    text = tr("-Inf");
+                    text = Strings::minus_infinity;
                     val = 0.0;
 		}
                 break;
@@ -1267,7 +1268,7 @@ WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pain
 		text = QString("%1").arg(-(10*n) + i * 10);
 		if (i == n) text = tr("0dB");
 		if (i == 0) {
-                    text = tr("-Inf");
+                    text = Strings::minus_infinity;
                     val = 0.0;
 		}
                 break;

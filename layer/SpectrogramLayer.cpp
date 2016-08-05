@@ -24,6 +24,7 @@
 #include "base/RangeMapper.h"
 #include "base/LogRange.h"
 #include "base/ColumnOp.h"
+#include "base/Strings.h"
 #include "widgets/CommandHistory.h"
 #include "data/model/Dense3DModelPeakCache.h"
 
@@ -529,7 +530,8 @@ SpectrogramLayer::getNewPropertyRangeMapper(const PropertyName &name) const
         return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
     }
     if (name == "Threshold") {
-        return new LinearRangeMapper(-81, -1, -81, -1, tr("dB"));
+        return new LinearRangeMapper(-81, -1, -81, -1, tr("dB"), false,
+                                     { { -81, Strings::minus_infinity } });
     }
     return 0;
 }
@@ -1956,12 +1958,12 @@ SpectrogramLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
 	QString dbMinString;
 	QString dbMaxString;
 	if (dbMin == AudioLevel::DB_FLOOR) {
-	    dbMinString = tr("-Inf");
+	    dbMinString = Strings::minus_infinity;
 	} else {
 	    dbMinString = QString("%1").arg(lrint(dbMin));
 	}
 	if (dbMax == AudioLevel::DB_FLOOR) {
-	    dbMaxString = tr("-Inf");
+	    dbMaxString = Strings::minus_infinity;
 	} else {
 	    dbMaxString = QString("%1").arg(lrint(dbMax));
 	}
@@ -2219,10 +2221,7 @@ SpectrogramLayer::paintDetailedScalePhase(LayerGeometryProvider *v,
     int ch = h - textHeight * (topLines + 1) - 8;
     paint.drawRect(4 + cw - cbw, textHeight * topLines + 4, cbw - 1, ch + 1);
 
-    QString top, bottom, middle;
-    top = QString("%1").arg(QChar(0x3c0)); // pi
-    bottom = "-" + top;
-    middle = "0";
+    QString top = Strings::pi, bottom = Strings::minus_pi, middle = "0";
     
     double min = -M_PI;
     double max =  M_PI;

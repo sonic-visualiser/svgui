@@ -18,6 +18,7 @@
 #include "LayerGeometryProvider.h"
 
 #include "base/AudioLevel.h"
+#include "base/Strings.h"
 
 #include <QPaintDevice>
 #include <QPainter>
@@ -81,7 +82,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             text = QString("%1").arg(meterdbs[i]);
             if (i == n) text = "0dB";
             if (i == 0) {
-                text = "-Inf";
+                text = Strings::minus_infinity;
                 val = 0.0;
             }
             break;
@@ -91,7 +92,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             text = QString("%1").arg(-(10*n) + i * 10);
             if (i == n) text = "0dB";
             if (i == 0) {
-                text = "-Inf";
+                text = Strings::minus_infinity;
                 val = 0.0;
             }
             break;

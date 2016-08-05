@@ -409,13 +409,27 @@ void AudioDial::updateMappedValue(int value)
 
     if (m_showTooltip) {
         QString name = objectName();
-        QString unit = "";
+        QString label;
+        if (m_rangeMapper) {
+            label = m_rangeMapper->getLabel(value);
+        }
         QString text;
-        if (m_rangeMapper) unit = m_rangeMapper->getUnit();
-        if (name != "") {
-            text = tr("%1: %2%3").arg(name).arg(m_mappedValue).arg(unit);
+        if (label != "") {
+            if (name != "") {
+                text = tr("%1: %2").arg(name).arg(label);
+            } else {
+                text = label;
+            }
         } else {
-            text = tr("%2%3").arg(m_mappedValue).arg(unit);
+            QString unit = "";
+            if (m_rangeMapper) {
+                unit = m_rangeMapper->getUnit();
+            }
+            if (name != "") {
+                text = tr("%1: %2%3").arg(name).arg(m_mappedValue).arg(unit);
+            } else {
+                text = tr("%2%3").arg(m_mappedValue).arg(unit);
+            }
         }
         setToolTip(text);
     }
