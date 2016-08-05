@@ -853,11 +853,14 @@ SpectrogramLayer::setColourRotation(int r)
     int distance = r - m_colourRotation;
 
     if (distance != 0) {
-//!!!	rotatePalette(-distance);
 	m_colourRotation = r;
     }
-    
-    invalidateRenderers(); //!!! in theory we shouldn't have to do this... but...
+
+    // Initially the idea with colour rotation was that we would just
+    // rotate the palette of an already-generated cache. That's not
+    // really practical now that cacheing is handled in a separate
+    // class in which the main cache no longer has a palette.
+    invalidateRenderers();
     
     emit layerParametersChanged();
 }
@@ -1003,10 +1006,6 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
         Layer::setLayerDormant(v, true);
 
 	invalidateRenderers();
-
-        //!!! in theory we should call invalidateFFTModel() if and
-        //!!! only if there are no remaining views in which we are not
-        //!!! dormant
 	
     } else {
 
@@ -1038,7 +1037,6 @@ SpectrogramLayer::cacheInvalid(
     cerr << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
 #endif
 
-    //!!! now in common with Colour3DPlotLayer:
     // We used to call invalidateMagnitudes(from, to) to invalidate
     // only those caches whose views contained some of the (from, to)
     // range. That's the right thing to do; it has been lost in
@@ -1465,7 +1463,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         params.normalization = m_normalization;
         params.binDisplay = m_binDisplay;
         params.binScale = m_binScale;
-        params.alwaysOpaque = false; //!!! should be true though
+        params.alwaysOpaque = true;
         params.invertVertical = false;
         params.scaleFactor = 1.0;
         params.colourRotation = m_colourRotation;
