@@ -1559,6 +1559,8 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     }
 
     paintWithRenderer(v, paint, rect);
+
+    illuminateLocalFeatures(v, paint);
 }
 
 void
