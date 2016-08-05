@@ -21,7 +21,9 @@
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
 #include "base/Pitch.h"
+
 #include "ColourMapper.h"
+#include "PaintAssistant.h"
 
 #include <QPainter>
 #include <QTextStream>
@@ -491,19 +493,19 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     int hoffset = 2;
     if (m_binScale == LogBins) hoffset = 13;
 
-    v->drawVisibleText(paint,
+    PaintAssistant::drawVisibleText(v, paint,
                        cursorPos.x() + 2,
                        v->getPaintHeight() - 2 - hoffset,
                        QString("%1 Hz").arg(fundamental),
-                       View::OutlinedText);
+                       PaintAssistant::OutlinedText);
 
     if (Pitch::isFrequencyInMidiRange(fundamental)) {
         QString pitchLabel = Pitch::getPitchLabelForFrequency(fundamental);
-        v->drawVisibleText(paint,
+        PaintAssistant::drawVisibleText(v, paint,
                            cursorPos.x() - paint.fontMetrics().width(pitchLabel) - 2,
                            v->getPaintHeight() - 2 - hoffset,
                            pitchLabel,
-                           View::OutlinedText);
+                           PaintAssistant::OutlinedText);
     }
 
     double value = getValueForY(cursorPos.y(), v);
@@ -512,17 +514,17 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     if (value > 0.0) db = 10.0 * log10(value);
     if (db < thresh) db = thresh;
 
-    v->drawVisibleText(paint,
+    PaintAssistant::drawVisibleText(v, paint,
                        xorigin + 2,
                        cursorPos.y() - 2,
                        QString("%1 V").arg(value),
-                       View::OutlinedText);
+                       PaintAssistant::OutlinedText);
 
-    v->drawVisibleText(paint,
+    PaintAssistant::drawVisibleText(v, paint,
                        xorigin + 2,
                        cursorPos.y() + 2 + paint.fontMetrics().ascent(),
                        QString("%1 dBV").arg(db),
-                       View::OutlinedText);
+                       PaintAssistant::OutlinedText);
     
     int harmonic = 2;
 

@@ -485,17 +485,17 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         v->drawVisibleText
             (paint, xorigin + 5,
              paint.fontMetrics().ascent() + 5,
-             startText, View::OutlinedText);
+             startText, PaintAssistant::OutlinedText);
         
         v->drawVisibleText
             (paint, xorigin + 5,
              paint.fontMetrics().ascent() + paint.fontMetrics().height() + 10,
-             endText, View::OutlinedText);
+             endText, PaintAssistant::OutlinedText);
         
         v->drawVisibleText
             (paint, xorigin + 5,
              paint.fontMetrics().ascent() + 2*paint.fontMetrics().height() + 15,
-             durationText, View::OutlinedText);
+             durationText, PaintAssistant::OutlinedText);
     }
 */
 }

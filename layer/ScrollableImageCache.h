@@ -17,14 +17,14 @@
 
 #include "base/BaseTypes.h"
 
-#include "view/LayerGeometryProvider.h"
+#include "LayerGeometryProvider.h"
 
 #include <QImage>
 #include <QRect>
 #include <QPainter>
 
 /**
- * A cached image for a view that scrolls horizontally, primarily the
+ * A cached image for a view that scrolls horizontally, such as a
  * spectrogram. The cache object holds an image, reports the size of
  * the image (likely the same as the underlying view, but it's the
  * caller's responsibility to set the size appropriately), can scroll
@@ -37,54 +37,67 @@
 class ScrollableImageCache
 {
 public:
-    ScrollableImageCache(const LayerGeometryProvider *v = 0) :
-	m_v(v),
-	m_left(0),
-	m_width(0),
+    ScrollableImageCache() :
+	m_validLeft(0),
+	m_validWidth(0),
 	m_startFrame(0),
 	m_zoomLevel(0)
     {}
 
     void invalidate() {
-	m_width = 0;
+	m_validWidth = 0;
     }
     
     bool isValid() const {
-	return m_width > 0;
+	return m_validWidth > 0;
     }
 
     QSize getSize() const {
 	return m_image.size();
     }
-    
+
+    /**
+     * Set the size of the cache. If the new size differs from the
+     * current size, the cache is invalidated.
+     */
     void resize(QSize newSize) {
-	m_image = QImage(newSize, QImage::Format_ARGB32_Premultiplied);
-	invalidate();
+        if (getSize() != newSize) {
+            m_image = QImage(newSize, QImage::Format_ARGB32_Premultiplied);
+            invalidate();
+        }
     }
 	
     int getValidLeft() const {
-	return m_left;
+	return m_validLeft;
     }
     
     int getValidWidth() const {
-	return m_width;
+	return m_validWidth;
     }
 
     int getValidRight() const {
-	return m_left + m_width;
+	return m_validLeft + m_validWidth;
     }
 
     QRect getValidArea() const {
-	return QRect(m_left, 0, m_width, m_image.height());
+	return QRect(m_validLeft, 0, m_validWidth, m_image.height());
     }
     
     int getZoomLevel() const {
 	return m_zoomLevel;
     }
-    
+
+    /**
+     * Set the zoom level. If the new zoom level differs from the
+     * current one, the cache is invalidated. (Determining whether to
+     * invalidate the cache here is the only thing the zoom level is
+     * used for.)
+     */
     void setZoomLevel(int zoom) {
-	m_zoomLevel = zoom;
-	invalidate();
+        if (m_zoomLevel != zoom) {
+            m_zoomLevel = zoom;
+            invalidate();
+        }
     }
 
     sv_frame_t getStartFrame() const {
@@ -92,13 +105,16 @@ public:
     }
 
     /**
-     * Set the start frame and invalidate the cache. To scroll,
-     * i.e. to set the start frame while retaining cache validity
-     * where possible, use scrollTo() instead.
+     * Set the start frame. If the new start frame differs from the
+     * current one, the cache is invalidated. To scroll, i.e. to set
+     * the start frame while retaining cache validity where possible,
+     * use scrollTo() instead.
      */
     void setStartFrame(sv_frame_t frame) {
-	m_startFrame = frame;
-	invalidate();
+        if (m_startFrame != frame) {
+            m_startFrame = frame;
+            invalidate();
+        }
     }
     
     const QImage &getImage() const {
@@ -106,20 +122,23 @@ public:
     }
 
     /**
-     * Set the new start frame for the cache, if possible also moving
-     * along any existing valid data within the cache so that it
-     * continues to be valid for the new start frame.
+     * Set the new start frame for the cache, according to the
+     * geometry of the supplied LayerGeometryProvider, if possible
+     * also moving along any existing valid data within the cache so
+     * that it continues to be valid for the new start frame.
      */
-    void scrollTo(sv_frame_t newStartFrame);
+    void scrollTo(const LayerGeometryProvider *v, sv_frame_t newStartFrame);
 
     /**
      * Take a left coordinate and width describing a region, and
      * adjust them so that they are contiguous with the cache valid
      * region and so that the union of the adjusted region with the
-     * cache valid region contains the supplied region.
+     * cache valid region contains the supplied region.  Does not
+     * modify anything about the cache, only about the arguments.
      */
     void adjustToTouchValidArea(int &left, int &width,
 				bool &isLeftOfValidArea) const;
+    
     /**
      * Draw from an image onto the cache. The supplied image must have
      * the same height as the cache and the full height is always
@@ -134,10 +153,9 @@ public:
 		   int imageWidth);
     
 private:
-    const LayerGeometryProvider *m_v;
     QImage m_image;
-    int m_left;  // of valid region
-    int m_width; // of valid region
+    int m_validLeft;
+    int m_validWidth;
     sv_frame_t m_startFrame;
     int m_zoomLevel;
 };

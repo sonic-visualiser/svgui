@@ -13,13 +13,15 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PAINT_ASSISTANT_H_
-#define _PAINT_ASSISTANT_H_
+#ifndef PAINT_ASSISTANT_H
+#define PAINT_ASSISTANT_H
 
 #include <QRect>
 #include <vector>
 
 class QPainter;
+class Layer;
+class LayerGeometryProvider;
 
 class PaintAssistant
 {
@@ -34,6 +36,16 @@ public:
     static int getYForValue(Scale scale, double value,
                             double minVal, double maxVal,
                             int minY, int height);
+
+    enum TextStyle {
+	BoxedText,
+	OutlinedText,
+        OutlinedItalicText
+    };
+
+    static void drawVisibleText(const LayerGeometryProvider *,
+                                QPainter &p, int x, int y,
+                                QString text, TextStyle style);
 };
 
 #endif

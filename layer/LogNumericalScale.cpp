@@ -22,7 +22,7 @@
 
 #include <cmath>
 
-#include "view/View.h"
+#include "LayerGeometryProvider.h"
 
 //#define DEBUG_TIME_VALUE_LAYER 1
 

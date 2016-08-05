@@ -15,6 +15,8 @@
 
 #include "PaintAssistant.h"
 
+#include "LayerGeometryProvider.h"
+
 #include "base/AudioLevel.h"
 
 #include <QPaintDevice>
@@ -206,4 +208,56 @@ PaintAssistant::getYForValue(Scale scale, double value,
     }
 
     return vy;
+}
+
+void
+PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
+                                QPainter &paint, int x, int y,
+                                QString text, TextStyle style)
+{
+    if (style == OutlinedText || style == OutlinedItalicText) {
+
+        paint.save();
+
+        if (style == OutlinedItalicText) {
+            QFont f(paint.font());
+            f.setItalic(true);
+            paint.setFont(f);
+        }
+
+        QColor penColour, surroundColour, boxColour;
+
+        penColour = v->getForeground();
+        surroundColour = v->getBackground();
+        boxColour = surroundColour;
+        boxColour.setAlpha(127);
+
+        paint.setPen(Qt::NoPen);
+        paint.setBrush(boxColour);
+        
+        QRect r = paint.fontMetrics().boundingRect(text);
+        r.translate(QPoint(x, y));
+//        cerr << "drawVisibleText: r = " << r.x() << "," <<r.y() << " " << r.width() << "x" << r.height() << endl;
+        paint.drawRect(r);
+        paint.setBrush(Qt::NoBrush);
+
+	paint.setPen(surroundColour);
+
+	for (int dx = -1; dx <= 1; ++dx) {
+	    for (int dy = -1; dy <= 1; ++dy) {
+		if (!(dx || dy)) continue;
+		paint.drawText(x + dx, y + dy, text);
+	    }
+	}
+
+	paint.setPen(penColour);
+
+	paint.drawText(x, y, text);
+
+        paint.restore();
+
+    } else {
+
+        std::cerr << "ERROR: PaintAssistant::drawVisibleText: Boxed style not yet implemented!" << std::endl;
+    }
 }

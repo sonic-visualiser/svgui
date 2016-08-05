@@ -39,14 +39,17 @@ OBJECTS_DIR = o
 MOC_DIR = o
 
 HEADERS += layer/Colour3DPlotLayer.h \
+	   layer/Colour3DPlotRenderer.h \
 	   layer/ColourDatabase.h \
 	   layer/ColourMapper.h \
+           layer/ColourScale.h \
            layer/ColourScaleLayer.h \
            layer/FlexiNoteLayer.h \
            layer/ImageLayer.h \
            layer/ImageRegionFinder.h \
            layer/Layer.h \
            layer/LayerFactory.h \
+           layer/LayerGeometryProvider.h \
            layer/LinearNumericalScale.h \
            layer/LogNumericalScale.h \
            layer/LinearColourScale.h \
@@ -55,7 +58,9 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/PaintAssistant.h \
            layer/PianoScale.h \
            layer/RegionLayer.h \
+           layer/RenderTimer.h \
            layer/ScrollableImageCache.h \
+           layer/ScrollableMagRangeCache.h \
            layer/SingleColourLayer.h \
            layer/SliceableLayer.h \
            layer/SliceLayer.h \
@@ -68,8 +73,10 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/VerticalScaleLayer.h \
            layer/WaveformLayer.h
 SOURCES += layer/Colour3DPlotLayer.cpp \
+	   layer/Colour3DPlotRenderer.cpp \
 	   layer/ColourDatabase.cpp \
 	   layer/ColourMapper.cpp \
+	   layer/ColourScale.cpp \
            layer/FlexiNoteLayer.cpp \
            layer/ImageLayer.cpp \
            layer/ImageRegionFinder.cpp \
@@ -84,6 +91,7 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/PianoScale.cpp \
            layer/RegionLayer.cpp \
            layer/ScrollableImageCache.cpp \
+           layer/ScrollableMagRangeCache.cpp \
            layer/SingleColourLayer.cpp \
            layer/SliceLayer.cpp \
            layer/SpectrogramLayer.cpp \

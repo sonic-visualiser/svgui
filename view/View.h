@@ -19,7 +19,7 @@
 #include <QFrame>
 #include <QProgressBar>
 
-#include "LayerGeometryProvider.h"
+#include "layer/LayerGeometryProvider.h"
 
 #include "base/ZoomConstraint.h"
 #include "base/PropertyContainer.h"
@@ -144,8 +144,8 @@ public:
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    double getFrequencyForY(int y, double minFreq, double maxFreq,
-			   bool logarithmic) const;
+    double getFrequencyForY(double y, double minFreq, double maxFreq,
+                            bool logarithmic) const;
 
     /**
      * Return the zoom level, i.e. the number of frames per pixel
@@ -265,9 +265,6 @@ public:
     virtual bool hasLightBackground() const;
     virtual QColor getForeground() const;
     virtual QColor getBackground() const;
-
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const;
 
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const;

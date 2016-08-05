@@ -19,13 +19,14 @@
 #include "base/RealTime.h"
 #include "base/Profiler.h"
 #include "base/LogRange.h"
-#include "ColourDatabase.h"
 
+#include "ColourDatabase.h"
 #include "ColourMapper.h"
 #include "LinearNumericalScale.h"
 #include "LogNumericalScale.h"
 #include "LinearColourScale.h"
 #include "LogColourScale.h"
+#include "PaintAssistant.h"
 
 #include "view/View.h"
 
@@ -979,18 +980,18 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                 paint.setBrush(v->getForeground());
 
                 QString vlabel = QString("%1%2").arg(p.value).arg(getScaleUnits());
-                v->drawVisibleText(paint, 
+                PaintAssistant::drawVisibleText(v, paint, 
                                    x - paint.fontMetrics().width(vlabel) - 2,
                                    y + paint.fontMetrics().height()/2
                                    - paint.fontMetrics().descent(), 
-                                   vlabel, View::OutlinedText);
+                                   vlabel, PaintAssistant::OutlinedText);
                 
                 QString hlabel = RealTime::frame2RealTime
                     (p.frame, m_model->getSampleRate()).toText(true).c_str();
-                v->drawVisibleText(paint, 
+                PaintAssistant::drawVisibleText(v, paint, 
                                    x,
                                    y - h/2 - paint.fontMetrics().descent() - 2,
-                                   hlabel, View::OutlinedText);
+                                   hlabel, PaintAssistant::OutlinedText);
             }
             
             paint.drawLine(x, y-1, x + w, y-1);
@@ -1048,7 +1049,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                 nextLabelMinX = labelX + paint.fontMetrics().width(label);
             }
 
-            v->drawVisibleText(paint, labelX, labelY, label, View::OutlinedText);
+            PaintAssistant::drawVisibleText(v, paint, labelX, labelY, label, PaintAssistant::OutlinedText);
         }
     }
 

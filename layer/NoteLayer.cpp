@@ -21,12 +21,13 @@
 #include "base/Pitch.h"
 #include "base/LogRange.h"
 #include "base/RangeMapper.h"
-#include "ColourDatabase.h"
 #include "view/View.h"
 
+#include "ColourDatabase.h"
 #include "PianoScale.h"
 #include "LinearNumericalScale.h"
 #include "LogNumericalScale.h"
+#include "PaintAssistant.h"
 
 #include "data/model/NoteModel.h"
 
@@ -809,18 +810,18 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             paint.setBrush(v->getForeground());
 
             QString vlabel = QString("%1%2").arg(p.value).arg(getScaleUnits());
-            v->drawVisibleText(paint, 
+            PaintAssistant::drawVisibleText(v, paint, 
                                x - paint.fontMetrics().width(vlabel) - 2,
                                y + paint.fontMetrics().height()/2
                                  - paint.fontMetrics().descent(), 
-                               vlabel, View::OutlinedText);
+                               vlabel, PaintAssistant::OutlinedText);
 
             QString hlabel = RealTime::frame2RealTime
                 (p.frame, m_model->getSampleRate()).toText(true).c_str();
-            v->drawVisibleText(paint, 
+            PaintAssistant::drawVisibleText(v, paint, 
                                x,
                                y - h/2 - paint.fontMetrics().descent() - 2,
-                               hlabel, View::OutlinedText);
+                               hlabel, PaintAssistant::OutlinedText);
 	}
 	
 	paint.drawRect(x, y - h/2, w, h);
