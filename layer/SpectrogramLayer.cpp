@@ -2001,7 +2001,8 @@ SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, 
 }
 
 void
-SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const
+SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
+                                     QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
 	return;
@@ -2010,8 +2011,14 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
     Profiler profiler("SpectrogramLayer::paintVerticalScale");
 
     //!!! cache this?
-
+    
     int h = rect.height(), w = rect.width();
+    int textHeight = paint.fontMetrics().height();
+
+    if (detailed && (h > textHeight * 3 + 10)) {
+        paintDetailedScale(v, paint, rect);
+    }
+    m_haveDetailedScale = detailed;
 
     int tickw = (m_binScale == BinScale::Log ? 10 : 4);
     int pkw = (m_binScale == BinScale::Log ? 10 : 0);
@@ -2025,103 +2032,10 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
     }
 
     int cw = 0;
-
     if (detailed) cw = getColourScaleWidth(paint);
-    int cbw = paint.fontMetrics().width("dB");
 
     int py = -1;
-    int textHeight = paint.fontMetrics().height();
     int toff = -textHeight + paint.fontMetrics().ascent() + 2;
-
-    if (detailed && (h > textHeight * 3 + 10)) {
-
-        int topLines = 2;
-        if (m_colourScale == ColourScaleType::Phase) topLines = 1;
-
-	int ch = h - textHeight * (topLines + 1) - 8;
-//	paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
-	paint.drawRect(4 + cw - cbw, textHeight * topLines + 4, cbw - 1, ch + 1);
-
-	QString top, bottom;
-        double min = m_viewMags[v->getId()].getMin();
-        double max = m_viewMags[v->getId()].getMax();
-
-        if (min < m_threshold) min = m_threshold;
-        if (max <= min) max = min + 0.1;
-        
-        double dBmin = AudioLevel::multiplier_to_dB(min);
-        double dBmax = AudioLevel::multiplier_to_dB(max);
-
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "paintVerticalScale: for view id " << v->getId()
-             << ": min = " << min << ", max = " << max
-             << ", dBmin = " << dBmin << ", dBmax = " << dBmax << endl;
-#endif
-        
-        if (dBmax < -60.f) dBmax = -60.f;
-        else top = QString("%1").arg(lrint(dBmax));
-
-        if (dBmin < dBmax - 60.f) dBmin = dBmax - 60.f;
-        bottom = QString("%1").arg(lrint(dBmin));
-
-#ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "adjusted dB range to min = " << dBmin << ", max = " << dBmax
-             << endl;
-#endif
-        
-        //!!! & phase etc
-
-        if (m_colourScale != ColourScaleType::Phase) {
-            paint.drawText((cw + 6 - paint.fontMetrics().width("dBFS")) / 2,
-                           2 + textHeight + toff, "dBFS");
-        }
-
-//	paint.drawText((cw + 6 - paint.fontMetrics().width(top)) / 2,
-	paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
-		       2 + textHeight * topLines + toff + textHeight/2, top);
-
-	paint.drawText(3 + cw - cbw - paint.fontMetrics().width(bottom),
-		       h + toff - 3 - textHeight/2, bottom);
-
-	paint.save();
-	paint.setBrush(Qt::NoBrush);
-
-        int lasty = 0;
-        int lastdb = 0;
-
-	for (int i = 0; i < ch; ++i) {
-
-            double dBval = dBmin + (((dBmax - dBmin) * i) / (ch - 1));
-            int idb = int(dBval);
-
-            double value = AudioLevel::dB_to_multiplier(dBval);
-            paint.setPen(getRenderer(v)->getColour(value));
-
-            int y = textHeight * topLines + 4 + ch - i;
-
-            paint.drawLine(5 + cw - cbw, y, cw + 2, y);
-
-            if (i == 0) {
-                lasty = y;
-                lastdb = idb;
-            } else if (i < ch - paint.fontMetrics().ascent() &&
-                       idb != lastdb &&
-                       ((abs(y - lasty) > textHeight && 
-                         idb % 10 == 0) ||
-                        (abs(y - lasty) > paint.fontMetrics().ascent() && 
-                         idb % 5 == 0))) {
-                paint.setPen(v->getBackground());
-                QString text = QString("%1").arg(idb);
-                paint.drawText(3 + cw - cbw - paint.fontMetrics().width(text),
-                               y + toff + textHeight/2, text);
-                paint.setPen(v->getForeground());
-                paint.drawLine(5 + cw - cbw, y, 8 + cw - cbw, y);
-                lasty = y;
-                lastdb = idb;
-            }
-	}
-	paint.restore();
-    }
 
     paint.drawLine(cw + 7, 0, cw + 7, h);
 
@@ -2172,6 +2086,107 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed, QP
     }
 
     m_haveDetailedScale = detailed;
+}
+
+void
+SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
+                                     QPainter &paint, QRect rect) const
+{
+    // The colour scale
+    
+    int h = rect.height();
+    int textHeight = paint.fontMetrics().height();
+    int toff = -textHeight + paint.fontMetrics().ascent() + 2;
+
+    int cw = getColourScaleWidth(paint);
+    int cbw = paint.fontMetrics().width("dB");
+
+    int topLines = 2;
+    if (m_colourScale == ColourScaleType::Phase) topLines = 1;
+
+    int ch = h - textHeight * (topLines + 1) - 8;
+//	paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
+    paint.drawRect(4 + cw - cbw, textHeight * topLines + 4, cbw - 1, ch + 1);
+
+    QString top, bottom;
+    double min = m_viewMags[v->getId()].getMin();
+    double max = m_viewMags[v->getId()].getMax();
+
+    if (min < m_threshold) min = m_threshold;
+    if (max <= min) max = min + 0.1;
+        
+    double dBmin = AudioLevel::multiplier_to_dB(min);
+    double dBmax = AudioLevel::multiplier_to_dB(max);
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    cerr << "paintVerticalScale: for view id " << v->getId()
+         << ": min = " << min << ", max = " << max
+         << ", dBmin = " << dBmin << ", dBmax = " << dBmax << endl;
+#endif
+        
+    if (dBmax < -60.f) dBmax = -60.f;
+    else top = QString("%1").arg(lrint(dBmax));
+
+    if (dBmin < dBmax - 60.f) dBmin = dBmax - 60.f;
+    bottom = QString("%1").arg(lrint(dBmin));
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    cerr << "adjusted dB range to min = " << dBmin << ", max = " << dBmax
+         << endl;
+#endif
+        
+    //!!! & phase etc
+
+    if (m_colourScale != ColourScaleType::Phase) {
+        paint.drawText((cw + 6 - paint.fontMetrics().width("dBFS")) / 2,
+                       2 + textHeight + toff, "dBFS");
+    }
+
+//	paint.drawText((cw + 6 - paint.fontMetrics().width(top)) / 2,
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
+                   2 + textHeight * topLines + toff + textHeight/2, top);
+
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(bottom),
+                   h + toff - 3 - textHeight/2, bottom);
+
+    paint.save();
+    paint.setBrush(Qt::NoBrush);
+
+    int lasty = 0;
+    int lastdb = 0;
+
+    for (int i = 0; i < ch; ++i) {
+
+        double dBval = dBmin + (((dBmax - dBmin) * i) / (ch - 1));
+        int idb = int(dBval);
+
+        double value = AudioLevel::dB_to_multiplier(dBval);
+        paint.setPen(getRenderer(v)->getColour(value));
+
+        int y = textHeight * topLines + 4 + ch - i;
+
+        paint.drawLine(5 + cw - cbw, y, cw + 2, y);
+
+        if (i == 0) {
+            lasty = y;
+            lastdb = idb;
+        } else if (i < ch - paint.fontMetrics().ascent() &&
+                   idb != lastdb &&
+                   ((abs(y - lasty) > textHeight && 
+                     idb % 10 == 0) ||
+                    (abs(y - lasty) > paint.fontMetrics().ascent() && 
+                     idb % 5 == 0))) {
+            paint.setPen(v->getBackground());
+            QString text = QString("%1").arg(idb);
+            paint.drawText(3 + cw - cbw - paint.fontMetrics().width(text),
+                           y + toff + textHeight/2, text);
+            paint.setPen(v->getForeground());
+            paint.drawLine(5 + cw - cbw, y, 8 + cw - cbw, y);
+            lasty = y;
+            lastdb = idb;
+        }
+    }
+    paint.restore();
 }
 
 class SpectrogramRangeMapper : public RangeMapper
