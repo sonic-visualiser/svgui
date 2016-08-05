@@ -51,8 +51,8 @@
 #include <alloca.h>
 #endif
 
-#define DEBUG_SPECTROGRAM 1
-#define DEBUG_SPECTROGRAM_REPAINT 1
+//#define DEBUG_SPECTROGRAM 1
+//#define DEBUG_SPECTROGRAM_REPAINT 1
 
 using namespace std;
 
@@ -1507,9 +1507,11 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
 
         result = renderer->renderTimeConstrained(v, paint, rect);
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "rect width from this paint: " << result.rendered.width()
              << ", mag range in this paint: " << result.range.getMin() << " -> "
              << result.range.getMax() << endl;
+#endif
         
         QRect uncached = renderer->getLargestUncachedRect(v);
         if (uncached.width() > 0) {
@@ -1522,15 +1524,19 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
     if (magRange.isSet()) {
         if (m_viewMags[viewId] != magRange) {
             m_viewMags[viewId] = magRange;
+#ifdef DEBUG_SPECTROGRAM_REPAINT
             cerr << "mag range in this view has changed: "
                  << magRange.getMin() << " -> " << magRange.getMax() << endl;
+#endif
         }
     }
 
     if (!continuingPaint && m_normalizeVisibleArea &&
         m_viewMags[viewId] != m_lastRenderedMags[viewId]) {
+#ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "mag range has changed from last rendered range: re-rendering"
              << endl;
+#endif
         delete m_renderers[viewId];
         m_renderers.erase(viewId);
         v->updatePaintRect(v->getPaintRect());
@@ -1571,8 +1577,10 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
         return;
     }
 
+#ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer: illuminateLocalFeatures("
               << localPos.x() << "," << localPos.y() << ")" << endl;
+#endif
 
     double s0, s1;
     double f0, f1;
@@ -1589,8 +1597,10 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
         int y1 = int(getYForFrequency(v, f1));
         int y0 = int(getYForFrequency(v, f0));
         
+#ifdef DEBUG_SPECTROGRAM_REPAINT
         cerr << "SpectrogramLayer: illuminate "
                   << x0 << "," << y1 << " -> " << x1 << "," << y0 << endl;
+#endif
         
         paint.setPen(v->getForeground());
 
@@ -2093,6 +2103,11 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
                                      QPainter &paint, QRect rect) const
 {
     // The colour scale
+
+    if (m_colourScale == ColourScaleType::Phase) {
+        paintDetailedScalePhase(v, paint, rect);
+        return;
+    }
     
     int h = rect.height();
     int textHeight = paint.fontMetrics().height();
@@ -2102,7 +2117,6 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     int cbw = paint.fontMetrics().width("dB");
 
     int topLines = 2;
-    if (m_colourScale == ColourScaleType::Phase) topLines = 1;
 
     int ch = h - textHeight * (topLines + 1) - 8;
 //	paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
@@ -2135,12 +2149,8 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
          << endl;
 #endif
         
-    //!!! & phase etc
-
-    if (m_colourScale != ColourScaleType::Phase) {
-        paint.drawText((cw + 6 - paint.fontMetrics().width("dBFS")) / 2,
-                       2 + textHeight + toff, "dBFS");
-    }
+    paint.drawText((cw + 6 - paint.fontMetrics().width("dBFS")) / 2,
+                   2 + textHeight + toff, "dBFS");
 
 //	paint.drawText((cw + 6 - paint.fontMetrics().width(top)) / 2,
     paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
@@ -2185,6 +2195,56 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
             lasty = y;
             lastdb = idb;
         }
+    }
+    paint.restore();
+}
+
+void
+SpectrogramLayer::paintDetailedScalePhase(LayerGeometryProvider *v,
+                                          QPainter &paint, QRect rect) const
+{
+    // The colour scale in phase mode
+    
+    int h = rect.height();
+    int textHeight = paint.fontMetrics().height();
+    int toff = -textHeight + paint.fontMetrics().ascent() + 2;
+
+    int cw = getColourScaleWidth(paint);
+
+    // Phase is not measured in dB of course, but this places the
+    // scale at the same position as in the magnitude spectrogram
+    int cbw = paint.fontMetrics().width("dB");
+
+    int topLines = 1;
+
+    int ch = h - textHeight * (topLines + 1) - 8;
+    paint.drawRect(4 + cw - cbw, textHeight * topLines + 4, cbw - 1, ch + 1);
+
+    QString top, bottom, middle;
+    top = QString("%1").arg(QChar(0x3c0)); // pi
+    bottom = "-" + top;
+    middle = "0";
+    
+    double min = -M_PI;
+    double max =  M_PI;
+
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
+                   2 + textHeight * topLines + toff + textHeight/2, top);
+
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(middle),
+                   2 + textHeight * topLines + ch/2 + toff + textHeight/2, middle);
+
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(bottom),
+                   h + toff - 3 - textHeight/2, bottom);
+
+    paint.save();
+    paint.setBrush(Qt::NoBrush);
+
+    for (int i = 0; i < ch; ++i) {
+        double val = min + (((max - min) * i) / (ch - 1));
+        paint.setPen(getRenderer(v)->getColour(val));
+        int y = textHeight * topLines + 4 + ch - i;
+        paint.drawLine(5 + cw - cbw, y, cw + 2, y);
     }
     paint.restore();
 }

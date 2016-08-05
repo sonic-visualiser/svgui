@@ -322,7 +322,10 @@ protected:
 
     void paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    void paintDetailedScale(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    void paintDetailedScale(LayerGeometryProvider *v,
+                            QPainter &paint, QRect rect) const;
+    void paintDetailedScalePhase(LayerGeometryProvider *v,
+                                 QPainter &paint, QRect rect) const;
     
     virtual void updateMeasureRectYCoords(LayerGeometryProvider *v,
                                           const MeasureRect &r) const;

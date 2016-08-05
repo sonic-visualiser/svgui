@@ -130,12 +130,6 @@ public:
      */
     void sampleColumn(int column, const MagnitudeRange &r);
     
-    /**
-     * Update a column in the cache, by frame.
-     */
-    void sampleColumn(const LayerGeometryProvider *v, sv_frame_t frame,
-		      const MagnitudeRange &r);
-    
 private:
     std::vector<MagnitudeRange> m_ranges;
     sv_frame_t m_startFrame;

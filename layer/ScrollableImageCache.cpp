@@ -17,7 +17,7 @@
 #include <iostream>
 using namespace std;
 
-#define DEBUG_SCROLLABLE_IMAGE_CACHE 1
+//#define DEBUG_SCROLLABLE_IMAGE_CACHE 1
 
 void
 ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
