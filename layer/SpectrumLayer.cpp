@@ -21,6 +21,7 @@
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
 #include "base/Pitch.h"
+#include "base/Strings.h"
 
 #include "ColourMapper.h"
 #include "PaintAssistant.h"
@@ -607,12 +608,12 @@ SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
     QString mindbstr;
     QString maxdbstr;
     if (mindb == AudioLevel::DB_FLOOR) {
-        mindbstr = tr("-Inf");
+        mindbstr = Strings::minus_infinity;
     } else {
         mindbstr = QString("%1").arg(lrint(mindb));
     }
     if (maxdb == AudioLevel::DB_FLOOR) {
-        maxdbstr = tr("-Inf");
+        maxdbstr = Strings::minus_infinity;
     } else {
         maxdbstr = QString("%1").arg(lrint(maxdb));
     }
