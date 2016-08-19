@@ -21,7 +21,6 @@
 #include "base/LogRange.h"
 #include "base/RangeMapper.h"
 #include "base/Pitch.h"
-#include "ColourDatabase.h"
 #include "view/View.h"
 
 #include "data/model/SparseTimeValueModel.h"
@@ -31,12 +30,14 @@
 #include "widgets/ListInputDialog.h"
 #include "widgets/TextAbbrev.h"
 
+#include "ColourDatabase.h"
 #include "ColourMapper.h"
 #include "PianoScale.h"
 #include "LinearNumericalScale.h"
 #include "LogNumericalScale.h"
 #include "LinearColourScale.h"
 #include "LogColourScale.h"
+#include "PaintAssistant.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -1214,10 +1215,10 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 if (haveRoom ||
                     (!haveNext &&
                      (pointCount == 0 || !italic))) {
-                    v->drawVisibleText(paint, x + 5, textY, label,
+                    PaintAssistant::drawVisibleText(v, paint, x + 5, textY, label,
                                        italic ?
-                                       View::OutlinedItalicText :
-                                       View::OutlinedText);
+                                       PaintAssistant::OutlinedItalicText :
+                                       PaintAssistant::OutlinedText);
                 }
             }
         }

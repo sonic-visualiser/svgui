@@ -22,7 +22,7 @@
 
 #include <cmath>
 
-#include "view/View.h"
+#include "LayerGeometryProvider.h"
 
 int
 LogColourScale::getWidth(LayerGeometryProvider *,

@@ -19,7 +19,7 @@
 #include <QFrame>
 #include <QProgressBar>
 
-#include "LayerGeometryProvider.h"
+#include "layer/LayerGeometryProvider.h"
 
 #include "base/ZoomConstraint.h"
 #include "base/PropertyContainer.h"
@@ -63,6 +63,12 @@ public:
      */
     virtual ~View();
 
+    /**
+     * Retrieve the id of this object. Views have their own unique
+     * ids, but ViewProxy objects share the id of their View.
+     */
+    int getId() const { return m_id; }
+    
     /**
      * Retrieve the first visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
@@ -108,6 +114,20 @@ public:
     sv_frame_t getFrameForX(int x) const;
 
     /**
+     * Return the closest pixel x-coordinate corresponding to a given
+     * view x-coordinate. Default is no scaling, ViewProxy handles
+     * scaling case.
+     */
+    int getXForViewX(int viewx) const { return viewx; }
+
+    /**
+     * Return the closest view x-coordinate corresponding to a given
+     * pixel x-coordinate. Default is no scaling, ViewProxy handles
+     * scaling case.
+     */
+    int getViewXForX(int x) const { return x; }
+
+    /**
      * Return the pixel y-coordinate corresponding to a given
      * frequency, if the frequency range is as specified.  This does
      * not imply any policy about layer frequency ranges, but it might
@@ -124,8 +144,8 @@ public:
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    double getFrequencyForY(int y, double minFreq, double maxFreq,
-			   bool logarithmic) const;
+    double getFrequencyForY(double y, double minFreq, double maxFreq,
+                            bool logarithmic) const;
 
     /**
      * Return the zoom level, i.e. the number of frames per pixel
@@ -246,9 +266,6 @@ public:
     virtual QColor getForeground() const;
     virtual QColor getBackground() const;
 
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const;
-
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const;
 
@@ -333,6 +350,8 @@ public:
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
 
+    void updatePaintRect(QRect r) { update(r); }
+    
     View *getView() { return this; } 
     const View *getView() const { return this; } 
     
@@ -351,7 +370,7 @@ signals:
                             bool globalScroll,
                             PlaybackFollowMode followMode);
 
-    void zoomLevelChanged(int, bool);
+    void zoomLevelChanged(int level, bool locked);
 
     void contextHelpChanged(const QString &);
 
@@ -384,6 +403,9 @@ public slots:
 
 protected:
     View(QWidget *, bool showProgress);
+
+    int m_id;
+    
     virtual void paintEvent(QPaintEvent *e);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }

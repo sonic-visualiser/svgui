@@ -289,6 +289,7 @@ LayerFactory::getLayerTypeForName(QString name)
     if (name == "timeruler") return TimeRuler;
     if (name == "timeinstants") return TimeInstants;
     if (name == "timevalues") return TimeValues;
+    if (name == "notes") return Notes;
     if (name == "flexinotes") return FlexiNotes;
     if (name == "regions") return Regions;
     if (name == "text") return Text;
