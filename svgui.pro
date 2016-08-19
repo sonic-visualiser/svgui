@@ -1,6 +1,9 @@
 
 TEMPLATE = lib
 
+INCLUDEPATH += ../vamp-plugin-sdk
+DEFINES += HAVE_VAMP HAVE_VAMPHOSTSDK
+
 exists(config.pri) {
     include(config.pri)
 }
@@ -22,7 +25,7 @@ exists(config.pri) {
         LIBS += -L../sv-dependency-builds/osx/lib
     }
 
-    DEFINES += HAVE_BZ2 HAVE_FFTW3 HAVE_FFTW3F HAVE_SNDFILE HAVE_SAMPLERATE HAVE_VAMP HAVE_VAMPHOSTSDK HAVE_RUBBERBAND HAVE_LIBLO HAVE_MAD HAVE_ID3TAG
+    DEFINES += HAVE_BZ2 HAVE_FFTW3 HAVE_FFTW3F HAVE_SNDFILE HAVE_SAMPLERATE HAVE_RUBBERBAND HAVE_LIBLO HAVE_MAD HAVE_ID3TAG
 }
 
 CONFIG += staticlib qt thread warn_on stl rtti exceptions c++11
@@ -36,14 +39,17 @@ OBJECTS_DIR = o
 MOC_DIR = o
 
 HEADERS += layer/Colour3DPlotLayer.h \
+	   layer/Colour3DPlotRenderer.h \
 	   layer/ColourDatabase.h \
 	   layer/ColourMapper.h \
+           layer/ColourScale.h \
            layer/ColourScaleLayer.h \
            layer/FlexiNoteLayer.h \
            layer/ImageLayer.h \
            layer/ImageRegionFinder.h \
            layer/Layer.h \
            layer/LayerFactory.h \
+           layer/LayerGeometryProvider.h \
            layer/LinearNumericalScale.h \
            layer/LogNumericalScale.h \
            layer/LinearColourScale.h \
@@ -52,6 +58,9 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/PaintAssistant.h \
            layer/PianoScale.h \
            layer/RegionLayer.h \
+           layer/RenderTimer.h \
+           layer/ScrollableImageCache.h \
+           layer/ScrollableMagRangeCache.h \
            layer/SingleColourLayer.h \
            layer/SliceableLayer.h \
            layer/SliceLayer.h \
@@ -64,8 +73,10 @@ HEADERS += layer/Colour3DPlotLayer.h \
            layer/VerticalScaleLayer.h \
            layer/WaveformLayer.h
 SOURCES += layer/Colour3DPlotLayer.cpp \
+	   layer/Colour3DPlotRenderer.cpp \
 	   layer/ColourDatabase.cpp \
 	   layer/ColourMapper.cpp \
+	   layer/ColourScale.cpp \
            layer/FlexiNoteLayer.cpp \
            layer/ImageLayer.cpp \
            layer/ImageRegionFinder.cpp \
@@ -79,6 +90,8 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/PaintAssistant.cpp \
            layer/PianoScale.cpp \
            layer/RegionLayer.cpp \
+           layer/ScrollableImageCache.cpp \
+           layer/ScrollableMagRangeCache.cpp \
            layer/SingleColourLayer.cpp \
            layer/SliceLayer.cpp \
            layer/SpectrogramLayer.cpp \
@@ -89,13 +102,16 @@ SOURCES += layer/Colour3DPlotLayer.cpp \
            layer/TimeValueLayer.cpp \
            layer/WaveformLayer.cpp
 
-HEADERS += view/Overview.h \
+HEADERS += view/AlignmentView.h \
+           view/Overview.h \
            view/Pane.h \
            view/PaneStack.h \
            view/View.h \
            view/ViewManager.h \
            view/ViewProxy.h
-SOURCES += view/Overview.cpp \
+           
+SOURCES += view/AlignmentView.cpp \
+           view/Overview.cpp \
            view/Pane.cpp \
            view/PaneStack.cpp \
            view/View.cpp \

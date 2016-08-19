@@ -15,7 +15,7 @@
 #ifndef VIEW_PROXY_H
 #define VIEW_PROXY_H
 
-#include "LayerGeometryProvider.h"
+#include "layer/LayerGeometryProvider.h"
 
 class ViewProxy : public LayerGeometryProvider
 {
@@ -23,6 +23,9 @@ public:
     ViewProxy(View *view, int scaleFactor) :
 	m_view(view), m_scaleFactor(scaleFactor) { }
 
+    virtual int getId() const {
+        return m_view->getId();
+    }
     virtual sv_frame_t getStartFrame() const {
 	return m_view->getStartFrame();
     }
@@ -42,6 +45,12 @@ public:
         sv_frame_t f1 = m_view->getFrameForX((x / m_scaleFactor) + 1);
         return f0 + ((f1 - f0) * (x % m_scaleFactor)) / m_scaleFactor;
     }
+    virtual int getXForViewX(int viewx) const {
+        return viewx * m_scaleFactor;
+    }
+    virtual int getViewXForX(int x) const {
+        return x / m_scaleFactor;
+    }
     virtual sv_frame_t getModelsStartFrame() const {
 	return m_view->getModelsStartFrame();
     }
@@ -54,14 +63,10 @@ public:
 	return m_scaleFactor *
 	    m_view->getYForFrequency(frequency, minFreq, maxFreq, logarithmic);
     }
-    virtual double getFrequencyForY(int y, double minFreq, double maxFreq,
+    virtual double getFrequencyForY(double y, double minFreq, double maxFreq,
 				    bool logarithmic) const {
-        double f0 = m_view->getFrequencyForY
+        return m_view->getFrequencyForY
             (y / m_scaleFactor, minFreq, maxFreq, logarithmic);
-        if (m_scaleFactor == 1) return f0;
-        double f1 = m_view->getFrequencyForY
-            ((y / m_scaleFactor) + 1, minFreq, maxFreq, logarithmic);
-        return f0 + ((f1 - f0) * (y % m_scaleFactor)) / m_scaleFactor;
     }
     virtual int getTextLabelHeight(const Layer *layer, QPainter &paint) const {
 	return m_scaleFactor * m_view->getTextLabelHeight(layer, paint);
@@ -119,16 +124,18 @@ public:
 	return m_view->shouldShowFeatureLabels();
     }
 
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const {
-	m_view->drawVisibleText(p, x, y, text, style);
-    }
-
     virtual void drawMeasurementRect(QPainter &p, const Layer *layer,
                                      QRect rect, bool focus) const {
 	m_view->drawMeasurementRect(p, layer, rect, focus);
     }
 
+    virtual void updatePaintRect(QRect r) {
+        m_view->update(r.x() / m_scaleFactor,
+                       r.y() / m_scaleFactor,
+                       r.width() / m_scaleFactor,
+                       r.height() / m_scaleFactor);
+    }
+    
     virtual View *getView() { return m_view; }
     virtual const View *getView() const { return m_view; }
 

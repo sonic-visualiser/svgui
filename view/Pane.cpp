@@ -25,6 +25,7 @@
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 #include "layer/TimeRulerLayer.h"
+#include "layer/PaintAssistant.h"
 
 // GF: added so we can propagate the mouse move event to the note layer for context handling.
 #include "layer/LayerFactory.h"
@@ -717,6 +718,10 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
 void
 Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
 {
+    if (omitLine && m_manager->getMainModelSampleRate() == 0) {
+        return;
+    }
+    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
@@ -773,14 +778,14 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
             int tw = paint.fontMetrics().width(text);
             int x = width()/2 - 4 - tw;
             
-            drawVisibleText(paint, x, y, text, OutlinedText);
+            PaintAssistant::drawVisibleText(this, paint, x, y, text, PaintAssistant::OutlinedText);
         }
         
         QString text = QString("%1").arg(m_centreFrame);
         
         int x = width()/2 + 4;
         
-        drawVisibleText(paint, x, y, text, OutlinedText);
+        PaintAssistant::drawVisibleText(this, paint, x, y, text, PaintAssistant::OutlinedText);
     }
 }
 
@@ -862,8 +867,8 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
         return;
     }
     
-    drawVisibleText(paint, m_scaleWidth + 5,
-                    paint.fontMetrics().ascent() + y, text, OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, m_scaleWidth + 5,
+                    paint.fontMetrics().ascent() + y, text, PaintAssistant::OutlinedText);
 
     paint.restore();
 }
@@ -901,8 +906,8 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
         return;
     }
     
-    drawVisibleText(paint, m_scaleWidth + 5,
-                    paint.fontMetrics().ascent() + y, text, OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, m_scaleWidth + 5,
+                    paint.fontMetrics().ascent() + y, text, PaintAssistant::OutlinedText);
 
     paint.restore();
 }
@@ -950,9 +955,9 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
                 paint.setPen(getForeground());
             }
             
-            drawVisibleText(paint, llx,
+            PaintAssistant::drawVisibleText(this, paint, llx,
                             lly - fontHeight + fontAscent,
-                            texts[i], OutlinedText);
+                            texts[i], PaintAssistant::OutlinedText);
 
             if (!pixmaps[i].isNull()) {
                 paint.drawPixmap(llx - fontAscent - 3,
@@ -1014,10 +1019,10 @@ Pane::drawEditingSelection(QPainter &paint)
             offsetText = tr("+%1").arg(offsetText);
         }
     }
-    drawVisibleText(paint, p0 + 2, fontAscent + fontHeight + 4, startText, OutlinedText);
-    drawVisibleText(paint, p1 + 2, fontAscent + fontHeight + 4, endText, OutlinedText);
-    drawVisibleText(paint, p0 + 2, fontAscent + fontHeight*2 + 4, offsetText, OutlinedText);
-    drawVisibleText(paint, p1 + 2, fontAscent + fontHeight*2 + 4, offsetText, OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, p0 + 2, fontAscent + fontHeight + 4, startText, PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, p1 + 2, fontAscent + fontHeight + 4, endText, PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, p0 + 2, fontAscent + fontHeight*2 + 4, offsetText, PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, p1 + 2, fontAscent + fontHeight*2 + 4, offsetText, PaintAssistant::OutlinedText);
     
     //!!! duplicating display policy with View::drawSelections
     
@@ -1080,9 +1085,9 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
     if (x < pbw + 5) x = pbw + 5;
 
     if (r.x() < x + paint.fontMetrics().width(desc)) {
-        drawVisibleText(paint, x,
+        PaintAssistant::drawVisibleText(this, paint, x,
                         height() - fontHeight + fontAscent - 6,
-                        desc, OutlinedText);
+                        desc, PaintAssistant::OutlinedText);
     }
 }
 
@@ -1943,7 +1948,7 @@ Pane::dragTopLayer(QMouseEvent *e)
          true, // can move horiz
          canTopLayerMoveVertical(), // can move vert
          canTopLayerMoveVertical() || (m_manager && m_manager->isPlaying()), // resist horiz
-         !(m_manager && m_manager->isPlaying())); // resist vert
+         true); // resist vert
 
     if (m_dragMode == HorizontalDrag ||
         m_dragMode == FreeDrag) {
@@ -2312,7 +2317,7 @@ Pane::wheelEvent(QWheelEvent *e)
             m_pendingWheelAngle = 0;
             return;
         }
-        
+
         while (abs(m_pendingWheelAngle) >= 120) {
 
             int sign = (m_pendingWheelAngle < 0 ? -1 : 1);

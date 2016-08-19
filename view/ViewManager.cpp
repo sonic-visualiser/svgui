@@ -741,3 +741,4 @@ ViewManager::scalePixelSize(int pixels)
     if (pixels != 0 && scaled == 0) scaled = 1;
     return scaled;
 }
+

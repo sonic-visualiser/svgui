@@ -13,17 +13,22 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SPECTROGRAM_LAYER_H_
-#define _SPECTROGRAM_LAYER_H_
+#ifndef SPECTROGRAM_LAYER_H
+#define SPECTROGRAM_LAYER_H
 
 #include "SliceableLayer.h"
 #include "base/Window.h"
+#include "base/MagnitudeRange.h"
 #include "base/RealTime.h"
 #include "base/Thread.h"
 #include "base/PropertyContainer.h"
 #include "data/model/PowerOfSqrtTwoZoomConstraint.h"
 #include "data/model/DenseTimeValueModel.h"
 #include "data/model/FFTModel.h"
+
+#include "VerticalBinLayer.h"
+#include "ColourScale.h"
+#include "Colour3DPlotRenderer.h"
 
 #include <QMutex>
 #include <QWaitCondition>
@@ -38,13 +43,12 @@ class QTimer;
 class FFTModel;
 class Dense3DModelPeakCache;
 
-
 /**
  * SpectrogramLayer represents waveform data (obtained from a
  * DenseTimeValueModel) in spectrogram form.
  */
 
-class SpectrogramLayer : public SliceableLayer,
+class SpectrogramLayer : public VerticalBinLayer,
 			 public PowerOfSqrtTwoZoomConstraint
 {
     Q_OBJECT
@@ -110,9 +114,6 @@ public:
     void setWindowType(WindowType type);
     WindowType getWindowType() const;
 
-    void setZeroPadLevel(int level);
-    int getZeroPadLevel() const;
-
     /**
      * Set the gain multiplier for sample values in this view.
      * The default is 1.0.
@@ -124,7 +125,7 @@ public:
      * Set the threshold for sample values to qualify for being shown
      * in the FFT, in voltage units.
      *
-     * The default is 0.0.
+     * The default is 10^-8 (-80dB).
      */
     void setThreshold(float threshold);
     float getThreshold() const;
@@ -135,56 +136,44 @@ public:
     void setMaxFrequency(int); // 0 -> no maximum
     int getMaxFrequency() const;
 
-    enum ColourScale {
-	LinearColourScale,
-	MeterColourScale,
-        dBSquaredColourScale,
-	dBColourScale,
-	PhaseColourScale
-    };
+    /**
+     * Specify the scale for sample levels.  See ColourScale and
+     * WaveformLayer for comparison and details of meter and dB
+     * scaling.  The default is LogColourScale.
+     */
+    void setColourScale(ColourScaleType);
+    ColourScaleType getColourScale() const;
 
     /**
-     * Specify the scale for sample levels.  See WaveformLayer for
-     * details of meter and dB scaling.  The default is dBColourScale.
+     * Specify multiple factor for colour scale. This is 2.0 for
+     * log-power spectrogram and 1.0 otherwise.
      */
-    void setColourScale(ColourScale);
-    ColourScale getColourScale() const;
-
-    enum FrequencyScale {
-	LinearFrequencyScale,
-	LogFrequencyScale
-    };
+    void setColourScaleMultiple(double);
+    double getColourScaleMultiple() const;
     
     /**
      * Specify the scale for the y axis.
      */
-    void setFrequencyScale(FrequencyScale);
-    FrequencyScale getFrequencyScale() const;
+    void setBinScale(BinScale);
+    BinScale getBinScale() const;
 
-    enum BinDisplay {
-	AllBins,
-	PeakBins,
-	PeakFrequencies
-    };
-    
     /**
      * Specify the processing of frequency bins for the y axis.
      */
     void setBinDisplay(BinDisplay);
     BinDisplay getBinDisplay() const;
 
-    enum Normalization {
-        NoNormalization,
-        NormalizeColumns,
-        NormalizeVisibleArea,
-        NormalizeHybrid
-    };
+    /**
+     * Specify the normalization mode for individual columns.
+     */
+    void setNormalization(ColumnNormalization);
+    ColumnNormalization getNormalization() const;
 
     /**
-     * Specify the normalization mode for bin values.
+     * Specify whether to normalize the visible area.
      */
-    void setNormalization(Normalization);
-    Normalization getNormalization() const;
+    void setNormalizeVisibleArea(bool);
+    bool getNormalizeVisibleArea() const;
 
     /**
      * Specify the colour map. See ColourMapper for the colour map
@@ -212,6 +201,10 @@ public:
     double getYForFrequency(const LayerGeometryProvider *v, double frequency) const;
     double getFrequencyForY(const LayerGeometryProvider *v, int y) const;
 
+    //!!! VerticalBinLayer methods. Note overlap with get*BinRange()
+    double getYForBin(const LayerGeometryProvider *, double bin) const;
+    double getBinForY(const LayerGeometryProvider *, double y) const;
+    
     virtual int getCompletion(LayerGeometryProvider *v) const;
     virtual QString getError(LayerGeometryProvider *v) const;
 
@@ -250,83 +243,37 @@ protected:
     const DenseTimeValueModel *m_model; // I do not own this
 
     int                 m_channel;
-    int              m_windowSize;
+    int                 m_windowSize;
     WindowType          m_windowType;
-    int              m_windowHopLevel;
-    int              m_zeroPadLevel;
-    int              m_fftSize;
+    int                 m_windowHopLevel;
     float               m_gain;
     float               m_initialGain;
     float               m_threshold;
     float               m_initialThreshold;
     int                 m_colourRotation;
     int                 m_initialRotation;
-    int              m_minFrequency;
-    int              m_maxFrequency;
-    int              m_initialMaxFrequency;
-    ColourScale         m_colourScale;
+    int                 m_minFrequency;
+    int                 m_maxFrequency;
+    int                 m_initialMaxFrequency;
+    ColourScaleType     m_colourScale;
+    double              m_colourScaleMultiple;
     int                 m_colourMap;
     QColor              m_crosshairColour;
-    FrequencyScale      m_frequencyScale;
+    BinScale            m_binScale;
     BinDisplay          m_binDisplay;
-    Normalization       m_normalization;
+    ColumnNormalization m_normalization; // of individual columns
+    bool                m_normalizeVisibleArea;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
 
     mutable bool        m_haveDetailedScale;
-    mutable int         m_lastPaintBlockWidth;
-    mutable RealTime    m_lastPaintTime;
 
-    enum { NO_VALUE = 0 }; // colour index for unused pixels
-
-    class Palette
-    {
-    public:
-        QColor getColour(unsigned char index) const {
-            return m_colours[index];
-        }
-    
-        void setColour(unsigned char index, QColor colour) {
-            m_colours[index] = colour;
-        }
-
-    private:
-        QColor m_colours[256];
-    };
-
-    Palette m_palette;
-
-    /**
-     * ImageCache covers the area of the view, at view resolution.
-     * Not all of it is necessarily valid at once (it is refreshed
-     * in parts when scrolling, for example).
-     */
-    struct ImageCache
-    {
-        QImage image;
-        QRect validArea;
-        sv_frame_t startFrame;
-        int zoomLevel;
-    };
-    typedef std::map<const View *, ImageCache> ViewImageCache;
-    void invalidateImageCaches();
-    void invalidateImageCaches(sv_frame_t startFrame, sv_frame_t endFrame);
-    mutable ViewImageCache m_imageCaches;
-
-    /**
-     * When painting, we draw directly onto the draw buffer and then
-     * copy this to the part of the image cache that needed refreshing
-     * before copying the image cache onto the window.  (Remind me why
-     * we don't draw directly onto the cache?)
-     */
-    mutable QImage m_drawBuffer;
+    static std::pair<ColourScaleType, double> convertToColourScale(int value);
+    static int convertFromColourScale(ColourScaleType type, double multiple);
+    static std::pair<ColumnNormalization, bool> convertToColumnNorm(int value);
+    static int convertFromColumnNorm(ColumnNormalization norm, bool visible);
 
     bool m_exiting;
-
-    void initialisePalette();
-    void rotatePalette(int distance);
-
-    unsigned char getDisplayValue(LayerGeometryProvider *v, double input) const;
 
     int getColourScaleWidth(QPainter &) const;
 
@@ -335,15 +282,8 @@ protected:
     double getEffectiveMinFrequency() const;
     double getEffectiveMaxFrequency() const;
 
-    // Note that the getYBin... methods return the nominal bin in the
-    // un-smoothed spectrogram.  This is not necessarily the same bin
-    // as is pulled from the spectrogram and drawn at the given
-    // position, if the spectrogram has oversampling smoothing.  Use
-    // getSmoothedYBinRange to obtain that.
-
     bool getXBinRange(LayerGeometryProvider *v, int x, double &windowMin, double &windowMax) const;
     bool getYBinRange(LayerGeometryProvider *v, int y, double &freqBinMin, double &freqBinMax) const;
-    bool getSmoothedYBinRange(LayerGeometryProvider *v, int y, double &freqBinMin, double &freqBinMax) const;
 
     bool getYBinSourceRange(LayerGeometryProvider *v, int y, double &freqMin, double &freqMax) const;
     bool getAdjustedYBinSourceRange(LayerGeometryProvider *v, int x, int y,
@@ -359,83 +299,38 @@ protected:
         else return m_windowSize / (1 << (m_windowHopLevel - 1));
     }
 
-    int getZeroPadLevel(const LayerGeometryProvider *v) const;
-    int getFFTSize(const LayerGeometryProvider *v) const;
-    FFTModel *getFFTModel(const LayerGeometryProvider *v) const;
-    Dense3DModelPeakCache *getPeakCache(const LayerGeometryProvider *v) const;
-    void invalidateFFTModels();
+    int getFFTOversampling() const;
+    int getFFTSize() const; // m_windowSize * getFFTOversampling()
 
-    typedef std::map<const View *, FFTModel *> ViewFFTMap;
-    typedef std::map<const View *, Dense3DModelPeakCache *> PeakCacheMap;
-    mutable ViewFFTMap m_fftModels;
-    mutable PeakCacheMap m_peakCaches;
-    mutable Model *m_sliceableModel;
+    mutable FFTModel *m_fftModel; //!!! should not be mutable, see getFFTModel()?
+    mutable Dense3DModelPeakCache *m_peakCache;
+    const int m_peakCacheDivisor;
 
-    class MagnitudeRange {
-    public:
-        MagnitudeRange() : m_min(0), m_max(0) { }
-        bool operator==(const MagnitudeRange &r) {
-            return r.m_min == m_min && r.m_max == m_max;
-        }
-        bool isSet() const { return (m_min != 0.f || m_max != 0.f); }
-        void set(float min, float max) {
-            m_min = min;
-            m_max = max;
-            if (m_max < m_min) m_max = m_min;
-        }
-        bool sample(float f) {
-            bool changed = false;
-            if (isSet()) {
-                if (f < m_min) { m_min = f; changed = true; }
-                if (f > m_max) { m_max = f; changed = true; }
-            } else {
-                m_max = m_min = f;
-                changed = true;
-            }
-            return changed;
-        }            
-        bool sample(const MagnitudeRange &r) {
-            bool changed = false;
-            if (isSet()) {
-                if (r.m_min < m_min) { m_min = r.m_min; changed = true; }
-                if (r.m_max > m_max) { m_max = r.m_max; changed = true; }
-            } else {
-                m_min = r.m_min;
-                m_max = r.m_max;
-                changed = true;
-            }
-            return changed;
-        }            
-        float getMin() const { return m_min; }
-        float getMax() const { return m_max; }
-    private:
-        float m_min;
-        float m_max;
-    };
-
-    typedef std::map<const LayerGeometryProvider *, MagnitudeRange> ViewMagMap;
+    typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
-    mutable std::vector<MagnitudeRange> m_columnMags;
+    mutable ViewMagMap m_lastRenderedMags; // when in normalizeVisibleArea mode
     void invalidateMagnitudes();
-    bool updateViewMagnitudes(LayerGeometryProvider *v) const;
-    bool paintDrawBuffer(LayerGeometryProvider *v, int w, int h,
-                         const std::vector<int> &binforx,
-                         const std::vector<double> &binfory,
-                         bool usePeaksCache,
-                         MagnitudeRange &overallMag,
-                         bool &overallMagChanged) const;
-    bool paintDrawBufferPeakFrequencies(LayerGeometryProvider *v, int w, int h,
-                                        const std::vector<int> &binforx,
-                                        int minbin,
-                                        int maxbin,
-                                        double displayMinFreq,
-                                        double displayMaxFreq,
-                                        bool logarithmic,
-                                        MagnitudeRange &overallMag,
-                                        bool &overallMagChanged) const;
 
-    virtual void updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const;
-    virtual void setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const;
+    typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
+    mutable ViewRendererMap m_renderers;
+    Colour3DPlotRenderer *getRenderer(LayerGeometryProvider *) const;
+    void invalidateRenderers();
+    
+    FFTModel *getFFTModel() const;
+    Dense3DModelPeakCache *getPeakCache() const;
+    void invalidateFFTModel();
+
+    void paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+
+    void paintDetailedScale(LayerGeometryProvider *v,
+                            QPainter &paint, QRect rect) const;
+    void paintDetailedScalePhase(LayerGeometryProvider *v,
+                                 QPainter &paint, QRect rect) const;
+    
+    virtual void updateMeasureRectYCoords(LayerGeometryProvider *v,
+                                          const MeasureRect &r) const;
+    virtual void setMeasureRectYCoord(LayerGeometryProvider *v,
+                                      MeasureRect &r, bool start, int y) const;
 };
 
 #endif

@@ -20,7 +20,7 @@
 
 #include <cmath>
 
-#include "view/LayerGeometryProvider.h"
+#include "LayerGeometryProvider.h"
 
 int
 LinearColourScale::getWidth(LayerGeometryProvider *,

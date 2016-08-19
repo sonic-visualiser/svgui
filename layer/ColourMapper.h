@@ -23,23 +23,23 @@
 /**
  * A class for mapping intensity values onto various colour maps.
  */
-
-class ColourMapper : public QObject
+class ColourMapper
 {
-    Q_OBJECT
-
 public:
     ColourMapper(int map, double minValue, double maxValue);
-    virtual ~ColourMapper();
+    ~ColourMapper();
+
+    ColourMapper(const ColourMapper &) = default;
+    ColourMapper &operator=(const ColourMapper &) = default;
 
     enum StandardMap {
-        DefaultColours,
+        Green,
         Sunset,
         WhiteOnBlack,
         BlackOnWhite,
-        RedOnBlue,
-        YellowOnBlack,
-        BlueOnBlack,
+        Cherry,
+        Wasp,
+        Ice,
         FruitSalad,
         Banded,
         Highlight,
