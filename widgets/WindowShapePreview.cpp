@@ -68,7 +68,7 @@ WindowShapePreview::updateLabels()
     
     path = QPainterPath();
 
-    float *acc = new float(w);
+    float *acc = new float[w];
     for (int i = 0; i < w; ++i) acc[i] = 0.f;
     for (int j = 0; j < 3; ++j) {
         for (int i = 0; i < step * 2; ++i) {
