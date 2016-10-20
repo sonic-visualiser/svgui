@@ -37,10 +37,6 @@
 
 #include <cassert>
 
-#ifndef __GNUC__
-#include <alloca.h>
-#endif
-
 using std::vector;
 
 //#define DEBUG_COLOUR_3D_PLOT_LAYER_PAINT 1
@@ -609,7 +605,7 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 }
 
 bool
-Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider */* v */) const
+Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider * /* v */) const
 {
     if (m_normalizeVisibleArea) {
         return false;

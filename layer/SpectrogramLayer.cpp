@@ -48,10 +48,6 @@
 #include <cassert>
 #include <cmath>
 
-#ifndef __GNUC__
-#include <alloca.h>
-#endif
-
 //#define DEBUG_SPECTROGRAM 1
 //#define DEBUG_SPECTROGRAM_REPAINT 1
 

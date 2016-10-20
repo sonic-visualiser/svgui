@@ -17,8 +17,10 @@ exists(config.pri) {
         LIBS += -L../sv-dependency-builds/win32-mingw/lib
     }
     win32-msvc* {
-        INCLUDEPATH += ../sv-dependency-builds/win32-msvc/include
-        LIBS += -L../sv-dependency-builds/win32-msvc/lib
+        # We actually expect MSVC to be used only for 64-bit builds,
+        # though the qmake spec is still called win32-msvc*
+        INCLUDEPATH += ../sv-dependency-builds/win64-msvc/include
+        LIBS += -L../sv-dependency-builds/win64-msvc/lib
     }
     macx* {
         INCLUDEPATH += ../sv-dependency-builds/osx/include
@@ -26,6 +28,11 @@ exists(config.pri) {
     }
 
     DEFINES += HAVE_BZ2 HAVE_FFTW3 HAVE_FFTW3F HAVE_SNDFILE HAVE_SAMPLERATE HAVE_RUBBERBAND HAVE_LIBLO HAVE_MAD HAVE_ID3TAG
+
+    win32-msvc* {
+        DEFINES += NOMINMAX _USE_MATH_DEFINES
+        DEFINES -= HAVE_LIBLO
+    }
 }
 
 CONFIG += staticlib qt thread warn_on stl rtti exceptions c++11
