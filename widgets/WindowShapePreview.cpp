@@ -47,13 +47,13 @@ WindowShapePreview::~WindowShapePreview()
 void
 WindowShapePreview::updateLabels()
 {
-    float scaleRatio = QFontMetrics(font()).height() / 14.f;
+    float scaleRatio = float(QFontMetrics(font()).height()) / 14.f;
     if (scaleRatio < 1.f) scaleRatio = 1.f;
 
     int step = int(24 * scaleRatio);
-    float peak = int(48 * scaleRatio);
+    float peak = float(48 * scaleRatio);
 
-    int w = step * 4, h = (peak * 4) / 3;
+    int w = step * 4, h = int((peak * 4) / 3);
 
     WindowType type = m_windowType;
     Window<float> windower = Window<float>(type, step * 2);
