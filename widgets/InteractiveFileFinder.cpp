@@ -37,7 +37,6 @@ InteractiveFileFinder::InteractiveFileFinder() :
     m_lastLocatedLocation(""),
     m_parent(0)
 {
-    SVDEBUG << "Registering interactive file finder" << endl;
     FileFinder::registerFileFinder(this);
 }
 
