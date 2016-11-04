@@ -302,7 +302,8 @@ private:
 
     RenderType decideRenderType(const LayerGeometryProvider *) const;
 
-    ColumnOp::Column getColumn(int sx, int minbin, int nbins) const;
+    ColumnOp::Column getColumn(int sx, int minbin, int nbins,
+                               bool usePeaksCache) const;
 };
 
 #endif
