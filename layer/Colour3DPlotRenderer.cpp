@@ -286,7 +286,8 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 }
 
 ColumnOp::Column
-Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins) const
+Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
+                                bool usePeaksCache) const
 {
     // order:
     // get column -> scale -> normalise -> record extents ->
@@ -307,7 +308,9 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins) const
 
     } else {
                     
-        ColumnOp::Column fullColumn = m_sources.source->getColumn(sx);
+        ColumnOp::Column fullColumn =
+            (usePeaksCache ? m_sources.peaks : m_sources.source)->
+            getColumn(sx);
                 
         column = vector<float>(fullColumn.data() + minbin,
                                fullColumn.data() + minbin + nbins);
@@ -384,7 +387,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             // peak pick -> distribute/interpolate -> apply display gain
 
             // this does the first three:
-            preparedColumn = getColumn(sx, minbin, nbins);
+            preparedColumn = getColumn(sx, minbin, nbins, false);
             
             magRange.sample(preparedColumn);
 
@@ -784,10 +787,6 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         // source column index
         
         ++columnCount;
-
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
-        cerr << "x = " << x << ", binforx[x] = " << binforx[x] << endl;
-#endif
         
         if (binforx[x] < 0) continue;
 
@@ -798,14 +797,14 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         if (sx0 < 0) continue;
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+        cerr << "x = " << x << ", binforx[x] = " << binforx[x] << ", sx range " << sx0 << " -> " << sx1 << endl;
+#endif
+
         vector<float> pixelPeakColumn;
         MagnitudeRange magRange;
         
         for (int sx = sx0; sx < sx1; ++sx) {
-
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
-            cerr << "sx = " << sx << endl;
-#endif
 
             if (sx < 0 || sx >= modelWidth) {
                 continue;
@@ -818,7 +817,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 // peak pick -> distribute/interpolate -> apply display gain
 
                 // this does the first three:
-                ColumnOp::Column column = getColumn(sx, minbin, nbins);
+                ColumnOp::Column column = getColumn(sx, minbin, nbins,
+                                                    usePeaksCache);
 
                 magRange.sample(column);
                 
@@ -960,7 +960,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             }
 
             if (sx != psx) {
-                preparedColumn = getColumn(sx, minbin, nbins);
+                preparedColumn = getColumn(sx, minbin, nbins, false);
                 magRange.sample(preparedColumn);
                 psx = sx;
             }
