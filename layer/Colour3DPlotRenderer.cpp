@@ -758,6 +758,11 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
     int nbins  = int(binfory[h-1]) - minbin + 1;
     if (minbin + nbins > sh) nbins = sh - minbin;
+
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    cerr << "minbin = " << minbin << ", nbins = " << nbins << ", last binfory = "
+         << binfory[h-1] << " (model height " << sh << ")" << endl;
+#endif
     
     int psx = -1;
 
@@ -821,7 +826,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                                                     usePeaksCache);
 
                 magRange.sample(column);
-                
+
                 if (m_params.binDisplay == BinDisplay::PeakBins) {
                     column = ColumnOp::peakPick(column);
                 }
