@@ -1421,7 +1421,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         sources.verticalBinLayer = this;
         sources.fft = getFFTModel();
         sources.source = sources.fft;
-        sources.peaks = getPeakCache();
+        sources.peakCache = getPeakCache();
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;

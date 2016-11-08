@@ -287,7 +287,7 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 
 ColumnOp::Column
 Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
-                                bool usePeaksCache) const
+                                bool usePeakCache) const
 {
     // order:
     // get column -> scale -> normalise -> record extents ->
@@ -309,7 +309,7 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
     } else {
                     
         ColumnOp::Column fullColumn =
-            (usePeaksCache ? m_sources.peaks : m_sources.source)->
+            (usePeakCache ? m_sources.peakCache : m_sources.source)->
             getColumn(sx);
                 
         column = vector<float>(fullColumn.data() + minbin,
@@ -506,7 +506,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     vector<int> binforx(repaintWidth);
     vector<double> binfory(h);
     
-    bool usePeaksCache = false;
+    bool usePeakCache = false;
     int binsPerPeak = 1;
     int zoomLevel = v->getZoomLevel();
     int binResolution = model->getResolution();
@@ -517,25 +517,21 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
         binforx[x] = int(s0 + 0.0001);
     }
 
-    if (m_sources.peaks) { // peaks cache exists
-
-        binsPerPeak = m_sources.peaks->getColumnsPerPeak();
-        usePeaksCache = (binResolution * binsPerPeak) < zoomLevel;
-        
+    if (m_sources.peakCache) {
+        binsPerPeak = m_sources.peakCache->getColumnsPerPeak();
+        usePeakCache = (zoomLevel >= binResolution * binsPerPeak);
         if (m_params.colourScale.getScale() ==
             ColourScaleType::Phase) {
-            usePeaksCache = false;
+            usePeakCache = false;
         }
     }
 
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
-    cerr << "[PIX] zoomLevel = " << zoomLevel
-         << ", binResolution " << binResolution 
-         << ", binsPerPeak " << binsPerPeak
-         << ", peak cache " << m_sources.peaks
-         << ", usePeaksCache = " << usePeaksCache
-         << endl;
-#endif
+    SVDEBUG << "[PIX] zoomLevel = " << zoomLevel
+            << ", binResolution " << binResolution 
+            << ", binsPerPeak " << binsPerPeak
+            << ", peak cache " << m_sources.peakCache
+            << ", usePeakCache = " << usePeakCache
+            << endl;
     
     for (int y = 0; y < h; ++y) {
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
@@ -557,7 +553,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
                                          h,
                                          binforx,
                                          binfory,
-                                         usePeaksCache,
+                                         usePeakCache,
                                          rightToLeft,
                                          timeConstrained);
     }
@@ -652,10 +648,8 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         binforx[x] = int(leftBoundaryFrame / binResolution) + x;
     }
 
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
-    cerr << "[BIN] binResolution " << binResolution 
-         << endl;
-#endif
+    SVDEBUG << "[BIN] binResolution " << binResolution 
+            << endl;
     
     for (int y = 0; y < h; ++y) {
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
@@ -731,13 +725,13 @@ int
 Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                                        const vector<int> &binforx,
                                        const vector<double> &binfory,
-                                       bool usePeaksCache,
+                                       bool usePeakCache,
                                        bool rightToLeft,
                                        bool timeConstrained)
 {
     // Callers must have checked that the appropriate subset of
     // Sources data members are set for the supplied flags (e.g. that
-    // peaks model exists if usePeaksCache)
+    // peakCache model exists if usePeakCache)
     
     RenderTimer timer(timeConstrained ?
                       RenderTimer::FastRender :
@@ -745,9 +739,9 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
     int divisor = 1;
     const DenseThreeDimensionalModel *sourceModel = m_sources.source;
-    if (usePeaksCache) {
-        divisor = m_sources.peaks->getColumnsPerPeak();
-        sourceModel = m_sources.peaks;
+    if (usePeakCache) {
+        divisor = m_sources.peakCache->getColumnsPerPeak();
+        sourceModel = m_sources.peakCache;
     }
 
     int sh = sourceModel->getHeight();
@@ -823,7 +817,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
                 // this does the first three:
                 ColumnOp::Column column = getColumn(sx, minbin, nbins,
-                                                    usePeaksCache);
+                                                    usePeakCache);
 
                 magRange.sample(column);
 
