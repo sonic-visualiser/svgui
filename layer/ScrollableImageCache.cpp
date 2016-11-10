@@ -14,6 +14,8 @@
 
 #include "ScrollableImageCache.h"
 
+#include "base/HitCount.h"
+
 #include <iostream>
 using namespace std;
 
@@ -23,6 +25,8 @@ void
 ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
                                sv_frame_t newStartFrame)
 {
+    static HitCount count("ScrollableImageCache: scrolling");
+    
     int dx = (v->getXForFrame(m_startFrame) -
 	      v->getXForFrame(newStartFrame));
     
@@ -33,12 +37,14 @@ ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
 
     if (m_startFrame == newStartFrame) {
 	// haven't moved
+        count.hit();
         return;
     }
 	
     m_startFrame = newStartFrame;
 	
     if (!isValid()) {
+        count.miss();
 	return;
     }
 
@@ -46,14 +52,18 @@ ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
 
     if (dx == 0) {
 	// haven't moved visibly (even though start frame may have changed)
+        count.hit();
 	return;
     }
 
     if (dx <= -w || dx >= w) {
 	// scrolled entirely off
 	invalidate();
+        count.miss();
 	return;
     }
+
+    count.partial();
 	
     // dx is in range, cache is scrollable
 
