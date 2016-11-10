@@ -14,6 +14,8 @@
 
 #include "ScrollableMagRangeCache.h"
 
+#include "base/HitCount.h"
+
 #include <iostream>
 using namespace std;
 
@@ -23,6 +25,8 @@ void
 ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
 				  sv_frame_t newStartFrame)
 {	
+    static HitCount count("ScrollableMagRangeCache: scrolling");
+    
     int dx = (v->getXForFrame(m_startFrame) -
 	      v->getXForFrame(newStartFrame));
 
@@ -33,6 +37,7 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
 
     if (m_startFrame == newStartFrame) {
 	// haven't moved
+        count.hit();
         return;
     }
     
@@ -40,6 +45,7 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
 
     if (dx == 0) {
 	// haven't moved visibly (even though start frame may have changed)
+        count.hit();
 	return;
     }
 	
@@ -48,8 +54,11 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
     if (dx <= -w || dx >= w) {
 	// scrolled entirely off
 	invalidate();
+        count.miss();
 	return;
     }
+
+    count.partial();
 	
     // dx is in range, cache is scrollable
 

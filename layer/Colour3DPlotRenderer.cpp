@@ -289,6 +289,8 @@ ColumnOp::Column
 Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
                                 bool usePeakCache) const
 {
+    Profiler profiler("Colour3DPlotRenderer::getColumn");
+    
     // order:
     // get column -> scale -> normalise -> record extents ->
     // peak pick -> distribute/interpolate -> apply display gain
@@ -737,6 +739,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                       RenderTimer::FastRender :
                       RenderTimer::NoTimeout);
 
+    Profiler profiler("Colour3DPlotRenderer::renderDrawBuffer");
+    
     int divisor = 1;
     const DenseThreeDimensionalModel *sourceModel = m_sources.source;
     if (usePeakCache) {
@@ -977,7 +981,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         }
 
         if (!pixelPeakColumn.empty()) {
-            
+
             for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
                  pi != peakfreqs.end(); ++pi) {
 
