@@ -31,7 +31,7 @@
 
 #include <vector>
 
-//#define DEBUG_COLOUR_PLOT_REPAINT 1
+#define DEBUG_COLOUR_PLOT_REPAINT 1
 
 using namespace std;
 
@@ -578,6 +578,66 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     }
 }
 
+QImage
+Colour3DPlotRenderer::scaleDrawBufferImage(QImage image,
+                                           int targetWidth,
+                                           int targetHeight) const
+{
+    int sourceWidth = image.width();
+    int sourceHeight = image.height();
+
+    // We can only do this if we're making the image larger --
+    // otherwise peaks may be lost. So this should be called only when
+    // rendering in DrawBufferBinResolution mode. Whenever the bin
+    // size is smaller than the pixel size, in either x or y axis, we
+    // should be using DrawBufferPixelResolution mode instead
+    
+    if (targetWidth < sourceWidth || targetHeight < sourceHeight) {
+        throw std::logic_error("Colour3DPlotRenderer::scaleDrawBufferImage: Can only use this function when making the image larger; should be rendering DrawBufferPixelResolution instead");
+    }
+
+    if (sourceWidth <= 0 || sourceHeight <= 0) {
+        throw std::logic_error("Colour3DPlotRenderer::scaleDrawBufferImage: Source image is empty");
+    }
+
+    if (targetWidth <= 0 || targetHeight <= 0) {
+        throw std::logic_error("Colour3DPlotRenderer::scaleDrawBufferImage: Target image is empty");
+    }        
+
+    // This function exists because of some unpredictable behaviour
+    // from Qt when scaling images with FastTransformation mode. We
+    // continue to use Qt's scaler for SmoothTransformation but let's
+    // bring the non-interpolated version "in-house" so we know what
+    // it's really doing.
+    
+    if (m_params.interpolate) {
+        return image.scaled(targetWidth, targetHeight,
+                            Qt::IgnoreAspectRatio,
+                            Qt::SmoothTransformation);
+    }
+    
+    // Same format as the target cache
+    QImage target(targetWidth, targetHeight, QImage::Format_ARGB32_Premultiplied);
+
+    for (int y = 0; y < targetHeight; ++y) {
+
+        QRgb *targetLine = reinterpret_cast<QRgb *>(target.scanLine(y));
+        
+        int sy = int((uint64_t(y) * sourceHeight) / targetHeight);
+        if (sy == sourceHeight) --sy;
+
+        for (int x = 0; x < targetWidth; ++x) {
+
+            int sx = int((uint64_t(x) * sourceWidth) / targetWidth);
+            if (sx == sourceWidth) --sx;
+            
+            targetLine[x] = image.pixel(sx, sy);
+        }
+    }
+
+    return target;
+}
+
 void
 Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
                                                  int x0, int repaintWidth)
@@ -650,8 +710,7 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         binforx[x] = int(leftBoundaryFrame / binResolution) + x;
     }
 
-    SVDEBUG << "[BIN] binResolution " << binResolution 
-            << endl;
+    SVDEBUG << "[BIN] binResolution " << binResolution << endl;
     
     for (int y = 0; y < h; ++y) {
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
@@ -675,12 +734,9 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
          << " to " << (scaledRight - scaledLeft) << " (nb drawBufferWidth = "
          << drawBufferWidth << ")" << endl;
 #endif
-    
-    QImage scaled = m_drawBuffer.scaled
-        (scaledRight - scaledLeft, h,
-         Qt::IgnoreAspectRatio, (m_params.interpolate ?
-                                 Qt::SmoothTransformation :
-                                 Qt::FastTransformation));
+
+    QImage scaled = scaleDrawBufferImage
+        (m_drawBuffer, scaledRight - scaledLeft, h);
             
     int scaledLeftCrop = v->getXForFrame(leftCropFrame);
     int scaledRightCrop = v->getXForFrame(rightCropFrame);
@@ -744,8 +800,11 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     int divisor = 1;
     const DenseThreeDimensionalModel *sourceModel = m_sources.source;
     if (usePeakCache) {
+        cerr << "usePeakCache is true, with divisor " << divisor << endl;
         divisor = m_sources.peakCache->getColumnsPerPeak();
         sourceModel = m_sources.peakCache;
+    } else {
+        cerr << "usePeakCache is false" << endl;
     }
 
     int sh = sourceModel->getHeight();
@@ -801,7 +860,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-        cerr << "x = " << x << ", binforx[x] = " << binforx[x] << ", sx range " << sx0 << " -> " << sx1 << endl;
+//        cerr << "x = " << x << ", binforx[x] = " << binforx[x] << ", sx range " << sx0 << " -> " << sx1 << endl;
 #endif
 
         vector<float> pixelPeakColumn;
