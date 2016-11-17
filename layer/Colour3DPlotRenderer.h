@@ -302,9 +302,6 @@ private:
 
     RenderType decideRenderType(const LayerGeometryProvider *) const;
 
-    QImage scaleDrawBufferImage(QImage source, int targetWidth, int targetHeight)
-        const;
-    
     ColumnOp::Column getColumn(int sx, int minbin, int nbins,
                                bool usePeakCache) const;
 };
