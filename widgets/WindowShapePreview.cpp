@@ -22,9 +22,13 @@
 #include <QFont>
 #include <QString>
 
-#include "data/fft/FFTapi.h"
+#include <bqfft/FFT.h>
 
+#include <vector>
+#include <complex>
 #include <iostream>
+
+using namespace std;
 
 
 WindowShapePreview::WindowShapePreview(QWidget *parent) :
@@ -126,24 +130,25 @@ WindowShapePreview::updateLabels()
 
     int fftsize = 512;
 
-    float *input = (float *)fftf_malloc(fftsize * sizeof(float));
-    fftf_complex *output =
-        (fftf_complex *)fftf_malloc(fftsize * sizeof(fftf_complex));
-    fftf_plan plan = fftf_plan_dft_r2c_1d(fftsize, input, output,
-                                            FFTW_ESTIMATE);
+    breakfastquay::FFT fft(fftsize);
+
+    vector<float> input(fftsize);
+    vector<complex<float>> output(fftsize/2 + 1);
+    
     for (int i = 0; i < fftsize; ++i) input[i] = 0.f;
     for (int i = 0; i < step * 2; ++i) {
         input[fftsize/2 - step + i] = windower.getValue(i);
     }
-    
-    fftf_execute(plan);
-    fftf_destroy_plan(plan);
+
+    fft.forwardInterleaved(input.data(), reinterpret_cast<float *>(output.data()));
 
     float maxdb = 0.f;
     float mindb = 0.f;
     bool first = true;
     for (int i = 0; i < fftsize/2; ++i) {
-        float power = output[i][0] * output[i][0] + output[i][1] * output[i][1];
+        float power =
+            output[i].real() * output[i].real() +
+            output[i].imag() * output[i].imag();
         float db = mindb;
         if (power > 0) {
             db = 20.f * log10f(power);
@@ -176,7 +181,9 @@ WindowShapePreview::updateLabels()
 //    cerr << "maxdb = " << maxdb << ", mindb = " << mindb << ", maxval = " <<maxval << endl;
 
     for (int i = 0; i < fftsize/2; ++i) {
-        float power = output[i][0] * output[i][0] + output[i][1] * output[i][1];
+        float power =
+            output[i].real() * output[i].real() +
+            output[i].imag() * output[i].imag();
         float db = 20.f * log10f(power);
         float val = db + -mindb;
         if (val < 0) val = 0;
@@ -190,9 +197,6 @@ WindowShapePreview::updateLabels()
     freqPainter.setRenderHint(QPainter::Antialiasing, true);
     path.addRect(0, 0, w, h + 1);
     freqPainter.drawPath(path);
-
-    fftf_free(input);
-    fftf_free(output);
 
     freqPainter.setFont(font);
     label = tr("dB / freq");
