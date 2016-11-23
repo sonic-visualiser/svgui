@@ -31,7 +31,7 @@
 
 #include <vector>
 
-#define DEBUG_COLOUR_PLOT_REPAINT 1
+//#define DEBUG_COLOUR_PLOT_REPAINT 1
 
 using namespace std;
 
@@ -813,12 +813,12 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     if (minbin >= sh) minbin = sh - 1;
     if (minbin < 0) minbin = 0;
 
-    int nbins  = int(binfory[h-1]) - minbin + 1;
+    int nbins  = int(binfory[h-1] + 0.0001) - minbin + 1;
     if (minbin + nbins > sh) nbins = sh - minbin;
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     cerr << "minbin = " << minbin << ", nbins = " << nbins << ", last binfory = "
-         << binfory[h-1] << " (model height " << sh << ")" << endl;
+         << binfory[h-1] << " (rounds to " << int(binfory[h-1]) << ") (model height " << sh << ")" << endl;
 #endif
     
     int psx = -1;
