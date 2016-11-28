@@ -800,13 +800,20 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     int divisor = 1;
     const DenseThreeDimensionalModel *sourceModel = m_sources.source;
     if (usePeakCache) {
-        cerr << "usePeakCache is true, with divisor " << divisor << endl;
         divisor = m_sources.peakCache->getColumnsPerPeak();
         sourceModel = m_sources.peakCache;
-    } else {
-        cerr << "usePeakCache is false" << endl;
     }
 
+    SVDEBUG << "renderDrawBuffer: w = " << w << ", h = " << h
+            << ", usePeakCache = " << usePeakCache << " (divisor = "
+            << divisor << "), rightToLeft = " << rightToLeft
+            << ", timeConstrained = " << timeConstrained << endl;
+    SVDEBUG << "renderDrawBuffer: normalization = " << int(m_params.normalization)
+            << ", binDisplay = " << int(m_params.binDisplay)
+            << ", binScale = " << int(m_params.binScale)
+            << ", alwaysOpaque = " << m_params.alwaysOpaque
+            << ", interpolate = " << m_params.interpolate << endl;
+    
     int sh = sourceModel->getHeight();
     
     int minbin = int(binfory[0] + 0.0001);
