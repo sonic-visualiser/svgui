@@ -2271,6 +2271,8 @@ Pane::wheelEvent(QWheelEvent *e)
 {
     cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
 
+    e->accept(); // we never want wheel events on the pane to be propagated
+    
     int dx = e->angleDelta().x();
     int dy = e->angleDelta().y();
 
