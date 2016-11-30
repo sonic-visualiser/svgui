@@ -476,11 +476,14 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
                 //!!! should be a proper colour combobox class that
                 // manages its own Add New Colour entry...
+
+                int size = (QFontMetrics(QFont()).height() * 2) / 3;
+                if (size < 12) size = 12;
                 
                 ColourDatabase *db = ColourDatabase::getInstance();
                 for (int i = 0; i < db->getColourCount(); ++i) {
                     QString name = db->getColourName(i);
-                    cb->addItem(db->getExamplePixmap(i, QSize(12, 12)), name);
+                    cb->addItem(db->getExamplePixmap(i, QSize(size, size)), name);
                 }
                 cb->addItem(tr("Add New Colour..."));
             }                
