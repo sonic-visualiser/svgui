@@ -21,6 +21,8 @@
 #include "layer/ColourMapper.h"
 #include "base/AudioLevel.h"
 
+#include "WidgetScale.h"
+
 #include <iostream>
 #include <cmath>
 #include <cassert>
@@ -47,22 +49,7 @@ LevelPanWidget::~LevelPanWidget()
 QSize
 LevelPanWidget::sizeHint() const
 {
-    static double ratio = 0.0;
-    if (ratio == 0.0) {
-        double baseEm;
-#ifdef Q_OS_MAC
-        baseEm = 17.0;
-#else
-        baseEm = 15.0;
-#endif
-        double em = QFontMetrics(QFont()).height();
-        ratio = em / baseEm;
-    }
-
-    int pixels = 40;
-    int scaled = int(pixels * ratio + 0.5);
-    if (pixels != 0 && scaled == 0) scaled = 1;
-    return QSize(scaled, scaled);
+    return WidgetScale::scaleQSize(QSize(40, 40));
 }
 
 static int
