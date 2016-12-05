@@ -27,6 +27,7 @@
 #include "AudioDial.h"
 #include "LEDButton.h"
 #include "IconLoader.h"
+#include "LevelPanWidget.h"
 #include "WidgetScale.h"
 
 #include "NotifyingCheckBox.h"
@@ -204,58 +205,16 @@ PropertyBox::populateViewPlayFrame()
                     this, SLOT(editPlayParameters()));
         }
 
-	AudioDial *gainDial = new AudioDial;
-	layout->addWidget(gainDial);
-	gainDial->setMeterColor(Qt::darkRed);
-	gainDial->setMinimum(-50);
-	gainDial->setMaximum(50);
-	gainDial->setPageStep(1);
-	gainDial->setFixedWidth(WidgetScale::scalePixelSize(24));
-	gainDial->setFixedHeight(WidgetScale::scalePixelSize(24));
-	gainDial->setNotchesVisible(false);
-        gainDial->setObjectName(tr("Playback Gain"));
-        gainDial->setRangeMapper(new LinearRangeMapper
-                                 (-50, 50, -25, 25, tr("dB")));
-	gainDial->setDefaultValue(0);
-        gainDial->setShowToolTip(true);
-	connect(gainDial, SIGNAL(valueChanged(int)),
-		this, SLOT(playGainDialChanged(int)));
-	connect(params, SIGNAL(playGainChanged(float)),
-		this, SLOT(playGainChanged(float)));
-	connect(this, SIGNAL(changePlayGainDial(int)),
-		gainDial, SLOT(setValue(int)));
-        connect(gainDial, SIGNAL(mouseEntered()),
-                this, SLOT(mouseEnteredWidget()));
-        connect(gainDial, SIGNAL(mouseLeft()),
-                this, SLOT(mouseLeftWidget()));
-        playGainChanged(params->getPlayGain());
-	layout->setAlignment(gainDial, Qt::AlignVCenter);
-
-	AudioDial *panDial = new AudioDial;
-	layout->addWidget(panDial);
-	panDial->setMeterColor(Qt::darkGreen);
-	panDial->setMinimum(-50);
-	panDial->setMaximum(50);
-	panDial->setPageStep(1);
-	panDial->setFixedWidth(WidgetScale::scalePixelSize(24));
-	panDial->setFixedHeight(WidgetScale::scalePixelSize(24));
-	panDial->setNotchesVisible(false);
-	panDial->setToolTip(tr("Playback Pan / Balance"));
-	panDial->setDefaultValue(0);
-        panDial->setObjectName(tr("Playback Pan / Balance"));
-        panDial->setShowToolTip(true);
-	connect(panDial, SIGNAL(valueChanged(int)),
-		this, SLOT(playPanDialChanged(int)));
-	connect(params, SIGNAL(playPanChanged(float)),
-		this, SLOT(playPanChanged(float)));
-	connect(this, SIGNAL(changePlayPanDial(int)),
-		panDial, SLOT(setValue(int)));
-        connect(panDial, SIGNAL(mouseEntered()),
-                this, SLOT(mouseEnteredWidget()));
-        connect(panDial, SIGNAL(mouseLeft()),
-                this, SLOT(mouseLeftWidget()));
-        playPanChanged(params->getPlayPan());
-	layout->setAlignment(panDial, Qt::AlignVCenter);
+        LevelPanWidget *levelPan = new LevelPanWidget;
+        layout->addWidget(levelPan);
+        connect(levelPan, SIGNAL(levelChanged(float)),
+                this, SLOT(playGainControlChanged(float)));
+        connect(levelPan, SIGNAL(panChanged(float)),
+                this, SLOT(playPanControlChanged(float)));
+        connect(params, SIGNAL(playGainChanged(float)),
+                levelPan, SLOT(setLevel(float)));
+        connect(params, SIGNAL(playPanChanged(float)),
+                levelPan, SLOT(setPan(float)));
 
     } else {
 
@@ -708,25 +667,14 @@ PropertyBox::playAudibleButtonChanged(bool audible)
         CommandHistory::getInstance()->addCommand(command, true, true);
     }
 }
-    
-void
-PropertyBox::playGainChanged(float gain)
-{
-    int dialValue = int(lrint(log10(gain) * 20.0));
-    if (dialValue < -50) dialValue = -50;
-    if (dialValue >  50) dialValue =  50;
-    emit changePlayGainDial(dialValue);
-}
 
 void
-PropertyBox::playGainDialChanged(int dialValue)
+PropertyBox::playGainControlChanged(float gain)
 {
     QObject *obj = sender();
 
     PlayParameters *params = m_container->getPlayParameters();
     if (!params) return;
-
-    float gain = float(pow(10, float(dialValue) / 20.0));
 
     if (params->getPlayGain() != gain) {
         PlayParameterRepository::EditCommand *command =
@@ -737,27 +685,14 @@ PropertyBox::playGainDialChanged(int dialValue)
 
     updateContextHelp(obj);
 }
-    
-void
-PropertyBox::playPanChanged(float pan)
-{
-    int dialValue = int(lrint(pan * 50.0));
-    if (dialValue < -50) dialValue = -50;
-    if (dialValue >  50) dialValue =  50;
-    emit changePlayPanDial(dialValue);
-}
 
 void
-PropertyBox::playPanDialChanged(int dialValue)
+PropertyBox::playPanControlChanged(float pan)
 {
     QObject *obj = sender();
 
     PlayParameters *params = m_container->getPlayParameters();
     if (!params) return;
-
-    float pan = float(dialValue) / 50.f;
-    if (pan < -1.f) pan = -1.f;
-    if (pan >  1.f) pan =  1.f;
 
     if (params->getPlayPan() != pan) {
         PlayParameterRepository::EditCommand *command =
