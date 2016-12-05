@@ -37,6 +37,8 @@ LevelPanWidget::LevelPanWidget(QWidget *parent) :
     QWidget(parent),
     m_level(maxLevel),
     m_pan(0),
+    m_monitorLeft(-1),
+    m_monitorRight(-1),
     m_editable(true),
     m_includeMute(true)
 {
@@ -78,18 +80,36 @@ level_to_db(int level)
     else return -20.;
 }
 
-void
-LevelPanWidget::setLevel(float flevel)
+int
+LevelPanWidget::audioLevelToLevel(float audioLevel, bool withMute)
 {
     int level;
-    if (m_includeMute) {
+    if (withMute) {
         level = AudioLevel::multiplier_to_fader
-            (flevel, maxLevel, AudioLevel::ShortFader);
+            (audioLevel, maxLevel, AudioLevel::ShortFader);
     } else {
-        level = db_to_level(AudioLevel::multiplier_to_dB(flevel));
+        level = db_to_level(AudioLevel::multiplier_to_dB(audioLevel));
     }
     if (level < 0) level = 0;
     if (level > maxLevel) level = maxLevel;
+    return level;
+}
+
+float
+LevelPanWidget::levelToAudioLevel(int level, bool withMute)
+{
+    if (withMute) {
+        return float(AudioLevel::fader_to_multiplier
+                     (level, maxLevel, AudioLevel::ShortFader));
+    } else {
+        return float(AudioLevel::dB_to_multiplier(level_to_db(level)));
+    }
+}
+
+void
+LevelPanWidget::setLevel(float flevel)
+{
+    int level = audioLevelToLevel(flevel, m_includeMute);
     if (level != m_level) {
 	m_level = level;
 	float convertsTo = getLevel();
@@ -103,20 +123,45 @@ LevelPanWidget::setLevel(float flevel)
 float
 LevelPanWidget::getLevel() const
 {
-    if (m_includeMute) {
-        return float(AudioLevel::fader_to_multiplier
-                     (m_level, maxLevel, AudioLevel::ShortFader));
-    } else {
-        return float(AudioLevel::dB_to_multiplier(level_to_db(m_level)));
-    }
+    return levelToAudioLevel(m_level, m_includeMute);
+}
+
+int
+LevelPanWidget::audioPanToPan(float audioPan)
+{
+    int pan = int(round(audioPan * maxPan));
+    if (pan < -maxPan) pan = -maxPan;
+    if (pan > maxPan) pan = maxPan;
+    return pan;
+}
+
+float
+LevelPanWidget::panToAudioPan(int pan)
+{
+    return float(pan) / float(maxPan);
 }
 
 void
-LevelPanWidget::setPan(float pan)
+LevelPanWidget::setPan(float fpan)
 {
-    m_pan = int(round(pan * maxPan));
-    if (m_pan < -maxPan) m_pan = -maxPan;
-    if (m_pan > maxPan) m_pan = maxPan;
+    int pan = audioPanToPan(fpan);
+    if (pan != m_pan) {
+        m_pan = pan;
+        update();
+    }
+}
+
+float
+LevelPanWidget::getPan() const
+{
+    return panToAudioPan(m_pan);
+}
+
+void
+LevelPanWidget::setMonitoringLevels(float left, float right)
+{
+    m_monitorLeft = left;
+    m_monitorRight = right;
     update();
 }
 
@@ -145,12 +190,6 @@ LevelPanWidget::setIncludeMute(bool include)
     m_includeMute = include;
     emitLevelChanged();
     update();
-}
-
-float
-LevelPanWidget::getPan() const
-{
-    return float(m_pan) / float(maxPan);
 }
 
 void
@@ -325,11 +364,33 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
     pen.setWidthF(cellLightSize(rect).width() + thin);
     pen.setCapStyle(Qt::RoundCap);
     paint.setPen(pen);
+    paint.setBrush(Qt::NoBrush);
 
     for (int pan = -maxPan; pan <= maxPan; ++pan) {
 	paint.drawLine(cellCentre(rect, 0, pan), cellCentre(rect, maxLevel, pan));
     }
 
+    if (m_monitorLeft > 0.f || m_monitorRight > 0.f) {
+        paint.setPen(Qt::NoPen);
+        for (int pan = -maxPan; pan <= maxPan; ++pan) {
+            float audioPan = panToAudioPan(pan);
+            float audioLevel;
+            if (audioPan < 0.f) {
+                audioLevel = m_monitorLeft + m_monitorRight * (1.f + audioPan);
+            } else {
+                audioLevel = m_monitorRight + m_monitorLeft * (1.f - audioPan);
+            }
+            int levelHere = audioLevelToLevel(audioLevel, false);
+            for (int level = 0; level <= levelHere; ++level) {
+                paint.setBrush(level_to_colour(level));
+                QRectF clr = cellLightRect(rect, level, pan);
+                paint.drawEllipse(clr);
+            }
+        }
+        paint.setPen(pen);
+        paint.setBrush(Qt::NoBrush);
+    }
+    
     if (isEnabled()) {
 	pen.setColor(Qt::black);
     } else {

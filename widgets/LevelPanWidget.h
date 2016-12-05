@@ -53,6 +53,9 @@ public slots:
     /// Set pan in the range [-1,1] -- will be rounded
     void setPan(float);
 
+    /// Set left and right peak monitoring levels in the range [0,1]
+    void setMonitoringLevels(float, float);
+    
     /// Specify whether the widget is editable or read-only (default editable)
     void setEditable(bool);
 
@@ -60,8 +63,8 @@ public slots:
     void setIncludeMute(bool);
     
 signals:
-    void levelChanged(float);
-    void panChanged(float);
+    void levelChanged(float); // range [0,1]
+    void panChanged(float); // range [-1,1]
 
 protected:
     virtual void mousePressEvent(QMouseEvent *ev);
@@ -75,9 +78,17 @@ protected:
     
     int m_level;
     int m_pan;
+    float m_monitorLeft;
+    float m_monitorRight;
     bool m_editable;
     bool m_includeMute;
 
+    static int audioLevelToLevel(float audioLevel, bool withMute);
+    static float levelToAudioLevel(int level, bool withMute);
+
+    static int audioPanToPan(float audioPan);
+    static float panToAudioPan(int pan);
+    
     QSizeF cellSize(QRectF) const;
     QPointF cellCentre(QRectF, int level, int pan) const;
     QSizeF cellLightSize(QRectF) const;
