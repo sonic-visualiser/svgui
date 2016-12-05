@@ -27,6 +27,7 @@
 #include "AudioDial.h"
 #include "LEDButton.h"
 #include "IconLoader.h"
+#include "WidgetScale.h"
 
 #include "NotifyingCheckBox.h"
 #include "NotifyingComboBox.h"
@@ -196,8 +197,8 @@ PropertyBox::populateViewPlayFrame()
         if (params->getPlayClipId() != "") {
             QPushButton *playParamButton =
                 new QPushButton(QIcon(":icons/faders.png"), "");
-            playParamButton->setFixedWidth(24);
-            playParamButton->setFixedHeight(24);
+            playParamButton->setFixedWidth(WidgetScale::scalePixelSize(24));
+            playParamButton->setFixedHeight(WidgetScale::scalePixelSize(24));
             layout->addWidget(playParamButton);
             connect(playParamButton, SIGNAL(clicked()),
                     this, SLOT(editPlayParameters()));
@@ -209,8 +210,8 @@ PropertyBox::populateViewPlayFrame()
 	gainDial->setMinimum(-50);
 	gainDial->setMaximum(50);
 	gainDial->setPageStep(1);
-	gainDial->setFixedWidth(24);
-	gainDial->setFixedHeight(24);
+	gainDial->setFixedWidth(WidgetScale::scalePixelSize(24));
+	gainDial->setFixedHeight(WidgetScale::scalePixelSize(24));
 	gainDial->setNotchesVisible(false);
         gainDial->setObjectName(tr("Playback Gain"));
         gainDial->setRangeMapper(new LinearRangeMapper
@@ -236,8 +237,8 @@ PropertyBox::populateViewPlayFrame()
 	panDial->setMinimum(-50);
 	panDial->setMaximum(50);
 	panDial->setPageStep(1);
-	panDial->setFixedWidth(24);
-	panDial->setFixedHeight(24);
+	panDial->setFixedWidth(WidgetScale::scalePixelSize(24));
+	panDial->setFixedHeight(WidgetScale::scalePixelSize(24));
 	panDial->setNotchesVisible(false);
 	panDial->setToolTip(tr("Playback Pan / Balance"));
 	panDial->setDefaultValue(0);
@@ -330,7 +331,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 QIcon icon(IconLoader().load(iconName));
                 button->setIcon(icon);
                 button->setObjectName(name);
-                button->setFixedSize(QSize(18, 18));
+                button->setFixedSize(WidgetScale::scaleQSize(QSize(18, 18)));
             } else {
                 button = new NotifyingCheckBox();
                 button->setObjectName(name);
@@ -397,13 +398,13 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseLeftWidget()));
 
 	    if (inGroup) {
-		dial->setFixedWidth(24);
-		dial->setFixedHeight(24);
+		dial->setFixedWidth(WidgetScale::scalePixelSize(24));
+		dial->setFixedHeight(WidgetScale::scalePixelSize(24));
 		m_groupLayouts[groupName]->addWidget
                     (dial, 0, m_groupLayouts[groupName]->columnCount());
 	    } else {
-		dial->setFixedWidth(32);
-		dial->setFixedHeight(32);
+		dial->setFixedWidth(WidgetScale::scalePixelSize(32));
+		dial->setFixedHeight(WidgetScale::scalePixelSize(32));
 		m_layout->addWidget(dial, row, 1);
 		QLabel *label = new QLabel(m_mainWidget);
 		connect(dial, SIGNAL(valueChanged(int)),
