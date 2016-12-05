@@ -23,6 +23,7 @@
 
 
 #include "LEDButton.h"
+#include "WidgetScale.h"
 
 #include <QPainter>
 #include <QImage>
@@ -279,12 +280,12 @@ LEDButton::off()
 QSize
 LEDButton::sizeHint() const
 {
-    return QSize(17, 17);
+    return WidgetScale::scaleQSize(QSize(17, 17));
 }
 
 QSize
 LEDButton::minimumSizeHint() const
 {
-    return QSize(17, 17);
+    return WidgetScale::scaleQSize(QSize(17, 17));
 }
 
