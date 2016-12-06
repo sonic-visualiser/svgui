@@ -28,6 +28,7 @@
 #include "LEDButton.h"
 #include "IconLoader.h"
 #include "LevelPanWidget.h"
+#include "LevelPanToolButton.h"
 #include "WidgetScale.h"
 
 #include "NotifyingCheckBox.h"
@@ -205,7 +206,7 @@ PropertyBox::populateViewPlayFrame()
                     this, SLOT(editPlayParameters()));
         }
 
-        LevelPanWidget *levelPan = new LevelPanWidget;
+        LevelPanToolButton *levelPan = new LevelPanToolButton;
         layout->addWidget(levelPan);
         connect(levelPan, SIGNAL(levelChanged(float)),
                 this, SLOT(playGainControlChanged(float)));
