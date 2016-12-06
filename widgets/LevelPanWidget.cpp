@@ -432,5 +432,17 @@ LevelPanWidget::paintEvent(QPaintEvent *)
     renderTo(this, rect(), m_editable);
 }
 
+void
+LevelPanWidget::enterEvent(QEvent *e)
+{
+    QWidget::enterEvent(e);
+    emit mouseEntered();
+}
 
+void
+LevelPanWidget::leaveEvent(QEvent *e)
+{
+    QWidget::enterEvent(e);
+    emit mouseLeft();
+}
 
