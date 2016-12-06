@@ -26,8 +26,8 @@
 class NotifyingPushButton : public QPushButton
 {
     Q_OBJECT
-public:
 
+public:
     NotifyingPushButton(QWidget *parent = 0) :
         QPushButton(parent) { }
 

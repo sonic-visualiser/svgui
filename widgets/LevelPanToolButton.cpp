@@ -170,4 +170,18 @@ LevelPanToolButton::paintEvent(QPaintEvent *)
     m_lpw->renderTo(this, QRectF(margin, margin, m_pixels, m_pixels), false);
 }
 
+void
+LevelPanToolButton::enterEvent(QEvent *e)
+{
+    QToolButton::enterEvent(e);
+    emit mouseEntered();
+}
+
+void
+LevelPanToolButton::leaveEvent(QEvent *e)
+{
+    QToolButton::enterEvent(e);
+    emit mouseLeft();
+}
+
 

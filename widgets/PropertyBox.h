@@ -27,6 +27,7 @@ class QGridLayout;
 class QVBoxLayout;
 class QLabel;
 class LEDButton;
+class NotifyingPushButton;
 
 class PropertyBox : public QFrame
 {
@@ -80,7 +81,7 @@ protected:
     QFrame *m_viewPlayFrame;
     QVBoxLayout *m_mainBox;
     LEDButton *m_showButton;
-    LEDButton *m_playButton;
+    NotifyingPushButton *m_playButton;
     std::map<QString, QGridLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };

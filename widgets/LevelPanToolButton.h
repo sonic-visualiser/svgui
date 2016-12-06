@@ -56,12 +56,17 @@ signals:
     void levelChanged(float);
     void panChanged(float);
 
+    void mouseEntered();
+    void mouseLeft();
+
 private slots:
     void selfLevelChanged(float);
     void selfClicked();
     
 protected:
-    void paintEvent(QPaintEvent *);
+    virtual void paintEvent(QPaintEvent *);
+    virtual void enterEvent(QEvent *);
+    virtual void leaveEvent(QEvent *);
     
     LevelPanWidget *m_lpw;
     int m_pixels;

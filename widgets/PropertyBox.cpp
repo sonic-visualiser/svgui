@@ -177,33 +177,21 @@ PropertyBox::populateViewPlayFrame()
     
     if (params) {
 
-	QLabel *playLabel = new QLabel(tr("Play"));
-	layout->addWidget(playLabel);
-	layout->setAlignment(playLabel, Qt::AlignVCenter);
-
-	m_playButton = new LEDButton(Qt::darkGreen);
-        m_playButton->setState(!params->isPlayMuted());
-	layout->addWidget(m_playButton);
-	connect(m_playButton, SIGNAL(stateChanged(bool)),
-		this, SLOT(playAudibleButtonChanged(bool)));
-        connect(m_playButton, SIGNAL(mouseEntered()),
-                this, SLOT(mouseEnteredWidget()));
-        connect(m_playButton, SIGNAL(mouseLeft()),
-                this, SLOT(mouseLeftWidget()));
-	connect(params, SIGNAL(playAudibleChanged(bool)),
-		this, SLOT(playAudibleChanged(bool)));
-	layout->setAlignment(m_playButton, Qt::AlignVCenter);
-
 	layout->insertStretch(-1, 10);
 
         if (params->getPlayClipId() != "") {
-            QPushButton *playParamButton =
-                new QPushButton(QIcon(":icons/faders.png"), "");
+            NotifyingPushButton *playParamButton = new NotifyingPushButton;
+            playParamButton->setObjectName("playParamButton");
+            playParamButton->setIcon(IconLoader().load("faders"));
             playParamButton->setFixedWidth(WidgetScale::scalePixelSize(24));
             playParamButton->setFixedHeight(WidgetScale::scalePixelSize(24));
             layout->addWidget(playParamButton);
             connect(playParamButton, SIGNAL(clicked()),
                     this, SLOT(editPlayParameters()));
+            connect(playParamButton, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(playParamButton, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
         }
 
         LevelPanToolButton *levelPan = new LevelPanToolButton;
@@ -216,6 +204,25 @@ PropertyBox::populateViewPlayFrame()
                 levelPan, SLOT(setLevel(float)));
         connect(params, SIGNAL(playPanChanged(float)),
                 levelPan, SLOT(setPan(float)));
+        connect(levelPan, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(levelPan, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
+
+        m_playButton = new NotifyingPushButton;
+        m_playButton->setCheckable(true);
+        m_playButton->setIcon(IconLoader().load("speaker"));
+        m_playButton->setChecked(!params->isPlayMuted());
+	layout->addWidget(m_playButton);
+	connect(m_playButton, SIGNAL(toggled(bool)),
+		this, SLOT(playAudibleButtonChanged(bool)));
+        connect(m_playButton, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(m_playButton, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
+	connect(params, SIGNAL(playAudibleChanged(bool)),
+		this, SLOT(playAudibleChanged(bool)));
+	layout->setAlignment(m_playButton, Qt::AlignVCenter);
 
     } else {
 
@@ -652,7 +659,7 @@ PropertyBox::addNewColour()
 void
 PropertyBox::playAudibleChanged(bool audible)
 {
-    m_playButton->setState(audible);
+    m_playButton->setChecked(audible);
 }
 
 void
@@ -786,10 +793,27 @@ PropertyBox::updateContextHelp(QObject *o)
     QString cname = m_container->getPropertyContainerName();
     if (cname == "") return;
 
+    LevelPanToolButton *lp = qobject_cast<LevelPanToolButton *>(w);
+    if (lp) {
+        emit contextHelpChanged(tr("Adjust playback level and pan of %1").arg(cname));
+        return;
+    }
+
     QString wname = w->objectName();
 
+    if (wname == "playParamButton") {
+        PlayParameters *params = m_container->getPlayParameters();
+        if (params) {
+            emit contextHelpChanged
+                (tr("Change sound used for playback (currently \"%1\")")
+                 .arg(params->getPlayClipId()));
+            return;
+        }
+    }
+    
     QString extraText;
-    AudioDial *dial = dynamic_cast<AudioDial *>(w);
+    
+    AudioDial *dial = qobject_cast<AudioDial *>(w);
     if (dial) {
         double mv = dial->mappedValue();
         QString unit = "";
