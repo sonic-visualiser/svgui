@@ -489,10 +489,10 @@ ViewManager::getPlaybackSampleRate() const
 }
 
 sv_samplerate_t
-ViewManager::getOutputSampleRate() const
+ViewManager::getDeviceSampleRate() const
 {
     if (m_playSource) {
-	return m_playSource->getTargetSampleRate();
+	return m_playSource->getDeviceSampleRate();
     }
     return 0;
 }
