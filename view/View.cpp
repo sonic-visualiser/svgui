@@ -444,7 +444,7 @@ View::getFrequencyForY(double y,
     }
 }
 
-int
+ZoomLevel
 View::getZoomLevel() const
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -473,7 +473,7 @@ View::effectiveDevicePixelRatio() const
 }
 
 void
-View::setZoomLevel(int z)
+View::setZoomLevel(ZoomLevel z)
 {
     int dpratio = effectiveDevicePixelRatio();
     if (z < dpratio) return;
@@ -721,13 +721,13 @@ View::setViewManager(ViewManager *manager)
 	m_manager->disconnect(this, SLOT(globalCentreFrameChanged(sv_frame_t)));
 	m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, sv_frame_t)));
 	m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
-	m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, int, bool)));
+	m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, ZoomLevel, bool)));
         m_manager->disconnect(this, SLOT(toolModeChanged()));
         m_manager->disconnect(this, SLOT(selectionChanged()));
         m_manager->disconnect(this, SLOT(overlayModeChanged()));
         m_manager->disconnect(this, SLOT(zoomWheelsEnabledChanged()));
         disconnect(m_manager, SLOT(viewCentreFrameChanged(sv_frame_t, bool, PlaybackFollowMode)));
-	disconnect(m_manager, SLOT(zoomLevelChanged(int, bool)));
+	disconnect(m_manager, SLOT(zoomLevelChanged(ZoomLevel, bool)));
     }
 
     m_manager = manager;
@@ -739,8 +739,8 @@ View::setViewManager(ViewManager *manager)
     connect(m_manager, SIGNAL(playbackFrameChanged(sv_frame_t)),
 	    this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
 
-    connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, int, bool)),
-	    this, SLOT(viewZoomLevelChanged(View *, int, bool)));
+    connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, ZoomLevel, bool)),
+	    this, SLOT(viewZoomLevelChanged(View *, ZoomLevel, bool)));
 
     connect(m_manager, SIGNAL(toolModeChanged()),
 	    this, SLOT(toolModeChanged()));
@@ -760,8 +760,8 @@ View::setViewManager(ViewManager *manager)
             m_manager, SLOT(viewCentreFrameChanged(sv_frame_t, bool,
                                                    PlaybackFollowMode)));
 
-    connect(this, SIGNAL(zoomLevelChanged(int, bool)),
-	    m_manager, SLOT(viewZoomLevelChanged(int, bool)));
+    connect(this, SIGNAL(zoomLevelChanged(ZoomLevel, bool)),
+	    m_manager, SLOT(viewZoomLevelChanged(ZoomLevel, bool)));
 
     switch (m_followPlay) {
         
@@ -1123,7 +1123,7 @@ View::movePlayPointer(sv_frame_t newFrame)
 }
 
 void
-View::viewZoomLevelChanged(View *p, int z, bool locked)
+View::viewZoomLevelChanged(View *p, ZoomLevel z, bool locked)
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr  << "View[" << this << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << endl;
@@ -1450,14 +1450,14 @@ View::hasTopLayerTimeXAxis() const
 void
 View::zoom(bool in)
 {
-    int newZoomLevel = m_zoomLevel;
+    ZoomLevel newZoomLevel = m_zoomLevel;
 
     if (in) {
-	newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
-						  ZoomConstraint::RoundDown);
+	newZoomLevel = getZoomConstraintLevel(m_zoomLevel.decremented(),
+                                              ZoomConstraint::RoundDown);
     } else {
-	newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
-						  ZoomConstraint::RoundUp);
+	newZoomLevel = getZoomConstraintLevel(m_zoomLevel.incremented(),
+                                              ZoomConstraint::RoundUp);
     }
 
     if (newZoomLevel != m_zoomLevel) {

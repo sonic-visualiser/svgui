@@ -47,10 +47,9 @@ Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
     bool zoomChanged = false;
 
     sv_frame_t frameCount = getModelsEndFrame() - getModelsStartFrame();
-    int zoomLevel = int(frameCount / width());
-    if (zoomLevel < 1) zoomLevel = 1;
-    zoomLevel = getZoomConstraintBlockSize(zoomLevel,
-					   ZoomConstraint::RoundUp);
+    ZoomLevel zoomLevel { ZoomLevel::FramesPerPixel, int(frameCount / width()) };
+    if (zoomLevel.level < 1) zoomLevel.level = 1;
+    zoomLevel = getZoomConstraintBlockSize(zoomLevel, ZoomConstraint::RoundUp);
     if (zoomLevel != m_zoomLevel) {
         zoomChanged = true;
     }

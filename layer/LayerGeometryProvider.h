@@ -147,9 +147,10 @@ public:
                                  bool &log) const = 0;
 
     /**
-     * Return the zoom level, i.e. the number of frames per pixel
+     * Return the zoom level, i.e. the number of frames per pixel or
+     * pixels per frame
      */
-    virtual int getZoomLevel() const = 0;
+    virtual ZoomLevel getZoomLevel() const = 0;
 
     /**
      * To be called from a layer, to obtain the extent of the surface

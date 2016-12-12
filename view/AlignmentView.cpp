@@ -57,14 +57,14 @@ AlignmentView::viewManagerPlaybackFrameChanged(sv_frame_t)
 }
 
 void
-AlignmentView::viewAboveZoomLevelChanged(int level, bool)
+AlignmentView::viewAboveZoomLevelChanged(ZoomLevel level, bool)
 {
     m_zoomLevel = level;
     update();
 }
 
 void
-AlignmentView::viewBelowZoomLevelChanged(int, bool)
+AlignmentView::viewBelowZoomLevelChanged(ZoomLevel, bool)
 {
     update();
 }
@@ -80,9 +80,9 @@ AlignmentView::setViewAbove(View *v)
 
     if (m_above) {
 	connect(m_above,
-		SIGNAL(zoomLevelChanged(int, bool)),
+		SIGNAL(zoomLevelChanged(ZoomLevel, bool)),
 		this, 
-		SLOT(viewAboveZoomLevelChanged(int, bool)));
+		SLOT(viewAboveZoomLevelChanged(ZoomLevel, bool)));
     }
 }
 
@@ -97,9 +97,9 @@ AlignmentView::setViewBelow(View *v)
 
     if (m_below) {
 	connect(m_below,
-		SIGNAL(zoomLevelChanged(int, bool)),
+		SIGNAL(zoomLevelChanged(ZoomLevel, bool)),
 		this, 
-		SLOT(viewBelowZoomLevelChanged(int, bool)));
+		SLOT(viewBelowZoomLevelChanged(ZoomLevel, bool)));
     }
 }
 

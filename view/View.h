@@ -148,16 +148,17 @@ public:
                             bool logarithmic) const;
 
     /**
-     * Return the zoom level, i.e. the number of frames per pixel
+     * Return the zoom level, i.e. the number of frames per pixel or
+     * pixels per frame
      */
-    int getZoomLevel() const;
+    ZoomLevel getZoomLevel() const;
 
     /**
-     * Set the zoom level, i.e. the number of frames per pixel.  The
-     * centre frame will be unchanged; the start and end frames will
-     * change.
+     * Set the zoom level, i.e. the number of frames per pixel or
+     * pixels per frame.  The centre frame will be unchanged; the
+     * start and end frames will change.
      */
-    virtual void setZoomLevel(int z);
+    virtual void setZoomLevel(ZoomLevel z);
 
     /**
      * Zoom in or out.
@@ -370,7 +371,7 @@ signals:
                             bool globalScroll,
                             PlaybackFollowMode followMode);
 
-    void zoomLevelChanged(int level, bool locked);
+    void zoomLevelChanged(ZoomLevel level, bool locked);
 
     void contextHelpChanged(const QString &);
 
@@ -388,7 +389,7 @@ public slots:
     virtual void globalCentreFrameChanged(sv_frame_t);
     virtual void viewCentreFrameChanged(View *, sv_frame_t);
     virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
-    virtual void viewZoomLevelChanged(View *, int, bool);
+    virtual void viewZoomLevelChanged(View *, ZoomLevel, bool);
 
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
 
@@ -426,9 +427,9 @@ protected:
     bool areLayersScrollable() const;
     LayerList getScrollableBackLayers(bool testChanged, bool &changed) const;
     LayerList getNonScrollableFrontLayers(bool testChanged, bool &changed) const;
-    int getZoomConstraintBlockSize(int blockSize,
-				      ZoomConstraint::RoundingDirection dir =
-				      ZoomConstraint::RoundNearest) const;
+    ZoomLevel getZoomConstraintLevel(ZoomLevel level,
+                                     ZoomConstraint::RoundingDirection dir =
+                                     ZoomConstraint::RoundNearest) const;
 
     // True if the top layer(s) use colours for meaningful things.  If
     // this is the case, selections will be shown using unfilled boxes
@@ -451,7 +452,7 @@ protected:
     int effectiveDevicePixelRatio() const;
 
     sv_frame_t          m_centreFrame;
-    int                 m_zoomLevel;
+    ZoomLevel           m_zoomLevel;
     bool                m_followPan;
     bool                m_followZoom;
     PlaybackFollowMode  m_followPlay;
@@ -463,7 +464,7 @@ protected:
     QPixmap            *m_cache;
     QPixmap            *m_buffer;
     sv_frame_t          m_cacheCentreFrame;
-    int                 m_cacheZoomLevel;
+    ZoomLevel           m_cacheZoomLevel;
     bool                m_selectionCached;
 
     bool                m_deleting;
