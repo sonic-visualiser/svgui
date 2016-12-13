@@ -2288,7 +2288,7 @@ Pane::wheelEvent(QWheelEvent *e)
     }
 
     if (e->phase() == Qt::ScrollBegin ||
-        fabs(d) >= 120 ||
+        std::abs(d) >= 120 ||
         (d > 0 && m_pendingWheelAngle < 0) ||
         (d < 0 && m_pendingWheelAngle > 0)) {
         m_pendingWheelAngle = d;
