@@ -1053,23 +1053,19 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
     sv_samplerate_t modelRate = waveformModel->getSampleRate();
     sv_samplerate_t nativeRate = waveformModel->getNativeRate();
     sv_samplerate_t playbackRate = m_manager->getPlaybackSampleRate();
-    sv_samplerate_t outputRate = m_manager->getOutputSampleRate();
         
     QString srNote = "";
 
-    // Show (R) for waveform models that have been resampled or will
-    // be resampled on playback, and (X) for waveform models that will
-    // be played at the wrong rate because their rate differs from the
-    // current playback rate (which is not necessarily that of the
-    // main model).
+    // Show (R) for waveform models that have been resampled during
+    // load, and (X) for waveform models that will be played at the
+    // wrong rate because their rate differs from the current playback
+    // rate (which is not necessarily that of the main model).
 
-    if (playbackRate != 0) {
-        if (modelRate == playbackRate) {
-            if (modelRate != outputRate || modelRate != nativeRate) {
-                srNote = " " + tr("(R)");
-            }
-        } else {
+    if (modelRate != nativeRate) {
+        if (playbackRate != 0 && modelRate != playbackRate) {
             srNote = " " + tr("(X)");
+        } else {            
+            srNote = " " + tr("(R)");
         }
     }
 
@@ -2292,7 +2288,7 @@ Pane::wheelEvent(QWheelEvent *e)
     }
 
     if (e->phase() == Qt::ScrollBegin ||
-        fabs(d) >= 120 ||
+        std::abs(d) >= 120 ||
         (d > 0 && m_pendingWheelAngle < 0) ||
         (d < 0 && m_pendingWheelAngle > 0)) {
         m_pendingWheelAngle = d;
