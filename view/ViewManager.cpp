@@ -159,6 +159,13 @@ ViewManager::getPlaybackFrame() const
 {
     if (m_playSource && m_playSource->isPlaying()) {
 	m_playbackFrame = m_playSource->getCurrentPlayingFrame();
+#ifdef DEBUG_VIEW_MANAGER
+        cout << "ViewManager::getPlaybackFrame(playing) -> " << m_playbackFrame << endl;
+#endif
+    } else {
+#ifdef DEBUG_VIEW_MANAGER
+        cout << "ViewManager::getPlaybackFrame(not playing) -> " << m_playbackFrame << endl;
+#endif
     }
     return m_playbackFrame;
 }
@@ -166,6 +173,9 @@ ViewManager::getPlaybackFrame() const
 void
 ViewManager::setPlaybackFrame(sv_frame_t f)
 {
+#ifdef DEBUG_VIEW_MANAGER
+    cerr << "ViewManager::setPlaybackFrame(" << f << ")" << endl;
+#endif
     if (f < 0) f = 0;
     if (m_playbackFrame != f) {
 	m_playbackFrame = f;
