@@ -172,9 +172,9 @@ public:
     /**
      * The sample rate of the audio output device.  If the playback
      * sample rate differs from this, everything will be resampled at
-     * the output stage.
+     * the output stage (but not before).
      */
-    sv_samplerate_t getOutputSampleRate() const;
+    sv_samplerate_t getDeviceSampleRate() const;
 
     /**
      * The sample rate of the current main model.  This may in theory
