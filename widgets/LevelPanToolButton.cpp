@@ -110,6 +110,13 @@ LevelPanToolButton::setPan(float pan)
 }
 
 void
+LevelPanToolButton::setMonitoringLevels(float left, float right)
+{
+    m_lpw->setMonitoringLevels(left, right);
+    update();
+}
+
+void
 LevelPanToolButton::setIncludeMute(bool include)
 {
     m_lpw->setIncludeMute(include);

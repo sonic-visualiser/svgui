@@ -47,6 +47,9 @@ public slots:
     /// Set pan in the range [-1,1] -- will be rounded
     void setPan(float);
 
+    /// Set left and right peak monitoring levels in the range [0,1]
+    void setMonitoringLevels(float, float);
+    
     /// Specify whether the level range should include muting or not
     void setIncludeMute(bool);
 
