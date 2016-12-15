@@ -49,6 +49,7 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
 
     setPopupMode(InstantPopup);
     setMenu(menu);
+    setToolTip(tr("Click to adjust level and pan"));
 
     setImageSize(m_pixels);
     setBigImageSize(m_pixelsBig);
