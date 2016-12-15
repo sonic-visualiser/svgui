@@ -158,56 +158,8 @@ PropertyBox::populateViewPlayFrame()
 #ifdef DEBUG_PROPERTY_BOX
     SVDEBUG << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName() << ") params " << params << endl;
 #endif
-
-    if (layer) {
-	QLabel *showLabel = new QLabel(tr("Show"));
-	layout->addWidget(showLabel);
-	layout->setAlignment(showLabel, Qt::AlignVCenter);
-
-	m_showButton = new LEDButton(Qt::blue);
-	layout->addWidget(m_showButton);
-	connect(m_showButton, SIGNAL(stateChanged(bool)),
-		this, SIGNAL(showLayer(bool)));
-        connect(m_showButton, SIGNAL(mouseEntered()),
-                this, SLOT(mouseEnteredWidget()));
-        connect(m_showButton, SIGNAL(mouseLeft()),
-                this, SLOT(mouseLeftWidget()));
-	layout->setAlignment(m_showButton, Qt::AlignVCenter);
-    }
     
     if (params) {
-
-	layout->insertStretch(-1, 10);
-
-        if (params->getPlayClipId() != "") {
-            NotifyingPushButton *playParamButton = new NotifyingPushButton;
-            playParamButton->setObjectName("playParamButton");
-            playParamButton->setIcon(IconLoader().load("faders"));
-            playParamButton->setFixedWidth(WidgetScale::scalePixelSize(24));
-            playParamButton->setFixedHeight(WidgetScale::scalePixelSize(24));
-            layout->addWidget(playParamButton);
-            connect(playParamButton, SIGNAL(clicked()),
-                    this, SLOT(editPlayParameters()));
-            connect(playParamButton, SIGNAL(mouseEntered()),
-                    this, SLOT(mouseEnteredWidget()));
-            connect(playParamButton, SIGNAL(mouseLeft()),
-                    this, SLOT(mouseLeftWidget()));
-        }
-
-        LevelPanToolButton *levelPan = new LevelPanToolButton;
-        layout->addWidget(levelPan);
-        connect(levelPan, SIGNAL(levelChanged(float)),
-                this, SLOT(playGainControlChanged(float)));
-        connect(levelPan, SIGNAL(panChanged(float)),
-                this, SLOT(playPanControlChanged(float)));
-        connect(params, SIGNAL(playGainChanged(float)),
-                levelPan, SLOT(setLevel(float)));
-        connect(params, SIGNAL(playPanChanged(float)),
-                levelPan, SLOT(setPan(float)));
-        connect(levelPan, SIGNAL(mouseEntered()),
-                this, SLOT(mouseEnteredWidget()));
-        connect(levelPan, SIGNAL(mouseLeft()),
-                this, SLOT(mouseLeftWidget()));
 
         m_playButton = new NotifyingPushButton;
         m_playButton->setCheckable(true);
@@ -224,9 +176,54 @@ PropertyBox::populateViewPlayFrame()
 		this, SLOT(playAudibleChanged(bool)));
 	layout->setAlignment(m_playButton, Qt::AlignVCenter);
 
-    } else {
+        LevelPanToolButton *levelPan = new LevelPanToolButton;
+        layout->addWidget(levelPan);
+        connect(levelPan, SIGNAL(levelChanged(float)),
+                this, SLOT(playGainControlChanged(float)));
+        connect(levelPan, SIGNAL(panChanged(float)),
+                this, SLOT(playPanControlChanged(float)));
+        connect(params, SIGNAL(playGainChanged(float)),
+                levelPan, SLOT(setLevel(float)));
+        connect(params, SIGNAL(playPanChanged(float)),
+                levelPan, SLOT(setPan(float)));
+        connect(levelPan, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(levelPan, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
 
-	layout->insertStretch(-1, 10);
+        if (params->getPlayClipId() != "") {
+            NotifyingPushButton *playParamButton = new NotifyingPushButton;
+            playParamButton->setObjectName("playParamButton");
+            playParamButton->setIcon(IconLoader().load("faders"));
+            playParamButton->setFixedWidth(WidgetScale::scalePixelSize(24));
+            playParamButton->setFixedHeight(WidgetScale::scalePixelSize(24));
+            layout->addWidget(playParamButton);
+            connect(playParamButton, SIGNAL(clicked()),
+                    this, SLOT(editPlayParameters()));
+            connect(playParamButton, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(playParamButton, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
+        }
+    }
+
+    layout->insertStretch(-1, 10);
+
+    if (layer) {
+
+	QLabel *showLabel = new QLabel(tr("Show"));
+	layout->addWidget(showLabel);
+	layout->setAlignment(showLabel, Qt::AlignVCenter);
+
+	m_showButton = new LEDButton(Qt::blue);
+	layout->addWidget(m_showButton);
+	connect(m_showButton, SIGNAL(stateChanged(bool)),
+		this, SIGNAL(showLayer(bool)));
+        connect(m_showButton, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(m_showButton, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
+	layout->setAlignment(m_showButton, Qt::AlignVCenter);
     }
 }
 
