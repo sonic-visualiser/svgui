@@ -2100,11 +2100,15 @@ View::drawSelections(QPainter &paint)
 		dx = p1 - 2 - dw;
 	    }
 
-	    paint.drawText(sx, sy, startText);
-	    paint.drawText(ex, ey, endText);
-	    paint.drawText(dx, dy, durationText);
+            PaintAssistant::drawVisibleText(this, paint, sx, sy, startText,
+                                            PaintAssistant::OutlinedText);
+            PaintAssistant::drawVisibleText(this, paint, ex, ey, endText,
+                                            PaintAssistant::OutlinedText);
+            PaintAssistant::drawVisibleText(this, paint, dx, dy, durationText,
+                                            PaintAssistant::OutlinedText);
             if (durationBothEnds) {
-                paint.drawText(sx, dy, durationText);
+                PaintAssistant::drawVisibleText(this, paint, sx, dy, durationText,
+                                                PaintAssistant::OutlinedText);
             }
 	}
     }
