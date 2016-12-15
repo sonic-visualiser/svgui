@@ -445,35 +445,37 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
     if (!m_cache.isNull()) {
         QPainter paint(this);
-        paint.drawImage(0, 0, m_cache);
+        paint.drawImage(rect(), m_cache, m_cache.rect());
         return;
     }
 
     Profiler profiler2("Thumbwheel::paintEvent (no cache)");
 
-    m_cache = QImage(size(), QImage::Format_ARGB32);
+    QSize imageSize = size() * devicePixelRatio();
+    m_cache = QImage(imageSize, QImage::Format_ARGB32);
     m_cache.fill(Qt::transparent);
 
-    int bw = 3;
+    double w = m_cache.width();
+    double h = m_cache.height();
+
+    int bw = 3; // border width
 
     QRect subclip;
     if (m_orientation == Qt::Horizontal) {
-        subclip = QRect(bw, bw+1, width() - bw*2, height() - bw*2 - 2);
+        subclip = QRect(bw, bw+1, w - bw*2, h - bw*2 - 2);
     } else {
-        subclip = QRect(bw+1, bw, width() - bw*2 - 2, height() - bw*2);
+        subclip = QRect(bw+1, bw, w - bw*2 - 2, h - bw*2);
     }
 
     QPainter paint(&m_cache);
-    paint.setClipRect(rect());
+    paint.setClipRect(m_cache.rect());
     paint.fillRect(subclip, palette().background().color());
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
-    double w  = width();
     double w0 = 0.5;
     double w1 = w - 0.5;
 
-    double h  = height();
     double h0 = 0.5;
     double h1 = h - 0.5;
 
@@ -508,13 +510,13 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
 //    cerr << "value = " << m_value << ", min = " << m_min << ", max = " << m_max << ", rotation = " << rotation << endl;
 
-    w = (m_orientation == Qt::Horizontal ? width() : height()) - bw*2;
+    int ww = (m_orientation == Qt::Horizontal ? w : h) - bw*2; // wheel width
 
     // total number of notches on the entire wheel
     int notches = 25;
     
     // radius of the wheel including invisible part
-    int radius = int(w / 2 + 2);
+    int radius = int(ww / 2 + 2);
 
     for (int i = 0; i < notches; ++i) {
 
@@ -525,13 +527,13 @@ Thumbwheel::paintEvent(QPaintEvent *)
         double depth = cos((a0 + a2) / 2);
         if (depth < 0) continue;
 
-        double x0 = radius * sin(a0) + w/2;
-        double x1 = radius * sin(a1) + w/2;
-        double x2 = radius * sin(a2) + w/2;
-        if (x2 < 0 || x0 > w) continue;
+        double x0 = radius * sin(a0) + ww/2;
+        double x1 = radius * sin(a1) + ww/2;
+        double x2 = radius * sin(a2) + ww/2;
+        if (x2 < 0 || x0 > ww) continue;
 
         if (x0 < 0) x0 = 0;
-        if (x2 > w) x2 = w;
+        if (x2 > ww) x2 = ww;
 
         x0 += bw;
         x1 += bw;
@@ -557,10 +559,10 @@ Thumbwheel::paintEvent(QPaintEvent *)
             }
             
             if (m_orientation == Qt::Horizontal) {
-                paint.drawRect(QRectF(x1, height() - (height() - bw*2) * prop - bw,
-                                      x2 - x1, height() * prop));
+                paint.drawRect(QRectF(x1, h - (h - bw*2) * prop - bw,
+                                      x2 - x1, h * prop));
             } else {
-                paint.drawRect(QRectF(bw, x1, (width() - bw*2) * prop, x2 - x1));
+                paint.drawRect(QRectF(bw, x1, (w - bw*2) * prop, x2 - x1));
             }
         }
 
@@ -568,14 +570,14 @@ Thumbwheel::paintEvent(QPaintEvent *)
         paint.setBrush(palette().background().color());
 
         if (m_orientation == Qt::Horizontal) {
-            paint.drawRect(QRectF(x0, bw, x1 - x0, height() - bw*2));
+            paint.drawRect(QRectF(x0, bw, x1 - x0, h - bw*2));
         } else {
-            paint.drawRect(QRectF(bw, x0, width() - bw*2, x1 - x0));
+            paint.drawRect(QRectF(bw, x0, w - bw*2, x1 - x0));
         }
     }
 
     QPainter paint2(this);
-    paint2.drawImage(0, 0, m_cache);
+    paint2.drawImage(rect(), m_cache, m_cache.rect());
 }
 
 QSize
