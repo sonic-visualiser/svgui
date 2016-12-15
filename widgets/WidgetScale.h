@@ -18,6 +18,8 @@
 #include <QFont>
 #include <QFontMetrics>
 
+#include "base/Debug.h"
+
 class WidgetScale
 {
 public:   
@@ -38,6 +40,9 @@ public:
 #endif
             double em = QFontMetrics(QFont()).height();
             ratio = em / baseEm;
+            SVDEBUG << "WidgetScale::scalePixelSize: baseEm = " << baseEm
+                    << ", platform default font height = " << em
+                    << ", resulting scale factor = " << ratio << endl;
         }
 
         int scaled = int(pixels * ratio + 0.5);
