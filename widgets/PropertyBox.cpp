@@ -34,12 +34,14 @@
 #include "NotifyingCheckBox.h"
 #include "NotifyingComboBox.h"
 #include "NotifyingPushButton.h"
+#include "NotifyingToolButton.h"
 #include "ColourNameDialog.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QToolButton>
 #include <QLabel>
 #include <QFrame>
 #include <QApplication>
@@ -150,7 +152,7 @@ PropertyBox::populateViewPlayFrame()
     m_viewPlayFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
     m_mainBox->addWidget(m_viewPlayFrame);
 
-    QHBoxLayout *layout = new QHBoxLayout;
+    QGridLayout *layout = new QGridLayout;
     m_viewPlayFrame->setLayout(layout);
 
     layout->setMargin(layout->margin() / 2);
@@ -158,14 +160,17 @@ PropertyBox::populateViewPlayFrame()
 #ifdef DEBUG_PROPERTY_BOX
     SVDEBUG << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName() << ") params " << params << endl;
 #endif
-    
-    if (params) {
 
-        m_playButton = new NotifyingPushButton;
+    QSize buttonSize = WidgetScale::scaleQSize(QSize(26, 26));
+    int col = 0;
+
+    if (params) {
+        
+        m_playButton = new NotifyingToolButton;
         m_playButton->setCheckable(true);
         m_playButton->setIcon(IconLoader().load("speaker"));
         m_playButton->setChecked(!params->isPlayMuted());
-	layout->addWidget(m_playButton);
+        m_playButton->setFixedSize(buttonSize);
 	connect(m_playButton, SIGNAL(toggled(bool)),
 		this, SLOT(playAudibleButtonChanged(bool)));
         connect(m_playButton, SIGNAL(mouseEntered()),
@@ -174,10 +179,11 @@ PropertyBox::populateViewPlayFrame()
                 this, SLOT(mouseLeftWidget()));
 	connect(params, SIGNAL(playAudibleChanged(bool)),
 		this, SLOT(playAudibleChanged(bool)));
-	layout->setAlignment(m_playButton, Qt::AlignVCenter);
 
         LevelPanToolButton *levelPan = new LevelPanToolButton;
-        layout->addWidget(levelPan);
+        levelPan->setFixedSize(buttonSize);
+        levelPan->setImageSize((buttonSize.height() * 3) / 4);
+        layout->addWidget(levelPan, 0, col++, Qt::AlignCenter);
         connect(levelPan, SIGNAL(levelChanged(float)),
                 this, SLOT(playGainControlChanged(float)));
         connect(levelPan, SIGNAL(panChanged(float)),
@@ -191,13 +197,14 @@ PropertyBox::populateViewPlayFrame()
         connect(levelPan, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
 
+	layout->addWidget(m_playButton, 0, col++, Qt::AlignCenter);
+
         if (params->getPlayClipId() != "") {
-            NotifyingPushButton *playParamButton = new NotifyingPushButton;
+            QToolButton *playParamButton = new QToolButton;
             playParamButton->setObjectName("playParamButton");
             playParamButton->setIcon(IconLoader().load("faders"));
-            playParamButton->setFixedWidth(WidgetScale::scalePixelSize(24));
-            playParamButton->setFixedHeight(WidgetScale::scalePixelSize(24));
-            layout->addWidget(playParamButton);
+            playParamButton->setFixedSize(buttonSize);
+            layout->addWidget(playParamButton, 0, col++, Qt::AlignCenter);
             connect(playParamButton, SIGNAL(clicked()),
                     this, SLOT(editPlayParameters()));
             connect(playParamButton, SIGNAL(mouseEntered()),
@@ -207,23 +214,21 @@ PropertyBox::populateViewPlayFrame()
         }
     }
 
-    layout->insertStretch(-1, 10);
+    layout->setColumnStretch(col++, 10);
 
     if (layer) {
 
 	QLabel *showLabel = new QLabel(tr("Show"));
-	layout->addWidget(showLabel);
-	layout->setAlignment(showLabel, Qt::AlignVCenter);
+	layout->addWidget(showLabel, 0, col++, Qt::AlignVCenter | Qt::AlignRight);
 
 	m_showButton = new LEDButton(Qt::blue);
-	layout->addWidget(m_showButton);
+	layout->addWidget(m_showButton, 0, col++, Qt::AlignVCenter | Qt::AlignLeft);
 	connect(m_showButton, SIGNAL(stateChanged(bool)),
 		this, SIGNAL(showLayer(bool)));
         connect(m_showButton, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
         connect(m_showButton, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
-	layout->setAlignment(m_showButton, Qt::AlignVCenter);
     }
 }
 
