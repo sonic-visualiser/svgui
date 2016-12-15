@@ -169,6 +169,7 @@ PropertyBox::populateViewPlayFrame()
         m_playButton = new NotifyingToolButton;
         m_playButton->setCheckable(true);
         m_playButton->setIcon(IconLoader().load("speaker"));
+        m_playButton->setToolTip(tr("Click to toggle playback"));
         m_playButton->setChecked(!params->isPlayMuted());
         m_playButton->setFixedSize(buttonSize);
 	connect(m_playButton, SIGNAL(toggled(bool)),
@@ -261,24 +262,31 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     bool inGroup = (groupName != QString());
 
     if (!have) {
+
+        QLabel *labelWidget = 0;
+
 	if (inGroup) {
 	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
-#ifdef DEBUG_PROPERTY_BOX
-		cerr << "PropertyBox: adding label \"" << groupName << "\" and frame for group for \"" << name << "\"" << endl;
-#endif
-		m_layout->addWidget(new QLabel(groupName, m_mainWidget), row, 0);
-		QFrame *frame = new QFrame(m_mainWidget);
-		m_layout->addWidget(frame, row, 1, 1, 2);
-		m_groupLayouts[groupName] = new QGridLayout;
-		m_groupLayouts[groupName]->setMargin(0);
-		frame->setLayout(m_groupLayouts[groupName]);
-	    }
-	} else {
-#ifdef DEBUG_PROPERTY_BOX 
-	    cerr << "PropertyBox: adding label \"" << propertyLabel << "\"" << endl;
-#endif
-	    m_layout->addWidget(new QLabel(propertyLabel, m_mainWidget), row, 0);
-	}
+                labelWidget = new QLabel(groupName, m_mainWidget);
+            }
+        } else {
+            inGroup = true;
+            groupName = "ungrouped: " + propertyLabel;
+	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
+                labelWidget = new QLabel(propertyLabel, m_mainWidget);
+            }
+        }
+        
+        if (labelWidget) {
+            m_layout->addWidget(labelWidget, row, 0);
+            QWidget *frame = new QWidget(m_mainWidget);
+            frame->setMinimumSize(WidgetScale::scaleQSize(QSize(1, 24)));
+            m_groupLayouts[groupName] = new QGridLayout;
+            m_groupLayouts[groupName]->setMargin(0);
+            frame->setLayout(m_groupLayouts[groupName]);
+            m_layout->addWidget(frame, row, 1, 1, 2);
+            m_layout->setColumnStretch(1, 10);
+        }
     }
 
     switch (type) {
