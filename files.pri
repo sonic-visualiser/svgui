@@ -66,6 +66,7 @@ SVGUI_HEADERS += \
            widgets/NotifyingComboBox.h \
            widgets/NotifyingPushButton.h \
            widgets/NotifyingTabBar.h \
+           widgets/NotifyingToolButton.h \
            widgets/Panner.h \
            widgets/PluginParameterBox.h \
            widgets/PluginParameterDialog.h \
@@ -144,6 +145,7 @@ SVGUI_SOURCES += \
            widgets/NotifyingComboBox.cpp \
            widgets/NotifyingPushButton.cpp \
            widgets/NotifyingTabBar.cpp \
+           widgets/NotifyingToolButton.cpp \
            widgets/Panner.cpp \
            widgets/PluginParameterBox.cpp \
            widgets/PluginParameterDialog.cpp \
