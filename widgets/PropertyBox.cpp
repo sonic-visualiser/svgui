@@ -282,7 +282,14 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             QWidget *frame = new QWidget(m_mainWidget);
             frame->setMinimumSize(WidgetScale::scaleQSize(QSize(1, 24)));
             m_groupLayouts[groupName] = new QGridLayout;
-            m_groupLayouts[groupName]->setMargin(0);
+#ifdef Q_OS_MAC
+            // Seems to be plenty of whitespace already
+            m_groupLayouts[groupName]->setContentsMargins(0, 0, 0, 0);
+#else
+            // Need a bit of padding on the left
+            m_groupLayouts[groupName]->setContentsMargins
+                (WidgetScale::scalePixelSize(10), 0, 0, 0);
+#endif
             frame->setLayout(m_groupLayouts[groupName]);
             m_layout->addWidget(frame, row, 1, 1, 2);
             m_layout->setColumnStretch(1, 10);
