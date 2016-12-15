@@ -42,6 +42,7 @@ LevelPanWidget::LevelPanWidget(QWidget *parent) :
     m_editable(true),
     m_includeMute(true)
 {
+    setToolTip(tr("Drag vertically to adjust level, horizontally to adjust pan"));
 }
 
 LevelPanWidget::~LevelPanWidget()
