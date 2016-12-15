@@ -455,9 +455,8 @@ Thumbwheel::paintEvent(QPaintEvent *)
     m_cache = QImage(imageSize, QImage::Format_ARGB32);
     m_cache.fill(Qt::transparent);
 
-    double w = m_cache.width();
-    double h = m_cache.height();
-
+    int w = m_cache.width();
+    int h = m_cache.height();
     int bw = 3; // border width
 
     QRect subclip;

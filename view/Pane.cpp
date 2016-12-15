@@ -22,6 +22,7 @@
 #include "ViewManager.h"
 #include "widgets/CommandHistory.h"
 #include "widgets/TextAbbrev.h"
+#include "widgets/IconLoader.h"
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 #include "layer/TimeRulerLayer.h"
@@ -142,8 +143,8 @@ Pane::updateHeadsUpDisplay()
         m_hthumb->setObjectName(tr("Horizontal Zoom"));
         m_hthumb->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_hthumb, 1, 0, 1, 2);
-        m_hthumb->setFixedWidth(70);
-        m_hthumb->setFixedHeight(16);
+        m_hthumb->setFixedWidth(m_manager->scalePixelSize(70));
+        m_hthumb->setFixedHeight(m_manager->scalePixelSize(16));
         m_hthumb->setDefaultValue(0);
         m_hthumb->setSpeed(0.6f);
         connect(m_hthumb, SIGNAL(valueChanged(int)), this, 
@@ -154,8 +155,8 @@ Pane::updateHeadsUpDisplay()
         m_vpan = new Panner;
         m_vpan->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_vpan, 0, 1);
-        m_vpan->setFixedWidth(12);
-        m_vpan->setFixedHeight(70);
+        m_vpan->setFixedWidth(m_manager->scalePixelSize(12));
+        m_vpan->setFixedHeight(m_manager->scalePixelSize(70));
         m_vpan->setAlpha(80, 130);
         connect(m_vpan, SIGNAL(rectExtentsChanged(float, float, float, float)),
                 this, SLOT(verticalPannerMoved(float, float, float, float)));
@@ -168,8 +169,8 @@ Pane::updateHeadsUpDisplay()
         m_vthumb->setObjectName(tr("Vertical Zoom"));
         m_vthumb->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_vthumb, 0, 2);
-        m_vthumb->setFixedWidth(16);
-        m_vthumb->setFixedHeight(70);
+        m_vthumb->setFixedWidth(m_manager->scalePixelSize(16));
+        m_vthumb->setFixedHeight(m_manager->scalePixelSize(70));
         connect(m_vthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(verticalThumbwheelMoved(int)));
         connect(m_vthumb, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
@@ -183,9 +184,9 @@ Pane::updateHeadsUpDisplay()
         m_reset = new NotifyingPushButton;
         m_reset->setFlat(true);
         m_reset->setCursor(Qt::ArrowCursor);
-        m_reset->setFixedHeight(16);
-        m_reset->setFixedWidth(16);
-        m_reset->setIcon(QPixmap(":/icons/zoom-reset.png"));
+        m_reset->setFixedHeight(m_manager->scalePixelSize(16));
+        m_reset->setFixedWidth(m_manager->scalePixelSize(16));
+        m_reset->setIcon(IconLoader().load("zoom-reset"));
         m_reset->setToolTip(tr("Reset zoom to default"));
         layout->addWidget(m_reset, 1, 2);
         
@@ -284,16 +285,19 @@ Pane::updateHeadsUpDisplay()
     updateVerticalPanner();
 
     if (m_manager && m_manager->getZoomWheelsEnabled() &&
-        width() > 120 && height() > 100) {
+        width() > m_manager->scalePixelSize(120) &&
+        height() > m_manager->scalePixelSize(100)) {
         if (!m_headsUpDisplay->isVisible()) {
             m_headsUpDisplay->show();
         }
+        int shift = m_manager->scalePixelSize(86);
         if (haveVThumb) {
             m_headsUpDisplay->setFixedHeight(m_vthumb->height() + m_hthumb->height());
-            m_headsUpDisplay->move(width() - 86, height() - 86);
+            m_headsUpDisplay->move(width() - shift, height() - shift);
         } else {
             m_headsUpDisplay->setFixedHeight(m_hthumb->height());
-            m_headsUpDisplay->move(width() - 86, height() - 16);
+            m_headsUpDisplay->move(width() - shift,
+                                   height() - m_manager->scalePixelSize(16));
         }
     } else {
         m_headsUpDisplay->hide();
@@ -920,7 +924,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 
     int lly = height() - 6;
     if (m_manager->getZoomWheelsEnabled()) {
-        lly -= 20;
+        lly -= m_manager->scalePixelSize(20);
     }
 
     if (r.y() + r.height() < lly - int(m_layerStack.size()) * fontHeight) {
@@ -942,7 +946,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 
     int llx = width() - maxTextWidth - 5;
     if (m_manager->getZoomWheelsEnabled()) {
-        llx -= 36;
+        llx -= m_manager->scalePixelSize(36);
     }
     
     if (r.x() + r.width() >= llx - fontAscent - 3) {
