@@ -255,6 +255,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
     if (name == "Gain") return RangeProperty;
     if (name == "Colour Rotation") return RangeProperty;
     if (name == "Threshold") return RangeProperty;
+    if (name == "Colour") return ColourMapProperty;
     return ValueProperty;
 }
 

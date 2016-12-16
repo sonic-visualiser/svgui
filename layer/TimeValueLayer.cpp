@@ -132,7 +132,7 @@ TimeValueLayer::getPropertyType(const PropertyName &name) const
     if (name == "Plot Type") return ValueProperty;
     if (name == "Vertical Scale") return ValueProperty;
     if (name == "Scale Units") return UnitsProperty;
-    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ValueProperty;
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ColourMapProperty;
     if (name == "Draw Segment Division Lines") return ToggleProperty;
     if (name == "Show Derivative") return ToggleProperty;
     return SingleColourLayer::getPropertyType(name);

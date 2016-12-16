@@ -35,6 +35,7 @@
 #include "NotifyingPushButton.h"
 #include "NotifyingToolButton.h"
 #include "ColourComboBox.h"
+#include "ColourMapComboBox.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -419,13 +420,44 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             cb->blockSignals(false);
         }
 
-#ifdef Q_OS_MAC
-	// Crashes on startup without this, for some reason; also
-	// prevents combo boxes from getting weirdly squished
-	// vertically
 	cb->setMinimumSize(QSize(10, cb->font().pixelSize() * 2));
-#endif
+        break;
+    }        
 
+    case PropertyContainer::ColourMapProperty:
+    {
+        ColourMapComboBox *cb;
+        
+	if (have) {
+	    cb = qobject_cast<ColourMapComboBox *>(m_propertyControllers[name]);
+	    assert(cb);
+	} else {
+#ifdef DEBUG_PROPERTY_BOX 
+	    cerr << "PropertyBox: creating new colourmap combobox" << endl;
+#endif
+            cb = new ColourMapComboBox();
+            cb->setObjectName(name);
+
+	    connect(cb, SIGNAL(colourMapChanged(int)),
+		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(cb, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
+
+            cb->setToolTip(propertyLabel);
+            m_groupLayouts[groupName]->addWidget
+                (cb, 0, m_groupLayouts[groupName]->columnCount());
+	    m_propertyControllers[name] = cb;
+	}
+
+        if (cb->currentIndex() != value) {
+            cb->blockSignals(true);
+            cb->setCurrentIndex(value);
+            cb->blockSignals(false);
+        }
+
+	cb->setMinimumSize(QSize(10, cb->font().pixelSize() * 2));
         break;
     }        
 
