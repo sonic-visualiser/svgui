@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2007 QMUL.
+    This file copyright 2007-2016 QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -13,33 +13,31 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef SV_NOTIFYING_COMBO_BOX_H
-#define SV_NOTIFYING_COMBO_BOX_H
+#ifndef SV_COLOUR_COMBO_BOX_H
+#define SV_COLOUR_COMBO_BOX_H
 
-#include <QComboBox>
+#include "NotifyingComboBox.h"
 
 /**
- * Very trivial enhancement to QComboBox to make it emit signals when
- * the mouse enters and leaves (for context help).
+ * Colour-picker combo box with swatches, optionally including "Add
+ * New Colour..." entry to invoke a QColorDialog/ColourNameDialog
  */
-
-class NotifyingComboBox : public QComboBox
+class ColourComboBox : public NotifyingComboBox
 {
     Q_OBJECT
 
 public:
-    NotifyingComboBox(QWidget *parent = 0) :
-        QComboBox(parent) { }
-
-    virtual ~NotifyingComboBox();
+    ColourComboBox(bool withAddNewColourEntry, QWidget *parent = 0);
 
 signals:
-    void mouseEntered();
-    void mouseLeft();
+    void colourChanged(int colourIndex);
 
-protected:
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+private slots:
+    void rebuild();
+    void comboActivated(int);
+    
+private:
+    bool m_withAddNewColourEntry;
 };
 
 #endif

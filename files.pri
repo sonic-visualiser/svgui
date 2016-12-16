@@ -44,6 +44,7 @@ SVGUI_HEADERS += \
 	   widgets/ActivityLog.h \
            widgets/AudioDial.h \
            widgets/ClickableLabel.h \
+           widgets/ColourComboBox.h \
            widgets/ColourNameDialog.h \
            widgets/CommandHistory.h \
            widgets/CSVFormatDialog.h \
@@ -123,6 +124,7 @@ SVGUI_SOURCES += \
            view/ViewManager.cpp \
 	   widgets/ActivityLog.cpp \
            widgets/AudioDial.cpp \
+           widgets/ColourComboBox.cpp \
            widgets/ColourNameDialog.cpp \
            widgets/CommandHistory.cpp \
            widgets/CSVFormatDialog.cpp \

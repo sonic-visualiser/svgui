@@ -20,7 +20,6 @@
 #include "base/PlayParameters.h"
 #include "base/PlayParameterRepository.h"
 #include "layer/Layer.h"
-#include "layer/ColourDatabase.h"
 #include "base/UnitDatabase.h"
 #include "base/RangeMapper.h"
 
@@ -35,7 +34,7 @@
 #include "NotifyingComboBox.h"
 #include "NotifyingPushButton.h"
 #include "NotifyingToolButton.h"
-#include "ColourNameDialog.h"
+#include "ColourComboBox.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -107,9 +106,6 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 
     connect(UnitDatabase::getInstance(), SIGNAL(unitDatabaseChanged()),
             this, SLOT(unitDatabaseChanged()));
-
-    connect(ColourDatabase::getInstance(), SIGNAL(colourDatabaseChanged()),
-            this, SLOT(colourDatabaseChanged()));
 
 #ifdef DEBUG_PROPERTY_BOX
     cerr << "PropertyBox[" << this << "]::PropertyBox returning" << endl;
@@ -303,7 +299,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         QAbstractButton *button = 0;
 
 	if (have) {
-            button = dynamic_cast<QAbstractButton *>(m_propertyControllers[name]);
+            button = qobject_cast<QAbstractButton *>(m_propertyControllers[name]);
             assert(button);
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
@@ -349,7 +345,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	AudioDial *dial;
 
 	if (have) {
-	    dial = dynamic_cast<AudioDial *>(m_propertyControllers[name]);
+	    dial = qobject_cast<AudioDial *>(m_propertyControllers[name]);
 	    assert(dial);
             if (rangeChanged) {
                 dial->blockSignals(true);
@@ -408,14 +404,60 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	break;
     }
 
+    case PropertyContainer::ColourProperty:
+    {
+        ColourComboBox *cb;
+        
+	if (have) {
+	    cb = qobject_cast<ColourComboBox *>(m_propertyControllers[name]);
+	    assert(cb);
+	} else {
+#ifdef DEBUG_PROPERTY_BOX 
+	    cerr << "PropertyBox: creating new colour combobox" << endl;
+#endif
+            cb = new ColourComboBox(true);
+            cb->setObjectName(name);
+
+	    connect(cb, SIGNAL(colourChanged(int)),
+		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(cb, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
+
+	    if (inGroup) {
+		cb->setToolTip(propertyLabel);
+		m_groupLayouts[groupName]->addWidget
+                    (cb, 0, m_groupLayouts[groupName]->columnCount());
+	    } else {
+		m_layout->addWidget(cb, row, 1, 1, 2);
+	    }
+	    m_propertyControllers[name] = cb;
+	}
+
+        if (cb->currentIndex() != value) {
+            cb->blockSignals(true);
+            cb->setCurrentIndex(value);
+            cb->blockSignals(false);
+        }
+
+#ifdef Q_OS_MAC
+	// Crashes on startup without this, for some reason; also
+	// prevents combo boxes from getting weirdly squished
+	// vertically
+	cb->setMinimumSize(QSize(10, cb->font().pixelSize() * 2));
+#endif
+
+        break;
+    }        
+
     case PropertyContainer::ValueProperty:
     case PropertyContainer::UnitsProperty:
-    case PropertyContainer::ColourProperty:
     {
 	NotifyingComboBox *cb;
 
 	if (have) {
-	    cb = dynamic_cast<NotifyingComboBox *>(m_propertyControllers[name]);
+	    cb = qobject_cast<NotifyingComboBox *>(m_propertyControllers[name]);
 	    assert(cb);
 	} else {
 #ifdef DEBUG_PROPERTY_BOX 
@@ -448,7 +490,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     }
                 }
 
-            } else if (type == PropertyContainer::UnitsProperty) {
+            } else { // PropertyContainer::UnitsProperty
 
                 QStringList units = UnitDatabase::getInstance()->getKnownUnits();
                 for (int i = 0; i < units.size(); ++i) {
@@ -456,26 +498,6 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 }
 
                 cb->setEditable(true);
-
-            } else { // ColourProperty
-
-                //!!! should be a proper colour combobox class that
-                // manages its own Add New Colour entry...
-
-                int size = (QFontMetrics(QFont()).height() * 2) / 3;
-                if (size < 12) size = 12;
-                
-                ColourDatabase *db = ColourDatabase::getInstance();
-                for (int i = 0; i < db->getColourCount(); ++i) {
-                    QString name = db->getColourName(i);
-                    cb->addItem(db->getExamplePixmap(i, QSize(size, size)), name);
-                }
-                cb->addItem(tr("Add New Colour..."));
-            }                
-                
-            cb->blockSignals(false);
-            if (cb->count() < 20 && cb->count() > cb->maxVisibleItems()) {
-                cb->setMaxVisibleItems(cb->count());
             }
         }
 
@@ -498,8 +520,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	}
 
         cb->blockSignals(true);
-        if (type == PropertyContainer::ValueProperty ||
-            type == PropertyContainer::ColourProperty) {
+        if (type == PropertyContainer::ValueProperty) {
             if (cb->currentIndex() != value) {
                 cb->setCurrentIndex(value);
             }
@@ -590,22 +611,6 @@ PropertyBox::unitDatabaseChanged()
 }    
 
 void
-PropertyBox::colourDatabaseChanged()
-{
-    blockSignals(true);
-
-    PropertyContainer::PropertyList properties = m_container->getProperties();
-    for (size_t i = 0; i < properties.size(); ++i) {
-        if (m_container->getPropertyType(properties[i]) ==
-            PropertyContainer::ColourProperty) {
-            updatePropertyEditor(properties[i], true);
-        }
-    }
-
-    blockSignals(false);
-}    
-
-void
 PropertyBox::propertyControllerChanged(bool on)
 {
     propertyControllerChanged(on ? 1 : 0);
@@ -627,23 +632,12 @@ PropertyBox::propertyControllerChanged(int value)
 
     if (type == PropertyContainer::UnitsProperty) {
 
-        NotifyingComboBox *cb = dynamic_cast<NotifyingComboBox *>(obj);
+        NotifyingComboBox *cb = qobject_cast<NotifyingComboBox *>(obj);
         if (cb) {
             QString unit = cb->currentText();
             c = m_container->getSetPropertyCommand
                 (name, UnitDatabase::getInstance()->getUnitId(unit));
         }
-
-    } else if (type == PropertyContainer::ColourProperty) {
-
-        if (value == int(ColourDatabase::getInstance()->getColourCount())) {
-            addNewColour();
-            if (value == int(ColourDatabase::getInstance()->getColourCount())) {
-                propertyContainerPropertyChanged(m_container);
-                return;
-            }
-        }
-        c = m_container->getSetPropertyCommand(name, value);
 
     } else if (type != PropertyContainer::InvalidProperty) {
 
@@ -653,24 +647,6 @@ PropertyBox::propertyControllerChanged(int value)
     if (c) CommandHistory::getInstance()->addCommand(c, true, true);
     
     updateContextHelp(obj);
-}
-
-void
-PropertyBox::addNewColour()
-{
-    QColor newColour = QColorDialog::getColor();
-    if (!newColour.isValid()) return;
-
-    ColourNameDialog dialog(tr("Name New Colour"),
-                            tr("Enter a name for the new colour:"),
-                            newColour, newColour.name(), this);
-    dialog.showDarkBackgroundCheckbox(tr("Prefer black background for this colour"));
-    if (dialog.exec() == QDialog::Accepted) {
-        //!!! command
-        ColourDatabase *db = ColourDatabase::getInstance();
-        int index = db->addColour(newColour, dialog.getColourName());
-        db->setUseDarkBackground(index, dialog.isDarkBackgroundChecked());
-    }
 }
 
 void
@@ -803,7 +779,7 @@ PropertyBox::mouseEnteredWidget()
 void
 PropertyBox::updateContextHelp(QObject *o)
 {
-    QWidget *w = dynamic_cast<QWidget *>(o);
+    QWidget *w = qobject_cast<QWidget *>(o);
     if (!w) return;
 
     if (!m_container) return;
@@ -848,7 +824,7 @@ PropertyBox::updateContextHelp(QObject *o)
         emit contextHelpChanged(tr("Toggle Playback of %1").arg(cname));
     } else if (wname == "") {
         return;
-    } else if (dynamic_cast<QAbstractButton *>(w)) {
+    } else if (qobject_cast<QAbstractButton *>(w)) {
         emit contextHelpChanged(tr("Toggle %1 property of %2")
                                 .arg(wname).arg(cname));
     } else {
