@@ -70,6 +70,7 @@ protected:
     virtual void paintEvent(QPaintEvent *);
     virtual void enterEvent(QEvent *);
     virtual void leaveEvent(QEvent *);
+    virtual void wheelEvent(QWheelEvent *e);
     
     LevelPanWidget *m_lpw;
     int m_pixels;
