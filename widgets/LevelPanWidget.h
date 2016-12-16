@@ -29,7 +29,8 @@ public:
     LevelPanWidget(QWidget *parent = 0);
     ~LevelPanWidget();
     
-    /// Return level as a gain value in the range [0,1]
+    /// Return level as a gain value. The basic level range is [0,1] but the
+    /// gain scale may go up to 4.0
     float getLevel() const; 
     
     /// Return pan as a value in the range [-1,1]
@@ -47,10 +48,11 @@ public:
     QSize sizeHint() const;
                                                
 public slots:
-    /// Set level in the range [0,1] -- will be rounded
+    /// Set level. The basic level range is [0,1] but the scale may go
+    /// higher. The value will be rounded.
     void setLevel(float);
 
-    /// Set pan in the range [-1,1] -- will be rounded
+    /// Set pan in the range [-1,1]. The value will be rounded
     void setPan(float);
 
     /// Set left and right peak monitoring levels in the range [0,1]

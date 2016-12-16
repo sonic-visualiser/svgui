@@ -43,6 +43,8 @@ LevelPanWidget::LevelPanWidget(QWidget *parent) :
     m_includeMute(true)
 {
     setToolTip(tr("Drag vertically to adjust level, horizontally to adjust pan"));
+    setLevel(1.0);
+    setPan(0.0);
 }
 
 LevelPanWidget::~LevelPanWidget()
@@ -124,7 +126,8 @@ LevelPanWidget::setLevel(float flevel)
 float
 LevelPanWidget::getLevel() const
 {
-    return levelToAudioLevel(m_level, m_includeMute);
+    float flevel = levelToAudioLevel(m_level, m_includeMute);
+    return flevel;
 }
 
 int
@@ -196,14 +199,12 @@ LevelPanWidget::setIncludeMute(bool include)
 void
 LevelPanWidget::emitLevelChanged()
 {
-    cerr << "emitting levelChanged(" << getLevel() << ")" << endl;
     emit levelChanged(getLevel());
 }
 
 void
 LevelPanWidget::emitPanChanged()
 {
-    cerr << "emitting panChanged(" << getPan() << ")" << endl;
     emit panChanged(getPan());
 }
 
