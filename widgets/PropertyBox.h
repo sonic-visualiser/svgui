@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PROPERTY_BOX_H_
-#define _PROPERTY_BOX_H_
+#ifndef SV_PROPERTY_BOX_H
+#define SV_PROPERTY_BOX_H
 
 #include "base/PropertyContainer.h"
 
@@ -62,7 +62,6 @@ protected slots:
     void populateViewPlayFrame();
 
     void unitDatabaseChanged();
-    void colourDatabaseChanged();
 
     void editPlayParameters();
 
@@ -73,7 +72,6 @@ protected:
     void updatePropertyEditor(PropertyContainer::PropertyName,
                               bool rangeChanged = false);
     void updateContextHelp(QObject *o);
-    void addNewColour();
 
     QLabel *m_nameWidget;
     QWidget *m_mainWidget;
