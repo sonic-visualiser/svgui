@@ -59,6 +59,12 @@ LevelPanToolButton::~LevelPanToolButton()
 {
 }
 
+void
+LevelPanToolButton::wheelEvent(QWheelEvent *e)
+{
+    m_lpw->wheelEvent(e);
+}
+
 float
 LevelPanToolButton::getLevel() const
 {
