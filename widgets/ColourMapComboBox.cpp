@@ -25,8 +25,9 @@
 
 using namespace std;
 
-ColourMapComboBox::ColourMapComboBox(QWidget *parent) :
-    NotifyingComboBox(parent)
+ColourMapComboBox::ColourMapComboBox(bool includeSwatches, QWidget *parent) :
+    NotifyingComboBox(parent),
+    m_includeSwatches(includeSwatches)
 {
     setEditable(false);
     rebuild();
@@ -57,9 +58,13 @@ ColourMapComboBox::rebuild()
     if (size < 12) size = 12;
 
     for (int i = 0; i < ColourMapper::getColourMapCount(); ++i) {
-	QString name = ColourMapper::getColourMapName(i);
-//	addItem(db->getExamplePixmap(i, QSize(size, size)), name);
-        addItem(name);
+        QString name = ColourMapper::getColourMapName(i);
+        if (m_includeSwatches) {
+            ColourMapper mapper(i, 0.0, 1.0);
+            addItem(mapper.getExamplePixmap(QSize(size * 2, size)), name);
+        } else {
+            addItem(name);
+        }
     }
 
     setCurrentIndex(ix);

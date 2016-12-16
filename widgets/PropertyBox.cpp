@@ -219,7 +219,7 @@ PropertyBox::populateViewPlayFrame()
 	QLabel *showLabel = new QLabel(tr("Show"));
 	layout->addWidget(showLabel, 0, col++, Qt::AlignVCenter | Qt::AlignRight);
 
-	m_showButton = new LEDButton(Qt::blue);
+	m_showButton = new LEDButton(palette().highlight().color());
 	layout->addWidget(m_showButton, 0, col++, Qt::AlignVCenter | Qt::AlignLeft);
 	connect(m_showButton, SIGNAL(stateChanged(bool)),
 		this, SIGNAL(showLayer(bool)));
@@ -420,7 +420,6 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             cb->blockSignals(false);
         }
 
-	cb->setMinimumSize(QSize(10, cb->font().pixelSize() * 2));
         break;
     }        
 
@@ -435,7 +434,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new colourmap combobox" << endl;
 #endif
-            cb = new ColourMapComboBox();
+            cb = new ColourMapComboBox(false);
             cb->setObjectName(name);
 
 	    connect(cb, SIGNAL(colourMapChanged(int)),
@@ -457,7 +456,6 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             cb->blockSignals(false);
         }
 
-	cb->setMinimumSize(QSize(10, cb->font().pixelSize() * 2));
         break;
     }        
 
@@ -542,13 +540,6 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             }
         }
         cb->blockSignals(false);
-
-#ifdef Q_OS_MAC
-	// Crashes on startup without this, for some reason; also
-	// prevents combo boxes from getting weirdly squished
-	// vertically
-	cb->setMinimumSize(QSize(10, cb->font().pixelSize() * 2));
-#endif
 
 	break;
     }

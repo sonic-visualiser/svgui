@@ -19,14 +19,14 @@
 #include "NotifyingComboBox.h"
 
 /**
- * Colour map picker combo box with swatches
+ * Colour map picker combo box with optional swatches
  */
 class ColourMapComboBox : public NotifyingComboBox
 {
     Q_OBJECT
 
 public:
-    ColourMapComboBox(QWidget *parent = 0);
+    ColourMapComboBox(bool includeSwatches, QWidget *parent = 0);
 
 signals:
     void colourMapChanged(int index);
@@ -34,6 +34,9 @@ signals:
 private slots:
     void rebuild();
     void comboActivated(int);
+
+private:
+    bool m_includeSwatches;
 };
 
 #endif

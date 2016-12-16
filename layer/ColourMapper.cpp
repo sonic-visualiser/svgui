@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006-2007 Chris Cannam and QMUL.
+    This file copyright 2006-2016 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -22,6 +22,8 @@
 #include "base/Debug.h"
 
 #include <vector>
+
+#include <QPainter>
 
 using namespace std;
 
@@ -318,6 +320,31 @@ ColourMapper::hasLightBackground() const
     default:
         return false;
     }
+}
+
+QPixmap
+ColourMapper::getExamplePixmap(QSize size) const
+{
+    QPixmap pmap(size);
+    pmap.fill(Qt::white);
+    QPainter paint(&pmap);
+
+    int w = size.width(), h = size.height();
+    
+    int margin = 2;
+    if (w < 4 || h < 4) margin = 0;
+    else if (w < 8 || h < 8) margin = 1;
+
+    int n = w - margin*2;
+    
+    for (int x = 0; x < n; ++x) {
+        double value = m_min + ((m_max - m_min) * x) / (n-1);
+        QColor colour(map(value));
+        paint.setPen(colour);
+        paint.drawLine(x + margin, margin, x + margin, h - margin);
+    }
+    
+    return pmap;
 }
 
 
