@@ -255,18 +255,15 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	      << groupName << "\"" << endl;
 #endif
 
-    bool inGroup = (groupName != QString());
-
     if (!have) {
 
         QLabel *labelWidget = 0;
 
-	if (inGroup) {
+	if (groupName != QString()) {
 	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
                 labelWidget = new QLabel(groupName, m_mainWidget);
             }
         } else {
-            inGroup = true;
             groupName = "ungrouped: " + propertyLabel;
 	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
                 labelWidget = new QLabel(propertyLabel, m_mainWidget);
@@ -322,13 +319,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseEnteredWidget()));
             connect(button, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
-	    if (inGroup) {
-		button->setToolTip(propertyLabel);
-		m_groupLayouts[groupName]->addWidget
-                    (button, 0, m_groupLayouts[groupName]->columnCount());
-	    } else {
-		m_layout->addWidget(button, row, 1, 1, 2);
-	    }
+            button->setToolTip(propertyLabel);
+            m_groupLayouts[groupName]->addWidget
+                (button, 0, m_groupLayouts[groupName]->columnCount());
 	    m_propertyControllers[name] = button;
 	}
 
@@ -377,21 +370,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             connect(dial, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
 
-	    if (inGroup) {
-		dial->setFixedWidth(WidgetScale::scalePixelSize(24));
-		dial->setFixedHeight(WidgetScale::scalePixelSize(24));
-		m_groupLayouts[groupName]->addWidget
-                    (dial, 0, m_groupLayouts[groupName]->columnCount());
-	    } else {
-		dial->setFixedWidth(WidgetScale::scalePixelSize(32));
-		dial->setFixedHeight(WidgetScale::scalePixelSize(32));
-		m_layout->addWidget(dial, row, 1);
-		QLabel *label = new QLabel(m_mainWidget);
-		connect(dial, SIGNAL(valueChanged(int)),
-			label, SLOT(setNum(int)));
-		label->setNum(value);
-		m_layout->addWidget(label, row, 2);
-	    }
+            dial->setFixedWidth(WidgetScale::scalePixelSize(24));
+            dial->setFixedHeight(WidgetScale::scalePixelSize(24));
+            m_groupLayouts[groupName]->addWidget
+                (dial, 0, m_groupLayouts[groupName]->columnCount());
 
 	    m_propertyControllers[name] = dial;
 	}
@@ -425,13 +407,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             connect(cb, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
 
-	    if (inGroup) {
-		cb->setToolTip(propertyLabel);
-		m_groupLayouts[groupName]->addWidget
-                    (cb, 0, m_groupLayouts[groupName]->columnCount());
-	    } else {
-		m_layout->addWidget(cb, row, 1, 1, 2);
-	    }
+            cb->setToolTip(propertyLabel);
+            m_groupLayouts[groupName]->addWidget
+                (cb, 0, m_groupLayouts[groupName]->columnCount());
 	    m_propertyControllers[name] = cb;
 	}
 
@@ -509,13 +487,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             connect(cb, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
 
-	    if (inGroup) {
-		cb->setToolTip(propertyLabel);
-		m_groupLayouts[groupName]->addWidget
-                    (cb, 0, m_groupLayouts[groupName]->columnCount());
-	    } else {
-		m_layout->addWidget(cb, row, 1, 1, 2);
-	    }
+            cb->setToolTip(propertyLabel);
+            m_groupLayouts[groupName]->addWidget
+                (cb, 0, m_groupLayouts[groupName]->columnCount());
 	    m_propertyControllers[name] = cb;
 	}
 
