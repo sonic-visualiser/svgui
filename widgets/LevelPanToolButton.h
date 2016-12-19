@@ -47,6 +47,9 @@ public slots:
     /// Set pan in the range [-1,1] -- will be rounded
     void setPan(float);
 
+    /// Set left and right peak monitoring levels in the range [0,1]
+    void setMonitoringLevels(float, float);
+    
     /// Specify whether the level range should include muting or not
     void setIncludeMute(bool);
 
@@ -56,12 +59,18 @@ signals:
     void levelChanged(float);
     void panChanged(float);
 
+    void mouseEntered();
+    void mouseLeft();
+
 private slots:
     void selfLevelChanged(float);
     void selfClicked();
     
 protected:
-    void paintEvent(QPaintEvent *);
+    virtual void paintEvent(QPaintEvent *);
+    virtual void enterEvent(QEvent *);
+    virtual void leaveEvent(QEvent *);
+    virtual void wheelEvent(QWheelEvent *e);
     
     LevelPanWidget *m_lpw;
     int m_pixels;

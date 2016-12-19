@@ -275,6 +275,7 @@ Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
     if (name == "Invert Vertical Scale") return ToggleProperty;
     if (name == "Opaque") return ToggleProperty;
     if (name == "Smooth") return ToggleProperty;
+    if (name == "Colour") return ColourMapProperty;
     return ValueProperty;
 }
 

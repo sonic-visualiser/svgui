@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2007 QMUL.
+    This file copyright 2007-2016 QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -13,33 +13,30 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef SV_NOTIFYING_COMBO_BOX_H
-#define SV_NOTIFYING_COMBO_BOX_H
+#ifndef SV_COLOURMAP_COMBO_BOX_H
+#define SV_COLOURMAP_COMBO_BOX_H
 
-#include <QComboBox>
+#include "NotifyingComboBox.h"
 
 /**
- * Very trivial enhancement to QComboBox to make it emit signals when
- * the mouse enters and leaves (for context help).
+ * Colour map picker combo box with optional swatches
  */
-
-class NotifyingComboBox : public QComboBox
+class ColourMapComboBox : public NotifyingComboBox
 {
     Q_OBJECT
 
 public:
-    NotifyingComboBox(QWidget *parent = 0) :
-        QComboBox(parent) { }
-
-    virtual ~NotifyingComboBox();
+    ColourMapComboBox(bool includeSwatches, QWidget *parent = 0);
 
 signals:
-    void mouseEntered();
-    void mouseLeft();
+    void colourMapChanged(int index);
 
-protected:
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+private slots:
+    void rebuild();
+    void comboActivated(int);
+
+private:
+    bool m_includeSwatches;
 };
 
 #endif

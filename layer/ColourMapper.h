@@ -13,12 +13,13 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _COLOUR_MAPPER_H_
-#define _COLOUR_MAPPER_H_
+#ifndef SV_COLOUR_MAPPER_H
+#define SV_COLOUR_MAPPER_H
 
 #include <QObject>
 #include <QColor>
 #include <QString>
+#include <QPixmap>
 
 /**
  * A class for mapping intensity values onto various colour maps.
@@ -59,6 +60,8 @@ public:
     QColor getContrastingColour() const; // for cursors etc
     bool hasLightBackground() const;
 
+    QPixmap getExamplePixmap(QSize size) const;
+    
 protected:
     int m_map;
     double m_min;

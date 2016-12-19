@@ -37,28 +37,35 @@ class Pane : public View
 
 public:
     Pane(QWidget *parent = 0);
-    virtual QString getPropertyContainerIconName() const { return "pane"; }
+    virtual QString getPropertyContainerIconName() const override { return "pane"; }
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *layer,
-					       QPoint &pos) const;
+					       QPoint &pos) const override;
     virtual bool shouldIlluminateLocalSelection(QPoint &pos,
 						bool &closeToLeft,
-						bool &closeToRight) const;
+						bool &closeToRight) const override;
 
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
 
-    virtual sv_frame_t getFirstVisibleFrame() const;
+    virtual sv_frame_t getFirstVisibleFrame() const override;
 
-    virtual int getVerticalScaleWidth() const;
+    int getVerticalScaleWidth() const;
 
-    virtual QImage *toNewImage(sv_frame_t f0, sv_frame_t f1);
-    virtual QImage *toNewImage() { return View::toNewImage(); }
-    virtual QSize getImageSize(sv_frame_t f0, sv_frame_t f1);
-    virtual QSize getImageSize() { return View::getImageSize(); }
+    virtual QImage *renderToNewImage() override {
+        return View::renderToNewImage();
+    }
+    
+    virtual QImage *renderPartToNewImage(sv_frame_t f0, sv_frame_t f1) override;
+
+    virtual QSize getRenderedImageSize() override {
+        return View::getRenderedImageSize();
+    }
+    
+    virtual QSize getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1) override;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+                       QString extraAttributes = "") const override;
 
     static void registerShortcuts(KeyReference &kr);
 

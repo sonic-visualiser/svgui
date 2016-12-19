@@ -308,12 +308,42 @@ public:
     virtual const PropertyContainer *getPropertyContainer(int i) const;
     virtual PropertyContainer *getPropertyContainer(int i);
 
-    // Render the contents on a wide canvas
-    virtual QImage *toNewImage(sv_frame_t f0, sv_frame_t f1);
-    virtual QImage *toNewImage();
-    virtual QSize getImageSize(sv_frame_t f0, sv_frame_t f1);
-    virtual QSize getImageSize();
+    /** 
+     * Render the view contents to a new QImage (which may be wider
+     * than the visible View).
+     */
+    virtual QImage *renderToNewImage();
 
+    /** 
+     * Render the view contents between the given frame extents to a
+     * new QImage (which may be wider than the visible View).
+     */
+    virtual QImage *renderPartToNewImage(sv_frame_t f0, sv_frame_t f1);
+
+    /**
+     * Calculate and return the size of image that will be generated
+     * by renderToNewImage().
+     */
+    virtual QSize getRenderedImageSize();
+
+    /**
+     * Calculate and return the size of image that will be generated
+     * by renderPartToNewImage(f0, f1).
+     */
+    virtual QSize getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1);
+
+    /**
+     * Render the view contents to a new SVG file.
+     */
+    virtual bool renderToSvgFile(QString filename);
+
+    /**
+     * Render the view contents between the given frame extents to a
+     * new SVG file.
+     */
+    virtual bool renderPartToSvgFile(QString filename,
+                                     sv_frame_t f0, sv_frame_t f1);
+    
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
 
     virtual bool getValueExtents(QString unit, double &min, double &max,

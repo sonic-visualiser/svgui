@@ -13,25 +13,26 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef SV_NOTIFYING_COMBO_BOX_H
-#define SV_NOTIFYING_COMBO_BOX_H
+#ifndef SV_NOTIFYING_TOOL_BUTTON_H
+#define SV_NOTIFYING_TOOL_BUTTON_H
 
-#include <QComboBox>
+#include <QToolButton>
 
 /**
- * Very trivial enhancement to QComboBox to make it emit signals when
- * the mouse enters and leaves (for context help).
+ * Very trivial enhancement to QToolButton to make it emit signals
+ * when the mouse enters and leaves (for context help). See also
+ * NotifyingPushButton
  */
 
-class NotifyingComboBox : public QComboBox
+class NotifyingToolButton : public QToolButton
 {
     Q_OBJECT
 
 public:
-    NotifyingComboBox(QWidget *parent = 0) :
-        QComboBox(parent) { }
+    NotifyingToolButton(QWidget *parent = 0) :
+        QToolButton(parent) { }
 
-    virtual ~NotifyingComboBox();
+    virtual ~NotifyingToolButton();
 
 signals:
     void mouseEntered();

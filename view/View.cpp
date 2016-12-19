@@ -41,6 +41,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
+#include <QSvgGenerator>
 
 #include <iostream>
 #include <cassert>
@@ -2100,11 +2101,15 @@ View::drawSelections(QPainter &paint)
 		dx = p1 - 2 - dw;
 	    }
 
-	    paint.drawText(sx, sy, startText);
-	    paint.drawText(ex, ey, endText);
-	    paint.drawText(dx, dy, durationText);
+            PaintAssistant::drawVisibleText(this, paint, sx, sy, startText,
+                                            PaintAssistant::OutlinedText);
+            PaintAssistant::drawVisibleText(this, paint, ex, ey, endText,
+                                            PaintAssistant::OutlinedText);
+            PaintAssistant::drawVisibleText(this, paint, dx, dy, durationText,
+                                            PaintAssistant::OutlinedText);
             if (durationBothEnds) {
-                paint.drawText(sx, dy, durationText);
+                PaintAssistant::drawVisibleText(this, paint, sx, dy, durationText,
+                                                PaintAssistant::OutlinedText);
             }
 	}
     }
@@ -2457,16 +2462,16 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 }
 
 QImage *
-View::toNewImage()
+View::renderToNewImage()
 {
     sv_frame_t f0 = getModelsStartFrame();
     sv_frame_t f1 = getModelsEndFrame();
 
-    return toNewImage(f0, f1);
+    return renderPartToNewImage(f0, f1);
 }
 
 QImage *
-View::toNewImage(sv_frame_t f0, sv_frame_t f1)
+View::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
 {
     int x0 = int(f0 / getZoomLevel());
     int x1 = int(f1 / getZoomLevel());
@@ -2485,21 +2490,50 @@ View::toNewImage(sv_frame_t f0, sv_frame_t f1)
 }
 
 QSize
-View::getImageSize()
+View::getRenderedImageSize()
 {
     sv_frame_t f0 = getModelsStartFrame();
     sv_frame_t f1 = getModelsEndFrame();
 
-    return getImageSize(f0, f1);
+    return getRenderedPartImageSize(f0, f1);
 }
     
 QSize
-View::getImageSize(sv_frame_t f0, sv_frame_t f1)
+View::getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1)
 {
     int x0 = int(f0 / getZoomLevel());
     int x1 = int(f1 / getZoomLevel());
 
     return QSize(x1 - x0, height());
+}
+
+bool
+View::renderToSvgFile(QString filename)
+{
+    sv_frame_t f0 = getModelsStartFrame();
+    sv_frame_t f1 = getModelsEndFrame();
+
+    return renderPartToSvgFile(filename, f0, f1);
+}
+
+bool
+View::renderPartToSvgFile(QString filename, sv_frame_t f0, sv_frame_t f1)
+{
+    int x0 = int(f0 / getZoomLevel());
+    int x1 = int(f1 / getZoomLevel());
+
+    QSvgGenerator generator;
+    generator.setFileName(filename);
+    generator.setSize(QSize(x1 - x0, height()));
+    generator.setViewBox(QRect(0, 0, x1 - x0, height()));
+    generator.setTitle(tr("Exported image from %1")
+                       .arg(QApplication::applicationName()));
+    
+    QPainter paint;
+    paint.begin(&generator);
+    bool result = render(paint, 0, f0, f1);
+    paint.end();
+    return result;
 }
 
 void
