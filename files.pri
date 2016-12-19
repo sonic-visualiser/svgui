@@ -44,6 +44,8 @@ SVGUI_HEADERS += \
 	   widgets/ActivityLog.h \
            widgets/AudioDial.h \
            widgets/ClickableLabel.h \
+           widgets/ColourComboBox.h \
+           widgets/ColourMapComboBox.h \
            widgets/ColourNameDialog.h \
            widgets/CommandHistory.h \
            widgets/CSVFormatDialog.h \
@@ -66,6 +68,7 @@ SVGUI_HEADERS += \
            widgets/NotifyingComboBox.h \
            widgets/NotifyingPushButton.h \
            widgets/NotifyingTabBar.h \
+           widgets/NotifyingToolButton.h \
            widgets/Panner.h \
            widgets/PluginParameterBox.h \
            widgets/PluginParameterDialog.h \
@@ -80,6 +83,7 @@ SVGUI_HEADERS += \
            widgets/TipDialog.h \
            widgets/TransformFinder.h \
            widgets/UnitConverter.h \
+           widgets/WidgetScale.h \
            widgets/WindowShapePreview.h \
            widgets/WindowTypeSelector.h
 
@@ -121,6 +125,8 @@ SVGUI_SOURCES += \
            view/ViewManager.cpp \
 	   widgets/ActivityLog.cpp \
            widgets/AudioDial.cpp \
+           widgets/ColourComboBox.cpp \
+           widgets/ColourMapComboBox.cpp \
            widgets/ColourNameDialog.cpp \
            widgets/CommandHistory.cpp \
            widgets/CSVFormatDialog.cpp \
@@ -143,6 +149,7 @@ SVGUI_SOURCES += \
            widgets/NotifyingComboBox.cpp \
            widgets/NotifyingPushButton.cpp \
            widgets/NotifyingTabBar.cpp \
+           widgets/NotifyingToolButton.cpp \
            widgets/Panner.cpp \
            widgets/PluginParameterBox.cpp \
            widgets/PluginParameterDialog.cpp \

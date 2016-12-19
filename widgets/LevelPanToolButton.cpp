@@ -49,6 +49,7 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
 
     setPopupMode(InstantPopup);
     setMenu(menu);
+    setToolTip(tr("Click to adjust level and pan"));
 
     setImageSize(m_pixels);
     setBigImageSize(m_pixelsBig);
@@ -56,6 +57,12 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
 
 LevelPanToolButton::~LevelPanToolButton()
 {
+}
+
+void
+LevelPanToolButton::wheelEvent(QWheelEvent *e)
+{
+    m_lpw->wheelEvent(e);
 }
 
 float
@@ -106,6 +113,13 @@ void
 LevelPanToolButton::setPan(float pan)
 {
     m_lpw->setPan(pan);
+    update();
+}
+
+void
+LevelPanToolButton::setMonitoringLevels(float left, float right)
+{
+    m_lpw->setMonitoringLevels(left, right);
     update();
 }
 
@@ -168,6 +182,20 @@ LevelPanToolButton::paintEvent(QPaintEvent *)
     
     double margin = (double(height()) - m_pixels) / 2.0;
     m_lpw->renderTo(this, QRectF(margin, margin, m_pixels, m_pixels), false);
+}
+
+void
+LevelPanToolButton::enterEvent(QEvent *e)
+{
+    QToolButton::enterEvent(e);
+    emit mouseEntered();
+}
+
+void
+LevelPanToolButton::leaveEvent(QEvent *e)
+{
+    QToolButton::enterEvent(e);
+    emit mouseLeft();
 }
 
 

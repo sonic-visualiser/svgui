@@ -25,6 +25,8 @@
 #include "widgets/CommandHistory.h"
 #include "layer/ShowLayerCommand.h"
 
+#include "WidgetScale.h"
+
 #include <QIcon>
 #include <QTabWidget>
 
@@ -45,11 +47,9 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
 
     setTabBar(bar);
 
-#if (QT_VERSION >= 0x0402)
     setElideMode(Qt::ElideNone); 
     tabBar()->setUsesScrollButtons(true); 
-    tabBar()->setIconSize(QSize(16, 16));
-#endif
+    tabBar()->setIconSize(WidgetScale::scaleQSize(QSize(16, 16)));
 
     repopulate();
 

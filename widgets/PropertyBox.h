@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PROPERTY_BOX_H_
-#define _PROPERTY_BOX_H_
+#ifndef SV_PROPERTY_BOX_H
+#define SV_PROPERTY_BOX_H
 
 #include "base/PropertyContainer.h"
 
@@ -27,6 +27,8 @@ class QGridLayout;
 class QVBoxLayout;
 class QLabel;
 class LEDButton;
+class QToolButton;
+class NotifyingPushButton;
 
 class PropertyBox : public QFrame
 {
@@ -39,8 +41,6 @@ public:
     PropertyContainer *getContainer() { return m_container; }
 
 signals:
-    void changePlayGainDial(int);
-    void changePlayPanDial(int);
     void showLayer(bool);
     void contextHelpChanged(const QString &);
 
@@ -56,15 +56,12 @@ protected slots:
 
     void playAudibleChanged(bool);
     void playAudibleButtonChanged(bool);
-    void playGainChanged(float);
-    void playGainDialChanged(int);
-    void playPanChanged(float);
-    void playPanDialChanged(int);
+    void playGainControlChanged(float);
+    void playPanControlChanged(float);
 
     void populateViewPlayFrame();
 
     void unitDatabaseChanged();
-    void colourDatabaseChanged();
 
     void editPlayParameters();
 
@@ -75,7 +72,6 @@ protected:
     void updatePropertyEditor(PropertyContainer::PropertyName,
                               bool rangeChanged = false);
     void updateContextHelp(QObject *o);
-    void addNewColour();
 
     QLabel *m_nameWidget;
     QWidget *m_mainWidget;
@@ -84,7 +80,7 @@ protected:
     QFrame *m_viewPlayFrame;
     QVBoxLayout *m_mainBox;
     LEDButton *m_showButton;
-    LEDButton *m_playButton;
+    QToolButton *m_playButton;
     std::map<QString, QGridLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };

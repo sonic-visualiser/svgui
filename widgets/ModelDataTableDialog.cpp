@@ -61,7 +61,7 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
 
     toolbar = addToolBar(tr("Edit Toolbar"));
 
-    action = new QAction(il.load("datainsert"), tr("Insert New Item"), this);
+    action = new QAction(il.load("draw"), tr("Insert New Item"), this);
     action->setShortcut(tr("Insert"));
     action->setStatusTip(tr("Insert a new item"));
     connect(action, SIGNAL(triggered()), this, SLOT(insertRow()));
