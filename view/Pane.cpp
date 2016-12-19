@@ -1123,7 +1123,7 @@ Pane::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 }
 
 QImage *
-Pane::toNewImage(sv_frame_t f0, sv_frame_t f1)
+Pane::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
 {
     int x0 = int(f0 / getZoomLevel());
     int x1 = int(f1 / getZoomLevel());
@@ -1162,9 +1162,9 @@ Pane::toNewImage(sv_frame_t f0, sv_frame_t f1)
 }
 
 QSize
-Pane::getImageSize(sv_frame_t f0, sv_frame_t f1)
+Pane::getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1)
 {
-    QSize s = View::getImageSize(f0, f1);
+    QSize s = View::getRenderedPartImageSize(f0, f1);
     QImage *image = new QImage(100, 100, QImage::Format_RGB32);
     QPainter paint(image);
 
