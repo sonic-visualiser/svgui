@@ -256,22 +256,15 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	      << groupName << "\"" << endl;
 #endif
 
+    QString groupLabel = groupName;
+    if (groupName == QString()) {
+        groupName = "ungrouped: " + name; // not tr(), this is internal id
+        groupLabel = propertyLabel;
+    }
+    
     if (!have) {
-
-        QLabel *labelWidget = 0;
-
-	if (groupName != QString()) {
-	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
-                labelWidget = new QLabel(groupName, m_mainWidget);
-            }
-        } else {
-            groupName = "ungrouped: " + propertyLabel;
-	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
-                labelWidget = new QLabel(propertyLabel, m_mainWidget);
-            }
-        }
-        
-        if (labelWidget) {
+        if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
+            QWidget *labelWidget = new QLabel(groupLabel, m_mainWidget);
             m_layout->addWidget(labelWidget, row, 0);
             QWidget *frame = new QWidget(m_mainWidget);
             frame->setMinimumSize(WidgetScale::scaleQSize(QSize(1, 24)));
@@ -290,16 +283,24 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         }
     }
 
+    QGridLayout *groupLayout = m_groupLayouts[groupName];
+
+#ifdef DEBUG_PROPERTY_BOX
+    cerr << "groupName becomes \"" << groupName << "\", groupLabel = \""
+         << groupLabel << "\", groupLayout = " << groupLayout << endl;
+#endif
+    
+    assert(groupLayout);
+
+    QWidget *existing = m_propertyControllers[name];
+    
     switch (type) {
 
     case PropertyContainer::ToggleProperty:
     {
-        QAbstractButton *button = 0;
+        QAbstractButton *button;
 
-	if (have) {
-            button = qobject_cast<QAbstractButton *>(m_propertyControllers[name]);
-            assert(button);
-	} else {
+	if (!(button = qobject_cast<QAbstractButton *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new checkbox" << endl;
 #endif
@@ -321,8 +322,14 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             connect(button, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
             button->setToolTip(propertyLabel);
-            m_groupLayouts[groupName]->addWidget
-                (button, 0, m_groupLayouts[groupName]->columnCount());
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, button);
+                delete existing;
+            } else {
+                groupLayout->addWidget(button, 0, groupLayout->columnCount());
+            }
+
 	    m_propertyControllers[name] = button;
 	}
 
@@ -338,9 +345,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
 	AudioDial *dial;
 
-	if (have) {
-	    dial = qobject_cast<AudioDial *>(m_propertyControllers[name]);
-	    assert(dial);
+	if ((dial = qobject_cast<AudioDial *>(existing))) {
             if (rangeChanged) {
                 dial->blockSignals(true);
                 dial->setMinimum(min);
@@ -348,8 +353,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
                 dial->blockSignals(false);
             }
-                
-	} else {
+        } else {
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new dial" << endl;
 #endif
@@ -373,8 +377,13 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
             dial->setFixedWidth(WidgetScale::scalePixelSize(24));
             dial->setFixedHeight(WidgetScale::scalePixelSize(24));
-            m_groupLayouts[groupName]->addWidget
-                (dial, 0, m_groupLayouts[groupName]->columnCount());
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, dial);
+                delete existing;
+            } else {
+                groupLayout->addWidget(dial, 0, groupLayout->columnCount());
+            }
 
 	    m_propertyControllers[name] = dial;
 	}
@@ -391,10 +400,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
         ColourComboBox *cb;
         
-	if (have) {
-	    cb = qobject_cast<ColourComboBox *>(m_propertyControllers[name]);
-	    assert(cb);
-	} else {
+	if (!(cb = qobject_cast<ColourComboBox *>(existing))) {
+
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new colour combobox" << endl;
 #endif
@@ -409,8 +416,14 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseLeftWidget()));
 
             cb->setToolTip(propertyLabel);
-            m_groupLayouts[groupName]->addWidget
-                (cb, 0, m_groupLayouts[groupName]->columnCount());
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, cb);
+                delete existing;
+            } else {
+                groupLayout->addWidget(cb, 0, groupLayout->columnCount());
+            }
+            
 	    m_propertyControllers[name] = cb;
 	}
 
@@ -426,11 +439,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     case PropertyContainer::ColourMapProperty:
     {
         ColourMapComboBox *cb;
-        
-	if (have) {
-	    cb = qobject_cast<ColourMapComboBox *>(m_propertyControllers[name]);
-	    assert(cb);
-	} else {
+
+        if (!(cb = qobject_cast<ColourMapComboBox *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new colourmap combobox" << endl;
 #endif
@@ -443,10 +453,16 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseEnteredWidget()));
             connect(cb, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
-
+            
             cb->setToolTip(propertyLabel);
-            m_groupLayouts[groupName]->addWidget
-                (cb, 0, m_groupLayouts[groupName]->columnCount());
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, cb);
+                delete existing;
+            } else {
+                groupLayout->addWidget(cb, 0, groupLayout->columnCount());
+            }
+            
 	    m_propertyControllers[name] = cb;
 	}
 
@@ -464,14 +480,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
 	NotifyingComboBox *cb;
 
-	if (have) {
-	    cb = qobject_cast<NotifyingComboBox *>(m_propertyControllers[name]);
-	    assert(cb);
-	} else {
+	if (!(cb = qobject_cast<NotifyingComboBox *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new combobox" << endl;
 #endif
-
 	    cb = new NotifyingComboBox();
 	    cb->setObjectName(name);
             cb->setDuplicatesEnabled(false);
@@ -518,10 +530,12 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseLeftWidget()));
 
             cb->setToolTip(propertyLabel);
-            m_groupLayouts[groupName]->addWidget
-                (cb, 0, m_groupLayouts[groupName]->columnCount());
+            groupLayout->addWidget(cb, 0, groupLayout->columnCount());
 	    m_propertyControllers[name] = cb;
-	}
+	} else if (existing != cb) {
+            groupLayout->replaceWidget(existing, cb);
+            delete existing;
+        }
 
         cb->blockSignals(true);
         if (type == PropertyContainer::ValueProperty) {
