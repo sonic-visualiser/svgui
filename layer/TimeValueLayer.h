@@ -146,11 +146,21 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    /// Override from SingleColourLayer
     virtual ColourSignificance getLayerColourSignificance() const {
         if (m_plotStyle == PlotSegmentation) {
             return ColourHasMeaningfulValue;
         } else {
             return ColourDistinguishes;
+        }
+    }
+
+    /// Override from SingleColourLayer
+    virtual bool hasLightBackground() const {
+        if (m_plotStyle == PlotSegmentation) {
+            return true;
+        } else {
+            return SingleColourLayer::hasLightBackground();
         }
     }
 
