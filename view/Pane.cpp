@@ -2269,7 +2269,7 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-    cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
+//    cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
 
     e->accept(); // we never want wheel events on the pane to be propagated
     
@@ -2385,7 +2385,7 @@ Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 void
 Pane::wheelHorizontal(int sign, Qt::KeyboardModifiers mods)
 {
-    cerr << "wheelHorizontal: sign = " << sign << endl;
+//    cerr << "wheelHorizontal: sign = " << sign << endl;
 
     // Scroll left or right, rapidly
 
@@ -2395,7 +2395,7 @@ Pane::wheelHorizontal(int sign, Qt::KeyboardModifiers mods)
 void
 Pane::wheelHorizontalFine(int pixels, Qt::KeyboardModifiers)
 {
-    cerr << "wheelHorizontalFine: pixels = " << pixels << endl;
+//    cerr << "wheelHorizontalFine: pixels = " << pixels << endl;
 
     // Scroll left or right by a fixed number of pixels
 
