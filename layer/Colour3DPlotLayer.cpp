@@ -388,7 +388,14 @@ Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
 	}
     }
     if (name == "Normalization") {
-        return ""; // icon only
+        switch(value) {
+        default:
+        case 0: return tr("None");
+        case 1: return tr("Col");
+        case 2: return tr("View");
+        case 3: return tr("Hybrid");
+        }
+//        return ""; // icon only
     }
     if (name == "Bin Scale") {
 	switch (value) {
