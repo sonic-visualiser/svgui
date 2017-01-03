@@ -440,7 +440,14 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
 	}
     }
     if (name == "Normalization") {
-        return ""; // icon only
+        switch(value) {
+        default:
+        case 0: return tr("None");
+        case 1: return tr("Col");
+        case 2: return tr("View");
+        case 3: return tr("Hybrid");
+        }
+//        return ""; // icon only
     }
     if (name == "Window Size") {
 	return QString("%1").arg(32 << value);
