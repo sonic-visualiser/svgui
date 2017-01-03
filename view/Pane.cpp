@@ -2338,7 +2338,7 @@ Pane::wheelEvent(QWheelEvent *e)
 void
 Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 {
-    cerr << "wheelVertical: sign = " << sign << endl;
+//    cerr << "wheelVertical: sign = " << sign << endl;
 
     if (mods & Qt::ShiftModifier) {
 
