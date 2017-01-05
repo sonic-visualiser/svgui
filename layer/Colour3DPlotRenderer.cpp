@@ -187,12 +187,17 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     if (!m_cache.isValid() && timeConstrained) {
         // When rendering the whole area, in a context where we might
         // not be able to complete the work, start from somewhere near
-        // the middle so that the region of interest appears first
-
-        //!!! (perhaps we should avoid doing this if past repaints
-        //!!! have been fast enough to do the whole in one shot)
+        // the middle so that the region of interest appears
+        // first. But only if we aren't using a peak cache, as
+        // rendering from peak cache is usually (not always) quick and
+        // looks odd if we make a habit of jumping back after reaching
+        // the end.
         if (x0 == 0 && x1 == v->getPaintWidth()) {
-            x0 = int(x1 * 0.3);
+            int peakCacheIndex = -1, binsPerPeak = -1;
+            getPreferredPeakCache(v, peakCacheIndex, binsPerPeak);
+            if (peakCacheIndex == -1) { // no peak cache
+                x0 = int(x1 * 0.3);
+            }
         }
     }
 
@@ -484,6 +489,41 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 }
 
 void
+Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
+                                            int &peakCacheIndex,
+                                            int &binsPerPeak) const
+{
+    peakCacheIndex = -1;
+    binsPerPeak = -1;
+
+    const DenseThreeDimensionalModel *model = m_sources.source;
+    if (!model) return;
+    
+    int zoomLevel = v->getZoomLevel();
+    int binResolution = model->getResolution();
+    
+    for (int ix = 0; in_range_for(m_sources.peakCaches, ix); ++ix) {
+        int bpp = m_sources.peakCaches[ix]->getColumnsPerPeak();
+        int equivZoom = binResolution * bpp;
+        if (zoomLevel >= equivZoom) {
+            // this peak cache would work, though it might not be best
+            if (bpp > binsPerPeak) {
+                // ok, it's better than the best one we've found so far
+                peakCacheIndex = ix;
+                binsPerPeak = bpp;
+            }
+        }
+    }
+
+    SVDEBUG << "getPreferredPeakCache: zoomLevel = " << zoomLevel
+            << ", binResolution " << binResolution 
+            << ", binsPerPeak " << binsPerPeak
+            << ", peakCacheIndex " << peakCacheIndex
+            << ", peakCaches " << m_sources.peakCaches.size()
+            << endl;
+}
+
+void
 Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *v,
                                                    int x0, int repaintWidth,
                                                    bool rightToLeft,
@@ -510,7 +550,6 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     vector<int> binforx(repaintWidth);
     vector<double> binfory(h);
     
-    int zoomLevel = v->getZoomLevel();
     int binResolution = model->getResolution();
 
     for (int x = 0; x < repaintWidth; ++x) {
@@ -523,26 +562,8 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     int binsPerPeak = -1;
 
     if (m_params.colourScale.getScale() != ColourScaleType::Phase) {
-        for (int ix = 0; in_range_for(m_sources.peakCaches, ix); ++ix) {
-            int bpp = m_sources.peakCaches[ix]->getColumnsPerPeak();
-            int equivZoom = binResolution * bpp;
-            if (zoomLevel >= equivZoom) {
-                // this peak cache would work, though it might not be best
-                if (bpp > binsPerPeak) {
-                    // ok, it's better than the best one we've found so far
-                    peakCacheIndex = ix;
-                    binsPerPeak = bpp;
-                }
-            }
-        }
+        getPreferredPeakCache(v, peakCacheIndex, binsPerPeak);
     }
-
-    SVDEBUG << "[PIX] zoomLevel = " << zoomLevel
-            << ", binResolution " << binResolution 
-            << ", binsPerPeak " << binsPerPeak
-            << ", peakCacheIndex " << peakCacheIndex
-            << ", peakCaches " << m_sources.peakCaches.size()
-            << endl;
     
     for (int y = 0; y < h; ++y) {
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
