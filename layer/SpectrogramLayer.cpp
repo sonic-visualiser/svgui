@@ -129,7 +129,9 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 SpectrogramLayer::~SpectrogramLayer()
 {
     invalidateRenderers();
-    invalidateFFTModel();
+
+    delete m_fftModel;
+    delete m_peakCache;
 }
 
 pair<ColourScaleType, double>
@@ -193,7 +195,8 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     if (model == m_model) return;
 
     m_model = model;
-    invalidateFFTModel();
+
+    recreateFFTModel();
 
     if (!m_model || !m_model->isOK()) return;
 
@@ -673,7 +676,7 @@ SpectrogramLayer::setChannel(int ch)
 
     invalidateRenderers();
     m_channel = ch;
-    invalidateFFTModel();
+    recreateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -717,7 +720,7 @@ SpectrogramLayer::setWindowSize(int ws)
     
     m_windowSize = ws;
     
-    invalidateFFTModel();
+    recreateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -737,7 +740,7 @@ SpectrogramLayer::setWindowHopLevel(int v)
     
     m_windowHopLevel = v;
     
-    invalidateFFTModel();
+    recreateFFTModel();
 
     emit layerParametersChanged();
 
@@ -759,7 +762,7 @@ SpectrogramLayer::setWindowType(WindowType w)
     
     m_windowType = w;
 
-    invalidateFFTModel();
+    recreateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -1325,34 +1328,34 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
     return rv;
 }
 	
-FFTModel *
-SpectrogramLayer::getFFTModel() const
+void
+SpectrogramLayer::recreateFFTModel()
 {
-    if (!m_model) return 0;
+#ifdef DEBUG_SPECTROGRAM
+    cerr << "SpectrogramLayer::recreateFFTModel called" << endl;
+#endif
 
-    int fftSize = getFFTSize();
-
-    //!!! it is now surely slower to do this on every getFFTModel()
-    //!!! request than it would be to recreate the model immediately
-    //!!! when something changes instead of just invalidating it
-    
-    if (m_fftModel &&
-        m_fftModel->getHeight() == fftSize / 2 + 1 &&
-        m_fftModel->getWindowIncrement() == getWindowIncrement()) {
-        return m_fftModel;
+    if (!m_model || !m_model->isOK()) {
+        emit sliceableModelReplaced(m_fftModel, 0);
+        delete m_fftModel;
+        delete m_peakCache;
+        m_fftModel = 0;
+        m_peakCache = 0;
+        return;
     }
-    
-    delete m_peakCache;
-    m_peakCache = 0;
 
-    delete m_fftModel;
+    FFTModel *oldModel = m_fftModel;
+
     m_fftModel = new FFTModel(m_model,
                               m_channel,
                               m_windowType,
                               m_windowSize,
                               getWindowIncrement(),
-                              fftSize);
+                              getFFTSize());
 
+    delete m_peakCache;
+    m_peakCache = 0;
+    
     if (!m_fftModel->isOK()) {
         QMessageBox::critical
             (0, tr("FFT cache failed"),
@@ -1360,47 +1363,20 @@ SpectrogramLayer::getFFTModel() const
                 "There may be insufficient memory or disc space to continue."));
         delete m_fftModel;
         m_fftModel = 0;
-        return 0;
+        return;
     }
-
-    ((SpectrogramLayer *)this)->sliceableModelReplaced(0, m_fftModel);
-
-    return m_fftModel;
-}
-
-Dense3DModelPeakCache *
-SpectrogramLayer::getPeakCache() const
-{
-    //!!! see comment in getFFTModel
     
-    if (!m_peakCache) {
-        FFTModel *f = getFFTModel();
-        if (!f) return 0;
-        m_peakCache = new Dense3DModelPeakCache(f, m_peakCacheDivisor);
-    }
-    return m_peakCache;
+    m_peakCache = new Dense3DModelPeakCache(m_fftModel, m_peakCacheDivisor);
+
+    emit sliceableModelReplaced(oldModel, m_fftModel);
+
+    delete oldModel;
 }
 
 const Model *
 SpectrogramLayer::getSliceableModel() const
 {
     return m_fftModel;
-}
-
-void
-SpectrogramLayer::invalidateFFTModel()
-{
-#ifdef DEBUG_SPECTROGRAM
-    cerr << "SpectrogramLayer::invalidateFFTModel called" << endl;
-#endif
-
-    emit sliceableModelReplaced(m_fftModel, 0);
-
-    delete m_fftModel;
-    delete m_peakCache;
-
-    m_fftModel = 0;
-    m_peakCache = 0;
 }
 
 void
