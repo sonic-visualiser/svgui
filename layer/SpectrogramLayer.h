@@ -302,9 +302,12 @@ protected:
     int getFFTOversampling() const;
     int getFFTSize() const; // m_windowSize * getFFTOversampling()
 
-    mutable FFTModel *m_fftModel; //!!! should not be mutable, see getFFTModel()?
-    mutable Dense3DModelPeakCache *m_peakCache;
+    FFTModel *m_fftModel;
+    FFTModel *getFFTModel() const { return m_fftModel; }
+    Dense3DModelPeakCache *m_peakCache;
+    Dense3DModelPeakCache *getPeakCache() const { return m_peakCache; }
     const int m_peakCacheDivisor;
+    void recreateFFTModel();
 
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
@@ -316,10 +319,6 @@ protected:
     Colour3DPlotRenderer *getRenderer(LayerGeometryProvider *) const;
     void invalidateRenderers();
     
-    FFTModel *getFFTModel() const;
-    Dense3DModelPeakCache *getPeakCache() const;
-    void invalidateFFTModel();
-
     void paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     void paintDetailedScale(LayerGeometryProvider *v,
