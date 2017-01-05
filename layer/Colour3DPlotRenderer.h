@@ -48,13 +48,13 @@ class Colour3DPlotRenderer
 {
 public:
     struct Sources {
-        Sources() : verticalBinLayer(0), source(0), peakCache(0), fft(0) { }
+        Sources() : verticalBinLayer(0), source(0), fft(0) { }
         
         // These must all outlive this class
         const VerticalBinLayer *verticalBinLayer;  // always
 	const DenseThreeDimensionalModel *source;  // always
-	const Dense3DModelPeakCache *peakCache;    // optionally
 	const FFTModel *fft;                       // optionally
+	std::vector<Dense3DModelPeakCache *> peakCaches; // zero or more
     };        
 
     struct Parameters {
@@ -280,7 +280,7 @@ private:
     int renderDrawBuffer(int w, int h,
                          const std::vector<int> &binforx,
                          const std::vector<double> &binfory,
-                         bool usePeakCache,
+                         int peakCacheIndex, // -1 => don't use a peak cache
                          bool rightToLeft,
                          bool timeConstrained);
 
@@ -306,7 +306,7 @@ private:
         const;
     
     ColumnOp::Column getColumn(int sx, int minbin, int nbins,
-                               bool usePeakCache) const;
+                               int peakCacheIndex) const; // -1 => don't use cache
 };
 
 #endif

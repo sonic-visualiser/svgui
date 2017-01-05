@@ -1036,7 +1036,7 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         sources.verticalBinLayer = this;
         sources.fft = 0;
         sources.source = m_model;
-        sources.peakCache = getPeakCache();
+        sources.peakCaches.push_back(getPeakCache());
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
