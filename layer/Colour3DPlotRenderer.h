@@ -307,6 +307,9 @@ private:
     
     ColumnOp::Column getColumn(int sx, int minbin, int nbins,
                                int peakCacheIndex) const; // -1 => don't use cache
+
+    void getPreferredPeakCache(const LayerGeometryProvider *,
+                               int &peakCacheIndex, int &binsPerPeak) const;
 };
 
 #endif
