@@ -304,9 +304,11 @@ protected:
 
     FFTModel *m_fftModel;
     FFTModel *getFFTModel() const { return m_fftModel; }
+    Dense3DModelPeakCache *m_wholeCache;
     Dense3DModelPeakCache *m_peakCache;
     Dense3DModelPeakCache *getPeakCache() const { return m_peakCache; }
     const int m_peakCacheDivisor;
+    bool canStoreWholeCache() const;
     void recreateFFTModel();
 
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id

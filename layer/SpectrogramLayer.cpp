@@ -25,6 +25,8 @@
 #include "base/LogRange.h"
 #include "base/ColumnOp.h"
 #include "base/Strings.h"
+#include "base/StorageAdviser.h"
+#include "base/Exceptions.h"
 #include "widgets/CommandHistory.h"
 #include "data/model/Dense3DModelPeakCache.h"
 
@@ -80,6 +82,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_haveDetailedScale(false),
     m_exiting(false),
     m_fftModel(0),
+    m_wholeCache(0),
     m_peakCache(0),
     m_peakCacheDivisor(8)
 {
@@ -132,6 +135,7 @@ SpectrogramLayer::~SpectrogramLayer()
 
     delete m_fftModel;
     delete m_peakCache;
+    delete m_wholeCache;
 }
 
 pair<ColourScaleType, double>
@@ -743,8 +747,6 @@ SpectrogramLayer::setWindowHopLevel(int v)
     recreateFFTModel();
 
     emit layerParametersChanged();
-
-//    fillCache();
 }
 
 int
@@ -1339,8 +1341,10 @@ SpectrogramLayer::recreateFFTModel()
         emit sliceableModelReplaced(m_fftModel, 0);
         delete m_fftModel;
         delete m_peakCache;
+        delete m_wholeCache;
         m_fftModel = 0;
         m_peakCache = 0;
+        m_wholeCache = 0;
         return;
     }
 
@@ -1355,6 +1359,9 @@ SpectrogramLayer::recreateFFTModel()
 
     delete m_peakCache;
     m_peakCache = 0;
+
+    delete m_wholeCache;
+    m_wholeCache = 0;
     
     if (!m_fftModel->isOK()) {
         QMessageBox::critical
@@ -1365,12 +1372,51 @@ SpectrogramLayer::recreateFFTModel()
         m_fftModel = 0;
         return;
     }
-    
-    m_peakCache = new Dense3DModelPeakCache(m_fftModel, m_peakCacheDivisor);
+
+    if (canStoreWholeCache()) { // i.e. if enough memory
+        m_wholeCache = new Dense3DModelPeakCache(m_fftModel, 1);
+        m_peakCache = new Dense3DModelPeakCache(m_wholeCache, m_peakCacheDivisor);
+    } else {
+        m_peakCache = new Dense3DModelPeakCache(m_fftModel, m_peakCacheDivisor);
+    }
 
     emit sliceableModelReplaced(oldModel, m_fftModel);
 
     delete oldModel;
+}
+
+bool
+SpectrogramLayer::canStoreWholeCache() const
+{
+    if (!m_fftModel) {
+        return false; // or true, doesn't really matter
+    }
+
+    size_t sz =
+        size_t(m_fftModel->getWidth()) *
+        size_t(m_fftModel->getHeight()) *
+        sizeof(float);
+
+    try {
+        SVDEBUG << "Requesting advice from StorageAdviser on whether to create whole-model cache" << endl;
+        StorageAdviser::Recommendation recommendation =
+            StorageAdviser::recommend
+            (StorageAdviser::Criteria(StorageAdviser::SpeedCritical |
+                                      StorageAdviser::PrecisionCritical |
+                                      StorageAdviser::FrequentLookupLikely),
+             sz / 1024, sz / 1024);
+        if ((recommendation & StorageAdviser::UseDisc) ||
+            (recommendation & StorageAdviser::ConserveSpace)) {
+            SVDEBUG << "Seems inadvisable to create whole-model cache" << endl;
+            return false;
+        } else {
+            SVDEBUG << "Seems fine to create whole-model cache" << endl;
+            return true;
+        }
+    } catch (const InsufficientDiscSpace &) {
+        SVDEBUG << "Seems like a terrible idea to create whole-model cache" << endl;
+        return false;
+    }
 }
 
 const Model *
@@ -1405,7 +1451,8 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         sources.verticalBinLayer = this;
         sources.fft = getFFTModel();
         sources.source = sources.fft;
-        sources.peakCache = getPeakCache();
+        if (m_peakCache) sources.peakCaches.push_back(m_peakCache);
+        if (m_wholeCache) sources.peakCaches.push_back(m_wholeCache);
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
