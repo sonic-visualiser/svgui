@@ -116,14 +116,14 @@ ImageLayer::getValueExtents(double &, double &, bool &, QString &) const
 }
 
 bool
-ImageLayer::isLayerScrollable(const View *) const
+ImageLayer::isLayerScrollable(const LayerGeometryProvider *) const
 {
     return true;
 }
 
 
 ImageModel::PointList
-ImageLayer::getLocalPoints(View *v, int x, int ) const
+ImageLayer::getLocalPoints(LayerGeometryProvider *v, int x, int ) const
 {
     if (!m_model) return ImageModel::PointList();
 
@@ -169,7 +169,7 @@ ImageLayer::getLocalPoints(View *v, int x, int ) const
 }
 
 QString
-ImageLayer::getFeatureDescription(View *v, QPoint &pos) const
+ImageLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
@@ -208,7 +208,7 @@ ImageLayer::getFeatureDescription(View *v, QPoint &pos) const
 //!!! too much overlap with TimeValueLayer/TimeInstantLayer/TextLayer
 
 bool
-ImageLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
+ImageLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 			      int &resolution,
 			      SnapType snap) const
 {
@@ -280,7 +280,7 @@ ImageLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 void
-ImageLayer::paint(View *v, QPainter &paint, QRect rect) const
+ImageLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
@@ -290,7 +290,7 @@ ImageLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    Profiler profiler("ImageLayer::paint", true);
 
 //    int x0 = rect.left(), x1 = rect.right();
-    int x0 = 0, x1 = v->width();
+    int x0 = 0, x1 = v->getPaintWidth();
 
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
@@ -299,7 +299,7 @@ ImageLayer::paint(View *v, QPainter &paint, QRect rect) const
     if (points.empty()) return;
 
     paint.save();
-    paint.setClipRect(rect.x(), 0, rect.width(), v->height());
+    paint.setClipRect(rect.x(), 0, rect.width(), v->getPaintHeight());
 
     QColor penColour;
     penColour = v->getForeground();
@@ -338,7 +338,7 @@ ImageLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 void
-ImageLayer::drawImage(View *v, QPainter &paint, const ImageModel::Point &p,
+ImageLayer::drawImage(LayerGeometryProvider *v, QPainter &paint, const ImageModel::Point &p,
                       int x, int nx) const
 {
     QString label = p.label;
@@ -358,12 +358,12 @@ ImageLayer::drawImage(View *v, QPainter &paint, const ImageModel::Point &p,
     int bottomMargin = 10;
     int spacing = 5;
 
-    if (v->height() < 100) {
+    if (v->getPaintHeight() < 100) {
         topMargin = 5;
         bottomMargin = 5;
     }
 
-    int maxBoxHeight = v->height() - topMargin - bottomMargin;
+    int maxBoxHeight = v->getPaintHeight() - topMargin - bottomMargin;
 
     int availableWidth = nx - x - 3;
     if (availableWidth < 20) availableWidth = 20;
@@ -372,7 +372,7 @@ ImageLayer::drawImage(View *v, QPainter &paint, const ImageModel::Point &p,
 
     if (label != "") {
 
-        int likelyHeight = v->height() / 4;
+        int likelyHeight = v->getPaintHeight() / 4;
 
         int likelyWidth = // available height times image aspect
             ((maxBoxHeight - likelyHeight) * imageSize.width())
@@ -435,10 +435,10 @@ ImageLayer::drawImage(View *v, QPainter &paint, const ImageModel::Point &p,
         division += paint.fontMetrics().height();
     }                
 
-    bottomMargin = v->height() - topMargin - boxHeight;
-    if (bottomMargin > topMargin + v->height()/7) {
-        topMargin += v->height()/8;
-        bottomMargin -= v->height()/8;
+    bottomMargin = v->getPaintHeight() - topMargin - boxHeight;
+    if (bottomMargin > topMargin + v->getPaintHeight()/7) {
+        topMargin += v->getPaintHeight()/8;
+        bottomMargin -= v->getPaintHeight()/8;
     }
 
     paint.drawRect(x - 1,
@@ -480,7 +480,7 @@ ImageLayer::drawImage(View *v, QPainter &paint, const ImageModel::Point &p,
 }
 
 void
-ImageLayer::setLayerDormant(const View *v, bool dormant)
+ImageLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 {
     if (dormant) {
         // Delete the images named in the view's scaled map from the
@@ -517,7 +517,7 @@ ImageLayer::getImageOriginalSize(QString name, QSize &size) const
 }
 
 QImage 
-ImageLayer::getImage(View *v, QString name, QSize maxSize) const
+ImageLayer::getImage(LayerGeometryProvider *v, QString name, QSize maxSize) const
 {
 //    SVDEBUG << "ImageLayer::getImage(" << v << ", " << name << ", ("
 //              << maxSize.width() << "x" << maxSize.height() << "))" << endl;
@@ -554,7 +554,7 @@ ImageLayer::getImage(View *v, QString name, QSize maxSize) const
 }
 
 void
-ImageLayer::drawStart(View *v, QMouseEvent *e)
+ImageLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "ImageLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -578,7 +578,7 @@ ImageLayer::drawStart(View *v, QMouseEvent *e)
 }
 
 void
-ImageLayer::drawDrag(View *v, QMouseEvent *e)
+ImageLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "ImageLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -594,7 +594,7 @@ ImageLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-ImageLayer::drawEnd(View *, QMouseEvent *)
+ImageLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "ImageLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
@@ -638,7 +638,7 @@ ImageLayer::addImage(sv_frame_t frame, QString url)
 }
 
 void
-ImageLayer::editStart(View *v, QMouseEvent *e)
+ImageLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "ImageLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -660,7 +660,7 @@ ImageLayer::editStart(View *v, QMouseEvent *e)
 }
 
 void
-ImageLayer::editDrag(View *v, QMouseEvent *e)
+ImageLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -680,7 +680,7 @@ ImageLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-ImageLayer::editEnd(View *, QMouseEvent *)
+ImageLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "ImageLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
@@ -694,7 +694,7 @@ ImageLayer::editEnd(View *, QMouseEvent *)
 }
 
 bool
-ImageLayer::editOpen(View *v, QMouseEvent *e)
+ImageLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
@@ -801,7 +801,7 @@ ImageLayer::deleteSelection(Selection s)
 }
 
 void
-ImageLayer::copy(View *v, Selection s, Clipboard &to)
+ImageLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -819,7 +819,7 @@ ImageLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-ImageLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -830,7 +830,7 @@ ImageLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */, 
     if (clipboardHasDifferentAlignment(v, from)) {
 
         QMessageBox::StandardButton button =
-            QMessageBox::question(v, tr("Re-align pasted items?"),
+            QMessageBox::question(v->getView(), tr("Re-align pasted items?"),
                                   tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Yes);

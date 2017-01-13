@@ -13,33 +13,34 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _COLOUR_MAPPER_H_
-#define _COLOUR_MAPPER_H_
+#ifndef SV_COLOUR_MAPPER_H
+#define SV_COLOUR_MAPPER_H
 
 #include <QObject>
 #include <QColor>
 #include <QString>
+#include <QPixmap>
 
 /**
  * A class for mapping intensity values onto various colour maps.
  */
-
-class ColourMapper : public QObject
+class ColourMapper
 {
-    Q_OBJECT
-
 public:
     ColourMapper(int map, double minValue, double maxValue);
-    virtual ~ColourMapper();
+    ~ColourMapper();
+
+    ColourMapper(const ColourMapper &) = default;
+    ColourMapper &operator=(const ColourMapper &) = default;
 
     enum StandardMap {
-        DefaultColours,
+        Green,
         Sunset,
         WhiteOnBlack,
         BlackOnWhite,
-        RedOnBlue,
-        YellowOnBlack,
-        BlueOnBlack,
+        Cherry,
+        Wasp,
+        Ice,
         FruitSalad,
         Banded,
         Highlight,
@@ -59,6 +60,8 @@ public:
     QColor getContrastingColour() const; // for cursors etc
     bool hasLightBackground() const;
 
+    QPixmap getExamplePixmap(QSize size) const;
+    
 protected:
     int m_map;
     double m_min;

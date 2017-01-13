@@ -34,6 +34,7 @@ class Layer;
 class ViewManager;
 class PropertyContainer;
 class PropertyStack;
+class AlignmentView;
 
 class PaneStack : public QFrame
 {
@@ -72,6 +73,8 @@ public:
     void setPropertyStackMinWidth(int mw);
     
     void setShowPaneAccessories(bool show); // current indicator, close button
+
+    void setShowAlignmentViews(bool show);
 
     void sizePanesEqually();
 
@@ -114,18 +117,20 @@ protected:
 
     struct PaneRec
     {
-	Pane        *pane;
-	QWidget     *propertyStack;
-        QPushButton *xButton;
-	QLabel      *currentIndicator;
-        QFrame      *frame;
-        QGridLayout *layout;
+	Pane          *pane;
+	QWidget       *propertyStack;
+        QPushButton   *xButton;
+	QLabel        *currentIndicator;
+        QFrame        *frame;
+        QGridLayout   *layout;
+        AlignmentView *alignmentView;
     };
 
     std::vector<PaneRec> m_panes;
     std::vector<PaneRec> m_hiddenPanes;
 
     bool m_showAccessories;
+    bool m_showAlignmentViews;
 
     QSplitter *m_splitter;
     QStackedWidget *m_propertyStackStack;
@@ -135,6 +140,9 @@ protected:
     void sizePropertyStacks();
 
     void showOrHidePaneAccessories();
+
+    void unlinkAlignmentViews();
+    void relinkAlignmentViews();
 
     LayoutStyle m_layoutStyle;
 };

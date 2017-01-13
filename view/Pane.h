@@ -37,28 +37,35 @@ class Pane : public View
 
 public:
     Pane(QWidget *parent = 0);
-    virtual QString getPropertyContainerIconName() const { return "pane"; }
+    virtual QString getPropertyContainerIconName() const override { return "pane"; }
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *layer,
-					       QPoint &pos) const;
+					       QPoint &pos) const override;
     virtual bool shouldIlluminateLocalSelection(QPoint &pos,
 						bool &closeToLeft,
-						bool &closeToRight) const;
+						bool &closeToRight) const override;
 
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
 
-    virtual sv_frame_t getFirstVisibleFrame() const;
+    virtual sv_frame_t getFirstVisibleFrame() const override;
 
-    virtual int getVerticalScaleWidth() const;
+    int getVerticalScaleWidth() const;
 
-    virtual QImage *toNewImage(sv_frame_t f0, sv_frame_t f1);
-    virtual QImage *toNewImage() { return View::toNewImage(); }
-    virtual QSize getImageSize(sv_frame_t f0, sv_frame_t f1);
-    virtual QSize getImageSize() { return View::getImageSize(); }
+    virtual QImage *renderToNewImage() override {
+        return View::renderToNewImage();
+    }
+    
+    virtual QImage *renderPartToNewImage(sv_frame_t f0, sv_frame_t f1) override;
+
+    virtual QSize getRenderedImageSize() override {
+        return View::getRenderedImageSize();
+    }
+    
+    virtual QSize getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1) override;
 
     virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+                       QString extraAttributes = "") const override;
 
     static void registerShortcuts(KeyReference &kr);
 
@@ -77,20 +84,22 @@ signals:
     void regionOutlined(QRect rect);
 
 public slots:
-    virtual void toolModeChanged();
-    virtual void zoomWheelsEnabledChanged();
-    virtual void viewZoomLevelChanged(View *v, int z, bool locked);
-    virtual void modelAlignmentCompletionChanged();
+    // view slots
+    virtual void toolModeChanged() override;
+    virtual void zoomWheelsEnabledChanged() override;
+    virtual void viewZoomLevelChanged(View *v, int z, bool locked) override;
+    virtual void modelAlignmentCompletionChanged() override;
 
+    // local slots, not overrides
     virtual void horizontalThumbwheelMoved(int value);
     virtual void verticalThumbwheelMoved(int value);
     virtual void verticalZoomChanged();
     virtual void verticalPannerMoved(float x, float y, float w, float h);
     virtual void editVerticalPannerExtents();
 
-    virtual void layerParametersChanged();
+    virtual void layerParametersChanged() override;
 
-    virtual void propertyContainerSelected(View *, PropertyContainer *pc);
+    virtual void propertyContainerSelected(View *, PropertyContainer *pc) override;
 
     void zoomToRegion(QRect r);
 
@@ -101,17 +110,17 @@ protected slots:
     void playbackScheduleTimerElapsed();
 
 protected:
-    virtual void paintEvent(QPaintEvent *e);
-    virtual void mousePressEvent(QMouseEvent *e);
-    virtual void mouseReleaseEvent(QMouseEvent *e);
-    virtual void mouseMoveEvent(QMouseEvent *e);
-    virtual void mouseDoubleClickEvent(QMouseEvent *e);
-    virtual void enterEvent(QEvent *e);
-    virtual void leaveEvent(QEvent *e);
-    virtual void wheelEvent(QWheelEvent *e);
-    virtual void resizeEvent(QResizeEvent *e);
-    virtual void dragEnterEvent(QDragEnterEvent *e);
-    virtual void dropEvent(QDropEvent *e);
+    virtual void paintEvent(QPaintEvent *e) override;
+    virtual void mousePressEvent(QMouseEvent *e) override;
+    virtual void mouseReleaseEvent(QMouseEvent *e) override;
+    virtual void mouseMoveEvent(QMouseEvent *e) override;
+    virtual void mouseDoubleClickEvent(QMouseEvent *e) override;
+    virtual void enterEvent(QEvent *e) override;
+    virtual void leaveEvent(QEvent *e) override;
+    virtual void wheelEvent(QWheelEvent *e) override;
+    virtual void resizeEvent(QResizeEvent *e) override;
+    virtual void dragEnterEvent(QDragEnterEvent *e) override;
+    virtual void dropEvent(QDropEvent *e) override;
 
     void wheelVertical(int sign, Qt::KeyboardModifiers);
     void wheelHorizontal(int sign, Qt::KeyboardModifiers);
@@ -127,7 +136,7 @@ protected:
     void drawEditingSelection(QPainter &);
     void drawAlignmentStatus(QRect, QPainter &, const Model *, bool down);
 
-    virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
+    virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1) override;
 
     Selection getSelectionAt(int x, bool &closeToLeft, bool &closeToRight) const;
 

@@ -22,14 +22,17 @@
 #include "base/Pitch.h"
 #include "base/LogRange.h"
 #include "base/RangeMapper.h"
-#include "ColourDatabase.h"
-#include "view/View.h"
 
+#include "ColourDatabase.h"
+#include "LayerGeometryProvider.h"
 #include "PianoScale.h"
 #include "LinearNumericalScale.h"
 #include "LogNumericalScale.h"
+#include "PaintAssistant.h"
 
 #include "data/model/FlexiNoteModel.h"
+
+#include "view/View.h"
 
 #include "widgets/ItemEditDialog.h"
 #include "widgets/TextAbbrev.h"
@@ -204,7 +207,7 @@ FlexiNoteLayer::setVerticalScale(VerticalScale scale)
 }
 
 bool
-FlexiNoteLayer::isLayerScrollable(const View *v) const
+FlexiNoteLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
@@ -405,7 +408,7 @@ FlexiNoteLayer::getNewVerticalZoomRangeMapper() const
 }
 
 FlexiNoteModel::PointList
-FlexiNoteLayer::getLocalPoints(View *v, int x) const
+FlexiNoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
     if (!m_model) return FlexiNoteModel::PointList();
 
@@ -448,7 +451,7 @@ FlexiNoteLayer::getLocalPoints(View *v, int x) const
 }
 
 bool
-FlexiNoteLayer::getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &p) const
+FlexiNoteLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, FlexiNoteModel::Point &p) const
 {
     if (!m_model) return false;
 
@@ -476,7 +479,7 @@ FlexiNoteLayer::getPointToDrag(View *v, int x, int y, FlexiNoteModel::Point &p) 
 }
 
 bool
-FlexiNoteLayer::getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &p) const
+FlexiNoteLayer::getNoteToEdit(LayerGeometryProvider *v, int x, int y, FlexiNoteModel::Point &p) const
 {
     // GF: find the note that is closest to the cursor
     if (!m_model) return false;
@@ -505,7 +508,7 @@ FlexiNoteLayer::getNoteToEdit(View *v, int x, int y, FlexiNoteModel::Point &p) c
 }
 
 QString
-FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
+FlexiNoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
@@ -593,7 +596,7 @@ FlexiNoteLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-FlexiNoteLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
+FlexiNoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                    int &resolution,
                                    SnapType snap) const
 {
@@ -673,7 +676,7 @@ FlexiNoteLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 void
-FlexiNoteLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
+FlexiNoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -730,11 +733,11 @@ FlexiNoteLayer::getScaleExtents(View *v, double &min, double &max, bool &log) co
 }
 
 int
-FlexiNoteLayer::getYForValue(View *v, double val) const
+FlexiNoteLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     getScaleExtents(v, min, max, logarithmic);
 
@@ -765,11 +768,11 @@ FlexiNoteLayer::getYForValue(View *v, double val) const
 }
 
 double
-FlexiNoteLayer::getValueForY(View *v, int y) const
+FlexiNoteLayer::getValueForY(LayerGeometryProvider *v, int y) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     getScaleExtents(v, min, max, logarithmic);
 
@@ -794,7 +797,7 @@ FlexiNoteLayer::shouldAutoAlign() const
 }
 
 void
-FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
+FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
@@ -860,41 +863,41 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
                 !FlexiNoteModel::Point::Comparator()(illuminatePoint, p) &&
                 !FlexiNoteModel::Point::Comparator()(p, illuminatePoint)) {
 
-                paint.drawLine(x, -1, x, v->height() + 1);
-                paint.drawLine(x+w, -1, x+w, v->height() + 1);
+                paint.drawLine(x, -1, x, v->getPaintHeight() + 1);
+                paint.drawLine(x+w, -1, x+w, v->getPaintHeight() + 1);
         
                 paint.setPen(v->getForeground());
                 // paint.setBrush(v->getForeground());
         
                 QString vlabel = QString("freq: %1%2").arg(p.value).arg(m_model->getScaleUnits());
-                // v->drawVisibleText(paint, 
+                // PaintAssistant::drawVisibleText(v, paint, 
                 //                    x - paint.fontMetrics().width(vlabel) - 2,
                 //                    y + paint.fontMetrics().height()/2
                 //                      - paint.fontMetrics().descent(), 
-                //                    vlabel, View::OutlinedText);
-                v->drawVisibleText(paint, 
+                //                    vlabel, PaintAssistant::OutlinedText);
+                PaintAssistant::drawVisibleText(v, paint, 
                                    x,
                                    y - h/2 - 2 - paint.fontMetrics().height()
                                      - paint.fontMetrics().descent(), 
-                                   vlabel, View::OutlinedText);
+                                   vlabel, PaintAssistant::OutlinedText);
 
                 QString hlabel = "dur: " + QString(RealTime::frame2RealTime
                     (p.duration, m_model->getSampleRate()).toText(true).c_str());
-                v->drawVisibleText(paint, 
+                PaintAssistant::drawVisibleText(v, paint, 
                                    x,
                                    y - h/2 - paint.fontMetrics().descent() - 2,
-                                   hlabel, View::OutlinedText);
+                                   hlabel, PaintAssistant::OutlinedText);
 
                 QString llabel = QString("%1").arg(p.label);
-                v->drawVisibleText(paint, 
+                PaintAssistant::drawVisibleText(v, paint, 
                                    x,
                                    y + h + 2 + paint.fontMetrics().descent(),
-                                   llabel, View::OutlinedText);
+                                   llabel, PaintAssistant::OutlinedText);
                 QString nlabel = QString("%1").arg(noteNumber);
-                v->drawVisibleText(paint, 
+                PaintAssistant::drawVisibleText(v, paint, 
                                    x + paint.fontMetrics().averageCharWidth() / 2,
                                    y + h/2 - paint.fontMetrics().descent(),
-                                   nlabel, View::OutlinedText);
+                                   nlabel, PaintAssistant::OutlinedText);
         }
     
         paint.drawRect(x, y - h/2, w, h);
@@ -904,7 +907,7 @@ FlexiNoteLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-FlexiNoteLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
+FlexiNoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
     if (!m_model || shouldAutoAlign()) {
         return 0;
@@ -918,7 +921,7 @@ FlexiNoteLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 }
 
 void
-FlexiNoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
+FlexiNoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
     if (!m_model || m_model->getPoints().empty()) return;
 
@@ -927,7 +930,7 @@ FlexiNoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     bool logarithmic;
 
     int w = getVerticalScaleWidth(v, false, paint);
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     getScaleExtents(v, min, max, logarithmic);
 
@@ -956,7 +959,7 @@ FlexiNoteLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 }
 
 void
-FlexiNoteLayer::drawStart(View *v, QMouseEvent *e)
+FlexiNoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -980,7 +983,7 @@ FlexiNoteLayer::drawStart(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::drawDrag(View *v, QMouseEvent *e)
+FlexiNoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
@@ -1009,7 +1012,7 @@ FlexiNoteLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::drawEnd(View *, QMouseEvent *)
+FlexiNoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "FlexiNoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
@@ -1019,7 +1022,7 @@ FlexiNoteLayer::drawEnd(View *, QMouseEvent *)
 }
 
 void
-FlexiNoteLayer::eraseStart(View *v, QMouseEvent *e)
+FlexiNoteLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
@@ -1034,12 +1037,12 @@ FlexiNoteLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::eraseDrag(View *, QMouseEvent *)
+FlexiNoteLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 {
 }
 
 void
-FlexiNoteLayer::eraseEnd(View *v, QMouseEvent *e)
+FlexiNoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -1059,7 +1062,7 @@ FlexiNoteLayer::eraseEnd(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
+FlexiNoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
@@ -1110,7 +1113,7 @@ FlexiNoteLayer::editStart(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
+FlexiNoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
@@ -1190,7 +1193,7 @@ FlexiNoteLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::editEnd(View *v, QMouseEvent *e)
+FlexiNoteLayer::editEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << std::endl;
@@ -1229,7 +1232,7 @@ FlexiNoteLayer::editEnd(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::splitStart(View *v, QMouseEvent *e)
+FlexiNoteLayer::splitStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     // GF: note splitting starts (!! remove printing soon)
     std::cerr << "splitStart (n.b. editStart will be called later, if the user drags the mouse)" << std::endl;
@@ -1252,7 +1255,7 @@ FlexiNoteLayer::splitStart(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
+FlexiNoteLayer::splitEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
     // GF: note splitting ends. (!! remove printing soon)
     std::cerr << "splitEnd" << std::endl;
@@ -1271,13 +1274,13 @@ FlexiNoteLayer::splitEnd(View *v, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::splitNotesAt(View *v, sv_frame_t frame)
+FlexiNoteLayer::splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame)
 {
     splitNotesAt(v, frame, 0);
 }
 
 void
-FlexiNoteLayer::splitNotesAt(View *v, sv_frame_t frame, QMouseEvent *e)
+FlexiNoteLayer::splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseEvent *e)
 {
     FlexiNoteModel::PointList onPoints = m_model->getPoints(frame);
     if (onPoints.empty()) return;
@@ -1317,7 +1320,7 @@ FlexiNoteLayer::splitNotesAt(View *v, sv_frame_t frame, QMouseEvent *e)
 }
 
 void
-FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
+FlexiNoteLayer::addNote(LayerGeometryProvider *v, QMouseEvent *e)
 {
     std::cerr << "addNote" << std::endl;
     if (!m_model) return;
@@ -1356,14 +1359,14 @@ FlexiNoteLayer::addNote(View *v, QMouseEvent *e)
 }
 
 SparseTimeValueModel *
-FlexiNoteLayer::getAssociatedPitchModel(View *v) const
+FlexiNoteLayer::getAssociatedPitchModel(LayerGeometryProvider *v) const
 {
     // Better than we used to do, but still not very satisfactory
 
 //    cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
 
-    for (int i = 0; i < v->getLayerCount(); ++i) {
-        Layer *layer = v->getLayer(i);
+    for (int i = 0; i < v->getView()->getLayerCount(); ++i) {
+        Layer *layer = v->getView()->getLayer(i);
         if (layer &&
             layer->getLayerPresentationName() != "candidate") {
 //            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
@@ -1381,7 +1384,7 @@ FlexiNoteLayer::getAssociatedPitchModel(View *v) const
 }
 
 void
-FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
+FlexiNoteLayer::snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selection s)
 {
     if (!m_model) return;
 
@@ -1419,7 +1422,7 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(View *v, Selection s)
 }
 
 void
-FlexiNoteLayer::mergeNotes(View *v, Selection s, bool inclusive)
+FlexiNoteLayer::mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive)
 {
     FlexiNoteModel::PointList points =
         m_model->getPoints(s.getStartFrame(), s.getEndFrame());
@@ -1462,8 +1465,7 @@ FlexiNoteLayer::mergeNotes(View *v, Selection s, bool inclusive)
 }
 
 bool
-FlexiNoteLayer::updateNoteValueFromPitchCurve(View *v,
-                                              FlexiNoteModel::Point &note) const
+FlexiNoteLayer::updateNoteValueFromPitchCurve(LayerGeometryProvider *v, FlexiNoteModel::Point &note) const
 {
     SparseTimeValueModel *model = getAssociatedPitchModel(v);
     if (!model) return false;
@@ -1507,13 +1509,13 @@ FlexiNoteLayer::updateNoteValueFromPitchCurve(View *v,
 }
 
 void 
-FlexiNoteLayer::mouseMoveEvent(View *v, QMouseEvent *e)
+FlexiNoteLayer::mouseMoveEvent(LayerGeometryProvider *v, QMouseEvent *e)
 {
     // GF: context sensitive cursors
-    // v->setCursor(Qt::ArrowCursor);
+    // v->getView()->setCursor(Qt::ArrowCursor);
     FlexiNoteModel::Point note(0);
     if (!getNoteToEdit(v, e->x(), e->y(), note)) { 
-        // v->setCursor(Qt::UpArrowCursor);
+        // v->getView()->setCursor(Qt::UpArrowCursor);
         return; 
     }
 
@@ -1524,28 +1526,28 @@ FlexiNoteLayer::mouseMoveEvent(View *v, QMouseEvent *e)
                              closeToTop, closeToBottom);
     
     if (closeToLeft) {
-        v->setCursor(Qt::SizeHorCursor);
+        v->getView()->setCursor(Qt::SizeHorCursor);
         m_editMode = LeftBoundary;
         cerr << "edit mode -> LeftBoundary" << endl;
     } else if (closeToRight) {
-        v->setCursor(Qt::SizeHorCursor);
+        v->getView()->setCursor(Qt::SizeHorCursor);
         m_editMode = RightBoundary;
         cerr << "edit mode -> RightBoundary" << endl;
     } else if (closeToTop) {
-        v->setCursor(Qt::CrossCursor);
+        v->getView()->setCursor(Qt::CrossCursor);
         m_editMode = DragNote;
         cerr << "edit mode -> DragNote" << endl;
     } else if (closeToBottom) {
-        v->setCursor(Qt::UpArrowCursor);
+        v->getView()->setCursor(Qt::UpArrowCursor);
         m_editMode = SplitNote;
         cerr << "edit mode -> SplitNote" << endl;
     } else {
-        v->setCursor(Qt::ArrowCursor);
+        v->getView()->setCursor(Qt::ArrowCursor);
     }
 }
 
 void
-FlexiNoteLayer::getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const
+FlexiNoteLayer::getRelativeMousePosition(LayerGeometryProvider *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const
 {
     // GF: TODO: consoloidate the tolerance values
     if (!m_model) return;
@@ -1574,7 +1576,7 @@ FlexiNoteLayer::getRelativeMousePosition(View *v, FlexiNoteModel::Point &note, i
 
 
 bool
-FlexiNoteLayer::editOpen(View *v, QMouseEvent *e)
+FlexiNoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     std::cerr << "Opening note editor dialog" << std::endl;
     if (!m_model) return false;
@@ -1728,7 +1730,7 @@ FlexiNoteLayer::deleteSelectionInclusive(Selection s)
 }
 
 void
-FlexiNoteLayer::copy(View *v, Selection s, Clipboard &to)
+FlexiNoteLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -1746,7 +1748,7 @@ FlexiNoteLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-FlexiNoteLayer::paste(View *v, const Clipboard &from, sv_frame_t /*frameOffset */, bool /* interactive */)
+FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1757,7 +1759,7 @@ FlexiNoteLayer::paste(View *v, const Clipboard &from, sv_frame_t /*frameOffset *
     if (clipboardHasDifferentAlignment(v, from)) {
 
         QMessageBox::StandardButton button =
-            QMessageBox::question(v, tr("Re-align pasted items?"),
+            QMessageBox::question(v->getView(), tr("Re-align pasted items?"),
                                   tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Yes);
@@ -1894,7 +1896,7 @@ FlexiNoteLayer::setProperties(const QXmlAttributes &attributes)
 }
 
 void
-FlexiNoteLayer::setVerticalRangeToNoteRange(View *v)
+FlexiNoteLayer::setVerticalRangeToNoteRange(LayerGeometryProvider *v)
 {
     double minf = std::numeric_limits<double>::max();
     double maxf = 0;
@@ -1910,7 +1912,7 @@ FlexiNoteLayer::setVerticalRangeToNoteRange(View *v)
     std::cerr << "min frequency:" << minf << ", max frequency: " << maxf << std::endl;
     
     if (hasNotes) {
-        v->getLayer(1)->setDisplayExtents(minf*0.66,maxf*1.5); 
+        v->getView()->getLayer(1)->setDisplayExtents(minf*0.66,maxf*1.5); 
         // MM: this is a hack because we rely on 
         // * this layer being automatically aligned to layer 1
         // * layer one is a log frequency layer.

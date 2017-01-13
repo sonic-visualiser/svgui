@@ -22,9 +22,11 @@
 #include "ViewManager.h"
 #include "widgets/CommandHistory.h"
 #include "widgets/TextAbbrev.h"
+#include "widgets/IconLoader.h"
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 #include "layer/TimeRulerLayer.h"
+#include "layer/PaintAssistant.h"
 
 // GF: added so we can propagate the mouse move event to the note layer for context handling.
 #include "layer/LayerFactory.h"
@@ -141,8 +143,8 @@ Pane::updateHeadsUpDisplay()
         m_hthumb->setObjectName(tr("Horizontal Zoom"));
         m_hthumb->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_hthumb, 1, 0, 1, 2);
-        m_hthumb->setFixedWidth(70);
-        m_hthumb->setFixedHeight(16);
+        m_hthumb->setFixedWidth(m_manager->scalePixelSize(70));
+        m_hthumb->setFixedHeight(m_manager->scalePixelSize(16));
         m_hthumb->setDefaultValue(0);
         m_hthumb->setSpeed(0.6f);
         connect(m_hthumb, SIGNAL(valueChanged(int)), this, 
@@ -153,8 +155,8 @@ Pane::updateHeadsUpDisplay()
         m_vpan = new Panner;
         m_vpan->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_vpan, 0, 1);
-        m_vpan->setFixedWidth(12);
-        m_vpan->setFixedHeight(70);
+        m_vpan->setFixedWidth(m_manager->scalePixelSize(12));
+        m_vpan->setFixedHeight(m_manager->scalePixelSize(70));
         m_vpan->setAlpha(80, 130);
         connect(m_vpan, SIGNAL(rectExtentsChanged(float, float, float, float)),
                 this, SLOT(verticalPannerMoved(float, float, float, float)));
@@ -167,8 +169,8 @@ Pane::updateHeadsUpDisplay()
         m_vthumb->setObjectName(tr("Vertical Zoom"));
         m_vthumb->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_vthumb, 0, 2);
-        m_vthumb->setFixedWidth(16);
-        m_vthumb->setFixedHeight(70);
+        m_vthumb->setFixedWidth(m_manager->scalePixelSize(16));
+        m_vthumb->setFixedHeight(m_manager->scalePixelSize(70));
         connect(m_vthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(verticalThumbwheelMoved(int)));
         connect(m_vthumb, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
@@ -182,9 +184,9 @@ Pane::updateHeadsUpDisplay()
         m_reset = new NotifyingPushButton;
         m_reset->setFlat(true);
         m_reset->setCursor(Qt::ArrowCursor);
-        m_reset->setFixedHeight(16);
-        m_reset->setFixedWidth(16);
-        m_reset->setIcon(QPixmap(":/icons/zoom-reset.png"));
+        m_reset->setFixedHeight(m_manager->scalePixelSize(16));
+        m_reset->setFixedWidth(m_manager->scalePixelSize(16));
+        m_reset->setIcon(IconLoader().load("zoom-reset"));
         m_reset->setToolTip(tr("Reset zoom to default"));
         layout->addWidget(m_reset, 1, 2);
         
@@ -283,16 +285,19 @@ Pane::updateHeadsUpDisplay()
     updateVerticalPanner();
 
     if (m_manager && m_manager->getZoomWheelsEnabled() &&
-        width() > 120 && height() > 100) {
+        width() > m_manager->scalePixelSize(120) &&
+        height() > m_manager->scalePixelSize(100)) {
         if (!m_headsUpDisplay->isVisible()) {
             m_headsUpDisplay->show();
         }
+        int shift = m_manager->scalePixelSize(86);
         if (haveVThumb) {
             m_headsUpDisplay->setFixedHeight(m_vthumb->height() + m_hthumb->height());
-            m_headsUpDisplay->move(width() - 86, height() - 86);
+            m_headsUpDisplay->move(width() - shift, height() - shift);
         } else {
             m_headsUpDisplay->setFixedHeight(m_hthumb->height());
-            m_headsUpDisplay->move(width() - 86, height() - 16);
+            m_headsUpDisplay->move(width() - shift,
+                                   height() - m_manager->scalePixelSize(16));
         }
     } else {
         m_headsUpDisplay->hide();
@@ -717,6 +722,10 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
 void
 Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
 {
+    if (omitLine && m_manager->getMainModelSampleRate() == 0) {
+        return;
+    }
+    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
@@ -773,14 +782,14 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
             int tw = paint.fontMetrics().width(text);
             int x = width()/2 - 4 - tw;
             
-            drawVisibleText(paint, x, y, text, OutlinedText);
+            PaintAssistant::drawVisibleText(this, paint, x, y, text, PaintAssistant::OutlinedText);
         }
         
         QString text = QString("%1").arg(m_centreFrame);
         
         int x = width()/2 + 4;
         
-        drawVisibleText(paint, x, y, text, OutlinedText);
+        PaintAssistant::drawVisibleText(this, paint, x, y, text, PaintAssistant::OutlinedText);
     }
 }
 
@@ -862,8 +871,8 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
         return;
     }
     
-    drawVisibleText(paint, m_scaleWidth + 5,
-                    paint.fontMetrics().ascent() + y, text, OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, m_scaleWidth + 5,
+                    paint.fontMetrics().ascent() + y, text, PaintAssistant::OutlinedText);
 
     paint.restore();
 }
@@ -901,8 +910,8 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
         return;
     }
     
-    drawVisibleText(paint, m_scaleWidth + 5,
-                    paint.fontMetrics().ascent() + y, text, OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, m_scaleWidth + 5,
+                    paint.fontMetrics().ascent() + y, text, PaintAssistant::OutlinedText);
 
     paint.restore();
 }
@@ -915,7 +924,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 
     int lly = height() - 6;
     if (m_manager->getZoomWheelsEnabled()) {
-        lly -= 20;
+        lly -= m_manager->scalePixelSize(20);
     }
 
     if (r.y() + r.height() < lly - int(m_layerStack.size()) * fontHeight) {
@@ -937,7 +946,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 
     int llx = width() - maxTextWidth - 5;
     if (m_manager->getZoomWheelsEnabled()) {
-        llx -= 36;
+        llx -= m_manager->scalePixelSize(36);
     }
     
     if (r.x() + r.width() >= llx - fontAscent - 3) {
@@ -950,9 +959,9 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
                 paint.setPen(getForeground());
             }
             
-            drawVisibleText(paint, llx,
+            PaintAssistant::drawVisibleText(this, paint, llx,
                             lly - fontHeight + fontAscent,
-                            texts[i], OutlinedText);
+                            texts[i], PaintAssistant::OutlinedText);
 
             if (!pixmaps[i].isNull()) {
                 paint.drawPixmap(llx - fontAscent - 3,
@@ -1014,10 +1023,10 @@ Pane::drawEditingSelection(QPainter &paint)
             offsetText = tr("+%1").arg(offsetText);
         }
     }
-    drawVisibleText(paint, p0 + 2, fontAscent + fontHeight + 4, startText, OutlinedText);
-    drawVisibleText(paint, p1 + 2, fontAscent + fontHeight + 4, endText, OutlinedText);
-    drawVisibleText(paint, p0 + 2, fontAscent + fontHeight*2 + 4, offsetText, OutlinedText);
-    drawVisibleText(paint, p1 + 2, fontAscent + fontHeight*2 + 4, offsetText, OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, p0 + 2, fontAscent + fontHeight + 4, startText, PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, p1 + 2, fontAscent + fontHeight + 4, endText, PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, p0 + 2, fontAscent + fontHeight*2 + 4, offsetText, PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText(this, paint, p1 + 2, fontAscent + fontHeight*2 + 4, offsetText, PaintAssistant::OutlinedText);
     
     //!!! duplicating display policy with View::drawSelections
     
@@ -1048,23 +1057,19 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
     sv_samplerate_t modelRate = waveformModel->getSampleRate();
     sv_samplerate_t nativeRate = waveformModel->getNativeRate();
     sv_samplerate_t playbackRate = m_manager->getPlaybackSampleRate();
-    sv_samplerate_t outputRate = m_manager->getOutputSampleRate();
         
     QString srNote = "";
 
-    // Show (R) for waveform models that have been resampled or will
-    // be resampled on playback, and (X) for waveform models that will
-    // be played at the wrong rate because their rate differs from the
-    // current playback rate (which is not necessarily that of the
-    // main model).
+    // Show (R) for waveform models that have been resampled during
+    // load, and (X) for waveform models that will be played at the
+    // wrong rate because their rate differs from the current playback
+    // rate (which is not necessarily that of the main model).
 
-    if (playbackRate != 0) {
-        if (modelRate == playbackRate) {
-            if (modelRate != outputRate || modelRate != nativeRate) {
-                srNote = " " + tr("(R)");
-            }
-        } else {
+    if (modelRate != nativeRate) {
+        if (playbackRate != 0 && modelRate != playbackRate) {
             srNote = " " + tr("(X)");
+        } else {            
+            srNote = " " + tr("(R)");
         }
     }
 
@@ -1080,9 +1085,9 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
     if (x < pbw + 5) x = pbw + 5;
 
     if (r.x() < x + paint.fontMetrics().width(desc)) {
-        drawVisibleText(paint, x,
+        PaintAssistant::drawVisibleText(this, paint, x,
                         height() - fontHeight + fontAscent - 6,
-                        desc, OutlinedText);
+                        desc, PaintAssistant::OutlinedText);
     }
 }
 
@@ -1118,7 +1123,7 @@ Pane::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 }
 
 QImage *
-Pane::toNewImage(sv_frame_t f0, sv_frame_t f1)
+Pane::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
 {
     int x0 = int(f0 / getZoomLevel());
     int x1 = int(f1 / getZoomLevel());
@@ -1157,9 +1162,9 @@ Pane::toNewImage(sv_frame_t f0, sv_frame_t f1)
 }
 
 QSize
-Pane::getImageSize(sv_frame_t f0, sv_frame_t f1)
+Pane::getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1)
 {
-    QSize s = View::getImageSize(f0, f1);
+    QSize s = View::getRenderedPartImageSize(f0, f1);
     QImage *image = new QImage(100, 100, QImage::Format_RGB32);
     QPainter paint(image);
 
@@ -1943,7 +1948,7 @@ Pane::dragTopLayer(QMouseEvent *e)
          true, // can move horiz
          canTopLayerMoveVertical(), // can move vert
          canTopLayerMoveVertical() || (m_manager && m_manager->isPlaying()), // resist horiz
-         !(m_manager && m_manager->isPlaying())); // resist vert
+         true); // resist vert
 
     if (m_dragMode == HorizontalDrag ||
         m_dragMode == FreeDrag) {
@@ -2264,8 +2269,10 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-    cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
+//    cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
 
+    e->accept(); // we never want wheel events on the pane to be propagated
+    
     int dx = e->angleDelta().x();
     int dy = e->angleDelta().y();
 
@@ -2285,7 +2292,7 @@ Pane::wheelEvent(QWheelEvent *e)
     }
 
     if (e->phase() == Qt::ScrollBegin ||
-        fabs(d) >= 120 ||
+        std::abs(d) >= 120 ||
         (d > 0 && m_pendingWheelAngle < 0) ||
         (d < 0 && m_pendingWheelAngle > 0)) {
         m_pendingWheelAngle = d;
@@ -2312,7 +2319,7 @@ Pane::wheelEvent(QWheelEvent *e)
             m_pendingWheelAngle = 0;
             return;
         }
-        
+
         while (abs(m_pendingWheelAngle) >= 120) {
 
             int sign = (m_pendingWheelAngle < 0 ? -1 : 1);
@@ -2331,7 +2338,7 @@ Pane::wheelEvent(QWheelEvent *e)
 void
 Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 {
-    cerr << "wheelVertical: sign = " << sign << endl;
+//    cerr << "wheelVertical: sign = " << sign << endl;
 
     if (mods & Qt::ShiftModifier) {
 
@@ -2378,7 +2385,7 @@ Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 void
 Pane::wheelHorizontal(int sign, Qt::KeyboardModifiers mods)
 {
-    cerr << "wheelHorizontal: sign = " << sign << endl;
+//    cerr << "wheelHorizontal: sign = " << sign << endl;
 
     // Scroll left or right, rapidly
 
@@ -2388,7 +2395,7 @@ Pane::wheelHorizontal(int sign, Qt::KeyboardModifiers mods)
 void
 Pane::wheelHorizontalFine(int pixels, Qt::KeyboardModifiers)
 {
-    cerr << "wheelHorizontalFine: pixels = " << pixels << endl;
+//    cerr << "wheelHorizontalFine: pixels = " << pixels << endl;
 
     // Scroll left or right by a fixed number of pixels
 

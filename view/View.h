@@ -19,6 +19,8 @@
 #include <QFrame>
 #include <QProgressBar>
 
+#include "layer/LayerGeometryProvider.h"
+
 #include "base/ZoomConstraint.h"
 #include "base/PropertyContainer.h"
 #include "ViewManager.h"
@@ -49,7 +51,8 @@ class QPushButton;
  */
 
 class View : public QFrame,
-	     public XmlExportable
+	     public XmlExportable,
+             public LayerGeometryProvider
 {
     Q_OBJECT
 
@@ -60,6 +63,12 @@ public:
      */
     virtual ~View();
 
+    /**
+     * Retrieve the id of this object. Views have their own unique
+     * ids, but ViewProxy objects share the id of their View.
+     */
+    int getId() const { return m_id; }
+    
     /**
      * Retrieve the first visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
@@ -105,6 +114,20 @@ public:
     sv_frame_t getFrameForX(int x) const;
 
     /**
+     * Return the closest pixel x-coordinate corresponding to a given
+     * view x-coordinate. Default is no scaling, ViewProxy handles
+     * scaling case.
+     */
+    int getXForViewX(int viewx) const { return viewx; }
+
+    /**
+     * Return the closest view x-coordinate corresponding to a given
+     * pixel x-coordinate. Default is no scaling, ViewProxy handles
+     * scaling case.
+     */
+    int getViewXForX(int x) const { return x; }
+
+    /**
      * Return the pixel y-coordinate corresponding to a given
      * frequency, if the frequency range is as specified.  This does
      * not imply any policy about layer frequency ranges, but it might
@@ -121,8 +144,8 @@ public:
      *
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
-    double getFrequencyForY(int y, double minFreq, double maxFreq,
-			   bool logarithmic) const;
+    double getFrequencyForY(double y, double minFreq, double maxFreq,
+                            bool logarithmic) const;
 
     /**
      * Return the zoom level, i.e. the number of frames per pixel
@@ -243,15 +266,6 @@ public:
     virtual QColor getForeground() const;
     virtual QColor getBackground() const;
 
-    enum TextStyle {
-	BoxedText,
-	OutlinedText,
-        OutlinedItalicText
-    };
-
-    virtual void drawVisibleText(QPainter &p, int x, int y,
-				 QString text, TextStyle style) const;
-
     virtual void drawMeasurementRect(QPainter &p, const Layer *,
                                      QRect rect, bool focus) const;
 
@@ -294,12 +308,42 @@ public:
     virtual const PropertyContainer *getPropertyContainer(int i) const;
     virtual PropertyContainer *getPropertyContainer(int i);
 
-    // Render the contents on a wide canvas
-    virtual QImage *toNewImage(sv_frame_t f0, sv_frame_t f1);
-    virtual QImage *toNewImage();
-    virtual QSize getImageSize(sv_frame_t f0, sv_frame_t f1);
-    virtual QSize getImageSize();
+    /** 
+     * Render the view contents to a new QImage (which may be wider
+     * than the visible View).
+     */
+    virtual QImage *renderToNewImage();
 
+    /** 
+     * Render the view contents between the given frame extents to a
+     * new QImage (which may be wider than the visible View).
+     */
+    virtual QImage *renderPartToNewImage(sv_frame_t f0, sv_frame_t f1);
+
+    /**
+     * Calculate and return the size of image that will be generated
+     * by renderToNewImage().
+     */
+    virtual QSize getRenderedImageSize();
+
+    /**
+     * Calculate and return the size of image that will be generated
+     * by renderPartToNewImage(f0, f1).
+     */
+    virtual QSize getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1);
+
+    /**
+     * Render the view contents to a new SVG file.
+     */
+    virtual bool renderToSvgFile(QString filename);
+
+    /**
+     * Render the view contents between the given frame extents to a
+     * new SVG file.
+     */
+    virtual bool renderPartToSvgFile(QString filename,
+                                     sv_frame_t f0, sv_frame_t f1);
+    
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
 
     virtual bool getValueExtents(QString unit, double &min, double &max,
@@ -315,6 +359,18 @@ public:
     sv_frame_t getModelsStartFrame() const;
     sv_frame_t getModelsEndFrame() const;
 
+    /**
+     * To be called from a layer, to obtain the extent of the surface
+     * that the layer is currently painting to. This may be the extent
+     * of the view (if 1x display scaling is in effect) or of a larger
+     * cached pixmap (if greater display scaling is in effect).
+     */
+    QRect getPaintRect() const;
+
+    QSize getPaintSize() const { return getPaintRect().size(); }
+    int getPaintWidth() const { return getPaintRect().width(); }
+    int getPaintHeight() const { return getPaintRect().height(); }
+
     typedef std::set<Model *> ModelSet;
     ModelSet getModels();
 
@@ -324,6 +380,11 @@ public:
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
 
+    void updatePaintRect(QRect r) { update(r); }
+    
+    View *getView() { return this; } 
+    const View *getView() const { return this; } 
+    
 signals:
     void propertyContainerAdded(PropertyContainer *pc);
     void propertyContainerRemoved(PropertyContainer *pc);
@@ -339,7 +400,7 @@ signals:
                             bool globalScroll,
                             PlaybackFollowMode followMode);
 
-    void zoomLevelChanged(int, bool);
+    void zoomLevelChanged(int level, bool locked);
 
     void contextHelpChanged(const QString &);
 
@@ -372,11 +433,22 @@ public slots:
 
 protected:
     View(QWidget *, bool showProgress);
+
+    int m_id;
+    
     virtual void paintEvent(QPaintEvent *e);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
     virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
     virtual void setPaintFont(QPainter &paint);
+
+    QSize scaledSize(const QSize &s, int factor) {
+        return QSize(s.width() * factor, s.height() * factor);
+    }
+    QRect scaledRect(const QRect &r, int factor) {
+        return QRect(r.x() * factor, r.y() * factor,
+                     r.width() * factor, r.height() * factor);
+    }
     
     typedef std::vector<Layer *> LayerList;
 
@@ -406,6 +478,8 @@ protected:
     void checkProgress(void *object);
     int getProgressBarWidth() const; // if visible
 
+    int effectiveDevicePixelRatio() const;
+
     sv_frame_t          m_centreFrame;
     int                 m_zoomLevel;
     bool                m_followPan;
@@ -416,7 +490,8 @@ protected:
     bool                m_lightBackground;
     bool                m_showProgress;
 
-    QPixmap            *m_cache;
+    QPixmap            *m_cache;  // I own this
+    QPixmap            *m_buffer; // I own this
     sv_frame_t          m_cacheCentreFrame;
     int                 m_cacheZoomLevel;
     bool                m_selectionCached;

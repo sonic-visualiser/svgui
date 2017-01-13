@@ -22,13 +22,14 @@
 #include <QFont>
 #include <QString>
 
-#include "data/fft/FFTapi.h"
+#include <bqfft/FFT.h>
 
+#include <vector>
+#include <complex>
 #include <iostream>
 
-#ifndef __GNUC__
-#include <alloca.h>
-#endif
+using namespace std;
+
 
 WindowShapePreview::WindowShapePreview(QWidget *parent) :
     QFrame(parent),
@@ -50,12 +51,17 @@ WindowShapePreview::~WindowShapePreview()
 void
 WindowShapePreview::updateLabels()
 {
-    int step = 24;
-    float peak = 48;
-    int w = step * 4, h = 64;
+    float scaleRatio = float(QFontMetrics(font()).height()) / 14.f;
+    if (scaleRatio < 1.f) scaleRatio = 1.f;
+
+    int step = int(24 * scaleRatio);
+    float peak = float(48 * scaleRatio);
+
+    int w = step * 4, h = int((peak * 4) / 3);
+
     WindowType type = m_windowType;
     Window<float> windower = Window<float>(type, step * 2);
-
+    
     QPixmap timeLabel(w, h + 1);
     timeLabel.fill(Qt::white);
     QPainter timePainter(&timeLabel);
@@ -71,12 +77,7 @@ WindowShapePreview::updateLabels()
     
     path = QPainterPath();
 
-#ifdef __GNUC__
-    float acc[w];
-#else
-    float *acc = (float *)alloca(w * sizeof(float));
-#endif
-
+    float *acc = new float[w];
     for (int i = 0; i < w; ++i) acc[i] = 0.f;
     for (int j = 0; j < 3; ++j) {
         for (int i = 0; i < step * 2; ++i) {
@@ -88,6 +89,7 @@ WindowShapePreview::updateLabels()
         if (i == 0) path.moveTo(i, y);
         else path.lineTo(i, y);
     }
+    delete[] acc;
 
     timePainter.drawPath(path);
     timePainter.setRenderHint(QPainter::Antialiasing, false);
@@ -112,7 +114,7 @@ WindowShapePreview::updateLabels()
     timePainter.drawPath(path);
 
     QFont font;
-    font.setPixelSize(10);
+    font.setPixelSize(int(10 * scaleRatio));
     font.setItalic(true);
     timePainter.setFont(font);
     QString label = tr("V / time");
@@ -121,33 +123,32 @@ WindowShapePreview::updateLabels()
 
     m_windowTimeExampleLabel->setPixmap(timeLabel);
     
-    int fw = 100;
-
-    QPixmap freqLabel(fw, h + 1);
+    QPixmap freqLabel(w, h + 1);
     freqLabel.fill(Qt::white);
     QPainter freqPainter(&freqLabel);
     path = QPainterPath();
 
     int fftsize = 512;
 
-    float *input = (float *)fftf_malloc(fftsize * sizeof(float));
-    fftf_complex *output =
-        (fftf_complex *)fftf_malloc(fftsize * sizeof(fftf_complex));
-    fftf_plan plan = fftf_plan_dft_r2c_1d(fftsize, input, output,
-                                            FFTW_ESTIMATE);
+    breakfastquay::FFT fft(fftsize);
+
+    vector<float> input(fftsize);
+    vector<complex<float>> output(fftsize/2 + 1);
+    
     for (int i = 0; i < fftsize; ++i) input[i] = 0.f;
     for (int i = 0; i < step * 2; ++i) {
         input[fftsize/2 - step + i] = windower.getValue(i);
     }
-    
-    fftf_execute(plan);
-    fftf_destroy_plan(plan);
+
+    fft.forwardInterleaved(input.data(), reinterpret_cast<float *>(output.data()));
 
     float maxdb = 0.f;
     float mindb = 0.f;
     bool first = true;
     for (int i = 0; i < fftsize/2; ++i) {
-        float power = output[i][0] * output[i][0] + output[i][1] * output[i][1];
+        float power =
+            output[i].real() * output[i].real() +
+            output[i].imag() * output[i].imag();
         float db = mindb;
         if (power > 0) {
             db = 20.f * log10f(power);
@@ -168,7 +169,7 @@ WindowShapePreview::updateLabels()
 //    float ly = h - ((-80.f + -mindb) / maxval) * peak + 1;
 
     path.moveTo(0, float(h) - peak + 1);
-    path.lineTo(fw, float(h) - peak + 1);
+    path.lineTo(w, float(h) - peak + 1);
 
     freqPainter.setPen(Qt::gray);
     freqPainter.setRenderHint(QPainter::Antialiasing, true);
@@ -180,27 +181,26 @@ WindowShapePreview::updateLabels()
 //    cerr << "maxdb = " << maxdb << ", mindb = " << mindb << ", maxval = " <<maxval << endl;
 
     for (int i = 0; i < fftsize/2; ++i) {
-        float power = output[i][0] * output[i][0] + output[i][1] * output[i][1];
+        float power =
+            output[i].real() * output[i].real() +
+            output[i].imag() * output[i].imag();
         float db = 20.f * log10f(power);
         float val = db + -mindb;
         if (val < 0) val = 0;
         float norm = val / maxval;
-        float x = (float(fw) / float(fftsize/2)) * float(i);
+        float x = (float(w) / float(fftsize/2)) * float(i);
         float y = float(h) - norm * peak + 1;
         if (i == 0) path.moveTo(x, y);
         else path.lineTo(x, y);
     }
 
     freqPainter.setRenderHint(QPainter::Antialiasing, true);
-    path.addRect(0, 0, fw, h + 1);
+    path.addRect(0, 0, w, h + 1);
     freqPainter.drawPath(path);
-
-    fftf_free(input);
-    fftf_free(output);
 
     freqPainter.setFont(font);
     label = tr("dB / freq");
-    freqPainter.drawText(fw - freqPainter.fontMetrics().width(label) - 4,
+    freqPainter.drawText(w - freqPainter.fontMetrics().width(label) - 4,
                          freqPainter.fontMetrics().ascent() + 1, label);
 
     m_windowFreqExampleLabel->setPixmap(freqLabel);

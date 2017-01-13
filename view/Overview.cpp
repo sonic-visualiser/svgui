@@ -211,8 +211,6 @@ Overview::paintEvent(QPaintEvent *e)
     paint.setClipRegion(e->region());
     paint.setRenderHints(QPainter::Antialiasing);
     
-    QRect r(rect());
-
     // We paint a rounded rect for each distinct set of view extents,
     // and we colour in the inside and outside of the rect that
     // corresponds to the current view. (One small caveat -- we don't
@@ -244,7 +242,6 @@ Overview::paintEvent(QPaintEvent *e)
 
 	int x0 = getXForFrame(f0);
 	int x1 = getXForFrame(f1);
-
 
 	if (x1 <= x0) x1 = x0 + 1;
 

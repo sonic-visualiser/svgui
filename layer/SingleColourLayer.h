@@ -71,16 +71,16 @@ public:
 
     virtual void setProperties(const QXmlAttributes &attributes);
 
-    virtual void setDefaultColourFor(View *v);
+    virtual void setDefaultColourFor(LayerGeometryProvider *v);
 
 protected:
     SingleColourLayer();
     virtual ~SingleColourLayer();
 
     virtual QColor getBaseQColor() const;
-    virtual QColor getBackgroundQColor(View *v) const;
-    virtual QColor getForegroundQColor(View *v) const;
-    std::vector<QColor> getPartialShades(View *v) const;
+    virtual QColor getBackgroundQColor(LayerGeometryProvider *v) const;
+    virtual QColor getForegroundQColor(LayerGeometryProvider *v) const;
+    std::vector<QColor> getPartialShades(LayerGeometryProvider *v) const;
 
     virtual void flagBaseColourChanged() { }
     virtual int getDefaultColourHint(bool /* darkBackground */,

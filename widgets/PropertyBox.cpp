@@ -20,23 +20,28 @@
 #include "base/PlayParameters.h"
 #include "base/PlayParameterRepository.h"
 #include "layer/Layer.h"
-#include "layer/ColourDatabase.h"
 #include "base/UnitDatabase.h"
 #include "base/RangeMapper.h"
 
 #include "AudioDial.h"
 #include "LEDButton.h"
 #include "IconLoader.h"
+#include "LevelPanWidget.h"
+#include "LevelPanToolButton.h"
+#include "WidgetScale.h"
 
 #include "NotifyingCheckBox.h"
 #include "NotifyingComboBox.h"
 #include "NotifyingPushButton.h"
-#include "ColourNameDialog.h"
+#include "NotifyingToolButton.h"
+#include "ColourComboBox.h"
+#include "ColourMapComboBox.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QToolButton>
 #include <QLabel>
 #include <QFrame>
 #include <QApplication>
@@ -62,6 +67,12 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 
     m_mainBox = new QVBoxLayout;
     setLayout(m_mainBox);
+
+#ifdef Q_OS_MAC
+    QMargins mm = m_mainBox->contentsMargins();
+    QMargins mmhalf(mm.left()/2, mm.top()/3, mm.right()/2, mm.bottom()/3);
+    m_mainBox->setContentsMargins(mmhalf);
+#endif
 
 //    m_nameWidget = new QLabel;
 //    m_mainBox->addWidget(m_nameWidget);
@@ -96,9 +107,6 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 
     connect(UnitDatabase::getInstance(), SIGNAL(unitDatabaseChanged()),
             this, SLOT(unitDatabaseChanged()));
-
-    connect(ColourDatabase::getInstance(), SIGNAL(colourDatabaseChanged()),
-            this, SLOT(colourDatabaseChanged()));
 
 #ifdef DEBUG_PROPERTY_BOX
     cerr << "PropertyBox[" << this << "]::PropertyBox returning" << endl;
@@ -141,7 +149,7 @@ PropertyBox::populateViewPlayFrame()
     m_viewPlayFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
     m_mainBox->addWidget(m_viewPlayFrame);
 
-    QHBoxLayout *layout = new QHBoxLayout;
+    QGridLayout *layout = new QGridLayout;
     m_viewPlayFrame->setLayout(layout);
 
     layout->setMargin(layout->margin() / 2);
@@ -150,32 +158,18 @@ PropertyBox::populateViewPlayFrame()
     SVDEBUG << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName() << ") params " << params << endl;
 #endif
 
-    if (layer) {
-	QLabel *showLabel = new QLabel(tr("Show"));
-	layout->addWidget(showLabel);
-	layout->setAlignment(showLabel, Qt::AlignVCenter);
+    QSize buttonSize = WidgetScale::scaleQSize(QSize(26, 26));
+    int col = 0;
 
-	m_showButton = new LEDButton(Qt::blue);
-	layout->addWidget(m_showButton);
-	connect(m_showButton, SIGNAL(stateChanged(bool)),
-		this, SIGNAL(showLayer(bool)));
-        connect(m_showButton, SIGNAL(mouseEntered()),
-                this, SLOT(mouseEnteredWidget()));
-        connect(m_showButton, SIGNAL(mouseLeft()),
-                this, SLOT(mouseLeftWidget()));
-	layout->setAlignment(m_showButton, Qt::AlignVCenter);
-    }
-    
     if (params) {
-
-	QLabel *playLabel = new QLabel(tr("Play"));
-	layout->addWidget(playLabel);
-	layout->setAlignment(playLabel, Qt::AlignVCenter);
-
-	m_playButton = new LEDButton(Qt::darkGreen);
-        m_playButton->setState(!params->isPlayMuted());
-	layout->addWidget(m_playButton);
-	connect(m_playButton, SIGNAL(stateChanged(bool)),
+        
+        m_playButton = new NotifyingToolButton;
+        m_playButton->setCheckable(true);
+        m_playButton->setIcon(IconLoader().load("speaker"));
+        m_playButton->setToolTip(tr("Click to toggle playback"));
+        m_playButton->setChecked(!params->isPlayMuted());
+        m_playButton->setFixedSize(buttonSize);
+	connect(m_playButton, SIGNAL(toggled(bool)),
 		this, SLOT(playAudibleButtonChanged(bool)));
         connect(m_playButton, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
@@ -183,76 +177,56 @@ PropertyBox::populateViewPlayFrame()
                 this, SLOT(mouseLeftWidget()));
 	connect(params, SIGNAL(playAudibleChanged(bool)),
 		this, SLOT(playAudibleChanged(bool)));
-	layout->setAlignment(m_playButton, Qt::AlignVCenter);
 
-	layout->insertStretch(-1, 10);
+        LevelPanToolButton *levelPan = new LevelPanToolButton;
+        levelPan->setFixedSize(buttonSize);
+        levelPan->setImageSize((buttonSize.height() * 3) / 4);
+        layout->addWidget(levelPan, 0, col++, Qt::AlignCenter);
+        connect(levelPan, SIGNAL(levelChanged(float)),
+                this, SLOT(playGainControlChanged(float)));
+        connect(levelPan, SIGNAL(panChanged(float)),
+                this, SLOT(playPanControlChanged(float)));
+        connect(params, SIGNAL(playGainChanged(float)),
+                levelPan, SLOT(setLevel(float)));
+        connect(params, SIGNAL(playPanChanged(float)),
+                levelPan, SLOT(setPan(float)));
+        connect(levelPan, SIGNAL(mouseEntered()),
+                this, SLOT(mouseEnteredWidget()));
+        connect(levelPan, SIGNAL(mouseLeft()),
+                this, SLOT(mouseLeftWidget()));
+
+	layout->addWidget(m_playButton, 0, col++, Qt::AlignCenter);
 
         if (params->getPlayClipId() != "") {
-            QPushButton *playParamButton =
-                new QPushButton(QIcon(":icons/faders.png"), "");
-            playParamButton->setFixedWidth(24);
-            playParamButton->setFixedHeight(24);
-            layout->addWidget(playParamButton);
+            QToolButton *playParamButton = new QToolButton;
+            playParamButton->setObjectName("playParamButton");
+            playParamButton->setIcon(IconLoader().load("faders"));
+            playParamButton->setFixedSize(buttonSize);
+            layout->addWidget(playParamButton, 0, col++, Qt::AlignCenter);
             connect(playParamButton, SIGNAL(clicked()),
                     this, SLOT(editPlayParameters()));
+            connect(playParamButton, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(playParamButton, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
         }
+    }
 
-	AudioDial *gainDial = new AudioDial;
-	layout->addWidget(gainDial);
-	gainDial->setMeterColor(Qt::darkRed);
-	gainDial->setMinimum(-50);
-	gainDial->setMaximum(50);
-	gainDial->setPageStep(1);
-	gainDial->setFixedWidth(24);
-	gainDial->setFixedHeight(24);
-	gainDial->setNotchesVisible(false);
-	gainDial->setDefaultValue(0);
-        gainDial->setObjectName(tr("Playback Gain"));
-        gainDial->setRangeMapper(new LinearRangeMapper
-                                 (-50, 50, -25, 25, tr("dB")));
-        gainDial->setShowToolTip(true);
-	connect(gainDial, SIGNAL(valueChanged(int)),
-		this, SLOT(playGainDialChanged(int)));
-	connect(params, SIGNAL(playGainChanged(float)),
-		this, SLOT(playGainChanged(float)));
-	connect(this, SIGNAL(changePlayGainDial(int)),
-		gainDial, SLOT(setValue(int)));
-        connect(gainDial, SIGNAL(mouseEntered()),
+    layout->setColumnStretch(col++, 10);
+
+    if (layer) {
+
+	QLabel *showLabel = new QLabel(tr("Show"));
+	layout->addWidget(showLabel, 0, col++, Qt::AlignVCenter | Qt::AlignRight);
+
+	m_showButton = new LEDButton(palette().highlight().color());
+	layout->addWidget(m_showButton, 0, col++, Qt::AlignVCenter | Qt::AlignLeft);
+	connect(m_showButton, SIGNAL(stateChanged(bool)),
+		this, SIGNAL(showLayer(bool)));
+        connect(m_showButton, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
-        connect(gainDial, SIGNAL(mouseLeft()),
+        connect(m_showButton, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
-        playGainChanged(params->getPlayGain());
-	layout->setAlignment(gainDial, Qt::AlignVCenter);
-
-	AudioDial *panDial = new AudioDial;
-	layout->addWidget(panDial);
-	panDial->setMeterColor(Qt::darkGreen);
-	panDial->setMinimum(-50);
-	panDial->setMaximum(50);
-	panDial->setPageStep(1);
-	panDial->setFixedWidth(24);
-	panDial->setFixedHeight(24);
-	panDial->setNotchesVisible(false);
-	panDial->setToolTip(tr("Playback Pan / Balance"));
-	panDial->setDefaultValue(0);
-        panDial->setObjectName(tr("Playback Pan / Balance"));
-        panDial->setShowToolTip(true);
-	connect(panDial, SIGNAL(valueChanged(int)),
-		this, SLOT(playPanDialChanged(int)));
-	connect(params, SIGNAL(playPanChanged(float)),
-		this, SLOT(playPanChanged(float)));
-	connect(this, SIGNAL(changePlayPanDial(int)),
-		panDial, SLOT(setValue(int)));
-        connect(panDial, SIGNAL(mouseEntered()),
-                this, SLOT(mouseEnteredWidget()));
-        connect(panDial, SIGNAL(mouseLeft()),
-                this, SLOT(mouseLeftWidget()));
-        playPanChanged(params->getPlayPan());
-	layout->setAlignment(panDial, Qt::AlignVCenter);
-
-    } else {
-
-	layout->insertStretch(-1, 10);
     }
 }
 
@@ -282,39 +256,51 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	      << groupName << "\"" << endl;
 #endif
 
-    bool inGroup = (groupName != QString());
-
+    QString groupLabel = groupName;
+    if (groupName == QString()) {
+        groupName = "ungrouped: " + name; // not tr(), this is internal id
+        groupLabel = propertyLabel;
+    }
+    
     if (!have) {
-	if (inGroup) {
-	    if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
-#ifdef DEBUG_PROPERTY_BOX
-		cerr << "PropertyBox: adding label \"" << groupName << "\" and frame for group for \"" << name << "\"" << endl;
+        if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
+            QWidget *labelWidget = new QLabel(groupLabel, m_mainWidget);
+            m_layout->addWidget(labelWidget, row, 0);
+            QWidget *frame = new QWidget(m_mainWidget);
+            frame->setMinimumSize(WidgetScale::scaleQSize(QSize(1, 24)));
+            m_groupLayouts[groupName] = new QGridLayout;
+#ifdef Q_OS_MAC
+            // Seems to be plenty of whitespace already
+            m_groupLayouts[groupName]->setContentsMargins(0, 0, 0, 0);
+#else
+            // Need a bit of padding on the left
+            m_groupLayouts[groupName]->setContentsMargins
+                (WidgetScale::scalePixelSize(10), 0, 0, 0);
 #endif
-		m_layout->addWidget(new QLabel(groupName, m_mainWidget), row, 0);
-		QFrame *frame = new QFrame(m_mainWidget);
-		m_layout->addWidget(frame, row, 1, 1, 2);
-		m_groupLayouts[groupName] = new QGridLayout;
-		m_groupLayouts[groupName]->setMargin(0);
-		frame->setLayout(m_groupLayouts[groupName]);
-	    }
-	} else {
-#ifdef DEBUG_PROPERTY_BOX 
-	    cerr << "PropertyBox: adding label \"" << propertyLabel << "\"" << endl;
-#endif
-	    m_layout->addWidget(new QLabel(propertyLabel, m_mainWidget), row, 0);
-	}
+            frame->setLayout(m_groupLayouts[groupName]);
+            m_layout->addWidget(frame, row, 1, 1, 2);
+            m_layout->setColumnStretch(1, 10);
+        }
     }
 
+    QGridLayout *groupLayout = m_groupLayouts[groupName];
+
+#ifdef DEBUG_PROPERTY_BOX
+    cerr << "groupName becomes \"" << groupName << "\", groupLabel = \""
+         << groupLabel << "\", groupLayout = " << groupLayout << endl;
+#endif
+    
+    assert(groupLayout);
+
+    QWidget *existing = m_propertyControllers[name];
+    
     switch (type) {
 
     case PropertyContainer::ToggleProperty:
     {
-        QAbstractButton *button = 0;
+        QAbstractButton *button;
 
-	if (have) {
-            button = dynamic_cast<QAbstractButton *>(m_propertyControllers[name]);
-            assert(button);
-	} else {
+	if (!(button = qobject_cast<QAbstractButton *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new checkbox" << endl;
 #endif
@@ -324,7 +310,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 QIcon icon(IconLoader().load(iconName));
                 button->setIcon(icon);
                 button->setObjectName(name);
-                button->setFixedSize(QSize(18, 18));
+                button->setFixedSize(WidgetScale::scaleQSize(QSize(18, 18)));
             } else {
                 button = new NotifyingCheckBox();
                 button->setObjectName(name);
@@ -335,13 +321,15 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseEnteredWidget()));
             connect(button, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
-	    if (inGroup) {
-		button->setToolTip(propertyLabel);
-		m_groupLayouts[groupName]->addWidget
-                    (button, 0, m_groupLayouts[groupName]->columnCount());
-	    } else {
-		m_layout->addWidget(button, row, 1, 1, 2);
-	    }
+            button->setToolTip(propertyLabel);
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, button);
+                delete existing;
+            } else {
+                groupLayout->addWidget(button, 0, groupLayout->columnCount());
+            }
+
 	    m_propertyControllers[name] = button;
 	}
 
@@ -357,9 +345,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
 	AudioDial *dial;
 
-	if (have) {
-	    dial = dynamic_cast<AudioDial *>(m_propertyControllers[name]);
-	    assert(dial);
+	if ((dial = qobject_cast<AudioDial *>(existing))) {
             if (rangeChanged) {
                 dial->blockSignals(true);
                 dial->setMinimum(min);
@@ -367,8 +353,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
                 dial->blockSignals(false);
             }
-                
-	} else {
+        } else {
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new dial" << endl;
 #endif
@@ -378,8 +363,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	    dial->setMaximum(max);
 	    dial->setPageStep(1);
 	    dial->setNotchesVisible((max - min) <= 12);
-	    dial->setDefaultValue(deflt);
+            // important to set the range mapper before the default,
+            // because the range mapper is used to map the default
             dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
+	    dial->setDefaultValue(deflt);
             dial->setShowToolTip(true);
 	    connect(dial, SIGNAL(valueChanged(int)),
 		    this, SLOT(propertyControllerChanged(int)));
@@ -388,21 +375,15 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             connect(dial, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
 
-	    if (inGroup) {
-		dial->setFixedWidth(24);
-		dial->setFixedHeight(24);
-		m_groupLayouts[groupName]->addWidget
-                    (dial, 0, m_groupLayouts[groupName]->columnCount());
-	    } else {
-		dial->setFixedWidth(32);
-		dial->setFixedHeight(32);
-		m_layout->addWidget(dial, row, 1);
-		QLabel *label = new QLabel(m_mainWidget);
-		connect(dial, SIGNAL(valueChanged(int)),
-			label, SLOT(setNum(int)));
-		label->setNum(value);
-		m_layout->addWidget(label, row, 2);
-	    }
+            dial->setFixedWidth(WidgetScale::scalePixelSize(24));
+            dial->setFixedHeight(WidgetScale::scalePixelSize(24));
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, dial);
+                delete existing;
+            } else {
+                groupLayout->addWidget(dial, 0, groupLayout->columnCount());
+            }
 
 	    m_propertyControllers[name] = dial;
 	}
@@ -415,20 +396,94 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 	break;
     }
 
+    case PropertyContainer::ColourProperty:
+    {
+        ColourComboBox *cb;
+        
+	if (!(cb = qobject_cast<ColourComboBox *>(existing))) {
+
+#ifdef DEBUG_PROPERTY_BOX 
+	    cerr << "PropertyBox: creating new colour combobox" << endl;
+#endif
+            cb = new ColourComboBox(true);
+            cb->setObjectName(name);
+
+	    connect(cb, SIGNAL(colourChanged(int)),
+		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(cb, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
+
+            cb->setToolTip(propertyLabel);
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, cb);
+                delete existing;
+            } else {
+                groupLayout->addWidget(cb, 0, groupLayout->columnCount());
+            }
+            
+	    m_propertyControllers[name] = cb;
+	}
+
+        if (cb->currentIndex() != value) {
+            cb->blockSignals(true);
+            cb->setCurrentIndex(value);
+            cb->blockSignals(false);
+        }
+
+        break;
+    }        
+
+    case PropertyContainer::ColourMapProperty:
+    {
+        ColourMapComboBox *cb;
+
+        if (!(cb = qobject_cast<ColourMapComboBox *>(existing))) {
+#ifdef DEBUG_PROPERTY_BOX 
+	    cerr << "PropertyBox: creating new colourmap combobox" << endl;
+#endif
+            cb = new ColourMapComboBox(false);
+            cb->setObjectName(name);
+
+	    connect(cb, SIGNAL(colourMapChanged(int)),
+		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(cb, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
+            
+            cb->setToolTip(propertyLabel);
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, cb);
+                delete existing;
+            } else {
+                groupLayout->addWidget(cb, 0, groupLayout->columnCount());
+            }
+            
+	    m_propertyControllers[name] = cb;
+	}
+
+        if (cb->currentIndex() != value) {
+            cb->blockSignals(true);
+            cb->setCurrentIndex(value);
+            cb->blockSignals(false);
+        }
+
+        break;
+    }        
+
     case PropertyContainer::ValueProperty:
     case PropertyContainer::UnitsProperty:
-    case PropertyContainer::ColourProperty:
     {
 	NotifyingComboBox *cb;
 
-	if (have) {
-	    cb = dynamic_cast<NotifyingComboBox *>(m_propertyControllers[name]);
-	    assert(cb);
-	} else {
+	if (!(cb = qobject_cast<NotifyingComboBox *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
 	    cerr << "PropertyBox: creating new combobox" << endl;
 #endif
-
 	    cb = new NotifyingComboBox();
 	    cb->setObjectName(name);
             cb->setDuplicatesEnabled(false);
@@ -443,10 +498,19 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             if (type == PropertyContainer::ValueProperty) {
 
                 for (int i = min; i <= max; ++i) {
-                    cb->addItem(m_container->getPropertyValueLabel(name, i));
+
+                    QString label = m_container->getPropertyValueLabel(name, i);
+                    QString iname = m_container->getPropertyValueIconName(name, i);
+
+                    if (iname != "") {
+                        QIcon icon(IconLoader().load(iname));
+                        cb->addItem(icon, label);
+                    } else {
+                        cb->addItem(label);
+                    }
                 }
 
-            } else if (type == PropertyContainer::UnitsProperty) {
+            } else { // PropertyContainer::UnitsProperty
 
                 QStringList units = UnitDatabase::getInstance()->getKnownUnits();
                 for (int i = 0; i < units.size(); ++i) {
@@ -454,23 +518,6 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 }
 
                 cb->setEditable(true);
-
-            } else { // ColourProperty
-
-                //!!! should be a proper colour combobox class that
-                // manages its own Add New Colour entry...
-                
-                ColourDatabase *db = ColourDatabase::getInstance();
-                for (int i = 0; i < db->getColourCount(); ++i) {
-                    QString name = db->getColourName(i);
-                    cb->addItem(db->getExamplePixmap(i, QSize(12, 12)), name);
-                }
-                cb->addItem(tr("Add New Colour..."));
-            }                
-                
-            cb->blockSignals(false);
-            if (cb->count() < 20 && cb->count() > cb->maxVisibleItems()) {
-                cb->setMaxVisibleItems(cb->count());
             }
         }
 
@@ -482,19 +529,16 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             connect(cb, SIGNAL(mouseLeft()),
                     this, SLOT(mouseLeftWidget()));
 
-	    if (inGroup) {
-		cb->setToolTip(propertyLabel);
-		m_groupLayouts[groupName]->addWidget
-                    (cb, 0, m_groupLayouts[groupName]->columnCount());
-	    } else {
-		m_layout->addWidget(cb, row, 1, 1, 2);
-	    }
+            cb->setToolTip(propertyLabel);
+            groupLayout->addWidget(cb, 0, groupLayout->columnCount());
 	    m_propertyControllers[name] = cb;
-	}
+	} else if (existing != cb) {
+            groupLayout->replaceWidget(existing, cb);
+            delete existing;
+        }
 
         cb->blockSignals(true);
-        if (type == PropertyContainer::ValueProperty ||
-            type == PropertyContainer::ColourProperty) {
+        if (type == PropertyContainer::ValueProperty) {
             if (cb->currentIndex() != value) {
                 cb->setCurrentIndex(value);
             }
@@ -510,11 +554,6 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             }
         }
         cb->blockSignals(false);
-
-#ifdef Q_OS_MAC
-	// Crashes on startup without this, for some reason
-	cb->setMinimumSize(QSize(10, 10));
-#endif
 
 	break;
     }
@@ -583,22 +622,6 @@ PropertyBox::unitDatabaseChanged()
 }    
 
 void
-PropertyBox::colourDatabaseChanged()
-{
-    blockSignals(true);
-
-    PropertyContainer::PropertyList properties = m_container->getProperties();
-    for (size_t i = 0; i < properties.size(); ++i) {
-        if (m_container->getPropertyType(properties[i]) ==
-            PropertyContainer::ColourProperty) {
-            updatePropertyEditor(properties[i], true);
-        }
-    }
-
-    blockSignals(false);
-}    
-
-void
 PropertyBox::propertyControllerChanged(bool on)
 {
     propertyControllerChanged(on ? 1 : 0);
@@ -620,23 +643,12 @@ PropertyBox::propertyControllerChanged(int value)
 
     if (type == PropertyContainer::UnitsProperty) {
 
-        NotifyingComboBox *cb = dynamic_cast<NotifyingComboBox *>(obj);
+        NotifyingComboBox *cb = qobject_cast<NotifyingComboBox *>(obj);
         if (cb) {
             QString unit = cb->currentText();
             c = m_container->getSetPropertyCommand
                 (name, UnitDatabase::getInstance()->getUnitId(unit));
         }
-
-    } else if (type == PropertyContainer::ColourProperty) {
-
-        if (value == int(ColourDatabase::getInstance()->getColourCount())) {
-            addNewColour();
-            if (value == int(ColourDatabase::getInstance()->getColourCount())) {
-                propertyContainerPropertyChanged(m_container);
-                return;
-            }
-        }
-        c = m_container->getSetPropertyCommand(name, value);
 
     } else if (type != PropertyContainer::InvalidProperty) {
 
@@ -649,27 +661,9 @@ PropertyBox::propertyControllerChanged(int value)
 }
 
 void
-PropertyBox::addNewColour()
-{
-    QColor newColour = QColorDialog::getColor();
-    if (!newColour.isValid()) return;
-
-    ColourNameDialog dialog(tr("Name New Colour"),
-                            tr("Enter a name for the new colour:"),
-                            newColour, newColour.name(), this);
-    dialog.showDarkBackgroundCheckbox(tr("Prefer black background for this colour"));
-    if (dialog.exec() == QDialog::Accepted) {
-        //!!! command
-        ColourDatabase *db = ColourDatabase::getInstance();
-        int index = db->addColour(newColour, dialog.getColourName());
-        db->setUseDarkBackground(index, dialog.isDarkBackgroundChecked());
-    }
-}
-
-void
 PropertyBox::playAudibleChanged(bool audible)
 {
-    m_playButton->setState(audible);
+    m_playButton->setChecked(audible);
 }
 
 void
@@ -685,25 +679,14 @@ PropertyBox::playAudibleButtonChanged(bool audible)
         CommandHistory::getInstance()->addCommand(command, true, true);
     }
 }
-    
-void
-PropertyBox::playGainChanged(float gain)
-{
-    int dialValue = int(lrint(log10(gain) * 20.0));
-    if (dialValue < -50) dialValue = -50;
-    if (dialValue >  50) dialValue =  50;
-    emit changePlayGainDial(dialValue);
-}
 
 void
-PropertyBox::playGainDialChanged(int dialValue)
+PropertyBox::playGainControlChanged(float gain)
 {
     QObject *obj = sender();
 
     PlayParameters *params = m_container->getPlayParameters();
     if (!params) return;
-
-    float gain = float(pow(10, float(dialValue) / 20.0));
 
     if (params->getPlayGain() != gain) {
         PlayParameterRepository::EditCommand *command =
@@ -714,27 +697,14 @@ PropertyBox::playGainDialChanged(int dialValue)
 
     updateContextHelp(obj);
 }
-    
-void
-PropertyBox::playPanChanged(float pan)
-{
-    int dialValue = int(lrint(pan * 50.0));
-    if (dialValue < -50) dialValue = -50;
-    if (dialValue >  50) dialValue =  50;
-    emit changePlayPanDial(dialValue);
-}
 
 void
-PropertyBox::playPanDialChanged(int dialValue)
+PropertyBox::playPanControlChanged(float pan)
 {
     QObject *obj = sender();
 
     PlayParameters *params = m_container->getPlayParameters();
     if (!params) return;
-
-    float pan = float(dialValue) / 50.f;
-    if (pan < -1.f) pan = -1.f;
-    if (pan >  1.f) pan =  1.f;
 
     if (params->getPlayPan() != pan) {
         PlayParameterRepository::EditCommand *command =
@@ -820,17 +790,34 @@ PropertyBox::mouseEnteredWidget()
 void
 PropertyBox::updateContextHelp(QObject *o)
 {
-    QWidget *w = dynamic_cast<QWidget *>(o);
+    QWidget *w = qobject_cast<QWidget *>(o);
     if (!w) return;
 
     if (!m_container) return;
     QString cname = m_container->getPropertyContainerName();
     if (cname == "") return;
 
+    LevelPanToolButton *lp = qobject_cast<LevelPanToolButton *>(w);
+    if (lp) {
+        emit contextHelpChanged(tr("Adjust playback level and pan of %1").arg(cname));
+        return;
+    }
+
     QString wname = w->objectName();
 
+    if (wname == "playParamButton") {
+        PlayParameters *params = m_container->getPlayParameters();
+        if (params) {
+            emit contextHelpChanged
+                (tr("Change sound used for playback (currently \"%1\")")
+                 .arg(params->getPlayClipId()));
+            return;
+        }
+    }
+    
     QString extraText;
-    AudioDial *dial = dynamic_cast<AudioDial *>(w);
+    
+    AudioDial *dial = qobject_cast<AudioDial *>(w);
     if (dial) {
         double mv = dial->mappedValue();
         QString unit = "";
@@ -848,7 +835,7 @@ PropertyBox::updateContextHelp(QObject *o)
         emit contextHelpChanged(tr("Toggle Playback of %1").arg(cname));
     } else if (wname == "") {
         return;
-    } else if (dynamic_cast<QAbstractButton *>(w)) {
+    } else if (qobject_cast<QAbstractButton *>(w)) {
         emit contextHelpChanged(tr("Toggle %1 property of %2")
                                 .arg(wname).arg(cname));
     } else {

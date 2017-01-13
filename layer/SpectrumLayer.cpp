@@ -21,7 +21,10 @@
 #include "base/Preferences.h"
 #include "base/RangeMapper.h"
 #include "base/Pitch.h"
+#include "base/Strings.h"
+
 #include "ColourMapper.h"
+#include "PaintAssistant.h"
 
 #include <QPainter>
 #include <QTextStream>
@@ -112,11 +115,7 @@ SpectrumLayer::setupFFT()
                                     m_windowType,
                                     m_windowSize,
                                     getWindowIncrement(),
-                                    m_windowSize,
-                                    false,
-                                    StorageAdviser::Criteria
-                                    (StorageAdviser::SpeedCritical |
-                                     StorageAdviser::FrequentLookupLikely));
+                                    m_windowSize);
 
     setSliceableModel(newFFT);
 
@@ -124,8 +123,6 @@ SpectrumLayer::setupFFT()
     for (int i = 0; i < m_windowSize; ++i) {
         m_biasCurve.push_back(1.f / (float(m_windowSize)/2.f));
     }
-
-    newFFT->resume();
 
     m_newFFTNeeded = false;
 }
@@ -386,18 +383,18 @@ SpectrumLayer::getXForFrequency(double freq, double w) const
 }
 
 bool
-SpectrumLayer::getXScaleValue(const View *v, int x, 
+SpectrumLayer::getXScaleValue(const LayerGeometryProvider *v, int x, 
                               double &value, QString &unit) const
 {
     if (m_xorigins.find(v) == m_xorigins.end()) return false;
     int xorigin = m_xorigins.find(v)->second;
-    value = getFrequencyForX(x - xorigin, v->width() - xorigin - 1);
+    value = getFrequencyForX(x - xorigin, v->getPaintWidth() - xorigin - 1);
     unit = "Hz";
     return true;
 }
 
 bool
-SpectrumLayer::getYScaleValue(const View *v, int y,
+SpectrumLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
                               double &value, QString &unit) const
 {
     value = getValueForY(y, v);
@@ -419,7 +416,7 @@ SpectrumLayer::getYScaleValue(const View *v, int y,
 }
 
 bool
-SpectrumLayer::getYScaleDifference(const View *v, int y0, int y1,
+SpectrumLayer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
                                    double &diff, QString &unit) const
 {
     bool rv = SliceLayer::getYScaleDifference(v, y0, y1, diff, unit);
@@ -429,14 +426,14 @@ SpectrumLayer::getYScaleDifference(const View *v, int y0, int y1,
 
 
 bool
-SpectrumLayer::getCrosshairExtents(View *v, QPainter &paint,
+SpectrumLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
                                    QPoint cursorPos,
                                    std::vector<QRect> &extents) const
 {
-    QRect vertical(cursorPos.x(), cursorPos.y(), 1, v->height() - cursorPos.y());
+    QRect vertical(cursorPos.x(), cursorPos.y(), 1, v->getPaintHeight() - cursorPos.y());
     extents.push_back(vertical);
 
-    QRect horizontal(0, cursorPos.y(), v->width(), 12);
+    QRect horizontal(0, cursorPos.y(), v->getPaintWidth(), 12);
     extents.push_back(horizontal);
 
     int hoffset = 2;
@@ -455,14 +452,14 @@ SpectrumLayer::getCrosshairExtents(View *v, QPainter &paint,
     extents.push_back(log);
 
     QRect freq(cursorPos.x(),
-               v->height() - paint.fontMetrics().height() - hoffset,
+               v->getPaintHeight() - paint.fontMetrics().height() - hoffset,
                paint.fontMetrics().width("123456 Hz") + 2,
                paint.fontMetrics().height());
     extents.push_back(freq);
 
     int w(paint.fontMetrics().width("C#10+50c") + 2);
     QRect pitch(cursorPos.x() - w,
-                v->height() - paint.fontMetrics().height() - hoffset,
+                v->getPaintHeight() - paint.fontMetrics().height() - hoffset,
                 w,
                 paint.fontMetrics().height());
     extents.push_back(pitch);
@@ -471,7 +468,7 @@ SpectrumLayer::getCrosshairExtents(View *v, QPainter &paint,
 }
 
 void
-SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
+SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                                QPoint cursorPos) const
 {
     if (!m_sliceableModel) return;
@@ -487,29 +484,29 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
     paint.setPen(mapper.getContrastingColour());
 
     int xorigin = m_xorigins[v];
-    int w = v->width() - xorigin - 1;
+    int w = v->getPaintWidth() - xorigin - 1;
     
-    paint.drawLine(xorigin, cursorPos.y(), v->width(), cursorPos.y());
-    paint.drawLine(cursorPos.x(), cursorPos.y(), cursorPos.x(), v->height());
+    paint.drawLine(xorigin, cursorPos.y(), v->getPaintWidth(), cursorPos.y());
+    paint.drawLine(cursorPos.x(), cursorPos.y(), cursorPos.x(), v->getPaintHeight());
     
     double fundamental = getFrequencyForX(cursorPos.x() - xorigin, w);
 
     int hoffset = 2;
     if (m_binScale == LogBins) hoffset = 13;
 
-    v->drawVisibleText(paint,
+    PaintAssistant::drawVisibleText(v, paint,
                        cursorPos.x() + 2,
-                       v->height() - 2 - hoffset,
+                       v->getPaintHeight() - 2 - hoffset,
                        QString("%1 Hz").arg(fundamental),
-                       View::OutlinedText);
+                       PaintAssistant::OutlinedText);
 
     if (Pitch::isFrequencyInMidiRange(fundamental)) {
         QString pitchLabel = Pitch::getPitchLabelForFrequency(fundamental);
-        v->drawVisibleText(paint,
+        PaintAssistant::drawVisibleText(v, paint,
                            cursorPos.x() - paint.fontMetrics().width(pitchLabel) - 2,
-                           v->height() - 2 - hoffset,
+                           v->getPaintHeight() - 2 - hoffset,
                            pitchLabel,
-                           View::OutlinedText);
+                           PaintAssistant::OutlinedText);
     }
 
     double value = getValueForY(cursorPos.y(), v);
@@ -518,17 +515,17 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
     if (value > 0.0) db = 10.0 * log10(value);
     if (db < thresh) db = thresh;
 
-    v->drawVisibleText(paint,
+    PaintAssistant::drawVisibleText(v, paint,
                        xorigin + 2,
                        cursorPos.y() - 2,
                        QString("%1 V").arg(value),
-                       View::OutlinedText);
+                       PaintAssistant::OutlinedText);
 
-    v->drawVisibleText(paint,
+    PaintAssistant::drawVisibleText(v, paint,
                        xorigin + 2,
                        cursorPos.y() + 2 + paint.fontMetrics().ascent(),
                        QString("%1 dBV").arg(db),
-                       View::OutlinedText);
+                       PaintAssistant::OutlinedText);
     
     int harmonic = 2;
 
@@ -537,7 +534,7 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
         int hx = int(lrint(getXForFrequency(fundamental * harmonic, w)));
         hx += xorigin;
 
-        if (hx < xorigin || hx > v->width()) break;
+        if (hx < xorigin || hx > v->getPaintWidth()) break;
         
         int len = 7;
 
@@ -561,7 +558,7 @@ SpectrumLayer::paintCrosshairs(View *v, QPainter &paint,
 }
 
 QString
-SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
+SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
 {
     if (!m_sliceableModel) return "";
 
@@ -611,12 +608,12 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
     QString mindbstr;
     QString maxdbstr;
     if (mindb == AudioLevel::DB_FLOOR) {
-        mindbstr = tr("-Inf");
+        mindbstr = Strings::minus_infinity;
     } else {
         mindbstr = QString("%1").arg(lrint(mindb));
     }
     if (maxdb == AudioLevel::DB_FLOOR) {
-        maxdbstr = tr("-Inf");
+        maxdbstr = Strings::minus_infinity;
     } else {
         maxdbstr = QString("%1").arg(lrint(maxdb));
     }
@@ -650,7 +647,7 @@ SpectrumLayer::getFeatureDescription(View *v, QPoint &p) const
 }
 
 void
-SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
+SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_originModel || !m_originModel->isOK() ||
         !m_originModel->isReady()) {
@@ -669,7 +666,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
     double thresh = (pow(10, -6) / m_gain) * (m_windowSize / 2.0); // -60dB adj
 
     int xorigin = getVerticalScaleWidth(v, false, paint) + 1;
-    int w = v->width() - xorigin - 1;
+    int w = v->getPaintWidth() - xorigin - 1;
 
     int pkh = 0;
 //!!!    if (m_binScale == LogBins) {
@@ -729,7 +726,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
             (void)getYForValue(values[bin], v, norm); // don't need return value, need norm
 
             paint.setPen(mapper.map(norm));
-            paint.drawLine(xorigin + x, 0, xorigin + x, v->height() - pkh - 1);
+            paint.drawLine(xorigin + x, 0, xorigin + x, v->getPaintHeight() - pkh - 1);
         }
 
         paint.restore();
@@ -749,7 +746,7 @@ SpectrumLayer::paint(View *v, QPainter &paint, QRect rect) const
 //    if (m_binScale == LogBins) {
 
 //        int pkh = 10;
-        int h = v->height();
+        int h = v->getPaintHeight();
 
         // piano keyboard
         //!!! should be in a new paintHorizontalScale()?

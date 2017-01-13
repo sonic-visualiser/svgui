@@ -29,6 +29,7 @@
 #include "base/BaseTypes.h"
 
 class AudioPlaySource;
+class AudioRecordTarget;
 class Model;
 
 enum PlaybackFollowMode {
@@ -80,8 +81,10 @@ public:
     virtual ~ViewManager();
 
     void setAudioPlaySource(AudioPlaySource *source);
+    void setAudioRecordTarget(AudioRecordTarget *target);
 
     bool isPlaying() const;
+    bool isRecording() const;
 
     sv_frame_t getGlobalCentreFrame() const; // the set method is a slot
     int getGlobalZoom() const;
@@ -172,9 +175,9 @@ public:
     /**
      * The sample rate of the audio output device.  If the playback
      * sample rate differs from this, everything will be resampled at
-     * the output stage.
+     * the output stage (but not before).
      */
-    sv_samplerate_t getOutputSampleRate() const;
+    sv_samplerate_t getDeviceSampleRate() const;
 
     /**
      * The sample rate of the current main model.  This may in theory
@@ -254,8 +257,8 @@ signals:
     /** Emitted when the playback frame changes. */
     void playbackFrameChanged(sv_frame_t frame);
 
-    /** Emitted when the output levels change. Values in range 0.0 -> 1.0. */
-    void outputLevelsChanged(float left, float right);
+    /** Emitted when the output or record levels change. Values in range 0.0 -> 1.0. */
+    void monitoringLevelsChanged(float left, float right);
 
     /** Emitted whenever the selection has changed. */
     void selectionChanged();
@@ -305,6 +308,7 @@ public slots:
     void setGlobalCentreFrame(sv_frame_t);
     void setPlaybackFrame(sv_frame_t);
     void playStatusChanged(bool playing);
+    void recordStatusChanged(bool recording);
 
 protected slots:
     void checkPlayStatus();
@@ -313,6 +317,8 @@ protected slots:
 
 protected:
     AudioPlaySource *m_playSource;
+    AudioRecordTarget *m_recordTarget;
+    
     sv_frame_t m_globalCentreFrame;
     int m_globalZoom;
     mutable sv_frame_t m_playbackFrame;

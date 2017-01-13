@@ -23,6 +23,7 @@
 
 
 #include "LEDButton.h"
+#include "WidgetScale.h"
 
 #include <QPainter>
 #include <QImage>
@@ -38,8 +39,6 @@ class LEDButton::LEDButtonPrivate
 
     int dark_factor;
     QColor offcolor;
-    QPixmap *off_map;
-    QPixmap *on_map;
 };
 
 
@@ -51,8 +50,6 @@ LEDButton::LEDButton(QWidget *parent) :
     d = new LEDButton::LEDButtonPrivate;
     d->dark_factor = 300;
     d->offcolor = col.dark(300);
-    d->off_map = 0;
-    d->on_map = 0;
     
     setColor(col);
 }
@@ -65,8 +62,6 @@ LEDButton::LEDButton(const QColor& col, QWidget *parent) :
     d = new LEDButton::LEDButtonPrivate;
     d->dark_factor = 300;
     d->offcolor = col.dark(300);
-    d->off_map = 0;
-    d->on_map = 0;
 
     setColor(col);
 }
@@ -78,16 +73,12 @@ LEDButton::LEDButton(const QColor& col, bool state, QWidget *parent) :
     d = new LEDButton::LEDButtonPrivate;
     d->dark_factor = 300;
     d->offcolor = col.dark(300);
-    d->off_map = 0;
-    d->on_map = 0;
 
     setColor(col);
 }
 
 LEDButton::~LEDButton()
 {
-    delete d->off_map;
-    delete d->on_map;
     delete d;
 }
 
@@ -135,40 +126,7 @@ LEDButton::paintEvent(QPaintEvent *)
     if (width < 0) 
 	width = 0;
 
-    QPixmap *tmpMap = 0;
-
-    if (led_state) {
-	if (d->on_map) {
-            if (d->on_map->size() == size()) {
-                paint.begin(this);
-                paint.drawPixmap(0, 0, *d->on_map);
-                paint.end();
-                return;
-            } else {
-                delete d->on_map;
-                d->on_map = 0;
-            }
-	}
-    } else {
-	if (d->off_map) {
-            if (d->off_map->size() == size()) {
-                paint.begin(this);
-                paint.drawPixmap(0, 0, *d->off_map);
-                paint.end();
-                return;
-            } else {
-                delete d->off_map;
-                d->off_map = 0;
-            }
-	}
-    }
-
-    int scale = 1;
-    width *= scale;
-
-    tmpMap = new QPixmap(width, width);
-    tmpMap->fill(palette().background().color());
-    paint.begin(tmpMap);
+    paint.begin(this);
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
@@ -182,14 +140,14 @@ LEDButton::paintEvent(QPaintEvent *)
     paint.setBrush(brush);
 
     // Draws a "flat" LED with the given color:
-    paint.drawEllipse( scale, scale, width - scale*2, width - scale*2 );
+    paint.drawEllipse( 1, 1, width - 2, width - 2 );
 
     // Draw the bright light spot of the LED now, using modified "old"
     // painter routine taken from KDEUI´s LEDButton widget:
 
     // Setting the new width of the pen is essential to avoid "pixelized"
     // shadow like it can be observed with the old LED code
-    pen.setWidth( 2 * scale );
+    pen.setWidth( 2 );
 
     // shrink the light on the LED to a size about 2/3 of the complete LED
     int pos = width/5 + 1;
@@ -217,12 +175,13 @@ LEDButton::paintEvent(QPaintEvent *)
 	pos++; light_width--;
     }
 
+    paint.drawPoint(pos, pos);
+
     // Drawing of bright spot finished, now draw a thin border
     // around the LED which resembles a shadow with light coming
     // from the upper left.
 
-//    pen.setWidth( 2 * scale + 1 ); // ### shouldn't this value be smaller for smaller LEDs?
-    pen.setWidth(2 * scale);
+    pen.setWidth(2);
     brush.setStyle(Qt::NoBrush);
     paint.setBrush(brush); // This avoids filling of the ellipse
 
@@ -235,35 +194,12 @@ LEDButton::paintEvent(QPaintEvent *)
     for (int arc = 120; arc < 2880; arc += 240) {
 	pen.setColor(color);
 	paint.setPen(pen);
-	int w = width - pen.width()/2 - scale + 1;
+	int w = width - pen.width()/2;
 	paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle + arc, 240);
 	paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle - arc, 240);
 	color = color.dark(110); //FIXME: this should somehow use the contrast value
     }	// end for ( angle = 720; angle < 6480; angle += 160 )
 
-    paint.end();
-    //
-    // painting done
-
-    QPixmap *&dest = led_state ? d->on_map : d->off_map;
-
-    if (scale > 1) {
-
-	QImage i = tmpMap->toImage();
-	width /= scale;
-	delete tmpMap;
-	dest = new QPixmap(QPixmap::fromImage
-			   (i.scaled(width, width, 
-				     Qt::KeepAspectRatio,
-				     Qt::SmoothTransformation)));
-
-    } else {
-
-	dest = tmpMap;
-    }
-
-    paint.begin(this);
-    paint.drawPixmap(0, 0, *dest);
     paint.end();
 }
 
@@ -303,10 +239,6 @@ LEDButton::setColor(const QColor& col)
     if(led_color!=col) {
 	led_color = col;
 	d->offcolor = col.dark(d->dark_factor);
-	delete d->on_map;
-	d->on_map = 0;
-	delete d->off_map;
-	d->off_map = 0;
 	update();
     }
 }
@@ -348,12 +280,12 @@ LEDButton::off()
 QSize
 LEDButton::sizeHint() const
 {
-    return QSize(17, 17);
+    return WidgetScale::scaleQSize(QSize(17, 17));
 }
 
 QSize
 LEDButton::minimumSizeHint() const
 {
-    return QSize(17, 17);
+    return WidgetScale::scaleQSize(QSize(17, 17));
 }
 

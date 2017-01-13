@@ -21,7 +21,6 @@
 #include "base/LogRange.h"
 #include "base/RangeMapper.h"
 #include "base/Pitch.h"
-#include "ColourDatabase.h"
 #include "view/View.h"
 
 #include "data/model/SparseTimeValueModel.h"
@@ -31,12 +30,14 @@
 #include "widgets/ListInputDialog.h"
 #include "widgets/TextAbbrev.h"
 
+#include "ColourDatabase.h"
 #include "ColourMapper.h"
 #include "PianoScale.h"
 #include "LinearNumericalScale.h"
 #include "LogNumericalScale.h"
 #include "LinearColourScale.h"
 #include "LogColourScale.h"
+#include "PaintAssistant.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -131,7 +132,7 @@ TimeValueLayer::getPropertyType(const PropertyName &name) const
     if (name == "Plot Type") return ValueProperty;
     if (name == "Vertical Scale") return ValueProperty;
     if (name == "Scale Units") return UnitsProperty;
-    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ValueProperty;
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ColourMapProperty;
     if (name == "Draw Segment Division Lines") return ToggleProperty;
     if (name == "Show Derivative") return ToggleProperty;
     return SingleColourLayer::getPropertyType(name);
@@ -316,7 +317,7 @@ TimeValueLayer::setShowDerivative(bool show)
 }
 
 bool
-TimeValueLayer::isLayerScrollable(const View *v) const
+TimeValueLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     // We don't illuminate sections in the line or curve modes, so
     // they're always scrollable
@@ -530,7 +531,7 @@ TimeValueLayer::getNewVerticalZoomRangeMapper() const
 }
 
 SparseTimeValueModel::PointList
-TimeValueLayer::getLocalPoints(View *v, int x) const
+TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
     if (!m_model) return SparseTimeValueModel::PointList();
 
@@ -587,7 +588,7 @@ TimeValueLayer::getLabelPreceding(sv_frame_t frame) const
 }
 
 QString
-TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
+TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
@@ -641,7 +642,7 @@ TimeValueLayer::getFeatureDescription(View *v, QPoint &pos) const
 }
 
 bool
-TimeValueLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
+TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 				   int &resolution,
 				   SnapType snap) const
 {
@@ -713,7 +714,7 @@ TimeValueLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 bool
-TimeValueLayer::snapToSimilarFeature(View *v, sv_frame_t &frame,
+TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                                      int &resolution,
                                      SnapType snap) const
 {
@@ -794,7 +795,7 @@ TimeValueLayer::snapToSimilarFeature(View *v, sv_frame_t &frame,
 }
 
 void
-TimeValueLayer::getScaleExtents(View *v, double &min, double &max, bool &log) const
+TimeValueLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -830,11 +831,11 @@ TimeValueLayer::getScaleExtents(View *v, double &min, double &max, bool &log) co
 }
 
 int
-TimeValueLayer::getYForValue(View *v, double val) const
+TimeValueLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     getScaleExtents(v, min, max, logarithmic);
 
@@ -851,11 +852,11 @@ TimeValueLayer::getYForValue(View *v, double val) const
 }
 
 double
-TimeValueLayer::getValueForY(View *v, int y) const
+TimeValueLayer::getValueForY(LayerGeometryProvider *v, int y) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     getScaleExtents(v, min, max, logarithmic);
 
@@ -877,7 +878,7 @@ TimeValueLayer::shouldAutoAlign() const
 }
 
 QColor
-TimeValueLayer::getColourForValue(View *v, double val) const
+TimeValueLayer::getColourForValue(LayerGeometryProvider *v, double val) const
 {
     double min, max;
     bool log;
@@ -908,7 +909,7 @@ TimeValueLayer::getDefaultColourHint(bool darkbg, bool &impose)
 }
 
 void
-TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
+TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) return;
 
@@ -943,8 +944,8 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
     double max = m_model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
-    int origin = int(nearbyint(v->height() -
-			       (-min * v->height()) / (max - min)));
+    int origin = int(nearbyint(v->getPaintHeight() -
+			       (-min * v->getPaintHeight()) / (max - min)));
 
     QPoint localPos;
     sv_frame_t illuminateFrame = -1;
@@ -978,7 +979,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
         textY = v->getTextLabelHeight(this, paint);
     } else {
         int originY = getYForValue(v, 0.f);
-        if (originY > 0 && originY < v->height()) {
+        if (originY > 0 && originY < v->getPaintHeight()) {
             paint.save();
             paint.setPen(getPartialShades(v)[1]);
             paint.drawLine(x0, originY, x1, originY);
@@ -1183,12 +1184,12 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
             if (!illuminate) {
                 if (!m_drawSegmentDivisions ||
                     nx < x + 5 ||
-                    x >= v->width() - 1) {
+                    x >= v->getPaintWidth() - 1) {
                     paint.setPen(Qt::NoPen);
                 }
 	    }
 
-	    paint.drawRect(x, -1, nx - x, v->height() + 1);
+	    paint.drawRect(x, -1, nx - x, v->getPaintHeight() + 1);
 	}
 
         if (v->shouldShowFeatureLabels()) {
@@ -1214,10 +1215,10 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
                 if (haveRoom ||
                     (!haveNext &&
                      (pointCount == 0 || !italic))) {
-                    v->drawVisibleText(paint, x + 5, textY, label,
+                    PaintAssistant::drawVisibleText(v, paint, x + 5, textY, label,
                                        italic ?
-                                       View::OutlinedItalicText :
-                                       View::OutlinedText);
+                                       PaintAssistant::OutlinedItalicText :
+                                       PaintAssistant::OutlinedText);
                 }
             }
         }
@@ -1231,7 +1232,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 	paint.drawPath(path);
     } else if ((m_plotStyle == PlotCurve || m_plotStyle == PlotLines)
                && !path.isEmpty()) {
-	paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->width());
+	paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->getPaintWidth());
 	paint.drawPath(path);
     }
 
@@ -1242,7 +1243,7 @@ TimeValueLayer::paint(View *v, QPainter &paint, QRect rect) const
 }
 
 int
-TimeValueLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
+TimeValueLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
     if (!m_model || shouldAutoAlign()) {
         return 0;
@@ -1262,7 +1263,7 @@ TimeValueLayer::getVerticalScaleWidth(View *v, bool, QPainter &paint) const
 }
 
 void
-TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
+TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
     if (!m_model || m_model->getPoints().empty()) return;
 
@@ -1271,7 +1272,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
     bool logarithmic;
 
     int w = getVerticalScaleWidth(v, false, paint);
-    int h = v->height();
+    int h = v->getPaintHeight();
 
     if (m_plotStyle == PlotSegmentation) {
 
@@ -1314,7 +1315,7 @@ TimeValueLayer::paintVerticalScale(View *v, bool, QPainter &paint, QRect) const
 }
 
 void
-TimeValueLayer::drawStart(View *v, QMouseEvent *e)
+TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
@@ -1364,7 +1365,7 @@ TimeValueLayer::drawStart(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
+TimeValueLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
@@ -1426,7 +1427,7 @@ TimeValueLayer::drawDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::drawEnd(View *, QMouseEvent *)
+TimeValueLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::drawEnd" << endl;
@@ -1438,7 +1439,7 @@ TimeValueLayer::drawEnd(View *, QMouseEvent *)
 }
 
 void
-TimeValueLayer::eraseStart(View *v, QMouseEvent *e)
+TimeValueLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
@@ -1456,12 +1457,12 @@ TimeValueLayer::eraseStart(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::eraseDrag(View *, QMouseEvent *)
+TimeValueLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 {
 }
 
 void
-TimeValueLayer::eraseEnd(View *v, QMouseEvent *e)
+TimeValueLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model || !m_editing) return;
 
@@ -1483,7 +1484,7 @@ TimeValueLayer::eraseEnd(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::editStart(View *v, QMouseEvent *e)
+TimeValueLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
@@ -1506,7 +1507,7 @@ TimeValueLayer::editStart(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::editDrag(View *v, QMouseEvent *e)
+TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
@@ -1532,7 +1533,7 @@ TimeValueLayer::editDrag(View *v, QMouseEvent *e)
 }
 
 void
-TimeValueLayer::editEnd(View *, QMouseEvent *)
+TimeValueLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::editEnd" << endl;
@@ -1562,7 +1563,7 @@ TimeValueLayer::editEnd(View *, QMouseEvent *)
 }
 
 bool
-TimeValueLayer::editOpen(View *v, QMouseEvent *e)
+TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
@@ -1685,7 +1686,7 @@ TimeValueLayer::deleteSelection(Selection s)
 }    
 
 void
-TimeValueLayer::copy(View *v, Selection s, Clipboard &to)
+TimeValueLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
@@ -1703,7 +1704,7 @@ TimeValueLayer::copy(View *v, Selection s, Clipboard &to)
 }
 
 bool
-TimeValueLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset */,
+TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */,
                       bool interactive)
 {
     if (!m_model) return false;
@@ -1715,7 +1716,7 @@ TimeValueLayer::paste(View *v, const Clipboard &from, sv_frame_t /* frameOffset 
     if (clipboardHasDifferentAlignment(v, from)) {
 
         QMessageBox::StandardButton button =
-            QMessageBox::question(v, tr("Re-align pasted items?"),
+            QMessageBox::question(v->getView(), tr("Re-align pasted items?"),
                                   tr("The items you are pasting came from a layer with different source material from this one.  Do you want to re-align them in time, to match the source material for this layer?"),
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
                                   QMessageBox::Yes);

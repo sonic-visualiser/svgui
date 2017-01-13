@@ -37,7 +37,6 @@ InteractiveFileFinder::InteractiveFileFinder() :
     m_lastLocatedLocation(""),
     m_parent(0)
 {
-    SVDEBUG << "Registering interactive file finder" << endl;
     FileFinder::registerFileFinder(this);
 }
 
@@ -133,6 +132,11 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
             }
             filter = tr("Image files (%1)\nAll files (*.*)").arg(fmts.join(" "));
         }
+        break;
+
+    case SVGFile:
+        settingsKeyStub = "svg";
+        filter = tr("Scalable Vector Graphics files (*.svg)\nAll files (*.*)");
         break;
 
     case CSVFile:
@@ -283,6 +287,12 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         filter = tr("Portable Network Graphics files (*.png)\nAll files (*.*)");
         break;
 
+    case SVGFile:
+        settingsKeyStub = "savesvg";
+        title = tr("Select a file to export to");
+        filter = tr("Scalable Vector Graphics files (*.svg)\nAll files (*.*)");
+        break;
+
     case CSVFile:
         settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
@@ -331,6 +341,8 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         defaultSuffix = "wav";
     } else if (type == ImageFile) {
         defaultSuffix = "png";
+    } else if (type == SVGFile) {
+        defaultSuffix = "svg";
     } else if (type == CSVFile) {
         defaultSuffix = "csv";
     }
@@ -449,6 +461,10 @@ InteractiveFileFinder::registerLastOpenedFilePath(FileType type, QString path)
 
     case ImageFile:
         settingsKeyStub = "image";
+        break;
+
+    case SVGFile:
+        settingsKeyStub = "svg";
         break;
 
     case CSVFile:

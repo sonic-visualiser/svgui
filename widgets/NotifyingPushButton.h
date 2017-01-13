@@ -13,21 +13,22 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _NOTIFYING_PUSH_BUTTON_H_
-#define _NOTIFYING_PUSH_BUTTON_H_
+#ifndef SV_NOTIFYING_PUSH_BUTTON_H
+#define SV_NOTIFYING_PUSH_BUTTON_H
 
 #include <QPushButton>
 
 /**
- * Very trivial enhancement to QPushButton to make it emit signals when
- * the mouse enters and leaves (for context help).
+ * Very trivial enhancement to QPushButton to make it emit signals
+ * when the mouse enters and leaves (for context help). See also
+ * NotifyingToolButton
  */
 
 class NotifyingPushButton : public QPushButton
 {
     Q_OBJECT
-public:
 
+public:
     NotifyingPushButton(QWidget *parent = 0) :
         QPushButton(parent) { }
 
