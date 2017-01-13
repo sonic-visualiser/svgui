@@ -80,6 +80,8 @@ View::~View()
 
     m_deleting = true;
     delete m_propertyContainer;
+    delete m_cache;
+    delete m_buffer;
 }
 
 PropertyContainer::PropertyList
