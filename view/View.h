@@ -490,8 +490,8 @@ protected:
     bool                m_lightBackground;
     bool                m_showProgress;
 
-    QPixmap            *m_cache;
-    QPixmap            *m_buffer;
+    QPixmap            *m_cache;  // I own this
+    QPixmap            *m_buffer; // I own this
     sv_frame_t          m_cacheCentreFrame;
     int                 m_cacheZoomLevel;
     bool                m_selectionCached;
