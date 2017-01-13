@@ -39,13 +39,13 @@ public:
     void setModel(DenseTimeValueModel *model);
     virtual const Model *getModel() const { return m_originModel; }
 
-    virtual bool getCrosshairExtents(View *, QPainter &, QPoint cursorPos,
+    virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint cursorPos,
                                      std::vector<QRect> &extents) const;
-    virtual void paintCrosshairs(View *, QPainter &, QPoint) const;
+    virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
     virtual VerticalPosition getPreferredFrameCountPosition() const {
 	return PositionTop;
@@ -67,16 +67,16 @@ public:
     virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
-    virtual bool getXScaleValue(const View *v, int x,
+    virtual bool getXScaleValue(const LayerGeometryProvider *v, int x,
                                 double &value, QString &unit) const;
 
-    virtual bool getYScaleValue(const View *, int y,
+    virtual bool getYScaleValue(const LayerGeometryProvider *, int y,
                                 double &value, QString &unit) const;
 
-    virtual bool getYScaleDifference(const View *, int y0, int y1,
+    virtual bool getYScaleDifference(const LayerGeometryProvider *, int y0, int y1,
                                      double &diff, QString &unit) const;
 
-    virtual bool isLayerScrollable(const View *) const { return false; }
+    virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
 
     void setChannel(int);
     int getChannel() const { return m_channel; }
@@ -93,7 +93,7 @@ public:
     void setShowPeaks(bool);
     bool getShowPeaks() const { return m_showPeaks; }
 
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;

@@ -19,17 +19,18 @@
 
 #include "data/model/Model.h"
 #include "base/RealTime.h"
-#include "ColourDatabase.h"
 #include "view/View.h"
+
+#include "ColourDatabase.h"
+#include "PaintAssistant.h"
 
 #include <QPainter>
 
 #include <iostream>
 #include <cmath>
+#include <stdexcept>
 
 //#define DEBUG_TIME_RULER_LAYER 1
-
-
 
 
 TimeRulerLayer::TimeRulerLayer() :
@@ -49,7 +50,7 @@ TimeRulerLayer::setModel(Model *model)
 }
 
 bool
-TimeRulerLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
+TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                    int &resolution, SnapType snap) const
 {
     if (!m_model) {
@@ -141,7 +142,7 @@ TimeRulerLayer::snapToFeatureFrame(View *v, sv_frame_t &frame,
 }
 
 int
-TimeRulerLayer::getMajorTickSpacing(View *v, bool &quarterTicks) const
+TimeRulerLayer::getMajorTickSpacing(LayerGeometryProvider *v, bool &quarterTicks) const
 {
     // return value is in milliseconds
 
@@ -158,7 +159,7 @@ TimeRulerLayer::getMajorTickSpacing(View *v, bool &quarterTicks) const
     RealTime rtStart = RealTime::frame2RealTime(startFrame, sampleRate);
     RealTime rtEnd = RealTime::frame2RealTime(endFrame, sampleRate);
 
-    int count = v->width() / minPixelSpacing;
+    int count = v->getPaintWidth() / minPixelSpacing;
     if (count < 1) count = 1;
     RealTime rtGap = (rtEnd - rtStart) / count;
 
@@ -182,6 +183,8 @@ TimeRulerLayer::getMajorTickSpacing(View *v, bool &quarterTicks) const
     } else {
 	incms = 1;
 	int ms = rtGap.msec();
+//        cerr << "rtGap.msec = " << ms << ", rtGap = " << rtGap << ", count = " << count << endl;
+//        cerr << "startFrame = " << startFrame << ", endFrame = " << endFrame << " rtStart = " << rtStart << ", rtEnd = " << rtEnd << endl;
 	if (ms > 0) { incms *= 10; ms /= 10; }
 	if (ms > 0) { incms *= 10; ms /= 10; }
 	if (ms > 0) { incms *= 5; ms /= 5; }
@@ -192,7 +195,7 @@ TimeRulerLayer::getMajorTickSpacing(View *v, bool &quarterTicks) const
 }
 
 void
-TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
+TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
 #ifdef DEBUG_TIME_RULER_LAYER
     SVDEBUG << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
@@ -241,6 +244,9 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
     // time < 0 which would cut it in half
     int minlabel = 1; // ms
 
+    // used for a sanity check
+    sv_frame_t prevframe = 0;
+    
     while (1) {
 
         // frame is used to determine where to draw the lines, so it
@@ -253,10 +259,17 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
         frame /= v->getZoomLevel();
         frame *= v->getZoomLevel(); // so frame corresponds to an exact pixel
 
+        if (frame == prevframe && prevframe != 0) {
+            cerr << "ERROR: frame == prevframe (== " << frame
+                 << ") in TimeRulerLayer::paint" << endl;
+            throw std::logic_error("frame == prevframe in TimeRulerLayer::paint");
+        }
+        prevframe = frame;
+        
         int x = v->getXForFrame(frame);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-        SVDEBUG << "Considering frame = " << frame << ", x = " << x << endl;
+        cerr << "Considering frame = " << frame << ", x = " << x << endl;
 #endif
 
         if (x >= rect.x() + rect.width() + 50) {
@@ -287,11 +300,11 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
             }
 
             paint.setPen(greyColour);
-            paint.drawLine(x, 0, x, v->height());
+            paint.drawLine(x, 0, x, v->getPaintHeight());
 
             paint.setPen(getBaseQColor());
             paint.drawLine(x, 0, x, 5);
-            paint.drawLine(x, v->height() - 6, x, v->height() - 1);
+            paint.drawLine(x, v->getPaintHeight() - 6, x, v->getPaintHeight() - 1);
 
             int y;
             switch (m_labelHeight) {
@@ -300,20 +313,20 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
                 y = 6 + metrics.ascent();
                 break;
             case LabelMiddle:
-                y = v->height() / 2 - metrics.height() / 2 + metrics.ascent();
+                y = v->getPaintHeight() / 2 - metrics.height() / 2 + metrics.ascent();
                 break;
             case LabelBottom:
-                y = v->height() - metrics.height() + metrics.ascent() - 6;
+                y = v->getPaintHeight() - metrics.height() + metrics.ascent() - 6;
             }
 
             if (v->getViewManager() && v->getViewManager()->getOverlayMode() !=
                 ViewManager::NoOverlays) {
 
-                if (v->getLayer(0) == this) {
+                if (v->getView()->getLayer(0) == this) {
                     // backmost layer, don't worry about outlining the text
                     paint.drawText(x+2 - tw/2, y, text);
                 } else {
-                    v->drawVisibleText(paint, x+2 - tw/2, y, text, View::OutlinedText);
+                    PaintAssistant::drawVisibleText(v, paint, x+2 - tw/2, y, text, PaintAssistant::OutlinedText);
                 }
             }
         }
@@ -344,14 +357,14 @@ TimeRulerLayer::paint(View *v, QPainter &paint, QRect rect) const
 	    if (ticks == 10) {
 		if ((i % 2) == 1) {
 		    if (i == 5) {
-			paint.drawLine(x, 0, x, v->height());
+			paint.drawLine(x, 0, x, v->getPaintHeight());
 		    } else sz = 3;
 		} else {
 		    sz = 7;
 		}
 	    }
 	    paint.drawLine(x, 0, x, sz);
-	    paint.drawLine(x, v->height() - sz - 1, x, v->height() - 1);
+	    paint.drawLine(x, v->getPaintHeight() - sz - 1, x, v->getPaintHeight() - 1);
 	}
 
 	ms += incms;

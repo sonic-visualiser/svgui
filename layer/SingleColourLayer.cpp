@@ -137,7 +137,7 @@ SingleColourLayer::setProperty(const PropertyName &name, int value)
 }
 
 void
-SingleColourLayer::setDefaultColourFor(View *v)
+SingleColourLayer::setDefaultColourFor(LayerGeometryProvider *v)
 {
 #ifdef DEBUG_COLOUR_SELECTION
     SVDEBUG << "SingleColourLayer::setDefaultColourFor: m_colourExplicitlySet = " << m_colourExplicitlySet << ", m_defaultColourSet " << m_defaultColourSet << endl;
@@ -244,19 +244,19 @@ SingleColourLayer::getBaseQColor() const
 }
 
 QColor
-SingleColourLayer::getBackgroundQColor(View *v) const
+SingleColourLayer::getBackgroundQColor(LayerGeometryProvider *v) const
 {
     return v->getBackground();
 }
 
 QColor
-SingleColourLayer::getForegroundQColor(View *v) const
+SingleColourLayer::getForegroundQColor(LayerGeometryProvider *v) const
 {
     return v->getForeground();
 }
 
 std::vector<QColor>
-SingleColourLayer::getPartialShades(View *v) const
+SingleColourLayer::getPartialShades(LayerGeometryProvider *v) const
 {
     std::vector<QColor> s;
     QColor base = getBaseQColor();

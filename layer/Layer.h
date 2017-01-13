@@ -39,6 +39,7 @@ class ZoomConstraint;
 class Model;
 class QPainter;
 class View;
+class LayerGeometryProvider;
 class QMouseEvent;
 class Clipboard;
 class RangeMapper;
@@ -83,12 +84,13 @@ public:
     /**
      * Paint the given rectangle of this layer onto the given view
      * using the given painter, superimposing it on top of any
-     * existing material in that view.  The view is provided here
-     * because it is possible for one layer to exist in more than one
-     * view, so the dimensions of the view may vary from one paint
-     * call to another (without any view having been resized).
+     * existing material in that view.  The LayerGeometryProvider (an
+     * interface implemented by View) is provided here because it is
+     * possible for one layer to exist in more than one view, so the
+     * dimensions of the view may vary from one paint call to another
+     * (without any view having been resized).
      */
-    virtual void paint(View *, QPainter &, QRect) const = 0;   
+    virtual void paint(LayerGeometryProvider *, QPainter &, QRect) const = 0;   
 
     /**
      * Enable or disable synchronous painting.  If synchronous
@@ -128,25 +130,25 @@ public:
     virtual QString getLayerPresentationName() const;
     virtual QPixmap getLayerPresentationPixmap(QSize) const { return QPixmap(); }
 
-    virtual int getVerticalScaleWidth(View *, bool detailed,
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool detailed,
                                       QPainter &) const = 0;
 
-    virtual void paintVerticalScale(View *, bool /* detailed */,
+    virtual void paintVerticalScale(LayerGeometryProvider *, bool /* detailed */,
                                     QPainter &, QRect) const { }
 
-    virtual bool getCrosshairExtents(View *, QPainter &, QPoint /* cursorPos */,
+    virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint /* cursorPos */,
                                      std::vector<QRect> &) const {
         return false;
     }
-    virtual void paintCrosshairs(View *, QPainter &, QPoint) const { }
+    virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const { }
 
-    virtual void paintMeasurementRects(View *, QPainter &,
+    virtual void paintMeasurementRects(LayerGeometryProvider *, QPainter &,
                                        bool showFocus, QPoint focusPoint) const;
 
-    virtual bool nearestMeasurementRectChanged(View *, QPoint prev,
+    virtual bool nearestMeasurementRectChanged(LayerGeometryProvider *, QPoint prev,
                                                QPoint now) const;
 
-    virtual QString getFeatureDescription(View *, QPoint &) const {
+    virtual QString getFeatureDescription(LayerGeometryProvider *, QPoint &) const {
 	return "";
     }
 
@@ -180,7 +182,7 @@ public:
      * (and leave frame unmodified).  If returning true, also return
      * the resolution of the model in this layer in sample frames.
      */
-    virtual bool snapToFeatureFrame(View * /* v */,
+    virtual bool snapToFeatureFrame(LayerGeometryProvider * /* v */,
 				    sv_frame_t & /* frame */,
 				    int &resolution,
 				    SnapType /* snap */) const {
@@ -204,7 +206,7 @@ public:
      * (and leave frame unmodified).  If returning true, also return
      * the resolution of the model in this layer in sample frames.
      */
-    virtual bool snapToSimilarFeature(View * /* v */,
+    virtual bool snapToSimilarFeature(LayerGeometryProvider * /* v */,
                                       sv_frame_t & /* source frame */,
                                       int &resolution,
                                       SnapType /* snap */) const {
@@ -217,30 +219,30 @@ public:
     // Layer needs to get actual mouse events, I guess.  Draw mode is
     // probably the easier.
 
-    virtual void drawStart(View *, QMouseEvent *) { }
-    virtual void drawDrag(View *, QMouseEvent *) { }
-    virtual void drawEnd(View *, QMouseEvent *) { }
+    virtual void drawStart(LayerGeometryProvider *, QMouseEvent *) { }
+    virtual void drawDrag(LayerGeometryProvider *, QMouseEvent *) { }
+    virtual void drawEnd(LayerGeometryProvider *, QMouseEvent *) { }
 
-    virtual void eraseStart(View *, QMouseEvent *) { }
-    virtual void eraseDrag(View *, QMouseEvent *) { }
-    virtual void eraseEnd(View *, QMouseEvent *) { }
+    virtual void eraseStart(LayerGeometryProvider *, QMouseEvent *) { }
+    virtual void eraseDrag(LayerGeometryProvider *, QMouseEvent *) { }
+    virtual void eraseEnd(LayerGeometryProvider *, QMouseEvent *) { }
 
-    virtual void editStart(View *, QMouseEvent *) { }
-    virtual void editDrag(View *, QMouseEvent *) { }
-    virtual void editEnd(View *, QMouseEvent *) { }
+    virtual void editStart(LayerGeometryProvider *, QMouseEvent *) { }
+    virtual void editDrag(LayerGeometryProvider *, QMouseEvent *) { }
+    virtual void editEnd(LayerGeometryProvider *, QMouseEvent *) { }
 
-    virtual void splitStart(View *, QMouseEvent *) { }
-    virtual void splitEnd(View *, QMouseEvent *) { }
-    virtual void addNote(View *, QMouseEvent *) { };
+    virtual void splitStart(LayerGeometryProvider *, QMouseEvent *) { }
+    virtual void splitEnd(LayerGeometryProvider *, QMouseEvent *) { }
+    virtual void addNote(LayerGeometryProvider *, QMouseEvent *) { };
 
     // Measurement rectangle (or equivalent).  Unlike draw and edit,
     // the base Layer class can provide working implementations of
     // these for most situations.
     //
-    virtual void measureStart(View *, QMouseEvent *);
-    virtual void measureDrag(View *, QMouseEvent *);
-    virtual void measureEnd(View *, QMouseEvent *);
-    virtual void measureDoubleClick(View *, QMouseEvent *);
+    virtual void measureStart(LayerGeometryProvider *, QMouseEvent *);
+    virtual void measureDrag(LayerGeometryProvider *, QMouseEvent *);
+    virtual void measureEnd(LayerGeometryProvider *, QMouseEvent *);
+    virtual void measureDoubleClick(LayerGeometryProvider *, QMouseEvent *);
 
     virtual bool haveCurrentMeasureRect() const {
         return m_haveCurrentMeasureRect;
@@ -252,13 +254,13 @@ public:
      * double-click).  If there is no item or editing is not
      * supported, return false.
      */
-    virtual bool editOpen(View *, QMouseEvent *) { return false; }
+    virtual bool editOpen(LayerGeometryProvider *, QMouseEvent *) { return false; }
 
     virtual void moveSelection(Selection, sv_frame_t /* newStartFrame */) { }
     virtual void resizeSelection(Selection, Selection /* newSize */) { }
     virtual void deleteSelection(Selection) { }
 
-    virtual void copy(View *, Selection, Clipboard & /* to */) { }
+    virtual void copy(LayerGeometryProvider *, Selection, Clipboard & /* to */) { }
 
     /**
      * Paste from the given clipboard onto the layer at the given
@@ -267,7 +269,7 @@ public:
      * return false if the user cancelled the paste operation.  This
      * function should return true if a paste actually occurred.
      */
-    virtual bool paste(View *,
+    virtual bool paste(LayerGeometryProvider *,
                        const Clipboard & /* from */,
                        sv_frame_t /* frameOffset */,
                        bool /* interactive */) { return false; }
@@ -289,7 +291,7 @@ public:
      * scrolling better if it is known that individual views can be
      * scrolled safely in this way.
      */
-    virtual bool isLayerScrollable(const View *) const { return true; }
+    virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return true; }
 
     /**
      * This should return true if the layer completely obscures any
@@ -344,14 +346,14 @@ public:
      * isReady(int *) call.  The view may choose to show a progress
      * meter if it finds that this returns < 100 at any given moment.
      */
-    virtual int getCompletion(View *) const { return 100; }
+    virtual int getCompletion(LayerGeometryProvider *) const { return 100; }
 
     /**
      * Return an error string if any errors have occurred while
      * loading or processing data for the given view.  Return the
      * empty string if no error has occurred.
      */
-    virtual QString getError(View *) const { return ""; }
+    virtual QString getError(LayerGeometryProvider *) const { return ""; }
 
     virtual void setObjectName(const QString &name);
 
@@ -400,13 +402,13 @@ public:
      * A layer class that overrides this function must also call this
      * class's implementation.
      */
-    virtual void setLayerDormant(const View *v, bool dormant);
+    virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
 
     /**
      * Return whether the layer is dormant (i.e. hidden) in the given
      * view.
      */
-    virtual bool isLayerDormant(const View *v) const;
+    virtual bool isLayerDormant(const LayerGeometryProvider *v) const;
 
     virtual PlayParameters *getPlayParameters();
 
@@ -457,14 +459,14 @@ public:
      * measurement tool.  The default implementation works correctly
      * if the layer hasTimeXAxis().
      */
-    virtual bool getXScaleValue(const View *v, int x,
+    virtual bool getXScaleValue(const LayerGeometryProvider *v, int x,
                                 double &value, QString &unit) const;
 
     /** 
      * Return the value and unit at the given y coordinate in the
      * given view.
      */
-    virtual bool getYScaleValue(const View *, int /* y */,
+    virtual bool getYScaleValue(const LayerGeometryProvider *, int /* y */,
                                 double &/* value */, QString &/* unit */) const {
         return false;
     }
@@ -475,7 +477,7 @@ public:
      * The default implementation just calls getYScaleValue twice and
      * returns the difference, with the same unit.
      */
-    virtual bool getYScaleDifference(const View *v, int y0, int y1,
+    virtual bool getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
                                      double &diff, QString &unit) const;
         
     /**
@@ -526,7 +528,7 @@ public:
     virtual bool canExistWithoutModel() const { return false; }
 
 public slots:
-    void showLayer(View *, bool show);
+    void showLayer(LayerGeometryProvider *, bool show);
 
 signals:
     void modelChanged();
@@ -545,9 +547,9 @@ signals:
 protected:
     void connectSignals(const Model *);
 
-    virtual sv_frame_t alignToReference(View *v, sv_frame_t frame) const;
-    virtual sv_frame_t alignFromReference(View *v, sv_frame_t frame) const;
-    bool clipboardHasDifferentAlignment(View *v, const Clipboard &clip) const;
+    virtual sv_frame_t alignToReference(LayerGeometryProvider *v, sv_frame_t frame) const;
+    virtual sv_frame_t alignFromReference(LayerGeometryProvider *v, sv_frame_t frame) const;
+    bool clipboardHasDifferentAlignment(LayerGeometryProvider *v, const Clipboard &clip) const;
 
     struct MeasureRect {
 
@@ -612,16 +614,16 @@ protected:
     // Note that pixrects are only correct for a single view.
     // So we should update them at the start of the paint procedure
     // (painting is single threaded) and only use them after that.
-    void updateMeasurePixrects(View *v) const;
+    void updateMeasurePixrects(LayerGeometryProvider *v) const;
 
-    virtual void updateMeasureRectYCoords(View *v, const MeasureRect &r) const;
-    virtual void setMeasureRectYCoord(View *v, MeasureRect &r, bool start, int y) const;
-    virtual void setMeasureRectFromPixrect(View *v, MeasureRect &r, QRect pixrect) const;
+    virtual void updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const;
+    virtual void setMeasureRectYCoord(LayerGeometryProvider *v, MeasureRect &r, bool start, int y) const;
+    virtual void setMeasureRectFromPixrect(LayerGeometryProvider *v, MeasureRect &r, QRect pixrect) const;
 
     // This assumes updateMeasurementPixrects has been called
     MeasureRectSet::const_iterator findFocusedMeasureRect(QPoint) const;
 
-    void paintMeasurementRect(View *v, QPainter &paint,
+    void paintMeasurementRect(LayerGeometryProvider *v, QPainter &paint,
                               const MeasureRect &r, bool focus) const;
 
     QString m_presentationName;

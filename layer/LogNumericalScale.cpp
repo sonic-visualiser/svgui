@@ -22,19 +22,19 @@
 
 #include <cmath>
 
-#include "view/View.h"
+#include "LayerGeometryProvider.h"
 
 //#define DEBUG_TIME_VALUE_LAYER 1
 
 int
-LogNumericalScale::getWidth(View *,
+LogNumericalScale::getWidth(LayerGeometryProvider *,
 			    QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 10;
 }
 
 void
-LogNumericalScale::paintVertical(View *v,
+LogNumericalScale::paintVertical(LayerGeometryProvider *v,
 				 const VerticalScaleLayer *layer,
 				 QPainter &paint,
 				 int x0,
@@ -79,7 +79,7 @@ LogNumericalScale::paintVertical(View *v,
         bool drawText = true;
 
 	if (i == n-1 &&
-	    v->height() < paint.fontMetrics().height() * (n*2)) {
+	    v->getPaintHeight() < paint.fontMetrics().height() * (n*2)) {
 	    if (layer->getScaleUnits() != "") drawText = false;
 	}
 

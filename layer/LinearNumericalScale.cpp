@@ -20,17 +20,17 @@
 
 #include <cmath>
 
-#include "view/View.h"
+#include "LayerGeometryProvider.h"
 
 int
-LinearNumericalScale::getWidth(View *,
+LinearNumericalScale::getWidth(LayerGeometryProvider *,
 			       QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 10;
 }
 
 void
-LinearNumericalScale::paintVertical(View *v,
+LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
 				    const VerticalScaleLayer *layer,
 				    QPainter &paint,
 				    int x0,
@@ -69,7 +69,7 @@ LinearNumericalScale::paintVertical(View *v,
         double dispval = val;
 
 	if (i == n-1 &&
-	    v->height() < paint.fontMetrics().height() * (n*2)) {
+	    v->getPaintHeight() < paint.fontMetrics().height() * (n*2)) {
 	    if (layer->getScaleUnits() != "") drawText = false;
 	}
 	dispval = int(rint(val / round) * round);

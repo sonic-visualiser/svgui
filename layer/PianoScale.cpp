@@ -21,10 +21,10 @@
 
 #include "base/Pitch.h"
 
-#include "view/View.h"
+#include "LayerGeometryProvider.h"
 
 void
-PianoScale::paintPianoVertical(View *v,
+PianoScale::paintPianoVertical(LayerGeometryProvider *v,
 			       QPainter &paint,
 			       QRect r,
 			       double minf,

@@ -325,7 +325,7 @@ UnitConverter::updatePitchesFromFreq()
     int note, octave;
     Pitch::getNoteAndOctaveForPitch(pitch, note, octave);
 
-    cerr << "pitch " << pitch << " note " << note << " octave " << octave << " cents " << cents << endl;
+//    cerr << "pitch " << pitch << " note " << note << " octave " << octave << " cents " << cents << endl;
 
     setTo(m_midi, pitch);
     setTo(m_cents, cents);
@@ -387,7 +387,7 @@ UnitConverter::updateTempiFromSamples()
     double samples = m_samples->value();
     double rate = getSampleRate();
 
-    cerr << samples << " samples at rate " << rate << endl;
+//    cerr << samples << " samples at rate " << rate << endl;
 
     double sec = samples / rate;
     double hz = rate / samples;

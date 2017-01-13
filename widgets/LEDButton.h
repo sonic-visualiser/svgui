@@ -25,8 +25,8 @@
     sunken variant.  This version also implements a simple button API.
 */
 
-#ifndef _LED_BUTTON_H_
-#define _LED_BUTTON_H_
+#ifndef SV_LED_BUTTON_H
+#define SV_LED_BUTTON_H
 
 #include <QWidget>
 #include "base/Debug.h"

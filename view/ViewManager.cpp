@@ -15,6 +15,7 @@
 
 #include "ViewManager.h"
 #include "base/AudioPlaySource.h"
+#include "base/AudioRecordTarget.h"
 #include "base/RealTime.h"
 #include "data/model/Model.h"
 #include "widgets/CommandHistory.h"
@@ -30,6 +31,7 @@
 
 ViewManager::ViewManager() :
     m_playSource(0),
+    m_recordTarget(0),
     m_globalCentreFrame(0),
     m_globalZoom(1024),
     m_playbackFrame(0),
@@ -157,8 +159,20 @@ ViewManager::getGlobalZoom() const
 sv_frame_t
 ViewManager::getPlaybackFrame() const
 {
-    if (m_playSource && m_playSource->isPlaying()) {
+    if (isRecording()) {
+        m_playbackFrame = m_recordTarget->getRecordDuration();
+#ifdef DEBUG_VIEW_MANAGER
+        cout << "ViewManager::getPlaybackFrame(recording) -> " << m_playbackFrame << endl;
+#endif
+    } else if (isPlaying()) {
 	m_playbackFrame = m_playSource->getCurrentPlayingFrame();
+#ifdef DEBUG_VIEW_MANAGER
+        cout << "ViewManager::getPlaybackFrame(playing) -> " << m_playbackFrame << endl;
+#endif
+    } else {
+#ifdef DEBUG_VIEW_MANAGER
+        cout << "ViewManager::getPlaybackFrame(not playing) -> " << m_playbackFrame << endl;
+#endif
     }
     return m_playbackFrame;
 }
@@ -166,11 +180,14 @@ ViewManager::getPlaybackFrame() const
 void
 ViewManager::setPlaybackFrame(sv_frame_t f)
 {
+#ifdef DEBUG_VIEW_MANAGER
+    cerr << "ViewManager::setPlaybackFrame(" << f << ")" << endl;
+#endif
     if (f < 0) f = 0;
     if (m_playbackFrame != f) {
 	m_playbackFrame = f;
 	emit playbackFrameChanged(f);
-	if (m_playSource && m_playSource->isPlaying()) {
+	if (isPlaying()) {
 	    m_playSource->play(f);
 	}
     }
@@ -489,10 +506,10 @@ ViewManager::getPlaybackSampleRate() const
 }
 
 sv_samplerate_t
-ViewManager::getOutputSampleRate() const
+ViewManager::getDeviceSampleRate() const
 {
     if (m_playSource) {
-	return m_playSource->getTargetSampleRate();
+	return m_playSource->getDeviceSampleRate();
     }
     return 0;
 }
@@ -507,6 +524,15 @@ ViewManager::setAudioPlaySource(AudioPlaySource *source)
 }
 
 void
+ViewManager::setAudioRecordTarget(AudioRecordTarget *target)
+{
+    if (!m_recordTarget) {
+	QTimer::singleShot(100, this, SLOT(checkPlayStatus()));
+    }
+    m_recordTarget = target;
+}
+
+void
 ViewManager::playStatusChanged(bool /* playing */)
 {
 #ifdef DEBUG_VIEW_MANAGER
@@ -516,14 +542,44 @@ ViewManager::playStatusChanged(bool /* playing */)
 }
 
 void
+ViewManager::recordStatusChanged(bool /* recording */)
+{
+#ifdef DEBUG_VIEW_MANAGER
+    cerr << "ViewManager::recordStatusChanged" << endl;
+#endif
+    checkPlayStatus();
+}
+
+void
 ViewManager::checkPlayStatus()
 {
-    if (m_playSource && m_playSource->isPlaying()) {
+    if (isRecording()) {
+
+	float left = 0, right = 0;
+	if (m_recordTarget->getInputLevels(left, right)) {
+	    if (left != m_lastLeft || right != m_lastRight) {
+		emit monitoringLevelsChanged(left, right);
+		m_lastLeft = left;
+		m_lastRight = right;
+	    }
+	}
+
+	m_playbackFrame = m_recordTarget->getRecordDuration();
+
+#ifdef DEBUG_VIEW_MANAGER
+	cerr << "ViewManager::checkPlayStatus: Recording, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
+#endif
+
+	emit playbackFrameChanged(m_playbackFrame);
+
+	QTimer::singleShot(500, this, SLOT(checkPlayStatus()));
+
+    } else if (isPlaying()) {
 
 	float left = 0, right = 0;
 	if (m_playSource->getOutputLevels(left, right)) {
 	    if (left != m_lastLeft || right != m_lastRight) {
-		emit outputLevelsChanged(left, right);
+		emit monitoringLevelsChanged(left, right);
 		m_lastLeft = left;
 		m_lastRight = right;
 	    }
@@ -542,13 +598,13 @@ ViewManager::checkPlayStatus()
     } else {
 
 	if (m_lastLeft != 0.0 || m_lastRight != 0.0) {
-	    emit outputLevelsChanged(0.0, 0.0);
+	    emit monitoringLevelsChanged(0.0, 0.0);
 	    m_lastLeft = 0.0;
 	    m_lastRight = 0.0;
 	}
 
 #ifdef DEBUG_VIEW_MANAGER
-	cerr << "ViewManager::checkPlayStatus: Not playing" << endl;
+	cerr << "ViewManager::checkPlayStatus: Not playing or recording" << endl;
 #endif
     }
 }
@@ -557,6 +613,12 @@ bool
 ViewManager::isPlaying() const
 {
     return m_playSource && m_playSource->isPlaying();
+}
+
+bool
+ViewManager::isRecording() const
+{
+    return m_recordTarget && m_recordTarget->isRecording();
 }
 
 void
@@ -597,14 +659,22 @@ ViewManager::seek(sv_frame_t f)
     cerr << "ViewManager::seek(" << f << ")" << endl;
 #endif
 
-    if (m_playSource && m_playSource->isPlaying()) {
+    if (isRecording()) {
+        // ignore
+#ifdef DEBUG_VIEW_MANAGER
+        cerr << "ViewManager::seek: Ignoring during recording" << endl;
+#endif
+        return;
+    }
+    
+    if (isPlaying()) {
 	sv_frame_t playFrame = m_playSource->getCurrentPlayingFrame();
 	sv_frame_t diff = std::max(f, playFrame) - std::min(f, playFrame);
 	if (diff > 20000) {
 	    m_playbackFrame = f;
 	    m_playSource->play(f);
 #ifdef DEBUG_VIEW_MANAGER 
-	    cerr << "ViewManager::considerSeek: reseeking from " << playFrame << " to " << f << endl;
+	    cerr << "ViewManager::seek: reseeking from " << playFrame << " to " << f << endl;
 #endif
             emit playbackFrameChanged(f);
 	}
@@ -741,3 +811,4 @@ ViewManager::scalePixelSize(int pixels)
     if (pixels != 0 && scaled == 0) scaled = 1;
     return scaled;
 }
+

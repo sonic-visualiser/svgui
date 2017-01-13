@@ -38,31 +38,31 @@ public:
     ImageLayer();
     virtual ~ImageLayer();
 
-    virtual void paint(View *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 
-    virtual QString getFeatureDescription(View *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
-    virtual bool snapToFeatureFrame(View *v, sv_frame_t &frame,
+    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 				    int &resolution,
 				    SnapType snap) const;
 
-    virtual void drawStart(View *v, QMouseEvent *);
-    virtual void drawDrag(View *v, QMouseEvent *);
-    virtual void drawEnd(View *v, QMouseEvent *);
+    virtual void drawStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void drawEnd(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual void editStart(View *v, QMouseEvent *);
-    virtual void editDrag(View *v, QMouseEvent *);
-    virtual void editEnd(View *v, QMouseEvent *);
+    virtual void editStart(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editDrag(LayerGeometryProvider *v, QMouseEvent *);
+    virtual void editEnd(LayerGeometryProvider *v, QMouseEvent *);
 
     virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
     virtual void resizeSelection(Selection s, Selection newSize);
     virtual void deleteSelection(Selection s);
 
-    virtual void copy(View *v, Selection s, Clipboard &to);
-    virtual bool paste(View *v, const Clipboard &from, sv_frame_t frameOffset,
+    virtual void copy(LayerGeometryProvider *v, Selection s, Clipboard &to);
+    virtual bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive);
 
-    virtual bool editOpen(View *, QMouseEvent *); // on double-click
+    virtual bool editOpen(LayerGeometryProvider *, QMouseEvent *); // on double-click
 
     virtual const Model *getModel() const { return m_model; }
     void setModel(ImageModel *model);
@@ -80,11 +80,11 @@ public:
         return ColourAbsent;
     }
 
-    virtual bool isLayerScrollable(const View *v) const;
+    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
 
     virtual bool isLayerEditable() const { return true; }
 
-    virtual int getCompletion(View *) const { return m_model->getCompletion(); }
+    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
 
     virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
@@ -92,9 +92,9 @@ public:
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 
-    virtual int getVerticalScaleWidth(View *, bool, QPainter &) const { return 0; }
+    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
 
-    virtual void setLayerDormant(const View *v, bool dormant);
+    virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
 
     void setProperties(const QXmlAttributes &attributes);
 
@@ -105,18 +105,18 @@ protected slots:
     void fileSourceReady();
 
 protected:
-    ImageModel::PointList getLocalPoints(View *v, int x, int y) const;
+    ImageModel::PointList getLocalPoints(LayerGeometryProvider *v, int x, int y) const;
 
     bool getImageOriginalSize(QString name, QSize &size) const;
-    QImage getImage(View *v, QString name, QSize maxSize) const;
+    QImage getImage(LayerGeometryProvider *v, QString name, QSize maxSize) const;
 
-    void drawImage(View *v, QPainter &paint, const ImageModel::Point &p,
+    void drawImage(LayerGeometryProvider *v, QPainter &paint, const ImageModel::Point &p,
                    int x, int nx) const;
 
     //!!! how to reap no-longer-used images?
 
     typedef std::map<QString, QImage> ImageMap;
-    typedef std::map<const View *, ImageMap> ViewImageMap;
+    typedef std::map<const LayerGeometryProvider *, ImageMap> ViewImageMap;
     typedef std::map<QString, FileSource *> FileSourceMap;
 
     static ImageMap m_images;
