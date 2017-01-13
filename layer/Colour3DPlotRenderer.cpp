@@ -504,6 +504,8 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
 
     const DenseThreeDimensionalModel *model = m_sources.source;
     if (!model) return;
+    if (m_params.binDisplay == BinDisplay::PeakFrequencies) return;
+    if (m_params.colourScale.getScale() == ColourScaleType::Phase) return;
     
     int zoomLevel = v->getZoomLevel();
     int binResolution = model->getResolution();
@@ -569,9 +571,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     int peakCacheIndex = -1;
     int binsPerPeak = -1;
 
-    if (m_params.colourScale.getScale() != ColourScaleType::Phase) {
-        getPreferredPeakCache(v, peakCacheIndex, binsPerPeak);
-    }
+    getPreferredPeakCache(v, peakCacheIndex, binsPerPeak);
     
     for (int y = 0; y < h; ++y) {
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
@@ -1046,7 +1046,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         (double(minbin + nbins - 1) * fft->getSampleRate()) / fft->getFFTSize();
 
     bool logarithmic = (m_params.binScale == BinScale::Log);
-    
+
     for (int x = start; x != finish; x += step) {
         
         // x is the on-canvas pixel coord; sx (later) will be the
