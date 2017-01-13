@@ -1047,6 +1047,11 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 
     bool logarithmic = (m_params.binScale == BinScale::Log);
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "start = " << start << ", finish = " << finish
+            << ", step = " << step << endl;
+#endif
+    
     for (int x = start; x != finish; x += step) {
         
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -1092,6 +1097,11 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 
         if (!pixelPeakColumn.empty()) {
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+            SVDEBUG << "found " << peakfreqs.size() << " peak freqs at column "
+                    << sx0 << endl;
+#endif
+
             for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
                  pi != peakfreqs.end(); ++pi) {
 
@@ -1116,10 +1126,19 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             }
 
             m_magRanges.push_back(magRange);
+
+        } else {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+            SVDEBUG << "pixel peak column for range " << sx0 << " to " << sx1
+                    << " is empty" << endl;
+#endif
         }
 
         double fractionComplete = double(columnCount) / double(w);
         if (timer.outOfTime(fractionComplete)) {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+            SVDEBUG << "out of time" << endl;
+#endif
             return columnCount;
         }
     }
