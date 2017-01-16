@@ -402,7 +402,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             // peak pick -> distribute/interpolate -> apply display gain
 
             // this does the first three:
-            preparedColumn = getColumn(sx, minbin, nbins, false);
+            preparedColumn = getColumn(sx, minbin, nbins, -1);
             
             magRange.sample(preparedColumn);
 
@@ -1078,7 +1078,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             }
 
             if (sx != psx) {
-                preparedColumn = getColumn(sx, minbin, nbins, false);
+                preparedColumn = getColumn(sx, minbin, nbins, -1);
                 magRange.sample(preparedColumn);
                 psx = sx;
             }
@@ -1119,10 +1119,15 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                 int iy = int(y + 0.5);
                 if (iy < 0 || iy >= h) continue;
 
-                m_drawBuffer.setPixel
-                    (x,
-                     iy,
-                     m_params.colourScale.getPixel(value));
+                auto pixel = m_params.colourScale.getPixel(value);
+
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+//                SVDEBUG << "frequency " << freq << " for bin " << bin
+//                        << " -> y = " << y << ", iy = " << iy << ", value = "
+//                        << value << ", pixel " << pixel << "\n";
+#endif
+                
+                m_drawBuffer.setPixel(x, iy, pixel);
             }
 
             m_magRanges.push_back(magRange);
