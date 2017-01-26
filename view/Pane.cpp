@@ -566,6 +566,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 {
     Layer *scaleLayer = 0;
 
+//    cerr << "Pane::drawVerticalScale[" << this << "]" << endl;
+    
     double min, max;
     bool log;
     QString unit;
@@ -580,6 +582,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
     int sw = topLayer->getVerticalScaleWidth
         (this, m_manager->shouldShowVerticalColourScale(), paint);
 
+//    cerr << "sw = " << sw << endl;
+    
     if (sw > 0) {
         scaleLayer = topLayer;
         m_scaleWidth = sw;
@@ -645,7 +649,9 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
     }
 
     if (!scaleLayer) m_scaleWidth = 0;
-        
+
+//    cerr << "m_scaleWidth = " << m_scaleWidth << ", r.left = " << r.left() << endl;
+    
     if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
 
 //      Profiler profiler("Pane::paintEvent - painting vertical scale", true);
@@ -734,7 +740,7 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
         c = QColor(240, 240, 240);
     }
 
-    paint.setPen(c);
+    paint.setPen(PaintAssistant::scalePen(c));
     int x = width() / 2;
 
     if (!omitLine) {
