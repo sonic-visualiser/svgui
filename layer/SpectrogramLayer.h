@@ -224,7 +224,7 @@ public:
 
     virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
+    virtual bool isLayerScrollable(const LayerGeometryProvider *) const;
 
     virtual int getVerticalZoomSteps(int &defaultStep) const;
     virtual int getCurrentVerticalZoomStep() const;
