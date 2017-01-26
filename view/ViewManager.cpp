@@ -804,6 +804,9 @@ ViewManager::scalePixelSize(int pixels)
 #endif
         double em = QFontMetrics(QFont()).height();
         ratio = em / baseEm;
+
+        SVDEBUG << "ViewManager::scalePixelSize: ratio is " << ratio
+                << " (em = " << em << ")" << endl;
     }
 
     int scaled = int(pixels * ratio + 0.5);
