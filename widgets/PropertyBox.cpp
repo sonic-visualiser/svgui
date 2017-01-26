@@ -198,7 +198,7 @@ PropertyBox::populateViewPlayFrame()
 	layout->addWidget(m_playButton, 0, col++, Qt::AlignCenter);
 
         if (params->getPlayClipId() != "") {
-            QToolButton *playParamButton = new QToolButton;
+            NotifyingToolButton *playParamButton = new NotifyingToolButton;
             playParamButton->setObjectName("playParamButton");
             playParamButton->setIcon(IconLoader().load("faders"));
             playParamButton->setFixedSize(buttonSize);
