@@ -1046,31 +1046,24 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 //        cout << "frame = " << p.frame << ", x = " << x << ", haveNext = " << haveNext 
 //                  << ", nx = " << nx << endl;
 
+        QPen pen(getBaseQColor());
+        QBrush brush(brushColour);
+        
         if (m_plotStyle == PlotDiscreteCurves) {
-            paint.setPen(QPen(getBaseQColor(), 3));
-            paint.setBrush(Qt::NoBrush);
+            pen = QPen(getBaseQColor(), 3);
+            brush = QBrush(Qt::NoBrush);
         } else if (m_plotStyle == PlotSegmentation) {
-            paint.setPen(getForegroundQColor(v));
-            paint.setBrush(getColourForValue(v, value));
+            pen = QPen(getForegroundQColor(v));
+            brush = QBrush(getColourForValue(v, value));
 	} else if (m_plotStyle == PlotLines ||
 		   m_plotStyle == PlotCurve) {
-            paint.setPen(getBaseQColor());
-	    paint.setBrush(Qt::NoBrush);
-	} else {
-            paint.setPen(getBaseQColor());
-	    paint.setBrush(brushColour);
-	}	    
-
+            brush = QBrush(Qt::NoBrush);
+	}
+        
+        paint.setPen(PaintAssistant::scalePen(pen));
+        paint.setBrush(brush);
+        
 	if (m_plotStyle == PlotStems) {
-/*
-	    paint.setPen(brushColour);
-	    if (y < origin - 1) {
-		paint.drawRect(x + w/2, y + 1, 1, origin - y);
-	    } else if (y > origin + 1) {
-		paint.drawRect(x + w/2, origin, 1, y - origin - 1);
-	    }
-*/
-	    paint.setPen(getBaseQColor());
 	    if (y < origin - 1) {
 		paint.drawLine(x + w/2, y + 1, x + w/2, origin);
 	    } else if (y > origin + 1) {
@@ -1098,7 +1091,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 	    m_plotStyle != PlotSegmentation) {
             if (illuminate) {
                 paint.save();
-		paint.setPen(getForegroundQColor(v));
+		paint.setPen(PaintAssistant::scalePen(getForegroundQColor(v)));
                 paint.setBrush(getForegroundQColor(v));
             }
             if (m_plotStyle != PlotStems ||
@@ -1120,7 +1113,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 		if (m_plotStyle == PlotConnectedPoints) {
 		    
                     paint.save();
-		    paint.setPen(brushColour);
+		    paint.setPen(PaintAssistant::scalePen(brushColour));
 		    paint.drawLine(x + w, y, nx, ny);
                     paint.restore();
 
@@ -1179,7 +1172,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 	    
 	    if (nx <= x) continue;
 
-            paint.setPen(QPen(getForegroundQColor(v), 2));
+            paint.setPen(PaintAssistant::scalePen(QPen(getForegroundQColor(v), 2)));
 
             if (!illuminate) {
                 if (!m_drawSegmentDivisions ||
