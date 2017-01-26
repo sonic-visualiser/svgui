@@ -761,11 +761,15 @@ Colour3DPlotLayer::getBinForY(const LayerGeometryProvider *v, double y) const
     getDisplayExtents(mn, mx);
     double h = v->getPaintHeight();
     if (m_binScale == BinScale::Linear) {
-        bin = mn + ((h - y) * (mx - mn)) / h;
+        // Arrange that the first bin (mn) appears as the exact result
+        // for the first pixel (which is pixel h-1) and the first
+        // out-of-range bin (mx) would appear as the exact result for
+        // the first out-of-range pixel (which would be pixel -1)
+        bin = mn + ((h - y - 1) * (mx - mn)) / h;
     } else {
         double logmin = mn + 1, logmax = mx + 1;
         LogRange::mapRange(logmin, logmax);
-        bin = LogRange::unmap(logmin + ((h - y) * (logmax - logmin)) / h) - 1;
+        bin = LogRange::unmap(logmin + ((h - y - 1) * (logmax - logmin)) / h) - 1;
     }
     return bin;
 }
