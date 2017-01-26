@@ -19,6 +19,7 @@
 
 #include "base/AudioLevel.h"
 #include "base/Strings.h"
+#include "base/Debug.h"
 
 #include <QPaintDevice>
 #include <QPainter>
@@ -262,3 +263,42 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
         std::cerr << "ERROR: PaintAssistant::drawVisibleText: Boxed style not yet implemented!" << std::endl;
     }
 }
+
+double
+PaintAssistant::scalePenWidth(double width)
+{
+    static double ratio = 0.0;
+    if (ratio == 0.0) {
+        double baseEm;
+#ifdef Q_OS_MAC
+        baseEm = 17.0;
+#else
+        baseEm = 15.0;
+#endif
+        double em = QFontMetrics(QFont()).height();
+        ratio = em / baseEm;
+
+        SVDEBUG << "PaintAssistant::scalePenWidth: ratio is " << ratio
+                << " (em = " << em << ")" << endl;
+    }
+
+    if (ratio <= 1.0) {
+        // we only ever scale up in this method
+        return width;
+    }
+
+    if (width <= 0) {
+        // zero-width pen, produce a scaled one-pixel pen
+        return ratio;
+    }
+
+    return width * ratio;
+}
+
+QPen
+PaintAssistant::scalePen(QPen pen)
+{
+    return QPen(pen.color(), scalePenWidth(pen.width()));
+}
+
+
