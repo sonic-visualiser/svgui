@@ -218,7 +218,8 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             int peakCacheIndex = -1, binsPerPeak = -1;
             getPreferredPeakCache(v, peakCacheIndex, binsPerPeak);
             if (peakCacheIndex == -1) { // no peak cache
-                x0 = int(x1 * 0.3);
+                double offset = 0.5 * (double(rand()) / double(RAND_MAX));
+                x0 = int(x1 * offset);
             }
         }
     }
