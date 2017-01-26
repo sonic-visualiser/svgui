@@ -32,6 +32,7 @@ class VerticalBinLayer;
 class DenseThreeDimensionalModel;
 class Dense3DModelPeakCache;
 class FFTModel;
+class RenderTimer;
 
 enum class BinDisplay {
     AllBins,
@@ -111,7 +112,9 @@ public:
     
     Colour3DPlotRenderer(Sources sources, Parameters parameters) :
         m_sources(sources),
-	m_params(parameters)
+	m_params(parameters),
+        m_secondsPerXPixel(0.0),
+        m_secondsPerXPixelValid(false)
     { }
 
     struct RenderResult {
@@ -263,6 +266,9 @@ private:
     // valid range in the magnitude cache, but not necessarily vice
     // versa (as the image cache is limited to contiguous ranges).
     ScrollableMagRangeCache m_magCache;
+
+    double m_secondsPerXPixel;
+    bool m_secondsPerXPixelValid;
     
     RenderResult render(const LayerGeometryProvider *v,
                         QPainter &paint, QRect rect, bool timeConstrained);
@@ -310,6 +316,8 @@ private:
 
     void getPreferredPeakCache(const LayerGeometryProvider *,
                                int &peakCacheIndex, int &binsPerPeak) const;
+
+    void updateTimings(const RenderTimer &timer, int xPixelCount);
 };
 
 #endif

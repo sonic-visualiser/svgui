@@ -90,12 +90,22 @@ public:
 	return false;
     }
 
+    double secondsPerItem(int itemsRendered) const {
+
+        if (itemsRendered == 0) return 0.0;
+
+	auto t = std::chrono::steady_clock::now();
+	double elapsed = std::chrono::duration<double>(t - m_start).count();
+
+        return elapsed / itemsRendered;
+    }
+
 private:
     std::chrono::time_point<std::chrono::steady_clock> m_start;
     bool m_haveLimits;
-    double m_minFraction;
-    double m_softLimit;
-    double m_hardLimit;
+    double m_minFraction; // proportion, 0.0 -> 1.0
+    double m_softLimit; // seconds
+    double m_hardLimit; // seconds
     bool m_softLimitOverridden;
 };
 

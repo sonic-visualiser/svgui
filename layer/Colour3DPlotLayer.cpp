@@ -1110,12 +1110,11 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
         }
     }
     
-    cerr << "mag range in this view: "
-         << m_viewMags[v->getId()].getMin()
-         << " -> "
-         << m_viewMags[v->getId()].getMax()
-         << endl;
-        
+    SVDEBUG << "Colour3DPlotRenderer::paintWithRenderer: mag range in this view: "
+            << m_viewMags[v->getId()].getMin()
+            << " -> "
+            << m_viewMags[v->getId()].getMax()
+            << endl;
 }
 
 void
