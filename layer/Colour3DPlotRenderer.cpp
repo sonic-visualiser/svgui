@@ -95,14 +95,30 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 {
     RenderType renderType = decideRenderType(v);
 
-    if (renderType != DrawBufferPixelResolution) {
-        // Rendering should be fast in bin-resolution and direct draw
-        // cases because we are quite well zoomed-in, and the sums are
-        // easier this way. Calculating boundaries later will be
-        // fiddly for partial paints otherwise.
-        timeConstrained = false;
-    }
+    if (timeConstrained) {
+        if (renderType != DrawBufferPixelResolution) {
+            // Rendering should be fast in bin-resolution and direct
+            // draw cases because we are quite well zoomed-in, and the
+            // sums are easier this way. Calculating boundaries later
+            // will be fiddly for partial paints otherwise.
+            timeConstrained = false;
 
+        } else if (m_secondsPerXPixelValid) {
+            double predicted = m_secondsPerXPixel * rect.width();
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+            SVDEBUG << "Predicted time for width " << rect.width() << " = "
+                    << predicted << endl;
+#endif
+            if (predicted < 0.1) {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+                SVDEBUG << "Predicted time looks fast enough: no partial renders"
+                        << endl;
+#endif
+                timeConstrained = false;
+            }
+        }
+    }
+            
     int x0 = v->getXForViewX(rect.x());
     int x1 = v->getXForViewX(rect.x() + rect.width());
     if (x0 < 0) x0 = 0;
@@ -882,7 +898,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         step = -1;
     }
 
-    int columnCount = 0;
+    int xPixelCount = 0;
     
     vector<float> preparedColumn;
 
@@ -897,7 +913,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         // x is the on-canvas pixel coord; sx (later) will be the
         // source column index
         
-        ++columnCount;
+        ++xPixelCount;
         
         if (binforx[x] < 0) continue;
 
@@ -978,16 +994,18 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
             m_magRanges.push_back(magRange);
         }
 
-        double fractionComplete = double(columnCount) / double(w);
+        double fractionComplete = double(xPixelCount) / double(w);
         if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
             SVDEBUG << "out of time" << endl;
 #endif
-            return columnCount;
+            updateTimings(timer, xPixelCount);
+            return xPixelCount;
         }
     }
 
-    return columnCount;
+    updateTimings(timer, xPixelCount);
+    return xPixelCount;
 }
 
 int
@@ -1003,7 +1021,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
     // fft model exists)
     
     RenderTimer timer(timeConstrained ?
-                      RenderTimer::FastRender :
+                      RenderTimer::SlowRender :
                       RenderTimer::NoTimeout);
 
     const FFTModel *fft = m_sources.fft;
@@ -1031,7 +1049,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         step = -1;
     }
     
-    int columnCount = 0;
+    int xPixelCount = 0;
     
     vector<float> preparedColumn;
 
@@ -1057,7 +1075,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         // x is the on-canvas pixel coord; sx (later) will be the
         // source column index
         
-        ++columnCount;
+        ++xPixelCount;
         
         if (binforx[x] < 0) continue;
 
@@ -1098,8 +1116,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         if (!pixelPeakColumn.empty()) {
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "found " << peakfreqs.size() << " peak freqs at column "
-                    << sx0 << endl;
+//            SVDEBUG << "found " << peakfreqs.size() << " peak freqs at column "
+//                    << sx0 << endl;
 #endif
 
             for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
@@ -1139,16 +1157,32 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 #endif
         }
 
-        double fractionComplete = double(columnCount) / double(w);
+        double fractionComplete = double(xPixelCount) / double(w);
         if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
             SVDEBUG << "out of time" << endl;
 #endif
-            return columnCount;
+            updateTimings(timer, xPixelCount);
+            return xPixelCount;
         }
     }
 
-    return columnCount;
+    updateTimings(timer, xPixelCount);
+    return xPixelCount;
+}
+
+void
+Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
+{
+    m_secondsPerXPixel = timer.secondsPerItem(xPixelCount);
+    m_secondsPerXPixelValid = (xPixelCount > 10);
+
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "seconds per x pixel = " << m_secondsPerXPixel
+            << " (enough data? " << (m_secondsPerXPixelValid ? "yes" : "no")
+            << ")" << endl;
+#endif
+    
 }
 
 void
