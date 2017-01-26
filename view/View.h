@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _VIEW_H_
-#define _VIEW_H_
+#ifndef SV_VIEW_H
+#define SV_VIEW_H
 
 #include <QFrame>
 #include <QProgressBar>
