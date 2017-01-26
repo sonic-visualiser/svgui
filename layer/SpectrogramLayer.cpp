@@ -1024,6 +1024,12 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
     }
 }
 
+bool
+SpectrogramLayer::isLayerScrollable(const LayerGeometryProvider *) const
+{
+    return false;
+}
+
 void
 SpectrogramLayer::cacheInvalid()
 {
