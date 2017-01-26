@@ -668,10 +668,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     int xorigin = getVerticalScaleWidth(v, false, paint) + 1;
     int w = v->getPaintWidth() - xorigin - 1;
 
-    int pkh = 0;
-//!!!    if (m_binScale == LogBins) {
-        pkh = 10;
-//!!!    }
+    int pkh = int(paint.fontMetrics().height() * 0.7 + 0.5);
+    if (pkh < 10) pkh = 10;
 
     paint.save();
 
@@ -749,9 +747,9 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         int h = v->getPaintHeight();
 
         // piano keyboard
-        //!!! should be in a new paintHorizontalScale()?
-        // nice to have a piano keyboard class, of course
 
+        //!!! todo: move to PianoScale::paintPianoHorizontal
+        
 	paint.drawLine(xorigin, h - pkh - 1, w + xorigin, h - pkh - 1);
 
 	int px = xorigin, ppx = xorigin;
