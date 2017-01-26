@@ -34,7 +34,7 @@ SliceLayer::SliceLayer() :
     m_colourMap(0),
     m_energyScale(dBScale),
     m_samplingMode(SampleMean),
-    m_plotStyle(PlotSteps),
+    m_plotStyle(PlotLines),
     m_binScale(LinearBins),
     m_normalize(false),
     m_threshold(0.0),
@@ -331,7 +331,12 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         }
     }
 
-    paint.setPen(getBaseQColor());
+    if (m_plotStyle == PlotBlocks) {
+        // Must use actual zero-width pen, too slow otherwise
+        paint.setPen(QPen(getBaseQColor(), 0));
+    } else {
+        paint.setPen(PaintAssistant::scalePen(getBaseQColor()));
+    }
 
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
     int w = v->getPaintWidth() - xorigin - 1;
@@ -423,9 +428,9 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         if (m_plotStyle == PlotLines) {
 
             if (bin == 0) {
-                path.moveTo(x, y);
+                path.moveTo((x + nx) / 2, y);
             } else {
-                path.lineTo(x, y);
+                path.lineTo((x + nx) / 2, y);
             }
 
         } else if (m_plotStyle == PlotSteps) {
