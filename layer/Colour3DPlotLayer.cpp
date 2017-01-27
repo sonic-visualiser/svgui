@@ -159,6 +159,7 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
     m_peakCache = 0;
 
     invalidateRenderers();
+    invalidateMagnitudes();
 
     emit modelReplaced();
     emit sliceableModelReplaced(oldModel, model);
@@ -168,6 +169,7 @@ void
 Colour3DPlotLayer::cacheInvalid()
 {
     invalidateRenderers();
+    invalidateMagnitudes();
 }
 
 void
@@ -179,6 +181,7 @@ Colour3DPlotLayer::cacheInvalid(sv_frame_t /* startFrame */,
     m_peakCache = 0;
     
     invalidateRenderers();
+    invalidateMagnitudes();
 }
 
 void
@@ -189,6 +192,15 @@ Colour3DPlotLayer::invalidateRenderers()
         delete i->second;
     }
     m_renderers.clear();
+}
+
+void
+Colour3DPlotLayer::invalidateMagnitudes()
+{
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+    cerr << "Colour3DPlotLayer::invalidateMagnitudes called" << endl;
+#endif
+    m_viewMags.clear();
 }
 
 Dense3DModelPeakCache *
@@ -531,8 +543,9 @@ Colour3DPlotLayer::setNormalizeVisibleArea(bool n)
 {
     if (m_normalizeVisibleArea == n) return;
 
-    m_normalizeVisibleArea = n;
     invalidateRenderers();
+    invalidateMagnitudes();
+    m_normalizeVisibleArea = n;
     
     emit layerParametersChanged();
 }
@@ -615,17 +628,7 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 bool
 Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider * /* v */) const
 {
-    if (m_normalizeVisibleArea) {
-        return false;
-    }
-    //!!! ah hang on, if we're potentially rendering incrementally
-    //!!! they we can't be scrollable
     return false;
-//    if (getRenderer(v)->willRenderOpaque(v)) {
-//        return true;
-//    }
-//    QPoint discard;
-//    return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 bool
@@ -1034,7 +1037,9 @@ Colour3DPlotLayer::getColumn(int col) const
 Colour3DPlotRenderer *
 Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
 {
-    if (m_renderers.find(v->getId()) == m_renderers.end()) {
+    int viewId = v->getId();
+    
+    if (m_renderers.find(viewId) == m_renderers.end()) {
 
         Colour3DPlotRenderer::Sources sources;
         sources.verticalBinLayer = this;
@@ -1047,18 +1052,30 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         cparams.scaleType = m_colourScale;
         cparams.gain = m_gain;
 
-        if (m_normalization == ColumnNormalization::None) {
-            cparams.minValue = m_model->getMinimumLevel();
-            cparams.maxValue = m_model->getMaximumLevel();
+        double minValue = 0.0;
+        double maxValue = 1.0;
+        
+        if (m_normalizeVisibleArea && m_viewMags[viewId].isSet()) {
+            minValue = m_viewMags[viewId].getMin();
+            maxValue = m_viewMags[viewId].getMax();
+        } else if (m_normalization == ColumnNormalization::None) {
+            minValue = m_model->getMinimumLevel();
+            maxValue = m_model->getMaximumLevel();
         } else if (m_normalization == ColumnNormalization::Hybrid) {
-            cparams.minValue = 0;
-            cparams.maxValue = log10(m_model->getMaximumLevel() + 1.0);
+            minValue = 0;
+            maxValue = log10(m_model->getMaximumLevel() + 1.0);
         }
 
-        if (cparams.maxValue <= cparams.minValue) {
-            cparams.maxValue = cparams.minValue + 0.1;
+        if (maxValue <= minValue) {
+            maxValue = minValue + 0.1f;
         }
+
+        cparams.minValue = minValue;
+        cparams.maxValue = maxValue;
         
+        m_lastRenderedMags[viewId] = MagnitudeRange(float(minValue),
+                                                    float(maxValue));
+
         Colour3DPlotRenderer::Parameters params;
         params.colourScale = ColourScale(cparams);
         params.normalization = m_normalization;
@@ -1067,10 +1084,10 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         params.invertVertical = m_invertVertical;
         params.interpolate = m_smooth;
 
-        m_renderers[v->getId()] = new Colour3DPlotRenderer(sources, params);
+        m_renderers[viewId] = new Colour3DPlotRenderer(sources, params);
     }
 
-    return m_renderers[v->getId()];
+    return m_renderers[viewId];
 }
 
 void
@@ -1083,7 +1100,9 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
     MagnitudeRange magRange;
     int viewId = v->getId();
 
-    if (!renderer->geometryChanged(v)) {
+    bool continuingPaint = !renderer->geometryChanged(v);
+    
+    if (continuingPaint) {
         magRange = m_viewMags[viewId];
     }
     
@@ -1104,17 +1123,25 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
     magRange.sample(result.range);
 
     if (magRange.isSet()) {
-        if (!(m_viewMags[viewId] == magRange)) {
+        if (m_viewMags[viewId] != magRange) {
             m_viewMags[viewId] = magRange;
-    //!!! now need to do the normalise-visible thing
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+            cerr << "mag range in this view has changed: "
+                 << magRange.getMin() << " -> " << magRange.getMax() << endl;
+#endif
         }
     }
     
-    SVDEBUG << "Colour3DPlotRenderer::paintWithRenderer: mag range in this view: "
-            << m_viewMags[v->getId()].getMin()
-            << " -> "
-            << m_viewMags[v->getId()].getMax()
-            << endl;
+    if (!continuingPaint && m_normalizeVisibleArea &&
+        m_viewMags[viewId] != m_lastRenderedMags[viewId]) {
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+        cerr << "mag range has changed from last rendered range: re-rendering"
+             << endl;
+#endif
+        delete m_renderers[viewId];
+        m_renderers.erase(viewId);
+        v->updatePaintRect(v->getPaintRect());
+    }
 }
 
 void
@@ -1146,16 +1173,6 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 #endif
         return;
     }
-
-    //!!!???
-    
-    if (m_normalizeVisibleArea) {
-        rect = v->getPaintRect();
-    }
-
-    //!!! why is the setLayerDormant(false) found here in
-    //!!! SpectrogramLayer not present in Colour3DPlotLayer?
-    //!!! unnecessary? vestigial? forgotten?
 
     paintWithRenderer(v, paint, rect);
 }
