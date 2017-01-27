@@ -208,17 +208,47 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     int reqx1 = x1;
     
     if (!m_cache.isValid() && timeConstrained) {
-        // When rendering the whole area, in a context where we might
-        // not be able to complete the work, start from somewhere near
-        // the middle so that the region of interest appears
-        // first. But only if we aren't using a peak cache, as
-        // rendering from peak cache is usually (not always) quick and
-        // looks odd if we make a habit of jumping back after reaching
-        // the end.
         if (x0 == 0 && x1 == v->getPaintWidth()) {
-            int peakCacheIndex = -1, binsPerPeak = -1;
-            getPreferredPeakCache(v, peakCacheIndex, binsPerPeak);
-            if (peakCacheIndex == -1) { // no peak cache
+            
+            // When rendering the whole area, in a context where we
+            // might not be able to complete the work, start from
+            // somewhere near the middle so that the region of
+            // interest appears first.
+            //
+            // This is very useful if we actually are slow to render,
+            // but if we're not sure how fast we'll be, we should
+            // prefer not to because it can be distracting to render
+            // fast from the middle and then jump back to fill in the
+            // start. That is:
+            //
+            // - if our seconds-per-x-pixel count is invalid, then we
+            // don't do this: we've probably only just been created
+            // and don't know how fast we'll be yet (this happens
+            // often while zooming rapidly in and out). The exception
+            // to the exception is if we're displaying peak
+            // frequencies; this we can assume to be slow. (Note that
+            // if the seconds-per-x-pixel is valid and we know we're
+            // fast, then we've already set timeConstrained false
+            // above so this doesn't apply)
+            // 
+            // - if we're using a peak cache, we don't do this;
+            // drawing from peak cache is often (even if not always)
+            // fast.
+
+            bool drawFromTheMiddle = true;
+
+            if (!m_secondsPerXPixelValid &&
+                (m_params.binDisplay != BinDisplay::PeakFrequencies)) {
+                drawFromTheMiddle = false;
+            } else {
+                int peakCacheIndex = -1, binsPerPeak = -1;
+                getPreferredPeakCache(v, peakCacheIndex, binsPerPeak);
+                if (peakCacheIndex >= 0) { // have a peak cache
+                    drawFromTheMiddle = false;
+                }
+            }
+
+            if (drawFromTheMiddle) {
                 double offset = 0.5 * (double(rand()) / double(RAND_MAX));
                 x0 = int(x1 * offset);
             }
@@ -1176,16 +1206,21 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 void
 Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
 {
-    m_secondsPerXPixel = timer.secondsPerItem(xPixelCount);
-    m_secondsPerXPixelValid = (xPixelCount > 10);
+    double secondsPerXPixel = timer.secondsPerItem(xPixelCount);
 
+    // valid if we have enough data points, or if the overall time is
+    // massively slow anyway (as we definitely need to warn about that)
+    bool valid = (xPixelCount > 20 || secondsPerXPixel > 0.01);
+
+    if (valid) {
+        m_secondsPerXPixel = secondsPerXPixel;
+        m_secondsPerXPixelValid = true;
+    
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "across " << xPixelCount << " x-pixels, seconds per x-pixel = "
-            << m_secondsPerXPixel
-            << " (enough data? " << (m_secondsPerXPixelValid ? "yes" : "no")
-            << ")" << endl;
+            << m_secondsPerXPixel << endl;
 #endif
-    
+    }
 }
 
 void
