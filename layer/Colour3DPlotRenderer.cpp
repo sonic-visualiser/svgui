@@ -105,7 +105,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
         } else if (m_secondsPerXPixelValid) {
             double predicted = m_secondsPerXPixel * rect.width();
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
+/#ifdef DEBUG_COLOUR_PLOT_REPAINT
             SVDEBUG << "Predicted time for width " << rect.width() << " = "
                     << predicted << endl;
 #endif

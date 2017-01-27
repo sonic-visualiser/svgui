@@ -187,6 +187,8 @@ protected:
 
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
+    mutable ViewMagMap m_lastRenderedMags; // when in normalizeVisibleArea mode
+    void invalidateMagnitudes();
 
     typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
     mutable ViewRendererMap m_renderers;
