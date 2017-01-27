@@ -105,11 +105,12 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
         } else if (m_secondsPerXPixelValid) {
             double predicted = m_secondsPerXPixel * rect.width();
-/#ifdef DEBUG_COLOUR_PLOT_REPAINT
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
             SVDEBUG << "Predicted time for width " << rect.width() << " = "
-                    << predicted << endl;
+                    << predicted << " (" << m_secondsPerXPixel << " x "
+                    << rect.width() << ")" << endl;
 #endif
-            if (predicted < 0.1) {
+            if (predicted < 0.2) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
                 SVDEBUG << "Predicted time looks fast enough: no partial renders"
                         << endl;
@@ -1179,7 +1180,8 @@ Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
     m_secondsPerXPixelValid = (xPixelCount > 10);
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "seconds per x pixel = " << m_secondsPerXPixel
+    SVDEBUG << "across " << xPixelCount << " x-pixels, seconds per x-pixel = "
+            << m_secondsPerXPixel
             << " (enough data? " << (m_secondsPerXPixelValid ? "yes" : "no")
             << ")" << endl;
 #endif
