@@ -640,7 +640,7 @@ Colour3DPlotLayer::getValueExtents(double &min, double &max,
     min = 0;
     max = double(m_model->getHeight());
 
-    logarithmic = false;
+    logarithmic = (m_binScale == BinScale::Log);
     unit = "";
 
     return true;

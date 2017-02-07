@@ -297,98 +297,29 @@ SpectrumLayer::preferenceChanged(PropertyContainer::PropertyName name)
     }
 }
 
-bool
-SpectrumLayer::getValueExtents(double &, double &, bool &, QString &) const
-{
-    return false;
-}
-
 double
-SpectrumLayer::getXForBin(int bin, int totalBins, double w) const
+SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 {
-    if (!m_sliceableModel) return SliceLayer::getXForBin(bin, totalBins, w);
-
-    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
-    double binfreq = (sampleRate * bin) / (totalBins * 2);
-    
-    return getXForFrequency(binfreq, w);
-}
-
-int
-SpectrumLayer::getBinForX(double x, int totalBins, double w) const
-{
-    if (!m_sliceableModel) return SliceLayer::getBinForX(x, totalBins, w);
-
-    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
-    double binfreq = getFrequencyForX(x, w);
-
-    return int((binfreq * totalBins * 2) / sampleRate);
-}
-
-double
-SpectrumLayer::getFrequencyForX(double x, double w) const
-{
-    double freq = 0;
     if (!m_sliceableModel) return 0;
-
-    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
-
-    double maxfreq = double(sampleRate) / 2;
-
-    switch (m_binScale) {
-
-    case LinearBins:
-        freq = ((x * maxfreq) / w);
-        break;
-        
-    case LogBins:
-        freq = pow(10.0, (x * log10(maxfreq)) / w);
-        break;
-
-    case InvertedLogBins:
-        freq = maxfreq - pow(10.0, ((w - x) * log10(maxfreq)) / w);
-        break;
-    }
-
-    return freq;
+    double bin = getBinForX(v, x);
+    return (m_sliceableModel->getSampleRate() * bin) /
+        (m_sliceableModel->getHeight() * 2);
 }
 
 double
-SpectrumLayer::getXForFrequency(double freq, double w) const
+SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) const
 {
-    double x = 0;
-    if (!m_sliceableModel) return x;
-
-    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
-
-    double maxfreq = double(sampleRate) / 2;
-
-    switch (m_binScale) {
-
-    case LinearBins:
-        x = (freq * w) / maxfreq;
-        break;
-        
-    case LogBins:
-        x = (log10(freq) * w) / log10(maxfreq);
-        break;
-
-    case InvertedLogBins:
-        if (maxfreq == freq) x = w;
-        else x = w - (log10(maxfreq - freq) * w) / log10(maxfreq);
-        break;
-    }
-
-    return x;
+    if (!m_sliceableModel) return 0;
+    double bin = (freq * m_sliceableModel->getHeight() * 2) /
+        m_sliceableModel->getSampleRate();
+    return getXForBin(v, bin);
 }
 
 bool
 SpectrumLayer::getXScaleValue(const LayerGeometryProvider *v, int x, 
                               double &value, QString &unit) const
 {
-    if (m_xorigins.find(v) == m_xorigins.end()) return false;
-    int xorigin = m_xorigins.find(v)->second;
-    value = getFrequencyForX(x - xorigin, v->getPaintWidth() - xorigin - 1);
+    value = getFrequencyForX(v, x);
     unit = "Hz";
     return true;
 }
@@ -397,7 +328,7 @@ bool
 SpectrumLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
                               double &value, QString &unit) const
 {
-    value = getValueForY(y, v);
+    value = getValueForY(v, y);
 
     if (m_energyScale == dBScale || m_energyScale == MeterScale) {
 
@@ -483,33 +414,34 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     ColourMapper mapper(m_colourMap, 0, 1);
     paint.setPen(mapper.getContrastingColour());
 
-    int xorigin = m_xorigins[v];
+    int xorigin = m_xorigins[v->getId()];
     int w = v->getPaintWidth() - xorigin - 1;
     
     paint.drawLine(xorigin, cursorPos.y(), v->getPaintWidth(), cursorPos.y());
     paint.drawLine(cursorPos.x(), cursorPos.y(), cursorPos.x(), v->getPaintHeight());
     
-    double fundamental = getFrequencyForX(cursorPos.x() - xorigin, w);
+    double fundamental = getFrequencyForX(v, cursorPos.x());
 
     int hoffset = 2;
     if (m_binScale == LogBins) hoffset = 13;
 
     PaintAssistant::drawVisibleText(v, paint,
-                       cursorPos.x() + 2,
-                       v->getPaintHeight() - 2 - hoffset,
-                       QString("%1 Hz").arg(fundamental),
-                       PaintAssistant::OutlinedText);
+                                    cursorPos.x() + 2,
+                                    v->getPaintHeight() - 2 - hoffset,
+                                    QString("%1 Hz").arg(fundamental),
+                                    PaintAssistant::OutlinedText);
 
     if (Pitch::isFrequencyInMidiRange(fundamental)) {
         QString pitchLabel = Pitch::getPitchLabelForFrequency(fundamental);
         PaintAssistant::drawVisibleText(v, paint,
-                           cursorPos.x() - paint.fontMetrics().width(pitchLabel) - 2,
-                           v->getPaintHeight() - 2 - hoffset,
-                           pitchLabel,
-                           PaintAssistant::OutlinedText);
+                                        cursorPos.x() -
+                                        paint.fontMetrics().width(pitchLabel) - 2,
+                                        v->getPaintHeight() - 2 - hoffset,
+                                        pitchLabel,
+                                        PaintAssistant::OutlinedText);
     }
 
-    double value = getValueForY(cursorPos.y(), v);
+    double value = getValueForY(v, cursorPos.y());
     double thresh = m_threshold;
     double db = thresh;
     if (value > 0.0) db = 10.0 * log10(value);
@@ -531,7 +463,7 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
 
     while (harmonic < 100) {
 
-        int hx = int(lrint(getXForFrequency(fundamental * harmonic, w)));
+        int hx = int(lrint(getXForFrequency(v, fundamental * harmonic)));
         hx += xorigin;
 
         if (hx < xorigin || hx > v->getPaintWidth()) break;
@@ -568,12 +500,15 @@ SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
 
     if (genericDesc == "") return "";
 
-    double minvalue = 0.f;
-    if (minbin < int(m_values.size())) minvalue = m_values[minbin];
-
-    double maxvalue = minvalue;
-    if (maxbin < int(m_values.size())) maxvalue = m_values[maxbin];
+    int i0 = minbin - m_minbin;
+    int i1 = maxbin - m_minbin;
         
+    float minvalue = 0.0;
+    if (in_range_for(m_values, i0)) minvalue = m_values[i0];
+
+    float maxvalue = minvalue;
+    if (in_range_for(m_values, i1)) maxvalue = m_values[i1];
+    
     if (minvalue > maxvalue) std::swap(minvalue, maxvalue);
     
     QString binstr;
@@ -718,10 +653,10 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             
             double freq = i->second;
           
-            int x = int(lrint(getXForFrequency(freq, w)));
+            int x = int(lrint(getXForFrequency(v, freq)));
 
             double norm = 0.f;
-            (void)getYForValue(values[bin], v, norm); // don't need return value, need norm
+            (void)getYForValue(v, values[bin], norm); // don't need return value, need norm
 
             paint.setPen(mapper.map(norm));
             paint.drawLine(xorigin + x, 0, xorigin + x, v->getPaintHeight() - pkh - 1);
@@ -733,87 +668,18 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     SliceLayer::paint(v, paint, rect);
 
     //!!! All of this stuff relating to depicting frequencies
-    //(keyboard, crosshairs etc) should be applicable to any slice
-    //layer whose model has a vertical scale unit of Hz.  However, the
-    //dense 3d model at the moment doesn't record its vertical scale
-    //unit -- we need to fix that and hoist this code as appropriate.
-    //Same really goes for any code in SpectrogramLayer that could be
-    //relevant to Colour3DPlotLayer with unit Hz, but that's a bigger
-    //proposition.
+    // (keyboard, crosshairs etc) should be applicable to any slice
+    // layer whose model has a vertical scale unit of Hz.  However,
+    // the dense 3d model at the moment doesn't record its vertical
+    // scale unit -- we need to fix that and hoist this code as
+    // appropriate.  Same really goes for any code in SpectrogramLayer
+    // that could be relevant to Colour3DPlotLayer with unit Hz, but
+    // that's a bigger proposition.
 
-//    if (m_binScale == LogBins) {
+    int h = v->getPaintHeight();
 
-//        int pkh = 10;
-        int h = v->getPaintHeight();
-
-        // piano keyboard
-
-        //!!! todo: move to PianoScale::paintPianoHorizontal
-        
-	paint.drawLine(xorigin, h - pkh - 1, w + xorigin, h - pkh - 1);
-
-	int px = xorigin, ppx = xorigin;
-	paint.setBrush(paint.pen().color());
-
-	for (int i = 0; i < 128; ++i) {
-
-	    double f = Pitch::getFrequencyForPitch(i);
-	    int x = int(lrint(getXForFrequency(f, w)));
-                           
-            x += xorigin;
-
-            if (i == 0) {
-                px = ppx = x;
-            }
-            if (i == 1) {
-                ppx = px - (x - px);
-            }
-
-            if (x < xorigin) {
-                ppx = px;
-                px = x;
-                continue;
-            }
-                
-            if (x > w) {
-                break;
-            }
-
-	    int n = (i % 12);
-
-            if (n == 1) {
-                // C# -- fill the C from here
-                QColor col = Qt::gray;
-                if (i == 61) { // filling middle C
-                    col = Qt::blue;
-                    col = col.light(150);
-                }
-                if (x - ppx > 2) {
-                    paint.fillRect((px + ppx) / 2 + 1,
-                                   h - pkh,
-                                   x - (px + ppx) / 2 - 1,
-                                   pkh,
-                                   col);
-                }
-            }
-
-	    if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
-		// black notes
-		paint.drawLine(x, h - pkh, x, h);
-		int rw = int(lrint(double(x - px) / 4) * 2);
-		if (rw < 2) rw = 2;
-		paint.drawRect(x - rw/2, h - pkh, rw, pkh/2);
-	    } else if (n == 0 || n == 5) {
-		// C, F
-		if (px < w) {
-		    paint.drawLine((x + px) / 2, h - pkh, (x + px) / 2, h);
-		}
-	    }
-
-            ppx = px;
-	    px = x;
-	}
-//    }
+    PianoScale().paintPianoHorizontal
+        (v, this, paint, QRect(xorigin, h - pkh - 1, w + xorigin, pkh));
 
     paint.restore();
 }

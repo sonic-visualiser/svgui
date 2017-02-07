@@ -26,6 +26,16 @@ class PianoScale
 public:
     void paintPianoVertical
     (LayerGeometryProvider *v, QPainter &paint, QRect rect, double minf, double maxf);
+
+    class HorizontalScaleProvider {
+    public:
+        virtual double getFrequencyForX(const LayerGeometryProvider *, double x) const = 0;
+        virtual double getXForFrequency(const LayerGeometryProvider *, double freq) const = 0;
+    };
+    
+    void paintPianoHorizontal
+    (LayerGeometryProvider *v, const HorizontalScaleProvider *p,
+     QPainter &paint, QRect rect);
 };
 
 #endif
