@@ -14,8 +14,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SPECTRUM_LAYER_H_
-#define _SPECTRUM_LAYER_H_
+#ifndef SV_SPECTRUM_LAYER_H
+#define SV_SPECTRUM_LAYER_H
 
 #include "SliceLayer.h"
 
@@ -23,12 +23,15 @@
 
 #include "data/model/DenseTimeValueModel.h"
 
+#include "PianoScale.h"
+
 #include <QColor>
 #include <QMutex>
 
 class FFTModel;
 
-class SpectrumLayer : public SliceLayer
+class SpectrumLayer : public SliceLayer,
+                      public PianoScale::HorizontalScaleProvider
 {
     Q_OBJECT
 
@@ -64,9 +67,6 @@ public:
     virtual void setProperty(const PropertyName &, int value);
     virtual void setProperties(const QXmlAttributes &);
 
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const;
-
     virtual bool getXScaleValue(const LayerGeometryProvider *v, int x,
                                 double &value, QString &unit) const;
 
@@ -96,15 +96,15 @@ public:
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const;
 
+    virtual double getFrequencyForX(const LayerGeometryProvider *,
+                                    double x) const override;
+    virtual double getXForFrequency(const LayerGeometryProvider *,
+                                    double freq) const override;
+
 protected slots:
     void preferenceChanged(PropertyContainer::PropertyName name);
 
 protected:
-    // make this SliceLayer method unavailable to the general public
-//    virtual void setModel(DenseThreeDimensionalModel *model) {
-//        SliceLayer::setModel(model);
-//    }
-
     DenseTimeValueModel    *m_originModel;
     int                     m_channel;
     bool                    m_channelSet;
@@ -120,12 +120,6 @@ protected:
 
     virtual void getBiasCurve(BiasCurve &) const;
     BiasCurve m_biasCurve;
-
-    virtual double getXForBin(int bin, int totalBins, double w) const;
-    virtual int getBinForX(double x, int totalBins, double w) const;
-
-    double getFrequencyForX(double x, double w) const;
-    double getXForFrequency(double freq, double w) const;
 
     int getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;

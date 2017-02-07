@@ -65,6 +65,14 @@ public:
     virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
 
+    virtual bool getDisplayExtents(double &min, double &max) const;
+    virtual bool setDisplayExtents(double min, double max);
+
+    virtual int getVerticalZoomSteps(int &defaultStep) const;
+    virtual int getCurrentVerticalZoomStep() const;
+    virtual void setVerticalZoomStep(int);
+    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
+
     virtual bool hasTimeXAxis() const { return false; }
 
     virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
@@ -109,11 +117,11 @@ public slots:
     void modelAboutToBeDeleted(Model *);
 
 protected:
-    virtual double getXForBin(int bin, int totalBins, double w) const;
-    virtual int getBinForX(double x, int totalBins, double w) const;
+    virtual double getXForBin(const LayerGeometryProvider *, double bin) const;
+    virtual double getBinForX(const LayerGeometryProvider *, double x) const;
 
-    virtual double getYForValue(double value, const LayerGeometryProvider *v, double &norm) const;
-    virtual double getValueForY(double y, const LayerGeometryProvider *v) const;
+    virtual double getYForValue(const LayerGeometryProvider *v, double value, double &norm) const;
+    virtual double getValueForY(const LayerGeometryProvider *v, double y) const;
     
     virtual QString getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &,
                                              bool includeBinDescription,
@@ -140,10 +148,12 @@ protected:
     float                             m_threshold;
     float                             m_initialThreshold;
     float                             m_gain;
+    int                               m_minbin;
+    int                               m_maxbin;
     mutable std::vector<int>          m_scalePoints;
-    mutable std::map<const LayerGeometryProvider *, int> m_xorigins;
-    mutable std::map<const LayerGeometryProvider *, int> m_yorigins;
-    mutable std::map<const LayerGeometryProvider *, int> m_heights;
+    mutable std::map<int, int>        m_xorigins; // LayerGeometryProvider id -> x
+    mutable std::map<int, int>        m_yorigins; // LayerGeometryProvider id -> y
+    mutable std::map<int, int>        m_heights;  // LayerGeometryProvider id -> h
     mutable sv_frame_t                m_currentf0;
     mutable sv_frame_t                m_currentf1;
     mutable std::vector<float>        m_values;

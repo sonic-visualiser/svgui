@@ -23,6 +23,9 @@
 
 #include "LayerGeometryProvider.h"
 
+#include <iostream>
+using namespace std;
+
 void
 PianoScale::paintPianoVertical(LayerGeometryProvider *v,
 			       QPainter &paint,
@@ -82,4 +85,76 @@ PianoScale::paintPianoVertical(LayerGeometryProvider *v,
 	py = y;
     }
 }
+
+void
+PianoScale::paintPianoHorizontal(LayerGeometryProvider *v,
+                                 const HorizontalScaleProvider *p,
+                                 QPainter &paint,
+                                 QRect r)
+{
+    int x0 = r.x(), y0 = r.y(), x1 = r.x() + r.width(), y1 = r.y() + r.height();
+
+    paint.drawLine(x0, y0, x1, y0);
+
+    int px = x0, ppx = x0;
+    paint.setBrush(paint.pen().color());
+
+    for (int i = 0; i < 128; ++i) {
+
+        double f = Pitch::getFrequencyForPitch(i);
+        int x = int(lrint(p->getXForFrequency(v, f)));
+
+        if (i == 0) {
+            px = ppx = x;
+        }
+        if (i == 1) {
+            ppx = px - (x - px);
+        }
+        
+        if (x < x0) {
+            ppx = px;
+            px = x;
+            continue;
+        }
+        
+        if (x > x1) {
+            break;
+        }
+
+        int n = (i % 12);
+
+        if (n == 1) {
+            // C# -- fill the C from here
+            QColor col = Qt::gray;
+            if (i == 61) { // filling middle C
+                col = Qt::blue;
+                col = col.light(150);
+            }
+            if (x - ppx > 2) {
+                paint.fillRect((px + ppx) / 2 + 1,
+                               y0 + 1,
+                               x - (px + ppx) / 2 - 1,
+                               y1 - y0,
+                               col);
+            }
+        }
+
+        if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
+            // black notes
+            paint.drawLine(x, y0, x, y1);
+            int rw = int(lrint(double(x - px) / 4) * 2);
+            if (rw < 2) rw = 2;
+            paint.drawRect(x - rw/2, (y0 + y1) / 2, rw, (y1 - y0) / 2);
+        } else if (n == 0 || n == 5) {
+            // C, F
+            if (px < x1) {
+                paint.drawLine((x + px) / 2, y0, (x + px) / 2, y1);
+            }
+        }
+        
+        ppx = px;
+        px = x;
+    }
+}
+
 

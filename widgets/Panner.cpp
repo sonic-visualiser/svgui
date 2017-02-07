@@ -20,6 +20,8 @@
 #include <QWheelEvent>
 #include <QPainter>
 
+#include "WidgetScale.h"
+
 #include <iostream>
 #include <cmath>
 
@@ -156,9 +158,13 @@ Panner::paintEvent(QPaintEvent *)
     QColor bg(palette().background().color());
     bg.setAlpha(m_backgroundAlpha);
 
-    paint.setPen(palette().dark().color());
+    int penWidth = WidgetScale::scalePixelSize(1);
+    if (penWidth < 1) penWidth = 1;
+    paint.setPen(QPen(palette().dark().color(), penWidth));
+    
     paint.setBrush(bg);
-    paint.drawRect(0, 0, width()-1, height()-1);
+    paint.drawRect(penWidth/2, penWidth/2,
+                   width()-penWidth/2-1, height()-penWidth/2-1);
 
     QColor hl(m_thumbColour);
     hl.setAlpha(m_thumbAlpha);
