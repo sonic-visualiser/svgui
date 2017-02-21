@@ -258,7 +258,7 @@ protected:
     ColourScaleType     m_colourScale;
     double              m_colourScaleMultiple;
     int                 m_colourMap;
-    QColor              m_crosshairColour;
+    mutable QColor      m_crosshairColour;
     BinScale            m_binScale;
     BinDisplay          m_binDisplay;
     ColumnNormalization m_normalization; // of individual columns
