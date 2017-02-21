@@ -428,25 +428,8 @@ Pane::paintEvent(QPaintEvent *e)
     ViewManager::ToolMode toolMode = ViewManager::NavigateMode;
     if (m_manager) toolMode = m_manager->getToolModeFor(this);
 
-    if (m_manager &&
-        m_mouseInWidget &&
-        toolMode == ViewManager::MeasureMode) {
-
-        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
-            --vi;
-
-            std::vector<QRect> crosshairExtents;
-
-            if ((*vi)->getCrosshairExtents(this, paint, m_identifyPoint,
-                                           crosshairExtents)) {
-                (*vi)->paintCrosshairs(this, paint, m_identifyPoint);
-                break;
-            } else if ((*vi)->isLayerOpaque()) {
-                break;
-            }
-        }
-    }
-
+    // Locate some relevant layers and models
+    
     Layer *topLayer = getTopLayer();
     bool haveSomeTimeXAxis = false;
 
@@ -473,16 +456,43 @@ Pane::paintEvent(QPaintEvent *e)
         if (waveformModel && workModel && haveSomeTimeXAxis) break;
     }
 
-    m_scaleWidth = 0;
-
+    // Block off left and right extents so we can see where the main model ends
+    
     if (workModel && hasTopLayerTimeXAxis()) {
         drawModelTimeExtents(r, paint, workModel);
     }
+
+    // Crosshairs for mouse movement in measure mode
+    
+    if (m_manager &&
+        m_mouseInWidget &&
+        toolMode == ViewManager::MeasureMode) {
+
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
+            --vi;
+
+            std::vector<QRect> crosshairExtents;
+
+            if ((*vi)->getCrosshairExtents(this, paint, m_identifyPoint,
+                                           crosshairExtents)) {
+                (*vi)->paintCrosshairs(this, paint, m_identifyPoint);
+                break;
+            } else if ((*vi)->isLayerOpaque()) {
+                break;
+            }
+        }
+    }
+
+    // Scale width will be set implicitly during drawVerticalScale call
+    m_scaleWidth = 0;
 
     if (m_manager && m_manager->shouldShowVerticalScale() && topLayer) {
         drawVerticalScale(r, topLayer, paint);
     }
 
+    // Feature description: the box in top-right showing values from
+    // the nearest feature to the mouse
+    
     if (m_identifyFeatures &&
         m_manager && m_manager->shouldIlluminateLocalFeatures() &&
         topLayer) {
@@ -527,6 +537,9 @@ Pane::paintEvent(QPaintEvent *e)
         drawLayerNames(r, paint);
     }
 
+    // The blue box that is shown when you ctrl-click in navigate mode
+    // to define a zoom region
+    
     if (m_shiftPressed && m_clickedInRange &&
         (toolMode == ViewManager::NavigateMode || m_navigating)) {
 

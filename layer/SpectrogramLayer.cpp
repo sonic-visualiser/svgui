@@ -1516,6 +1516,9 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
              smoothing == Preferences::SpectrogramZeroPaddedAndInterpolated);
 
         m_renderers[viewId] = new Colour3DPlotRenderer(sources, params);
+
+        m_crosshairColour =
+            ColourMapper(m_colourMap, 1.f, 255.f).getContrastingColour();
     }
 
     return m_renderers[viewId];
