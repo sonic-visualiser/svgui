@@ -320,6 +320,8 @@ protected:
     mutable ViewRendererMap m_renderers;
     Colour3DPlotRenderer *getRenderer(LayerGeometryProvider *) const;
     void invalidateRenderers();
+
+    void deleteDerivedModels();
     
     void paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 

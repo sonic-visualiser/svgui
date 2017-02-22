@@ -132,10 +132,23 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 SpectrogramLayer::~SpectrogramLayer()
 {
     invalidateRenderers();
+    deleteDerivedModels();
+}
+
+void
+SpectrogramLayer::deleteDerivedModels()
+{
+    if (m_fftModel) m_fftModel->aboutToDelete();
+    if (m_peakCache) m_peakCache->aboutToDelete();
+    if (m_wholeCache) m_wholeCache->aboutToDelete();
 
     delete m_fftModel;
     delete m_peakCache;
     delete m_wholeCache;
+
+    m_fftModel = 0;
+    m_peakCache = 0;
+    m_wholeCache = 0;
 }
 
 pair<ColourScaleType, double>
@@ -1339,45 +1352,44 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 void
 SpectrogramLayer::recreateFFTModel()
 {
-#ifdef DEBUG_SPECTROGRAM
-    cerr << "SpectrogramLayer::recreateFFTModel called" << endl;
-#endif
+    SVDEBUG << "SpectrogramLayer::recreateFFTModel called" << endl;
 
     if (!m_model || !m_model->isOK()) {
         emit sliceableModelReplaced(m_fftModel, 0);
-        delete m_fftModel;
-        delete m_peakCache;
-        delete m_wholeCache;
-        m_fftModel = 0;
-        m_peakCache = 0;
-        m_wholeCache = 0;
+        deleteDerivedModels();
         return;
     }
 
-    FFTModel *oldModel = m_fftModel;
-
-    m_fftModel = new FFTModel(m_model,
-                              m_channel,
-                              m_windowType,
-                              m_windowSize,
-                              getWindowIncrement(),
-                              getFFTSize());
-
+    if (m_fftModel) m_fftModel->aboutToDelete();
+    
+    if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
     m_peakCache = 0;
 
+    if (m_wholeCache) m_wholeCache->aboutToDelete();
     delete m_wholeCache;
     m_wholeCache = 0;
     
-    if (!m_fftModel->isOK()) {
+    FFTModel *newModel = new FFTModel(m_model,
+                                      m_channel,
+                                      m_windowType,
+                                      m_windowSize,
+                                      getWindowIncrement(),
+                                      getFFTSize());
+
+    if (!newModel->isOK()) {
         QMessageBox::critical
             (0, tr("FFT cache failed"),
              tr("Failed to create the FFT model for this spectrogram.\n"
                 "There may be insufficient memory or disc space to continue."));
+        delete newModel;
         delete m_fftModel;
         m_fftModel = 0;
         return;
     }
+
+    FFTModel *oldModel = m_fftModel;
+    m_fftModel = newModel;
 
     if (canStoreWholeCache()) { // i.e. if enough memory
         m_wholeCache = new Dense3DModelPeakCache(m_fftModel, 1);
@@ -1387,7 +1399,6 @@ SpectrogramLayer::recreateFFTModel()
     }
 
     emit sliceableModelReplaced(oldModel, m_fftModel);
-
     delete oldModel;
 }
 
