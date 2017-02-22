@@ -40,43 +40,43 @@ public:
     ~SpectrumLayer();
     
     void setModel(DenseTimeValueModel *model);
-    virtual const Model *getModel() const { return m_originModel; }
+    virtual const Model *getModel() const override { return m_originModel; }
 
     virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint cursorPos,
-                                     std::vector<QRect> &extents) const;
-    virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const;
+                                     std::vector<QRect> &extents) const override;
+    virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
-    virtual VerticalPosition getPreferredFrameCountPosition() const {
+    virtual VerticalPosition getPreferredFrameCountPosition() const override {
 	return PositionTop;
     }
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual QString getPropertyIconName(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
+    virtual PropertyList getProperties() const override;
+    virtual QString getPropertyLabel(const PropertyName &) const override;
+    virtual QString getPropertyIconName(const PropertyName &) const override;
+    virtual PropertyType getPropertyType(const PropertyName &) const override;
+    virtual QString getPropertyGroupName(const PropertyName &) const override;
     virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
+                                         int *min, int *max, int *deflt) const override;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
-    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
-    virtual void setProperty(const PropertyName &, int value);
-    virtual void setProperties(const QXmlAttributes &);
+					  int value) const override;
+    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
+    virtual void setProperty(const PropertyName &, int value) override;
+    virtual void setProperties(const QXmlAttributes &) override;
 
     virtual bool getXScaleValue(const LayerGeometryProvider *v, int x,
-                                double &value, QString &unit) const;
+                                double &value, QString &unit) const override;
 
     virtual bool getYScaleValue(const LayerGeometryProvider *, int y,
-                                double &value, QString &unit) const;
+                                double &value, QString &unit) const override;
 
     virtual bool getYScaleDifference(const LayerGeometryProvider *, int y0, int y1,
-                                     double &diff, QString &unit) const;
+                                     double &diff, QString &unit) const override;
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
+    virtual bool isLayerScrollable(const LayerGeometryProvider *) const override { return false; }
 
     void setChannel(int);
     int getChannel() const { return m_channel; }
@@ -94,7 +94,7 @@ public:
     bool getShowPeaks() const { return m_showPeaks; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+                       QString extraAttributes = "") const override;
 
     virtual double getFrequencyForX(const LayerGeometryProvider *,
                                     double x) const override;
@@ -118,7 +118,7 @@ protected:
 
     void setupFFT();
 
-    virtual void getBiasCurve(BiasCurve &) const;
+    virtual void getBiasCurve(BiasCurve &) const override;
     BiasCurve m_biasCurve;
 
     int getWindowIncrement() const {
