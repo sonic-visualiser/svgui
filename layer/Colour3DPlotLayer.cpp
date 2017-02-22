@@ -70,6 +70,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
 Colour3DPlotLayer::~Colour3DPlotLayer()
 {
     invalidateRenderers();
+    if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
 }
 
@@ -135,6 +136,8 @@ Colour3DPlotLayer::setSynchronousPainting(bool synchronous)
 void
 Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 {
+    SVDEBUG << "Colour3DPlotLayer::setModel(" << model << ")" << endl;
+    
     if (m_model == model) return;
     const DenseThreeDimensionalModel *oldModel = m_model;
     m_model = model;
@@ -155,6 +158,7 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
         m_peakResolution = 128;
     }
 
+    if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
     m_peakCache = 0;
 
@@ -177,6 +181,7 @@ Colour3DPlotLayer::cacheInvalid(sv_frame_t /* startFrame */,
                                 sv_frame_t /* endFrame */)
 {
     //!!! should do this only if the range is visible
+    if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
     m_peakCache = 0;
     
