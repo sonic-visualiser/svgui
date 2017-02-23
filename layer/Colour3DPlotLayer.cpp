@@ -1071,6 +1071,9 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
             maxValue = log10(m_model->getMaximumLevel() + 1.0);
         }
 
+        SVDEBUG << "Colour3DPlotLayer: rebuilding renderer, value range is "
+                << minValue << " -> " << maxValue << endl;
+        
         if (maxValue <= minValue) {
             maxValue = minValue + 0.1f;
         }
