@@ -1033,6 +1033,7 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
             maxValue = minValue + 0.1f;
         }
 
+        cparams.threshold = minValue;
         cparams.minValue = minValue;
         cparams.maxValue = maxValue;
         
