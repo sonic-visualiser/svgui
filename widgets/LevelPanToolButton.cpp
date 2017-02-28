@@ -152,8 +152,6 @@ LevelPanToolButton::selfLevelChanged(float level)
 void
 LevelPanToolButton::selfClicked()
 {
-    cerr << "selfClicked" << endl;
-    
     if (m_muted) {
 	m_muted = false;
 	m_lpw->setLevel(m_savedLevel);
