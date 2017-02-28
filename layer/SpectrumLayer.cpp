@@ -415,8 +415,6 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     paint.setPen(mapper.getContrastingColour());
 
     int xorigin = m_xorigins[v->getId()];
-    int w = v->getPaintWidth() - xorigin - 1;
-    
     paint.drawLine(xorigin, cursorPos.y(), v->getPaintWidth(), cursorPos.y());
     paint.drawLine(cursorPos.x(), cursorPos.y(), cursorPos.x(), v->getPaintHeight());
     
