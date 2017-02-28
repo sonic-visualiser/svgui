@@ -481,9 +481,9 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 void
 Colour3DPlotLayer::setColourScale(ColourScaleType scale)
 {
+    m_colourScaleSet = true; // even if setting to the same thing
     if (m_colourScale == scale) return;
     m_colourScale = scale;
-    m_colourScaleSet = true;
     invalidateRenderers();
     emit layerParametersChanged();
 }
