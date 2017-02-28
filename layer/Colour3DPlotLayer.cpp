@@ -1216,7 +1216,7 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
     bool ok = false, alsoOk = false;
 
     ColourScaleType colourScale = convertToColourScale
-        (attributes.value("colourScale").toInt(&ok));
+        (attributes.value("scale").toInt(&ok));
     if (ok) setColourScale(colourScale);
 
     int colourMap = attributes.value("colourScheme").toInt(&ok);
