@@ -40,6 +40,7 @@ LevelPanWidget::LevelPanWidget(QWidget *parent) :
     m_monitorLeft(-1),
     m_monitorRight(-1),
     m_editable(true),
+    m_editing(false),
     m_includeMute(true)
 {
     setToolTip(tr("Drag vertically to adjust level, horizontally to adjust pan"));
@@ -49,6 +50,13 @@ LevelPanWidget::LevelPanWidget(QWidget *parent) :
 
 LevelPanWidget::~LevelPanWidget()
 {
+}
+
+void
+LevelPanWidget::setToDefault()
+{
+    setLevel(1.0);
+    setPan(0.0);
 }
 
 QSize
@@ -211,13 +219,28 @@ LevelPanWidget::emitPanChanged()
 void
 LevelPanWidget::mousePressEvent(QMouseEvent *e)
 {
+    if (e->button() == Qt::MidButton ||
+        ((e->button() == Qt::LeftButton) &&
+         (e->modifiers() & Qt::ControlModifier))) {
+        setToDefault();
+    } else if (e->button() == Qt::LeftButton) {
+        m_editing = true;
+        mouseMoveEvent(e);
+    }
+}
+
+void
+LevelPanWidget::mouseReleaseEvent(QMouseEvent *e)
+{
     mouseMoveEvent(e);
+    m_editing = false;
 }
 
 void
 LevelPanWidget::mouseMoveEvent(QMouseEvent *e)
 {
     if (!m_editable) return;
+    if (!m_editing) return;
     
     int level, pan;
     toCell(rect(), e->pos(), level, pan);
@@ -233,12 +256,6 @@ LevelPanWidget::mouseMoveEvent(QMouseEvent *e)
 	emitPanChanged();
     }
     update();
-}
-
-void
-LevelPanWidget::mouseReleaseEvent(QMouseEvent *e)
-{
-    mouseMoveEvent(e);
 }
 
 void

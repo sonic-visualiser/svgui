@@ -63,6 +63,9 @@ public slots:
 
     /// Specify whether the level range should include muting or not
     void setIncludeMute(bool);
+
+    /// Reset to default values
+    void setToDefault();
     
     // public so it can be called from LevelPanToolButton (ew)
     virtual void wheelEvent(QWheelEvent *ev);
@@ -90,6 +93,7 @@ protected:
     float m_monitorLeft;
     float m_monitorRight;
     bool m_editable;
+    bool m_editing;
     bool m_includeMute;
 
     static int audioLevelToLevel(float audioLevel, bool withMute);
