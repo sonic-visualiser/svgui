@@ -211,8 +211,6 @@ protected:
      * if the vertical scale is the usual way up).
      */
     double getBinForY(const LayerGeometryProvider *, double y) const;
-    
-    DenseThreeDimensionalModel::Column getColumn(int col) const;
 
     int getColourScaleWidth(QPainter &) const;
 

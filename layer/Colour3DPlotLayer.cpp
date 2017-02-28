@@ -994,52 +994,6 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
     paint.restore();
 }
 
-DenseThreeDimensionalModel::Column
-Colour3DPlotLayer::getColumn(int col) const
-{
-    Profiler profiler("Colour3DPlotLayer::getColumn");
-
-    DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
-    values.resize(m_model->getHeight(), 0.f);
-    if (m_normalization != ColumnNormalization::Max1 &&
-        m_normalization != ColumnNormalization::Hybrid) {
-        return values;
-    }
-
-    double colMax = 0.f, colMin = 0.f;
-    double min = 0.f, max = 0.f;
-
-    int nv = int(values.size());
-    
-    min = m_model->getMinimumLevel();
-    max = m_model->getMaximumLevel();
-
-    for (int y = 0; y < nv; ++y) {
-        if (y == 0 || values.at(y) > colMax) colMax = values.at(y);
-        if (y == 0 || values.at(y) < colMin) colMin = values.at(y);
-    }
-    if (colMin == colMax) colMax = colMin + 1;
-    
-    for (int y = 0; y < nv; ++y) {
-    
-        double value = values.at(y);
-        double norm = (value - colMin) / (colMax - colMin);
-        double newvalue = min + (max - min) * norm;
-
-        if (value != newvalue) values[y] = float(newvalue);
-    }
-
-    if (m_normalization == ColumnNormalization::Hybrid
-        && (colMax > 0.0)) {
-        double logmax = log10(colMax);
-        for (int y = 0; y < nv; ++y) {
-            values[y] = float(values[y] * logmax);
-        }
-    }
-
-    return values;
-}
-
 Colour3DPlotRenderer *
 Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
 {
