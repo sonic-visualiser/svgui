@@ -126,7 +126,13 @@ public:
         QRect rendered;
 
         /**
-         * The magnitude range of the data in the rendered area.
+         * The magnitude range of the data in the rendered area, after
+         * initial scaling (parameters.scaleFactor) and normalisation,
+         * for use in displaying colour scale etc. (Note that the
+         * magnitude range *before* normalisation would not be very
+         * meaningful for this purpose, as the scale would need to be
+         * different for every column if column or hybrid
+         * normalisation was in use.)
          */
         MagnitudeRange range;
     };
