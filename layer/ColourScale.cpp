@@ -44,7 +44,24 @@ ColourScale::ColourScale(Parameters parameters) :
     
     if (m_params.scaleType == ColourScaleType::Log) {
 
-	LogRange::mapRange(m_mappedMin, m_mappedMax);
+        // When used in e.g. spectrogram, we have a range with a min
+        // value of zero. The LogRange converts that to a threshold
+        // value of -10, so for a range of e.g. (0,1) we end up with
+        // (-10,0) as the mapped range.
+        // 
+        // But in other contexts we could end up with a mapped range
+        // much larger than that if we have a small non-zero minimum
+        // value (less than 1e-10), or a particularly large
+        // maximum. That's unlikely to give us good results, so let's
+        // insist that the mapped log range has no more than 10
+        // difference between min and max, to match the behaviour when
+        // min == 0 at the input.
+        //
+        double threshold = -10.0;
+        LogRange::mapRange(m_mappedMin, m_mappedMax, threshold);
+        if (m_mappedMin < m_mappedMax + threshold) {
+            m_mappedMin = m_mappedMax + threshold;
+        }
 	
     } else if (m_params.scaleType == ColourScaleType::PlusMinusOne) {
 	
