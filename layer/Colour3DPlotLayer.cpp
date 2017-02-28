@@ -107,7 +107,7 @@ Colour3DPlotLayer::convertToColumnNorm(int value)
     switch (value) {
     default:
     case 0: return { ColumnNormalization::None, false };
-    case 1: return { ColumnNormalization::Max1, false };
+    case 1: return { ColumnNormalization::Range01, false };
     case 2: return { ColumnNormalization::None, true }; // visible area
     case 3: return { ColumnNormalization::Hybrid, false };
     }
@@ -119,10 +119,11 @@ Colour3DPlotLayer::convertFromColumnNorm(ColumnNormalization norm, bool visible)
     if (visible) return 2;
     switch (norm) {
     case ColumnNormalization::None: return 0;
-    case ColumnNormalization::Max1: return 1;
+    case ColumnNormalization::Range01: return 1;
     case ColumnNormalization::Hybrid: return 3;
 
     case ColumnNormalization::Sum1:
+    case ColumnNormalization::Max1:
     default: return 0;
     }
 }
@@ -1063,12 +1064,12 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         if (m_normalizeVisibleArea && m_viewMags[viewId].isSet()) {
             minValue = m_viewMags[viewId].getMin();
             maxValue = m_viewMags[viewId].getMax();
-        } else if (m_normalization == ColumnNormalization::None) {
-            minValue = m_model->getMinimumLevel();
-            maxValue = m_model->getMaximumLevel();
         } else if (m_normalization == ColumnNormalization::Hybrid) {
             minValue = 0;
             maxValue = log10(m_model->getMaximumLevel() + 1.0);
+        } else if (m_normalization == ColumnNormalization::None) {
+            minValue = m_model->getMinimumLevel();
+            maxValue = m_model->getMaximumLevel();
         }
 
         SVDEBUG << "Colour3DPlotLayer: rebuilding renderer, value range is "
@@ -1238,13 +1239,13 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
     // area as well afterwards
     
     s += QString("columnNormalization=\"%1\" ")
-        .arg(m_normalization == ColumnNormalization::Max1 ? "peak" :
+        .arg(m_normalization == ColumnNormalization::Range01 ? "peak" :
              m_normalization == ColumnNormalization::Hybrid ? "hybrid" : "none");
 
     // Old-style normalization attribute, for backward compatibility
     
     s += QString("normalizeColumns=\"%1\" ")
-	.arg(m_normalization == ColumnNormalization::Max1 ? "true" : "false");
+	.arg(m_normalization == ColumnNormalization::Range01 ? "true" : "false");
 
     // And this applies to both old- and new-style attributes
     
@@ -1298,7 +1299,7 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
         haveNewStyleNormalization = true;
 
         if (columnNormalization == "peak") {
-            setNormalization(ColumnNormalization::Max1);
+            setNormalization(ColumnNormalization::Range01);
         } else if (columnNormalization == "hybrid") {
             setNormalization(ColumnNormalization::Hybrid);
         } else if (columnNormalization == "none") {
@@ -1316,7 +1317,7 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
         bool normalizeColumns =
             (attributes.value("normalizeColumns").trimmed() == "true");
         if (normalizeColumns) {
-            setNormalization(ColumnNormalization::Max1);
+            setNormalization(ColumnNormalization::Range01);
         }
 
         bool normalizeHybrid =
