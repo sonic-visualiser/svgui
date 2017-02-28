@@ -57,6 +57,8 @@ LevelPanWidget::setToDefault()
 {
     setLevel(1.0);
     setPan(0.0);
+    emitLevelChanged();
+    emitPanChanged();
 }
 
 QSize
