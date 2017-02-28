@@ -200,6 +200,7 @@ SpectrogramLayer::convertFromColumnNorm(ColumnNormalization norm, bool visible)
     case ColumnNormalization::Hybrid: return 3;
 
     case ColumnNormalization::Sum1:
+    case ColumnNormalization::Range01:
     default: return 0;
     }
 }

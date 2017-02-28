@@ -368,8 +368,6 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     }
 
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
-    int w = v->getPaintWidth() - xorigin - 1;
-
     m_xorigins[v->getId()] = xorigin; // for use in getFeatureDescription
     
     int yorigin = v->getPaintHeight() - 20 - paint.fontMetrics().height() - 7;
