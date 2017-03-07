@@ -115,8 +115,8 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
     maxbin = 0;
     if (!m_sliceableModel) return "";
 
-    minbin = int(round(getBinForX(v, p.x())));
-    maxbin = int(round(getBinForX(v, p.x() + 1)));
+    minbin = int(getBinForX(v, p.x()));
+    maxbin = int(getBinForX(v, p.x() + 1));
 
     int mh = m_sliceableModel->getHeight();
     if (minbin >= mh) minbin = mh - 1;
@@ -237,19 +237,21 @@ SliceLayer::getBinForX(const LayerGeometryProvider *v, double x) const
 
     x = x - origin;
     if (x < 0) x = 0;
+
+    double eps = 1e-10;
     
     switch (m_binScale) {
 
     case LinearBins:
-        bin = int((x * count) / w + 0.0001);
+        bin = (x * count) / w + eps;
         break;
         
     case LogBins:
-        bin = int(pow(10.0, (x * log10(count + 1)) / w) - 1 + 0.0001);
+        bin = pow(10.0, (x * log10(count + 1)) / w) - 1.0 + eps;
         break;
 
     case InvertedLogBins:
-        bin = count + 1 - int(pow(10.0, (log10(count) * (w - x)) / double(w)) + 0.0001);
+        bin = count + 1 - pow(10.0, (log10(count) * (w - x)) / double(w)) + eps;
         break;
     }
 
