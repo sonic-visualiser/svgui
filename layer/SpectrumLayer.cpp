@@ -302,6 +302,7 @@ SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 {
     if (!m_sliceableModel) return 0;
     double bin = getBinForX(v, x);
+    cerr << "bin = " << bin << endl;
     return (m_sliceableModel->getSampleRate() * bin) /
         (m_sliceableModel->getHeight() * 2);
 }
@@ -462,7 +463,6 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     while (harmonic < 100) {
 
         int hx = int(lrint(getXForFrequency(v, fundamental * harmonic)));
-        hx += xorigin;
 
         if (hx < xorigin || hx > v->getPaintWidth()) break;
         
@@ -513,7 +513,7 @@ SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
     QString hzstr;
     int minfreq = int(lrint((minbin * m_sliceableModel->getSampleRate()) /
                             m_windowSize));
-    int maxfreq = int(lrint((std::max(maxbin, minbin+1)
+    int maxfreq = int(lrint((std::max(maxbin, minbin)
                              * m_sliceableModel->getSampleRate()) /
                             m_windowSize));
 
