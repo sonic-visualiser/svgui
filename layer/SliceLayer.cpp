@@ -67,6 +67,8 @@ SliceLayer::setSliceableModel(const Model *model)
 
     m_sliceableModel = sliceable;
 
+    if (!m_sliceableModel) return;
+
     connectSignals(m_sliceableModel);
 
     m_minbin = 0;
