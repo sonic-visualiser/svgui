@@ -302,7 +302,6 @@ SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 {
     if (!m_sliceableModel) return 0;
     double bin = getBinForX(v, x);
-    cerr << "bin = " << bin << endl;
     return (m_sliceableModel->getSampleRate() * bin) /
         (m_sliceableModel->getHeight() * 2);
 }
