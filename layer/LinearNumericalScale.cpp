@@ -47,7 +47,7 @@ LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
 
     int prevy = -1;
                 
-    for (int i = 0; i < int(ticks.ticks.size()); ++i) {
+    for (int i = 0; i < int(ticks.size()); ++i) {
 
 	int y, ty;
         bool drawText = true;
@@ -57,8 +57,8 @@ LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
 	    if (layer->getScaleUnits() != "") drawText = false;
 	}
 
-        double val = ticks.ticks[i].value;
-        QString label = QString::fromStdString(ticks.ticks[i].label);
+        double val = ticks[i].value;
+        QString label = QString::fromStdString(ticks[i].label);
         
 	y = layer->getYForValue(v, val);
 
