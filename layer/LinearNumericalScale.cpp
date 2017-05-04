@@ -40,14 +40,14 @@ LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
 				    double maxf)
 {
     int n = 10;
-
     auto ticks = ScaleTickIntervals::linear({ minf, maxf, n });
+    n = int(ticks.size());
 
     int w = getWidth(v, paint) + x0;
 
     int prevy = -1;
-                
-    for (int i = 0; i < int(ticks.size()); ++i) {
+
+    for (int i = 0; i < n; ++i) {
 
 	int y, ty;
         bool drawText = true;
