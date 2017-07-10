@@ -24,7 +24,7 @@
 
 #include "LayerGeometryProvider.h"
 
-//#define DEBUG_TIME_VALUE_LAYER 1
+#include "base/ScaleTickIntervals.h"
 
 int
 LogNumericalScale::getWidth(LayerGeometryProvider *,
@@ -41,35 +41,11 @@ LogNumericalScale::paintVertical(LayerGeometryProvider *v,
 				 double minlog,
 				 double maxlog)
 {
-    int w = getWidth(v, paint) + x0;
-
     int n = 10;
+    auto ticks = ScaleTickIntervals::logarithmicAlready({ minlog, maxlog, n });
+    n = int(ticks.size());
 
-    double val = minlog;
-    double inc = (maxlog - val) / n; // even increments of log scale
-
-    // smallest increment as displayed
-    double minDispInc = LogRange::unmap(minlog + inc) - LogRange::unmap(minlog);
-
-#ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "min = " << minlog << ", max = " << maxlog << ", inc = " << inc << ", minDispInc = " << minDispInc << endl;
-#endif
-
-    const int buflen = 40;
-    char buffer[buflen];
-
-    double round = 1.f;
-    int dp = 0;
-
-    if (minDispInc > 0) {
-        int prec = int(trunc(log10(minDispInc)));
-        if (prec < 0) dp = -prec;
-        round = pow(10.0, prec);
-        if (dp > 4) dp = 4;
-#ifdef DEBUG_TIME_VALUE_LAYER
-        cerr << "round = " << round << ", prec = " << prec << ", dp = " << dp << endl;
-#endif
-    }
+    int w = getWidth(v, paint) + x0;
 
     int prevy = -1;
                 
@@ -83,31 +59,16 @@ LogNumericalScale::paintVertical(LayerGeometryProvider *v,
 	    if (layer->getScaleUnits() != "") drawText = false;
 	}
 
-        double dispval = LogRange::unmap(val);
-	dispval = floor(dispval / round) * round;
+        double val = ticks[i].value;
+        QString label = QString::fromStdString(ticks[i].label);
 
-#ifdef DEBUG_TIME_VALUE_LAYER
-	cerr << "val = " << val << ", dispval = " << dispval << endl;
-#endif
-
-	y = layer->getYForValue(v, dispval);
+	y = layer->getYForValue(v, val);
 
 	ty = y - paint.fontMetrics().height() + paint.fontMetrics().ascent() + 2;
 	
 	if (prevy >= 0 && (prevy - y) < paint.fontMetrics().height()) {
-	    val += inc;
 	    continue;
         }
-
-	int digits = int(trunc(log10(dispval)));
-	int sf = dp + (digits > 0 ? digits : 0);
-	if (sf < 4) sf = 4;
-#ifdef DEBUG_TIME_VALUE_LAYER
-        cerr << "sf = " << sf << endl;
-#endif
-	snprintf(buffer, buflen, "%.*g", sf, dispval);
-
-	QString label = QString(buffer);
 
 	paint.drawLine(w - 5, y, w, y);
 
@@ -117,6 +78,5 @@ LogNumericalScale::paintVertical(LayerGeometryProvider *v,
         }
 
         prevy = y;
-	val += inc;
     }
 }

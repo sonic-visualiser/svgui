@@ -22,6 +22,8 @@
 
 #include "LayerGeometryProvider.h"
 
+#include "base/ScaleTickIntervals.h"
+
 int
 LinearNumericalScale::getWidth(LayerGeometryProvider *,
 			       QPainter &paint)
@@ -38,58 +40,33 @@ LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
 				    double maxf)
 {
     int n = 10;
-
-    double val = minf;
-    double inc = (maxf - val) / n;
-
-    const int buflen = 40;
-    char buffer[buflen];
+    auto ticks = ScaleTickIntervals::linear({ minf, maxf, n });
+    n = int(ticks.size());
 
     int w = getWidth(v, paint) + x0;
 
-    double round = 1.0;
-    int dp = 0;
-    if (inc > 0) {
-        int prec = int(trunc(log10(inc)));
-        prec -= 1;
-        if (prec < 0) dp = -prec;
-        round = pow(10.0, prec);
-#ifdef DEBUG_TIME_VALUE_LAYER
-        cerr << "inc = " << inc << ", round = " << round << ", dp = " << dp << endl;
-#endif
-    }
-
     int prevy = -1;
-                
+
     for (int i = 0; i < n; ++i) {
 
 	int y, ty;
         bool drawText = true;
 
-        double dispval = val;
-
 	if (i == n-1 &&
 	    v->getPaintHeight() < paint.fontMetrics().height() * (n*2)) {
 	    if (layer->getScaleUnits() != "") drawText = false;
 	}
-	dispval = int(rint(val / round) * round);
 
-#ifdef DEBUG_TIME_VALUE_LAYER
-	cerr << "val = " << val << ", dispval = " << dispval << endl;
-#endif
-
-	y = layer->getYForValue(v, dispval);
+        double val = ticks[i].value;
+        QString label = QString::fromStdString(ticks[i].label);
+        
+	y = layer->getYForValue(v, val);
 
 	ty = y - paint.fontMetrics().height() + paint.fontMetrics().ascent() + 2;
 	
 	if (prevy >= 0 && (prevy - y) < paint.fontMetrics().height()) {
-	    val += inc;
 	    continue;
         }
-
-	snprintf(buffer, buflen, "%.*f", dp, dispval);
-
-	QString label = QString(buffer);
 
 	paint.drawLine(w - 5, y, w, y);
 
@@ -99,6 +76,5 @@ LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
         }
 
         prevy = y;
-	val += inc;
     }
 }
