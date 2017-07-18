@@ -96,30 +96,35 @@ IconLoader::loadPixmap(QString name, int size)
     QString scalableName, nonScalableName;
     QPixmap pmap;
 
+    // attempt to load a pixmap with the right size and inversion
     nonScalableName = makeNonScalableFilename(name, size, invert);
     pmap = QPixmap(nonScalableName);
-    if (!pmap.isNull()) return pmap;
 
-    if (size > 0) {
+    if (pmap.isNull() && size > 0) {
+        // if that failed, load a scalable vector with the right
+        // inversion and scale it
         scalableName = makeScalableFilename(name, invert);
         pmap = loadScalable(scalableName, size);
-        if (!pmap.isNull()) return pmap;
     }
 
-    if (invert && shouldAutoInvert(name)) {
-
+    if (pmap.isNull() && invert) {
+        // if that failed, and we were asking for an inverted pixmap,
+        // that may mean we don't have an inverted version of it. We
+        // could either auto-invert or use the uninverted version
         nonScalableName = makeNonScalableFilename(name, size, false);
         pmap = QPixmap(nonScalableName);
-        if (!pmap.isNull()) return invertPixmap(pmap);
 
-        if (size > 0) {
+        if (pmap.isNull() && size > 0) {
             scalableName = makeScalableFilename(name, false);
             pmap = loadScalable(scalableName, size);
-            if (!pmap.isNull()) return invertPixmap(pmap);
+        }
+        
+        if (!pmap.isNull() && shouldAutoInvert(name)) {
+            pmap = invertPixmap(pmap);
         }
     }
 
-    return QPixmap();
+    return pmap;
 }
 
 QPixmap
