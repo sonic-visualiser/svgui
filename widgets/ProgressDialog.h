@@ -25,8 +25,13 @@ class ProgressDialog : public ProgressReporter
     Q_OBJECT
     
 public:
-    ProgressDialog(QString message, bool cancellable,
-                   int timeBeforeShow = 0, QWidget *parent = 0);
+    ProgressDialog(
+        QString message,
+        bool cancellable,
+        int timeBeforeShow = 0,
+        QWidget *parent = 0,
+        Qt::WindowModality modality = Qt::NonModal
+    );
     virtual ~ProgressDialog();
 
     virtual bool isDefinite() const;

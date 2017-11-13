@@ -19,14 +19,21 @@
 #include <QApplication>
 #include <QTimer>
 
-ProgressDialog::ProgressDialog(QString message, bool cancellable,
-                               int timeBeforeShow, QWidget *parent) : 
+ProgressDialog::ProgressDialog(
+    QString message,
+    bool cancellable,
+    int timeBeforeShow,
+    QWidget *parent,
+    Qt::WindowModality modality
+) : 
     m_showTimer(0),
     m_timerElapsed(false),
     m_cancelled(false)
 {
     m_dialog = new QProgressDialog(message, cancellable ? tr("Cancel") : 0,
                                    0, 100, parent);
+    m_dialog->setWindowModality(modality);
+
     if (timeBeforeShow > 0) {
         m_dialog->hide();
         m_showTimer = new QTimer;
@@ -97,9 +104,6 @@ void
 ProgressDialog::setProgress(int percentage)
 {
     if (percentage > m_dialog->value()) {
-
-        m_dialog->setValue(percentage);
-
         if (percentage >= 100 && isDefinite()) {
             m_dialog->hide();
         } else if (m_timerElapsed && !m_dialog->isVisible()) {
@@ -107,8 +111,7 @@ ProgressDialog::setProgress(int percentage)
             m_dialog->show();
             m_dialog->raise();
         }
-
-        qApp->processEvents();
+        m_dialog->setValue(percentage); // processes event loop when modal
+        if (!m_dialog->isModal()) qApp->processEvents();
     }
 }
-
