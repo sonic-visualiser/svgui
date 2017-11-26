@@ -19,13 +19,11 @@
 #include <QApplication>
 #include <QTimer>
 
-ProgressDialog::ProgressDialog(
-    QString message,
-    bool cancellable,
-    int timeBeforeShow,
-    QWidget *parent,
-    Qt::WindowModality modality
-) : 
+ProgressDialog::ProgressDialog(QString message,
+                               bool cancellable,
+                               int timeBeforeShow,
+                               QWidget *parent,
+                               Qt::WindowModality modality) : 
     m_showTimer(0),
     m_timerElapsed(false),
     m_cancelled(false)
