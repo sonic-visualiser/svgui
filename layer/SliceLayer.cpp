@@ -295,7 +295,9 @@ SliceLayer::getYForValue(const LayerGeometryProvider *v, double value, double &n
         
     case AbsoluteScale:
         value = fabs(value);
-        // and fall through
+#ifdef __GNUC__
+        __attribute__ ((fallthrough));
+#endif 
         
     case LinearScale:
     default:
