@@ -2625,7 +2625,7 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         } else if (columnNormalization == "none") {
             setNormalization(ColumnNormalization::None);
         } else {
-            cerr << "NOTE: Unknown or unsupported columnNormalization attribute \""
+            SVCERR << "NOTE: Unknown or unsupported columnNormalization attribute \""
                  << columnNormalization << "\"" << endl;
         }
     }

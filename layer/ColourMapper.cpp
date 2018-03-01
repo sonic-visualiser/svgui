@@ -67,7 +67,7 @@ ColourMapper::ColourMapper(int map, double min, double max) :
     m_max(max)
 {
     if (m_min == m_max) {
-        cerr << "WARNING: ColourMapper: min == max (== " << m_min
+        SVCERR << "WARNING: ColourMapper: min == max (== " << m_min
                   << "), adjusting" << endl;
         m_max = m_min + 1;
     }

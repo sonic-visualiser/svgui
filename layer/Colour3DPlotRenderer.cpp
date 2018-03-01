@@ -297,7 +297,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
                     pr.x(), pr.y(), pr.width(), pr.height());
 
     if (!timeConstrained && (pr != rect)) {
-        cerr << "WARNING: failed to render entire requested rect "
+        SVCERR << "WARNING: failed to render entire requested rect "
              << "even when not time-constrained" << endl;
     }
 

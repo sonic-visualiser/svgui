@@ -30,7 +30,7 @@ ColourScale::ColourScale(Parameters parameters) :
     m_mapper(m_params.colourMap, 1.f, double(m_maxPixel))
 {
     if (m_params.minValue >= m_params.maxValue) {
-        cerr << "ERROR: ColourScale::ColourScale: minValue = "
+        SVCERR << "ERROR: ColourScale::ColourScale: minValue = "
              << m_params.minValue << ", maxValue = " << m_params.maxValue << endl;
 	throw std::logic_error("maxValue must be greater than minValue");
     }
@@ -78,7 +78,7 @@ ColourScale::ColourScale(Parameters parameters) :
     }
 
     if (m_mappedMin >= m_mappedMax) {
-        cerr << "ERROR: ColourScale::ColourScale: minValue = " << m_params.minValue
+        SVCERR << "ERROR: ColourScale::ColourScale: minValue = " << m_params.minValue
              << ", maxValue = " << m_params.maxValue
              << ", threshold = " << m_params.threshold
              << ", scale = " << int(m_params.scaleType)
@@ -106,7 +106,7 @@ ColourScale::getPixel(double value) const
     if (m_params.scaleType == ColourScaleType::Phase) {
 	double half = (maxPixF - 1.f) / 2.f;
         int pixel = 1 + int((value * half) / M_PI + half);
-//        cerr << "phase = " << value << " pixel = " << pixel << endl;
+//        SVCERR << "phase = " << value << " pixel = " << pixel << endl;
         return pixel;
     }
     
