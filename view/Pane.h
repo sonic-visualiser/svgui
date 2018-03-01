@@ -40,10 +40,10 @@ public:
     virtual QString getPropertyContainerIconName() const override { return "pane"; }
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *layer,
-					       QPoint &pos) const override;
+                                               QPoint &pos) const override;
     virtual bool shouldIlluminateLocalSelection(QPoint &pos,
-						bool &closeToLeft,
-						bool &closeToRight) const override;
+                                                bool &closeToLeft,
+                                                bool &closeToRight) const override;
 
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }

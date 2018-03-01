@@ -117,10 +117,10 @@ protected:
 
     struct PaneRec
     {
-	Pane          *pane;
-	QWidget       *propertyStack;
+        Pane          *pane;
+        QWidget       *propertyStack;
         QPushButton   *xButton;
-	QLabel        *currentIndicator;
+        QLabel        *currentIndicator;
         QFrame        *frame;
         QGridLayout   *layout;
         AlignmentView *alignmentView;

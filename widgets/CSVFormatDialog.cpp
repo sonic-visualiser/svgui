@@ -49,7 +49,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     int row = 0;
 
     layout->addWidget(new QLabel(tr("Please select the correct data format for this file.")),
-		      row++, 0, 1, 4);
+                      row++, 0, 1, 4);
 
     QFrame *exampleFrame = new QFrame;
     exampleFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -136,7 +136,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     layout->addWidget(m_timingTypeCombo, row++, 1, 1, 2);
 
     connect(m_timingTypeCombo, SIGNAL(activated(int)),
-	    this, SLOT(timingTypeChanged(int)));
+            this, SLOT(timingTypeChanged(int)));
 
     m_initialTimingOption = TimingImplicit;
     if (m_format.getTimingType() == CSVFormat::ExplicitTiming) {
@@ -157,14 +157,14 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     layout->addWidget(m_sampleRateLabel, row, 0);
     
     int sampleRates[] = {
-	8000, 11025, 12000, 22050, 24000, 32000,
-	44100, 48000, 88200, 96000, 176400, 192000
+        8000, 11025, 12000, 22050, 24000, 32000,
+        44100, 48000, 88200, 96000, 176400, 192000
     };
 
     m_sampleRateCombo = new QComboBox;
     for (int i = 0; i < int(sizeof(sampleRates) / sizeof(sampleRates[0])); ++i) {
-	m_sampleRateCombo->addItem(QString("%1").arg(sampleRates[i]));
-	if (sampleRates[i] == m_format.getSampleRate()) {
+        m_sampleRateCombo->addItem(QString("%1").arg(sampleRates[i]));
+        if (sampleRates[i] == m_format.getSampleRate()) {
             m_sampleRateCombo->setCurrentIndex(i);
         }
     }
@@ -172,18 +172,18 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     layout->addWidget(m_sampleRateCombo, row++, 1);
     connect(m_sampleRateCombo, SIGNAL(activated(QString)),
-	    this, SLOT(sampleRateChanged(QString)));
+            this, SLOT(sampleRateChanged(QString)));
     connect(m_sampleRateCombo, SIGNAL(editTextChanged(QString)),
-	    this, SLOT(sampleRateChanged(QString)));
+            this, SLOT(sampleRateChanged(QString)));
 
     m_windowSizeLabel = new QLabel(tr("Frame increment between rows:"));
     layout->addWidget(m_windowSizeLabel, row, 0);
 
     m_windowSizeCombo = new QComboBox;
     for (int i = 0; i <= 16; ++i) {
-	int value = 1 << i;
-	m_windowSizeCombo->addItem(QString("%1").arg(value));
-	if (value == int(m_format.getWindowSize())) {
+        int value = 1 << i;
+        m_windowSizeCombo->addItem(QString("%1").arg(value));
+        if (value == int(m_format.getWindowSize())) {
             m_windowSizeCombo->setCurrentIndex(i);
         }
     }
@@ -191,9 +191,9 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     layout->addWidget(m_windowSizeCombo, row++, 1);
     connect(m_windowSizeCombo, SIGNAL(activated(QString)),
-	    this, SLOT(windowSizeChanged(QString)));
+            this, SLOT(windowSizeChanged(QString)));
     connect(m_windowSizeCombo, SIGNAL(editTextChanged(QString)),
-	    this, SLOT(windowSizeChanged(QString)));
+            this, SLOT(windowSizeChanged(QString)));
 
     m_modelLabel = new QLabel;
     QFont f(m_modelLabel->font());
@@ -419,24 +419,24 @@ CSVFormatDialog::updateFormatFromDialog()
     switch (TimingOption(m_timingTypeCombo->currentIndex())) {
 
     case TimingExplicitSeconds:
-	m_format.setTimingType(CSVFormat::ExplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeSeconds);
-	break;
+        m_format.setTimingType(CSVFormat::ExplicitTiming);
+        m_format.setTimeUnits(CSVFormat::TimeSeconds);
+        break;
 
     case TimingExplicitMsec:
-	m_format.setTimingType(CSVFormat::ExplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeMilliseconds);
-	break;
+        m_format.setTimingType(CSVFormat::ExplicitTiming);
+        m_format.setTimeUnits(CSVFormat::TimeMilliseconds);
+        break;
 
     case TimingExplicitSamples:
-	m_format.setTimingType(CSVFormat::ExplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
-	break;
+        m_format.setTimingType(CSVFormat::ExplicitTiming);
+        m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
+        break;
 
     case TimingImplicit:
-	m_format.setTimingType(CSVFormat::ImplicitTiming);
-	m_format.setTimeUnits(CSVFormat::TimeWindows);
-	break;
+        m_format.setTimingType(CSVFormat::ImplicitTiming);
+        m_format.setTimeUnits(CSVFormat::TimeWindows);
+        break;
     }
 
     bool haveStartTime = false;

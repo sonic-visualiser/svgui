@@ -101,16 +101,16 @@ TimeInstantLayer::getPropertyRangeAndValue(const PropertyName &name,
     int val = 0;
 
     if (name == "Plot Type") {
-	
-	if (min) *min = 0;
-	if (max) *max = 1;
+        
+        if (min) *min = 0;
+        if (max) *max = 1;
         if (deflt) *deflt = 0;
-	
-	val = int(m_plotStyle);
+        
+        val = int(m_plotStyle);
 
     } else {
-	
-	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
+        
+        val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -121,11 +121,11 @@ TimeInstantLayer::getPropertyValueLabel(const PropertyName &name,
                                         int value) const
 {
     if (name == "Plot Type") {
-	switch (value) {
-	default:
-	case 0: return tr("Instants");
-	case 1: return tr("Segmentation");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Instants");
+        case 1: return tr("Segmentation");
+        }
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
 }
@@ -134,7 +134,7 @@ void
 TimeInstantLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Plot Type") {
-	setPlotStyle(PlotStyle(value));
+        setPlotStyle(PlotStyle(value));
     } else {
         SingleColourLayer::setProperty(name, value);
     }
@@ -167,36 +167,36 @@ TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     sv_frame_t frame = v->getFrameForX(x);
 
     SparseOneDimensionalModel::PointList onPoints =
-	m_model->getPoints(frame);
+        m_model->getPoints(frame);
 
     if (!onPoints.empty()) {
-	return onPoints;
+        return onPoints;
     }
 
     SparseOneDimensionalModel::PointList prevPoints =
-	m_model->getPreviousPoints(frame);
+        m_model->getPreviousPoints(frame);
     SparseOneDimensionalModel::PointList nextPoints =
-	m_model->getNextPoints(frame);
+        m_model->getNextPoints(frame);
 
     SparseOneDimensionalModel::PointList usePoints = prevPoints;
 
     if (prevPoints.empty()) {
-	usePoints = nextPoints;
+        usePoints = nextPoints;
     } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
-	       !(nextPoints.begin()->frame > v->getEndFrame())) {
-	usePoints = nextPoints;
+               !(nextPoints.begin()->frame > v->getEndFrame())) {
+        usePoints = nextPoints;
     } else if (nextPoints.begin()->frame - frame <
-	       frame - prevPoints.begin()->frame) {
-	usePoints = nextPoints;
+               frame - prevPoints.begin()->frame) {
+        usePoints = nextPoints;
     }
 
     if (!usePoints.empty()) {
-	int fuzz = 2;
-	int px = v->getXForFrame(usePoints.begin()->frame);
-	if ((px > x && px - x > fuzz) ||
-	    (px < x && x - px > fuzz + 1)) {
-	    usePoints.clear();
-	}
+        int fuzz = 2;
+        int px = v->getXForFrame(usePoints.begin()->frame);
+        if ((px > x && px - x > fuzz) ||
+            (px < x && x - px > fuzz + 1)) {
+            usePoints.clear();
+        }
     }
 
     return usePoints;
@@ -224,11 +224,11 @@ TimeInstantLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
     SparseOneDimensionalModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
-	if (!m_model->isReady()) {
-	    return tr("In progress");
-	} else {
-	    return tr("No local points");
-	}
+        if (!m_model->isReady()) {
+            return tr("In progress");
+        } else {
+            return tr("No local points");
+        }
     }
 
     sv_frame_t useFrame = points.begin()->frame;
@@ -238,12 +238,12 @@ TimeInstantLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
     QString text;
 
     if (points.begin()->label == "") {
-	text = QString(tr("Time:\t%1\nNo label"))
-	    .arg(rt.toText(true).c_str());
+        text = QString(tr("Time:\t%1\nNo label"))
+            .arg(rt.toText(true).c_str());
     } else {
-	text = QString(tr("Time:\t%1\nLabel:\t%2"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(points.begin()->label);
+        text = QString(tr("Time:\t%1\nLabel:\t%2"))
+            .arg(rt.toText(true).c_str())
+            .arg(points.begin()->label);
     }
 
     pos = QPoint(v->getXForFrame(useFrame), pos.y());
@@ -252,22 +252,22 @@ TimeInstantLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
 
 bool
 TimeInstantLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-				     int &resolution,
-				     SnapType snap) const
+                                     int &resolution,
+                                     SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
     SparseOneDimensionalModel::PointList points;
 
     if (snap == SnapNeighbouring) {
-	
-	points = getLocalPoints(v, v->getXForFrame(frame));
-	if (points.empty()) return false;
-	frame = points.begin()->frame;
-	return true;
+        
+        points = getLocalPoints(v, v->getXForFrame(frame));
+        if (points.empty()) return false;
+        frame = points.begin()->frame;
+        return true;
     }    
 
     points = m_model->getPoints(frame, frame);
@@ -275,47 +275,47 @@ TimeInstantLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame
     bool found = false;
 
     for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
-	    if (i->frame >= frame) {
-		snapped = i->frame;
-		found = true;
-		break;
-	    }
+            if (i->frame >= frame) {
+                snapped = i->frame;
+                found = true;
+                break;
+            }
 
-	} else if (snap == SnapLeft) {
+        } else if (snap == SnapLeft) {
 
-	    if (i->frame <= frame) {
-		snapped = i->frame;
-		found = true; // don't break, as the next may be better
-	    } else {
-		break;
-	    }
+            if (i->frame <= frame) {
+                snapped = i->frame;
+                found = true; // don't break, as the next may be better
+            } else {
+                break;
+            }
 
-	} else { // nearest
+        } else { // nearest
 
-	    SparseOneDimensionalModel::PointList::const_iterator j = i;
-	    ++j;
+            SparseOneDimensionalModel::PointList::const_iterator j = i;
+            ++j;
 
-	    if (j == points.end()) {
+            if (j == points.end()) {
 
-		snapped = i->frame;
-		found = true;
-		break;
+                snapped = i->frame;
+                found = true;
+                break;
 
-	    } else if (j->frame >= frame) {
+            } else if (j->frame >= frame) {
 
-		if (j->frame - frame < frame - i->frame) {
-		    snapped = j->frame;
-		} else {
-		    snapped = i->frame;
-		}
-		found = true;
-		break;
-	    }
-	}
+                if (j->frame - frame < frame - i->frame) {
+                    snapped = j->frame;
+                } else {
+                    snapped = i->frame;
+                }
+                found = true;
+                break;
+            }
+        }
     }
 
     frame = snapped;
@@ -335,12 +335,12 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     sv_frame_t frame1 = v->getFrameForX(x1);
 
     SparseOneDimensionalModel::PointList points(m_model->getPoints
-						(frame0, frame1));
+                                                (frame0, frame1));
 
     bool odd = false;
     if (m_plotStyle == PlotSegmentation && !points.empty()) {
-	int index = m_model->getIndexOf(*points.begin());
-	odd = ((index % 2) == 1);
+        int index = m_model->getIndexOf(*points.begin());
+        odd = ((index % 2) == 1);
     }
 
     paint.setPen(getBaseQColor());
@@ -351,119 +351,119 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
     QColor oddBrushColour(brushColour);
     if (m_plotStyle == PlotSegmentation) {
-	if (getBaseQColor() == Qt::black) {
-	    oddBrushColour = Qt::gray;
-	} else if (getBaseQColor() == Qt::darkRed) {
-	    oddBrushColour = Qt::red;
-	} else if (getBaseQColor() == Qt::darkBlue) {
-	    oddBrushColour = Qt::blue;
-	} else if (getBaseQColor() == Qt::darkGreen) {
-	    oddBrushColour = Qt::green;
-	} else {
-	    oddBrushColour = oddBrushColour.light(150);
-	}
-	oddBrushColour.setAlpha(100);
+        if (getBaseQColor() == Qt::black) {
+            oddBrushColour = Qt::gray;
+        } else if (getBaseQColor() == Qt::darkRed) {
+            oddBrushColour = Qt::red;
+        } else if (getBaseQColor() == Qt::darkBlue) {
+            oddBrushColour = Qt::blue;
+        } else if (getBaseQColor() == Qt::darkGreen) {
+            oddBrushColour = Qt::green;
+        } else {
+            oddBrushColour = oddBrushColour.light(150);
+        }
+        oddBrushColour.setAlpha(100);
     }
 
 //    SVDEBUG << "TimeInstantLayer::paint: resolution is "
-//	      << m_model->getResolution() << " frames" << endl;
+//              << m_model->getResolution() << " frames" << endl;
 
     QPoint localPos;
     sv_frame_t illuminateFrame = -1;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
-	SparseOneDimensionalModel::PointList localPoints =
-	    getLocalPoints(v, localPos.x());
-	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
+        SparseOneDimensionalModel::PointList localPoints =
+            getLocalPoints(v, localPos.x());
+        if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
-	
+        
     int prevX = -1;
     int textY = v->getTextLabelHeight(this, paint);
     
     for (SparseOneDimensionalModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	const SparseOneDimensionalModel::Point &p(*i);
-	SparseOneDimensionalModel::PointList::const_iterator j = i;
-	++j;
+        const SparseOneDimensionalModel::Point &p(*i);
+        SparseOneDimensionalModel::PointList::const_iterator j = i;
+        ++j;
 
-	int x = v->getXForFrame(p.frame);
+        int x = v->getXForFrame(p.frame);
         if (x == prevX && m_plotStyle == PlotInstants &&
             p.frame != illuminateFrame) continue;
 
-	int iw = v->getXForFrame(p.frame + m_model->getResolution()) - x;
-	if (iw < 2) {
-	    if (iw < 1) {
-		iw = 2;
-		if (j != points.end()) {
-		    int nx = v->getXForFrame(j->frame);
-		    if (nx < x + 3) iw = 1;
-		}
-	    } else {
-		iw = 2;
-	    }
-	}
-		
-	if (p.frame == illuminateFrame) {
-	    paint.setPen(getForegroundQColor(v->getView()));
-	} else {
-	    paint.setPen(brushColour);
-	}
+        int iw = v->getXForFrame(p.frame + m_model->getResolution()) - x;
+        if (iw < 2) {
+            if (iw < 1) {
+                iw = 2;
+                if (j != points.end()) {
+                    int nx = v->getXForFrame(j->frame);
+                    if (nx < x + 3) iw = 1;
+                }
+            } else {
+                iw = 2;
+            }
+        }
+                
+        if (p.frame == illuminateFrame) {
+            paint.setPen(getForegroundQColor(v->getView()));
+        } else {
+            paint.setPen(brushColour);
+        }
 
-	if (m_plotStyle == PlotInstants) {
-	    if (iw > 1) {
-		paint.drawRect(x, 0, iw - 1, v->getPaintHeight() - 1);
-	    } else {
-		paint.drawLine(x, 0, x, v->getPaintHeight() - 1);
-	    }
-	} else {
+        if (m_plotStyle == PlotInstants) {
+            if (iw > 1) {
+                paint.drawRect(x, 0, iw - 1, v->getPaintHeight() - 1);
+            } else {
+                paint.drawLine(x, 0, x, v->getPaintHeight() - 1);
+            }
+        } else {
 
-	    if (odd) paint.setBrush(oddBrushColour);
-	    else paint.setBrush(brushColour);
-	    
-	    int nx;
-	    
-	    if (j != points.end()) {
-		const SparseOneDimensionalModel::Point &q(*j);
-		nx = v->getXForFrame(q.frame);
-	    } else {
-		nx = v->getXForFrame(m_model->getEndFrame());
-	    }
+            if (odd) paint.setBrush(oddBrushColour);
+            else paint.setBrush(brushColour);
+            
+            int nx;
+            
+            if (j != points.end()) {
+                const SparseOneDimensionalModel::Point &q(*j);
+                nx = v->getXForFrame(q.frame);
+            } else {
+                nx = v->getXForFrame(m_model->getEndFrame());
+            }
 
-	    if (nx >= x) {
-		
-		if (illuminateFrame != p.frame &&
-		    (nx < x + 5 || x >= v->getPaintWidth() - 1)) {
-		    paint.setPen(Qt::NoPen);
-		}
+            if (nx >= x) {
+                
+                if (illuminateFrame != p.frame &&
+                    (nx < x + 5 || x >= v->getPaintWidth() - 1)) {
+                    paint.setPen(Qt::NoPen);
+                }
 
                 paint.drawRect(x, -1, nx - x, v->getPaintHeight() + 1);
-	    }
+            }
 
-	    odd = !odd;
-	}
+            odd = !odd;
+        }
 
-	paint.setPen(getBaseQColor());
-	
-	if (p.label != "") {
+        paint.setPen(getBaseQColor());
+        
+        if (p.label != "") {
 
-	    // only draw if there's enough room from here to the next point
+            // only draw if there's enough room from here to the next point
 
-	    int lw = paint.fontMetrics().width(p.label);
-	    bool good = true;
+            int lw = paint.fontMetrics().width(p.label);
+            bool good = true;
 
-	    if (j != points.end()) {
-		int nx = v->getXForFrame(j->frame);
-		if (nx >= x && nx - x - iw - 3 <= lw) good = false;
-	    }
+            if (j != points.end()) {
+                int nx = v->getXForFrame(j->frame);
+                if (nx >= x && nx - x - iw - 3 <= lw) good = false;
+            }
 
-	    if (good) {
+            if (good) {
                 PaintAssistant::drawVisibleText(v, paint, x + iw + 2, textY, p.label, PaintAssistant::OutlinedText);
-//		paint.drawText(x + iw + 2, textY, p.label);
-	    }
-	}
+//                paint.drawText(x + iw + 2, textY, p.label);
+            }
+        }
 
-	prevX = x;
+        prevX = x;
     }
 }
 
@@ -484,7 +484,7 @@ TimeInstantLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new SparseOneDimensionalModel::EditCommand(m_model,
-								  tr("Draw Point"));
+                                                                  tr("Draw Point"));
     m_editingCommand->addPoint(m_editingPoint);
 
     m_editing = true;
@@ -515,9 +515,9 @@ TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 #endif
     if (!m_model || !m_editing) return;
     QString newName = tr("Add Point at %1 s")
-	.arg(RealTime::frame2RealTime(m_editingPoint.frame,
-				      m_model->getSampleRate())
-	     .toText(false).c_str());
+        .arg(RealTime::frame2RealTime(m_editingPoint.frame,
+                                      m_model->getSampleRate())
+             .toText(false).c_str());
     m_editingCommand->setName(newName);
     finish(m_editingCommand);
     m_editingCommand = 0;
@@ -535,8 +535,8 @@ TimeInstantLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingPoint = *points.begin();
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -583,8 +583,8 @@ TimeInstantLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingPoint = *points.begin();
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -604,8 +604,8 @@ TimeInstantLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     frame = frame / m_model->getResolution() * m_model->getResolution();
 
     if (!m_editingCommand) {
-	m_editingCommand = new SparseOneDimensionalModel::EditCommand(m_model,
-								      tr("Drag Point"));
+        m_editingCommand = new SparseOneDimensionalModel::EditCommand(m_model,
+                                                                      tr("Drag Point"));
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
@@ -621,12 +621,12 @@ TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 #endif
     if (!m_model || !m_editing) return;
     if (m_editingCommand) {
-	QString newName = tr("Move Point to %1 s")
-	    .arg(RealTime::frame2RealTime(m_editingPoint.frame,
-					  m_model->getSampleRate())
-		 .toText(false).c_str());
-	m_editingCommand->setName(newName);
-	finish(m_editingCommand);
+        QString newName = tr("Move Point to %1 s")
+            .arg(RealTime::frame2RealTime(m_editingPoint.frame,
+                                          m_model->getSampleRate())
+                 .toText(false).c_str());
+        m_editingCommand->setName(newName);
+        finish(m_editingCommand);
     }
     m_editingCommand = 0;
     m_editing = false;
@@ -673,21 +673,21 @@ TimeInstantLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     if (!m_model) return;
 
     SparseOneDimensionalModel::EditCommand *command =
-	new SparseOneDimensionalModel::EditCommand(m_model,
-						   tr("Drag Selection"));
+        new SparseOneDimensionalModel::EditCommand(m_model,
+                                                   tr("Drag Selection"));
 
     SparseOneDimensionalModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
-	    SparseOneDimensionalModel::Point newPoint(*i);
-	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+        if (s.contains(i->frame)) {
+            SparseOneDimensionalModel::Point newPoint(*i);
+            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -699,30 +699,30 @@ TimeInstantLayer::resizeSelection(Selection s, Selection newSize)
     if (!m_model) return;
 
     SparseOneDimensionalModel::EditCommand *command =
-	new SparseOneDimensionalModel::EditCommand(m_model,
-						   tr("Resize Selection"));
+        new SparseOneDimensionalModel::EditCommand(m_model,
+                                                   tr("Resize Selection"));
 
     SparseOneDimensionalModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     double ratio =
-	double(newSize.getEndFrame() - newSize.getStartFrame()) /
-	double(s.getEndFrame() - s.getStartFrame());
+        double(newSize.getEndFrame() - newSize.getStartFrame()) /
+        double(s.getEndFrame() - s.getStartFrame());
 
     for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
+        if (s.contains(i->frame)) {
 
-	    double target = double(i->frame);
-	    target = double(newSize.getStartFrame()) +
-		target - double(s.getStartFrame()) * ratio;
+            double target = double(i->frame);
+            target = double(newSize.getStartFrame()) +
+                target - double(s.getStartFrame()) * ratio;
 
-	    SparseOneDimensionalModel::Point newPoint(*i);
-	    newPoint.frame = lrint(target);
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+            SparseOneDimensionalModel::Point newPoint(*i);
+            newPoint.frame = lrint(target);
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -734,15 +734,15 @@ TimeInstantLayer::deleteSelection(Selection s)
     if (!m_model) return;
 
     SparseOneDimensionalModel::EditCommand *command =
-	new SparseOneDimensionalModel::EditCommand(m_model,
-						   tr("Delete Selection"));
+        new SparseOneDimensionalModel::EditCommand(m_model,
+                                                   tr("Delete Selection"));
 
     SparseOneDimensionalModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) command->deletePoint(*i);
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) command->deletePoint(*i);
     }
 
     finish(command);
@@ -754,11 +754,11 @@ TimeInstantLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     if (!m_model) return;
 
     SparseOneDimensionalModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) {
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->label);
             point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
@@ -793,7 +793,7 @@ TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_fram
     }
 
     SparseOneDimensionalModel::EditCommand *command =
-	new SparseOneDimensionalModel::EditCommand(m_model, tr("Paste"));
+        new SparseOneDimensionalModel::EditCommand(m_model, tr("Paste"));
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -861,7 +861,7 @@ TimeInstantLayer::setProperties(const QXmlAttributes &attributes)
 
     bool ok;
     PlotStyle style = (PlotStyle)
-	attributes.value("plotStyle").toInt(&ok);
+        attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
 }
 

@@ -124,12 +124,12 @@ LevelPanWidget::setLevel(float flevel)
 {
     int level = audioLevelToLevel(flevel, m_includeMute);
     if (level != m_level) {
-	m_level = level;
-	float convertsTo = getLevel();
-	if (fabsf(convertsTo - flevel) > 1e-5) {
-	    emitLevelChanged();
-	}
-	update();
+        m_level = level;
+        float convertsTo = getLevel();
+        if (fabsf(convertsTo - flevel) > 1e-5) {
+            emitLevelChanged();
+        }
+        update();
     }
 }
 
@@ -247,15 +247,15 @@ LevelPanWidget::mouseMoveEvent(QMouseEvent *e)
     int level, pan;
     toCell(rect(), e->pos(), level, pan);
     if (level == m_level && pan == m_pan) {
-	return;
+        return;
     }
     if (level != m_level) {
-	m_level = level;
-	emitLevelChanged();
+        m_level = level;
+        emitLevelChanged();
     }
     if (pan != m_pan) {
-	m_pan = pan;
-	emitPanChanged();
+        m_pan = pan;
+        emitPanChanged();
     }
     update();
 }
@@ -264,33 +264,33 @@ void
 LevelPanWidget::wheelEvent(QWheelEvent *e)
 {
     if (e->modifiers() & Qt::ControlModifier) {
-	if (e->delta() > 0) {
-	    if (m_pan < maxPan) {
-		++m_pan;
-		emitPanChanged();
-		update();
-	    }
-	} else {
-	    if (m_pan > -maxPan) {
-		--m_pan;
-		emitPanChanged();
-		update();
-	    }
-	}
+        if (e->delta() > 0) {
+            if (m_pan < maxPan) {
+                ++m_pan;
+                emitPanChanged();
+                update();
+            }
+        } else {
+            if (m_pan > -maxPan) {
+                --m_pan;
+                emitPanChanged();
+                update();
+            }
+        }
     } else {
-	if (e->delta() > 0) {
-	    if (m_level < maxLevel) {
-		++m_level;
-		emitLevelChanged();
-		update();
-	    }
-	} else {
-	    if (m_level > 0) {
-		--m_level;
-		emitLevelChanged();
-		update();
-	    }
-	}
+        if (e->delta() > 0) {
+            if (m_level < maxLevel) {
+                ++m_level;
+                emitLevelChanged();
+                update();
+            }
+        } else {
+            if (m_level > 0) {
+                --m_level;
+                emitLevelChanged();
+                update();
+            }
+        }
     }
 }
 
@@ -328,7 +328,7 @@ LevelPanWidget::cellCentre(QRectF rect, int level, int pan) const
 {
     QSizeF cs = cellSize(rect);
     return QPointF(rect.x() + cs.width() * (pan + maxPan) + cs.width() / 2.,
-		   rect.y() + rect.height() - cs.height() * (level + 1) + cs.height() / 2.);
+                   rect.y() + rect.height() - cs.height() * (level + 1) + cs.height() / 2.);
 }
 
 QSizeF
@@ -346,9 +346,9 @@ LevelPanWidget::cellLightRect(QRectF rect, int level, int pan) const
     QSizeF cls = cellLightSize(rect);
     QPointF cc = cellCentre(rect, level, pan);
     return QRectF(cc.x() - cls.width() / 2., 
-		  cc.y() - cls.height() / 2.,
-		  cls.width(),
-		  cls.height());
+                  cc.y() - cls.height() / 2.,
+                  cls.width(),
+                  cls.height());
 }
 
 double
@@ -388,7 +388,7 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
     paint.setBrush(Qt::NoBrush);
 
     for (int pan = -maxPan; pan <= maxPan; ++pan) {
-	paint.drawLine(cellCentre(rect, 0, pan), cellCentre(rect, maxLevel, pan));
+        paint.drawLine(cellCentre(rect, 0, pan), cellCentre(rect, maxLevel, pan));
     }
 
     if (m_monitorLeft > 0.f || m_monitorRight > 0.f) {
@@ -413,9 +413,9 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
     }
     
     if (isEnabled()) {
-	pen.setColor(Qt::black);
+        pen.setColor(Qt::black);
     } else {
-	pen.setColor(Qt::darkGray);
+        pen.setColor(Qt::darkGray);
     }
 
     if (!asIfEditable && m_includeMute && m_level == 0) {
@@ -434,16 +434,16 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
     paint.setPen(pen);
     
     for (int level = 0; level <= m_level; ++level) {
-	if (isEnabled()) {
-	    paint.setBrush(level_to_colour(level));
-	}
-	QRectF clr = cellLightRect(rect, level, m_pan);
-	if (m_includeMute && m_level == 0) {
-	    paint.drawLine(clr.topLeft(), clr.bottomRight());
-	    paint.drawLine(clr.bottomLeft(), clr.topRight());
-	} else {
-	    paint.drawEllipse(clr);
-	}
+        if (isEnabled()) {
+            paint.setBrush(level_to_colour(level));
+        }
+        QRectF clr = cellLightRect(rect, level, m_pan);
+        if (m_includeMute && m_level == 0) {
+            paint.drawLine(clr.topLeft(), clr.bottomRight());
+            paint.drawLine(clr.bottomLeft(), clr.topRight());
+        } else {
+            paint.drawEllipse(clr);
+        }
     }
 }
 

@@ -51,7 +51,7 @@ class RangeMapper;
  */
 
 class Layer : public PropertyContainer,
-	      public XmlExportable
+              public XmlExportable
 {
     Q_OBJECT
 
@@ -61,7 +61,7 @@ public:
 
     virtual const Model *getModel() const = 0;
     Model *getModel() {
-	return const_cast<Model *>(const_cast<const Layer *>(this)->getModel());
+        return const_cast<Model *>(const_cast<const Layer *>(this)->getModel());
     }
     
     /**
@@ -106,13 +106,13 @@ public:
     virtual void setSynchronousPainting(bool /* synchronous */) { }
 
     enum VerticalPosition {
-	PositionTop, PositionMiddle, PositionBottom
+        PositionTop, PositionMiddle, PositionBottom
     };
     virtual VerticalPosition getPreferredTimeRulerPosition() const {
-	return PositionMiddle;
+        return PositionMiddle;
     }
     virtual VerticalPosition getPreferredFrameCountPosition() const {
-	return PositionBottom;
+        return PositionBottom;
     }
     virtual bool hasLightBackground() const {
         return true;
@@ -122,7 +122,7 @@ public:
 
     virtual QString getPropertyContainerName() const {
         if (m_presentationName != "") return m_presentationName;
-	else return objectName();
+        else return objectName();
     }
 
     virtual void setPresentationName(QString name);
@@ -149,7 +149,7 @@ public:
                                                QPoint now) const;
 
     virtual QString getFeatureDescription(LayerGeometryProvider *, QPoint &) const {
-	return "";
+        return "";
     }
 
     virtual QString getLabelPreceding(sv_frame_t /* frame */) const {
@@ -157,10 +157,10 @@ public:
     }
 
     enum SnapType {
-	SnapLeft,
-	SnapRight,
-	SnapNearest,
-	SnapNeighbouring
+        SnapLeft,
+        SnapRight,
+        SnapNearest,
+        SnapNeighbouring
     };
 
     /**
@@ -183,11 +183,11 @@ public:
      * the resolution of the model in this layer in sample frames.
      */
     virtual bool snapToFeatureFrame(LayerGeometryProvider * /* v */,
-				    sv_frame_t & /* frame */,
-				    int &resolution,
-				    SnapType /* snap */) const {
-	resolution = 1;
-	return false;
+                                    sv_frame_t & /* frame */,
+                                    int &resolution,
+                                    SnapType /* snap */) const {
+        resolution = 1;
+        return false;
     }
 
     /**
@@ -210,8 +210,8 @@ public:
                                       sv_frame_t & /* source frame */,
                                       int &resolution,
                                       SnapType /* snap */) const {
-	resolution = 1;
-	return false;
+        resolution = 1;
+        return false;
     }
 
     // Draw, erase, and edit modes:

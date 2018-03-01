@@ -114,14 +114,14 @@ View::getPropertyType(const PropertyContainer::PropertyName &name) const
 
 int
 View::getPropertyRangeAndValue(const PropertyContainer::PropertyName &name,
-			       int *min, int *max, int *deflt) const
+                               int *min, int *max, int *deflt) const
 {
     if (deflt) *deflt = 1;
     if (name == "Global Scroll") return m_followPan;
     if (name == "Global Zoom") return m_followZoom;
     if (name == "Follow Playback") {
-	if (min) *min = 0;
-	if (max) *max = 2;
+        if (min) *min = 0;
+        if (max) *max = 2;
         if (deflt) *deflt = int(PlaybackScrollPageWithCentre);
         switch (m_followPlay) {
         case PlaybackScrollContinuous: return 0;
@@ -137,15 +137,15 @@ View::getPropertyRangeAndValue(const PropertyContainer::PropertyName &name,
 
 QString
 View::getPropertyValueLabel(const PropertyContainer::PropertyName &name,
-			    int value) const
+                            int value) const
 {
     if (name == "Follow Playback") {
-	switch (value) {
-	default:
-	case 0: return tr("Scroll");
-	case 1: return tr("Page");
-	case 2: return tr("Off");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Scroll");
+        case 1: return tr("Page");
+        case 2: return tr("Off");
+        }
     }
     return tr("<unknown>");
 }
@@ -154,16 +154,16 @@ void
 View::setProperty(const PropertyContainer::PropertyName &name, int value)
 {
     if (name == "Global Scroll") {
-	setFollowGlobalPan(value != 0);
+        setFollowGlobalPan(value != 0);
     } else if (name == "Global Zoom") {
-	setFollowGlobalZoom(value != 0);
+        setFollowGlobalZoom(value != 0);
     } else if (name == "Follow Playback") {
-	switch (value) {
-	default:
-	case 0: setPlaybackFollow(PlaybackScrollContinuous); break;
-	case 1: setPlaybackFollow(PlaybackScrollPageWithCentre); break;
-	case 2: setPlaybackFollow(PlaybackIgnore); break;
-	}
+        switch (value) {
+        default:
+        case 0: setPlaybackFollow(PlaybackScrollContinuous); break;
+        case 1: setPlaybackFollow(PlaybackScrollPageWithCentre); break;
+        case 2: setPlaybackFollow(PlaybackIgnore); break;
+        }
     }
 }
 
@@ -177,7 +177,7 @@ const PropertyContainer *
 View::getPropertyContainer(int i) const
 {
     return (const PropertyContainer *)(((View *)this)->
-				       getPropertyContainer(i));
+                                       getPropertyContainer(i));
 }
 
 PropertyContainer *
@@ -253,11 +253,11 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
     if (client != this) return;
     
     if (pc == m_propertyContainer) {
-	if (m_haveSelectedLayer) {
-	    m_haveSelectedLayer = false;
-	    update();
-	}
-	return;
+        if (m_haveSelectedLayer) {
+            m_haveSelectedLayer = false;
+            update();
+        }
+        return;
     }
 
     delete m_cache;
@@ -266,19 +266,19 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
     Layer *selectedLayer = 0;
 
     for (LayerList::iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
-	if (*i == pc) {
-	    selectedLayer = *i;
-	    m_layerStack.erase(i);
-	    break;
-	}
+        if (*i == pc) {
+            selectedLayer = *i;
+            m_layerStack.erase(i);
+            break;
+        }
     }
 
     if (selectedLayer) {
-	m_haveSelectedLayer = true;
-	m_layerStack.push_back(selectedLayer);
-	update();
+        m_haveSelectedLayer = true;
+        m_layerStack.push_back(selectedLayer);
+        update();
     } else {
-	m_haveSelectedLayer = false;
+        m_haveSelectedLayer = false;
     }
 
     emit propertyContainerSelected(pc);
@@ -329,23 +329,23 @@ View::setCentreFrame(sv_frame_t f, bool e)
 
     if (m_centreFrame != f) {
 
-	int formerPixel = int(m_centreFrame / m_zoomLevel);
+        int formerPixel = int(m_centreFrame / m_zoomLevel);
 
-	m_centreFrame = f;
+        m_centreFrame = f;
 
-	int newPixel = int(m_centreFrame / m_zoomLevel);
-	
-	if (newPixel != formerPixel) {
+        int newPixel = int(m_centreFrame / m_zoomLevel);
+        
+        if (newPixel != formerPixel) {
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	    cout << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
+            cout << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
 #endif
-	    update();
+            update();
 
-	    changeVisible = true;
-	}
+            changeVisible = true;
+        }
 
-	if (e) {
+        if (e) {
             sv_frame_t rf = alignToReference(f);
 #ifdef DEBUG_VIEW
             cerr << "View[" << this << "]::setCentreFrame(" << f
@@ -383,9 +383,9 @@ View::getFrameForX(int x) const
 
 double
 View::getYForFrequency(double frequency,
-		       double minf,
-		       double maxf, 
-		       bool logarithmic) const
+                       double minf,
+                       double maxf, 
+                       bool logarithmic) const
 {
     Profiler profiler("View::getYForFrequency");
 
@@ -393,57 +393,57 @@ View::getYForFrequency(double frequency,
 
     if (logarithmic) {
 
-	static double lastminf = 0.0, lastmaxf = 0.0;
-	static double logminf = 0.0, logmaxf = 0.0;
+        static double lastminf = 0.0, lastmaxf = 0.0;
+        static double logminf = 0.0, logmaxf = 0.0;
 
-	if (lastminf != minf) {
-	    lastminf = (minf == 0.0 ? 1.0 : minf);
-	    logminf = log10(minf);
-	}
-	if (lastmaxf != maxf) {
-	    lastmaxf = (maxf < lastminf ? lastminf : maxf);
-	    logmaxf = log10(maxf);
-	}
+        if (lastminf != minf) {
+            lastminf = (minf == 0.0 ? 1.0 : minf);
+            logminf = log10(minf);
+        }
+        if (lastmaxf != maxf) {
+            lastmaxf = (maxf < lastminf ? lastminf : maxf);
+            logmaxf = log10(maxf);
+        }
 
-	if (logminf == logmaxf) return 0;
-	return h - (h * (log10(frequency) - logminf)) / (logmaxf - logminf);
+        if (logminf == logmaxf) return 0;
+        return h - (h * (log10(frequency) - logminf)) / (logmaxf - logminf);
 
     } else {
-	
-	if (minf == maxf) return 0;
-	return h - (h * (frequency - minf)) / (maxf - minf);
+        
+        if (minf == maxf) return 0;
+        return h - (h * (frequency - minf)) / (maxf - minf);
     }
 }
 
 double
 View::getFrequencyForY(double y,
-		       double minf,
-		       double maxf,
-		       bool logarithmic) const
+                       double minf,
+                       double maxf,
+                       bool logarithmic) const
 {
     double h = height();
 
     if (logarithmic) {
 
-	static double lastminf = 0.0, lastmaxf = 0.0;
-	static double logminf = 0.0, logmaxf = 0.0;
+        static double lastminf = 0.0, lastmaxf = 0.0;
+        static double logminf = 0.0, logmaxf = 0.0;
 
-	if (lastminf != minf) {
-	    lastminf = (minf == 0.0 ? 1.0 : minf);
-	    logminf = log10(minf);
-	}
-	if (lastmaxf != maxf) {
-	    lastmaxf = (maxf < lastminf ? lastminf : maxf);
-	    logmaxf = log10(maxf);
-	}
+        if (lastminf != minf) {
+            lastminf = (minf == 0.0 ? 1.0 : minf);
+            logminf = log10(minf);
+        }
+        if (lastmaxf != maxf) {
+            lastmaxf = (maxf < lastminf ? lastminf : maxf);
+            logmaxf = log10(maxf);
+        }
 
-	if (logminf == logmaxf) return 0;
-	return pow(10.0, logminf + ((logmaxf - logminf) * (h - y)) / h);
+        if (logminf == logmaxf) return 0;
+        return pow(10.0, logminf + ((logmaxf - logminf) * (h - y)) / h);
 
     } else {
 
-	if (minf == maxf) return 0;
-	return minf + ((h - y) * (maxf - minf)) / h;
+        if (minf == maxf) return 0;
+        return minf + ((h - y) * (maxf - minf)) / h;
     }
 }
 
@@ -451,7 +451,7 @@ int
 View::getZoomLevel() const
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-//	cout << "zoom level: " << m_zoomLevel << endl;
+//        cout << "zoom level: " << m_zoomLevel << endl;
 #endif
     return m_zoomLevel;
 }
@@ -482,9 +482,9 @@ View::setZoomLevel(int z)
     if (z < dpratio) return;
     if (z < 1) z = 1;
     if (m_zoomLevel != int(z)) {
-	m_zoomLevel = z;
-	emit zoomLevelChanged(z, m_followZoom);
-	update();
+        m_zoomLevel = z;
+        emit zoomLevelChanged(z, m_followZoom);
+        update();
     }
 }
 
@@ -596,23 +596,23 @@ View::addLayer(Layer *layer)
     pb->hide();
     
     connect(layer, SIGNAL(layerParametersChanged()),
-	    this,    SLOT(layerParametersChanged()));
+            this,    SLOT(layerParametersChanged()));
     connect(layer, SIGNAL(layerParameterRangesChanged()),
-	    this,    SLOT(layerParameterRangesChanged()));
+            this,    SLOT(layerParameterRangesChanged()));
     connect(layer, SIGNAL(layerMeasurementRectsChanged()),
-	    this,    SLOT(layerMeasurementRectsChanged()));
+            this,    SLOT(layerMeasurementRectsChanged()));
     connect(layer, SIGNAL(layerNameChanged()),
-	    this,    SLOT(layerNameChanged()));
+            this,    SLOT(layerNameChanged()));
     connect(layer, SIGNAL(modelChanged()),
-	    this,    SLOT(modelChanged()));
+            this,    SLOT(modelChanged()));
     connect(layer, SIGNAL(modelCompletionChanged()),
-	    this,    SLOT(modelCompletionChanged()));
+            this,    SLOT(modelCompletionChanged()));
     connect(layer, SIGNAL(modelAlignmentCompletionChanged()),
-	    this,    SLOT(modelAlignmentCompletionChanged()));
+            this,    SLOT(modelAlignmentCompletionChanged()));
     connect(layer, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-	    this,    SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
+            this,    SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
     connect(layer, SIGNAL(modelReplaced()),
-	    this,    SLOT(modelReplaced()));
+            this,    SLOT(modelReplaced()));
 
     update();
 
@@ -623,7 +623,7 @@ void
 View::removeLayer(Layer *layer)
 {
     if (m_deleting) {
-	return;
+        return;
     }
 
     delete m_cache;
@@ -632,8 +632,8 @@ View::removeLayer(Layer *layer)
     for (LayerList::iterator i = m_fixedOrderLayers.begin();
          i != m_fixedOrderLayers.end();
          ++i) {
-	if (*i == layer) {
-	    m_fixedOrderLayers.erase(i);
+        if (*i == layer) {
+            m_fixedOrderLayers.erase(i);
             break;
         }
     }
@@ -641,16 +641,16 @@ View::removeLayer(Layer *layer)
     for (LayerList::iterator i = m_layerStack.begin(); 
          i != m_layerStack.end();
          ++i) {
-	if (*i == layer) {
-	    m_layerStack.erase(i);
-	    if (m_progressBars.find(layer) != m_progressBars.end()) {
-		delete m_progressBars[layer].bar;
+        if (*i == layer) {
+            m_layerStack.erase(i);
+            if (m_progressBars.find(layer) != m_progressBars.end()) {
+                delete m_progressBars[layer].bar;
                 delete m_progressBars[layer].cancel;
-		delete m_progressBars[layer].checkTimer;
-		m_progressBars.erase(layer);
-	    }
-	    break;
-	}
+                delete m_progressBars[layer].checkTimer;
+                m_progressBars.erase(layer);
+            }
+            break;
+        }
     }
     
     disconnect(layer, SIGNAL(layerParametersChanged()),
@@ -707,7 +707,7 @@ View::getSelectedLayer()
     if (m_haveSelectedLayer && !m_layerStack.empty()) {
         return getLayer(getLayerCount() - 1);
     } else {
-	return 0;
+        return 0;
     }
 }
 
@@ -721,36 +721,36 @@ void
 View::setViewManager(ViewManager *manager)
 {
     if (m_manager) {
-	m_manager->disconnect(this, SLOT(globalCentreFrameChanged(sv_frame_t)));
-	m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, sv_frame_t)));
-	m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
-	m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, int, bool)));
+        m_manager->disconnect(this, SLOT(globalCentreFrameChanged(sv_frame_t)));
+        m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, sv_frame_t)));
+        m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
+        m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, int, bool)));
         m_manager->disconnect(this, SLOT(toolModeChanged()));
         m_manager->disconnect(this, SLOT(selectionChanged()));
         m_manager->disconnect(this, SLOT(overlayModeChanged()));
         m_manager->disconnect(this, SLOT(zoomWheelsEnabledChanged()));
         disconnect(m_manager, SLOT(viewCentreFrameChanged(sv_frame_t, bool, PlaybackFollowMode)));
-	disconnect(m_manager, SLOT(zoomLevelChanged(int, bool)));
+        disconnect(m_manager, SLOT(zoomLevelChanged(int, bool)));
     }
 
     m_manager = manager;
 
     connect(m_manager, SIGNAL(globalCentreFrameChanged(sv_frame_t)),
-	    this, SLOT(globalCentreFrameChanged(sv_frame_t)));
+            this, SLOT(globalCentreFrameChanged(sv_frame_t)));
     connect(m_manager, SIGNAL(viewCentreFrameChanged(View *, sv_frame_t)),
-	    this, SLOT(viewCentreFrameChanged(View *, sv_frame_t)));
+            this, SLOT(viewCentreFrameChanged(View *, sv_frame_t)));
     connect(m_manager, SIGNAL(playbackFrameChanged(sv_frame_t)),
-	    this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
+            this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
 
     connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, int, bool)),
-	    this, SLOT(viewZoomLevelChanged(View *, int, bool)));
+            this, SLOT(viewZoomLevelChanged(View *, int, bool)));
 
     connect(m_manager, SIGNAL(toolModeChanged()),
-	    this, SLOT(toolModeChanged()));
+            this, SLOT(toolModeChanged()));
     connect(m_manager, SIGNAL(selectionChanged()),
-	    this, SLOT(selectionChanged()));
+            this, SLOT(selectionChanged()));
     connect(m_manager, SIGNAL(inProgressSelectionChanged()),
-	    this, SLOT(selectionChanged()));
+            this, SLOT(selectionChanged()));
     connect(m_manager, SIGNAL(overlayModeChanged()),
             this, SLOT(overlayModeChanged()));
     connect(m_manager, SIGNAL(showCentreLineChanged()),
@@ -764,7 +764,7 @@ View::setViewManager(ViewManager *manager)
                                                    PlaybackFollowMode)));
 
     connect(this, SIGNAL(zoomLevelChanged(int, bool)),
-	    m_manager, SLOT(viewZoomLevelChanged(int, bool)));
+            m_manager, SLOT(viewZoomLevelChanged(int, bool)));
 
     switch (m_followPlay) {
         
@@ -836,16 +836,16 @@ View::modelChanged()
     bool discard;
     LayerList scrollables = getScrollableBackLayers(false, discard);
     for (LayerList::const_iterator i = scrollables.begin();
-	 i != scrollables.end(); ++i) {
-	if (*i == obj || (*i)->getModel() == obj) {
-	    recreate = true;
-	    break;
-	}
+         i != scrollables.end(); ++i) {
+        if (*i == obj || (*i)->getModel() == obj) {
+            recreate = true;
+            break;
+        }
     }
 
     if (recreate) {
-	delete m_cache;
-	m_cache = 0;
+        delete m_cache;
+        m_cache = 0;
     }
 
     emit layerModelChanged();
@@ -868,12 +868,12 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 #endif
 
     if (myStartFrame > 0 && endFrame < myStartFrame) {
-	checkProgress(obj);
-	return;
+        checkProgress(obj);
+        return;
     }
     if (startFrame > myEndFrame) {
-	checkProgress(obj);
-	return;
+        checkProgress(obj);
+        return;
     }
 
     // If the model that has changed is not used by any of the cached
@@ -884,16 +884,16 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
     bool discard;
     LayerList scrollables = getScrollableBackLayers(false, discard);
     for (LayerList::const_iterator i = scrollables.begin();
-	 i != scrollables.end(); ++i) {
-	if (*i == obj || (*i)->getModel() == obj) {
-	    recreate = true;
-	    break;
-	}
+         i != scrollables.end(); ++i) {
+        if (*i == obj || (*i)->getModel() == obj) {
+            recreate = true;
+            break;
+        }
     }
 
     if (recreate) {
-	delete m_cache;
-	m_cache = 0;
+        delete m_cache;
+        m_cache = 0;
     }
 
     if (startFrame < myStartFrame) startFrame = myStartFrame;
@@ -948,7 +948,7 @@ View::layerParametersChanged()
     update();
 
     if (layer) {
-	emit propertyContainerPropertyChanged(layer);
+        emit propertyContainerPropertyChanged(layer);
     }
 }
 
@@ -996,7 +996,7 @@ void
 View::viewManagerPlaybackFrameChanged(sv_frame_t f)
 {
     if (m_manager) {
-	if (sender() != m_manager) return;
+        if (sender() != m_manager) return;
     }
 
 #ifdef DEBUG_VIEW        
@@ -1031,7 +1031,7 @@ View::movePlayPointer(sv_frame_t newFrame)
          (QApplication::keyboardModifiers() & Qt::AltModifier));
 
     bool pointerInVisibleArea =
-	long(m_playPointerFrame) >= getStartFrame() &&
+        long(m_playPointerFrame) >= getStartFrame() &&
         (m_playPointerFrame < getEndFrame() ||
          // include old pointer location so we know to refresh when moving out
          oldPlayPointerFrame < getEndFrame());
@@ -1039,10 +1039,10 @@ View::movePlayPointer(sv_frame_t newFrame)
     switch (m_followPlay) {
 
     case PlaybackScrollContinuous:
-	if (!somethingGoingOn) {
-	    setCentreFrame(m_playPointerFrame, false);
-	}
-	break;
+        if (!somethingGoingOn) {
+            setCentreFrame(m_playPointerFrame, false);
+        }
+        break;
 
     case PlaybackScrollPage:
     case PlaybackScrollPageWithCentre:
@@ -1117,11 +1117,11 @@ View::movePlayPointer(sv_frame_t newFrame)
         break;
 
     case PlaybackIgnore:
-	if (m_playPointerFrame >= getStartFrame() &&
+        if (m_playPointerFrame >= getStartFrame() &&
             m_playPointerFrame < getEndFrame()) {
-	    update();
-	}
-	break;
+            update();
+        }
+        break;
     }
 }
 
@@ -1140,9 +1140,9 @@ void
 View::selectionChanged()
 {
     if (m_selectionCached) {
-	delete m_cache;
-	m_cache = 0;
-	m_selectionCached = false;
+        delete m_cache;
+        m_cache = 0;
+        m_selectionCached = false;
     }
     update();
 }
@@ -1173,15 +1173,15 @@ View::getModelsStartFrame() const
 
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
-	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
+        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 
-	    sv_frame_t thisStartFrame = (*i)->getModel()->getStartFrame();
+            sv_frame_t thisStartFrame = (*i)->getModel()->getStartFrame();
 
-	    if (first || thisStartFrame < startFrame) {
-		startFrame = thisStartFrame;
-	    }
-	    first = false;
-	}
+            if (first || thisStartFrame < startFrame) {
+                startFrame = thisStartFrame;
+            }
+            first = false;
+        }
     }
     return startFrame;
 }
@@ -1194,15 +1194,15 @@ View::getModelsEndFrame() const
 
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
-	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
+        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
 
-	    sv_frame_t thisEndFrame = (*i)->getModel()->getEndFrame();
+            sv_frame_t thisEndFrame = (*i)->getModel()->getEndFrame();
 
-	    if (first || thisEndFrame > endFrame) {
-		endFrame = thisEndFrame;
-	    }
-	    first = false;
-	}
+            if (first || thisEndFrame > endFrame) {
+                endFrame = thisEndFrame;
+            }
+            first = false;
+        }
     }
 
     if (first) return getModelsStartFrame();
@@ -1219,9 +1219,9 @@ View::getModelsSampleRate() const
     //!!! nah, this wants to always return the sr of the main model!
 
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
-	if ((*i)->getModel() && (*i)->getModel()->isOK()) {
-	    return (*i)->getModel()->getSampleRate();
-	}
+        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
+            return (*i)->getModel()->getSampleRate();
+        }
     }
     return 0;
 }
@@ -1326,7 +1326,7 @@ View::areLayersScrollable() const
 {
     // True iff all views are scrollable
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
-	if (!(*i)->isLayerScrollable(this)) return false;
+        if (!(*i)->isLayerScrollable(this)) return false;
     }
     return true;
 }
@@ -1347,13 +1347,13 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
 //        cerr << "(name is " << (*i)->objectName() << ")"
 //                  << endl;
 //        SVDEBUG << "View::getScrollableBackLayers: I am " << this << endl;
-	if ((*i)->isLayerDormant(this)) continue;
-	if ((*i)->isLayerOpaque()) {
-	    // You can't see anything behind an opaque layer!
-	    scrollables.clear();
+        if ((*i)->isLayerDormant(this)) continue;
+        if ((*i)->isLayerOpaque()) {
+            // You can't see anything behind an opaque layer!
+            scrollables.clear();
             if (metUnscrollable) break;
-	}
-	if (!metUnscrollable && (*i)->isLayerScrollable(this)) {
+        }
+        if (!metUnscrollable && (*i)->isLayerScrollable(this)) {
             scrollables.push_back(*i);
         } else {
             metUnscrollable = true;
@@ -1361,8 +1361,8 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
     }
 
     if (testChanged && scrollables != m_lastScrollableBackLayers) {
-	m_lastScrollableBackLayers = scrollables;
-	changed = true;
+        m_lastScrollableBackLayers = scrollables;
+        changed = true;
     }
     return scrollables;
 }
@@ -1379,21 +1379,21 @@ View::getNonScrollableFrontLayers(bool testChanged, bool &changed) const
     bool started = false;
 
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
-	if ((*i)->isLayerDormant(this)) continue;
-	if (!started && (*i)->isLayerScrollable(this)) {
-	    continue;
-	}
-	started = true;
-	if ((*i)->isLayerOpaque()) {
-	    // You can't see anything behind an opaque layer!
-	    nonScrollables.clear();
-	}
-	nonScrollables.push_back(*i);
+        if ((*i)->isLayerDormant(this)) continue;
+        if (!started && (*i)->isLayerScrollable(this)) {
+            continue;
+        }
+        started = true;
+        if ((*i)->isLayerOpaque()) {
+            // You can't see anything behind an opaque layer!
+            nonScrollables.clear();
+        }
+        nonScrollables.push_back(*i);
     }
 
     if (testChanged && nonScrollables != m_lastNonScrollableBackLayers) {
-	m_lastNonScrollableBackLayers = nonScrollables;
-	changed = true;
+        m_lastNonScrollableBackLayers = nonScrollables;
+        changed = true;
     }
 
     return nonScrollables;
@@ -1401,7 +1401,7 @@ View::getNonScrollableFrontLayers(bool testChanged, bool &changed) const
 
 int
 View::getZoomConstraintBlockSize(int blockSize,
-				 ZoomConstraint::RoundingDirection dir)
+                                 ZoomConstraint::RoundingDirection dir)
     const
 {
     int candidate = blockSize;
@@ -1411,20 +1411,20 @@ View::getZoomConstraintBlockSize(int blockSize,
 
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
-	const ZoomConstraint *zoomConstraint = (*i)->getZoomConstraint();
-	if (!zoomConstraint) zoomConstraint = &defaultZoomConstraint;
+        const ZoomConstraint *zoomConstraint = (*i)->getZoomConstraint();
+        if (!zoomConstraint) zoomConstraint = &defaultZoomConstraint;
 
-	int thisBlockSize =
-	    zoomConstraint->getNearestBlockSize(blockSize, dir);
+        int thisBlockSize =
+            zoomConstraint->getNearestBlockSize(blockSize, dir);
 
-	// Go for the block size that's furthest from the one
-	// passed in.  Most of the time, that's what we want.
-	if (!haveCandidate ||
-	    (thisBlockSize > blockSize && thisBlockSize > candidate) ||
-	    (thisBlockSize < blockSize && thisBlockSize < candidate)) {
-	    candidate = thisBlockSize;
-	    haveCandidate = true;
-	}
+        // Go for the block size that's furthest from the one
+        // passed in.  Most of the time, that's what we want.
+        if (!haveCandidate ||
+            (thisBlockSize > blockSize && thisBlockSize > candidate) ||
+            (thisBlockSize < blockSize && thisBlockSize < candidate)) {
+            candidate = thisBlockSize;
+            haveCandidate = true;
+        }
     }
 
     return candidate;
@@ -1434,7 +1434,7 @@ bool
 View::areLayerColoursSignificant() const
 {
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
-	if ((*i)->getLayerColourSignificance() ==
+        if ((*i)->getLayerColourSignificance() ==
             Layer::ColourHasMeaningfulValue) return true;
         if ((*i)->isLayerOpaque()) break;
     }
@@ -1456,15 +1456,15 @@ View::zoom(bool in)
     int newZoomLevel = m_zoomLevel;
 
     if (in) {
-	newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
-						  ZoomConstraint::RoundDown);
+        newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
+                                                  ZoomConstraint::RoundDown);
     } else {
-	newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
-						  ZoomConstraint::RoundUp);
+        newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
+                                                  ZoomConstraint::RoundUp);
     }
 
     if (newZoomLevel != m_zoomLevel) {
-	setZoomLevel(newZoomLevel);
+        setZoomLevel(newZoomLevel);
     }
 }
 
@@ -1473,18 +1473,18 @@ View::scroll(bool right, bool lots, bool e)
 {
     sv_frame_t delta;
     if (lots) {
-	delta = (getEndFrame() - getStartFrame()) / 2;
+        delta = (getEndFrame() - getStartFrame()) / 2;
     } else {
-	delta = (getEndFrame() - getStartFrame()) / 20;
+        delta = (getEndFrame() - getStartFrame()) / 20;
     }
     if (right) delta = -delta;
 
     if (m_centreFrame < delta) {
-	setCentreFrame(0, e);
+        setCentreFrame(0, e);
     } else if (m_centreFrame - delta >= getModelsEndFrame()) {
-	setCentreFrame(getModelsEndFrame(), e);
+        setCentreFrame(getModelsEndFrame(), e);
     } else {
-	setCentreFrame(m_centreFrame - delta, e);
+        setCentreFrame(m_centreFrame - delta, e);
     }
 }
 
@@ -1495,7 +1495,7 @@ View::cancelClicked()
     if (!cancel) return;
 
     for (ProgressMap::iterator i = m_progressBars.begin();
-	 i != m_progressBars.end(); ++i) {
+         i != m_progressBars.end(); ++i) {
 
         if (i->second.cancel == cancel) {
 
@@ -1515,19 +1515,19 @@ View::checkProgress(void *object)
     int ph = height();
 
     for (ProgressMap::iterator i = m_progressBars.begin();
-	 i != m_progressBars.end(); ++i) {
+         i != m_progressBars.end(); ++i) {
 
         QProgressBar *pb = i->second.bar;
         QPushButton *cancel = i->second.cancel;
 
-	if (i->first == object) {
+        if (i->first == object) {
 
             // The timer is used to test for stalls.  If the progress
             // bar does not get updated for some length of time, the
             // timer prompts it to go back into "indeterminate" mode
             QTimer *timer = i->second.checkTimer;
 
-	    int completion = i->first->getCompletion(this);
+            int completion = i->first->getCompletion(this);
             QString text = i->first->getPropertyContainerName();
             QString error = i->first->getError(this);
 
@@ -1562,13 +1562,13 @@ View::checkProgress(void *object)
                 update(); // ensure duration &c gets updated
             }
 
-	    if (completion >= 100) {
+            if (completion >= 100) {
 
-		pb->hide();
+                pb->hide();
                 cancel->hide();
                 timer->stop();
 
-	    } else {
+            } else {
 
 //                cerr << "progress = " << completion << endl;
 
@@ -1581,19 +1581,19 @@ View::checkProgress(void *object)
                 cancel->move(0, ph - pb->height()/2 - 10);
                 cancel->show();
 
-		pb->setValue(completion);
-		pb->move(20, ph - pb->height());
+                pb->setValue(completion);
+                pb->move(20, ph - pb->height());
 
-		pb->show();
-		pb->update();
+                pb->show();
+                pb->update();
 
-		ph -= pb->height();
-	    }
-	} else {
-	    if (pb->isVisible()) {
-		ph -= pb->height();
-	    }
-	}
+                ph -= pb->height();
+            }
+        } else {
+            if (pb->isVisible()) {
+                ph -= pb->height();
+            }
+        }
     }
 }
 
@@ -1620,7 +1620,7 @@ int
 View::getProgressBarWidth() const
 {
     for (ProgressMap::const_iterator i = m_progressBars.begin();
-	 i != m_progressBars.end(); ++i) {
+         i != m_progressBars.end(); ++i) {
         if (i->second.bar && i->second.bar->isVisible()) {
             return i->second.bar->width();
         }
@@ -1660,8 +1660,8 @@ View::paintEvent(QPaintEvent *e)
 //    cerr << "View::paintEvent: centre frame is " << m_centreFrame << endl;
 
     if (m_layerStack.empty()) {
-	QFrame::paintEvent(e);
-	return;
+        QFrame::paintEvent(e);
+        return;
     }
 
     // ensure our constraints are met
@@ -1670,7 +1670,7 @@ View::paintEvent(QPaintEvent *e)
   zoom levels?
 
     m_zoomLevel = getZoomConstraintBlockSize(m_zoomLevel,
-					     ZoomConstraint::RoundUp);
+                                             ZoomConstraint::RoundUp);
 */
 
     QPainter paint;
@@ -1680,10 +1680,10 @@ View::paintEvent(QPaintEvent *e)
     QRect cacheRect(rect());
 
     if (e) {
-	cacheRect &= e->rect();
+        cacheRect &= e->rect();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	cerr << "paint rect " << cacheRect.width() << "x" << cacheRect.height()
-		  << ", my rect " << width() << "x" << height() << endl;
+        cerr << "paint rect " << cacheRect.width() << "x" << cacheRect.height()
+                  << ", my rect " << width() << "x" << height() << endl;
 #endif
     }
 
@@ -1734,17 +1734,17 @@ View::paintEvent(QPaintEvent *e)
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr << "View(" << this << ")::paintEvent: have " << scrollables.size()
-	      << " scrollable back layers and " << nonScrollables.size()
-	      << " non-scrollable front layers" << endl;
+              << " scrollable back layers and " << nonScrollables.size()
+              << " non-scrollable front layers" << endl;
     cerr << "haveSelections " << haveSelections << ", selectionCacheable "
-	      << selectionCacheable << ", m_selectionCached " << m_selectionCached << endl;
+              << selectionCacheable << ", m_selectionCached " << m_selectionCached << endl;
 #endif
 
     if (layersChanged || scrollables.empty() ||
-	(haveSelections && (selectionCacheable != m_selectionCached))) {
-	delete m_cache;
-	m_cache = 0;
-	m_selectionCached = false;
+        (haveSelections && (selectionCacheable != m_selectionCached))) {
+        delete m_cache;
+        m_cache = 0;
+        m_selectionCached = false;
     }
 
     QSize scaledCacheSize(scaledSize(size(), dpratio));
@@ -1762,75 +1762,75 @@ View::paintEvent(QPaintEvent *e)
                   << m_cacheZoomLevel << ", zoom " << m_zoomLevel << endl;
 #endif
 
-	if (!m_cache ||
-	    m_cacheZoomLevel != m_zoomLevel ||
+        if (!m_cache ||
+            m_cacheZoomLevel != m_zoomLevel ||
             scaledCacheSize != m_cache->size()) {
 
-	    // cache is not valid
+            // cache is not valid
 
-	    if (cacheRect.width() < width()/10) {
-		delete m_cache;
+            if (cacheRect.width() < width()/10) {
+                delete m_cache;
                 m_cache = 0;
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-		cerr << "View(" << this << ")::paintEvent: small repaint, not bothering to recreate cache" << endl;
+                cerr << "View(" << this << ")::paintEvent: small repaint, not bothering to recreate cache" << endl;
 #endif
-	    } else {
-		delete m_cache;
-		m_cache = new QPixmap(scaledCacheSize);
+            } else {
+                delete m_cache;
+                m_cache = new QPixmap(scaledCacheSize);
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-		cerr << "View(" << this << ")::paintEvent: recreated cache" << endl;
+                cerr << "View(" << this << ")::paintEvent: recreated cache" << endl;
 #endif
-		cacheRect = rect();
-		repaintCache = true;
-	    }
+                cacheRect = rect();
+                repaintCache = true;
+            }
 
-	} else if (m_cacheCentreFrame != m_centreFrame) {
+        } else if (m_cacheCentreFrame != m_centreFrame) {
 
-	    int dx =
-		getXForFrame(m_cacheCentreFrame) -
-		getXForFrame(m_centreFrame);
+            int dx =
+                getXForFrame(m_cacheCentreFrame) -
+                getXForFrame(m_centreFrame);
 
-	    if (dx > -width() && dx < width()) {
-		static QPixmap *tmpPixmap = 0;
-		if (!tmpPixmap || tmpPixmap->size() != scaledCacheSize) {
-		    delete tmpPixmap;
-		    tmpPixmap = new QPixmap(scaledCacheSize);
-		}
-		paint.begin(tmpPixmap);
-		paint.drawPixmap(0, 0, *m_cache);
-		paint.end();
-		paint.begin(m_cache);
-		paint.drawPixmap(dx, 0, *tmpPixmap);
-		paint.end();
-		if (dx < 0) {
-		    cacheRect = QRect(width() + dx, 0, -dx, height());
-		} else {
-		    cacheRect = QRect(0, 0, dx, height());
-		}
+            if (dx > -width() && dx < width()) {
+                static QPixmap *tmpPixmap = 0;
+                if (!tmpPixmap || tmpPixmap->size() != scaledCacheSize) {
+                    delete tmpPixmap;
+                    tmpPixmap = new QPixmap(scaledCacheSize);
+                }
+                paint.begin(tmpPixmap);
+                paint.drawPixmap(0, 0, *m_cache);
+                paint.end();
+                paint.begin(m_cache);
+                paint.drawPixmap(dx, 0, *tmpPixmap);
+                paint.end();
+                if (dx < 0) {
+                    cacheRect = QRect(width() + dx, 0, -dx, height());
+                } else {
+                    cacheRect = QRect(0, 0, dx, height());
+                }
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-		cerr << "View(" << this << ")::paintEvent: scrolled cache by " << dx << endl;
+                cerr << "View(" << this << ")::paintEvent: scrolled cache by " << dx << endl;
 #endif
-	    } else {
-		cacheRect = rect();
+            } else {
+                cacheRect = rect();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-		cerr << "View(" << this << ")::paintEvent: scrolling too far" << endl;
+                cerr << "View(" << this << ")::paintEvent: scrolling too far" << endl;
 #endif
-	    }
-	    repaintCache = true;
+            }
+            repaintCache = true;
 
-	} else {
+        } else {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	    cerr << "View(" << this << ")::paintEvent: cache is good" << endl;
+            cerr << "View(" << this << ")::paintEvent: cache is good" << endl;
 #endif
-	    paint.begin(m_buffer);
-	    paint.drawPixmap(scaledCacheRect, *m_cache, scaledCacheRect);
-	    paint.end();
-	    QFrame::paintEvent(e);
-	    paintedCacheRect = true;
-	}
+            paint.begin(m_buffer);
+            paint.drawPixmap(scaledCacheRect, *m_cache, scaledCacheRect);
+            paint.end();
+            QFrame::paintEvent(e);
+            paintedCacheRect = true;
+        }
 
-	m_cacheCentreFrame = m_centreFrame;
-	m_cacheZoomLevel = m_zoomLevel;
+        m_cacheCentreFrame = m_centreFrame;
+        m_cacheZoomLevel = m_zoomLevel;
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -1845,7 +1845,7 @@ View::paintEvent(QPaintEvent *e)
 
         QRect rectToPaint;
 
-	if (repaintCache) {
+        if (repaintCache) {
             paint.begin(m_cache);
             rectToPaint = scaledCacheRect;
         } else {
@@ -1854,39 +1854,39 @@ View::paintEvent(QPaintEvent *e)
         }
 
         setPaintFont(paint);
-	paint.setClipRect(rectToPaint);
+        paint.setClipRect(rectToPaint);
 
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
-	paint.drawRect(rectToPaint);
+        paint.drawRect(rectToPaint);
 
-	paint.setPen(getForeground());
-	paint.setBrush(Qt::NoBrush);
-	
-	for (LayerList::iterator i = scrollables.begin(); i != scrollables.end(); ++i) {
-	    paint.setRenderHint(QPainter::Antialiasing, false);
-	    paint.save();
+        paint.setPen(getForeground());
+        paint.setBrush(Qt::NoBrush);
+        
+        for (LayerList::iterator i = scrollables.begin(); i != scrollables.end(); ++i) {
+            paint.setRenderHint(QPainter::Antialiasing, false);
+            paint.save();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
             cerr << "Painting scrollable layer " << *i << " using proxy with repaintCache = " << repaintCache << ", dpratio = " << dpratio << ", rectToPaint = " << rectToPaint.x() << "," << rectToPaint.y() << " " << rectToPaint.width() << "x" << rectToPaint.height() << endl;
 #endif
             (*i)->paint(&proxy, paint, rectToPaint);
-	    paint.restore();
-	}
+            paint.restore();
+        }
 
-	if (haveSelections && selectionCacheable) {
-	    drawSelections(paint);
-	    m_selectionCached = repaintCache;
-	}
-	
-	paint.end();
+        if (haveSelections && selectionCacheable) {
+            drawSelections(paint);
+            m_selectionCached = repaintCache;
+        }
+        
+        paint.end();
 
-	if (repaintCache) {
-	    cacheRect |= (e ? e->rect() : rect());
+        if (repaintCache) {
+            cacheRect |= (e ? e->rect() : rect());
             scaledCacheRect = scaledRect(cacheRect, dpratio);
-	    paint.begin(m_buffer);
-	    paint.drawPixmap(scaledCacheRect, *m_cache, scaledCacheRect);
-	    paint.end();
-	}
+            paint.begin(m_buffer);
+            paint.drawPixmap(scaledCacheRect, *m_cache, scaledCacheRect);
+            paint.end();
+        }
     }
 
     // Now non-cacheable items.  We always need to redraw the
@@ -1903,20 +1903,20 @@ View::paintEvent(QPaintEvent *e)
     if (scrollables.empty()) {
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
-	paint.drawRect(scaledNonCacheRect);
+        paint.drawRect(scaledNonCacheRect);
     }
-	
+        
     paint.setPen(getForeground());
     paint.setBrush(Qt::NoBrush);
-	
+        
     for (LayerList::iterator i = nonScrollables.begin(); i != nonScrollables.end(); ++i) {
 //        Profiler profiler2("View::paintEvent non-cacheable");
 #ifdef DEBUG_VIEW_WIDGET_PAINT
         cerr << "Painting non-scrollable layer " << *i << " without proxy with repaintCache = " << repaintCache << ", dpratio = " << dpratio << ", rectToPaint = " << nonCacheRect.x() << "," << nonCacheRect.y() << " " << nonCacheRect.width() << "x" << nonCacheRect.height() << endl;
 #endif
-	(*i)->paint(&proxy, paint, scaledNonCacheRect);
+        (*i)->paint(&proxy, paint, scaledNonCacheRect);
     }
-	
+        
     paint.end();
     
     paint.begin(this);
@@ -1928,7 +1928,7 @@ View::paintEvent(QPaintEvent *e)
     setPaintFont(paint);
     if (e) paint.setClipRect(e->rect());
     if (!m_selectionCached) {
-	drawSelections(paint);
+        drawSelections(paint);
     }
     paint.end();
 
@@ -1950,7 +1950,7 @@ View::paintEvent(QPaintEvent *e)
     
     if (showPlayPointer) {
 
-	paint.begin(this);
+        paint.begin(this);
 
         int playx = getXForFrame(m_playPointerFrame);
         
@@ -1962,7 +1962,7 @@ View::paintEvent(QPaintEvent *e)
         paint.setPen(getBackground());
         paint.drawLine(playx, 1, playx, height() - 2);
 
-	paint.end();
+        paint.end();
     }
 
     QFrame::paintEvent(e);
@@ -1976,14 +1976,14 @@ View::drawSelections(QPainter &paint)
     MultiSelection::SelectionList selections;
 
     if (m_manager) {
-	selections = m_manager->getSelections();
-	if (m_manager->haveInProgressSelection()) {
-	    bool exclusive;
-	    Selection inProgressSelection =
-		m_manager->getInProgressSelection(exclusive);
-	    if (exclusive) selections.clear();
-	    selections.insert(inProgressSelection);
-	}
+        selections = m_manager->getSelections();
+        if (m_manager->haveInProgressSelection()) {
+            bool exclusive;
+            Selection inProgressSelection =
+                m_manager->getInProgressSelection(exclusive);
+            if (exclusive) selections.clear();
+            selections.insert(inProgressSelection);
+        }
     }
 
     paint.save();
@@ -2003,27 +2003,27 @@ View::drawSelections(QPainter &paint)
     bool closeToLeft, closeToRight;
 
     if (shouldIlluminateLocalSelection(localPos, closeToLeft, closeToRight)) {
-	illuminateFrame = getFrameForX(localPos.x());
+        illuminateFrame = getFrameForX(localPos.x());
     }
 
     const QFontMetrics &metrics = paint.fontMetrics();
 
     for (MultiSelection::SelectionList::iterator i = selections.begin();
-	 i != selections.end(); ++i) {
+         i != selections.end(); ++i) {
 
-	int p0 = getXForFrame(alignFromReference(i->getStartFrame()));
-	int p1 = getXForFrame(alignFromReference(i->getEndFrame()));
+        int p0 = getXForFrame(alignFromReference(i->getStartFrame()));
+        int p1 = getXForFrame(alignFromReference(i->getEndFrame()));
 
-	if (p1 < 0 || p0 > width()) continue;
+        if (p1 < 0 || p0 > width()) continue;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-	SVDEBUG << "View::drawSelections: " << p0 << ",-1 [" << (p1-p0) << "x" << (height()+1) << "]" << endl;
+        SVDEBUG << "View::drawSelections: " << p0 << ",-1 [" << (p1-p0) << "x" << (height()+1) << "]" << endl;
 #endif
 
-	bool illuminateThis =
-	    (illuminateFrame >= 0 && i->contains(illuminateFrame));
+        bool illuminateThis =
+            (illuminateFrame >= 0 && i->contains(illuminateFrame));
 
-	paint.setPen(QColor(150, 150, 255));
+        paint.setPen(QColor(150, 150, 255));
 
         if (translucent && shouldLabelSelections()) {
             paint.drawRect(p0, -1, p1 - p0, height() + 1);
@@ -2035,73 +2035,73 @@ View::drawSelections(QPainter &paint)
             paint.drawRect(p0, 0, p1 - p0, height() - 1);
         }
 
-	if (illuminateThis) {
-	    paint.save();
+        if (illuminateThis) {
+            paint.save();
             paint.setPen(QPen(getForeground(), 2));
-	    if (closeToLeft) {
-		paint.drawLine(p0, 1, p1, 1);
-		paint.drawLine(p0, 0, p0, height());
-		paint.drawLine(p0, height() - 1, p1, height() - 1);
-	    } else if (closeToRight) {
-		paint.drawLine(p0, 1, p1, 1);
-		paint.drawLine(p1, 0, p1, height());
-		paint.drawLine(p0, height() - 1, p1, height() - 1);
-	    } else {
-		paint.setBrush(Qt::NoBrush);
-		paint.drawRect(p0, 1, p1 - p0, height() - 2);
-	    }
-	    paint.restore();
-	}
+            if (closeToLeft) {
+                paint.drawLine(p0, 1, p1, 1);
+                paint.drawLine(p0, 0, p0, height());
+                paint.drawLine(p0, height() - 1, p1, height() - 1);
+            } else if (closeToRight) {
+                paint.drawLine(p0, 1, p1, 1);
+                paint.drawLine(p1, 0, p1, height());
+                paint.drawLine(p0, height() - 1, p1, height() - 1);
+            } else {
+                paint.setBrush(Qt::NoBrush);
+                paint.drawRect(p0, 1, p1 - p0, height() - 2);
+            }
+            paint.restore();
+        }
 
-	if (sampleRate && shouldLabelSelections() && m_manager &&
+        if (sampleRate && shouldLabelSelections() && m_manager &&
             m_manager->shouldShowSelectionExtents()) {
-	    
-	    QString startText = QString("%1 / %2")
-		.arg(QString::fromStdString
-		     (RealTime::frame2RealTime
-		      (i->getStartFrame(), sampleRate).toText(true)))
-		.arg(i->getStartFrame());
-	    
-	    QString endText = QString(" %1 / %2")
-		.arg(QString::fromStdString
-		     (RealTime::frame2RealTime
-		      (i->getEndFrame(), sampleRate).toText(true)))
-		.arg(i->getEndFrame());
-	    
-	    QString durationText = QString("(%1 / %2) ")
-		.arg(QString::fromStdString
-		     (RealTime::frame2RealTime
-		      (i->getEndFrame() - i->getStartFrame(), sampleRate)
-		      .toText(true)))
-		.arg(i->getEndFrame() - i->getStartFrame());
+            
+            QString startText = QString("%1 / %2")
+                .arg(QString::fromStdString
+                     (RealTime::frame2RealTime
+                      (i->getStartFrame(), sampleRate).toText(true)))
+                .arg(i->getStartFrame());
+            
+            QString endText = QString(" %1 / %2")
+                .arg(QString::fromStdString
+                     (RealTime::frame2RealTime
+                      (i->getEndFrame(), sampleRate).toText(true)))
+                .arg(i->getEndFrame());
+            
+            QString durationText = QString("(%1 / %2) ")
+                .arg(QString::fromStdString
+                     (RealTime::frame2RealTime
+                      (i->getEndFrame() - i->getStartFrame(), sampleRate)
+                      .toText(true)))
+                .arg(i->getEndFrame() - i->getStartFrame());
 
-	    int sw = metrics.width(startText),
-		ew = metrics.width(endText),
-		dw = metrics.width(durationText);
+            int sw = metrics.width(startText),
+                ew = metrics.width(endText),
+                dw = metrics.width(durationText);
 
-	    int sy = metrics.ascent() + metrics.height() + 4;
-	    int ey = sy;
-	    int dy = sy + metrics.height();
+            int sy = metrics.ascent() + metrics.height() + 4;
+            int ey = sy;
+            int dy = sy + metrics.height();
 
-	    int sx = p0 + 2;
-	    int ex = sx;
-	    int dx = sx;
+            int sx = p0 + 2;
+            int ex = sx;
+            int dx = sx;
 
             bool durationBothEnds = true;
 
-	    if (sw + ew > (p1 - p0)) {
-		ey += metrics.height();
-		dy += metrics.height();
+            if (sw + ew > (p1 - p0)) {
+                ey += metrics.height();
+                dy += metrics.height();
                 durationBothEnds = false;
-	    }
+            }
 
-	    if (ew < (p1 - p0)) {
-		ex = p1 - 2 - ew;
-	    }
+            if (ew < (p1 - p0)) {
+                ex = p1 - 2 - ew;
+            }
 
-	    if (dw < (p1 - p0)) {
-		dx = p1 - 2 - dw;
-	    }
+            if (dw < (p1 - p0)) {
+                dx = p1 - 2 - dw;
+            }
 
             PaintAssistant::drawVisibleText(this, paint, sx, sy, startText,
                                             PaintAssistant::OutlinedText);
@@ -2113,7 +2113,7 @@ View::drawSelections(QPainter &paint)
                 PaintAssistant::drawVisibleText(this, paint, sx, dy, durationText,
                                                 PaintAssistant::OutlinedText);
             }
-	}
+        }
     }
 
     paint.restore();
@@ -2431,12 +2431,12 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
 
-	paint.drawRect(QRect(xorigin + x, 0, width(), height()));
+        paint.drawRect(QRect(xorigin + x, 0, width(), height()));
 
-	paint.setPen(getForeground());
-	paint.setBrush(Qt::NoBrush);
+        paint.setPen(getForeground());
+        paint.setBrush(Qt::NoBrush);
 
-	for (LayerList::iterator i = m_layerStack.begin();
+        for (LayerList::iterator i = m_layerStack.begin();
              i != m_layerStack.end(); ++i) {
             if (!((*i)->isLayerDormant(this))){
 
@@ -2455,7 +2455,7 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 
                 paint.restore();
             }
-	}
+        }
     }
 
     m_centreFrame = origCentreFrame;
@@ -2551,15 +2551,15 @@ View::toXml(QTextStream &stream,
                       "followZoom=\"%4\" "
                       "tracking=\"%5\" "
                       " %6>\n")
-	.arg(m_centreFrame)
-	.arg(m_zoomLevel)
-	.arg(m_followPan)
-	.arg(m_followZoom)
-	.arg(m_followPlay == PlaybackScrollContinuous ? "scroll" :
-	     m_followPlay == PlaybackScrollPageWithCentre ? "page" :
-	     m_followPlay == PlaybackScrollPage ? "daw" :
+        .arg(m_centreFrame)
+        .arg(m_zoomLevel)
+        .arg(m_followPan)
+        .arg(m_followZoom)
+        .arg(m_followPlay == PlaybackScrollContinuous ? "scroll" :
+             m_followPlay == PlaybackScrollPageWithCentre ? "page" :
+             m_followPlay == PlaybackScrollPage ? "daw" :
              "ignore")
-	.arg(extraAttributes);
+        .arg(extraAttributes);
 
     for (int i = 0; i < (int)m_fixedOrderLayers.size(); ++i) {
         bool visible = !m_fixedOrderLayers[i]->isLayerDormant(this);
@@ -2576,7 +2576,7 @@ ViewPropertyContainer::ViewPropertyContainer(View *v) :
 {
 //    cerr << "ViewPropertyContainer: " << this << " is owned by View " << v << endl;
     connect(m_v, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
-	    this, SIGNAL(propertyChanged(PropertyContainer::PropertyName)));
+            this, SIGNAL(propertyChanged(PropertyContainer::PropertyName)));
 }
 
 ViewPropertyContainer::~ViewPropertyContainer()

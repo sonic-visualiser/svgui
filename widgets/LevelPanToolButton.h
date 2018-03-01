@@ -37,9 +37,9 @@ public:
     bool includesMute() const;
 
     void setImageSize(int pixels);
-			
+                        
     void setBigImageSize(int pixels);
-			
+                        
 public slots:
     /// Set level in the range [0,1] -- will be rounded
     void setLevel(float);

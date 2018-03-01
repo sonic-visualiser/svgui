@@ -28,10 +28,10 @@ using namespace std;
 
 void
 PianoScale::paintPianoVertical(LayerGeometryProvider *v,
-			       QPainter &paint,
-			       QRect r,
-			       double minf,
-			       double maxf)
+                               QPainter &paint,
+                               QRect r,
+                               double minf,
+                               double maxf)
 {
     int x0 = r.x(), y0 = r.y(), x1 = r.x() + r.width(), y1 = r.y() + r.height();
 
@@ -42,47 +42,47 @@ PianoScale::paintPianoVertical(LayerGeometryProvider *v,
 
     for (int i = 0; i < 128; ++i) {
 
-	double f = Pitch::getFrequencyForPitch(i);
-	int y = int(lrint(v->getYForFrequency(f, minf, maxf, true)));
+        double f = Pitch::getFrequencyForPitch(i);
+        int y = int(lrint(v->getYForFrequency(f, minf, maxf, true)));
 
-	if (y < y0 - 2) break;
-	if (y > y1 + 2) {
-	    continue;
-	}
-	
-	int n = (i % 12);
-	
-	if (n == 1) {
-	    // C# -- fill the C from here
-	    QColor col = Qt::gray;
-	    if (i == 61) { // filling middle C
-		col = Qt::blue;
-		col = col.light(150);
-	    }
-	    if (ppy - y > 2) {
-		paint.fillRect(x0 + 1,
-			       y,
-			       x1 - x0,
-			       (py + ppy) / 2 - y,
-			       col);
-	    }
-	}
-	
-	if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
-	    // black notes
-	    paint.drawLine(x0 + 1, y, x1, y);
-	    int rh = ((py - y) / 4) * 2;
-	    if (rh < 2) rh = 2;
-	    paint.drawRect(x0 + 1, y - (py-y)/4, (x1 - x0) / 2, rh);
-	} else if (n == 0 || n == 5) {
-	    // C, F
-	    if (py < y1) {
-		paint.drawLine(x0 + 1, (y + py) / 2, x1, (y + py) / 2);
-	    }
-	}
-	
-	ppy = py;
-	py = y;
+        if (y < y0 - 2) break;
+        if (y > y1 + 2) {
+            continue;
+        }
+        
+        int n = (i % 12);
+        
+        if (n == 1) {
+            // C# -- fill the C from here
+            QColor col = Qt::gray;
+            if (i == 61) { // filling middle C
+                col = Qt::blue;
+                col = col.light(150);
+            }
+            if (ppy - y > 2) {
+                paint.fillRect(x0 + 1,
+                               y,
+                               x1 - x0,
+                               (py + ppy) / 2 - y,
+                               col);
+            }
+        }
+        
+        if (n == 1 || n == 3 || n == 6 || n == 8 || n == 10) {
+            // black notes
+            paint.drawLine(x0 + 1, y, x1, y);
+            int rh = ((py - y) / 4) * 2;
+            if (rh < 2) rh = 2;
+            paint.drawRect(x0 + 1, y - (py-y)/4, (x1 - x0) / 2, rh);
+        } else if (n == 0 || n == 5) {
+            // C, F
+            if (py < y1) {
+                paint.drawLine(x0 + 1, (y + py) / 2, x1, (y + py) / 2);
+            }
+        }
+        
+        ppy = py;
+        py = y;
     }
 }
 

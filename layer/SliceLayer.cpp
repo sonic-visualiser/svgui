@@ -507,7 +507,7 @@ SliceLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint
 {
     int width;
     if (m_energyScale == LinearScale || m_energyScale == AbsoluteScale) {
-	width = std::max(paint.fontMetrics().width("0.0") + 13,
+        width = std::max(paint.fontMetrics().width("0.0") + 13,
                          paint.fontMetrics().width("x10-10"));
     } else {
         width = std::max(paint.fontMetrics().width(tr("0dB")),
@@ -625,32 +625,32 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     if (name == "Gain") {
 
-	*min = -50;
-	*max = 50;
+        *min = -50;
+        *max = 50;
         *deflt = 0;
 
 //        cerr << "gain is " << m_gain << ", mode is " << m_samplingMode << endl;
 
-	val = int(lrint(log10(m_gain) * 20.0));
-	if (val < *min) val = *min;
-	if (val > *max) val = *max;
+        val = int(lrint(log10(m_gain) * 20.0));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
     } else if (name == "Threshold") {
         
-	*min = -80;
-	*max = 0;
+        *min = -80;
+        *max = 0;
 
         *deflt = int(lrint(AudioLevel::multiplier_to_dB(m_initialThreshold)));
-	if (*deflt < *min) *deflt = *min;
-	if (*deflt > *max) *deflt = *max;
+        if (*deflt < *min) *deflt = *min;
+        if (*deflt > *max) *deflt = *max;
 
-	val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
-	if (val < *min) val = *min;
-	if (val > *max) val = *max;
+        val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
     } else if (name == "Normalize") {
-	
-	val = (m_normalize ? 1 : 0);
+        
+        val = (m_normalize ? 1 : 0);
         *deflt = 0;
 
     } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
@@ -663,19 +663,19 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == "Scale") {
 
-	*min = 0;
-	*max = 3;
+        *min = 0;
+        *max = 3;
         *deflt = (int)dBScale;
 
-	val = (int)m_energyScale;
+        val = (int)m_energyScale;
 
     } else if (name == "Sampling Mode") {
 
-	*min = 0;
-	*max = 2;
+        *min = 0;
+        *max = 2;
         *deflt = (int)SampleMean;
         
-	val = (int)m_samplingMode;
+        val = (int)m_samplingMode;
 
     } else if (name == "Plot Type") {
         
@@ -695,7 +695,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = (int)m_binScale;
 
     } else {
-	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
+        val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -703,44 +703,44 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 SliceLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
+                                    int value) const
 {
     if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
         return ColourMapper::getColourMapName(value);
     }
     if (name == "Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Meter");
-	case 2: return tr("Log");
-	case 3: return tr("Absolute");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Linear");
+        case 1: return tr("Meter");
+        case 2: return tr("Log");
+        case 3: return tr("Absolute");
+        }
     }
     if (name == "Sampling Mode") {
-	switch (value) {
-	default:
-	case 0: return tr("Any");
-	case 1: return tr("Mean");
-	case 2: return tr("Peak");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Any");
+        case 1: return tr("Mean");
+        case 2: return tr("Peak");
+        }
     }
     if (name == "Plot Type") {
-	switch (value) {
-	default:
-	case 0: return tr("Lines");
-	case 1: return tr("Steps");
-	case 2: return tr("Blocks");
-	case 3: return tr("Colours");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Lines");
+        case 1: return tr("Steps");
+        case 2: return tr("Blocks");
+        case 3: return tr("Colours");
+        }
     }
     if (name == "Bin Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Log");
-	case 2: return tr("Rev Log");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Linear");
+        case 1: return tr("Log");
+        case 2: return tr("Rev Log");
+        }
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
 }
@@ -761,38 +761,38 @@ void
 SliceLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-	setGain(powf(10, float(value)/20.0f));
+        setGain(powf(10, float(value)/20.0f));
     } else if (name == "Threshold") {
-	if (value == -80) setThreshold(0.0f);
-	else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
+        if (value == -80) setThreshold(0.0f);
+        else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
     } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
         setFillColourMap(value);
     } else if (name == "Scale") {
-	switch (value) {
-	default:
-	case 0: setEnergyScale(LinearScale); break;
-	case 1: setEnergyScale(MeterScale); break;
-	case 2: setEnergyScale(dBScale); break;
-	case 3: setEnergyScale(AbsoluteScale); break;
-	}
+        switch (value) {
+        default:
+        case 0: setEnergyScale(LinearScale); break;
+        case 1: setEnergyScale(MeterScale); break;
+        case 2: setEnergyScale(dBScale); break;
+        case 3: setEnergyScale(AbsoluteScale); break;
+        }
     } else if (name == "Plot Type") {
-	setPlotStyle(PlotStyle(value));
+        setPlotStyle(PlotStyle(value));
     } else if (name == "Sampling Mode") {
-	switch (value) {
-	default:
-	case 0: setSamplingMode(NearestSample); break;
-	case 1: setSamplingMode(SampleMean); break;
-	case 2: setSamplingMode(SamplePeak); break;
-	}
+        switch (value) {
+        default:
+        case 0: setSamplingMode(NearestSample); break;
+        case 1: setSamplingMode(SampleMean); break;
+        case 2: setSamplingMode(SamplePeak); break;
+        }
     } else if (name == "Bin Scale") {
-	switch (value) {
-	default:
-	case 0: setBinScale(LinearBins); break;
-	case 1: setBinScale(LogBins); break;
-	case 2: setBinScale(InvertedLogBins); break;
-	}
+        switch (value) {
+        default:
+        case 0: setBinScale(LinearBins); break;
+        case 1: setBinScale(LogBins); break;
+        case 2: setBinScale(InvertedLogBins); break;
+        }
     } else if (name == "Normalize") {
-	setNormalize(value ? true : false);
+        setNormalize(value ? true : false);
     } else {
         SingleColourLayer::setProperty(name, value);
     }
@@ -890,7 +890,7 @@ SliceLayer::toXml(QTextStream &stream,
     QString s;
     
     s += QString("colourScheme=\"%1\" "
-		 "energyScale=\"%2\" "
+                 "energyScale=\"%2\" "
                  "samplingMode=\"%3\" "
                  "plotStyle=\"%4\" "
                  "binScale=\"%5\" "
@@ -898,7 +898,7 @@ SliceLayer::toXml(QTextStream &stream,
                  "threshold=\"%7\" "
                  "normalize=\"%8\" %9")
         .arg(m_colourMap)
-	.arg(m_energyScale)
+        .arg(m_energyScale)
         .arg(m_samplingMode)
         .arg(m_plotStyle)
         .arg(m_binScale)
@@ -921,22 +921,22 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
     SingleColourLayer::setProperties(attributes);
 
     EnergyScale scale = (EnergyScale)
-	attributes.value("energyScale").toInt(&ok);
+        attributes.value("energyScale").toInt(&ok);
     if (ok) setEnergyScale(scale);
 
     SamplingMode mode = (SamplingMode)
-	attributes.value("samplingMode").toInt(&ok);
+        attributes.value("samplingMode").toInt(&ok);
     if (ok) setSamplingMode(mode);
 
     int colourMap = attributes.value("colourScheme").toInt(&ok);
     if (ok) setFillColourMap(colourMap);
 
     PlotStyle s = (PlotStyle)
-	attributes.value("plotStyle").toInt(&ok);
+        attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(s);
 
     BinScale b = (BinScale)
-	attributes.value("binScale").toInt(&ok);
+        attributes.value("binScale").toInt(&ok);
     if (ok) setBinScale(b);
 
     float gain = attributes.value("gain").toFloat(&ok);

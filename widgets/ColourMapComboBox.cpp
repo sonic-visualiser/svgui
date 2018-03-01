@@ -35,7 +35,7 @@ ColourMapComboBox::ColourMapComboBox(bool includeSwatches, QWidget *parent) :
     connect(this, SIGNAL(activated(int)), this, SLOT(comboActivated(int)));
 
     if (count() < 20 && count() > maxVisibleItems()) {
-	setMaxVisibleItems(count());
+        setMaxVisibleItems(count());
     }
 }
 

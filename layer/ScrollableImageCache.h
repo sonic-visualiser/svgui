@@ -38,22 +38,22 @@ class ScrollableImageCache
 {
 public:
     ScrollableImageCache() :
-	m_validLeft(0),
-	m_validWidth(0),
-	m_startFrame(0),
-	m_zoomLevel(0)
+        m_validLeft(0),
+        m_validWidth(0),
+        m_startFrame(0),
+        m_zoomLevel(0)
     {}
 
     void invalidate() {
-	m_validWidth = 0;
+        m_validWidth = 0;
     }
     
     bool isValid() const {
-	return m_validWidth > 0;
+        return m_validWidth > 0;
     }
 
     QSize getSize() const {
-	return m_image.size();
+        return m_image.size();
     }
 
     /**
@@ -66,25 +66,25 @@ public:
             invalidate();
         }
     }
-	
+        
     int getValidLeft() const {
-	return m_validLeft;
+        return m_validLeft;
     }
     
     int getValidWidth() const {
-	return m_validWidth;
+        return m_validWidth;
     }
 
     int getValidRight() const {
-	return m_validLeft + m_validWidth;
+        return m_validLeft + m_validWidth;
     }
 
     QRect getValidArea() const {
-	return QRect(m_validLeft, 0, m_validWidth, m_image.height());
+        return QRect(m_validLeft, 0, m_validWidth, m_image.height());
     }
     
     int getZoomLevel() const {
-	return m_zoomLevel;
+        return m_zoomLevel;
     }
 
     /**
@@ -101,7 +101,7 @@ public:
     }
 
     sv_frame_t getStartFrame() const {
-	return m_startFrame;
+        return m_startFrame;
     }
 
     /**
@@ -118,7 +118,7 @@ public:
     }
     
     const QImage &getImage() const {
-	return m_image;
+        return m_image;
     }
 
     /**
@@ -137,7 +137,7 @@ public:
      * modify anything about the cache, only about the arguments.
      */
     void adjustToTouchValidArea(int &left, int &width,
-				bool &isLeftOfValidArea) const;
+                                bool &isLeftOfValidArea) const;
     
     /**
      * Draw from an image onto the cache. The supplied image must have
@@ -147,10 +147,10 @@ public:
      * the source region of the image.
      */
     void drawImage(int left,
-		   int width,
-		   QImage image,
-		   int imageLeft,
-		   int imageWidth);
+                   int width,
+                   QImage image,
+                   int imageLeft,
+                   int imageWidth);
     
 private:
     QImage m_image;

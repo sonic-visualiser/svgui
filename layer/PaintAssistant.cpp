@@ -29,7 +29,7 @@
 
 void
 PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
-					double minVal, double maxVal,
+                                        double minVal, double maxVal,
                                         Scale scale, int &mult,
                                         std::vector<int> *vy)
 {
@@ -243,18 +243,18 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
         paint.drawRect(r);
         paint.setBrush(Qt::NoBrush);
 
-	paint.setPen(surroundColour);
+        paint.setPen(surroundColour);
 
-	for (int dx = -1; dx <= 1; ++dx) {
-	    for (int dy = -1; dy <= 1; ++dy) {
-		if (!(dx || dy)) continue;
-		paint.drawText(x + dx, y + dy, text);
-	    }
-	}
+        for (int dx = -1; dx <= 1; ++dx) {
+            for (int dy = -1; dy <= 1; ++dy) {
+                if (!(dx || dy)) continue;
+                paint.drawText(x + dx, y + dy, text);
+            }
+        }
 
-	paint.setPen(penColour);
+        paint.setPen(penColour);
 
-	paint.drawText(x, y, text);
+        paint.drawText(x, y, text);
 
         paint.restore();
 

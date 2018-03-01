@@ -36,16 +36,16 @@ class ScrollableMagRangeCache
 {
 public:
     ScrollableMagRangeCache() :
-	m_startFrame(0),
-	m_zoomLevel(0)
+        m_startFrame(0),
+        m_zoomLevel(0)
     {}
 
     void invalidate() {
-	m_ranges = std::vector<MagnitudeRange>(m_ranges.size());
+        m_ranges = std::vector<MagnitudeRange>(m_ranges.size());
     }
     
     int getWidth() const {
-	return int(m_ranges.size());
+        return int(m_ranges.size());
     }
 
     /**
@@ -54,12 +54,12 @@ public:
      */
     void resize(int newWidth) {
         if (getWidth() != newWidth) {
-	    m_ranges = std::vector<MagnitudeRange>(newWidth);
+            m_ranges = std::vector<MagnitudeRange>(newWidth);
         }
     }
-	
+        
     int getZoomLevel() const {
-	return m_zoomLevel;
+        return m_zoomLevel;
     }
 
     /**
@@ -76,7 +76,7 @@ public:
     }
 
     sv_frame_t getStartFrame() const {
-	return m_startFrame;
+        return m_startFrame;
     }
 
     /**
@@ -93,21 +93,21 @@ public:
     }
 
     bool isColumnSet(int column) const {
-	return in_range_for(m_ranges, column) && m_ranges.at(column).isSet();
+        return in_range_for(m_ranges, column) && m_ranges.at(column).isSet();
     }
 
     bool areColumnsSet(int x, int count) const {
-	for (int i = 0; i < count; ++i) {
-	    if (!isColumnSet(x + i)) return false;
-	}
-	return true;
+        for (int i = 0; i < count; ++i) {
+            if (!isColumnSet(x + i)) return false;
+        }
+        return true;
     }
     
     /**
      * Get the magnitude range for a single column.
      */
     MagnitudeRange getRange(int column) const {
-	return m_ranges.at(column);
+        return m_ranges.at(column);
     }
 
     /**

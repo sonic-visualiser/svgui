@@ -165,7 +165,7 @@ ViewManager::getPlaybackFrame() const
         cout << "ViewManager::getPlaybackFrame(recording) -> " << m_playbackFrame << endl;
 #endif
     } else if (isPlaying()) {
-	m_playbackFrame = m_playSource->getCurrentPlayingFrame();
+        m_playbackFrame = m_playSource->getCurrentPlayingFrame();
 #ifdef DEBUG_VIEW_MANAGER
         cout << "ViewManager::getPlaybackFrame(playing) -> " << m_playbackFrame << endl;
 #endif
@@ -185,11 +185,11 @@ ViewManager::setPlaybackFrame(sv_frame_t f)
 #endif
     if (f < 0) f = 0;
     if (m_playbackFrame != f) {
-	m_playbackFrame = f;
-	emit playbackFrameChanged(f);
-	if (isPlaying()) {
-	    m_playSource->play(f);
-	}
+        m_playbackFrame = f;
+        emit playbackFrameChanged(f);
+        if (isPlaying()) {
+            m_playSource->play(f);
+        }
     }
 }
 
@@ -359,7 +359,7 @@ ViewManager::signalSelectionChange()
 }
 
 ViewManager::SetSelectionCommand::SetSelectionCommand(ViewManager *vm,
-						      const MultiSelection &ms) :
+                                                      const MultiSelection &ms) :
     m_vm(vm),
     m_oldSelection(vm->m_selections),
     m_newSelection(ms)
@@ -509,7 +509,7 @@ sv_samplerate_t
 ViewManager::getDeviceSampleRate() const
 {
     if (m_playSource) {
-	return m_playSource->getDeviceSampleRate();
+        return m_playSource->getDeviceSampleRate();
     }
     return 0;
 }
@@ -518,7 +518,7 @@ void
 ViewManager::setAudioPlaySource(AudioPlaySource *source)
 {
     if (!m_playSource) {
-	QTimer::singleShot(100, this, SLOT(checkPlayStatus()));
+        QTimer::singleShot(100, this, SLOT(checkPlayStatus()));
     }
     m_playSource = source;
 }
@@ -527,7 +527,7 @@ void
 ViewManager::setAudioRecordTarget(AudioRecordTarget *target)
 {
     if (!m_recordTarget) {
-	QTimer::singleShot(100, this, SLOT(checkPlayStatus()));
+        QTimer::singleShot(100, this, SLOT(checkPlayStatus()));
     }
     m_recordTarget = target;
 }
@@ -555,56 +555,56 @@ ViewManager::checkPlayStatus()
 {
     if (isRecording()) {
 
-	float left = 0, right = 0;
-	if (m_recordTarget->getInputLevels(left, right)) {
-	    if (left != m_lastLeft || right != m_lastRight) {
-		emit monitoringLevelsChanged(left, right);
-		m_lastLeft = left;
-		m_lastRight = right;
-	    }
-	}
+        float left = 0, right = 0;
+        if (m_recordTarget->getInputLevels(left, right)) {
+            if (left != m_lastLeft || right != m_lastRight) {
+                emit monitoringLevelsChanged(left, right);
+                m_lastLeft = left;
+                m_lastRight = right;
+            }
+        }
 
-	m_playbackFrame = m_recordTarget->getRecordDuration();
+        m_playbackFrame = m_recordTarget->getRecordDuration();
 
 #ifdef DEBUG_VIEW_MANAGER
-	cerr << "ViewManager::checkPlayStatus: Recording, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
+        cerr << "ViewManager::checkPlayStatus: Recording, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
 #endif
 
-	emit playbackFrameChanged(m_playbackFrame);
+        emit playbackFrameChanged(m_playbackFrame);
 
-	QTimer::singleShot(500, this, SLOT(checkPlayStatus()));
+        QTimer::singleShot(500, this, SLOT(checkPlayStatus()));
 
     } else if (isPlaying()) {
 
-	float left = 0, right = 0;
-	if (m_playSource->getOutputLevels(left, right)) {
-	    if (left != m_lastLeft || right != m_lastRight) {
-		emit monitoringLevelsChanged(left, right);
-		m_lastLeft = left;
-		m_lastRight = right;
-	    }
-	}
+        float left = 0, right = 0;
+        if (m_playSource->getOutputLevels(left, right)) {
+            if (left != m_lastLeft || right != m_lastRight) {
+                emit monitoringLevelsChanged(left, right);
+                m_lastLeft = left;
+                m_lastRight = right;
+            }
+        }
 
-	m_playbackFrame = m_playSource->getCurrentPlayingFrame();
+        m_playbackFrame = m_playSource->getCurrentPlayingFrame();
 
 #ifdef DEBUG_VIEW_MANAGER
-	cerr << "ViewManager::checkPlayStatus: Playing, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
+        cerr << "ViewManager::checkPlayStatus: Playing, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
 #endif
 
-	emit playbackFrameChanged(m_playbackFrame);
+        emit playbackFrameChanged(m_playbackFrame);
 
-	QTimer::singleShot(20, this, SLOT(checkPlayStatus()));
+        QTimer::singleShot(20, this, SLOT(checkPlayStatus()));
 
     } else {
 
-	if (m_lastLeft != 0.0 || m_lastRight != 0.0) {
-	    emit monitoringLevelsChanged(0.0, 0.0);
-	    m_lastLeft = 0.0;
-	    m_lastRight = 0.0;
-	}
+        if (m_lastLeft != 0.0 || m_lastRight != 0.0) {
+            emit monitoringLevelsChanged(0.0, 0.0);
+            m_lastLeft = 0.0;
+            m_lastRight = 0.0;
+        }
 
 #ifdef DEBUG_VIEW_MANAGER
-	cerr << "ViewManager::checkPlayStatus: Not playing or recording" << endl;
+        cerr << "ViewManager::checkPlayStatus: Not playing or recording" << endl;
 #endif
     }
 }
@@ -668,16 +668,16 @@ ViewManager::seek(sv_frame_t f)
     }
     
     if (isPlaying()) {
-	sv_frame_t playFrame = m_playSource->getCurrentPlayingFrame();
-	sv_frame_t diff = std::max(f, playFrame) - std::min(f, playFrame);
-	if (diff > 20000) {
-	    m_playbackFrame = f;
-	    m_playSource->play(f);
+        sv_frame_t playFrame = m_playSource->getCurrentPlayingFrame();
+        sv_frame_t diff = std::max(f, playFrame) - std::min(f, playFrame);
+        if (diff > 20000) {
+            m_playbackFrame = f;
+            m_playSource->play(f);
 #ifdef DEBUG_VIEW_MANAGER 
-	    cerr << "ViewManager::seek: reseeking from " << playFrame << " to " << f << endl;
+            cerr << "ViewManager::seek: reseeking from " << playFrame << " to " << f << endl;
 #endif
             emit playbackFrameChanged(f);
-	}
+        }
     } else {
         if (m_playbackFrame != f) {
             m_playbackFrame = f;
@@ -699,7 +699,7 @@ ViewManager::viewZoomLevelChanged(int z, bool locked)
 //!!!    emit zoomLevelChanged();
     
     if (locked) {
-	m_globalZoom = z;
+        m_globalZoom = z;
     }
 
 #ifdef DEBUG_VIEW_MANAGER 

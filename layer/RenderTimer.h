@@ -21,16 +21,16 @@ class RenderTimer
 {
 public:
     enum Type {
-	/// A normal rendering operation with normal responsiveness demands
-	FastRender,
+        /// A normal rendering operation with normal responsiveness demands
+        FastRender,
 
-	/// An operation that the user might accept being slower
-	SlowRender,
+        /// An operation that the user might accept being slower
+        SlowRender,
 
-	/// An operation that should always complete, i.e. as if there
-	/// were no RenderTimer in use, but without having to change
-	/// client code structurally
-	NoTimeout
+        /// An operation that should always complete, i.e. as if there
+        /// were no RenderTimer in use, but without having to change
+        /// client code structurally
+        NoTimeout
     };
     
     /**
@@ -41,19 +41,19 @@ public:
      * happened.
      */
     RenderTimer(Type t) :
-	m_start(std::chrono::steady_clock::now()),
-	m_haveLimits(true),
-	m_minFraction(0.1),
-	m_softLimit(0.1),
-	m_hardLimit(0.2),
-	m_softLimitOverridden(false) {
+        m_start(std::chrono::steady_clock::now()),
+        m_haveLimits(true),
+        m_minFraction(0.1),
+        m_softLimit(0.1),
+        m_hardLimit(0.2),
+        m_softLimitOverridden(false) {
 
-	if (t == NoTimeout) {
-	    m_haveLimits = false;
-	} else if (t == SlowRender) {
-	    m_softLimit = 0.2;
-	    m_hardLimit = 0.4;
-	}
+        if (t == NoTimeout) {
+            m_haveLimits = false;
+        } else if (t == SlowRender) {
+            m_softLimit = 0.2;
+            m_hardLimit = 0.4;
+        }
     }
 
 
@@ -66,36 +66,36 @@ public:
      */
     bool outOfTime(double fractionComplete) {
 
-	if (!m_haveLimits || fractionComplete < m_minFraction) {
-	    return false;
-	}
-	
-	auto t = std::chrono::steady_clock::now();
-	double elapsed = std::chrono::duration<double>(t - m_start).count();
-	
-	if (elapsed > m_hardLimit) {
-	    return true;
-	} else if (!m_softLimitOverridden && elapsed > m_softLimit) {
-	    if (fractionComplete > 0.6) {
-		// If we're significantly more than half way by the
-		// time we reach the soft limit, ignore it (though
-		// always respect the hard limit, above). Otherwise
-		// respect the soft limit and report out of time now.
-		m_softLimitOverridden = true;
-	    } else {
-		return true;
-	    }
-	}
+        if (!m_haveLimits || fractionComplete < m_minFraction) {
+            return false;
+        }
+        
+        auto t = std::chrono::steady_clock::now();
+        double elapsed = std::chrono::duration<double>(t - m_start).count();
+        
+        if (elapsed > m_hardLimit) {
+            return true;
+        } else if (!m_softLimitOverridden && elapsed > m_softLimit) {
+            if (fractionComplete > 0.6) {
+                // If we're significantly more than half way by the
+                // time we reach the soft limit, ignore it (though
+                // always respect the hard limit, above). Otherwise
+                // respect the soft limit and report out of time now.
+                m_softLimitOverridden = true;
+            } else {
+                return true;
+            }
+        }
 
-	return false;
+        return false;
     }
 
     double secondsPerItem(int itemsRendered) const {
 
         if (itemsRendered == 0) return 0.0;
 
-	auto t = std::chrono::steady_clock::now();
-	double elapsed = std::chrono::duration<double>(t - m_start).count();
+        auto t = std::chrono::steady_clock::now();
+        double elapsed = std::chrono::duration<double>(t - m_start).count();
 
         return elapsed / itemsRendered;
     }

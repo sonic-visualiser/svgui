@@ -77,14 +77,14 @@ TextLayer::getPropertyType(const PropertyName &name) const
 
 int
 TextLayer::getPropertyRangeAndValue(const PropertyName &name,
-				    int *min, int *max, int *deflt) const
+                                    int *min, int *max, int *deflt) const
 {
     return SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
 }
 
 QString
 TextLayer::getPropertyValueLabel(const PropertyName &name,
-				 int value) const
+                                 int value) const
 {
     return SingleColourLayer::getPropertyValueLabel(name, value);
 }
@@ -123,31 +123,31 @@ TextLayer::getLocalPoints(LayerGeometryProvider *v, int x, int y) const
     QFontMetrics metrics = QFontMetrics(QFont());
 
     for (TextModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	const TextModel::Point &p(*i);
+        const TextModel::Point &p(*i);
 
-	int px = v->getXForFrame(p.frame);
-	int py = getYForHeight(v, p.height);
+        int px = v->getXForFrame(p.frame);
+        int py = getYForHeight(v, p.height);
 
-	QString label = p.label;
-	if (label == "") {
-	    label = tr("<no text>");
-	}
+        QString label = p.label;
+        if (label == "") {
+            label = tr("<no text>");
+        }
 
-	QRect rect = metrics.boundingRect
-	    (QRect(0, 0, 150, 200),
-	     Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, label);
+        QRect rect = metrics.boundingRect
+            (QRect(0, 0, 150, 200),
+             Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, label);
 
-	if (py + rect.height() > v->getPaintHeight()) {
-	    if (rect.height() > v->getPaintHeight()) py = 0;
-	    else py = v->getPaintHeight() - rect.height() - 1;
-	}
+        if (py + rect.height() > v->getPaintHeight()) {
+            if (rect.height() > v->getPaintHeight()) py = 0;
+            else py = v->getPaintHeight() - rect.height() - 1;
+        }
 
-	if (x >= px && x < px + rect.width() &&
-	    y >= py && y < py + rect.height()) {
-	    rv.insert(p);
-	}
+        if (x >= px && x < px + rect.width() &&
+            y >= py && y < py + rect.height()) {
+            rv.insert(p);
+        }
     }
 
     return rv;
@@ -191,11 +191,11 @@ TextLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     TextModel::PointList points = getLocalPoints(v, x, pos.y());
 
     if (points.empty()) {
-	if (!m_model->isReady()) {
-	    return tr("In progress");
-	} else {
-	    return "";
-	}
+        if (!m_model->isReady()) {
+            return tr("In progress");
+        } else {
+            return "";
+        }
     }
 
     sv_frame_t useFrame = points.begin()->frame;
@@ -205,14 +205,14 @@ TextLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     QString text;
 
     if (points.begin()->label == "") {
-	text = QString(tr("Time:\t%1\nHeight:\t%2\nLabel:\t%3"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(points.begin()->height)
-	    .arg(points.begin()->label);
+        text = QString(tr("Time:\t%1\nHeight:\t%2\nLabel:\t%3"))
+            .arg(rt.toText(true).c_str())
+            .arg(points.begin()->height)
+            .arg(points.begin()->label);
     }
 
     pos = QPoint(v->getXForFrame(useFrame),
-		 getYForHeight(v, points.begin()->height));
+                 getYForHeight(v, points.begin()->height));
     return text;
 }
 
@@ -221,22 +221,22 @@ TextLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 
 bool
 TextLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-			      int &resolution,
-			      SnapType snap) const
+                              int &resolution,
+                              SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
     TextModel::PointList points;
 
     if (snap == SnapNeighbouring) {
-	
-	points = getLocalPoints(v, v->getXForFrame(frame), -1);
-	if (points.empty()) return false;
-	frame = points.begin()->frame;
-	return true;
+        
+        points = getLocalPoints(v, v->getXForFrame(frame), -1);
+        if (points.empty()) return false;
+        frame = points.begin()->frame;
+        return true;
     }    
 
     points = m_model->getPoints(frame, frame);
@@ -244,47 +244,47 @@ TextLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     bool found = false;
 
     for (TextModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
-	    if (i->frame > frame) {
-		snapped = i->frame;
-		found = true;
-		break;
-	    }
+            if (i->frame > frame) {
+                snapped = i->frame;
+                found = true;
+                break;
+            }
 
-	} else if (snap == SnapLeft) {
+        } else if (snap == SnapLeft) {
 
-	    if (i->frame <= frame) {
-		snapped = i->frame;
-		found = true; // don't break, as the next may be better
-	    } else {
-		break;
-	    }
+            if (i->frame <= frame) {
+                snapped = i->frame;
+                found = true; // don't break, as the next may be better
+            } else {
+                break;
+            }
 
-	} else { // nearest
+        } else { // nearest
 
-	    TextModel::PointList::const_iterator j = i;
-	    ++j;
+            TextModel::PointList::const_iterator j = i;
+            ++j;
 
-	    if (j == points.end()) {
+            if (j == points.end()) {
 
-		snapped = i->frame;
-		found = true;
-		break;
+                snapped = i->frame;
+                found = true;
+                break;
 
-	    } else if (j->frame >= frame) {
+            } else if (j->frame >= frame) {
 
-		if (j->frame - frame < frame - i->frame) {
-		    snapped = j->frame;
-		} else {
-		    snapped = i->frame;
-		}
-		found = true;
-		break;
-	    }
-	}
+                if (j->frame - frame < frame - i->frame) {
+                    snapped = j->frame;
+                } else {
+                    snapped = i->frame;
+                }
+                found = true;
+                break;
+            }
+        }
     }
 
     frame = snapped;
@@ -332,7 +332,7 @@ TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     penColour = v->getForeground();
 
 //    SVDEBUG << "TextLayer::paint: resolution is "
-//	      << m_model->getResolution() << " frames" << endl;
+//              << m_model->getResolution() << " frames" << endl;
 
     QPoint localPos;
     TextModel::Point illuminatePoint(0);
@@ -350,58 +350,58 @@ TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     paint.setClipRect(rect.x(), 0, rect.width() + boxMaxWidth, v->getPaintHeight());
     
     for (TextModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	const TextModel::Point &p(*i);
+        const TextModel::Point &p(*i);
 
-	int x = v->getXForFrame(p.frame);
-	int y = getYForHeight(v, p.height);
+        int x = v->getXForFrame(p.frame);
+        int y = getYForHeight(v, p.height);
 
         if (!shouldIlluminate ||
             // "illuminatePoint != p"
             TextModel::Point::Comparator()(illuminatePoint, p) ||
             TextModel::Point::Comparator()(p, illuminatePoint)) {
-	    paint.setPen(penColour);
-	    paint.setBrush(brushColour);
+            paint.setPen(penColour);
+            paint.setBrush(brushColour);
         } else {
-	    paint.setBrush(penColour);
+            paint.setBrush(penColour);
             paint.setPen(v->getBackground());
-	}
+        }
 
-	QString label = p.label;
-	if (label == "") {
-	    label = tr("<no text>");
-	}
+        QString label = p.label;
+        if (label == "") {
+            label = tr("<no text>");
+        }
 
-	QRect boxRect = paint.fontMetrics().boundingRect
-	    (QRect(0, 0, boxMaxWidth, boxMaxHeight),
-	     Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, label);
+        QRect boxRect = paint.fontMetrics().boundingRect
+            (QRect(0, 0, boxMaxWidth, boxMaxHeight),
+             Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap, label);
 
-	QRect textRect = QRect(3, 2, boxRect.width(), boxRect.height());
-	boxRect = QRect(0, 0, boxRect.width() + 6, boxRect.height() + 2);
+        QRect textRect = QRect(3, 2, boxRect.width(), boxRect.height());
+        boxRect = QRect(0, 0, boxRect.width() + 6, boxRect.height() + 2);
 
-	if (y + boxRect.height() > v->getPaintHeight()) {
-	    if (boxRect.height() > v->getPaintHeight()) y = 0;
-	    else y = v->getPaintHeight() - boxRect.height() - 1;
-	}
+        if (y + boxRect.height() > v->getPaintHeight()) {
+            if (boxRect.height() > v->getPaintHeight()) y = 0;
+            else y = v->getPaintHeight() - boxRect.height() - 1;
+        }
 
-	boxRect = QRect(x, y, boxRect.width(), boxRect.height());
-	textRect = QRect(x + 3, y + 2, textRect.width(), textRect.height());
+        boxRect = QRect(x, y, boxRect.width(), boxRect.height());
+        textRect = QRect(x + 3, y + 2, textRect.width(), textRect.height());
 
-//	boxRect = QRect(x, y, boxRect.width(), boxRect.height());
-//	textRect = QRect(x + 3, y + 2, textRect.width(), textRect.height());
+//        boxRect = QRect(x, y, boxRect.width(), boxRect.height());
+//        textRect = QRect(x + 3, y + 2, textRect.width(), textRect.height());
 
-	paint.setRenderHint(QPainter::Antialiasing, false);
-	paint.drawRect(boxRect);
+        paint.setRenderHint(QPainter::Antialiasing, false);
+        paint.drawRect(boxRect);
 
-	paint.setRenderHint(QPainter::Antialiasing, true);
-	paint.drawText(textRect,
-		       Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap,
-		       label);
+        paint.setRenderHint(QPainter::Antialiasing, true);
+        paint.drawText(textRect,
+                       Qt::AlignLeft | Qt::AlignTop | Qt::TextWordWrap,
+                       label);
 
-///	if (p.label != "") {
-///	    paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
-///	}
+///        if (p.label != "") {
+///            paint.drawText(x + 5, y - paint.fontMetrics().height() + paint.fontMetrics().ascent(), p.label);
+///        }
     }
 
     paint.restore();
@@ -416,8 +416,8 @@ TextLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 //    SVDEBUG << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) {
-	SVDEBUG << "TextLayer::drawStart: no model" << endl;
-	return;
+        SVDEBUG << "TextLayer::drawStart: no model" << endl;
+        return;
     }
 
     sv_frame_t frame = v->getFrameForX(e->x());
@@ -463,13 +463,13 @@ TextLayer::drawEnd(LayerGeometryProvider *v, QMouseEvent *)
 
     bool ok = false;
     QString label = QInputDialog::getText(v->getView(), tr("Enter label"),
-					  tr("Please enter a new label:"),
-					  QLineEdit::Normal, "", &ok);
+                                          tr("Please enter a new label:"),
+                                          QLineEdit::Normal, "", &ok);
 
     if (ok) {
-	TextModel::RelabelCommand *command =
-	    new TextModel::RelabelCommand(m_model, m_editingPoint, label);
-	m_editingCommand->addCommand(command);
+        TextModel::RelabelCommand *command =
+            new TextModel::RelabelCommand(m_model, m_editingPoint, label);
+        m_editingCommand->addCommand(command);
     } else {
         m_editingCommand->deletePoint(m_editingPoint);
     }
@@ -487,8 +487,8 @@ TextLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -535,8 +535,8 @@ TextLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -560,7 +560,7 @@ TextLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 //    double height = getHeightForY(v, e->y());
 
     if (!m_editingCommand) {
-	m_editingCommand = new TextModel::EditCommand(m_model, tr("Drag Label"));
+        m_editingCommand = new TextModel::EditCommand(m_model, tr("Drag Label"));
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
@@ -577,20 +577,20 @@ TextLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 
     if (m_editingCommand) {
 
-	QString newName = m_editingCommand->getName();
+        QString newName = m_editingCommand->getName();
 
-	if (m_editingPoint.frame != m_originalPoint.frame) {
-	    if (m_editingPoint.height != m_originalPoint.height) {
-		newName = tr("Move Label");
-	    } else {
-		newName = tr("Move Label Horizontally");
-	    }
-	} else {
-	    newName = tr("Move Label Vertically");
-	}
+        if (m_editingPoint.frame != m_originalPoint.frame) {
+            if (m_editingPoint.height != m_originalPoint.height) {
+                newName = tr("Move Label");
+            } else {
+                newName = tr("Move Label Horizontally");
+            }
+        } else {
+            newName = tr("Move Label Vertically");
+        }
 
-	m_editingCommand->setName(newName);
-	finish(m_editingCommand);
+        m_editingCommand->setName(newName);
+        finish(m_editingCommand);
     }
     
     m_editingCommand = 0;
@@ -609,12 +609,12 @@ TextLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 
     bool ok = false;
     label = QInputDialog::getText(v->getView(), tr("Enter label"),
-				  tr("Please enter a new label:"),
-				  QLineEdit::Normal, label, &ok);
+                                  tr("Please enter a new label:"),
+                                  QLineEdit::Normal, label, &ok);
     if (ok && label != text.label) {
-	TextModel::RelabelCommand *command =
-	    new TextModel::RelabelCommand(m_model, text, label);
-	CommandHistory::getInstance()->addCommand(command);
+        TextModel::RelabelCommand *command =
+            new TextModel::RelabelCommand(m_model, text, label);
+        CommandHistory::getInstance()->addCommand(command);
     }
 
     return true;
@@ -626,20 +626,20 @@ TextLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     if (!m_model) return;
 
     TextModel::EditCommand *command =
-	new TextModel::EditCommand(m_model, tr("Drag Selection"));
+        new TextModel::EditCommand(m_model, tr("Drag Selection"));
 
     TextModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (TextModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
-	    TextModel::Point newPoint(*i);
-	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+        if (s.contains(i->frame)) {
+            TextModel::Point newPoint(*i);
+            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -651,29 +651,29 @@ TextLayer::resizeSelection(Selection s, Selection newSize)
     if (!m_model) return;
 
     TextModel::EditCommand *command =
-	new TextModel::EditCommand(m_model, tr("Resize Selection"));
+        new TextModel::EditCommand(m_model, tr("Resize Selection"));
 
     TextModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     double ratio =
-	double(newSize.getEndFrame() - newSize.getStartFrame()) /
-	double(s.getEndFrame() - s.getStartFrame());
+        double(newSize.getEndFrame() - newSize.getStartFrame()) /
+        double(s.getEndFrame() - s.getStartFrame());
 
     for (TextModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
+        if (s.contains(i->frame)) {
 
-	    double target = double(i->frame);
-	    target = double(newSize.getStartFrame()) + 
-		target - double(s.getStartFrame()) * ratio;
+            double target = double(i->frame);
+            target = double(newSize.getStartFrame()) + 
+                target - double(s.getStartFrame()) * ratio;
 
-	    TextModel::Point newPoint(*i);
-	    newPoint.frame = lrint(target);
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+            TextModel::Point newPoint(*i);
+            newPoint.frame = lrint(target);
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -685,14 +685,14 @@ TextLayer::deleteSelection(Selection s)
     if (!m_model) return;
 
     TextModel::EditCommand *command =
-	new TextModel::EditCommand(m_model, tr("Delete Selection"));
+        new TextModel::EditCommand(m_model, tr("Delete Selection"));
 
     TextModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (TextModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) command->deletePoint(*i);
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) command->deletePoint(*i);
     }
 
     finish(command);
@@ -704,11 +704,11 @@ TextLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     if (!m_model) return;
 
     TextModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (TextModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) {
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->height, i->label);
             point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
@@ -743,7 +743,7 @@ TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
     }
 
     TextModel::EditCommand *command =
-	new TextModel::EditCommand(m_model, tr("Paste"));
+        new TextModel::EditCommand(m_model, tr("Paste"));
 
     double valueMin = 0.0, valueMax = 1.0;
     for (Clipboard::PointList::const_iterator i = points.begin();

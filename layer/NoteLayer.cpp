@@ -61,12 +61,12 @@ NoteLayer::NoteLayer() :
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
-  	SVDEBUG << "constructed NoteLayer" << endl;
+          SVDEBUG << "constructed NoteLayer" << endl;
 }
 
 void
 NoteLayer::setModel(NoteModel *model)
-{	
+{        
     if (m_model == model) return;
     m_model = model;
 
@@ -128,12 +128,12 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
     int val = 0;
 
     if (name == "Vertical Scale") {
-	
-	if (min) *min = 0;
-	if (max) *max = 3;
+        
+        if (min) *min = 0;
+        if (max) *max = 3;
         if (deflt) *deflt = int(AutoAlignScale);
-	
-	val = int(m_verticalScale);
+        
+        val = int(m_verticalScale);
 
     } else if (name == "Scale Units") {
 
@@ -145,7 +145,7 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else {
 
-	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
+        val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -156,13 +156,13 @@ NoteLayer::getPropertyValueLabel(const PropertyName &name,
                                  int value) const
 {
     if (name == "Vertical Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Auto-Align");
-	case 1: return tr("Linear");
-	case 2: return tr("Log");
-	case 3: return tr("MIDI Notes");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Auto-Align");
+        case 1: return tr("Linear");
+        case 2: return tr("Log");
+        case 3: return tr("MIDI Notes");
+        }
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
 }
@@ -171,7 +171,7 @@ void
 NoteLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Vertical Scale") {
-	setVerticalScale(VerticalScale(value));
+        setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
         if (m_model) {
             m_model->setScaleUnits
@@ -397,36 +397,36 @@ NoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     sv_frame_t frame = v->getFrameForX(x);
 
     NoteModel::PointList onPoints =
-	m_model->getPoints(frame);
+        m_model->getPoints(frame);
 
     if (!onPoints.empty()) {
-	return onPoints;
+        return onPoints;
     }
 
     NoteModel::PointList prevPoints =
-	m_model->getPreviousPoints(frame);
+        m_model->getPreviousPoints(frame);
     NoteModel::PointList nextPoints =
-	m_model->getNextPoints(frame);
+        m_model->getNextPoints(frame);
 
     NoteModel::PointList usePoints = prevPoints;
 
     if (prevPoints.empty()) {
-	usePoints = nextPoints;
+        usePoints = nextPoints;
     } else if (int(prevPoints.begin()->frame) < v->getStartFrame() &&
-	       !(nextPoints.begin()->frame > v->getEndFrame())) {
-	usePoints = nextPoints;
+               !(nextPoints.begin()->frame > v->getEndFrame())) {
+        usePoints = nextPoints;
     } else if (int(nextPoints.begin()->frame) - frame <
-	       frame - int(prevPoints.begin()->frame)) {
-	usePoints = nextPoints;
+               frame - int(prevPoints.begin()->frame)) {
+        usePoints = nextPoints;
     }
 
     if (!usePoints.empty()) {
-	int fuzz = 2;
-	int px = v->getXForFrame(usePoints.begin()->frame);
-	if ((px > x && px - x > fuzz) ||
-	    (px < x && x - px > fuzz + 1)) {
-	    usePoints.clear();
-	}
+        int fuzz = 2;
+        int px = v->getXForFrame(usePoints.begin()->frame);
+        if ((px > x && px - x > fuzz) ||
+            (px < x && x - px > fuzz + 1)) {
+            usePoints.clear();
+        }
     }
 
     return usePoints;
@@ -470,11 +470,11 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     NoteModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
-	if (!m_model->isReady()) {
-	    return tr("In progress");
-	} else {
-	    return tr("No local points");
-	}
+        if (!m_model->isReady()) {
+            return tr("In progress");
+        } else {
+            return tr("No local points");
+        }
     }
 
     Note note(0);
@@ -482,26 +482,26 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 
     for (i = points.begin(); i != points.end(); ++i) {
 
-	int y = getYForValue(v, i->value);
-	int h = 3;
+        int y = getYForValue(v, i->value);
+        int h = 3;
 
-	if (m_model->getValueQuantization() != 0.0) {
-	    h = y - getYForValue(v, i->value + m_model->getValueQuantization());
-	    if (h < 3) h = 3;
-	}
+        if (m_model->getValueQuantization() != 0.0) {
+            h = y - getYForValue(v, i->value + m_model->getValueQuantization());
+            if (h < 3) h = 3;
+        }
 
-	if (pos.y() >= y - h && pos.y() <= y) {
-	    note = *i;
-	    break;
-	}
+        if (pos.y() >= y - h && pos.y() <= y) {
+            note = *i;
+            break;
+        }
     }
 
     if (i == points.end()) return tr("No local points");
 
     RealTime rt = RealTime::frame2RealTime(note.frame,
-					   m_model->getSampleRate());
+                                           m_model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(note.duration,
-					   m_model->getSampleRate());
+                                           m_model->getSampleRate());
     
     QString pitchText;
 
@@ -530,41 +530,41 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     QString text;
 
     if (note.label == "") {
-	text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(pitchText)
-	    .arg(rd.toText(true).c_str());
+        text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
+            .arg(rt.toText(true).c_str())
+            .arg(pitchText)
+            .arg(rd.toText(true).c_str());
     } else {
-	text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(pitchText)
-	    .arg(rd.toText(true).c_str())
-	    .arg(note.label);
+        text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nLabel:\t%4"))
+            .arg(rt.toText(true).c_str())
+            .arg(pitchText)
+            .arg(rd.toText(true).c_str())
+            .arg(note.label);
     }
 
     pos = QPoint(v->getXForFrame(note.frame),
-		 getYForValue(v, note.value));
+                 getYForValue(v, note.value));
     return text;
 }
 
 bool
 NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-			      int &resolution,
-			      SnapType snap) const
+                              int &resolution,
+                              SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
     NoteModel::PointList points;
 
     if (snap == SnapNeighbouring) {
-	
-	points = getLocalPoints(v, v->getXForFrame(frame));
-	if (points.empty()) return false;
-	frame = points.begin()->frame;
-	return true;
+        
+        points = getLocalPoints(v, v->getXForFrame(frame));
+        if (points.empty()) return false;
+        frame = points.begin()->frame;
+        return true;
     }    
 
     points = m_model->getPoints(frame, frame);
@@ -572,47 +572,47 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     bool found = false;
 
     for (NoteModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
-	    if (i->frame > frame) {
-		snapped = i->frame;
-		found = true;
-		break;
-	    }
+            if (i->frame > frame) {
+                snapped = i->frame;
+                found = true;
+                break;
+            }
 
-	} else if (snap == SnapLeft) {
+        } else if (snap == SnapLeft) {
 
-	    if (i->frame <= frame) {
-		snapped = i->frame;
-		found = true; // don't break, as the next may be better
-	    } else {
-		break;
-	    }
+            if (i->frame <= frame) {
+                snapped = i->frame;
+                found = true; // don't break, as the next may be better
+            } else {
+                break;
+            }
 
-	} else { // nearest
+        } else { // nearest
 
-	    NoteModel::PointList::const_iterator j = i;
-	    ++j;
+            NoteModel::PointList::const_iterator j = i;
+            ++j;
 
-	    if (j == points.end()) {
+            if (j == points.end()) {
 
-		snapped = i->frame;
-		found = true;
-		break;
+                snapped = i->frame;
+                found = true;
+                break;
 
-	    } else if (j->frame >= frame) {
+            } else if (j->frame >= frame) {
 
-		if (j->frame - frame < frame - i->frame) {
-		    snapped = j->frame;
-		} else {
-		    snapped = i->frame;
-		}
-		found = true;
-		break;
-	    }
-	}
+                if (j->frame - frame < frame - i->frame) {
+                    snapped = j->frame;
+                } else {
+                    snapped = i->frame;
+                }
+                found = true;
+                break;
+            }
+        }
     }
 
     frame = snapped;
@@ -764,7 +764,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     brushColour.setAlpha(80);
 
 //    SVDEBUG << "NoteLayer::paint: resolution is "
-//	      << m_model->getResolution() << " frames" << endl;
+//              << m_model->getResolution() << " frames" << endl;
 
     double min = m_model->getValueMinimum();
     double max = m_model->getValueMaximum();
@@ -783,25 +783,25 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     paint.setRenderHint(QPainter::Antialiasing, false);
     
     for (NoteModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	const NoteModel::Point &p(*i);
+        const NoteModel::Point &p(*i);
 
-	int x = v->getXForFrame(p.frame);
-	int y = getYForValue(v, p.value);
-	int w = v->getXForFrame(p.frame + p.duration) - x;
-	int h = 3;
-	
-	if (m_model->getValueQuantization() != 0.0) {
-	    h = y - getYForValue(v, p.value + m_model->getValueQuantization());
-	    if (h < 3) h = 3;
-	}
+        int x = v->getXForFrame(p.frame);
+        int y = getYForValue(v, p.value);
+        int w = v->getXForFrame(p.frame + p.duration) - x;
+        int h = 3;
+        
+        if (m_model->getValueQuantization() != 0.0) {
+            h = y - getYForValue(v, p.value + m_model->getValueQuantization());
+            if (h < 3) h = 3;
+        }
 
-	if (w < 1) w = 1;
-	paint.setPen(getBaseQColor());
-	paint.setBrush(brushColour);
+        if (w < 1) w = 1;
+        paint.setPen(getBaseQColor());
+        paint.setBrush(brushColour);
 
-	if (shouldIlluminate &&
+        if (shouldIlluminate &&
             // "illuminatePoint == p"
             !NoteModel::Point::Comparator()(illuminatePoint, p) &&
             !NoteModel::Point::Comparator()(p, illuminatePoint)) {
@@ -822,9 +822,9 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                                x,
                                y - h/2 - paint.fontMetrics().descent() - 2,
                                hlabel, PaintAssistant::OutlinedText);
-	}
-	
-	paint.drawRect(x, y - h/2, w, h);
+        }
+        
+        paint.drawRect(x, y - h/2, w, h);
     }
 
     paint.restore();
@@ -900,7 +900,7 @@ NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new NoteModel::EditCommand(m_model,
-						  tr("Draw Point"));
+                                                  tr("Draw Point"));
     m_editingCommand->addPoint(m_editingPoint);
 
     m_editing = true;
@@ -953,8 +953,8 @@ NoteLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -999,8 +999,8 @@ NoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_dragPointY = getYForValue(v, m_editingPoint.value);
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -1027,8 +1027,8 @@ NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     double value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
-	m_editingCommand = new NoteModel::EditCommand(m_model,
-						      tr("Drag Point"));
+        m_editingCommand = new NoteModel::EditCommand(m_model,
+                                                      tr("Drag Point"));
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
@@ -1045,20 +1045,20 @@ NoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 
     if (m_editingCommand) {
 
-	QString newName = m_editingCommand->getName();
+        QString newName = m_editingCommand->getName();
 
-	if (m_editingPoint.frame != m_originalPoint.frame) {
-	    if (m_editingPoint.value != m_originalPoint.value) {
-		newName = tr("Edit Point");
-	    } else {
-		newName = tr("Relocate Point");
-	    }
-	} else {
-	    newName = tr("Change Point Value");
-	}
+        if (m_editingPoint.frame != m_originalPoint.frame) {
+            if (m_editingPoint.value != m_originalPoint.value) {
+                newName = tr("Edit Point");
+            } else {
+                newName = tr("Relocate Point");
+            }
+        } else {
+            newName = tr("Change Point Value");
+        }
 
-	m_editingCommand->setName(newName);
-	finish(m_editingCommand);
+        m_editingCommand->setName(newName);
+        finish(m_editingCommand);
     }
 
     m_editingCommand = 0;
@@ -1113,20 +1113,20 @@ NoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     if (!m_model) return;
 
     NoteModel::EditCommand *command =
-	new NoteModel::EditCommand(m_model, tr("Drag Selection"));
+        new NoteModel::EditCommand(m_model, tr("Drag Selection"));
 
     NoteModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (NoteModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
-	    NoteModel::Point newPoint(*i);
-	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+        if (s.contains(i->frame)) {
+            NoteModel::Point newPoint(*i);
+            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -1138,34 +1138,34 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
     if (!m_model) return;
 
     NoteModel::EditCommand *command =
-	new NoteModel::EditCommand(m_model, tr("Resize Selection"));
+        new NoteModel::EditCommand(m_model, tr("Resize Selection"));
 
     NoteModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     double ratio =
-	double(newSize.getEndFrame() - newSize.getStartFrame()) /
-	double(s.getEndFrame() - s.getStartFrame());
+        double(newSize.getEndFrame() - newSize.getStartFrame()) /
+        double(s.getEndFrame() - s.getStartFrame());
 
     for (NoteModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
+        if (s.contains(i->frame)) {
 
-	    double targetStart = double(i->frame);
-	    targetStart = double(newSize.getStartFrame()) +
-		targetStart - double(s.getStartFrame()) * ratio;
+            double targetStart = double(i->frame);
+            targetStart = double(newSize.getStartFrame()) +
+                targetStart - double(s.getStartFrame()) * ratio;
 
-	    double targetEnd = double(i->frame + i->duration);
-	    targetEnd = double(newSize.getStartFrame()) +
-		targetEnd - double(s.getStartFrame()) * ratio;
+            double targetEnd = double(i->frame + i->duration);
+            targetEnd = double(newSize.getStartFrame()) +
+                targetEnd - double(s.getStartFrame()) * ratio;
 
-	    NoteModel::Point newPoint(*i);
-	    newPoint.frame = lrint(targetStart);
-	    newPoint.duration = lrint(targetEnd - targetStart);
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+            NoteModel::Point newPoint(*i);
+            newPoint.frame = lrint(targetStart);
+            newPoint.duration = lrint(targetEnd - targetStart);
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -1177,13 +1177,13 @@ NoteLayer::deleteSelection(Selection s)
     if (!m_model) return;
 
     NoteModel::EditCommand *command =
-	new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
+        new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
 
     NoteModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (NoteModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
         if (s.contains(i->frame)) {
             command->deletePoint(*i);
@@ -1199,11 +1199,11 @@ NoteLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     if (!m_model) return;
 
     NoteModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (NoteModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) {
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->value, i->duration, i->level, i->label);
             point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
@@ -1238,7 +1238,7 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
     }
 
     NoteModel::EditCommand *command =
-	new NoteModel::EditCommand(m_model, tr("Paste"));
+        new NoteModel::EditCommand(m_model, tr("Paste"));
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1350,7 +1350,7 @@ NoteLayer::setProperties(const QXmlAttributes &attributes)
 
     bool ok, alsoOk;
     VerticalScale scale = (VerticalScale)
-	attributes.value("verticalScale").toInt(&ok);
+        attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
 
     float min = attributes.value("scaleMinimum").toFloat(&ok);

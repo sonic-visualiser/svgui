@@ -25,8 +25,8 @@
 #include <QPushButton>
 
 ColourNameDialog::ColourNameDialog(QString title, QString message,
-				   QColor colour, QString defaultName,
-				   QWidget *parent) :
+                                   QColor colour, QString defaultName,
+                                   QWidget *parent) :
     QDialog(parent),
     m_colour(colour)
 {

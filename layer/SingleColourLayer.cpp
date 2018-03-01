@@ -103,7 +103,7 @@ SingleColourLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = m_colour;
 
     } else {
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
+        val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -111,7 +111,7 @@ SingleColourLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 SingleColourLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
+                                    int value) const
 {
     if (name == "Colour") {
         ColourDatabase *db = ColourDatabase::getInstance();
@@ -283,7 +283,7 @@ SingleColourLayer::toXml(QTextStream &stream,
     s += QString("colourName=\"%1\" "
                  "colour=\"%2\" "
                  "darkBackground=\"%3\" ")
-	.arg(colourName)
+        .arg(colourName)
         .arg(colourSpec)
         .arg(darkbg);
 

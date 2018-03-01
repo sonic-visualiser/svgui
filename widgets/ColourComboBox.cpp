@@ -40,7 +40,7 @@ ColourComboBox::ColourComboBox(bool withAddNewColourEntry, QWidget *parent) :
             this, SLOT(rebuild()));
 
     if (count() < 20 && count() > maxVisibleItems()) {
-	setMaxVisibleItems(count());
+        setMaxVisibleItems(count());
     }
 }
 
@@ -48,9 +48,9 @@ void
 ColourComboBox::comboActivated(int index)
 {
     if (!m_withAddNewColourEntry ||
-	index < int(ColourDatabase::getInstance()->getColourCount())) {
-	emit colourChanged(index);
-	return;
+        index < int(ColourDatabase::getInstance()->getColourCount())) {
+        emit colourChanged(index);
+        return;
     }
     
     QColor newColour = QColorDialog::getColor();
@@ -65,10 +65,10 @@ ColourComboBox::comboActivated(int index)
         ColourDatabase *db = ColourDatabase::getInstance();
         int index = db->addColour(newColour, dialog.getColourName());
         db->setUseDarkBackground(index, dialog.isDarkBackgroundChecked());
-	// addColour will have called back on rebuild(), and the new
-	// colour will be at the index previously occupied by Add New
-	// Colour, which is our current index
-	emit colourChanged(currentIndex());
+        // addColour will have called back on rebuild(), and the new
+        // colour will be at the index previously occupied by Add New
+        // Colour, which is our current index
+        emit colourChanged(currentIndex());
     }
 }
 
@@ -86,12 +86,12 @@ ColourComboBox::rebuild()
     
     ColourDatabase *db = ColourDatabase::getInstance();
     for (int i = 0; i < db->getColourCount(); ++i) {
-	QString name = db->getColourName(i);
-	addItem(db->getExamplePixmap(i, QSize(size, size)), name);
+        QString name = db->getColourName(i);
+        addItem(db->getExamplePixmap(i, QSize(size, size)), name);
     }
 
     if (m_withAddNewColourEntry) {
-	addItem(tr("Add New Colour..."));
+        addItem(tr("Add New Colour..."));
     }
 
     setCurrentIndex(ix);

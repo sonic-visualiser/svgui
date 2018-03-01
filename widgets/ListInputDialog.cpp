@@ -24,8 +24,8 @@
 #include <QDialogButtonBox>
 
 ListInputDialog::ListInputDialog(QWidget *parent, const QString &title,
-				 const QString &labelText, const QStringList &list,
-				 int current) :
+                                 const QString &labelText, const QStringList &list,
+                                 int current) :
     QDialog(parent),
     m_strings(list)
 {

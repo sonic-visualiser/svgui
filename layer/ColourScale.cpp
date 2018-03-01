@@ -32,7 +32,7 @@ ColourScale::ColourScale(Parameters parameters) :
     if (m_params.minValue >= m_params.maxValue) {
         SVCERR << "ERROR: ColourScale::ColourScale: minValue = "
              << m_params.minValue << ", maxValue = " << m_params.maxValue << endl;
-	throw std::logic_error("maxValue must be greater than minValue");
+        throw std::logic_error("maxValue must be greater than minValue");
     }
 
     m_mappedMin = m_params.minValue;
@@ -62,19 +62,19 @@ ColourScale::ColourScale(Parameters parameters) :
         if (m_mappedMin < m_mappedMax + threshold) {
             m_mappedMin = m_mappedMax + threshold;
         }
-	
+        
     } else if (m_params.scaleType == ColourScaleType::PlusMinusOne) {
-	
-	m_mappedMin = -1.0;
-	m_mappedMax =  1.0;
+        
+        m_mappedMin = -1.0;
+        m_mappedMax =  1.0;
 
     } else if (m_params.scaleType == ColourScaleType::Absolute) {
 
-	m_mappedMin = fabs(m_mappedMin);
-	m_mappedMax = fabs(m_mappedMax);
-	if (m_mappedMin >= m_mappedMax) {
-	    std::swap(m_mappedMin, m_mappedMax);
-	}
+        m_mappedMin = fabs(m_mappedMin);
+        m_mappedMax = fabs(m_mappedMax);
+        if (m_mappedMin >= m_mappedMax) {
+            std::swap(m_mappedMin, m_mappedMax);
+        }
     }
 
     if (m_mappedMin >= m_mappedMax) {
@@ -84,7 +84,7 @@ ColourScale::ColourScale(Parameters parameters) :
              << ", scale = " << int(m_params.scaleType)
              << " resulting in mapped minValue = " << m_mappedMin
              << ", mapped maxValue = " << m_mappedMax << endl;
-	throw std::logic_error("maxValue must be greater than minValue [after mapping]");
+        throw std::logic_error("maxValue must be greater than minValue [after mapping]");
     }
 }
 
@@ -104,7 +104,7 @@ ColourScale::getPixel(double value) const
     double maxPixF = m_maxPixel;
 
     if (m_params.scaleType == ColourScaleType::Phase) {
-	double half = (maxPixF - 1.f) / 2.f;
+        double half = (maxPixF - 1.f) / 2.f;
         int pixel = 1 + int((value * half) / M_PI + half);
 //        SVCERR << "phase = " << value << " pixel = " << pixel << endl;
         return pixel;
@@ -117,21 +117,21 @@ ColourScale::getPixel(double value) const
     double mapped = value;
 
     if (m_params.scaleType == ColourScaleType::Log) {
-	mapped = LogRange::map(value);
+        mapped = LogRange::map(value);
     } else if (m_params.scaleType == ColourScaleType::PlusMinusOne) {
-	if (mapped < -1.f) mapped = -1.f;
-	if (mapped > 1.f) mapped = 1.f;
+        if (mapped < -1.f) mapped = -1.f;
+        if (mapped > 1.f) mapped = 1.f;
     } else if (m_params.scaleType == ColourScaleType::Absolute) {
-	if (mapped < 0.f) mapped = -mapped;
+        if (mapped < 0.f) mapped = -mapped;
     }
 
     mapped *= m_params.multiple;
     
     if (mapped < m_mappedMin) {
-	mapped = m_mappedMin;
+        mapped = m_mappedMin;
     }
     if (mapped > m_mappedMax) {
-	mapped = m_mappedMax;
+        mapped = m_mappedMax;
     }
 
     double proportion = (mapped - m_mappedMin) / (m_mappedMax - m_mappedMin);
@@ -139,16 +139,16 @@ ColourScale::getPixel(double value) const
     int pixel = 0;
 
     if (m_params.scaleType == ColourScaleType::Meter) {
-	pixel = AudioLevel::multiplier_to_preview(proportion, m_maxPixel-1) + 1;
+        pixel = AudioLevel::multiplier_to_preview(proportion, m_maxPixel-1) + 1;
     } else {
-	pixel = int(proportion * maxPixF) + 1;
+        pixel = int(proportion * maxPixF) + 1;
     }
 
     if (pixel < 0) {
-	pixel = 0;
+        pixel = 0;
     }
     if (pixel > m_maxPixel) {
-	pixel = m_maxPixel;
+        pixel = m_maxPixel;
     }
     return pixel;
 }
@@ -157,21 +157,21 @@ QColor
 ColourScale::getColourForPixel(int pixel, int rotation) const
 {
     if (pixel < 0) {
-	pixel = 0;
+        pixel = 0;
     }
     if (pixel > m_maxPixel) {
-	pixel = m_maxPixel;
+        pixel = m_maxPixel;
     }
     if (pixel == 0) {
-	if (m_mapper.hasLightBackground()) {
-	    return Qt::white;
-	} else {
-	    return Qt::black;
-	}
+        if (m_mapper.hasLightBackground()) {
+            return Qt::white;
+        } else {
+            return Qt::black;
+        }
     } else {
-	int target = int(pixel) + rotation;
-	while (target < 1) target += m_maxPixel;
-	while (target > m_maxPixel) target -= m_maxPixel;
-	return m_mapper.map(double(target));
+        int target = int(pixel) + rotation;
+        while (target < 1) target += m_maxPixel;
+        while (target > m_maxPixel) target -= m_maxPixel;
+        return m_mapper.map(double(target));
     }
 }

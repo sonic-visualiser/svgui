@@ -26,18 +26,18 @@
 
 int
 LinearNumericalScale::getWidth(LayerGeometryProvider *,
-			       QPainter &paint)
+                               QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 10;
 }
 
 void
 LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
-				    const VerticalScaleLayer *layer,
-				    QPainter &paint,
-				    int x0,
-				    double minf,
-				    double maxf)
+                                    const VerticalScaleLayer *layer,
+                                    QPainter &paint,
+                                    int x0,
+                                    double minf,
+                                    double maxf)
 {
     int n = 10;
     auto ticks = ScaleTickIntervals::linear({ minf, maxf, n });
@@ -49,30 +49,30 @@ LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
 
     for (int i = 0; i < n; ++i) {
 
-	int y, ty;
+        int y, ty;
         bool drawText = true;
 
-	if (i == n-1 &&
-	    v->getPaintHeight() < paint.fontMetrics().height() * (n*2)) {
-	    if (layer->getScaleUnits() != "") drawText = false;
-	}
+        if (i == n-1 &&
+            v->getPaintHeight() < paint.fontMetrics().height() * (n*2)) {
+            if (layer->getScaleUnits() != "") drawText = false;
+        }
 
         double val = ticks[i].value;
         QString label = QString::fromStdString(ticks[i].label);
         
-	y = layer->getYForValue(v, val);
+        y = layer->getYForValue(v, val);
 
-	ty = y - paint.fontMetrics().height() + paint.fontMetrics().ascent() + 2;
-	
-	if (prevy >= 0 && (prevy - y) < paint.fontMetrics().height()) {
-	    continue;
+        ty = y - paint.fontMetrics().height() + paint.fontMetrics().ascent() + 2;
+        
+        if (prevy >= 0 && (prevy - y) < paint.fontMetrics().height()) {
+            continue;
         }
 
-	paint.drawLine(w - 5, y, w, y);
+        paint.drawLine(w - 5, y, w, y);
 
         if (drawText) {
-	    paint.drawText(w - paint.fontMetrics().width(label) - 6,
-			   ty, label);
+            paint.drawText(w - paint.fontMetrics().width(label) - 6,
+                           ty, label);
         }
 
         prevy = y;

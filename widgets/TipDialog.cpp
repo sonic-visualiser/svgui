@@ -276,10 +276,10 @@ bool
 TipDialog::TipFileParser::error(const QXmlParseException &exception)
 {
     QString errorString =
-	QString("ERROR: TipFileParser: %1 at line %2, column %3")
-	.arg(exception.message())
-	.arg(exception.lineNumber())
-	.arg(exception.columnNumber());
+        QString("ERROR: TipFileParser: %1 at line %2, column %3")
+        .arg(exception.message())
+        .arg(exception.lineNumber())
+        .arg(exception.columnNumber());
     cerr << errorString << endl;
     return QXmlDefaultHandler::error(exception);
 }
@@ -288,10 +288,10 @@ bool
 TipDialog::TipFileParser::fatalError(const QXmlParseException &exception)
 {
     QString errorString =
-	QString("FATAL ERROR: TipFileParser: %1 at line %2, column %3")
-	.arg(exception.message())
-	.arg(exception.lineNumber())
-	.arg(exception.columnNumber());
+        QString("FATAL ERROR: TipFileParser: %1 at line %2, column %3")
+        .arg(exception.message())
+        .arg(exception.lineNumber())
+        .arg(exception.columnNumber());
     cerr << errorString << endl;
     return QXmlDefaultHandler::fatalError(exception);
 }

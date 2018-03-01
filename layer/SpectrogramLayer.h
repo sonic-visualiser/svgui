@@ -49,7 +49,7 @@ class Dense3DModelPeakCache;
  */
 
 class SpectrogramLayer : public VerticalBinLayer,
-			 public PowerOfSqrtTwoZoomConstraint
+                         public PowerOfSqrtTwoZoomConstraint
 {
     Q_OBJECT
 
@@ -74,8 +74,8 @@ public:
     virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-				    int &resolution,
-				    SnapType snap) const;
+                                    int &resolution,
+                                    SnapType snap) const;
 
     virtual void measureDoubleClick(LayerGeometryProvider *, QMouseEvent *);
 
@@ -91,7 +91,7 @@ public:
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
+                                          int value) const;
     virtual QString getPropertyValueIconName(const PropertyName &,
                                              int value) const;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
@@ -189,7 +189,7 @@ public:
     int getColourRotation() const;
 
     virtual VerticalPosition getPreferredFrameCountPosition() const {
-	return PositionTop;
+        return PositionTop;
     }
 
     virtual bool isLayerOpaque() const { return true; }
@@ -287,11 +287,11 @@ protected:
 
     bool getYBinSourceRange(LayerGeometryProvider *v, int y, double &freqMin, double &freqMax) const;
     bool getAdjustedYBinSourceRange(LayerGeometryProvider *v, int x, int y,
-				    double &freqMin, double &freqMax,
-				    double &adjFreqMin, double &adjFreqMax) const;
+                                    double &freqMin, double &freqMax,
+                                    double &adjFreqMin, double &adjFreqMax) const;
     bool getXBinSourceRange(LayerGeometryProvider *v, int x, RealTime &timeMin, RealTime &timeMax) const;
     bool getXYBinSourceRange(LayerGeometryProvider *v, int x, int y, double &min, double &max,
-			     double &phaseMin, double &phaseMax) const;
+                             double &phaseMin, double &phaseMax) const;
 
     int getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;

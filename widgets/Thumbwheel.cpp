@@ -29,7 +29,7 @@
 #include <iostream>
 
 Thumbwheel::Thumbwheel(Qt::Orientation orientation,
-		       QWidget *parent) :
+                       QWidget *parent) :
     QWidget(parent),
     m_min(0),
     m_max(100),
@@ -244,9 +244,9 @@ Thumbwheel::scroll(bool up)
     if (step == 0) step = 1;
 
     if (up) {
-	setValue(m_value + step);
+        setValue(m_value + step);
     } else {
-	setValue(m_value - step);
+        setValue(m_value - step);
     }
     
     emit valueChanged(getValue());
@@ -430,9 +430,9 @@ Thumbwheel::wheelEvent(QWheelEvent *e)
     if (step == 0) step = 1;
 
     if (e->delta() > 0) {
-	setValue(m_value + step);
+        setValue(m_value + step);
     } else {
-	setValue(m_value - step);
+        setValue(m_value - step);
     }
     
     emit valueChanged(getValue());

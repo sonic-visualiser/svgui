@@ -24,18 +24,18 @@
 
 int
 LinearColourScale::getWidth(LayerGeometryProvider *,
-			    QPainter &paint)
+                            QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 15;
 }
 
 void
 LinearColourScale::paintVertical(LayerGeometryProvider *v,
-				 const ColourScaleLayer *layer,
-				 QPainter &paint,
-				 int /* x0 */,
-				 double min,
-				 double max)
+                                 const ColourScaleLayer *layer,
+                                 QPainter &paint,
+                                 int /* x0 */,
+                                 double min,
+                                 double max)
 {
     int h = v->getPaintHeight();
 
@@ -58,9 +58,9 @@ LinearColourScale::paintVertical(LayerGeometryProvider *v,
 
     paint.save();
     for (int y = 0; y < boxh; ++y) {
-	double val = ((boxh - y) * (max - min)) / boxh + min;
-	paint.setPen(layer->getColourForValue(v, val));
-	paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
+        double val = ((boxh - y) * (max - min)) / boxh + min;
+        paint.setPen(layer->getColourForValue(v, val));
+        paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
     }
     paint.restore();
 
@@ -78,19 +78,19 @@ LinearColourScale::paintVertical(LayerGeometryProvider *v,
 
     for (int i = 0; i < n; ++i) {
 
-	int y, ty;
+        int y, ty;
 
-	y = boxy + int(boxh - ((val - min) * boxh) / (max - min));
+        y = boxy + int(boxh - ((val - min) * boxh) / (max - min));
 
-	ty = y - paint.fontMetrics().height() +
-	    paint.fontMetrics().ascent() + 2;
+        ty = y - paint.fontMetrics().height() +
+            paint.fontMetrics().ascent() + 2;
 
-	snprintf(buffer, buflen, "%.*f", dp, val);
-	QString label = QString(buffer);
+        snprintf(buffer, buflen, "%.*f", dp, val);
+        QString label = QString(buffer);
 
-	paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
-	paint.drawText(tx, ty, label);
+        paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
+        paint.drawText(tx, ty, label);
 
-	val += inc;
+        val += inc;
     }
 }

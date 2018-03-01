@@ -141,10 +141,10 @@ void
 LevelPanToolButton::selfLevelChanged(float level)
 {
     if (level > 0.f) {
-	m_muted = false;
+        m_muted = false;
     } else {
-	m_muted = true;
-	m_savedLevel = 1.f;
+        m_muted = true;
+        m_savedLevel = 1.f;
     }
     update();
 }
@@ -153,14 +153,14 @@ void
 LevelPanToolButton::selfClicked()
 {
     if (m_muted) {
-	m_muted = false;
-	m_lpw->setLevel(m_savedLevel);
-	emit levelChanged(m_savedLevel);
+        m_muted = false;
+        m_lpw->setLevel(m_savedLevel);
+        emit levelChanged(m_savedLevel);
     } else {
-	m_savedLevel = m_lpw->getLevel();
-	m_muted = true;
-	m_lpw->setLevel(0.f);
-	emit levelChanged(0.f);
+        m_savedLevel = m_lpw->getLevel();
+        m_muted = true;
+        m_lpw->setLevel(0.f);
+        emit levelChanged(0.f);
     }
     update();
 }

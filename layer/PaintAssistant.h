@@ -39,8 +39,8 @@ public:
                             int minY, int height);
 
     enum TextStyle {
-	BoxedText,
-	OutlinedText,
+        BoxedText,
+        OutlinedText,
         OutlinedItalicText
     };
 

@@ -48,8 +48,8 @@ public:
     virtual QString getLabelPreceding(sv_frame_t) const;
 
     virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-				    int &resolution,
-				    SnapType snap) const;
+                                    int &resolution,
+                                    SnapType snap) const;
     virtual bool snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                                       int &resolution,
                                       SnapType snap) const;
@@ -86,7 +86,7 @@ public:
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
+                                          int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
     void setFillColourMap(int);
@@ -103,8 +103,8 @@ public:
     VerticalScale getVerticalScale() const { return m_verticalScale; }
 
     enum PlotStyle {
-	PlotLines,
-	PlotSegmentation
+        PlotLines,
+        PlotSegmentation
     };
 
     void setPlotStyle(PlotStyle style);

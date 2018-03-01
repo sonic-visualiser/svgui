@@ -54,25 +54,25 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
     repopulate();
 
     connect(this, SIGNAL(currentChanged(int)),
-	    this, SLOT(selectedContainerChanged(int)));
+            this, SLOT(selectedContainerChanged(int)));
 
     connect(m_client, SIGNAL(propertyContainerAdded(PropertyContainer *)),
-	    this, SLOT(propertyContainerAdded(PropertyContainer *)));
+            this, SLOT(propertyContainerAdded(PropertyContainer *)));
 
     connect(m_client, SIGNAL(propertyContainerRemoved(PropertyContainer *)),
-	    this, SLOT(propertyContainerRemoved(PropertyContainer *)));
+            this, SLOT(propertyContainerRemoved(PropertyContainer *)));
 
     connect(m_client, SIGNAL(propertyContainerPropertyChanged(PropertyContainer *)),
-	    this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
+            this, SLOT(propertyContainerPropertyChanged(PropertyContainer *)));
 
     connect(m_client, SIGNAL(propertyContainerPropertyRangeChanged(PropertyContainer *)),
-	    this, SLOT(propertyContainerPropertyRangeChanged(PropertyContainer *)));
+            this, SLOT(propertyContainerPropertyRangeChanged(PropertyContainer *)));
 
     connect(m_client, SIGNAL(propertyContainerNameChanged(PropertyContainer *)),
-	    this, SLOT(propertyContainerNameChanged(PropertyContainer *)));
+            this, SLOT(propertyContainerNameChanged(PropertyContainer *)));
 
     connect(this, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
-	    m_client, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
+            m_client, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
 }
 
 PropertyStack::~PropertyStack()
@@ -89,27 +89,27 @@ PropertyStack::repopulate()
 #endif
     
     while (count() > 0) {
-	removeTab(0);
+        removeTab(0);
     }
     for (size_t i = 0; i < m_boxes.size(); ++i) {
-	delete m_boxes[i];
+        delete m_boxes[i];
     }
     m_boxes.clear();
     
     for (int i = 0; i < m_client->getPropertyContainerCount(); ++i) {
 
-	PropertyContainer *container = m_client->getPropertyContainer(i);
-	QString name = container->getPropertyContainerName();
-	
+        PropertyContainer *container = m_client->getPropertyContainer(i);
+        QString name = container->getPropertyContainerName();
+        
 #ifdef DEBUG_PROPERTY_STACK
         cerr << "PropertyStack[" << this << "]::repopulate: client " << m_client
              << " returns container " << container << " (name " << name
              << ") at position " << i << endl;
 #endif
 
-	PropertyBox *box = new PropertyBox(container);
+        PropertyBox *box = new PropertyBox(container);
 
-	connect(box, SIGNAL(showLayer(bool)), this, SLOT(showLayer(bool)));
+        connect(box, SIGNAL(showLayer(bool)), this, SLOT(showLayer(bool)));
         connect(box, SIGNAL(contextHelpChanged(const QString &)),
                 this, SIGNAL(contextHelpChanged(const QString &)));
 
@@ -131,20 +131,20 @@ PropertyStack::repopulate()
         bool nameDiffers = (name != shortName);
         shortName = QString("&%1 %2").arg(i + 1).arg(shortName);
 
-	QString iconName = container->getPropertyContainerIconName();
+        QString iconName = container->getPropertyContainerIconName();
 
         QIcon icon(IconLoader().load(iconName));
-	if (icon.isNull()) {
-	    addTab(box, shortName);
+        if (icon.isNull()) {
+            addTab(box, shortName);
             if (nameDiffers) {
                 setTabToolTip(i, name);
             }
-	} else {
-	    addTab(box, icon, QString("&%1").arg(i + 1));
-	    setTabToolTip(i, name);
-	}
+        } else {
+            addTab(box, icon, QString("&%1").arg(i + 1));
+            setTabToolTip(i, name);
+        }
 
-	m_boxes.push_back(box);
+        m_boxes.push_back(box);
     }    
 
     blockSignals(false);
@@ -154,8 +154,8 @@ bool
 PropertyStack::containsContainer(PropertyContainer *pc) const
 {
     for (int i = 0; i < m_client->getPropertyContainerCount(); ++i) {
-	PropertyContainer *container = m_client->getPropertyContainer(i);
-	if (pc == container) return true;
+        PropertyContainer *container = m_client->getPropertyContainer(i);
+        if (pc == container) return true;
     }
 
     return false;
@@ -173,8 +173,8 @@ PropertyStack::getContainerIndex(PropertyContainer *pc) const
     // box list, not in the view.
 
     for (int i = 0; in_range_for(m_boxes, i); ++i) {
-	PropertyContainer *container = m_boxes[i]->getContainer();
-	if (pc == container) {
+        PropertyContainer *container = m_boxes[i]->getContainer();
+        if (pc == container) {
             return i;
         }
     }
@@ -201,13 +201,13 @@ PropertyStack::propertyContainerPropertyChanged(PropertyContainer *pc)
 {
     Layer *layer = dynamic_cast<Layer *>(pc);
     for (unsigned int i = 0; i < m_boxes.size(); ++i) {
-	if (pc == m_boxes[i]->getContainer()) {
-	    m_boxes[i]->propertyContainerPropertyChanged(pc);
+        if (pc == m_boxes[i]->getContainer()) {
+            m_boxes[i]->propertyContainerPropertyChanged(pc);
             if (layer) {
                 m_boxes[i]->layerVisibilityChanged
                     (!layer->isLayerDormant(m_client));
             }
-	}
+        }
     }
 }
 
@@ -215,9 +215,9 @@ void
 PropertyStack::propertyContainerPropertyRangeChanged(PropertyContainer *pc)
 {
     for (unsigned int i = 0; i < m_boxes.size(); ++i) {
-	if (pc == m_boxes[i]->getContainer()) {
-	    m_boxes[i]->propertyContainerPropertyRangeChanged(pc);
-	}
+        if (pc == m_boxes[i]->getContainer()) {
+            m_boxes[i]->propertyContainerPropertyRangeChanged(pc);
+        }
     }
 }
 
@@ -234,15 +234,15 @@ PropertyStack::showLayer(bool show)
     QObject *obj = sender();
     
     for (unsigned int i = 0; i < m_boxes.size(); ++i) {
-	if (obj == m_boxes[i]) {
-	    Layer *layer = dynamic_cast<Layer *>(m_boxes[i]->getContainer());
-	    if (layer) {
+        if (obj == m_boxes[i]) {
+            Layer *layer = dynamic_cast<Layer *>(m_boxes[i]->getContainer());
+            if (layer) {
                 CommandHistory::getInstance()->addCommand
                     (new ShowLayerCommand(m_client, layer, show,
                                           tr("Change Layer Visibility")));
-		return;
-	    }
-	}
+                return;
+            }
+        }
     }
 }
 

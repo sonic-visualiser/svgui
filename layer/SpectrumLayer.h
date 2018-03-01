@@ -51,7 +51,7 @@ public:
     virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
     virtual VerticalPosition getPreferredFrameCountPosition() const override {
-	return PositionTop;
+        return PositionTop;
     }
 
     virtual PropertyList getProperties() const override;
@@ -62,7 +62,7 @@ public:
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const override;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const override;
+                                          int value) const override;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
     virtual void setProperty(const PropertyName &, int value) override;
     virtual void setProperties(const QXmlAttributes &) override;

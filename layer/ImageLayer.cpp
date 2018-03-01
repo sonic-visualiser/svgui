@@ -91,14 +91,14 @@ ImageLayer::getPropertyType(const PropertyName &name) const
 
 int
 ImageLayer::getPropertyRangeAndValue(const PropertyName &name,
-				    int *min, int *max, int *deflt) const
+                                    int *min, int *max, int *deflt) const
 {
     return Layer::getPropertyRangeAndValue(name, min, max, deflt);
 }
 
 QString
 ImageLayer::getPropertyValueLabel(const PropertyName &name,
-				 int value) const
+                                 int value) const
 {
     return Layer::getPropertyValueLabel(name, value);
 }
@@ -133,10 +133,10 @@ ImageLayer::getLocalPoints(LayerGeometryProvider *v, int x, int ) const
     ImageModel::PointList rv;
 
     for (ImageModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ) {
+         i != points.end(); ) {
 
-	const ImageModel::Point &p(*i);
-	int px = v->getXForFrame(p.frame);
+        const ImageModel::Point &p(*i);
+        int px = v->getXForFrame(p.frame);
         if (px > x) break;
 
         ++i;
@@ -178,11 +178,11 @@ ImageLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     ImageModel::PointList points = getLocalPoints(v, x, pos.y());
 
     if (points.empty()) {
-	if (!m_model->isReady()) {
-	    return tr("In progress");
-	} else {
-	    return "";
-	}
+        if (!m_model->isReady()) {
+            return tr("In progress");
+        } else {
+            return "";
+        }
     }
 
 //    int useFrame = points.begin()->frame;
@@ -192,14 +192,14 @@ ImageLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     QString text;
 /*    
     if (points.begin()->label == "") {
-	text = QString(tr("Time:\t%1\nHeight:\t%2\nLabel:\t%3"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(points.begin()->height)
-	    .arg(points.begin()->label);
+        text = QString(tr("Time:\t%1\nHeight:\t%2\nLabel:\t%3"))
+            .arg(rt.toText(true).c_str())
+            .arg(points.begin()->height)
+            .arg(points.begin()->label);
     }
 
     pos = QPoint(v->getXForFrame(useFrame),
-		 getYForHeight(v, points.begin()->height));
+                 getYForHeight(v, points.begin()->height));
 */
     return text;
 }
@@ -209,22 +209,22 @@ ImageLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 
 bool
 ImageLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-			      int &resolution,
-			      SnapType snap) const
+                              int &resolution,
+                              SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
     ImageModel::PointList points;
 
     if (snap == SnapNeighbouring) {
-	
-	points = getLocalPoints(v, v->getXForFrame(frame), -1);
-	if (points.empty()) return false;
-	frame = points.begin()->frame;
-	return true;
+        
+        points = getLocalPoints(v, v->getXForFrame(frame), -1);
+        if (points.empty()) return false;
+        frame = points.begin()->frame;
+        return true;
     }    
 
     points = m_model->getPoints(frame, frame);
@@ -232,47 +232,47 @@ ImageLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     bool found = false;
 
     for (ImageModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
-	    if (i->frame > frame) {
-		snapped = i->frame;
-		found = true;
-		break;
-	    }
+            if (i->frame > frame) {
+                snapped = i->frame;
+                found = true;
+                break;
+            }
 
-	} else if (snap == SnapLeft) {
+        } else if (snap == SnapLeft) {
 
-	    if (i->frame <= frame) {
-		snapped = i->frame;
-		found = true; // don't break, as the next may be better
-	    } else {
-		break;
-	    }
+            if (i->frame <= frame) {
+                snapped = i->frame;
+                found = true; // don't break, as the next may be better
+            } else {
+                break;
+            }
 
-	} else { // nearest
+        } else { // nearest
 
-	    ImageModel::PointList::const_iterator j = i;
-	    ++j;
+            ImageModel::PointList::const_iterator j = i;
+            ++j;
 
-	    if (j == points.end()) {
+            if (j == points.end()) {
 
-		snapped = i->frame;
-		found = true;
-		break;
+                snapped = i->frame;
+                found = true;
+                break;
 
-	    } else if (j->frame >= frame) {
+            } else if (j->frame >= frame) {
 
-		if (j->frame - frame < frame - i->frame) {
-		    snapped = j->frame;
-		} else {
-		    snapped = i->frame;
-		}
-		found = true;
-		break;
-	    }
-	}
+                if (j->frame - frame < frame - i->frame) {
+                    snapped = j->frame;
+                } else {
+                    snapped = i->frame;
+                }
+                found = true;
+                break;
+            }
+        }
     }
 
     frame = snapped;
@@ -316,11 +316,11 @@ ImageLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     paint.setRenderHint(QPainter::Antialiasing, true);
 
     for (ImageModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	const ImageModel::Point &p(*i);
+        const ImageModel::Point &p(*i);
 
-	int x = v->getXForFrame(p.frame);
+        int x = v->getXForFrame(p.frame);
 
         int nx = x + 2000;
         ImageModel::PointList::const_iterator j = i;
@@ -559,8 +559,8 @@ ImageLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 //    SVDEBUG << "ImageLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
     if (!m_model) {
-	SVDEBUG << "ImageLayer::drawStart: no model" << endl;
-	return;
+        SVDEBUG << "ImageLayer::drawStart: no model" << endl;
+        return;
     }
 
     sv_frame_t frame = v->getFrameForX(e->x());
@@ -605,10 +605,10 @@ ImageLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 
         checkAddSource(dialog.getImage());
 
-	ImageModel::ChangeImageCommand *command =
-	    new ImageModel::ChangeImageCommand
+        ImageModel::ChangeImageCommand *command =
+            new ImageModel::ChangeImageCommand
             (m_model, m_editingPoint, dialog.getImage(), dialog.getLabel());
-	m_editingCommand->addCommand(command);
+        m_editingCommand->addCommand(command);
     } else {
         m_editingCommand->deletePoint(m_editingPoint);
     }
@@ -652,8 +652,8 @@ ImageLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -671,7 +671,7 @@ ImageLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     frame = (frame / m_model->getResolution()) * m_model->getResolution();
 
     if (!m_editingCommand) {
-	m_editingCommand = new ImageModel::EditCommand(m_model, tr("Move Image"));
+        m_editingCommand = new ImageModel::EditCommand(m_model, tr("Move Image"));
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
@@ -686,7 +686,7 @@ ImageLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
     if (!m_model || !m_editing) return;
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
+        finish(m_editingCommand);
     }
     
     m_editingCommand = 0;
@@ -712,8 +712,8 @@ ImageLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 
         checkAddSource(dialog.getImage());
 
-	ImageModel::ChangeImageCommand *command =
-	    new ImageModel::ChangeImageCommand
+        ImageModel::ChangeImageCommand *command =
+            new ImageModel::ChangeImageCommand
             (m_model, *points.begin(), dialog.getImage(), dialog.getLabel());
 
         CommandHistory::getInstance()->addCommand(command);
@@ -728,20 +728,20 @@ ImageLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     if (!m_model) return;
 
     ImageModel::EditCommand *command =
-	new ImageModel::EditCommand(m_model, tr("Drag Selection"));
+        new ImageModel::EditCommand(m_model, tr("Drag Selection"));
 
     ImageModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (ImageModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
-	    ImageModel::Point newPoint(*i);
-	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+        if (s.contains(i->frame)) {
+            ImageModel::Point newPoint(*i);
+            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -753,29 +753,29 @@ ImageLayer::resizeSelection(Selection s, Selection newSize)
     if (!m_model) return;
 
     ImageModel::EditCommand *command =
-	new ImageModel::EditCommand(m_model, tr("Resize Selection"));
+        new ImageModel::EditCommand(m_model, tr("Resize Selection"));
 
     ImageModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     double ratio =
-	double(newSize.getEndFrame() - newSize.getStartFrame()) /
-	double(s.getEndFrame() - s.getStartFrame());
+        double(newSize.getEndFrame() - newSize.getStartFrame()) /
+        double(s.getEndFrame() - s.getStartFrame());
 
     for (ImageModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
+        if (s.contains(i->frame)) {
 
-	    double target = double(i->frame);
-	    target = double(newSize.getStartFrame()) +
-		target - double(s.getStartFrame()) * ratio;
+            double target = double(i->frame);
+            target = double(newSize.getStartFrame()) +
+                target - double(s.getStartFrame()) * ratio;
 
-	    ImageModel::Point newPoint(*i);
-	    newPoint.frame = lrint(target);
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+            ImageModel::Point newPoint(*i);
+            newPoint.frame = lrint(target);
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -787,14 +787,14 @@ ImageLayer::deleteSelection(Selection s)
     if (!m_model) return;
 
     ImageModel::EditCommand *command =
-	new ImageModel::EditCommand(m_model, tr("Delete Selection"));
+        new ImageModel::EditCommand(m_model, tr("Delete Selection"));
 
     ImageModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (ImageModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) command->deletePoint(*i);
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) command->deletePoint(*i);
     }
 
     finish(command);
@@ -806,11 +806,11 @@ ImageLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     if (!m_model) return;
 
     ImageModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (ImageModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) {
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->label);
             point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
@@ -845,7 +845,7 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*
     }
 
     ImageModel::EditCommand *command =
-	new ImageModel::EditCommand(m_model, tr("Paste"));
+        new ImageModel::EditCommand(m_model, tr("Paste"));
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -925,7 +925,7 @@ ImageLayer::checkAddSources()
     const ImageModel::PointList &points(m_model->getPoints());
 
     for (ImageModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
         
         checkAddSource((*i).image);
     }

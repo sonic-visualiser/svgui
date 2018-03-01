@@ -43,10 +43,10 @@ AlignmentView::viewCentreFrameChanged(View *v, sv_frame_t f)
 {
     View::viewCentreFrameChanged(v, f);
     if (v == m_above) {
-	m_centreFrame = f;
-	update();
+        m_centreFrame = f;
+        update();
     } else if (v == m_below) {
-	update();
+        update();
     }
 }
 
@@ -73,16 +73,16 @@ void
 AlignmentView::setViewAbove(View *v)
 {
     if (m_above) {
-	disconnect(m_above, 0, this, 0);
+        disconnect(m_above, 0, this, 0);
     }
 
     m_above = v;
 
     if (m_above) {
-	connect(m_above,
-		SIGNAL(zoomLevelChanged(int, bool)),
-		this, 
-		SLOT(viewAboveZoomLevelChanged(int, bool)));
+        connect(m_above,
+                SIGNAL(zoomLevelChanged(int, bool)),
+                this, 
+                SLOT(viewAboveZoomLevelChanged(int, bool)));
     }
 }
 
@@ -90,16 +90,16 @@ void
 AlignmentView::setViewBelow(View *v)
 {
     if (m_below) {
-	disconnect(m_below, 0, this, 0);
+        disconnect(m_below, 0, this, 0);
     }
 
     m_below = v;
 
     if (m_below) {
-	connect(m_below,
-		SIGNAL(zoomLevelChanged(int, bool)),
-		this, 
-		SLOT(viewBelowZoomLevelChanged(int, bool)));
+        connect(m_below,
+                SIGNAL(zoomLevelChanged(int, bool)),
+                this, 
+                SLOT(viewBelowZoomLevelChanged(int, bool)));
     }
 }
 
@@ -130,11 +130,11 @@ AlignmentView::paintEvent(QPaintEvent *)
     vector<sv_frame_t> keyFrames = getKeyFrames();
 
     foreach (sv_frame_t f, keyFrames) {
-	int ax = m_above->getXForFrame(f);
-	sv_frame_t rf = m_above->alignToReference(f);
-	sv_frame_t bf = m_below->alignFromReference(rf);
-	int bx = m_below->getXForFrame(bf);
-	paint.drawLine(ax, 0, bx, height());
+        int ax = m_above->getXForFrame(f);
+        sv_frame_t rf = m_above->alignToReference(f);
+        sv_frame_t bf = m_below->alignFromReference(rf);
+        int bx = m_below->getXForFrame(bf);
+        paint.drawLine(ax, 0, bx, height());
     }
 
     paint.end();
@@ -144,31 +144,31 @@ vector<sv_frame_t>
 AlignmentView::getKeyFrames()
 {
     if (!m_above) {
-	return getDefaultKeyFrames();
+        return getDefaultKeyFrames();
     }
 
     SparseOneDimensionalModel *m = 0;
 
     // get the topmost such
     for (int i = 0; i < m_above->getLayerCount(); ++i) {
-	if (qobject_cast<TimeInstantLayer *>(m_above->getLayer(i))) {
-	    SparseOneDimensionalModel *mm = 
-		qobject_cast<SparseOneDimensionalModel *>
-		(m_above->getLayer(i)->getModel());
-	    if (mm) m = mm;
-	}
+        if (qobject_cast<TimeInstantLayer *>(m_above->getLayer(i))) {
+            SparseOneDimensionalModel *mm = 
+                qobject_cast<SparseOneDimensionalModel *>
+                (m_above->getLayer(i)->getModel());
+            if (mm) m = mm;
+        }
     }
 
     if (!m) {
-	return getDefaultKeyFrames();
+        return getDefaultKeyFrames();
     }
 
     vector<sv_frame_t> keyFrames;
 
     const SparseOneDimensionalModel::PointList pp = m->getPoints();
     for (SparseOneDimensionalModel::PointList::const_iterator pi = pp.begin();
-	 pi != pp.end(); ++pi) {
-	keyFrames.push_back(pi->frame);
+         pi != pp.end(); ++pi) {
+        keyFrames.push_back(pi->frame);
     }
 
     return keyFrames;
@@ -185,9 +185,9 @@ AlignmentView::getDefaultKeyFrames()
     if (rate == 0) return keyFrames;
 
     for (sv_frame_t f = m_above->getModelsStartFrame(); 
-	 f <= m_above->getModelsEndFrame(); 
-	 f += sv_frame_t(rate * 5 + 0.5)) {
-	keyFrames.push_back(f);
+         f <= m_above->getModelsEndFrame(); 
+         f += sv_frame_t(rate * 5 + 0.5)) {
+        keyFrames.push_back(f);
     }
     
     return keyFrames;

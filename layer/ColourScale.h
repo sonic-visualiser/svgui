@@ -35,28 +35,28 @@ class ColourScale
 {
 public:
     struct Parameters {
-	Parameters() : colourMap(0), scaleType(ColourScaleType::Linear),
-		       minValue(0.0), maxValue(1.0),
-		       threshold(0.0), gain(1.0), multiple(1.0) { }
+        Parameters() : colourMap(0), scaleType(ColourScaleType::Linear),
+                       minValue(0.0), maxValue(1.0),
+                       threshold(0.0), gain(1.0), multiple(1.0) { }
 
-	/** A colour map index as used by ColourMapper */
-	int colourMap;
-	
-	/** Distribution for the scale */
-	ColourScaleType scaleType;
-	
-	/** Minimum value in source range */
-	double minValue;
-	
-	/** Maximum value in source range. Must be > minValue */
-	double maxValue;
+        /** A colour map index as used by ColourMapper */
+        int colourMap;
+        
+        /** Distribution for the scale */
+        ColourScaleType scaleType;
+        
+        /** Minimum value in source range */
+        double minValue;
+        
+        /** Maximum value in source range. Must be > minValue */
+        double maxValue;
 
-	/** Threshold below which every value is mapped to background
-	    pixel 0 */
-	double threshold;
+        /** Threshold below which every value is mapped to background
+            pixel 0 */
+        double threshold;
 
-	/** Gain to apply before thresholding, mapping, and clamping */
-	double gain;
+        /** Gain to apply before thresholding, mapping, and clamping */
+        double gain;
 
         /** Multiple to apply after thresholding and mapping. In most
          *  cases the gain parameter is the one you want instead of
@@ -106,7 +106,7 @@ public:
      * equivalent to getColourForPixel(getPixel(value), rotation).
      */
     QColor getColour(double value, int rotation) const {
-	return getColourForPixel(getPixel(value), rotation);
+        return getColourForPixel(getPixel(value), rotation);
     }
 
 private:

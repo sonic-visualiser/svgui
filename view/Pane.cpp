@@ -1892,11 +1892,11 @@ Pane::zoomToRegion(QRect r)
     }
         
     double ratio = double(w) / double(width());
-//	cerr << "ratio: " << ratio << endl;
+//        cerr << "ratio: " << ratio << endl;
     int newZoomLevel = (int)nearbyint(m_zoomLevel * ratio);
     if (newZoomLevel < 1) newZoomLevel = 1;
 
-//	cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << endl;
+//        cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << endl;
     setZoomLevel(getZoomConstraintBlockSize(newZoomLevel));
     setStartFrame(newStartFrame);
 
@@ -2116,8 +2116,8 @@ Pane::dragExtendSelection(QMouseEvent *e)
         layer->snapToFeatureFrame(this, snapFrameRight,
                                   resolution, Layer::SnapRight);
     }
-	
-//	cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
+        
+//        cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
 
     if (snapFrameLeft < 0) snapFrameLeft = 0;
     if (snapFrameRight < 0) snapFrameRight = 0;

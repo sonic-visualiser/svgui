@@ -130,13 +130,13 @@ public:
     Clipboard &getClipboard() { return m_clipboard; }
 
     enum ToolMode {
-	NavigateMode,
-	SelectMode,
+        NavigateMode,
+        SelectMode,
         EditMode,
-	DrawMode,
-	EraseMode,
-	MeasureMode,
-	NoteEditMode //GF: Tonioni: this tool mode will be context sensitive.
+        DrawMode,
+        EraseMode,
+        MeasureMode,
+        NoteEditMode //GF: Tonioni: this tool mode will be context sensitive.
     };
     ToolMode getToolMode() const { return m_toolMode; }
     void setToolMode(ToolMode mode);
@@ -348,16 +348,16 @@ protected:
     class SetSelectionCommand : public Command
     {
     public:
-	SetSelectionCommand(ViewManager *vm, const MultiSelection &ms);
-	virtual ~SetSelectionCommand();
-	virtual void execute();
-	virtual void unexecute();
-	virtual QString getName() const;
+        SetSelectionCommand(ViewManager *vm, const MultiSelection &ms);
+        virtual ~SetSelectionCommand();
+        virtual void execute();
+        virtual void unexecute();
+        virtual QString getName() const;
 
     protected:
-	ViewManager *m_vm;
-	MultiSelection m_oldSelection;
-	MultiSelection m_newSelection;
+        ViewManager *m_vm;
+        MultiSelection m_oldSelection;
+        MultiSelection m_newSelection;
     };
 
     OverlayMode m_overlayMode;

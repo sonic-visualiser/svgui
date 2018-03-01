@@ -43,7 +43,7 @@
 #include "base/Debug.h"
 
 PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
-					     QWidget *parent) :
+                                             QWidget *parent) :
     QDialog(parent),
     m_plugin(plugin),
     m_channel(-1),

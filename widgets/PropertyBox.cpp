@@ -62,7 +62,7 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 {
 #ifdef DEBUG_PROPERTY_BOX
     cerr << "PropertyBox[" << this << "(\"" <<
-	container->getPropertyContainerName() << "\" at " << container << ")]::PropertyBox" << endl;
+        container->getPropertyContainerName() << "\" at " << container << ")]::PropertyBox" << endl;
 #endif
 
     m_mainBox = new QVBoxLayout;
@@ -98,7 +98,7 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     size_t i;
 
     for (i = 0; i < properties.size(); ++i) {
-	updatePropertyEditor(properties[i]);
+        updatePropertyEditor(properties[i]);
     }
 
     blockSignals(false);
@@ -128,18 +128,18 @@ PropertyBox::populateViewPlayFrame()
 #endif
 
     if (m_viewPlayFrame) {
-	delete m_viewPlayFrame;
-	m_viewPlayFrame = 0;
+        delete m_viewPlayFrame;
+        m_viewPlayFrame = 0;
     }
 
     if (!m_container) return;
 
     Layer *layer = dynamic_cast<Layer *>(m_container);
     if (layer) {
-	disconnect(layer, SIGNAL(modelReplaced()),
+        disconnect(layer, SIGNAL(modelReplaced()),
                    this, SLOT(populateViewPlayFrame()));
-	connect(layer, SIGNAL(modelReplaced()),
-		this, SLOT(populateViewPlayFrame()));
+        connect(layer, SIGNAL(modelReplaced()),
+                this, SLOT(populateViewPlayFrame()));
     }
 
     PlayParameters *params = m_container->getPlayParameters();
@@ -169,14 +169,14 @@ PropertyBox::populateViewPlayFrame()
         m_playButton->setToolTip(tr("Click to toggle playback"));
         m_playButton->setChecked(!params->isPlayMuted());
         m_playButton->setFixedSize(buttonSize);
-	connect(m_playButton, SIGNAL(toggled(bool)),
-		this, SLOT(playAudibleButtonChanged(bool)));
+        connect(m_playButton, SIGNAL(toggled(bool)),
+                this, SLOT(playAudibleButtonChanged(bool)));
         connect(m_playButton, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
         connect(m_playButton, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
-	connect(params, SIGNAL(playAudibleChanged(bool)),
-		this, SLOT(playAudibleChanged(bool)));
+        connect(params, SIGNAL(playAudibleChanged(bool)),
+                this, SLOT(playAudibleChanged(bool)));
 
         LevelPanToolButton *levelPan = new LevelPanToolButton;
         levelPan->setFixedSize(buttonSize);
@@ -195,7 +195,7 @@ PropertyBox::populateViewPlayFrame()
         connect(levelPan, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
 
-	layout->addWidget(m_playButton, 0, col++, Qt::AlignCenter);
+        layout->addWidget(m_playButton, 0, col++, Qt::AlignCenter);
 
         if (params->getPlayClipId() != "") {
             NotifyingToolButton *playParamButton = new NotifyingToolButton;
@@ -216,13 +216,13 @@ PropertyBox::populateViewPlayFrame()
 
     if (layer) {
 
-	QLabel *showLabel = new QLabel(tr("Show"));
-	layout->addWidget(showLabel, 0, col++, Qt::AlignVCenter | Qt::AlignRight);
+        QLabel *showLabel = new QLabel(tr("Show"));
+        layout->addWidget(showLabel, 0, col++, Qt::AlignVCenter | Qt::AlignRight);
 
-	m_showButton = new LEDButton(palette().highlight().color());
-	layout->addWidget(m_showButton, 0, col++, Qt::AlignVCenter | Qt::AlignLeft);
-	connect(m_showButton, SIGNAL(stateChanged(bool)),
-		this, SIGNAL(showLayer(bool)));
+        m_showButton = new LEDButton(palette().highlight().color());
+        layout->addWidget(m_showButton, 0, col++, Qt::AlignVCenter | Qt::AlignLeft);
+        connect(m_showButton, SIGNAL(stateChanged(bool)),
+                this, SIGNAL(showLayer(bool)));
         connect(m_showButton, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
         connect(m_showButton, SIGNAL(mouseLeft()),
@@ -241,7 +241,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     value = m_container->getPropertyRangeAndValue(name, &min, &max, &deflt);
 
     bool have = (m_propertyControllers.find(name) !=
-		 m_propertyControllers.end());
+                 m_propertyControllers.end());
 
     QString groupName = m_container->getPropertyGroupName(name);
     QString propertyLabel = m_container->getPropertyLabel(name);
@@ -249,11 +249,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
 #ifdef DEBUG_PROPERTY_BOX
     cerr << "PropertyBox[" << this
-	      << "(\"" << m_container->getPropertyContainerName()
-	      << "\")]";
+              << "(\"" << m_container->getPropertyContainerName()
+              << "\")]";
     cerr << "::updatePropertyEditor(\"" << name << "\"):";
     cerr << " value " << value << ", have " << have << ", group \""
-	      << groupName << "\"" << endl;
+              << groupName << "\"" << endl;
 #endif
 
     QString groupLabel = groupName;
@@ -300,9 +300,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
         QAbstractButton *button;
 
-	if (!(button = qobject_cast<QAbstractButton *>(existing))) {
+        if (!(button = qobject_cast<QAbstractButton *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
-	    cerr << "PropertyBox: creating new checkbox" << endl;
+            cerr << "PropertyBox: creating new checkbox" << endl;
 #endif
             if (iconName != "") {
                 button = new NotifyingPushButton();
@@ -315,8 +315,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 button = new NotifyingCheckBox();
                 button->setObjectName(name);
             }
-	    connect(button, SIGNAL(toggled(bool)),
-		    this, SLOT(propertyControllerChanged(bool)));
+            connect(button, SIGNAL(toggled(bool)),
+                    this, SLOT(propertyControllerChanged(bool)));
             connect(button, SIGNAL(mouseEntered()),
                     this, SLOT(mouseEnteredWidget()));
             connect(button, SIGNAL(mouseLeft()),
@@ -330,22 +330,22 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 groupLayout->addWidget(button, 0, groupLayout->columnCount());
             }
 
-	    m_propertyControllers[name] = button;
-	}
+            m_propertyControllers[name] = button;
+        }
 
         if (button->isChecked() != (value > 0)) {
-	    button->blockSignals(true);
-	    button->setChecked(value > 0);
-	    button->blockSignals(false);
-	}
-	break;
+            button->blockSignals(true);
+            button->setChecked(value > 0);
+            button->blockSignals(false);
+        }
+        break;
     }
 
     case PropertyContainer::RangeProperty:
     {
-	AudioDial *dial;
+        AudioDial *dial;
 
-	if ((dial = qobject_cast<AudioDial *>(existing))) {
+        if ((dial = qobject_cast<AudioDial *>(existing))) {
             if (rangeChanged) {
                 dial->blockSignals(true);
                 dial->setMinimum(min);
@@ -355,21 +355,21 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             }
         } else {
 #ifdef DEBUG_PROPERTY_BOX 
-	    cerr << "PropertyBox: creating new dial" << endl;
+            cerr << "PropertyBox: creating new dial" << endl;
 #endif
-	    dial = new AudioDial();
-	    dial->setObjectName(name);
-	    dial->setMinimum(min);
-	    dial->setMaximum(max);
-	    dial->setPageStep(1);
-	    dial->setNotchesVisible((max - min) <= 12);
+            dial = new AudioDial();
+            dial->setObjectName(name);
+            dial->setMinimum(min);
+            dial->setMaximum(max);
+            dial->setPageStep(1);
+            dial->setNotchesVisible((max - min) <= 12);
             // important to set the range mapper before the default,
             // because the range mapper is used to map the default
             dial->setRangeMapper(m_container->getNewPropertyRangeMapper(name));
-	    dial->setDefaultValue(deflt);
+            dial->setDefaultValue(deflt);
             dial->setShowToolTip(true);
-	    connect(dial, SIGNAL(valueChanged(int)),
-		    this, SLOT(propertyControllerChanged(int)));
+            connect(dial, SIGNAL(valueChanged(int)),
+                    this, SLOT(propertyControllerChanged(int)));
             connect(dial, SIGNAL(mouseEntered()),
                     this, SLOT(mouseEnteredWidget()));
             connect(dial, SIGNAL(mouseLeft()),
@@ -385,31 +385,31 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 groupLayout->addWidget(dial, 0, groupLayout->columnCount());
             }
 
-	    m_propertyControllers[name] = dial;
-	}
+            m_propertyControllers[name] = dial;
+        }
 
-	if (dial->value() != value) {
-	    dial->blockSignals(true);
-	    dial->setValue(value);
-	    dial->blockSignals(false);
-	}
-	break;
+        if (dial->value() != value) {
+            dial->blockSignals(true);
+            dial->setValue(value);
+            dial->blockSignals(false);
+        }
+        break;
     }
 
     case PropertyContainer::ColourProperty:
     {
         ColourComboBox *cb;
         
-	if (!(cb = qobject_cast<ColourComboBox *>(existing))) {
+        if (!(cb = qobject_cast<ColourComboBox *>(existing))) {
 
 #ifdef DEBUG_PROPERTY_BOX 
-	    cerr << "PropertyBox: creating new colour combobox" << endl;
+            cerr << "PropertyBox: creating new colour combobox" << endl;
 #endif
             cb = new ColourComboBox(true);
             cb->setObjectName(name);
 
-	    connect(cb, SIGNAL(colourChanged(int)),
-		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(colourChanged(int)),
+                    this, SLOT(propertyControllerChanged(int)));
             connect(cb, SIGNAL(mouseEntered()),
                     this, SLOT(mouseEnteredWidget()));
             connect(cb, SIGNAL(mouseLeft()),
@@ -424,8 +424,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 groupLayout->addWidget(cb, 0, groupLayout->columnCount());
             }
             
-	    m_propertyControllers[name] = cb;
-	}
+            m_propertyControllers[name] = cb;
+        }
 
         if (cb->currentIndex() != value) {
             cb->blockSignals(true);
@@ -442,13 +442,13 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
         if (!(cb = qobject_cast<ColourMapComboBox *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
-	    cerr << "PropertyBox: creating new colourmap combobox" << endl;
+            cerr << "PropertyBox: creating new colourmap combobox" << endl;
 #endif
             cb = new ColourMapComboBox(false);
             cb->setObjectName(name);
 
-	    connect(cb, SIGNAL(colourMapChanged(int)),
-		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(colourMapChanged(int)),
+                    this, SLOT(propertyControllerChanged(int)));
             connect(cb, SIGNAL(mouseEntered()),
                     this, SLOT(mouseEnteredWidget()));
             connect(cb, SIGNAL(mouseLeft()),
@@ -463,8 +463,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                 groupLayout->addWidget(cb, 0, groupLayout->columnCount());
             }
             
-	    m_propertyControllers[name] = cb;
-	}
+            m_propertyControllers[name] = cb;
+        }
 
         if (cb->currentIndex() != value) {
             cb->blockSignals(true);
@@ -478,14 +478,14 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     case PropertyContainer::ValueProperty:
     case PropertyContainer::UnitsProperty:
     {
-	NotifyingComboBox *cb;
+        NotifyingComboBox *cb;
 
-	if (!(cb = qobject_cast<NotifyingComboBox *>(existing))) {
+        if (!(cb = qobject_cast<NotifyingComboBox *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
-	    cerr << "PropertyBox: creating new combobox" << endl;
+            cerr << "PropertyBox: creating new combobox" << endl;
 #endif
-	    cb = new NotifyingComboBox();
-	    cb->setObjectName(name);
+            cb = new NotifyingComboBox();
+            cb->setObjectName(name);
             cb->setDuplicatesEnabled(false);
         }
 
@@ -522,8 +522,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         }
 
         if (!have) {
-	    connect(cb, SIGNAL(activated(int)),
-		    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(activated(int)),
+                    this, SLOT(propertyControllerChanged(int)));
             connect(cb, SIGNAL(mouseEntered()),
                     this, SLOT(mouseEnteredWidget()));
             connect(cb, SIGNAL(mouseLeft()),
@@ -531,8 +531,8 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
             cb->setToolTip(propertyLabel);
             groupLayout->addWidget(cb, 0, groupLayout->columnCount());
-	    m_propertyControllers[name] = cb;
-	} else if (existing != cb) {
+            m_propertyControllers[name] = cb;
+        } else if (existing != cb) {
             groupLayout->replaceWidget(existing, cb);
             delete existing;
         }
@@ -555,12 +555,12 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         }
         cb->blockSignals(false);
 
-	break;
+        break;
     }
 
     case PropertyContainer::InvalidProperty:
     default:
-	break;
+        break;
     }
 }
 
@@ -579,7 +579,7 @@ PropertyBox::propertyContainerPropertyChanged(PropertyContainer *pc)
     blockSignals(true);
 
     for (i = 0; i < properties.size(); ++i) {
-	updatePropertyEditor(properties[i]);
+        updatePropertyEditor(properties[i]);
     }
 
     blockSignals(false);
@@ -592,7 +592,7 @@ PropertyBox::propertyContainerPropertyRangeChanged(PropertyContainer *)
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
     for (size_t i = 0; i < properties.size(); ++i) {
-	updatePropertyEditor(properties[i], true);
+        updatePropertyEditor(properties[i], true);
     }
 
     blockSignals(false);
@@ -634,7 +634,7 @@ PropertyBox::propertyControllerChanged(int value)
     QString name = obj->objectName();
 
 #ifdef DEBUG_PROPERTY_BOX
-    SVDEBUG << "PropertyBox::propertyControllerChanged(" << name	      << ", " << value << ")" << endl;
+    SVDEBUG << "PropertyBox::propertyControllerChanged(" << name              << ", " << value << ")" << endl;
 #endif
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
@@ -652,7 +652,7 @@ PropertyBox::propertyControllerChanged(int value)
 
     } else if (type != PropertyContainer::InvalidProperty) {
 
-	c = m_container->getSetPropertyCommand(name, value);
+        c = m_container->getSetPropertyCommand(name, value);
     }
 
     if (c) CommandHistory::getInstance()->addCommand(c, true, true);

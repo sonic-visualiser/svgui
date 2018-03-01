@@ -166,7 +166,7 @@ QString
 SpectrumLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Window Size" ||
-	name == "Window Increment") return tr("Window");
+        name == "Window Increment") return tr("Window");
     if (name == "Show Peak Frequencies") return tr("Bins");
     return SliceLayer::getPropertyGroupName(name);
 }
@@ -184,20 +184,20 @@ SpectrumLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     if (name == "Window Size") {
 
-	*min = 0;
-	*max = 15;
+        *min = 0;
+        *max = 15;
         *deflt = 5;
-	
-	val = 0;
-	int ws = m_windowSize;
-	while (ws > 32) { ws >>= 1; val ++; }
+        
+        val = 0;
+        int ws = m_windowSize;
+        while (ws > 32) { ws >>= 1; val ++; }
 
     } else if (name == "Window Increment") {
-	
-	*min = 0;
-	*max = 5;
+        
+        *min = 0;
+        *max = 5;
         *deflt = 2;
-	
+        
         val = m_windowHopLevel;
     
     } else if (name == "Show Peak Frequencies") {
@@ -214,21 +214,21 @@ SpectrumLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 SpectrumLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
+                                    int value) const
 {
     if (name == "Window Size") {
-	return QString("%1").arg(32 << value);
+        return QString("%1").arg(32 << value);
     }
     if (name == "Window Increment") {
-	switch (value) {
-	default:
-	case 0: return tr("None");
-	case 1: return tr("25 %");
-	case 2: return tr("50 %");
-	case 3: return tr("75 %");
-	case 4: return tr("87.5 %");
-	case 5: return tr("93.75 %");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("None");
+        case 1: return tr("25 %");
+        case 2: return tr("50 %");
+        case 3: return tr("75 %");
+        case 4: return tr("87.5 %");
+        case 5: return tr("93.75 %");
+        }
     }
     return SliceLayer::getPropertyValueLabel(name, value);
 }
@@ -243,7 +243,7 @@ void
 SpectrumLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Window Size") {
-	setWindowSize(32 << value);
+        setWindowSize(32 << value);
     } else if (name == "Window Increment") {
         setWindowHopLevel(value);
     } else if (name == "Show Peak Frequencies") {

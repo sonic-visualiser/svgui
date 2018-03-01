@@ -464,21 +464,21 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             psx = sx;
         }
 
-	sv_frame_t fx = sx * modelResolution + modelStart;
+        sv_frame_t fx = sx * modelResolution + modelStart;
 
-	if (fx + modelResolution <= modelStart || fx > modelEnd) continue;
+        if (fx + modelResolution <= modelStart || fx > modelEnd) continue;
 
         int rx0 = v->getXForFrame(int(double(fx) * rateRatio));
-	int rx1 = v->getXForFrame(int(double(fx + modelResolution + 1) * rateRatio));
+        int rx1 = v->getXForFrame(int(double(fx + modelResolution + 1) * rateRatio));
 
-	int rw = rx1 - rx0;
-	if (rw < 1) rw = 1;
+        int rw = rx1 - rx0;
+        if (rw < 1) rw = 1;
 
-	bool showLabel = (rw > 10 &&
-			  paint.fontMetrics().width("0.000000") < rw - 3 &&
-			  paint.fontMetrics().height() < (h / sh));
+        bool showLabel = (rw > 10 &&
+                          paint.fontMetrics().width("0.000000") < rw - 3 &&
+                          paint.fontMetrics().height() < (h / sh));
         
-	for (int sy = minbin; sy < minbin + nbins; ++sy) {
+        for (int sy = minbin; sy < minbin + nbins; ++sy) {
 
             int ry0 = m_sources.verticalBinLayer->getIYForBin(v, sy);
             int ry1 = m_sources.verticalBinLayer->getIYForBin(v, sy + 1);
@@ -501,30 +501,30 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                 continue;
             }
 
-	    QColor pen(255, 255, 255, 80);
-	    QColor brush(colour);
+            QColor pen(255, 255, 255, 80);
+            QColor brush(colour);
 
             if (rw > 3 && r.height() > 3) {
                 brush.setAlpha(160);
             }
 
-	    paint.setPen(Qt::NoPen);
-	    paint.setBrush(brush);
+            paint.setPen(Qt::NoPen);
+            paint.setBrush(brush);
 
-	    if (illuminate) {
-		if (r.contains(illuminatePos)) {
-		    paint.setPen(v->getForeground());
-		}
-	    }
+            if (illuminate) {
+                if (r.contains(illuminatePos)) {
+                    paint.setPen(v->getForeground());
+                }
+            }
             
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
 //            SVDEBUG << "rect " << r.x() << "," << r.y() << " "
 //                      << r.width() << "x" << r.height() << endl;
 #endif
 
-	    paint.drawRect(r);
+            paint.drawRect(r);
 
-	    if (showLabel) {
+            if (showLabel) {
                 double value = model->getValueAt(sx, sy);
                 snprintf(labelbuf, buflen, "%06f", value);
                 QString text(labelbuf);
@@ -535,8 +535,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                      ry0 - h / sh - 1 + 2 + paint.fontMetrics().ascent(),
                      text,
                      PaintAssistant::OutlinedText);
-	    }
-	}
+            }
+        }
     }
 
     return magRange;
@@ -598,7 +598,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
 
     const DenseThreeDimensionalModel *model = m_sources.source;
     if (!model || !model->isOK() || !model->isReady()) {
-	throw std::logic_error("no source model provided, or model not ready");
+        throw std::logic_error("no source model provided, or model not ready");
     }
 
     int h = v->getPaintHeight();
@@ -739,7 +739,7 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
 
     const DenseThreeDimensionalModel *model = m_sources.source;
     if (!model || !model->isOK() || !model->isReady()) {
-	throw std::logic_error("no source model provided, or model not ready");
+        throw std::logic_error("no source model provided, or model not ready");
     }
 
     // The draw buffer will contain a fragment at bin resolution. We
