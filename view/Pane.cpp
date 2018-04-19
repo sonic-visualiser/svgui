@@ -823,10 +823,10 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
     QBrush brush;
 
     if (hasLightBackground()) {
-        brush = QBrush(QColor("#f8f8f8"));
+        brush = QBrush(QColor("#aaf8f8f8"));
         paint.setPen(Qt::black);
     } else {
-        brush = QBrush(QColor("#101010"));
+        brush = QBrush(QColor("#aa101010"));
         paint.setPen(Qt::white);
     }
 
