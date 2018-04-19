@@ -2023,32 +2023,38 @@ View::drawSelections(QPainter &paint)
         bool illuminateThis =
             (illuminateFrame >= 0 && i->contains(illuminateFrame));
 
-        paint.setPen(QColor(150, 150, 255));
+        double h = height();
+        double penWidth = PaintAssistant::scalePenWidth(1.0);
+        double half = penWidth/2.0;
+
+        paint.setPen(QPen(QColor(150, 150, 255), penWidth));
 
         if (translucent && shouldLabelSelections()) {
-            paint.drawRect(p0, -1, p1 - p0, height() + 1);
+            paint.drawRect(QRectF(p0, -penWidth, p1 - p0, h + 2*penWidth));
         } else {
             // Make the top & bottom lines of the box visible if we
             // are lacking some of the other visual cues.  There's no
             // particular logic to this, it's just a question of what
             // I happen to think looks nice.
-            paint.drawRect(p0, 0, p1 - p0, height() - 1);
+            paint.drawRect(QRectF(p0, half, p1 - p0, h - penWidth));
         }
 
         if (illuminateThis) {
             paint.save();
-            paint.setPen(QPen(getForeground(), 2));
+            penWidth = PaintAssistant::scalePenWidth(2.0);
+            half = penWidth/2.0;
+            paint.setPen(QPen(getForeground(), penWidth));
             if (closeToLeft) {
-                paint.drawLine(p0, 1, p1, 1);
-                paint.drawLine(p0, 0, p0, height());
-                paint.drawLine(p0, height() - 1, p1, height() - 1);
+                paint.drawLine(QLineF(p0, half, p1, half));
+                paint.drawLine(QLineF(p0, half, p0, h - half));
+                paint.drawLine(QLineF(p0, h - half, p1, h - half));
             } else if (closeToRight) {
-                paint.drawLine(p0, 1, p1, 1);
-                paint.drawLine(p1, 0, p1, height());
-                paint.drawLine(p0, height() - 1, p1, height() - 1);
+                paint.drawLine(QLineF(p0, half, p1, half));
+                paint.drawLine(QLineF(p1, half, p1, h - half));
+                paint.drawLine(QLineF(p0, h - half, p1, h - half));
             } else {
                 paint.setBrush(Qt::NoBrush);
-                paint.drawRect(p0, 1, p1 - p0, height() - 2);
+                paint.drawRect(QRectF(p0, half, p1 - p0, h - penWidth));
             }
             paint.restore();
         }

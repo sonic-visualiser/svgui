@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _VIEW_MANAGER_H_
-#define _VIEW_MANAGER_H_
+#ifndef SV_VIEW_MANAGER_H
+#define SV_VIEW_MANAGER_H
 
 #include <QObject>
 #include <QTimer>
@@ -193,7 +193,7 @@ public:
      * display. This is relevant to hi-dpi systems that do not do
      * pixel doubling (i.e. Windows and Linux rather than OS/X).
      */
-    int scalePixelSize(int pixels);
+    static int scalePixelSize(int pixels);
     
     enum OverlayMode {
         NoOverlays,
