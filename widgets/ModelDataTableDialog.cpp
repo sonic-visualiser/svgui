@@ -208,6 +208,12 @@ ModelDataTableDialog::searchRepeated()
 void
 ModelDataTableDialog::makeCurrent(int row)
 {
+    if (m_table->rowCount() == 0 ||
+        row >= m_table->rowCount() ||
+        row < 0) {
+        return;
+    }
+    
     int rh = m_tableView->height() / m_tableView->rowHeight(0);
     int topRow = row - rh/4;
     if (topRow < 0) topRow = 0;
