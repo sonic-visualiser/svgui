@@ -261,12 +261,12 @@ ModelDataTableDialog::viewPressed(const QModelIndex &)
 
 void
 ModelDataTableDialog::currentChanged(const QModelIndex &current,
-                                     const QModelIndex &)
+                                     const QModelIndex &previous)
 {
-//    SVDEBUG << "ModelDataTableDialog::currentChanged: from "
-//              << previous.row() << ", " << previous.column()
-//              << " to " << current.row() << ", " << current.column() 
-//              << endl;
+    SVDEBUG << "ModelDataTableDialog::currentChanged: from "
+            << previous.row() << ", " << previous.column()
+            << " to " << current.row() << ", " << current.column() 
+            << endl;
     m_currentRow = current.row();
     m_table->setCurrentRow(m_currentRow);
 }
@@ -280,10 +280,17 @@ ModelDataTableDialog::insertRow()
 void
 ModelDataTableDialog::deleteRows()
 {
-    // not efficient
-    while (m_tableView->selectionModel()->hasSelection()) {
-        m_table->removeRow
-            (m_tableView->selectionModel()->selection().indexes().begin()->row());
+    std::set<int> selectedRows;
+    if (m_tableView->selectionModel()->hasSelection()) {
+        for (const auto &ix: m_tableView->selectionModel()->selectedIndexes()) {
+            selectedRows.insert(ix.row());
+        }
+    }
+    // Remove rows in reverse order, so as not to pull the rug from
+    // under our own feet
+    for (auto ri = selectedRows.rbegin(); ri != selectedRows.rend(); ++ri) {
+        SVDEBUG << "ModelDataTableDialog: removing row " << *ri << endl;
+        m_table->removeRow(*ri);
     }
 }
 
