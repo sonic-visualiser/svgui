@@ -236,11 +236,11 @@ View::getTextLabelHeight(const Layer *layer, QPainter &paint) const
         }
     }
 
-    int y = 15 + paint.fontMetrics().ascent();
+    int y = ViewManager::scalePixelSize(15) + paint.fontMetrics().ascent();
 
     for (std::map<int, Layer *>::const_iterator i = sortedLayers.begin();
          i != sortedLayers.end(); ++i) {
-        if (i->second == layer) return y;
+        if (i->second == layer) break;
         y += paint.fontMetrics().height();
     }
 

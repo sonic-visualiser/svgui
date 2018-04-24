@@ -458,8 +458,10 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
             }
 
             if (good) {
-                PaintAssistant::drawVisibleText(v, paint, x + iw + 2, textY, p.label, PaintAssistant::OutlinedText);
-//                paint.drawText(x + iw + 2, textY, p.label);
+                PaintAssistant::drawVisibleText(v, paint,
+                                                x + iw + 2, textY,
+                                                p.label,
+                                                PaintAssistant::OutlinedText);
             }
         }
 
