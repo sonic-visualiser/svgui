@@ -89,10 +89,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
     copyrightLabel->setWordWrap(true);
 
-//    QLabel *typeLabel = new QLabel(plugin->getType().c_str());
-//    typeLabel->setWordWrap(true);
-//    typeLabel->setFont(boldFont);
-
     QLabel *descriptionLabel = 0;
     if (plugin->getDescription() != "") {
         descriptionLabel = new QLabel(plugin->getDescription().c_str());
@@ -117,9 +113,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     row++;
 
     if (descriptionLabel) {
-//        label = new QLabel(tr("Description:"));
-//        label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-//        subgrid->addWidget(label, row, 0);
         subgrid->addWidget(descriptionLabel, row, 1, 1, 2);
         row++;
     }
@@ -131,12 +124,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         subgrid->addWidget(versionLabel, row, 1);
         row++;
     }
-
-//    label = new QLabel(tr("Type:"));
-//    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-//    subgrid->addWidget(label, row, 0);
-//    subgrid->addWidget(typeLabel, row, 1);
-//    row++;
 
     label = new QLabel(tr("Maker:"));
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -596,8 +583,6 @@ PluginParameterDialog::advancedToggled()
 void
 PluginParameterDialog::setAdvancedVisible(bool visible)
 {
-//    m_advanced->setVisible(visible);
-
     if (visible) {
         m_advancedButton->setText(tr("Advanced <<"));
         m_advancedButton->setChecked(true);
@@ -608,12 +593,7 @@ PluginParameterDialog::setAdvancedVisible(bool visible)
         m_advancedButton->setChecked(false);
     }
 
-//    cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << endl;
-
-//    setMinimumHeight(sizeHint().height());
     adjustSize();
-
-//    (sizeHint());
 
     m_advancedVisible = visible;
 
@@ -621,9 +601,6 @@ PluginParameterDialog::setAdvancedVisible(bool visible)
     settings.beginGroup("PluginParameterDialog");
     settings.setValue("advancedvisible", visible);
     settings.endGroup();
-
-//    if (visible) setMaximumHeight(sizeHint().height());
-//    adjustSize();
 }
 
 void
