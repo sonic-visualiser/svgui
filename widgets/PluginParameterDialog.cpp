@@ -20,6 +20,7 @@
 
 #include "TextAbbrev.h"
 #include "IconLoader.h"
+#include "WidgetScale.h"
 
 #include <vamp-hostsdk/Plugin.h>
 #include <vamp-hostsdk/PluginHostAdapter.h>
@@ -108,7 +109,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     m_moreInfo = new QPushButton;
     m_moreInfo->setIcon(IconLoader().load("info"));
-    m_moreInfo->setFixedSize(QSize(16, 16));
+    m_moreInfo->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
     connect(m_moreInfo, SIGNAL(clicked()), this, SLOT(moreInfo()));
     subgrid->addWidget(m_moreInfo, row, 2, Qt::AlignTop | Qt::AlignRight);
     m_moreInfo->hide();
