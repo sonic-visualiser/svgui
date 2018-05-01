@@ -23,7 +23,7 @@
 
 #include "data/model/DenseTimeValueModel.h"
 
-#include "PianoScale.h"
+#include "HorizontalScaleProvider.h"
 
 #include <QColor>
 #include <QMutex>
@@ -31,7 +31,7 @@
 class FFTModel;
 
 class SpectrumLayer : public SliceLayer,
-                      public PianoScale::HorizontalScaleProvider
+                      public HorizontalScaleProvider
 {
     Q_OBJECT
 

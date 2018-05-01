@@ -15,22 +15,26 @@
 
 #include "LogNumericalScale.h"
 #include "VerticalScaleLayer.h"
+#include "HorizontalScaleProvider.h"
+#include "LayerGeometryProvider.h"
 
 #include "base/LogRange.h"
+#include "base/ScaleTickIntervals.h"
 
 #include <QPainter>
 
 #include <cmath>
 
-#include "LayerGeometryProvider.h"
-
-#include "base/ScaleTickIntervals.h"
-
 int
 LogNumericalScale::getWidth(LayerGeometryProvider *,
-                            QPainter &paint)
+                                QPainter &paint,
+                                bool horizontal)
 {
-    return paint.fontMetrics().width("-000.00") + 10;
+    if (horizontal) {
+        return paint.fontMetrics().height() + 10;
+    } else {
+        return paint.fontMetrics().width("-000.00") + 10;
+    }
 }
 
 void
@@ -80,3 +84,39 @@ LogNumericalScale::paintVertical(LayerGeometryProvider *v,
         prevy = y;
     }
 }
+
+void
+LogNumericalScale::paintHorizontal(LayerGeometryProvider *v,
+                                   const HorizontalScaleProvider *p,
+                                   QPainter &paint,
+                                   QRect r)
+{
+    int x0 = r.x(), y0 = r.y(), x1 = r.x() + r.width(), y1 = r.y() + r.height();
+
+    paint.drawLine(x0, y0, x1, y0);
+
+    double f0 = p->getFrequencyForX(v, x0);
+    double f1 = p->getFrequencyForX(v, x1);
+
+    int n = 10;
+    auto ticks = ScaleTickIntervals::logarithmic({ f0, f1, n });
+    n = int(ticks.size());
+
+//    int prevx = -1;
+    (void)y1;
+
+    for (int i = 0; i < n; ++i) {
+        
+        double val = ticks[i].value;
+        QString label = QString::fromStdString(ticks[i].label);
+        int tw = paint.fontMetrics().width(label);
+        
+        cerr << "i = " << i << ", value = " << val << ", tw = " << tw << endl;
+
+        double x = p->getXForFrequency(v, val);
+
+        cerr << "x = " << x << endl;
+        
+    }
+}
+

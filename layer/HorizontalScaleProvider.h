@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006-2013 Chris Cannam and QMUL.
+    This file copyright 2006-2018 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -13,28 +13,26 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef PIANO_SCALE_H
-#define PIANO_SCALE_H
+#ifndef SV_HORIZONTAL_SCALE_PROVIDER_H
+#define SV_HORIZONTAL_SCALE_PROVIDER_H
 
-#include <QRect>
-
-class QPainter;
 class LayerGeometryProvider;
-class HorizontalScaleProvider;
 
-class PianoScale
+/**
+ * Interface to be implemented by objects, such as layers or objects
+ * they delegate to, in which the X axis corresponds to frequency. For
+ * example, SpectrumLayer.
+ */
+class HorizontalScaleProvider
 {
 public:
-    void paintPianoVertical
-    (LayerGeometryProvider *v, QPainter &paint, QRect rect,
-     double minf, double maxf);
+    virtual double getFrequencyForX(const LayerGeometryProvider *,
+                                    double x)
+        const = 0;
     
-    void paintPianoHorizontal
-    (LayerGeometryProvider *v, const HorizontalScaleProvider *p,
-     QPainter &paint, QRect rect);
+    virtual double getXForFrequency(const LayerGeometryProvider *,
+                                    double freq)
+        const = 0;
 };
 
 #endif
-
-
-    

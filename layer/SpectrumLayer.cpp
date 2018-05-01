@@ -25,6 +25,8 @@
 
 #include "ColourMapper.h"
 #include "PaintAssistant.h"
+#include "PianoScale.h"
+#include "LogNumericalScale.h"
 
 #include <QPainter>
 #include <QTextStream>
@@ -603,6 +605,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     int pkh = int(paint.fontMetrics().height() * 0.7 + 0.5);
     if (pkh < 10) pkh = 10;
 
+    int scaleh = LogNumericalScale().getWidth(v, paint, true);
+
     paint.save();
 
     if (fft && m_showPeaks) {
@@ -656,7 +660,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             (void)getYForValue(v, values[bin], norm); // don't need return value, need norm
 
             paint.setPen(mapper.map(norm));
-            paint.drawLine(xorigin + x, 0, xorigin + x, v->getPaintHeight() - pkh - 1);
+            paint.drawLine(xorigin + x, 0, xorigin + x,
+                           v->getPaintHeight() - scaleh - pkh - 1);
         }
 
         paint.restore();
@@ -676,8 +681,13 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     int h = v->getPaintHeight();
 
     PianoScale().paintPianoHorizontal
-        (v, this, paint, QRect(xorigin, h - pkh - 1, w + xorigin, pkh));
+        (v, this, paint,
+         QRect(xorigin, h - scaleh - pkh - 1, w + xorigin, pkh));
 
+    LogNumericalScale().paintHorizontal
+        (v, this, paint,
+         QRect(xorigin, h - scaleh, w + xorigin, scaleh)); 
+    
     paint.restore();
 }
 

@@ -13,23 +13,29 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef LINEAR_NUMERICAL_SCALE_H
-#define LINEAR_NUMERICAL_SCALE_H
+#ifndef SV_LINEAR_NUMERICAL_SCALE_H
+#define SV_LINEAR_NUMERICAL_SCALE_H
 
 #include <QRect>
 
 class QPainter;
 class LayerGeometryProvider;
 class VerticalScaleLayer;
+class HorizontalScaleProvider;
 
 class LinearNumericalScale
 {
 public:
-    int getWidth(LayerGeometryProvider *v, QPainter &paint);
+    int getWidth(LayerGeometryProvider *v, QPainter &paint,
+                 bool horizontal = false);
 
     void paintVertical
     (LayerGeometryProvider *v, const VerticalScaleLayer *layer,
      QPainter &paint, int x0, double minf, double maxf);
+
+    void paintHorizontal
+    (LayerGeometryProvider *v, const HorizontalScaleProvider *provider,
+     QPainter &paint, QRect r);
 };
 
 #endif

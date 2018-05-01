@@ -26,9 +26,14 @@
 
 int
 LinearNumericalScale::getWidth(LayerGeometryProvider *,
-                               QPainter &paint)
+                                   QPainter &paint,
+                                   bool horizontal)
 {
-    return paint.fontMetrics().width("-000.00") + 10;
+    if (horizontal) {
+        return paint.fontMetrics().height() + 10;
+    } else {
+        return paint.fontMetrics().width("-000.00") + 10;
+    }
 }
 
 void
