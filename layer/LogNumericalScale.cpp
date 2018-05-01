@@ -95,15 +95,17 @@ LogNumericalScale::paintHorizontal(LayerGeometryProvider *v,
 
     paint.drawLine(x0, y0, x1, y0);
 
-    double f0 = p->getFrequencyForX(v, x0);
+    double f0 = p->getFrequencyForX(v, x0 ? x0 : 1);
     double f1 = p->getFrequencyForX(v, x1);
 
+    cerr << "f0 = " << f0 << " at x " << (x0 ? x0 : 1) << endl;
+    cerr << "f1 = " << f1 << " at x " << x1 << endl;
+    
     int n = 10;
     auto ticks = ScaleTickIntervals::logarithmic({ f0, f1, n });
     n = int(ticks.size());
 
-//    int prevx = -1;
-    (void)y1;
+    int marginx = -1;
 
     for (int i = 0; i < n; ++i) {
         
@@ -113,10 +115,19 @@ LogNumericalScale::paintHorizontal(LayerGeometryProvider *v,
         
         cerr << "i = " << i << ", value = " << val << ", tw = " << tw << endl;
 
-        double x = p->getXForFrequency(v, val);
+        int x = int(round(p->getXForFrequency(v, val)));
 
         cerr << "x = " << x << endl;
+
+        if (x < marginx) continue;
         
+        //!!! todo: pixel scaling (here & elsewhere in these classes)
+        
+        paint.drawLine(x, y0, x, y1);
+
+        paint.drawText(x + 5, y0 + paint.fontMetrics().ascent() + 5, label);
+
+        marginx = x + tw + 10;
     }
 }
 

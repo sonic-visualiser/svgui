@@ -686,7 +686,7 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
 
     LogNumericalScale().paintHorizontal
         (v, this, paint,
-         QRect(xorigin, h - scaleh, w + xorigin, scaleh)); 
+         QRect(int(getXForBin(v, 0)), h - scaleh, w + xorigin, scaleh)); 
     
     paint.restore();
 }
