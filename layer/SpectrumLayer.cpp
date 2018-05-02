@@ -656,7 +656,7 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             (void)getYForValue(v, values[bin], norm); // don't need return value, need norm
 
             paint.setPen(mapper.map(norm));
-            paint.drawLine(xorigin + x, 0, xorigin + x, v->getPaintHeight() - pkh - 1);
+            paint.drawLine(x, 0, x, v->getPaintHeight() - scaleh - pkh - 1);
         }
 
         paint.restore();
