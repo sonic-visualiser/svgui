@@ -101,7 +101,7 @@ LogNumericalScale::paintHorizontal(LayerGeometryProvider *v,
     cerr << "f0 = " << f0 << " at x " << (x0 ? x0 : 1) << endl;
     cerr << "f1 = " << f1 << " at x " << x1 << endl;
     
-    int n = 10;
+    int n = 20;
     auto ticks = ScaleTickIntervals::logarithmic({ f0, f1, n });
     n = int(ticks.size());
 
