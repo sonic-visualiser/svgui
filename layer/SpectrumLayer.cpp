@@ -25,6 +25,8 @@
 
 #include "ColourMapper.h"
 #include "PaintAssistant.h"
+#include "PianoScale.h"
+#include "HorizontalFrequencyScale.h"
 
 #include <QPainter>
 #include <QTextStream>
@@ -302,6 +304,9 @@ SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 {
     if (!m_sliceableModel) return 0;
     double bin = getBinForX(v, x);
+    // we assume the frequency of a bin corresponds to the centre of
+    // its visual range
+    bin -= 0.5;
     return (m_sliceableModel->getSampleRate() * bin) /
         (m_sliceableModel->getHeight() * 2);
 }
@@ -312,6 +317,8 @@ SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) con
     if (!m_sliceableModel) return 0;
     double bin = (freq * m_sliceableModel->getHeight() * 2) /
         m_sliceableModel->getSampleRate();
+    // we want the centre of the bin range
+    bin += 0.5;
     return getXForBin(v, bin);
 }
 
@@ -598,25 +605,22 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     double thresh = (pow(10, -6) / m_gain) * (m_windowSize / 2.0); // -60dB adj
 
     int xorigin = getVerticalScaleWidth(v, false, paint) + 1;
-    int w = v->getPaintWidth() - xorigin - 1;
-
-    int pkh = int(paint.fontMetrics().height() * 0.7 + 0.5);
-    if (pkh < 10) pkh = 10;
-
-    paint.save();
+    int scaleHeight = getHorizontalScaleHeight(v, paint);
 
     if (fft && m_showPeaks) {
 
         // draw peak lines
 
-//        SVDEBUG << "Showing peaks..." << endl;
-
         int col = int(v->getCentreFrame() / fft->getResolution());
 
         paint.save();
         paint.setRenderHint(QPainter::Antialiasing, false);
-        paint.setPen(QColor(160, 160, 160)); //!!!
 
+        ColourMapper mapper =
+            hasLightBackground() ?
+            ColourMapper(ColourMapper::BlackOnWhite, 0, 1) :
+            ColourMapper(ColourMapper::WhiteOnBlack, 0, 1);
+        
         int peakminbin = 0;
         int peakmaxbin = fft->getHeight() - 1;
         double peakmaxfreq = Pitch::getFrequencyForPitch(128);
@@ -624,8 +628,6 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         
         FFTModel::PeakSet peaks = fft->getPeakFrequencies
             (FFTModel::MajorPitchAdaptivePeaks, col, peakminbin, peakmaxbin);
-
-        ColourMapper mapper(ColourMapper::BlackOnWhite, 0, 1);
 
         BiasCurve curve;
         getBiasCurve(curve);
@@ -656,14 +658,38 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             (void)getYForValue(v, values[bin], norm); // don't need return value, need norm
 
             paint.setPen(mapper.map(norm));
-            paint.drawLine(x, 0, x, v->getPaintHeight() - scaleh - pkh - 1);
+            paint.drawLine(x, 0, x, v->getPaintHeight() - scaleHeight - 1);
         }
 
         paint.restore();
     }
     
+    paint.save();
+    
     SliceLayer::paint(v, paint, rect);
+    
+    paintHorizontalScale(v, paint, xorigin);
 
+    paint.restore();
+}
+
+int
+SpectrumLayer::getHorizontalScaleHeight(LayerGeometryProvider *v,
+                                        QPainter &paint) const
+{
+    int pkh = int(paint.fontMetrics().height() * 0.7 + 0.5);
+    if (pkh < 10) pkh = 10;
+
+    int scaleh = HorizontalFrequencyScale().getHeight(v, paint);
+
+    return pkh + scaleh;
+}
+
+void
+SpectrumLayer::paintHorizontalScale(LayerGeometryProvider *v,
+                                    QPainter &paint,
+                                    int xorigin) const
+{
     //!!! All of this stuff relating to depicting frequencies
     // (keyboard, crosshairs etc) should be applicable to any slice
     // layer whose model has a vertical scale unit of Hz.  However,
@@ -673,12 +699,39 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     // that could be relevant to Colour3DPlotLayer with unit Hz, but
     // that's a bigger proposition.
 
-    int h = v->getPaintHeight();
+    if (!v->getViewManager()->shouldShowHorizontalValueScale()) {
+        return;
+    }
+    
+    int totalScaleHeight = getHorizontalScaleHeight(v, paint); // inc piano
+    int freqScaleHeight = HorizontalFrequencyScale().getHeight(v, paint);
+    int paintHeight = v->getPaintHeight();
+    int paintWidth = v->getPaintWidth();
 
     PianoScale().paintPianoHorizontal
-        (v, this, paint, QRect(xorigin, h - pkh - 1, w + xorigin, pkh));
+        (v, this, paint,
+         QRect(xorigin, paintHeight - totalScaleHeight - 1,
+               paintWidth - 1, totalScaleHeight - freqScaleHeight));
 
-    paint.restore();
+    int scaleLeft = int(getXForBin(v, 1));
+    
+    paint.drawLine(int(getXForBin(v, 0)), paintHeight - freqScaleHeight,
+                   scaleLeft, paintHeight - freqScaleHeight);
+
+    QString hz = tr("Hz");
+    int hzw = paint.fontMetrics().width(hz);
+    if (scaleLeft > hzw + 5) {
+        paint.drawText
+            (scaleLeft - hzw - 5,
+             paintHeight - freqScaleHeight + paint.fontMetrics().ascent() + 5,
+             hz);
+    }
+
+    HorizontalFrequencyScale().paintScale
+        (v, this, paint,
+         QRect(scaleLeft, paintHeight - freqScaleHeight,
+               paintWidth, totalScaleHeight),
+         m_binScale == LogBins);
 }
 
 void

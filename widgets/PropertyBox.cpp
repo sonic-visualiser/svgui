@@ -251,9 +251,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     cerr << "PropertyBox[" << this
               << "(\"" << m_container->getPropertyContainerName()
               << "\")]";
-    cerr << "::updatePropertyEditor(\"" << name << "\"):";
-    cerr << " value " << value << ", have " << have << ", group \""
-              << groupName << "\"" << endl;
+    cerr << "::updatePropertyEditor(\"" << name << "\", "
+         << rangeChanged << "):";
+    cerr << " type " << type << ", value " << value
+         << ", have " << have << ", group \"" << groupName << "\"" << endl;
 #endif
 
     QString groupLabel = groupName;

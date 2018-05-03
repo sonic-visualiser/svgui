@@ -13,24 +13,23 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef SV_LOG_NUMERICAL_SCALE_H
-#define SV_LOG_NUMERICAL_SCALE_H
+#ifndef SV_HORIZONTAL_FREQUENCY_SCALE_H
+#define SV_HORIZONTAL_FREQUENCY_SCALE_H
 
 #include <QRect>
 
 class QPainter;
 class LayerGeometryProvider;
-class VerticalScaleLayer;
+class HorizontalScaleProvider;
 
-class LogNumericalScale
+class HorizontalFrequencyScale
 {
 public:
-    int getWidth(LayerGeometryProvider *v, QPainter &paint);
+    int getHeight(LayerGeometryProvider *v, QPainter &paint);
 
-    void paintVertical
-    (LayerGeometryProvider *v, const VerticalScaleLayer *layer,
-     QPainter &paint, int x0, double minlog, double maxlog);
+    void paintScale
+    (LayerGeometryProvider *v, const HorizontalScaleProvider *provider,
+     QPainter &paint, QRect r, bool logarithmic);
 };
 
 #endif
-

@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef LINEAR_NUMERICAL_SCALE_H
-#define LINEAR_NUMERICAL_SCALE_H
+#ifndef SV_LINEAR_NUMERICAL_SCALE_H
+#define SV_LINEAR_NUMERICAL_SCALE_H
 
 #include <QRect>
 

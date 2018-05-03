@@ -22,6 +22,7 @@
 #include "base/Pitch.h"
 
 #include "LayerGeometryProvider.h"
+#include "HorizontalScaleProvider.h"
 
 #include <iostream>
 using namespace std;

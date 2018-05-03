@@ -32,8 +32,6 @@ public:
     SliceLayer();
     ~SliceLayer();
     
-//    virtual void setModel(const Model *model);
-//    virtual const Model *getModel() const { return m_model; }
     virtual const Model *getModel() const { return 0; }
 
     void setSliceableModel(const Model *model);    
@@ -48,6 +46,8 @@ public:
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourAndBackgroundSignificant;
     }
+
+    virtual bool hasLightBackground() const;
 
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
@@ -85,6 +85,8 @@ public:
 
     enum BinScale { LinearBins, LogBins, InvertedLogBins };
 
+    bool usesSolidColour() const { return m_plotStyle == PlotFilledBlocks; }
+    
     void setFillColourMap(int);
     int getFillColourMap() const { return m_colourMap; }
 

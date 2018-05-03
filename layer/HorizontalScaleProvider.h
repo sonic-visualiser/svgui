@@ -13,24 +13,26 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef SV_LOG_NUMERICAL_SCALE_H
-#define SV_LOG_NUMERICAL_SCALE_H
+#ifndef SV_HORIZONTAL_SCALE_PROVIDER_H
+#define SV_HORIZONTAL_SCALE_PROVIDER_H
 
-#include <QRect>
-
-class QPainter;
 class LayerGeometryProvider;
-class VerticalScaleLayer;
 
-class LogNumericalScale
+/**
+ * Interface to be implemented by objects, such as layers or objects
+ * they delegate to, in which the X axis corresponds to frequency. For
+ * example, SpectrumLayer.
+ */
+class HorizontalScaleProvider
 {
 public:
-    int getWidth(LayerGeometryProvider *v, QPainter &paint);
-
-    void paintVertical
-    (LayerGeometryProvider *v, const VerticalScaleLayer *layer,
-     QPainter &paint, int x0, double minlog, double maxlog);
+    virtual double getFrequencyForX(const LayerGeometryProvider *,
+                                    double x)
+        const = 0;
+    
+    virtual double getXForFrequency(const LayerGeometryProvider *,
+                                    double freq)
+        const = 0;
 };
 
 #endif
-
