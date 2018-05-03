@@ -7,6 +7,8 @@ SVGUI_HEADERS += \
            layer/ColourScale.h \
            layer/ColourScaleLayer.h \
            layer/FlexiNoteLayer.h \
+           layer/HorizontalFrequencyScale.h \
+           layer/HorizontalScaleProvider.h \
            layer/ImageLayer.h \
            layer/ImageRegionFinder.h \
            layer/Layer.h \
@@ -94,6 +96,7 @@ SVGUI_SOURCES += \
 	   layer/ColourMapper.cpp \
 	   layer/ColourScale.cpp \
            layer/FlexiNoteLayer.cpp \
+           layer/HorizontalFrequencyScale.cpp \
            layer/ImageLayer.cpp \
            layer/ImageRegionFinder.cpp \
            layer/Layer.cpp \

@@ -46,6 +46,9 @@ public:
                                      std::vector<QRect> &extents) const override;
     virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const override;
 
+    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const;
+    virtual void paintHorizontalScale(LayerGeometryProvider *, QPainter &, int xorigin) const;
+    
     virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
     virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
@@ -96,10 +99,10 @@ public:
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    virtual double getFrequencyForX(const LayerGeometryProvider *,
-                                    double x) const override;
-    virtual double getXForFrequency(const LayerGeometryProvider *,
-                                    double freq) const override;
+    virtual double getFrequencyForX(const LayerGeometryProvider *, double x)
+        const override;
+    virtual double getXForFrequency(const LayerGeometryProvider *, double freq)
+        const override;
 
 protected slots:
     void preferenceChanged(PropertyContainer::PropertyName name);

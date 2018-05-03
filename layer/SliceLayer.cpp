@@ -31,7 +31,7 @@
 
 SliceLayer::SliceLayer() :
     m_sliceableModel(0),
-    m_colourMap(0),
+    m_colourMap(int(ColourMapper::Ice)),
     m_energyScale(dBScale),
     m_samplingMode(SampleMean),
     m_plotStyle(PlotLines),
@@ -210,7 +210,19 @@ SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
         break;
         
     case LogBins:
-        x = (w * log10(bin + 1)) / log10(count + 1);
+        // The 0.8 here is an awkward compromise. Our x-coord is
+        // proportional to log of bin number, with the x-coord "of a
+        // bin" being that of the left edge of the bin range. We can't
+        // start counting bins from 0, as that would give us x = -Inf
+        // and hide the first bin entirely. But if we start from 1, we
+        // are giving a lot of space to the first bin, which in most
+        // display modes won't be used because the "point" location
+        // for that bin is in the middle of it. Yet in some modes
+        // we'll still want it. A compromise is to count our first bin
+        // as "a bit less than 1", so that most of it is visible but a
+        // bit is tactfully cropped at the left edge so it doesn't
+        // take up so much space.
+        x = (w * log10(bin + 0.8)) / log10(count + 0.8);
         break;
         
     case InvertedLogBins:
@@ -247,7 +259,8 @@ SliceLayer::getBinForX(const LayerGeometryProvider *v, double x) const
         break;
         
     case LogBins:
-        bin = pow(10.0, (x * log10(count + 1)) / w) - 1.0 + eps;
+        // See comment in getXForBin
+        bin = pow(10.0, (x * log10(count + 0.8)) / w) - 0.8 + eps;
         break;
 
     case InvertedLogBins:
@@ -551,6 +564,17 @@ SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, 
     }
 }
 
+bool
+SliceLayer::hasLightBackground() const
+{
+    if (usesSolidColour()) {
+        ColourMapper mapper(m_colourMap, 0, 1);
+        return mapper.hasLightBackground();
+    } else {
+        return SingleColourLayer::hasLightBackground();
+    }
+}
+
 Layer::PropertyList
 SliceLayer::getProperties() const
 {
@@ -595,7 +619,7 @@ SliceLayer::getPropertyType(const PropertyName &name) const
     if (name == "Scale") return ValueProperty;
     if (name == "Sampling Mode") return ValueProperty;
     if (name == "Bin Scale") return ValueProperty;
-    if (name == "Colour" && m_plotStyle == PlotFilledBlocks) return ValueProperty;
+    if (name == "Colour" && usesSolidColour()) return ColourMapProperty;
     return SingleColourLayer::getPropertyType(name);
 }
 
@@ -653,11 +677,11 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = (m_normalize ? 1 : 0);
         *deflt = 0;
 
-    } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
+    } else if (name == "Colour" && usesSolidColour()) {
             
         *min = 0;
         *max = ColourMapper::getColourMapCount() - 1;
-        *deflt = 0;
+        *deflt = int(ColourMapper::Ice);
         
         val = m_colourMap;
 
@@ -703,9 +727,9 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 SliceLayer::getPropertyValueLabel(const PropertyName &name,
-                                    int value) const
+                                  int value) const
 {
-    if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
+    if (name == "Colour" && usesSolidColour()) {
         return ColourMapper::getColourMapName(value);
     }
     if (name == "Scale") {
@@ -765,7 +789,7 @@ SliceLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Threshold") {
         if (value == -80) setThreshold(0.0f);
         else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
-    } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
+    } else if (name == "Colour" && usesSolidColour()) {
         setFillColourMap(value);
     } else if (name == "Scale") {
         switch (value) {

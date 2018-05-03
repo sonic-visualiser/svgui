@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006-2013 Chris Cannam and QMUL.
+    This file copyright 2006-2018 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -15,25 +15,19 @@
 
 #include "LinearNumericalScale.h"
 #include "VerticalScaleLayer.h"
+#include "LayerGeometryProvider.h"
 
 #include <QPainter>
 
 #include <cmath>
 
-#include "LayerGeometryProvider.h"
-
 #include "base/ScaleTickIntervals.h"
 
 int
 LinearNumericalScale::getWidth(LayerGeometryProvider *,
-                                   QPainter &paint,
-                                   bool horizontal)
+                                   QPainter &paint)
 {
-    if (horizontal) {
-        return paint.fontMetrics().height() + 10;
-    } else {
-        return paint.fontMetrics().width("-000.00") + 10;
-    }
+    return paint.fontMetrics().width("-000.00") + 10;
 }
 
 void

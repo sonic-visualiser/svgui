@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006-2013 Chris Cannam and QMUL.
+    This file copyright 2006-2018 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -15,7 +15,6 @@
 
 #include "LogNumericalScale.h"
 #include "VerticalScaleLayer.h"
-#include "HorizontalScaleProvider.h"
 #include "LayerGeometryProvider.h"
 
 #include "base/LogRange.h"
@@ -27,14 +26,9 @@
 
 int
 LogNumericalScale::getWidth(LayerGeometryProvider *,
-                                QPainter &paint,
-                                bool horizontal)
+                            QPainter &paint)
 {
-    if (horizontal) {
-        return paint.fontMetrics().height() + 10;
-    } else {
-        return paint.fontMetrics().width("-000.00") + 10;
-    }
+    return paint.fontMetrics().width("-000.00") + 10;
 }
 
 void
@@ -82,52 +76,6 @@ LogNumericalScale::paintVertical(LayerGeometryProvider *v,
         }
 
         prevy = y;
-    }
-}
-
-void
-LogNumericalScale::paintHorizontal(LayerGeometryProvider *v,
-                                   const HorizontalScaleProvider *p,
-                                   QPainter &paint,
-                                   QRect r)
-{
-    int x0 = r.x(), y0 = r.y(), x1 = r.x() + r.width(), y1 = r.y() + r.height();
-
-    paint.drawLine(x0, y0, x1, y0);
-
-    double f0 = p->getFrequencyForX(v, x0 ? x0 : 1);
-    double f1 = p->getFrequencyForX(v, x1);
-
-    cerr << "f0 = " << f0 << " at x " << (x0 ? x0 : 1) << endl;
-    cerr << "f1 = " << f1 << " at x " << x1 << endl;
-    
-    int n = 20;
-    auto ticks = ScaleTickIntervals::logarithmic({ f0, f1, n });
-    n = int(ticks.size());
-
-    int marginx = -1;
-
-    for (int i = 0; i < n; ++i) {
-        
-        double val = ticks[i].value;
-        QString label = QString::fromStdString(ticks[i].label);
-        int tw = paint.fontMetrics().width(label);
-        
-        cerr << "i = " << i << ", value = " << val << ", tw = " << tw << endl;
-
-        int x = int(round(p->getXForFrequency(v, val)));
-
-        cerr << "x = " << x << endl;
-
-        if (x < marginx) continue;
-        
-        //!!! todo: pixel scaling (here & elsewhere in these classes)
-        
-        paint.drawLine(x, y0, x, y1);
-
-        paint.drawText(x + 5, y0 + paint.fontMetrics().ascent() + 5, label);
-
-        marginx = x + tw + 10;
     }
 }
 

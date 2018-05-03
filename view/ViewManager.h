@@ -219,6 +219,9 @@ public:
     bool shouldShowVerticalColourScale() const {
         return m_overlayMode == AllOverlays;
     }
+    bool shouldShowHorizontalValueScale() const { // for layers where x != time
+        return m_overlayMode != NoOverlays;
+    }
     bool shouldShowSelectionExtents() const {
         return m_overlayMode != NoOverlays && m_overlayMode != GlobalOverlays;
     }
