@@ -56,13 +56,11 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         } while (!round && mult < limit);
         if (round) {
             mult /= 10;
-//            cerr << "\n\nstep goes from " << step;
             step = double(round) / mult;
             n = int(lrint((maxVal - minVal) / step));
             if (mult > 1) {
                 mult /= 10;
             }
-//            cerr << " to " << step << " (n = " << n << ")" << endl;
         }
     }
 
@@ -117,7 +115,6 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         if (spaceForLabel) {
             
             int tx = 3;
-//            if (scale != LinearScale) {
             if (paint.fontMetrics().width(text) < w - 10) {
                 tx = w - 10 - paint.fontMetrics().width(text);
             }
@@ -126,8 +123,6 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 
             if (ty < paint.fontMetrics().ascent()) {
                 ty = paint.fontMetrics().ascent();
-//            } else if (ty > rect.y() + h - paint.fontMetrics().descent()) {
-//                ty = rect.y() + h - paint.fontMetrics().descent();
             } else {
                 ty += toff;
             }
@@ -135,19 +130,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             paint.drawText(tx, ty, text);
             
             lastLabelledY = ty - toff;
-            /*
-            if (ny != y) {
-                ty = ny;
-                if (ty < paint.fontMetrics().ascent()) {
-                    ty = paint.fontMetrics().ascent();
-                } else if (ty > h - paint.fontMetrics().descent()) {
-                    ty = h - paint.fontMetrics().descent();
-                } else {
-                    ty += toff;
-                }
-                paint.drawText(tx, ty, text);
-            }
-            */
+
             paint.drawLine(w - 7, y, w, y);
             if (vy) vy->push_back(y);
 
@@ -188,18 +171,13 @@ PaintAssistant::getYForValue(Scale scale, double value,
 {
     int vy = 0;
 
-//    int m = height/2;
-//    int my = minY + m;
-
     switch (scale) {
 
     case LinearScale:
-//        vy = my - int(m * value);
         vy = minY + height - int(((value - minVal) / (maxVal - minVal)) * height);
         break;
 
     case MeterScale:
-//        vy = my - AudioLevel::multiplier_to_preview(value, m);
         vy = minY + height - AudioLevel::multiplier_to_preview
             ((value - minVal) / (maxVal - minVal), height);
         break;
@@ -239,7 +217,6 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
         
         QRect r = paint.fontMetrics().boundingRect(text);
         r.translate(QPoint(x, y));
-//        cerr << "drawVisibleText: r = " << r.x() << "," <<r.y() << " " << r.width() << "x" << r.height() << endl;
         paint.drawRect(r);
         paint.setBrush(Qt::NoBrush);
 
