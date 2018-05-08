@@ -373,8 +373,11 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     if (v->getViewManager() && v->getViewManager()->shouldShowScaleGuides()) {
         if (!m_scalePoints.empty()) {
             paint.setPen(QColor(240, 240, 240)); //!!! and dark background?
+            int ratio = int(round(double(v->getPaintHeight()) / 
+                                  m_scalePaintHeight));
             for (int i = 0; i < (int)m_scalePoints.size(); ++i) {
-                paint.drawLine(0, m_scalePoints[i], rect.width(), m_scalePoints[i]);
+                paint.drawLine(0, m_scalePoints[i] * ratio, 
+                               rect.width(), m_scalePoints[i] * ratio);
             }
         }
     }
@@ -554,6 +557,15 @@ SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, 
          mult,
          const_cast<std::vector<int> *>(&m_scalePoints));
 
+    // Ugly hack (but then everything about this scale drawing is a
+    // bit ugly). In pixel-doubling hi-dpi scenarios, the scale is
+    // painted at pixel-doubled resolution but we do explicit
+    // pixel-doubling ourselves when painting the layer content. We
+    // make a note of this here so that we can compare with the
+    // equivalent dimension in the paint method when deciding where to
+    // place scale continuation lines.
+    m_scalePaintHeight = v->getPaintHeight();
+    
     if (mult != 1 && mult != 0) {
         int log = int(lrint(log10(mult)));
         QString a = tr("x10");

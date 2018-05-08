@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SLICE_LAYER_H_
-#define _SLICE_LAYER_H_
+#ifndef SV_SLICE_LAYER_H
+#define SV_SLICE_LAYER_H
 
 #include "SingleColourLayer.h"
 
@@ -153,6 +153,7 @@ protected:
     int                               m_minbin;
     int                               m_maxbin;
     mutable std::vector<int>          m_scalePoints;
+    mutable int                       m_scalePaintHeight;
     mutable std::map<int, int>        m_xorigins; // LayerGeometryProvider id -> x
     mutable std::map<int, int>        m_yorigins; // LayerGeometryProvider id -> y
     mutable std::map<int, int>        m_heights;  // LayerGeometryProvider id -> h
