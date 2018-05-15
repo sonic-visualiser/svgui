@@ -21,6 +21,7 @@
 
 class QLabel;
 class QWidget;
+class QListWidget;
 
 class PluginPathConfigurator : public QFrame
 {
@@ -43,14 +44,12 @@ private slots:
     
 private:
     QGridLayout *m_layout;
+    QListWidget *m_list;
 
     QStringList m_path;
     QString m_var;
-
-    QWidget *m_innerFrame;
-    std::vector<QLabel *> m_labels;
     
-    void populate();
+    void populate(int makeCurrent = 0);
 };
 
 #endif
