@@ -16,6 +16,7 @@
 
 #include <QPushButton>
 #include <QListWidget>
+#include <QGridLayout>
 #include <QLabel>
 
 #include "IconLoader.h"
@@ -38,30 +39,32 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
     m_layout->addWidget(m_list, row, 0, 1, 2);
     m_layout->setRowStretch(row, 10);
     m_layout->setColumnStretch(0, 10);
+    connect(m_list, SIGNAL(currentRowChanged(int)),
+            this, SLOT(currentLocationChanged(int)));
     ++row;
 
     QHBoxLayout *buttons = new QHBoxLayout;
     
-    QPushButton *down = new QPushButton;
-    down->setIcon(IconLoader().load("down"));
-    down->setToolTip(tr("Move the selected location down in the list"));
-    down->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
-    connect(down, SIGNAL(clicked()), this, SLOT(downClicked()));
-    buttons->addWidget(down);
+    m_down = new QPushButton;
+    m_down->setIcon(IconLoader().load("down"));
+    m_down->setToolTip(tr("Move the selected location later in the list"));
+    m_down->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
+    connect(m_down, SIGNAL(clicked()), this, SLOT(downClicked()));
+    buttons->addWidget(m_down);
 
-    QPushButton *up = new QPushButton;
-    up->setIcon(IconLoader().load("up"));
-    up->setToolTip(tr("Move the selected location up in the list"));
-    up->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
-    connect(up, SIGNAL(clicked()), this, SLOT(upClicked()));
-    buttons->addWidget(up);
+    m_up = new QPushButton;
+    m_up->setIcon(IconLoader().load("up"));
+    m_up->setToolTip(tr("Move the selected location earlier in the list"));
+    m_up->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
+    connect(m_up, SIGNAL(clicked()), this, SLOT(upClicked()));
+    buttons->addWidget(m_up);
 
-    QPushButton *del = new QPushButton;
-    del->setIcon(IconLoader().load("datadelete"));
-    del->setToolTip(tr("Remove the selected location from the list"));
-    del->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
-    connect(del, SIGNAL(clicked()), this, SLOT(deleteClicked()));
-    buttons->addWidget(del);
+    m_delete = new QPushButton;
+    m_delete->setIcon(IconLoader().load("datadelete"));
+    m_delete->setToolTip(tr("Remove the selected location from the list"));
+    m_delete->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
+    connect(m_delete, SIGNAL(clicked()), this, SLOT(deleteClicked()));
+    buttons->addWidget(m_delete);
 
     m_layout->addLayout(buttons, row, 1);
     ++row;
@@ -91,6 +94,14 @@ PluginPathConfigurator::populate(int makeCurrent)
     if (makeCurrent >= 0 && makeCurrent < m_path.size()) {
         m_list->setCurrentRow(makeCurrent);
     }
+}
+
+void
+PluginPathConfigurator::currentLocationChanged(int i)
+{
+    m_up->setEnabled(i > 0);
+    m_down->setEnabled(i + 1 < m_path.size());
+    m_delete->setEnabled(i < m_path.size());
 }
 
 void

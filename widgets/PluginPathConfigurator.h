@@ -16,12 +16,13 @@
 #define SV_PLUGIN_PATH_CONFIGURATOR_H
 
 #include <QFrame>
-#include <QGridLayout>
 #include <QStringList>
 
 class QLabel;
 class QWidget;
 class QListWidget;
+class QPushButton;
+class QGridLayout;
 
 class PluginPathConfigurator : public QFrame
 {
@@ -41,10 +42,14 @@ private slots:
     void upClicked();
     void downClicked();
     void deleteClicked();
+    void currentLocationChanged(int);
     
 private:
     QGridLayout *m_layout;
     QListWidget *m_list;
+    QPushButton *m_up;
+    QPushButton *m_down;
+    QPushButton *m_delete;
 
     QStringList m_path;
     QString m_var;
