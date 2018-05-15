@@ -19,6 +19,9 @@
 #include <QGridLayout>
 #include <QStringList>
 
+class QLabel;
+class QWidget;
+
 class PluginPathConfigurator : public QFrame
 {
     Q_OBJECT
@@ -43,9 +46,11 @@ private:
 
     QStringList m_path;
     QString m_var;
+
+    QWidget *m_innerFrame;
+    std::vector<QLabel *> m_labels;
     
     void populate();
-    
 };
 
 #endif

@@ -21,12 +21,12 @@
 #include "WidgetScale.h"
 
 PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
-    QFrame(parent)
+    QFrame(parent),
+    m_innerFrame(0)
 {
     setFrameStyle(StyledPanel | Sunken);
     m_layout = new QGridLayout;
     setLayout(m_layout);
-    populate();
 }
 
 PluginPathConfigurator::~PluginPathConfigurator()
@@ -44,9 +44,16 @@ PluginPathConfigurator::setPath(QStringList directories, QString envVariable)
 void
 PluginPathConfigurator::populate()
 {
-    QLabel *header = new QLabel;
+    delete m_innerFrame;
+    m_innerFrame = new QWidget;
+    m_layout->addWidget(m_innerFrame, 0, 0);
+
+    QGridLayout *innerLayout = new QGridLayout;
+    m_innerFrame->setLayout(innerLayout);
+    
+    QLabel *header = new QLabel(m_innerFrame);
     header->setText(QString("<b>%1</b>").arg(tr("Location")));
-    m_layout->addWidget(header, 0, 3);
+    innerLayout->addWidget(header, 0, 3);
     
     for (int i = 0; i < m_path.size(); ++i) {
 
@@ -55,52 +62,103 @@ PluginPathConfigurator::populate()
         QString dir = m_path[i];
 
         if (i > 0) {
-            QPushButton *up = new QPushButton;
+            QPushButton *up = new QPushButton(m_innerFrame);
+            up->setObjectName(QString("%1").arg(i));
             up->setIcon(IconLoader().load("up"));
             up->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
             connect(up, SIGNAL(clicked()), this, SLOT(upClicked()));
-            m_layout->addWidget(up, row, col);
+            innerLayout->addWidget(up, row, col);
         }
         ++col;
 
         if (i + 1 < m_path.size()) {
-            QPushButton *down = new QPushButton;
+            QPushButton *down = new QPushButton(m_innerFrame);
+            down->setObjectName(QString("%1").arg(i));
             down->setIcon(IconLoader().load("down"));
             down->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
             connect(down, SIGNAL(clicked()), this, SLOT(downClicked()));
-            m_layout->addWidget(down, row, col);
+            innerLayout->addWidget(down, row, col);
         }
         ++col;
 
-        QPushButton *del = new QPushButton;
+        QPushButton *del = new QPushButton(m_innerFrame);
+        del->setObjectName(QString("%1").arg(i));
         del->setIcon(IconLoader().load("datadelete"));
         del->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
         connect(del, SIGNAL(clicked()), this, SLOT(deleteClicked()));
-        m_layout->addWidget(del, row, col);
+        innerLayout->addWidget(del, row, col);
         ++col;
 
-        QLabel *dirLabel = new QLabel;
+        QLabel *dirLabel = new QLabel(m_innerFrame);
+        dirLabel->setObjectName(QString("%1").arg(i));
         dirLabel->setText(dir);
-        m_layout->addWidget(dirLabel, row, col);
-        m_layout->setColumnStretch(col, 10);
+        innerLayout->addWidget(dirLabel, row, col);
+        innerLayout->setColumnStretch(col, 10);
         ++col;
-    }        
+    }
 }
 
 void
 PluginPathConfigurator::upClicked()
 {
-    //!!!
+    bool ok = false;
+    int n = sender()->objectName().toInt(&ok);
+    if (!ok) {
+        SVCERR << "upClicked: unable to find index" << endl;
+        return;
+    }
+    QStringList newPath;
+    for (int i = 0; i < m_path.size(); ++i) {
+        if (i + 1 == n) {
+            newPath.push_back(m_path[i+1]);
+            newPath.push_back(m_path[i]);
+            ++i;
+        } else {
+            newPath.push_back(m_path[i]);
+        }
+    }
+    m_path = newPath;
+    populate();
 }
 
 void
 PluginPathConfigurator::downClicked()
 {
-    //!!!!
+    bool ok = false;
+    int n = sender()->objectName().toInt(&ok);
+    if (!ok) {
+        SVCERR << "downClicked: unable to find index" << endl;
+        return;
+    }
+    QStringList newPath;
+    for (int i = 0; i < m_path.size(); ++i) {
+        if (i == n) {
+            newPath.push_back(m_path[i+1]);
+            newPath.push_back(m_path[i]);
+            ++i;
+        } else {
+            newPath.push_back(m_path[i]);
+        }
+    }
+    m_path = newPath;
+    populate();
 }
 
 void
 PluginPathConfigurator::deleteClicked()
 {
-    //!!!
+    bool ok = false;
+    int n = sender()->objectName().toInt(&ok);
+    if (!ok) {
+        SVCERR << "deleteClicked: unable to find index" << endl;
+        return;
+    }
+    QStringList newPath;
+    for (int i = 0; i < m_path.size(); ++i) {
+        if (i != n) {
+            newPath.push_back(m_path[i]);
+        }
+    }
+    m_path = newPath;
+    populate();
 }
