@@ -17,6 +17,7 @@
 #include <QPushButton>
 #include <QListWidget>
 #include <QGridLayout>
+#include <QComboBox>
 #include <QLabel>
 
 #include "IconLoader.h"
@@ -30,9 +31,15 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
 
     int row = 0;
     
-    QLabel *header = new QLabel;
-    header->setText(tr("Plugin locations"));
-    m_layout->addWidget(header, row, 0);
+    m_header = new QLabel;
+    m_header->setText(tr("Plugin locations"));
+    m_layout->addWidget(m_header, row, 0);
+
+    m_pluginTypeSelector = new QComboBox;
+    m_layout->addWidget(m_pluginTypeSelector, row, 1);
+    connect(m_pluginTypeSelector, SIGNAL(currentTextChanged(QString)),
+            this, SLOT(currentTypeChanged(QString)));
+
     ++row;
     
     m_list = new QListWidget;
@@ -75,23 +82,46 @@ PluginPathConfigurator::~PluginPathConfigurator()
 }
 
 void
-PluginPathConfigurator::setPath(QStringList directories, QString envVariable)
+PluginPathConfigurator::setPaths(Paths paths)
 {
-    m_path = directories;
-    m_var = envVariable;
+    m_paths = paths;
+
+    m_pluginTypeSelector->clear();
+    for (const auto &p: paths) {
+        m_pluginTypeSelector->addItem(p.first);
+    }
+    
     populate();
 }
 
 void
-PluginPathConfigurator::populate(int makeCurrent)
+PluginPathConfigurator::populate()
 {
     m_list->clear();
 
-    for (int i = 0; i < m_path.size(); ++i) {
-        m_list->addItem(m_path[i]);
+    if (m_paths.empty()) return;
+
+    populateFor(m_paths.begin()->first, 0);
+}
+
+void
+PluginPathConfigurator::populateFor(QString type, int makeCurrent)
+{
+    m_list->clear();
+
+    for (int i = 0; i < m_pluginTypeSelector->count(); ++i) {
+        if (type == m_pluginTypeSelector->itemText(i)) {
+            m_pluginTypeSelector->setCurrentIndex(i);
+        }
+    }
+    
+    QStringList path = m_paths.at(type).directories;
+    
+    for (int i = 0; i < path.size(); ++i) {
+        m_list->addItem(path[i]);
     }
 
-    if (makeCurrent >= 0 && makeCurrent < m_path.size()) {
+    if (makeCurrent >= 0 && makeCurrent < path.size()) {
         m_list->setCurrentRow(makeCurrent);
     }
 }
@@ -99,65 +129,85 @@ PluginPathConfigurator::populate(int makeCurrent)
 void
 PluginPathConfigurator::currentLocationChanged(int i)
 {
+    QString type = m_pluginTypeSelector->currentText();
+    QStringList path = m_paths.at(type).directories;
     m_up->setEnabled(i > 0);
-    m_down->setEnabled(i + 1 < m_path.size());
-    m_delete->setEnabled(i < m_path.size());
+    m_down->setEnabled(i + 1 < path.size());
+    m_delete->setEnabled(i < path.size());
+}
+
+void
+PluginPathConfigurator::currentTypeChanged(QString type)
+{
+    populateFor(type, 0);
 }
 
 void
 PluginPathConfigurator::upClicked()
 {
+    QString type = m_pluginTypeSelector->currentText();
+    QStringList path = m_paths.at(type).directories;
+    QString variable = m_paths.at(type).envVariable;
+        
     int current = m_list->currentRow();
     if (current <= 0) return;
     
     QStringList newPath;
-    for (int i = 0; i < m_path.size(); ++i) {
+    for (int i = 0; i < path.size(); ++i) {
         if (i + 1 == current) {
-            newPath.push_back(m_path[i+1]);
-            newPath.push_back(m_path[i]);
+            newPath.push_back(path[i+1]);
+            newPath.push_back(path[i]);
             ++i;
         } else {
-            newPath.push_back(m_path[i]);
+            newPath.push_back(path[i]);
         }
     }
-    m_path = newPath;
+    m_paths[type] = { newPath, variable };
     
-    populate(current - 1);
+    populateFor(type, current - 1);
 }
 
 void
 PluginPathConfigurator::downClicked()
 {
+    QString type = m_pluginTypeSelector->currentText();
+    QStringList path = m_paths.at(type).directories;
+    QString variable = m_paths.at(type).envVariable;
+
     int current = m_list->currentRow();
-    if (current < 0 || current + 1 >= m_path.size()) return;
-    
+    if (current < 0 || current + 1 >= path.size()) return;
+
     QStringList newPath;
-    for (int i = 0; i < m_path.size(); ++i) {
+    for (int i = 0; i < path.size(); ++i) {
         if (i == current) {
-            newPath.push_back(m_path[i+1]);
-            newPath.push_back(m_path[i]);
+            newPath.push_back(path[i+1]);
+            newPath.push_back(path[i]);
             ++i;
         } else {
-            newPath.push_back(m_path[i]);
+            newPath.push_back(path[i]);
         }
     }
-    m_path = newPath;
+    m_paths[type] = { newPath, variable };
     
-    populate(current + 1);
+    populateFor(type, current + 1);
 }
 
 void
 PluginPathConfigurator::deleteClicked()
 {
-    int current = m_list->currentRow();
+    QString type = m_pluginTypeSelector->currentText();
+    QStringList path = m_paths.at(type).directories;
+    QString variable = m_paths.at(type).envVariable;
     
+    int current = m_list->currentRow();
+
     QStringList newPath;
-    for (int i = 0; i < m_path.size(); ++i) {
+    for (int i = 0; i < path.size(); ++i) {
         if (i != current) {
-            newPath.push_back(m_path[i]);
+            newPath.push_back(path[i]);
         }
     }
-    m_path = newPath;
+    m_paths[type] = { newPath, variable };
     
-    populate(current < m_path.size() ? current : current-1);
+    populateFor(type, current < newPath.size() ? current : current-1);
 }

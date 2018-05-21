@@ -23,6 +23,7 @@ class QWidget;
 class QListWidget;
 class QPushButton;
 class QGridLayout;
+class QComboBox;
 
 class PluginPathConfigurator : public QFrame
 {
@@ -32,29 +33,43 @@ public:
     PluginPathConfigurator(QWidget *parent = 0);
     ~PluginPathConfigurator();
 
-    void setPath(QStringList directories, QString envVariable);
-    QStringList getPath() const;
+    // Text used to identify a plugin type to the user.
+    // e.g. "LADSPA", "Vamp", or potentially transliterations thereof
+    typedef QString PluginTypeLabel;
+
+    struct PathConfig {
+        QStringList directories;
+        QString envVariable; // e.g. "LADSPA_PATH" etc
+    };
+
+    typedef std::map<PluginTypeLabel, PathConfig> Paths;
+    
+    void setPaths(Paths paths);
+    Paths getPaths() const;
 
 signals:
-    void pathChanged(QStringList);
+    void pathsChanged(const Paths &paths);
 
 private slots:
     void upClicked();
     void downClicked();
     void deleteClicked();
+    void currentTypeChanged(QString);
     void currentLocationChanged(int);
     
 private:
     QGridLayout *m_layout;
+    QLabel *m_header;
+    QComboBox *m_pluginTypeSelector;
     QListWidget *m_list;
     QPushButton *m_up;
     QPushButton *m_down;
     QPushButton *m_delete;
 
-    QStringList m_path;
-    QString m_var;
+    Paths m_paths;
     
-    void populate(int makeCurrent = 0);
+    void populate();
+    void populateFor(QString type, int makeCurrent);
 };
 
 #endif
