@@ -55,6 +55,7 @@ signals:
 private slots:
     void upClicked();
     void downClicked();
+    void addClicked();
     void deleteClicked();
     void resetClicked();
     void currentTypeChanged(QString);
@@ -68,6 +69,7 @@ private:
     QListWidget *m_list;
     QPushButton *m_up;
     QPushButton *m_down;
+    QPushButton *m_add;
     QPushButton *m_delete;
     QPushButton *m_reset;
     QCheckBox *m_envOverride;

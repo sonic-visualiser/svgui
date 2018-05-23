@@ -20,6 +20,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QCheckBox>
+#include <QFileDialog>
 
 #include "IconLoader.h"
 #include "WidgetScale.h"
@@ -29,6 +30,38 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
 {
     m_layout = new QGridLayout;
     setLayout(m_layout);
+    
+    QHBoxLayout *buttons = new QHBoxLayout;
+
+    m_down = new QPushButton;
+    m_down->setIcon(IconLoader().load("down"));
+    m_down->setToolTip(tr("Move the selected location later in the list"));
+    connect(m_down, SIGNAL(clicked()), this, SLOT(downClicked()));
+    buttons->addWidget(m_down);
+
+    m_up = new QPushButton;
+    m_up->setIcon(IconLoader().load("up"));
+    m_up->setToolTip(tr("Move the selected location earlier in the list"));
+    connect(m_up, SIGNAL(clicked()), this, SLOT(upClicked()));
+    buttons->addWidget(m_up);
+
+    m_add = new QPushButton;
+    m_add->setIcon(IconLoader().load("plus"));
+    m_add->setToolTip(tr("Move the selected location earlier in the list"));
+    connect(m_add, SIGNAL(clicked()), this, SLOT(addClicked()));
+    buttons->addWidget(m_add);
+    
+    m_delete = new QPushButton;
+    m_delete->setIcon(IconLoader().load("datadelete"));
+    m_delete->setToolTip(tr("Remove the selected location from the list"));
+    connect(m_delete, SIGNAL(clicked()), this, SLOT(deleteClicked()));
+    buttons->addWidget(m_delete);
+
+    m_reset = new QPushButton;
+    m_reset->setText(tr("Reset"));
+    m_reset->setToolTip(tr("Reset the list for this plugin type to its default"));
+    connect(m_reset, SIGNAL(clicked()), this, SLOT(resetClicked()));
+    buttons->addWidget(m_reset);
 
     int row = 0;
     
@@ -42,7 +75,6 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
             this, SLOT(currentTypeChanged(QString)));
 
     m_layout->setColumnStretch(1, 10);
-
     ++row;
     
     m_list = new QListWidget;
@@ -51,40 +83,15 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
     connect(m_list, SIGNAL(currentRowChanged(int)),
             this, SLOT(currentLocationChanged(int)));
     ++row;
-    
-    QHBoxLayout *buttons = new QHBoxLayout;
-    
-    m_down = new QPushButton;
-    m_down->setIcon(IconLoader().load("down"));
-    m_down->setToolTip(tr("Move the selected location later in the list"));
-    connect(m_down, SIGNAL(clicked()), this, SLOT(downClicked()));
-    buttons->addWidget(m_down);
-
-    m_up = new QPushButton;
-    m_up->setIcon(IconLoader().load("up"));
-    m_up->setToolTip(tr("Move the selected location earlier in the list"));
-    connect(m_up, SIGNAL(clicked()), this, SLOT(upClicked()));
-    buttons->addWidget(m_up);
-
-    m_delete = new QPushButton;
-    m_delete->setIcon(IconLoader().load("datadelete"));
-    m_delete->setToolTip(tr("Remove the selected location from the list"));
-    connect(m_delete, SIGNAL(clicked()), this, SLOT(deleteClicked()));
-    buttons->addWidget(m_delete);
-
-    m_reset = new QPushButton;
-    m_reset->setText(tr("Reset"));
-    m_reset->setToolTip(tr("Reset the list for this plugin type to its default"));
-    connect(m_reset, SIGNAL(clicked()), this, SLOT(resetClicked()));
-    buttons->addWidget(m_reset);
 
     m_layout->addLayout(buttons, row, 2);
     ++row;
-    
+
     m_envOverride = new QCheckBox;
     connect(m_envOverride, SIGNAL(stateChanged(int)),
             this, SLOT(envOverrideChanged(int)));
     m_layout->addWidget(m_envOverride, row, 0, 1, 3);
+    ++row;
 }
 
 PluginPathConfigurator::~PluginPathConfigurator()
@@ -123,7 +130,7 @@ PluginPathConfigurator::populateFor(QString type, int makeCurrent)
     QString envVariable = m_paths.at(type).envVariable;
     bool useEnvVariable = m_paths.at(type).useEnvVariable;
     m_envOverride->setText
-        (tr("Allow the %1 environment variable to override this")
+        (tr("Allow the %1 environment variable to take priority over this")
          .arg(envVariable));
     m_envOverride->setCheckState(useEnvVariable ? Qt::Checked : Qt::Unchecked);
     
@@ -222,6 +229,23 @@ PluginPathConfigurator::downClicked()
     m_paths[type] = newEntry;
     
     populateFor(type, current + 1);
+}
+
+void
+PluginPathConfigurator::addClicked()
+{
+    QString type = m_pluginTypeSelector->currentText();
+
+    QString newDir = QFileDialog::getExistingDirectory
+        (this, tr("Choose directory to add"));
+
+    if (newDir == QString()) return;
+
+    auto newEntry = m_paths.at(type);
+    newEntry.directories.push_back(newDir);
+    m_paths[type] = newEntry;
+    
+    populateFor(type, newEntry.directories.size() - 1);
 }
 
 void
