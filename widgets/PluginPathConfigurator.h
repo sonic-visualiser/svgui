@@ -24,6 +24,7 @@ class QListWidget;
 class QPushButton;
 class QGridLayout;
 class QComboBox;
+class QCheckBox;
 
 class PluginPathConfigurator : public QFrame
 {
@@ -40,6 +41,7 @@ public:
     struct PathConfig {
         QStringList directories;
         QString envVariable; // e.g. "LADSPA_PATH" etc
+        bool useEnvVariable; // true if env variable overrides directories list
     };
 
     typedef std::map<PluginTypeLabel, PathConfig> Paths;
@@ -54,8 +56,10 @@ private slots:
     void upClicked();
     void downClicked();
     void deleteClicked();
+    void resetClicked();
     void currentTypeChanged(QString);
     void currentLocationChanged(int);
+    void envOverrideChanged(int);
     
 private:
     QGridLayout *m_layout;
@@ -65,8 +69,11 @@ private:
     QPushButton *m_up;
     QPushButton *m_down;
     QPushButton *m_delete;
+    QPushButton *m_reset;
+    QCheckBox *m_envOverride;
 
     Paths m_paths;
+    Paths m_originalPaths;
     
     void populate();
     void populateFor(QString type, int makeCurrent);

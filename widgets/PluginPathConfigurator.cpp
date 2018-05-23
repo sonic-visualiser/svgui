@@ -19,6 +19,7 @@
 #include <QGridLayout>
 #include <QComboBox>
 #include <QLabel>
+#include <QCheckBox>
 
 #include "IconLoader.h"
 #include "WidgetScale.h"
@@ -32,49 +33,58 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
     int row = 0;
     
     m_header = new QLabel;
-    m_header->setText(tr("Plugin locations"));
+    m_header->setText(tr("Plugin locations for plugin type:"));
     m_layout->addWidget(m_header, row, 0);
 
     m_pluginTypeSelector = new QComboBox;
-    m_layout->addWidget(m_pluginTypeSelector, row, 1);
+    m_layout->addWidget(m_pluginTypeSelector, row, 1, Qt::AlignLeft);
     connect(m_pluginTypeSelector, SIGNAL(currentTextChanged(QString)),
             this, SLOT(currentTypeChanged(QString)));
+
+    m_layout->setColumnStretch(1, 10);
 
     ++row;
     
     m_list = new QListWidget;
-    m_layout->addWidget(m_list, row, 0, 1, 2);
-    m_layout->setRowStretch(row, 10);
-    m_layout->setColumnStretch(0, 10);
+    m_layout->addWidget(m_list, row, 0, 1, 3);
+    m_layout->setRowStretch(row, 20);
     connect(m_list, SIGNAL(currentRowChanged(int)),
             this, SLOT(currentLocationChanged(int)));
     ++row;
-
+    
     QHBoxLayout *buttons = new QHBoxLayout;
     
     m_down = new QPushButton;
     m_down->setIcon(IconLoader().load("down"));
     m_down->setToolTip(tr("Move the selected location later in the list"));
-    m_down->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
     connect(m_down, SIGNAL(clicked()), this, SLOT(downClicked()));
     buttons->addWidget(m_down);
 
     m_up = new QPushButton;
     m_up->setIcon(IconLoader().load("up"));
     m_up->setToolTip(tr("Move the selected location earlier in the list"));
-    m_up->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
     connect(m_up, SIGNAL(clicked()), this, SLOT(upClicked()));
     buttons->addWidget(m_up);
 
     m_delete = new QPushButton;
     m_delete->setIcon(IconLoader().load("datadelete"));
     m_delete->setToolTip(tr("Remove the selected location from the list"));
-    m_delete->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
     connect(m_delete, SIGNAL(clicked()), this, SLOT(deleteClicked()));
     buttons->addWidget(m_delete);
 
-    m_layout->addLayout(buttons, row, 1);
+    m_reset = new QPushButton;
+    m_reset->setText(tr("Reset"));
+    m_reset->setToolTip(tr("Reset the list for this plugin type to its default"));
+    connect(m_reset, SIGNAL(clicked()), this, SLOT(resetClicked()));
+    buttons->addWidget(m_reset);
+
+    m_layout->addLayout(buttons, row, 2);
     ++row;
+    
+    m_envOverride = new QCheckBox;
+    connect(m_envOverride, SIGNAL(stateChanged(int)),
+            this, SLOT(envOverrideChanged(int)));
+    m_layout->addWidget(m_envOverride, row, 0, 1, 3);
 }
 
 PluginPathConfigurator::~PluginPathConfigurator()
@@ -85,6 +95,9 @@ void
 PluginPathConfigurator::setPaths(Paths paths)
 {
     m_paths = paths;
+    if (m_originalPaths.empty()) {
+        m_originalPaths = paths;
+    }
 
     m_pluginTypeSelector->clear();
     for (const auto &p: paths) {
@@ -101,12 +114,19 @@ PluginPathConfigurator::populate()
 
     if (m_paths.empty()) return;
 
-    populateFor(m_paths.begin()->first, 0);
+    populateFor(m_paths.begin()->first, -1);
 }
 
 void
 PluginPathConfigurator::populateFor(QString type, int makeCurrent)
 {
+    QString envVariable = m_paths.at(type).envVariable;
+    bool useEnvVariable = m_paths.at(type).useEnvVariable;
+    m_envOverride->setText
+        (tr("Allow the %1 environment variable to override this")
+         .arg(envVariable));
+    m_envOverride->setCheckState(useEnvVariable ? Qt::Checked : Qt::Unchecked);
+    
     m_list->clear();
 
     for (int i = 0; i < m_pluginTypeSelector->count(); ++i) {
@@ -121,8 +141,9 @@ PluginPathConfigurator::populateFor(QString type, int makeCurrent)
         m_list->addItem(path[i]);
     }
 
-    if (makeCurrent >= 0 && makeCurrent < path.size()) {
+    if (makeCurrent < path.size()) {
         m_list->setCurrentRow(makeCurrent);
+        currentLocationChanged(makeCurrent);
     }
 }
 
@@ -132,14 +153,21 @@ PluginPathConfigurator::currentLocationChanged(int i)
     QString type = m_pluginTypeSelector->currentText();
     QStringList path = m_paths.at(type).directories;
     m_up->setEnabled(i > 0);
-    m_down->setEnabled(i + 1 < path.size());
-    m_delete->setEnabled(i < path.size());
+    m_down->setEnabled(i >= 0 && i + 1 < path.size());
+    m_delete->setEnabled(i >= 0 && i < path.size());
+    m_reset->setEnabled(path != m_originalPaths.at(type).directories);
 }
 
 void
 PluginPathConfigurator::currentTypeChanged(QString type)
 {
-    populateFor(type, 0);
+    populateFor(type, -1);
+}
+
+void
+PluginPathConfigurator::envOverrideChanged(int )
+{
+    //!!!
 }
 
 void
@@ -147,7 +175,6 @@ PluginPathConfigurator::upClicked()
 {
     QString type = m_pluginTypeSelector->currentText();
     QStringList path = m_paths.at(type).directories;
-    QString variable = m_paths.at(type).envVariable;
         
     int current = m_list->currentRow();
     if (current <= 0) return;
@@ -162,7 +189,10 @@ PluginPathConfigurator::upClicked()
             newPath.push_back(path[i]);
         }
     }
-    m_paths[type] = { newPath, variable };
+
+    auto newEntry = m_paths.at(type);
+    newEntry.directories = newPath;
+    m_paths[type] = newEntry;
     
     populateFor(type, current - 1);
 }
@@ -172,7 +202,6 @@ PluginPathConfigurator::downClicked()
 {
     QString type = m_pluginTypeSelector->currentText();
     QStringList path = m_paths.at(type).directories;
-    QString variable = m_paths.at(type).envVariable;
 
     int current = m_list->currentRow();
     if (current < 0 || current + 1 >= path.size()) return;
@@ -187,7 +216,10 @@ PluginPathConfigurator::downClicked()
             newPath.push_back(path[i]);
         }
     }
-    m_paths[type] = { newPath, variable };
+
+    auto newEntry = m_paths.at(type);
+    newEntry.directories = newPath;
+    m_paths[type] = newEntry;
     
     populateFor(type, current + 1);
 }
@@ -197,9 +229,9 @@ PluginPathConfigurator::deleteClicked()
 {
     QString type = m_pluginTypeSelector->currentText();
     QStringList path = m_paths.at(type).directories;
-    QString variable = m_paths.at(type).envVariable;
     
     int current = m_list->currentRow();
+    if (current < 0) return;
 
     QStringList newPath;
     for (int i = 0; i < path.size(); ++i) {
@@ -207,7 +239,18 @@ PluginPathConfigurator::deleteClicked()
             newPath.push_back(path[i]);
         }
     }
-    m_paths[type] = { newPath, variable };
+
+    auto newEntry = m_paths.at(type);
+    newEntry.directories = newPath;
+    m_paths[type] = newEntry;
     
     populateFor(type, current < newPath.size() ? current : current-1);
+}
+
+void
+PluginPathConfigurator::resetClicked()
+{
+    QString type = m_pluginTypeSelector->currentText();
+    m_paths[type] = m_originalPaths[type];
+    populateFor(type, -1);
 }
