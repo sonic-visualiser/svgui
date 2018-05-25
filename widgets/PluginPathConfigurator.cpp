@@ -26,6 +26,8 @@
 #include "IconLoader.h"
 #include "WidgetScale.h"
 
+#include "plugin/PluginPathSetter.h"
+
 PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
     QFrame(parent)
 {
@@ -59,7 +61,7 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
     buttons->addWidget(m_delete);
 
     m_reset = new QPushButton;
-    m_reset->setText(tr("Reset"));
+    m_reset->setText(tr("Reset to Default"));
     m_reset->setToolTip(tr("Reset the list for this plugin type to its default"));
     connect(m_reset, SIGNAL(clicked()), this, SLOT(resetClicked()));
     buttons->addWidget(m_reset);
@@ -85,7 +87,7 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
             this, SLOT(currentLocationChanged(int)));
     ++row;
 
-    m_layout->addLayout(buttons, row, 0, Qt::AlignLeft);
+    m_layout->addLayout(buttons, row, 0, 1, 2, Qt::AlignLeft);
 
     m_seePlugins = new QPushButton;
     m_seePlugins->setText(tr("Review plugins..."));
@@ -106,12 +108,11 @@ PluginPathConfigurator::~PluginPathConfigurator()
 }
 
 void
-PluginPathConfigurator::setPaths(Paths paths)
+PluginPathConfigurator::setPaths(PluginPathSetter::Paths paths)
 {
     m_paths = paths;
-    if (m_originalPaths.empty()) {
-        m_originalPaths = paths;
-    }
+
+    m_defaultPaths = PluginPathSetter::getDefaultPaths();
 
     m_pluginTypeSelector->clear();
     for (const auto &p: paths) {
@@ -169,7 +170,7 @@ PluginPathConfigurator::currentLocationChanged(int i)
     m_up->setEnabled(i > 0);
     m_down->setEnabled(i >= 0 && i + 1 < path.size());
     m_delete->setEnabled(i >= 0 && i < path.size());
-    m_reset->setEnabled(path != m_originalPaths.at(type).directories);
+    m_reset->setEnabled(path != m_defaultPaths.at(type).directories);
 }
 
 void
@@ -189,7 +190,7 @@ PluginPathConfigurator::envOverrideChanged(int state)
     newEntry.useEnvVariable = useEnvVariable;
     m_paths[type] = newEntry;
 
-    emit pathsChanged(m_paths);
+    emit pathsChanged();
 }
 
 void
@@ -218,7 +219,7 @@ PluginPathConfigurator::upClicked()
     
     populateFor(type, current - 1);
 
-    emit pathsChanged(m_paths);
+    emit pathsChanged();
 }
 
 void
@@ -247,7 +248,7 @@ PluginPathConfigurator::downClicked()
     
     populateFor(type, current + 1);
 
-    emit pathsChanged(m_paths);
+    emit pathsChanged();
 }
 
 void
@@ -266,7 +267,7 @@ PluginPathConfigurator::addClicked()
     
     populateFor(type, newEntry.directories.size() - 1);
 
-    emit pathsChanged(m_paths);
+    emit pathsChanged();
 }
 
 void
@@ -291,17 +292,17 @@ PluginPathConfigurator::deleteClicked()
     
     populateFor(type, current < newPath.size() ? current : current-1);
 
-    emit pathsChanged(m_paths);
+    emit pathsChanged();
 }
 
 void
 PluginPathConfigurator::resetClicked()
 {
     QString type = m_pluginTypeSelector->currentText();
-    m_paths[type] = m_originalPaths[type];
+    m_paths[type] = m_defaultPaths[type];
     populateFor(type, -1);
 
-    emit pathsChanged(m_paths);
+    emit pathsChanged();
 }
 
 void

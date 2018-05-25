@@ -26,6 +26,8 @@ class QGridLayout;
 class QComboBox;
 class QCheckBox;
 
+#include "plugin/PluginPathSetter.h"
+
 class PluginPathConfigurator : public QFrame
 {
     Q_OBJECT
@@ -34,23 +36,11 @@ public:
     PluginPathConfigurator(QWidget *parent = 0);
     ~PluginPathConfigurator();
 
-    // Text used to identify a plugin type to the user.
-    // e.g. "LADSPA", "Vamp", or potentially transliterations thereof
-    typedef QString PluginTypeLabel;
-
-    struct PathConfig {
-        QStringList directories;
-        QString envVariable; // e.g. "LADSPA_PATH" etc
-        bool useEnvVariable; // true if env variable overrides directories list
-    };
-
-    typedef std::map<PluginTypeLabel, PathConfig> Paths;
-    
-    void setPaths(Paths paths);
-    Paths getPaths() const;
+    void setPaths(PluginPathSetter::Paths paths);
+    PluginPathSetter::Paths getPaths() const { return m_paths; }
 
 signals:
-    void pathsChanged(const Paths &paths);
+    void pathsChanged();
 
 private slots:
     void upClicked();
@@ -76,8 +66,8 @@ private:
     QPushButton *m_reset;
     QCheckBox *m_envOverride;
 
-    Paths m_paths;
-    Paths m_originalPaths;
+    PluginPathSetter::Paths m_paths;
+    PluginPathSetter::Paths m_defaultPaths;
     
     void populate();
     void populateFor(QString type, int makeCurrent);

@@ -65,9 +65,9 @@ PluginReviewDialog::populate()
     m_table->setColumnCount(5);
 
     QStringList headers;
-    int typeCol = 0, libCol = 1, nameCol = 2, idCol = 3, dirCol = 4;
-    headers << tr("Type") << tr("Library") << tr("Name")
-            << tr("Identifier") << tr("Location");
+    int typeCol = 0, libCol = 1, idCol = 2, dirCol = 3, nameCol = 4;
+    headers << tr("Type") << tr("Library")
+            << tr("Identifier") << tr("Found in") << tr("Name");
     m_table->setHorizontalHeaderLabels(headers);
 
     int row = 0;
