@@ -75,6 +75,7 @@ SVGUI_HEADERS += \
            widgets/PluginParameterBox.h \
            widgets/PluginParameterDialog.h \
            widgets/PluginPathConfigurator.h \
+           widgets/PluginReviewDialog.h \
            widgets/ProgressDialog.h \
            widgets/PropertyBox.h \
            widgets/PropertyStack.h \
@@ -158,6 +159,7 @@ SVGUI_SOURCES += \
            widgets/PluginParameterBox.cpp \
            widgets/PluginParameterDialog.cpp \
            widgets/PluginPathConfigurator.cpp \
+           widgets/PluginReviewDialog.cpp \
            widgets/ProgressDialog.cpp \
            widgets/PropertyBox.cpp \
            widgets/PropertyStack.cpp \

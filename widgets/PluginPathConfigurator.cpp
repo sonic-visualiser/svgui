@@ -13,6 +13,7 @@
 */
 
 #include "PluginPathConfigurator.h"
+#include "PluginReviewDialog.h"
 
 #include <QPushButton>
 #include <QListWidget>
@@ -30,7 +31,7 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
 {
     m_layout = new QGridLayout;
     setLayout(m_layout);
-    
+
     QHBoxLayout *buttons = new QHBoxLayout;
 
     m_down = new QPushButton;
@@ -84,7 +85,13 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
             this, SLOT(currentLocationChanged(int)));
     ++row;
 
-    m_layout->addLayout(buttons, row, 2);
+    m_layout->addLayout(buttons, row, 0, Qt::AlignLeft);
+
+    m_seePlugins = new QPushButton;
+    m_seePlugins->setText(tr("Review plugins..."));
+    connect(m_seePlugins, SIGNAL(clicked()), this, SLOT(seePluginsClicked()));
+    m_layout->addWidget(m_seePlugins, row, 2);
+    
     ++row;
 
     m_envOverride = new QCheckBox;
@@ -172,9 +179,17 @@ PluginPathConfigurator::currentTypeChanged(QString type)
 }
 
 void
-PluginPathConfigurator::envOverrideChanged(int )
+PluginPathConfigurator::envOverrideChanged(int state)
 {
-    //!!!
+    bool useEnvVariable = (state == Qt::Checked);
+    
+    QString type = m_pluginTypeSelector->currentText();
+
+    auto newEntry = m_paths.at(type);
+    newEntry.useEnvVariable = useEnvVariable;
+    m_paths[type] = newEntry;
+
+    emit pathsChanged(m_paths);
 }
 
 void
@@ -202,6 +217,8 @@ PluginPathConfigurator::upClicked()
     m_paths[type] = newEntry;
     
     populateFor(type, current - 1);
+
+    emit pathsChanged(m_paths);
 }
 
 void
@@ -229,6 +246,8 @@ PluginPathConfigurator::downClicked()
     m_paths[type] = newEntry;
     
     populateFor(type, current + 1);
+
+    emit pathsChanged(m_paths);
 }
 
 void
@@ -246,6 +265,8 @@ PluginPathConfigurator::addClicked()
     m_paths[type] = newEntry;
     
     populateFor(type, newEntry.directories.size() - 1);
+
+    emit pathsChanged(m_paths);
 }
 
 void
@@ -269,6 +290,8 @@ PluginPathConfigurator::deleteClicked()
     m_paths[type] = newEntry;
     
     populateFor(type, current < newPath.size() ? current : current-1);
+
+    emit pathsChanged(m_paths);
 }
 
 void
@@ -277,4 +300,15 @@ PluginPathConfigurator::resetClicked()
     QString type = m_pluginTypeSelector->currentText();
     m_paths[type] = m_originalPaths[type];
     populateFor(type, -1);
+
+    emit pathsChanged(m_paths);
 }
+
+void
+PluginPathConfigurator::seePluginsClicked()
+{
+    PluginReviewDialog dialog(this);
+    dialog.populate();
+    dialog.exec();
+}
+

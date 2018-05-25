@@ -61,12 +61,14 @@ private slots:
     void currentTypeChanged(QString);
     void currentLocationChanged(int);
     void envOverrideChanged(int);
+    void seePluginsClicked();
     
 private:
     QGridLayout *m_layout;
     QLabel *m_header;
     QComboBox *m_pluginTypeSelector;
     QListWidget *m_list;
+    QPushButton *m_seePlugins;
     QPushButton *m_up;
     QPushButton *m_down;
     QPushButton *m_add;
