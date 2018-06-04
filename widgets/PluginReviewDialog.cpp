@@ -36,9 +36,9 @@ PluginReviewDialog::PluginReviewDialog(QWidget *parent) :
     m_table = new QTableWidget;
     layout->addWidget(m_table, 0, 1);
     
-    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok);
+    QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
     layout->addWidget(bb, 1, 1);
-    connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(bb, SIGNAL(rejected()), this, SLOT(close()));
 }
 
 PluginReviewDialog::~PluginReviewDialog()

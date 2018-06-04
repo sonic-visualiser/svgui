@@ -129,7 +129,7 @@ PluginPathConfigurator::populate()
 
     if (m_paths.empty()) return;
 
-    populateFor(m_paths.begin()->first, -1);
+    populateFor(m_paths.rbegin()->first, -1);
 }
 
 void
@@ -137,16 +137,34 @@ PluginPathConfigurator::populateFor(QString type, int makeCurrent)
 {
     QString envVariable = m_paths.at(type).envVariable;
     bool useEnvVariable = m_paths.at(type).useEnvVariable;
+    QString envVarValue =
+        PluginPathSetter::getOriginalEnvironmentValue(envVariable);
+    QString currentValueRubric;
+    if (envVarValue == QString()) {
+        currentValueRubric = tr("(Variable is currently unset)");
+    } else {
+        if (envVarValue.length() > 100) {
+            QString envVarStart = envVarValue.left(95);
+            currentValueRubric = tr("(Current value begins: \"%1 ...\")")
+                .arg(envVarStart);
+        } else {
+            currentValueRubric = tr("(Currently set to: \"%1\")")
+                .arg(envVarValue);
+        }
+    }        
     m_envOverride->setText
-        (tr("Allow the %1 environment variable to take priority over this")
-         .arg(envVariable));
+        (tr("Allow the %1 environment variable to take priority over this\n%2")
+         .arg(envVariable)
+         .arg(currentValueRubric));
     m_envOverride->setCheckState(useEnvVariable ? Qt::Checked : Qt::Unchecked);
-    
+
     m_list->clear();
 
     for (int i = 0; i < m_pluginTypeSelector->count(); ++i) {
         if (type == m_pluginTypeSelector->itemText(i)) {
+            m_pluginTypeSelector->blockSignals(true);
             m_pluginTypeSelector->setCurrentIndex(i);
+            m_pluginTypeSelector->blockSignals(false);
         }
     }
     
