@@ -50,7 +50,7 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
 
     m_add = new QPushButton;
     m_add->setIcon(IconLoader().load("plus"));
-    m_add->setToolTip(tr("Move the selected location earlier in the list"));
+    m_add->setToolTip(tr("Add a new location to the list"));
     connect(m_add, SIGNAL(clicked()), this, SLOT(addClicked()));
     buttons->addWidget(m_add);
     
