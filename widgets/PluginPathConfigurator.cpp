@@ -66,6 +66,13 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
     connect(m_reset, SIGNAL(clicked()), this, SLOT(resetClicked()));
     buttons->addWidget(m_reset);
 
+    buttons->addStretch(50);
+
+    m_seePlugins = new QPushButton;
+    m_seePlugins->setText(tr("Review plugins..."));
+    connect(m_seePlugins, SIGNAL(clicked()), this, SLOT(seePluginsClicked()));
+    buttons->addWidget(m_seePlugins);
+
     int row = 0;
     
     m_header = new QLabel;
@@ -87,12 +94,7 @@ PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
             this, SLOT(currentLocationChanged(int)));
     ++row;
 
-    m_layout->addLayout(buttons, row, 0, 1, 2, Qt::AlignLeft);
-
-    m_seePlugins = new QPushButton;
-    m_seePlugins->setText(tr("Review plugins..."));
-    connect(m_seePlugins, SIGNAL(clicked()), this, SLOT(seePluginsClicked()));
-    m_layout->addWidget(m_seePlugins, row, 2);
+    m_layout->addLayout(buttons, row, 0, 1, 3);
     
     ++row;
 
