@@ -70,7 +70,10 @@ private:
     PluginPathSetter::Paths m_defaultPaths;
     
     void populate();
-    void populateFor(QString type, int makeCurrent);
+    void populateFor(PluginPathSetter::TypeKey, int makeCurrent);
+
+    QString getLabelFor(PluginPathSetter::TypeKey);
+    PluginPathSetter::TypeKey getKeyForLabel(QString label);
 };
 
 #endif

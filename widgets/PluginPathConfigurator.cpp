@@ -107,6 +107,48 @@ PluginPathConfigurator::~PluginPathConfigurator()
 {
 }
 
+QString
+PluginPathConfigurator::getLabelFor(PluginPathSetter::TypeKey key)
+{
+    if (key.second == KnownPlugins::FormatNative) {
+        switch (key.first) {
+        case KnownPlugins::VampPlugin:
+            return tr("Vamp");
+        case KnownPlugins::LADSPAPlugin:
+            return tr("LADSPA");
+        case KnownPlugins::DSSIPlugin:
+            return tr("DSSI");
+        }
+    } else if (key.second == KnownPlugins::FormatNonNative32Bit) {
+        switch (key.first) {
+        case KnownPlugins::VampPlugin:
+            return tr("Vamp (32-bit)");
+        case KnownPlugins::LADSPAPlugin:
+            return tr("LADSPA (32-bit)");
+        case KnownPlugins::DSSIPlugin:
+            return tr("DSSI (32-bit)");
+        }
+    } else {
+        SVCERR << "PluginPathConfigurator::getLabelFor: WARNING: "
+               << "Unknown format value " << key.second << endl;
+        return "<unknown>";
+    }
+}
+
+PluginPathSetter::TypeKey
+PluginPathConfigurator::getKeyForLabel(QString label)
+{
+    for (const auto &p: m_paths) {
+        auto key = p.first;
+        if (getLabelFor(key) == label) {
+            return key;
+        }
+    }
+    SVCERR << "PluginPathConfigurator::getKeyForLabel: WARNING: "
+           << "Unrecognised label \"" << label << "\"" << endl;
+    return { KnownPlugins::VampPlugin, KnownPlugins::FormatNative };
+}
+
 void
 PluginPathConfigurator::setPaths(PluginPathSetter::Paths paths)
 {
@@ -116,7 +158,7 @@ PluginPathConfigurator::setPaths(PluginPathSetter::Paths paths)
 
     m_pluginTypeSelector->clear();
     for (const auto &p: paths) {
-        m_pluginTypeSelector->addItem(p.first);
+        m_pluginTypeSelector->addItem(getLabelFor(p.first));
     }
     
     populate();
@@ -129,14 +171,15 @@ PluginPathConfigurator::populate()
 
     if (m_paths.empty()) return;
 
-    populateFor(m_paths.rbegin()->first, -1);
+    populateFor(m_paths.begin()->first, -1);
 }
 
 void
-PluginPathConfigurator::populateFor(QString type, int makeCurrent)
+PluginPathConfigurator::populateFor(PluginPathSetter::TypeKey key,
+                                    int makeCurrent)
 {
-    QString envVariable = m_paths.at(type).envVariable;
-    bool useEnvVariable = m_paths.at(type).useEnvVariable;
+    QString envVariable = m_paths.at(key).envVariable;
+    bool useEnvVariable = m_paths.at(key).useEnvVariable;
     QString envVarValue =
         PluginPathSetter::getOriginalEnvironmentValue(envVariable);
     QString currentValueRubric;
@@ -161,14 +204,14 @@ PluginPathConfigurator::populateFor(QString type, int makeCurrent)
     m_list->clear();
 
     for (int i = 0; i < m_pluginTypeSelector->count(); ++i) {
-        if (type == m_pluginTypeSelector->itemText(i)) {
+        if (getLabelFor(key) == m_pluginTypeSelector->itemText(i)) {
             m_pluginTypeSelector->blockSignals(true);
             m_pluginTypeSelector->setCurrentIndex(i);
             m_pluginTypeSelector->blockSignals(false);
         }
     }
     
-    QStringList path = m_paths.at(type).directories;
+    QStringList path = m_paths.at(key).directories;
     
     for (int i = 0; i < path.size(); ++i) {
         m_list->addItem(path[i]);
@@ -183,18 +226,19 @@ PluginPathConfigurator::populateFor(QString type, int makeCurrent)
 void
 PluginPathConfigurator::currentLocationChanged(int i)
 {
-    QString type = m_pluginTypeSelector->currentText();
-    QStringList path = m_paths.at(type).directories;
+    QString label = m_pluginTypeSelector->currentText();
+    PluginPathSetter::TypeKey key = getKeyForLabel(label);
+    QStringList path = m_paths.at(key).directories;
     m_up->setEnabled(i > 0);
     m_down->setEnabled(i >= 0 && i + 1 < path.size());
     m_delete->setEnabled(i >= 0 && i < path.size());
-    m_reset->setEnabled(path != m_defaultPaths.at(type).directories);
+    m_reset->setEnabled(path != m_defaultPaths.at(key).directories);
 }
 
 void
-PluginPathConfigurator::currentTypeChanged(QString type)
+PluginPathConfigurator::currentTypeChanged(QString label)
 {
-    populateFor(type, -1);
+    populateFor(getKeyForLabel(label), -1);
 }
 
 void
@@ -202,11 +246,12 @@ PluginPathConfigurator::envOverrideChanged(int state)
 {
     bool useEnvVariable = (state == Qt::Checked);
     
-    QString type = m_pluginTypeSelector->currentText();
+    QString label = m_pluginTypeSelector->currentText();
+    PluginPathSetter::TypeKey key = getKeyForLabel(label);
 
-    auto newEntry = m_paths.at(type);
+    auto newEntry = m_paths.at(key);
     newEntry.useEnvVariable = useEnvVariable;
-    m_paths[type] = newEntry;
+    m_paths[key] = newEntry;
 
     emit pathsChanged();
 }
@@ -214,8 +259,9 @@ PluginPathConfigurator::envOverrideChanged(int state)
 void
 PluginPathConfigurator::upClicked()
 {
-    QString type = m_pluginTypeSelector->currentText();
-    QStringList path = m_paths.at(type).directories;
+    QString label = m_pluginTypeSelector->currentText();
+    PluginPathSetter::TypeKey key = getKeyForLabel(label);
+    QStringList path = m_paths.at(key).directories;
         
     int current = m_list->currentRow();
     if (current <= 0) return;
@@ -231,11 +277,11 @@ PluginPathConfigurator::upClicked()
         }
     }
 
-    auto newEntry = m_paths.at(type);
+    auto newEntry = m_paths.at(key);
     newEntry.directories = newPath;
-    m_paths[type] = newEntry;
+    m_paths[key] = newEntry;
     
-    populateFor(type, current - 1);
+    populateFor(key, current - 1);
 
     emit pathsChanged();
 }
@@ -243,8 +289,9 @@ PluginPathConfigurator::upClicked()
 void
 PluginPathConfigurator::downClicked()
 {
-    QString type = m_pluginTypeSelector->currentText();
-    QStringList path = m_paths.at(type).directories;
+    QString label = m_pluginTypeSelector->currentText();
+    PluginPathSetter::TypeKey key = getKeyForLabel(label);
+    QStringList path = m_paths.at(key).directories;
 
     int current = m_list->currentRow();
     if (current < 0 || current + 1 >= path.size()) return;
@@ -260,11 +307,11 @@ PluginPathConfigurator::downClicked()
         }
     }
 
-    auto newEntry = m_paths.at(type);
+    auto newEntry = m_paths.at(key);
     newEntry.directories = newPath;
-    m_paths[type] = newEntry;
+    m_paths[key] = newEntry;
     
-    populateFor(type, current + 1);
+    populateFor(key, current + 1);
 
     emit pathsChanged();
 }
@@ -272,18 +319,19 @@ PluginPathConfigurator::downClicked()
 void
 PluginPathConfigurator::addClicked()
 {
-    QString type = m_pluginTypeSelector->currentText();
+    QString label = m_pluginTypeSelector->currentText();
+    PluginPathSetter::TypeKey key = getKeyForLabel(label);
 
     QString newDir = QFileDialog::getExistingDirectory
         (this, tr("Choose directory to add"));
 
     if (newDir == QString()) return;
 
-    auto newEntry = m_paths.at(type);
+    auto newEntry = m_paths.at(key);
     newEntry.directories.push_back(newDir);
-    m_paths[type] = newEntry;
+    m_paths[key] = newEntry;
     
-    populateFor(type, newEntry.directories.size() - 1);
+    populateFor(key, newEntry.directories.size() - 1);
 
     emit pathsChanged();
 }
@@ -291,8 +339,9 @@ PluginPathConfigurator::addClicked()
 void
 PluginPathConfigurator::deleteClicked()
 {
-    QString type = m_pluginTypeSelector->currentText();
-    QStringList path = m_paths.at(type).directories;
+    QString label = m_pluginTypeSelector->currentText();
+    PluginPathSetter::TypeKey key = getKeyForLabel(label);
+    QStringList path = m_paths.at(key).directories;
     
     int current = m_list->currentRow();
     if (current < 0) return;
@@ -304,11 +353,11 @@ PluginPathConfigurator::deleteClicked()
         }
     }
 
-    auto newEntry = m_paths.at(type);
+    auto newEntry = m_paths.at(key);
     newEntry.directories = newPath;
-    m_paths[type] = newEntry;
+    m_paths[key] = newEntry;
     
-    populateFor(type, current < newPath.size() ? current : current-1);
+    populateFor(key, current < newPath.size() ? current : current-1);
 
     emit pathsChanged();
 }
@@ -316,9 +365,10 @@ PluginPathConfigurator::deleteClicked()
 void
 PluginPathConfigurator::resetClicked()
 {
-    QString type = m_pluginTypeSelector->currentText();
-    m_paths[type] = m_defaultPaths[type];
-    populateFor(type, -1);
+    QString label = m_pluginTypeSelector->currentText();
+    PluginPathSetter::TypeKey key = getKeyForLabel(label);
+    m_paths[key] = m_defaultPaths[key];
+    populateFor(key, -1);
 
     emit pathsChanged();
 }
