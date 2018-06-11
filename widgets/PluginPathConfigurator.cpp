@@ -130,11 +130,10 @@ PluginPathConfigurator::getLabelFor(PluginPathSetter::TypeKey key)
         case KnownPlugins::DSSIPlugin:
             return tr("DSSI (32-bit)");
         }
-    } else {
-        SVCERR << "PluginPathConfigurator::getLabelFor: WARNING: "
-               << "Unknown format value " << key.second << endl;
-        return "<unknown>";
     }
+    SVCERR << "PluginPathConfigurator::getLabelFor: WARNING: "
+           << "Unknown format value " << key.second << endl;
+    return "<unknown>";
 }
 
 PluginPathSetter::TypeKey
