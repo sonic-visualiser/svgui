@@ -19,6 +19,7 @@
 #include "data/fileio/DataFileReaderFactory.h"
 #include "rdf/RDFImporter.h"
 #include "rdf/RDFExporter.h"
+#include "system/System.h"
 
 #include <QFileInfo>
 #include <QMessageBox>
@@ -156,9 +157,12 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     };
 
     if (lastPath == "") {
-        char *home = getenv("HOME");
-        if (home) lastPath = home;
-        else lastPath = ".";
+        std::string home;
+        if (getEnvUtf8("HOME", home)) {
+            lastPath = QString::fromStdString(home);
+        } else {
+            lastPath = ".";
+        }
     } else if (QFileInfo(lastPath).isDir()) {
         lastPath = QFileInfo(lastPath).canonicalPath();
     } else {
@@ -305,9 +309,12 @@ InteractiveFileFinder::getSaveFileName(FileType type,
     };
 
     if (lastPath == "") {
-        char *home = getenv("HOME");
-        if (home) lastPath = home;
-        else lastPath = ".";
+        std::string home;
+        if (getEnvUtf8("HOME", home)) {
+            lastPath = QString::fromStdString(home);
+        } else {
+            lastPath = ".";
+        }
     } else if (QFileInfo(lastPath).isDir()) {
         lastPath = QFileInfo(lastPath).canonicalPath();
     } else {
