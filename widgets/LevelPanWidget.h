@@ -87,27 +87,37 @@ protected:
 
     void emitLevelChanged();
     void emitPanChanged();
-    
-    int m_level;
+
+    int m_minNotch;
+    int m_maxNotch;
+    int m_notch;
     int m_pan;
     float m_monitorLeft;
     float m_monitorRight;
     bool m_editable;
     bool m_editing;
     bool m_includeMute;
+    bool m_includeHalfSteps;
 
-    static int audioLevelToLevel(float audioLevel, bool withMute);
-    static float levelToAudioLevel(int level, bool withMute);
+    int clampNotch(int notch) const;
 
-    static int audioPanToPan(float audioPan);
-    static float panToAudioPan(int pan);
+    int audioLevelToNotch(float audioLevel) const;
+    float notchToAudioLevel(int notch) const;
+
+    int audioPanToPan(float audioPan) const;
+    float panToAudioPan(int pan) const;
+
+    int coordsToNotch(QRectF rect, QPointF pos) const;
+    int coordsToPan(QRectF rect, QPointF pos) const;
+
+    QColor notchToColour(int notch) const;
     
     QSizeF cellSize(QRectF) const;
-    QPointF cellCentre(QRectF, int level, int pan) const;
+    QPointF cellCentre(QRectF, int row, int col) const;
     QSizeF cellLightSize(QRectF) const;
-    QRectF cellLightRect(QRectF, int level, int pan) const;
+    QRectF cellLightRect(QRectF, int row, int col) const;
+    QRectF cellOutlineRect(QRectF, int row, int col) const;
     double thinLineWidth(QRectF) const;
-    void toCell(QRectF, QPointF loc, int &level, int &pan) const;
 };
 
 #endif
