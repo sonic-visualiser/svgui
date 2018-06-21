@@ -18,8 +18,11 @@
 #include <QMenu>
 #include <QWidgetAction>
 #include <QImage>
+#include <QMouseEvent>
 #include <QStylePainter>
 #include <QStyleOptionToolButton>
+
+#include "base/Debug.h"
 
 #include <iostream>
 using std::cerr;
@@ -57,6 +60,19 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
 
 LevelPanToolButton::~LevelPanToolButton()
 {
+}
+
+void
+LevelPanToolButton::mousePressEvent(QMouseEvent *e)
+{
+    if (e->button() == Qt::MidButton ||
+        ((e->button() == Qt::LeftButton) &&
+         (e->modifiers() & Qt::ControlModifier))) {
+        m_lpw->setToDefault();
+        e->accept();
+    } else {
+        QToolButton::mousePressEvent(e);
+    }
 }
 
 void
