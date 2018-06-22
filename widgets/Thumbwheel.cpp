@@ -426,15 +426,13 @@ Thumbwheel::mouseReleaseEvent(QMouseEvent *e)
 void
 Thumbwheel::wheelEvent(QWheelEvent *e)
 {
-    int step = int(lrintf(m_speed));
-    if (step == 0) step = 1;
+    int delta = m_wheelCounter.count(e);
 
-    if (e->delta() > 0) {
-        setValue(m_value + step);
-    } else {
-        setValue(m_value - step);
+    if (delta == 0) {
+        return;
     }
-    
+
+    setValue(m_value + delta);
     emit valueChanged(getValue());
 }
 

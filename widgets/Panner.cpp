@@ -64,6 +64,12 @@ Panner::setScrollUnit(float unit)
 void
 Panner::scroll(bool up)
 {
+    scroll(up, 1);
+}
+
+void
+Panner::scroll(bool up, int count)
+{
     float unit = m_scrollUnit;
     if (unit == 0.f) {
         unit = float(m_rectHeight) / (6 * float(height()));
@@ -71,9 +77,9 @@ Panner::scroll(bool up)
     }
 
     if (!up) {
-        m_rectY += unit;
+        m_rectY += unit * count;
     } else {
-        m_rectY -= unit;
+        m_rectY -= unit * count;
     }
 
     normalise();
@@ -134,7 +140,8 @@ Panner::mouseReleaseEvent(QMouseEvent *e)
 void
 Panner::wheelEvent(QWheelEvent *e)
 {
-    scroll(e->delta() > 0);
+    int delta = m_wheelCounter.count(e);
+    scroll(delta > 0, abs(delta));
 }
 
 void

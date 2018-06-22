@@ -74,8 +74,7 @@ LevelPanWidget::LevelPanWidget(QWidget *parent) :
     m_editable(true),
     m_editing(false),
     m_includeMute(true),
-    m_includeHalfSteps(true),
-    m_pendingWheelAngle(0)
+    m_includeHalfSteps(true)
 {
     setToolTip(tr("Drag vertically to adjust level, horizontally to adjust pan"));
     setLevel(1.0);
@@ -284,45 +283,20 @@ LevelPanWidget::mouseMoveEvent(QMouseEvent *e)
 void
 LevelPanWidget::wheelEvent(QWheelEvent *e)
 {
-    e->accept();
-    
-    int dy = e->angleDelta().y();
-    if (dy == 0) {
+    int delta = m_wheelCounter.count(e);
+
+    if (delta == 0) {
         return;
     }
 
-    if (e->phase() == Qt::ScrollBegin ||
-        std::abs(dy) >= 120 ||
-        (dy > 0 && m_pendingWheelAngle < 0) ||
-        (dy < 0 && m_pendingWheelAngle > 0)) {
-        m_pendingWheelAngle = dy;
+    if (e->modifiers() & Qt::ControlModifier) {
+        m_pan = clampPan(m_pan + delta);
+        emitPanChanged();
+        update();
     } else {
-        m_pendingWheelAngle += dy;
-    }
-
-    if (abs(m_pendingWheelAngle) >= 600) {
-        // discard absurd results
-        m_pendingWheelAngle = 0;
-        return;
-    }
-
-    while (abs(m_pendingWheelAngle) >= 120) {
-
-        int sign = (m_pendingWheelAngle < 0 ? -1 : 1);
-
-        if (e->modifiers() & Qt::ControlModifier) {
-            m_pan += sign;
-            m_pan = clampPan(m_pan);
-            emitPanChanged();
-            update();
-        } else {
-            m_notch += sign;
-            m_notch = clampNotch(m_notch);
-            emitLevelChanged();
-            update();
-        }
-
-        m_pendingWheelAngle -= sign * 120;
+        m_notch = clampNotch(m_notch + delta);
+        emitLevelChanged();
+        update();
     }
 }
 

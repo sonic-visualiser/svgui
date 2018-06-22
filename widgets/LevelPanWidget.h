@@ -17,6 +17,8 @@
 
 #include <QWidget>
 
+#include "WheelCounter.h"
+
 /**
  * A simple widget for coarse level and pan control.
  */
@@ -98,7 +100,8 @@ protected:
     bool m_editing;
     bool m_includeMute;
     bool m_includeHalfSteps;
-    int m_pendingWheelAngle;
+
+    WheelCounter m_wheelCounter;
 
     int clampNotch(int notch) const;
     int clampPan(int pan) const;

@@ -13,13 +13,15 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _THUMBWHEEL_H_
-#define _THUMBWHEEL_H_
+#ifndef SV_THUMBWHEEL_H
+#define SV_THUMBWHEEL_H
 
 #include <QWidget>
 #include <QImage>
 
 #include <map>
+
+#include "WheelCounter.h"
 
 class RangeMapper;
 
@@ -96,6 +98,7 @@ protected:
     bool m_showTooltip;
     RangeMapper *m_rangeMapper;
     QImage m_cache;
+    WheelCounter m_wheelCounter;
 };
 
 #endif

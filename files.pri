@@ -87,6 +87,7 @@ SVGUI_HEADERS += \
            widgets/TipDialog.h \
            widgets/TransformFinder.h \
            widgets/UnitConverter.h \
+           widgets/WheelCounter.h \
            widgets/WidgetScale.h \
            widgets/WindowShapePreview.h \
            widgets/WindowTypeSelector.h

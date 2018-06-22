@@ -13,10 +13,12 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PANNER_H_
-#define _PANNER_H_
+#ifndef SV_PANNER_H
+#define SV_PANNER_H
 
 #include <QWidget>
+
+#include "WheelCounter.h"
 
 class Panner : public QWidget
 {
@@ -109,6 +111,12 @@ public slots:
      */
     void scroll(bool up);
 
+    /**
+     * Move up (if up is true) or down a bit.  This is basically the
+     * same action as rolling the mouse wheel n notches.
+     */
+    void scroll(bool up, int n);
+
     void resetToDefault();
 
 protected:
@@ -145,6 +153,8 @@ protected:
     QPoint m_clickPos;
     float m_dragStartX;
     float m_dragStartY;
+
+    WheelCounter m_wheelCounter;
 };
 
 #endif
