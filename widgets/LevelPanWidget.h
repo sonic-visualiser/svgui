@@ -123,6 +123,7 @@ protected:
     QRectF cellLightRect(QRectF, int row, int col) const;
     QRectF cellOutlineRect(QRectF, int row, int col) const;
     double thinLineWidth(QRectF) const;
+    double cornerRadius(QRectF) const;
 };
 
 #endif

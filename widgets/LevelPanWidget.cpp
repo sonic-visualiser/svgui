@@ -376,6 +376,14 @@ LevelPanWidget::thinLineWidth(QRectF rect) const
     return std::min(th, tw);
 }
 
+double
+LevelPanWidget::cornerRadius(QRectF rect) const
+{
+    QSizeF cs = cellSize(rect);
+    double m = std::min(cs.width(), cs.height());
+    return m / 5;
+}
+
 QRectF
 LevelPanWidget::cellOutlineRect(QRectF rect, int row, int col) const
 {
@@ -404,17 +412,20 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
     QPen pen;
 
     double thin = thinLineWidth(rect);
+    double radius = cornerRadius(rect);
 
     QColor columnBackground = QColor(180, 180, 180);
-    pen.setColor(columnBackground);
-    pen.setWidthF(cellLightSize(rect).width() + thin);
-    pen.setCapStyle(Qt::RoundCap);
-    paint.setPen(pen);
-    paint.setBrush(Qt::NoBrush);
+    paint.setPen(Qt::NoPen);
+    paint.setBrush(columnBackground);
 
     for (int pan = -maxPan; pan <= maxPan; ++pan) {
-        paint.drawLine(cellCentre(rect, 0, pan),
-                       cellCentre(rect, m_maxNotch/2 - 1, pan));
+        QRectF top = cellOutlineRect(rect, m_maxNotch/2 - 1, pan);
+        QRectF bottom = cellOutlineRect(rect, 0, pan);
+        paint.drawRoundedRect(QRectF(top.x(),
+                                     top.y(),
+                                     top.width(),
+                                     bottom.y() + bottom.height() - top.y()),
+                              radius, radius);
     }
 
     bool monitoring = (m_monitorLeft > 0.f || m_monitorRight > 0.f);
@@ -452,16 +463,26 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
             for (int notch = 1; notch <= m_notch; notch += 2) {
                 if (isEnabled() && !monitoring) {
                     paint.setBrush(notchToColour(notch));
+                } else {
+                    paint.setBrush(Qt::NoBrush);
                 }
                 QRectF clr = cellLightRect(rect, notch/2, m_pan);
-                paint.drawEllipse(clr);
+                paint.drawRoundedRect(clr, radius, radius);
             }
             if (m_notch % 2 != 0) {
                 QRectF clr = cellOutlineRect(rect, (m_notch-1)/2, m_pan);
                 paint.save();
                 paint.setPen(Qt::NoPen);
                 paint.setBrush(columnBackground);
-                paint.drawPie(clr, 0, 180 * 16);
+                paint.drawRoundedRect(QRectF(clr.x(),
+                                             clr.y(),
+                                             clr.width(),
+                                             clr.height()/4 + thin),
+                                      radius, radius);
+                paint.drawRect(QRectF(clr.x(),
+                                      clr.y() + clr.height()/4 - thin,
+                                      clr.width(),
+                                      clr.height()/4 + thin));
                 paint.restore();
             }
         }
@@ -490,8 +511,6 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
                 }
             }
         }
-        paint.setPen(pen);
-        paint.setBrush(Qt::NoBrush);
     }
 }
 
