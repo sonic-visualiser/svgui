@@ -98,8 +98,10 @@ protected:
     bool m_editing;
     bool m_includeMute;
     bool m_includeHalfSteps;
+    int m_pendingWheelAngle;
 
     int clampNotch(int notch) const;
+    int clampPan(int pan) const;
 
     int audioLevelToNotch(float audioLevel) const;
     float notchToAudioLevel(int notch) const;
