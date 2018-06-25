@@ -392,12 +392,12 @@ LevelPanWidget::cellOutlineRect(QRectF rect, int row, int col) const
 }
 
 QColor
-LevelPanWidget::notchToColour(int notch) const
+LevelPanWidget::cellToColour(int cell) const
 {
-    if (notch < 3) return Qt::black;
-    if (notch < 5) return QColor(80, 0, 0);
-    if (notch < 7) return QColor(160, 0, 0);
-    if (notch < 9) return QColor(255, 0, 0);
+    if (cell < 1) return Qt::black;
+    if (cell < 2) return QColor(80, 0, 0);
+    if (cell < 3) return QColor(160, 0, 0);
+    if (cell < 4) return QColor(255, 0, 0);
     return QColor(255, 255, 0);
 }
 
@@ -408,16 +408,28 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
-    QPen pen;
-
     double thin = thinLineWidth(rect);
     double radius = cornerRadius(rect);
 
     QColor columnBackground = QColor(180, 180, 180);
-    paint.setPen(Qt::NoPen);
-    paint.setBrush(columnBackground);
+
+    bool monitoring = (m_monitorLeft > 0.f || m_monitorRight > 0.f);
+    
+    QPen pen;
+    if (isEnabled()) {
+        pen.setColor(Qt::black);
+    } else {
+        pen.setColor(Qt::darkGray);
+    }
+    pen.setWidthF(thin);
+    pen.setCapStyle(Qt::FlatCap);
+    pen.setJoinStyle(Qt::MiterJoin);
 
     for (int pan = -maxPan; pan <= maxPan; ++pan) {
+
+        paint.setPen(Qt::NoPen);
+        paint.setBrush(columnBackground);
+        
         QRectF top = cellOutlineRect(rect, m_maxNotch/2 - 1, pan);
         QRectF bottom = cellOutlineRect(rect, 0, pan);
         paint.drawRoundedRect(QRectF(top.x(),
@@ -425,19 +437,132 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
                                      top.width(),
                                      bottom.y() + bottom.height() - top.y()),
                               radius, radius);
-    }
 
-    bool monitoring = (m_monitorLeft > 0.f || m_monitorRight > 0.f);
-    
-    if (isEnabled()) {
-        pen.setColor(Qt::black);
-    } else {
-        pen.setColor(Qt::darkGray);
+        if (!asIfEditable && m_includeMute && m_notch == 0) {
+            // We will instead be drawing a single big X for mute,
+            // after this loop
+            continue;
+        }
+
+        if (!monitoring && m_pan != pan) {
+            continue;
+        }
+
+        int monitorNotch = 0;
+        if (monitoring) {
+            float rprop = float(pan - (-maxPan)) / float(maxPan * 2);
+            float lprop = float(maxPan - pan) / float(maxPan * 2);
+            float monitorLevel =
+                lprop * m_monitorLeft * m_monitorLeft +
+                rprop * m_monitorRight * m_monitorRight;
+            monitorNotch = audioLevelToNotch(monitorLevel);
+        }
+
+        int firstCell = 0;
+        int lastCell = m_maxNotch / 2 - 1;
+        
+        for (int cell = firstCell; cell <= lastCell; ++cell) {
+
+            QRectF clr = cellLightRect(rect, cell, pan);
+
+            if (m_includeMute && m_pan == pan && m_notch == 0) {
+                // X for mute in the bottom cell
+                paint.setPen(pen);
+                paint.drawLine(clr.topLeft(), clr.bottomRight());
+                paint.drawLine(clr.bottomLeft(), clr.topRight());
+                break;
+            }
+
+            const int none = 0, half = 1, full = 2;
+
+            int fill = none;
+
+            int outline = none;
+            if (m_pan == pan && m_notch > cell * 2 + 1) {
+                outline = full;
+            } else if (m_pan == pan && m_notch == cell * 2 + 1) {
+                outline = half;
+            }
+
+            if (monitoring) {
+                if (monitorNotch > cell * 2 + 1) {
+                    fill = full;
+                } else if (monitorNotch == cell * 2 + 1) {
+                    fill = half;
+                }
+            } else {
+                if (isEnabled()) {
+                    fill = outline;
+                }
+            }                
+
+            // If one of {fill, outline} is "full" and the other is
+            // "half", then we draw the "half" one first (because we
+            // need to erase half of it)
+
+            if (fill == half || outline == half) {
+                if (fill == half) {
+                    paint.setBrush(cellToColour(cell));
+                } else {
+                    paint.setBrush(Qt::NoBrush);
+                }
+                if (outline == half) {
+                    paint.setPen(pen);
+                } else {
+                    paint.setPen(Qt::NoPen);
+                }
+
+                paint.drawRoundedRect(clr, radius, radius);
+
+                paint.setBrush(columnBackground);
+                
+                if (cell == lastCell) {
+                    QPen bgpen(pen);
+                    bgpen.setColor(columnBackground);
+                    paint.setPen(bgpen);
+                    paint.drawRoundedRect(QRectF(clr.x(),
+                                                 clr.y(),
+                                                 clr.width(),
+                                                 clr.height()/4),
+                                          radius, radius);
+                    paint.drawRect(QRectF(clr.x(),
+                                          clr.y() + clr.height()/4,
+                                          clr.width(),
+                                          clr.height()/4));
+                } else {
+                    paint.setPen(Qt::NoPen);
+                    if (outline == half) {
+                        clr = cellOutlineRect(rect, cell, pan);
+                    }
+                    paint.drawRect(QRectF(clr.x(),
+                                          clr.y() - 0.5,
+                                          clr.width(),
+                                          clr.height()/2));
+                }
+            }
+
+            if (outline == full || fill == full) {
+
+                if (fill == full) {
+                    paint.setBrush(cellToColour(cell));
+                } else {
+                    paint.setBrush(Qt::NoBrush);
+                }
+                if (outline == full) {
+                    paint.setPen(pen);
+                } else {
+                    paint.setPen(Qt::NoPen);
+                }
+                
+                paint.drawRoundedRect(clr, radius, radius);
+            }
+        }
     }
 
     if (!asIfEditable && m_includeMute && m_notch == 0) {
         // The X for mute takes up the whole display when we're not
         // being rendered in editable style
+        pen.setColor(Qt::black);
         pen.setWidthF(thin * 2);
         pen.setCapStyle(Qt::RoundCap);
         paint.setPen(pen);
@@ -445,83 +570,6 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
                        cellCentre(rect, m_maxNotch/2 - 1, maxPan));
         paint.drawLine(cellCentre(rect, m_maxNotch/2 - 1, -maxPan),
                        cellCentre(rect, 0, maxPan));
-    } else {
-        // the normal case
-        
-        // pen a bit less thin than in theory, so that we can erase
-        // semi-circles later without leaving a faint edge
-        pen.setWidthF(thin * 0.8);
-        pen.setCapStyle(Qt::FlatCap);
-        paint.setPen(pen);
-
-        if (m_includeMute && m_notch == 0) {
-            QRectF clr = cellLightRect(rect, 0, m_pan);
-            paint.drawLine(clr.topLeft(), clr.bottomRight());
-            paint.drawLine(clr.bottomLeft(), clr.topRight());
-        } else {
-            for (int notch = 1; notch <= m_notch; notch += 2) {
-                if (isEnabled() && !monitoring) {
-                    paint.setBrush(notchToColour(notch));
-                } else {
-                    paint.setBrush(Qt::NoBrush);
-                }
-                QRectF clr = cellLightRect(rect, notch/2, m_pan);
-                paint.drawRoundedRect(clr, radius, radius);
-            }
-            if (m_notch % 2 != 0) {
-                QRectF clr = cellOutlineRect(rect, (m_notch-1)/2, m_pan);
-                paint.save();
-                paint.setPen(Qt::NoPen);
-                paint.setBrush(columnBackground);
-                paint.drawRoundedRect(QRectF(clr.x(),
-                                             clr.y(),
-                                             clr.width(),
-                                             clr.height()/4 + thin),
-                                      radius, radius);
-                paint.drawRect(QRectF(clr.x(),
-                                      clr.y() + clr.height()/4 - thin,
-                                      clr.width(),
-                                      clr.height()/4 + thin));
-                paint.restore();
-            }
-        }
-    }
-
-    if (monitoring) {
-        paint.setPen(Qt::NoPen);
-
-        for (int pan = -maxPan; pan <= maxPan; ++pan) {
-            float rprop = float(pan - (-maxPan)) / float(maxPan * 2);
-            float lprop = float(maxPan - pan) / float(maxPan * 2);
-            float audioLevel =
-                lprop * m_monitorLeft * m_monitorLeft +
-                rprop * m_monitorRight * m_monitorRight;
-            int notchHere = audioLevelToNotch(audioLevel);
-
-            for (int notch = 1; notch <= notchHere; notch += 2) {
-                
-                paint.setBrush(notchToColour(notch));
-                QRectF clr = cellLightRect(rect, (notch-1)/2, pan);
-//                double adj = thinLineWidth(rect)/2;
-//                clr = clr.adjusted(adj, adj, -adj, -adj);
-                paint.drawRoundedRect(clr, radius, radius);
-
-                if (notch + 2 > notchHere && notchHere % 2 != 0) {
-                    paint.save();
-                    paint.setBrush(columnBackground);
-                    paint.drawRoundedRect(QRectF(clr.x(),
-                                                 clr.y()-0.5,
-                                                 clr.width(),
-                                                 clr.height()/4 + thin),
-                                          radius, radius);
-                    paint.drawRect(QRectF(clr.x(),
-                                          clr.y() + clr.height()/4 - thin,
-                                          clr.width(),
-                                          clr.height()/4 + thin));
-                    paint.restore();
-                }
-            }
-        }
     }
 }
 

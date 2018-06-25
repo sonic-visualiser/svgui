@@ -115,7 +115,7 @@ protected:
     int coordsToNotch(QRectF rect, QPointF pos) const;
     int coordsToPan(QRectF rect, QPointF pos) const;
 
-    QColor notchToColour(int notch) const;
+    QColor cellToColour(int cell) const;
     
     QSizeF cellSize(QRectF) const;
     QPointF cellCentre(QRectF, int row, int col) const;
