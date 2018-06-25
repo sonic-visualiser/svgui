@@ -146,7 +146,6 @@ LevelPanWidget::setLevel(float level)
         }
         update();
     }
-    SVCERR << "setLevel: level " << level << " -> notch " << m_notch << " (which converts back to level " << getLevel() << ")" << endl;
 }
 
 float
@@ -490,24 +489,36 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
 
     if (monitoring) {
         paint.setPen(Qt::NoPen);
+
         for (int pan = -maxPan; pan <= maxPan; ++pan) {
-            float audioPan = panToAudioPan(pan);
-            float audioLevel;
-            if (audioPan < 0.f) {
-                audioLevel = m_monitorLeft + m_monitorRight * (1.f + audioPan);
-            } else {
-                audioLevel = m_monitorRight + m_monitorLeft * (1.f - audioPan);
-            }
+            float rprop = float(pan - (-maxPan)) / float(maxPan * 2);
+            float lprop = float(maxPan - pan) / float(maxPan * 2);
+            float audioLevel =
+                lprop * m_monitorLeft * m_monitorLeft +
+                rprop * m_monitorRight * m_monitorRight;
             int notchHere = audioLevelToNotch(audioLevel);
+
             for (int notch = 1; notch <= notchHere; notch += 2) {
+                
                 paint.setBrush(notchToColour(notch));
                 QRectF clr = cellLightRect(rect, (notch-1)/2, pan);
-                double adj = thinLineWidth(rect)/2;
-                clr = clr.adjusted(adj, adj, -adj, -adj);
+//                double adj = thinLineWidth(rect)/2;
+//                clr = clr.adjusted(adj, adj, -adj, -adj);
+                paint.drawRoundedRect(clr, radius, radius);
+
                 if (notch + 2 > notchHere && notchHere % 2 != 0) {
-                    paint.drawPie(clr, 180 * 16, 180 * 16);
-                } else {
-                    paint.drawEllipse(clr);
+                    paint.save();
+                    paint.setBrush(columnBackground);
+                    paint.drawRoundedRect(QRectF(clr.x(),
+                                                 clr.y()-0.5,
+                                                 clr.width(),
+                                                 clr.height()/4 + thin),
+                                          radius, radius);
+                    paint.drawRect(QRectF(clr.x(),
+                                          clr.y() + clr.height()/4 - thin,
+                                          clr.width(),
+                                          clr.height()/4 + thin));
+                    paint.restore();
                 }
             }
         }
