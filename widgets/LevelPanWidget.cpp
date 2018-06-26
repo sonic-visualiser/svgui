@@ -350,7 +350,7 @@ LevelPanWidget::cellCentre(QRectF rect, int row, int col) const
 QSizeF
 LevelPanWidget::cellLightSize(QRectF rect) const
 {
-    double extent = 3. / 4.;
+    double extent = 0.7;
     QSizeF cs = cellSize(rect);
     double m = std::min(cs.width(), cs.height());
     return QSizeF(m * extent, m * extent);
@@ -387,7 +387,7 @@ QRectF
 LevelPanWidget::cellOutlineRect(QRectF rect, int row, int col) const
 {
     QRectF clr = cellLightRect(rect, row, col);
-    double adj = thinLineWidth(rect)/2;
+    double adj = thinLineWidth(rect)/2 + 0.5;
     return clr.adjusted(-adj, -adj, adj, adj);
 }
 
@@ -531,13 +531,11 @@ LevelPanWidget::renderTo(QPaintDevice *dev, QRectF rect, bool asIfEditable) cons
                                           clr.height()/4));
                 } else {
                     paint.setPen(Qt::NoPen);
-                    if (outline == half) {
-                        clr = cellOutlineRect(rect, cell, pan);
-                    }
-                    paint.drawRect(QRectF(clr.x(),
-                                          clr.y() - 0.5,
-                                          clr.width(),
-                                          clr.height()/2));
+                    QRectF cor = cellOutlineRect(rect, cell, pan);
+                    paint.drawRect(QRectF(cor.x(),
+                                          cor.y() - 0.5,
+                                          cor.width(),
+                                          cor.height()/2));
                 }
             }
 
