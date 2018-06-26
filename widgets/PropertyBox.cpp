@@ -306,7 +306,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             cerr << "PropertyBox: creating new checkbox" << endl;
 #endif
             if (iconName != "") {
+#ifdef Q_OS_MAC
+                button = new NotifyingToolButton();
+#else
                 button = new NotifyingPushButton();
+#endif
                 button->setCheckable(true);
                 QIcon icon(IconLoader().load(iconName));
                 button->setIcon(icon);
