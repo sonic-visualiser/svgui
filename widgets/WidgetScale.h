@@ -43,6 +43,11 @@ public:
             SVDEBUG << "WidgetScale::scalePixelSize: baseEm = " << baseEm
                     << ", platform default font height = " << em
                     << ", resulting scale factor = " << ratio << endl;
+            if (ratio < 1.0) {
+                SVDEBUG << "WidgetScale::scalePixelSize: rounding up to 1.0"
+                        << endl;
+                ratio = 1.0;
+            }
         }
 
         int scaled = int(pixels * ratio + 0.5);
