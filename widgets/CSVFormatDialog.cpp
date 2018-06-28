@@ -244,6 +244,9 @@ CSVFormatDialog::updateModelLabel()
     case CSVFormat::ThreeDimensionalModel:
         s = f->getLayerPresentationName(LayerFactory::Colour3DPlot);
         break;
+    case CSVFormat::WaveFileModel:
+        s = f->getLayerPresentationName(LayerFactory::Waveform);
+        break;
     }   
 
     m_modelLabel->setText("\n" + tr("Data will be displayed in a %1 layer.").arg(s));

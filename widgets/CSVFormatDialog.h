@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _CSV_FORMAT_DIALOG_H_
-#define _CSV_FORMAT_DIALOG_H_
+#ifndef SV_CSV_FORMAT_DIALOG_H
+#define SV_CSV_FORMAT_DIALOG_H
 
 #include "data/fileio/CSVFormat.h"
 
