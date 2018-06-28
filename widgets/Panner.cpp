@@ -77,9 +77,9 @@ Panner::scroll(bool up, int count)
     }
 
     if (!up) {
-        m_rectY += unit * count;
+        m_rectY += unit * float(count);
     } else {
-        m_rectY -= unit * count;
+        m_rectY -= unit * float(count);
     }
 
     normalise();
