@@ -1238,7 +1238,9 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 int
 TimeValueLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
-    if (!m_model || shouldAutoAlign()) {
+    if (!m_model) {
+        return 0;
+    } else if (shouldAutoAlign() && !valueExtentsMatchMine(v)) {
         return 0;
     } else if (m_plotStyle == PlotSegmentation) {
         if (m_verticalScale == LogScale) {

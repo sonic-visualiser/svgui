@@ -594,8 +594,6 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
     int sw = topLayer->getVerticalScaleWidth
         (this, m_manager->shouldShowVerticalColourScale(), paint);
-
-//    cerr << "sw = " << sw << endl;
     
     if (sw > 0) {
         scaleLayer = topLayer;
