@@ -670,10 +670,13 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 //      SVDEBUG << "Pane::paintEvent: calling paint.save() in vertical scale block" << endl;
         paint.save();
             
-        paint.setPen(getForeground());
+        paint.setPen(Qt::NoPen);
         paint.setBrush(getBackground());
-        paint.drawRect(0, -1, m_scaleWidth, height()+1);
+        paint.drawRect(0, 0, m_scaleWidth, height());
         
+        paint.setPen(getForeground());
+        paint.drawLine(m_scaleWidth, 0, m_scaleWidth, height());
+
         paint.setBrush(Qt::NoBrush);
         scaleLayer->paintVerticalScale
             (this, m_manager->shouldShowVerticalColourScale(),
