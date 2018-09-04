@@ -626,6 +626,8 @@ protected:
     void paintMeasurementRect(LayerGeometryProvider *v, QPainter &paint,
                               const MeasureRect &r, bool focus) const;
 
+    bool valueExtentsMatchMine(LayerGeometryProvider *v) const;
+    
     QString m_presentationName;
 
 private:

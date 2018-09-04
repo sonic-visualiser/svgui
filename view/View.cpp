@@ -511,7 +511,7 @@ View::hasLightBackground() const
         }
     }
 
-    if (int(maxSignificance) >= int(Layer::ColourAndBackgroundSignificant)) {
+    if (int(maxSignificance) >= int(Layer::ColourDistinguishes)) {
         return !mostSignificantHasDarkBackground;
     } else {
         return !darkPalette;

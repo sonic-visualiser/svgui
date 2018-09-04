@@ -61,7 +61,7 @@ NoteLayer::NoteLayer() :
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
-          SVDEBUG << "constructed NoteLayer" << endl;
+    SVDEBUG << "constructed NoteLayer" << endl;
 }
 
 void
@@ -833,14 +833,18 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 int
 NoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
-    if (!m_model || shouldAutoAlign()) {
+    if (!m_model) {
         return 0;
-    } else  {
-        if (m_verticalScale == LogScale || m_verticalScale == MIDIRangeScale) {
-            return LogNumericalScale().getWidth(v, paint) + 10; // for piano
-        } else {
-            return LinearNumericalScale().getWidth(v, paint);
-        }
+    }
+
+    if (shouldAutoAlign() && !valueExtentsMatchMine(v)) {
+        return 0;
+    }
+
+    if (m_verticalScale == LogScale || m_verticalScale == MIDIRangeScale) {
+        return LogNumericalScale().getWidth(v, paint) + 10; // for piano
+    } else {
+        return LinearNumericalScale().getWidth(v, paint);
     }
 }
 

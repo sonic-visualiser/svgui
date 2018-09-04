@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SINGLE_COLOUR_LAYER_H_
-#define _SINGLE_COLOUR_LAYER_H_
+#ifndef SV_SINGLE_COLOUR_LAYER_H
+#define SV_SINGLE_COLOUR_LAYER_H
 
 #include "Layer.h"
 #include <QColor>

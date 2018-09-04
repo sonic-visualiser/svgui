@@ -588,6 +588,31 @@ Layer::paintMeasurementRect(LayerGeometryProvider *v, QPainter &paint,
     v->drawMeasurementRect(paint, this, r.pixrect.normalized(), focus);
 }
 
+bool
+Layer::valueExtentsMatchMine(LayerGeometryProvider *v) const
+{
+    double min, min_;
+    double max, max_;
+    bool logarithmic, logarithmic_;
+    QString unit;
+
+    if (!getValueExtents(min_, max_, logarithmic_, unit)) {
+        return false;
+    }
+
+    if (!v->getValueExtents(unit, min, max, logarithmic)) {
+        return false;
+    }
+
+    if (min != min_ ||
+        max != max_ ||
+        logarithmic != logarithmic_) {
+        return false;
+    }
+
+    return true;
+}
+
 void
 Layer::toXml(QTextStream &stream,
              QString indent, QString extraAttributes) const
