@@ -38,6 +38,7 @@ CSVAudioFormatDialog::CSVAudioFormatDialog(QWidget *parent, CSVFormat format,
                                            int maxDisplayCols) :
     QDialog(parent),
     m_format(format),
+    m_sampleRange(RangeSigned1),
     m_maxDisplayCols(maxDisplayCols),
     m_fuzzyColumn(-1)
 {
@@ -116,8 +117,7 @@ CSVAudioFormatDialog::CSVAudioFormatDialog(QWidget *parent, CSVFormat format,
     layout->setColumnStretch(3, 10);
     layout->setRowStretch(row++, 10);
 
-    m_sampleRateLabel = new QLabel(tr("Audio sample rate (Hz):"));
-    layout->addWidget(m_sampleRateLabel, row, 0);
+    layout->addWidget(new QLabel(tr("Audio sample rate (Hz):")), row, 0);
     
     int sampleRates[] = {
         8000, 11025, 12000, 22050, 24000, 32000,
@@ -139,6 +139,61 @@ CSVAudioFormatDialog::CSVAudioFormatDialog(QWidget *parent, CSVFormat format,
     connect(m_sampleRateCombo, SIGNAL(editTextChanged(QString)),
             this, SLOT(sampleRateChanged(QString)));
 
+    m_sampleRange = RangeSigned1;
+    bool knownSigned = false;
+    bool knownNonIntegral = false;
+    
+    for (int i = 0; i < columns; ++i) {
+        if (!(format.getColumnQualities()[i] & CSVFormat::ColumnIntegral)) {
+            knownNonIntegral = true;
+            if (m_sampleRange == RangeUnsigned255 ||
+                m_sampleRange == RangeSigned32767) {
+                m_sampleRange = RangeOther;
+            }
+        }
+        if (format.getColumnQualities()[i] & CSVFormat::ColumnLarge) {
+            if (m_sampleRange == RangeSigned1 ||
+                m_sampleRange == RangeUnsigned255) {
+                if (knownNonIntegral) {
+                    m_sampleRange = RangeOther;
+                } else {
+                    m_sampleRange = RangeSigned32767;
+                }
+            }
+        }
+        if (format.getColumnQualities()[i] & CSVFormat::ColumnSigned) {
+            knownSigned = true;
+            if (m_sampleRange == RangeUnsigned255) {
+                m_sampleRange = RangeSigned32767;
+            }
+        }
+        if (!(format.getColumnQualities()[i] & CSVFormat::ColumnSmall)) {
+            if (m_sampleRange == RangeSigned1) {
+                if (knownNonIntegral) {
+                    m_sampleRange = RangeOther;
+                } else if (knownSigned) {
+                    m_sampleRange = RangeSigned32767;
+                } else {
+                    m_sampleRange = RangeUnsigned255;
+                }
+            }
+        }
+    }
+    
+    layout->addWidget(new QLabel(tr("Sample values are:")), row, 0);
+    
+    m_sampleRangeCombo = new QComboBox;
+    // NB must be in the same order as the CSVSampleRange enum
+    m_sampleRangeCombo->addItem(tr("Floating-point in range -1 to 1"));
+    m_sampleRangeCombo->addItem(tr("8-bit in range 0 to 255"));
+    m_sampleRangeCombo->addItem(tr("16-bit in range -32768 to 32767"));
+    m_sampleRangeCombo->addItem(tr("Unknown range: normalise on load"));
+    m_sampleRangeCombo->setCurrentIndex(int(m_sampleRange));
+
+    layout->addWidget(m_sampleRangeCombo, row++, 1);
+    connect(m_sampleRangeCombo, SIGNAL(activated(int)),
+            this, SLOT(sampleRangeChanged(int)));
+    
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                 QDialogButtonBox::Cancel);
     layout->addWidget(bb, row++, 0, 1, 4);
@@ -160,12 +215,24 @@ CSVAudioFormatDialog::getFormat() const
     return m_format;
 }
 
+CSVAudioFormatDialog::CSVSampleRange
+CSVAudioFormatDialog::getSampleRange() const
+{
+    return m_sampleRange;
+}
+
 void
 CSVAudioFormatDialog::sampleRateChanged(QString rateString)
 {
     bool ok = false;
     int sampleRate = rateString.toInt(&ok);
     if (ok) m_format.setSampleRate(sampleRate);
+}
+
+void
+CSVAudioFormatDialog::sampleRangeChanged(int range)
+{
+    m_sampleRange = (CSVSampleRange) range;
 }
 
 void
