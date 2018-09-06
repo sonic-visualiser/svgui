@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006 Chris Cannam.
+    This file copyright 2006-2018 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef SV_CSV_FORMAT_DIALOG_H
-#define SV_CSV_FORMAT_DIALOG_H
+#ifndef SV_CSV_AUDIO_FORMAT_DIALOG_H
+#define SV_CSV_AUDIO_FORMAT_DIALOG_H
 
 #include "data/fileio/CSVFormat.h"
 
@@ -24,51 +24,30 @@ class QLabel;
     
 #include <QDialog>
 
-class CSVFormatDialog : public QDialog
+class CSVAudioFormatDialog : public QDialog
 {
     Q_OBJECT
     
 public:
-    CSVFormatDialog(QWidget *parent,
-                    CSVFormat initialFormat,
-                    int maxDisplayCols = 5);
-    ~CSVFormatDialog();
+    CSVAudioFormatDialog(QWidget *parent,
+                         CSVFormat initialFormat,
+                         int maxDisplayCols = 5);
+    ~CSVAudioFormatDialog();
 
     CSVFormat getFormat() const;
     
 protected slots:
-    void timingTypeChanged(int type);
     void sampleRateChanged(QString);
-    void windowSizeChanged(QString);
     void columnPurposeChanged(int purpose);
 
     void updateFormatFromDialog();
-    void updateModelLabel();
 
 protected:
     CSVFormat m_format;
     int m_maxDisplayCols;
     
-    enum TimingOption {
-        TimingExplicitSeconds = 0,
-        TimingExplicitMsec,
-        TimingExplicitSamples,
-        TimingImplicit
-    };
-    std::map<TimingOption, QString> m_timingLabels;
-    TimingOption m_initialTimingOption;
-
-    void columnPurposeChangedForAnnotationType(QComboBox *, int purpose);
-    void updateComboVisibility();
-    void applyStartTimePurpose();
-    void removeStartTimePurpose();
-    
-    QComboBox *m_timingTypeCombo;
     QLabel *m_sampleRateLabel;
     QComboBox *m_sampleRateCombo;
-    QLabel *m_windowSizeLabel;
-    QComboBox *m_windowSizeCombo;
-    QLabel *m_modelLabel;
 
     QList<QComboBox *> m_columnPurposeCombos;
     int m_fuzzyColumn;

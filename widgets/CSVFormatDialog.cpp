@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006 Chris Cannam.
+    This file copyright 2006-2018 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -37,9 +37,6 @@
 CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
                                  int maxDisplayCols) :
     QDialog(parent),
-    m_dialogType(format.getModelType() == CSVFormat::WaveFileModel ?
-                 AudioDataDialog :
-                 AnnotationDataDialog),
     m_format(format),
     m_maxDisplayCols(maxDisplayCols),
     m_fuzzyColumn(-1)
@@ -82,44 +79,26 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
         if (i == m_maxDisplayCols && columns > i + 2) {
             m_fuzzyColumn = i;
 
-            if (m_dialogType == AnnotationDataDialog) {
-                cpc->addItem(tr("<ignore>"));
-                cpc->addItem(tr("Values"));
-                cpc->setCurrentIndex
-                    (m_format.getColumnPurpose(i-1) ==
-                     CSVFormat::ColumnUnknown ? 0 : 1);
-            } else {
-                cpc->addItem(tr("<ignore>"));
-                cpc->addItem(tr("Audio channels"));
-                cpc->setCurrentIndex
-                    (m_format.isColumnNumeric(i-1) ? 1 : 0);
-            }
+            cpc->addItem(tr("<ignore>"));
+            cpc->addItem(tr("Values"));
+            cpc->setCurrentIndex
+                (m_format.getColumnPurpose(i-1) ==
+                 CSVFormat::ColumnUnknown ? 0 : 1);
+
             exampleLayout->addWidget
                 (new QLabel(tr("(%1 more)").arg(columns - i)), 1, i);
             break;
         }
 
-        if (m_dialogType == AnnotationDataDialog) {
-
-            // NB must be in the same order as the CSVFormat::ColumnPurpose enum
-            cpc->addItem(tr("<ignore>")); // ColumnUnknown
-            cpc->addItem(tr("Time"));     // ColumnStartTime
-            cpc->addItem(tr("End time")); // ColumnEndTime
-            cpc->addItem(tr("Duration")); // ColumnDuration
-            cpc->addItem(tr("Value"));    // ColumnValue
-            cpc->addItem(tr("Pitch"));    // ColumnPitch
-            cpc->addItem(tr("Label"));    // ColumnLabel
-            cpc->setCurrentIndex(int(m_format.getColumnPurpose(i)));
-
-        } else {
-            cpc->addItem(tr("<ignore>"));
-            cpc->addItem(tr("Audio channel"));
-            if (m_format.isColumnNumeric(i)) {
-                cpc->setCurrentIndex(1);
-            } else {
-                cpc->setCurrentIndex(0);
-            }
-        }
+        // NB must be in the same order as the CSVFormat::ColumnPurpose enum
+        cpc->addItem(tr("<ignore>")); // ColumnUnknown
+        cpc->addItem(tr("Time"));     // ColumnStartTime
+        cpc->addItem(tr("End time")); // ColumnEndTime
+        cpc->addItem(tr("Duration")); // ColumnDuration
+        cpc->addItem(tr("Value"));    // ColumnValue
+        cpc->addItem(tr("Pitch"));    // ColumnPitch
+        cpc->addItem(tr("Label"));    // ColumnLabel
+        cpc->setCurrentIndex(int(m_format.getColumnPurpose(i)));
         
         for (int j = 0; j < example.size() && j < 6; ++j) {
             if (i >= example[j].size()) {
@@ -140,47 +119,40 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     layout->setColumnStretch(3, 10);
     layout->setRowStretch(row++, 10);
 
-    if (m_dialogType == AnnotationDataDialog) {
+    layout->addWidget(new QLabel(tr("Timing is specified:")), row, 0);
     
-        layout->addWidget(new QLabel(tr("Timing is specified:")), row, 0);
-    
-        m_timingTypeCombo = new QComboBox;
+    m_timingTypeCombo = new QComboBox;
 
-        m_timingLabels = {
-            { TimingExplicitSeconds, tr("Explicitly, in seconds") },
-            { TimingExplicitMsec, tr("Explicitly, in milliseconds") },
-            { TimingExplicitSamples, tr("Explicitly, in audio sample frames") },
-            { TimingImplicit, tr("Implicitly: rows are equally spaced in time") }
-        };
+    m_timingLabels = {
+        { TimingExplicitSeconds, tr("Explicitly, in seconds") },
+        { TimingExplicitMsec, tr("Explicitly, in milliseconds") },
+        { TimingExplicitSamples, tr("Explicitly, in audio sample frames") },
+        { TimingImplicit, tr("Implicitly: rows are equally spaced in time") }
+    };
 
-        for (auto &l: m_timingLabels) {
-            m_timingTypeCombo->addItem(l.second);
-        }
-
-        layout->addWidget(m_timingTypeCombo, row++, 1, 1, 2);
-
-        connect(m_timingTypeCombo, SIGNAL(activated(int)),
-                this, SLOT(timingTypeChanged(int)));
-
-        m_initialTimingOption = TimingImplicit;
-        if (m_format.getTimingType() == CSVFormat::ExplicitTiming) {
-            switch (m_format.getTimeUnits()) {
-            case CSVFormat::TimeSeconds:
-                m_initialTimingOption = TimingExplicitSeconds; break;
-            case CSVFormat::TimeMilliseconds:
-                m_initialTimingOption = TimingExplicitMsec; break;
-            case CSVFormat::TimeAudioFrames:
-                m_initialTimingOption = TimingExplicitSamples; break;
-            case CSVFormat::TimeWindows:
-                m_initialTimingOption = TimingImplicit; break;
-            }
-        }
-        m_timingTypeCombo->setCurrentIndex(int(m_initialTimingOption));
-
-    } else {
-
-        m_timingTypeCombo = 0;
+    for (auto &l: m_timingLabels) {
+        m_timingTypeCombo->addItem(l.second);
     }
+    
+    layout->addWidget(m_timingTypeCombo, row++, 1, 1, 2);
+    
+    connect(m_timingTypeCombo, SIGNAL(activated(int)),
+            this, SLOT(timingTypeChanged(int)));
+    
+    m_initialTimingOption = TimingImplicit;
+    if (m_format.getTimingType() == CSVFormat::ExplicitTiming) {
+        switch (m_format.getTimeUnits()) {
+        case CSVFormat::TimeSeconds:
+            m_initialTimingOption = TimingExplicitSeconds; break;
+        case CSVFormat::TimeMilliseconds:
+            m_initialTimingOption = TimingExplicitMsec; break;
+        case CSVFormat::TimeAudioFrames:
+            m_initialTimingOption = TimingExplicitSamples; break;
+        case CSVFormat::TimeWindows:
+            m_initialTimingOption = TimingImplicit; break;
+        }
+    }
+    m_timingTypeCombo->setCurrentIndex(int(m_initialTimingOption));
         
     m_sampleRateLabel = new QLabel(tr("Audio sample rate (Hz):"));
     layout->addWidget(m_sampleRateLabel, row, 0);
@@ -205,38 +177,30 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     connect(m_sampleRateCombo, SIGNAL(editTextChanged(QString)),
             this, SLOT(sampleRateChanged(QString)));
 
-    if (m_dialogType == AnnotationDataDialog) {
+    m_windowSizeLabel = new QLabel(tr("Frame increment between rows:"));
+    layout->addWidget(m_windowSizeLabel, row, 0);
     
-        m_windowSizeLabel = new QLabel(tr("Frame increment between rows:"));
-        layout->addWidget(m_windowSizeLabel, row, 0);
-
-        m_windowSizeCombo = new QComboBox;
-        for (int i = 0; i <= 16; ++i) {
-            int value = 1 << i;
-            m_windowSizeCombo->addItem(QString("%1").arg(value));
-            if (value == int(m_format.getWindowSize())) {
-                m_windowSizeCombo->setCurrentIndex(i);
-            }
+    m_windowSizeCombo = new QComboBox;
+    for (int i = 0; i <= 16; ++i) {
+        int value = 1 << i;
+        m_windowSizeCombo->addItem(QString("%1").arg(value));
+        if (value == int(m_format.getWindowSize())) {
+            m_windowSizeCombo->setCurrentIndex(i);
         }
-        m_windowSizeCombo->setEditable(true);
-
-        layout->addWidget(m_windowSizeCombo, row++, 1);
-        connect(m_windowSizeCombo, SIGNAL(activated(QString)),
-                this, SLOT(windowSizeChanged(QString)));
-        connect(m_windowSizeCombo, SIGNAL(editTextChanged(QString)),
-                this, SLOT(windowSizeChanged(QString)));
-
-        m_modelLabel = new QLabel;
-        QFont f(m_modelLabel->font());
-        f.setItalic(true);
-        m_modelLabel->setFont(f);
-        layout->addWidget(m_modelLabel, row++, 0, 1, 4);
-
-    } else {
-        m_windowSizeLabel = 0;
-        m_windowSizeCombo = 0;
-        m_modelLabel = 0;
     }
+    m_windowSizeCombo->setEditable(true);
+    
+    layout->addWidget(m_windowSizeCombo, row++, 1);
+    connect(m_windowSizeCombo, SIGNAL(activated(QString)),
+            this, SLOT(windowSizeChanged(QString)));
+    connect(m_windowSizeCombo, SIGNAL(editTextChanged(QString)),
+            this, SLOT(windowSizeChanged(QString)));
+
+    m_modelLabel = new QLabel;
+    QFont f(m_modelLabel->font());
+    f.setItalic(true);
+    m_modelLabel->setFont(f);
+    layout->addWidget(m_modelLabel, row++, 0, 1, 4);
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                 QDialogButtonBox::Cancel);
@@ -246,12 +210,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     setLayout(layout);
 
-    if (m_timingTypeCombo) {
-        timingTypeChanged(m_timingTypeCombo->currentIndex());
-    } else {
-        updateFormatFromDialog();
-        updateComboVisibility();
-    }
+    timingTypeChanged(m_timingTypeCombo->currentIndex());
 }
 
 CSVFormatDialog::~CSVFormatDialog()
@@ -302,10 +261,6 @@ CSVFormatDialog::updateModelLabel()
 void
 CSVFormatDialog::applyStartTimePurpose()
 {
-    if (m_dialogType == AudioDataDialog) {
-        return;
-    }
-    
     // First check if we already have any. NB there may be fewer than
     // m_format.getColumnCount() elements in m_columnPurposeCombos
     // (because of the fuzzy column behaviour). Note also that the
@@ -333,10 +288,6 @@ CSVFormatDialog::applyStartTimePurpose()
 void
 CSVFormatDialog::removeStartTimePurpose()
 {
-    if (m_dialogType == AudioDataDialog) {
-        return;
-    }
-    
     // NB there may be fewer than m_format.getColumnCount() elements
     // in m_columnPurposeCombos (because of the fuzzy column
     // behaviour)
@@ -352,18 +303,15 @@ CSVFormatDialog::removeStartTimePurpose()
 void
 CSVFormatDialog::updateComboVisibility()
 {
-    bool wantRate = (m_dialogType == AudioDataDialog ||
-                     m_format.getTimingType() == CSVFormat::ImplicitTiming ||
+    bool wantRate = (m_format.getTimingType() == CSVFormat::ImplicitTiming ||
                      m_format.getTimeUnits() == CSVFormat::TimeAudioFrames);
     bool wantWindow = (m_format.getTimingType() == CSVFormat::ImplicitTiming);
     
     m_sampleRateCombo->setEnabled(wantRate);
     m_sampleRateLabel->setEnabled(wantRate);
 
-    if (m_windowSizeCombo) {
-        m_windowSizeCombo->setEnabled(wantWindow);
-        m_windowSizeLabel->setEnabled(wantWindow);
-    }
+    m_windowSizeCombo->setEnabled(wantWindow);
+    m_windowSizeLabel->setEnabled(wantWindow);
 }
 
 void
@@ -402,22 +350,10 @@ CSVFormatDialog::columnPurposeChanged(int p)
     QComboBox *cb = qobject_cast<QComboBox *>(o);
     if (!cb) return;
 
-    if (m_dialogType == AnnotationDataDialog) {
-        columnPurposeChangedForAnnotationType(cb, p);
-    }
-
-    updateFormatFromDialog();
-    updateComboVisibility();
-}
-    
-void
-CSVFormatDialog::columnPurposeChangedForAnnotationType(QComboBox *cb, int p)
-{
-    // Ensure a consistent set of column purposes, in a situation
-    // where some combinations are contradictory. This is only
-    // relevant to annotation type formats. Only updates the UI, does
-    // not update the stored format record from the UI - that's the
-    // job of updateFormatFromDialog
+    // Ensure a consistent set of column purposes, in case of a
+    // situation where some combinations are contradictory. Only
+    // updates the UI, does not update the stored format record from
+    // the UI - that's the job of updateFormatFromDialog
     
     CSVFormat::ColumnPurpose purpose = (CSVFormat::ColumnPurpose)p;
 
@@ -477,48 +413,44 @@ CSVFormatDialog::columnPurposeChangedForAnnotationType(QComboBox *cb, int p)
         }
     }
 
-    if (m_timingTypeCombo) {
-        if (!haveStartTime) {
-            m_timingTypeCombo->setCurrentIndex(int(TimingImplicit));
-        } else if (m_timingTypeCombo->currentIndex() == int(TimingImplicit)) {
-            if (m_initialTimingOption == TimingImplicit) {
-                m_timingTypeCombo->setCurrentIndex(TimingExplicitSeconds);
-            } else {
-                m_timingTypeCombo->setCurrentIndex(m_initialTimingOption);
-            }
+    if (!haveStartTime) {
+        m_timingTypeCombo->setCurrentIndex(int(TimingImplicit));
+    } else if (m_timingTypeCombo->currentIndex() == int(TimingImplicit)) {
+        if (m_initialTimingOption == TimingImplicit) {
+            m_timingTypeCombo->setCurrentIndex(TimingExplicitSeconds);
+        } else {
+            m_timingTypeCombo->setCurrentIndex(m_initialTimingOption);
         }
     }
+
+    updateFormatFromDialog();
+    updateComboVisibility();
 }
     
 void
 CSVFormatDialog::updateFormatFromDialog()
 {
-    if (m_timingTypeCombo) {
-        switch (TimingOption(m_timingTypeCombo->currentIndex())) {
+    switch (TimingOption(m_timingTypeCombo->currentIndex())) {
 
-        case TimingExplicitSeconds:
-            m_format.setTimingType(CSVFormat::ExplicitTiming);
-            m_format.setTimeUnits(CSVFormat::TimeSeconds);
-            break;
-
-        case TimingExplicitMsec:
-            m_format.setTimingType(CSVFormat::ExplicitTiming);
-            m_format.setTimeUnits(CSVFormat::TimeMilliseconds);
-            break;
-
-        case TimingExplicitSamples:
-            m_format.setTimingType(CSVFormat::ExplicitTiming);
-            m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
-            break;
-
-        case TimingImplicit:
-            m_format.setTimingType(CSVFormat::ImplicitTiming);
-            m_format.setTimeUnits(CSVFormat::TimeWindows);
-            break;
-        }
-    } else if (m_dialogType == AudioDataDialog) {
-        m_format.setTimingType(CSVFormat::ImplicitTiming);
+    case TimingExplicitSeconds:
+        m_format.setTimingType(CSVFormat::ExplicitTiming);
+        m_format.setTimeUnits(CSVFormat::TimeSeconds);
+        break;
+        
+    case TimingExplicitMsec:
+        m_format.setTimingType(CSVFormat::ExplicitTiming);
+        m_format.setTimeUnits(CSVFormat::TimeMilliseconds);
+        break;
+        
+    case TimingExplicitSamples:
+        m_format.setTimingType(CSVFormat::ExplicitTiming);
         m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
+        break;
+        
+    case TimingImplicit:
+        m_format.setTimingType(CSVFormat::ImplicitTiming);
+        m_format.setTimeUnits(CSVFormat::TimeWindows);
+        break;
     }
     
     bool haveStartTime = false;
@@ -530,16 +462,9 @@ CSVFormatDialog::updateFormatFromDialog()
 
         QComboBox *thisCombo = m_columnPurposeCombos[i];
         
-        CSVFormat::ColumnPurpose purpose;
-
-        if (m_dialogType == AnnotationDataDialog) {
-            purpose = (CSVFormat::ColumnPurpose) (thisCombo->currentIndex());
-        } else {
-            purpose = (thisCombo->currentIndex() == 1 ?
-                       CSVFormat::ColumnValue :
-                       CSVFormat::ColumnUnknown);
-        }
-
+        CSVFormat::ColumnPurpose purpose =
+            (CSVFormat::ColumnPurpose) (thisCombo->currentIndex());
+        
         if (i == m_fuzzyColumn) {
             for (int j = i; j < m_format.getColumnCount(); ++j) {
                 if (purpose == CSVFormat::ColumnUnknown) {
@@ -569,9 +494,7 @@ CSVFormatDialog::updateFormatFromDialog()
         }
     }
 
-    if (m_dialogType == AudioDataDialog) {
-        m_format.setModelType(CSVFormat::WaveFileModel);
-    } else if (haveStartTime && haveDuration) {
+    if (haveStartTime && haveDuration) {
         if (havePitch) {
             m_format.setModelType(CSVFormat::TwoDimensionalModelWithDurationAndPitch);
         } else {
