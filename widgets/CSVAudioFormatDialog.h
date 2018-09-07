@@ -33,16 +33,8 @@ public:
                          CSVFormat initialFormat,
                          int maxDisplayCols = 5);
     ~CSVAudioFormatDialog();
-
-    enum CSVSampleRange {
-        RangeSigned1 = 0, //     -1 .. 1
-        RangeUnsigned255, //      0 .. 255
-        RangeSigned32767, // -32768 .. 32767
-        RangeOther        // Other/unknown: Normalise on load
-    };
     
     CSVFormat getFormat() const;
-    CSVSampleRange getSampleRange() const;
     
 protected slots:
     void sampleRateChanged(QString);
@@ -53,7 +45,6 @@ protected slots:
 
 protected:
     CSVFormat m_format;
-    CSVSampleRange m_sampleRange;
     int m_maxDisplayCols;
     
     QComboBox *m_sampleRateCombo;
