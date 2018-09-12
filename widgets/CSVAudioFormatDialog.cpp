@@ -82,7 +82,8 @@ CSVAudioFormatDialog::CSVAudioFormatDialog(QWidget *parent, CSVFormat format,
             cpc->addItem(tr("<ignore>"));
             cpc->addItem(tr("Audio channels"));
             cpc->setCurrentIndex
-                (m_format.isColumnNumeric(i-1) ? 1 : 0);
+                (m_format.getColumnPurpose(i-1) == CSVFormat::ColumnValue ?
+                 1 : 0);
 
             exampleLayout->addWidget
                 (new QLabel(tr("(%1 more)").arg(columns - i)), 1, i);
@@ -91,11 +92,8 @@ CSVAudioFormatDialog::CSVAudioFormatDialog(QWidget *parent, CSVFormat format,
 
         cpc->addItem(tr("<ignore>"));
         cpc->addItem(tr("Audio channel"));
-        if (m_format.isColumnNumeric(i)) {
-            cpc->setCurrentIndex(1);
-        } else {
-            cpc->setCurrentIndex(0);
-        }
+        cpc->setCurrentIndex
+            (m_format.getColumnPurpose(i) == CSVFormat::ColumnValue ? 1 : 0);
         
         for (int j = 0; j < example.size() && j < 6; ++j) {
             if (i >= example[j].size()) {
