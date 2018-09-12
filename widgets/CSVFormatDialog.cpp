@@ -4,7 +4,7 @@
     Sonic Visualiser
     An audio file viewer and annotation editor.
     Centre for Digital Music, Queen Mary, University of London.
-    This file copyright 2006 Chris Cannam.
+    This file copyright 2006-2018 Chris Cannam and QMUL.
     
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
@@ -48,8 +48,9 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     int row = 0;
 
-    layout->addWidget(new QLabel(tr("Please select the correct data format for this file.")),
-                      row++, 0, 1, 4);
+    layout->addWidget
+        (new QLabel(tr("Please select the correct data format for this file.")),
+         row++, 0, 1, 4);
 
     QFrame *exampleFrame = new QFrame;
     exampleFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
@@ -64,9 +65,6 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     QFont fp;
     fp.setPointSize(int(floor(fp.pointSize() * 0.9)));
-//    fp.setFixedPitch(true);
-//    fp.setStyleHint(QFont::TypeWriter);
-//    fp.setFamily("Monospaced");
     
     int columns = format.getColumnCount();
     QList<QStringList> example = m_format.getExample();
@@ -77,15 +75,18 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
         m_columnPurposeCombos.push_back(cpc);
         exampleLayout->addWidget(cpc, 0, i);
         connect(cpc, SIGNAL(activated(int)), this, SLOT(columnPurposeChanged(int)));
-
+        
         if (i == m_maxDisplayCols && columns > i + 2) {
             m_fuzzyColumn = i;
+
             cpc->addItem(tr("<ignore>"));
             cpc->addItem(tr("Values"));
             cpc->setCurrentIndex
-                (m_format.getColumnPurpose(i-1) == CSVFormat::ColumnUnknown ? 0 : 1);
-            exampleLayout->addWidget(new QLabel(tr("(%1 more)").arg(columns - i)),
-                                     1, i);
+                (m_format.getColumnPurpose(i-1) ==
+                 CSVFormat::ColumnUnknown ? 0 : 1);
+
+            exampleLayout->addWidget
+                (new QLabel(tr("(%1 more)").arg(columns - i)), 1, i);
             break;
         }
 
@@ -98,7 +99,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
         cpc->addItem(tr("Pitch"));    // ColumnPitch
         cpc->addItem(tr("Label"));    // ColumnLabel
         cpc->setCurrentIndex(int(m_format.getColumnPurpose(i)));
-
+        
         for (int j = 0; j < example.size() && j < 6; ++j) {
             if (i >= example[j].size()) {
                 continue;
@@ -132,12 +133,12 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
     for (auto &l: m_timingLabels) {
         m_timingTypeCombo->addItem(l.second);
     }
-
+    
     layout->addWidget(m_timingTypeCombo, row++, 1, 1, 2);
-
+    
     connect(m_timingTypeCombo, SIGNAL(activated(int)),
             this, SLOT(timingTypeChanged(int)));
-
+    
     m_initialTimingOption = TimingImplicit;
     if (m_format.getTimingType() == CSVFormat::ExplicitTiming) {
         switch (m_format.getTimeUnits()) {
@@ -152,7 +153,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
         }
     }
     m_timingTypeCombo->setCurrentIndex(int(m_initialTimingOption));
-
+        
     m_sampleRateLabel = new QLabel(tr("Audio sample rate (Hz):"));
     layout->addWidget(m_sampleRateLabel, row, 0);
     
@@ -178,7 +179,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
 
     m_windowSizeLabel = new QLabel(tr("Frame increment between rows:"));
     layout->addWidget(m_windowSizeLabel, row, 0);
-
+    
     m_windowSizeCombo = new QComboBox;
     for (int i = 0; i <= 16; ++i) {
         int value = 1 << i;
@@ -188,7 +189,7 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent, CSVFormat format,
         }
     }
     m_windowSizeCombo->setEditable(true);
-
+    
     layout->addWidget(m_windowSizeCombo, row++, 1);
     connect(m_windowSizeCombo, SIGNAL(activated(QString)),
             this, SLOT(windowSizeChanged(QString)));
@@ -225,6 +226,10 @@ CSVFormatDialog::getFormat() const
 void
 CSVFormatDialog::updateModelLabel()
 {
+    if (!m_modelLabel) {
+        return;
+    }
+    
     LayerFactory *f = LayerFactory::getInstance();
 
     QString s;
@@ -244,9 +249,13 @@ CSVFormatDialog::updateModelLabel()
     case CSVFormat::ThreeDimensionalModel:
         s = f->getLayerPresentationName(LayerFactory::Colour3DPlot);
         break;
+    case CSVFormat::WaveFileModel:
+        s = f->getLayerPresentationName(LayerFactory::Waveform);
+        break;
     }   
 
-    m_modelLabel->setText("\n" + tr("Data will be displayed in a %1 layer.").arg(s));
+    m_modelLabel->setText("\n" + tr("Data will be displayed in a %1 layer.")
+                          .arg(s));
 }
 
 void
@@ -341,6 +350,11 @@ CSVFormatDialog::columnPurposeChanged(int p)
     QComboBox *cb = qobject_cast<QComboBox *>(o);
     if (!cb) return;
 
+    // Ensure a consistent set of column purposes, in case of a
+    // situation where some combinations are contradictory. Only
+    // updates the UI, does not update the stored format record from
+    // the UI - that's the job of updateFormatFromDialog
+    
     CSVFormat::ColumnPurpose purpose = (CSVFormat::ColumnPurpose)p;
 
     bool haveStartTime = false; // so as to update timing type combo appropriately
@@ -412,7 +426,7 @@ CSVFormatDialog::columnPurposeChanged(int p)
     updateFormatFromDialog();
     updateComboVisibility();
 }
-
+    
 void
 CSVFormatDialog::updateFormatFromDialog()
 {
@@ -422,23 +436,23 @@ CSVFormatDialog::updateFormatFromDialog()
         m_format.setTimingType(CSVFormat::ExplicitTiming);
         m_format.setTimeUnits(CSVFormat::TimeSeconds);
         break;
-
+        
     case TimingExplicitMsec:
         m_format.setTimingType(CSVFormat::ExplicitTiming);
         m_format.setTimeUnits(CSVFormat::TimeMilliseconds);
         break;
-
+        
     case TimingExplicitSamples:
         m_format.setTimingType(CSVFormat::ExplicitTiming);
         m_format.setTimeUnits(CSVFormat::TimeAudioFrames);
         break;
-
+        
     case TimingImplicit:
         m_format.setTimingType(CSVFormat::ImplicitTiming);
         m_format.setTimeUnits(CSVFormat::TimeWindows);
         break;
     }
-
+    
     bool haveStartTime = false;
     bool haveDuration = false;
     bool havePitch = false;
@@ -448,9 +462,9 @@ CSVFormatDialog::updateFormatFromDialog()
 
         QComboBox *thisCombo = m_columnPurposeCombos[i];
         
-        CSVFormat::ColumnPurpose purpose = (CSVFormat::ColumnPurpose)
-            (thisCombo->currentIndex());
-
+        CSVFormat::ColumnPurpose purpose =
+            (CSVFormat::ColumnPurpose) (thisCombo->currentIndex());
+        
         if (i == m_fuzzyColumn) {
             for (int j = i; j < m_format.getColumnCount(); ++j) {
                 if (purpose == CSVFormat::ColumnUnknown) {
