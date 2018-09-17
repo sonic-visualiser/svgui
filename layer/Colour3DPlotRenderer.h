@@ -32,6 +32,7 @@ class VerticalBinLayer;
 class DenseThreeDimensionalModel;
 class Dense3DModelPeakCache;
 class FFTModel;
+class RenderTimer;
 
 enum class BinDisplay {
     AllBins,
@@ -48,22 +49,22 @@ class Colour3DPlotRenderer
 {
 public:
     struct Sources {
-        Sources() : verticalBinLayer(0), source(0), peakCache(0), fft(0) { }
+        Sources() : verticalBinLayer(0), source(0), fft(0) { }
         
         // These must all outlive this class
         const VerticalBinLayer *verticalBinLayer;  // always
-	const DenseThreeDimensionalModel *source;  // always
-	const Dense3DModelPeakCache *peakCache;    // optionally
-	const FFTModel *fft;                       // optionally
+        const DenseThreeDimensionalModel *source;  // always
+        const FFTModel *fft;                       // optionally
+        std::vector<Dense3DModelPeakCache *> peakCaches; // zero or more
     };        
 
     struct Parameters {
-	Parameters() :
-	    colourScale(ColourScale::Parameters()),
-	    normalization(ColumnNormalization::None),
-	    binDisplay(BinDisplay::AllBins),
+        Parameters() :
+            colourScale(ColourScale::Parameters()),
+            normalization(ColumnNormalization::None),
+            binDisplay(BinDisplay::AllBins),
             binScale(BinScale::Linear),
-	    alwaysOpaque(false),
+            alwaysOpaque(false),
             interpolate(false),
             invertVertical(false),
             scaleFactor(1.0),
@@ -72,32 +73,32 @@ public:
         /** A complete ColourScale object by value, used for colour
          *  map conversion. Note that the final display gain setting is
          *  also encapsulated here. */
-	ColourScale colourScale;
+        ColourScale colourScale;
 
         /** Type of column normalization. */
-	ColumnNormalization normalization;
+        ColumnNormalization normalization;
 
         /** Selection of bins to display. */
-	BinDisplay binDisplay;
+        BinDisplay binDisplay;
 
         /** Scale for vertical bin spacing (linear or logarithmic). */
-	BinScale binScale;
+        BinScale binScale;
 
         /** Whether cells should always be opaque. If false, then
          *  large cells (when zoomed in a long way) will be rendered
          *  translucent in order not to obscure anything in a layer
          *  beneath. */
-	bool alwaysOpaque;
+        bool alwaysOpaque;
 
         /** Whether to apply smoothing when rendering cells at more
          *  than one pixel per cell.  !!! todo: decide about separating
          *  out x-interpolate and y-interpolate as the spectrogram
          *  actually does (or used to)
          */
-	bool interpolate;
+        bool interpolate;
 
         /** Whether to render the whole caboodle upside-down. */
-	bool invertVertical;
+        bool invertVertical;
 
         /** Initial scale factor (e.g. for FFT scaling). This factor
          *  is applied to all values read from the underlying model
@@ -111,7 +112,9 @@ public:
     
     Colour3DPlotRenderer(Sources sources, Parameters parameters) :
         m_sources(sources),
-	m_params(parameters)
+        m_params(parameters),
+        m_secondsPerXPixel(0.0),
+        m_secondsPerXPixelValid(false)
     { }
 
     struct RenderResult {
@@ -123,7 +126,13 @@ public:
         QRect rendered;
 
         /**
-         * The magnitude range of the data in the rendered area.
+         * The magnitude range of the data in the rendered area, after
+         * initial scaling (parameters.scaleFactor) and normalisation,
+         * for use in displaying colour scale etc. (Note that the
+         * magnitude range *before* normalisation would not be very
+         * meaningful for this purpose, as the scale would need to be
+         * different for every column if column or hybrid
+         * normalisation was in use.)
          */
         MagnitudeRange range;
     };
@@ -263,6 +272,9 @@ private:
     // valid range in the magnitude cache, but not necessarily vice
     // versa (as the image cache is limited to contiguous ranges).
     ScrollableMagRangeCache m_magCache;
+
+    double m_secondsPerXPixel;
+    bool m_secondsPerXPixelValid;
     
     RenderResult render(const LayerGeometryProvider *v,
                         QPainter &paint, QRect rect, bool timeConstrained);
@@ -280,7 +292,7 @@ private:
     int renderDrawBuffer(int w, int h,
                          const std::vector<int> &binforx,
                          const std::vector<double> &binfory,
-                         bool usePeakCache,
+                         int peakCacheIndex, // -1 => don't use a peak cache
                          bool rightToLeft,
                          bool timeConstrained);
 
@@ -306,7 +318,12 @@ private:
         const;
     
     ColumnOp::Column getColumn(int sx, int minbin, int nbins,
-                               bool usePeakCache) const;
+                               int peakCacheIndex) const; // -1 => don't use cache
+
+    void getPreferredPeakCache(const LayerGeometryProvider *,
+                               int &peakCacheIndex, int &binsPerPeak) const;
+
+    void updateTimings(const RenderTimer &timer, int xPixelCount);
 };
 
 #endif

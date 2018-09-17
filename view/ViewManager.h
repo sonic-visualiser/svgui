@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _VIEW_MANAGER_H_
-#define _VIEW_MANAGER_H_
+#ifndef SV_VIEW_MANAGER_H
+#define SV_VIEW_MANAGER_H
 
 #include <QObject>
 #include <QTimer>
@@ -29,6 +29,7 @@
 #include "base/BaseTypes.h"
 
 class AudioPlaySource;
+class AudioRecordTarget;
 class Model;
 
 enum PlaybackFollowMode {
@@ -80,8 +81,10 @@ public:
     virtual ~ViewManager();
 
     void setAudioPlaySource(AudioPlaySource *source);
+    void setAudioRecordTarget(AudioRecordTarget *target);
 
     bool isPlaying() const;
+    bool isRecording() const;
 
     sv_frame_t getGlobalCentreFrame() const; // the set method is a slot
     int getGlobalZoom() const;
@@ -127,13 +130,13 @@ public:
     Clipboard &getClipboard() { return m_clipboard; }
 
     enum ToolMode {
-	NavigateMode,
-	SelectMode,
+        NavigateMode,
+        SelectMode,
         EditMode,
-	DrawMode,
-	EraseMode,
-	MeasureMode,
-	NoteEditMode //GF: Tonioni: this tool mode will be context sensitive.
+        DrawMode,
+        EraseMode,
+        MeasureMode,
+        NoteEditMode //GF: Tonioni: this tool mode will be context sensitive.
     };
     ToolMode getToolMode() const { return m_toolMode; }
     void setToolMode(ToolMode mode);
@@ -190,7 +193,7 @@ public:
      * display. This is relevant to hi-dpi systems that do not do
      * pixel doubling (i.e. Windows and Linux rather than OS/X).
      */
-    int scalePixelSize(int pixels);
+    static int scalePixelSize(int pixels);
     
     enum OverlayMode {
         NoOverlays,
@@ -215,6 +218,9 @@ public:
     }
     bool shouldShowVerticalColourScale() const {
         return m_overlayMode == AllOverlays;
+    }
+    bool shouldShowHorizontalValueScale() const { // for layers where x != time
+        return m_overlayMode != NoOverlays;
     }
     bool shouldShowSelectionExtents() const {
         return m_overlayMode != NoOverlays && m_overlayMode != GlobalOverlays;
@@ -254,8 +260,8 @@ signals:
     /** Emitted when the playback frame changes. */
     void playbackFrameChanged(sv_frame_t frame);
 
-    /** Emitted when the output levels change. Values in range 0.0 -> 1.0. */
-    void outputLevelsChanged(float left, float right);
+    /** Emitted when the output or record levels change. Values in range 0.0 -> 1.0. */
+    void monitoringLevelsChanged(float left, float right);
 
     /** Emitted whenever the selection has changed. */
     void selectionChanged();
@@ -305,6 +311,7 @@ public slots:
     void setGlobalCentreFrame(sv_frame_t);
     void setPlaybackFrame(sv_frame_t);
     void playStatusChanged(bool playing);
+    void recordStatusChanged(bool recording);
 
 protected slots:
     void checkPlayStatus();
@@ -313,6 +320,8 @@ protected slots:
 
 protected:
     AudioPlaySource *m_playSource;
+    AudioRecordTarget *m_recordTarget;
+    
     sv_frame_t m_globalCentreFrame;
     int m_globalZoom;
     mutable sv_frame_t m_playbackFrame;
@@ -342,16 +351,16 @@ protected:
     class SetSelectionCommand : public Command
     {
     public:
-	SetSelectionCommand(ViewManager *vm, const MultiSelection &ms);
-	virtual ~SetSelectionCommand();
-	virtual void execute();
-	virtual void unexecute();
-	virtual QString getName() const;
+        SetSelectionCommand(ViewManager *vm, const MultiSelection &ms);
+        virtual ~SetSelectionCommand();
+        virtual void execute();
+        virtual void unexecute();
+        virtual QString getName() const;
 
     protected:
-	ViewManager *m_vm;
-	MultiSelection m_oldSelection;
-	MultiSelection m_newSelection;
+        ViewManager *m_vm;
+        MultiSelection m_oldSelection;
+        MultiSelection m_newSelection;
     };
 
     OverlayMode m_overlayMode;

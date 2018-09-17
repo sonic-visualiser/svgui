@@ -30,9 +30,9 @@ ColourScale::ColourScale(Parameters parameters) :
     m_mapper(m_params.colourMap, 1.f, double(m_maxPixel))
 {
     if (m_params.minValue >= m_params.maxValue) {
-        cerr << "ERROR: ColourScale::ColourScale: minValue = "
+        SVCERR << "ERROR: ColourScale::ColourScale: minValue = "
              << m_params.minValue << ", maxValue = " << m_params.maxValue << endl;
-	throw std::logic_error("maxValue must be greater than minValue");
+        throw std::logic_error("maxValue must be greater than minValue");
     }
 
     m_mappedMin = m_params.minValue;
@@ -44,30 +44,47 @@ ColourScale::ColourScale(Parameters parameters) :
     
     if (m_params.scaleType == ColourScaleType::Log) {
 
-	LogRange::mapRange(m_mappedMin, m_mappedMax);
-	
+        // When used in e.g. spectrogram, we have a range with a min
+        // value of zero. The LogRange converts that to a threshold
+        // value of -10, so for a range of e.g. (0,1) we end up with
+        // (-10,0) as the mapped range.
+        // 
+        // But in other contexts we could end up with a mapped range
+        // much larger than that if we have a small non-zero minimum
+        // value (less than 1e-10), or a particularly large
+        // maximum. That's unlikely to give us good results, so let's
+        // insist that the mapped log range has no more than 10
+        // difference between min and max, to match the behaviour when
+        // min == 0 at the input.
+        //
+        double threshold = -10.0;
+        LogRange::mapRange(m_mappedMin, m_mappedMax, threshold);
+        if (m_mappedMin < m_mappedMax + threshold) {
+            m_mappedMin = m_mappedMax + threshold;
+        }
+        
     } else if (m_params.scaleType == ColourScaleType::PlusMinusOne) {
-	
-	m_mappedMin = -1.0;
-	m_mappedMax =  1.0;
+        
+        m_mappedMin = -1.0;
+        m_mappedMax =  1.0;
 
     } else if (m_params.scaleType == ColourScaleType::Absolute) {
 
-	m_mappedMin = fabs(m_mappedMin);
-	m_mappedMax = fabs(m_mappedMax);
-	if (m_mappedMin >= m_mappedMax) {
-	    std::swap(m_mappedMin, m_mappedMax);
-	}
+        m_mappedMin = fabs(m_mappedMin);
+        m_mappedMax = fabs(m_mappedMax);
+        if (m_mappedMin >= m_mappedMax) {
+            std::swap(m_mappedMin, m_mappedMax);
+        }
     }
 
     if (m_mappedMin >= m_mappedMax) {
-        cerr << "ERROR: ColourScale::ColourScale: minValue = " << m_params.minValue
+        SVCERR << "ERROR: ColourScale::ColourScale: minValue = " << m_params.minValue
              << ", maxValue = " << m_params.maxValue
              << ", threshold = " << m_params.threshold
              << ", scale = " << int(m_params.scaleType)
              << " resulting in mapped minValue = " << m_mappedMin
              << ", mapped maxValue = " << m_mappedMax << endl;
-	throw std::logic_error("maxValue must be greater than minValue [after mapping]");
+        throw std::logic_error("maxValue must be greater than minValue [after mapping]");
     }
 }
 
@@ -87,9 +104,9 @@ ColourScale::getPixel(double value) const
     double maxPixF = m_maxPixel;
 
     if (m_params.scaleType == ColourScaleType::Phase) {
-	double half = (maxPixF - 1.f) / 2.f;
+        double half = (maxPixF - 1.f) / 2.f;
         int pixel = 1 + int((value * half) / M_PI + half);
-//        cerr << "phase = " << value << " pixel = " << pixel << endl;
+//        SVCERR << "phase = " << value << " pixel = " << pixel << endl;
         return pixel;
     }
     
@@ -100,21 +117,21 @@ ColourScale::getPixel(double value) const
     double mapped = value;
 
     if (m_params.scaleType == ColourScaleType::Log) {
-	mapped = LogRange::map(value);
+        mapped = LogRange::map(value);
     } else if (m_params.scaleType == ColourScaleType::PlusMinusOne) {
-	if (mapped < -1.f) mapped = -1.f;
-	if (mapped > 1.f) mapped = 1.f;
+        if (mapped < -1.f) mapped = -1.f;
+        if (mapped > 1.f) mapped = 1.f;
     } else if (m_params.scaleType == ColourScaleType::Absolute) {
-	if (mapped < 0.f) mapped = -mapped;
+        if (mapped < 0.f) mapped = -mapped;
     }
 
     mapped *= m_params.multiple;
     
     if (mapped < m_mappedMin) {
-	mapped = m_mappedMin;
+        mapped = m_mappedMin;
     }
     if (mapped > m_mappedMax) {
-	mapped = m_mappedMax;
+        mapped = m_mappedMax;
     }
 
     double proportion = (mapped - m_mappedMin) / (m_mappedMax - m_mappedMin);
@@ -122,16 +139,16 @@ ColourScale::getPixel(double value) const
     int pixel = 0;
 
     if (m_params.scaleType == ColourScaleType::Meter) {
-	pixel = AudioLevel::multiplier_to_preview(proportion, m_maxPixel-1) + 1;
+        pixel = AudioLevel::multiplier_to_preview(proportion, m_maxPixel-1) + 1;
     } else {
-	pixel = int(proportion * maxPixF) + 1;
+        pixel = int(proportion * maxPixF) + 1;
     }
 
     if (pixel < 0) {
-	pixel = 0;
+        pixel = 0;
     }
     if (pixel > m_maxPixel) {
-	pixel = m_maxPixel;
+        pixel = m_maxPixel;
     }
     return pixel;
 }
@@ -140,21 +157,21 @@ QColor
 ColourScale::getColourForPixel(int pixel, int rotation) const
 {
     if (pixel < 0) {
-	pixel = 0;
+        pixel = 0;
     }
     if (pixel > m_maxPixel) {
-	pixel = m_maxPixel;
+        pixel = m_maxPixel;
     }
     if (pixel == 0) {
-	if (m_mapper.hasLightBackground()) {
-	    return Qt::white;
-	} else {
-	    return Qt::black;
-	}
+        if (m_mapper.hasLightBackground()) {
+            return Qt::white;
+        } else {
+            return Qt::black;
+        }
     } else {
-	int target = int(pixel) + rotation;
-	while (target < 1) target += m_maxPixel;
-	while (target > m_maxPixel) target -= m_maxPixel;
-	return m_mapper.map(double(target));
+        int target = int(pixel) + rotation;
+        while (target < 1) target += m_maxPixel;
+        while (target > m_maxPixel) target -= m_maxPixel;
+        return m_mapper.map(double(target));
     }
 }

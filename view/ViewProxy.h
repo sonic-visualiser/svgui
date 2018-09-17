@@ -21,23 +21,23 @@ class ViewProxy : public LayerGeometryProvider
 {
 public:
     ViewProxy(View *view, int scaleFactor) :
-	m_view(view), m_scaleFactor(scaleFactor) { }
+        m_view(view), m_scaleFactor(scaleFactor) { }
 
     virtual int getId() const {
         return m_view->getId();
     }
     virtual sv_frame_t getStartFrame() const {
-	return m_view->getStartFrame();
+        return m_view->getStartFrame();
     }
     virtual sv_frame_t getCentreFrame() const {
-	return m_view->getCentreFrame();
+        return m_view->getCentreFrame();
     }
     virtual sv_frame_t getEndFrame() const {
-	return m_view->getEndFrame();
+        return m_view->getEndFrame();
     }
     virtual int getXForFrame(sv_frame_t frame) const {
         //!!! not actually correct, if frame lies between view's pixels
-	return m_scaleFactor * m_view->getXForFrame(frame);
+        return m_scaleFactor * m_view->getXForFrame(frame);
     }
     virtual sv_frame_t getFrameForX(int x) const {
         sv_frame_t f0 = m_view->getFrameForX(x / m_scaleFactor);
@@ -52,43 +52,43 @@ public:
         return x / m_scaleFactor;
     }
     virtual sv_frame_t getModelsStartFrame() const {
-	return m_view->getModelsStartFrame();
+        return m_view->getModelsStartFrame();
     }
     virtual sv_frame_t getModelsEndFrame() const {
-	return m_view->getModelsEndFrame();
+        return m_view->getModelsEndFrame();
     }
     virtual double getYForFrequency(double frequency,
-				    double minFreq, double maxFreq, 
+                                    double minFreq, double maxFreq, 
                                     bool logarithmic) const {
-	return m_scaleFactor *
-	    m_view->getYForFrequency(frequency, minFreq, maxFreq, logarithmic);
+        return m_scaleFactor *
+            m_view->getYForFrequency(frequency, minFreq, maxFreq, logarithmic);
     }
     virtual double getFrequencyForY(double y, double minFreq, double maxFreq,
-				    bool logarithmic) const {
+                                    bool logarithmic) const {
         return m_view->getFrequencyForY
             (y / m_scaleFactor, minFreq, maxFreq, logarithmic);
     }
     virtual int getTextLabelHeight(const Layer *layer, QPainter &paint) const {
-	return m_scaleFactor * m_view->getTextLabelHeight(layer, paint);
+        return m_scaleFactor * m_view->getTextLabelHeight(layer, paint);
     }
     virtual bool getValueExtents(QString unit, double &min, double &max,
                                  bool &log) const {
-	return m_view->getValueExtents(unit, min, max, log);
+        return m_view->getValueExtents(unit, min, max, log);
     }
     virtual int getZoomLevel() const {
-	int z = m_view->getZoomLevel();
-//	cerr << "getZoomLevel: from " << z << " to ";
-	z = z / m_scaleFactor;
-//	cerr << z << endl;
+        int z = m_view->getZoomLevel();
+//        cerr << "getZoomLevel: from " << z << " to ";
+        z = z / m_scaleFactor;
+//        cerr << z << endl;
         if (z < 1) z = 1;
-	return z;
+        return z;
     }
     virtual QRect getPaintRect() const {
-	QRect r = m_view->getPaintRect();
-	return QRect(r.x() * m_scaleFactor,
-		     r.y() * m_scaleFactor,
-		     r.width() * m_scaleFactor,
-		     r.height() * m_scaleFactor);
+        QRect r = m_view->getPaintRect();
+        return QRect(r.x() * m_scaleFactor,
+                     r.y() * m_scaleFactor,
+                     r.width() * m_scaleFactor,
+                     r.height() * m_scaleFactor);
     }
     virtual QSize getPaintSize() const {
         return getPaintRect().size();
@@ -100,33 +100,33 @@ public:
         return getPaintRect().height();
     }
     virtual bool hasLightBackground() const {
-	return m_view->hasLightBackground();
+        return m_view->hasLightBackground();
     }
     virtual QColor getForeground() const {
-	return m_view->getForeground();
+        return m_view->getForeground();
     }
     virtual QColor getBackground() const {
-	return m_view->getBackground();
+        return m_view->getBackground();
     }
     virtual ViewManager *getViewManager() const {
-	return m_view->getViewManager();
+        return m_view->getViewManager();
     }
-	
+        
     virtual bool shouldIlluminateLocalFeatures(const Layer *layer,
                                                QPoint &point) const {
         QPoint p;
-	bool should = m_view->shouldIlluminateLocalFeatures(layer, p);
+        bool should = m_view->shouldIlluminateLocalFeatures(layer, p);
         point = QPoint(p.x() * m_scaleFactor, p.y() * m_scaleFactor);
         return should;
     }
 
     virtual bool shouldShowFeatureLabels() const {
-	return m_view->shouldShowFeatureLabels();
+        return m_view->shouldShowFeatureLabels();
     }
 
     virtual void drawMeasurementRect(QPainter &p, const Layer *layer,
                                      QRect rect, bool focus) const {
-	m_view->drawMeasurementRect(p, layer, rect, focus);
+        m_view->drawMeasurementRect(p, layer, rect, focus);
     }
 
     virtual void updatePaintRect(QRect r) {

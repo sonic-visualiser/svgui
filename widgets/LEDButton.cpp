@@ -23,6 +23,7 @@
 
 
 #include "LEDButton.h"
+#include "WidgetScale.h"
 
 #include <QPainter>
 #include <QImage>
@@ -87,10 +88,10 @@ LEDButton::mousePressEvent(QMouseEvent *e)
     cerr << "LEDButton(" << this << ")::mousePressEvent" << endl;
 
     if (e->buttons() & Qt::LeftButton) {
-	toggle();
-	bool newState = state();
-	SVDEBUG << "emitting new state " << newState << endl;
-	emit stateChanged(newState);
+        toggle();
+        bool newState = state();
+        SVDEBUG << "emitting new state " << newState << endl;
+        emit stateChanged(newState);
     }
 }
 
@@ -113,17 +114,17 @@ LEDButton::paintEvent(QPaintEvent *)
     QColor color;
     QBrush brush;
     QPen pen;
-		
+                
     // First of all we want to know what area should be updated
     // Initialize coordinates, width, and height of the LED
-    int	width = this->width();
+    int        width = this->width();
 
     // Make sure the LED is round!
     if (width > this->height())
-	width = this->height();
+        width = this->height();
     width -= 2; // leave one pixel border
     if (width < 0) 
-	width = 0;
+        width = 0;
 
     paint.begin(this);
 
@@ -153,25 +154,25 @@ LEDButton::paintEvent(QPaintEvent *)
     int light_width = width;
     light_width *= 2;
     light_width /= 3;
-	
+        
     // Calculate the LED´s "light factor":
     int light_quote = (130*2/(light_width?light_width:1))+100;
 
     // Now draw the bright spot on the LED:
     while (light_width) {
-	color = color.light( light_quote );                      // make color lighter
-	pen.setColor( color );                                   // set color as pen color
-	paint.setPen( pen );                                     // select the pen for drawing
-	paint.drawEllipse( pos, pos, light_width, light_width ); // draw the ellipse (circle)
-	light_width--;
-	if (!light_width)
-	    break;
-	paint.drawEllipse( pos, pos, light_width, light_width );
-	light_width--;
-	if (!light_width)
-	    break;
-	paint.drawEllipse( pos, pos, light_width, light_width );
-	pos++; light_width--;
+        color = color.light( light_quote );                      // make color lighter
+        pen.setColor( color );                                   // set color as pen color
+        paint.setPen( pen );                                     // select the pen for drawing
+        paint.drawEllipse( pos, pos, light_width, light_width ); // draw the ellipse (circle)
+        light_width--;
+        if (!light_width)
+            break;
+        paint.drawEllipse( pos, pos, light_width, light_width );
+        light_width--;
+        if (!light_width)
+            break;
+        paint.drawEllipse( pos, pos, light_width, light_width );
+        pos++; light_width--;
     }
 
     paint.drawPoint(pos, pos);
@@ -191,13 +192,13 @@ LEDButton::paintEvent(QPaintEvent *)
     color = palette().light().color();
     
     for (int arc = 120; arc < 2880; arc += 240) {
-	pen.setColor(color);
-	paint.setPen(pen);
-	int w = width - pen.width()/2;
-	paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle + arc, 240);
-	paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle - arc, 240);
-	color = color.dark(110); //FIXME: this should somehow use the contrast value
-    }	// end for ( angle = 720; angle < 6480; angle += 160 )
+        pen.setColor(color);
+        paint.setPen(pen);
+        int w = width - pen.width()/2;
+        paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle + arc, 240);
+        paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle - arc, 240);
+        color = color.dark(110); //FIXME: this should somehow use the contrast value
+    }        // end for ( angle = 720; angle < 6480; angle += 160 )
 
     paint.end();
 }
@@ -219,8 +220,8 @@ LEDButton::setState( bool state )
 {
     if (led_state != state)
     {
-	led_state = state;
-	update();
+        led_state = state;
+        update();
     }
 }
 
@@ -236,9 +237,9 @@ void
 LEDButton::setColor(const QColor& col)
 {
     if(led_color!=col) {
-	led_color = col;
-	d->offcolor = col.dark(d->dark_factor);
-	update();
+        led_color = col;
+        d->offcolor = col.dark(d->dark_factor);
+        update();
     }
 }
 
@@ -246,9 +247,9 @@ void
 LEDButton::setDarkFactor(int darkfactor)
 {
     if (d->dark_factor != darkfactor) {
-	d->dark_factor = darkfactor;
-	d->offcolor = led_color.dark(darkfactor);
-	update();
+        d->dark_factor = darkfactor;
+        d->offcolor = led_color.dark(darkfactor);
+        update();
     }
 }
 
@@ -279,12 +280,12 @@ LEDButton::off()
 QSize
 LEDButton::sizeHint() const
 {
-    return QSize(17, 17);
+    return WidgetScale::scaleQSize(QSize(17, 17));
 }
 
 QSize
 LEDButton::minimumSizeHint() const
 {
-    return QSize(17, 17);
+    return WidgetScale::scaleQSize(QSize(17, 17));
 }
 

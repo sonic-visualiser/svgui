@@ -220,14 +220,14 @@ ModelMetadataModel::flags(const QModelIndex &) const
 
 QVariant
 ModelMetadataModel::headerData(int section,
-			   Qt::Orientation orientation,
-			   int role) const
+                           Qt::Orientation orientation,
+                           int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
-	if (section == m_modelTypeColumn) return QVariant(tr("Type"));
-	else if (section == m_modelNameColumn) return QVariant(tr("Name"));
-	else if (section == m_modelMakerColumn) return QVariant(tr("Maker"));
-	else if (section == m_modelSourceColumn) return QVariant(tr("Source"));
+        if (section == m_modelTypeColumn) return QVariant(tr("Type"));
+        else if (section == m_modelNameColumn) return QVariant(tr("Name"));
+        else if (section == m_modelMakerColumn) return QVariant(tr("Maker"));
+        else if (section == m_modelSourceColumn) return QVariant(tr("Source"));
     }
 
     return QVariant();
@@ -238,7 +238,7 @@ ModelMetadataModel::index(int row, int column, const QModelIndex &parent) const
 {
     if (!parent.isValid()) {
         if (row >= (int)m_models.size()) return QModelIndex();
-	return createIndex(row, column, (void *)0);
+        return createIndex(row, column, (void *)0);
     }
 
     return QModelIndex();
@@ -507,14 +507,14 @@ LayerTreeModel::flags(const QModelIndex &index) const
 
 QVariant
 LayerTreeModel::headerData(int section,
-			   Qt::Orientation orientation,
-			   int role) const
+                           Qt::Orientation orientation,
+                           int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
-	if (section == m_layerNameColumn) return QVariant(tr("Layer"));
+        if (section == m_layerNameColumn) return QVariant(tr("Layer"));
         else if (section == m_layerVisibleColumn) return QVariant(tr("Shown"));
         else if (section == m_layerPlayedColumn) return QVariant(tr("Played"));
-	else if (section == m_modelNameColumn) return QVariant(tr("Model"));
+        else if (section == m_modelNameColumn) return QVariant(tr("Model"));
     }
 
     return QVariant();
@@ -531,7 +531,7 @@ LayerTreeModel::index(int row, int column, const QModelIndex &parent) const
 
     if (!parent.isValid()) {
         if (row >= m_stack->getPaneCount() || column > 0) return QModelIndex();
-	return createIndex(row, column, m_stack);
+        return createIndex(row, column, m_stack);
     }
 
     QObject *obj = static_cast<QObject *>(parent.internalPointer());

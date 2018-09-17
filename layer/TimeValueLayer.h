@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _TIME_VALUE_LAYER_H_
-#define _TIME_VALUE_LAYER_H_
+#ifndef SV_TIME_VALUE_LAYER_H
+#define SV_TIME_VALUE_LAYER_H
 
 #include "SingleColourLayer.h"
 #include "VerticalScaleLayer.h"
@@ -46,8 +46,8 @@ public:
     virtual QString getLabelPreceding(sv_frame_t) const;
 
     virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-				    int &resolution,
-				    SnapType snap) const;
+                                    int &resolution,
+                                    SnapType snap) const;
     virtual bool snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                                       int &resolution,
                                       SnapType snap) const;
@@ -85,19 +85,19 @@ public:
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
+                                          int value) const;
     virtual void setProperty(const PropertyName &, int value);
 
     void setFillColourMap(int);
     int getFillColourMap() const { return m_colourMap; }
 
     enum PlotStyle {
-	PlotPoints,
-	PlotStems,
-	PlotConnectedPoints,
-	PlotLines,
-	PlotCurve,
-	PlotSegmentation,
+        PlotPoints,
+        PlotStems,
+        PlotConnectedPoints,
+        PlotLines,
+        PlotCurve,
+        PlotSegmentation,
         PlotDiscreteCurves
     };
 
@@ -146,11 +146,21 @@ public:
 
     void setProperties(const QXmlAttributes &attributes);
 
+    /// Override from SingleColourLayer
     virtual ColourSignificance getLayerColourSignificance() const {
         if (m_plotStyle == PlotSegmentation) {
             return ColourHasMeaningfulValue;
         } else {
             return ColourDistinguishes;
+        }
+    }
+
+    /// Override from SingleColourLayer
+    virtual bool hasLightBackground() const {
+        if (m_plotStyle == PlotSegmentation) {
+            return true;
+        } else {
+            return SingleColourLayer::hasLightBackground();
         }
     }
 

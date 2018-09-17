@@ -7,6 +7,8 @@ SVGUI_HEADERS += \
            layer/ColourScale.h \
            layer/ColourScaleLayer.h \
            layer/FlexiNoteLayer.h \
+           layer/HorizontalFrequencyScale.h \
+           layer/HorizontalScaleProvider.h \
            layer/ImageLayer.h \
            layer/ImageRegionFinder.h \
            layer/Layer.h \
@@ -44,8 +46,11 @@ SVGUI_HEADERS += \
 	   widgets/ActivityLog.h \
            widgets/AudioDial.h \
            widgets/ClickableLabel.h \
+           widgets/ColourComboBox.h \
+           widgets/ColourMapComboBox.h \
            widgets/ColourNameDialog.h \
            widgets/CommandHistory.h \
+           widgets/CSVAudioFormatDialog.h \
            widgets/CSVFormatDialog.h \
            widgets/Fader.h \
            widgets/InteractiveFileFinder.h \
@@ -66,9 +71,12 @@ SVGUI_HEADERS += \
            widgets/NotifyingComboBox.h \
            widgets/NotifyingPushButton.h \
            widgets/NotifyingTabBar.h \
+           widgets/NotifyingToolButton.h \
            widgets/Panner.h \
            widgets/PluginParameterBox.h \
            widgets/PluginParameterDialog.h \
+           widgets/PluginPathConfigurator.h \
+           widgets/PluginReviewDialog.h \
            widgets/ProgressDialog.h \
            widgets/PropertyBox.h \
            widgets/PropertyStack.h \
@@ -80,6 +88,8 @@ SVGUI_HEADERS += \
            widgets/TipDialog.h \
            widgets/TransformFinder.h \
            widgets/UnitConverter.h \
+           widgets/WheelCounter.h \
+           widgets/WidgetScale.h \
            widgets/WindowShapePreview.h \
            widgets/WindowTypeSelector.h
 
@@ -90,6 +100,7 @@ SVGUI_SOURCES += \
 	   layer/ColourMapper.cpp \
 	   layer/ColourScale.cpp \
            layer/FlexiNoteLayer.cpp \
+           layer/HorizontalFrequencyScale.cpp \
            layer/ImageLayer.cpp \
            layer/ImageRegionFinder.cpp \
            layer/Layer.cpp \
@@ -121,8 +132,11 @@ SVGUI_SOURCES += \
            view/ViewManager.cpp \
 	   widgets/ActivityLog.cpp \
            widgets/AudioDial.cpp \
+           widgets/ColourComboBox.cpp \
+           widgets/ColourMapComboBox.cpp \
            widgets/ColourNameDialog.cpp \
            widgets/CommandHistory.cpp \
+           widgets/CSVAudioFormatDialog.cpp \
            widgets/CSVFormatDialog.cpp \
            widgets/Fader.cpp \
            widgets/InteractiveFileFinder.cpp \
@@ -143,9 +157,12 @@ SVGUI_SOURCES += \
            widgets/NotifyingComboBox.cpp \
            widgets/NotifyingPushButton.cpp \
            widgets/NotifyingTabBar.cpp \
+           widgets/NotifyingToolButton.cpp \
            widgets/Panner.cpp \
            widgets/PluginParameterBox.cpp \
            widgets/PluginParameterDialog.cpp \
+           widgets/PluginPathConfigurator.cpp \
+           widgets/PluginReviewDialog.cpp \
            widgets/ProgressDialog.cpp \
            widgets/PropertyBox.cpp \
            widgets/PropertyStack.cpp \

@@ -25,6 +25,8 @@
 #include "base/LogRange.h"
 #include "base/ColumnOp.h"
 #include "base/Strings.h"
+#include "base/StorageAdviser.h"
+#include "base/Exceptions.h"
 #include "widgets/CommandHistory.h"
 #include "data/model/Dense3DModelPeakCache.h"
 
@@ -80,6 +82,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_haveDetailedScale(false),
     m_exiting(false),
     m_fftModel(0),
+    m_wholeCache(0),
     m_peakCache(0),
     m_peakCacheDivisor(8)
 {
@@ -90,26 +93,26 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
         m_initialMaxFrequency = 0;
         setMaxFrequency(0);
     } else if (config == MelodicRange) {
-	setWindowSize(8192);
-	setWindowHopLevel(4);
+        setWindowSize(8192);
+        setWindowHopLevel(4);
         m_initialMaxFrequency = 1500;
-	setMaxFrequency(1500);
+        setMaxFrequency(1500);
         setMinFrequency(40);
-	setColourScale(ColourScaleType::Linear);
+        setColourScale(ColourScaleType::Linear);
         setColourMap(ColourMapper::Sunset);
         setBinScale(BinScale::Log);
         colourConfigName = "spectrogram-melodic-colour";
         colourConfigDefault = int(ColourMapper::Sunset);
 //        setGain(20);
     } else if (config == MelodicPeaks) {
-	setWindowSize(4096);
-	setWindowHopLevel(5);
+        setWindowSize(4096);
+        setWindowHopLevel(5);
         m_initialMaxFrequency = 2000;
-	setMaxFrequency(2000);
-	setMinFrequency(40);
-	setBinScale(BinScale::Log);
-	setColourScale(ColourScaleType::Linear);
-	setBinDisplay(BinDisplay::PeakFrequencies);
+        setMaxFrequency(2000);
+        setMinFrequency(40);
+        setBinScale(BinScale::Log);
+        setColourScale(ColourScaleType::Linear);
+        setBinDisplay(BinDisplay::PeakFrequencies);
         setNormalization(ColumnNormalization::Max1);
         colourConfigName = "spectrogram-melodic-colour";
         colourConfigDefault = int(ColourMapper::Sunset);
@@ -129,7 +132,23 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 SpectrogramLayer::~SpectrogramLayer()
 {
     invalidateRenderers();
-    invalidateFFTModel();
+    deleteDerivedModels();
+}
+
+void
+SpectrogramLayer::deleteDerivedModels()
+{
+    if (m_fftModel) m_fftModel->aboutToDelete();
+    if (m_peakCache) m_peakCache->aboutToDelete();
+    if (m_wholeCache) m_wholeCache->aboutToDelete();
+
+    delete m_fftModel;
+    delete m_peakCache;
+    delete m_wholeCache;
+
+    m_fftModel = 0;
+    m_peakCache = 0;
+    m_wholeCache = 0;
 }
 
 pair<ColourScaleType, double>
@@ -181,6 +200,7 @@ SpectrogramLayer::convertFromColumnNorm(ColumnNormalization norm, bool visible)
     case ColumnNormalization::Hybrid: return 3;
 
     case ColumnNormalization::Sum1:
+    case ColumnNormalization::Range01:
     default: return 0;
     }
 }
@@ -193,7 +213,8 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
     if (model == m_model) return;
 
     m_model = model;
-    invalidateFFTModel();
+
+    recreateFFTModel();
 
     if (!m_model || !m_model->isOK()) return;
 
@@ -201,7 +222,7 @@ SpectrogramLayer::setModel(const DenseTimeValueModel *model)
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(cacheInvalid()));
     connect(m_model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-	    this, SLOT(cacheInvalid(sv_frame_t, sv_frame_t)));
+            this, SLOT(cacheInvalid(sv_frame_t, sv_frame_t)));
 
     emit modelReplaced();
 }
@@ -255,6 +276,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
     if (name == "Gain") return RangeProperty;
     if (name == "Colour Rotation") return RangeProperty;
     if (name == "Threshold") return RangeProperty;
+    if (name == "Colour") return ColourMapProperty;
     return ValueProperty;
 }
 
@@ -264,19 +286,19 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Bin Display" ||
         name == "Frequency Scale") return tr("Bins");
     if (name == "Window Size" ||
-	name == "Window Increment") return tr("Window");
+        name == "Window Increment") return tr("Window");
     if (name == "Colour" ||
-	name == "Threshold" ||
-	name == "Colour Rotation") return tr("Colour");
+        name == "Threshold" ||
+        name == "Colour Rotation") return tr("Colour");
     if (name == "Normalization" ||
         name == "Gain" ||
-	name == "Colour Scale") return tr("Scale");
+        name == "Colour Scale") return tr("Scale");
     return QString();
 }
 
 int
 SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
-					   int *min, int *max, int *deflt) const
+                                           int *min, int *max, int *deflt) const
 {
     int val = 0;
 
@@ -287,127 +309,127 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     if (name == "Gain") {
 
-	*min = -50;
-	*max = 50;
+        *min = -50;
+        *max = 50;
 
         *deflt = int(lrint(log10(m_initialGain) * 20.0));
-	if (*deflt < *min) *deflt = *min;
-	if (*deflt > *max) *deflt = *max;
+        if (*deflt < *min) *deflt = *min;
+        if (*deflt > *max) *deflt = *max;
 
-	val = int(lrint(log10(m_gain) * 20.0));
-	if (val < *min) val = *min;
-	if (val > *max) val = *max;
+        val = int(lrint(log10(m_gain) * 20.0));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
     } else if (name == "Threshold") {
 
-	*min = -81;
-	*max = -1;
+        *min = -81;
+        *max = -1;
 
         *deflt = int(lrint(AudioLevel::multiplier_to_dB(m_initialThreshold)));
-	if (*deflt < *min) *deflt = *min;
-	if (*deflt > *max) *deflt = *max;
+        if (*deflt < *min) *deflt = *min;
+        if (*deflt > *max) *deflt = *max;
 
-	val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
-	if (val < *min) val = *min;
-	if (val > *max) val = *max;
+        val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
     } else if (name == "Colour Rotation") {
 
-	*min = 0;
-	*max = 256;
+        *min = 0;
+        *max = 256;
         *deflt = m_initialRotation;
 
-	val = m_colourRotation;
+        val = m_colourRotation;
 
     } else if (name == "Colour Scale") {
 
         // linear, meter, db^2, db, phase
-	*min = 0;
-	*max = 4;
+        *min = 0;
+        *max = 4;
         *deflt = 2;
 
-	val = convertFromColourScale(m_colourScale, m_colourScaleMultiple);
+        val = convertFromColourScale(m_colourScale, m_colourScaleMultiple);
 
     } else if (name == "Colour") {
 
-	*min = 0;
-	*max = ColourMapper::getColourMapCount() - 1;
+        *min = 0;
+        *max = ColourMapper::getColourMapCount() - 1;
         *deflt = 0;
 
-	val = m_colourMap;
+        val = m_colourMap;
 
     } else if (name == "Window Size") {
 
-	*min = 0;
-	*max = 10;
+        *min = 0;
+        *max = 10;
         *deflt = 5;
-	
-	val = 0;
-	int ws = m_windowSize;
-	while (ws > 32) { ws >>= 1; val ++; }
+        
+        val = 0;
+        int ws = m_windowSize;
+        while (ws > 32) { ws >>= 1; val ++; }
 
     } else if (name == "Window Increment") {
-	
-	*min = 0;
-	*max = 5;
+        
+        *min = 0;
+        *max = 5;
         *deflt = 2;
 
         val = m_windowHopLevel;
     
     } else if (name == "Min Frequency") {
 
-	*min = 0;
-	*max = 9;
+        *min = 0;
+        *max = 9;
         *deflt = 1;
 
-	switch (m_minFrequency) {
-	case 0: default: val = 0; break;
-	case 10: val = 1; break;
-	case 20: val = 2; break;
-	case 40: val = 3; break;
-	case 100: val = 4; break;
-	case 250: val = 5; break;
-	case 500: val = 6; break;
-	case 1000: val = 7; break;
-	case 4000: val = 8; break;
-	case 10000: val = 9; break;
-	}
+        switch (m_minFrequency) {
+        case 0: default: val = 0; break;
+        case 10: val = 1; break;
+        case 20: val = 2; break;
+        case 40: val = 3; break;
+        case 100: val = 4; break;
+        case 250: val = 5; break;
+        case 500: val = 6; break;
+        case 1000: val = 7; break;
+        case 4000: val = 8; break;
+        case 10000: val = 9; break;
+        }
     
     } else if (name == "Max Frequency") {
 
-	*min = 0;
-	*max = 9;
+        *min = 0;
+        *max = 9;
         *deflt = 6;
 
-	switch (m_maxFrequency) {
-	case 500: val = 0; break;
-	case 1000: val = 1; break;
-	case 1500: val = 2; break;
-	case 2000: val = 3; break;
-	case 4000: val = 4; break;
-	case 6000: val = 5; break;
-	case 8000: val = 6; break;
-	case 12000: val = 7; break;
-	case 16000: val = 8; break;
-	default: val = 9; break;
-	}
+        switch (m_maxFrequency) {
+        case 500: val = 0; break;
+        case 1000: val = 1; break;
+        case 1500: val = 2; break;
+        case 2000: val = 3; break;
+        case 4000: val = 4; break;
+        case 6000: val = 5; break;
+        case 8000: val = 6; break;
+        case 12000: val = 7; break;
+        case 16000: val = 8; break;
+        default: val = 9; break;
+        }
 
     } else if (name == "Frequency Scale") {
 
-	*min = 0;
-	*max = 1;
+        *min = 0;
+        *max = 1;
         *deflt = int(BinScale::Linear);
-	val = (int)m_binScale;
+        val = (int)m_binScale;
 
     } else if (name == "Bin Display") {
 
-	*min = 0;
-	*max = 2;
+        *min = 0;
+        *max = 2;
         *deflt = int(BinDisplay::AllBins);
-	val = (int)m_binDisplay;
+        val = (int)m_binDisplay;
 
     } else if (name == "Normalization") {
-	
+        
         *min = 0;
         *max = 3;
         *deflt = 0;
@@ -415,7 +437,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = convertFromColumnNorm(m_normalization, m_normalizeVisibleArea);
 
     } else {
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
+        val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -423,82 +445,89 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
-					int value) const
+                                        int value) const
 {
     if (name == "Colour") {
         return ColourMapper::getColourMapName(value);
     }
     if (name == "Colour Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Meter");
-	case 2: return tr("dBV^2");
-	case 3: return tr("dBV");
-	case 4: return tr("Phase");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Linear");
+        case 1: return tr("Meter");
+        case 2: return tr("dBV^2");
+        case 3: return tr("dBV");
+        case 4: return tr("Phase");
+        }
     }
     if (name == "Normalization") {
-        return ""; // icon only
+        switch(value) {
+        default:
+        case 0: return tr("None");
+        case 1: return tr("Col");
+        case 2: return tr("View");
+        case 3: return tr("Hybrid");
+        }
+//        return ""; // icon only
     }
     if (name == "Window Size") {
-	return QString("%1").arg(32 << value);
+        return QString("%1").arg(32 << value);
     }
     if (name == "Window Increment") {
-	switch (value) {
-	default:
-	case 0: return tr("None");
-	case 1: return tr("25 %");
-	case 2: return tr("50 %");
-	case 3: return tr("75 %");
-	case 4: return tr("87.5 %");
-	case 5: return tr("93.75 %");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("None");
+        case 1: return tr("25 %");
+        case 2: return tr("50 %");
+        case 3: return tr("75 %");
+        case 4: return tr("87.5 %");
+        case 5: return tr("93.75 %");
+        }
     }
     if (name == "Min Frequency") {
-	switch (value) {
-	default:
-	case 0: return tr("No min");
-	case 1: return tr("10 Hz");
-	case 2: return tr("20 Hz");
-	case 3: return tr("40 Hz");
-	case 4: return tr("100 Hz");
-	case 5: return tr("250 Hz");
-	case 6: return tr("500 Hz");
-	case 7: return tr("1 KHz");
-	case 8: return tr("4 KHz");
-	case 9: return tr("10 KHz");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("No min");
+        case 1: return tr("10 Hz");
+        case 2: return tr("20 Hz");
+        case 3: return tr("40 Hz");
+        case 4: return tr("100 Hz");
+        case 5: return tr("250 Hz");
+        case 6: return tr("500 Hz");
+        case 7: return tr("1 KHz");
+        case 8: return tr("4 KHz");
+        case 9: return tr("10 KHz");
+        }
     }
     if (name == "Max Frequency") {
-	switch (value) {
-	default:
-	case 0: return tr("500 Hz");
-	case 1: return tr("1 KHz");
-	case 2: return tr("1.5 KHz");
-	case 3: return tr("2 KHz");
-	case 4: return tr("4 KHz");
-	case 5: return tr("6 KHz");
-	case 6: return tr("8 KHz");
-	case 7: return tr("12 KHz");
-	case 8: return tr("16 KHz");
-	case 9: return tr("No max");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("500 Hz");
+        case 1: return tr("1 KHz");
+        case 2: return tr("1.5 KHz");
+        case 3: return tr("2 KHz");
+        case 4: return tr("4 KHz");
+        case 5: return tr("6 KHz");
+        case 6: return tr("8 KHz");
+        case 7: return tr("12 KHz");
+        case 8: return tr("16 KHz");
+        case 9: return tr("No max");
+        }
     }
     if (name == "Frequency Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Log");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Linear");
+        case 1: return tr("Log");
+        }
     }
     if (name == "Bin Display") {
-	switch (value) {
-	default:
-	case 0: return tr("All Bins");
-	case 1: return tr("Peak Bins");
-	case 2: return tr("Frequencies");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("All Bins");
+        case 1: return tr("Peak Bins");
+        case 2: return tr("Frequencies");
+        }
     }
     return tr("<unknown>");
 }
@@ -536,51 +565,51 @@ void
 SpectrogramLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-	setGain(float(pow(10, float(value)/20.0)));
+        setGain(float(pow(10, float(value)/20.0)));
     } else if (name == "Threshold") {
-	if (value == -81) setThreshold(0.0);
-	else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
+        if (value == -81) setThreshold(0.0);
+        else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
     } else if (name == "Colour Rotation") {
-	setColourRotation(value);
+        setColourRotation(value);
     } else if (name == "Colour") {
         setColourMap(value);
     } else if (name == "Window Size") {
-	setWindowSize(32 << value);
+        setWindowSize(32 << value);
     } else if (name == "Window Increment") {
         setWindowHopLevel(value);
     } else if (name == "Min Frequency") {
-	switch (value) {
-	default:
-	case 0: setMinFrequency(0); break;
-	case 1: setMinFrequency(10); break;
-	case 2: setMinFrequency(20); break;
-	case 3: setMinFrequency(40); break;
-	case 4: setMinFrequency(100); break;
-	case 5: setMinFrequency(250); break;
-	case 6: setMinFrequency(500); break;
-	case 7: setMinFrequency(1000); break;
-	case 8: setMinFrequency(4000); break;
-	case 9: setMinFrequency(10000); break;
-	}
+        switch (value) {
+        default:
+        case 0: setMinFrequency(0); break;
+        case 1: setMinFrequency(10); break;
+        case 2: setMinFrequency(20); break;
+        case 3: setMinFrequency(40); break;
+        case 4: setMinFrequency(100); break;
+        case 5: setMinFrequency(250); break;
+        case 6: setMinFrequency(500); break;
+        case 7: setMinFrequency(1000); break;
+        case 8: setMinFrequency(4000); break;
+        case 9: setMinFrequency(10000); break;
+        }
         int vs = getCurrentVerticalZoomStep();
         if (vs != m_lastEmittedZoomStep) {
             emit verticalZoomChanged();
             m_lastEmittedZoomStep = vs;
         }
     } else if (name == "Max Frequency") {
-	switch (value) {
-	case 0: setMaxFrequency(500); break;
-	case 1: setMaxFrequency(1000); break;
-	case 2: setMaxFrequency(1500); break;
-	case 3: setMaxFrequency(2000); break;
-	case 4: setMaxFrequency(4000); break;
-	case 5: setMaxFrequency(6000); break;
-	case 6: setMaxFrequency(8000); break;
-	case 7: setMaxFrequency(12000); break;
-	case 8: setMaxFrequency(16000); break;
-	default:
-	case 9: setMaxFrequency(0); break;
-	}
+        switch (value) {
+        case 0: setMaxFrequency(500); break;
+        case 1: setMaxFrequency(1000); break;
+        case 2: setMaxFrequency(1500); break;
+        case 3: setMaxFrequency(2000); break;
+        case 4: setMaxFrequency(4000); break;
+        case 5: setMaxFrequency(6000); break;
+        case 6: setMaxFrequency(8000); break;
+        case 7: setMaxFrequency(12000); break;
+        case 8: setMaxFrequency(16000); break;
+        default:
+        case 9: setMaxFrequency(0); break;
+        }
         int vs = getCurrentVerticalZoomStep();
         if (vs != m_lastEmittedZoomStep) {
             emit verticalZoomChanged();
@@ -588,30 +617,30 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
         }
     } else if (name == "Colour Scale") {
         setColourScaleMultiple(1.0);
-	switch (value) {
-	default:
-	case 0: setColourScale(ColourScaleType::Linear); break;
-	case 1: setColourScale(ColourScaleType::Meter); break;
-	case 2:
+        switch (value) {
+        default:
+        case 0: setColourScale(ColourScaleType::Linear); break;
+        case 1: setColourScale(ColourScaleType::Meter); break;
+        case 2:
             setColourScale(ColourScaleType::Log);
             setColourScaleMultiple(2.0);
             break;
-	case 3: setColourScale(ColourScaleType::Log); break;
-	case 4: setColourScale(ColourScaleType::Phase); break;
-	}
+        case 3: setColourScale(ColourScaleType::Log); break;
+        case 4: setColourScale(ColourScaleType::Phase); break;
+        }
     } else if (name == "Frequency Scale") {
-	switch (value) {
-	default:
-	case 0: setBinScale(BinScale::Linear); break;
-	case 1: setBinScale(BinScale::Log); break;
-	}
+        switch (value) {
+        default:
+        case 0: setBinScale(BinScale::Linear); break;
+        case 1: setBinScale(BinScale::Log); break;
+        }
     } else if (name == "Bin Display") {
-	switch (value) {
-	default:
-	case 0: setBinDisplay(BinDisplay::AllBins); break;
-	case 1: setBinDisplay(BinDisplay::PeakBins); break;
-	case 2: setBinDisplay(BinDisplay::PeakFrequencies); break;
-	}
+        switch (value) {
+        default:
+        case 0: setBinDisplay(BinDisplay::AllBins); break;
+        case 1: setBinDisplay(BinDisplay::PeakBins); break;
+        case 2: setBinDisplay(BinDisplay::PeakFrequencies); break;
+        }
     } else if (name == "Normalization") {
         auto n = convertToColumnNorm(value);
         setNormalization(n.first);
@@ -665,7 +694,7 @@ SpectrogramLayer::setChannel(int ch)
 
     invalidateRenderers();
     m_channel = ch;
-    invalidateFFTModel();
+    recreateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -709,7 +738,7 @@ SpectrogramLayer::setWindowSize(int ws)
     
     m_windowSize = ws;
     
-    invalidateFFTModel();
+    recreateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -729,11 +758,9 @@ SpectrogramLayer::setWindowHopLevel(int v)
     
     m_windowHopLevel = v;
     
-    invalidateFFTModel();
+    recreateFFTModel();
 
     emit layerParametersChanged();
-
-//    fillCache();
 }
 
 int
@@ -751,7 +778,7 @@ SpectrogramLayer::setWindowType(WindowType w)
     
     m_windowType = w;
 
-    invalidateFFTModel();
+    recreateFFTModel();
 
     emit layerParametersChanged();
 }
@@ -766,7 +793,7 @@ void
 SpectrogramLayer::setGain(float gain)
 {
 //    SVDEBUG << "SpectrogramLayer::setGain(" << gain << ") (my gain is now "
-//	      << m_gain << ")" << endl;
+//            << m_gain << ")" << endl;
 
     if (m_gain == gain) return;
 
@@ -851,7 +878,7 @@ SpectrogramLayer::setColourRotation(int r)
     int distance = r - m_colourRotation;
 
     if (distance != 0) {
-	m_colourRotation = r;
+        m_colourRotation = r;
     }
 
     // Initially the idea with colour rotation was that we would just
@@ -1003,12 +1030,18 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 
         Layer::setLayerDormant(v, true);
 
-	invalidateRenderers();
-	
+        invalidateRenderers();
+        
     } else {
 
         Layer::setLayerDormant(v, false);
     }
+}
+
+bool
+SpectrogramLayer::isLayerScrollable(const LayerGeometryProvider *) const
+{
+    return false;
 }
 
 void
@@ -1058,9 +1091,9 @@ SpectrogramLayer::getEffectiveMinFrequency() const
     double minf = double(sr) / getFFTSize();
 
     if (m_minFrequency > 0.0) {
-	int minbin = int((double(m_minFrequency) * getFFTSize()) / sr + 0.01);
-	if (minbin < 1) minbin = 1;
-	minf = minbin * sr / getFFTSize();
+        int minbin = int((double(m_minFrequency) * getFFTSize()) / sr + 0.01);
+        if (minbin < 1) minbin = 1;
+        minf = minbin * sr / getFFTSize();
     }
 
     return minf;
@@ -1073,9 +1106,9 @@ SpectrogramLayer::getEffectiveMaxFrequency() const
     double maxf = double(sr) / 2;
 
     if (m_maxFrequency > 0.0) {
-	int maxbin = int((double(m_maxFrequency) * getFFTSize()) / sr + 0.1);
-	if (maxbin > getFFTSize() / 2) maxbin = getFFTSize() / 2;
-	maxf = maxbin * sr / getFFTSize();
+        int maxbin = int((double(m_maxFrequency) * getFFTSize()) / sr + 0.1);
+        if (maxbin > getFFTSize() / 2) maxbin = getFFTSize() / 2;
+        maxf = maxbin * sr / getFFTSize();
     }
 
     return maxf;
@@ -1135,7 +1168,7 @@ SpectrogramLayer::getXBinRange(LayerGeometryProvider *v, int x, double &s0, doub
     sv_frame_t f1 = v->getFrameForX(x + 1) - modelStart - 1;
 
     if (f1 < int(modelStart) || f0 > int(modelEnd)) {
-	return false;
+        return false;
     }
       
     // And that range may be drawn from a possibly non-integral
@@ -1160,7 +1193,7 @@ SpectrogramLayer::getXBinSourceRange(LayerGeometryProvider *v, int x, RealTime &
     int windowIncrement = getWindowIncrement();
     int w0 = s0i * windowIncrement - (m_windowSize - windowIncrement)/2;
     int w1 = s1i * windowIncrement + windowIncrement +
-	(m_windowSize - windowIncrement)/2 - 1;
+        (m_windowSize - windowIncrement)/2 - 1;
     
     min = RealTime::frame2RealTime(w0, m_model->getSampleRate());
     max = RealTime::frame2RealTime(w1, m_model->getSampleRate());
@@ -1180,20 +1213,20 @@ const
     sv_samplerate_t sr = m_model->getSampleRate();
 
     for (int q = q0i; q <= q1i; ++q) {
-	if (q == q0i) freqMin = (sr * q) / getFFTSize();
-	if (q == q1i) freqMax = (sr * (q+1)) / getFFTSize();
+        if (q == q0i) freqMin = (sr * q) / getFFTSize();
+        if (q == q1i) freqMax = (sr * (q+1)) / getFFTSize();
     }
     return true;
 }
 
 bool
 SpectrogramLayer::getAdjustedYBinSourceRange(LayerGeometryProvider *v, int x, int y,
-					     double &freqMin, double &freqMax,
-					     double &adjFreqMin, double &adjFreqMax)
+                                             double &freqMin, double &freqMax,
+                                             double &adjFreqMin, double &adjFreqMax)
 const
 {
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
-	return false;
+        return false;
     }
 
     FFTModel *fft = getFFTModel();
@@ -1216,39 +1249,39 @@ const
     bool haveAdj = false;
 
     bool peaksOnly = (m_binDisplay == BinDisplay::PeakBins ||
-		      m_binDisplay == BinDisplay::PeakFrequencies);
+                      m_binDisplay == BinDisplay::PeakFrequencies);
 
     for (int q = q0i; q <= q1i; ++q) {
 
-	for (int s = s0i; s <= s1i; ++s) {
+        for (int s = s0i; s <= s1i; ++s) {
 
-	    double binfreq = (double(sr) * q) / m_windowSize;
-	    if (q == q0i) freqMin = binfreq;
-	    if (q == q1i) freqMax = binfreq;
+            double binfreq = (double(sr) * q) / m_windowSize;
+            if (q == q0i) freqMin = binfreq;
+            if (q == q1i) freqMax = binfreq;
 
-	    if (peaksOnly && !fft->isLocalPeak(s, q)) continue;
+            if (peaksOnly && !fft->isLocalPeak(s, q)) continue;
 
-	    if (!fft->isOverThreshold
+            if (!fft->isOverThreshold
                 (s, q, float(m_threshold * double(getFFTSize())/2.0))) {
                 continue;
             }
 
             double freq = binfreq;
-	    
-	    if (s < int(fft->getWidth()) - 1) {
+            
+            if (s < int(fft->getWidth()) - 1) {
 
                 fft->estimateStableFrequency(s, q, freq);
-	    
-		if (!haveAdj || freq < adjFreqMin) adjFreqMin = freq;
-		if (!haveAdj || freq > adjFreqMax) adjFreqMax = freq;
+            
+                if (!haveAdj || freq < adjFreqMin) adjFreqMin = freq;
+                if (!haveAdj || freq > adjFreqMax) adjFreqMax = freq;
 
-		haveAdj = true;
-	    }
-	}
+                haveAdj = true;
+            }
+        }
     }
 
     if (!haveAdj) {
-	adjFreqMin = adjFreqMax = 0.0;
+        adjFreqMin = adjFreqMax = 0.0;
     }
 
     return haveAdj;
@@ -1256,11 +1289,11 @@ const
     
 bool
 SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
-				      double &min, double &max,
-				      double &phaseMin, double &phaseMax) const
+                                      double &min, double &max,
+                                      double &phaseMin, double &phaseMax) const
 {
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
-	return false;
+        return false;
     }
 
     double q0 = 0, q1 = 0;
@@ -1305,7 +1338,7 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
                     if (!have || value > max) { max = value; }
                     
                     have = true;
-                }	
+                }       
             }
         }
         
@@ -1316,83 +1349,98 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 
     return rv;
 }
-	
-FFTModel *
-SpectrogramLayer::getFFTModel() const
+        
+void
+SpectrogramLayer::recreateFFTModel()
 {
-    if (!m_model) return 0;
+    SVDEBUG << "SpectrogramLayer::recreateFFTModel called" << endl;
 
-    int fftSize = getFFTSize();
-
-    //!!! it is now surely slower to do this on every getFFTModel()
-    //!!! request than it would be to recreate the model immediately
-    //!!! when something changes instead of just invalidating it
-    
-    if (m_fftModel &&
-        m_fftModel->getHeight() == fftSize / 2 + 1 &&
-        m_fftModel->getWindowIncrement() == getWindowIncrement()) {
-        return m_fftModel;
+    if (!m_model || !m_model->isOK()) {
+        emit sliceableModelReplaced(m_fftModel, 0);
+        deleteDerivedModels();
+        return;
     }
+
+    if (m_fftModel) m_fftModel->aboutToDelete();
     
+    if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
     m_peakCache = 0;
 
-    delete m_fftModel;
-    m_fftModel = new FFTModel(m_model,
-                              m_channel,
-                              m_windowType,
-                              m_windowSize,
-                              getWindowIncrement(),
-                              fftSize);
+    if (m_wholeCache) m_wholeCache->aboutToDelete();
+    delete m_wholeCache;
+    m_wholeCache = 0;
+    
+    FFTModel *newModel = new FFTModel(m_model,
+                                      m_channel,
+                                      m_windowType,
+                                      m_windowSize,
+                                      getWindowIncrement(),
+                                      getFFTSize());
 
-    if (!m_fftModel->isOK()) {
+    if (!newModel->isOK()) {
         QMessageBox::critical
             (0, tr("FFT cache failed"),
              tr("Failed to create the FFT model for this spectrogram.\n"
                 "There may be insufficient memory or disc space to continue."));
+        delete newModel;
         delete m_fftModel;
         m_fftModel = 0;
-        return 0;
+        return;
     }
 
-    ((SpectrogramLayer *)this)->sliceableModelReplaced(0, m_fftModel);
+    FFTModel *oldModel = m_fftModel;
+    m_fftModel = newModel;
 
-    return m_fftModel;
+    if (canStoreWholeCache()) { // i.e. if enough memory
+        m_wholeCache = new Dense3DModelPeakCache(m_fftModel, 1);
+        m_peakCache = new Dense3DModelPeakCache(m_wholeCache, m_peakCacheDivisor);
+    } else {
+        m_peakCache = new Dense3DModelPeakCache(m_fftModel, m_peakCacheDivisor);
+    }
+
+    emit sliceableModelReplaced(oldModel, m_fftModel);
+    delete oldModel;
 }
 
-Dense3DModelPeakCache *
-SpectrogramLayer::getPeakCache() const
+bool
+SpectrogramLayer::canStoreWholeCache() const
 {
-    //!!! see comment in getFFTModel
-    
-    if (!m_peakCache) {
-        FFTModel *f = getFFTModel();
-        if (!f) return 0;
-        m_peakCache = new Dense3DModelPeakCache(f, m_peakCacheDivisor);
+    if (!m_fftModel) {
+        return false; // or true, doesn't really matter
     }
-    return m_peakCache;
+
+    size_t sz =
+        size_t(m_fftModel->getWidth()) *
+        size_t(m_fftModel->getHeight()) *
+        sizeof(float);
+
+    try {
+        SVDEBUG << "Requesting advice from StorageAdviser on whether to create whole-model cache" << endl;
+        StorageAdviser::Recommendation recommendation =
+            StorageAdviser::recommend
+            (StorageAdviser::Criteria(StorageAdviser::SpeedCritical |
+                                      StorageAdviser::PrecisionCritical |
+                                      StorageAdviser::FrequentLookupLikely),
+             sz / 1024, sz / 1024);
+        if ((recommendation & StorageAdviser::UseDisc) ||
+            (recommendation & StorageAdviser::ConserveSpace)) {
+            SVDEBUG << "Seems inadvisable to create whole-model cache" << endl;
+            return false;
+        } else {
+            SVDEBUG << "Seems fine to create whole-model cache" << endl;
+            return true;
+        }
+    } catch (const InsufficientDiscSpace &) {
+        SVDEBUG << "Seems like a terrible idea to create whole-model cache" << endl;
+        return false;
+    }
 }
 
 const Model *
 SpectrogramLayer::getSliceableModel() const
 {
     return m_fftModel;
-}
-
-void
-SpectrogramLayer::invalidateFFTModel()
-{
-#ifdef DEBUG_SPECTROGRAM
-    cerr << "SpectrogramLayer::invalidateFFTModel called" << endl;
-#endif
-
-    emit sliceableModelReplaced(m_fftModel, 0);
-
-    delete m_fftModel;
-    delete m_peakCache;
-
-    m_fftModel = 0;
-    m_peakCache = 0;
 }
 
 void
@@ -1421,7 +1469,8 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         sources.verticalBinLayer = this;
         sources.fft = getFFTModel();
         sources.source = sources.fft;
-        sources.peakCache = getPeakCache();
+        if (m_peakCache) sources.peakCaches.push_back(m_peakCache);
+        if (m_wholeCache) sources.peakCaches.push_back(m_wholeCache);
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
@@ -1433,8 +1482,8 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
             cparams.threshold = m_threshold;
         }
 
-        float minValue = 0.0f;
-        float maxValue = 1.0f;
+        double minValue = 0.0f;
+        double maxValue = 1.0f;
         
         if (m_normalizeVisibleArea && m_viewMags[viewId].isSet()) {
             minValue = m_viewMags[viewId].getMin();
@@ -1454,7 +1503,8 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         cparams.minValue = minValue;
         cparams.maxValue = maxValue;
 
-        m_lastRenderedMags[viewId] = MagnitudeRange(minValue, maxValue);
+        m_lastRenderedMags[viewId] = MagnitudeRange(float(minValue),
+                                                    float(maxValue));
 
         Colour3DPlotRenderer::Parameters params;
         params.colourScale = ColourScale(cparams);
@@ -1477,10 +1527,13 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
             (smoothing == Preferences::SpectrogramInterpolated ||
              smoothing == Preferences::SpectrogramZeroPaddedAndInterpolated);
 
-        m_renderers[v->getId()] = new Colour3DPlotRenderer(sources, params);
+        m_renderers[viewId] = new Colour3DPlotRenderer(sources, params);
+
+        m_crosshairColour =
+            ColourMapper(m_colourMap, 1.f, 255.f).getContrastingColour();
     }
 
-    return m_renderers[v->getId()];
+    return m_renderers[viewId];
 }
 
 void
@@ -1554,11 +1607,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 #endif
 
     if (!m_model || !m_model->isOK() || !m_model->isReady()) {
-	return;
-    }
-
-    if (isLayerDormant(v)) {
-	SVDEBUG << "SpectrogramLayer::paint(): Layer is dormant, making it undormant again" << endl;
+        return;
     }
 
     paintWithRenderer(v, paint, rect);
@@ -1613,18 +1662,18 @@ double
 SpectrogramLayer::getYForFrequency(const LayerGeometryProvider *v, double frequency) const
 {
     return v->getYForFrequency(frequency,
-			       getEffectiveMinFrequency(),
-			       getEffectiveMaxFrequency(),
-			       m_binScale == BinScale::Log);
+                               getEffectiveMinFrequency(),
+                               getEffectiveMaxFrequency(),
+                               m_binScale == BinScale::Log);
 }
 
 double
 SpectrogramLayer::getFrequencyForY(const LayerGeometryProvider *v, int y) const
 {
     return v->getFrequencyForY(y,
-			       getEffectiveMinFrequency(),
-			       getEffectiveMaxFrequency(),
-			       m_binScale == BinScale::Log);
+                               getEffectiveMinFrequency(),
+                               getEffectiveMaxFrequency(),
+                               m_binScale == BinScale::Log);
 }
 
 int
@@ -1714,8 +1763,8 @@ SpectrogramLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
 bool
 SpectrogramLayer::snapToFeatureFrame(LayerGeometryProvider *,
                                      sv_frame_t &frame,
-				     int &resolution,
-				     SnapType snap) const
+                                     int &resolution,
+                                     SnapType snap) const
 {
     resolution = getWindowIncrement();
     sv_frame_t left = (frame / resolution) * resolution;
@@ -1726,9 +1775,9 @@ SpectrogramLayer::snapToFeatureFrame(LayerGeometryProvider *,
     case SnapRight: frame = right; break;
     case SnapNearest:
     case SnapNeighbouring:
-	if (frame - left > right - frame) frame = right;
-	else frame = left;
-	break;
+        if (frame - left > right - frame) frame = right;
+        else frame = left;
+        break;
     }
     
     return true;
@@ -1884,95 +1933,95 @@ SpectrogramLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
     bool haveValues = false;
 
     if (!getXBinSourceRange(v, x, rtMin, rtMax)) {
-	return "";
+        return "";
     }
     if (getXYBinSourceRange(v, x, y, magMin, magMax, phaseMin, phaseMax)) {
-	haveValues = true;
+        haveValues = true;
     }
 
     QString adjFreqText = "", adjPitchText = "";
 
     if (m_binDisplay == BinDisplay::PeakFrequencies) {
 
-	if (!getAdjustedYBinSourceRange(v, x, y, freqMin, freqMax,
-					adjFreqMin, adjFreqMax)) {
-	    return "";
-	}
+        if (!getAdjustedYBinSourceRange(v, x, y, freqMin, freqMax,
+                                        adjFreqMin, adjFreqMax)) {
+            return "";
+        }
 
-	if (adjFreqMin != adjFreqMax) {
-	    adjFreqText = tr("Peak Frequency:\t%1 - %2 Hz\n")
-		.arg(adjFreqMin).arg(adjFreqMax);
-	} else {
-	    adjFreqText = tr("Peak Frequency:\t%1 Hz\n")
-		.arg(adjFreqMin);
-	}
+        if (adjFreqMin != adjFreqMax) {
+            adjFreqText = tr("Peak Frequency:\t%1 - %2 Hz\n")
+                .arg(adjFreqMin).arg(adjFreqMax);
+        } else {
+            adjFreqText = tr("Peak Frequency:\t%1 Hz\n")
+                .arg(adjFreqMin);
+        }
 
-	QString pmin = Pitch::getPitchLabelForFrequency(adjFreqMin);
-	QString pmax = Pitch::getPitchLabelForFrequency(adjFreqMax);
+        QString pmin = Pitch::getPitchLabelForFrequency(adjFreqMin);
+        QString pmax = Pitch::getPitchLabelForFrequency(adjFreqMax);
 
-	if (pmin != pmax) {
-	    adjPitchText = tr("Peak Pitch:\t%3 - %4\n").arg(pmin).arg(pmax);
-	} else {
-	    adjPitchText = tr("Peak Pitch:\t%2\n").arg(pmin);
-	}
+        if (pmin != pmax) {
+            adjPitchText = tr("Peak Pitch:\t%3 - %4\n").arg(pmin).arg(pmax);
+        } else {
+            adjPitchText = tr("Peak Pitch:\t%2\n").arg(pmin);
+        }
 
     } else {
-	
-	if (!getYBinSourceRange(v, y, freqMin, freqMax)) return "";
+        
+        if (!getYBinSourceRange(v, y, freqMin, freqMax)) return "";
     }
 
     QString text;
 
     if (rtMin != rtMax) {
-	text += tr("Time:\t%1 - %2\n")
-	    .arg(rtMin.toText(true).c_str())
-	    .arg(rtMax.toText(true).c_str());
+        text += tr("Time:\t%1 - %2\n")
+            .arg(rtMin.toText(true).c_str())
+            .arg(rtMax.toText(true).c_str());
     } else {
-	text += tr("Time:\t%1\n")
-	    .arg(rtMin.toText(true).c_str());
+        text += tr("Time:\t%1\n")
+            .arg(rtMin.toText(true).c_str());
     }
 
     if (freqMin != freqMax) {
-	text += tr("%1Bin Frequency:\t%2 - %3 Hz\n%4Bin Pitch:\t%5 - %6\n")
-	    .arg(adjFreqText)
-	    .arg(freqMin)
-	    .arg(freqMax)
-	    .arg(adjPitchText)
-	    .arg(Pitch::getPitchLabelForFrequency(freqMin))
-	    .arg(Pitch::getPitchLabelForFrequency(freqMax));
+        text += tr("%1Bin Frequency:\t%2 - %3 Hz\n%4Bin Pitch:\t%5 - %6\n")
+            .arg(adjFreqText)
+            .arg(freqMin)
+            .arg(freqMax)
+            .arg(adjPitchText)
+            .arg(Pitch::getPitchLabelForFrequency(freqMin))
+            .arg(Pitch::getPitchLabelForFrequency(freqMax));
     } else {
-	text += tr("%1Bin Frequency:\t%2 Hz\n%3Bin Pitch:\t%4\n")
-	    .arg(adjFreqText)
-	    .arg(freqMin)
-	    .arg(adjPitchText)
-	    .arg(Pitch::getPitchLabelForFrequency(freqMin));
-    }	
+        text += tr("%1Bin Frequency:\t%2 Hz\n%3Bin Pitch:\t%4\n")
+            .arg(adjFreqText)
+            .arg(freqMin)
+            .arg(adjPitchText)
+            .arg(Pitch::getPitchLabelForFrequency(freqMin));
+    }   
 
     if (haveValues) {
-	double dbMin = AudioLevel::multiplier_to_dB(magMin);
-	double dbMax = AudioLevel::multiplier_to_dB(magMax);
-	QString dbMinString;
-	QString dbMaxString;
-	if (dbMin == AudioLevel::DB_FLOOR) {
-	    dbMinString = Strings::minus_infinity;
-	} else {
-	    dbMinString = QString("%1").arg(lrint(dbMin));
-	}
-	if (dbMax == AudioLevel::DB_FLOOR) {
-	    dbMaxString = Strings::minus_infinity;
-	} else {
-	    dbMaxString = QString("%1").arg(lrint(dbMax));
-	}
-	if (lrint(dbMin) != lrint(dbMax)) {
-	    text += tr("dB:\t%1 - %2").arg(dbMinString).arg(dbMaxString);
-	} else {
-	    text += tr("dB:\t%1").arg(dbMinString);
-	}
-	if (phaseMin != phaseMax) {
-	    text += tr("\nPhase:\t%1 - %2").arg(phaseMin).arg(phaseMax);
-	} else {
-	    text += tr("\nPhase:\t%1").arg(phaseMin);
-	}
+        double dbMin = AudioLevel::multiplier_to_dB(magMin);
+        double dbMax = AudioLevel::multiplier_to_dB(magMax);
+        QString dbMinString;
+        QString dbMaxString;
+        if (dbMin == AudioLevel::DB_FLOOR) {
+            dbMinString = Strings::minus_infinity;
+        } else {
+            dbMinString = QString("%1").arg(lrint(dbMin));
+        }
+        if (dbMax == AudioLevel::DB_FLOOR) {
+            dbMaxString = Strings::minus_infinity;
+        } else {
+            dbMaxString = QString("%1").arg(lrint(dbMax));
+        }
+        if (lrint(dbMin) != lrint(dbMax)) {
+            text += tr("dB:\t%1 - %2").arg(dbMinString).arg(dbMaxString);
+        } else {
+            text += tr("dB:\t%1").arg(dbMinString);
+        }
+        if (phaseMin != phaseMax) {
+            text += tr("\nPhase:\t%1 - %2").arg(phaseMin).arg(phaseMax);
+        } else {
+            text += tr("\nPhase:\t%1").arg(phaseMin);
+        }
     }
 
     return text;
@@ -1997,9 +2046,9 @@ SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, 
     if (detailed) cw = getColourScaleWidth(paint);
 
     int tw = paint.fontMetrics().width(QString("%1")
-				     .arg(m_maxFrequency > 0 ?
-					  m_maxFrequency - 1 :
-					  m_model->getSampleRate() / 2));
+                                     .arg(m_maxFrequency > 0 ?
+                                          m_maxFrequency - 1 :
+                                          m_model->getSampleRate() / 2));
 
     int fw = paint.fontMetrics().width(tr("43Hz"));
     if (tw < fw) tw = fw;
@@ -2014,7 +2063,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
                                      QPainter &paint, QRect rect) const
 {
     if (!m_model || !m_model->isOK()) {
-	return;
+        return;
     }
 
     Profiler profiler("SpectrogramLayer::paintVerticalScale");
@@ -2036,8 +2085,8 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
     sv_samplerate_t sr = m_model->getSampleRate();
 
     if (m_maxFrequency > 0) {
-	bins = int((double(m_maxFrequency) * getFFTSize()) / sr + 0.1);
-	if (bins > getFFTSize() / 2) bins = getFFTSize() / 2;
+        bins = int((double(m_maxFrequency) * getFFTSize()) / sr + 0.1);
+        if (bins > getFFTSize() / 2) bins = getFFTSize() / 2;
     }
 
     int cw = 0;
@@ -2052,37 +2101,37 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
 
     for (int y = 0; y < v->getPaintHeight(); ++y) {
 
-	double q0, q1;
-	if (!getYBinRange(v, v->getPaintHeight() - y, q0, q1)) continue;
+        double q0, q1;
+        if (!getYBinRange(v, v->getPaintHeight() - y, q0, q1)) continue;
 
-	int vy;
+        int vy;
 
-	if (int(q0) > bin) {
-	    vy = y;
-	    bin = int(q0);
-	} else {
-	    continue;
-	}
+        if (int(q0) > bin) {
+            vy = y;
+            bin = int(q0);
+        } else {
+            continue;
+        }
 
-	int freq = int((sr * bin) / getFFTSize());
+        int freq = int((sr * bin) / getFFTSize());
 
-	if (py >= 0 && (vy - py) < textHeight - 1) {
-	    if (m_binScale == BinScale::Linear) {
-		paint.drawLine(w - tickw, h - vy, w, h - vy);
-	    }
-	    continue;
-	}
+        if (py >= 0 && (vy - py) < textHeight - 1) {
+            if (m_binScale == BinScale::Linear) {
+                paint.drawLine(w - tickw, h - vy, w, h - vy);
+            }
+            continue;
+        }
 
-	QString text = QString("%1").arg(freq);
-	if (bin == 1) text = tr("%1Hz").arg(freq); // bin 0 is DC
-	paint.drawLine(cw + 7, h - vy, w - pkw - 1, h - vy);
+        QString text = QString("%1").arg(freq);
+        if (bin == 1) text = tr("%1Hz").arg(freq); // bin 0 is DC
+        paint.drawLine(cw + 7, h - vy, w - pkw - 1, h - vy);
 
-	if (h - vy - textHeight >= -2) {
-	    int tx = w - 3 - paint.fontMetrics().width(text) - max(tickw, pkw);
-	    paint.drawText(tx, h - vy + toff, text);
-	}
+        if (h - vy - textHeight >= -2) {
+            int tx = w - 3 - paint.fontMetrics().width(text) - max(tickw, pkw);
+            paint.drawText(tx, h - vy + toff, text);
+        }
 
-	py = vy;
+        py = vy;
     }
 
     if (m_binScale == BinScale::Log) {
@@ -2118,7 +2167,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     int topLines = 2;
 
     int ch = h - textHeight * (topLines + 1) - 8;
-//	paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
+//      paint.drawRect(4, textHeight + 4, cw - 1, ch + 1);
     paint.drawRect(4 + cw - cbw, textHeight * topLines + 4, cbw - 1, ch + 1);
 
     QString top, bottom;
@@ -2446,30 +2495,30 @@ SpectrogramLayer::toXml(QTextStream &stream,
     QString s;
     
     s += QString("channel=\"%1\" "
-		 "windowSize=\"%2\" "
-		 "windowHopLevel=\"%3\" "
-		 "gain=\"%4\" "
-		 "threshold=\"%5\" ")
-	.arg(m_channel)
-	.arg(m_windowSize)
-	.arg(m_windowHopLevel)
-	.arg(m_gain)
-	.arg(m_threshold);
+                 "windowSize=\"%2\" "
+                 "windowHopLevel=\"%3\" "
+                 "gain=\"%4\" "
+                 "threshold=\"%5\" ")
+        .arg(m_channel)
+        .arg(m_windowSize)
+        .arg(m_windowHopLevel)
+        .arg(m_gain)
+        .arg(m_threshold);
 
     s += QString("minFrequency=\"%1\" "
-		 "maxFrequency=\"%2\" "
-		 "colourScale=\"%3\" "
-		 "colourScheme=\"%4\" "
-		 "colourRotation=\"%5\" "
-		 "frequencyScale=\"%6\" "
-		 "binDisplay=\"%7\" ")
-	.arg(m_minFrequency)
-	.arg(m_maxFrequency)
-	.arg(convertFromColourScale(m_colourScale, m_colourScaleMultiple))
-	.arg(m_colourMap)
-	.arg(m_colourRotation)
-	.arg(int(m_binScale))
-	.arg(int(m_binDisplay));
+                 "maxFrequency=\"%2\" "
+                 "colourScale=\"%3\" "
+                 "colourScheme=\"%4\" "
+                 "colourRotation=\"%5\" "
+                 "frequencyScale=\"%6\" "
+                 "binDisplay=\"%7\" ")
+        .arg(m_minFrequency)
+        .arg(m_maxFrequency)
+        .arg(convertFromColourScale(m_colourScale, m_colourScaleMultiple))
+        .arg(m_colourMap)
+        .arg(m_colourRotation)
+        .arg(int(m_binScale))
+        .arg(int(m_binDisplay));
 
     // New-style normalization attributes, allowing for more types of
     // normalization in future: write out the column normalization
@@ -2487,7 +2536,7 @@ SpectrogramLayer::toXml(QTextStream &stream,
     // v2.0+ will look odd in Tony v1.0
     
     s += QString("normalizeColumns=\"%1\" ")
-	.arg(m_normalization == ColumnNormalization::Max1 ? "true" : "false");
+        .arg(m_normalization == ColumnNormalization::Max1 ? "true" : "false");
 
     // And this applies to both old- and new-style attributes
     
@@ -2554,11 +2603,11 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
     if (ok) setColourRotation(colourRotation);
 
     BinScale binScale = (BinScale)
-	attributes.value("frequencyScale").toInt(&ok);
+        attributes.value("frequencyScale").toInt(&ok);
     if (ok) setBinScale(binScale);
 
     BinDisplay binDisplay = (BinDisplay)
-	attributes.value("binDisplay").toInt(&ok);
+        attributes.value("binDisplay").toInt(&ok);
     if (ok) setBinDisplay(binDisplay);
 
     bool haveNewStyleNormalization = false;
@@ -2576,7 +2625,7 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         } else if (columnNormalization == "none") {
             setNormalization(ColumnNormalization::None);
         } else {
-            cerr << "NOTE: Unknown or unsupported columnNormalization attribute \""
+            SVCERR << "NOTE: Unknown or unsupported columnNormalization attribute \""
                  << columnNormalization << "\"" << endl;
         }
     }

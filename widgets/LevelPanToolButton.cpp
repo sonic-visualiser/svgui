@@ -18,8 +18,11 @@
 #include <QMenu>
 #include <QWidgetAction>
 #include <QImage>
+#include <QMouseEvent>
 #include <QStylePainter>
 #include <QStyleOptionToolButton>
+
+#include "base/Debug.h"
 
 #include <iostream>
 using std::cerr;
@@ -49,6 +52,7 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
 
     setPopupMode(InstantPopup);
     setMenu(menu);
+    setToolTip(tr("Click to adjust level and pan"));
 
     setImageSize(m_pixels);
     setBigImageSize(m_pixelsBig);
@@ -56,6 +60,25 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
 
 LevelPanToolButton::~LevelPanToolButton()
 {
+}
+
+void
+LevelPanToolButton::mousePressEvent(QMouseEvent *e)
+{
+    if (e->button() == Qt::MidButton ||
+        ((e->button() == Qt::LeftButton) &&
+         (e->modifiers() & Qt::ControlModifier))) {
+        m_lpw->setToDefault();
+        e->accept();
+    } else {
+        QToolButton::mousePressEvent(e);
+    }
+}
+
+void
+LevelPanToolButton::wheelEvent(QWheelEvent *e)
+{
+    m_lpw->wheelEvent(e);
 }
 
 float
@@ -110,6 +133,13 @@ LevelPanToolButton::setPan(float pan)
 }
 
 void
+LevelPanToolButton::setMonitoringLevels(float left, float right)
+{
+    m_lpw->setMonitoringLevels(left, right);
+    update();
+}
+
+void
 LevelPanToolButton::setIncludeMute(bool include)
 {
     m_lpw->setIncludeMute(include);
@@ -127,10 +157,10 @@ void
 LevelPanToolButton::selfLevelChanged(float level)
 {
     if (level > 0.f) {
-	m_muted = false;
+        m_muted = false;
     } else {
-	m_muted = true;
-	m_savedLevel = 1.f;
+        m_muted = true;
+        m_savedLevel = 1.f;
     }
     update();
 }
@@ -138,17 +168,15 @@ LevelPanToolButton::selfLevelChanged(float level)
 void
 LevelPanToolButton::selfClicked()
 {
-    cerr << "selfClicked" << endl;
-    
     if (m_muted) {
-	m_muted = false;
-	m_lpw->setLevel(m_savedLevel);
-	emit levelChanged(m_savedLevel);
+        m_muted = false;
+        m_lpw->setLevel(m_savedLevel);
+        emit levelChanged(m_savedLevel);
     } else {
-	m_savedLevel = m_lpw->getLevel();
-	m_muted = true;
-	m_lpw->setLevel(0.f);
-	emit levelChanged(0.f);
+        m_savedLevel = m_lpw->getLevel();
+        m_muted = true;
+        m_lpw->setLevel(0.f);
+        emit levelChanged(0.f);
     }
     update();
 }
@@ -168,6 +196,20 @@ LevelPanToolButton::paintEvent(QPaintEvent *)
     
     double margin = (double(height()) - m_pixels) / 2.0;
     m_lpw->renderTo(this, QRectF(margin, margin, m_pixels, m_pixels), false);
+}
+
+void
+LevelPanToolButton::enterEvent(QEvent *e)
+{
+    QToolButton::enterEvent(e);
+    emit mouseEntered();
+}
+
+void
+LevelPanToolButton::leaveEvent(QEvent *e)
+{
+    QToolButton::enterEvent(e);
+    emit mouseLeft();
 }
 
 

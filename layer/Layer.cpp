@@ -52,10 +52,10 @@ Layer::connectSignals(const Model *model)
             this, SIGNAL(modelChanged()));
 
     connect(model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-	    this, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)));
+            this, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)));
 
     connect(model, SIGNAL(completionChanged()),
-	    this, SIGNAL(modelCompletionChanged()));
+            this, SIGNAL(modelCompletionChanged()));
 
     connect(model, SIGNAL(alignmentCompletionChanged()),
             this, SIGNAL(modelAlignmentCompletionChanged()));
@@ -65,7 +65,7 @@ QString
 Layer::getPropertyContainerIconName() const
 {
     return LayerFactory::getInstance()->getLayerIconName
-	(LayerFactory::getInstance()->getLayerType(this));
+        (LayerFactory::getInstance()->getLayerType(this));
 }
 
 void
@@ -85,14 +85,14 @@ Layer::getLayerPresentationName() const
 
     QString modelName;
     if (getModel()) modelName = getModel()->objectName();
-	    
+            
     QString text;
     if (modelName != "") {
-	text = QString("%1: %2").arg(modelName).arg(layerName);
+        text = QString("%1: %2").arg(modelName).arg(layerName);
     } else {
-	text = layerName;
+        text = layerName;
     }
-	
+        
     return text;
 }
 
@@ -109,7 +109,7 @@ Layer::getPlayParameters()
 //    cerr << "Layer (" << this << ", " << objectName() << ")::getPlayParameters: model is "<< getModel() << endl;
     const Model *model = getModel();
     if (model) {
-	return PlayParameterRepository::getInstance()->getPlayParameters(model);
+        return PlayParameterRepository::getInstance()->getPlayParameters(model);
     }
     return 0;
 }
@@ -588,6 +588,31 @@ Layer::paintMeasurementRect(LayerGeometryProvider *v, QPainter &paint,
     v->drawMeasurementRect(paint, this, r.pixrect.normalized(), focus);
 }
 
+bool
+Layer::valueExtentsMatchMine(LayerGeometryProvider *v) const
+{
+    double min, min_;
+    double max, max_;
+    bool logarithmic, logarithmic_;
+    QString unit;
+
+    if (!getValueExtents(min_, max_, logarithmic_, unit)) {
+        return false;
+    }
+
+    if (!v->getValueExtents(unit, min, max, logarithmic)) {
+        return false;
+    }
+
+    if (min != min_ ||
+        max != max_ ||
+        logarithmic != logarithmic_) {
+        return false;
+    }
+
+    return true;
+}
+
 void
 Layer::toXml(QTextStream &stream,
              QString indent, QString extraAttributes) const
@@ -600,12 +625,12 @@ Layer::toXml(QTextStream &stream,
     }
 
     stream << QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5")
-	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
+        .arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
                             (LayerFactory::getInstance()->getLayerType(this))))
-	.arg(getObjectExportId(this))
-	.arg(encodeEntities(objectName()))
-	.arg(getObjectExportId(getModel()))
-	.arg(extraAttributes);
+        .arg(getObjectExportId(this))
+        .arg(encodeEntities(objectName()))
+        .arg(getObjectExportId(getModel()))
+        .arg(extraAttributes);
 
     if (m_measureRects.empty()) {
         stream << QString("/>\n");
@@ -634,11 +659,11 @@ Layer::toBriefXml(QTextStream &stream,
     }
 
     stream << QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
-	.arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
+        .arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
                             (LayerFactory::getInstance()->getLayerType(this))))
-	.arg(getObjectExportId(this))
-	.arg(encodeEntities(objectName()))
-	.arg(getObjectExportId(getModel()))
+        .arg(getObjectExportId(this))
+        .arg(encodeEntities(objectName()))
+        .arg(getObjectExportId(getModel()))
         .arg(extraAttributes);
 }
 

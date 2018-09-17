@@ -59,7 +59,7 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_freq->setMaximum(1e6);
     m_freq->setValue(440);
     connect(m_freq, SIGNAL(valueChanged(double)),
-	    this, SLOT(freqChanged()));
+            this, SLOT(freqChanged()));
 
     // The min and max range values for all the remaining controls are
     // determined by the min and max Hz above
@@ -68,20 +68,20 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_midi->setMinimum(-156);
     m_midi->setMaximum(203);
     connect(m_midi, SIGNAL(valueChanged(int)),
-	    this, SLOT(midiChanged()));
+            this, SLOT(midiChanged()));
 
     m_note = new QComboBox;
     for (int i = 0; i < 12; ++i) {
-	m_note->addItem(pianoNotes[i]);
+        m_note->addItem(pianoNotes[i]);
     }
     connect(m_note, SIGNAL(currentIndexChanged(int)),
-	    this, SLOT(noteChanged()));
+            this, SLOT(noteChanged()));
 
     m_octave = new QSpinBox;
     m_octave->setMinimum(-14);
     m_octave->setMaximum(15);
     connect(m_octave, SIGNAL(valueChanged(int)),
-	    this, SLOT(octaveChanged()));
+            this, SLOT(octaveChanged()));
 
     m_cents = new QDoubleSpinBox;
     m_cents->setSuffix(tr(" cents"));
@@ -89,7 +89,7 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_cents->setMinimum(-50);
     m_cents->setMaximum(50);
     connect(m_cents, SIGNAL(valueChanged(double)),
-	    this, SLOT(centsChanged()));
+            this, SLOT(centsChanged()));
     
     int row = 0;
 
@@ -130,9 +130,9 @@ UnitConverter::UnitConverter(QWidget *parent) :
     ++row;
     
     grid->addWidget
-	(new QLabel(tr("Note that only pitches in the range 0 to 127 are valid "
-		       "in the MIDI protocol.")),
-	 row, 0, 1, 9);
+        (new QLabel(tr("Note that only pitches in the range 0 to 127 are valid "
+                       "in the MIDI protocol.")),
+         row, 0, 1, 9);
 
     ++row;
     
@@ -149,7 +149,7 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_samples->setMaximum(1e8);
     m_samples->setValue(22050);
     connect(m_samples, SIGNAL(valueChanged(double)),
-	    this, SLOT(samplesChanged()));
+            this, SLOT(samplesChanged()));
     
     m_period = new QDoubleSpinBox;
     m_period->setSuffix(QString(" ms"));
@@ -158,7 +158,7 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_period->setMaximum(100000);
     m_period->setValue(500);
     connect(m_period, SIGNAL(valueChanged(double)),
-	    this, SLOT(periodChanged()));
+            this, SLOT(periodChanged()));
 
     m_bpm = new QDoubleSpinBox;
     m_bpm->setSuffix(QString(" bpm"));
@@ -167,7 +167,7 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_bpm->setMaximum(1e6);
     m_bpm->setValue(120);
     connect(m_bpm, SIGNAL(valueChanged(double)),
-	    this, SLOT(bpmChanged()));
+            this, SLOT(bpmChanged()));
 
     m_tempofreq = new QDoubleSpinBox;
     m_tempofreq->setSuffix(QString(" beats/sec"));
@@ -177,24 +177,24 @@ UnitConverter::UnitConverter(QWidget *parent) :
     m_tempofreq->setValue(0.5);
 
     connect(m_tempofreq, SIGNAL(valueChanged(double)),
-	    this, SLOT(tempofreqChanged()));
-	
+            this, SLOT(tempofreqChanged()));
+        
     m_samplerate = new QComboBox;
     QList<int> rates;
     rates << 8000;
     for (int i = 1; i <= 16; i *= 2) {
-	rates << 11025 * i << 12000 * i;
+        rates << 11025 * i << 12000 * i;
     }
     foreach (int r, rates) {
-	m_samplerate->addItem(QString("%1 Hz").arg(r));
+        m_samplerate->addItem(QString("%1 Hz").arg(r));
     }
     connect(m_samplerate, SIGNAL(currentIndexChanged(int)),
-	    this, SLOT(samplerateChanged()));
+            this, SLOT(samplerateChanged()));
     m_samplerate->setCurrentText("44100 Hz");
     
     connect(Preferences::getInstance(),
-	    SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
-	    this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
+            SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
+            this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
 
     row = 0;
 
@@ -236,11 +236,11 @@ UnitConverter::setTo(QSpinBox *box, int value)
 {
     box->blockSignals(true);
     if (value < box->minimum() || value > box->maximum()) {
-	QPalette p;
-	p.setColor(QPalette::Text, Qt::red);
-	box->setPalette(p);
+        QPalette p;
+        p.setColor(QPalette::Text, Qt::red);
+        box->setPalette(p);
     } else {
-	box->setPalette(QPalette());
+        box->setPalette(QPalette());
     }
     box->setValue(value);
     box->blockSignals(false);
@@ -251,11 +251,11 @@ UnitConverter::setTo(QDoubleSpinBox *box, double value)
 {
     box->blockSignals(true);
     if (value < box->minimum() || value > box->maximum()) {
-	QPalette p;
-	p.setColor(QPalette::Text, Qt::red);
-	box->setPalette(p);
+        QPalette p;
+        p.setColor(QPalette::Text, Qt::red);
+        box->setPalette(p);
     } else {
-	box->setPalette(QPalette());
+        box->setPalette(QPalette());
     }
     box->setValue(value);
     box->blockSignals(false);
@@ -272,11 +272,11 @@ void
 UnitConverter::updatePitchPrefsLabel()
 {
     m_pitchPrefsLabel->setText
-	(tr("With concert-A tuning frequency at %1 Hz, and "
-	    "middle C residing in octave %2.\n"
-	    "(These can be changed in the application preferences.)")
-	 .arg(Preferences::getInstance()->getTuningFrequency())
-	 .arg(Preferences::getInstance()->getOctaveOfMiddleC()));
+        (tr("With concert-A tuning frequency at %1 Hz, and "
+            "middle C residing in octave %2.\n"
+            "(These can be changed in the application preferences.)")
+         .arg(Preferences::getInstance()->getTuningFrequency())
+         .arg(Preferences::getInstance()->getOctaveOfMiddleC()));
 }
 
 void
@@ -296,7 +296,7 @@ void
 UnitConverter::noteChanged()
 {
     int pitch = Pitch::getPitchForNoteAndOctave(m_note->currentIndex(),
-						m_octave->value());
+                                                m_octave->value());
     double freq = Pitch::getFrequencyForPitch(pitch, m_cents->value());
     m_freq->setValue(freq);
 }
@@ -305,7 +305,7 @@ void
 UnitConverter::octaveChanged()
 {
     int pitch = Pitch::getPitchForNoteAndOctave(m_note->currentIndex(),
-						m_octave->value());
+                                                m_octave->value());
     double freq = Pitch::getFrequencyForPitch(pitch, m_cents->value());
     m_freq->setValue(freq);
 }

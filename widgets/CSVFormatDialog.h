@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _CSV_FORMAT_DIALOG_H_
-#define _CSV_FORMAT_DIALOG_H_
+#ifndef SV_CSV_FORMAT_DIALOG_H
+#define SV_CSV_FORMAT_DIALOG_H
 
 #include "data/fileio/CSVFormat.h"
 
@@ -29,7 +29,8 @@ class CSVFormatDialog : public QDialog
     Q_OBJECT
     
 public:
-    CSVFormatDialog(QWidget *parent, CSVFormat initialFormat,
+    CSVFormatDialog(QWidget *parent,
+                    CSVFormat initialFormat,
                     int maxDisplayCols = 5);
     ~CSVFormatDialog();
 
@@ -47,7 +48,7 @@ protected slots:
 protected:
     CSVFormat m_format;
     int m_maxDisplayCols;
-
+    
     enum TimingOption {
         TimingExplicitSeconds = 0,
         TimingExplicitMsec,
@@ -57,6 +58,7 @@ protected:
     std::map<TimingOption, QString> m_timingLabels;
     TimingOption m_initialTimingOption;
 
+    void columnPurposeChangedForAnnotationType(QComboBox *, int purpose);
     void updateComboVisibility();
     void applyStartTimePurpose();
     void removeStartTimePurpose();

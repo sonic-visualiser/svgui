@@ -131,11 +131,11 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
 
     QWidget *properties = 0;
     if (suppressPropertyBox) {
-	properties = new QFrame();
+        properties = new QFrame();
     } else {
-	properties = new PropertyStack(frame, pane);
-	connect(properties, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
-		this, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
+        properties = new PropertyStack(frame, pane);
+        connect(properties, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
+                this, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
         connect(properties, SIGNAL(viewSelected(View  *)),
                 this, SLOT(viewSelected(View *)));
         connect(properties, SIGNAL(contextHelpChanged(const QString &)),
@@ -163,11 +163,11 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     m_splitter->insertWidget(index, frame);
 
     connect(pane, SIGNAL(propertyContainerAdded(PropertyContainer *)),
-	    this, SLOT(propertyContainerAdded(PropertyContainer *)));
+            this, SLOT(propertyContainerAdded(PropertyContainer *)));
     connect(pane, SIGNAL(propertyContainerRemoved(PropertyContainer *)),
-	    this, SLOT(propertyContainerRemoved(PropertyContainer *)));
+            this, SLOT(propertyContainerRemoved(PropertyContainer *)));
     connect(pane, SIGNAL(paneInteractedWith()),
-	    this, SLOT(paneInteractedWith()));
+            this, SLOT(paneInteractedWith()));
     connect(pane, SIGNAL(rightButtonMenuRequested(QPoint)),
             this, SLOT(rightButtonMenuRequested(QPoint)));
     connect(pane, SIGNAL(dropAccepted(QStringList)),
@@ -181,7 +181,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     emit paneAdded();
 
     if (!m_currentPane) {
-	setCurrentPane(pane);
+        setCurrentPane(pane);
     }
 
     showOrHidePaneAccessories();
@@ -294,29 +294,29 @@ PaneStack::deletePane(Pane *pane)
     QWidget *stack = 0;
 
     for (i = m_panes.begin(); i != m_panes.end(); ++i) {
-	if (i->pane == pane) {
+        if (i->pane == pane) {
             stack = i->propertyStack;
-	    m_panes.erase(i);
-	    found = true;
-	    break;
-	}
+            m_panes.erase(i);
+            found = true;
+            break;
+        }
     }
 
     if (!found) {
 
-	for (i = m_hiddenPanes.begin(); i != m_hiddenPanes.end(); ++i) {
-	    if (i->pane == pane) {
+        for (i = m_hiddenPanes.begin(); i != m_hiddenPanes.end(); ++i) {
+            if (i->pane == pane) {
                 stack = i->propertyStack;
-		m_hiddenPanes.erase(i);
-		found = true;
-		break;
-	    }
-	}
+                m_hiddenPanes.erase(i);
+                found = true;
+                break;
+            }
+        }
 
-	if (!found) {
-	    cerr << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << endl;
-	    return;
-	}
+        if (!found) {
+            cerr << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << endl;
+            return;
+        }
     }
 
     emit paneAboutToBeDeleted(pane);
@@ -337,11 +337,11 @@ PaneStack::deletePane(Pane *pane)
     delete pane->parent();
 
     if (m_currentPane == pane) {
-	if (m_panes.size() > 0) {
+        if (m_panes.size() > 0) {
             setCurrentPane(m_panes[0].pane);
-	} else {
-	    setCurrentPane(0);
-	}
+        } else {
+            setCurrentPane(0);
+        }
     }
 
     showOrHidePaneAccessories();
@@ -381,28 +381,28 @@ PaneStack::hidePane(Pane *pane)
     std::vector<PaneRec>::iterator i = m_panes.begin();
 
     while (i != m_panes.end()) {
-	if (i->pane == pane) {
+        if (i->pane == pane) {
 
-	    m_hiddenPanes.push_back(*i);
-	    m_panes.erase(i);
+            m_hiddenPanes.push_back(*i);
+            m_panes.erase(i);
 
-	    QWidget *pw = dynamic_cast<QWidget *>(pane->parent());
-	    if (pw) pw->hide();
+            QWidget *pw = dynamic_cast<QWidget *>(pane->parent());
+            if (pw) pw->hide();
 
-	    if (m_currentPane == pane) {
-		if (m_panes.size() > 0) {
-		    setCurrentPane(m_panes[0].pane);
-		} else {
-		    setCurrentPane(0);
-		}
-	    }
-	    
+            if (m_currentPane == pane) {
+                if (m_panes.size() > 0) {
+                    setCurrentPane(m_panes[0].pane);
+                } else {
+                    setCurrentPane(0);
+                }
+            }
+            
             showOrHidePaneAccessories();
             emit paneHidden(pane);
             emit paneHidden();
-	    return;
-	}
-	++i;
+            return;
+        }
+        ++i;
     }
 
     relinkAlignmentViews();
@@ -416,19 +416,19 @@ PaneStack::showPane(Pane *pane)
     std::vector<PaneRec>::iterator i = m_hiddenPanes.begin();
 
     while (i != m_hiddenPanes.end()) {
-	if (i->pane == pane) {
-	    m_panes.push_back(*i);
-	    m_hiddenPanes.erase(i);
-	    QWidget *pw = dynamic_cast<QWidget *>(pane->parent());
-	    if (pw) pw->show();
+        if (i->pane == pane) {
+            m_panes.push_back(*i);
+            m_hiddenPanes.erase(i);
+            QWidget *pw = dynamic_cast<QWidget *>(pane->parent());
+            if (pw) pw->show();
 
-	    //!!! update current pane
+            //!!! update current pane
 
             showOrHidePaneAccessories();
 
-	    return;
-	}
-	++i;
+            return;
+        }
+        ++i;
     }
 
     relinkAlignmentViews();
@@ -456,23 +456,23 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
     bool found = false;
 
     while (i != m_panes.end()) {
-	if (i->pane == pane) {
-	    i->currentIndicator->setPixmap(selectedMap);
+        if (i->pane == pane) {
+            i->currentIndicator->setPixmap(selectedMap);
             if (m_layoutStyle != PropertyStackPerPaneLayout) {
                 m_propertyStackStack->setCurrentWidget(i->propertyStack);
             }
-	    found = true;
-	} else {
-	    i->currentIndicator->setPixmap(unselectedMap);
-	}
-	++i;
+            found = true;
+        } else {
+            i->currentIndicator->setPixmap(unselectedMap);
+        }
+        ++i;
     }
 
     if (found || pane == 0) {
-	m_currentPane = pane;
-	emit currentPaneChanged(m_currentPane);
+        m_currentPane = pane;
+        emit currentPaneChanged(m_currentPane);
     } else {
-	cerr << "WARNING: PaneStack::setCurrentPane(" << pane << "): pane is not a visible pane in this stack" << endl;
+        cerr << "WARNING: PaneStack::setCurrentPane(" << pane << "): pane is not a visible pane in this stack" << endl;
     }
 }
 
@@ -483,28 +483,28 @@ PaneStack::setCurrentLayer(Pane *pane, Layer *layer) // may be null
 
     if (m_currentPane) {
 
-	std::vector<PaneRec>::iterator i = m_panes.begin();
+        std::vector<PaneRec>::iterator i = m_panes.begin();
 
-	while (i != m_panes.end()) {
+        while (i != m_panes.end()) {
 
-	    if (i->pane == pane) {
-		PropertyStack *stack = dynamic_cast<PropertyStack *>
-		    (i->propertyStack);
-		if (stack) {
-		    if (stack->containsContainer(layer)) {
-			stack->setCurrentIndex(stack->getContainerIndex(layer));
-			emit currentLayerChanged(pane, layer);
-		    } else {
-			stack->setCurrentIndex
-			    (stack->getContainerIndex
-			     (pane->getPropertyContainer(0)));
-			emit currentLayerChanged(pane, 0);
-		    }
-		}
-		break;
-	    }
-	    ++i;
-	}
+            if (i->pane == pane) {
+                PropertyStack *stack = dynamic_cast<PropertyStack *>
+                    (i->propertyStack);
+                if (stack) {
+                    if (stack->containsContainer(layer)) {
+                        stack->setCurrentIndex(stack->getContainerIndex(layer));
+                        emit currentLayerChanged(pane, layer);
+                    } else {
+                        stack->setCurrentIndex
+                            (stack->getContainerIndex
+                             (pane->getPropertyContainer(0)));
+                        emit currentLayerChanged(pane, 0);
+                    }
+                }
+                break;
+            }
+            ++i;
+        }
     }
 }
 
@@ -532,14 +532,14 @@ PaneStack::propertyContainerSelected(View *client, PropertyContainer *pc)
     std::vector<PaneRec>::iterator i = m_panes.begin();
 
     while (i != m_panes.end()) {
-	PropertyStack *stack = dynamic_cast<PropertyStack *>(i->propertyStack);
-	if (stack &&
-	    stack->getClient() == client &&
-	    stack->containsContainer(pc)) {
-	    setCurrentPane(i->pane);
-	    break;
-	}
-	++i;
+        PropertyStack *stack = dynamic_cast<PropertyStack *>(i->propertyStack);
+        if (stack &&
+            stack->getClient() == client &&
+            stack->containsContainer(pc)) {
+            setCurrentPane(i->pane);
+            break;
+        }
+        ++i;
     }
 
     Layer *layer = dynamic_cast<Layer *>(pc);
@@ -578,17 +578,17 @@ PaneStack::sizePropertyStacks()
     if (m_propertyStackMinWidth > 0) maxMinWidth = m_propertyStackMinWidth;
 
     for (int i = 0; i < (int)m_panes.size(); ++i) {
-	if (!m_panes[i].propertyStack) continue;
+        if (!m_panes[i].propertyStack) continue;
 #ifdef DEBUG_PANE_STACK
-	SVDEBUG << "PaneStack::sizePropertyStacks: " << i << ": min " 
-		  << m_panes[i].propertyStack->minimumSizeHint().width() << ", hint "
+        SVDEBUG << "PaneStack::sizePropertyStacks: " << i << ": min " 
+                  << m_panes[i].propertyStack->minimumSizeHint().width() << ", hint "
                   << m_panes[i].propertyStack->sizeHint().width() << ", current "
-		  << m_panes[i].propertyStack->width() << endl;
+                  << m_panes[i].propertyStack->width() << endl;
 #endif
 
-	if (m_panes[i].propertyStack->sizeHint().width() > maxMinWidth) {
-	    maxMinWidth = m_panes[i].propertyStack->sizeHint().width();
-	}
+        if (m_panes[i].propertyStack->sizeHint().width() > maxMinWidth) {
+            maxMinWidth = m_panes[i].propertyStack->sizeHint().width();
+        }
     }
 
 #ifdef DEBUG_PANE_STACK
@@ -600,8 +600,8 @@ PaneStack::sizePropertyStacks()
     m_propertyStackStack->setMaximumWidth(setWidth + 10);
 
     for (int i = 0; i < (int)m_panes.size(); ++i) {
-	if (!m_panes[i].propertyStack) continue;
-	m_panes[i].propertyStack->setMinimumWidth(setWidth);
+        if (!m_panes[i].propertyStack) continue;
+        m_panes[i].propertyStack->setMinimumWidth(setWidth);
     }
 
     emit propertyStacksResized(setWidth);
@@ -627,7 +627,7 @@ PaneStack::paneDeleteButtonClicked()
 {
     QObject *s = sender();
     for (int i = 0; i < (int)m_panes.size(); ++i) {
-	if (m_panes[i].xButton == s) {
+        if (m_panes[i].xButton == s) {
             emit paneDeleteButtonClicked(m_panes[i].pane);
         }
     }
@@ -639,7 +639,7 @@ PaneStack::indicatorClicked()
     QObject *s = sender();
 
     for (int i = 0; i < (int)m_panes.size(); ++i) {
-	if (m_panes[i].currentIndicator == s) {
+        if (m_panes[i].currentIndicator == s) {
             setCurrentPane(m_panes[i].pane);
             return;
         }

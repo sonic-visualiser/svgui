@@ -19,6 +19,7 @@
 #include "data/fileio/DataFileReaderFactory.h"
 #include "rdf/RDFImporter.h"
 #include "rdf/RDFExporter.h"
+#include "system/System.h"
 
 #include <QFileInfo>
 #include <QMessageBox>
@@ -134,6 +135,11 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
         }
         break;
 
+    case SVGFile:
+        settingsKeyStub = "svg";
+        filter = tr("Scalable Vector Graphics files (*.svg)\nAll files (*.*)");
+        break;
+
     case CSVFile:
         settingsKeyStub = "layer";
         filter = tr("Comma-separated data files (*.csv)\nSpace-separated .lab files (*.lab)\nText files (*.txt)\nAll files (*.*)");
@@ -151,9 +157,12 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     };
 
     if (lastPath == "") {
-        char *home = getenv("HOME");
-        if (home) lastPath = home;
-        else lastPath = ".";
+        std::string home;
+        if (getEnvUtf8("HOME", home)) {
+            lastPath = QString::fromStdString(home);
+        } else {
+            lastPath = ".";
+        }
     } else if (QFileInfo(lastPath).isDir()) {
         lastPath = QFileInfo(lastPath).canonicalPath();
     } else {
@@ -282,6 +291,12 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         filter = tr("Portable Network Graphics files (*.png)\nAll files (*.*)");
         break;
 
+    case SVGFile:
+        settingsKeyStub = "savesvg";
+        title = tr("Select a file to export to");
+        filter = tr("Scalable Vector Graphics files (*.svg)\nAll files (*.*)");
+        break;
+
     case CSVFile:
         settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
@@ -294,9 +309,12 @@ InteractiveFileFinder::getSaveFileName(FileType type,
     };
 
     if (lastPath == "") {
-        char *home = getenv("HOME");
-        if (home) lastPath = home;
-        else lastPath = ".";
+        std::string home;
+        if (getEnvUtf8("HOME", home)) {
+            lastPath = QString::fromStdString(home);
+        } else {
+            lastPath = ".";
+        }
     } else if (QFileInfo(lastPath).isDir()) {
         lastPath = QFileInfo(lastPath).canonicalPath();
     } else {
@@ -330,6 +348,8 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         defaultSuffix = "wav";
     } else if (type == ImageFile) {
         defaultSuffix = "png";
+    } else if (type == SVGFile) {
+        defaultSuffix = "svg";
     } else if (type == CSVFile) {
         defaultSuffix = "csv";
     }
@@ -448,6 +468,10 @@ InteractiveFileFinder::registerLastOpenedFilePath(FileType type, QString path)
 
     case ImageFile:
         settingsKeyStub = "image";
+        break;
+
+    case SVGFile:
+        settingsKeyStub = "svg";
         break;
 
     case CSVFile:

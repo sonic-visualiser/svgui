@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _MODEL_DATA_TABLE_DIALOG_H_
-#define _MODEL_DATA_TABLE_DIALOG_H_
+#ifndef SV_MODEL_DATA_TABLE_DIALOG_H
+#define SV_MODEL_DATA_TABLE_DIALOG_H
 
 #include <QMainWindow>
 

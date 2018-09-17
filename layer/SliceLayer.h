@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SLICE_LAYER_H_
-#define _SLICE_LAYER_H_
+#ifndef SV_SLICE_LAYER_H
+#define SV_SLICE_LAYER_H
 
 #include "SingleColourLayer.h"
 
@@ -32,8 +32,6 @@ public:
     SliceLayer();
     ~SliceLayer();
     
-//    virtual void setModel(const Model *model);
-//    virtual const Model *getModel() const { return m_model; }
     virtual const Model *getModel() const { return 0; }
 
     void setSliceableModel(const Model *model);    
@@ -49,6 +47,8 @@ public:
         return ColourAndBackgroundSignificant;
     }
 
+    virtual bool hasLightBackground() const;
+
     virtual PropertyList getProperties() const;
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual QString getPropertyIconName(const PropertyName &) const;
@@ -57,13 +57,21 @@ public:
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
+                                          int value) const;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
     virtual void setProperty(const PropertyName &, int value);
     virtual void setProperties(const QXmlAttributes &);
 
     virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const;
+
+    virtual bool getDisplayExtents(double &min, double &max) const;
+    virtual bool setDisplayExtents(double min, double max);
+
+    virtual int getVerticalZoomSteps(int &defaultStep) const;
+    virtual int getCurrentVerticalZoomStep() const;
+    virtual void setVerticalZoomStep(int);
+    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
     virtual bool hasTimeXAxis() const { return false; }
 
@@ -77,6 +85,8 @@ public:
 
     enum BinScale { LinearBins, LogBins, InvertedLogBins };
 
+    bool usesSolidColour() const { return m_plotStyle == PlotFilledBlocks; }
+    
     void setFillColourMap(int);
     int getFillColourMap() const { return m_colourMap; }
 
@@ -109,11 +119,11 @@ public slots:
     void modelAboutToBeDeleted(Model *);
 
 protected:
-    virtual double getXForBin(int bin, int totalBins, double w) const;
-    virtual int getBinForX(double x, int totalBins, double w) const;
+    virtual double getXForBin(const LayerGeometryProvider *, double bin) const;
+    virtual double getBinForX(const LayerGeometryProvider *, double x) const;
 
-    virtual double getYForValue(double value, const LayerGeometryProvider *v, double &norm) const;
-    virtual double getValueForY(double y, const LayerGeometryProvider *v) const;
+    virtual double getYForValue(const LayerGeometryProvider *v, double value, double &norm) const;
+    virtual double getValueForY(const LayerGeometryProvider *v, double y) const;
     
     virtual QString getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &,
                                              bool includeBinDescription,
@@ -140,10 +150,13 @@ protected:
     float                             m_threshold;
     float                             m_initialThreshold;
     float                             m_gain;
+    int                               m_minbin;
+    int                               m_maxbin;
     mutable std::vector<int>          m_scalePoints;
-    mutable std::map<const LayerGeometryProvider *, int> m_xorigins;
-    mutable std::map<const LayerGeometryProvider *, int> m_yorigins;
-    mutable std::map<const LayerGeometryProvider *, int> m_heights;
+    mutable int                       m_scalePaintHeight;
+    mutable std::map<int, int>        m_xorigins; // LayerGeometryProvider id -> x
+    mutable std::map<int, int>        m_yorigins; // LayerGeometryProvider id -> y
+    mutable std::map<int, int>        m_heights;  // LayerGeometryProvider id -> h
     mutable sv_frame_t                m_currentf0;
     mutable sv_frame_t                m_currentf1;
     mutable std::vector<float>        m_values;

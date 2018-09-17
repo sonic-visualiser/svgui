@@ -70,7 +70,7 @@ CommandHistory::CommandHistory() :
     m_undoMenu = new QMenu(tr("&Undo"));
     m_undoMenuAction->setMenu(m_undoMenu);
     connect(m_undoMenu, SIGNAL(triggered(QAction *)),
-	    this, SLOT(undoActivated(QAction*)));
+            this, SLOT(undoActivated(QAction*)));
 
     m_redoAction = new QAction(redoIcon, tr("Re&do"), this);
     m_redoAction->setShortcut(tr("Ctrl+Shift+Z"));
@@ -83,7 +83,7 @@ CommandHistory::CommandHistory() :
     m_redoMenu = new QMenu(tr("Re&do"));
     m_redoMenuAction->setMenu(m_redoMenu);
     connect(m_redoMenu, SIGNAL(triggered(QAction *)),
-	    this, SLOT(redoActivated(QAction*)));
+            this, SLOT(redoActivated(QAction*)));
 }
 
 CommandHistory::~CommandHistory()
@@ -136,8 +136,8 @@ CommandHistory::addCommand(Command *command)
     if (!command) return;
 
     if (m_currentCompound) {
-	addToCompound(command, m_executeCompound);
-	return;
+        addToCompound(command, m_executeCompound);
+        return;
     }
 
     addCommand(command, true);
@@ -153,15 +153,15 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
 #endif
 
     if (m_currentCompound) {
-	addToCompound(command, execute);
-	return;
+        addToCompound(command, execute);
+        return;
     }
 
     if (bundle) {
-	addToBundle(command, execute);
-	return;
+        addToBundle(command, execute);
+        return;
     } else if (m_currentBundle) {
-	closeBundle();
+        closeBundle();
     }
 
 #ifdef DEBUG_COMMAND_HISTORY
@@ -180,7 +180,7 @@ CommandHistory::addCommand(Command *command, bool execute, bool bundle)
     clipCommands();
     
     if (execute) {
-	command->execute();
+        command->execute();
     }
 
     // Emit even if we aren't executing the command, because
@@ -196,13 +196,13 @@ void
 CommandHistory::addToBundle(Command *command, bool execute)
 {
     if (m_currentBundle) {
-	if (!command || (command->getName() != m_currentBundleName)) {
+        if (!command || (command->getName() != m_currentBundleName)) {
 #ifdef DEBUG_COMMAND_HISTORY
             cerr << "CommandHistory::addToBundle: " << command->getName()
                  << ": closing current bundle" << endl;
 #endif
-	    closeBundle();
-	}
+            closeBundle();
+        }
     }
 
     if (!command) return;
@@ -214,14 +214,14 @@ CommandHistory::addToBundle(Command *command, bool execute)
              << ": creating new bundle" << endl;
 #endif
 
-	// need to addCommand before setting m_currentBundle, as addCommand
-	// with bundle false will reset m_currentBundle to 0
-	MacroCommand *mc = new BundleCommand(command->getName());
+        // need to addCommand before setting m_currentBundle, as addCommand
+        // with bundle false will reset m_currentBundle to 0
+        MacroCommand *mc = new BundleCommand(command->getName());
         m_bundling = true;
-	addCommand(mc, false);
+        addCommand(mc, false);
         m_bundling = false;
-	m_currentBundle = mc;
-	m_currentBundleName = command->getName();
+        m_currentBundle = mc;
+        m_currentBundleName = command->getName();
     }
 
 #ifdef DEBUG_COMMAND_HISTORY
@@ -272,7 +272,7 @@ void
 CommandHistory::addToCompound(Command *command, bool execute)
 {
     if (!m_currentCompound) {
-	cerr << "CommandHistory::addToCompound: ERROR: no compound operation in progress!" << endl;
+        cerr << "CommandHistory::addToCompound: ERROR: no compound operation in progress!" << endl;
         return;
     }
 
@@ -288,8 +288,8 @@ void
 CommandHistory::startCompoundOperation(QString name, bool execute)
 {
     if (m_currentCompound) {
-	cerr << "CommandHistory::startCompoundOperation: ERROR: compound operation already in progress!" << endl;
-	cerr << "(name is " << m_currentCompound->getName() << ")" << endl;
+        cerr << "CommandHistory::startCompoundOperation: ERROR: compound operation already in progress!" << endl;
+        cerr << "(name is " << m_currentCompound->getName() << ")" << endl;
         return;
     }
  
@@ -307,7 +307,7 @@ void
 CommandHistory::endCompoundOperation()
 {
     if (!m_currentCompound) {
-	cerr << "CommandHistory::endCompoundOperation: ERROR: no compound operation in progress!" << endl;
+        cerr << "CommandHistory::endCompoundOperation: ERROR: no compound operation in progress!" << endl;
         return;
     }
  
@@ -433,7 +433,7 @@ void
 CommandHistory::clipCommands()
 {
     if (int(m_undoStack.size()) > m_undoLimit) {
-	m_savedAt -= (int(m_undoStack.size()) - m_undoLimit);
+        m_savedAt -= (int(m_undoStack.size()) - m_undoLimit);
     }
 
     clipStack(m_undoStack, m_undoLimit);
@@ -447,23 +447,23 @@ CommandHistory::clipStack(CommandStack &stack, int limit)
 
     if ((int)stack.size() > limit) {
 
-	CommandStack tempStack;
+        CommandStack tempStack;
 
-	for (i = 0; i < limit; ++i) {
+        for (i = 0; i < limit; ++i) {
 #ifdef DEBUG_COMMAND_HISTORY
-	    Command *command = stack.top();
-	    cerr << "CommandHistory::clipStack: Saving recent command: " << command->getName() << " at " << command << endl;
+            Command *command = stack.top();
+            cerr << "CommandHistory::clipStack: Saving recent command: " << command->getName() << " at " << command << endl;
 #endif
-	    tempStack.push(stack.top());
-	    stack.pop();
-	}
+            tempStack.push(stack.top());
+            stack.pop();
+        }
 
-	clearStack(stack);
+        clearStack(stack);
 
-	for (i = 0; i < m_undoLimit; ++i) {
-	    stack.push(tempStack.top());
-	    tempStack.pop();
-	}
+        for (i = 0; i < m_undoLimit; ++i) {
+            stack.push(tempStack.top());
+            tempStack.pop();
+        }
     }
 }
 
@@ -471,13 +471,13 @@ void
 CommandHistory::clearStack(CommandStack &stack)
 {
     while (!stack.empty()) {
-	Command *command = stack.top();
-	// Not safe to call getName() on a command about to be deleted
+        Command *command = stack.top();
+        // Not safe to call getName() on a command about to be deleted
 #ifdef DEBUG_COMMAND_HISTORY
-	cerr << "CommandHistory::clearStack: About to delete command " << command << endl;
+        cerr << "CommandHistory::clearStack: About to delete command " << command << endl;
 #endif
-	delete command;
-	stack.pop();
+        delete command;
+        stack.pop();
     }
 }
 
@@ -486,7 +486,7 @@ CommandHistory::undoActivated(QAction *action)
 {
     int pos = m_actionCounts[action];
     for (int i = 0; i <= pos; ++i) {
-	undo();
+        undo();
     }
 }
 
@@ -495,7 +495,7 @@ CommandHistory::redoActivated(QAction *action)
 {
     int pos = m_actionCounts[action];
     for (int i = 0; i <= pos; ++i) {
-	redo();
+        redo();
     }
 }
 
@@ -506,62 +506,62 @@ CommandHistory::updateActions()
 
     for (int undo = 0; undo <= 1; ++undo) {
 
-	QAction *action(undo ? m_undoAction : m_redoAction);
-	QAction *menuAction(undo ? m_undoMenuAction : m_redoMenuAction);
-	QMenu *menu(undo ? m_undoMenu : m_redoMenu);
-	CommandStack &stack(undo ? m_undoStack : m_redoStack);
+        QAction *action(undo ? m_undoAction : m_redoAction);
+        QAction *menuAction(undo ? m_undoMenuAction : m_redoMenuAction);
+        QMenu *menu(undo ? m_undoMenu : m_redoMenu);
+        CommandStack &stack(undo ? m_undoStack : m_redoStack);
 
-	if (stack.empty()) {
+        if (stack.empty()) {
 
-	    QString text(undo ? tr("Nothing to undo") : tr("Nothing to redo"));
+            QString text(undo ? tr("Nothing to undo") : tr("Nothing to redo"));
 
-	    action->setEnabled(false);
-	    action->setText(text);
+            action->setEnabled(false);
+            action->setText(text);
 
-	    menuAction->setEnabled(false);
-	    menuAction->setText(text);
+            menuAction->setEnabled(false);
+            menuAction->setText(text);
 
-	} else {
+        } else {
 
-	    action->setEnabled(true);
-	    menuAction->setEnabled(true);
+            action->setEnabled(true);
+            menuAction->setEnabled(true);
 
-	    QString commandName = stack.top()->getName();
-	    commandName.replace(QRegExp("&"), "");
+            QString commandName = stack.top()->getName();
+            commandName.replace(QRegExp("&"), "");
 
-	    QString text = (undo ? tr("&Undo %1") : tr("Re&do %1"))
-		.arg(commandName);
+            QString text = (undo ? tr("&Undo %1") : tr("Re&do %1"))
+                .arg(commandName);
 
-	    action->setText(text);
-	    menuAction->setText(text);
-	}
+            action->setText(text);
+            menuAction->setText(text);
+        }
 
-	menu->clear();
+        menu->clear();
 
-	CommandStack tempStack;
-	int j = 0;
+        CommandStack tempStack;
+        int j = 0;
 
-	while (j < m_menuLimit && !stack.empty()) {
+        while (j < m_menuLimit && !stack.empty()) {
 
-	    Command *command = stack.top();
-	    tempStack.push(command);
-	    stack.pop();
+            Command *command = stack.top();
+            tempStack.push(command);
+            stack.pop();
 
-	    QString commandName = command->getName();
-	    commandName.replace(QRegExp("&"), "");
+            QString commandName = command->getName();
+            commandName.replace(QRegExp("&"), "");
 
-	    QString text;
-	    if (undo) text = tr("&Undo %1").arg(commandName);
-	    else      text = tr("Re&do %1").arg(commandName);
-	    
-	    QAction *action = menu->addAction(text);
-	    m_actionCounts[action] = j++;
-	}
+            QString text;
+            if (undo) text = tr("&Undo %1").arg(commandName);
+            else      text = tr("Re&do %1").arg(commandName);
+            
+            QAction *action = menu->addAction(text);
+            m_actionCounts[action] = j++;
+        }
 
-	while (!tempStack.empty()) {
-	    stack.push(tempStack.top());
-	    tempStack.pop();
-	}
+        while (!tempStack.empty()) {
+            stack.push(tempStack.top());
+            tempStack.pop();
+        }
     }
 }
 

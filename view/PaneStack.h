@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PANESTACK_H_
-#define _PANESTACK_H_
+#ifndef SV_PANESTACK_H
+#define SV_PANESTACK_H
 
 #include <QFrame>
 
@@ -117,10 +117,10 @@ protected:
 
     struct PaneRec
     {
-	Pane          *pane;
-	QWidget       *propertyStack;
+        Pane          *pane;
+        QWidget       *propertyStack;
         QPushButton   *xButton;
-	QLabel        *currentIndicator;
+        QLabel        *currentIndicator;
         QFrame        *frame;
         QGridLayout   *layout;
         AlignmentView *alignmentView;

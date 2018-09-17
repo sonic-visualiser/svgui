@@ -122,23 +122,23 @@ void AudioDial::paintEvent(QPaintEvent *)
     QPainter paint;
 
     double angle = AUDIO_DIAL_MIN // offset
-	+ (AUDIO_DIAL_RANGE *
-	   (double(QDial::value() - QDial::minimum()) /
-	    (double(QDial::maximum() - QDial::minimum()))));
+        + (AUDIO_DIAL_RANGE *
+           (double(QDial::value() - QDial::minimum()) /
+            (double(QDial::maximum() - QDial::minimum()))));
     int degrees = int(angle * 180.0 / M_PI);
 
     int ns = notchSize();
     int numTicks = 1 + (maximum() + ns - minimum()) / ns;
-	
+        
     QColor knobColor(m_knobColor);
     if (knobColor == Qt::black)
-	knobColor = palette().window().color();
+        knobColor = palette().window().color();
 
     QColor meterColor(m_meterColor);
     if (!isEnabled())
-	meterColor = palette().mid().color();
+        meterColor = palette().mid().color();
     else if (m_meterColor == Qt::white)
-	meterColor = palette().highlight().color();
+        meterColor = palette().highlight().color();
 
     int m_size = width() < height() ? width() : height();
     int scale = 1;
@@ -157,7 +157,7 @@ void AudioDial::paintEvent(QPaintEvent *)
     pen.setColor(knobColor);
     pen.setWidth(scale * 2);
     pen.setCapStyle(Qt::FlatCap);
-	
+        
     paint.setPen(pen);
     paint.setBrush(c);
 
@@ -169,30 +169,30 @@ void AudioDial::paintEvent(QPaintEvent *)
     int pos = indent-1 + (width-2*indent) / 20;
     int darkWidth = (width-2*indent) * 3 / 4;
     while (darkWidth) {
-	c = c.light(102);
-	pen.setColor(c);
-	paint.setPen(pen);
-	paint.drawEllipse(pos, pos, darkWidth, darkWidth);
-	if (!--darkWidth) break;
-	paint.drawEllipse(pos, pos, darkWidth, darkWidth);
-	if (!--darkWidth) break;
-	paint.drawEllipse(pos, pos, darkWidth, darkWidth);
-	++pos; --darkWidth;
+        c = c.light(102);
+        pen.setColor(c);
+        paint.setPen(pen);
+        paint.drawEllipse(pos, pos, darkWidth, darkWidth);
+        if (!--darkWidth) break;
+        paint.drawEllipse(pos, pos, darkWidth, darkWidth);
+        if (!--darkWidth) break;
+        paint.drawEllipse(pos, pos, darkWidth, darkWidth);
+        ++pos; --darkWidth;
     }
 
     // Tick notches...
 
     if ( notchesVisible() ) {
-//	cerr << "Notches visible" << endl;
-	pen.setColor(palette().dark().color());
-	pen.setWidth(scale);
-	paint.setPen(pen);
-	for (int i = 0; i < numTicks; ++i) {
-	    int div = numTicks;
-	    if (div > 1) --div;
-	    drawTick(paint, AUDIO_DIAL_MIN + (AUDIO_DIAL_MAX - AUDIO_DIAL_MIN) * i / div,
-		     width, true);
-	}
+//        cerr << "Notches visible" << endl;
+        pen.setColor(palette().dark().color());
+        pen.setWidth(scale);
+        paint.setPen(pen);
+        for (int i = 0; i < numTicks; ++i) {
+            int div = numTicks;
+            if (div > 1) --div;
+            drawTick(paint, AUDIO_DIAL_MIN + (AUDIO_DIAL_MAX - AUDIO_DIAL_MIN) * i / div,
+                     width, true);
+        }
     }
 
     // The bright metering bit...
@@ -208,7 +208,7 @@ void AudioDial::paintEvent(QPaintEvent *)
     if (arcLen == 0) arcLen = -16;
 
     paint.drawArc(indent/2, indent/2,
-		  width-indent, width-indent, (180 + 45) * 16, arcLen);
+                  width-indent, width-indent, (180 + 45) * 16, arcLen);
 
     paint.setBrush(Qt::NoBrush);
 
@@ -222,13 +222,13 @@ void AudioDial::paintEvent(QPaintEvent *)
     int shadowAngle = -720;
     c = knobColor.dark();
     for (int arc = 120; arc < 2880; arc += 240) {
-	pen.setColor(c);
-	paint.setPen(pen);
-	paint.drawArc(indent, indent,
-		      width-2*indent, width-2*indent, shadowAngle + arc, 240);
-	paint.drawArc(indent, indent,
-		      width-2*indent, width-2*indent, shadowAngle - arc, 240);
-	c = c.light(110);
+        pen.setColor(c);
+        paint.setPen(pen);
+        paint.drawArc(indent, indent,
+                      width-2*indent, width-2*indent, shadowAngle + arc, 240);
+        paint.drawArc(indent, indent,
+                      width-2*indent, width-2*indent, shadowAngle - arc, 240);
+        c = c.light(110);
     }
 
     // Scale shadow, omitting the bottom part...
@@ -236,21 +236,21 @@ void AudioDial::paintEvent(QPaintEvent *)
     shadowAngle = 2160;
     c = palette().shadow().color();
     for (int i = 0; i < 5; ++i) {
-	pen.setColor(c);
-	paint.setPen(pen);
+        pen.setColor(c);
+        paint.setPen(pen);
         int arc = i * 240 + 120;
-	paint.drawArc(scale/2, scale/2,
-		      width-scale, width-scale, shadowAngle + arc, 240);
-	c = c.light(110);
+        paint.drawArc(scale/2, scale/2,
+                      width-scale, width-scale, shadowAngle + arc, 240);
+        c = c.light(110);
     }
     c = palette().shadow().color();
     for (int i = 0; i < 12; ++i) {
-	pen.setColor(c);
-	paint.setPen(pen);
+        pen.setColor(c);
+        paint.setPen(pen);
         int arc = i * 240 + 120;
-	paint.drawArc(scale/2, scale/2,
-		      width-scale, width-scale, shadowAngle - arc, 240);
-	c = c.light(110);
+        paint.drawArc(scale/2, scale/2,
+                      width-scale, width-scale, shadowAngle - arc, 240);
+        c = c.light(110);
     }
 
     // Scale ends...
@@ -259,11 +259,11 @@ void AudioDial::paintEvent(QPaintEvent *)
     pen.setWidth(scale);
     paint.setPen(pen);
     for (int i = 0; i < numTicks; ++i) {
-	if (i != 0 && i != numTicks - 1) continue;
-	int div = numTicks;
-	if (div > 1) --div;
-	drawTick(paint, AUDIO_DIAL_MIN + (AUDIO_DIAL_MAX - AUDIO_DIAL_MIN) * i / div,
-		 width, false);
+        if (i != 0 && i != numTicks - 1) continue;
+        int div = numTicks;
+        if (div > 1) --div;
+        drawTick(paint, AUDIO_DIAL_MIN + (AUDIO_DIAL_MAX - AUDIO_DIAL_MIN) * i / div,
+                 width, false);
     }
 
     // Pointer notch...
@@ -289,7 +289,7 @@ void AudioDial::paintEvent(QPaintEvent *)
 
 
 void AudioDial::drawTick(QPainter &paint,
-			 double angle, int size, bool internal)
+                         double angle, int size, bool internal)
 {
     double hyp = double(size) / 2.0;
     double x0 = hyp - (hyp - 1) * sin(angle);
@@ -299,19 +299,19 @@ void AudioDial::drawTick(QPainter &paint,
     
     if (internal) {
 
-	double len = hyp / 4;
-	double x1 = hyp - (hyp - len) * sin(angle);
-	double y1 = hyp + (hyp - len) * cos(angle);
-		
-	paint.drawLine(int(x0), int(y0), int(x1), int(y1));
+        double len = hyp / 4;
+        double x1 = hyp - (hyp - len) * sin(angle);
+        double y1 = hyp + (hyp - len) * cos(angle);
+                
+        paint.drawLine(int(x0), int(y0), int(x1), int(y1));
 
     } else {
 
-	double len = hyp / 4;
-	double x1 = hyp - (hyp + len) * sin(angle);
-	double y1 = hyp + (hyp + len) * cos(angle);
+        double len = hyp / 4;
+        double x1 = hyp - (hyp + len) * sin(angle);
+        double y1 = hyp + (hyp + len) * cos(angle);
 
-	paint.drawLine(int(x0), int(y0), int(x1), int(y1));
+        paint.drawLine(int(x0), int(y0), int(x1), int(y1));
     }
 }
 
@@ -452,14 +452,14 @@ AudioDial::setToDefault()
 void AudioDial::mousePressEvent(QMouseEvent *mouseEvent)
 {
     if (m_mouseDial) {
-	QDial::mousePressEvent(mouseEvent);
+        QDial::mousePressEvent(mouseEvent);
     } else if (mouseEvent->button() == Qt::MidButton ||
                ((mouseEvent->button() == Qt::LeftButton) &&
                 (mouseEvent->modifiers() & Qt::ControlModifier))) {
         setToDefault();
     } else if (mouseEvent->button() == Qt::LeftButton) {
-	m_mousePressed = true;
-	m_posMouse = mouseEvent->pos();
+        m_mousePressed = true;
+        m_posMouse = mouseEvent->pos();
     }
 }
 
@@ -469,7 +469,7 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
     //!!! needs a common base class with Thumbwheel
 
     if (m_mouseDial) {
-	QDial::mouseDoubleClickEvent(mouseEvent);
+        QDial::mouseDoubleClickEvent(mouseEvent);
     } else if (mouseEvent->button() != Qt::LeftButton) {
         return;
     }
@@ -541,19 +541,19 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
 void AudioDial::mouseMoveEvent(QMouseEvent *mouseEvent)
 {
     if (m_mouseDial) {
-	QDial::mouseMoveEvent(mouseEvent);
+        QDial::mouseMoveEvent(mouseEvent);
     } else if (m_mousePressed) {
-	const QPoint& posMouse = mouseEvent->pos();
-	int v = QDial::value()
-	    + (posMouse.x() - m_posMouse.x())
-	    + (m_posMouse.y() - posMouse.y());
-	if (v > QDial::maximum())
-	    v = QDial::maximum();
-	else
-	    if (v < QDial::minimum())
-		v = QDial::minimum();
-	m_posMouse = posMouse;
-	QDial::setValue(v);
+        const QPoint& posMouse = mouseEvent->pos();
+        int v = QDial::value()
+            + (posMouse.x() - m_posMouse.x())
+            + (m_posMouse.y() - posMouse.y());
+        if (v > QDial::maximum())
+            v = QDial::maximum();
+        else
+            if (v < QDial::minimum())
+                v = QDial::minimum();
+        m_posMouse = posMouse;
+        QDial::setValue(v);
     }
 }
 
@@ -561,9 +561,9 @@ void AudioDial::mouseMoveEvent(QMouseEvent *mouseEvent)
 void AudioDial::mouseReleaseEvent(QMouseEvent *mouseEvent)
 {
     if (m_mouseDial) {
-	QDial::mouseReleaseEvent(mouseEvent);
+        QDial::mouseReleaseEvent(mouseEvent);
     } else if (m_mousePressed) {
-	m_mousePressed = false;
+        m_mousePressed = false;
     }
 }
 

@@ -19,6 +19,7 @@
 
 #include "base/AudioLevel.h"
 #include "base/Strings.h"
+#include "base/Debug.h"
 
 #include <QPaintDevice>
 #include <QPainter>
@@ -28,7 +29,7 @@
 
 void
 PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
-					double minVal, double maxVal,
+                                        double minVal, double maxVal,
                                         Scale scale, int &mult,
                                         std::vector<int> *vy)
 {
@@ -55,13 +56,11 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         } while (!round && mult < limit);
         if (round) {
             mult /= 10;
-//            cerr << "\n\nstep goes from " << step;
             step = double(round) / mult;
             n = int(lrint((maxVal - minVal) / step));
             if (mult > 1) {
                 mult /= 10;
             }
-//            cerr << " to " << step << " (n = " << n << ")" << endl;
         }
     }
 
@@ -116,7 +115,6 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         if (spaceForLabel) {
             
             int tx = 3;
-//            if (scale != LinearScale) {
             if (paint.fontMetrics().width(text) < w - 10) {
                 tx = w - 10 - paint.fontMetrics().width(text);
             }
@@ -125,8 +123,6 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 
             if (ty < paint.fontMetrics().ascent()) {
                 ty = paint.fontMetrics().ascent();
-//            } else if (ty > rect.y() + h - paint.fontMetrics().descent()) {
-//                ty = rect.y() + h - paint.fontMetrics().descent();
             } else {
                 ty += toff;
             }
@@ -134,19 +130,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             paint.drawText(tx, ty, text);
             
             lastLabelledY = ty - toff;
-            /*
-            if (ny != y) {
-                ty = ny;
-                if (ty < paint.fontMetrics().ascent()) {
-                    ty = paint.fontMetrics().ascent();
-                } else if (ty > h - paint.fontMetrics().descent()) {
-                    ty = h - paint.fontMetrics().descent();
-                } else {
-                    ty += toff;
-                }
-                paint.drawText(tx, ty, text);
-            }
-            */
+
             paint.drawLine(w - 7, y, w, y);
             if (vy) vy->push_back(y);
 
@@ -187,18 +171,13 @@ PaintAssistant::getYForValue(Scale scale, double value,
 {
     int vy = 0;
 
-//    int m = height/2;
-//    int my = minY + m;
-
     switch (scale) {
 
     case LinearScale:
-//        vy = my - int(m * value);
         vy = minY + height - int(((value - minVal) / (maxVal - minVal)) * height);
         break;
 
     case MeterScale:
-//        vy = my - AudioLevel::multiplier_to_preview(value, m);
         vy = minY + height - AudioLevel::multiplier_to_preview
             ((value - minVal) / (maxVal - minVal), height);
         break;
@@ -238,22 +217,21 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
         
         QRect r = paint.fontMetrics().boundingRect(text);
         r.translate(QPoint(x, y));
-//        cerr << "drawVisibleText: r = " << r.x() << "," <<r.y() << " " << r.width() << "x" << r.height() << endl;
         paint.drawRect(r);
         paint.setBrush(Qt::NoBrush);
 
-	paint.setPen(surroundColour);
+        paint.setPen(surroundColour);
 
-	for (int dx = -1; dx <= 1; ++dx) {
-	    for (int dy = -1; dy <= 1; ++dy) {
-		if (!(dx || dy)) continue;
-		paint.drawText(x + dx, y + dy, text);
-	    }
-	}
+        for (int dx = -1; dx <= 1; ++dx) {
+            for (int dy = -1; dy <= 1; ++dy) {
+                if (!(dx || dy)) continue;
+                paint.drawText(x + dx, y + dy, text);
+            }
+        }
 
-	paint.setPen(penColour);
+        paint.setPen(penColour);
 
-	paint.drawText(x, y, text);
+        paint.drawText(x, y, text);
 
         paint.restore();
 
@@ -262,3 +240,42 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
         std::cerr << "ERROR: PaintAssistant::drawVisibleText: Boxed style not yet implemented!" << std::endl;
     }
 }
+
+double
+PaintAssistant::scalePenWidth(double width)
+{
+    static double ratio = 0.0;
+    if (ratio == 0.0) {
+        double baseEm;
+#ifdef Q_OS_MAC
+        baseEm = 17.0;
+#else
+        baseEm = 15.0;
+#endif
+        double em = QFontMetrics(QFont()).height();
+        ratio = em / baseEm;
+
+        SVDEBUG << "PaintAssistant::scalePenWidth: ratio is " << ratio
+                << " (em = " << em << ")" << endl;
+    }
+
+    if (ratio <= 1.0) {
+        // we only ever scale up in this method
+        return width;
+    }
+
+    if (width <= 0) {
+        // zero-width pen, produce a scaled one-pixel pen
+        return ratio;
+    }
+
+    return width * ratio;
+}
+
+QPen
+PaintAssistant::scalePen(QPen pen)
+{
+    return QPen(pen.color(), scalePenWidth(pen.width()));
+}
+
+

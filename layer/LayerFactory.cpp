@@ -84,14 +84,14 @@ LayerFactory::getLayerPresentationName(LayerType type)
     case Slice:        return Layer::tr("Time Slice");
 
     case MelodicRangeSpectrogram:
-	// The user can change all the parameters of this after the
-	// fact -- there's nothing permanently melodic-range about it
-	// that should be encoded in its name
-	return Layer::tr("Spectrogram");
+        // The user can change all the parameters of this after the
+        // fact -- there's nothing permanently melodic-range about it
+        // that should be encoded in its name
+        return Layer::tr("Spectrogram");
 
     case PeakFrequencySpectrogram:
-	// likewise
-	return Layer::tr("Spectrogram");
+        // likewise
+        return Layer::tr("Spectrogram");
 
     case UnknownLayer:
     default:
@@ -139,47 +139,47 @@ LayerFactory::getValidLayerTypes(Model *model)
     LayerTypeSet types;
 
     if (dynamic_cast<DenseThreeDimensionalModel *>(model)) {
-	types.insert(Colour3DPlot);
+        types.insert(Colour3DPlot);
         types.insert(Slice);
     }
 
     if (dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
-	types.insert(Waveform);
+        types.insert(Waveform);
     }
 
     if (dynamic_cast<DenseTimeValueModel *>(model)) {
-	types.insert(Spectrogram);
-	types.insert(MelodicRangeSpectrogram);
-	types.insert(PeakFrequencySpectrogram);
+        types.insert(Spectrogram);
+        types.insert(MelodicRangeSpectrogram);
+        types.insert(PeakFrequencySpectrogram);
     }
 
     if (dynamic_cast<SparseOneDimensionalModel *>(model)) {
-	types.insert(TimeInstants);
+        types.insert(TimeInstants);
     }
 
     if (dynamic_cast<SparseTimeValueModel *>(model)) {
-	types.insert(TimeValues);
+        types.insert(TimeValues);
     }
 
     if (dynamic_cast<NoteModel *>(model)) {
-	types.insert(Notes);
+        types.insert(Notes);
     }
 
     // NOTE: GF: types is a set, so order of insertion does not matter
     if (dynamic_cast<FlexiNoteModel *>(model)) {
-	types.insert(FlexiNotes);
+        types.insert(FlexiNotes);
     }
 
     if (dynamic_cast<RegionModel *>(model)) {
-	types.insert(Regions);
+        types.insert(Regions);
     }
 
     if (dynamic_cast<TextModel *>(model)) {
-	types.insert(Text);
+        types.insert(Text);
     }
 
     if (dynamic_cast<ImageModel *>(model)) {
-	types.insert(Image);
+        types.insert(Image);
     }
 
     if (dynamic_cast<DenseTimeValueModel *>(model)) {
@@ -304,47 +304,47 @@ void
 LayerFactory::setModel(Layer *layer, Model *model)
 {
 //    if (trySetModel<WaveformLayer, RangeSummarisableTimeValueModel>(layer, model))
-//	return;
-	
+//        return;
+        
     if (trySetModel<WaveformLayer, WaveFileModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<WaveformLayer, WritableWaveFileModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<SpectrogramLayer, DenseTimeValueModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<TimeRulerLayer, Model>(layer, model))
-	return;
+        return;
 
     if (trySetModel<TimeInstantLayer, SparseOneDimensionalModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<TimeValueLayer, SparseTimeValueModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<NoteLayer, NoteModel>(layer, model)) 
-	return; 
+        return; 
 
     // GF: added FlexiNoteLayer
     if (trySetModel<FlexiNoteLayer, FlexiNoteModel>(layer, model)) 
-	return; 
-	
+        return; 
+        
     if (trySetModel<RegionLayer, RegionModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<TextLayer, TextModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<ImageLayer, ImageModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<Colour3DPlotLayer, DenseThreeDimensionalModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<SpectrogramLayer, DenseTimeValueModel>(layer, model))
-	return;
+        return;
 
     if (trySetModel<SpectrumLayer, DenseTimeValueModel>(layer, model)) 
         return;
@@ -357,21 +357,21 @@ Model *
 LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
 {
     if (layerType == TimeInstants) {
-	return new SparseOneDimensionalModel(baseModel->getSampleRate(), 1);
+        return new SparseOneDimensionalModel(baseModel->getSampleRate(), 1);
     } else if (layerType == TimeValues) {
-	return new SparseTimeValueModel(baseModel->getSampleRate(), 1, true);
+        return new SparseTimeValueModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == FlexiNotes) {
-	return new FlexiNoteModel(baseModel->getSampleRate(), 1, true);
+        return new FlexiNoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Notes) {
-	return new NoteModel(baseModel->getSampleRate(), 1, true);
+        return new NoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Regions) {
-	return new RegionModel(baseModel->getSampleRate(), 1, true);
+        return new RegionModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Text) {
-	return new TextModel(baseModel->getSampleRate(), 1, true);
+        return new TextModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Image) {
-	return new ImageModel(baseModel->getSampleRate(), 1, true);
+        return new ImageModel(baseModel->getSampleRate(), 1, true);
     } else {
-	return 0;
+        return 0;
     }
 }
 
@@ -379,10 +379,10 @@ int
 LayerFactory::getChannel(Layer *layer)
 {
     if (dynamic_cast<WaveformLayer *>(layer)) {
-	return dynamic_cast<WaveformLayer *>(layer)->getChannel();
+        return dynamic_cast<WaveformLayer *>(layer)->getChannel();
     } 
     if (dynamic_cast<SpectrogramLayer *>(layer)) {
-	return dynamic_cast<SpectrogramLayer *>(layer)->getChannel();
+        return dynamic_cast<SpectrogramLayer *>(layer)->getChannel();
     }
     return -1;
 }
@@ -391,16 +391,16 @@ void
 LayerFactory::setChannel(Layer *layer, int channel)
 {
     if (dynamic_cast<WaveformLayer *>(layer)) {
-	dynamic_cast<WaveformLayer *>(layer)->setChannel(channel);
-	return;
+        dynamic_cast<WaveformLayer *>(layer)->setChannel(channel);
+        return;
     } 
     if (dynamic_cast<SpectrogramLayer *>(layer)) {
-	dynamic_cast<SpectrogramLayer *>(layer)->setChannel(channel);
-	return;
+        dynamic_cast<SpectrogramLayer *>(layer)->setChannel(channel);
+        return;
     }
     if (dynamic_cast<SpectrumLayer *>(layer)) {
-	dynamic_cast<SpectrumLayer *>(layer)->setChannel(channel);
-	return;
+        dynamic_cast<SpectrumLayer *>(layer)->setChannel(channel);
+        return;
     }
 }
 
@@ -412,48 +412,48 @@ LayerFactory::createLayer(LayerType type)
     switch (type) {
 
     case Waveform:
-	layer = new WaveformLayer;
-	break;
+        layer = new WaveformLayer;
+        break;
 
     case Spectrogram:
-	layer = new SpectrogramLayer;
-	break;
+        layer = new SpectrogramLayer;
+        break;
 
     case TimeRuler:
-	layer = new TimeRulerLayer;
-	break;
+        layer = new TimeRulerLayer;
+        break;
 
     case TimeInstants:
-	layer = new TimeInstantLayer;
-	break;
+        layer = new TimeInstantLayer;
+        break;
 
     case TimeValues:
-	layer = new TimeValueLayer;
-	break;
+        layer = new TimeValueLayer;
+        break;
 
     case FlexiNotes:
-	layer = new FlexiNoteLayer;
-	break;
+        layer = new FlexiNoteLayer;
+        break;
 
     case Notes:
-	layer = new NoteLayer;
-	break;
+        layer = new NoteLayer;
+        break;
 
     case Regions:
-	layer = new RegionLayer;
-	break;
+        layer = new RegionLayer;
+        break;
 
     case Text:
-	layer = new TextLayer;
-	break;
+        layer = new TextLayer;
+        break;
 
     case Image:
-	layer = new ImageLayer;
-	break;
+        layer = new ImageLayer;
+        break;
 
     case Colour3DPlot:
-	layer = new Colour3DPlotLayer;
-	break;
+        layer = new Colour3DPlotLayer;
+        break;
 
     case Spectrum:
         layer = new SpectrumLayer;
@@ -464,12 +464,12 @@ LayerFactory::createLayer(LayerType type)
         break;
 
     case MelodicRangeSpectrogram: 
-	layer = new SpectrogramLayer(SpectrogramLayer::MelodicRange);
-	break;
+        layer = new SpectrogramLayer(SpectrogramLayer::MelodicRange);
+        break;
 
     case PeakFrequencySpectrogram: 
-	layer = new SpectrogramLayer(SpectrogramLayer::MelodicPeaks);
-	break;
+        layer = new SpectrogramLayer(SpectrogramLayer::MelodicPeaks);
+        break;
 
     case UnknownLayer:
     default:
@@ -478,12 +478,12 @@ LayerFactory::createLayer(LayerType type)
     }
 
     if (!layer) {
-	cerr << "LayerFactory::createLayer: Unknown layer type " 
-		  << type << endl;
+        cerr << "LayerFactory::createLayer: Unknown layer type " 
+                  << type << endl;
     } else {
-//	SVDEBUG << "LayerFactory::createLayer: Setting object name "
-//		  << getLayerPresentationName(type) << " on " << layer << endl;
-	layer->setObjectName(getLayerPresentationName(type));
+//        SVDEBUG << "LayerFactory::createLayer: Setting object name "
+//                  << getLayerPresentationName(type) << " on " << layer << endl;
+        layer->setObjectName(getLayerPresentationName(type));
         setLayerDefaultProperties(type, layer);
     }
 

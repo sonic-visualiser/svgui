@@ -26,18 +26,18 @@
 
 int
 LogColourScale::getWidth(LayerGeometryProvider *,
-			    QPainter &paint)
+                            QPainter &paint)
 {
     return paint.fontMetrics().width("-000.00") + 15;
 }
 
 void
 LogColourScale::paintVertical(LayerGeometryProvider *v,
-			      const ColourScaleLayer *layer,
-			      QPainter &paint,
-			      int /* x0 */,
-			      double minlog,
-			      double maxlog)
+                              const ColourScaleLayer *layer,
+                              QPainter &paint,
+                              int /* x0 */,
+                              double minlog,
+                              double maxlog)
 {
     int h = v->getPaintHeight();
 
@@ -60,9 +60,9 @@ LogColourScale::paintVertical(LayerGeometryProvider *v,
 
     paint.save();
     for (int y = 0; y < boxh; ++y) {
-	double val = ((boxh - y) * (maxlog - minlog)) / boxh + minlog;
-	paint.setPen(layer->getColourForValue(v, LogRange::unmap(val)));
-	paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
+        double val = ((boxh - y) * (maxlog - minlog)) / boxh + minlog;
+        paint.setPen(layer->getColourForValue(v, LogRange::unmap(val)));
+        paint.drawLine(boxx + 1, y + boxy + 1, boxx + boxw, y + boxy + 1);
     }
     paint.restore();
 
@@ -75,24 +75,24 @@ LogColourScale::paintVertical(LayerGeometryProvider *v,
 
     for (int i = 0; i < n; ++i) {
 
-	int y, ty;
+        int y, ty;
 
-	y = boxy + int(boxh - ((val - minlog) * boxh) / (maxlog - minlog));
+        y = boxy + int(boxh - ((val - minlog) * boxh) / (maxlog - minlog));
 
-	ty = y - paint.fontMetrics().height() +
-	    paint.fontMetrics().ascent() + 2;
+        ty = y - paint.fontMetrics().height() +
+            paint.fontMetrics().ascent() + 2;
 
-	double dv = LogRange::unmap(val);
-	int digits = int(trunc(log10(dv)));
-	int sf = dp + (digits > 0 ? digits : 0);
-	if (sf < 2) sf = 2;
-	snprintf(buffer, buflen, "%.*g", sf, dv);
+        double dv = LogRange::unmap(val);
+        int digits = int(trunc(log10(dv)));
+        int sf = dp + (digits > 0 ? digits : 0);
+        if (sf < 2) sf = 2;
+        snprintf(buffer, buflen, "%.*g", sf, dv);
 
-	QString label = QString(buffer);
+        QString label = QString(buffer);
 
-	paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
-	paint.drawText(tx, ty, label);
+        paint.drawLine(boxx + boxw - boxw/3, y, boxx + boxw, y);
+        paint.drawText(tx, ty, label);
 
-	val += inc;
+        val += inc;
     }
 }

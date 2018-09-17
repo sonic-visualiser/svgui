@@ -20,12 +20,18 @@
 
 class QPainter;
 class LayerGeometryProvider;
+class HorizontalScaleProvider;
 
 class PianoScale
 {
 public:
     void paintPianoVertical
-    (LayerGeometryProvider *v, QPainter &paint, QRect rect, double minf, double maxf);
+    (LayerGeometryProvider *v, QPainter &paint, QRect rect,
+     double minf, double maxf);
+    
+    void paintPianoHorizontal
+    (LayerGeometryProvider *v, const HorizontalScaleProvider *p,
+     QPainter &paint, QRect rect);
 };
 
 #endif

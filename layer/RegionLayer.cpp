@@ -138,20 +138,20 @@ RegionLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = m_colourMap;
 
     } else if (name == "Plot Type") {
-	
-	if (min) *min = 0;
-	if (max) *max = 1;
+        
+        if (min) *min = 0;
+        if (max) *max = 1;
         if (deflt) *deflt = 0;
-	
-	val = int(m_plotStyle);
+        
+        val = int(m_plotStyle);
 
     } else if (name == "Vertical Scale") {
-	
-	if (min) *min = 0;
-	if (max) *max = 3;
+        
+        if (min) *min = 0;
+        if (max) *max = 3;
         if (deflt) *deflt = int(EqualSpaced);
-	
-	val = int(m_verticalScale);
+        
+        val = int(m_verticalScale);
 
     } else if (name == "Scale Units") {
 
@@ -163,7 +163,7 @@ RegionLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else {
 
-	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
+        val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -177,20 +177,20 @@ RegionLayer::getPropertyValueLabel(const PropertyName &name,
         return ColourMapper::getColourMapName(value);
     } else if (name == "Plot Type") {
 
-	switch (value) {
-	default:
-	case 0: return tr("Bars");
-	case 1: return tr("Segmentation");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Bars");
+        case 1: return tr("Segmentation");
+        }
 
     } else if (name == "Vertical Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Auto-Align");
-	case 1: return tr("Equal Spaced");
-	case 2: return tr("Linear");
-	case 3: return tr("Log");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Auto-Align");
+        case 1: return tr("Equal Spaced");
+        case 2: return tr("Linear");
+        case 3: return tr("Log");
+        }
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
 }
@@ -201,9 +201,9 @@ RegionLayer::setProperty(const PropertyName &name, int value)
     if (name == "Colour" && m_plotStyle == PlotSegmentation) {
         setFillColourMap(value);
     } else if (name == "Plot Type") {
-	setPlotStyle(PlotStyle(value));
+        setPlotStyle(PlotStyle(value));
     } else if (name == "Vertical Scale") {
-	setVerticalScale(VerticalScale(value));
+        setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
         if (m_model) {
             m_model->setScaleUnits
@@ -310,36 +310,36 @@ RegionLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     sv_frame_t frame = v->getFrameForX(x);
 
     RegionModel::PointList onPoints =
-	m_model->getPoints(frame);
+        m_model->getPoints(frame);
 
     if (!onPoints.empty()) {
-	return onPoints;
+        return onPoints;
     }
 
     RegionModel::PointList prevPoints =
-	m_model->getPreviousPoints(frame);
+        m_model->getPreviousPoints(frame);
     RegionModel::PointList nextPoints =
-	m_model->getNextPoints(frame);
+        m_model->getNextPoints(frame);
 
     RegionModel::PointList usePoints = prevPoints;
 
     if (prevPoints.empty()) {
-	usePoints = nextPoints;
+        usePoints = nextPoints;
     } else if (long(prevPoints.begin()->frame) < v->getStartFrame() &&
-	       !(nextPoints.begin()->frame > v->getEndFrame())) {
-	usePoints = nextPoints;
+               !(nextPoints.begin()->frame > v->getEndFrame())) {
+        usePoints = nextPoints;
     } else if (long(nextPoints.begin()->frame) - frame <
-	       frame - long(prevPoints.begin()->frame)) {
-	usePoints = nextPoints;
+               frame - long(prevPoints.begin()->frame)) {
+        usePoints = nextPoints;
     }
 
     if (!usePoints.empty()) {
-	int fuzz = 2;
-	int px = v->getXForFrame(usePoints.begin()->frame);
-	if ((px > x && px - x > fuzz) ||
-	    (px < x && x - px > fuzz + 1)) {
-	    usePoints.clear();
-	}
+        int fuzz = 2;
+        int px = v->getXForFrame(usePoints.begin()->frame);
+        if ((px > x && px - x > fuzz) ||
+            (px < x && x - px > fuzz + 1)) {
+            usePoints.clear();
+        }
     }
 
     return usePoints;
@@ -393,11 +393,11 @@ RegionLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     RegionModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
-	if (!m_model->isReady()) {
-	    return tr("In progress");
-	} else {
-	    return tr("No local points");
-	}
+        if (!m_model->isReady()) {
+            return tr("In progress");
+        } else {
+            return tr("No local points");
+        }
     }
 
     RegionRec region(0);
@@ -408,26 +408,26 @@ RegionLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 
     for (i = points.begin(); i != points.end(); ++i) {
 
-	int y = getYForValue(v, i->value);
-	int h = 3;
+        int y = getYForValue(v, i->value);
+        int h = 3;
 
-	if (m_model->getValueQuantization() != 0.0) {
-	    h = y - getYForValue(v, i->value + m_model->getValueQuantization());
-	    if (h < 3) h = 3;
-	}
+        if (m_model->getValueQuantization() != 0.0) {
+            h = y - getYForValue(v, i->value + m_model->getValueQuantization());
+            if (h < 3) h = 3;
+        }
 
-	if (pos.y() >= y - h && pos.y() <= y) {
-	    region = *i;
-	    break;
-	}
+        if (pos.y() >= y - h && pos.y() <= y) {
+            region = *i;
+            break;
+        }
     }
 
     if (i == points.end()) return tr("No local points");
 
     RealTime rt = RealTime::frame2RealTime(region.frame,
-					   m_model->getSampleRate());
+                                           m_model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(region.duration,
-					   m_model->getSampleRate());
+                                           m_model->getSampleRate());
     
     QString valueText;
 
@@ -436,20 +436,20 @@ RegionLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     QString text;
 
     if (region.label == "") {
-	text = QString(tr("Time:\t%1\nValue:\t%2\nDuration:\t%3\nNo label"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(valueText)
-	    .arg(rd.toText(true).c_str());
+        text = QString(tr("Time:\t%1\nValue:\t%2\nDuration:\t%3\nNo label"))
+            .arg(rt.toText(true).c_str())
+            .arg(valueText)
+            .arg(rd.toText(true).c_str());
     } else {
-	text = QString(tr("Time:\t%1\nValue:\t%2\nDuration:\t%3\nLabel:\t%4"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(valueText)
-	    .arg(rd.toText(true).c_str())
-	    .arg(region.label);
+        text = QString(tr("Time:\t%1\nValue:\t%2\nDuration:\t%3\nLabel:\t%4"))
+            .arg(rt.toText(true).c_str())
+            .arg(valueText)
+            .arg(rd.toText(true).c_str())
+            .arg(region.label);
     }
 
     pos = QPoint(v->getXForFrame(region.frame),
-		 getYForValue(v, region.value));
+                 getYForValue(v, region.value));
     return text;
 }
 
@@ -459,18 +459,18 @@ RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                 SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
     RegionModel::PointList points;
 
     if (snap == SnapNeighbouring) {
-	
-	points = getLocalPoints(v, v->getXForFrame(frame));
-	if (points.empty()) return false;
-	frame = points.begin()->frame;
-	return true;
+        
+        points = getLocalPoints(v, v->getXForFrame(frame));
+        if (points.empty()) return false;
+        frame = points.begin()->frame;
+        return true;
     }    
 
     points = m_model->getPoints(frame, frame);
@@ -478,15 +478,15 @@ RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     bool found = false;
 
     for (RegionModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
             // The best frame to snap to is the end frame of whichever
             // feature we would have snapped to the start frame of if
             // we had been snapping left.
 
-	    if (i->frame <= frame) {
+            if (i->frame <= frame) {
                 if (i->frame + i->duration > frame) {
                     snapped = i->frame + i->duration;
                     found = true; // don't break, as the next may be better
@@ -499,37 +499,37 @@ RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                 break;
             }
 
-	} else if (snap == SnapLeft) {
+        } else if (snap == SnapLeft) {
 
-	    if (i->frame <= frame) {
-		snapped = i->frame;
-		found = true; // don't break, as the next may be better
-	    } else {
-		break;
-	    }
+            if (i->frame <= frame) {
+                snapped = i->frame;
+                found = true; // don't break, as the next may be better
+            } else {
+                break;
+            }
 
-	} else { // nearest
+        } else { // nearest
 
-	    RegionModel::PointList::const_iterator j = i;
-	    ++j;
+            RegionModel::PointList::const_iterator j = i;
+            ++j;
 
-	    if (j == points.end()) {
+            if (j == points.end()) {
 
-		snapped = i->frame;
-		found = true;
-		break;
+                snapped = i->frame;
+                found = true;
+                break;
 
-	    } else if (j->frame >= frame) {
+            } else if (j->frame >= frame) {
 
-		if (j->frame - frame < frame - i->frame) {
-		    snapped = j->frame;
-		} else {
-		    snapped = i->frame;
-		}
-		found = true;
-		break;
-	    }
-	}
+                if (j->frame - frame < frame - i->frame) {
+                    snapped = j->frame;
+                } else {
+                    snapped = i->frame;
+                }
+                found = true;
+                break;
+            }
+        }
     }
 
     frame = snapped;
@@ -542,7 +542,7 @@ RegionLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                                   SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToSimilarFeature(v, frame, resolution, snap);
+        return Layer::snapToSimilarFeature(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
@@ -586,29 +586,29 @@ RegionLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
             }
         }
 
-	if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
-	    if (i->frame > matchframe &&
+            if (i->frame > matchframe &&
                 fabs(i->value - matchvalue) < epsilon) {
-		snapped = i->frame;
-		found = true;
-		break;
-	    }
+                snapped = i->frame;
+                found = true;
+                break;
+            }
 
-	} else if (snap == SnapLeft) {
+        } else if (snap == SnapLeft) {
 
-	    if (i->frame < matchframe) {
+            if (i->frame < matchframe) {
                 if (fabs(i->value - matchvalue) < epsilon) {
                     snapped = i->frame;
                     found = true; // don't break, as the next may be better
                 }
-	    } else if (found || distant) {
-		break;
-	    }
+            } else if (found || distant) {
+                break;
+            }
 
-	} else { 
+        } else { 
             // no other snap types supported
-	}
+        }
 
         ++i;
     }
@@ -889,7 +889,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     brushColour.setAlpha(80);
 
 //    SVDEBUG << "RegionLayer::paint: resolution is "
-//	      << m_model->getResolution() << " frames" << endl;
+//              << m_model->getResolution() << " frames" << endl;
 
     double min = m_model->getValueMinimum();
     double max = m_model->getValueMaximum();
@@ -916,33 +916,33 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     int fontHeight = paint.fontMetrics().height();
 
     for (RegionModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	const RegionModel::Point &p(*i);
+        const RegionModel::Point &p(*i);
 
-	int x = v->getXForFrame(p.frame);
-	int y = getYForValue(v, p.value);
-	int w = v->getXForFrame(p.frame + p.duration) - x;
-	int h = 9;
-	int ex = x + w;
+        int x = v->getXForFrame(p.frame);
+        int y = getYForValue(v, p.value);
+        int w = v->getXForFrame(p.frame + p.duration) - x;
+        int h = 9;
+        int ex = x + w;
 
         RegionModel::PointList::const_iterator j = i;
-	++j;
+        ++j;
 
-	if (j != points.end()) {
-	    const RegionModel::Point &q(*j);
-	    int nx = v->getXForFrame(q.frame);
+        if (j != points.end()) {
+            const RegionModel::Point &q(*j);
+            int nx = v->getXForFrame(q.frame);
             if (nx < ex) ex = nx;
         }
 
-	if (m_model->getValueQuantization() != 0.0) {
-	    h = y - getYForValue(v, p.value + m_model->getValueQuantization());
-	    if (h < 3) h = 3;
-	}
+        if (m_model->getValueQuantization() != 0.0) {
+            h = y - getYForValue(v, p.value + m_model->getValueQuantization());
+            if (h < 3) h = 3;
+        }
 
-	if (w < 1) w = 1;
+        if (w < 1) w = 1;
 
-	if (m_plotStyle == PlotSegmentation) {
+        if (m_plotStyle == PlotSegmentation) {
             paint.setPen(getForegroundQColor(v->getView()));
             paint.setBrush(getColourForValue(v, p.value));
         } else {
@@ -950,9 +950,9 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             paint.setBrush(brushColour);
         }
 
-	if (m_plotStyle == PlotSegmentation) {
+        if (m_plotStyle == PlotSegmentation) {
 
-	    if (ex <= x) continue;
+            if (ex <= x) continue;
 
             if (!shouldIlluminate ||
                 // "illuminatePoint != p"
@@ -967,9 +967,9 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                 paint.setPen(QPen(getForegroundQColor(v->getView()), 2));
             }
 
-	    paint.drawRect(x, -1, ex - x, v->getPaintHeight() + 2);
+            paint.drawRect(x, -1, ex - x, v->getPaintHeight() + 2);
 
-	} else {
+        } else {
 
             if (shouldIlluminate &&
                 // "illuminatePoint == p"
@@ -1005,16 +1005,16 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     int lastLabelY = 0;
 
     for (RegionModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	const RegionModel::Point &p(*i);
+        const RegionModel::Point &p(*i);
 
-	int x = v->getXForFrame(p.frame);
-	int y = getYForValue(v, p.value);
+        int x = v->getXForFrame(p.frame);
+        int y = getYForValue(v, p.value);
 
         bool illuminated = false;
 
-	if (m_plotStyle != PlotSegmentation) {
+        if (m_plotStyle != PlotSegmentation) {
 
             if (shouldIlluminate &&
                 // "illuminatePoint == p"
@@ -1194,8 +1194,8 @@ RegionLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -1244,8 +1244,8 @@ RegionLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -1278,8 +1278,8 @@ RegionLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     double value = getValueForY(v, newy, avoid);
 
     if (!m_editingCommand) {
-	m_editingCommand = new RegionModel::EditCommand(m_model,
-						      tr("Drag Region"));
+        m_editingCommand = new RegionModel::EditCommand(m_model,
+                                                      tr("Drag Region"));
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
@@ -1296,20 +1296,20 @@ RegionLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 
     if (m_editingCommand) {
 
-	QString newName = m_editingCommand->getName();
+        QString newName = m_editingCommand->getName();
 
-	if (m_editingPoint.frame != m_originalPoint.frame) {
-	    if (m_editingPoint.value != m_originalPoint.value) {
-		newName = tr("Edit Region");
-	    } else {
-		newName = tr("Relocate Region");
-	    }
-	} else {
-	    newName = tr("Change Point Value");
-	}
+        if (m_editingPoint.frame != m_originalPoint.frame) {
+            if (m_editingPoint.value != m_originalPoint.value) {
+                newName = tr("Edit Region");
+            } else {
+                newName = tr("Relocate Region");
+            }
+        } else {
+            newName = tr("Change Point Value");
+        }
 
-	m_editingCommand->setName(newName);
-	finish(m_editingCommand);
+        m_editingCommand->setName(newName);
+        finish(m_editingCommand);
     }
 
     m_editingCommand = 0;
@@ -1364,20 +1364,20 @@ RegionLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     if (!m_model) return;
 
     RegionModel::EditCommand *command =
-	new RegionModel::EditCommand(m_model, tr("Drag Selection"));
+        new RegionModel::EditCommand(m_model, tr("Drag Selection"));
 
     RegionModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (RegionModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
-	    RegionModel::Point newPoint(*i);
-	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+        if (s.contains(i->frame)) {
+            RegionModel::Point newPoint(*i);
+            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -1390,34 +1390,34 @@ RegionLayer::resizeSelection(Selection s, Selection newSize)
     if (!m_model) return;
 
     RegionModel::EditCommand *command =
-	new RegionModel::EditCommand(m_model, tr("Resize Selection"));
+        new RegionModel::EditCommand(m_model, tr("Resize Selection"));
 
     RegionModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     double ratio =
-	double(newSize.getEndFrame() - newSize.getStartFrame()) /
-	double(s.getEndFrame() - s.getStartFrame());
+        double(newSize.getEndFrame() - newSize.getStartFrame()) /
+        double(s.getEndFrame() - s.getStartFrame());
 
     for (RegionModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
+        if (s.contains(i->frame)) {
 
-	    double targetStart = double(i->frame);
-	    targetStart = double(newSize.getStartFrame()) +
-		targetStart - double(s.getStartFrame()) * ratio;
+            double targetStart = double(i->frame);
+            targetStart = double(newSize.getStartFrame()) +
+                targetStart - double(s.getStartFrame()) * ratio;
 
-	    double targetEnd = double(i->frame + i->duration);
-	    targetEnd = double(newSize.getStartFrame()) +
-		targetEnd - double(s.getStartFrame()) * ratio;
+            double targetEnd = double(i->frame + i->duration);
+            targetEnd = double(newSize.getStartFrame()) +
+                targetEnd - double(s.getStartFrame()) * ratio;
 
-	    RegionModel::Point newPoint(*i);
-	    newPoint.frame = lrint(targetStart);
-	    newPoint.duration = lrint(targetEnd - targetStart);
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+            RegionModel::Point newPoint(*i);
+            newPoint.frame = lrint(targetStart);
+            newPoint.duration = lrint(targetEnd - targetStart);
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -1430,13 +1430,13 @@ RegionLayer::deleteSelection(Selection s)
     if (!m_model) return;
 
     RegionModel::EditCommand *command =
-	new RegionModel::EditCommand(m_model, tr("Delete Selected Points"));
+        new RegionModel::EditCommand(m_model, tr("Delete Selected Points"));
 
     RegionModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (RegionModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
         if (s.contains(i->frame)) {
             command->deletePoint(*i);
@@ -1453,11 +1453,11 @@ RegionLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     if (!m_model) return;
 
     RegionModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (RegionModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) {
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->value, i->duration, i->label);
             point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
@@ -1492,7 +1492,7 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
     }
 
     RegionModel::EditCommand *command =
-	new RegionModel::EditCommand(m_model, tr("Paste"));
+        new RegionModel::EditCommand(m_model, tr("Paste"));
 
     for (Clipboard::PointList::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1563,10 +1563,10 @@ RegionLayer::setProperties(const QXmlAttributes &attributes)
 
     bool ok;
     VerticalScale scale = (VerticalScale)
-	attributes.value("verticalScale").toInt(&ok);
+        attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
     PlotStyle style = (PlotStyle)
-	attributes.value("plotStyle").toInt(&ok);
+        attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
 }
 

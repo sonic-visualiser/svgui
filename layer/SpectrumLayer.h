@@ -14,8 +14,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SPECTRUM_LAYER_H_
-#define _SPECTRUM_LAYER_H_
+#ifndef SV_SPECTRUM_LAYER_H
+#define SV_SPECTRUM_LAYER_H
 
 #include "SliceLayer.h"
 
@@ -23,12 +23,15 @@
 
 #include "data/model/DenseTimeValueModel.h"
 
+#include "HorizontalScaleProvider.h"
+
 #include <QColor>
 #include <QMutex>
 
 class FFTModel;
 
-class SpectrumLayer : public SliceLayer
+class SpectrumLayer : public SliceLayer,
+                      public HorizontalScaleProvider
 {
     Q_OBJECT
 
@@ -37,46 +40,46 @@ public:
     ~SpectrumLayer();
     
     void setModel(DenseTimeValueModel *model);
-    virtual const Model *getModel() const { return m_originModel; }
+    virtual const Model *getModel() const override { return m_originModel; }
 
     virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint cursorPos,
-                                     std::vector<QRect> &extents) const;
-    virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const;
+                                     std::vector<QRect> &extents) const override;
+    virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
+    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const;
+    virtual void paintHorizontalScale(LayerGeometryProvider *, QPainter &, int xorigin) const;
+    
+    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
-    virtual VerticalPosition getPreferredFrameCountPosition() const {
-	return PositionTop;
+    virtual VerticalPosition getPreferredFrameCountPosition() const override {
+        return PositionTop;
     }
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual QString getPropertyIconName(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
+    virtual PropertyList getProperties() const override;
+    virtual QString getPropertyLabel(const PropertyName &) const override;
+    virtual QString getPropertyIconName(const PropertyName &) const override;
+    virtual PropertyType getPropertyType(const PropertyName &) const override;
+    virtual QString getPropertyGroupName(const PropertyName &) const override;
     virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
+                                         int *min, int *max, int *deflt) const override;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
-    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
-    virtual void setProperty(const PropertyName &, int value);
-    virtual void setProperties(const QXmlAttributes &);
-
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const;
+                                          int value) const override;
+    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
+    virtual void setProperty(const PropertyName &, int value) override;
+    virtual void setProperties(const QXmlAttributes &) override;
 
     virtual bool getXScaleValue(const LayerGeometryProvider *v, int x,
-                                double &value, QString &unit) const;
+                                double &value, QString &unit) const override;
 
     virtual bool getYScaleValue(const LayerGeometryProvider *, int y,
-                                double &value, QString &unit) const;
+                                double &value, QString &unit) const override;
 
     virtual bool getYScaleDifference(const LayerGeometryProvider *, int y0, int y1,
-                                     double &diff, QString &unit) const;
+                                     double &diff, QString &unit) const override;
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
+    virtual bool isLayerScrollable(const LayerGeometryProvider *) const override { return false; }
 
     void setChannel(int);
     int getChannel() const { return m_channel; }
@@ -93,20 +96,18 @@ public:
     void setShowPeaks(bool);
     bool getShowPeaks() const { return m_showPeaks; }
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
-
     virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+                       QString extraAttributes = "") const override;
+
+    virtual double getFrequencyForX(const LayerGeometryProvider *, double x)
+        const override;
+    virtual double getXForFrequency(const LayerGeometryProvider *, double freq)
+        const override;
 
 protected slots:
     void preferenceChanged(PropertyContainer::PropertyName name);
 
 protected:
-    // make this SliceLayer method unavailable to the general public
-//    virtual void setModel(DenseThreeDimensionalModel *model) {
-//        SliceLayer::setModel(model);
-//    }
-
     DenseTimeValueModel    *m_originModel;
     int                     m_channel;
     bool                    m_channelSet;
@@ -120,14 +121,8 @@ protected:
 
     void setupFFT();
 
-    virtual void getBiasCurve(BiasCurve &) const;
+    virtual void getBiasCurve(BiasCurve &) const override;
     BiasCurve m_biasCurve;
-
-    virtual double getXForBin(int bin, int totalBins, double w) const;
-    virtual int getBinForX(double x, int totalBins, double w) const;
-
-    double getFrequencyForX(double x, double w) const;
-    double getXForFrequency(double freq, double w) const;
 
     int getWindowIncrement() const {
         if (m_windowHopLevel == 0) return m_windowSize;

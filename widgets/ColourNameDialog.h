@@ -31,8 +31,8 @@ class ColourNameDialog : public QDialog
 
 public:
     ColourNameDialog(QString title, QString message, QColor colour,
-		     QString defaultName,
-		     QWidget *parent = 0);
+                     QString defaultName,
+                     QWidget *parent = 0);
 
     void showDarkBackgroundCheckbox(QString text);
 

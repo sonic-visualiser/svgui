@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _VIEW_H_
-#define _VIEW_H_
+#ifndef SV_VIEW_H
+#define SV_VIEW_H
 
 #include <QFrame>
 #include <QProgressBar>
@@ -51,7 +51,7 @@ class QPushButton;
  */
 
 class View : public QFrame,
-	     public XmlExportable,
+             public XmlExportable,
              public LayerGeometryProvider
 {
     Q_OBJECT
@@ -136,7 +136,7 @@ public:
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
     double getYForFrequency(double frequency, double minFreq, double maxFreq, 
-			   bool logarithmic) const;
+                           bool logarithmic) const;
 
     /**
      * Return the closest frequency to the given pixel y-coordinate,
@@ -274,10 +274,10 @@ public:
         return m_manager && m_manager->shouldShowFeatureLabels();
     }
     virtual bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const {
-	return false;
+        return false;
     }
     virtual bool shouldIlluminateLocalSelection(QPoint &, bool &, bool &) const {
-	return false;
+        return false;
     }
 
     virtual void setPlaybackFollow(PlaybackFollowMode m);
@@ -293,12 +293,12 @@ public:
     virtual QString getPropertyLabel(const PropertyName &) const;
     virtual PropertyContainer::PropertyType getPropertyType(const PropertyName &) const;
     virtual int getPropertyRangeAndValue(const PropertyName &,
-					 int *min, int *max, int *deflt) const;
+                                         int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
+                                          int value) const;
     virtual void setProperty(const PropertyName &, int value);
     virtual QString getPropertyContainerName() const {
-	return objectName();
+        return objectName();
     }
     virtual QString getPropertyContainerIconName() const = 0;
 
@@ -309,12 +309,42 @@ public:
     virtual const PropertyContainer *getPropertyContainer(int i) const;
     virtual PropertyContainer *getPropertyContainer(int i);
 
-    // Render the contents on a wide canvas
-    virtual QImage *toNewImage(sv_frame_t f0, sv_frame_t f1);
-    virtual QImage *toNewImage();
-    virtual QSize getImageSize(sv_frame_t f0, sv_frame_t f1);
-    virtual QSize getImageSize();
+    /** 
+     * Render the view contents to a new QImage (which may be wider
+     * than the visible View).
+     */
+    virtual QImage *renderToNewImage();
 
+    /** 
+     * Render the view contents between the given frame extents to a
+     * new QImage (which may be wider than the visible View).
+     */
+    virtual QImage *renderPartToNewImage(sv_frame_t f0, sv_frame_t f1);
+
+    /**
+     * Calculate and return the size of image that will be generated
+     * by renderToNewImage().
+     */
+    virtual QSize getRenderedImageSize();
+
+    /**
+     * Calculate and return the size of image that will be generated
+     * by renderPartToNewImage(f0, f1).
+     */
+    virtual QSize getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1);
+
+    /**
+     * Render the view contents to a new SVG file.
+     */
+    virtual bool renderToSvgFile(QString filename);
+
+    /**
+     * Render the view contents between the given frame extents to a
+     * new SVG file.
+     */
+    virtual bool renderPartToSvgFile(QString filename,
+                                     sv_frame_t f0, sv_frame_t f1);
+    
     virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
 
     virtual bool getValueExtents(QString unit, double &min, double &max,
@@ -461,8 +491,8 @@ protected:
     bool                m_lightBackground;
     bool                m_showProgress;
 
-    QPixmap            *m_cache;
-    QPixmap            *m_buffer;
+    QPixmap            *m_cache;  // I own this
+    QPixmap            *m_buffer; // I own this
     sv_frame_t          m_cacheCentreFrame;
     ZoomLevel           m_cacheZoomLevel;
     bool                m_selectionCached;
@@ -510,25 +540,25 @@ public:
         return m_v->getPropertyLabel(n);
     }
     PropertyType getPropertyType(const PropertyName &n) const {
-	return m_v->getPropertyType(n);
+        return m_v->getPropertyType(n);
     }
     int getPropertyRangeAndValue(const PropertyName &n, int *min, int *max,
                                  int *deflt) const {
-	return m_v->getPropertyRangeAndValue(n, min, max, deflt);
+        return m_v->getPropertyRangeAndValue(n, min, max, deflt);
     }
     QString getPropertyValueLabel(const PropertyName &n, int value) const {
-	return m_v->getPropertyValueLabel(n, value);
+        return m_v->getPropertyValueLabel(n, value);
     }
     QString getPropertyContainerName() const {
-	return m_v->getPropertyContainerName();
+        return m_v->getPropertyContainerName();
     }
     QString getPropertyContainerIconName() const {
-	return m_v->getPropertyContainerIconName();
+        return m_v->getPropertyContainerIconName();
     }
 
 public slots:
     virtual void setProperty(const PropertyName &n, int value) {
-	m_v->setProperty(n, value);
+        m_v->setProperty(n, value);
     }
 
 protected:

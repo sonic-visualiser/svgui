@@ -17,6 +17,8 @@
 
 #include <QWidget>
 
+#include "WheelCounter.h"
+
 /**
  * A simple widget for coarse level and pan control.
  */
@@ -29,7 +31,8 @@ public:
     LevelPanWidget(QWidget *parent = 0);
     ~LevelPanWidget();
     
-    /// Return level as a gain value in the range [0,1]
+    /// Return level as a gain value. The basic level range is [0,1] but the
+    /// gain scale may go up to 4.0
     float getLevel() const; 
     
     /// Return pan as a value in the range [-1,1]
@@ -47,43 +50,80 @@ public:
     QSize sizeHint() const;
                                                
 public slots:
-    /// Set level in the range [0,1] -- will be rounded
+    /// Set level. The basic level range is [0,1] but the scale may go
+    /// higher. The value will be rounded.
     void setLevel(float);
 
-    /// Set pan in the range [-1,1] -- will be rounded
+    /// Set pan in the range [-1,1]. The value will be rounded
     void setPan(float);
 
+    /// Set left and right peak monitoring levels in the range [0,1]
+    void setMonitoringLevels(float, float);
+    
     /// Specify whether the widget is editable or read-only (default editable)
     void setEditable(bool);
 
     /// Specify whether the level range should include muting or not
     void setIncludeMute(bool);
+
+    /// Reset to default values
+    void setToDefault();
+    
+    // public so it can be called from LevelPanToolButton (ew)
+    virtual void wheelEvent(QWheelEvent *ev);
     
 signals:
-    void levelChanged(float);
-    void panChanged(float);
+    void levelChanged(float); // range [0,1]
+    void panChanged(float); // range [-1,1]
 
+    void mouseEntered();
+    void mouseLeft();
+    
 protected:
     virtual void mousePressEvent(QMouseEvent *ev);
     virtual void mouseMoveEvent(QMouseEvent *ev);
     virtual void mouseReleaseEvent(QMouseEvent *ev);
-    virtual void wheelEvent(QWheelEvent *ev);
     virtual void paintEvent(QPaintEvent *ev);
+    virtual void enterEvent(QEvent *);
+    virtual void leaveEvent(QEvent *);
 
     void emitLevelChanged();
     void emitPanChanged();
-    
-    int m_level;
-    int m_pan;
-    bool m_editable;
-    bool m_includeMute;
 
+    int m_minNotch;
+    int m_maxNotch;
+    int m_notch;
+    int m_pan;
+    float m_monitorLeft;
+    float m_monitorRight;
+    bool m_editable;
+    bool m_editing;
+    bool m_includeMute;
+    bool m_includeHalfSteps;
+
+    WheelCounter m_wheelCounter;
+
+    int clampNotch(int notch) const;
+    int clampPan(int pan) const;
+
+    int audioLevelToNotch(float audioLevel) const;
+    float notchToAudioLevel(int notch) const;
+
+    int audioPanToPan(float audioPan) const;
+    float panToAudioPan(int pan) const;
+
+    int coordsToNotch(QRectF rect, QPointF pos) const;
+    int coordsToPan(QRectF rect, QPointF pos) const;
+
+    QColor cellToColour(int cell) const;
+    
     QSizeF cellSize(QRectF) const;
-    QPointF cellCentre(QRectF, int level, int pan) const;
+    QPointF cellCentre(QRectF, int row, int col) const;
     QSizeF cellLightSize(QRectF) const;
-    QRectF cellLightRect(QRectF, int level, int pan) const;
+    QRectF cellLightRect(QRectF, int row, int col) const;
+    QRectF cellOutlineRect(QRectF, int row, int col) const;
     double thinLineWidth(QRectF) const;
-    void toCell(QRectF, QPointF loc, int &level, int &pan) const;
+    double cornerRadius(QRectF) const;
 };
 
 #endif

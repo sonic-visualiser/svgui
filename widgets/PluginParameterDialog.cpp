@@ -20,6 +20,7 @@
 
 #include "TextAbbrev.h"
 #include "IconLoader.h"
+#include "WidgetScale.h"
 
 #include <vamp-hostsdk/Plugin.h>
 #include <vamp-hostsdk/PluginHostAdapter.h>
@@ -43,7 +44,7 @@
 #include "base/Debug.h"
 
 PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
-					     QWidget *parent) :
+                                             QWidget *parent) :
     QDialog(parent),
     m_plugin(plugin),
     m_channel(-1),
@@ -88,10 +89,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
     copyrightLabel->setWordWrap(true);
 
-//    QLabel *typeLabel = new QLabel(plugin->getType().c_str());
-//    typeLabel->setWordWrap(true);
-//    typeLabel->setFont(boldFont);
-
     QLabel *descriptionLabel = 0;
     if (plugin->getDescription() != "") {
         descriptionLabel = new QLabel(plugin->getDescription().c_str());
@@ -108,7 +105,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
 
     m_moreInfo = new QPushButton;
     m_moreInfo->setIcon(IconLoader().load("info"));
-    m_moreInfo->setFixedSize(QSize(16, 16));
+    m_moreInfo->setFixedSize(WidgetScale::scaleQSize(QSize(16, 16)));
     connect(m_moreInfo, SIGNAL(clicked()), this, SLOT(moreInfo()));
     subgrid->addWidget(m_moreInfo, row, 2, Qt::AlignTop | Qt::AlignRight);
     m_moreInfo->hide();
@@ -116,9 +113,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     row++;
 
     if (descriptionLabel) {
-//        label = new QLabel(tr("Description:"));
-//        label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-//        subgrid->addWidget(label, row, 0);
         subgrid->addWidget(descriptionLabel, row, 1, 1, 2);
         row++;
     }
@@ -130,12 +124,6 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
         subgrid->addWidget(versionLabel, row, 1);
         row++;
     }
-
-//    label = new QLabel(tr("Type:"));
-//    label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-//    subgrid->addWidget(label, row, 0);
-//    subgrid->addWidget(typeLabel, row, 1);
-//    row++;
 
     label = new QLabel(tr("Maker:"));
     label->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -595,8 +583,6 @@ PluginParameterDialog::advancedToggled()
 void
 PluginParameterDialog::setAdvancedVisible(bool visible)
 {
-//    m_advanced->setVisible(visible);
-
     if (visible) {
         m_advancedButton->setText(tr("Advanced <<"));
         m_advancedButton->setChecked(true);
@@ -607,12 +593,7 @@ PluginParameterDialog::setAdvancedVisible(bool visible)
         m_advancedButton->setChecked(false);
     }
 
-//    cerr << "resize to " << sizeHint().width() << " x " << sizeHint().height() << endl;
-
-//    setMinimumHeight(sizeHint().height());
     adjustSize();
-
-//    (sizeHint());
 
     m_advancedVisible = visible;
 
@@ -620,9 +601,6 @@ PluginParameterDialog::setAdvancedVisible(bool visible)
     settings.beginGroup("PluginParameterDialog");
     settings.setValue("advancedvisible", visible);
     settings.endGroup();
-
-//    if (visible) setMaximumHeight(sizeHint().height());
-//    adjustSize();
 }
 
 void

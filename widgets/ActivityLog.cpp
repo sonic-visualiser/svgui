@@ -30,7 +30,9 @@
 using std::cerr;
 using std::endl;
 
-//#define PRINT_ACTIVITY 1
+#ifndef NO_PRINT_ACTIVITY
+#define PRINT_ACTIVITY 1
+#endif
 
 ActivityLog::ActivityLog() : QDialog()
 {
@@ -62,11 +64,11 @@ ActivityLog::activityHappened(QString name)
     name = name.replace("&", "");
 
 #ifdef PRINT_ACTIVITY
-    cerr << "ActivityLog: " << name;
+    SVDEBUG << "ActivityLog: " << name;
     if (name == m_prevName) {
-        cerr << " (duplicate)";
+        SVDEBUG << " (duplicate)";
     }
-    cerr << endl;
+    SVDEBUG << endl;
 #endif
 
     if (name == m_prevName) {

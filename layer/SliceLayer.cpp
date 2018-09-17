@@ -31,15 +31,17 @@
 
 SliceLayer::SliceLayer() :
     m_sliceableModel(0),
-    m_colourMap(0),
+    m_colourMap(int(ColourMapper::Ice)),
     m_energyScale(dBScale),
     m_samplingMode(SampleMean),
-    m_plotStyle(PlotSteps),
+    m_plotStyle(PlotLines),
     m_binScale(LinearBins),
     m_normalize(false),
     m_threshold(0.0),
     m_initialThreshold(0.0),
     m_gain(1.0),
+    m_minbin(0),
+    m_maxbin(0),
     m_currentf0(0),
     m_currentf1(0)
 {
@@ -65,9 +67,15 @@ SliceLayer::setSliceableModel(const Model *model)
 
     m_sliceableModel = sliceable;
 
+    if (!m_sliceableModel) return;
+
     connectSignals(m_sliceableModel);
 
+    m_minbin = 0;
+    m_maxbin = m_sliceableModel->getHeight();
+    
     emit modelReplaced();
+    emit layerParametersChanged();
 }
 
 void
@@ -107,13 +115,10 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
     maxbin = 0;
     if (!m_sliceableModel) return "";
 
-    int xorigin = m_xorigins[v];
-    int w = v->getPaintWidth() - xorigin - 1;
-    
-    int mh = m_sliceableModel->getHeight();
-    minbin = getBinForX(p.x() - xorigin, mh, w);
-    maxbin = getBinForX(p.x() - xorigin + 1, mh, w);
+    minbin = int(getBinForX(v, p.x()));
+    maxbin = int(getBinForX(v, p.x() + 1));
 
+    int mh = m_sliceableModel->getHeight();
     if (minbin >= mh) minbin = mh - 1;
     if (maxbin >= mh) maxbin = mh - 1;
     if (minbin < 0) minbin = 0;
@@ -133,12 +138,15 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
 
     if (includeBinDescription) {
 
+        int i0 = minbin - m_minbin;
+        int i1 = maxbin - m_minbin;
+        
         float minvalue = 0.0;
-        if (minbin < int(m_values.size())) minvalue = m_values[minbin];
+        if (in_range_for(m_values, i0)) minvalue = m_values[i0];
 
         float maxvalue = minvalue;
-        if (maxbin < int(m_values.size())) maxvalue = m_values[maxbin];
-        
+        if (in_range_for(m_values, i1)) maxvalue = m_values[i1];
+
         if (minvalue > maxvalue) std::swap(minvalue, maxvalue);
         
         QString binstr;
@@ -180,9 +188,20 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
 }
 
 double
-SliceLayer::getXForBin(int bin, int count, double w) const
+SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
 {
     double x = 0;
+
+    bin -= m_minbin;
+    if (bin < 0) bin = 0;
+
+    double count = m_maxbin - m_minbin;
+    if (count < 0) count = 0;
+
+    int pw = v->getPaintWidth();
+    int origin = m_xorigins[v->getId()];
+    int w = pw - origin;
+    if (w < 1) w = 1;
 
     switch (m_binScale) {
 
@@ -191,51 +210,78 @@ SliceLayer::getXForBin(int bin, int count, double w) const
         break;
         
     case LogBins:
-        x = (w * log10(bin + 1)) / log10(count + 1);
+        // The 0.8 here is an awkward compromise. Our x-coord is
+        // proportional to log of bin number, with the x-coord "of a
+        // bin" being that of the left edge of the bin range. We can't
+        // start counting bins from 0, as that would give us x = -Inf
+        // and hide the first bin entirely. But if we start from 1, we
+        // are giving a lot of space to the first bin, which in most
+        // display modes won't be used because the "point" location
+        // for that bin is in the middle of it. Yet in some modes
+        // we'll still want it. A compromise is to count our first bin
+        // as "a bit less than 1", so that most of it is visible but a
+        // bit is tactfully cropped at the left edge so it doesn't
+        // take up so much space.
+        x = (w * log10(bin + 0.8)) / log10(count + 0.8);
         break;
         
     case InvertedLogBins:
         x = w - (w * log10(count - bin - 1)) / log10(count);
         break;
     }
-
-    return x;
-}
-
-int
-SliceLayer::getBinForX(double x, int count, double w) const
-{
-    int bin = 0;
-
-    switch (m_binScale) {
-
-    case LinearBins:
-        bin = int((x * count) / w + 0.0001);
-        break;
-        
-    case LogBins:
-        bin = int(pow(10.0, (x * log10(count + 1)) / w) - 1 + 0.0001);
-        break;
-
-    case InvertedLogBins:
-        bin = count + 1 - int(pow(10.0, (log10(count) * (w - x)) / double(w)) + 0.0001);
-        break;
-    }
-
-    return bin;
+    
+    return x + origin;
 }
 
 double
-SliceLayer::getYForValue(double value, const LayerGeometryProvider *v, double &norm) const
+SliceLayer::getBinForX(const LayerGeometryProvider *v, double x) const
+{
+    double bin = 0;
+
+    double count = m_maxbin - m_minbin;
+    if (count < 0) count = 0;
+
+    int pw = v->getPaintWidth();
+    int origin = m_xorigins[v->getId()];
+
+    int w = pw - origin;
+    if (w < 1) w = 1;
+
+    x = x - origin;
+    if (x < 0) x = 0;
+
+    double eps = 1e-10;
+    
+    switch (m_binScale) {
+
+    case LinearBins:
+        bin = (x * count) / w + eps;
+        break;
+        
+    case LogBins:
+        // See comment in getXForBin
+        bin = pow(10.0, (x * log10(count + 0.8)) / w) - 0.8 + eps;
+        break;
+
+    case InvertedLogBins:
+        bin = count + 1 - pow(10.0, (log10(count) * (w - x)) / double(w)) + eps;
+        break;
+    }
+
+    return bin + m_minbin;
+}
+
+double
+SliceLayer::getYForValue(const LayerGeometryProvider *v, double value, double &norm) const
 {
     norm = 0.0;
 
-    if (m_yorigins.find(v) == m_yorigins.end()) return 0;
+    if (m_yorigins.find(v->getId()) == m_yorigins.end()) return 0;
 
     value *= m_gain;
 
-    int yorigin = m_yorigins[v];
-    int h = m_heights[v];
+    int yorigin = m_yorigins[v->getId()];
+    int h = m_heights[v->getId()];
     double thresh = getThresholdDb();
 
     double y = 0.0;
@@ -262,7 +308,9 @@ SliceLayer::getYForValue(double value, const LayerGeometryProvider *v, double &n
         
     case AbsoluteScale:
         value = fabs(value);
-        // and fall through
+#if (__GNUC__ >= 7)
+        __attribute__ ((fallthrough));
+#endif 
         
     case LinearScale:
     default:
@@ -276,14 +324,14 @@ SliceLayer::getYForValue(double value, const LayerGeometryProvider *v, double &n
 }
 
 double
-SliceLayer::getValueForY(double y, const LayerGeometryProvider *v) const
+SliceLayer::getValueForY(const LayerGeometryProvider *v, double y) const
 {
     double value = 0.0;
 
-    if (m_yorigins.find(v) == m_yorigins.end()) return value;
+    if (m_yorigins.find(v->getId()) == m_yorigins.end()) return value;
 
-    int yorigin = m_yorigins[v];
-    int h = m_heights[v];
+    int yorigin = m_yorigins[v->getId()];
+    int h = m_heights[v->getId()];
     double thresh = getThresholdDb();
 
     if (h <= 0) return value;
@@ -325,31 +373,43 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     if (v->getViewManager() && v->getViewManager()->shouldShowScaleGuides()) {
         if (!m_scalePoints.empty()) {
             paint.setPen(QColor(240, 240, 240)); //!!! and dark background?
+            int ratio = int(round(double(v->getPaintHeight()) / 
+                                  m_scalePaintHeight));
             for (int i = 0; i < (int)m_scalePoints.size(); ++i) {
-                paint.drawLine(0, m_scalePoints[i], rect.width(), m_scalePoints[i]);
+                paint.drawLine(0, m_scalePoints[i] * ratio, 
+                               rect.width(), m_scalePoints[i] * ratio);
             }
         }
     }
 
-    paint.setPen(getBaseQColor());
+    if (m_plotStyle == PlotBlocks) {
+        // Must use actual zero-width pen, too slow otherwise
+        paint.setPen(QPen(getBaseQColor(), 0));
+    } else {
+        paint.setPen(PaintAssistant::scalePen(getBaseQColor()));
+    }
 
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
-    int w = v->getPaintWidth() - xorigin - 1;
-
-    m_xorigins[v] = xorigin; // for use in getFeatureDescription
+    m_xorigins[v->getId()] = xorigin; // for use in getFeatureDescription
     
     int yorigin = v->getPaintHeight() - 20 - paint.fontMetrics().height() - 7;
     int h = yorigin - paint.fontMetrics().height() - 8;
 
-    m_yorigins[v] = yorigin; // for getYForValue etc
-    m_heights[v] = h;
+    m_yorigins[v->getId()] = yorigin; // for getYForValue etc
+    m_heights[v->getId()] = h;
 
     if (h <= 0) return;
 
     QPainterPath path;
 
     int mh = m_sliceableModel->getHeight();
+    int bin0 = 0;
 
+    if (m_maxbin > m_minbin) {
+        mh = m_maxbin - m_minbin;
+        bin0 = m_minbin;
+    }
+    
     int divisor = 0;
 
     m_values.clear();
@@ -383,7 +443,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     for (int col = col0; col <= col1; ++col) {
         for (int bin = 0; bin < mh; ++bin) {
-            float value = m_sliceableModel->getValueAt(col, bin);
+            float value = m_sliceableModel->getValueAt(col, bin0 + bin);
             if (bin < cs) value *= curve[bin];
             if (m_samplingMode == SamplePeak) {
                 if (value > m_values[bin]) m_values[bin] = value;
@@ -407,25 +467,25 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         }
     }
 
-    double nx = xorigin;
+    double nx = getXForBin(v, bin0);
 
     ColourMapper mapper(m_colourMap, 0, 1);
 
     for (int bin = 0; bin < mh; ++bin) {
 
         double x = nx;
-        nx = xorigin + getXForBin(bin + 1, mh, w);
+        nx = getXForBin(v, bin + bin0 + 1);
 
         double value = m_values[bin];
         double norm = 0.0;
-        double y = getYForValue(value, v, norm);
+        double y = getYForValue(v, value, norm);
 
         if (m_plotStyle == PlotLines) {
 
             if (bin == 0) {
-                path.moveTo(x, y);
+                path.moveTo((x + nx) / 2, y);
             } else {
-                path.lineTo(x, y);
+                path.lineTo((x + nx) / 2, y);
             }
 
         } else if (m_plotStyle == PlotSteps) {
@@ -456,60 +516,20 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         paint.drawPath(path);
     }
     paint.restore();
-/*
-    QPoint discard;
-
-    if (v->getViewManager() && v->getViewManager()->shouldShowFrameCount() &&
-        v->shouldIlluminateLocalFeatures(this, discard)) {
-
-        int sampleRate = m_sliceableModel->getSampleRate();
-
-        QString startText = QString("%1 / %2")
-            .arg(QString::fromStdString
-                 (RealTime::frame2RealTime
-                  (f0, sampleRate).toText(true)))
-            .arg(f0);
-
-        QString endText = QString(" %1 / %2")
-            .arg(QString::fromStdString
-                 (RealTime::frame2RealTime
-                  (f1, sampleRate).toText(true)))
-            .arg(f1);
-
-        QString durationText = QString("(%1 / %2) ")
-            .arg(QString::fromStdString
-                 (RealTime::frame2RealTime
-                  (f1 - f0 + 1, sampleRate).toText(true)))
-            .arg(f1 - f0 + 1);
-
-        v->drawVisibleText
-            (paint, xorigin + 5,
-             paint.fontMetrics().ascent() + 5,
-             startText, PaintAssistant::OutlinedText);
-        
-        v->drawVisibleText
-            (paint, xorigin + 5,
-             paint.fontMetrics().ascent() + paint.fontMetrics().height() + 10,
-             endText, PaintAssistant::OutlinedText);
-        
-        v->drawVisibleText
-            (paint, xorigin + 5,
-             paint.fontMetrics().ascent() + 2*paint.fontMetrics().height() + 15,
-             durationText, PaintAssistant::OutlinedText);
-    }
-*/
 }
 
 int
 SliceLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint) const
 {
+    int width;
     if (m_energyScale == LinearScale || m_energyScale == AbsoluteScale) {
-	return std::max(paint.fontMetrics().width("0.0") + 13,
-                        paint.fontMetrics().width("x10-10"));
+        width = std::max(paint.fontMetrics().width("0.0") + 13,
+                         paint.fontMetrics().width("x10-10"));
     } else {
-	return std::max(paint.fontMetrics().width(tr("0dB")),
-			paint.fontMetrics().width(tr("-Inf"))) + 13;
+        width = std::max(paint.fontMetrics().width(tr("0dB")),
+                         paint.fontMetrics().width(tr("-Inf"))) + 13;
     }
+    return width;
 }
 
 void
@@ -537,6 +557,15 @@ SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, 
          mult,
          const_cast<std::vector<int> *>(&m_scalePoints));
 
+    // Ugly hack (but then everything about this scale drawing is a
+    // bit ugly). In pixel-doubling hi-dpi scenarios, the scale is
+    // painted at pixel-doubled resolution but we do explicit
+    // pixel-doubling ourselves when painting the layer content. We
+    // make a note of this here so that we can compare with the
+    // equivalent dimension in the paint method when deciding where to
+    // place scale continuation lines.
+    m_scalePaintHeight = v->getPaintHeight();
+    
     if (mult != 1 && mult != 0) {
         int log = int(lrint(log10(mult)));
         QString a = tr("x10");
@@ -544,6 +573,17 @@ SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, 
         paint.drawText(3, 8 + paint.fontMetrics().ascent(), a);
         paint.drawText(3 + paint.fontMetrics().width(a),
                        3 + paint.fontMetrics().ascent(), b);
+    }
+}
+
+bool
+SliceLayer::hasLightBackground() const
+{
+    if (usesSolidColour()) {
+        ColourMapper mapper(m_colourMap, 0, 1);
+        return mapper.hasLightBackground();
+    } else {
+        return SingleColourLayer::hasLightBackground();
     }
 }
 
@@ -591,7 +631,7 @@ SliceLayer::getPropertyType(const PropertyName &name) const
     if (name == "Scale") return ValueProperty;
     if (name == "Sampling Mode") return ValueProperty;
     if (name == "Bin Scale") return ValueProperty;
-    if (name == "Colour" && m_plotStyle == PlotFilledBlocks) return ValueProperty;
+    if (name == "Colour" && usesSolidColour()) return ColourMapProperty;
     return SingleColourLayer::getPropertyType(name);
 }
 
@@ -621,57 +661,57 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     if (name == "Gain") {
 
-	*min = -50;
-	*max = 50;
+        *min = -50;
+        *max = 50;
         *deflt = 0;
 
-        cerr << "gain is " << m_gain << ", mode is " << m_samplingMode << endl;
+//        cerr << "gain is " << m_gain << ", mode is " << m_samplingMode << endl;
 
-	val = int(lrint(log10(m_gain) * 20.0));
-	if (val < *min) val = *min;
-	if (val > *max) val = *max;
+        val = int(lrint(log10(m_gain) * 20.0));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
     } else if (name == "Threshold") {
         
-	*min = -80;
-	*max = 0;
+        *min = -80;
+        *max = 0;
 
         *deflt = int(lrint(AudioLevel::multiplier_to_dB(m_initialThreshold)));
-	if (*deflt < *min) *deflt = *min;
-	if (*deflt > *max) *deflt = *max;
+        if (*deflt < *min) *deflt = *min;
+        if (*deflt > *max) *deflt = *max;
 
-	val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
-	if (val < *min) val = *min;
-	if (val > *max) val = *max;
+        val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
     } else if (name == "Normalize") {
-	
-	val = (m_normalize ? 1 : 0);
+        
+        val = (m_normalize ? 1 : 0);
         *deflt = 0;
 
-    } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
+    } else if (name == "Colour" && usesSolidColour()) {
             
         *min = 0;
         *max = ColourMapper::getColourMapCount() - 1;
-        *deflt = 0;
+        *deflt = int(ColourMapper::Ice);
         
         val = m_colourMap;
 
     } else if (name == "Scale") {
 
-	*min = 0;
-	*max = 3;
+        *min = 0;
+        *max = 3;
         *deflt = (int)dBScale;
 
-	val = (int)m_energyScale;
+        val = (int)m_energyScale;
 
     } else if (name == "Sampling Mode") {
 
-	*min = 0;
-	*max = 2;
+        *min = 0;
+        *max = 2;
         *deflt = (int)SampleMean;
         
-	val = (int)m_samplingMode;
+        val = (int)m_samplingMode;
 
     } else if (name == "Plot Type") {
         
@@ -691,7 +731,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = (int)m_binScale;
 
     } else {
-	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
+        val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -699,44 +739,44 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 SliceLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
+                                  int value) const
 {
-    if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
+    if (name == "Colour" && usesSolidColour()) {
         return ColourMapper::getColourMapName(value);
     }
     if (name == "Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Meter");
-	case 2: return tr("Log");
-	case 3: return tr("Absolute");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Linear");
+        case 1: return tr("Meter");
+        case 2: return tr("Log");
+        case 3: return tr("Absolute");
+        }
     }
     if (name == "Sampling Mode") {
-	switch (value) {
-	default:
-	case 0: return tr("Any");
-	case 1: return tr("Mean");
-	case 2: return tr("Peak");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Any");
+        case 1: return tr("Mean");
+        case 2: return tr("Peak");
+        }
     }
     if (name == "Plot Type") {
-	switch (value) {
-	default:
-	case 0: return tr("Lines");
-	case 1: return tr("Steps");
-	case 2: return tr("Blocks");
-	case 3: return tr("Colours");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Lines");
+        case 1: return tr("Steps");
+        case 2: return tr("Blocks");
+        case 3: return tr("Colours");
+        }
     }
     if (name == "Bin Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Log");
-	case 2: return tr("Rev Log");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Linear");
+        case 1: return tr("Log");
+        case 2: return tr("Rev Log");
+        }
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
 }
@@ -757,38 +797,38 @@ void
 SliceLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-	setGain(powf(10, float(value)/20.0f));
+        setGain(powf(10, float(value)/20.0f));
     } else if (name == "Threshold") {
-	if (value == -80) setThreshold(0.0f);
-	else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
-    } else if (name == "Colour" && m_plotStyle == PlotFilledBlocks) {
+        if (value == -80) setThreshold(0.0f);
+        else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
+    } else if (name == "Colour" && usesSolidColour()) {
         setFillColourMap(value);
     } else if (name == "Scale") {
-	switch (value) {
-	default:
-	case 0: setEnergyScale(LinearScale); break;
-	case 1: setEnergyScale(MeterScale); break;
-	case 2: setEnergyScale(dBScale); break;
-	case 3: setEnergyScale(AbsoluteScale); break;
-	}
+        switch (value) {
+        default:
+        case 0: setEnergyScale(LinearScale); break;
+        case 1: setEnergyScale(MeterScale); break;
+        case 2: setEnergyScale(dBScale); break;
+        case 3: setEnergyScale(AbsoluteScale); break;
+        }
     } else if (name == "Plot Type") {
-	setPlotStyle(PlotStyle(value));
+        setPlotStyle(PlotStyle(value));
     } else if (name == "Sampling Mode") {
-	switch (value) {
-	default:
-	case 0: setSamplingMode(NearestSample); break;
-	case 1: setSamplingMode(SampleMean); break;
-	case 2: setSamplingMode(SamplePeak); break;
-	}
+        switch (value) {
+        default:
+        case 0: setSamplingMode(NearestSample); break;
+        case 1: setSamplingMode(SampleMean); break;
+        case 2: setSamplingMode(SamplePeak); break;
+        }
     } else if (name == "Bin Scale") {
-	switch (value) {
-	default:
-	case 0: setBinScale(LinearBins); break;
-	case 1: setBinScale(LogBins); break;
-	case 2: setBinScale(InvertedLogBins); break;
-	}
+        switch (value) {
+        default:
+        case 0: setBinScale(LinearBins); break;
+        case 1: setBinScale(LogBins); break;
+        case 2: setBinScale(InvertedLogBins); break;
+        }
     } else if (name == "Normalize") {
-	setNormalize(value ? true : false);
+        setNormalize(value ? true : false);
     } else {
         SingleColourLayer::setProperty(name, value);
     }
@@ -886,21 +926,25 @@ SliceLayer::toXml(QTextStream &stream,
     QString s;
     
     s += QString("colourScheme=\"%1\" "
-		 "energyScale=\"%2\" "
+                 "energyScale=\"%2\" "
                  "samplingMode=\"%3\" "
                  "plotStyle=\"%4\" "
                  "binScale=\"%5\" "
                  "gain=\"%6\" "
                  "threshold=\"%7\" "
-                 "normalize=\"%8\"")
+                 "normalize=\"%8\" %9")
         .arg(m_colourMap)
-	.arg(m_energyScale)
+        .arg(m_energyScale)
         .arg(m_samplingMode)
         .arg(m_plotStyle)
         .arg(m_binScale)
         .arg(m_gain)
         .arg(m_threshold)
-        .arg(m_normalize ? "true" : "false");
+        .arg(m_normalize ? "true" : "false")
+        .arg(QString("minbin=\"%1\" "
+                     "maxbin=\"%2\"")
+             .arg(m_minbin)
+             .arg(m_maxbin));
 
     SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -913,22 +957,22 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
     SingleColourLayer::setProperties(attributes);
 
     EnergyScale scale = (EnergyScale)
-	attributes.value("energyScale").toInt(&ok);
+        attributes.value("energyScale").toInt(&ok);
     if (ok) setEnergyScale(scale);
 
     SamplingMode mode = (SamplingMode)
-	attributes.value("samplingMode").toInt(&ok);
+        attributes.value("samplingMode").toInt(&ok);
     if (ok) setSamplingMode(mode);
 
     int colourMap = attributes.value("colourScheme").toInt(&ok);
     if (ok) setFillColourMap(colourMap);
 
     PlotStyle s = (PlotStyle)
-	attributes.value("plotStyle").toInt(&ok);
+        attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(s);
 
     BinScale b = (BinScale)
-	attributes.value("binScale").toInt(&ok);
+        attributes.value("binScale").toInt(&ok);
     if (ok) setBinScale(b);
 
     float gain = attributes.value("gain").toFloat(&ok);
@@ -939,11 +983,105 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
 
     bool normalize = (attributes.value("normalize").trimmed() == "true");
     setNormalize(normalize);
+
+    bool alsoOk = false;
+    
+    float min = attributes.value("minbin").toFloat(&ok);
+    float max = attributes.value("maxbin").toFloat(&alsoOk);
+    if (ok && alsoOk) setDisplayExtents(min, max);
 }
 
 bool
-SliceLayer::getValueExtents(double &, double &, bool &, QString &) const
+SliceLayer::getValueExtents(double &min, double &max, bool &logarithmic,
+                            QString &unit) const
 {
-    return false;
+    if (!m_sliceableModel) return false;
+    
+    min = 0;
+    max = double(m_sliceableModel->getHeight());
+
+    logarithmic = (m_binScale == BinScale::LogBins);
+    unit = "";
+
+    return true;
 }
 
+bool
+SliceLayer::getDisplayExtents(double &min, double &max) const
+{
+    if (!m_sliceableModel) return false;
+
+    double hmax = double(m_sliceableModel->getHeight());
+    
+    min = m_minbin;
+    max = m_maxbin;
+    if (max <= min) {
+        min = 0;
+        max = hmax;
+    }
+    if (min < 0) min = 0;
+    if (max > hmax) max = hmax;
+
+    return true;
+}
+
+bool
+SliceLayer::setDisplayExtents(double min, double max)
+{
+    if (!m_sliceableModel) return false;
+
+    m_minbin = int(lrint(min));
+    m_maxbin = int(lrint(max));
+    
+    emit layerParametersChanged();
+    return true;
+}
+
+int
+SliceLayer::getVerticalZoomSteps(int &defaultStep) const
+{
+    if (!m_sliceableModel) return 0;
+
+    defaultStep = 0;
+    int h = m_sliceableModel->getHeight();
+    return h;
+}
+
+int
+SliceLayer::getCurrentVerticalZoomStep() const
+{
+    if (!m_sliceableModel) return 0;
+
+    double min, max;
+    getDisplayExtents(min, max);
+    return m_sliceableModel->getHeight() - int(lrint(max - min));
+}
+
+void
+SliceLayer::setVerticalZoomStep(int step)
+{
+    if (!m_sliceableModel) return;
+
+//    SVDEBUG << "SliceLayer::setVerticalZoomStep(" <<step <<"): before: minbin = " << m_minbin << ", maxbin = " << m_maxbin << endl;
+
+    int dist = m_sliceableModel->getHeight() - step;
+    if (dist < 1) dist = 1;
+    double centre = m_minbin + (m_maxbin - m_minbin) / 2.0;
+    m_minbin = int(lrint(centre - dist/2.0));
+    if (m_minbin < 0) m_minbin = 0;
+    m_maxbin = m_minbin + dist;
+    if (m_maxbin > m_sliceableModel->getHeight()) m_maxbin = m_sliceableModel->getHeight();
+
+//    SVDEBUG << "SliceLayer::setVerticalZoomStep(" <<step <<"):  after: minbin = " << m_minbin << ", maxbin = " << m_maxbin << endl;
+    
+    emit layerParametersChanged();
+}
+
+RangeMapper *
+SliceLayer::getNewVerticalZoomRangeMapper() const
+{
+    if (!m_sliceableModel) return 0;
+
+    return new LinearRangeMapper(0, m_sliceableModel->getHeight(),
+                                 0, m_sliceableModel->getHeight(), "");
+}

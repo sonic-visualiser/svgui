@@ -20,6 +20,8 @@
 #include <QWheelEvent>
 #include <QPainter>
 
+#include "WidgetScale.h"
+
 #include <iostream>
 #include <cmath>
 
@@ -62,6 +64,12 @@ Panner::setScrollUnit(float unit)
 void
 Panner::scroll(bool up)
 {
+    scroll(up, 1);
+}
+
+void
+Panner::scroll(bool up, int count)
+{
     float unit = m_scrollUnit;
     if (unit == 0.f) {
         unit = float(m_rectHeight) / (6 * float(height()));
@@ -69,9 +77,9 @@ Panner::scroll(bool up)
     }
 
     if (!up) {
-        m_rectY += unit;
+        m_rectY += unit * float(count);
     } else {
-        m_rectY -= unit;
+        m_rectY -= unit * float(count);
     }
 
     normalise();
@@ -132,7 +140,8 @@ Panner::mouseReleaseEvent(QMouseEvent *e)
 void
 Panner::wheelEvent(QWheelEvent *e)
 {
-    scroll(e->delta() > 0);
+    int delta = m_wheelCounter.count(e);
+    scroll(delta > 0, abs(delta));
 }
 
 void
@@ -156,9 +165,13 @@ Panner::paintEvent(QPaintEvent *)
     QColor bg(palette().background().color());
     bg.setAlpha(m_backgroundAlpha);
 
-    paint.setPen(palette().dark().color());
+    int penWidth = WidgetScale::scalePixelSize(1);
+    if (penWidth < 1) penWidth = 1;
+    paint.setPen(QPen(palette().dark().color(), penWidth));
+    
     paint.setBrush(bg);
-    paint.drawRect(0, 0, width()-1, height()-1);
+    paint.drawRect(penWidth/2, penWidth/2,
+                   width()-penWidth/2-1, height()-penWidth/2-1);
 
     QColor hl(m_thumbColour);
     hl.setAlpha(m_thumbAlpha);

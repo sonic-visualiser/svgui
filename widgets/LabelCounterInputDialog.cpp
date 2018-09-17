@@ -22,7 +22,7 @@
 #include <QDialogButtonBox>
 
 LabelCounterInputDialog::LabelCounterInputDialog(Labeller *labeller,
-						 QWidget *parent) :
+                                                 QWidget *parent) :
     QDialog(parent),
     m_labeller(labeller)
 {

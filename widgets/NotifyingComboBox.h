@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _NOTIFYING_COMBO_BOX_H_
-#define _NOTIFYING_COMBO_BOX_H_
+#ifndef SV_NOTIFYING_COMBO_BOX_H
+#define SV_NOTIFYING_COMBO_BOX_H
 
 #include <QComboBox>
 
@@ -26,8 +26,8 @@
 class NotifyingComboBox : public QComboBox
 {
     Q_OBJECT
-public:
 
+public:
     NotifyingComboBox(QWidget *parent = 0) :
         QComboBox(parent) { }
 

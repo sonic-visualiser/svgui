@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _LAYER_FACTORY_H_
-#define _LAYER_FACTORY_H_
+#ifndef SV_LAYER_FACTORY_H
+#define SV_LAYER_FACTORY_H
 
 #include <QString>
 #include <set>
@@ -28,27 +28,27 @@ class LayerFactory
 public:
     enum LayerType {
 
-	// Standard layers
-	Waveform,
-	Spectrogram,
-	TimeRuler,
-	TimeInstants,
-	TimeValues,
-	Notes,
-	FlexiNotes,
-	Regions,
-	Text,
+        // Standard layers
+        Waveform,
+        Spectrogram,
+        TimeRuler,
+        TimeInstants,
+        TimeValues,
+        Notes,
+        FlexiNotes,
+        Regions,
+        Text,
         Image,
-	Colour3DPlot,
+        Colour3DPlot,
         Spectrum,
         Slice,
 
-	// Layers with different initial parameters
-	MelodicRangeSpectrogram,
-	PeakFrequencySpectrogram,
+        // Layers with different initial parameters
+        MelodicRangeSpectrogram,
+        PeakFrequencySpectrogram,
 
-	// Not-a-layer-type
-	UnknownLayer = 255
+        // Not-a-layer-type
+        UnknownLayer = 255
     };
 
     static LayerFactory *getInstance();
@@ -89,12 +89,12 @@ public:
 protected:
     template <typename LayerClass, typename ModelClass>
     bool trySetModel(Layer *layerBase, Model *modelBase) {
-	LayerClass *layer = dynamic_cast<LayerClass *>(layerBase);
-	if (!layer) return false;
-	ModelClass *model = dynamic_cast<ModelClass *>(modelBase);
-	if (!model) return false;
-	layer->setModel(model);
-	return true;
+        LayerClass *layer = dynamic_cast<LayerClass *>(layerBase);
+        if (!layer) return false;
+        ModelClass *model = dynamic_cast<ModelClass *>(modelBase);
+        if (!model) return false;
+        layer->setModel(model);
+        return true;
     }
 
     static LayerFactory *m_instance;

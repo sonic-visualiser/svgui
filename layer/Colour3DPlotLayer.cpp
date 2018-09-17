@@ -70,6 +70,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
 Colour3DPlotLayer::~Colour3DPlotLayer()
 {
     invalidateRenderers();
+    if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
 }
 
@@ -106,7 +107,7 @@ Colour3DPlotLayer::convertToColumnNorm(int value)
     switch (value) {
     default:
     case 0: return { ColumnNormalization::None, false };
-    case 1: return { ColumnNormalization::Max1, false };
+    case 1: return { ColumnNormalization::Range01, false };
     case 2: return { ColumnNormalization::None, true }; // visible area
     case 3: return { ColumnNormalization::Hybrid, false };
     }
@@ -118,10 +119,11 @@ Colour3DPlotLayer::convertFromColumnNorm(ColumnNormalization norm, bool visible)
     if (visible) return 2;
     switch (norm) {
     case ColumnNormalization::None: return 0;
-    case ColumnNormalization::Max1: return 1;
+    case ColumnNormalization::Range01: return 1;
     case ColumnNormalization::Hybrid: return 3;
 
     case ColumnNormalization::Sum1:
+    case ColumnNormalization::Max1:
     default: return 0;
     }
 }
@@ -135,6 +137,8 @@ Colour3DPlotLayer::setSynchronousPainting(bool synchronous)
 void
 Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 {
+    SVDEBUG << "Colour3DPlotLayer::setModel(" << model << ")" << endl;
+    
     if (m_model == model) return;
     const DenseThreeDimensionalModel *oldModel = m_model;
     m_model = model;
@@ -144,7 +148,7 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 
     connect(m_model, SIGNAL(modelChanged()), this, SLOT(modelChanged()));
     connect(m_model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-	    this, SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
+            this, SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
 
     m_peakResolution = 256;
     if (model->getResolution() > 512) {
@@ -155,10 +159,12 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
         m_peakResolution = 128;
     }
 
+    if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
     m_peakCache = 0;
 
     invalidateRenderers();
+    invalidateMagnitudes();
 
     emit modelReplaced();
     emit sliceableModelReplaced(oldModel, model);
@@ -168,6 +174,7 @@ void
 Colour3DPlotLayer::cacheInvalid()
 {
     invalidateRenderers();
+    invalidateMagnitudes();
 }
 
 void
@@ -175,10 +182,12 @@ Colour3DPlotLayer::cacheInvalid(sv_frame_t /* startFrame */,
                                 sv_frame_t /* endFrame */)
 {
     //!!! should do this only if the range is visible
+    if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
     m_peakCache = 0;
     
     invalidateRenderers();
+    invalidateMagnitudes();
 }
 
 void
@@ -189,6 +198,15 @@ Colour3DPlotLayer::invalidateRenderers()
         delete i->second;
     }
     m_renderers.clear();
+}
+
+void
+Colour3DPlotLayer::invalidateMagnitudes()
+{
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+    cerr << "Colour3DPlotLayer::invalidateMagnitudes called" << endl;
+#endif
+    m_viewMags.clear();
 }
 
 Dense3DModelPeakCache *
@@ -275,6 +293,7 @@ Colour3DPlotLayer::getPropertyType(const PropertyName &name) const
     if (name == "Invert Vertical Scale") return ToggleProperty;
     if (name == "Opaque") return ToggleProperty;
     if (name == "Smooth") return ToggleProperty;
+    if (name == "Colour") return ColourMapProperty;
     return ValueProperty;
 }
 
@@ -305,36 +324,36 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     if (name == "Gain") {
 
-	*min = -50;
-	*max = 50;
+        *min = -50;
+        *max = 50;
 
         *deflt = int(lrint(log10(1.0) * 20.0));
-	if (*deflt < *min) *deflt = *min;
-	if (*deflt > *max) *deflt = *max;
+        if (*deflt < *min) *deflt = *min;
+        if (*deflt > *max) *deflt = *max;
 
-	val = int(lrint(log10(m_gain) * 20.0));
-	if (val < *min) val = *min;
-	if (val > *max) val = *max;
+        val = int(lrint(log10(m_gain) * 20.0));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
     } else if (name == "Colour Scale") {
 
         // linear, log, +/-1, abs
-	*min = 0;
-	*max = 3;
+        *min = 0;
+        *max = 3;
         *deflt = 0;
 
-	val = convertFromColourScale(m_colourScale);
+        val = convertFromColourScale(m_colourScale);
 
     } else if (name == "Colour") {
 
-	*min = 0;
-	*max = ColourMapper::getColourMapCount() - 1;
+        *min = 0;
+        *max = ColourMapper::getColourMapCount() - 1;
         *deflt = 0;
 
-	val = m_colourMap;
+        val = m_colourMap;
 
     } else if (name == "Normalization") {
-	
+        
         *min = 0;
         *max = 3;
         *deflt = 0;
@@ -342,29 +361,29 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = convertFromColumnNorm(m_normalization, m_normalizeVisibleArea);
 
     } else if (name == "Invert Vertical Scale") {
-	
+        
         *deflt = 0;
-	val = (m_invertVertical ? 1 : 0);
+        val = (m_invertVertical ? 1 : 0);
 
     } else if (name == "Bin Scale") {
 
-	*min = 0;
-	*max = 1;
+        *min = 0;
+        *max = 1;
         *deflt = int(BinScale::Linear);
-	val = (int)m_binScale;
+        val = (int)m_binScale;
 
     } else if (name == "Opaque") {
-	
+        
         *deflt = 0;
-	val = (m_opaque ? 1 : 0);
+        val = (m_opaque ? 1 : 0);
         
     } else if (name == "Smooth") {
-	
+        
         *deflt = 0;
-	val = (m_smooth ? 1 : 0);
+        val = (m_smooth ? 1 : 0);
         
     } else {
-	val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
+        val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -372,29 +391,36 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
+                                    int value) const
 {
     if (name == "Colour") {
         return ColourMapper::getColourMapName(value);
     }
     if (name == "Colour Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Log");
-	case 2: return tr("+/-1");
-	case 3: return tr("Absolute");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Linear");
+        case 1: return tr("Log");
+        case 2: return tr("+/-1");
+        case 3: return tr("Absolute");
+        }
     }
     if (name == "Normalization") {
-        return ""; // icon only
+        switch(value) {
+        default:
+        case 0: return tr("None");
+        case 1: return tr("Col");
+        case 2: return tr("View");
+        case 3: return tr("Hybrid");
+        }
+//        return ""; // icon only
     }
     if (name == "Bin Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Linear");
-	case 1: return tr("Log");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Linear");
+        case 1: return tr("Log");
+        }
     }
     return tr("<unknown>");
 }
@@ -428,23 +454,23 @@ void
 Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-	setGain(float(pow(10, value/20.0)));
+        setGain(float(pow(10, value/20.0)));
     } else if (name == "Colour Scale") {
         setColourScale(convertToColourScale(value));
     } else if (name == "Colour") {
         setColourMap(value);
     } else if (name == "Invert Vertical Scale") {
-	setInvertVertical(value ? true : false);
+        setInvertVertical(value ? true : false);
     } else if (name == "Opaque") {
-	setOpaque(value ? true : false);
+        setOpaque(value ? true : false);
     } else if (name == "Smooth") {
-	setSmooth(value ? true : false);
+        setSmooth(value ? true : false);
     } else if (name == "Bin Scale") {
-	switch (value) {
-	default:
-	case 0: setBinScale(BinScale::Linear); break;
-	case 1: setBinScale(BinScale::Log); break;
-	}
+        switch (value) {
+        default:
+        case 0: setBinScale(BinScale::Linear); break;
+        case 1: setBinScale(BinScale::Log); break;
+        }
     } else if (name == "Normalization") {
         auto n = convertToColumnNorm(value);
         setNormalization(n.first);
@@ -455,9 +481,9 @@ Colour3DPlotLayer::setProperty(const PropertyName &name, int value)
 void
 Colour3DPlotLayer::setColourScale(ColourScaleType scale)
 {
+    m_colourScaleSet = true; // even if setting to the same thing
     if (m_colourScale == scale) return;
     m_colourScale = scale;
-    m_colourScaleSet = true;
     invalidateRenderers();
     emit layerParametersChanged();
 }
@@ -523,8 +549,9 @@ Colour3DPlotLayer::setNormalizeVisibleArea(bool n)
 {
     if (m_normalizeVisibleArea == n) return;
 
-    m_normalizeVisibleArea = n;
     invalidateRenderers();
+    invalidateMagnitudes();
+    m_normalizeVisibleArea = n;
     
     emit layerParametersChanged();
 }
@@ -597,7 +624,7 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
         Layer::setLayerDormant(v, true);
 
         cacheInvalid();
-	
+        
     } else {
 
         Layer::setLayerDormant(v, false);
@@ -607,17 +634,7 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 bool
 Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider * /* v */) const
 {
-    if (m_normalizeVisibleArea) {
-        return false;
-    }
-    //!!! ah hang on, if we're potentially rendering incrementally
-    //!!! they we can't be scrollable
     return false;
-//    if (getRenderer(v)->willRenderOpaque(v)) {
-//        return true;
-//    }
-//    QPoint discard;
-//    return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 bool
@@ -629,7 +646,7 @@ Colour3DPlotLayer::getValueExtents(double &min, double &max,
     min = 0;
     max = double(m_model->getHeight());
 
-    logarithmic = false;
+    logarithmic = (m_binScale == BinScale::Log);
     unit = "";
 
     return true;
@@ -753,11 +770,15 @@ Colour3DPlotLayer::getBinForY(const LayerGeometryProvider *v, double y) const
     getDisplayExtents(mn, mx);
     double h = v->getPaintHeight();
     if (m_binScale == BinScale::Linear) {
-        bin = mn + ((h - y) * (mx - mn)) / h;
+        // Arrange that the first bin (mn) appears as the exact result
+        // for the first pixel (which is pixel h-1) and the first
+        // out-of-range bin (mx) would appear as the exact result for
+        // the first out-of-range pixel (which would be pixel -1)
+        bin = mn + ((h - y - 1) * (mx - mn)) / h;
     } else {
         double logmin = mn + 1, logmax = mx + 1;
         LogRange::mapRange(logmin, logmax);
-        bin = LogRange::unmap(logmin + ((h - y) * (logmax - logmin)) / h) - 1;
+        bin = LogRange::unmap(logmin + ((h - y - 1) * (logmax - logmin)) / h) - 1;
     }
     return bin;
 }
@@ -814,12 +835,12 @@ Colour3DPlotLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) 
     else binName = QString("%1 [%2]").arg(binName).arg(sy + 1);
 
     QString text = tr("Time:\t%1 - %2\nBin:\t%3\nValue:\t%4")
-	.arg(RealTime::frame2RealTime(f0, m_model->getSampleRate())
-	     .toText(true).c_str())
-	.arg(RealTime::frame2RealTime(f1, m_model->getSampleRate())
-	     .toText(true).c_str())
-	.arg(binName)
-	.arg(value);
+        .arg(RealTime::frame2RealTime(f0, m_model->getSampleRate())
+             .toText(true).c_str())
+        .arg(RealTime::frame2RealTime(f1, m_model->getSampleRate())
+             .toText(true).c_str())
+        .arg(binName)
+        .arg(value);
 
     return text;
 }
@@ -842,13 +863,13 @@ Colour3DPlotLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter
     bool another = false;
 
     for (int i = 0; i < m_model->getHeight(); ++i) {
-	if (m_model->getBinName(i).length() > sampleText.length()) {
-	    sampleText = m_model->getBinName(i);
+        if (m_model->getBinName(i).length() > sampleText.length()) {
+            sampleText = m_model->getBinName(i);
             another = true;
-	}
+        }
     }
     if (another) {
-	tw = std::max(tw, paint.fontMetrics().width(sampleText));
+        tw = std::max(tw, paint.fontMetrics().width(sampleText));
     }
 
     return tw + 13 + getColourScaleWidth(paint);
@@ -948,7 +969,7 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
                 }
             }
         }
-	
+        
         py = y0;
 
         if (i < symax) {
@@ -973,80 +994,52 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
     paint.restore();
 }
 
-DenseThreeDimensionalModel::Column
-Colour3DPlotLayer::getColumn(int col) const
-{
-    Profiler profiler("Colour3DPlotLayer::getColumn");
-
-    DenseThreeDimensionalModel::Column values = m_model->getColumn(col);
-    values.resize(m_model->getHeight(), 0.f);
-    if (m_normalization != ColumnNormalization::Max1 &&
-        m_normalization != ColumnNormalization::Hybrid) {
-        return values;
-    }
-
-    double colMax = 0.f, colMin = 0.f;
-    double min = 0.f, max = 0.f;
-
-    int nv = int(values.size());
-    
-    min = m_model->getMinimumLevel();
-    max = m_model->getMaximumLevel();
-
-    for (int y = 0; y < nv; ++y) {
-        if (y == 0 || values.at(y) > colMax) colMax = values.at(y);
-        if (y == 0 || values.at(y) < colMin) colMin = values.at(y);
-    }
-    if (colMin == colMax) colMax = colMin + 1;
-    
-    for (int y = 0; y < nv; ++y) {
-    
-        double value = values.at(y);
-        double norm = (value - colMin) / (colMax - colMin);
-        double newvalue = min + (max - min) * norm;
-
-        if (value != newvalue) values[y] = float(newvalue);
-    }
-
-    if (m_normalization == ColumnNormalization::Hybrid
-        && (colMax > 0.0)) {
-        double logmax = log10(colMax);
-        for (int y = 0; y < nv; ++y) {
-            values[y] = float(values[y] * logmax);
-        }
-    }
-
-    return values;
-}
-
 Colour3DPlotRenderer *
 Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
 {
-    if (m_renderers.find(v->getId()) == m_renderers.end()) {
+    int viewId = v->getId();
+    
+    if (m_renderers.find(viewId) == m_renderers.end()) {
 
         Colour3DPlotRenderer::Sources sources;
         sources.verticalBinLayer = this;
         sources.fft = 0;
         sources.source = m_model;
-        sources.peakCache = getPeakCache();
+        sources.peakCaches.push_back(getPeakCache());
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
         cparams.scaleType = m_colourScale;
         cparams.gain = m_gain;
 
-        if (m_normalization == ColumnNormalization::None) {
-            cparams.minValue = m_model->getMinimumLevel();
-            cparams.maxValue = m_model->getMaximumLevel();
+        double minValue = 0.0;
+        double maxValue = 1.0;
+        
+        if (m_normalizeVisibleArea && m_viewMags[viewId].isSet()) {
+            minValue = m_viewMags[viewId].getMin();
+            maxValue = m_viewMags[viewId].getMax();
         } else if (m_normalization == ColumnNormalization::Hybrid) {
-            cparams.minValue = 0;
-            cparams.maxValue = log10(m_model->getMaximumLevel() + 1.0);
+            minValue = 0;
+            maxValue = log10(m_model->getMaximumLevel() + 1.0);
+        } else if (m_normalization == ColumnNormalization::None) {
+            minValue = m_model->getMinimumLevel();
+            maxValue = m_model->getMaximumLevel();
         }
 
-        if (cparams.maxValue <= cparams.minValue) {
-            cparams.maxValue = cparams.minValue + 0.1;
-        }
+        SVDEBUG << "Colour3DPlotLayer: rebuilding renderer, value range is "
+                << minValue << " -> " << maxValue << endl;
         
+        if (maxValue <= minValue) {
+            maxValue = minValue + 0.1f;
+        }
+
+        cparams.threshold = minValue;
+        cparams.minValue = minValue;
+        cparams.maxValue = maxValue;
+        
+        m_lastRenderedMags[viewId] = MagnitudeRange(float(minValue),
+                                                    float(maxValue));
+
         Colour3DPlotRenderer::Parameters params;
         params.colourScale = ColourScale(cparams);
         params.normalization = m_normalization;
@@ -1055,10 +1048,10 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         params.invertVertical = m_invertVertical;
         params.interpolate = m_smooth;
 
-        m_renderers[v->getId()] = new Colour3DPlotRenderer(sources, params);
+        m_renderers[viewId] = new Colour3DPlotRenderer(sources, params);
     }
 
-    return m_renderers[v->getId()];
+    return m_renderers[viewId];
 }
 
 void
@@ -1071,7 +1064,9 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
     MagnitudeRange magRange;
     int viewId = v->getId();
 
-    if (!renderer->geometryChanged(v)) {
+    bool continuingPaint = !renderer->geometryChanged(v);
+    
+    if (continuingPaint) {
         magRange = m_viewMags[viewId];
     }
     
@@ -1092,18 +1087,25 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
     magRange.sample(result.range);
 
     if (magRange.isSet()) {
-        if (!(m_viewMags[viewId] == magRange)) {
+        if (m_viewMags[viewId] != magRange) {
             m_viewMags[viewId] = magRange;
-    //!!! now need to do the normalise-visible thing
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+            cerr << "mag range in this view has changed: "
+                 << magRange.getMin() << " -> " << magRange.getMax() << endl;
+#endif
         }
     }
     
-    cerr << "mag range in this view: "
-         << m_viewMags[v->getId()].getMin()
-         << " -> "
-         << m_viewMags[v->getId()].getMax()
-         << endl;
-        
+    if (!continuingPaint && m_normalizeVisibleArea &&
+        m_viewMags[viewId] != m_lastRenderedMags[viewId]) {
+#ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
+        cerr << "mag range has changed from last rendered range: re-rendering"
+             << endl;
+#endif
+        delete m_renderers[viewId];
+        m_renderers.erase(viewId);
+        v->updatePaintRect(v->getPaintRect());
+    }
 }
 
 void
@@ -1121,11 +1123,11 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 
     int completion = 0;
     if (!m_model || !m_model->isOK() || !m_model->isReady(&completion)) {
-	if (completion > 0) {
-	    paint.fillRect(0, 10, v->getPaintWidth() * completion / 100,
-			   10, QColor(120, 120, 120));
-	}
-	return;
+        if (completion > 0) {
+            paint.fillRect(0, 10, v->getPaintWidth() * completion / 100,
+                           10, QColor(120, 120, 120));
+        }
+        return;
     }
 
     if (m_model->getWidth() == 0) {
@@ -1136,26 +1138,16 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
         return;
     }
 
-    //!!!???
-    
-    if (m_normalizeVisibleArea) {
-        rect = v->getPaintRect();
-    }
-
-    //!!! why is the setLayerDormant(false) found here in
-    //!!! SpectrogramLayer not present in Colour3DPlotLayer?
-    //!!! unnecessary? vestigial? forgotten?
-
     paintWithRenderer(v, paint, rect);
 }
 
 bool
 Colour3DPlotLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-				      int &resolution,
-				      SnapType snap) const
+                                      int &resolution,
+                                      SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
@@ -1167,9 +1159,9 @@ Colour3DPlotLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &fram
     case SnapRight: frame = right; break;
     case SnapNearest:
     case SnapNeighbouring:
-	if (frame - left > right - frame) frame = right;
-	else frame = left;
-	break;
+        if (frame - left > right - frame) frame = right;
+        else frame = left;
+        break;
     }
     
     return true;
@@ -1185,7 +1177,7 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
                         "maxY=\"%4\" "
                         "invertVertical=\"%5\" "
                         "opaque=\"%6\" %7")
-	.arg(convertFromColourScale(m_colourScale))
+        .arg(convertFromColourScale(m_colourScale))
         .arg(m_colourMap)
         .arg(m_miny)
         .arg(m_maxy)
@@ -1202,13 +1194,13 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
     // area as well afterwards
     
     s += QString("columnNormalization=\"%1\" ")
-        .arg(m_normalization == ColumnNormalization::Max1 ? "peak" :
+        .arg(m_normalization == ColumnNormalization::Range01 ? "peak" :
              m_normalization == ColumnNormalization::Hybrid ? "hybrid" : "none");
 
     // Old-style normalization attribute, for backward compatibility
     
     s += QString("normalizeColumns=\"%1\" ")
-	.arg(m_normalization == ColumnNormalization::Max1 ? "true" : "false");
+        .arg(m_normalization == ColumnNormalization::Range01 ? "true" : "false");
 
     // And this applies to both old- and new-style attributes
     
@@ -1224,14 +1216,14 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
     bool ok = false, alsoOk = false;
 
     ColourScaleType colourScale = convertToColourScale
-        (attributes.value("colourScale").toInt(&ok));
+        (attributes.value("scale").toInt(&ok));
     if (ok) setColourScale(colourScale);
 
     int colourMap = attributes.value("colourScheme").toInt(&ok);
     if (ok) setColourMap(colourMap);
 
     BinScale binScale = (BinScale)
-	attributes.value("binScale").toInt(&ok);
+        attributes.value("binScale").toInt(&ok);
     if (ok) setBinScale(binScale);
 
     bool invertVertical =
@@ -1262,7 +1254,7 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
         haveNewStyleNormalization = true;
 
         if (columnNormalization == "peak") {
-            setNormalization(ColumnNormalization::Max1);
+            setNormalization(ColumnNormalization::Range01);
         } else if (columnNormalization == "hybrid") {
             setNormalization(ColumnNormalization::Hybrid);
         } else if (columnNormalization == "none") {
@@ -1280,7 +1272,7 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
         bool normalizeColumns =
             (attributes.value("normalizeColumns").trimmed() == "true");
         if (normalizeColumns) {
-            setNormalization(ColumnNormalization::Max1);
+            setNormalization(ColumnNormalization::Range01);
         }
 
         bool normalizeHybrid =

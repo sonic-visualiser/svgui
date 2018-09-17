@@ -13,10 +13,11 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef PAINT_ASSISTANT_H
-#define PAINT_ASSISTANT_H
+#ifndef SV_PAINT_ASSISTANT_H
+#define SV_PAINT_ASSISTANT_H
 
 #include <QRect>
+#include <QPen>
 #include <vector>
 
 class QPainter;
@@ -38,14 +39,26 @@ public:
                             int minY, int height);
 
     enum TextStyle {
-	BoxedText,
-	OutlinedText,
+        BoxedText,
+        OutlinedText,
         OutlinedItalicText
     };
 
     static void drawVisibleText(const LayerGeometryProvider *,
                                 QPainter &p, int x, int y,
                                 QString text, TextStyle style);
+
+    /**
+     * Scale up pen width for a hi-dpi display without pixel doubling.
+     * Very similar to ViewManager::scalePixelSize, but a bit more
+     * conservative.
+     */
+    static double scalePenWidth(double width);
+
+    /**
+     * Apply scalePenWidth to a pen.
+     */
+    static QPen scalePen(QPen pen);
 };
 
 #endif

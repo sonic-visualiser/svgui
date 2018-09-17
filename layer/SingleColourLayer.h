@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SINGLE_COLOUR_LAYER_H_
-#define _SINGLE_COLOUR_LAYER_H_
+#ifndef SV_SINGLE_COLOUR_LAYER_H
+#define SV_SINGLE_COLOUR_LAYER_H
 
 #include "Layer.h"
 #include <QColor>
@@ -62,7 +62,7 @@ public:
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
+                                          int value) const;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
     virtual void setProperty(const PropertyName &, int value);
 

@@ -167,28 +167,28 @@ TimeRulerLayer::getMajorTickSpacing(LayerGeometryProvider *v, bool &quarterTicks
     quarterTicks = false;
 
     if (rtGap.sec > 0) {
-	incms = 1000;
-	int s = rtGap.sec;
-	if (s > 0) { incms *= 5; s /= 5; }
-	if (s > 0) { incms *= 2; s /= 2; }
-	if (s > 0) { incms *= 6; s /= 6; quarterTicks = true; }
-	if (s > 0) { incms *= 5; s /= 5; quarterTicks = false; }
-	if (s > 0) { incms *= 2; s /= 2; }
-	if (s > 0) { incms *= 6; s /= 6; quarterTicks = true; }
-	while (s > 0) {
-	    incms *= 10;
-	    s /= 10;
-	    quarterTicks = false;
-	}
+        incms = 1000;
+        int s = rtGap.sec;
+        if (s > 0) { incms *= 5; s /= 5; }
+        if (s > 0) { incms *= 2; s /= 2; }
+        if (s > 0) { incms *= 6; s /= 6; quarterTicks = true; }
+        if (s > 0) { incms *= 5; s /= 5; quarterTicks = false; }
+        if (s > 0) { incms *= 2; s /= 2; }
+        if (s > 0) { incms *= 6; s /= 6; quarterTicks = true; }
+        while (s > 0) {
+            incms *= 10;
+            s /= 10;
+            quarterTicks = false;
+        }
     } else {
-	incms = 1;
-	int ms = rtGap.msec();
+        incms = 1;
+        int ms = rtGap.msec();
 //        cerr << "rtGap.msec = " << ms << ", rtGap = " << rtGap << ", count = " << count << endl;
 //        cerr << "startFrame = " << startFrame << ", endFrame = " << endFrame << " rtStart = " << rtStart << ", rtEnd = " << rtEnd << endl;
-	if (ms > 0) { incms *= 10; ms /= 10; }
-	if (ms > 0) { incms *= 10; ms /= 10; }
-	if (ms > 0) { incms *= 5; ms /= 5; }
-	if (ms > 0) { incms *= 2; ms /= 2; }
+        if (ms > 0) { incms *= 10; ms /= 10; }
+        if (ms > 0) { incms *= 10; ms /= 10; }
+        if (ms > 0) { incms *= 5; ms /= 5; }
+        if (ms > 0) { incms *= 2; ms /= 2; }
     }
 
     return incms;
@@ -199,7 +199,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 {
 #ifdef DEBUG_TIME_RULER_LAYER
     SVDEBUG << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
-	      << ") [" << rect.width() << "x" << rect.height() << "]" << endl;
+              << ") [" << rect.width() << "x" << rect.height() << "]" << endl;
 #endif
     
     if (!m_model || !m_model->isOK()) return;
@@ -233,7 +233,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     int incX = int(incFrame / v->getZoomLevel());
     int ticks = 10;
     if (incX < minPixelSpacing * 2) {
-	ticks = quarter ? 4 : 5;
+        ticks = quarter ? 4 : 5;
     }
 
     QColor greyColour = getPartialShades(v)[1];
@@ -279,7 +279,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             break;
         }
 
-	if (x >= rect.x() - 50 && ms >= minlabel) {
+        if (x >= rect.x() - 50 && ms >= minlabel) {
 
             RealTime rt = RealTime::fromMilliseconds(ms);
 
@@ -331,9 +331,9 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             }
         }
 
-	paint.setPen(greyColour);
+        paint.setPen(greyColour);
 
-	for (int i = 1; i < ticks; ++i) {
+        for (int i = 1; i < ticks; ++i) {
 
             dms = ms + (i * double(incms)) / ticks;
             frame = lrint((dms * sampleRate) / 1000.0);
@@ -353,21 +353,21 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             cerr << "tick " << i << " in range, drawing at " << x << endl;
 #endif
 
-	    int sz = 5;
-	    if (ticks == 10) {
-		if ((i % 2) == 1) {
-		    if (i == 5) {
-			paint.drawLine(x, 0, x, v->getPaintHeight());
-		    } else sz = 3;
-		} else {
-		    sz = 7;
-		}
-	    }
-	    paint.drawLine(x, 0, x, sz);
-	    paint.drawLine(x, v->getPaintHeight() - sz - 1, x, v->getPaintHeight() - 1);
-	}
+            int sz = 5;
+            if (ticks == 10) {
+                if ((i % 2) == 1) {
+                    if (i == 5) {
+                        paint.drawLine(x, 0, x, v->getPaintHeight());
+                    } else sz = 3;
+                } else {
+                    sz = 7;
+                }
+            }
+            paint.drawLine(x, 0, x, sz);
+            paint.drawLine(x, v->getPaintHeight() - sz - 1, x, v->getPaintHeight() - 1);
+        }
 
-	ms += incms;
+        ms += incms;
     }
 
     paint.restore();

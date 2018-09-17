@@ -160,7 +160,7 @@ ColourDatabase::putStringValues(QString colourName,
 {
     int index = -1;
     if (colourSpec != "") {
-	QColor colour(colourSpec);
+        QColor colour(colourSpec);
         index = getColourIndex(colour);
         if (index < 0) {
             index = addColour(colour,

@@ -22,6 +22,7 @@
 #include "ViewManager.h"
 #include "widgets/CommandHistory.h"
 #include "widgets/TextAbbrev.h"
+#include "widgets/IconLoader.h"
 #include "base/Preferences.h"
 #include "layer/WaveformLayer.h"
 #include "layer/TimeRulerLayer.h"
@@ -142,8 +143,8 @@ Pane::updateHeadsUpDisplay()
         m_hthumb->setObjectName(tr("Horizontal Zoom"));
         m_hthumb->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_hthumb, 1, 0, 1, 2);
-        m_hthumb->setFixedWidth(70);
-        m_hthumb->setFixedHeight(16);
+        m_hthumb->setFixedWidth(m_manager->scalePixelSize(70));
+        m_hthumb->setFixedHeight(m_manager->scalePixelSize(16));
         m_hthumb->setDefaultValue(0);
         m_hthumb->setSpeed(0.6f);
         connect(m_hthumb, SIGNAL(valueChanged(int)), this, 
@@ -154,8 +155,8 @@ Pane::updateHeadsUpDisplay()
         m_vpan = new Panner;
         m_vpan->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_vpan, 0, 1);
-        m_vpan->setFixedWidth(12);
-        m_vpan->setFixedHeight(70);
+        m_vpan->setFixedWidth(m_manager->scalePixelSize(12));
+        m_vpan->setFixedHeight(m_manager->scalePixelSize(70));
         m_vpan->setAlpha(80, 130);
         connect(m_vpan, SIGNAL(rectExtentsChanged(float, float, float, float)),
                 this, SLOT(verticalPannerMoved(float, float, float, float)));
@@ -168,8 +169,8 @@ Pane::updateHeadsUpDisplay()
         m_vthumb->setObjectName(tr("Vertical Zoom"));
         m_vthumb->setCursor(Qt::ArrowCursor);
         layout->addWidget(m_vthumb, 0, 2);
-        m_vthumb->setFixedWidth(16);
-        m_vthumb->setFixedHeight(70);
+        m_vthumb->setFixedWidth(m_manager->scalePixelSize(16));
+        m_vthumb->setFixedHeight(m_manager->scalePixelSize(70));
         connect(m_vthumb, SIGNAL(valueChanged(int)), this, 
                 SLOT(verticalThumbwheelMoved(int)));
         connect(m_vthumb, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
@@ -183,9 +184,9 @@ Pane::updateHeadsUpDisplay()
         m_reset = new NotifyingPushButton;
         m_reset->setFlat(true);
         m_reset->setCursor(Qt::ArrowCursor);
-        m_reset->setFixedHeight(16);
-        m_reset->setFixedWidth(16);
-        m_reset->setIcon(QPixmap(":/icons/zoom-reset.png"));
+        m_reset->setFixedHeight(m_manager->scalePixelSize(16));
+        m_reset->setFixedWidth(m_manager->scalePixelSize(16));
+        m_reset->setIcon(IconLoader().load("zoom-reset"));
         m_reset->setToolTip(tr("Reset zoom to default"));
         layout->addWidget(m_reset, 1, 2);
         
@@ -284,16 +285,19 @@ Pane::updateHeadsUpDisplay()
     updateVerticalPanner();
 
     if (m_manager && m_manager->getZoomWheelsEnabled() &&
-        width() > 120 && height() > 100) {
+        width() > m_manager->scalePixelSize(120) &&
+        height() > m_manager->scalePixelSize(100)) {
         if (!m_headsUpDisplay->isVisible()) {
             m_headsUpDisplay->show();
         }
+        int shift = m_manager->scalePixelSize(86);
         if (haveVThumb) {
             m_headsUpDisplay->setFixedHeight(m_vthumb->height() + m_hthumb->height());
-            m_headsUpDisplay->move(width() - 86, height() - 86);
+            m_headsUpDisplay->move(width() - shift, height() - shift);
         } else {
             m_headsUpDisplay->setFixedHeight(m_hthumb->height());
-            m_headsUpDisplay->move(width() - 86, height() - 16);
+            m_headsUpDisplay->move(width() - shift,
+                                   height() - m_manager->scalePixelSize(16));
         }
     } else {
         m_headsUpDisplay->hide();
@@ -424,25 +428,8 @@ Pane::paintEvent(QPaintEvent *e)
     ViewManager::ToolMode toolMode = ViewManager::NavigateMode;
     if (m_manager) toolMode = m_manager->getToolModeFor(this);
 
-    if (m_manager &&
-        m_mouseInWidget &&
-        toolMode == ViewManager::MeasureMode) {
-
-        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
-            --vi;
-
-            std::vector<QRect> crosshairExtents;
-
-            if ((*vi)->getCrosshairExtents(this, paint, m_identifyPoint,
-                                           crosshairExtents)) {
-                (*vi)->paintCrosshairs(this, paint, m_identifyPoint);
-                break;
-            } else if ((*vi)->isLayerOpaque()) {
-                break;
-            }
-        }
-    }
-
+    // Locate some relevant layers and models
+    
     Layer *topLayer = getTopLayer();
     bool haveSomeTimeXAxis = false;
 
@@ -469,16 +456,43 @@ Pane::paintEvent(QPaintEvent *e)
         if (waveformModel && workModel && haveSomeTimeXAxis) break;
     }
 
-    m_scaleWidth = 0;
-
+    // Block off left and right extents so we can see where the main model ends
+    
     if (workModel && hasTopLayerTimeXAxis()) {
         drawModelTimeExtents(r, paint, workModel);
     }
+
+    // Crosshairs for mouse movement in measure mode
+    
+    if (m_manager &&
+        m_mouseInWidget &&
+        toolMode == ViewManager::MeasureMode) {
+
+        for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
+            --vi;
+
+            std::vector<QRect> crosshairExtents;
+
+            if ((*vi)->getCrosshairExtents(this, paint, m_identifyPoint,
+                                           crosshairExtents)) {
+                (*vi)->paintCrosshairs(this, paint, m_identifyPoint);
+                break;
+            } else if ((*vi)->isLayerOpaque()) {
+                break;
+            }
+        }
+    }
+
+    // Scale width will be set implicitly during drawVerticalScale call
+    m_scaleWidth = 0;
 
     if (m_manager && m_manager->shouldShowVerticalScale() && topLayer) {
         drawVerticalScale(r, topLayer, paint);
     }
 
+    // Feature description: the box in top-right showing values from
+    // the nearest feature to the mouse
+    
     if (m_identifyFeatures &&
         m_manager && m_manager->shouldIlluminateLocalFeatures() &&
         topLayer) {
@@ -523,6 +537,9 @@ Pane::paintEvent(QPaintEvent *e)
         drawLayerNames(r, paint);
     }
 
+    // The blue box that is shown when you ctrl-click in navigate mode
+    // to define a zoom region
+    
     if (m_shiftPressed && m_clickedInRange &&
         (toolMode == ViewManager::NavigateMode || m_navigating)) {
 
@@ -562,6 +579,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 {
     Layer *scaleLayer = 0;
 
+//    cerr << "Pane::drawVerticalScale[" << this << "]" << endl;
+    
     double min, max;
     bool log;
     QString unit;
@@ -575,7 +594,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
     int sw = topLayer->getVerticalScaleWidth
         (this, m_manager->shouldShowVerticalColourScale(), paint);
-
+    
     if (sw > 0) {
         scaleLayer = topLayer;
         m_scaleWidth = sw;
@@ -641,7 +660,9 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
     }
 
     if (!scaleLayer) m_scaleWidth = 0;
-        
+
+//    cerr << "m_scaleWidth = " << m_scaleWidth << ", r.left = " << r.left() << endl;
+    
     if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
 
 //      Profiler profiler("Pane::paintEvent - painting vertical scale", true);
@@ -649,10 +670,13 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 //      SVDEBUG << "Pane::paintEvent: calling paint.save() in vertical scale block" << endl;
         paint.save();
             
-        paint.setPen(getForeground());
+        paint.setPen(Qt::NoPen);
         paint.setBrush(getBackground());
-        paint.drawRect(0, -1, m_scaleWidth, height()+1);
+        paint.drawRect(0, 0, m_scaleWidth, height());
         
+        paint.setPen(getForeground());
+        paint.drawLine(m_scaleWidth, 0, m_scaleWidth, height());
+
         paint.setBrush(Qt::NoBrush);
         scaleLayer->paintVerticalScale
             (this, m_manager->shouldShowVerticalColourScale(),
@@ -730,7 +754,7 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
         c = QColor(240, 240, 240);
     }
 
-    paint.setPen(c);
+    paint.setPen(PaintAssistant::scalePen(c));
     int x = width() / 2;
 
     if (!omitLine) {
@@ -800,10 +824,10 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
     QBrush brush;
 
     if (hasLightBackground()) {
-        brush = QBrush(QColor("#f8f8f8"));
+        brush = QBrush(QColor("#aaf8f8f8"));
         paint.setPen(Qt::black);
     } else {
-        brush = QBrush(QColor("#101010"));
+        brush = QBrush(QColor("#aa101010"));
         paint.setPen(Qt::white);
     }
 
@@ -920,7 +944,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 
     int lly = height() - 6;
     if (m_manager->getZoomWheelsEnabled()) {
-        lly -= 20;
+        lly -= m_manager->scalePixelSize(20);
     }
 
     if (r.y() + r.height() < lly - int(m_layerStack.size()) * fontHeight) {
@@ -942,7 +966,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
 
     int llx = width() - maxTextWidth - 5;
     if (m_manager->getZoomWheelsEnabled()) {
-        llx -= 36;
+        llx -= m_manager->scalePixelSize(36);
     }
     
     if (r.x() + r.width() >= llx - fontAscent - 3) {
@@ -1119,7 +1143,7 @@ Pane::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 }
 
 QImage *
-Pane::toNewImage(sv_frame_t f0, sv_frame_t f1)
+Pane::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
 {
     int x0 = int(f0 / getZoomLevel());
     int x1 = int(f1 / getZoomLevel());
@@ -1158,9 +1182,9 @@ Pane::toNewImage(sv_frame_t f0, sv_frame_t f1)
 }
 
 QSize
-Pane::getImageSize(sv_frame_t f0, sv_frame_t f1)
+Pane::getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1)
 {
-    QSize s = View::getImageSize(f0, f1);
+    QSize s = View::getRenderedPartImageSize(f0, f1);
     QImage *image = new QImage(100, 100, QImage::Format_RGB32);
     QPainter paint(image);
 
@@ -1192,7 +1216,7 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
 
     if (!m_manager) return Selection();
 
-    sv_frame_t testFrame = getFrameForX(x - 5);
+    sv_frame_t testFrame = getFrameForX(x - ViewManager::scalePixelSize(5));
     if (testFrame < 0) {
         testFrame = getFrameForX(x);
         if (testFrame < 0) return Selection();
@@ -1204,13 +1228,15 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
     int lx = getXForFrame(selection.getStartFrame());
     int rx = getXForFrame(selection.getEndFrame());
     
-    int fuzz = 2;
+    int fuzz = ViewManager::scalePixelSize(2);
     if (x < lx - fuzz || x > rx + fuzz) return Selection();
 
     int width = rx - lx;
-    fuzz = 3;
+    fuzz = ViewManager::scalePixelSize(3);
     if (width < 12) fuzz = width / 4;
-    if (fuzz < 1) fuzz = 1;
+    if (fuzz < ViewManager::scalePixelSize(1)) {
+        fuzz = ViewManager::scalePixelSize(1);
+    }
 
     if (x < lx + fuzz) closeToLeftEdge = true;
     if (x > rx - fuzz) closeToRightEdge = true;
@@ -1869,11 +1895,11 @@ Pane::zoomToRegion(QRect r)
     }
         
     double ratio = double(w) / double(width());
-//	cerr << "ratio: " << ratio << endl;
+//        cerr << "ratio: " << ratio << endl;
     int newZoomLevel = (int)nearbyint(m_zoomLevel * ratio);
     if (newZoomLevel < 1) newZoomLevel = 1;
 
-//	cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << endl;
+//        cerr << "start: " << m_startFrame << ", level " << m_zoomLevel << endl;
     setZoomLevel(getZoomConstraintBlockSize(newZoomLevel));
     setStartFrame(newStartFrame);
 
@@ -2093,8 +2119,8 @@ Pane::dragExtendSelection(QMouseEvent *e)
         layer->snapToFeatureFrame(this, snapFrameRight,
                                   resolution, Layer::SnapRight);
     }
-	
-//	cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
+        
+//        cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
 
     if (snapFrameLeft < 0) snapFrameLeft = 0;
     if (snapFrameRight < 0) snapFrameRight = 0;
@@ -2265,7 +2291,7 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-    cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
+//    cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
 
     e->accept(); // we never want wheel events on the pane to be propagated
     
@@ -2288,7 +2314,7 @@ Pane::wheelEvent(QWheelEvent *e)
     }
 
     if (e->phase() == Qt::ScrollBegin ||
-        fabs(d) >= 120 ||
+        std::abs(d) >= 120 ||
         (d > 0 && m_pendingWheelAngle < 0) ||
         (d < 0 && m_pendingWheelAngle > 0)) {
         m_pendingWheelAngle = d;
@@ -2334,7 +2360,7 @@ Pane::wheelEvent(QWheelEvent *e)
 void
 Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 {
-    cerr << "wheelVertical: sign = " << sign << endl;
+//    cerr << "wheelVertical: sign = " << sign << endl;
 
     if (mods & Qt::ShiftModifier) {
 
@@ -2381,7 +2407,7 @@ Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 void
 Pane::wheelHorizontal(int sign, Qt::KeyboardModifiers mods)
 {
-    cerr << "wheelHorizontal: sign = " << sign << endl;
+//    cerr << "wheelHorizontal: sign = " << sign << endl;
 
     // Scroll left or right, rapidly
 
@@ -2391,7 +2417,7 @@ Pane::wheelHorizontal(int sign, Qt::KeyboardModifiers mods)
 void
 Pane::wheelHorizontalFine(int pixels, Qt::KeyboardModifiers)
 {
-    cerr << "wheelHorizontalFine: pixels = " << pixels << endl;
+//    cerr << "wheelHorizontalFine: pixels = " << pixels << endl;
 
     // Scroll left or right by a fixed number of pixels
 

@@ -59,8 +59,8 @@ public:
     virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
 
     virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame, 
-				    int &resolution,
-				    SnapType snap) const;
+                                    int &resolution,
+                                    SnapType snap) const;
 
     virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
 
@@ -82,7 +82,7 @@ public:
     virtual int getPropertyRangeAndValue(const PropertyName &,
                                          int *min, int *max, int *deflt) const;
     virtual QString getPropertyValueLabel(const PropertyName &,
-					  int value) const;
+                                          int value) const;
     virtual QString getPropertyValueIconName(const PropertyName &,
                                              int value) const;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
@@ -187,6 +187,8 @@ protected:
 
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
+    mutable ViewMagMap m_lastRenderedMags; // when in normalizeVisibleArea mode
+    void invalidateMagnitudes();
 
     typedef std::map<int, Colour3DPlotRenderer *> ViewRendererMap; // key is view id
     mutable ViewRendererMap m_renderers;
@@ -209,8 +211,6 @@ protected:
      * if the vertical scale is the usual way up).
      */
     double getBinForY(const LayerGeometryProvider *, double y) const;
-    
-    DenseThreeDimensionalModel::Column getColumn(int col) const;
 
     int getColourScaleWidth(QPainter &) const;
 

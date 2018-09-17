@@ -132,7 +132,7 @@ TimeValueLayer::getPropertyType(const PropertyName &name) const
     if (name == "Plot Type") return ValueProperty;
     if (name == "Vertical Scale") return ValueProperty;
     if (name == "Scale Units") return UnitsProperty;
-    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ValueProperty;
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ColourMapProperty;
     if (name == "Draw Segment Division Lines") return ToggleProperty;
     if (name == "Show Derivative") return ToggleProperty;
     return SingleColourLayer::getPropertyType(name);
@@ -160,7 +160,7 @@ TimeValueLayer::getScaleUnits() const
 
 int
 TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
-					 int *min, int *max, int *deflt) const
+                                         int *min, int *max, int *deflt) const
 {
     int val = 0;
 
@@ -173,20 +173,20 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = m_colourMap;
 
     } else if (name == "Plot Type") {
-	
-	if (min) *min = 0;
-	if (max) *max = 6;
+        
+        if (min) *min = 0;
+        if (max) *max = 6;
         if (deflt) *deflt = int(PlotConnectedPoints);
-	
-	val = int(m_plotStyle);
+        
+        val = int(m_plotStyle);
 
     } else if (name == "Vertical Scale") {
-	
-	if (min) *min = 0;
-	if (max) *max = 3;
+        
+        if (min) *min = 0;
+        if (max) *max = 3;
         if (deflt) *deflt = int(AutoAlignScale);
-	
-	val = int(m_verticalScale);
+        
+        val = int(m_verticalScale);
 
     } else if (name == "Scale Units") {
 
@@ -211,8 +211,8 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = (m_derivative ? 1.0 : 0.0);
 
     } else {
-	
-	val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
+        
+        val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
 
     return val;
@@ -220,29 +220,29 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 QString
 TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
-				    int value) const
+                                    int value) const
 {
     if (name == "Colour" && m_plotStyle == PlotSegmentation) {
         return ColourMapper::getColourMapName(value);
     } else if (name == "Plot Type") {
-	switch (value) {
-	default:
-	case 0: return tr("Points");
-	case 1: return tr("Stems");
-	case 2: return tr("Connected Points");
-	case 3: return tr("Lines");
-	case 4: return tr("Curve");
-	case 5: return tr("Segmentation");
-	case 6: return tr("Discrete Curves");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Points");
+        case 1: return tr("Stems");
+        case 2: return tr("Connected Points");
+        case 3: return tr("Lines");
+        case 4: return tr("Curve");
+        case 5: return tr("Segmentation");
+        case 6: return tr("Discrete Curves");
+        }
     } else if (name == "Vertical Scale") {
-	switch (value) {
-	default:
-	case 0: return tr("Auto-Align");
-	case 1: return tr("Linear");
-	case 2: return tr("Log");
-	case 3: return tr("+/-1");
-	}
+        switch (value) {
+        default:
+        case 0: return tr("Auto-Align");
+        case 1: return tr("Linear");
+        case 2: return tr("Log");
+        case 3: return tr("+/-1");
+        }
     }
     return SingleColourLayer::getPropertyValueLabel(name, value);
 }
@@ -253,9 +253,9 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
     if (name == "Colour" && m_plotStyle == PlotSegmentation) {
         setFillColourMap(value);
     } else if (name == "Plot Type") {
-	setPlotStyle(PlotStyle(value));
+        setPlotStyle(PlotStyle(value));
     } else if (name == "Vertical Scale") {
-	setVerticalScale(VerticalScale(value));
+        setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
         if (m_model) {
             m_model->setScaleUnits
@@ -323,7 +323,7 @@ TimeValueLayer::isLayerScrollable(const LayerGeometryProvider *v) const
     // they're always scrollable
 
     if (m_plotStyle == PlotLines ||
-	m_plotStyle == PlotCurve ||
+        m_plotStyle == PlotCurve ||
         m_plotStyle == PlotDiscreteCurves) return true;
 
     QPoint discard;
@@ -538,38 +538,38 @@ TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     sv_frame_t frame = v->getFrameForX(x);
 
     SparseTimeValueModel::PointList onPoints =
-	m_model->getPoints(frame);
+        m_model->getPoints(frame);
 
     if (!onPoints.empty()) {
-	return onPoints;
+        return onPoints;
     }
 
     SparseTimeValueModel::PointList prevPoints =
-	m_model->getPreviousPoints(frame);
+        m_model->getPreviousPoints(frame);
     SparseTimeValueModel::PointList nextPoints =
-	m_model->getNextPoints(frame);
+        m_model->getNextPoints(frame);
 
     SparseTimeValueModel::PointList usePoints = prevPoints;
 
     if (prevPoints.empty()) {
-	usePoints = nextPoints;
+        usePoints = nextPoints;
     } else if (nextPoints.empty()) {
         // stick with prevPoints
     } else if (prevPoints.begin()->frame < v->getStartFrame() &&
-	       !(nextPoints.begin()->frame > v->getEndFrame())) {
-	usePoints = nextPoints;
+               !(nextPoints.begin()->frame > v->getEndFrame())) {
+        usePoints = nextPoints;
     } else if (nextPoints.begin()->frame - frame <
-	       frame - prevPoints.begin()->frame) {
-	usePoints = nextPoints;
+               frame - prevPoints.begin()->frame) {
+        usePoints = nextPoints;
     }
 
     if (!usePoints.empty()) {
-	int fuzz = 2;
-	int px = v->getXForFrame(usePoints.begin()->frame);
-	if ((px > x && px - x > fuzz) ||
-	    (px < x && x - px > fuzz + 3)) {
-	    usePoints.clear();
-	}
+        int fuzz = 2;
+        int px = v->getXForFrame(usePoints.begin()->frame);
+        if ((px > x && px - x > fuzz) ||
+            (px < x && x - px > fuzz + 3)) {
+            usePoints.clear();
+        }
     }
 
     return usePoints;
@@ -597,11 +597,11 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
     SparseTimeValueModel::PointList points = getLocalPoints(v, x);
 
     if (points.empty()) {
-	if (!m_model->isReady()) {
-	    return tr("In progress");
-	} else {
-	    return tr("No local points");
-	}
+        if (!m_model->isReady()) {
+            return tr("In progress");
+        } else {
+            return tr("No local points");
+        }
     }
 
     sv_frame_t useFrame = points.begin()->frame;
@@ -626,39 +626,39 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
     QString text;
 
     if (points.begin()->label == "") {
-	text = QString(tr("Time:\t%1\nValue:\t%2\nNo label"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(valueText);
+        text = QString(tr("Time:\t%1\nValue:\t%2\nNo label"))
+            .arg(rt.toText(true).c_str())
+            .arg(valueText);
     } else {
-	text = QString(tr("Time:\t%1\nValue:\t%2\nLabel:\t%4"))
-	    .arg(rt.toText(true).c_str())
-	    .arg(valueText)
-	    .arg(points.begin()->label);
+        text = QString(tr("Time:\t%1\nValue:\t%2\nLabel:\t%4"))
+            .arg(rt.toText(true).c_str())
+            .arg(valueText)
+            .arg(points.begin()->label);
     }
 
     pos = QPoint(v->getXForFrame(useFrame),
-		 getYForValue(v, points.begin()->value));
+                 getYForValue(v, points.begin()->value));
     return text;
 }
 
 bool
 TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-				   int &resolution,
-				   SnapType snap) const
+                                   int &resolution,
+                                   SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
     SparseTimeValueModel::PointList points;
 
     if (snap == SnapNeighbouring) {
-	
-	points = getLocalPoints(v, v->getXForFrame(frame));
-	if (points.empty()) return false;
-	frame = points.begin()->frame;
-	return true;
+        
+        points = getLocalPoints(v, v->getXForFrame(frame));
+        if (points.empty()) return false;
+        frame = points.begin()->frame;
+        return true;
     }    
 
     points = m_model->getPoints(frame, frame);
@@ -666,47 +666,47 @@ TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     bool found = false;
 
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
-	    if (i->frame > frame) {
-		snapped = i->frame;
-		found = true;
-		break;
-	    }
+            if (i->frame > frame) {
+                snapped = i->frame;
+                found = true;
+                break;
+            }
 
-	} else if (snap == SnapLeft) {
+        } else if (snap == SnapLeft) {
 
-	    if (i->frame <= frame) {
-		snapped = i->frame;
-		found = true; // don't break, as the next may be better
-	    } else {
-		break;
-	    }
+            if (i->frame <= frame) {
+                snapped = i->frame;
+                found = true; // don't break, as the next may be better
+            } else {
+                break;
+            }
 
-	} else { // nearest
+        } else { // nearest
 
-	    SparseTimeValueModel::PointList::const_iterator j = i;
-	    ++j;
+            SparseTimeValueModel::PointList::const_iterator j = i;
+            ++j;
 
-	    if (j == points.end()) {
+            if (j == points.end()) {
 
-		snapped = i->frame;
-		found = true;
-		break;
+                snapped = i->frame;
+                found = true;
+                break;
 
-	    } else if (j->frame >= frame) {
+            } else if (j->frame >= frame) {
 
-		if (j->frame - frame < frame - i->frame) {
-		    snapped = j->frame;
-		} else {
-		    snapped = i->frame;
-		}
-		found = true;
-		break;
-	    }
-	}
+                if (j->frame - frame < frame - i->frame) {
+                    snapped = j->frame;
+                } else {
+                    snapped = i->frame;
+                }
+                found = true;
+                break;
+            }
+        }
     }
 
     frame = snapped;
@@ -719,7 +719,7 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame
                                      SnapType snap) const
 {
     if (!m_model) {
-	return Layer::snapToSimilarFeature(v, frame, resolution, snap);
+        return Layer::snapToSimilarFeature(v, frame, resolution, snap);
     }
 
     resolution = m_model->getResolution();
@@ -763,29 +763,29 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame
             }
         }
 
-	if (snap == SnapRight) {
+        if (snap == SnapRight) {
 
-	    if (i->frame > matchframe &&
+            if (i->frame > matchframe &&
                 fabs(i->value - matchvalue) < epsilon) {
-		snapped = i->frame;
-		found = true;
-		break;
-	    }
+                snapped = i->frame;
+                found = true;
+                break;
+            }
 
-	} else if (snap == SnapLeft) {
+        } else if (snap == SnapLeft) {
 
-	    if (i->frame < matchframe) {
+            if (i->frame < matchframe) {
                 if (fabs(i->value - matchvalue) < epsilon) {
                     snapped = i->frame;
                     found = true; // don't break, as the next may be better
                 }
-	    } else if (found || distant) {
-		break;
-	    }
+            } else if (found || distant) {
+                break;
+            }
 
-	} else { 
+        } else { 
             // no other snap types supported
-	}
+        }
 
         ++i;
     }
@@ -926,7 +926,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     if (m_derivative) --frame0;
 
     SparseTimeValueModel::PointList points(m_model->getPoints
-					   (frame0, frame1));
+                                           (frame0, frame1));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -937,7 +937,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::paint: resolution is "
-	      << m_model->getResolution() << " frames" << endl;
+              << m_model->getResolution() << " frames" << endl;
 #endif
 
     double min = m_model->getValueMinimum();
@@ -945,23 +945,23 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     if (max == min) max = min + 1.0;
 
     int origin = int(nearbyint(v->getPaintHeight() -
-			       (-min * v->getPaintHeight()) / (max - min)));
+                               (-min * v->getPaintHeight()) / (max - min)));
 
     QPoint localPos;
     sv_frame_t illuminateFrame = -1;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
-	SparseTimeValueModel::PointList localPoints =
-	    getLocalPoints(v, localPos.x());
+        SparseTimeValueModel::PointList localPoints =
+            getLocalPoints(v, localPos.x());
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "TimeValueLayer: " << localPoints.size() << " local points" << endl;
 #endif
-	if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
+        if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
     }
 
     int w =
-	v->getXForFrame(frame0 + m_model->getResolution()) -
-	v->getXForFrame(frame0);
+        v->getXForFrame(frame0 + m_model->getResolution()) -
+        v->getXForFrame(frame0);
 
     if (m_plotStyle == PlotStems) {
         if (w < 2) w = 2;
@@ -990,11 +990,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_frame_t prevFrame = 0;
 
     for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
         if (m_derivative && i == points.begin()) continue;
 
-	const SparseTimeValueModel::Point &p(*i);
+        const SparseTimeValueModel::Point &p(*i);
 
         double value = p.value;
         if (m_derivative) {
@@ -1003,8 +1003,8 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             value -= j->value;
         }
 
-	int x = v->getXForFrame(p.frame);
-	int y = getYForValue(v, value);
+        int x = v->getXForFrame(p.frame);
+        int y = getYForValue(v, value);
 
         bool gap = false;
         if (m_plotStyle == PlotDiscreteCurves) { 
@@ -1024,81 +1024,74 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             }
         }
 
-	bool haveNext = false;
+        bool haveNext = false;
         double nvalue = 0.f;
         sv_frame_t nf = v->getModelsEndFrame();
-	int nx = v->getXForFrame(nf);
-	int ny = y;
+        int nx = v->getXForFrame(nf);
+        int ny = y;
 
-	SparseTimeValueModel::PointList::const_iterator j = i;
-	++j;
+        SparseTimeValueModel::PointList::const_iterator j = i;
+        ++j;
 
-	if (j != points.end()) {
-	    const SparseTimeValueModel::Point &q(*j);
+        if (j != points.end()) {
+            const SparseTimeValueModel::Point &q(*j);
             nvalue = q.value;
             if (m_derivative) nvalue -= p.value;
             nf = q.frame;
-	    nx = v->getXForFrame(nf);
-	    ny = getYForValue(v, nvalue);
-	    haveNext = true;
+            nx = v->getXForFrame(nf);
+            ny = getYForValue(v, nvalue);
+            haveNext = true;
         }
 
 //        cout << "frame = " << p.frame << ", x = " << x << ", haveNext = " << haveNext 
 //                  << ", nx = " << nx << endl;
 
+        QPen pen(getBaseQColor());
+        QBrush brush(brushColour);
+        
         if (m_plotStyle == PlotDiscreteCurves) {
-            paint.setPen(QPen(getBaseQColor(), 3));
-            paint.setBrush(Qt::NoBrush);
+            pen = QPen(getBaseQColor(), 3);
+            brush = QBrush(Qt::NoBrush);
         } else if (m_plotStyle == PlotSegmentation) {
-            paint.setPen(getForegroundQColor(v));
-            paint.setBrush(getColourForValue(v, value));
-	} else if (m_plotStyle == PlotLines ||
-		   m_plotStyle == PlotCurve) {
-            paint.setPen(getBaseQColor());
-	    paint.setBrush(Qt::NoBrush);
-	} else {
-            paint.setPen(getBaseQColor());
-	    paint.setBrush(brushColour);
-	}	    
-
-	if (m_plotStyle == PlotStems) {
-/*
-	    paint.setPen(brushColour);
-	    if (y < origin - 1) {
-		paint.drawRect(x + w/2, y + 1, 1, origin - y);
-	    } else if (y > origin + 1) {
-		paint.drawRect(x + w/2, origin, 1, y - origin - 1);
-	    }
-*/
-	    paint.setPen(getBaseQColor());
-	    if (y < origin - 1) {
-		paint.drawLine(x + w/2, y + 1, x + w/2, origin);
-	    } else if (y > origin + 1) {
-		paint.drawLine(x + w/2, origin, x + w/2, y - 1);
-	    }
-	}
+            pen = QPen(getForegroundQColor(v));
+            brush = QBrush(getColourForValue(v, value));
+        } else if (m_plotStyle == PlotLines ||
+                   m_plotStyle == PlotCurve) {
+            brush = QBrush(Qt::NoBrush);
+        }
+        
+        paint.setPen(PaintAssistant::scalePen(pen));
+        paint.setBrush(brush);
+        
+        if (m_plotStyle == PlotStems) {
+            if (y < origin - 1) {
+                paint.drawLine(x + w/2, y + 1, x + w/2, origin);
+            } else if (y > origin + 1) {
+                paint.drawLine(x + w/2, origin, x + w/2, y - 1);
+            }
+        }
 
         bool illuminate = false;
 
-	if (illuminateFrame == p.frame) {
+        if (illuminateFrame == p.frame) {
 
-	    // not equipped to illuminate the right section in line
-	    // or curve mode
+            // not equipped to illuminate the right section in line
+            // or curve mode
 
-	    if (m_plotStyle != PlotCurve &&
+            if (m_plotStyle != PlotCurve &&
                 m_plotStyle != PlotDiscreteCurves &&
-		m_plotStyle != PlotLines) {
+                m_plotStyle != PlotLines) {
                 illuminate = true;
             }
         }
 
-	if (m_plotStyle != PlotLines &&
-	    m_plotStyle != PlotCurve &&
+        if (m_plotStyle != PlotLines &&
+            m_plotStyle != PlotCurve &&
             m_plotStyle != PlotDiscreteCurves &&
-	    m_plotStyle != PlotSegmentation) {
+            m_plotStyle != PlotSegmentation) {
             if (illuminate) {
                 paint.save();
-		paint.setPen(getForegroundQColor(v));
+                paint.setPen(PaintAssistant::scalePen(getForegroundQColor(v)));
                 paint.setBrush(getForegroundQColor(v));
             }
             if (m_plotStyle != PlotStems ||
@@ -1108,38 +1101,38 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             if (illuminate) {
                 paint.restore();
             }
-	}
+        }
 
-	if (m_plotStyle == PlotConnectedPoints ||
-	    m_plotStyle == PlotLines ||
+        if (m_plotStyle == PlotConnectedPoints ||
+            m_plotStyle == PlotLines ||
             m_plotStyle == PlotDiscreteCurves ||
-	    m_plotStyle == PlotCurve) {
+            m_plotStyle == PlotCurve) {
 
-	    if (haveNext) {
+            if (haveNext) {
 
-		if (m_plotStyle == PlotConnectedPoints) {
-		    
+                if (m_plotStyle == PlotConnectedPoints) {
+                    
                     paint.save();
-		    paint.setPen(brushColour);
-		    paint.drawLine(x + w, y, nx, ny);
+                    paint.setPen(PaintAssistant::scalePen(brushColour));
+                    paint.drawLine(x + w, y, nx, ny);
                     paint.restore();
 
-		} else if (m_plotStyle == PlotLines) {
+                } else if (m_plotStyle == PlotLines) {
                     
                     if (pointCount == 0) {
                         path.moveTo(x + w/2, y);
                     }
 
-//		    paint.drawLine(x + w/2, y, nx + w/2, ny);
+//                    paint.drawLine(x + w/2, y, nx + w/2, ny);
                     path.lineTo(nx + w/2, ny);
 
-		} else {
+                } else {
 
-		    double x0 = x + double(w)/2;
-		    double x1 = nx + double(w)/2;
-		    
-		    double y0 = y;
-		    double y1 = ny;
+                    double x0 = x + double(w)/2;
+                    double x1 = nx + double(w)/2;
+                    
+                    double y0 = y;
+                    double y1 = ny;
 
                     if (m_plotStyle == PlotDiscreteCurves) {
                         bool nextGap =
@@ -1151,35 +1144,35 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                         }
                     }
 
-		    if (pointCount == 0 || gap) {
-			path.moveTo((x0 + x1) / 2, (y0 + y1) / 2);
-		    }
+                    if (pointCount == 0 || gap) {
+                        path.moveTo((x0 + x1) / 2, (y0 + y1) / 2);
+                    }
 
-		    if (nx - x > 5) {
-			path.cubicTo(x0, y0,
-				     x0, y0,
-				     (x0 + x1) / 2, (y0 + y1) / 2);
+                    if (nx - x > 5) {
+                        path.cubicTo(x0, y0,
+                                     x0, y0,
+                                     (x0 + x1) / 2, (y0 + y1) / 2);
 
-			// // or
-			// path.quadTo(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
+                        // // or
+                        // path.quadTo(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
 
-		    } else {
+                    } else {
                         path.lineTo(x0, y0);
-			path.lineTo((x0 + x1) / 2, (y0 + y1) / 2);
-		    }
-		}
-	    }
-	}
+                        path.lineTo((x0 + x1) / 2, (y0 + y1) / 2);
+                    }
+                }
+            }
+        }
 
-	if (m_plotStyle == PlotSegmentation) {
+        if (m_plotStyle == PlotSegmentation) {
 
 #ifdef DEBUG_TIME_VALUE_LAYER
             cerr << "drawing rect" << endl;
 #endif
-	    
-	    if (nx <= x) continue;
+            
+            if (nx <= x) continue;
 
-            paint.setPen(QPen(getForegroundQColor(v), 2));
+            paint.setPen(PaintAssistant::scalePen(QPen(getForegroundQColor(v), 2)));
 
             if (!illuminate) {
                 if (!m_drawSegmentDivisions ||
@@ -1187,10 +1180,10 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                     x >= v->getPaintWidth() - 1) {
                     paint.setPen(Qt::NoPen);
                 }
-	    }
+            }
 
-	    paint.drawRect(x, -1, nx - x, v->getPaintHeight() + 1);
-	}
+            paint.drawRect(x, -1, nx - x, v->getPaintHeight() + 1);
+        }
 
         if (v->shouldShowFeatureLabels()) {
 
@@ -1229,11 +1222,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     if (m_plotStyle == PlotDiscreteCurves) {
         paint.setRenderHint(QPainter::Antialiasing, true);
-	paint.drawPath(path);
+        paint.drawPath(path);
     } else if ((m_plotStyle == PlotCurve || m_plotStyle == PlotLines)
                && !path.isEmpty()) {
-	paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->getPaintWidth());
-	paint.drawPath(path);
+        paint.setRenderHint(QPainter::Antialiasing, pointCount <= v->getPaintWidth());
+        paint.drawPath(path);
     }
 
     paint.restore();
@@ -1245,7 +1238,9 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 int
 TimeValueLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
-    if (!m_model || shouldAutoAlign()) {
+    if (!m_model) {
+        return 0;
+    } else if (shouldAutoAlign() && !valueExtentsMatchMine(v)) {
         return 0;
     } else if (m_plotStyle == PlotSegmentation) {
         if (m_verticalScale == LogScale) {
@@ -1356,7 +1351,7 @@ TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
-							     tr("Draw Point"));
+                                                             tr("Draw Point"));
     if (!havePoint) {
         m_editingCommand->addPoint(m_editingPoint);
     }
@@ -1449,8 +1444,8 @@ TimeValueLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingPoint = *points.begin();
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -1499,8 +1494,8 @@ TimeValueLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) {
-	finish(m_editingCommand);
-	m_editingCommand = 0;
+        finish(m_editingCommand);
+        m_editingCommand = 0;
     }
 
     m_editing = true;
@@ -1522,8 +1517,8 @@ TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     double value = getValueForY(v, e->y());
 
     if (!m_editingCommand) {
-	m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
-								 tr("Drag Point"));
+        m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
+                                                                 tr("Drag Point"));
     }
 
     m_editingCommand->deletePoint(m_editingPoint);
@@ -1542,20 +1537,20 @@ TimeValueLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 
     if (m_editingCommand) {
 
-	QString newName = m_editingCommand->getName();
+        QString newName = m_editingCommand->getName();
 
-	if (m_editingPoint.frame != m_originalPoint.frame) {
-	    if (m_editingPoint.value != m_originalPoint.value) {
-		newName = tr("Edit Point");
-	    } else {
-		newName = tr("Relocate Point");
-	    }
-	} else {
-	    newName = tr("Change Point Value");
-	}
+        if (m_editingPoint.frame != m_originalPoint.frame) {
+            if (m_editingPoint.value != m_originalPoint.value) {
+                newName = tr("Edit Point");
+            } else {
+                newName = tr("Relocate Point");
+            }
+        } else {
+            newName = tr("Change Point Value");
+        }
 
-	m_editingCommand->setName(newName);
-	finish(m_editingCommand);
+        m_editingCommand->setName(newName);
+        finish(m_editingCommand);
     }
 
     m_editingCommand = 0;
@@ -1607,21 +1602,21 @@ TimeValueLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     if (!m_model) return;
 
     SparseTimeValueModel::EditCommand *command =
-	new SparseTimeValueModel::EditCommand(m_model,
-					      tr("Drag Selection"));
+        new SparseTimeValueModel::EditCommand(m_model,
+                                              tr("Drag Selection"));
 
     SparseTimeValueModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (SparseTimeValueModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
-	    SparseTimeValueModel::Point newPoint(*i);
-	    newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+        if (s.contains(i->frame)) {
+            SparseTimeValueModel::Point newPoint(*i);
+            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -1633,30 +1628,30 @@ TimeValueLayer::resizeSelection(Selection s, Selection newSize)
     if (!m_model) return;
 
     SparseTimeValueModel::EditCommand *command =
-	new SparseTimeValueModel::EditCommand(m_model,
-					      tr("Resize Selection"));
+        new SparseTimeValueModel::EditCommand(m_model,
+                                              tr("Resize Selection"));
 
     SparseTimeValueModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     double ratio =
-	double(newSize.getEndFrame() - newSize.getStartFrame()) /
-	double(s.getEndFrame() - s.getStartFrame());
+        double(newSize.getEndFrame() - newSize.getStartFrame()) /
+        double(s.getEndFrame() - s.getStartFrame());
 
     for (SparseTimeValueModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
-	if (s.contains(i->frame)) {
+        if (s.contains(i->frame)) {
 
-	    double target = double(i->frame);
-	    target = double(newSize.getStartFrame()) +
-		target - double(s.getStartFrame()) * ratio;
+            double target = double(i->frame);
+            target = double(newSize.getStartFrame()) +
+                target - double(s.getStartFrame()) * ratio;
 
-	    SparseTimeValueModel::Point newPoint(*i);
-	    newPoint.frame = lrint(target);
-	    command->deletePoint(*i);
-	    command->addPoint(newPoint);
-	}
+            SparseTimeValueModel::Point newPoint(*i);
+            newPoint.frame = lrint(target);
+            command->deletePoint(*i);
+            command->addPoint(newPoint);
+        }
     }
 
     finish(command);
@@ -1668,14 +1663,14 @@ TimeValueLayer::deleteSelection(Selection s)
     if (!m_model) return;
 
     SparseTimeValueModel::EditCommand *command =
-	new SparseTimeValueModel::EditCommand(m_model,
-					      tr("Delete Selected Points"));
+        new SparseTimeValueModel::EditCommand(m_model,
+                                              tr("Delete Selected Points"));
 
     SparseTimeValueModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (SparseTimeValueModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
+         i != points.end(); ++i) {
 
         if (s.contains(i->frame)) {
             command->deletePoint(*i);
@@ -1691,11 +1686,11 @@ TimeValueLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     if (!m_model) return;
 
     SparseTimeValueModel::PointList points =
-	m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
 
     for (SparseTimeValueModel::PointList::iterator i = points.begin();
-	 i != points.end(); ++i) {
-	if (s.contains(i->frame)) {
+         i != points.end(); ++i) {
+        if (s.contains(i->frame)) {
             Clipboard::Point point(i->frame, i->value, i->label);
             point.setReferenceFrame(alignToReference(v, i->frame));
             to.addPoint(point);
@@ -1731,7 +1726,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
     }
 
     SparseTimeValueModel::EditCommand *command =
-	new SparseTimeValueModel::EditCommand(m_model, tr("Paste"));
+        new SparseTimeValueModel::EditCommand(m_model, tr("Paste"));
 
     enum ValueAvailability {
         UnknownAvailability,
@@ -1935,11 +1930,11 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
     if (ok) setFillColourMap(cmap);
 
     PlotStyle style = (PlotStyle)
-	attributes.value("plotStyle").toInt(&ok);
+        attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
 
     VerticalScale scale = (VerticalScale)
-	attributes.value("verticalScale").toInt(&ok);
+        attributes.value("verticalScale").toInt(&ok);
     if (ok) setVerticalScale(scale);
 
     bool draw = (attributes.value("drawDivisions").trimmed() == "true");
