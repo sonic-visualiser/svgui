@@ -12,10 +12,11 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef LAYER_GEOMETRY_PROVIDER_H
-#define LAYER_GEOMETRY_PROVIDER_H
+#ifndef SV_LAYER_GEOMETRY_PROVIDER_H
+#define SV_LAYER_GEOMETRY_PROVIDER_H
 
 #include "base/BaseTypes.h"
+#include "base/ZoomLevel.h"
 
 #include <QMutex>
 #include <QMutexLocker>

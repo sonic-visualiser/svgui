@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _OVERVIEW_H_
-#define _OVERVIEW_H_
+#ifndef SV_OVERVIEW_H
+#define SV_OVERVIEW_H
 
 #include "View.h"
 

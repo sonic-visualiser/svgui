@@ -44,12 +44,14 @@ Overview::Overview(QWidget *w) :
 void
 Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 {
+    using namespace std::rel_ops;
+    
     bool zoomChanged = false;
 
     sv_frame_t frameCount = getModelsEndFrame() - getModelsStartFrame();
     ZoomLevel zoomLevel { ZoomLevel::FramesPerPixel, int(frameCount / width()) };
     if (zoomLevel.level < 1) zoomLevel.level = 1;
-    zoomLevel = getZoomConstraintBlockSize(zoomLevel, ZoomConstraint::RoundUp);
+    zoomLevel = getZoomConstraintLevel(zoomLevel, ZoomConstraint::RoundUp);
     if (zoomLevel != m_zoomLevel) {
         zoomChanged = true;
     }
@@ -170,6 +172,8 @@ Overview::setBoxColour(QColor c)
 void
 Overview::paintEvent(QPaintEvent *e)
 {
+    using namespace std::rel_ops;
+    
     // Recalculate zoom in case the size of the widget has changed.
 
 #ifdef DEBUG_OVERVIEW
@@ -178,10 +182,9 @@ Overview::paintEvent(QPaintEvent *e)
 
     sv_frame_t startFrame = getModelsStartFrame();
     sv_frame_t frameCount = getModelsEndFrame() - getModelsStartFrame();
-    int zoomLevel = int(frameCount / width());
-    if (zoomLevel < 1) zoomLevel = 1;
-    zoomLevel = getZoomConstraintBlockSize(zoomLevel,
-                                           ZoomConstraint::RoundUp);
+    ZoomLevel zoomLevel { ZoomLevel::FramesPerPixel, int(frameCount / width()) };
+    if (zoomLevel.level < 1) zoomLevel.level = 1;
+    zoomLevel = getZoomConstraintLevel(zoomLevel, ZoomConstraint::RoundUp);
     if (zoomLevel != m_zoomLevel) {
         m_zoomLevel = zoomLevel;
         emit zoomLevelChanged(m_zoomLevel, m_followZoom);

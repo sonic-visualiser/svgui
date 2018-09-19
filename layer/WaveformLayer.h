@@ -238,7 +238,7 @@ protected:
 
     mutable QPixmap *m_cache;
     mutable bool m_cacheValid;
-    mutable int m_cacheZoomLevel;
+    mutable ZoomLevel m_cacheZoomLevel;
 };
 
 #endif

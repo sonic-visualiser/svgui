@@ -49,8 +49,7 @@ WaveformLayer::WaveformLayer() :
     m_middleLineHeight(0.5),
     m_aggressive(false),
     m_cache(0),
-    m_cacheValid(false),
-    m_cacheZoomLevel(0)
+    m_cacheValid(false)
 {
     
 }
@@ -482,7 +481,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         return;
     }
   
-    int zoomLevel = v->getZoomLevel();
+    ZoomLevel zoomLevel = v->getZoomLevel();
 
 #ifdef DEBUG_WAVEFORM_PAINT
     Profiler profiler("WaveformLayer::paint", true);
@@ -509,6 +508,8 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         cerr << "WaveformLayer::paint: aggressive is true" << endl;
 #endif
 
+        using namespace std::rel_ops;
+        
         if (m_cacheValid && (zoomLevel != m_cacheZoomLevel)) {
             m_cacheValid = false;
         }
@@ -572,18 +573,22 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     // the range being drawn is.  And that set of underlying frames
     // must remain the same when we scroll one or more pixels left or
     // right.
-            
-    int modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
+
+    int desiredBlockSize = 1;
+    if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+        desiredBlockSize = zoomLevel.level;
+    }
+    int blockSize = m_model->getSummaryBlockSize(desiredBlockSize);
 
     sv_frame_t frame0;
     sv_frame_t frame1;
     sv_frame_t spare;
 
-    getSourceFramesForX(v, x0, modelZoomLevel, frame0, spare);
-    getSourceFramesForX(v, x1, modelZoomLevel, spare, frame1);
+    getSourceFramesForX(v, x0, blockSize, frame0, spare);
+    getSourceFramesForX(v, x1, blockSize, spare, frame1);
     
 #ifdef DEBUG_WAVEFORM_PAINT
-    cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << modelZoomLevel << ")" <<  endl;
+    cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << blockSize << ")" <<  endl;
 #endif
 
     RangeSummarisableTimeValueModel::RangeBlock *ranges = 
@@ -688,10 +693,10 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         }
   
         m_model->getSummaries(ch, frame0, frame1 - frame0,
-                              *ranges, modelZoomLevel);
+                              *ranges, blockSize);
 
 #ifdef DEBUG_WAVEFORM_PAINT
-        cerr << "channel " << ch << ": " << ranges->size() << " ranges from " << frame0 << " to " << frame1 << " at zoom level " << modelZoomLevel << endl;
+        cerr << "channel " << ch << ": " << ranges->size() << " ranges from " << frame0 << " to " << frame1 << " at zoom level " << blockSize << endl;
 #endif
 
         if (mergingChannels || mixingChannels) {
@@ -702,7 +707,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
                 }
                 m_model->getSummaries
                     (1, frame0, frame1 - frame0, *otherChannelRanges,
-                     modelZoomLevel);
+                     blockSize);
             } else {
                 if (otherChannelRanges != ranges) delete otherChannelRanges;
                 otherChannelRanges = ranges;
@@ -714,7 +719,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
             range = RangeSummarisableTimeValueModel::Range();
 
             sv_frame_t f0, f1;
-            if (!getSourceFramesForX(v, x, modelZoomLevel, f0, f1)) continue;
+            if (!getSourceFramesForX(v, x, blockSize, f0, f1)) continue;
             f1 = f1 - 1;
 
             if (f0 < frame0) {
@@ -722,15 +727,15 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
                 continue;
             }
 
-            sv_frame_t i0 = (f0 - frame0) / modelZoomLevel;
-            sv_frame_t i1 = (f1 - frame0) / modelZoomLevel;
+            sv_frame_t i0 = (f0 - frame0) / blockSize;
+            sv_frame_t i1 = (f1 - frame0) / blockSize;
 
 #ifdef DEBUG_WAVEFORM_PAINT
             cerr << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
 #endif
 
             if (i1 > i0 + 1) {
-                cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << modelZoomLevel << ")" << endl;
+                cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << blockSize << ")" << endl;
             }
 
             if (ranges && i0 < (sv_frame_t)ranges->size()) {
@@ -968,12 +973,17 @@ WaveformLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) cons
 
     if (!m_model || !m_model->isOK()) return "";
 
-    int zoomLevel = v->getZoomLevel();
+    ZoomLevel zoomLevel = v->getZoomLevel();
 
-    int modelZoomLevel = m_model->getSummaryBlockSize(zoomLevel);
+    int desiredBlockSize = 1;
+    if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+        desiredBlockSize = zoomLevel.level;
+    }
+
+    int blockSize = m_model->getSummaryBlockSize(desiredBlockSize);
 
     sv_frame_t f0, f1;
-    if (!getSourceFramesForX(v, x, modelZoomLevel, f0, f1)) return "";
+    if (!getSourceFramesForX(v, x, blockSize, f0, f1)) return "";
     
     QString text;
 
@@ -998,7 +1008,6 @@ WaveformLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) cons
 
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
 
-        int blockSize = v->getZoomLevel();
         RangeSummarisableTimeValueModel::RangeBlock ranges;
         m_model->getSummaries(ch, f0, f1 - f0, ranges, blockSize);
 

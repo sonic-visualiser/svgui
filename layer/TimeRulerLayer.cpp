@@ -230,7 +230,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     int minPixelSpacing = 50;
     sv_frame_t incFrame = lrint((incms * sampleRate) / 1000);
-    int incX = int(incFrame / v->getZoomLevel());
+    int incX = int(round(v->getZoomLevel().framesToPixels(incFrame)));
     int ticks = 10;
     if (incX < minPixelSpacing * 2) {
         ticks = quarter ? 4 : 5;
@@ -256,8 +256,11 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
         double dms = ms;
         sv_frame_t frame = lrint((dms * sampleRate) / 1000.0);
-        frame /= v->getZoomLevel();
-        frame *= v->getZoomLevel(); // so frame corresponds to an exact pixel
+        ZoomLevel zoom = v->getZoomLevel();
+        if (zoom.zone == ZoomLevel::FramesPerPixel) {
+            frame /= zoom.level;
+            frame *= zoom.level; // so frame corresponds to an exact pixel
+        }
 
         if (frame == prevframe && prevframe != 0) {
             cerr << "ERROR: frame == prevframe (== " << frame
@@ -337,8 +340,10 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
             dms = ms + (i * double(incms)) / ticks;
             frame = lrint((dms * sampleRate) / 1000.0);
-            frame /= v->getZoomLevel();
-            frame *= v->getZoomLevel(); // exact pixel as above
+            if (zoom.zone == ZoomLevel::FramesPerPixel) {
+                frame /= zoom.level;
+                frame *= zoom.level; // exact pixel as above
+            } 
 
             x = v->getXForFrame(frame);
 
