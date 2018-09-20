@@ -78,7 +78,7 @@ public:
     virtual ZoomLevel getZoomLevel() const {
         ZoomLevel z = m_view->getZoomLevel();
         //!!!
-        cerr << "getZoomLevel: from " << z << " to ";
+//        cerr << "getZoomLevel: from " << z << " to ";
         if (z.zone == ZoomLevel::FramesPerPixel) {
             z.level /= m_scaleFactor;
             if (z.level < 1) {
@@ -88,7 +88,7 @@ public:
             //!!!???
             z.level *= m_scaleFactor;
         }
-        cerr << z << endl;
+//        cerr << z << endl;
         return z;
     }
     virtual QRect getPaintRect() const {

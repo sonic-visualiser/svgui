@@ -764,9 +764,14 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     int drawBufferWidth;
     int binResolution = model->getResolution();
 
-    for (int x = x0; ; --x) {
+    int limitOverrun = 100; // overrun from edge before we decide this
+                            // isn't going to work out
+    int leftLimit = -limitOverrun;
+    int rightLimit = v->getPaintWidth() + limitOverrun;
+    
+    for (int x = x0; x > leftLimit; --x) {
         sv_frame_t f = v->getFrameForX(x);
-        if ((f / binResolution) * binResolution == f) {
+        if ((f / binResolution) * binResolution == f || x-1 == leftLimit) {
             if (leftCropFrame == -1) leftCropFrame = f;
             else if (x < x0 - 2) {
                 leftBoundaryFrame = f;
@@ -774,9 +779,10 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
             }
         }
     }
-    for (int x = x0 + repaintWidth; ; ++x) {
+    
+    for (int x = x0 + repaintWidth; x < rightLimit; ++x) {
         sv_frame_t f = v->getFrameForX(x);
-        if ((f / binResolution) * binResolution == f) {
+        if ((f / binResolution) * binResolution == f || x+1 == rightLimit) {
             if (rightCropFrame == -1) rightCropFrame = f;
             else if (x > x0 + repaintWidth + 2) {
                 rightBoundaryFrame = f;
@@ -784,6 +790,12 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
             }
         }
     }
+
+    if (leftBoundaryFrame == -1 || rightBoundaryFrame == -1) {
+        SVCERR << "WARNING: failed to set left or right boundary frame (values are " << leftBoundaryFrame << " and " << rightBoundaryFrame << " respectively)" << endl;
+        return;
+    }
+    
     drawBufferWidth = int
         ((rightBoundaryFrame - leftBoundaryFrame) / binResolution);
     

@@ -47,7 +47,7 @@
 #include <cassert>
 #include <cmath>
 
-//#define DEBUG_VIEW 1
+#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
 
 View::View(QWidget *w, bool showProgress) :
@@ -328,6 +328,11 @@ View::setCentreFrame(sv_frame_t f, bool e)
 {
     bool changeVisible = false;
 
+#ifdef DEBUG_VIEW
+    SVCERR << "View::setCentreFrame: from " << m_centreFrame
+           << " to " << f << endl;
+#endif
+
     if (m_centreFrame != f) {
 
         sv_frame_t formerCentre = m_centreFrame;
@@ -351,6 +356,9 @@ View::setCentreFrame(sv_frame_t f, bool e)
 #ifdef DEBUG_VIEW_WIDGET_PAINT
                 SVCERR << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
 #endif
+                // ensure the centre frame is a multiple of the zoom level
+                m_centreFrame = sv_frame_t(newPixel) * m_zoomLevel.level;
+                
                 update();
                 changeVisible = true;
             }
