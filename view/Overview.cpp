@@ -329,9 +329,11 @@ Overview::mouseMoveEvent(QMouseEvent *e)
         if (newCentreFrame > 0) --newCentreFrame;
     }
     
+    sv_frame_t pixel = sv_frame_t(round(m_zoomLevel.pixelsToFrames(1)));
+    
     if (std::max(m_centreFrame, newCentreFrame) -
         std::min(m_centreFrame, newCentreFrame) >
-        m_zoomLevel.pixelsToFrames(1)) {
+        pixel) {
         sv_frame_t rf = alignToReference(newCentreFrame);
 #ifdef DEBUG_OVERVIEW
         cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << endl;
