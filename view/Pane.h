@@ -87,7 +87,7 @@ public slots:
     // view slots
     virtual void toolModeChanged() override;
     virtual void zoomWheelsEnabledChanged() override;
-    virtual void viewZoomLevelChanged(View *v, int z, bool locked) override;
+    virtual void viewZoomLevelChanged(View *, ZoomLevel, bool locked) override;
     virtual void modelAlignmentCompletionChanged() override;
 
     // local slots, not overrides

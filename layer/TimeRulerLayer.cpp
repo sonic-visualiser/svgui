@@ -230,7 +230,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     int minPixelSpacing = 50;
     sv_frame_t incFrame = lrint((incms * sampleRate) / 1000);
-    int incX = int(round(v->getZoomLevel().framesToPixels(incFrame)));
+    int incX = int(round(v->getZoomLevel().framesToPixels(double(incFrame))));
     int ticks = 10;
     if (incX < minPixelSpacing * 2) {
         ticks = quarter ? 4 : 5;

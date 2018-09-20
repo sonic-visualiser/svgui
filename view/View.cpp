@@ -54,7 +54,7 @@ View::View(QWidget *w, bool showProgress) :
     QFrame(w),
     m_id(getNextId()),
     m_centreFrame(0),
-    m_zoomLevel(1024),
+    m_zoomLevel(ZoomLevel::FramesPerPixel, 1024),
     m_followPan(true),
     m_followZoom(true),
     m_followPlay(PlaybackScrollPageWithCentre),
@@ -64,7 +64,7 @@ View::View(QWidget *w, bool showProgress) :
     m_cache(0),
     m_buffer(0),
     m_cacheCentreFrame(0),
-    m_cacheZoomLevel(1024),
+    m_cacheZoomLevel(ZoomLevel::FramesPerPixel, 1024),
     m_selectionCached(false),
     m_deleting(false),
     m_haveSelectedLayer(false),
@@ -319,7 +319,8 @@ View::getEndFrame() const
 void
 View::setStartFrame(sv_frame_t f)
 {
-    setCentreFrame(f + m_zoomLevel * (width() / 2));
+    setCentreFrame(f + sv_frame_t(round
+                                  (m_zoomLevel.pixelsToFrames(width() / 2))));
 }
 
 bool
