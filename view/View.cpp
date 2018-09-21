@@ -395,16 +395,33 @@ View::getXForFrame(sv_frame_t frame) const
 sv_frame_t
 View::getFrameForX(int x) const
 {
+    // Note, this must always return a value that is on a zoom-level
+    // boundary - regardless of whether the nominal centre frame is on
+    // such a boundary or not
+
     int diff = x - (width()/2);
-    sv_frame_t fdiff = diff;
-
+    sv_frame_t level = m_zoomLevel.level;
+    sv_frame_t fdiff, result;
+    
     if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
-        fdiff *= m_zoomLevel.level;
+        fdiff = diff * level;
+        result = ((fdiff + m_centreFrame) / level) * level;
     } else {
-        fdiff /= m_zoomLevel.level;
+        fdiff = diff / level;
+        result = fdiff + m_centreFrame;
     }
-
-    return fdiff + m_centreFrame;
+/*    
+    if (x == 0) {
+        SVCERR << "getFrameForX(" << x << "): diff = " << diff << ", fdiff = "
+               << fdiff << ", m_centreFrame = " << m_centreFrame
+               << ", level = " << m_zoomLevel.level
+               << ", diff % level = " << (diff % m_zoomLevel.level)
+               << ", nominal " << fdiff + m_centreFrame
+               << ", will return " << result
+               << endl;
+    }
+*/        
+    return result;
 }
 
 double

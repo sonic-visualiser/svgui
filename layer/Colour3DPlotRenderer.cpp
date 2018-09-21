@@ -764,14 +764,14 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     int drawBufferWidth;
     int binResolution = model->getResolution();
 
-    int limitOverrun = 100; // overrun from edge before we decide this
-                            // isn't going to work out
-    int leftLimit = -limitOverrun;
-    int rightLimit = v->getPaintWidth() + limitOverrun;
+    // These loops should eventually terminate provided that
+    // getFrameForX always returns a multiple of the zoom level,
+    // i.e. there is some x for which getFrameForX(x) == 0 and
+    // subsequent return values are equally spaced
     
-    for (int x = x0; x > leftLimit; --x) {
+    for (int x = x0; ; --x) {
         sv_frame_t f = v->getFrameForX(x);
-        if ((f / binResolution) * binResolution == f || x-1 == leftLimit) {
+        if ((f / binResolution) * binResolution == f) {
             if (leftCropFrame == -1) leftCropFrame = f;
             else if (x < x0 - 2) {
                 leftBoundaryFrame = f;
@@ -780,9 +780,9 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         }
     }
     
-    for (int x = x0 + repaintWidth; x < rightLimit; ++x) {
+    for (int x = x0 + repaintWidth; ; ++x) {
         sv_frame_t f = v->getFrameForX(x);
-        if ((f / binResolution) * binResolution == f || x+1 == rightLimit) {
+        if ((f / binResolution) * binResolution == f) {
             if (rightCropFrame == -1) rightCropFrame = f;
             else if (x > x0 + repaintWidth + 2) {
                 rightBoundaryFrame = f;
@@ -791,11 +791,6 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         }
     }
 
-    if (leftBoundaryFrame == -1 || rightBoundaryFrame == -1) {
-        SVCERR << "WARNING: failed to set left or right boundary frame (values are " << leftBoundaryFrame << " and " << rightBoundaryFrame << " respectively)" << endl;
-        return;
-    }
-    
     drawBufferWidth = int
         ((rightBoundaryFrame - leftBoundaryFrame) / binResolution);
     
