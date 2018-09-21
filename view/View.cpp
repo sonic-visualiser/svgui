@@ -2618,7 +2618,7 @@ View::toXml(QTextStream &stream,
                       "followPan=\"%4\" "
                       "followZoom=\"%5\" "
                       "tracking=\"%6\" "
-                      " %6>\n")
+                      " %7>\n")
         .arg(m_centreFrame)
         .arg(classicZoomValue)
         .arg(deepZoomValue)
