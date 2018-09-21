@@ -554,15 +554,19 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     }
 
     int x0 = 0, x1 = w - 1;
-    int y0 = 0, y1 = h - 1;
 
     x0 = rect.left();
     x1 = rect.right();
-    y0 = rect.top();
-    y1 = rect.bottom();
 
-    if (x0 > 0) --x0;
-    if (x1 < w) ++x1;
+    if (x0 > 0) {
+        rect.adjust(-1, 0, 0, 0);
+        x0 = rect.left();
+    }
+
+    if (x1 < w) {
+        rect.adjust(0, 0, 1, 0);
+        x1 = rect.right();
+    }
 
     // Our zoom level may differ from that at which the underlying
     // model has its blocks.
@@ -616,8 +620,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     }
     
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
-        paintChannel(v, paint, ch, ranges,
-                     blockSize, x0, y0, x1, y1, frame0, frame1);
+        paintChannel(v, paint, rect, ch, ranges, blockSize, frame0, frame1);
     }
 
     if (m_middleLineHeight != 0.5) {
@@ -636,13 +639,18 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
 }
 
 void
-WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint, int ch,
+WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint,
+                            QRect rect, int ch,
                             const vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
-                            int blockSize, int x0, int y0, int x1, int y1,
-                            sv_frame_t frame0, sv_frame_t frame1)
+                            int blockSize, sv_frame_t frame0, sv_frame_t frame1)
     const
 {
-    int w = v->getPaintWidth();
+    int x0 = rect.left();
+    int y0 = rect.top();
+
+    int x1 = rect.right();
+    int y1 = rect.bottom();
+
     int h = v->getPaintHeight();
 
     int channels = 0, minChannel = 0, maxChannel = 0;
@@ -690,6 +698,8 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint, int ch,
         my = m + (((ch - minChannel) * h) / channels);
     }
 
+
+    
     paint->setPen(greys[1]);
     paint->drawLine(x0, my, x1, my);
 

@@ -213,10 +213,11 @@ protected:
     int getChannelArrangement(int &min, int &max,
                               bool &merging, bool &mixing) const;
 
-    void paintChannel(LayerGeometryProvider *, QPainter *paint, int channel,
+    void paintChannel(LayerGeometryProvider *, QPainter *paint, QRect rect,
+                      int channel,
                       const std::vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
-                      int blockSize, int x0, int y0, int x1, int y1,
-                      sv_frame_t frame0, sv_frame_t frame1) const;
+                      int blockSize, sv_frame_t frame0, sv_frame_t frame1)
+        const;
     
     int getYForValue(const LayerGeometryProvider *v, double value, int channel) const;
 
