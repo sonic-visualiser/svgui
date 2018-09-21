@@ -698,58 +698,10 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint,
         my = m + (((ch - minChannel) * h) / channels);
     }
 
-
-    
     paint->setPen(greys[1]);
     paint->drawLine(x0, my, x1, my);
 
-    int n = 10;
-    int py = -1;
-        
-    if (v->hasLightBackground() &&
-        v->getViewManager() &&
-        v->getViewManager()->shouldShowScaleGuides()) {
-
-        paint->setPen(QColor(240, 240, 240));
-
-        for (int i = 1; i < n; ++i) {
-                
-            double val = 0.0, nval = 0.0;
-
-            switch (m_scale) {
-
-            case LinearScale:
-                val = (i * gain) / n;
-                if (i > 0) nval = -val;
-                break;
-
-            case MeterScale:
-                val = AudioLevel::dB_to_multiplier(meterdbs[i]) * gain;
-                break;
-
-            case dBScale:
-                val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10) * gain;
-                break;
-            }
-
-            if (val < -1.0 || val > 1.0) continue;
-
-            int y = getYForValue(v, val, ch);
-
-            if (py >= 0 && abs(y - py) < 10) continue;
-            else py = y;
-
-            int ny = y;
-            if (nval != 0.0) {
-                ny = getYForValue(v, nval, ch);
-            }
-
-            paint->drawLine(x0, y, x1, y);
-            if (ny != y) {
-                paint->drawLine(x0, ny, x1, ny);
-            }
-        }
-    }
+    paintChannelScaleGuides(v, paint, rect, ch);
   
     int rangeix = ch - minChannel;
         
@@ -979,6 +931,69 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint,
         
         prevRangeBottom = rangeBottom;
         prevRangeTop = rangeTop;
+    }
+}
+
+void
+WaveformLayer::paintChannelScaleGuides(LayerGeometryProvider *v,
+                                       QPainter *paint,
+                                       QRect rect,
+                                       int ch) const
+{
+    int x0 = rect.left();
+    int y0 = rect.top();
+
+    int x1 = rect.right();
+    int y1 = rect.bottom();
+
+    int n = 10;
+    int py = -1;
+
+    double gain = m_effectiveGains[ch];
+        
+    if (v->hasLightBackground() &&
+        v->getViewManager() &&
+        v->getViewManager()->shouldShowScaleGuides()) {
+
+        paint->setPen(QColor(240, 240, 240));
+
+        for (int i = 1; i < n; ++i) {
+                
+            double val = 0.0, nval = 0.0;
+
+            switch (m_scale) {
+
+            case LinearScale:
+                val = (i * gain) / n;
+                if (i > 0) nval = -val;
+                break;
+
+            case MeterScale:
+                val = AudioLevel::dB_to_multiplier(meterdbs[i]) * gain;
+                break;
+
+            case dBScale:
+                val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10) * gain;
+                break;
+            }
+
+            if (val < -1.0 || val > 1.0) continue;
+
+            int y = getYForValue(v, val, ch);
+
+            if (py >= 0 && abs(y - py) < 10) continue;
+            else py = y;
+
+            int ny = y;
+            if (nval != 0.0) {
+                ny = getYForValue(v, nval, ch);
+            }
+
+            paint->drawLine(x0, y, x1, y);
+            if (ny != y) {
+                paint->drawLine(x0, ny, x1, ny);
+            }
+        }
     }
 }
 

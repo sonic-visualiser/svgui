@@ -218,6 +218,9 @@ protected:
                       const std::vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
                       int blockSize, sv_frame_t frame0, sv_frame_t frame1)
         const;
+
+    void paintChannelScaleGuides(LayerGeometryProvider *, QPainter *paint,
+                                 QRect rect, int channel) const;
     
     int getYForValue(const LayerGeometryProvider *v, double value, int channel) const;
 
