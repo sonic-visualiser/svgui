@@ -214,8 +214,7 @@ protected:
                               bool &merging, bool &mixing) const;
 
     void paintChannel(LayerGeometryProvider *, QPainter *paint, int channel,
-                      const RangeSummarisableTimeValueModel::RangeBlock *ranges,
-                      const RangeSummarisableTimeValueModel::RangeBlock *other,
+                      const std::vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
                       int blockSize, int x0, int y0, int x1, int y1,
                       sv_frame_t frame0, sv_frame_t frame1) const;
     

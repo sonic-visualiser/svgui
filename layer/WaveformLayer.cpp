@@ -33,7 +33,7 @@
 
 //#define DEBUG_WAVEFORM_PAINT 1
 
-
+using std::vector;
 
 
 WaveformLayer::WaveformLayer() :
@@ -590,40 +590,33 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << blockSize << ")" <<  endl;
 #endif
 
-    RangeSummarisableTimeValueModel::RangeBlock *ranges = 
-        new RangeSummarisableTimeValueModel::RangeBlock;
-
-    RangeSummarisableTimeValueModel::RangeBlock *otherChannelRanges = 0;
-
     while ((int)m_effectiveGains.size() <= maxChannel) {
         m_effectiveGains.push_back(m_gain);
     }
 
+    vector<RangeSummarisableTimeValueModel::RangeBlock> ranges;
+
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
-        
+        ranges.push_back({});
         m_model->getSummaries(ch, frame0, frame1 - frame0,
-                              *ranges, blockSize);
-
+                              ranges[ch - minChannel], blockSize);
 #ifdef DEBUG_WAVEFORM_PAINT
-        cerr << "channel " << ch << ": " << ranges->size() << " ranges from " << frame0 << " to " << frame1 << " at zoom level " << blockSize << endl;
+        cerr << "channel " << ch << ": " << ranges[ch - minChannel].size() << " ranges from " << frame0 << " to " << frame1 << " at zoom level " << blockSize << endl;
 #endif
-
-        if (mergingChannels || mixingChannels) {
-            if (m_model->getChannelCount() > 1) {
-                if (!otherChannelRanges) {
-                    otherChannelRanges =
-                        new RangeSummarisableTimeValueModel::RangeBlock;
-                }
-                m_model->getSummaries
-                    (1, frame0, frame1 - frame0, *otherChannelRanges,
-                     blockSize);
-            } else {
-                if (otherChannelRanges != ranges) delete otherChannelRanges;
-                otherChannelRanges = ranges;
-            }
+    }
+    
+    if (mergingChannels || mixingChannels) {
+        if (minChannel != 0 || maxChannel != 0) {
+            SVCERR << "Internal error: min & max channels should be 0 when merging or mixing all channels" << endl;
+        } else if (m_model->getChannelCount() > 1) {
+            ranges.push_back({});
+            m_model->getSummaries
+                (1, frame0, frame1 - frame0, ranges[1], blockSize);
         }
-
-        paintChannel(v, paint, ch, ranges, otherChannelRanges,
+    }
+    
+    for (int ch = minChannel; ch <= maxChannel; ++ch) {
+        paintChannel(v, paint, ch, ranges,
                      blockSize, x0, y0, x1, y1, frame0, frame1);
     }
 
@@ -632,7 +625,6 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     }
 
     if (m_aggressive) {
-
         if (m_model->isReady() && rect == v->getPaintRect()) {
             m_cacheValid = true;
             m_cacheZoomLevel = zoomLevel;
@@ -641,15 +633,11 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         delete paint;
         viewPainter.drawPixmap(rect, *m_cache, rect);
     }
-
-    if (otherChannelRanges != ranges) delete otherChannelRanges;
-    delete ranges;
 }
 
 void
 WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint, int ch,
-                            const RangeSummarisableTimeValueModel::RangeBlock *ranges,
-                            const RangeSummarisableTimeValueModel::RangeBlock *otherChannelRanges,
+                            const vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
                             int blockSize, int x0, int y0, int x1, int y1,
                             sv_frame_t frame0, sv_frame_t frame1)
     const
@@ -665,7 +653,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint, int ch,
     if (channels == 0) return;
 
     QColor baseColour = getBaseQColor();
-    std::vector<QColor> greys = getPartialShades(v);
+    vector<QColor> greys = getPartialShades(v);
         
     QColor midColour = baseColour;
     if (midColour == Qt::black) {
@@ -753,9 +741,9 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint, int ch,
         }
     }
   
+    int rangeix = ch - minChannel;
+        
     for (int x = x0; x <= x1; ++x) {
-
-        RangeSummarisableTimeValueModel::Range range;
 
         sv_frame_t f0, f1;
         if (!getSourceFramesForX(v, x, blockSize, f0, f1)) continue;
@@ -777,17 +765,17 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint, int ch,
             cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << v->getZoomLevel() << ", model zoom = " << blockSize << ")" << endl;
         }
 
-        if (ranges && i0 < (sv_frame_t)ranges->size()) {
+        const auto &r = ranges[rangeix];
+        RangeSummarisableTimeValueModel::Range range;
+            
+        if (in_range_for(r, i0)) {
 
-            range = (*ranges)[size_t(i0)];
+            range = r[i0];
 
-            if (i1 > i0 && i1 < (int)ranges->size()) {
-                range.setMax(std::max(range.max(),
-                                      (*ranges)[size_t(i1)].max()));
-                range.setMin(std::min(range.min(),
-                                      (*ranges)[size_t(i1)].min()));
-                range.setAbsmean((range.absmean()
-                                  + (*ranges)[size_t(i1)].absmean()) / 2);
+            if (i1 > i0 && in_range_for(r, i1)) {
+                range.setMax(std::max(range.max(), r[i1].max()));
+                range.setMin(std::min(range.min(), r[i1].min()));
+                range.setAbsmean((range.absmean() + r[i1].absmean()) / 2);
             }
 
         } else {
@@ -799,35 +787,33 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint, int ch,
 
         int rangeBottom = 0, rangeTop = 0, meanBottom = 0, meanTop = 0;
 
-        if (mergingChannels) {
+        if (mergingChannels && ranges.size() > 1) {
 
-            if (otherChannelRanges && i0 < (sv_frame_t)otherChannelRanges->size()) {
+            const auto &other = ranges[1];
+            
+            if (in_range_for(other, i0)) {
 
                 range.setMax(fabsf(range.max()));
-                range.setMin(-fabsf((*otherChannelRanges)[size_t(i0)].max()));
+                range.setMin(-fabsf(other[i0].max()));
                 range.setAbsmean
-                    ((range.absmean() +
-                      (*otherChannelRanges)[size_t(i0)].absmean()) / 2);
+                    ((range.absmean() + other[i0].absmean()) / 2);
 
-                if (i1 > i0 && i1 < (sv_frame_t)otherChannelRanges->size()) {
+                if (i1 > i0 && in_range_for(other, i1)) {
                     // let's not concern ourselves about the mean
-                    range.setMin
-                        (std::min
-                         (range.min(),
-                          -fabsf((*otherChannelRanges)[size_t(i1)].max())));
+                    range.setMin(std::min(range.min(),
+                                          -fabsf(other[i1].max())));
                 }
             }
 
-        } else if (mixingChannels) {
+        } else if (mixingChannels && ranges.size() > 1) {
 
-            if (otherChannelRanges && i0 < (sv_frame_t)otherChannelRanges->size()) {
+            const auto &other = ranges[1];
+            
+            if (in_range_for(other, i0)) {
 
-                range.setMax((range.max()
-                              + (*otherChannelRanges)[size_t(i0)].max()) / 2);
-                range.setMin((range.min()
-                              + (*otherChannelRanges)[size_t(i0)].min()) / 2);
-                range.setAbsmean((range.absmean()
-                                  + (*otherChannelRanges)[size_t(i0)].absmean()) / 2);
+                range.setMax((range.max() + other[i0].max()) / 2);
+                range.setMin((range.min() + other[i0].min()) / 2);
+                range.setAbsmean((range.absmean() + other[i0].absmean()) / 2);
             }
         }
 
