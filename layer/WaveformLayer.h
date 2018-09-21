@@ -211,8 +211,14 @@ protected:
 
     /// Return value is number of channels displayed
     int getChannelArrangement(int &min, int &max,
-                                 bool &merging, bool &mixing) const;
+                              bool &merging, bool &mixing) const;
 
+    void paintChannel(LayerGeometryProvider *, QPainter *paint, int channel,
+                      const RangeSummarisableTimeValueModel::RangeBlock *ranges,
+                      const RangeSummarisableTimeValueModel::RangeBlock *other,
+                      int blockSize, int x0, int y0, int x1, int y1,
+                      sv_frame_t frame0, sv_frame_t frame1) const;
+    
     int getYForValue(const LayerGeometryProvider *v, double value, int channel) const;
 
     double getValueForY(const LayerGeometryProvider *v, int y, int &channel) const;

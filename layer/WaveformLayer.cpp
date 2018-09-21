@@ -499,7 +499,6 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     int w = v->getPaintWidth();
     int h = v->getPaintHeight();
 
-    bool ready = m_model->isReady();
     QPainter *paint;
 
     if (m_aggressive) {
@@ -595,103 +594,13 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         new RangeSummarisableTimeValueModel::RangeBlock;
 
     RangeSummarisableTimeValueModel::RangeBlock *otherChannelRanges = 0;
-    RangeSummarisableTimeValueModel::Range range;
-
-    QColor baseColour = getBaseQColor();
-    std::vector<QColor> greys = getPartialShades(v);
-        
-    QColor midColour = baseColour;
-    if (midColour == Qt::black) {
-        midColour = Qt::gray;
-    } else if (v->hasLightBackground()) {
-        midColour = midColour.light(150);
-    } else {
-        midColour = midColour.light(50);
-    }
 
     while ((int)m_effectiveGains.size() <= maxChannel) {
         m_effectiveGains.push_back(m_gain);
     }
 
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
-
-        int prevRangeBottom = -1, prevRangeTop = -1;
-        QColor prevRangeBottomColour = baseColour, prevRangeTopColour = baseColour;
-
-        m_effectiveGains[ch] = m_gain;
-
-        if (m_autoNormalize) {
-            m_effectiveGains[ch] = getNormalizeGain(v, ch);
-        }
-
-        double gain = m_effectiveGains[ch];
-
-        int m = (h / channels) / 2;
-        int my = m + (((ch - minChannel) * h) / channels);
-
-#ifdef DEBUG_WAVEFORM_PAINT        
-        cerr << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << endl;
-#endif
-
-        if (my - m > y1 || my + m < y0) continue;
-
-        if ((m_scale == dBScale || m_scale == MeterScale) &&
-            m_channelMode != MergeChannels) {
-            m = (h / channels);
-            my = m + (((ch - minChannel) * h) / channels);
-        }
-
-        paint->setPen(greys[1]);
-        paint->drawLine(x0, my, x1, my);
-
-        int n = 10;
-        int py = -1;
         
-        if (v->hasLightBackground() &&
-            v->getViewManager() &&
-            v->getViewManager()->shouldShowScaleGuides()) {
-
-            paint->setPen(QColor(240, 240, 240));
-
-            for (int i = 1; i < n; ++i) {
-                
-                double val = 0.0, nval = 0.0;
-
-                switch (m_scale) {
-
-                case LinearScale:
-                    val = (i * gain) / n;
-                    if (i > 0) nval = -val;
-                    break;
-
-                case MeterScale:
-                    val = AudioLevel::dB_to_multiplier(meterdbs[i]) * gain;
-                    break;
-
-                case dBScale:
-                    val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10) * gain;
-                    break;
-                }
-
-                if (val < -1.0 || val > 1.0) continue;
-
-                int y = getYForValue(v, val, ch);
-
-                if (py >= 0 && abs(y - py) < 10) continue;
-                else py = y;
-
-                int ny = y;
-                if (nval != 0.0) {
-                    ny = getYForValue(v, nval, ch);
-                }
-
-                paint->drawLine(x0, y, x1, y);
-                if (ny != y) {
-                    paint->drawLine(x0, ny, x1, ny);
-                }
-            }
-        }
-  
         m_model->getSummaries(ch, frame0, frame1 - frame0,
                               *ranges, blockSize);
 
@@ -714,237 +623,8 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
             }
         }
 
-        for (int x = x0; x <= x1; ++x) {
-
-            range = RangeSummarisableTimeValueModel::Range();
-
-            sv_frame_t f0, f1;
-            if (!getSourceFramesForX(v, x, blockSize, f0, f1)) continue;
-            f1 = f1 - 1;
-
-            if (f0 < frame0) {
-                cerr << "ERROR: WaveformLayer::paint: pixel " << x << " has f0 = " << f0 << " which is less than range frame0 " << frame0 << " for x0 = " << x0 << endl;
-                continue;
-            }
-
-            sv_frame_t i0 = (f0 - frame0) / blockSize;
-            sv_frame_t i1 = (f1 - frame0) / blockSize;
-
-#ifdef DEBUG_WAVEFORM_PAINT
-            cerr << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
-#endif
-
-            if (i1 > i0 + 1) {
-                cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << blockSize << ")" << endl;
-            }
-
-            if (ranges && i0 < (sv_frame_t)ranges->size()) {
-
-                range = (*ranges)[size_t(i0)];
-
-                if (i1 > i0 && i1 < (int)ranges->size()) {
-                    range.setMax(std::max(range.max(),
-                                          (*ranges)[size_t(i1)].max()));
-                    range.setMin(std::min(range.min(),
-                                          (*ranges)[size_t(i1)].min()));
-                    range.setAbsmean((range.absmean()
-                                      + (*ranges)[size_t(i1)].absmean()) / 2);
-                }
-
-            } else {
-#ifdef DEBUG_WAVEFORM_PAINT
-                cerr << "No (or not enough) ranges for i0 = " << i0 << endl;
-#endif
-                continue;
-            }
-
-            int rangeBottom = 0, rangeTop = 0, meanBottom = 0, meanTop = 0;
-
-            if (mergingChannels) {
-
-                if (otherChannelRanges && i0 < (sv_frame_t)otherChannelRanges->size()) {
-
-                    range.setMax(fabsf(range.max()));
-                    range.setMin(-fabsf((*otherChannelRanges)[size_t(i0)].max()));
-                    range.setAbsmean
-                        ((range.absmean() +
-                          (*otherChannelRanges)[size_t(i0)].absmean()) / 2);
-
-                    if (i1 > i0 && i1 < (sv_frame_t)otherChannelRanges->size()) {
-                        // let's not concern ourselves about the mean
-                        range.setMin
-                            (std::min
-                             (range.min(),
-                              -fabsf((*otherChannelRanges)[size_t(i1)].max())));
-                    }
-                }
-
-            } else if (mixingChannels) {
-
-                if (otherChannelRanges && i0 < (sv_frame_t)otherChannelRanges->size()) {
-
-                    range.setMax((range.max()
-                                  + (*otherChannelRanges)[size_t(i0)].max()) / 2);
-                    range.setMin((range.min()
-                                  + (*otherChannelRanges)[size_t(i0)].min()) / 2);
-                    range.setAbsmean((range.absmean()
-                                      + (*otherChannelRanges)[size_t(i0)].absmean()) / 2);
-                }
-            }
-
-            int greyLevels = 1;
-            if (m_greyscale && (m_scale == LinearScale)) greyLevels = 4;
-
-            switch (m_scale) {
-
-            case LinearScale:
-                rangeBottom = int(double(m * greyLevels) * range.min() * gain);
-                rangeTop    = int(double(m * greyLevels) * range.max() * gain);
-                meanBottom  = int(double(-m) * range.absmean() * gain);
-                meanTop     = int(double(m) * range.absmean() * gain);
-                break;
-
-            case dBScale:
-                if (!mergingChannels) {
-                    int db0 = dBscale(range.min() * gain, m);
-                    int db1 = dBscale(range.max() * gain, m);
-                    rangeTop    = std::max(db0, db1);
-                    meanTop     = std::min(db0, db1);
-                    if (mixingChannels) rangeBottom = meanTop;
-                    else rangeBottom = dBscale(range.absmean() * gain, m);
-                    meanBottom  = rangeBottom;
-                } else {
-                    rangeBottom = -dBscale(range.min() * gain, m * greyLevels);
-                    rangeTop    =  dBscale(range.max() * gain, m * greyLevels);
-                    meanBottom  = -dBscale(range.absmean() * gain, m);
-                    meanTop     =  dBscale(range.absmean() * gain, m);
-                }
-                break;
-
-            case MeterScale:
-                if (!mergingChannels) {
-                    int r0 = abs(AudioLevel::multiplier_to_preview(range.min() * gain, m));
-                    int r1 = abs(AudioLevel::multiplier_to_preview(range.max() * gain, m));
-                    rangeTop    = std::max(r0, r1);
-                    meanTop     = std::min(r0, r1);
-                    if (mixingChannels) rangeBottom = meanTop;
-                    else rangeBottom = AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
-                    meanBottom  = rangeBottom;
-                } else {
-                    rangeBottom = -AudioLevel::multiplier_to_preview(range.min() * gain, m * greyLevels);
-                    rangeTop    =  AudioLevel::multiplier_to_preview(range.max() * gain, m * greyLevels);
-                    meanBottom  = -AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
-                    meanTop     =  AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
-                }
-                break;
-            }
-
-            rangeBottom = my * greyLevels - rangeBottom;
-            rangeTop    = my * greyLevels - rangeTop;
-            meanBottom  = my - meanBottom;
-            meanTop     = my - meanTop;
-
-            int topFill = (rangeTop % greyLevels);
-            if (topFill > 0) topFill = greyLevels - topFill;
-
-            int bottomFill = (rangeBottom % greyLevels);
-
-            rangeTop = rangeTop / greyLevels;
-            rangeBottom = rangeBottom / greyLevels;
-
-            bool clipped = false;
-
-            if (rangeTop < my - m) { rangeTop = my - m; }
-            if (rangeTop > my + m) { rangeTop = my + m; }
-            if (rangeBottom < my - m) { rangeBottom = my - m; }
-            if (rangeBottom > my + m) { rangeBottom = my + m; }
-
-            if (range.max() <= -1.0 ||
-                range.max() >= 1.0) clipped = true;
-            
-            if (meanBottom > rangeBottom) meanBottom = rangeBottom;
-            if (meanTop < rangeTop) meanTop = rangeTop;
-
-            bool drawMean = m_showMeans;
-            if (meanTop == rangeTop) {
-                if (meanTop < meanBottom) ++meanTop;
-                else drawMean = false;
-            }
-            if (meanBottom == rangeBottom && m_scale == LinearScale) {
-                if (meanBottom > meanTop) --meanBottom;
-                else drawMean = false;
-            }
-
-            if (x != x0 && prevRangeBottom != -1) {
-                if (prevRangeBottom > rangeBottom + 1 &&
-                    prevRangeTop    > rangeBottom + 1) {
-//                    paint->setPen(midColour);
-                    paint->setPen(baseColour);
-                    paint->drawLine(x-1, prevRangeTop, x, rangeBottom + 1);
-                    paint->setPen(prevRangeTopColour);
-                    paint->drawPoint(x-1, prevRangeTop);
-                } else if (prevRangeBottom < rangeTop - 1 &&
-                           prevRangeTop    < rangeTop - 1) {
-//                    paint->setPen(midColour);
-                    paint->setPen(baseColour);
-                    paint->drawLine(x-1, prevRangeBottom, x, rangeTop - 1);
-                    paint->setPen(prevRangeBottomColour);
-                    paint->drawPoint(x-1, prevRangeBottom);
-                }
-            }
-
-            if (ready) {
-                if (clipped /*!!! ||
-                    range.min() * gain <= -1.0 ||
-                    range.max() * gain >=  1.0 */) {
-                    paint->setPen(Qt::red); //!!! getContrastingColour
-                } else {
-                    paint->setPen(baseColour);
-                }
-            } else {
-                paint->setPen(midColour);
-            }
-
-#ifdef DEBUG_WAVEFORM_PAINT
-            cerr << "range " << rangeBottom << " -> " << rangeTop << ", means " << meanBottom << " -> " << meanTop << ", raw range " << range.min() << " -> " << range.max() << endl;
-#endif
-
-            if (rangeTop == rangeBottom) {
-                paint->drawPoint(x, rangeTop);
-            } else {
-                paint->drawLine(x, rangeBottom, x, rangeTop);
-            }
-
-            prevRangeTopColour = baseColour;
-            prevRangeBottomColour = baseColour;
-
-            if (m_greyscale && (m_scale == LinearScale) && ready) {
-                if (!clipped) {
-                    if (rangeTop < rangeBottom) {
-                        if (topFill > 0 &&
-                            (!drawMean || (rangeTop < meanTop - 1))) {
-                            paint->setPen(greys[topFill - 1]);
-                            paint->drawPoint(x, rangeTop);
-                            prevRangeTopColour = greys[topFill - 1];
-                        }
-                        if (bottomFill > 0 && 
-                            (!drawMean || (rangeBottom > meanBottom + 1))) {
-                            paint->setPen(greys[bottomFill - 1]);
-                            paint->drawPoint(x, rangeBottom);
-                            prevRangeBottomColour = greys[bottomFill - 1];
-                        }
-                    }
-                }
-            }
-        
-            if (drawMean) {
-                paint->setPen(midColour);
-                paint->drawLine(x, meanBottom, x, meanTop);
-            }
-        
-            prevRangeBottom = rangeBottom;
-            prevRangeTop = rangeTop;
-        }
+        paintChannel(v, paint, ch, ranges, otherChannelRanges,
+                     blockSize, x0, y0, x1, y1, frame0, frame1);
     }
 
     if (m_middleLineHeight != 0.5) {
@@ -953,7 +633,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
 
     if (m_aggressive) {
 
-        if (ready && rect == v->getPaintRect()) {
+        if (m_model->isReady() && rect == v->getPaintRect()) {
             m_cacheValid = true;
             m_cacheZoomLevel = zoomLevel;
         }
@@ -964,6 +644,346 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
 
     if (otherChannelRanges != ranges) delete otherChannelRanges;
     delete ranges;
+}
+
+void
+WaveformLayer::paintChannel(LayerGeometryProvider *v, QPainter *paint, int ch,
+                            const RangeSummarisableTimeValueModel::RangeBlock *ranges,
+                            const RangeSummarisableTimeValueModel::RangeBlock *otherChannelRanges,
+                            int blockSize, int x0, int y0, int x1, int y1,
+                            sv_frame_t frame0, sv_frame_t frame1)
+    const
+{
+    int w = v->getPaintWidth();
+    int h = v->getPaintHeight();
+
+    int channels = 0, minChannel = 0, maxChannel = 0;
+    bool mergingChannels = false, mixingChannels = false;
+
+    channels = getChannelArrangement(minChannel, maxChannel,
+                                     mergingChannels, mixingChannels);
+    if (channels == 0) return;
+
+    QColor baseColour = getBaseQColor();
+    std::vector<QColor> greys = getPartialShades(v);
+        
+    QColor midColour = baseColour;
+    if (midColour == Qt::black) {
+        midColour = Qt::gray;
+    } else if (v->hasLightBackground()) {
+        midColour = midColour.light(150);
+    } else {
+        midColour = midColour.light(50);
+    }
+
+    int prevRangeBottom = -1, prevRangeTop = -1;
+    QColor prevRangeBottomColour = baseColour, prevRangeTopColour = baseColour;
+
+    m_effectiveGains[ch] = m_gain;
+
+    if (m_autoNormalize) {
+        m_effectiveGains[ch] = getNormalizeGain(v, ch);
+    }
+
+    double gain = m_effectiveGains[ch];
+
+    int m = (h / channels) / 2;
+    int my = m + (((ch - minChannel) * h) / channels);
+
+#ifdef DEBUG_WAVEFORM_PAINT        
+    cerr << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << endl;
+#endif
+
+    if (my - m > y1 || my + m < y0) return;
+
+    if ((m_scale == dBScale || m_scale == MeterScale) &&
+        m_channelMode != MergeChannels) {
+        m = (h / channels);
+        my = m + (((ch - minChannel) * h) / channels);
+    }
+
+    paint->setPen(greys[1]);
+    paint->drawLine(x0, my, x1, my);
+
+    int n = 10;
+    int py = -1;
+        
+    if (v->hasLightBackground() &&
+        v->getViewManager() &&
+        v->getViewManager()->shouldShowScaleGuides()) {
+
+        paint->setPen(QColor(240, 240, 240));
+
+        for (int i = 1; i < n; ++i) {
+                
+            double val = 0.0, nval = 0.0;
+
+            switch (m_scale) {
+
+            case LinearScale:
+                val = (i * gain) / n;
+                if (i > 0) nval = -val;
+                break;
+
+            case MeterScale:
+                val = AudioLevel::dB_to_multiplier(meterdbs[i]) * gain;
+                break;
+
+            case dBScale:
+                val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10) * gain;
+                break;
+            }
+
+            if (val < -1.0 || val > 1.0) continue;
+
+            int y = getYForValue(v, val, ch);
+
+            if (py >= 0 && abs(y - py) < 10) continue;
+            else py = y;
+
+            int ny = y;
+            if (nval != 0.0) {
+                ny = getYForValue(v, nval, ch);
+            }
+
+            paint->drawLine(x0, y, x1, y);
+            if (ny != y) {
+                paint->drawLine(x0, ny, x1, ny);
+            }
+        }
+    }
+  
+    for (int x = x0; x <= x1; ++x) {
+
+        RangeSummarisableTimeValueModel::Range range;
+
+        sv_frame_t f0, f1;
+        if (!getSourceFramesForX(v, x, blockSize, f0, f1)) continue;
+        f1 = f1 - 1;
+
+        if (f0 < frame0) {
+            cerr << "ERROR: WaveformLayer::paint: pixel " << x << " has f0 = " << f0 << " which is less than range frame0 " << frame0 << " for x0 = " << x0 << endl;
+            continue;
+        }
+
+        sv_frame_t i0 = (f0 - frame0) / blockSize;
+        sv_frame_t i1 = (f1 - frame0) / blockSize;
+
+#ifdef DEBUG_WAVEFORM_PAINT
+        cerr << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
+#endif
+
+        if (i1 > i0 + 1) {
+            cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << v->getZoomLevel() << ", model zoom = " << blockSize << ")" << endl;
+        }
+
+        if (ranges && i0 < (sv_frame_t)ranges->size()) {
+
+            range = (*ranges)[size_t(i0)];
+
+            if (i1 > i0 && i1 < (int)ranges->size()) {
+                range.setMax(std::max(range.max(),
+                                      (*ranges)[size_t(i1)].max()));
+                range.setMin(std::min(range.min(),
+                                      (*ranges)[size_t(i1)].min()));
+                range.setAbsmean((range.absmean()
+                                  + (*ranges)[size_t(i1)].absmean()) / 2);
+            }
+
+        } else {
+#ifdef DEBUG_WAVEFORM_PAINT
+            cerr << "No (or not enough) ranges for i0 = " << i0 << endl;
+#endif
+            continue;
+        }
+
+        int rangeBottom = 0, rangeTop = 0, meanBottom = 0, meanTop = 0;
+
+        if (mergingChannels) {
+
+            if (otherChannelRanges && i0 < (sv_frame_t)otherChannelRanges->size()) {
+
+                range.setMax(fabsf(range.max()));
+                range.setMin(-fabsf((*otherChannelRanges)[size_t(i0)].max()));
+                range.setAbsmean
+                    ((range.absmean() +
+                      (*otherChannelRanges)[size_t(i0)].absmean()) / 2);
+
+                if (i1 > i0 && i1 < (sv_frame_t)otherChannelRanges->size()) {
+                    // let's not concern ourselves about the mean
+                    range.setMin
+                        (std::min
+                         (range.min(),
+                          -fabsf((*otherChannelRanges)[size_t(i1)].max())));
+                }
+            }
+
+        } else if (mixingChannels) {
+
+            if (otherChannelRanges && i0 < (sv_frame_t)otherChannelRanges->size()) {
+
+                range.setMax((range.max()
+                              + (*otherChannelRanges)[size_t(i0)].max()) / 2);
+                range.setMin((range.min()
+                              + (*otherChannelRanges)[size_t(i0)].min()) / 2);
+                range.setAbsmean((range.absmean()
+                                  + (*otherChannelRanges)[size_t(i0)].absmean()) / 2);
+            }
+        }
+
+        int greyLevels = 1;
+        if (m_greyscale && (m_scale == LinearScale)) greyLevels = 4;
+
+        switch (m_scale) {
+
+        case LinearScale:
+            rangeBottom = int(double(m * greyLevels) * range.min() * gain);
+            rangeTop    = int(double(m * greyLevels) * range.max() * gain);
+            meanBottom  = int(double(-m) * range.absmean() * gain);
+            meanTop     = int(double(m) * range.absmean() * gain);
+            break;
+
+        case dBScale:
+            if (!mergingChannels) {
+                int db0 = dBscale(range.min() * gain, m);
+                int db1 = dBscale(range.max() * gain, m);
+                rangeTop    = std::max(db0, db1);
+                meanTop     = std::min(db0, db1);
+                if (mixingChannels) rangeBottom = meanTop;
+                else rangeBottom = dBscale(range.absmean() * gain, m);
+                meanBottom  = rangeBottom;
+            } else {
+                rangeBottom = -dBscale(range.min() * gain, m * greyLevels);
+                rangeTop    =  dBscale(range.max() * gain, m * greyLevels);
+                meanBottom  = -dBscale(range.absmean() * gain, m);
+                meanTop     =  dBscale(range.absmean() * gain, m);
+            }
+            break;
+
+        case MeterScale:
+            if (!mergingChannels) {
+                int r0 = abs(AudioLevel::multiplier_to_preview(range.min() * gain, m));
+                int r1 = abs(AudioLevel::multiplier_to_preview(range.max() * gain, m));
+                rangeTop    = std::max(r0, r1);
+                meanTop     = std::min(r0, r1);
+                if (mixingChannels) rangeBottom = meanTop;
+                else rangeBottom = AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
+                meanBottom  = rangeBottom;
+            } else {
+                rangeBottom = -AudioLevel::multiplier_to_preview(range.min() * gain, m * greyLevels);
+                rangeTop    =  AudioLevel::multiplier_to_preview(range.max() * gain, m * greyLevels);
+                meanBottom  = -AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
+                meanTop     =  AudioLevel::multiplier_to_preview(range.absmean() * gain, m);
+            }
+            break;
+        }
+
+        rangeBottom = my * greyLevels - rangeBottom;
+        rangeTop    = my * greyLevels - rangeTop;
+        meanBottom  = my - meanBottom;
+        meanTop     = my - meanTop;
+
+        int topFill = (rangeTop % greyLevels);
+        if (topFill > 0) topFill = greyLevels - topFill;
+
+        int bottomFill = (rangeBottom % greyLevels);
+
+        rangeTop = rangeTop / greyLevels;
+        rangeBottom = rangeBottom / greyLevels;
+
+        bool clipped = false;
+
+        if (rangeTop < my - m) { rangeTop = my - m; }
+        if (rangeTop > my + m) { rangeTop = my + m; }
+        if (rangeBottom < my - m) { rangeBottom = my - m; }
+        if (rangeBottom > my + m) { rangeBottom = my + m; }
+
+        if (range.max() <= -1.0 ||
+            range.max() >= 1.0) clipped = true;
+            
+        if (meanBottom > rangeBottom) meanBottom = rangeBottom;
+        if (meanTop < rangeTop) meanTop = rangeTop;
+
+        bool drawMean = m_showMeans;
+        if (meanTop == rangeTop) {
+            if (meanTop < meanBottom) ++meanTop;
+            else drawMean = false;
+        }
+        if (meanBottom == rangeBottom && m_scale == LinearScale) {
+            if (meanBottom > meanTop) --meanBottom;
+            else drawMean = false;
+        }
+
+        if (x != x0 && prevRangeBottom != -1) {
+            if (prevRangeBottom > rangeBottom + 1 &&
+                prevRangeTop    > rangeBottom + 1) {
+//                    paint->setPen(midColour);
+                paint->setPen(baseColour);
+                paint->drawLine(x-1, prevRangeTop, x, rangeBottom + 1);
+                paint->setPen(prevRangeTopColour);
+                paint->drawPoint(x-1, prevRangeTop);
+            } else if (prevRangeBottom < rangeTop - 1 &&
+                       prevRangeTop    < rangeTop - 1) {
+//                    paint->setPen(midColour);
+                paint->setPen(baseColour);
+                paint->drawLine(x-1, prevRangeBottom, x, rangeTop - 1);
+                paint->setPen(prevRangeBottomColour);
+                paint->drawPoint(x-1, prevRangeBottom);
+            }
+        }
+
+        if (m_model->isReady()) {
+            if (clipped /*!!! ||
+                          range.min() * gain <= -1.0 ||
+                          range.max() * gain >=  1.0 */) {
+                paint->setPen(Qt::red); //!!! getContrastingColour
+            } else {
+                paint->setPen(baseColour);
+            }
+        } else {
+            paint->setPen(midColour);
+        }
+
+#ifdef DEBUG_WAVEFORM_PAINT
+        cerr << "range " << rangeBottom << " -> " << rangeTop << ", means " << meanBottom << " -> " << meanTop << ", raw range " << range.min() << " -> " << range.max() << endl;
+#endif
+
+        if (rangeTop == rangeBottom) {
+            paint->drawPoint(x, rangeTop);
+        } else {
+            paint->drawLine(x, rangeBottom, x, rangeTop);
+        }
+
+        prevRangeTopColour = baseColour;
+        prevRangeBottomColour = baseColour;
+
+        if (m_greyscale && (m_scale == LinearScale) && m_model->isReady()) {
+            if (!clipped) {
+                if (rangeTop < rangeBottom) {
+                    if (topFill > 0 &&
+                        (!drawMean || (rangeTop < meanTop - 1))) {
+                        paint->setPen(greys[topFill - 1]);
+                        paint->drawPoint(x, rangeTop);
+                        prevRangeTopColour = greys[topFill - 1];
+                    }
+                    if (bottomFill > 0 && 
+                        (!drawMean || (rangeBottom > meanBottom + 1))) {
+                        paint->setPen(greys[bottomFill - 1]);
+                        paint->drawPoint(x, rangeBottom);
+                        prevRangeBottomColour = greys[bottomFill - 1];
+                    }
+                }
+            }
+        }
+        
+        if (drawMean) {
+            paint->setPen(midColour);
+            paint->drawLine(x, meanBottom, x, meanTop);
+        }
+        
+        prevRangeBottom = rangeBottom;
+        prevRangeTop = rangeTop;
+    }
 }
 
 QString
