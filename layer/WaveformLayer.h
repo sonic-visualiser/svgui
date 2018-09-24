@@ -26,6 +26,8 @@ class View;
 class QPainter;
 class QPixmap;
 
+namespace breakfastquay { class Resampler; }
+
 class WaveformLayer : public SingleColourLayer
 {
     Q_OBJECT
@@ -213,12 +215,15 @@ protected:
     int getChannelArrangement(int &min, int &max,
                               bool &merging, bool &mixing) const;
 
-    void paintChannel(LayerGeometryProvider *, QPainter *paint, QRect rect,
-                      int channel,
-                      const std::vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
-                      int blockSize, sv_frame_t frame0, sv_frame_t frame1)
-        const;
+    void paintChannelSummarised
+    (LayerGeometryProvider *, QPainter *paint, QRect rect, int channel,
+     const std::vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
+     int blockSize, sv_frame_t frame0, sv_frame_t frame1) const;
 
+    void paintChannelOversampled
+    (LayerGeometryProvider *, QPainter *paint, QRect rect, int channel,
+     sv_frame_t frame0, sv_frame_t frame1) const;
+    
     void paintChannelScaleGuides(LayerGeometryProvider *, QPainter *paint,
                                  QRect rect, int channel) const;
     
@@ -242,8 +247,12 @@ protected:
     Scale        m_scale;
     double       m_middleLineHeight;
     bool         m_aggressive;
+    int          m_oversampleRate;
+    int          m_oversampleTail;
 
     mutable std::vector<float> m_effectiveGains;
+
+    mutable breakfastquay::Resampler *m_oversampler;
 
     mutable QPixmap *m_cache;
     mutable bool m_cacheValid;
