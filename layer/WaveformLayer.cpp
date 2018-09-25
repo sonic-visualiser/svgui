@@ -609,8 +609,10 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     while ((int)m_effectiveGains.size() <= maxChannel) {
         m_effectiveGains.push_back(m_gain);
     }
-    for (int ch = minChannel; ch <= maxChannel; ++ch) {
-        m_effectiveGains[ch] = getNormalizeGain(v, ch);
+    if (m_autoNormalize) {
+        for (int ch = minChannel; ch <= maxChannel; ++ch) {
+            m_effectiveGains[ch] = getNormalizeGain(v, ch);
+        }
     }
 
     if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel) {
