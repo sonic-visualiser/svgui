@@ -33,7 +33,8 @@
 
 #include <bqresample/Resampler.h>
 
-//#define DEBUG_WAVEFORM_PAINT 1
+#define DEBUG_WAVEFORM_PAINT 1
+//#define DEBUG_WAVEFORM_PAINT_BY_PIXEL 1
 
 using std::vector;
 
@@ -50,8 +51,6 @@ WaveformLayer::WaveformLayer() :
     m_scale(LinearScale),
     m_middleLineHeight(0.5),
     m_aggressive(false),
-    m_oversampleRate(8),
-    m_oversampleTail(200),
     m_oversampler(0),
     m_cache(0),
     m_cacheValid(false)
@@ -88,8 +87,10 @@ WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
     delete m_oversampler;
     breakfastquay::Resampler::Parameters params;
     params.initialSampleRate = m_model->getSampleRate();
-    m_oversampler = new breakfastquay::Resampler
-        (params, m_model->getChannelCount());
+    // Oversampler is initialised with 1 channel: we resample the
+    // channels individually for practical reasons (because channel
+    // configuration may vary)
+    m_oversampler = new breakfastquay::Resampler(params, 1);
     
     connectSignals(m_model);
 
@@ -433,7 +434,6 @@ WaveformLayer::getSourceFramesForX(LayerGeometryProvider *v,
     }
 
     f0 = viewFrame;
-    
     f0 = f0 / modelZoomLevel;
     f0 = f0 * modelZoomLevel;
 
@@ -497,7 +497,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
 
 #ifdef DEBUG_WAVEFORM_PAINT
     Profiler profiler("WaveformLayer::paint", true);
-    cerr << "WaveformLayer::paint (" << rect.x() << "," << rect.y()
+    SVCERR << "WaveformLayer::paint (" << rect.x() << "," << rect.y()
               << ") [" << rect.width() << "x" << rect.height() << "]: zoom " << zoomLevel << endl;
 #endif
 
@@ -516,7 +516,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     if (m_aggressive) {
 
 #ifdef DEBUG_WAVEFORM_PAINT
-        cerr << "WaveformLayer::paint: aggressive is true" << endl;
+        SVCERR << "WaveformLayer::paint: aggressive is true" << endl;
 #endif
 
         using namespace std::rel_ops;
@@ -528,7 +528,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         if (!m_cache || m_cache->width() != w || m_cache->height() != h) {
 #ifdef DEBUG_WAVEFORM_PAINT
             if (m_cache) {
-                cerr << "WaveformLayer::paint: cache size " << m_cache->width() << "x" << m_cache->height() << " differs from view size " << w << "x" << h << ": regenerating aggressive cache" << endl;
+                SVCERR << "WaveformLayer::paint: cache size " << m_cache->width() << "x" << m_cache->height() << " differs from view size " << w << "x" << h << ": regenerating aggressive cache" << endl;
             }
 #endif
             delete m_cache;
@@ -603,9 +603,10 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     getSourceFramesForX(v, x1, blockSize, spare, frame1);
     
 #ifdef DEBUG_WAVEFORM_PAINT
-    cerr << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << blockSize << ")" <<  endl;
+    SVCERR << "Painting waveform from " << frame0 << " to " << frame1 << " (" << (x1-x0+1) << " pixels at zoom " << zoomLevel << " and model zoom " << blockSize << ")" <<  endl;
 #endif
 
+    m_effectiveGains.clear();
     while ((int)m_effectiveGains.size() <= maxChannel) {
         m_effectiveGains.push_back(m_gain);
     }
@@ -615,38 +616,22 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         }
     }
 
+    RangeVec ranges;
+
     if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel) {
-    
-        vector<RangeSummarisableTimeValueModel::RangeBlock> ranges;
-
-        for (int ch = minChannel; ch <= maxChannel; ++ch) {
-            ranges.push_back({});
-            m_model->getSummaries(ch, frame0, frame1 - frame0,
-                                  ranges[ch - minChannel], blockSize);
-#ifdef DEBUG_WAVEFORM_PAINT
-            cerr << "channel " << ch << ": " << ranges[ch - minChannel].size() << " ranges from " << frame0 << " to " << frame1 << " at zoom level " << blockSize << endl;
-#endif
-        }
-    
-        if (mergingChannels || mixingChannels) {
-            if (minChannel != 0 || maxChannel != 0) {
-                SVCERR << "Internal error: min & max channels should be 0 when merging or mixing all channels" << endl;
-            } else if (m_model->getChannelCount() > 1) {
-                ranges.push_back({});
-                m_model->getSummaries
-                    (1, frame0, frame1 - frame0, ranges[1], blockSize);
-            }
-        }
-    
-        for (int ch = minChannel; ch <= maxChannel; ++ch) {
-            paintChannelSummarised(v, paint, rect, ch,
-                                   ranges, blockSize, frame0, frame1);
-        }
+        getSummaryRanges(minChannel, maxChannel,
+                         mixingChannels || mergingChannels,
+                         frame0, frame1,
+                         blockSize, ranges);
     } else {
+        getOversampledRanges(minChannel, maxChannel,
+                             mixingChannels || mergingChannels,
+                             frame0, frame1,
+                             v->getZoomLevel().level, ranges);
+    }
 
-        for (int ch = minChannel; ch <= maxChannel; ++ch) {
-            paintChannelOversampled(v, paint, rect, ch, frame0, frame1);
-        }
+    for (int ch = minChannel; ch <= maxChannel; ++ch) {
+        paintChannel(v, paint, rect, ch, ranges, blockSize, frame0, frame1);
     }
     
     if (m_middleLineHeight != 0.5) {
@@ -665,12 +650,108 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
 }
 
 void
-WaveformLayer::paintChannelSummarised(LayerGeometryProvider *v,
-                                      QPainter *paint,
-                                      QRect rect, int ch,
-                                      const vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
-                                      int blockSize,
-                                      sv_frame_t frame0, sv_frame_t frame1)
+WaveformLayer::getSummaryRanges(int minChannel, int maxChannel,
+                                bool mixingOrMerging,
+                                sv_frame_t frame0, sv_frame_t frame1,
+                                int blockSize, RangeVec &ranges)
+    const
+{
+    for (int ch = minChannel; ch <= maxChannel; ++ch) {
+        ranges.push_back({});
+        m_model->getSummaries(ch, frame0, frame1 - frame0,
+                              ranges[ch - minChannel], blockSize);
+#ifdef DEBUG_WAVEFORM_PAINT
+            SVCERR << "channel " << ch << ": " << ranges[ch - minChannel].size() << " ranges from " << frame0 << " to " << frame1 << " at zoom level " << blockSize << endl;
+#endif
+    }
+    
+    if (mixingOrMerging) {
+        if (minChannel != 0 || maxChannel != 0) {
+            SVCERR << "Internal error: min & max channels should be 0 when merging or mixing all channels" << endl;
+        } else if (m_model->getChannelCount() > 1) {
+            ranges.push_back({});
+            m_model->getSummaries
+                (1, frame0, frame1 - frame0, ranges[1], blockSize);
+        }
+    }
+}
+
+void
+WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
+                                    bool mixingOrMerging,
+                                    sv_frame_t frame0, sv_frame_t frame1,
+                                    int oversampleBy, RangeVec &ranges)
+    const
+{
+    // These frame values, tail length, etc variables are at the model
+    // sample rate, not the oversampled rate
+
+    sv_frame_t tail = 16;
+    sv_frame_t leftTail = tail, rightTail = tail;
+    sv_frame_t startFrame = m_model->getStartFrame();
+    sv_frame_t endFrame = m_model->getEndFrame();
+
+    sv_frame_t rf0 = frame0 - tail;
+    if (rf0 < startFrame) {
+        leftTail = frame0 - startFrame;
+        rf0 = 0;
+    }
+
+    sv_frame_t rf1 = frame1 + tail;
+    if (rf1 >= endFrame) {
+        rightTail = endFrame - 1 - frame1;
+        rf1 = endFrame - 1;
+    }
+    if (rf1 <= rf0) {
+        SVCERR << "WARNING: getOversampledRanges: rf1 (" << rf1 << ") <= rf0 ("
+               << rf0 << ")" << endl;
+        return;
+    }
+    
+    for (int ch = minChannel; ch <= maxChannel; ++ch) {
+        floatvec_t raw = m_model->getData(ch, rf0, rf1 - rf0);
+        floatvec_t oversampled(oversampleBy * (frame1 - frame0 + 2 * tail),
+                               0.f);
+        //!!! return value, err etc
+        m_oversampler->reset();
+        m_oversampler->resampleInterleaved(oversampled.data(),
+                                           oversampled.size(),
+                                           raw.data(),
+                                           raw.size(),
+                                           oversampleBy,
+                                           true);
+        RangeSummarisableTimeValueModel::RangeBlock rr;
+        for (sv_frame_t ix = leftTail * oversampleBy;
+             in_range_for(oversampled, ix + (rightTail * oversampleBy));
+             ++ix) {
+            RangeSummarisableTimeValueModel::Range r;
+            r.sample(oversampled[ix]);
+            rr.push_back(r);
+        }
+        ranges.push_back(rr);
+
+#ifdef DEBUG_WAVEFORM_PAINT
+        SVCERR << "getOversampledRanges: " << frame0 << " -> " << frame1
+               << " (" << frame1 - frame0 << "-frame range) at ratio "
+               << oversampleBy << " with tail " << tail
+               << " -> got " << oversampled.size()
+               << " oversampled values for channel " << ch
+               << ", from which returning " << rr.size() << " ranges" << endl;
+#endif    
+    }
+
+    //!!! + channel modes
+    
+    return;
+}
+
+void
+WaveformLayer::paintChannel(LayerGeometryProvider *v,
+                            QPainter *paint,
+                            QRect rect, int ch,
+                            const RangeVec &ranges,
+                            int blockSize,
+                            sv_frame_t frame0, sv_frame_t frame1)
     const
 {
     int x0 = rect.left();
@@ -709,7 +790,7 @@ WaveformLayer::paintChannelSummarised(LayerGeometryProvider *v,
     int my = m + (((ch - minChannel) * h) / channels);
 
 #ifdef DEBUG_WAVEFORM_PAINT        
-    cerr << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << endl;
+    SVCERR << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << endl;
 #endif
 
     if (my - m > y1 || my + m < y0) return;
@@ -726,27 +807,44 @@ WaveformLayer::paintChannelSummarised(LayerGeometryProvider *v,
     paintChannelScaleGuides(v, paint, rect, ch);
   
     int rangeix = ch - minChannel;
-        
+
+#ifdef DEBUG_WAVEFORM_PAINT
+    SVCERR << "paint channel " << ch << ": frame0 = " << frame0 << ", frame1 = " << frame1 << ", blockSize = " << blockSize << ", have " << ranges.size() << " range blocks of which ours is index " << rangeix << " with " << ranges[rangeix].size() << " ranges in it" << endl;
+#endif
+
     for (int x = x0; x <= x1; ++x) {
 
         sv_frame_t f0, f1;
-        if (!getSourceFramesForX(v, x, blockSize, f0, f1)) continue;
-        f1 = f1 - 1;
+        sv_frame_t i0, i1;
+
+        bool showIndividualSample = false;
+        
+        if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel) {
+            if (!getSourceFramesForX(v, x, blockSize, f0, f1)) {
+                continue;
+            }
+            f1 = f1 - 1;
+            i0 = (f0 - frame0) / blockSize;
+            i1 = (f1 - frame0) / blockSize;
+        } else {
+            int oversampleBy = v->getZoomLevel().level;
+            f0 = f1 = v->getFrameForX(x);
+            int xf0 = v->getXForFrame(f0);
+            showIndividualSample = (x == xf0);
+            i0 = i1 = (f0 - frame0) * oversampleBy + (x - xf0);
+        }
 
         if (f0 < frame0) {
-            cerr << "ERROR: WaveformLayer::paint: pixel " << x << " has f0 = " << f0 << " which is less than range frame0 " << frame0 << " for x0 = " << x0 << endl;
+            SVCERR << "ERROR: WaveformLayer::paint: pixel " << x << " has f0 = " << f0 << " which is less than range frame0 " << frame0 << " for x0 = " << x0 << endl;
             continue;
         }
 
-        sv_frame_t i0 = (f0 - frame0) / blockSize;
-        sv_frame_t i1 = (f1 - frame0) / blockSize;
-
-#ifdef DEBUG_WAVEFORM_PAINT
-        cerr << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
+#ifdef DEBUG_WAVEFORM_PAINT_BY_PIXEL
+        SVCERR << "WaveformLayer::paint: pixel " << x << ": i0 " << i0 << " (f " << f0 << "), i1 " << i1 << " (f " << f1 << ")" << endl;
 #endif
 
         if (i1 > i0 + 1) {
-            cerr << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << v->getZoomLevel() << ", model zoom = " << blockSize << ")" << endl;
+            SVCERR << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << v->getZoomLevel() << ", model zoom = " << blockSize << ")" << endl;
         }
 
         const auto &r = ranges[rangeix];
@@ -764,7 +862,7 @@ WaveformLayer::paintChannelSummarised(LayerGeometryProvider *v,
 
         } else {
 #ifdef DEBUG_WAVEFORM_PAINT
-            cerr << "No (or not enough) ranges for i0 = " << i0 << endl;
+            SVCERR << "No (or not enough) ranges for index i0 = " << i0 << " (there are " << r.size() << " range(s))" << endl;
 #endif
             continue;
         }
@@ -884,6 +982,11 @@ WaveformLayer::paintChannelSummarised(LayerGeometryProvider *v,
             else drawMean = false;
         }
 
+        if (showIndividualSample) {
+            paint->setPen(baseColour);
+            paint->drawRect(x-1, rangeTop-1, 3, 3);
+        }
+        
         if (x != x0 && prevRangeBottom != -1) {
             if (prevRangeBottom > rangeBottom + 1 &&
                 prevRangeTop    > rangeBottom + 1) {
@@ -914,8 +1017,8 @@ WaveformLayer::paintChannelSummarised(LayerGeometryProvider *v,
             paint->setPen(midColour);
         }
 
-#ifdef DEBUG_WAVEFORM_PAINT
-        cerr << "range " << rangeBottom << " -> " << rangeTop << ", means " << meanBottom << " -> " << meanTop << ", raw range " << range.min() << " -> " << range.max() << endl;
+#ifdef DEBUG_WAVEFORM_PAINT_BY_PIXEL
+        SVCERR << "range " << rangeBottom << " -> " << rangeTop << ", means " << meanBottom << " -> " << meanTop << ", raw range " << range.min() << " -> " << range.max() << endl;
 #endif
 
         if (rangeTop == rangeBottom) {
@@ -953,68 +1056,6 @@ WaveformLayer::paintChannelSummarised(LayerGeometryProvider *v,
         
         prevRangeBottom = rangeBottom;
         prevRangeTop = rangeTop;
-    }
-}
-
-void
-WaveformLayer::paintChannelOversampled(LayerGeometryProvider *v,
-                                       QPainter *paint,
-                                       QRect rect,
-                                       int ch,
-                                       sv_frame_t frame0, sv_frame_t frame1)
-    const
-{
-    int x0 = rect.left();
-    int y0 = rect.top();
-
-    int x1 = rect.right();
-    int y1 = rect.bottom();
-
-    int h = v->getPaintHeight();
-
-    int channels = 0, minChannel = 0, maxChannel = 0;
-    bool mergingChannels = false, mixingChannels = false;
-
-    channels = getChannelArrangement(minChannel, maxChannel,
-                                     mergingChannels, mixingChannels);
-    if (channels == 0) return;
-
-    QColor baseColour = getBaseQColor();
-    vector<QColor> greys = getPartialShades(v);
-        
-    QColor midColour = baseColour;
-    if (midColour == Qt::black) {
-        midColour = Qt::gray;
-    } else if (v->hasLightBackground()) {
-        midColour = midColour.light(150);
-    } else {
-        midColour = midColour.light(50);
-    }
-
-    double gain = m_effectiveGains[ch];
-
-    int m = (h / channels) / 2;
-    int my = m + (((ch - minChannel) * h) / channels);
-
-#ifdef DEBUG_WAVEFORM_PAINT        
-    cerr << "ch = " << ch << ", channels = " << channels << ", m = " << m << ", my = " << my << ", h = " << h << endl;
-#endif
-
-    if (my - m > y1 || my + m < y0) return;
-
-    if ((m_scale == dBScale || m_scale == MeterScale) &&
-        m_channelMode != MergeChannels) {
-        m = (h / channels);
-        my = m + (((ch - minChannel) * h) / channels);
-    }
-
-    paint->setPen(greys[1]);
-    paint->drawLine(x0, my, x1, my);
-
-    paintChannelScaleGuides(v, paint, rect, ch);
-  
-    for (sv_frame_t f = frame0; f <= frame1; ++f) {
-
     }
 }
 
@@ -1206,7 +1247,7 @@ WaveformLayer::getYForValue(const LayerGeometryProvider *v, double value, int ch
         break;
     }
 
-//    cerr << "mergingChannels= " << mergingChannels << ", channel  = " << channel << ", value = " << value << ", vy = " << vy << endl;
+//    SVCERR << "mergingChannels= " << mergingChannels << ", channel  = " << channel << ", value = " << value << ", vy = " << vy << endl;
 
     return my - vy;
 }

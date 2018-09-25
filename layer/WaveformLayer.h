@@ -211,21 +211,29 @@ protected:
 
     const RangeSummarisableTimeValueModel *m_model; // I do not own this
 
+    typedef std::vector<RangeSummarisableTimeValueModel::RangeBlock> RangeVec;
+
     /// Return value is number of channels displayed
     int getChannelArrangement(int &min, int &max,
                               bool &merging, bool &mixing) const;
 
-    void paintChannelSummarised
+    void paintChannel
     (LayerGeometryProvider *, QPainter *paint, QRect rect, int channel,
-     const std::vector<RangeSummarisableTimeValueModel::RangeBlock> &ranges,
+     const RangeVec &ranges,
      int blockSize, sv_frame_t frame0, sv_frame_t frame1) const;
-
-    void paintChannelOversampled
-    (LayerGeometryProvider *, QPainter *paint, QRect rect, int channel,
-     sv_frame_t frame0, sv_frame_t frame1) const;
     
     void paintChannelScaleGuides(LayerGeometryProvider *, QPainter *paint,
                                  QRect rect, int channel) const;
+
+    void getSummaryRanges(int minChannel, int maxChannel,
+                          bool mixingOrMerging,
+                          sv_frame_t f0, sv_frame_t f1,
+                          int blockSize, RangeVec &ranges) const;
+
+    void getOversampledRanges(int minChannel, int maxChannel,
+                              bool mixingOrMerging,
+                              sv_frame_t f0, sv_frame_t f1,
+                              int oversampleBy, RangeVec &ranges) const;
     
     int getYForValue(const LayerGeometryProvider *v, double value, int channel) const;
 
@@ -247,8 +255,6 @@ protected:
     Scale        m_scale;
     double       m_middleLineHeight;
     bool         m_aggressive;
-    int          m_oversampleRate;
-    int          m_oversampleTail;
 
     mutable std::vector<float> m_effectiveGains;
 
