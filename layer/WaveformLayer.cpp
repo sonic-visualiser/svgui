@@ -23,6 +23,7 @@
 
 #include "ColourDatabase.h"
 #include "PaintAssistant.h"
+#include "WaveformOversampler.h"
 
 #include <QPainter>
 #include <QPixmap>
@@ -51,7 +52,6 @@ WaveformLayer::WaveformLayer() :
     m_scale(LinearScale),
     m_middleLineHeight(0.5),
     m_aggressive(false),
-    m_oversampler(0),
     m_cache(0),
     m_cacheValid(false)
 {
@@ -60,7 +60,6 @@ WaveformLayer::WaveformLayer() :
 WaveformLayer::~WaveformLayer()
 {
     delete m_cache;
-    delete m_oversampler;
 }
 
 void
@@ -84,14 +83,6 @@ WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
     m_cacheValid = false;
     if (!m_model || !m_model->isOK()) return;
 
-    delete m_oversampler;
-    breakfastquay::Resampler::Parameters params;
-    params.initialSampleRate = m_model->getSampleRate();
-    // Oversampler is initialised with 1 channel: we resample the
-    // channels individually for practical reasons (because channel
-    // configuration may vary)
-    m_oversampler = new breakfastquay::Resampler(params, 1);
-    
     connectSignals(m_model);
 
     emit modelReplaced();
@@ -709,23 +700,12 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
     }
     
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
-        floatvec_t raw = m_model->getData(ch, rf0, rf1 - rf0);
-        floatvec_t oversampled(oversampleBy * (frame1 - frame0 + 2 * tail),
-                               0.f);
-        //!!! return value, err etc
-        m_oversampler->reset();
-        m_oversampler->resampleInterleaved(oversampled.data(),
-                                           oversampled.size(),
-                                           raw.data(),
-                                           raw.size(),
-                                           oversampleBy,
-                                           true);
+        floatvec_t oversampled = WaveformOversampler::getOversampledData
+            (m_model, ch, frame0, frame1 - frame0, oversampleBy);
         RangeSummarisableTimeValueModel::RangeBlock rr;
-        for (sv_frame_t ix = leftTail * oversampleBy;
-             in_range_for(oversampled, ix + (rightTail * oversampleBy));
-             ++ix) {
+        for (float v: oversampled) {
             RangeSummarisableTimeValueModel::Range r;
-            r.sample(oversampled[ix]);
+            r.sample(v);
             rr.push_back(r);
         }
         ranges.push_back(rr);

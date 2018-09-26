@@ -36,6 +36,7 @@ SVGUI_HEADERS += \
            layer/TimeValueLayer.h \
            layer/VerticalScaleLayer.h \
            layer/WaveformLayer.h \
+           layer/WaveformOversampler.h \
 	   view/AlignmentView.h \
            view/Overview.h \
            view/Pane.h \
@@ -124,6 +125,7 @@ SVGUI_SOURCES += \
            layer/TimeRulerLayer.cpp \
            layer/TimeValueLayer.cpp \
            layer/WaveformLayer.cpp \
+           layer/WaveformOversampler.cpp \
 	   view/AlignmentView.cpp \
            view/Overview.cpp \
            view/Pane.cpp \

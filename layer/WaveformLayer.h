@@ -258,8 +258,6 @@ protected:
 
     mutable std::vector<float> m_effectiveGains;
 
-    mutable breakfastquay::Resampler *m_oversampler;
-
     mutable QPixmap *m_cache;
     mutable bool m_cacheValid;
     mutable ZoomLevel m_cacheZoomLevel;
