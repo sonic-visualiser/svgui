@@ -1,9 +1,9 @@
 
 SVGUI_HEADERS += \
            layer/Colour3DPlotLayer.h \
-	   layer/Colour3DPlotRenderer.h \
-	   layer/ColourDatabase.h \
-	   layer/ColourMapper.h \
+           layer/Colour3DPlotRenderer.h \
+           layer/ColourDatabase.h \
+           layer/ColourMapper.h \
            layer/ColourScale.h \
            layer/ColourScaleLayer.h \
            layer/FlexiNoteLayer.h \
@@ -36,15 +36,14 @@ SVGUI_HEADERS += \
            layer/TimeValueLayer.h \
            layer/VerticalScaleLayer.h \
            layer/WaveformLayer.h \
-           layer/WaveformOversampler.h \
-	   view/AlignmentView.h \
+           view/AlignmentView.h \
            view/Overview.h \
            view/Pane.h \
            view/PaneStack.h \
            view/View.h \
            view/ViewManager.h \
            view/ViewProxy.h \
-	   widgets/ActivityLog.h \
+           widgets/ActivityLog.h \
            widgets/AudioDial.h \
            widgets/ClickableLabel.h \
            widgets/ColourComboBox.h \
@@ -96,10 +95,10 @@ SVGUI_HEADERS += \
 
 SVGUI_SOURCES += \
            layer/Colour3DPlotLayer.cpp \
-	   layer/Colour3DPlotRenderer.cpp \
-	   layer/ColourDatabase.cpp \
-	   layer/ColourMapper.cpp \
-	   layer/ColourScale.cpp \
+           layer/Colour3DPlotRenderer.cpp \
+           layer/ColourDatabase.cpp \
+           layer/ColourMapper.cpp \
+           layer/ColourScale.cpp \
            layer/FlexiNoteLayer.cpp \
            layer/HorizontalFrequencyScale.cpp \
            layer/ImageLayer.cpp \
@@ -125,14 +124,13 @@ SVGUI_SOURCES += \
            layer/TimeRulerLayer.cpp \
            layer/TimeValueLayer.cpp \
            layer/WaveformLayer.cpp \
-           layer/WaveformOversampler.cpp \
-	   view/AlignmentView.cpp \
+           view/AlignmentView.cpp \
            view/Overview.cpp \
            view/Pane.cpp \
            view/PaneStack.cpp \
            view/View.cpp \
            view/ViewManager.cpp \
-	   widgets/ActivityLog.cpp \
+           widgets/ActivityLog.cpp \
            widgets/AudioDial.cpp \
            widgets/ColourComboBox.cpp \
            widgets/ColourMapComboBox.cpp \

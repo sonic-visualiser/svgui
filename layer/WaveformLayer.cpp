@@ -23,7 +23,8 @@
 
 #include "ColourDatabase.h"
 #include "PaintAssistant.h"
-#include "WaveformOversampler.h"
+
+#include "data/model/WaveformOversampler.h"
 
 #include <QPainter>
 #include <QPixmap>
@@ -31,8 +32,6 @@
 
 #include <iostream>
 #include <cmath>
-
-#include <bqresample/Resampler.h>
 
 #define DEBUG_WAVEFORM_PAINT 1
 //#define DEBUG_WAVEFORM_PAINT_BY_PIXEL 1

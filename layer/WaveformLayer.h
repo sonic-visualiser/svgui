@@ -26,8 +26,6 @@ class View;
 class QPainter;
 class QPixmap;
 
-namespace breakfastquay { class Resampler; }
-
 class WaveformLayer : public SingleColourLayer
 {
     Q_OBJECT
