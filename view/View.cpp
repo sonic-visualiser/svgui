@@ -381,15 +381,25 @@ View::setCentreFrame(sv_frame_t f, bool e)
 int
 View::getXForFrame(sv_frame_t frame) const
 {
+    // In FramesPerPixel mode, the pixel should be the one "covering"
+    // the given frame, i.e. to the "left" of it - not necessarily the
+    // nearest boundary.
+    
+    sv_frame_t level = m_zoomLevel.level;
     sv_frame_t fdiff = frame - getCentreFrame();
+    int diff, result;
 
     if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
-        fdiff /= m_zoomLevel.level;
+        diff = fdiff / level;
+        if ((fdiff < 0) && ((fdiff % level) != 0)) {
+            --diff; // round to the left
+        }
     } else {
-        fdiff *= m_zoomLevel.level;
+        diff = fdiff * level;
     }
 
-    return int(fdiff + (width()/2));
+    result = int(diff + (width()/2));
+    return result;
 }
 
 sv_frame_t
@@ -397,7 +407,10 @@ View::getFrameForX(int x) const
 {
     // Note, this must always return a value that is on a zoom-level
     // boundary - regardless of whether the nominal centre frame is on
-    // such a boundary or not
+    // such a boundary or not.
+    
+    // In PixelsPerFrame mode, the frame should be the one immediately
+    // left of the given pixel, not necessarily the nearest.
 
     int diff = x - (width()/2);
     sv_frame_t level = m_zoomLevel.level;
@@ -408,9 +421,12 @@ View::getFrameForX(int x) const
         result = ((fdiff + m_centreFrame) / level) * level;
     } else {
         fdiff = diff / level;
+        if ((diff < 0) && ((diff % level) != 0)) {
+            --fdiff; // round to the left
+        }
         result = fdiff + m_centreFrame;
     }
-/*    
+
     if (x == 0) {
         SVCERR << "getFrameForX(" << x << "): diff = " << diff << ", fdiff = "
                << fdiff << ", m_centreFrame = " << m_centreFrame
@@ -420,7 +436,7 @@ View::getFrameForX(int x) const
                << ", will return " << result
                << endl;
     }
-*/        
+
     return result;
 }
 

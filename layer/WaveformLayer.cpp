@@ -427,11 +427,14 @@ WaveformLayer::getSourceFramesForX(LayerGeometryProvider *v,
     f0 = f0 / modelZoomLevel;
     f0 = f0 * modelZoomLevel;
 
-    viewFrame = v->getFrameForX(x + 1);
-    
-    f1 = viewFrame;
-    f1 = f1 / modelZoomLevel;
-    f1 = f1 * modelZoomLevel;
+    if (v->getZoomLevel().zone == ZoomLevel::PixelsPerFrame) {
+        f1 = f0 + 1;
+    } else {
+        viewFrame = v->getFrameForX(x + 1);
+        f1 = viewFrame;
+        f1 = f1 / modelZoomLevel;
+        f1 = f1 * modelZoomLevel;
+    }
     
     return (f0 < m_model->getEndFrame());
 }
