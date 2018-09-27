@@ -390,12 +390,12 @@ View::getXForFrame(sv_frame_t frame) const
     int diff, result;
 
     if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
-        diff = fdiff / level;
+        diff = int(fdiff / level);
         if ((fdiff < 0) && ((fdiff % level) != 0)) {
             --diff; // round to the left
         }
     } else {
-        diff = fdiff * level;
+        diff = int(fdiff * level);
     }
 
     result = int(diff + (width()/2));

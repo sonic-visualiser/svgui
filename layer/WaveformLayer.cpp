@@ -623,8 +623,11 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
                              v->getZoomLevel().level, ranges);
     }
 
-    for (int ch = minChannel; ch <= maxChannel; ++ch) {
-        paintChannel(v, paint, rect, ch, ranges, blockSize, frame0, frame1);
+    if (!ranges.empty()) {
+        for (int ch = minChannel; ch <= maxChannel; ++ch) {
+            paintChannel(v, paint, rect, ch, ranges, blockSize,
+                         frame0, frame1);
+        }
     }
     
     if (m_middleLineHeight != 0.5) {
@@ -671,7 +674,7 @@ WaveformLayer::getSummaryRanges(int minChannel, int maxChannel,
 
 void
 WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
-                                    bool mixingOrMerging,
+                                    bool /* mixingOrMerging */,
                                     sv_frame_t frame0, sv_frame_t frame1,
                                     int oversampleBy, RangeVec &ranges)
     const
@@ -680,19 +683,16 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
     // sample rate, not the oversampled rate
 
     sv_frame_t tail = 16;
-    sv_frame_t leftTail = tail, rightTail = tail;
     sv_frame_t startFrame = m_model->getStartFrame();
     sv_frame_t endFrame = m_model->getEndFrame();
 
     sv_frame_t rf0 = frame0 - tail;
     if (rf0 < startFrame) {
-        leftTail = frame0 - startFrame;
         rf0 = 0;
     }
 
     sv_frame_t rf1 = frame1 + tail;
     if (rf1 >= endFrame) {
-        rightTail = endFrame - 1 - frame1;
         rf1 = endFrame - 1;
     }
     if (rf1 <= rf0) {
@@ -1048,10 +1048,7 @@ WaveformLayer::paintChannelScaleGuides(LayerGeometryProvider *v,
                                        int ch) const
 {
     int x0 = rect.left();
-    int y0 = rect.top();
-
     int x1 = rect.right();
-    int y1 = rect.bottom();
 
     int n = 10;
     int py = -1;
