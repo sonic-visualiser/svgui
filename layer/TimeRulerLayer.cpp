@@ -30,7 +30,7 @@
 #include <cmath>
 #include <stdexcept>
 
-//#define DEBUG_TIME_RULER_LAYER 1
+#define DEBUG_TIME_RULER_LAYER 1
 
 
 TimeRulerLayer::TimeRulerLayer() :
@@ -304,10 +304,10 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
         if (x >= rect.x() - 50 && us >= minlabel) {
 
-            RealTime rt = RealTime(0, us * 1000);
+            RealTime rt = RealTime::fromMicroseconds(us);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-            cerr << "X in range, drawing line here for time " << rt.toText() << endl;
+            cerr << "X in range, drawing line here for time " << rt.toText() << " (usec = " << us << ")" << endl;
 #endif
 
             QString text(QString::fromStdString(rt.toText()));
