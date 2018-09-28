@@ -31,7 +31,7 @@
 #include <cmath>
 #include <stdexcept>
 
-#define DEBUG_TIME_RULER_LAYER 1
+//#define DEBUG_TIME_RULER_LAYER 1
 
 
 TimeRulerLayer::TimeRulerLayer() :
@@ -60,8 +60,8 @@ TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     }
 
     bool q;
-    int tickUSec = getMajorTickUSec(v, q);
-    RealTime rtick = RealTime(0, tickUSec * 1000);
+    int64_t tickUSec = getMajorTickUSec(v, q);
+    RealTime rtick = RealTime::fromMicroseconds(tickUSec);
     sv_samplerate_t rate = m_model->getSampleRate();
     
     RealTime rt = RealTime::frame2RealTime(frame, rate);
@@ -142,7 +142,7 @@ TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     return true;
 }
 
-int
+int64_t
 TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
                                  bool &quarterTicks) const
 {
@@ -164,7 +164,7 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
     if (count < 1) count = 1;
     RealTime rtGap = (rtEnd - rtStart) / count;
 
-    int incus;
+    int64_t incus;
     quarterTicks = false;
 
     if (rtGap.sec > 0) {
@@ -238,8 +238,8 @@ void
 TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
 #ifdef DEBUG_TIME_RULER_LAYER
-    SVDEBUG << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
-              << ") [" << rect.width() << "x" << rect.height() << "]" << endl;
+    SVCERR << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
+           << ") [" << rect.width() << "x" << rect.height() << "]" << endl;
 #endif
     
     if (!m_model || !m_model->isOK()) return;
@@ -250,18 +250,17 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_frame_t startFrame = v->getFrameForX(rect.x() - 50);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-    cerr << "start frame = " << startFrame << endl;
+    SVCERR << "start frame = " << startFrame << endl;
 #endif
 
     bool quarter = false;
-    int incus = getMajorTickUSec(v, quarter);
-
-    int us = int(lrint(1000.0 * 1000.0 * (double(startFrame) /
-                                          double(sampleRate))));
+    int64_t incus = getMajorTickUSec(v, quarter);
+    int64_t us = int64_t(floor(1000.0 * 1000.0 * (double(startFrame) /
+                                                  double(sampleRate))));
     us = (us / incus) * incus - incus;
 
 #ifdef DEBUG_TIME_RULER_LAYER
-    cerr << "start us = " << us << " at step " << incus << endl;
+    SVCERR << "start us = " << us << " at step " << incus << endl;
 #endif
 
     Preferences *prefs = Preferences::getInstance();
@@ -279,7 +278,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     // draw the actual ticks or lines.
 
     int minPixelSpacing = 50;
-    sv_frame_t incFrame = lrint((incus * sampleRate) / 1000000);
+    sv_frame_t incFrame = lrint((double(incus) * sampleRate) / 1000000);
     int incX = int(round(v->getZoomLevel().framesToPixels(double(incFrame))));
     int ticks = 10;
     if (incX < minPixelSpacing * 2) {
@@ -301,13 +300,13 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
         // a different pixel when scrolling a small amount and
         // re-drawing with a different start frame).
 
-        double dus = us;
+        double dus = double(us);
 
         int x = getXForUSec(v, dus);
 
         if (x >= rect.x() + rect.width() + 50) {
 #ifdef DEBUG_TIME_RULER_LAYER
-            cerr << "X well out of range, ending here" << endl;
+            SVCERR << "X well out of range, ending here" << endl;
 #endif
             break;
         }
@@ -317,7 +316,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             RealTime rt = RealTime::fromMicroseconds(us);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-            cerr << "X in range, drawing line here for time " << rt.toText() << " (usec = " << us << ")" << endl;
+            SVCERR << "X in range, drawing line here for time " << rt.toText() << " (usec = " << us << ")" << endl;
 #endif
 
             QString text(QString::fromStdString(rt.toText()));
@@ -329,7 +328,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 (x < rect.x() - tw/2 ||
                  x >= rect.x() + rect.width() + tw/2)) {
 #ifdef DEBUG_TIME_RULER_LAYER
-                cerr << "hm, maybe X isn't in range after all (x = " << x << ", tw = " << tw << ", rect.x() = " << rect.x() << ", rect.width() = " << rect.width() << ")" << endl;
+                SVCERR << "hm, maybe X isn't in range after all (x = " << x << ", tw = " << tw << ", rect.x() = " << rect.x() << ", rect.width() = " << rect.width() << ")" << endl;
 #endif
             }
 
@@ -369,19 +368,19 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
         for (int i = 1; i < ticks; ++i) {
 
-            dus = us + (i * double(incus)) / ticks;
+            dus = double(us) + (i * double(incus)) / ticks;
 
             x = getXForUSec(v, dus);
 
             if (x < rect.x() || x >= rect.x() + rect.width()) {
 #ifdef DEBUG_TIME_RULER_LAYER
-//                cerr << "tick " << i << ": X out of range, going on to next tick" << endl;
+//                SVCERR << "tick " << i << ": X out of range, going on to next tick" << endl;
 #endif
                 continue;
             }
 
 #ifdef DEBUG_TIME_RULER_LAYER
-            cerr << "tick " << i << " in range, drawing at " << x << endl;
+            SVCERR << "tick " << i << " in range, drawing at " << x << endl;
 #endif
 
             int sz = 5;

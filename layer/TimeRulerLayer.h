@@ -68,7 +68,7 @@ protected:
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
-    int getMajorTickUSec(LayerGeometryProvider *, bool &quarterTicks) const;
+    int64_t getMajorTickUSec(LayerGeometryProvider *, bool &quarterTicks) const;
     int getXForUSec(LayerGeometryProvider *, double usec) const;
 };
 
