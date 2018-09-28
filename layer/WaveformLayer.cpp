@@ -966,7 +966,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
 
         if (showIndividualSample) {
             paint->setPen(baseColour);
-            paint->drawRect(x-1, rangeTop-1, 3, 3);
+            paint->drawRect(x-1, rangeTop-1, 2, 2);
         }
         
         if (x != x0 && prevRangeBottom != -1) {
