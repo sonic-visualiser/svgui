@@ -19,6 +19,7 @@
 
 #include "data/model/Model.h"
 #include "base/RealTime.h"
+#include "base/Preferences.h"
 #include "view/View.h"
 
 #include "ColourDatabase.h"
@@ -263,6 +264,15 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     cerr << "start us = " << us << " at step " << incus << endl;
 #endif
 
+    Preferences *prefs = Preferences::getInstance();
+    auto origTimeTextMode = prefs->getTimeToTextMode();
+    if (incus < 1000) {
+        // Temporarily switch to usec display mode (if we aren't using
+        // it already)
+        prefs->blockSignals(true);
+        prefs->setTimeToTextMode(Preferences::TimeToTextUs);
+    }
+    
     // Calculate the number of ticks per increment -- approximate
     // values for x and frame counts here will do, no rounding issue.
     // We always use the exact incus in our calculations for where to
@@ -311,6 +321,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 #endif
 
             QString text(QString::fromStdString(rt.toText()));
+            
             QFontMetrics metrics = paint.fontMetrics();
             int tw = metrics.width(text);
 
@@ -389,6 +400,9 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
         us += incus;
     }
+    
+    prefs->setTimeToTextMode(origTimeTextMode);
+    prefs->blockSignals(false);
 
     paint.restore();
 }
