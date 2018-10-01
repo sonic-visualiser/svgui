@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SUBDIVIDING_MENU_H_
-#define _SUBDIVIDING_MENU_H_
+#ifndef SV_SUBDIVIDING_MENU_H
+#define SV_SUBDIVIDING_MENU_H
 
 #include <QMenu>
 
