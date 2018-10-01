@@ -121,6 +121,10 @@ PluginParameterBox::populate()
         if (!(hint & PortHint::Logarithmic)) {
             if (qtz > 0.0) {
                 imax = int(lrintf((max - min) / qtz));
+                if (imax <= imin) {
+                    imax = 100;
+                    qtz = (max - min) / 100.f;
+                }
             } else {
                 qtz = (max - min) / 100.f;
             }
@@ -181,15 +185,22 @@ PluginParameterBox::populate()
 //            dial->setValue(lrintf((value - min) / qtz));
             dial->setFixedWidth(32);
             dial->setFixedHeight(32);
-            RangeMapper *rm = 0;
-            if (hint & PortHint::Logarithmic) {
-                rm = new LogRangeMapper(imin, imax, min, max, unit);
+            if (max == min || imax == imin) {
+                SVCERR << "WARNING: for parameter \"" << name
+                       << "\" of plugin \"" << m_plugin->getName()
+                       << "\": invalid range " << min << " -> " << max
+                       << " with quantize step " << qtz << endl;
             } else {
-                rm = new LinearRangeMapper(imin, imax, min, max, unit);
+                RangeMapper *rm = 0;
+                if (hint & PortHint::Logarithmic) {
+                    rm = new LogRangeMapper(imin, imax, min, max, unit);
+                } else {
+                    rm = new LinearRangeMapper(imin, imax, min, max, unit);
+                }
+                dial->setRangeMapper(rm);
+                dial->setDefaultValue(rm->getPositionForValue(deft));
+                dial->setValue(rm->getPositionForValue(value));
             }
-            dial->setRangeMapper(rm);
-            dial->setDefaultValue(rm->getPositionForValue(deft));
-            dial->setValue(rm->getPositionForValue(value));
             dial->setShowToolTip(true);
             connect(dial, SIGNAL(valueChanged(int)),
                     this, SLOT(dialChanged(int)));
