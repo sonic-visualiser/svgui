@@ -571,7 +571,7 @@ View::addLayer(Layer *layer)
     pb->setTextVisible(false);
 
     QPushButton *cancel = new QPushButton(this);
-    cancel->setIcon(IconLoader().load("fileclose"));
+    cancel->setIcon(IconLoader().load("cancel"));
     cancel->setFlat(true);
     cancel->setFixedSize(QSize(20, 20));
     connect(cancel, SIGNAL(clicked()), this, SLOT(cancelClicked()));
