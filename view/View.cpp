@@ -633,9 +633,10 @@ View::addLayer(Layer *layer)
     pb->setTextVisible(false);
 
     QPushButton *cancel = new QPushButton(this);
-    cancel->setIcon(IconLoader().load("fileclose"));
+    cancel->setIcon(IconLoader().load("cancel"));
     cancel->setFlat(true);
-    cancel->setFixedSize(QSize(20, 20));
+    int scaled20 = ViewManager::scalePixelSize(20);
+    cancel->setFixedSize(QSize(scaled20, scaled20));
     connect(cancel, SIGNAL(clicked()), this, SLOT(cancelClicked()));
     
     ProgressBarRec pbr;
@@ -1644,11 +1645,13 @@ View::checkProgress(void *object)
                     timer->start();
                 }
 
-                cancel->move(0, ph - pb->height()/2 - 10);
+                int scaled20 = ViewManager::scalePixelSize(20);
+
+                cancel->move(0, ph - pb->height()/2 - scaled20/2);
                 cancel->show();
 
                 pb->setValue(completion);
-                pb->move(20, ph - pb->height());
+                pb->move(scaled20, ph - pb->height());
 
                 pb->show();
                 pb->update();
