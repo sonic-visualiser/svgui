@@ -47,7 +47,7 @@
 #include <cassert>
 #include <cmath>
 
-#define DEBUG_VIEW 1
+//#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
 
 View::View(QWidget *w, bool showProgress) :
@@ -427,6 +427,7 @@ View::getFrameForX(int x) const
         result = fdiff + m_centreFrame;
     }
 
+#ifdef DEBUG_VIEW
     if (x == 0) {
         SVCERR << "getFrameForX(" << x << "): diff = " << diff << ", fdiff = "
                << fdiff << ", m_centreFrame = " << m_centreFrame
@@ -436,7 +437,8 @@ View::getFrameForX(int x) const
                << ", will return " << result
                << endl;
     }
-
+#endif
+    
     return result;
 }
 

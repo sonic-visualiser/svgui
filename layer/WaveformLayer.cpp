@@ -33,7 +33,7 @@
 #include <iostream>
 #include <cmath>
 
-#define DEBUG_WAVEFORM_PAINT 1
+//#define DEBUG_WAVEFORM_PAINT 1
 //#define DEBUG_WAVEFORM_PAINT_BY_PIXEL 1
 
 using std::vector;
@@ -733,7 +733,8 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
                             QRect rect, int ch,
                             const RangeVec &ranges,
                             int blockSize,
-                            sv_frame_t frame0, sv_frame_t frame1)
+                            sv_frame_t frame0,
+                            sv_frame_t frame1)
     const
 {
     int x0 = rect.left();
@@ -792,6 +793,8 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
 
 #ifdef DEBUG_WAVEFORM_PAINT
     SVCERR << "paint channel " << ch << ": frame0 = " << frame0 << ", frame1 = " << frame1 << ", blockSize = " << blockSize << ", have " << ranges.size() << " range blocks of which ours is index " << rangeix << " with " << ranges[rangeix].size() << " ranges in it" << endl;
+#else
+    (void)frame1; // not actually used
 #endif
 
     for (int x = x0; x <= x1; ++x) {

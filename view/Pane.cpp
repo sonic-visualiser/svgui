@@ -213,12 +213,15 @@ Pane::updateHeadsUpDisplay()
         }
     }
 
+    SVCERR << "haveConstraint = " << haveConstraint << endl;
+            
     if (haveConstraint) {
         while (true) {
             //!!! this won't terminate if level is in the PixelsPerFrame zone
             if (getZoomLevel() == level) current = count;
             ZoomLevel newLevel = getZoomConstraintLevel(level.incremented(),
                                                         ZoomConstraint::RoundUp);
+            SVCERR << "newLevel = " << newLevel << endl;
             if (newLevel == level) break;
             level = newLevel;
             if (++count == 50) break;
@@ -240,7 +243,7 @@ Pane::updateHeadsUpDisplay()
                 step *= 2;
                 --pwr;
             }
-//            cerr << level << endl;
+            cerr << level.level << ", step " << step << endl;
             level.level += step;
             if (++count == 100 || level.level > 262144) break;
         }
