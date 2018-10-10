@@ -1507,7 +1507,7 @@ View::countZoomLevels() const
         level = getZoomConstraintLevel
             (level.incremented(), ZoomConstraint::RoundUp);
     }
-    cerr << "View::countZoomLevels: " << n << endl;
+//    cerr << "View::countZoomLevels: " << n << endl;
     return n;
 }
 
@@ -1520,8 +1520,8 @@ View::getZoomLevelByIndex(int ix) const
     ZoomLevel level = min;
     while (true) {
         if (n == ix) {
-            cerr << "View::getZoomLevelByIndex: " << ix << " -> " << level
-                 << endl;
+//            cerr << "View::getZoomLevelByIndex: " << ix << " -> " << level
+//                 << endl;
             return level;
         }
         ++n;
@@ -1531,8 +1531,8 @@ View::getZoomLevelByIndex(int ix) const
         level = getZoomConstraintLevel
             (level.incremented(), ZoomConstraint::RoundUp);
     }
-    cerr << "View::getZoomLevelByIndex: " << ix << " -> " << max << " (max)"
-         << endl;
+//    cerr << "View::getZoomLevelByIndex: " << ix << " -> " << max << " (max)"
+//         << endl;
     return max;
 }
 
@@ -1545,8 +1545,8 @@ View::getZoomLevelIndex(ZoomLevel z) const
     ZoomLevel level = min;
     while (true) {
         if (z == level) {
-            cerr << "View::getZoomLevelIndex: " << z << " -> " << n
-                 << endl;
+//            cerr << "View::getZoomLevelIndex: " << z << " -> " << n
+//                 << endl;
             return n;
         }
         ++n;
@@ -1556,8 +1556,8 @@ View::getZoomLevelIndex(ZoomLevel z) const
         level = getZoomConstraintLevel
             (level.incremented(), ZoomConstraint::RoundUp);
     }
-    cerr << "View::getZoomLevelIndex: " << z << " -> " << n << " (max)"
-         << endl;
+//    cerr << "View::getZoomLevelIndex: " << z << " -> " << n << " (max)"
+//         << endl;
     return n;
 }
 
