@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _OVERVIEW_H_
-#define _OVERVIEW_H_
+#ifndef SV_OVERVIEW_H
+#define SV_OVERVIEW_H
 
 #include "View.h"
 
@@ -46,7 +46,7 @@ public slots:
 
     virtual void globalCentreFrameChanged(sv_frame_t);
     virtual void viewCentreFrameChanged(View *, sv_frame_t);
-    virtual void viewZoomLevelChanged(View *, int, bool);
+    virtual void viewZoomLevelChanged(View *, ZoomLevel, bool);
     virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
 
     virtual void setBoxColour(QColor);

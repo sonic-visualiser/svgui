@@ -19,6 +19,7 @@
 
 #include "data/model/Model.h"
 #include "base/RealTime.h"
+#include "base/Preferences.h"
 #include "view/View.h"
 
 #include "ColourDatabase.h"
@@ -59,8 +60,8 @@ TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     }
 
     bool q;
-    int tick = getMajorTickSpacing(v, q);
-    RealTime rtick = RealTime::fromMilliseconds(tick);
+    int64_t tickUSec = getMajorTickUSec(v, q);
+    RealTime rtick = RealTime::fromMicroseconds(tickUSec);
     sv_samplerate_t rate = m_model->getSampleRate();
     
     RealTime rt = RealTime::frame2RealTime(frame, rate);
@@ -141,20 +142,20 @@ TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     return true;
 }
 
-int
-TimeRulerLayer::getMajorTickSpacing(LayerGeometryProvider *v, bool &quarterTicks) const
+int64_t
+TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
+                                 bool &quarterTicks) const
 {
-    // return value is in milliseconds
-
-    if (!m_model || !v) return 1000;
+    // return value is in microseconds
+    if (!m_model || !v) return 1000 * 1000;
 
     sv_samplerate_t sampleRate = m_model->getSampleRate();
-    if (!sampleRate) return 1000;
+    if (!sampleRate) return 1000 * 1000;
 
     sv_frame_t startFrame = v->getStartFrame();
     sv_frame_t endFrame = v->getEndFrame();
 
-    int minPixelSpacing = 50;
+    int minPixelSpacing = ViewManager::scalePixelSize(50);
 
     RealTime rtStart = RealTime::frame2RealTime(startFrame, sampleRate);
     RealTime rtEnd = RealTime::frame2RealTime(endFrame, sampleRate);
@@ -163,43 +164,82 @@ TimeRulerLayer::getMajorTickSpacing(LayerGeometryProvider *v, bool &quarterTicks
     if (count < 1) count = 1;
     RealTime rtGap = (rtEnd - rtStart) / count;
 
-    int incms;
+    int64_t incus;
     quarterTicks = false;
 
     if (rtGap.sec > 0) {
-        incms = 1000;
+        incus = 1000 * 1000;
         int s = rtGap.sec;
-        if (s > 0) { incms *= 5; s /= 5; }
-        if (s > 0) { incms *= 2; s /= 2; }
-        if (s > 0) { incms *= 6; s /= 6; quarterTicks = true; }
-        if (s > 0) { incms *= 5; s /= 5; quarterTicks = false; }
-        if (s > 0) { incms *= 2; s /= 2; }
-        if (s > 0) { incms *= 6; s /= 6; quarterTicks = true; }
+        if (s > 0) { incus *= 5; s /= 5; }
+        if (s > 0) { incus *= 2; s /= 2; }
+        if (s > 0) { incus *= 6; s /= 6; quarterTicks = true; }
+        if (s > 0) { incus *= 5; s /= 5; quarterTicks = false; }
+        if (s > 0) { incus *= 2; s /= 2; }
+        if (s > 0) { incus *= 6; s /= 6; quarterTicks = true; }
         while (s > 0) {
-            incms *= 10;
+            incus *= 10;
             s /= 10;
             quarterTicks = false;
         }
-    } else {
-        incms = 1;
+    } else if (rtGap.msec() > 0) {
+        incus = 1000;
         int ms = rtGap.msec();
-//        cerr << "rtGap.msec = " << ms << ", rtGap = " << rtGap << ", count = " << count << endl;
-//        cerr << "startFrame = " << startFrame << ", endFrame = " << endFrame << " rtStart = " << rtStart << ", rtEnd = " << rtEnd << endl;
-        if (ms > 0) { incms *= 10; ms /= 10; }
-        if (ms > 0) { incms *= 10; ms /= 10; }
-        if (ms > 0) { incms *= 5; ms /= 5; }
-        if (ms > 0) { incms *= 2; ms /= 2; }
+        if (ms > 0) { incus *= 10; ms /= 10; }
+        if (ms > 0) { incus *= 10; ms /= 10; }
+        if (ms > 0) { incus *= 5; ms /= 5; }
+        if (ms > 0) { incus *= 2; ms /= 2; }
+    } else {
+        incus = 1;
+        int us = rtGap.usec();
+        if (us > 0) { incus *= 10; us /= 10; }
+        if (us > 0) { incus *= 10; us /= 10; }
+        if (us > 0) { incus *= 5; us /= 5; }
+        if (us > 0) { incus *= 2; us /= 2; }
     }
 
-    return incms;
+    return incus;
+}
+
+int
+TimeRulerLayer::getXForUSec(LayerGeometryProvider *v, double us) const
+{
+    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    double dframe = (us * sampleRate) / 1000000.0;
+    double eps = 1e-7;
+    sv_frame_t frame = sv_frame_t(floor(dframe + eps));
+    int x;
+
+    ZoomLevel zoom = v->getZoomLevel();
+
+    if (zoom.zone == ZoomLevel::FramesPerPixel) {
+            
+        frame /= zoom.level;
+        frame *= zoom.level; // so frame corresponds to an exact pixel
+        
+        x = v->getXForFrame(frame);
+        
+    } else {
+
+        double off = dframe - double(frame);
+        int x0 = v->getXForFrame(frame);
+        int x1 = v->getXForFrame(frame + 1);
+        
+        x = int(x0 + off * (x1 - x0));
+    }
+
+#ifdef DEBUG_TIME_RULER_LAYER
+    cerr << "Considering frame = " << frame << ", x = " << x << endl;
+#endif
+        
+    return x;
 }
 
 void
 TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
 #ifdef DEBUG_TIME_RULER_LAYER
-    SVDEBUG << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
-              << ") [" << rect.width() << "x" << rect.height() << "]" << endl;
+    SVCERR << "TimeRulerLayer::paint (" << rect.x() << "," << rect.y()
+           << ") [" << rect.width() << "x" << rect.height() << "]" << endl;
 #endif
     
     if (!m_model || !m_model->isOK()) return;
@@ -210,27 +250,36 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_frame_t startFrame = v->getFrameForX(rect.x() - 50);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-    cerr << "start frame = " << startFrame << endl;
+    SVCERR << "start frame = " << startFrame << endl;
 #endif
 
     bool quarter = false;
-    int incms = getMajorTickSpacing(v, quarter);
-
-    int ms = int(lrint(1000.0 * (double(startFrame) / double(sampleRate))));
-    ms = (ms / incms) * incms - incms;
+    int64_t incus = getMajorTickUSec(v, quarter);
+    int64_t us = int64_t(floor(1000.0 * 1000.0 * (double(startFrame) /
+                                                  double(sampleRate))));
+    us = (us / incus) * incus - incus;
 
 #ifdef DEBUG_TIME_RULER_LAYER
-    cerr << "start ms = " << ms << " at step " << incms << endl;
+    SVCERR << "start us = " << us << " at step " << incus << endl;
 #endif
 
+    Preferences *prefs = Preferences::getInstance();
+    auto origTimeTextMode = prefs->getTimeToTextMode();
+    if (incus < 1000) {
+        // Temporarily switch to usec display mode (if we aren't using
+        // it already)
+        prefs->blockSignals(true);
+        prefs->setTimeToTextMode(Preferences::TimeToTextUs);
+    }
+    
     // Calculate the number of ticks per increment -- approximate
     // values for x and frame counts here will do, no rounding issue.
-    // We always use the exact incms in our calculations for where to
+    // We always use the exact incus in our calculations for where to
     // draw the actual ticks or lines.
 
     int minPixelSpacing = 50;
-    sv_frame_t incFrame = lrint((incms * sampleRate) / 1000);
-    int incX = int(incFrame / v->getZoomLevel());
+    sv_frame_t incFrame = lrint((double(incus) * sampleRate) / 1000000);
+    int incX = int(round(v->getZoomLevel().framesToPixels(double(incFrame))));
     int ticks = 10;
     if (incX < minPixelSpacing * 2) {
         ticks = quarter ? 4 : 5;
@@ -242,10 +291,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     // Do not label time zero - we now overlay an opaque area over
     // time < 0 which would cut it in half
-    int minlabel = 1; // ms
-
-    // used for a sanity check
-    sv_frame_t prevframe = 0;
+    int minlabel = 1; // us
     
     while (1) {
 
@@ -254,40 +300,27 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
         // a different pixel when scrolling a small amount and
         // re-drawing with a different start frame).
 
-        double dms = ms;
-        sv_frame_t frame = lrint((dms * sampleRate) / 1000.0);
-        frame /= v->getZoomLevel();
-        frame *= v->getZoomLevel(); // so frame corresponds to an exact pixel
+        double dus = double(us);
 
-        if (frame == prevframe && prevframe != 0) {
-            cerr << "ERROR: frame == prevframe (== " << frame
-                 << ") in TimeRulerLayer::paint" << endl;
-            throw std::logic_error("frame == prevframe in TimeRulerLayer::paint");
-        }
-        prevframe = frame;
-        
-        int x = v->getXForFrame(frame);
-
-#ifdef DEBUG_TIME_RULER_LAYER
-        cerr << "Considering frame = " << frame << ", x = " << x << endl;
-#endif
+        int x = getXForUSec(v, dus);
 
         if (x >= rect.x() + rect.width() + 50) {
 #ifdef DEBUG_TIME_RULER_LAYER
-            cerr << "X well out of range, ending here" << endl;
+            SVCERR << "X well out of range, ending here" << endl;
 #endif
             break;
         }
 
-        if (x >= rect.x() - 50 && ms >= minlabel) {
+        if (x >= rect.x() - 50 && us >= minlabel) {
 
-            RealTime rt = RealTime::fromMilliseconds(ms);
+            RealTime rt = RealTime::fromMicroseconds(us);
 
 #ifdef DEBUG_TIME_RULER_LAYER
-            cerr << "X in range, drawing line here for time " << rt.toText() << endl;
+            SVCERR << "X in range, drawing line here for time " << rt.toText() << " (usec = " << us << ")" << endl;
 #endif
 
             QString text(QString::fromStdString(rt.toText()));
+            
             QFontMetrics metrics = paint.fontMetrics();
             int tw = metrics.width(text);
 
@@ -295,7 +328,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 (x < rect.x() - tw/2 ||
                  x >= rect.x() + rect.width() + tw/2)) {
 #ifdef DEBUG_TIME_RULER_LAYER
-                cerr << "hm, maybe X isn't in range after all (x = " << x << ", tw = " << tw << ", rect.x() = " << rect.x() << ", rect.width() = " << rect.width() << ")" << endl;
+                SVCERR << "hm, maybe X isn't in range after all (x = " << x << ", tw = " << tw << ", rect.x() = " << rect.x() << ", rect.width() = " << rect.width() << ")" << endl;
 #endif
             }
 
@@ -335,22 +368,19 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
         for (int i = 1; i < ticks; ++i) {
 
-            dms = ms + (i * double(incms)) / ticks;
-            frame = lrint((dms * sampleRate) / 1000.0);
-            frame /= v->getZoomLevel();
-            frame *= v->getZoomLevel(); // exact pixel as above
+            dus = double(us) + (i * double(incus)) / ticks;
 
-            x = v->getXForFrame(frame);
+            x = getXForUSec(v, dus);
 
             if (x < rect.x() || x >= rect.x() + rect.width()) {
 #ifdef DEBUG_TIME_RULER_LAYER
-//                cerr << "tick " << i << ": X out of range, going on to next tick" << endl;
+//                SVCERR << "tick " << i << ": X out of range, going on to next tick" << endl;
 #endif
                 continue;
             }
 
 #ifdef DEBUG_TIME_RULER_LAYER
-            cerr << "tick " << i << " in range, drawing at " << x << endl;
+            SVCERR << "tick " << i << " in range, drawing at " << x << endl;
 #endif
 
             int sz = 5;
@@ -367,8 +397,11 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             paint.drawLine(x, v->getPaintHeight() - sz - 1, x, v->getPaintHeight() - 1);
         }
 
-        ms += incms;
+        us += incus;
     }
+    
+    prefs->setTimeToTextMode(origTimeTextMode);
+    prefs->blockSignals(false);
 
     paint.restore();
 }

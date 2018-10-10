@@ -54,7 +54,7 @@ View::View(QWidget *w, bool showProgress) :
     QFrame(w),
     m_id(getNextId()),
     m_centreFrame(0),
-    m_zoomLevel(1024),
+    m_zoomLevel(ZoomLevel::FramesPerPixel, 1024),
     m_followPan(true),
     m_followZoom(true),
     m_followPlay(PlaybackScrollPageWithCentre),
@@ -64,7 +64,7 @@ View::View(QWidget *w, bool showProgress) :
     m_cache(0),
     m_buffer(0),
     m_cacheCentreFrame(0),
-    m_cacheZoomLevel(1024),
+    m_cacheZoomLevel(ZoomLevel::FramesPerPixel, 1024),
     m_selectionCached(false),
     m_deleting(false),
     m_haveSelectedLayer(false),
@@ -319,7 +319,8 @@ View::getEndFrame() const
 void
 View::setStartFrame(sv_frame_t f)
 {
-    setCentreFrame(f + m_zoomLevel * (width() / 2));
+    setCentreFrame(f + sv_frame_t(round
+                                  (m_zoomLevel.pixelsToFrames(width() / 2))));
 }
 
 bool
@@ -327,22 +328,40 @@ View::setCentreFrame(sv_frame_t f, bool e)
 {
     bool changeVisible = false;
 
+#ifdef DEBUG_VIEW
+    SVCERR << "View::setCentreFrame: from " << m_centreFrame
+           << " to " << f << endl;
+#endif
+
     if (m_centreFrame != f) {
 
-        int formerPixel = int(m_centreFrame / m_zoomLevel);
-
+        sv_frame_t formerCentre = m_centreFrame;
         m_centreFrame = f;
-
-        int newPixel = int(m_centreFrame / m_zoomLevel);
         
-        if (newPixel != formerPixel) {
+        if (m_zoomLevel.zone == ZoomLevel::PixelsPerFrame) {
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-            cout << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
+            SVCERR << "View(" << this << ")::setCentreFrame: in PixelsPerFrame zone, so change must be visible" << endl;
 #endif
             update();
-
             changeVisible = true;
+
+        } else {
+        
+            int formerPixel = int(formerCentre / m_zoomLevel.level);
+            int newPixel = int(m_centreFrame / m_zoomLevel.level);
+        
+            if (newPixel != formerPixel) {
+
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+                SVCERR << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
+#endif
+                // ensure the centre frame is a multiple of the zoom level
+                m_centreFrame = sv_frame_t(newPixel) * m_zoomLevel.level;
+                
+                update();
+                changeVisible = true;
+            }
         }
 
         if (e) {
@@ -362,23 +381,65 @@ View::setCentreFrame(sv_frame_t f, bool e)
 int
 View::getXForFrame(sv_frame_t frame) const
 {
-    return int((frame - getStartFrame()) / m_zoomLevel);
+    // In FramesPerPixel mode, the pixel should be the one "covering"
+    // the given frame, i.e. to the "left" of it - not necessarily the
+    // nearest boundary.
+    
+    sv_frame_t level = m_zoomLevel.level;
+    sv_frame_t fdiff = frame - getCentreFrame();
+    int diff, result;
+
+    if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+        diff = int(fdiff / level);
+        if ((fdiff < 0) && ((fdiff % level) != 0)) {
+            --diff; // round to the left
+        }
+    } else {
+        diff = int(fdiff * level);
+    }
+
+    result = int(diff + (width()/2));
+    return result;
 }
 
 sv_frame_t
 View::getFrameForX(int x) const
 {
-    sv_frame_t z = m_zoomLevel; // nb not just int, or multiplication may overflow
-    sv_frame_t frame = m_centreFrame - (width()/2) * z;
+    // Note, this must always return a value that is on a zoom-level
+    // boundary - regardless of whether the nominal centre frame is on
+    // such a boundary or not.
+    
+    // In PixelsPerFrame mode, the frame should be the one immediately
+    // left of the given pixel, not necessarily the nearest.
 
-    frame = (frame / z) * z; // this is start frame
-    frame = frame + x * z;
+    int diff = x - (width()/2);
+    sv_frame_t level = m_zoomLevel.level;
+    sv_frame_t fdiff, result;
+    
+    if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+        fdiff = diff * level;
+        result = ((fdiff + m_centreFrame) / level) * level;
+    } else {
+        fdiff = diff / level;
+        if ((diff < 0) && ((diff % level) != 0)) {
+            --fdiff; // round to the left
+        }
+        result = fdiff + m_centreFrame;
+    }
 
-#ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View::getFrameForX(" << x << "): z = " << z << ", m_centreFrame = " << m_centreFrame << ", width() = " << width() << ", frame = " << frame << endl;
+#ifdef DEBUG_VIEW
+    if (x == 0) {
+        SVCERR << "getFrameForX(" << x << "): diff = " << diff << ", fdiff = "
+               << fdiff << ", m_centreFrame = " << m_centreFrame
+               << ", level = " << m_zoomLevel.level
+               << ", diff % level = " << (diff % m_zoomLevel.level)
+               << ", nominal " << fdiff + m_centreFrame
+               << ", will return " << result
+               << endl;
+    }
 #endif
-
-    return frame;
+    
+    return result;
 }
 
 double
@@ -447,7 +508,7 @@ View::getFrequencyForY(double y,
     }
 }
 
-int
+ZoomLevel
 View::getZoomLevel() const
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -476,16 +537,17 @@ View::effectiveDevicePixelRatio() const
 }
 
 void
-View::setZoomLevel(int z)
+View::setZoomLevel(ZoomLevel z)
 {
-    int dpratio = effectiveDevicePixelRatio();
-    if (z < dpratio) return;
-    if (z < 1) z = 1;
-    if (m_zoomLevel != int(z)) {
-        m_zoomLevel = z;
-        emit zoomLevelChanged(z, m_followZoom);
-        update();
+//!!!    int dpratio = effectiveDevicePixelRatio();
+//    if (z < dpratio) return;
+//    if (z < 1) z = 1;
+    if (m_zoomLevel == z) {
+        return;
     }
+    m_zoomLevel = z;
+    emit zoomLevelChanged(z, m_followZoom);
+    update();
 }
 
 bool
@@ -725,13 +787,13 @@ View::setViewManager(ViewManager *manager)
         m_manager->disconnect(this, SLOT(globalCentreFrameChanged(sv_frame_t)));
         m_manager->disconnect(this, SLOT(viewCentreFrameChanged(View *, sv_frame_t)));
         m_manager->disconnect(this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
-        m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, int, bool)));
+        m_manager->disconnect(this, SLOT(viewZoomLevelChanged(View *, ZoomLevel, bool)));
         m_manager->disconnect(this, SLOT(toolModeChanged()));
         m_manager->disconnect(this, SLOT(selectionChanged()));
         m_manager->disconnect(this, SLOT(overlayModeChanged()));
         m_manager->disconnect(this, SLOT(zoomWheelsEnabledChanged()));
         disconnect(m_manager, SLOT(viewCentreFrameChanged(sv_frame_t, bool, PlaybackFollowMode)));
-        disconnect(m_manager, SLOT(zoomLevelChanged(int, bool)));
+        disconnect(m_manager, SLOT(zoomLevelChanged(ZoomLevel, bool)));
     }
 
     m_manager = manager;
@@ -743,8 +805,8 @@ View::setViewManager(ViewManager *manager)
     connect(m_manager, SIGNAL(playbackFrameChanged(sv_frame_t)),
             this, SLOT(viewManagerPlaybackFrameChanged(sv_frame_t)));
 
-    connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, int, bool)),
-            this, SLOT(viewZoomLevelChanged(View *, int, bool)));
+    connect(m_manager, SIGNAL(viewZoomLevelChanged(View *, ZoomLevel, bool)),
+            this, SLOT(viewZoomLevelChanged(View *, ZoomLevel, bool)));
 
     connect(m_manager, SIGNAL(toolModeChanged()),
             this, SLOT(toolModeChanged()));
@@ -764,8 +826,8 @@ View::setViewManager(ViewManager *manager)
             m_manager, SLOT(viewCentreFrameChanged(sv_frame_t, bool,
                                                    PlaybackFollowMode)));
 
-    connect(this, SIGNAL(zoomLevelChanged(int, bool)),
-            m_manager, SLOT(viewZoomLevelChanged(int, bool)));
+    connect(this, SIGNAL(zoomLevelChanged(ZoomLevel, bool)),
+            m_manager, SLOT(viewZoomLevelChanged(ZoomLevel, bool)));
 
     switch (m_followPlay) {
         
@@ -1127,7 +1189,7 @@ View::movePlayPointer(sv_frame_t newFrame)
 }
 
 void
-View::viewZoomLevelChanged(View *p, int z, bool locked)
+View::viewZoomLevelChanged(View *p, ZoomLevel z, bool locked)
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr  << "View[" << this << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << endl;
@@ -1400,30 +1462,32 @@ View::getNonScrollableFrontLayers(bool testChanged, bool &changed) const
     return nonScrollables;
 }
 
-int
-View::getZoomConstraintBlockSize(int blockSize,
-                                 ZoomConstraint::RoundingDirection dir)
+ZoomLevel
+View::getZoomConstraintLevel(ZoomLevel zoomLevel,
+                             ZoomConstraint::RoundingDirection dir)
     const
 {
-    int candidate = blockSize;
+    using namespace std::rel_ops;
+    
+    ZoomLevel candidate = zoomLevel;
     bool haveCandidate = false;
 
     PowerOfSqrtTwoZoomConstraint defaultZoomConstraint;
 
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
+    for (auto i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 
         const ZoomConstraint *zoomConstraint = (*i)->getZoomConstraint();
         if (!zoomConstraint) zoomConstraint = &defaultZoomConstraint;
 
-        int thisBlockSize =
-            zoomConstraint->getNearestBlockSize(blockSize, dir);
+        ZoomLevel thisLevel =
+            zoomConstraint->getNearestZoomLevel(zoomLevel, dir);
 
         // Go for the block size that's furthest from the one
         // passed in.  Most of the time, that's what we want.
         if (!haveCandidate ||
-            (thisBlockSize > blockSize && thisBlockSize > candidate) ||
-            (thisBlockSize < blockSize && thisBlockSize < candidate)) {
-            candidate = thisBlockSize;
+            (thisLevel > zoomLevel && thisLevel > candidate) ||
+            (thisLevel < zoomLevel && thisLevel < candidate)) {
+            candidate = thisLevel;
             haveCandidate = true;
         }
     }
@@ -1454,16 +1518,18 @@ View::hasTopLayerTimeXAxis() const
 void
 View::zoom(bool in)
 {
-    int newZoomLevel = m_zoomLevel;
+    ZoomLevel newZoomLevel = m_zoomLevel;
 
     if (in) {
-        newZoomLevel = getZoomConstraintBlockSize(newZoomLevel - 1, 
-                                                  ZoomConstraint::RoundDown);
+        newZoomLevel = getZoomConstraintLevel(m_zoomLevel.decremented(),
+                                              ZoomConstraint::RoundDown);
     } else {
-        newZoomLevel = getZoomConstraintBlockSize(newZoomLevel + 1,
-                                                  ZoomConstraint::RoundUp);
+        newZoomLevel = getZoomConstraintLevel(m_zoomLevel.incremented(),
+                                              ZoomConstraint::RoundUp);
     }
 
+    using namespace std::rel_ops;
+    
     if (newZoomLevel != m_zoomLevel) {
         setZoomLevel(newZoomLevel);
     }
@@ -1765,6 +1831,8 @@ View::paintEvent(QPaintEvent *e)
                   << m_cacheZoomLevel << ", zoom " << m_zoomLevel << endl;
 #endif
 
+        using namespace std::rel_ops;
+    
         if (!m_cache ||
             m_cacheZoomLevel != m_zoomLevel ||
             scaledCacheSize != m_cache->size()) {
@@ -2370,8 +2438,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 bool
 View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = int(f0 / m_zoomLevel);
-    int x1 = int(f1 / m_zoomLevel);
+    int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
+    int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
 
     int w = x1 - x0;
 
@@ -2433,7 +2501,8 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
             return false;
         }
 
-        m_centreFrame = f0 + (x + width()/2) * m_zoomLevel;
+        m_centreFrame = f0 + sv_frame_t(round(m_zoomLevel.pixelsToFrames
+                                              (x + width()/2)));
         
         QRect chunk(0, 0, width(), height());
 
@@ -2484,8 +2553,8 @@ View::renderToNewImage()
 QImage *
 View::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = int(f0 / getZoomLevel());
-    int x1 = int(f1 / getZoomLevel());
+    int x0 = int(round(getZoomLevel().framesToPixels(double(f0))));
+    int x1 = int(round(getZoomLevel().framesToPixels(double(f1))));
     
     QImage *image = new QImage(x1 - x0, height(), QImage::Format_RGB32);
 
@@ -2512,8 +2581,8 @@ View::getRenderedImageSize()
 QSize
 View::getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = int(f0 / getZoomLevel());
-    int x1 = int(f1 / getZoomLevel());
+    int x0 = int(round(getZoomLevel().framesToPixels(double(f0))));
+    int x1 = int(round(getZoomLevel().framesToPixels(double(f1))));
 
     return QSize(x1 - x0, height());
 }
@@ -2530,8 +2599,8 @@ View::renderToSvgFile(QString filename)
 bool
 View::renderPartToSvgFile(QString filename, sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = int(f0 / getZoomLevel());
-    int x1 = int(f1 / getZoomLevel());
+    int x0 = int(round(getZoomLevel().framesToPixels(double(f0))));
+    int x1 = int(round(getZoomLevel().framesToPixels(double(f1))));
 
     QSvgGenerator generator;
     generator.setFileName(filename);
@@ -2553,15 +2622,27 @@ View::toXml(QTextStream &stream,
 {
     stream << indent;
 
+    int classicZoomValue, deepZoomValue;
+
+    if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+        classicZoomValue = m_zoomLevel.level;
+        deepZoomValue = 1;
+    } else {
+        classicZoomValue = 1;
+        deepZoomValue = m_zoomLevel.level;
+    }
+
     stream << QString("<view "
                       "centre=\"%1\" "
                       "zoom=\"%2\" "
-                      "followPan=\"%3\" "
-                      "followZoom=\"%4\" "
-                      "tracking=\"%5\" "
-                      " %6>\n")
+                      "deepZoom=\"%3\" "
+                      "followPan=\"%4\" "
+                      "followZoom=\"%5\" "
+                      "tracking=\"%6\" "
+                      " %7>\n")
         .arg(m_centreFrame)
-        .arg(m_zoomLevel)
+        .arg(classicZoomValue)
+        .arg(deepZoomValue)
         .arg(m_followPan)
         .arg(m_followZoom)
         .arg(m_followPlay == PlaybackScrollContinuous ? "scroll" :

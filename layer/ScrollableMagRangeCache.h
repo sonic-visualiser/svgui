@@ -36,8 +36,7 @@ class ScrollableMagRangeCache
 {
 public:
     ScrollableMagRangeCache() :
-        m_startFrame(0),
-        m_zoomLevel(0)
+        m_startFrame(0)
     {}
 
     void invalidate() {
@@ -58,7 +57,7 @@ public:
         }
     }
         
-    int getZoomLevel() const {
+    ZoomLevel getZoomLevel() const {
         return m_zoomLevel;
     }
 
@@ -68,7 +67,8 @@ public:
      * invalidate the cache here is the only thing the zoom level is
      * used for.)
      */
-    void setZoomLevel(int zoom) {
+    void setZoomLevel(ZoomLevel zoom) {
+        using namespace std::rel_ops;
         if (m_zoomLevel != zoom) {
             m_zoomLevel = zoom;
             invalidate();
@@ -133,7 +133,7 @@ public:
 private:
     std::vector<MagnitudeRange> m_ranges;
     sv_frame_t m_startFrame;
-    int m_zoomLevel;
+    ZoomLevel m_zoomLevel;
 };
 
 #endif

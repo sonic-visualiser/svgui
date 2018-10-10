@@ -12,10 +12,11 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef LAYER_GEOMETRY_PROVIDER_H
-#define LAYER_GEOMETRY_PROVIDER_H
+#ifndef SV_LAYER_GEOMETRY_PROVIDER_H
+#define SV_LAYER_GEOMETRY_PROVIDER_H
 
 #include "base/BaseTypes.h"
+#include "base/ZoomLevel.h"
 
 #include <QMutex>
 #include <QMutexLocker>
@@ -147,9 +148,10 @@ public:
                                  bool &log) const = 0;
 
     /**
-     * Return the zoom level, i.e. the number of frames per pixel
+     * Return the zoom level, i.e. the number of frames per pixel or
+     * pixels per frame
      */
-    virtual int getZoomLevel() const = 0;
+    virtual ZoomLevel getZoomLevel() const = 0;
 
     /**
      * To be called from a layer, to obtain the extent of the surface

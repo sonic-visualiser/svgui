@@ -33,7 +33,7 @@ ViewManager::ViewManager() :
     m_playSource(0),
     m_recordTarget(0),
     m_globalCentreFrame(0),
-    m_globalZoom(1024),
+    m_globalZoom(ZoomLevel::FramesPerPixel, 1024),
     m_playbackFrame(0),
     m_playbackModel(0),
     m_mainModelSampleRate(0),
@@ -147,7 +147,7 @@ ViewManager::setGlobalCentreFrame(sv_frame_t f)
     emit globalCentreFrameChanged(f);
 }
 
-int
+ZoomLevel
 ViewManager::getGlobalZoom() const
 {
 #ifdef DEBUG_VIEW_MANAGER
@@ -687,7 +687,7 @@ ViewManager::seek(sv_frame_t f)
 }
 
 void
-ViewManager::viewZoomLevelChanged(int z, bool locked)
+ViewManager::viewZoomLevelChanged(ZoomLevel z, bool locked)
 {
     View *v = dynamic_cast<View *>(sender());
 
@@ -709,7 +709,11 @@ ViewManager::viewZoomLevelChanged(int z, bool locked)
     emit viewZoomLevelChanged(v, z, locked);
 
     if (!dynamic_cast<Overview *>(v)) {
-        emit activity(tr("Zoom to %n sample(s) per pixel", "", z));
+        if (z.zone == ZoomLevel::FramesPerPixel) {
+            emit activity(tr("Zoom to %n sample(s) per pixel", "", z.level));
+        } else {
+            emit activity(tr("Zoom to %n pixels per sample", "", z.level));
+        }
     }
 }
 

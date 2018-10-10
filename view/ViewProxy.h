@@ -75,12 +75,20 @@ public:
                                  bool &log) const {
         return m_view->getValueExtents(unit, min, max, log);
     }
-    virtual int getZoomLevel() const {
-        int z = m_view->getZoomLevel();
+    virtual ZoomLevel getZoomLevel() const {
+        ZoomLevel z = m_view->getZoomLevel();
+        //!!!
 //        cerr << "getZoomLevel: from " << z << " to ";
-        z = z / m_scaleFactor;
+        if (z.zone == ZoomLevel::FramesPerPixel) {
+            z.level /= m_scaleFactor;
+            if (z.level < 1) {
+                z.level = 1;
+            }
+        } else {
+            //!!!???
+            z.level *= m_scaleFactor;
+        }
 //        cerr << z << endl;
-        if (z < 1) z = 1;
         return z;
     }
     virtual QRect getPaintRect() const {

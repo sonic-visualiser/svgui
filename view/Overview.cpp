@@ -44,13 +44,14 @@ Overview::Overview(QWidget *w) :
 void
 Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 {
+    using namespace std::rel_ops;
+    
     bool zoomChanged = false;
 
     sv_frame_t frameCount = getModelsEndFrame() - getModelsStartFrame();
-    int zoomLevel = int(frameCount / width());
-    if (zoomLevel < 1) zoomLevel = 1;
-    zoomLevel = getZoomConstraintBlockSize(zoomLevel,
-                                           ZoomConstraint::RoundUp);
+    ZoomLevel zoomLevel { ZoomLevel::FramesPerPixel, int(frameCount / width()) };
+    if (zoomLevel.level < 1) zoomLevel.level = 1;
+    zoomLevel = getZoomConstraintLevel(zoomLevel, ZoomConstraint::RoundUp);
     if (zoomLevel != m_zoomLevel) {
         zoomChanged = true;
     }
@@ -123,7 +124,7 @@ Overview::viewCentreFrameChanged(View *v, sv_frame_t
 }    
 
 void
-Overview::viewZoomLevelChanged(View *v, int, bool)
+Overview::viewZoomLevelChanged(View *v, ZoomLevel, bool)
 {
     if (v == this) return;
     if (m_views.find(v) != m_views.end()) {
@@ -171,6 +172,8 @@ Overview::setBoxColour(QColor c)
 void
 Overview::paintEvent(QPaintEvent *e)
 {
+    using namespace std::rel_ops;
+    
     // Recalculate zoom in case the size of the widget has changed.
 
 #ifdef DEBUG_OVERVIEW
@@ -179,16 +182,17 @@ Overview::paintEvent(QPaintEvent *e)
 
     sv_frame_t startFrame = getModelsStartFrame();
     sv_frame_t frameCount = getModelsEndFrame() - getModelsStartFrame();
-    int zoomLevel = int(frameCount / width());
-    if (zoomLevel < 1) zoomLevel = 1;
-    zoomLevel = getZoomConstraintBlockSize(zoomLevel,
-                                           ZoomConstraint::RoundUp);
+    ZoomLevel zoomLevel { ZoomLevel::FramesPerPixel, int(frameCount / width()) };
+    if (zoomLevel.level < 1) zoomLevel.level = 1;
+    zoomLevel = getZoomConstraintLevel(zoomLevel, ZoomConstraint::RoundUp);
     if (zoomLevel != m_zoomLevel) {
         m_zoomLevel = zoomLevel;
         emit zoomLevelChanged(m_zoomLevel, m_followZoom);
     }
 
-    sv_frame_t centreFrame = startFrame + m_zoomLevel * (width() / 2);
+    sv_frame_t centreFrame = startFrame +
+        sv_frame_t(round(m_zoomLevel.pixelsToFrames(width()/2)));
+    
     if (centreFrame > (startFrame + getModelsEndFrame())/2) {
         centreFrame = (startFrame + getModelsEndFrame())/2;
     }
@@ -309,7 +313,7 @@ Overview::mouseMoveEvent(QMouseEvent *e)
     if (!m_clickedInRange) return;
 
     int xoff = int(e->x()) - int(m_clickPos.x());
-    sv_frame_t frameOff = xoff * m_zoomLevel;
+    sv_frame_t frameOff = sv_frame_t(round(m_zoomLevel.pixelsToFrames(xoff)));
     
     sv_frame_t newCentreFrame = m_dragCentreFrame;
     if (frameOff > 0) {
@@ -325,8 +329,11 @@ Overview::mouseMoveEvent(QMouseEvent *e)
         if (newCentreFrame > 0) --newCentreFrame;
     }
     
+    sv_frame_t pixel = sv_frame_t(round(m_zoomLevel.pixelsToFrames(1)));
+    
     if (std::max(m_centreFrame, newCentreFrame) -
-        std::min(m_centreFrame, newCentreFrame) > m_zoomLevel) {
+        std::min(m_centreFrame, newCentreFrame) >
+        pixel) {
         sv_frame_t rf = alignToReference(newCentreFrame);
 #ifdef DEBUG_OVERVIEW
         cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << endl;

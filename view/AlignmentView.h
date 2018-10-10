@@ -32,8 +32,8 @@ public:
 public slots:
     virtual void globalCentreFrameChanged(sv_frame_t);
     virtual void viewCentreFrameChanged(View *, sv_frame_t);
-    virtual void viewAboveZoomLevelChanged(int, bool);
-    virtual void viewBelowZoomLevelChanged(int, bool);
+    virtual void viewAboveZoomLevelChanged(ZoomLevel, bool);
+    virtual void viewBelowZoomLevelChanged(ZoomLevel, bool);
     virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
 
 protected:

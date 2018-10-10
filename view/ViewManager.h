@@ -27,6 +27,7 @@
 #include "base/Command.h"
 #include "base/Clipboard.h"
 #include "base/BaseTypes.h"
+#include "base/ZoomLevel.h"
 
 class AudioPlaySource;
 class AudioRecordTarget;
@@ -87,7 +88,7 @@ public:
     bool isRecording() const;
 
     sv_frame_t getGlobalCentreFrame() const; // the set method is a slot
-    int getGlobalZoom() const;
+    ZoomLevel getGlobalZoom() const;
 
     sv_frame_t getPlaybackFrame() const; // the set method is a slot
 
@@ -255,7 +256,7 @@ signals:
     void viewCentreFrameChanged(View *v, sv_frame_t frame);
 
     /** Emitted when a view zooms. */
-    void viewZoomLevelChanged(View *v, int zoom, bool locked);
+    void viewZoomLevelChanged(View *v, ZoomLevel zoom, bool locked);
 
     /** Emitted when the playback frame changes. */
     void playbackFrameChanged(sv_frame_t frame);
@@ -307,7 +308,7 @@ signals:
 
 public slots:
     void viewCentreFrameChanged(sv_frame_t, bool, PlaybackFollowMode);
-    void viewZoomLevelChanged(int, bool);
+    void viewZoomLevelChanged(ZoomLevel, bool);
     void setGlobalCentreFrame(sv_frame_t);
     void setPlaybackFrame(sv_frame_t);
     void playStatusChanged(bool playing);
@@ -323,7 +324,7 @@ protected:
     AudioRecordTarget *m_recordTarget;
     
     sv_frame_t m_globalCentreFrame;
-    int m_globalZoom;
+    ZoomLevel m_globalZoom;
     mutable sv_frame_t m_playbackFrame;
     Model *m_playbackModel; //!!!
     sv_samplerate_t m_mainModelSampleRate;
