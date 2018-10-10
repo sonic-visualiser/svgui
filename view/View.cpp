@@ -26,7 +26,7 @@
 #include "layer/SingleColourLayer.h"
 #include "layer/PaintAssistant.h"
 
-#include "data/model/PowerOfSqrtTwoZoomConstraint.h"
+#include "data/model/RelativelyFineZoomConstraint.h"
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
 #include "widgets/IconLoader.h"
@@ -1469,30 +1469,96 @@ View::getZoomConstraintLevel(ZoomLevel zoomLevel,
 {
     using namespace std::rel_ops;
     
-    ZoomLevel candidate = zoomLevel;
-    bool haveCandidate = false;
+    ZoomLevel candidate =
+        RelativelyFineZoomConstraint().getNearestZoomLevel(zoomLevel, dir);
 
-    PowerOfSqrtTwoZoomConstraint defaultZoomConstraint;
+    for (auto i : m_layerStack) {
 
-    for (auto i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
-
-        const ZoomConstraint *zoomConstraint = (*i)->getZoomConstraint();
-        if (!zoomConstraint) zoomConstraint = &defaultZoomConstraint;
-
+        if (i->supportsOtherZoomLevels() || !(i->getZoomConstraint())) {
+            continue;
+        }
+        
         ZoomLevel thisLevel =
-            zoomConstraint->getNearestZoomLevel(zoomLevel, dir);
+            i->getZoomConstraint()->getNearestZoomLevel(zoomLevel, dir);
 
         // Go for the block size that's furthest from the one
         // passed in.  Most of the time, that's what we want.
-        if (!haveCandidate ||
-            (thisLevel > zoomLevel && thisLevel > candidate) ||
+        if ((thisLevel > zoomLevel && thisLevel > candidate) ||
             (thisLevel < zoomLevel && thisLevel < candidate)) {
             candidate = thisLevel;
-            haveCandidate = true;
         }
     }
 
     return candidate;
+}
+
+int
+View::countZoomLevels() const
+{
+    int n = 0;
+    ZoomLevel min = ZoomConstraint().getMinZoomLevel();
+    ZoomLevel max = ZoomConstraint().getMaxZoomLevel();
+    ZoomLevel level = min;
+    while (true) {
+        ++n;
+        if (level == max) {
+            break;
+        }
+        level = getZoomConstraintLevel
+            (level.incremented(), ZoomConstraint::RoundUp);
+    }
+    cerr << "View::countZoomLevels: " << n << endl;
+    return n;
+}
+
+ZoomLevel
+View::getZoomLevelByIndex(int ix) const
+{
+    int n = 0;
+    ZoomLevel min = ZoomConstraint().getMinZoomLevel();
+    ZoomLevel max = ZoomConstraint().getMaxZoomLevel();
+    ZoomLevel level = min;
+    while (true) {
+        if (n == ix) {
+            cerr << "View::getZoomLevelByIndex: " << ix << " -> " << level
+                 << endl;
+            return level;
+        }
+        ++n;
+        if (level == max) {
+            break;
+        }
+        level = getZoomConstraintLevel
+            (level.incremented(), ZoomConstraint::RoundUp);
+    }
+    cerr << "View::getZoomLevelByIndex: " << ix << " -> " << max << " (max)"
+         << endl;
+    return max;
+}
+
+int
+View::getZoomLevelIndex(ZoomLevel z) const
+{
+    int n = 0;
+    ZoomLevel min = ZoomConstraint().getMinZoomLevel();
+    ZoomLevel max = ZoomConstraint().getMaxZoomLevel();
+    ZoomLevel level = min;
+    while (true) {
+        if (z == level) {
+            cerr << "View::getZoomLevelIndex: " << z << " -> " << n
+                 << endl;
+            return n;
+        }
+        ++n;
+        if (level == max) {
+            break;
+        }
+        level = getZoomConstraintLevel
+            (level.incremented(), ZoomConstraint::RoundUp);
+    }
+    cerr << "View::getZoomLevelIndex: " << z << " -> " << n << " (max)"
+         << endl;
+    return n;
 }
 
 bool
@@ -1734,13 +1800,8 @@ View::paintEvent(QPaintEvent *e)
     }
 
     // ensure our constraints are met
-
-/*!!! Should we do this only if we have layers that can't support other
-  zoom levels?
-
-    m_zoomLevel = getZoomConstraintBlockSize(m_zoomLevel,
-                                             ZoomConstraint::RoundUp);
-*/
+    m_zoomLevel = getZoomConstraintLevel
+        (m_zoomLevel, ZoomConstraint::RoundNearest);
 
     QPainter paint;
     bool repaintCache = false;

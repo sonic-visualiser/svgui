@@ -457,10 +457,16 @@ protected:
     bool areLayersScrollable() const;
     LayerList getScrollableBackLayers(bool testChanged, bool &changed) const;
     LayerList getNonScrollableFrontLayers(bool testChanged, bool &changed) const;
+
     ZoomLevel getZoomConstraintLevel(ZoomLevel level,
                                      ZoomConstraint::RoundingDirection dir =
                                      ZoomConstraint::RoundNearest) const;
 
+    // These three are slow, intended for indexing GUI thumbwheel stuff
+    int countZoomLevels() const;
+    int getZoomLevelIndex(ZoomLevel level) const;
+    ZoomLevel getZoomLevelByIndex(int ix) const;
+    
     // True if the top layer(s) use colours for meaningful things.  If
     // this is the case, selections will be shown using unfilled boxes
     // rather than with a translucent fill.

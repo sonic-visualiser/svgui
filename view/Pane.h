@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PANE_H_
-#define _PANE_H_
+#ifndef SV_PANE_H
+#define SV_PANE_H
 
 #include <QFrame>
 #include <QPoint>
@@ -212,7 +212,7 @@ protected:
 
     bool m_playbackFrameMoveScheduled;
     sv_frame_t m_playbackFrameMoveTo;
-
+    
     static QCursor *m_measureCursor1;
     static QCursor *m_measureCursor2;
 };
