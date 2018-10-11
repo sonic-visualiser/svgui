@@ -85,7 +85,7 @@ SubdividingMenu::setEntries(const std::set<QString> &entries)
                           return QString::localeAwareCompare(s1, s2) < 0;
                       };
     
-    set<QString, typeof(comparator)> sortedEntries(comparator);
+    set<QString, decltype(comparator)> sortedEntries(comparator);
     sortedEntries.insert(entries.begin(), entries.end());
     
     for (auto j = sortedEntries.begin(); j != sortedEntries.end(); ++j) {
@@ -180,7 +180,7 @@ SubdividingMenu::entriesAdded()
     auto comparator = [](QString s1, QString s2) -> bool {
                           return QString::localeAwareCompare(s1, s2) < 0;
                       };
-    set<QString, typeof(comparator)> sortedEntries(comparator);
+    set<QString, decltype(comparator)> sortedEntries(comparator);
     for (auto i: m_pendingEntries) {
         sortedEntries.insert(i.first);
     }
