@@ -440,6 +440,7 @@ protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
+    virtual void drawPlayPointer(QPainter &);
     virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
     virtual void setPaintFont(QPainter &paint);
 
@@ -499,6 +500,7 @@ protected:
 
     QPixmap            *m_cache;  // I own this
     QPixmap            *m_buffer; // I own this
+    bool                m_cacheValid;
     sv_frame_t          m_cacheCentreFrame;
     ZoomLevel           m_cacheZoomLevel;
     bool                m_selectionCached;

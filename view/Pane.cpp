@@ -2373,12 +2373,7 @@ Pane::wheelHorizontalFine(int pixels, Qt::KeyboardModifiers)
 void
 Pane::horizontalThumbwheelMoved(int value)
 {
-    cerr << "horizontalThumbwheelMoved(" << value << ")" << endl;
-    
-    ZoomLevel level = getZoomLevelByIndex
-        (m_hthumb->getMaximumValue() - value);
-        
-    cerr << "new level is " << level << endl;
+    ZoomLevel level = getZoomLevelByIndex(m_hthumb->getMaximumValue() - value);
     setZoomLevel(level);
 }    
 

@@ -20,6 +20,7 @@
 #include "base/Profiler.h"
 #include "base/Pitch.h"
 #include "base/Preferences.h"
+#include "base/HitCount.h"
 #include "ViewProxy.h"
 
 #include "layer/TimeRulerLayer.h"
@@ -63,6 +64,7 @@ View::View(QWidget *w, bool showProgress) :
     m_showProgress(showProgress),
     m_cache(0),
     m_buffer(0),
+    m_cacheValid(false),
     m_cacheCentreFrame(0),
     m_cacheZoomLevel(ZoomLevel::FramesPerPixel, 1024),
     m_selectionCached(false),
@@ -260,8 +262,7 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
         return;
     }
 
-    delete m_cache;
-    m_cache = 0;
+    m_cacheValid = false;
 
     Layer *selectedLayer = 0;
 
@@ -293,8 +294,7 @@ View::toolModeChanged()
 void
 View::overlayModeChanged()
 {
-    delete m_cache;
-    m_cache = 0;
+    m_cacheValid = false;
     update();
 }
 
@@ -617,8 +617,7 @@ View::getForeground() const
 void
 View::addLayer(Layer *layer)
 {
-    delete m_cache;
-    m_cache = 0;
+    m_cacheValid = false;
 
     SingleColourLayer *scl = dynamic_cast<SingleColourLayer *>(layer);
     if (scl) scl->setDefaultColourFor(this);
@@ -689,8 +688,7 @@ View::removeLayer(Layer *layer)
         return;
     }
 
-    delete m_cache;
-    m_cache = 0;
+    m_cacheValid = false;
 
     for (LayerList::iterator i = m_fixedOrderLayers.begin();
          i != m_fixedOrderLayers.end();
@@ -907,8 +905,7 @@ View::modelChanged()
     }
 
     if (recreate) {
-        delete m_cache;
-        m_cache = 0;
+        m_cacheValid = false;
     }
 
     emit layerModelChanged();
@@ -955,8 +952,7 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
     }
 
     if (recreate) {
-        delete m_cache;
-        m_cache = 0;
+        m_cacheValid = false;
     }
 
     if (startFrame < myStartFrame) startFrame = myStartFrame;
@@ -991,9 +987,7 @@ View::modelReplaced()
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr << "View(" << this << ")::modelReplaced()" << endl;
 #endif
-    delete m_cache;
-    m_cache = 0;
-
+    m_cacheValid = false;
     update();
 }
 
@@ -1006,8 +1000,7 @@ View::layerParametersChanged()
     SVDEBUG << "View::layerParametersChanged()" << endl;
 #endif
 
-    delete m_cache;
-    m_cache = 0;
+    m_cacheValid = false;
     update();
 
     if (layer) {
@@ -1203,8 +1196,7 @@ void
 View::selectionChanged()
 {
     if (m_selectionCached) {
-        delete m_cache;
-        m_cache = 0;
+        m_cacheValid = false;
         m_selectionCached = false;
     }
     update();
@@ -1803,23 +1795,52 @@ View::paintEvent(QPaintEvent *e)
     m_zoomLevel = getZoomConstraintLevel
         (m_zoomLevel, ZoomConstraint::RoundNearest);
 
-    QPainter paint;
-    bool repaintCache = false;
-    bool paintedCacheRect = false;
+    // We have a cache, which retains the state of scrollable (back)
+    // layers from one paint to the next, and a buffer, which we paint
+    // onto before copying directly to the widget. Both are at scaled
+    // resolution (e.g. 2x on a pixel-doubled display), whereas the
+    // paint event always comes in at formal (1x) resolution.
 
-    QRect cacheRect(rect());
+    // If we touch the cache, we always leave it in a valid state
+    // across its whole extent. When another method invalidates the
+    // cache, it does so by setting m_cacheValid false, so if that
+    // flag is true on entry, then the cache is valid across its whole
+    // extent - although it may be valid for a different centre frame,
+    // zoom level, or view size from those now in effect.
 
-    if (e) {
-        cacheRect &= e->rect();
-#ifdef DEBUG_VIEW_WIDGET_PAINT
-        cerr << "paint rect " << cacheRect.width() << "x" << cacheRect.height()
-                  << ", my rect " << width() << "x" << height() << endl;
-#endif
-    }
-
-    QRect nonCacheRect(cacheRect);
+    // Our process goes:
+    // 
+    // 1. Check whether we have any scrollable (cacheable) layers.  If
+    //    we don't, then invalidate and ignore the cache and go to
+    //    step 5.  Otherwise:
+    // 
+    // 2. Check the cache, scroll as necessary, identify any area that
+    //    needs to be refreshed (this might be the whole cache).
+    //
+    // 3. Paint to cache the area that needs to be refreshed, from the
+    //    stack of scrollable layers.
+    //
+    // 4. Paint to buffer from cache: if there are no non-cached areas
+    //    or selections and the cache has not scrolled, then paint the
+    //    union of the area of cache that has changed and the area
+    //    that the paint event reported as exposed; otherwise paint
+    //    the whole.
+    //
+    // 5. Paint the exposed area to the buffer from the cache plus all
+    //    the layers that haven't been cached, plus selections etc.
+    //
+    // 6. Paint the exposed rect from the buffer.
+    //
+    // Note that all rects except the target for the final step are at
+    // cache (scaled, 2x as applicable) resolution.
 
     int dpratio = effectiveDevicePixelRatio();
+
+    QRect requestedPaintArea(scaledRect(rect(), dpratio));
+    if (e) {
+        // cut down to only the area actually exposed
+        requestedPaintArea &= scaledRect(e->rect(), dpratio);
+    }
 
     // If not all layers are scrollable, but some of the back layers
     // are, we should store only those in the cache.
@@ -1827,65 +1848,36 @@ View::paintEvent(QPaintEvent *e)
     bool layersChanged = false;
     LayerList scrollables = getScrollableBackLayers(true, layersChanged);
     LayerList nonScrollables = getNonScrollableFrontLayers(true, layersChanged);
-    bool selectionCacheable = nonScrollables.empty();
-    bool haveSelections = m_manager && !m_manager->getSelections().empty();
-
-    // If all the non-scrollable layers are non-opaque, then we draw
-    // the selection rectangle behind them and cache it.  If any are
-    // opaque, however, or if our device-pixel ratio is not 1 (so we
-    // need to paint direct to the widget), then we can't cache.
-    //
-    if (dpratio == 1) {
-
-        if (!selectionCacheable) {
-            selectionCacheable = true;
-            for (LayerList::const_iterator i = nonScrollables.begin();
-                 i != nonScrollables.end(); ++i) {
-                if ((*i)->isLayerOpaque()) {
-                    selectionCacheable = false;
-                    break;
-                }
-            }
-        }
-
-        if (selectionCacheable) {
-            QPoint localPos;
-            bool closeToLeft, closeToRight;
-            if (shouldIlluminateLocalSelection
-                (localPos, closeToLeft, closeToRight)) {
-                selectionCacheable = false;
-            }
-        }
-
-    } else {
-
-        selectionCacheable = false;
-    }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr << "View(" << this << ")::paintEvent: have " << scrollables.size()
               << " scrollable back layers and " << nonScrollables.size()
               << " non-scrollable front layers" << endl;
-    cerr << "haveSelections " << haveSelections << ", selectionCacheable "
-              << selectionCacheable << ", m_selectionCached " << m_selectionCached << endl;
 #endif
 
-    if (layersChanged || scrollables.empty() ||
-        (haveSelections && (selectionCacheable != m_selectionCached))) {
-        delete m_cache;
-        m_cache = 0;
-        m_selectionCached = false;
+    if (layersChanged || scrollables.empty()) {
+        m_cacheValid = false;
     }
 
-    QSize scaledCacheSize(scaledSize(size(), dpratio));
-    QRect scaledCacheRect(scaledRect(cacheRect, dpratio));
+    QRect wholeArea(scaledRect(rect(), dpratio));
+    QSize wholeSize(scaledSize(size(), dpratio));
 
-    if (!m_buffer || scaledCacheSize != m_buffer->size()) {
+    if (!m_buffer || wholeSize != m_buffer->size()) {
         delete m_buffer;
-        m_buffer = new QPixmap(scaledCacheSize);
+        m_buffer = new QPixmap(wholeSize);
     }
+
+    bool shouldUseCache = false;
+    bool shouldRepaintCache = false;
+    QRect cacheAreaToRepaint;
     
+    static HitCount count("View cache");
+
     if (!scrollables.empty()) {
+
+        shouldUseCache = true;
+        shouldRepaintCache = true;
+        cacheAreaToRepaint = wholeArea;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
         cerr << "View(" << this << "): cache " << m_cache << ", cache zoom "
@@ -1894,208 +1886,184 @@ View::paintEvent(QPaintEvent *e)
 
         using namespace std::rel_ops;
     
-        if (!m_cache ||
+        if (!m_cacheValid ||
+            !m_cache ||
             m_cacheZoomLevel != m_zoomLevel ||
-            scaledCacheSize != m_cache->size()) {
+            m_cache->size() != wholeSize) {
 
-            // cache is not valid
+            // cache is not valid at all
 
-            if (cacheRect.width() < width()/10) {
-                delete m_cache;
-                m_cache = 0;
+            if (requestedPaintArea.width() < wholeSize.width() / 10) {
+
+                m_cacheValid = false;
+                shouldUseCache = false;
+                shouldRepaintCache = false;
+
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << this << ")::paintEvent: small repaint, not bothering to recreate cache" << endl;
+                cerr << "View(" << this << ")::paintEvent: cache is invalid but only small area requested, will repaint directly instead" << endl;
 #endif
             } else {
-                delete m_cache;
-                m_cache = new QPixmap(scaledCacheSize);
+
+                if (!m_cache ||
+                    m_cache->size() != wholeSize) {
+                    delete m_cache;
+                    m_cache = new QPixmap(wholeSize);
+                }
+
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << this << ")::paintEvent: recreated cache" << endl;
+                cerr << "View(" << this << ")::paintEvent: cache is invalid, will repaint whole" << endl;
 #endif
-                cacheRect = rect();
-                repaintCache = true;
             }
 
+            count.miss();
+            
         } else if (m_cacheCentreFrame != m_centreFrame) {
 
-            int dx =
-                getXForFrame(m_cacheCentreFrame) -
-                getXForFrame(m_centreFrame);
+            int dx = dpratio * (getXForFrame(m_cacheCentreFrame) -
+                                getXForFrame(m_centreFrame));
 
-            if (dx > -width() && dx < width()) {
-                static QPixmap *tmpPixmap = 0;
-                if (!tmpPixmap || tmpPixmap->size() != scaledCacheSize) {
-                    delete tmpPixmap;
-                    tmpPixmap = new QPixmap(scaledCacheSize);
-                }
-                paint.begin(tmpPixmap);
-                paint.drawPixmap(0, 0, *m_cache);
-                paint.end();
-                paint.begin(m_cache);
-                paint.drawPixmap(dx, 0, *tmpPixmap);
-                paint.end();
+            if (dx > -m_cache->width() && dx < m_cache->width()) {
+
+                m_cache->scroll(dx, 0, m_cache->rect(), 0);
+
                 if (dx < 0) {
-                    cacheRect = QRect(width() + dx, 0, -dx, height());
+                    cacheAreaToRepaint = 
+                        QRect(m_cache->width() + dx, 0, -dx, m_cache->height());
                 } else {
-                    cacheRect = QRect(0, 0, dx, height());
+                    cacheAreaToRepaint = 
+                        QRect(0, 0, dx, m_cache->height());
                 }
+
+                count.partial();
+
 #ifdef DEBUG_VIEW_WIDGET_PAINT
                 cerr << "View(" << this << ")::paintEvent: scrolled cache by " << dx << endl;
 #endif
             } else {
-                cacheRect = rect();
+                count.miss();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
                 cerr << "View(" << this << ")::paintEvent: scrolling too far" << endl;
 #endif
             }
-            repaintCache = true;
 
         } else {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
             cerr << "View(" << this << ")::paintEvent: cache is good" << endl;
 #endif
-            paint.begin(m_buffer);
-            paint.drawPixmap(scaledCacheRect, *m_cache, scaledCacheRect);
-            paint.end();
-            QFrame::paintEvent(e);
-            paintedCacheRect = true;
+            count.hit();
+            shouldRepaintCache = false;
         }
+    }
 
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+    cerr << "View(" << this << ")::paintEvent: m_cacheValid = " << m_cacheValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
+#endif
+
+    if (shouldRepaintCache && !shouldUseCache) {
+        // If we are repainting the cache, then we paint the
+        // scrollables only to the cache, not to the buffer. So if
+        // shouldUseCache is also false, then the scrollables can't
+        // appear because they will only be on the cache
+        throw std::logic_error("ERROR: shouldRepaintCache is true, but shouldUseCache is false: this can't lead to the correct result");
+    }
+
+    // Scrollable (cacheable) items first. If we are repainting the
+    // cache, then we paint these to the cache; otherwise straight to
+    // the buffer.
+
+    ViewProxy proxy(this, dpratio);
+    QRect areaToPaint;
+    QPainter paint;
+
+    if (shouldRepaintCache) {
+        paint.begin(m_cache);
+        areaToPaint = cacheAreaToRepaint;
+    } else {
+        paint.begin(m_buffer);
+        areaToPaint = requestedPaintArea;
+    }
+
+    setPaintFont(paint);
+    paint.setClipRect(areaToPaint);
+
+    paint.setPen(getBackground());
+    paint.setBrush(getBackground());
+    paint.drawRect(areaToPaint);
+
+    paint.setPen(getForeground());
+    paint.setBrush(Qt::NoBrush);
+        
+    for (LayerList::iterator i = scrollables.begin();
+         i != scrollables.end(); ++i) {
+
+        paint.setRenderHint(QPainter::Antialiasing, false);
+        paint.save();
+
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+        cerr << "Painting scrollable layer " << *i << " using proxy with shouldRepaintCache = " << shouldRepaintCache << ", dpratio = " << dpratio << ", areaToPaint = " << areaToPaint.x() << "," << areaToPaint.y() << " " << areaToPaint.width() << "x" << areaToPaint.height() << endl;
+#endif
+
+        (*i)->paint(&proxy, paint, areaToPaint);
+
+        paint.restore();
+    }
+
+    paint.end();
+
+    if (shouldRepaintCache) {
+        // and now we have
+        m_cacheValid = true;
         m_cacheCentreFrame = m_centreFrame;
         m_cacheZoomLevel = m_zoomLevel;
     }
 
-#ifdef DEBUG_VIEW_WIDGET_PAINT
-//    cerr << "View(" << this << ")::paintEvent: cacheRect " << cacheRect << ", nonCacheRect " << (nonCacheRect | cacheRect) << ", repaintCache " << repaintCache << ", paintedCacheRect " << paintedCacheRect << endl;
-#endif
-
-    // Scrollable (cacheable) items first
-
-    ViewProxy proxy(this, dpratio);
-    
-    if (!paintedCacheRect) {
-
-        QRect rectToPaint;
-
-        if (repaintCache) {
-            paint.begin(m_cache);
-            rectToPaint = scaledCacheRect;
-        } else {
-            paint.begin(m_buffer);
-            rectToPaint = scaledCacheRect;
-        }
-
-        setPaintFont(paint);
-        paint.setClipRect(rectToPaint);
-
-        paint.setPen(getBackground());
-        paint.setBrush(getBackground());
-        paint.drawRect(rectToPaint);
-
-        paint.setPen(getForeground());
-        paint.setBrush(Qt::NoBrush);
-        
-        for (LayerList::iterator i = scrollables.begin(); i != scrollables.end(); ++i) {
-            paint.setRenderHint(QPainter::Antialiasing, false);
-            paint.save();
-#ifdef DEBUG_VIEW_WIDGET_PAINT
-            cerr << "Painting scrollable layer " << *i << " using proxy with repaintCache = " << repaintCache << ", dpratio = " << dpratio << ", rectToPaint = " << rectToPaint.x() << "," << rectToPaint.y() << " " << rectToPaint.width() << "x" << rectToPaint.height() << endl;
-#endif
-            (*i)->paint(&proxy, paint, rectToPaint);
-            paint.restore();
-        }
-
-        if (haveSelections && selectionCacheable) {
-            drawSelections(paint);
-            m_selectionCached = repaintCache;
-        }
-        
+    if (shouldUseCache) {
+        paint.begin(m_buffer);
+        paint.drawPixmap(requestedPaintArea, *m_cache, requestedPaintArea);
         paint.end();
-
-        if (repaintCache) {
-            cacheRect |= (e ? e->rect() : rect());
-            scaledCacheRect = scaledRect(cacheRect, dpratio);
-            paint.begin(m_buffer);
-            paint.drawPixmap(scaledCacheRect, *m_cache, scaledCacheRect);
-            paint.end();
-        }
     }
 
-    // Now non-cacheable items.  We always need to redraw the
-    // non-cacheable items across at least the area we drew of the
-    // cacheable items.
+    // Now non-cacheable items.
 
-    nonCacheRect |= cacheRect;
-
-    QRect scaledNonCacheRect = scaledRect(nonCacheRect, dpratio);
-    
     paint.begin(m_buffer);
-    paint.setClipRect(scaledNonCacheRect);
+    paint.setClipRect(requestedPaintArea);
     setPaintFont(paint);
     if (scrollables.empty()) {
         paint.setPen(getBackground());
         paint.setBrush(getBackground());
-        paint.drawRect(scaledNonCacheRect);
+        paint.drawRect(requestedPaintArea);
     }
         
     paint.setPen(getForeground());
     paint.setBrush(Qt::NoBrush);
         
-    for (LayerList::iterator i = nonScrollables.begin(); i != nonScrollables.end(); ++i) {
+    for (LayerList::iterator i = nonScrollables.begin(); 
+         i != nonScrollables.end(); ++i) {
+
 //        Profiler profiler2("View::paintEvent non-cacheable");
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        cerr << "Painting non-scrollable layer " << *i << " without proxy with repaintCache = " << repaintCache << ", dpratio = " << dpratio << ", rectToPaint = " << nonCacheRect.x() << "," << nonCacheRect.y() << " " << nonCacheRect.width() << "x" << nonCacheRect.height() << endl;
+        cerr << "Painting non-scrollable layer " << *i << " without proxy with shouldRepaintCache = " << shouldRepaintCache << ", dpratio = " << dpratio << ", requestedPaintArea = " << requestedPaintArea.x() << "," << requestedPaintArea.y() << " " << requestedPaintArea.width() << "x" << requestedPaintArea.height() << endl;
 #endif
-        (*i)->paint(&proxy, paint, scaledNonCacheRect);
+        (*i)->paint(&proxy, paint, requestedPaintArea);
     }
         
     paint.end();
-    
-    paint.begin(this);
-    QRect finalPaintRect = e ? e->rect() : rect();
-    paint.drawPixmap(finalPaintRect, *m_buffer, scaledRect(finalPaintRect, dpratio));
-    paint.end();
+
+    // Now paint to widget from buffer: target rects from here on,
+    // unlike all the preceding, are at formal (1x) resolution
 
     paint.begin(this);
     setPaintFont(paint);
     if (e) paint.setClipRect(e->rect());
-    if (!m_selectionCached) {
-        drawSelections(paint);
-    }
+
+    QRect finalPaintRect = e ? e->rect() : rect();
+    paint.drawPixmap(finalPaintRect, *m_buffer, 
+                     scaledRect(finalPaintRect, dpratio));
+
+    drawSelections(paint);
+    drawPlayPointer(paint);
+
     paint.end();
-
-    bool showPlayPointer = true;
-    if (m_followPlay == PlaybackScrollContinuous) {
-        showPlayPointer = false;
-    } else if (m_playPointerFrame <= getStartFrame() ||
-               m_playPointerFrame >= getEndFrame()) {
-        showPlayPointer = false;
-    } else if (m_manager && !m_manager->isPlaying()) {
-        if (m_playPointerFrame == getCentreFrame() &&
-            m_manager->shouldShowCentreLine() &&
-            m_followPlay != PlaybackIgnore) {
-            // Don't show the play pointer when it is redundant with
-            // the centre line
-            showPlayPointer = false;
-        }
-    }
-    
-    if (showPlayPointer) {
-
-        paint.begin(this);
-
-        int playx = getXForFrame(m_playPointerFrame);
-        
-        paint.setPen(getForeground());
-        paint.drawLine(playx - 1, 0, playx - 1, height() - 1);
-        paint.drawLine(playx + 1, 0, playx + 1, height() - 1);
-        paint.drawPoint(playx, 0);
-        paint.drawPoint(playx, height() - 1);
-        paint.setPen(getBackground());
-        paint.drawLine(playx, 1, playx, height() - 2);
-
-        paint.end();
-    }
 
     QFrame::paintEvent(e);
 }
@@ -2255,6 +2223,40 @@ View::drawSelections(QPainter &paint)
     }
 
     paint.restore();
+}
+
+void
+View::drawPlayPointer(QPainter &paint)
+{
+    bool showPlayPointer = true;
+
+    if (m_followPlay == PlaybackScrollContinuous) {
+        showPlayPointer = false;
+    } else if (m_playPointerFrame <= getStartFrame() ||
+               m_playPointerFrame >= getEndFrame()) {
+        showPlayPointer = false;
+    } else if (m_manager && !m_manager->isPlaying()) {
+        if (m_playPointerFrame == getCentreFrame() &&
+            m_manager->shouldShowCentreLine() &&
+            m_followPlay != PlaybackIgnore) {
+            // Don't show the play pointer when it is redundant with
+            // the centre line
+            showPlayPointer = false;
+        }
+    }
+    
+    if (showPlayPointer) {
+
+        int playx = getXForFrame(m_playPointerFrame);
+        
+        paint.setPen(getForeground());
+        paint.drawLine(playx - 1, 0, playx - 1, height() - 1);
+        paint.drawLine(playx + 1, 0, playx + 1, height() - 1);
+        paint.drawPoint(playx, 0);
+        paint.drawPoint(playx, height() - 1);
+        paint.setPen(getBackground());
+        paint.drawLine(playx, 1, playx, height() - 2);
+    }
 }
 
 void
