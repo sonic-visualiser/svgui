@@ -154,8 +154,12 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
 
     sv_frame_t startFrame = v->getStartFrame();
     sv_frame_t endFrame = v->getEndFrame();
+    if (endFrame == startFrame) {
+        endFrame = startFrame + 1;
+    }
 
-    int minPixelSpacing = ViewManager::scalePixelSize(50);
+    int exampleWidth = QFontMetrics(QFont()).width("10:42.987654");
+    int minPixelSpacing = v->getXForViewX(exampleWidth);
 
     RealTime rtStart = RealTime::frame2RealTime(startFrame, sampleRate);
     RealTime rtEnd = RealTime::frame2RealTime(endFrame, sampleRate);
@@ -163,6 +167,15 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
     int count = v->getPaintWidth() / minPixelSpacing;
     if (count < 1) count = 1;
     RealTime rtGap = (rtEnd - rtStart) / count;
+
+#ifdef DEBUG_TIME_RULER_LAYER
+    SVCERR << "zoomLevel = " << v->getZoomLevel()
+           << ", startFrame = " << startFrame << ", endFrame = " << endFrame
+           << ", rtStart = " << rtStart << ", rtEnd = " << rtEnd
+           << ", paint width = " << v->getPaintWidth()
+           << ", minPixelSpacing = " << minPixelSpacing
+           << ", count = " << count << ", rtGap = " << rtGap << endl;
+#endif
 
     int64_t incus;
     quarterTicks = false;
@@ -196,6 +209,10 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
         if (us > 0) { incus *= 5; us /= 5; }
         if (us > 0) { incus *= 2; us /= 2; }
     }
+
+#ifdef DEBUG_TIME_RULER_LAYER
+    SVCERR << "getMajorTickUSec: returning incus = " << incus << endl;
+#endif
 
     return incus;
 }
@@ -277,7 +294,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     // We always use the exact incus in our calculations for where to
     // draw the actual ticks or lines.
 
-    int minPixelSpacing = 50;
+    int minPixelSpacing = v->getXForViewX(50);
     sv_frame_t incFrame = lrint((double(incus) * sampleRate) / 1000000);
     int incX = int(round(v->getZoomLevel().framesToPixels(double(incFrame))));
     int ticks = 10;
