@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _REGION_LAYER_H_
-#define _REGION_LAYER_H_
+#ifndef SV_REGION_LAYER_H
+#define SV_REGION_LAYER_H
 
 #include "SingleColourLayer.h"
 #include "VerticalScaleLayer.h"
@@ -156,6 +156,7 @@ protected:
     RegionModel::EditCommand *m_editingCommand;
     VerticalScale m_verticalScale;
     int m_colourMap;
+    bool m_colourInverted;
     PlotStyle m_plotStyle;
 
     typedef std::map<double, int> SpacingMap;

@@ -418,7 +418,7 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
         paint.setFont(fn);
     }
 
-    ColourMapper mapper(m_colourMap, 0, 1);
+    ColourMapper mapper(m_colourMap, m_colourInverted, 0, 1);
     paint.setPen(mapper.getContrastingColour());
 
     int xorigin = m_xorigins[v->getId()];
@@ -618,8 +618,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
 
         ColourMapper mapper =
             hasLightBackground() ?
-            ColourMapper(ColourMapper::BlackOnWhite, 0, 1) :
-            ColourMapper(ColourMapper::WhiteOnBlack, 0, 1);
+            ColourMapper(ColourMapper::BlackOnWhite, m_colourInverted, 0, 1) :
+            ColourMapper(ColourMapper::WhiteOnBlack, m_colourInverted, 0, 1);
         
         int peakminbin = 0;
         int peakmaxbin = fft->getHeight() - 1;

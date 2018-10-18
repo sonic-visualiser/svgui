@@ -47,6 +47,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_colourScale(ColourScaleType::Linear),
     m_colourScaleSet(false),
     m_colourMap(0),
+    m_colourInverted(false),
     m_gain(1.0),
     m_binScale(BinScale::Linear),
     m_normalization(ColumnNormalization::None),
@@ -394,7 +395,7 @@ Colour3DPlotLayer::getPropertyValueLabel(const PropertyName &name,
                                     int value) const
 {
     if (name == "Colour") {
-        return ColourMapper::getColourMapName(value);
+        return ColourMapper::getColourMapLabel(value);
     }
     if (name == "Colour Scale") {
         switch (value) {
@@ -824,7 +825,9 @@ Colour3DPlotLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) 
         return "";
     }
 
-    if (m_invertVertical) sy = m_model->getHeight() - sy - 1;
+    if (m_invertVertical) {
+        sy = m_model->getHeight() - sy - 1;
+    }
 
     float value = m_model->getValueAt(sx0, sy);
 
@@ -979,7 +982,9 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
         if (i > symin) {
 
             int idx = i - 1;
-            if (m_invertVertical) idx = m_model->getHeight() - idx - 1;
+            if (m_invertVertical) {
+                idx = m_model->getHeight() - idx - 1;
+            }
 
             QString text = m_model->getBinName(idx);
             if (text == "") text = QString("[%1]").arg(idx + 1);
@@ -1009,6 +1014,7 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
+        cparams.inverted = m_colourInverted;
         cparams.scaleType = m_colourScale;
         cparams.gain = m_gain;
 
@@ -1027,7 +1033,10 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         }
 
         SVDEBUG << "Colour3DPlotLayer: rebuilding renderer, value range is "
-                << minValue << " -> " << maxValue << endl;
+                << minValue << " -> " << maxValue
+                << " (model min = " << m_model->getMinimumLevel()
+                << ", max = " << m_model->getMaximumLevel() << ")"
+                << endl;
         
         if (maxValue <= minValue) {
             maxValue = minValue + 0.1f;
@@ -1172,13 +1181,11 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
                          QString indent, QString extraAttributes) const
 {
     QString s = QString("scale=\"%1\" "
-                        "colourScheme=\"%2\" "
-                        "minY=\"%3\" "
-                        "maxY=\"%4\" "
-                        "invertVertical=\"%5\" "
-                        "opaque=\"%6\" %7")
+                        "minY=\"%2\" "
+                        "maxY=\"%3\" "
+                        "invertVertical=\"%4\" "
+                        "opaque=\"%5\" %6")
         .arg(convertFromColourScale(m_colourScale))
-        .arg(m_colourMap)
         .arg(m_miny)
         .arg(m_maxy)
         .arg(m_invertVertical ? "true" : "false")
@@ -1187,6 +1194,17 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
              .arg(int(m_binScale))
              .arg(m_smooth ? "true" : "false")
              .arg(m_gain));
+
+    // New-style colour map attribute, by string id rather than by
+    // number
+
+    s += QString("colourMap=\"%1\" ")
+        .arg(ColourMapper::getColourMapId(m_colourMap));
+
+    // Old-style colour map attribute
+
+    s += QString("colourScheme=\"%1\" ")
+        .arg(ColourMapper::getBackwardCompatibilityColourMap(m_colourMap));
     
     // New-style normalization attributes, allowing for more types of
     // normalization in future: write out the column normalization
@@ -1219,8 +1237,16 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
         (attributes.value("scale").toInt(&ok));
     if (ok) setColourScale(colourScale);
 
-    int colourMap = attributes.value("colourScheme").toInt(&ok);
-    if (ok) setColourMap(colourMap);
+    QString colourMapId = attributes.value("colourMap");
+    int colourMap = ColourMapper::getColourMapById(colourMapId);
+    if (colourMap >= 0) {
+        setColourMap(colourMap);
+    } else {
+        colourMap = attributes.value("colourScheme").toInt(&ok);
+        if (ok && colourMap < ColourMapper::getColourMapCount()) {
+            setColourMap(colourMap);
+        }
+    }
 
     BinScale binScale = (BinScale)
         attributes.value("binScale").toInt(&ok);

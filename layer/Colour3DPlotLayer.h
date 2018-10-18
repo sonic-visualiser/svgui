@@ -160,6 +160,7 @@ protected:
     ColourScaleType m_colourScale;
     bool m_colourScaleSet;
     int m_colourMap;
+    bool m_colourInverted;
     float m_gain;
     BinScale m_binScale;
     ColumnNormalization m_normalization; // of individual columns

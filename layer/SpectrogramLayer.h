@@ -258,6 +258,7 @@ protected:
     ColourScaleType     m_colourScale;
     double              m_colourScaleMultiple;
     int                 m_colourMap;
+    bool                m_colourInverted;
     mutable QColor      m_crosshairColour;
     BinScale            m_binScale;
     BinDisplay          m_binDisplay;

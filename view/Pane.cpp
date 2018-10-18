@@ -111,7 +111,9 @@ Pane::updateHeadsUpDisplay()
     if (!isVisible()) return;
 
     Layer *layer = 0;
-    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    if (getLayerCount() > 0) {
+        layer = getLayer(getLayerCount() - 1);
+    }
 
     if (!m_headsUpDisplay) {
 
@@ -189,12 +191,8 @@ Pane::updateHeadsUpDisplay()
     m_hthumb->setMaximumValue(count);
     m_hthumb->setValue(count - current);
 
-//    cerr << "set value to " << count - 1 - current << endl;
-//    cerr << "default value is " << m_hthumb->getDefaultValue() << endl;
-
     if (m_hthumb->getDefaultValue() == 0) {
         m_hthumb->setDefaultValue(count - current);
-//        cerr << "set default value to " << m_hthumb->getDefaultValue() << endl;
     }
 
     bool haveVThumb = false;

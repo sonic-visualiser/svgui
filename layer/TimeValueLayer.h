@@ -184,6 +184,7 @@ protected:
     SparseTimeValueModel::Point m_editingPoint;
     SparseTimeValueModel::EditCommand *m_editingCommand;
     int m_colourMap;
+    bool m_colourInverted;
     PlotStyle m_plotStyle;
     VerticalScale m_verticalScale;
     bool m_drawSegmentDivisions;

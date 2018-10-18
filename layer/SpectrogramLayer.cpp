@@ -73,6 +73,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_colourScale(ColourScaleType::Log),
     m_colourScaleMultiple(1.0),
     m_colourMap(0),
+    m_colourInverted(false),
     m_binScale(BinScale::Linear),
     m_binDisplay(BinDisplay::AllBins),
     m_normalization(ColumnNormalization::None),
@@ -448,7 +449,7 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
                                         int value) const
 {
     if (name == "Colour") {
-        return ColourMapper::getColourMapName(value);
+        return ColourMapper::getColourMapLabel(value);
     }
     if (name == "Colour Scale") {
         switch (value) {
@@ -1081,7 +1082,8 @@ SpectrogramLayer::cacheInvalid(
 bool
 SpectrogramLayer::hasLightBackground() const 
 {
-    return ColourMapper(m_colourMap, 1.f, 255.f).hasLightBackground();
+    return ColourMapper(m_colourMap, m_colourInverted, 1.f, 255.f)
+        .hasLightBackground();
 }
 
 double
@@ -1530,7 +1532,8 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         m_renderers[viewId] = new Colour3DPlotRenderer(sources, params);
 
         m_crosshairColour =
-            ColourMapper(m_colourMap, 1.f, 255.f).getContrastingColour();
+            ColourMapper(m_colourMap, m_colourInverted, 1.f, 255.f)
+            .getContrastingColour();
     }
 
     return m_renderers[viewId];
@@ -2508,18 +2511,27 @@ SpectrogramLayer::toXml(QTextStream &stream,
     s += QString("minFrequency=\"%1\" "
                  "maxFrequency=\"%2\" "
                  "colourScale=\"%3\" "
-                 "colourScheme=\"%4\" "
-                 "colourRotation=\"%5\" "
-                 "frequencyScale=\"%6\" "
-                 "binDisplay=\"%7\" ")
+                 "colourRotation=\"%4\" "
+                 "frequencyScale=\"%5\" "
+                 "binDisplay=\"%6\" ")
         .arg(m_minFrequency)
         .arg(m_maxFrequency)
         .arg(convertFromColourScale(m_colourScale, m_colourScaleMultiple))
-        .arg(m_colourMap)
         .arg(m_colourRotation)
         .arg(int(m_binScale))
         .arg(int(m_binDisplay));
 
+    // New-style colour map attribute, by string id rather than by
+    // number
+
+    s += QString("colourMap=\"%1\" ")
+        .arg(ColourMapper::getColourMapId(m_colourMap));
+
+    // Old-style colour map attribute
+
+    s += QString("colourScheme=\"%1\" ")
+        .arg(ColourMapper::getBackwardCompatibilityColourMap(m_colourMap));
+    
     // New-style normalization attributes, allowing for more types of
     // normalization in future: write out the column normalization
     // type separately, and then whether we are normalizing visible
@@ -2596,8 +2608,16 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         setColourScaleMultiple(colourScale.second);
     }
 
-    int colourMap = attributes.value("colourScheme").toInt(&ok);
-    if (ok) setColourMap(colourMap);
+    QString colourMapId = attributes.value("colourMap");
+    int colourMap = ColourMapper::getColourMapById(colourMapId);
+    if (colourMap >= 0) {
+        setColourMap(colourMap);
+    } else {
+        colourMap = attributes.value("colourScheme").toInt(&ok);
+        if (ok && colourMap < ColourMapper::getColourMapCount()) {
+            setColourMap(colourMap);
+        }
+    }
 
     int colourRotation = attributes.value("colourRotation").toInt(&ok);
     if (ok) setColourRotation(colourRotation);

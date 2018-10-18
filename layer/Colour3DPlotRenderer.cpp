@@ -35,7 +35,7 @@
 #include <utility>
 using namespace std::rel_ops;
 
-#define DEBUG_COLOUR_PLOT_REPAINT 1
+//#define DEBUG_COLOUR_PLOT_REPAINT 1
 
 using namespace std;
 

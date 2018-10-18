@@ -32,6 +32,7 @@
 SliceLayer::SliceLayer() :
     m_sliceableModel(0),
     m_colourMap(int(ColourMapper::Ice)),
+    m_colourInverted(false),
     m_energyScale(dBScale),
     m_samplingMode(SampleMean),
     m_plotStyle(PlotLines),
@@ -469,7 +470,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     double nx = getXForBin(v, bin0);
 
-    ColourMapper mapper(m_colourMap, 0, 1);
+    ColourMapper mapper(m_colourMap, m_colourInverted, 0, 1);
 
     for (int bin = 0; bin < mh; ++bin) {
 
@@ -580,7 +581,7 @@ bool
 SliceLayer::hasLightBackground() const
 {
     if (usesSolidColour()) {
-        ColourMapper mapper(m_colourMap, 0, 1);
+        ColourMapper mapper(m_colourMap, m_colourInverted, 0, 1);
         return mapper.hasLightBackground();
     } else {
         return SingleColourLayer::hasLightBackground();
@@ -742,7 +743,7 @@ SliceLayer::getPropertyValueLabel(const PropertyName &name,
                                   int value) const
 {
     if (name == "Colour" && usesSolidColour()) {
-        return ColourMapper::getColourMapName(value);
+        return ColourMapper::getColourMapLabel(value);
     }
     if (name == "Scale") {
         switch (value) {
@@ -925,15 +926,13 @@ SliceLayer::toXml(QTextStream &stream,
 {
     QString s;
     
-    s += QString("colourScheme=\"%1\" "
-                 "energyScale=\"%2\" "
-                 "samplingMode=\"%3\" "
-                 "plotStyle=\"%4\" "
-                 "binScale=\"%5\" "
-                 "gain=\"%6\" "
-                 "threshold=\"%7\" "
-                 "normalize=\"%8\" %9")
-        .arg(m_colourMap)
+    s += QString("energyScale=\"%1\" "
+                 "samplingMode=\"%2\" "
+                 "plotStyle=\"%3\" "
+                 "binScale=\"%4\" "
+                 "gain=\"%5\" "
+                 "threshold=\"%6\" "
+                 "normalize=\"%7\" %8 ")
         .arg(m_energyScale)
         .arg(m_samplingMode)
         .arg(m_plotStyle)
@@ -946,6 +945,17 @@ SliceLayer::toXml(QTextStream &stream,
              .arg(m_minbin)
              .arg(m_maxbin));
 
+    // New-style colour map attribute, by string id rather than by
+    // number
+
+    s += QString("fillColourMap=\"%1\" ")
+        .arg(ColourMapper::getColourMapId(m_colourMap));
+
+    // Old-style colour map attribute
+
+    s += QString("colourScheme=\"%1\" ")
+        .arg(ColourMapper::getBackwardCompatibilityColourMap(m_colourMap));
+    
     SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
@@ -964,8 +974,16 @@ SliceLayer::setProperties(const QXmlAttributes &attributes)
         attributes.value("samplingMode").toInt(&ok);
     if (ok) setSamplingMode(mode);
 
-    int colourMap = attributes.value("colourScheme").toInt(&ok);
-    if (ok) setFillColourMap(colourMap);
+    QString colourMapId = attributes.value("fillColourMap");
+    int colourMap = ColourMapper::getColourMapById(colourMapId);
+    if (colourMap >= 0) {
+        setFillColourMap(colourMap);
+    } else {
+        colourMap = attributes.value("colourScheme").toInt(&ok);
+        if (ok && colourMap < ColourMapper::getColourMapCount()) {
+            setFillColourMap(colourMap);
+        }
+    }
 
     PlotStyle s = (PlotStyle)
         attributes.value("plotStyle").toInt(&ok);

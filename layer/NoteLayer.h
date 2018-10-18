@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _NOTE_LAYER_H_
-#define _NOTE_LAYER_H_
+#ifndef SV_NOTE_LAYER_H
+#define SV_NOTE_LAYER_H
 
 #include "SingleColourLayer.h"
 #include "VerticalScaleLayer.h"

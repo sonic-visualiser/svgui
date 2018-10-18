@@ -142,6 +142,7 @@ protected:
 
     const DenseThreeDimensionalModel *m_sliceableModel;
     int                               m_colourMap;
+    bool                              m_colourInverted;
     EnergyScale                       m_energyScale;
     SamplingMode                      m_samplingMode;
     PlotStyle                         m_plotStyle;
