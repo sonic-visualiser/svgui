@@ -303,12 +303,18 @@ Colour3DPlotLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Normalization" ||
         name == "Colour Scale" ||
-        name == "Gain") return tr("Scale");
+        name == "Gain") {
+        return tr("Scale");
+    }
     if (name == "Bin Scale" ||
-        name == "Invert Vertical Scale") return tr("Bins");
+        name == "Invert Vertical Scale") {
+        return tr("Bins");
+    }
     if (name == "Opaque" ||
         name == "Smooth" ||
-        name == "Colour") return tr("Colour");
+        name == "Colour") {
+        return tr("Colour");
+    }
     return QString();
 }
 
@@ -362,7 +368,9 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = convertFromColumnNorm(m_normalization, m_normalizeVisibleArea);
 
     } else if (name == "Invert Vertical Scale") {
-        
+
+        *min = 0;
+        *max = 1;
         *deflt = 0;
         val = (m_invertVertical ? 1 : 0);
 
@@ -375,11 +383,15 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == "Opaque") {
         
+        *min = 0;
+        *max = 1;
         *deflt = 0;
         val = (m_opaque ? 1 : 0);
         
     } else if (name == "Smooth") {
         
+        *min = 0;
+        *max = 1;
         *deflt = 0;
         val = (m_smooth ? 1 : 0);
         

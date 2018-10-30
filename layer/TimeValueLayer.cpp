@@ -200,14 +200,14 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Draw Segment Division Lines") {
 
         if (min) *min = 0;
-        if (max) *max = 0;
+        if (max) *max = 1;
         if (deflt) *deflt = 1;
         val = (m_drawSegmentDivisions ? 1.0 : 0.0);
 
     } else if (name == "Show Derivative") {
 
         if (min) *min = 0;
-        if (max) *max = 0;
+        if (max) *max = 1;
         if (deflt) *deflt = 0;
         val = (m_derivative ? 1.0 : 0.0);
 
