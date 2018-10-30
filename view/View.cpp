@@ -340,7 +340,7 @@ View::setCentreFrame(sv_frame_t f, bool e)
         
         if (m_zoomLevel.zone == ZoomLevel::PixelsPerFrame) {
 
-#ifdef DEBUG_VIEW_WIDGET_PAINT
+#ifdef DEBUG_VIEW
             SVCERR << "View(" << this << ")::setCentreFrame: in PixelsPerFrame zone, so change must be visible" << endl;
 #endif
             update();
@@ -353,11 +353,18 @@ View::setCentreFrame(sv_frame_t f, bool e)
         
             if (newPixel != formerPixel) {
 
-#ifdef DEBUG_VIEW_WIDGET_PAINT
+#ifdef DEBUG_VIEW
                 SVCERR << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
 #endif
                 // ensure the centre frame is a multiple of the zoom level
                 m_centreFrame = sv_frame_t(newPixel) * m_zoomLevel.level;
+
+#ifdef DEBUG_VIEW
+                SVCERR << "View(" << this
+                       << ")::setCentreFrame: centre frame rounded to "
+                       << m_centreFrame << " (zoom level is "
+                       << m_zoomLevel.level << ")" << endl;
+#endif
                 
                 update();
                 changeVisible = true;
@@ -365,11 +372,12 @@ View::setCentreFrame(sv_frame_t f, bool e)
         }
 
         if (e) {
-            sv_frame_t rf = alignToReference(f);
+            sv_frame_t rf = alignToReference(m_centreFrame);
 #ifdef DEBUG_VIEW
             cerr << "View[" << this << "]::setCentreFrame(" << f
-                      << "): emitting centreFrameChanged("
-                      << rf << ")" << endl;
+                 << "): m_centreFrame = " << m_centreFrame
+                 << ", emitting centreFrameChanged with aligned frame "
+                 << rf << endl;
 #endif
             emit centreFrameChanged(rf, m_followPan, m_followPlay);
         }
@@ -427,7 +435,7 @@ View::getFrameForX(int x) const
         result = fdiff + m_centreFrame;
     }
 
-#ifdef DEBUG_VIEW
+#ifdef DEBUG_VIEW_WIDGET_PAINT
     if (x == 0) {
         SVCERR << "getFrameForX(" << x << "): diff = " << diff << ", fdiff = "
                << fdiff << ", m_centreFrame = " << m_centreFrame
@@ -1604,6 +1612,12 @@ View::scroll(bool right, bool lots, bool e)
     }
     if (right) delta = -delta;
 
+#ifdef DEBUG_VIEW
+    SVCERR << "View::scroll(" << right << ", " << lots << ", " << e << "): "
+           << "delta = " << delta << ", m_centreFrame = " << m_centreFrame
+           << endl;
+#endif
+    
     if (m_centreFrame < delta) {
         setCentreFrame(0, e);
     } else if (m_centreFrame - delta >= getModelsEndFrame()) {

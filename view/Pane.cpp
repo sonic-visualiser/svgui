@@ -62,9 +62,6 @@
 
 //#define DEBUG_PANE
 
-
-
-
 QCursor *Pane::m_measureCursor1 = 0;
 QCursor *Pane::m_measureCursor2 = 0;
 
