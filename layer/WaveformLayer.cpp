@@ -663,7 +663,7 @@ WaveformLayer::getSummaryRanges(int minChannel, int maxChannel,
     
     if (mixingOrMerging) {
         if (minChannel != 0 || maxChannel != 0) {
-            SVCERR << "Internal error: min & max channels should be 0 when merging or mixing all channels" << endl;
+            throw std::logic_error("Internal error: min & max channels should be 0 when merging or mixing all channels");
         } else if (m_model->getChannelCount() > 1) {
             ranges.push_back({});
             m_model->getSummaries
@@ -674,11 +674,24 @@ WaveformLayer::getSummaryRanges(int minChannel, int maxChannel,
 
 void
 WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
-                                    bool /* mixingOrMerging */,
+                                    bool mixingOrMerging,
                                     sv_frame_t frame0, sv_frame_t frame1,
                                     int oversampleBy, RangeVec &ranges)
     const
 {
+    if (mixingOrMerging) {
+        if (minChannel != 0 || maxChannel != 0) {
+            throw std::logic_error("Internal error: min & max channels should be 0 when merging or mixing all channels");
+        }
+        if (m_model->getChannelCount() > 1) {
+            // call back on self for the individual channels with
+            // mixingOrMerging false
+            getOversampledRanges
+                (0, 1, false, frame0, frame1, oversampleBy, ranges);
+            return;
+        }
+    }
+    
     // These frame values, tail length, etc variables are at the model
     // sample rate, not the oversampled rate
 
@@ -721,8 +734,6 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
                << ", from which returning " << rr.size() << " ranges" << endl;
 #endif    
     }
-
-    //!!! + channel modes
     
     return;
 }
@@ -970,6 +981,9 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
         if (showIndividualSample) {
             paint->setPen(baseColour);
             paint->drawRect(x-1, rangeTop-1, 2, 2);
+            if (rangeTop != rangeBottom) { // e.g. for "butterfly" merging mode
+                paint->drawRect(x-1, rangeBottom-1, 2, 2);
+            }
         }
         
         if (x != x0 && prevRangeBottom != -1) {
