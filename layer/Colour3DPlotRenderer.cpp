@@ -353,8 +353,6 @@ ColumnOp::Column
 Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
                                 int peakCacheIndex) const
 {
-    Profiler profiler("Colour3DPlotRenderer::getColumn");
-    
     // order:
     // get column -> scale -> normalise -> record extents ->
     // peak pick -> distribute/interpolate -> apply display gain
@@ -363,7 +361,38 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
     // get column -> scale -> normalise
 
     ColumnOp::Column column;
-                
+    
+    if (m_params.showDerivative && sx > 0) {
+
+        auto prev = getColumnRaw(sx - 1, minbin, nbins, peakCacheIndex);
+        column = getColumnRaw(sx, minbin, nbins, peakCacheIndex);
+        
+        for (int i = 0; i < nbins; ++i) {
+            column[i] -= prev[i];
+        }
+
+    } else {
+        column = getColumnRaw(sx, minbin, nbins, peakCacheIndex);
+    }
+
+    if (m_params.colourScale.getScale() == ColourScaleType::Phase &&
+        m_sources.fft) {
+        return column;
+    } else {
+        column = ColumnOp::applyGain(column, m_params.scaleFactor);
+        column = ColumnOp::normalize(column, m_params.normalization);
+        return column;
+    }
+}
+
+ColumnOp::Column
+Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
+                                   int peakCacheIndex) const
+{
+    Profiler profiler("Colour3DPlotRenderer::getColumn");
+
+    ColumnOp::Column column;
+
     if (m_params.colourScale.getScale() == ColourScaleType::Phase &&
         m_sources.fft) {
 
@@ -382,10 +411,6 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
                 
         column = vector<float>(fullColumn.data() + minbin,
                                fullColumn.data() + minbin + nbins);
-
-        column = ColumnOp::applyGain(column, m_params.scaleFactor);
-
-        column = ColumnOp::normalize(column, m_params.normalization);
     }
 
     return column;
