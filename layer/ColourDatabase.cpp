@@ -85,6 +85,26 @@ ColourDatabase::getColourIndex(QColor col) const
     return -1;
 }
 
+QColor
+ColourDatabase::getContrastingColour(int c) const
+{
+    QColor col = getColour(c);
+    if (col.red() > col.blue()) {
+        if (col.green() > col.blue()) {
+            return Qt::blue;
+        } else {
+            return Qt::yellow;
+        }
+    } else {
+        if (col.green() > col.blue()) {
+            return Qt::yellow;
+        } else {
+            return Qt::red;
+        }
+    }
+    return Qt::red;
+}
+
 bool
 ColourDatabase::useDarkBackground(int c) const
 {

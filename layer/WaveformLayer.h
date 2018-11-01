@@ -87,19 +87,6 @@ public:
     void setShowMeans(bool);
     bool getShowMeans() const { return m_showMeans; }
 
-    /**
-     * Set whether to use shades of grey (or of the base colour) to
-     * provide additional perceived vertical resolution (i.e. using
-     * half-filled pixels to represent levels that only just meet the
-     * pixel unit boundary).  This provides a small improvement in
-     * waveform quality at a small cost in rendering speed.
-     * 
-     * The default is to use greyscale.
-     */
-    void setUseGreyscale(bool);
-    bool getUseGreyscale() const { return m_greyscale; }
-
-
     enum ChannelMode { SeparateChannels, MixChannels, MergeChannels };
 
     /**
@@ -205,7 +192,7 @@ public:
     virtual bool canExistWithoutModel() const { return true; }
 
 protected:
-    int dBscale(double sample, int m) const;
+    double dBscale(double sample, int m) const;
 
     const RangeSummarisableTimeValueModel *m_model; // I do not own this
 
@@ -247,7 +234,6 @@ protected:
     float        m_gain;
     bool         m_autoNormalize;
     bool         m_showMeans;
-    bool         m_greyscale;
     ChannelMode  m_channelMode;
     int          m_channel;
     Scale        m_scale;
