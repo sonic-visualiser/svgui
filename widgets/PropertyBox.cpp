@@ -181,6 +181,8 @@ PropertyBox::populateViewPlayFrame()
         LevelPanToolButton *levelPan = new LevelPanToolButton;
         levelPan->setFixedSize(buttonSize);
         levelPan->setImageSize((buttonSize.height() * 3) / 4);
+        levelPan->setLevel(params->getPlayGain());
+        levelPan->setPan(params->getPlayPan());
         layout->addWidget(levelPan, 0, col++, Qt::AlignCenter);
         connect(levelPan, SIGNAL(levelChanged(float)),
                 this, SLOT(playGainControlChanged(float)));
