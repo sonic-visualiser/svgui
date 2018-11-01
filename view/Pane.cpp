@@ -802,7 +802,7 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
     } else {
         completion = model->getAlignmentCompletion();
         if (completion == 0) {
-            text = tr("Unaligned");
+            text = tr("Waiting to Align");
         } else if (completion < 100) {
             text = tr("Aligning: %1%").arg(completion);
         } else {
