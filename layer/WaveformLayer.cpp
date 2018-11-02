@@ -801,6 +801,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
     vector<QPointF> individualSamplePoints;
 
     bool firstPoint = true;
+    double prevRangeBottom = 0, prevRangeTop = 0;
     
     for (int x = x0; x <= x1; ++x) {
 
@@ -986,20 +987,30 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
                 individualSamplePoints.push_back(QPointF(px, rangeBottom));
             }
         }
+
+        bool contiguous = true;
+        if (rangeTop > prevRangeBottom + 0.5 ||
+            rangeBottom < prevRangeTop - 0.5) {
+            contiguous = false;
+        }
         
-        if (firstPoint) {
-            waveformPath = QPainterPath(QPointF(px, rangeMiddle));
-            firstPoint = false;
+        if (firstPoint || (contiguous && !trivialRange)) {
+            waveformPath.moveTo(QPointF(px, rangeTop));
+            waveformPath.lineTo(QPointF(px, rangeBottom));
+            waveformPath.moveTo(QPointF(px, rangeMiddle));
         } else {
             waveformPath.lineTo(QPointF(px, rangeMiddle));
+            if (!trivialRange) {
+                waveformPath.lineTo(QPointF(px, rangeTop));
+                waveformPath.lineTo(QPointF(px, rangeBottom));
+                waveformPath.lineTo(QPointF(px, rangeMiddle));
+            }
         }
 
-        if (!trivialRange) {
-            waveformPath.lineTo(QPointF(px, rangeTop));
-            waveformPath.lineTo(QPointF(px, rangeBottom));
-            waveformPath.lineTo(QPointF(px, rangeMiddle));
-        }
-
+        firstPoint = false;
+        prevRangeTop = rangeTop;
+        prevRangeBottom = rangeBottom;
+        
         if (drawMean) {
             meanPath.moveTo(QPointF(px, meanBottom));
             meanPath.lineTo(QPointF(px, meanTop));
