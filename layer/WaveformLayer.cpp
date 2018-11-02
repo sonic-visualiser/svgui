@@ -1041,9 +1041,14 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
     }
     
     if (!individualSamplePoints.empty()) {
+        double sz = ViewManager::scalePixelSize(2.0);
+        if (v->getZoomLevel().zone == ZoomLevel::PixelsPerFrame) {
+            if (v->getZoomLevel().level < 10) {
+                sz = 1.5;
+            }
+        }
         paint->save();
         paint->setPen(QPen(baseColour, penWidth));
-        double sz = ViewManager::scalePixelSize(2.0);
         for (QPointF p: individualSamplePoints) {
             paint->drawRect(QRectF(p.x() - sz/2, p.y() - sz/2, sz, sz));
         }
