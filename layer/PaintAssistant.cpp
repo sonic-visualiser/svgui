@@ -242,7 +242,7 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
 }
 
 double
-PaintAssistant::scalePenWidth(double width)
+PaintAssistant::scaleSize(double size)
 {
     static double ratio = 0.0;
     if (ratio == 0.0) {
@@ -255,21 +255,28 @@ PaintAssistant::scalePenWidth(double width)
         double em = QFontMetrics(QFont()).height();
         ratio = em / baseEm;
 
-        SVDEBUG << "PaintAssistant::scalePenWidth: ratio is " << ratio
+        SVDEBUG << "PaintAssistant::scaleSize: ratio is " << ratio
                 << " (em = " << em << ")" << endl;
+
+        if (ratio < 1.0) {
+            SVDEBUG << "PaintAssistant::scaleSize: rounding ratio up to 1.0"
+                    << endl;
+            ratio = 1.0;
+        }
     }
 
-    if (ratio <= 1.0) {
-        // we only ever scale up in this method
-        return width;
-    }
+    return size * ratio;
+}
 
+double
+PaintAssistant::scalePenWidth(double width)
+{
     if (width <= 0) {
         // zero-width pen, produce a scaled one-pixel pen
-        return ratio;
+        width = 1;
     }
 
-    return width * ratio;
+    return scaleSize(width);
 }
 
 QPen
