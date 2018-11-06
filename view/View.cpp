@@ -395,18 +395,50 @@ View::getXForFrame(sv_frame_t frame) const
     
     sv_frame_t level = m_zoomLevel.level;
     sv_frame_t fdiff = frame - getCentreFrame();
-    int diff, result;
+    int result = 0;
 
+    bool inRange = false;
     if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
-        diff = int(fdiff / level);
-        if ((fdiff < 0) && ((fdiff % level) != 0)) {
-            --diff; // round to the left
-        }
+        inRange = ((fdiff / level) < sv_frame_t(INT_MAX) &&
+                   (fdiff / level) > sv_frame_t(INT_MIN));
     } else {
-        diff = int(fdiff * level);
+        inRange = (fdiff < sv_frame_t(INT_MAX) / level &&
+                   fdiff > sv_frame_t(INT_MIN) / level);
     }
 
-    result = int(diff + (width()/2));
+    if (inRange) {
+        
+        sv_frame_t adjusted;
+
+        if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+            adjusted = fdiff / level;
+            if ((fdiff < 0) && ((fdiff % level) != 0)) {
+                --adjusted; // round to the left
+            }
+        } else {
+            adjusted = fdiff * level;
+        }
+
+        adjusted = adjusted + (width()/2);
+
+        if (adjusted > INT_MAX || adjusted < INT_MIN) {
+            inRange = false;
+        } else {
+            result = int(adjusted);
+        }
+    }
+
+    if (!inRange) {
+        SVCERR << "ERROR: Frame " << frame
+               << " is out of range in View::getXForFrame" << endl;
+        SVCERR << "ERROR: (centre frame = " << getCentreFrame() << ", fdiff = "
+               << fdiff << ", zoom level = " << m_zoomLevel << ")" << endl;
+        SVCERR << "ERROR: This is a logic error: getXForFrame should not be "
+               << "called for locations unadjacent to the current view"
+               << endl;
+        return 0;
+    }
+
     return result;
 }
 

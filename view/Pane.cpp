@@ -750,11 +750,8 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
 void
 Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
 {
-    int x0 = getXForFrame(model->getStartFrame());
-    int x1 = getXForFrame(model->getEndFrame());
-
     paint.save();
-
+    
     QBrush brush;
 
     if (hasLightBackground()) {
@@ -765,14 +762,24 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
         paint.setPen(Qt::white);
     }
 
-    if (x0 > r.x()) {
-        paint.fillRect(0, 0, x0, height(), brush);
-        paint.drawLine(x0, 0, x0, height());
+    sv_frame_t f0 = model->getStartFrame();
+
+    if (f0 > getStartFrame() && f0 < getEndFrame()) {
+        int x0 = getXForFrame(f0);
+        if (x0 > r.x()) {
+            paint.fillRect(0, 0, x0, height(), brush);
+            paint.drawLine(x0, 0, x0, height());
+        }
     }
 
-    if (x1 < r.x() + r.width()) {
-        paint.fillRect(x1, 0, width() - x1, height(), brush);
-        paint.drawLine(x1, 0, x1, height());
+    sv_frame_t f1 = model->getEndFrame();
+    
+    if (f1 > getStartFrame() && f1 < getEndFrame()) {
+        int x1 = getXForFrame(f1);
+        if (x1 < r.x() + r.width()) {
+            paint.fillRect(x1, 0, width() - x1, height(), brush);
+            paint.drawLine(x1, 0, x1, height());
+        }
     }
 
     paint.restore();

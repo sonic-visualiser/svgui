@@ -826,7 +826,8 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
         }
 
         if (f0 < frame0) {
-            SVCERR << "ERROR: WaveformLayer::paint: pixel " << x << " has f0 = " << f0 << " which is less than range frame0 " << frame0 << " for x0 = " << x0 << endl;
+            // Not an error, this simply occurs when painting the
+            // start of a signal in PixelsPerFrame zone
             continue;
         }
 
