@@ -834,6 +834,11 @@ PropertyBox::updateContextHelp(QObject *o)
         }
     }
 
+    QString propertyLabel;
+    if (wname != "") {
+        propertyLabel = m_container->getPropertyLabel(wname);
+    }
+    
     if (w == m_showButton) {
         emit contextHelpChanged(tr("Toggle Visibility of %1").arg(cname));
     } else if (w == m_playButton) {
@@ -842,10 +847,10 @@ PropertyBox::updateContextHelp(QObject *o)
         return;
     } else if (qobject_cast<QAbstractButton *>(w)) {
         emit contextHelpChanged(tr("Toggle %1 property of %2")
-                                .arg(wname).arg(cname));
+                                .arg(propertyLabel).arg(cname));
     } else {
         emit contextHelpChanged(tr("Adjust %1 property of %2%3")
-                                .arg(wname).arg(cname).arg(extraText));
+                                .arg(propertyLabel).arg(cname).arg(extraText));
     }
 }
 
