@@ -1049,9 +1049,16 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
                 << " (model min = " << m_model->getMinimumLevel()
                 << ", max = " << m_model->getMaximumLevel() << ")"
                 << endl;
-        
+
         if (maxValue <= minValue) {
             maxValue = minValue + 0.1f;
+
+            if (!(maxValue > minValue)) { // one of them must be NaN or Inf
+                SVCERR << "WARNING: Colour3DPlotLayer::getRenderer: resetting "
+                       << "minValue and maxValue to zero and one" << endl;
+                minValue = 0.f;
+                maxValue = 1.f;
+            }
         }
 
         cparams.threshold = minValue;
