@@ -802,28 +802,35 @@ PropertyBox::updateContextHelp(QObject *o)
     QString cname = m_container->getPropertyContainerName();
     if (cname == "") return;
 
-    LevelPanToolButton *lp = qobject_cast<LevelPanToolButton *>(w);
-    if (lp) {
-        emit contextHelpChanged(tr("Adjust playback level and pan of %1").arg(cname));
-        return;
-    }
+    QString help;
+    QString mainText;
+    QString extraText;
+    QString editText;
 
     QString wname = w->objectName();
+    QString propertyLabel;
+    if (wname != "") {
+        propertyLabel = m_container->getPropertyLabel(wname);
+    }
 
-    if (wname == "playParamButton") {
+    LevelPanToolButton *lp = qobject_cast<LevelPanToolButton *>(w);
+    AudioDial *dial = qobject_cast<AudioDial *>(w);
+
+    if (lp) {
+
+        mainText = tr("Adjust playback level and pan of %1").arg(cname);
+        editText = tr("click then drag to adjust, ctrl+click to reset");
+
+    } else if (wname == "playParamButton") {
+ 
         PlayParameters *params = m_container->getPlayParameters();
         if (params) {
-            emit contextHelpChanged
-                (tr("Change sound used for playback (currently \"%1\")")
-                 .arg(params->getPlayClipId()));
-            return;
+            help = tr("Change sound used for playback (currently \"%1\")")
+                .arg(params->getPlayClipId());
         }
-    }
-    
-    QString extraText;
-    
-    AudioDial *dial = qobject_cast<AudioDial *>(w);
-    if (dial) {
+
+    } else if (dial) {
+        
         double mv = dial->mappedValue();
         QString unit = "";
         if (dial->rangeMapper()) unit = dial->rangeMapper()->getUnit();
@@ -832,25 +839,45 @@ PropertyBox::updateContextHelp(QObject *o)
         } else {
             extraText = tr(" (current value: %1)").arg(mv);
         }
+        editText = tr("drag up/down to adjust, ctrl+click to reset");
+
+    } else if (w == m_showButton) {
+        help = tr("Toggle Visibility of %1").arg(cname);
+
+    } else if (w == m_playButton) {
+        help = tr("Toggle Playback of %1").arg(cname);
+
     }
 
-    QString propertyLabel;
-    if (wname != "") {
-        propertyLabel = m_container->getPropertyLabel(wname);
+    if (help == "" && wname != "") {
+        
+        if (qobject_cast<QAbstractButton *>(w)) {
+            mainText = tr("Toggle %1 property of %2")
+                .arg(propertyLabel).arg(cname);
+
+        } else {
+
+            // Last param empty for historical reasons, to avoid
+            // changing tr() string
+            mainText = tr("Adjust %1 property of %2%3")
+                .arg(propertyLabel).arg(cname).arg("");
+        }
     }
-    
-    if (w == m_showButton) {
-        emit contextHelpChanged(tr("Toggle Visibility of %1").arg(cname));
-    } else if (w == m_playButton) {
-        emit contextHelpChanged(tr("Toggle Playback of %1").arg(cname));
-    } else if (wname == "") {
-        return;
-    } else if (qobject_cast<QAbstractButton *>(w)) {
-        emit contextHelpChanged(tr("Toggle %1 property of %2")
-                                .arg(propertyLabel).arg(cname));
-    } else {
-        emit contextHelpChanged(tr("Adjust %1 property of %2%3")
-                                .arg(propertyLabel).arg(cname).arg(extraText));
+
+    if (help == "") {
+        if (mainText != "") {
+            if (editText != "") {
+                help = tr("%1%2: %3")
+                    .arg(mainText).arg(extraText).arg(editText);
+            } else {
+                help = tr("%1%2")
+                    .arg(mainText).arg(extraText);
+            }
+        }
+    }
+
+    if (help != "") {
+        emit contextHelpChanged(help);
     }
 }
 
