@@ -61,6 +61,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_windowSize(1024),
     m_windowType(HanningWindow),
     m_windowHopLevel(2),
+    m_oversampling(1),
     m_gain(1.0),
     m_initialGain(1.0),
     m_threshold(1.0e-8f),
@@ -236,6 +237,7 @@ SpectrogramLayer::getProperties() const
     list.push_back("Colour Scale");
     list.push_back("Window Size");
     list.push_back("Window Increment");
+    list.push_back("Oversampling");
     list.push_back("Normalization");
     list.push_back("Bin Display");
     list.push_back("Threshold");
@@ -254,6 +256,7 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Colour Scale") return tr("Colour Scale");
     if (name == "Window Size") return tr("Window Size");
     if (name == "Window Increment") return tr("Window Overlap");
+    if (name == "Oversampling") return tr("Oversampling");
     if (name == "Normalization") return tr("Normalization");
     if (name == "Bin Display") return tr("Bin Display");
     if (name == "Threshold") return tr("Threshold");
@@ -287,7 +290,8 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Bin Display" ||
         name == "Frequency Scale") return tr("Bins");
     if (name == "Window Size" ||
-        name == "Window Increment") return tr("Window");
+        name == "Window Increment" ||
+        name == "Oversampling") return tr("Window");
     if (name == "Colour" ||
         name == "Threshold" ||
         name == "Colour Rotation") return tr("Colour");
@@ -376,7 +380,17 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
         *deflt = 2;
 
         val = m_windowHopLevel;
-    
+
+    } else if (name == "Oversampling") {
+
+        *min = 0;
+        *max = 3;
+        *deflt = 0;
+
+        val = 0;
+        int ov = m_oversampling;
+        while (ov > 1) { ov >>= 1; val ++; }
+        
     } else if (name == "Min Frequency") {
 
         *min = 0;
@@ -485,6 +499,15 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
         case 5: return tr("93.75 %");
         }
     }
+    if (name == "Oversampling") {
+        switch (value) {
+        default:
+        case 0: return tr("1x");
+        case 1: return tr("2x");
+        case 2: return tr("4x");
+        case 3: return tr("8x");
+        }
+    }
     if (name == "Min Frequency") {
         switch (value) {
         default:
@@ -578,6 +601,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
         setWindowSize(32 << value);
     } else if (name == "Window Increment") {
         setWindowHopLevel(value);
+    } else if (name == "Oversampling") {
+        setOversampling(1 << value);
     } else if (name == "Min Frequency") {
         switch (value) {
         default:
@@ -707,27 +732,9 @@ SpectrogramLayer::getChannel() const
 }
 
 int
-SpectrogramLayer::getFFTOversampling() const
-{
-    if (m_binDisplay != BinDisplay::AllBins) {
-        return 1;
-    }
-
-    Preferences::SpectrogramSmoothing smoothing = 
-        Preferences::getInstance()->getSpectrogramSmoothing();
-    
-    if (smoothing == Preferences::NoSpectrogramSmoothing ||
-        smoothing == Preferences::SpectrogramInterpolated) {
-        return 1;
-    }
-
-    return 4;
-}
-
-int
 SpectrogramLayer::getFFTSize() const
 {
-    return m_windowSize * getFFTOversampling();
+    return m_windowSize * m_oversampling;
 }
 
 void
@@ -768,6 +775,37 @@ int
 SpectrogramLayer::getWindowHopLevel() const
 {
     return m_windowHopLevel;
+}
+
+void
+SpectrogramLayer::setOversampling(int oversampling)
+{
+    if (m_oversampling == oversampling) return;
+    invalidateRenderers();
+    m_oversampling = oversampling;
+    recreateFFTModel();
+    emit layerParametersChanged();
+}
+
+int
+SpectrogramLayer::getOversampling() const
+{
+    return m_oversampling;
+    /*!!!
+    if (m_binDisplay != BinDisplay::AllBins) {
+        return 1;
+    }
+
+    Preferences::SpectrogramSmoothing smoothing = 
+        Preferences::getInstance()->getSpectrogramSmoothing();
+    
+    if (smoothing == Preferences::NoSpectrogramSmoothing ||
+        smoothing == Preferences::SpectrogramInterpolated) {
+        return 1;
+    }
+
+    return 4;
+    */
 }
 
 void
