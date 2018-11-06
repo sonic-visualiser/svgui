@@ -20,6 +20,8 @@
 
 #include "SingleColourLayer.h"
 
+#include "base/ZoomLevel.h"
+
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
 class View;

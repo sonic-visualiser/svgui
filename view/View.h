@@ -104,7 +104,11 @@ public:
 
     /**
      * Return the pixel x-coordinate corresponding to a given sample
-     * frame (which may be negative).
+     * frame. The frame is permitted to be negative, and the result
+     * may be outside the currently visible area. But this should not
+     * be called with frame values very far away from the currently
+     * visible area, as that could lead to overflow. In that situation
+     * an error will be logged and 0 returned.
      */
     int getXForFrame(sv_frame_t frame) const;
 
