@@ -286,7 +286,9 @@ PaneStack::getHiddenPane(int n)
 void
 PaneStack::deletePane(Pane *pane)
 {
-    cerr << "PaneStack::deletePane(" << pane << ")" << endl;
+#ifdef DEBUG_PANE_STACK
+    SVCERR << "PaneStack::deletePane(" << pane << ")" << endl;
+#endif
 
     std::vector<PaneRec>::iterator i;
     bool found = false;
@@ -322,7 +324,9 @@ PaneStack::deletePane(Pane *pane)
     emit paneAboutToBeDeleted(pane);
     unlinkAlignmentViews();
 
-    cerr << "PaneStack::deletePane: about to delete parent " << pane->parent() << " of pane " << pane << endl;
+#ifdef DEBUG_PANE_STACK
+    SVCERR << "PaneStack::deletePane: about to delete parent " << pane->parent() << " of pane " << pane << endl;
+#endif
 
     // The property stack associated with the parent was initially
     // created with the same parent as it, so it would be deleted when
@@ -353,7 +357,9 @@ PaneStack::deletePane(Pane *pane)
 void
 PaneStack::showOrHidePaneAccessories()
 {
-    cerr << "PaneStack::showOrHidePaneAccessories: count == " << getPaneCount() << endl;
+#ifdef DEBUG_PANE_STACK
+    SVCERR << "PaneStack::showOrHidePaneAccessories: count == " << getPaneCount() << endl;
+#endif
 
     bool multi = (getPaneCount() > 1);
     for (std::vector<PaneRec>::iterator i = m_panes.begin();
@@ -407,7 +413,7 @@ PaneStack::hidePane(Pane *pane)
 
     relinkAlignmentViews();
 
-    cerr << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << endl;
+    SVCERR << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << endl;
 }
 
 void
@@ -433,7 +439,7 @@ PaneStack::showPane(Pane *pane)
 
     relinkAlignmentViews();
 
-    cerr << "WARNING: PaneStack::showPane(" << pane << "): Pane not found in hidden panes" << endl;
+    SVCERR << "WARNING: PaneStack::showPane(" << pane << "): Pane not found in hidden panes" << endl;
 }
 
 void
@@ -472,7 +478,7 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
         m_currentPane = pane;
         emit currentPaneChanged(m_currentPane);
     } else {
-        cerr << "WARNING: PaneStack::setCurrentPane(" << pane << "): pane is not a visible pane in this stack" << endl;
+        SVCERR << "WARNING: PaneStack::setCurrentPane(" << pane << "): pane is not a visible pane in this stack" << endl;
     }
 }
 

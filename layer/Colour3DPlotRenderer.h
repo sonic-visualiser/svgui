@@ -67,6 +67,7 @@ public:
             alwaysOpaque(false),
             interpolate(false),
             invertVertical(false),
+            showDerivative(false),
             scaleFactor(1.0),
             colourRotation(0) { }
 
@@ -99,6 +100,10 @@ public:
 
         /** Whether to render the whole caboodle upside-down. */
         bool invertVertical;
+
+        /** Whether to show the frame-to-frame difference instead of
+         *  the actual value */
+        bool showDerivative;
 
         /** Initial scale factor (e.g. for FFT scaling). This factor
          *  is applied to all values read from the underlying model
@@ -319,6 +324,8 @@ private:
     
     ColumnOp::Column getColumn(int sx, int minbin, int nbins,
                                int peakCacheIndex) const; // -1 => don't use cache
+    ColumnOp::Column getColumnRaw(int sx, int minbin, int nbins,
+                                  int peakCacheIndex) const; // -1 => don't use cache
 
     void getPreferredPeakCache(const LayerGeometryProvider *,
                                int &peakCacheIndex, int &binsPerPeak) const;

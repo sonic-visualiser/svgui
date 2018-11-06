@@ -60,6 +60,7 @@ TimeValueLayer::TimeValueLayer() :
     m_editingPoint(0, 0.0, tr("New Point")),
     m_editingCommand(0),
     m_colourMap(0),
+    m_colourInverted(false),
     m_plotStyle(PlotConnectedPoints),
     m_verticalScale(AutoAlignScale),
     m_drawSegmentDivisions(true),
@@ -199,14 +200,14 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Draw Segment Division Lines") {
 
         if (min) *min = 0;
-        if (max) *max = 0;
+        if (max) *max = 1;
         if (deflt) *deflt = 1;
         val = (m_drawSegmentDivisions ? 1.0 : 0.0);
 
     } else if (name == "Show Derivative") {
 
         if (min) *min = 0;
-        if (max) *max = 0;
+        if (max) *max = 1;
         if (deflt) *deflt = 0;
         val = (m_derivative ? 1.0 : 0.0);
 
@@ -223,7 +224,7 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
                                     int value) const
 {
     if (name == "Colour" && m_plotStyle == PlotSegmentation) {
-        return ColourMapper::getColourMapName(value);
+        return ColourMapper::getColourMapLabel(value);
     } else if (name == "Plot Type") {
         switch (value) {
         default:
@@ -896,7 +897,7 @@ TimeValueLayer::getColourForValue(LayerGeometryProvider *v, double val) const
               << max << ", log " << log << ", value " << val << endl;
 #endif
 
-    QColor solid = ColourMapper(m_colourMap, min, max).map(val);
+    QColor solid = ColourMapper(m_colourMap, m_colourInverted, min, max).map(val);
     return QColor(solid.red(), solid.green(), solid.blue(), 120);
 }
 
@@ -1907,16 +1908,33 @@ void
 TimeValueLayer::toXml(QTextStream &stream,
                       QString indent, QString extraAttributes) const
 {
-    SingleColourLayer::toXml(stream, indent,
-                             extraAttributes +
-                             QString(" colourMap=\"%1\" plotStyle=\"%2\" verticalScale=\"%3\" scaleMinimum=\"%4\" scaleMaximum=\"%5\" drawDivisions=\"%6\" derivative=\"%7\" ")
-                             .arg(m_colourMap)
-                             .arg(m_plotStyle)
-                             .arg(m_verticalScale)
-                             .arg(m_scaleMinimum)
-                             .arg(m_scaleMaximum)
-                             .arg(m_drawSegmentDivisions ? "true" : "false")
-                             .arg(m_derivative ? "true" : "false"));
+    QString s;
+
+    s += QString("plotStyle=\"%1\" "
+                 "verticalScale=\"%2\" "
+                 "scaleMinimum=\"%3\" "
+                 "scaleMaximum=\"%4\" "
+                 "drawDivisions=\"%5\" "
+                 "derivative=\"%6\" ")
+        .arg(m_plotStyle)
+        .arg(m_verticalScale)
+        .arg(m_scaleMinimum)
+        .arg(m_scaleMaximum)
+        .arg(m_drawSegmentDivisions ? "true" : "false")
+        .arg(m_derivative ? "true" : "false");
+    
+    // New-style colour map attribute, by string id rather than by
+    // number
+
+    s += QString("fillColourMap=\"%1\" ")
+        .arg(ColourMapper::getColourMapId(m_colourMap));
+
+    // Old-style colour map attribute
+
+    s += QString("colourMap=\"%1\" ")
+        .arg(ColourMapper::getBackwardCompatibilityColourMap(m_colourMap));
+    
+    SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void
@@ -1926,8 +1944,16 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
 
     bool ok, alsoOk;
 
-    int cmap = attributes.value("colourMap").toInt(&ok);
-    if (ok) setFillColourMap(cmap);
+    QString colourMapId = attributes.value("fillColourMap");
+    int colourMap = ColourMapper::getColourMapById(colourMapId);
+    if (colourMap >= 0) {
+        setFillColourMap(colourMap);
+    } else {
+        colourMap = attributes.value("colourMap").toInt(&ok);
+        if (ok && colourMap < ColourMapper::getColourMapCount()) {
+            setFillColourMap(colourMap);
+        }
+    }
 
     PlotStyle style = (PlotStyle)
         attributes.value("plotStyle").toInt(&ok);

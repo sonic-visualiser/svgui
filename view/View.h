@@ -440,6 +440,7 @@ protected:
     virtual void paintEvent(QPaintEvent *e);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
+    virtual void drawPlayPointer(QPainter &);
     virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
     virtual void setPaintFont(QPainter &paint);
 
@@ -457,10 +458,16 @@ protected:
     bool areLayersScrollable() const;
     LayerList getScrollableBackLayers(bool testChanged, bool &changed) const;
     LayerList getNonScrollableFrontLayers(bool testChanged, bool &changed) const;
+
     ZoomLevel getZoomConstraintLevel(ZoomLevel level,
                                      ZoomConstraint::RoundingDirection dir =
                                      ZoomConstraint::RoundNearest) const;
 
+    // These three are slow, intended for indexing GUI thumbwheel stuff
+    int countZoomLevels() const;
+    int getZoomLevelIndex(ZoomLevel level) const;
+    ZoomLevel getZoomLevelByIndex(int ix) const;
+    
     // True if the top layer(s) use colours for meaningful things.  If
     // this is the case, selections will be shown using unfilled boxes
     // rather than with a translucent fill.
@@ -493,6 +500,7 @@ protected:
 
     QPixmap            *m_cache;  // I own this
     QPixmap            *m_buffer; // I own this
+    bool                m_cacheValid;
     sv_frame_t          m_cacheCentreFrame;
     ZoomLevel           m_cacheZoomLevel;
     bool                m_selectionCached;

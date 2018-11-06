@@ -27,13 +27,16 @@
 class ColourMapper
 {
 public:
-    ColourMapper(int map, double minValue, double maxValue);
+    ColourMapper(int map,
+                 bool inverted,
+                 double minValue,
+                 double maxValue);
     ~ColourMapper();
 
-    ColourMapper(const ColourMapper &) = default;
-    ColourMapper &operator=(const ColourMapper &) = default;
+    ColourMapper(const ColourMapper &) =default;
+    ColourMapper &operator=(const ColourMapper &) =default;
 
-    enum StandardMap {
+    enum ColourMap {
         Green,
         Sunset,
         WhiteOnBlack,
@@ -45,25 +48,86 @@ public:
         Banded,
         Highlight,
         Printer,
-        HighGain
+        HighGain,
+        BlueOnBlack,
+        Cividis,
+        Magma
     };
 
     int getMap() const { return m_map; }
+    bool isInverted() const { return m_inverted; }
     double getMinValue() const { return m_min; }
     double getMaxValue() const { return m_max; }
 
+    /**
+     * Return the number of known colour maps.
+     */
     static int getColourMapCount();
-    static QString getColourMapName(int n);
 
+    /**
+     * Return a human-readable label for the colour map with the given
+     * index. This may have been subject to translation.
+     */
+    static QString getColourMapLabel(int n);
+
+    /**
+     * Return a machine-readable id string for the colour map with the
+     * given index. This is not translated and is intended for use in
+     * file I/O.
+     */
+    static QString getColourMapId(int n);
+
+    /**
+     * Return the index for the colour map with the given
+     * machine-readable id string, or -1 if the id is not recognised.
+     */
+    static int getColourMapById(QString id);
+
+    /**
+     * Older versions of colour-handling code save and reload colour
+     * maps by numerical index and can't properly handle situations in
+     * which the index order changes between releases, or new indices
+     * are added. So when we save a colour map by id, we should also
+     * save a compatibility value that can be re-read by such
+     * code. This value is an index into the series of colours used by
+     * pre-3.2 SV code, namely (Default/Green, Sunset, WhiteOnBlack,
+     * BlackOnWhite, RedOnBlue, YellowOnBlack, BlueOnBlack,
+     * FruitSalad, Banded, Highlight, Printer, HighGain). It should
+     * represent the closest equivalent to the current colour scheme
+     * available in that set. This function returns that index.
+     */    
+    static int getBackwardCompatibilityColourMap(int n);
+    
+    /**
+     * Map the given value to a colour. The value will be clamped to
+     * the range minValue to maxValue (where both are drawn from the
+     * constructor arguments).
+     */
     QColor map(double value) const;
 
-    QColor getContrastingColour() const; // for cursors etc
+    /**
+     * Return a colour that contrasts somewhat with the colours in the
+     * map, so as to be used for cursors etc.
+     */
+    QColor getContrastingColour() const;
+
+    /**
+     * Return true if the colour map is intended to be placed over a
+     * light background, false otherwise. This is typically true if
+     * the colours corresponding to higher values are darker than
+     * those corresponding to lower values.
+     */
     bool hasLightBackground() const;
 
+    /**
+     * Return a pixmap of the given size containing a preview swatch
+     * for the colour map.
+     */
     QPixmap getExamplePixmap(QSize size) const;
     
 protected:
     int m_map;
+    bool m_inverted;
     double m_min;
     double m_max;
 };

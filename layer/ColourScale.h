@@ -36,7 +36,7 @@ class ColourScale
 public:
     struct Parameters {
         Parameters() : colourMap(0), scaleType(ColourScaleType::Linear),
-                       minValue(0.0), maxValue(1.0),
+                       minValue(0.0), maxValue(1.0), inverted(false),
                        threshold(0.0), gain(1.0), multiple(1.0) { }
 
         /** A colour map index as used by ColourMapper */
@@ -50,6 +50,9 @@ public:
         
         /** Maximum value in source range. Must be > minValue */
         double maxValue;
+
+        /** Whether the colour scale should be mapped inverted */
+        bool inverted;
 
         /** Threshold below which every value is mapped to background
             pixel 0 */

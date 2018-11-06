@@ -62,9 +62,6 @@
 
 //#define DEBUG_PANE
 
-
-
-
 QCursor *Pane::m_measureCursor1 = 0;
 QCursor *Pane::m_measureCursor2 = 0;
 
@@ -110,25 +107,10 @@ Pane::updateHeadsUpDisplay()
 
     if (!isVisible()) return;
 
-/*
-    int count = 0;
-    int currentLevel = 1;
-    int level = 1;
-    while (true) {
-        if (getZoomLevel() == level) currentLevel = count;
-        int newLevel = getZoomConstraintBlockSize(level + 1,
-                                                  ZoomConstraint::RoundUp);
-        if (newLevel == level) break;
-        if (newLevel == 131072) break; //!!! just because
-        level = newLevel;
-        ++count;
-    }
-
-    cerr << "Have " << count+1 << " zoom levels" << endl;
-*/
-
     Layer *layer = 0;
-    if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
+    if (getLayerCount() > 0) {
+        layer = getLayer(getLayerCount() - 1);
+    }
 
     if (!m_headsUpDisplay) {
 
@@ -199,70 +181,15 @@ Pane::updateHeadsUpDisplay()
         connect(m_reset, SIGNAL(mouseLeft()), this, SLOT(mouseLeftWidget()));
     }
 
-    int count = 0;
-    int current = 0;
-    ZoomLevel level;
-
-    //!!! pull out into function (presumably in View)
-    bool haveConstraint = false;
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end();
-         ++i) {
-        if ((*i)->getZoomConstraint() && !(*i)->supportsOtherZoomLevels()) {
-            haveConstraint = true;
-            break;
-        }
-    }
-
-    SVCERR << "haveConstraint = " << haveConstraint << endl;
-            
-    if (haveConstraint) {
-        while (true) {
-            //!!! this won't terminate if level is in the PixelsPerFrame zone
-            if (getZoomLevel() == level) current = count;
-            ZoomLevel newLevel = getZoomConstraintLevel(level.incremented(),
-                                                        ZoomConstraint::RoundUp);
-            SVCERR << "newLevel = " << newLevel << endl;
-            if (newLevel == level) break;
-            level = newLevel;
-            if (++count == 50) break;
-        }
-    } else {
-        // if we have no particular constraints, we can really spread out
-        //!!! this is nonsense in PixelsPerFrame zone
-        while (true) {
-            using namespace std::rel_ops;
-            if (getZoomLevel() >= level) current = count;
-            int step = level.level / 10;
-            int pwr = 0;
-            while (step > 0) {
-                ++pwr;
-                step /= 2;
-            }
-            step = 1;
-            while (pwr > 0) {
-                step *= 2;
-                --pwr;
-            }
-            cerr << level.level << ", step " << step << endl;
-            level.level += step;
-            if (++count == 100 || level.level > 262144) break;
-        }
-    }
-
-    //!!!
-    SVCERR << "Have " << count << " zoom levels" << endl;
-
-    m_hthumb->setMinimumValue(0);
+    int count = countZoomLevels();
+    int current = getZoomLevelIndex(getZoomLevel());
+    
+    m_hthumb->setMinimumValue(1);
     m_hthumb->setMaximumValue(count);
     m_hthumb->setValue(count - current);
 
-//    cerr << "set value to " << count-current << endl;
-
-//    cerr << "default value is " << m_hthumb->getDefaultValue() << endl;
-
-    if (count != 50 && m_hthumb->getDefaultValue() == 0) {
+    if (m_hthumb->getDefaultValue() == 0) {
         m_hthumb->setDefaultValue(count - current);
-//        cerr << "set default value to " << m_hthumb->getDefaultValue() << endl;
     }
 
     bool haveVThumb = false;
@@ -2441,53 +2368,7 @@ Pane::wheelHorizontalFine(int pixels, Qt::KeyboardModifiers)
 void
 Pane::horizontalThumbwheelMoved(int value)
 {
-    //!!! dupe with updateHeadsUpDisplay
-
-    int count = 0;
-    ZoomLevel level;
-
-    //!!! pull out into function (presumably in View)
-    bool haveConstraint = false;
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end();
-         ++i) {
-        if ((*i)->getZoomConstraint() && !(*i)->supportsOtherZoomLevels()) {
-            haveConstraint = true;
-            break;
-        }
-    }
-
-    if (haveConstraint) {
-        while (true) {
-            //!!! this won't terminate if level is in the PixelsPerFrame zone
-            if (m_hthumb->getMaximumValue() - value == count) break;
-            ZoomLevel newLevel = getZoomConstraintLevel(level.incremented(),
-                                                        ZoomConstraint::RoundUp);
-            if (newLevel == level) break;
-            level = newLevel;
-            if (++count == 50) break;
-        }
-    } else {
-        //!!! this is nonsense in PixelsPerFrame zone
-        while (true) {
-            if (m_hthumb->getMaximumValue() - value == count) break;
-            int step = level.level / 10;
-            int pwr = 0;
-            while (step > 0) {
-                ++pwr;
-                step /= 2;
-            }
-            step = 1;
-            while (pwr > 0) {
-                step *= 2;
-                --pwr;
-            }
-//            cerr << level << endl;
-            level.level += step;
-            if (++count == 100 || level.level > 262144) break;
-        }
-    }
-        
-//    cerr << "new level is " << level << endl;
+    ZoomLevel level = getZoomLevelByIndex(m_hthumb->getMaximumValue() - value);
     setZoomLevel(level);
 }    
 

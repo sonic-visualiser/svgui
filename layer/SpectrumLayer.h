@@ -111,9 +111,9 @@ protected:
     DenseTimeValueModel    *m_originModel;
     int                     m_channel;
     bool                    m_channelSet;
-    int                  m_windowSize;
+    int                     m_windowSize;
     WindowType              m_windowType;
-    int                  m_windowHopLevel;
+    int                     m_windowHopLevel;
     bool                    m_showPeaks;
     mutable bool            m_newFFTNeeded;
 

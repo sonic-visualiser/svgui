@@ -27,7 +27,7 @@ int ColourScale::m_maxPixel = 255;
 
 ColourScale::ColourScale(Parameters parameters) :
     m_params(parameters),
-    m_mapper(m_params.colourMap, 1.f, double(m_maxPixel))
+    m_mapper(m_params.colourMap, m_params.inverted, 1.f, double(m_maxPixel))
 {
     if (m_params.minValue >= m_params.maxValue) {
         SVCERR << "ERROR: ColourScale::ColourScale: minValue = "

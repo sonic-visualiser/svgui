@@ -57,6 +57,7 @@ RegionLayer::RegionLayer() :
     m_editingCommand(0),
     m_verticalScale(EqualSpaced),
     m_colourMap(0),
+    m_colourInverted(false),
     m_plotStyle(PlotLines)
 {
     
@@ -174,7 +175,7 @@ RegionLayer::getPropertyValueLabel(const PropertyName &name,
                                    int value) const
 {
     if (name == "Colour" && m_plotStyle == PlotSegmentation) {
-        return ColourMapper::getColourMapName(value);
+        return ColourMapper::getColourMapLabel(value);
     } else if (name == "Plot Type") {
 
         switch (value) {
@@ -854,7 +855,7 @@ RegionLayer::getColourForValue(LayerGeometryProvider *v, double val) const
 //    SVDEBUG << "RegionLayer::getColourForValue: min " << min << ", max "
 //              << max << ", log " << log << ", value " << val << endl;
 
-    QColor solid = ColourMapper(m_colourMap, min, max).map(val);
+    QColor solid = ColourMapper(m_colourMap, m_colourInverted, min, max).map(val);
     return QColor(solid.red(), solid.green(), solid.blue(), 120);
 }
 
@@ -1550,10 +1551,25 @@ void
 RegionLayer::toXml(QTextStream &stream,
                  QString indent, QString extraAttributes) const
 {
-    SingleColourLayer::toXml(stream, indent, extraAttributes +
-                             QString(" verticalScale=\"%1\" plotStyle=\"%2\"")
-                             .arg(m_verticalScale)
-                             .arg(m_plotStyle));
+    QString s;
+
+    s += QString("verticalScale=\"%1\" "
+                 "plotStyle=\"%2\" ")
+        .arg(m_verticalScale)
+        .arg(m_plotStyle);
+
+    // New-style colour map attribute, by string id rather than by
+    // number
+
+    s += QString("fillColourMap=\"%1\" ")
+        .arg(ColourMapper::getColourMapId(m_colourMap));
+    
+    // Old-style colour map attribute
+
+    s += QString("colourMap=\"%1\" ")
+        .arg(ColourMapper::getBackwardCompatibilityColourMap(m_colourMap));
+    
+    SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void
@@ -1568,6 +1584,17 @@ RegionLayer::setProperties(const QXmlAttributes &attributes)
     PlotStyle style = (PlotStyle)
         attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
+    
+    QString colourMapId = attributes.value("fillColourMap");
+    int colourMap = ColourMapper::getColourMapById(colourMapId);
+    if (colourMap >= 0) {
+        setFillColourMap(colourMap);
+    } else {
+        colourMap = attributes.value("colourMap").toInt(&ok);
+        if (ok && colourMap < ColourMapper::getColourMapCount()) {
+            setFillColourMap(colourMap);
+        }
+    }
 }
 
 

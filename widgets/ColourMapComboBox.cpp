@@ -58,9 +58,9 @@ ColourMapComboBox::rebuild()
     if (size < 12) size = 12;
 
     for (int i = 0; i < ColourMapper::getColourMapCount(); ++i) {
-        QString name = ColourMapper::getColourMapName(i);
+        QString name = ColourMapper::getColourMapLabel(i);
         if (m_includeSwatches) {
-            ColourMapper mapper(i, 0.0, 1.0);
+            ColourMapper mapper(i, false, 0.0, 1.0);
             addItem(mapper.getExamplePixmap(QSize(size * 2, size)), name);
         } else {
             addItem(name);
