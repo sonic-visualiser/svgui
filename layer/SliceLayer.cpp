@@ -24,6 +24,8 @@
 
 #include "PaintAssistant.h"
 
+#include "base/Profiler.h"
+
 #include <QPainter>
 #include <QPainterPath>
 #include <QTextStream>
@@ -364,11 +366,14 @@ SliceLayer::getValueForY(const LayerGeometryProvider *v, double y) const
 void
 SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_sliceableModel || !m_sliceableModel->isOK() ||
+    if (!m_sliceableModel ||
+        !m_sliceableModel->isOK() ||
         !m_sliceableModel->isReady()) return;
 
+    Profiler profiler("SliceLayer::paint()");
+
     paint.save();
-    paint.setRenderHint(QPainter::Antialiasing, m_plotStyle == PlotLines);
+    paint.setRenderHint(QPainter::Antialiasing, true);
     paint.setBrush(Qt::NoBrush);
 
     if (v->getViewManager() && v->getViewManager()->shouldShowScaleGuides()) {
@@ -393,7 +398,8 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
     m_xorigins[v->getId()] = xorigin; // for use in getFeatureDescription
     
-    int yorigin = v->getPaintHeight() - 20 - paint.fontMetrics().height() - 7;
+    int yorigin = v->getPaintHeight() - getHorizontalScaleHeight(v, paint) -
+        paint.fontMetrics().height();
     int h = yorigin - paint.fontMetrics().height() - 8;
 
     m_yorigins[v->getId()] = yorigin; // for getYForValue etc
@@ -434,6 +440,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     f1 = (col1 + 1) * res - 1;
 
 //    cerr << "resolution " << res << ", col0 " << col0 << ", col1 " << col1 << ", f0 " << f0 << ", f1 " << f1 << endl;
+//    cerr << "mh = " << mh << endl;
 
     m_currentf0 = f0;
     m_currentf1 = f1;
@@ -443,8 +450,10 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     int cs = int(curve.size());
 
     for (int col = col0; col <= col1; ++col) {
+        DenseThreeDimensionalModel::Column column =
+            m_sliceableModel->getColumn(col);
         for (int bin = 0; bin < mh; ++bin) {
-            float value = m_sliceableModel->getValueAt(col, bin0 + bin);
+            float value = column[bin0 + bin];
             if (bin < cs) value *= curve[bin];
             if (m_samplingMode == SamplePeak) {
                 if (value > m_values[bin]) m_values[bin] = value;
@@ -472,6 +481,9 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     ColourMapper mapper(m_colourMap, m_colourInverted, 0, 1);
 
+    double ytop = 0, ybottom = 0;
+    bool firstBinOfPixel = true;
+    
     for (int bin = 0; bin < mh; ++bin) {
 
         double x = nx;
@@ -481,36 +493,59 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         double norm = 0.0;
         double y = getYForValue(v, value, norm);
 
-        if (m_plotStyle == PlotLines) {
-
-            if (bin == 0) {
-                path.moveTo((x + nx) / 2, y);
-            } else {
-                path.lineTo((x + nx) / 2, y);
-            }
-
-        } else if (m_plotStyle == PlotSteps) {
-
-            if (bin == 0) {
-                path.moveTo(x, y);
-            } else {
-                path.lineTo(x, y);
-            }
-            path.lineTo(nx, y);
-
-        } else if (m_plotStyle == PlotBlocks) {
-
-            path.moveTo(x, yorigin);
-            path.lineTo(x, y);
-            path.lineTo(nx, y);
-            path.lineTo(nx, yorigin);
-            path.lineTo(x, yorigin);
-
-        } else if (m_plotStyle == PlotFilledBlocks) {
-
-            paint.fillRect(QRectF(x, y, nx - x, yorigin - y), mapper.map(norm));
+        if (y < ytop || firstBinOfPixel) {
+            ytop = y;
+        }
+        if (y > ybottom || firstBinOfPixel) {
+            ybottom = y;
         }
 
+        if (int(nx) != int(x) || bin+1 == mh) {
+
+            if (m_plotStyle == PlotLines) {
+
+                auto px = (x + nx) / 2;
+                
+                if (bin == 0) {
+                    path.moveTo(px, y);
+                } else {
+                    if (ytop != ybottom) {
+                        path.lineTo(px, ybottom);
+                        path.lineTo(px, ytop);
+                        path.moveTo(px, ybottom);
+                    } else {
+                        path.lineTo(px, ytop);
+                    }
+                }
+
+            } else if (m_plotStyle == PlotSteps) {
+
+                if (bin == 0) {
+                    path.moveTo(x, y);
+                } else {
+                    path.lineTo(x, ytop);
+                }
+                path.lineTo(nx, ytop);
+
+            } else if (m_plotStyle == PlotBlocks) {
+
+                path.moveTo(x, yorigin);
+                path.lineTo(x, ytop);
+                path.lineTo(nx, ytop);
+                path.lineTo(nx, yorigin);
+                path.lineTo(x, yorigin);
+
+            } else if (m_plotStyle == PlotFilledBlocks) {
+
+                paint.fillRect(QRectF(x, ytop, nx - x, yorigin - ytop),
+                               mapper.map(norm));
+            }
+
+            firstBinOfPixel = true;
+
+        } else {
+            firstBinOfPixel = false;
+        }
     }
 
     if (m_plotStyle != PlotFilledBlocks) {
@@ -544,7 +579,8 @@ SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, 
 //    int h = (rect.height() * 3) / 4;
 //    int y = (rect.height() / 2) - (h / 2);
     
-    int yorigin = v->getPaintHeight() - 20 - paint.fontMetrics().height() - 6;
+    int yorigin = v->getPaintHeight() - getHorizontalScaleHeight(v, paint) -
+        paint.fontMetrics().height();
     int h = yorigin - paint.fontMetrics().height() - 8;
     if (h < 0) return;
 

@@ -28,8 +28,6 @@
 #include <QColor>
 #include <QMutex>
 
-class FFTModel;
-
 class SpectrumLayer : public SliceLayer,
                       public HorizontalScaleProvider
 {
@@ -46,7 +44,7 @@ public:
                                      std::vector<QRect> &extents) const override;
     virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const override;
 
-    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const;
+    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const override;
     virtual void paintHorizontalScale(LayerGeometryProvider *, QPainter &, int xorigin) const;
     
     virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
