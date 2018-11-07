@@ -741,13 +741,9 @@ void
 SpectrogramLayer::setWindowSize(int ws)
 {
     if (m_windowSize == ws) return;
-
     invalidateRenderers();
-    
     m_windowSize = ws;
-    
     recreateFFTModel();
-
     emit layerParametersChanged();
 }
 
@@ -761,13 +757,9 @@ void
 SpectrogramLayer::setWindowHopLevel(int v)
 {
     if (m_windowHopLevel == v) return;
-
     invalidateRenderers();
-    
     m_windowHopLevel = v;
-    
     recreateFFTModel();
-
     emit layerParametersChanged();
 }
 
@@ -2538,11 +2530,13 @@ SpectrogramLayer::toXml(QTextStream &stream,
     s += QString("channel=\"%1\" "
                  "windowSize=\"%2\" "
                  "windowHopLevel=\"%3\" "
-                 "gain=\"%4\" "
-                 "threshold=\"%5\" ")
+                 "oversampling=\"%4\" "
+                 "gain=\"%5\" "
+                 "threshold=\"%6\" ")
         .arg(m_channel)
         .arg(m_windowSize)
         .arg(m_windowHopLevel)
+        .arg(m_oversampling)
         .arg(m_gain)
         .arg(m_threshold);
 
@@ -2620,6 +2614,9 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
             else if (windowOverlap == 90) setWindowHopLevel(4);
         }
     }
+
+    int oversampling = attributes.value("oversampling").toUInt(&ok);
+    if (ok) setOversampling(oversampling);
 
     float gain = attributes.value("gain").toFloat(&ok);
     if (ok) setGain(gain);

@@ -368,7 +368,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         !m_sliceableModel->isReady()) return;
 
     paint.save();
-    paint.setRenderHint(QPainter::Antialiasing, false);
+    paint.setRenderHint(QPainter::Antialiasing, m_plotStyle == PlotLines);
     paint.setBrush(Qt::NoBrush);
 
     if (v->getViewManager() && v->getViewManager()->shouldShowScaleGuides()) {

@@ -90,9 +90,14 @@ public:
     void setWindowHopLevel(int level);
     int getWindowHopLevel() const { return m_windowHopLevel; }
 
+    void setOversampling(int oversampling);
+    int getOversampling() const;
+
+    int getFFTSize() const { return getWindowSize() * getOversampling(); }
+    
     void setWindowType(WindowType type);
     WindowType getWindowType() const { return m_windowType; }
-
+    
     void setShowPeaks(bool);
     bool getShowPeaks() const { return m_showPeaks; }
 
@@ -114,6 +119,7 @@ protected:
     int                     m_windowSize;
     WindowType              m_windowType;
     int                     m_windowHopLevel;
+    int                     m_oversampling;
     bool                    m_showPeaks;
     mutable bool            m_newFFTNeeded;
 
