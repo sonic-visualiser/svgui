@@ -679,14 +679,6 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         getBiasCurve(curve);
         int cs = int(curve.size());
 
-        std::vector<double> values;
-        
-        for (int bin = 0; bin < fft->getHeight(); ++bin) {
-            double value = m_sliceableModel->getValueAt(col, bin);
-            if (bin < cs) value *= curve[bin];
-            values.push_back(value);
-        }
-
         for (FFTModel::PeakSet::iterator i = peaks.begin();
              i != peaks.end(); ++i) {
 
@@ -694,14 +686,16 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             
 //            cerr << "bin = " << bin << ", thresh = " << thresh << ", value = " << fft->getMagnitudeAt(col, bin) << endl;
 
-            if (!fft->isOverThreshold(col, bin, float(thresh))) continue;
+            double value = fft->getValueAt(col, bin);
+            if (value < thresh) continue;
+            if (bin < cs) value *= curve[bin];
             
             double freq = i->second;
-          
             int x = int(lrint(getXForFrequency(v, freq)));
-
+            
             double norm = 0.f;
-            (void)getYForValue(v, values[bin], norm); // don't need return value, need norm
+            // don't need return value, need norm:            
+            (void)getYForValue(v, value, norm);
 
             paint.setPen(mapper.map(norm));
             paint.drawLine(x, 0, x, v->getPaintHeight() - scaleHeight - 1);
