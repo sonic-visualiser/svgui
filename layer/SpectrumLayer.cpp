@@ -705,7 +705,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         int peakminbin = 0;
         int peakmaxbin = fft->getHeight() - 1;
         double peakmaxfreq = Pitch::getFrequencyForPitch(128);
-        peakmaxbin = int(((peakmaxfreq * fft->getHeight() * 2) / fft->getSampleRate()));
+        peakmaxbin = int(((peakmaxfreq * fft->getHeight() * 2) /
+                          fft->getSampleRate()));
         
         FFTModel::PeakSet peaks = fft->getPeakFrequencies
             (FFTModel::MajorPitchAdaptivePeaks, col, peakminbin, peakmaxbin);
@@ -714,8 +715,16 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         getBiasCurve(curve);
         int cs = int(curve.size());
 
+        int px = -1;
+
         for (FFTModel::PeakSet::iterator i = peaks.begin();
              i != peaks.end(); ++i) {
+
+            double freq = i->second;
+            int x = int(lrint(getXForFrequency(v, freq)));
+            if (x == px) {
+                continue;
+            }
 
             int bin = i->first;
             
@@ -725,15 +734,14 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             if (value < thresh) continue;
             if (bin < cs) value *= curve[bin];
             
-            double freq = i->second;
-            int x = int(lrint(getXForFrequency(v, freq)));
-            
             double norm = 0.f;
             // don't need return value, need norm:            
             (void)getYForValue(v, value, norm);
 
-            paint.setPen(mapper.map(norm));
+            paint.setPen(QPen(mapper.map(norm), 1));
             paint.drawLine(x, 0, x, v->getPaintHeight() - scaleHeight - 1);
+
+            px = x;
         }
 
         paint.restore();

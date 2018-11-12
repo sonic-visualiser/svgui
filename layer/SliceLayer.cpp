@@ -402,11 +402,19 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         }
     }
 
+    int mh = m_sliceableModel->getHeight();
+    
     if (m_plotStyle == PlotBlocks) {
         // Must use actual zero-width pen, too slow otherwise
         paint.setPen(QPen(getBaseQColor(), 0));
     } else {
-        paint.setPen(PaintAssistant::scalePen(getBaseQColor()));
+        // Similarly, if there are very many bins here, let's drop to
+        // a precise 1-pixel-width pen
+        if (mh > 10000) {
+            paint.setPen(QPen(getBaseQColor(), 1));
+        } else {
+            paint.setPen(PaintAssistant::scalePen(getBaseQColor()));
+        }
     }
 
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
@@ -423,7 +431,6 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     QPainterPath path;
 
-    int mh = m_sliceableModel->getHeight();
     int bin0 = 0;
 
     if (m_maxbin > m_minbin) {
