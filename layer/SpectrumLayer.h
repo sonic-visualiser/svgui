@@ -125,6 +125,14 @@ protected:
 
     void setupFFT();
 
+    virtual double getBinForFrequency(double freq) const;
+    virtual double getFrequencyForBin(double bin) const;
+    
+    virtual double getXForBin(const LayerGeometryProvider *, double bin)
+        const override;
+    virtual double getBinForX(const LayerGeometryProvider *, double x)
+        const override;
+
     virtual void getBiasCurve(BiasCurve &) const override;
     BiasCurve m_biasCurve;
 

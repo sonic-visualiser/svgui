@@ -193,13 +193,20 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
 double
 SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
 {
+    return getXForScalePoint(v, bin, m_minbin, m_maxbin);
+}
+
+double
+SliceLayer::getXForScalePoint(const LayerGeometryProvider *v,
+                              double p, double pmin, double pmax) const
+{
     double x = 0;
 
-    bin -= m_minbin;
-    if (bin < 0) bin = 0;
+    p -= pmin;
+    if (p < 0) p = 0;
 
-    double count = m_maxbin - m_minbin;
-    if (count < 0) count = 0;
+    double extent = pmax - pmin;
+    if (extent < 0) extent = 0;
 
     int pw = v->getPaintWidth();
     int origin = m_xorigins[v->getId()];
@@ -209,7 +216,7 @@ SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
     switch (m_binScale) {
 
     case LinearBins:
-        x = (w * bin) / count;
+        x = (w * p) / extent;
         break;
         
     case LogBins:
@@ -225,11 +232,11 @@ SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
         // as "a bit less than 1", so that most of it is visible but a
         // bit is tactfully cropped at the left edge so it doesn't
         // take up so much space.
-        x = (w * log10(bin + 0.8)) / log10(count + 0.8);
+        x = (w * log10(p + 0.8)) / log10(extent + 0.8);
         break;
         
     case InvertedLogBins:
-        x = w - (w * log10(count - bin - 1)) / log10(count);
+        x = w - (w * log10(extent - p - 1)) / log10(extent);
         break;
     }
     
@@ -239,10 +246,17 @@ SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
 double
 SliceLayer::getBinForX(const LayerGeometryProvider *v, double x) const
 {
-    double bin = 0;
+    return getScalePointForX(v, x, m_minbin, m_maxbin);
+}
 
-    double count = m_maxbin - m_minbin;
-    if (count < 0) count = 0;
+double
+SliceLayer::getScalePointForX(const LayerGeometryProvider *v,
+                              double x, double pmin, double pmax) const
+{
+    double p = 0;
+
+    double extent = pmax - pmin;
+    if (extent < 0) extent = 0;
 
     int pw = v->getPaintWidth();
     int origin = m_xorigins[v->getId()];
@@ -258,20 +272,20 @@ SliceLayer::getBinForX(const LayerGeometryProvider *v, double x) const
     switch (m_binScale) {
 
     case LinearBins:
-        bin = (x * count) / w + eps;
+        p = (x * extent) / w + eps;
         break;
         
     case LogBins:
-        // See comment in getXForBin
-        bin = pow(10.0, (x * log10(count + 0.8)) / w) - 0.8 + eps;
+        // See comment in getXForScalePoint
+        p = pow(10.0, (x * log10(extent + 0.8)) / w) - 0.8 + eps;
         break;
 
     case InvertedLogBins:
-        bin = count + 1 - pow(10.0, (log10(count) * (w - x)) / double(w)) + eps;
+        p = extent + 1 - pow(10.0, (log10(extent) * (w - x)) / double(w)) + eps;
         break;
     }
 
-    return bin + m_minbin;
+    return p + pmin;
 }
 
 double

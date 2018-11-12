@@ -346,26 +346,61 @@ SpectrumLayer::preferenceChanged(PropertyContainer::PropertyName name)
 }
 
 double
+SpectrumLayer::getBinForFrequency(double freq) const
+{
+    if (!m_sliceableModel) return 0;
+    double bin = (freq * getFFTSize()) / m_sliceableModel->getSampleRate();
+    // we assume the frequency of a bin corresponds to the centre of
+    // its visual range
+    bin += 0.5;
+    return bin;
+}
+
+double
+SpectrumLayer::getBinForX(const LayerGeometryProvider *v, double x) const
+{
+    if (!m_sliceableModel) return 0;
+    double bin = getBinForFrequency(getFrequencyForX(v, x));
+    return bin;
+}
+
+double
 SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 {
     if (!m_sliceableModel) return 0;
-    double bin = getBinForX(v, x);
+    double freq = getScalePointForX(v, x,
+                                    getFrequencyForBin(m_minbin),
+                                    getFrequencyForBin(m_maxbin));
+    return freq;
+}
+
+double
+SpectrumLayer::getFrequencyForBin(double bin) const
+{
+    if (!m_sliceableModel) return 0;
     // we assume the frequency of a bin corresponds to the centre of
     // its visual range
     bin -= 0.5;
-    return (m_sliceableModel->getSampleRate() * bin) /
-        (m_sliceableModel->getHeight() * 2);
+    double freq = (bin * m_sliceableModel->getSampleRate()) / getFFTSize();
+    return freq;
+}
+
+double
+SpectrumLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
+{
+    if (!m_sliceableModel) return 0;
+    double x = getXForFrequency(v, getFrequencyForBin(bin));
+    return x;
 }
 
 double
 SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) const
 {
     if (!m_sliceableModel) return 0;
-    double bin = (freq * m_sliceableModel->getHeight() * 2) /
-        m_sliceableModel->getSampleRate();
-    // we want the centre of the bin range
-    bin += 0.5;
-    return getXForBin(v, bin);
+    double x = getXForScalePoint(v, freq,
+                                 getFrequencyForBin(m_minbin),
+                                 getFrequencyForBin(m_maxbin));
+    return x;
 }
 
 bool
