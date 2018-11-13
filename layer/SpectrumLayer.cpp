@@ -709,6 +709,11 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     int xorigin = getVerticalScaleWidth(v, false, paint) + 1;
     int scaleHeight = getHorizontalScaleHeight(v, paint);
 
+    QPoint localPos;
+    bool shouldIlluminate = v->shouldIlluminateLocalFeatures(this, localPos);
+
+    cerr << "shouldIlluminate = " << shouldIlluminate << ", localPos = " << localPos.x() << "," << localPos.y() << endl;
+    
     if (fft && m_showPeaks) {
 
         // draw peak lines
@@ -738,6 +743,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
 
         int px = -1;
 
+        int fuzz = ViewManager::scalePixelSize(2);
+        
         for (FFTModel::PeakSet::iterator i = peaks.begin();
              i != peaks.end(); ++i) {
 
@@ -746,7 +753,7 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             if (x == px) {
                 continue;
             }
-
+            
             int bin = i->first;
             
 //            cerr << "bin = " << bin << ", thresh = " << thresh << ", value = " << fft->getMagnitudeAt(col, bin) << endl;
@@ -754,6 +761,12 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             double value = fft->getValueAt(col, bin);
             if (value < thresh) continue;
             if (bin < cs) value *= curve[bin];
+
+            bool highlightThis = false;
+            if (std::abs(localPos.x() - x) <= fuzz) {
+                highlightThis = true;
+                cerr << "should highlight this one (at " << x << ")" << endl;
+            }
             
             double norm = 0.f;
             // don't need return value, need norm:            

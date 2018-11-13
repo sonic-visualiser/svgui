@@ -113,7 +113,7 @@ TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
             dr = abs(v->getXForFrame(right) - x);
         }
 
-        int fuzz = 2;
+        int fuzz = ViewManager::scalePixelSize(2);
 
         if (dl >= 0 && dr >= 0) {
             if (dl < dr) {

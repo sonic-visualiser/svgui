@@ -414,6 +414,12 @@ public:
 
     virtual PlayParameters *getPlayParameters();
 
+    /**
+     * True if this layer will need to place text labels when it is
+     * painted. The view will take into account how many layers are
+     * requesting this, and will provide a distinct y-coord to each
+     * layer on request via View::getTextLabelHeight().
+     */
     virtual bool needsTextLabelHeight() const { return false; }
 
     /**

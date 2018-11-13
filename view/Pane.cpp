@@ -300,8 +300,8 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
 
 bool
 Pane::shouldIlluminateLocalSelection(QPoint &pos,
-                     bool &closeToLeft,
-                     bool &closeToRight) const
+                                     bool &closeToLeft,
+                                     bool &closeToRight) const
 {
     if (m_identifyFeatures &&
         m_manager &&
