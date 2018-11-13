@@ -2718,7 +2718,7 @@ Pane::updateContextHelp(const QPoint *pos)
         
     if (mode == ViewManager::NavigateMode) {
 
-        help = tr("Click and drag to navigate");
+        help = tr("Click and drag to navigate; use mouse-wheel or trackpad-scroll to zoom; hold Shift and drag to zoom to an area");
         
     } else if (mode == ViewManager::SelectMode) {
 
