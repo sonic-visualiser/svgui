@@ -43,8 +43,6 @@ public:
     virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
     virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
 
-    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const { return 0; }
-
     virtual ColourSignificance getLayerColourSignificance() const {
         return ColourAndBackgroundSignificant;
     }

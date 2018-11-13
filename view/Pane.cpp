@@ -881,6 +881,8 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
 void
 Pane::drawLayerNames(QRect r, QPainter &paint)
 {
+    ViewProxy proxy(this, effectiveDevicePixelRatio());
+    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
@@ -889,6 +891,18 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
         lly -= m_manager->scalePixelSize(20);
     }
 
+    for (LayerList::iterator i = m_layerStack.end(); i != m_layerStack.begin();) {
+        --i;
+        int hsh = (*i)->getHorizontalScaleHeight(&proxy, paint);
+        if (hsh > 0) {
+            lly -= hsh;
+            break;
+        }
+        if ((*i)->isLayerOpaque()) {
+            break;
+        }
+    }
+    
     if (r.y() + r.height() < lly - int(m_layerStack.size()) * fontHeight) {
         return;
     }

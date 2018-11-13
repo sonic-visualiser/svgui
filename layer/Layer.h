@@ -136,6 +136,8 @@ public:
     virtual void paintVerticalScale(LayerGeometryProvider *, bool /* detailed */,
                                     QPainter &, QRect) const { }
 
+    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const { return 0; }
+    
     virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint /* cursorPos */,
                                      std::vector<QRect> &) const {
         return false;
