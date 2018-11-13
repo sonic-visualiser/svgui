@@ -27,6 +27,7 @@
 #include "layer/WaveformLayer.h"
 #include "layer/TimeRulerLayer.h"
 #include "layer/PaintAssistant.h"
+#include "ViewProxy.h"
 
 // GF: added so we can propagate the mouse move event to the note layer for context handling.
 #include "layer/LayerFactory.h"
@@ -1822,6 +1823,18 @@ Pane::zoomToRegion(QRect r)
     int x1 = r.x() + r.width();
     int y1 = r.y() + r.height();
 
+    SVDEBUG << "Pane::zoomToRegion: region defined by pixel rect ("
+            << r.x() << "," << r.y() << "), " << r.width() << "x" << r.height()
+            << endl;
+
+    Layer *interactionLayer = getInteractionLayer();
+    if (interactionLayer && !(interactionLayer->hasTimeXAxis())) {
+        SVDEBUG << "Interaction layer does not have time X axis - delegating to it to decide what to do" << endl;
+        ViewProxy proxy(this, effectiveDevicePixelRatio());
+        interactionLayer->zoomToRegion(&proxy, r);
+        return;
+    }
+    
     sv_frame_t newStartFrame = getFrameForX(x0);
     sv_frame_t newEndFrame = getFrameForX(x1);
     sv_frame_t dist = newEndFrame - newStartFrame;

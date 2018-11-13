@@ -74,8 +74,10 @@ SliceLayer::setSliceableModel(const Model *model)
 
     connectSignals(m_sliceableModel);
 
-    m_minbin = 0;
-    m_maxbin = m_sliceableModel->getHeight();
+    if (m_minbin == 0 && m_maxbin == 0) {
+        m_minbin = 0;
+        m_maxbin = m_sliceableModel->getHeight();
+    }
     
     emit modelReplaced();
     emit layerParametersChanged();
@@ -403,18 +405,23 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     }
 
     int mh = m_sliceableModel->getHeight();
+    int bin0 = 0;
+    if (m_maxbin > m_minbin) {
+        mh = m_maxbin - m_minbin;
+        bin0 = m_minbin;
+    }
     
     if (m_plotStyle == PlotBlocks) {
         // Must use actual zero-width pen, too slow otherwise
         paint.setPen(QPen(getBaseQColor(), 0));
     } else {
-        // Similarly, if there are very many bins here, let's drop to
-        // a precise 1-pixel-width pen
-        if (mh > 10000) {
-            paint.setPen(QPen(getBaseQColor(), 1));
-        } else {
-            paint.setPen(PaintAssistant::scalePen(getBaseQColor()));
+        // Similarly, if there are very many bins here, we use a
+        // thinner pen
+        QPen pen(getBaseQColor(), 1);
+        if (mh < 10000) {
+            pen = PaintAssistant::scalePen(pen);
         }
+        paint.setPen(pen);
     }
 
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
@@ -430,13 +437,6 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     if (h <= 0) return;
 
     QPainterPath path;
-
-    int bin0 = 0;
-
-    if (m_maxbin > m_minbin) {
-        mh = m_maxbin - m_minbin;
-        bin0 = m_minbin;
-    }
     
     int divisor = 0;
 
@@ -1210,3 +1210,18 @@ SliceLayer::getNewVerticalZoomRangeMapper() const
     return new LinearRangeMapper(0, m_sliceableModel->getHeight(),
                                  0, m_sliceableModel->getHeight(), "");
 }
+
+void
+SliceLayer::zoomToRegion(const LayerGeometryProvider *v, QRect rect)
+{
+    double bin0 = getBinForX(v, rect.x());
+    double bin1 = getBinForX(v, rect.x() + rect.width());
+
+    // ignore y for now...
+
+    SVDEBUG << "SliceLayer::zoomToRegion: zooming to bin range "
+            << bin0 << " -> " << bin1 << endl;
+    
+    setDisplayExtents(floor(bin0), ceil(bin1));
+}
+

@@ -414,7 +414,22 @@ public:
 
     virtual bool needsTextLabelHeight() const { return false; }
 
+    /**
+     * Return true if the X axis on the layer is time proportional to
+     * audio frames, false otherwise. Almost all layer types return
+     * true here: the exceptions are spectrum and slice layers.
+     */
     virtual bool hasTimeXAxis() const { return true; }
+
+    /**
+     * Update the X and Y axis scales, where appropriate, to focus on
+     * the given rectangular region. This should *only* be overridden
+     * by layers whose hasTimeXAxis() returns false - the pane handles
+     * zooming appropriately in every "normal" case.
+     */
+    virtual void zoomToRegion(const LayerGeometryProvider *, QRect) {
+        return;
+    }
 
     /**
      * Return the minimum and maximum values for the y axis of the

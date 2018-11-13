@@ -287,6 +287,16 @@ void
 SpectrumLayer::setWindowSize(int ws)
 {
     if (m_windowSize == ws) return;
+
+    SVDEBUG << "setWindowSize: from " << m_windowSize
+            << " to " << ws << ": updating min and max bins from "
+            << m_minbin << " and " << m_maxbin << " to ";
+    
+    m_minbin = int(round((double(m_minbin) / m_windowSize) * ws));
+    m_maxbin = int(round((double(m_maxbin) / m_windowSize) * ws));
+
+    SVDEBUG << m_minbin << " and " << m_maxbin << endl;
+
     m_windowSize = ws;
     m_newFFTNeeded = true;
     emit layerParametersChanged();
@@ -314,8 +324,19 @@ void
 SpectrumLayer::setOversampling(int oversampling)
 {
     if (m_oversampling == oversampling) return;
+
+    SVDEBUG << "setOversampling: from " << m_oversampling
+            << " to " << oversampling << ": updating min and max bins from "
+            << m_minbin << " and " << m_maxbin << " to ";
+    
+    m_minbin = int(round((double(m_minbin) / m_oversampling) * oversampling));
+    m_maxbin = int(round((double(m_maxbin) / m_oversampling) * oversampling));
+
+    SVDEBUG << m_minbin << " and " << m_maxbin << endl;
+    
     m_oversampling = oversampling;
     m_newFFTNeeded = true;
+    
     emit layerParametersChanged();
 }
 

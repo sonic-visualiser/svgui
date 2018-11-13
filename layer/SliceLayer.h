@@ -75,7 +75,9 @@ public:
     virtual void setVerticalZoomStep(int);
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
-    virtual bool hasTimeXAxis() const { return false; }
+    virtual bool hasTimeXAxis() const override { return false; }
+
+    virtual void zoomToRegion(const LayerGeometryProvider *, QRect) override;
 
     virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
 
