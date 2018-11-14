@@ -785,10 +785,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             if (bin < cs) value *= curve[bin];
             
             double norm = 0.f;
-            // we need the norm here for colour map; the y coord is
-            // only used to pick a label height if illuminating the
-            // local point
-            double y = getYForValue(v, value, norm);
+            // we only need the norm here, for the colour map
+            (void)getYForValue(v, value, norm);
 
             QColor colour = mapper.map(norm);
             
