@@ -733,6 +733,15 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     QPoint localPos;
     bool shouldIlluminate = v->shouldIlluminateLocalFeatures(this, localPos);
 
+    int illuminateX = 0;
+    double illuminateFreq = 0.0;
+    double illuminateLevel = 0.0;
+
+    ColourMapper mapper =
+        hasLightBackground() ?
+        ColourMapper(ColourMapper::BlackOnWhite, m_colourInverted, 0, 1) :
+        ColourMapper(ColourMapper::WhiteOnBlack, m_colourInverted, 0, 1);
+
 //    cerr << "shouldIlluminate = " << shouldIlluminate << ", localPos = " << localPos.x() << "," << localPos.y() << endl;
 
     if (fft && m_showPeaks) {
@@ -743,11 +752,6 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
 
         paint.save();
         paint.setRenderHint(QPainter::Antialiasing, false);
-
-        ColourMapper mapper =
-            hasLightBackground() ?
-            ColourMapper(ColourMapper::BlackOnWhite, m_colourInverted, 0, 1) :
-            ColourMapper(ColourMapper::WhiteOnBlack, m_colourInverted, 0, 1);
         
         int peakminbin = 0;
         int peakmaxbin = fft->getHeight() - 1;
@@ -765,7 +769,6 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         int px = -1;
 
         int fuzz = ViewManager::scalePixelSize(3);
-        bool illuminatedSomething = false;
         
         for (FFTModel::PeakSet::iterator i = peaks.begin();
              i != peaks.end(); ++i) {
@@ -793,37 +796,10 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             paint.setPen(QPen(colour, 1));
             paint.drawLine(x, 0, x, v->getPaintHeight() - scaleHeight - 1);
 
-            bool illuminateThis = false;
-            if (shouldIlluminate && !illuminatedSomething &&
-                std::abs(localPos.x() - x) <= fuzz) {
-                illuminateThis = true;
-            }
-
-            if (illuminateThis) {
-                int labelY = v->getPaintHeight() -
-                    getHorizontalScaleHeight(v, paint) -
-                    paint.fontMetrics().height() * 4;
-                QString text = tr("%1 Hz").arg(freq);
-                int lw = paint.fontMetrics().width(text);
-                int gap = ViewManager::scalePixelSize(v->getXForViewX(3));
-                double half = double(gap)/2.0;
-                int labelX = x - lw - gap;
-                if (labelX < getVerticalScaleWidth(v, false, paint)) {
-                    labelX = x + gap;
-                }
-                PaintAssistant::drawVisibleText
-                    (v, paint, labelX, labelY,
-                     text, PaintAssistant::OutlinedText);
-                if (Pitch::isFrequencyInMidiRange(freq)) {
-                    QString pitchLabel = Pitch::getPitchLabelForFrequency(freq);
-                    PaintAssistant::drawVisibleText
-                        (v, paint,
-                         labelX, labelY + paint.fontMetrics().ascent() + gap,
-                         pitchLabel, PaintAssistant::OutlinedText);
-                }
-                paint.fillRect(QRectF(x - half, labelY + gap, gap, gap),
-                               colour);
-                illuminatedSomething = true;
+            if (shouldIlluminate && std::abs(localPos.x() - x) <= fuzz) {
+                illuminateX = x;
+                illuminateFreq = freq;
+                illuminateLevel = norm;
             }
             
             px = x;
@@ -839,6 +815,42 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     paintHorizontalScale(v, paint, xorigin);
 
     paint.restore();
+
+    if (illuminateFreq > 0.0) {
+
+        QColor colour = mapper.map(illuminateLevel);
+        paint.setPen(QPen(colour, 1));
+
+        int labelY = v->getPaintHeight() -
+            getHorizontalScaleHeight(v, paint) -
+            paint.fontMetrics().height() * 4;
+        
+        QString text = tr("%1 Hz").arg(illuminateFreq);
+        int lw = paint.fontMetrics().width(text);
+
+        int gap = ViewManager::scalePixelSize(v->getXForViewX(3));
+        double half = double(gap)/2.0;
+
+        int labelX = illuminateX - lw - gap;
+        if (labelX < getVerticalScaleWidth(v, false, paint)) {
+            labelX = illuminateX + gap;
+        }
+
+        PaintAssistant::drawVisibleText
+            (v, paint, labelX, labelY,
+             text, PaintAssistant::OutlinedText);
+
+        if (Pitch::isFrequencyInMidiRange(illuminateFreq)) {
+            QString pitchLabel = Pitch::getPitchLabelForFrequency
+                (illuminateFreq);
+            PaintAssistant::drawVisibleText
+                (v, paint,
+                 labelX, labelY + paint.fontMetrics().ascent() + gap,
+                 pitchLabel, PaintAssistant::OutlinedText);
+        }
+        paint.fillRect(QRectF(illuminateX - half, labelY + gap, gap, gap),
+                       colour);
+    }
 }
 
 int
