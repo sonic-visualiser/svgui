@@ -27,7 +27,6 @@
 #include "layer/WaveformLayer.h"
 #include "layer/TimeRulerLayer.h"
 #include "layer/PaintAssistant.h"
-#include "ViewProxy.h"
 
 // GF: added so we can propagate the mouse move event to the note layer for context handling.
 #include "layer/LayerFactory.h"
@@ -881,27 +880,29 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
 void
 Pane::drawLayerNames(QRect r, QPainter &paint)
 {
-    ViewProxy proxy(this, effectiveDevicePixelRatio());
-    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
     int lly = height() - 6;
+
+    int zoomWheelSkip = 0, horizontalScaleSkip = 0;
+
     if (m_manager->getZoomWheelsEnabled()) {
-        lly -= m_manager->scalePixelSize(20);
+        zoomWheelSkip = m_manager->scalePixelSize(20);
     }
 
     for (LayerList::iterator i = m_layerStack.end(); i != m_layerStack.begin();) {
         --i;
-        int hsh = (*i)->getHorizontalScaleHeight(&proxy, paint);
-        if (hsh > 0) {
-            lly -= hsh;
+        horizontalScaleSkip = (*i)->getHorizontalScaleHeight(this, paint);
+        if (horizontalScaleSkip > 0) {
             break;
         }
         if ((*i)->isLayerOpaque()) {
             break;
         }
     }
+
+    lly -= std::max(zoomWheelSkip, horizontalScaleSkip);
     
     if (r.y() + r.height() < lly - int(m_layerStack.size()) * fontHeight) {
         return;
@@ -1844,8 +1845,7 @@ Pane::zoomToRegion(QRect r)
     Layer *interactionLayer = getInteractionLayer();
     if (interactionLayer && !(interactionLayer->hasTimeXAxis())) {
         SVDEBUG << "Interaction layer does not have time X axis - delegating to it to decide what to do" << endl;
-        ViewProxy proxy(this, effectiveDevicePixelRatio());
-        interactionLayer->zoomToRegion(&proxy, r);
+        interactionLayer->zoomToRegion(this, r);
         return;
     }
     

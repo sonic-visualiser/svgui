@@ -802,10 +802,10 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             if (illuminateThis) {
                 int labelY = v->getPaintHeight() -
                     getHorizontalScaleHeight(v, paint) -
-                    paint.fontMetrics().height() * 3;
+                    paint.fontMetrics().height() * 4;
                 QString text = tr("%1 Hz").arg(freq);
                 int lw = paint.fontMetrics().width(text);
-                int gap = ViewManager::scalePixelSize(3);
+                int gap = ViewManager::scalePixelSize(v->getXForViewX(3));
                 double half = double(gap)/2.0;
                 int labelX = x - lw - gap;
                 if (labelX < getVerticalScaleWidth(v, false, paint)) {
