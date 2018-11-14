@@ -73,7 +73,9 @@ public:
     virtual void setVerticalZoomStep(int);
     virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
 
-    virtual bool hasTimeXAxis() const { return false; }
+    virtual bool hasTimeXAxis() const override { return false; }
+
+    virtual void zoomToRegion(const LayerGeometryProvider *, QRect) override;
 
     virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
 
@@ -119,8 +121,21 @@ public slots:
     void modelAboutToBeDeleted(Model *);
 
 protected:
+    /// Convert a (possibly non-integral) bin into x-coord. May be overridden
     virtual double getXForBin(const LayerGeometryProvider *, double bin) const;
+    
+    /// Convert an x-coord into (possibly non-integral) bin. May be overridden
     virtual double getBinForX(const LayerGeometryProvider *, double x) const;
+
+    /// Convert a point such as a bin number into x-coord, given max &
+    /// min. For use by getXForBin etc
+    double getXForScalePoint(const LayerGeometryProvider *,
+                             double p, double pmin, double pmax) const;
+
+    /// Convert an x-coord into a point such as a bin number, given
+    /// max & min. For use by getBinForX etc
+    double getScalePointForX(const LayerGeometryProvider *,
+                             double x, double pmin, double pmax) const;
 
     virtual double getYForValue(const LayerGeometryProvider *v, double value, double &norm) const;
     virtual double getValueForY(const LayerGeometryProvider *v, double y) const;

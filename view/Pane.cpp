@@ -27,6 +27,7 @@
 #include "layer/WaveformLayer.h"
 #include "layer/TimeRulerLayer.h"
 #include "layer/PaintAssistant.h"
+#include "ViewProxy.h"
 
 // GF: added so we can propagate the mouse move event to the note layer for context handling.
 #include "layer/LayerFactory.h"
@@ -299,8 +300,8 @@ Pane::shouldIlluminateLocalFeatures(const Layer *layer, QPoint &pos) const
 
 bool
 Pane::shouldIlluminateLocalSelection(QPoint &pos,
-                     bool &closeToLeft,
-                     bool &closeToRight) const
+                                     bool &closeToLeft,
+                                     bool &closeToRight) const
 {
     if (m_identifyFeatures &&
         m_manager &&
@@ -880,6 +881,8 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
 void
 Pane::drawLayerNames(QRect r, QPainter &paint)
 {
+    ViewProxy proxy(this, effectiveDevicePixelRatio());
+    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 
@@ -888,6 +891,18 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
         lly -= m_manager->scalePixelSize(20);
     }
 
+    for (LayerList::iterator i = m_layerStack.end(); i != m_layerStack.begin();) {
+        --i;
+        int hsh = (*i)->getHorizontalScaleHeight(&proxy, paint);
+        if (hsh > 0) {
+            lly -= hsh;
+            break;
+        }
+        if ((*i)->isLayerOpaque()) {
+            break;
+        }
+    }
+    
     if (r.y() + r.height() < lly - int(m_layerStack.size()) * fontHeight) {
         return;
     }
@@ -1822,6 +1837,18 @@ Pane::zoomToRegion(QRect r)
     int x1 = r.x() + r.width();
     int y1 = r.y() + r.height();
 
+    SVDEBUG << "Pane::zoomToRegion: region defined by pixel rect ("
+            << r.x() << "," << r.y() << "), " << r.width() << "x" << r.height()
+            << endl;
+
+    Layer *interactionLayer = getInteractionLayer();
+    if (interactionLayer && !(interactionLayer->hasTimeXAxis())) {
+        SVDEBUG << "Interaction layer does not have time X axis - delegating to it to decide what to do" << endl;
+        ViewProxy proxy(this, effectiveDevicePixelRatio());
+        interactionLayer->zoomToRegion(&proxy, r);
+        return;
+    }
+    
     sv_frame_t newStartFrame = getFrameForX(x0);
     sv_frame_t newEndFrame = getFrameForX(x1);
     sv_frame_t dist = newEndFrame - newStartFrame;
@@ -2718,7 +2745,7 @@ Pane::updateContextHelp(const QPoint *pos)
         
     if (mode == ViewManager::NavigateMode) {
 
-        help = tr("Click and drag to navigate");
+        help = tr("Click and drag to navigate; use mouse-wheel or trackpad-scroll to zoom; hold Shift and drag to zoom to an area");
         
     } else if (mode == ViewManager::SelectMode) {
 

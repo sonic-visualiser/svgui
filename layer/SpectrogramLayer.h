@@ -111,6 +111,9 @@ public:
     void setWindowHopLevel(int level);
     int getWindowHopLevel() const;
 
+    void setOversampling(int oversampling);
+    int getOversampling() const;
+    
     void setWindowType(WindowType type);
     WindowType getWindowType() const;
 
@@ -246,6 +249,7 @@ protected:
     int                 m_windowSize;
     WindowType          m_windowType;
     int                 m_windowHopLevel;
+    int                 m_oversampling;
     float               m_gain;
     float               m_initialGain;
     float               m_threshold;
@@ -300,8 +304,7 @@ protected:
         else return m_windowSize / (1 << (m_windowHopLevel - 1));
     }
 
-    int getFFTOversampling() const;
-    int getFFTSize() const; // m_windowSize * getFFTOversampling()
+    int getFFTSize() const; // m_windowSize * getOversampling()
 
     FFTModel *m_fftModel;
     FFTModel *getFFTModel() const { return m_fftModel; }

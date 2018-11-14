@@ -24,6 +24,8 @@
 
 #include "PaintAssistant.h"
 
+#include "base/Profiler.h"
+
 #include <QPainter>
 #include <QPainterPath>
 #include <QTextStream>
@@ -72,8 +74,10 @@ SliceLayer::setSliceableModel(const Model *model)
 
     connectSignals(m_sliceableModel);
 
-    m_minbin = 0;
-    m_maxbin = m_sliceableModel->getHeight();
+    if (m_minbin == 0 && m_maxbin == 0) {
+        m_minbin = 0;
+        m_maxbin = m_sliceableModel->getHeight();
+    }
     
     emit modelReplaced();
     emit layerParametersChanged();
@@ -191,26 +195,32 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
 double
 SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
 {
+    return getXForScalePoint(v, bin, m_minbin, m_maxbin);
+}
+
+double
+SliceLayer::getXForScalePoint(const LayerGeometryProvider *v,
+                              double p, double pmin, double pmax) const
+{
     double x = 0;
-
-    bin -= m_minbin;
-    if (bin < 0) bin = 0;
-
-    double count = m_maxbin - m_minbin;
-    if (count < 0) count = 0;
 
     int pw = v->getPaintWidth();
     int origin = m_xorigins[v->getId()];
     int w = pw - origin;
     if (w < 1) w = 1;
 
-    switch (m_binScale) {
+    if (p < pmin) p = pmin;
+    if (p > pmax) p = pmax;
+    
+    if (m_binScale == LinearBins) {
+        x = (w * (p - pmin)) / (pmax - pmin);
+    } else {
 
-    case LinearBins:
-        x = (w * bin) / count;
-        break;
+        if (m_binScale == InvertedLogBins) {
+            // stoopid
+            p = pmax - p;
+        }
         
-    case LogBins:
         // The 0.8 here is an awkward compromise. Our x-coord is
         // proportional to log of bin number, with the x-coord "of a
         // bin" being that of the left edge of the bin range. We can't
@@ -223,12 +233,33 @@ SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
         // as "a bit less than 1", so that most of it is visible but a
         // bit is tactfully cropped at the left edge so it doesn't
         // take up so much space.
-        x = (w * log10(bin + 0.8)) / log10(count + 0.8);
-        break;
+        const double origin = 0.8;
         
-    case InvertedLogBins:
-        x = w - (w * log10(count - bin - 1)) / log10(count);
-        break;
+        // sometimes we are called with a pmin/pmax range that begins
+        // before 0: in that situation, we shift everything along by
+        // the difference between 0 and pmin before doing any other
+        // calculations
+        double reqdshift = 0.0;
+        if (pmin < 0) reqdshift = -pmin;
+
+        double pminlog = log10(pmin + reqdshift + origin);
+        double pmaxlog = log10(pmax + reqdshift + origin);
+        double plog = log10(p + reqdshift + origin);
+        x = (w * (plog - pminlog)) / (pmaxlog - pminlog);
+
+/*        
+        cerr << "getXForScalePoint(" << p << "): pmin = " << pmin
+             << ", pmax = " << pmax << ", w = " << w
+             << ", reqdshift = " << reqdshift
+             << ", pminlog = " << pminlog << ", pmaxlog = " << pmaxlog
+             << ", plog = " << plog 
+             << " -> x = " << x << endl;
+*/
+
+        if (m_binScale == InvertedLogBins) {
+            // still stoopid
+            x = w - x;
+        }
     }
     
     return x + origin;
@@ -237,10 +268,14 @@ SliceLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
 double
 SliceLayer::getBinForX(const LayerGeometryProvider *v, double x) const
 {
-    double bin = 0;
+    return getScalePointForX(v, x, m_minbin, m_maxbin);
+}
 
-    double count = m_maxbin - m_minbin;
-    if (count < 0) count = 0;
+double
+SliceLayer::getScalePointForX(const LayerGeometryProvider *v,
+                              double x, double pmin, double pmax) const
+{
+    double p = 0;
 
     int pw = v->getPaintWidth();
     int origin = m_xorigins[v->getId()];
@@ -252,24 +287,33 @@ SliceLayer::getBinForX(const LayerGeometryProvider *v, double x) const
     if (x < 0) x = 0;
 
     double eps = 1e-10;
-    
-    switch (m_binScale) {
 
-    case LinearBins:
-        bin = (x * count) / w + eps;
-        break;
-        
-    case LogBins:
-        // See comment in getXForBin
-        bin = pow(10.0, (x * log10(count + 0.8)) / w) - 0.8 + eps;
-        break;
+    if (m_binScale == LinearBins) {
+        p = pmin + eps + (x * (pmax - pmin)) / w;
+    } else {
 
-    case InvertedLogBins:
-        bin = count + 1 - pow(10.0, (log10(count) * (w - x)) / double(w)) + eps;
-        break;
+        if (m_binScale == InvertedLogBins) {
+            x = w - x;
+        }
+
+        // See comments in getXForScalePoint
+
+        const double origin = 0.8;
+        double reqdshift = 0.0;
+        if (pmin < 0) reqdshift = -pmin;
+
+        double pminlog = log10(pmin + reqdshift + origin);
+        double pmaxlog = log10(pmax + reqdshift + origin);
+
+        double plog = pminlog + eps + (x * (pmaxlog - pminlog)) / w;
+        p = pow(10.0, plog) - reqdshift - origin;
+
+        if (m_binScale == InvertedLogBins) {
+            p = pmax - p;
+        }
     }
 
-    return bin + m_minbin;
+    return p;
 }
 
 double
@@ -364,11 +408,14 @@ SliceLayer::getValueForY(const LayerGeometryProvider *v, double y) const
 void
 SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_sliceableModel || !m_sliceableModel->isOK() ||
+    if (!m_sliceableModel ||
+        !m_sliceableModel->isOK() ||
         !m_sliceableModel->isReady()) return;
 
+    Profiler profiler("SliceLayer::paint()");
+
     paint.save();
-    paint.setRenderHint(QPainter::Antialiasing, false);
+    paint.setRenderHint(QPainter::Antialiasing, true);
     paint.setBrush(Qt::NoBrush);
 
     if (v->getViewManager() && v->getViewManager()->shouldShowScaleGuides()) {
@@ -383,17 +430,31 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         }
     }
 
+    int mh = m_sliceableModel->getHeight();
+    int bin0 = 0;
+    if (m_maxbin > m_minbin) {
+        mh = m_maxbin - m_minbin;
+        bin0 = m_minbin;
+    }
+    
     if (m_plotStyle == PlotBlocks) {
         // Must use actual zero-width pen, too slow otherwise
         paint.setPen(QPen(getBaseQColor(), 0));
     } else {
-        paint.setPen(PaintAssistant::scalePen(getBaseQColor()));
+        // Similarly, if there are very many bins here, we use a
+        // thinner pen
+        QPen pen(getBaseQColor(), 1);
+        if (mh < 10000) {
+            pen = PaintAssistant::scalePen(pen);
+        }
+        paint.setPen(pen);
     }
 
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
     m_xorigins[v->getId()] = xorigin; // for use in getFeatureDescription
     
-    int yorigin = v->getPaintHeight() - 20 - paint.fontMetrics().height() - 7;
+    int yorigin = v->getPaintHeight() - getHorizontalScaleHeight(v, paint) -
+        paint.fontMetrics().height();
     int h = yorigin - paint.fontMetrics().height() - 8;
 
     m_yorigins[v->getId()] = yorigin; // for getYForValue etc
@@ -402,14 +463,6 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     if (h <= 0) return;
 
     QPainterPath path;
-
-    int mh = m_sliceableModel->getHeight();
-    int bin0 = 0;
-
-    if (m_maxbin > m_minbin) {
-        mh = m_maxbin - m_minbin;
-        bin0 = m_minbin;
-    }
     
     int divisor = 0;
 
@@ -434,6 +487,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     f1 = (col1 + 1) * res - 1;
 
 //    cerr << "resolution " << res << ", col0 " << col0 << ", col1 " << col1 << ", f0 " << f0 << ", f1 " << f1 << endl;
+//    cerr << "mh = " << mh << endl;
 
     m_currentf0 = f0;
     m_currentf1 = f1;
@@ -443,8 +497,10 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     int cs = int(curve.size());
 
     for (int col = col0; col <= col1; ++col) {
+        DenseThreeDimensionalModel::Column column =
+            m_sliceableModel->getColumn(col);
         for (int bin = 0; bin < mh; ++bin) {
-            float value = m_sliceableModel->getValueAt(col, bin0 + bin);
+            float value = column[bin0 + bin];
             if (bin < cs) value *= curve[bin];
             if (m_samplingMode == SamplePeak) {
                 if (value > m_values[bin]) m_values[bin] = value;
@@ -472,6 +528,13 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     ColourMapper mapper(m_colourMap, m_colourInverted, 0, 1);
 
+    double ytop = 0, ybottom = 0;
+    bool firstBinOfPixel = true;
+
+    QColor prevColour = v->getBackground();
+    double prevPx = 0;
+    double prevYtop = 0;
+    
     for (int bin = 0; bin < mh; ++bin) {
 
         double x = nx;
@@ -481,36 +544,105 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         double norm = 0.0;
         double y = getYForValue(v, value, norm);
 
-        if (m_plotStyle == PlotLines) {
-
-            if (bin == 0) {
-                path.moveTo((x + nx) / 2, y);
-            } else {
-                path.lineTo((x + nx) / 2, y);
-            }
-
-        } else if (m_plotStyle == PlotSteps) {
-
-            if (bin == 0) {
-                path.moveTo(x, y);
-            } else {
-                path.lineTo(x, y);
-            }
-            path.lineTo(nx, y);
-
-        } else if (m_plotStyle == PlotBlocks) {
-
-            path.moveTo(x, yorigin);
-            path.lineTo(x, y);
-            path.lineTo(nx, y);
-            path.lineTo(nx, yorigin);
-            path.lineTo(x, yorigin);
-
-        } else if (m_plotStyle == PlotFilledBlocks) {
-
-            paint.fillRect(QRectF(x, y, nx - x, yorigin - y), mapper.map(norm));
+        if (y < ytop || firstBinOfPixel) {
+            ytop = y;
+        }
+        if (y > ybottom || firstBinOfPixel) {
+            ybottom = y;
         }
 
+        if (int(nx) != int(x) || bin+1 == mh) {
+
+            if (m_plotStyle == PlotLines) {
+
+                double px = (x + nx) / 2;
+                
+                if (bin == 0) {
+                    path.moveTo(px, y);
+                } else {
+                    if (ytop != ybottom) {
+                        path.lineTo(px, ybottom);
+                        path.lineTo(px, ytop);
+                        path.moveTo(px, ybottom);
+                    } else {
+                        path.lineTo(px, ytop);
+                    }
+                }
+
+            } else if (m_plotStyle == PlotSteps) {
+
+                if (bin == 0) {
+                    path.moveTo(x, y);
+                } else {
+                    path.lineTo(x, ytop);
+                }
+                path.lineTo(nx, ytop);
+
+            } else if (m_plotStyle == PlotBlocks) {
+
+                // work in pixel coords here, as we don't want the
+                // vertical edges to be antialiased
+
+                path.moveTo(QPoint(int(x), int(yorigin)));
+                path.lineTo(QPoint(int(x), int(ytop)));
+                path.lineTo(QPoint(int(nx), int(ytop)));
+                path.lineTo(QPoint(int(nx), int(yorigin)));
+                path.lineTo(QPoint(int(x), int(yorigin)));
+
+            } else if (m_plotStyle == PlotFilledBlocks) {
+
+                QColor c = mapper.map(norm);
+                paint.setPen(Qt::NoPen);
+
+                // work in pixel coords here, as we don't want the
+                // vertical edges to be antialiased
+
+                if (nx > x + 1) {
+                
+                    double px = (x + nx) / 2;
+
+                    QVector<QPoint> pp;
+                    
+                    if (bin > 0) {
+                        paint.setBrush(prevColour);
+                        pp.clear();
+                        pp << QPoint(int(prevPx), int(yorigin));
+                        pp << QPoint(int(prevPx), int(prevYtop));
+                        pp << QPoint(int((px + prevPx) / 2),
+                                     int((ytop + prevYtop) / 2));
+                        pp << QPoint(int((px + prevPx) / 2),
+                                     int(yorigin));
+                        paint.drawConvexPolygon(QPolygon(pp));
+
+                        paint.setBrush(c);
+                        pp.clear();
+                        pp << QPoint(int((px + prevPx) / 2),
+                                     int(yorigin));
+                        pp << QPoint(int((px + prevPx) / 2),
+                                     int((ytop + prevYtop) / 2));
+                        pp << QPoint(int(px), int(ytop));
+                        pp << QPoint(int(px), int(yorigin));
+                        paint.drawConvexPolygon(QPolygon(pp));
+                    }
+
+                    prevPx = px;
+                    prevColour = c;
+                    prevYtop = ytop;
+
+                } else {
+                    
+                    paint.fillRect(QRect(int(x), int(ytop),
+                                         int(nx) - int(x),
+                                         int(yorigin) - int(ytop)),
+                                   c);
+                }
+            }
+
+            firstBinOfPixel = true;
+
+        } else {
+            firstBinOfPixel = false;
+        }
     }
 
     if (m_plotStyle != PlotFilledBlocks) {
@@ -544,7 +676,8 @@ SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, 
 //    int h = (rect.height() * 3) / 4;
 //    int y = (rect.height() / 2) - (h / 2);
     
-    int yorigin = v->getPaintHeight() - 20 - paint.fontMetrics().height() - 6;
+    int yorigin = v->getPaintHeight() - getHorizontalScaleHeight(v, paint) -
+        paint.fontMetrics().height();
     int h = yorigin - paint.fontMetrics().height() - 8;
     if (h < 0) return;
 
@@ -1103,3 +1236,18 @@ SliceLayer::getNewVerticalZoomRangeMapper() const
     return new LinearRangeMapper(0, m_sliceableModel->getHeight(),
                                  0, m_sliceableModel->getHeight(), "");
 }
+
+void
+SliceLayer::zoomToRegion(const LayerGeometryProvider *v, QRect rect)
+{
+    double bin0 = getBinForX(v, rect.x());
+    double bin1 = getBinForX(v, rect.x() + rect.width());
+
+    // ignore y for now...
+
+    SVDEBUG << "SliceLayer::zoomToRegion: zooming to bin range "
+            << bin0 << " -> " << bin1 << endl;
+    
+    setDisplayExtents(floor(bin0), ceil(bin1));
+}
+

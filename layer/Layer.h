@@ -136,6 +136,8 @@ public:
     virtual void paintVerticalScale(LayerGeometryProvider *, bool /* detailed */,
                                     QPainter &, QRect) const { }
 
+    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const { return 0; }
+    
     virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint /* cursorPos */,
                                      std::vector<QRect> &) const {
         return false;
@@ -412,9 +414,30 @@ public:
 
     virtual PlayParameters *getPlayParameters();
 
+    /**
+     * True if this layer will need to place text labels when it is
+     * painted. The view will take into account how many layers are
+     * requesting this, and will provide a distinct y-coord to each
+     * layer on request via View::getTextLabelHeight().
+     */
     virtual bool needsTextLabelHeight() const { return false; }
 
+    /**
+     * Return true if the X axis on the layer is time proportional to
+     * audio frames, false otherwise. Almost all layer types return
+     * true here: the exceptions are spectrum and slice layers.
+     */
     virtual bool hasTimeXAxis() const { return true; }
+
+    /**
+     * Update the X and Y axis scales, where appropriate, to focus on
+     * the given rectangular region. This should *only* be overridden
+     * by layers whose hasTimeXAxis() returns false - the pane handles
+     * zooming appropriately in every "normal" case.
+     */
+    virtual void zoomToRegion(const LayerGeometryProvider *, QRect) {
+        return;
+    }
 
     /**
      * Return the minimum and maximum values for the y axis of the

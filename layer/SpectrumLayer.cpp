@@ -39,6 +39,7 @@ SpectrumLayer::SpectrumLayer() :
     m_windowSize(4096),
     m_windowType(HanningWindow),
     m_windowHopLevel(3),
+    m_oversampling(1),
     m_showPeaks(false),
     m_newFFTNeeded(true)
 {
@@ -112,18 +113,20 @@ SpectrumLayer::setupFFT()
         return;
     }
 
+    int fftSize = getFFTSize();
+
     FFTModel *newFFT = new FFTModel(m_originModel,
                                     m_channel,
                                     m_windowType,
                                     m_windowSize,
                                     getWindowIncrement(),
-                                    m_windowSize);
+                                    fftSize);
 
     setSliceableModel(newFFT);
 
     m_biasCurve.clear();
-    for (int i = 0; i < m_windowSize; ++i) {
-        m_biasCurve.push_back(1.f / (float(m_windowSize)/2.f));
+    for (int i = 0; i < fftSize; ++i) {
+        m_biasCurve.push_back(1.f / (float(fftSize)/2.f));
     }
 
     m_newFFTNeeded = false;
@@ -135,6 +138,7 @@ SpectrumLayer::getProperties() const
     PropertyList list = SliceLayer::getProperties();
     list.push_back("Window Size");
     list.push_back("Window Increment");
+    list.push_back("Oversampling");
     list.push_back("Show Peak Frequencies");
     return list;
 }
@@ -144,6 +148,7 @@ SpectrumLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Window Size") return tr("Window Size");
     if (name == "Window Increment") return tr("Window Overlap");
+    if (name == "Oversampling") return tr("Oversampling");
     if (name == "Show Peak Frequencies") return tr("Show Peak Frequencies");
     return SliceLayer::getPropertyLabel(name);
 }
@@ -160,6 +165,7 @@ SpectrumLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Window Size") return ValueProperty;
     if (name == "Window Increment") return ValueProperty;
+    if (name == "Oversampling") return ValueProperty;
     if (name == "Show Peak Frequencies") return ToggleProperty;
     return SliceLayer::getPropertyType(name);
 }
@@ -168,7 +174,8 @@ QString
 SpectrumLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Window Size" ||
-        name == "Window Increment") return tr("Window");
+        name == "Window Increment" ||
+        name == "Oversampling") return tr("Window");
     if (name == "Show Peak Frequencies") return tr("Bins");
     return SliceLayer::getPropertyGroupName(name);
 }
@@ -202,6 +209,16 @@ SpectrumLayer::getPropertyRangeAndValue(const PropertyName &name,
         
         val = m_windowHopLevel;
     
+    } else if (name == "Oversampling") {
+
+        *min = 0;
+        *max = 3;
+        *deflt = 0;
+
+        val = 0;
+        int ov = m_oversampling;
+        while (ov > 1) { ov >>= 1; val ++; }
+        
     } else if (name == "Show Peak Frequencies") {
 
         return m_showPeaks ? 1 : 0;
@@ -232,6 +249,15 @@ SpectrumLayer::getPropertyValueLabel(const PropertyName &name,
         case 5: return tr("93.75 %");
         }
     }
+    if (name == "Oversampling") {
+        switch (value) {
+        default:
+        case 0: return tr("1x");
+        case 1: return tr("2x");
+        case 2: return tr("4x");
+        case 3: return tr("8x");
+        }
+    }
     return SliceLayer::getPropertyValueLabel(name, value);
 }
 
@@ -248,6 +274,8 @@ SpectrumLayer::setProperty(const PropertyName &name, int value)
         setWindowSize(32 << value);
     } else if (name == "Window Increment") {
         setWindowHopLevel(value);
+    } else if (name == "Oversampling") {
+        setOversampling(1 << value);
     } else if (name == "Show Peak Frequencies") {
         setShowPeaks(value ? true : false);
     } else {
@@ -259,6 +287,16 @@ void
 SpectrumLayer::setWindowSize(int ws)
 {
     if (m_windowSize == ws) return;
+
+    SVDEBUG << "setWindowSize: from " << m_windowSize
+            << " to " << ws << ": updating min and max bins from "
+            << m_minbin << " and " << m_maxbin << " to ";
+    
+    m_minbin = int(round((double(m_minbin) / m_windowSize) * ws));
+    m_maxbin = int(round((double(m_maxbin) / m_windowSize) * ws));
+
+    SVDEBUG << m_minbin << " and " << m_maxbin << endl;
+
     m_windowSize = ws;
     m_newFFTNeeded = true;
     emit layerParametersChanged();
@@ -283,6 +321,32 @@ SpectrumLayer::setWindowType(WindowType w)
 }
 
 void
+SpectrumLayer::setOversampling(int oversampling)
+{
+    if (m_oversampling == oversampling) return;
+
+    SVDEBUG << "setOversampling: from " << m_oversampling
+            << " to " << oversampling << ": updating min and max bins from "
+            << m_minbin << " and " << m_maxbin << " to ";
+    
+    m_minbin = int(round((double(m_minbin) / m_oversampling) * oversampling));
+    m_maxbin = int(round((double(m_maxbin) / m_oversampling) * oversampling));
+
+    SVDEBUG << m_minbin << " and " << m_maxbin << endl;
+    
+    m_oversampling = oversampling;
+    m_newFFTNeeded = true;
+    
+    emit layerParametersChanged();
+}
+
+int
+SpectrumLayer::getOversampling() const
+{
+    return m_oversampling;
+}
+
+void
 SpectrumLayer::setShowPeaks(bool show)
 {
     if (m_showPeaks == show) return;
@@ -294,32 +358,91 @@ void
 SpectrumLayer::preferenceChanged(PropertyContainer::PropertyName name)
 {
     if (name == "Window Type") {
-        setWindowType(Preferences::getInstance()->getWindowType());
+        auto type = Preferences::getInstance()->getWindowType();
+        SVDEBUG << "SpectrumLayer::preferenceChanged: Window type changed to "
+                << type << endl;
+        setWindowType(type);
         return;
     }
+}
+
+double
+SpectrumLayer::getBinForFrequency(double freq) const
+{
+    if (!m_sliceableModel) return 0;
+    double bin = (freq * getFFTSize()) / m_sliceableModel->getSampleRate();
+    // we assume the frequency of a bin corresponds to the centre of
+    // its visual range
+    bin += 0.5;
+    return bin;
+}
+
+double
+SpectrumLayer::getBinForX(const LayerGeometryProvider *v, double x) const
+{
+    if (!m_sliceableModel) return 0;
+    double bin = getBinForFrequency(getFrequencyForX(v, x));
+    return bin;
 }
 
 double
 SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 {
     if (!m_sliceableModel) return 0;
-    double bin = getBinForX(v, x);
+
+    double fmin = getFrequencyForBin(m_minbin);
+
+    if (m_binScale == LogBins && m_minbin == 0) {
+        // Avoid too much space going to the first bin, but do so in a
+        // way that usually avoids us shifting left/right as the
+        // window size or oversampling ratio change - i.e. base this
+        // on frequency rather than bin number unless we have a lot of
+        // very low-resolution content
+        fmin = getFrequencyForBin(0.8);
+        if (fmin > 6.0) fmin = 6.0;
+    }
+    
+    double fmax = getFrequencyForBin(m_maxbin);
+
+    double freq = getScalePointForX(v, x, fmin, fmax);
+    return freq;
+}
+
+double
+SpectrumLayer::getFrequencyForBin(double bin) const
+{
+    if (!m_sliceableModel) return 0;
     // we assume the frequency of a bin corresponds to the centre of
     // its visual range
     bin -= 0.5;
-    return (m_sliceableModel->getSampleRate() * bin) /
-        (m_sliceableModel->getHeight() * 2);
+    double freq = (bin * m_sliceableModel->getSampleRate()) / getFFTSize();
+    return freq;
+}
+
+double
+SpectrumLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
+{
+    if (!m_sliceableModel) return 0;
+    double x = getXForFrequency(v, getFrequencyForBin(bin));
+    return x;
 }
 
 double
 SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) const
 {
     if (!m_sliceableModel) return 0;
-    double bin = (freq * m_sliceableModel->getHeight() * 2) /
-        m_sliceableModel->getSampleRate();
-    // we want the centre of the bin range
-    bin += 0.5;
-    return getXForBin(v, bin);
+
+    double fmin = getFrequencyForBin(m_minbin);
+    if (m_binScale == LogBins && m_minbin == 0) {
+        // See comment in getFrequencyForX above
+        fmin = getFrequencyForBin(0.8);
+        if (fmin > 6.0) fmin = 6.0;
+    }
+    
+    double fmax = getFrequencyForBin(m_maxbin);
+
+    double x = getXForScalePoint(v, freq, fmin, fmax);
+    return x;
 }
 
 bool
@@ -427,13 +550,13 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     
     double fundamental = getFrequencyForX(v, cursorPos.x());
 
-    int hoffset = 2;
-    if (m_binScale == LogBins) hoffset = 13;
+    int hoffset = getHorizontalScaleHeight(v, paint) +
+        2 * paint.fontMetrics().height();
 
     PaintAssistant::drawVisibleText(v, paint,
                                     cursorPos.x() + 2,
                                     v->getPaintHeight() - 2 - hoffset,
-                                    QString("%1 Hz").arg(fundamental),
+                                    tr("%1 Hz").arg(fundamental),
                                     PaintAssistant::OutlinedText);
 
     if (Pitch::isFrequencyInMidiRange(fundamental)) {
@@ -447,10 +570,6 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     }
 
     double value = getValueForY(v, cursorPos.y());
-    double thresh = m_threshold;
-    double db = thresh;
-    if (value > 0.0) db = 10.0 * log10(value);
-    if (db < thresh) db = thresh;
 
     PaintAssistant::drawVisibleText(v, paint,
                        xorigin + 2,
@@ -458,11 +577,15 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                        QString("%1 V").arg(value),
                        PaintAssistant::OutlinedText);
 
-    PaintAssistant::drawVisibleText(v, paint,
-                       xorigin + 2,
-                       cursorPos.y() + 2 + paint.fontMetrics().ascent(),
-                       QString("%1 dBV").arg(db),
-                       PaintAssistant::OutlinedText);
+    if (value > m_threshold) {
+        double db = 10.0 * log10(value);
+        PaintAssistant::drawVisibleText(v, paint,
+                                        xorigin + 2,
+                                        cursorPos.y() + 2 +
+                                        paint.fontMetrics().ascent(),
+                                        QString("%1 dBV").arg(db),
+                                        PaintAssistant::OutlinedText);
+    }
     
     int harmonic = 2;
 
@@ -518,10 +641,10 @@ SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
     QString binstr;
     QString hzstr;
     int minfreq = int(lrint((minbin * m_sliceableModel->getSampleRate()) /
-                            m_windowSize));
+                            getFFTSize()));
     int maxfreq = int(lrint((std::max(maxbin, minbin)
                              * m_sliceableModel->getSampleRate()) /
-                            m_windowSize));
+                            getFFTSize()));
 
     if (maxbin != minbin) {
         binstr = tr("%1 - %2").arg(minbin+1).arg(maxbin+1);
@@ -602,10 +725,15 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     FFTModel *fft = dynamic_cast<FFTModel *>
         (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
 
-    double thresh = (pow(10, -6) / m_gain) * (m_windowSize / 2.0); // -60dB adj
+    double thresh = (pow(10, -6) / m_gain) * (getFFTSize() / 2.0); // -60dB adj
 
     int xorigin = getVerticalScaleWidth(v, false, paint) + 1;
     int scaleHeight = getHorizontalScaleHeight(v, paint);
+
+    QPoint localPos;
+    bool shouldIlluminate = v->shouldIlluminateLocalFeatures(this, localPos);
+
+//    cerr << "shouldIlluminate = " << shouldIlluminate << ", localPos = " << localPos.x() << "," << localPos.y() << endl;
 
     if (fft && m_showPeaks) {
 
@@ -624,7 +752,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         int peakminbin = 0;
         int peakmaxbin = fft->getHeight() - 1;
         double peakmaxfreq = Pitch::getFrequencyForPitch(128);
-        peakmaxbin = int(((peakmaxfreq * fft->getHeight() * 2) / fft->getSampleRate()));
+        peakmaxbin = int(((peakmaxfreq * fft->getHeight() * 2) /
+                          fft->getSampleRate()));
         
         FFTModel::PeakSet peaks = fft->getPeakFrequencies
             (FFTModel::MajorPitchAdaptivePeaks, col, peakminbin, peakmaxbin);
@@ -633,32 +762,73 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         getBiasCurve(curve);
         int cs = int(curve.size());
 
-        std::vector<double> values;
-        
-        for (int bin = 0; bin < fft->getHeight(); ++bin) {
-            double value = m_sliceableModel->getValueAt(col, bin);
-            if (bin < cs) value *= curve[bin];
-            values.push_back(value);
-        }
+        int px = -1;
 
+        int fuzz = ViewManager::scalePixelSize(3);
+        bool illuminatedSomething = false;
+        
         for (FFTModel::PeakSet::iterator i = peaks.begin();
              i != peaks.end(); ++i) {
 
+            double freq = i->second;
+            int x = int(lrint(getXForFrequency(v, freq)));
+            if (x == px) {
+                continue;
+            }
+            
             int bin = i->first;
             
 //            cerr << "bin = " << bin << ", thresh = " << thresh << ", value = " << fft->getMagnitudeAt(col, bin) << endl;
 
-            if (!fft->isOverThreshold(col, bin, float(thresh))) continue;
+            double value = fft->getValueAt(col, bin);
+            if (value < thresh) continue;
+            if (bin < cs) value *= curve[bin];
             
-            double freq = i->second;
-          
-            int x = int(lrint(getXForFrequency(v, freq)));
-
             double norm = 0.f;
-            (void)getYForValue(v, values[bin], norm); // don't need return value, need norm
+            // we need the norm here for colour map; the y coord is
+            // only used to pick a label height if illuminating the
+            // local point
+            double y = getYForValue(v, value, norm);
 
-            paint.setPen(mapper.map(norm));
+            QColor colour = mapper.map(norm);
+            
+            paint.setPen(QPen(colour, 1));
             paint.drawLine(x, 0, x, v->getPaintHeight() - scaleHeight - 1);
+
+            bool illuminateThis = false;
+            if (shouldIlluminate && !illuminatedSomething &&
+                std::abs(localPos.x() - x) <= fuzz) {
+                illuminateThis = true;
+            }
+
+            if (illuminateThis) {
+                int labelY = v->getPaintHeight() -
+                    getHorizontalScaleHeight(v, paint) -
+                    paint.fontMetrics().height() * 3;
+                QString text = tr("%1 Hz").arg(freq);
+                int lw = paint.fontMetrics().width(text);
+                int gap = ViewManager::scalePixelSize(3);
+                double half = double(gap)/2.0;
+                int labelX = x - lw - gap;
+                if (labelX < getVerticalScaleWidth(v, false, paint)) {
+                    labelX = x + gap;
+                }
+                PaintAssistant::drawVisibleText
+                    (v, paint, labelX, labelY,
+                     text, PaintAssistant::OutlinedText);
+                if (Pitch::isFrequencyInMidiRange(freq)) {
+                    QString pitchLabel = Pitch::getPitchLabelForFrequency(freq);
+                    PaintAssistant::drawVisibleText
+                        (v, paint,
+                         labelX, labelY + paint.fontMetrics().ascent() + gap,
+                         pitchLabel, PaintAssistant::OutlinedText);
+                }
+                paint.fillRect(QRectF(x - half, labelY + gap, gap, gap),
+                               colour);
+                illuminatedSomething = true;
+            }
+            
+            px = x;
         }
 
         paint.restore();
@@ -746,9 +916,11 @@ SpectrumLayer::toXml(QTextStream &stream,
 {
     QString s = QString("windowSize=\"%1\" "
                         "windowHopLevel=\"%2\" "
-                        "showPeaks=\"%3\" ")
+                        "oversampling=\"%3\" "
+                        "showPeaks=\"%4\" ")
         .arg(m_windowSize)
         .arg(m_windowHopLevel)
+        .arg(m_oversampling)
         .arg(m_showPeaks ? "true" : "false");
 
     SliceLayer::toXml(stream, indent, extraAttributes + " " + s);
@@ -766,6 +938,9 @@ SpectrumLayer::setProperties(const QXmlAttributes &attributes)
 
     int windowHopLevel = attributes.value("windowHopLevel").toUInt(&ok);
     if (ok) setWindowHopLevel(windowHopLevel);
+
+    int oversampling = attributes.value("oversampling").toUInt(&ok);
+    if (ok) setOversampling(oversampling);
 
     bool showPeaks = (attributes.value("showPeaks").trimmed() == "true");
     setShowPeaks(showPeaks);

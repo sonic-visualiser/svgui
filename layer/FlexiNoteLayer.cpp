@@ -439,7 +439,7 @@ FlexiNoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     }
 
     if (!usePoints.empty()) {
-        int fuzz = 2;
+        int fuzz = ViewManager::scalePixelSize(2);
         int px = v->getXForFrame(usePoints.begin()->frame);
         if ((px > x && px - x > fuzz) ||
             (px < x && x - px > fuzz + 1)) {

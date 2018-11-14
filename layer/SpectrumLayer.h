@@ -28,8 +28,6 @@
 #include <QColor>
 #include <QMutex>
 
-class FFTModel;
-
 class SpectrumLayer : public SliceLayer,
                       public HorizontalScaleProvider
 {
@@ -46,7 +44,7 @@ public:
                                      std::vector<QRect> &extents) const override;
     virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const override;
 
-    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const;
+    virtual int getHorizontalScaleHeight(LayerGeometryProvider *, QPainter &) const override;
     virtual void paintHorizontalScale(LayerGeometryProvider *, QPainter &, int xorigin) const;
     
     virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
@@ -90,11 +88,18 @@ public:
     void setWindowHopLevel(int level);
     int getWindowHopLevel() const { return m_windowHopLevel; }
 
+    void setOversampling(int oversampling);
+    int getOversampling() const;
+
+    int getFFTSize() const { return getWindowSize() * getOversampling(); }
+    
     void setWindowType(WindowType type);
     WindowType getWindowType() const { return m_windowType; }
-
+    
     void setShowPeaks(bool);
     bool getShowPeaks() const { return m_showPeaks; }
+
+    virtual bool needsTextLabelHeight() const { return true; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
@@ -114,12 +119,21 @@ protected:
     int                     m_windowSize;
     WindowType              m_windowType;
     int                     m_windowHopLevel;
+    int                     m_oversampling;
     bool                    m_showPeaks;
     mutable bool            m_newFFTNeeded;
 
     mutable QMutex m_fftMutex;
 
     void setupFFT();
+
+    virtual double getBinForFrequency(double freq) const;
+    virtual double getFrequencyForBin(double bin) const;
+    
+    virtual double getXForBin(const LayerGeometryProvider *, double bin)
+        const override;
+    virtual double getBinForX(const LayerGeometryProvider *, double x)
+        const override;
 
     virtual void getBiasCurve(BiasCurve &) const override;
     BiasCurve m_biasCurve;

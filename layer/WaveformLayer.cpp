@@ -783,7 +783,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
 
     // Horizontal axis along middle
     paint->setPen(QPen(midColour, 0));
-    paint->drawLine(x0, my, x1, my);
+    paint->drawLine(QPointF(x0, my + 0.5), QPointF(x1, my + 0.5));
 
     paintChannelScaleGuides(v, paint, rect, ch);
   
