@@ -529,13 +529,13 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     
     double fundamental = getFrequencyForX(v, cursorPos.x());
 
-    int hoffset = 2;
-    if (m_binScale == LogBins) hoffset = 13;
+    int hoffset = getHorizontalScaleHeight(v, paint) +
+        2 * paint.fontMetrics().height();
 
     PaintAssistant::drawVisibleText(v, paint,
                                     cursorPos.x() + 2,
                                     v->getPaintHeight() - 2 - hoffset,
-                                    QString("%1 Hz").arg(fundamental),
+                                    tr("%1 Hz").arg(fundamental),
                                     PaintAssistant::OutlinedText);
 
     if (Pitch::isFrequencyInMidiRange(fundamental)) {
@@ -549,10 +549,6 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     }
 
     double value = getValueForY(v, cursorPos.y());
-    double thresh = m_threshold;
-    double db = thresh;
-    if (value > 0.0) db = 10.0 * log10(value);
-    if (db < thresh) db = thresh;
 
     PaintAssistant::drawVisibleText(v, paint,
                        xorigin + 2,
@@ -560,11 +556,15 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                        QString("%1 V").arg(value),
                        PaintAssistant::OutlinedText);
 
-    PaintAssistant::drawVisibleText(v, paint,
-                       xorigin + 2,
-                       cursorPos.y() + 2 + paint.fontMetrics().ascent(),
-                       QString("%1 dBV").arg(db),
-                       PaintAssistant::OutlinedText);
+    if (value > m_threshold) {
+        double db = 10.0 * log10(value);
+        PaintAssistant::drawVisibleText(v, paint,
+                                        xorigin + 2,
+                                        cursorPos.y() + 2 +
+                                        paint.fontMetrics().ascent(),
+                                        QString("%1 dBV").arg(db),
+                                        PaintAssistant::OutlinedText);
+    }
     
     int harmonic = 2;
 
@@ -712,8 +712,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
     QPoint localPos;
     bool shouldIlluminate = v->shouldIlluminateLocalFeatures(this, localPos);
 
-    cerr << "shouldIlluminate = " << shouldIlluminate << ", localPos = " << localPos.x() << "," << localPos.y() << endl;
-    
+//    cerr << "shouldIlluminate = " << shouldIlluminate << ", localPos = " << localPos.x() << "," << localPos.y() << endl;
+
     if (fft && m_showPeaks) {
 
         // draw peak lines
@@ -743,7 +743,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
 
         int px = -1;
 
-        int fuzz = ViewManager::scalePixelSize(2);
+        int fuzz = ViewManager::scalePixelSize(3);
+        bool illuminatedSomething = false;
         
         for (FFTModel::PeakSet::iterator i = peaks.begin();
              i != peaks.end(); ++i) {
@@ -761,20 +762,51 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             double value = fft->getValueAt(col, bin);
             if (value < thresh) continue;
             if (bin < cs) value *= curve[bin];
-
-            bool highlightThis = false;
-            if (std::abs(localPos.x() - x) <= fuzz) {
-                highlightThis = true;
-                cerr << "should highlight this one (at " << x << ")" << endl;
-            }
             
             double norm = 0.f;
-            // don't need return value, need norm:            
-            (void)getYForValue(v, value, norm);
+            // we need the norm here for colour map; the y coord is
+            // only used to pick a label height if illuminating the
+            // local point
+            double y = getYForValue(v, value, norm);
 
-            paint.setPen(QPen(mapper.map(norm), 1));
+            QColor colour = mapper.map(norm);
+            
+            paint.setPen(QPen(colour, 1));
             paint.drawLine(x, 0, x, v->getPaintHeight() - scaleHeight - 1);
 
+            bool illuminateThis = false;
+            if (shouldIlluminate && !illuminatedSomething &&
+                std::abs(localPos.x() - x) <= fuzz) {
+                illuminateThis = true;
+            }
+
+            if (illuminateThis) {
+                int labelY = v->getPaintHeight() -
+                    getHorizontalScaleHeight(v, paint) -
+                    paint.fontMetrics().height() * 3;
+                QString text = tr("%1 Hz").arg(freq);
+                int lw = paint.fontMetrics().width(text);
+                int gap = ViewManager::scalePixelSize(3);
+                double half = double(gap)/2.0;
+                int labelX = x - lw - gap;
+                if (labelX < getVerticalScaleWidth(v, false, paint)) {
+                    labelX = x + gap;
+                }
+                PaintAssistant::drawVisibleText
+                    (v, paint, labelX, labelY,
+                     text, PaintAssistant::OutlinedText);
+                if (Pitch::isFrequencyInMidiRange(freq)) {
+                    QString pitchLabel = Pitch::getPitchLabelForFrequency(freq);
+                    PaintAssistant::drawVisibleText
+                        (v, paint,
+                         labelX, labelY + paint.fontMetrics().ascent() + gap,
+                         pitchLabel, PaintAssistant::OutlinedText);
+                }
+                paint.fillRect(QRectF(x - half, labelY + gap, gap, gap),
+                               colour);
+                illuminatedSomething = true;
+            }
+            
             px = x;
         }
 
