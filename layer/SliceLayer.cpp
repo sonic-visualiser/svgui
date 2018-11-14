@@ -204,24 +204,23 @@ SliceLayer::getXForScalePoint(const LayerGeometryProvider *v,
 {
     double x = 0;
 
-    p -= pmin;
-    if (p < 0) p = 0;
-
-    double extent = pmax - pmin;
-    if (extent < 0) extent = 0;
-
     int pw = v->getPaintWidth();
     int origin = m_xorigins[v->getId()];
     int w = pw - origin;
     if (w < 1) w = 1;
 
-    switch (m_binScale) {
+    if (p < pmin) p = pmin;
+    if (p > pmax) p = pmax;
+    
+    if (m_binScale == LinearBins) {
+        x = (w * (p - pmin)) / (pmax - pmin);
+    } else {
 
-    case LinearBins:
-        x = (w * p) / extent;
-        break;
+        if (m_binScale == InvertedLogBins) {
+            // stoopid
+            p = pmax - p;
+        }
         
-    case LogBins:
         // The 0.8 here is an awkward compromise. Our x-coord is
         // proportional to log of bin number, with the x-coord "of a
         // bin" being that of the left edge of the bin range. We can't
@@ -234,12 +233,33 @@ SliceLayer::getXForScalePoint(const LayerGeometryProvider *v,
         // as "a bit less than 1", so that most of it is visible but a
         // bit is tactfully cropped at the left edge so it doesn't
         // take up so much space.
-        x = (w * log10(p + 0.8)) / log10(extent + 0.8);
-        break;
+        const double origin = 0.8;
         
-    case InvertedLogBins:
-        x = w - (w * log10(extent - p - 1)) / log10(extent);
-        break;
+        // sometimes we are called with a pmin/pmax range that begins
+        // before 0: in that situation, we shift everything along by
+        // the difference between 0 and pmin before doing any other
+        // calculations
+        double reqdshift = 0.0;
+        if (pmin < 0) reqdshift = -pmin;
+
+        double pminlog = log10(pmin + reqdshift + origin);
+        double pmaxlog = log10(pmax + reqdshift + origin);
+        double plog = log10(p + reqdshift + origin);
+        x = (w * (plog - pminlog)) / (pmaxlog - pminlog);
+
+/*        
+        cerr << "getXForScalePoint(" << p << "): pmin = " << pmin
+             << ", pmax = " << pmax << ", w = " << w
+             << ", reqdshift = " << reqdshift
+             << ", pminlog = " << pminlog << ", pmaxlog = " << pmaxlog
+             << ", plog = " << plog 
+             << " -> x = " << x << endl;
+*/
+
+        if (m_binScale == InvertedLogBins) {
+            // still stoopid
+            x = w - x;
+        }
     }
     
     return x + origin;
@@ -257,9 +277,6 @@ SliceLayer::getScalePointForX(const LayerGeometryProvider *v,
 {
     double p = 0;
 
-    double extent = pmax - pmin;
-    if (extent < 0) extent = 0;
-
     int pw = v->getPaintWidth();
     int origin = m_xorigins[v->getId()];
 
@@ -270,24 +287,33 @@ SliceLayer::getScalePointForX(const LayerGeometryProvider *v,
     if (x < 0) x = 0;
 
     double eps = 1e-10;
-    
-    switch (m_binScale) {
 
-    case LinearBins:
-        p = (x * extent) / w + eps;
-        break;
-        
-    case LogBins:
-        // See comment in getXForScalePoint
-        p = pow(10.0, (x * log10(extent + 0.8)) / w) - 0.8 + eps;
-        break;
+    if (m_binScale == LinearBins) {
+        p = pmin + eps + (x * (pmax - pmin)) / w;
+    } else {
 
-    case InvertedLogBins:
-        p = extent + 1 - pow(10.0, (log10(extent) * (w - x)) / double(w)) + eps;
-        break;
+        if (m_binScale == InvertedLogBins) {
+            x = w - x;
+        }
+
+        // See comments in getXForScalePoint
+
+        const double origin = 0.8;
+        double reqdshift = 0.0;
+        if (pmin < 0) reqdshift = -pmin;
+
+        double pminlog = log10(pmin + reqdshift + origin);
+        double pmaxlog = log10(pmax + reqdshift + origin);
+
+        double plog = pminlog + eps + (x * (pmaxlog - pminlog)) / w;
+        p = pow(10.0, plog) - reqdshift - origin;
+
+        if (m_binScale == InvertedLogBins) {
+            p = pmax - p;
+        }
     }
 
-    return p + pmin;
+    return p;
 }
 
 double

@@ -389,9 +389,22 @@ double
 SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 {
     if (!m_sliceableModel) return 0;
-    double freq = getScalePointForX(v, x,
-                                    getFrequencyForBin(m_minbin),
-                                    getFrequencyForBin(m_maxbin));
+
+    double fmin = getFrequencyForBin(m_minbin);
+
+    if (m_binScale == LogBins && m_minbin == 0) {
+        // Avoid too much space going to the first bin, but do so in a
+        // way that usually avoids us shifting left/right as the
+        // window size or oversampling ratio change - i.e. base this
+        // on frequency rather than bin number unless we have a lot of
+        // very low-resolution content
+        fmin = getFrequencyForBin(0.8);
+        if (fmin > 6.0) fmin = 6.0;
+    }
+    
+    double fmax = getFrequencyForBin(m_maxbin);
+
+    double freq = getScalePointForX(v, x, fmin, fmax);
     return freq;
 }
 
@@ -418,9 +431,17 @@ double
 SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) const
 {
     if (!m_sliceableModel) return 0;
-    double x = getXForScalePoint(v, freq,
-                                 getFrequencyForBin(m_minbin),
-                                 getFrequencyForBin(m_maxbin));
+
+    double fmin = getFrequencyForBin(m_minbin);
+    if (m_binScale == LogBins && m_minbin == 0) {
+        // See comment in getFrequencyForX above
+        fmin = getFrequencyForBin(0.8);
+        if (fmin > 6.0) fmin = 6.0;
+    }
+    
+    double fmax = getFrequencyForBin(m_maxbin);
+
+    double x = getXForScalePoint(v, freq, fmin, fmax);
     return x;
 }
 
