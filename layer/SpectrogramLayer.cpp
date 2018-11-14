@@ -698,7 +698,6 @@ SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
         return;
     }
     if (name == "Spectrogram Y Smoothing") {
-        setWindowSize(m_windowSize);
         invalidateRenderers();
         invalidateMagnitudes();
         emit layerParametersChanged();
@@ -783,21 +782,6 @@ int
 SpectrogramLayer::getOversampling() const
 {
     return m_oversampling;
-    /*!!!
-    if (m_binDisplay != BinDisplay::AllBins) {
-        return 1;
-    }
-
-    Preferences::SpectrogramSmoothing smoothing = 
-        Preferences::getInstance()->getSpectrogramSmoothing();
-    
-    if (smoothing == Preferences::NoSpectrogramSmoothing ||
-        smoothing == Preferences::SpectrogramInterpolated) {
-        return 1;
-    }
-
-    return 4;
-    */
 }
 
 void
@@ -1556,8 +1540,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         Preferences::SpectrogramSmoothing smoothing = 
             Preferences::getInstance()->getSpectrogramSmoothing();
         params.interpolate = 
-            (smoothing == Preferences::SpectrogramInterpolated ||
-             smoothing == Preferences::SpectrogramZeroPaddedAndInterpolated);
+            (smoothing != Preferences::NoSpectrogramSmoothing);
 
         m_renderers[viewId] = new Colour3DPlotRenderer(sources, params);
 

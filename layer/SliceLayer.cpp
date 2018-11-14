@@ -209,9 +209,13 @@ SliceLayer::getXForScalePoint(const LayerGeometryProvider *v,
     int w = pw - origin;
     if (w < 1) w = 1;
 
+    if (pmax <= pmin) {
+        pmax = pmin + 1.0;
+    }
+    
     if (p < pmin) p = pmin;
     if (p > pmax) p = pmax;
-    
+
     if (m_binScale == LinearBins) {
         x = (w * (p - pmin)) / (pmax - pmin);
     } else {
@@ -246,16 +250,14 @@ SliceLayer::getXForScalePoint(const LayerGeometryProvider *v,
         double pmaxlog = log10(pmax + reqdshift + origin);
         double plog = log10(p + reqdshift + origin);
         x = (w * (plog - pminlog)) / (pmaxlog - pminlog);
-
-/*        
+        /*
         cerr << "getXForScalePoint(" << p << "): pmin = " << pmin
              << ", pmax = " << pmax << ", w = " << w
              << ", reqdshift = " << reqdshift
              << ", pminlog = " << pminlog << ", pmaxlog = " << pmaxlog
              << ", plog = " << plog 
              << " -> x = " << x << endl;
-*/
-
+        */
         if (m_binScale == InvertedLogBins) {
             // still stoopid
             x = w - x;
@@ -287,6 +289,10 @@ SliceLayer::getScalePointForX(const LayerGeometryProvider *v,
     if (x < 0) x = 0;
 
     double eps = 1e-10;
+
+    if (pmax <= pmin) {
+        pmax = pmin + 1.0;
+    }
 
     if (m_binScale == LinearBins) {
         p = pmin + eps + (x * (pmax - pmin)) / w;

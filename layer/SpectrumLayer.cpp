@@ -122,6 +122,11 @@ SpectrumLayer::setupFFT()
                                     getWindowIncrement(),
                                     fftSize);
 
+    if (m_minbin == 0 && m_maxbin == 0) {
+        m_minbin = 1;
+        m_maxbin = newFFT->getHeight();
+    }
+    
     setSliceableModel(newFFT);
 
     m_biasCurve.clear();
@@ -433,6 +438,7 @@ SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) con
     if (!m_sliceableModel) return 0;
 
     double fmin = getFrequencyForBin(m_minbin);
+
     if (m_binScale == LogBins && m_minbin == 0) {
         // See comment in getFrequencyForX above
         fmin = getFrequencyForBin(0.8);
@@ -440,8 +446,8 @@ SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) con
     }
     
     double fmax = getFrequencyForBin(m_maxbin);
-
     double x = getXForScalePoint(v, freq, fmin, fmax);
+    
     return x;
 }
 
