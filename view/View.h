@@ -377,6 +377,7 @@ public:
     int getPaintHeight() const { return getPaintRect().height(); }
 
     double scaleSize(double size) const;
+    int scalePixelSize(int size) const;
     double scalePenWidth(double width) const;
     QPen scalePen(QPen pen) const;
 

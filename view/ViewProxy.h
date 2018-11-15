@@ -156,6 +156,13 @@ public:
     }
 
     /**
+     * Integer version of scaleSize.
+     */
+    virtual int scalePixelSize(int size) const {
+        return m_view->scalePixelSize(size * m_scaleFactor);
+    }
+    
+    /**
      * Scale up pen width for a hi-dpi display without pixel doubling.
      * This is like scaleSize except that it also scales the
      * zero-width case.

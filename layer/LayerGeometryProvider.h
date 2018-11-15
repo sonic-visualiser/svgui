@@ -180,6 +180,7 @@ public:
     virtual void updatePaintRect(QRect r) = 0;
 
     virtual double scaleSize(double size) const = 0;
+    virtual int scalePixelSize(int size) const = 0;
     virtual double scalePenWidth(double width) const = 0;
     virtual QPen scalePen(QPen pen) const = 0;
     

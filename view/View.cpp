@@ -238,7 +238,7 @@ View::getTextLabelHeight(const Layer *layer, QPainter &paint) const
         }
     }
 
-    int y = scaleSize(15) + paint.fontMetrics().ascent();
+    int y = scalePixelSize(15) + paint.fontMetrics().ascent();
 
     for (std::map<int, Layer *>::const_iterator i = sortedLayers.begin();
          i != sortedLayers.end(); ++i) {
@@ -674,7 +674,7 @@ View::addLayer(Layer *layer)
     QPushButton *cancel = new QPushButton(this);
     cancel->setIcon(IconLoader().load("cancel"));
     cancel->setFlat(true);
-    int scaled20 = scaleSize(20);
+    int scaled20 = scalePixelSize(20);
     cancel->setFixedSize(QSize(scaled20, scaled20));
     connect(cancel, SIGNAL(clicked()), this, SLOT(cancelClicked()));
     
@@ -1620,6 +1620,15 @@ View::scaleSize(double size) const
     return size * ratio;
 }
 
+int
+View::scalePixelSize(int size) const
+{
+    double d = scaleSize(size);
+    int i = int(d + 0.5);
+    if (size != 0 && i == 0) i = 1;
+    return i;
+}
+
 double
 View::scalePenWidth(double width) const 
 {
@@ -1792,7 +1801,7 @@ View::checkProgress(void *object)
                     timer->start();
                 }
 
-                int scaled20 = scaleSize(20);
+                int scaled20 = scalePixelSize(20);
 
                 cancel->move(0, ph - pb->height()/2 - scaled20/2);
                 cancel->show();
