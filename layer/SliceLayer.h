@@ -155,7 +155,24 @@ protected:
 
     virtual int getDefaultColourHint(bool dark, bool &impose);
 
+    // Determine how the bins are lined up
+    // horizontally. BinsCentredOnScalePoint means we operate like a
+    // spectrum, where a bin maps to a specific frequency, and so the
+    // bin should be visually centred on the scale point that
+    // corresponds to that frequency. BinsSpanScalePoints means we
+    // have numbered or labelled bins that are not mapped to a
+    // continuous scale, like a typical chromagram output, and so bin
+    // N spans from scale point N to N+1.  This is a fundamental
+    // quality of the class or input data, not a user-configurable
+    // property.
+    //
+    enum BinAlignment {
+        BinsCentredOnScalePoints,
+        BinsSpanScalePoints
+    };
+
     const DenseThreeDimensionalModel *m_sliceableModel;
+    BinAlignment                      m_binAlignment;
     int                               m_colourMap;
     bool                              m_colourInverted;
     EnergyScale                       m_energyScale;

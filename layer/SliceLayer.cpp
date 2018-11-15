@@ -33,6 +33,7 @@
 
 SliceLayer::SliceLayer() :
     m_sliceableModel(0),
+    m_binAlignment(BinsSpanScalePoints),
     m_colourMap(int(ColourMapper::Ice)),
     m_colourInverted(false),
     m_energyScale(dBScale),
@@ -120,8 +121,13 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
     maxbin = 0;
     if (!m_sliceableModel) return "";
 
-    minbin = int(getBinForX(v, p.x()));
-    maxbin = int(getBinForX(v, p.x() + 1));
+    if (m_binAlignment == BinsSpanScalePoints) {
+        minbin = int(getBinForX(v, p.x()));
+        maxbin = int(getBinForX(v, p.x() + 1));
+    } else {
+        minbin = int(getBinForX(v, p.x()) + 0.5);
+        maxbin = int(getBinForX(v, p.x() + 1) + 0.5);
+    }        
 
     int mh = m_sliceableModel->getHeight();
     if (minbin >= mh) minbin = mh - 1;
@@ -449,9 +455,11 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     } else {
         // Similarly, if there are very many bins here, we use a
         // thinner pen
-        QPen pen(getBaseQColor(), 1);
+        QPen pen;
         if (mh < 10000) {
-            pen = PaintAssistant::scalePen(pen);
+            pen = PaintAssistant::scalePen(QPen(getBaseQColor(), 0.8));
+        } else {
+            pen = QPen(getBaseQColor(), 1);
         }
         paint.setPen(pen);
     }
@@ -530,21 +538,30 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         }
     }
 
-    double nx = getXForBin(v, bin0);
-
     ColourMapper mapper(m_colourMap, m_colourInverted, 0, 1);
 
     double ytop = 0, ybottom = 0;
     bool firstBinOfPixel = true;
 
     QColor prevColour = v->getBackground();
-    double prevPx = 0;
     double prevYtop = 0;
     
+    double xleft = -1, xmiddle = -1, xright = -1;
+    double prevXmiddle = 0;
+
     for (int bin = 0; bin < mh; ++bin) {
 
-        double x = nx;
-        nx = getXForBin(v, bin + bin0 + 1);
+        if (m_binAlignment == BinsSpanScalePoints) {
+            if (xright >= 0) xleft = xright; // previous value of
+            else xleft = getXForBin(v, bin0 + bin);
+            xmiddle = getXForBin(v, bin0 + bin + 0.5);
+            xright = getXForBin(v, bin0 + bin + 1);
+        } else {
+            if (xright >= 0) xleft = xright; // previous value of
+            else xleft = getXForBin(v, bin0 + bin - 0.5);
+            xmiddle = getXForBin(v, bin0 + bin);
+            xright = getXForBin(v, bin0 + bin + 0.5);
+        }
 
         double value = m_values[bin];
         double norm = 0.0;
@@ -557,43 +574,41 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             ybottom = y;
         }
 
-        if (int(nx) != int(x) || bin+1 == mh) {
+        if (int(xright) != int(xleft) || bin+1 == mh) {
 
             if (m_plotStyle == PlotLines) {
 
-                double px = (x + nx) / 2;
-                
                 if (bin == 0) {
-                    path.moveTo(px, y);
+                    path.moveTo(xmiddle, y);
                 } else {
                     if (ytop != ybottom) {
-                        path.lineTo(px, ybottom);
-                        path.lineTo(px, ytop);
-                        path.moveTo(px, ybottom);
+                        path.lineTo(xmiddle, ybottom);
+                        path.lineTo(xmiddle, ytop);
+                        path.moveTo(xmiddle, ybottom);
                     } else {
-                        path.lineTo(px, ytop);
+                        path.lineTo(xmiddle, ytop);
                     }
                 }
 
             } else if (m_plotStyle == PlotSteps) {
 
                 if (bin == 0) {
-                    path.moveTo(x, y);
+                    path.moveTo(xleft, y);
                 } else {
-                    path.lineTo(x, ytop);
+                    path.lineTo(xleft, ytop);
                 }
-                path.lineTo(nx, ytop);
+                path.lineTo(xright, ytop);
 
             } else if (m_plotStyle == PlotBlocks) {
 
                 // work in pixel coords here, as we don't want the
                 // vertical edges to be antialiased
 
-                path.moveTo(QPoint(int(x), int(yorigin)));
-                path.lineTo(QPoint(int(x), int(ytop)));
-                path.lineTo(QPoint(int(nx), int(ytop)));
-                path.lineTo(QPoint(int(nx), int(yorigin)));
-                path.lineTo(QPoint(int(x), int(yorigin)));
+                path.moveTo(QPoint(int(xleft), int(yorigin)));
+                path.lineTo(QPoint(int(xleft), int(ytop)));
+                path.lineTo(QPoint(int(xright), int(ytop)));
+                path.lineTo(QPoint(int(xright), int(yorigin)));
+                path.lineTo(QPoint(int(xleft), int(yorigin)));
 
             } else if (m_plotStyle == PlotFilledBlocks) {
 
@@ -603,45 +618,44 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                 // work in pixel coords here, as we don't want the
                 // vertical edges to be antialiased
 
-                if (nx > x + 1) {
+                if (xright > xleft + 1) {
                 
-                    double px = (x + nx) / 2;
-
                     QVector<QPoint> pp;
                     
                     if (bin > 0) {
                         paint.setBrush(prevColour);
                         pp.clear();
-                        pp << QPoint(int(prevPx), int(yorigin));
-                        pp << QPoint(int(prevPx), int(prevYtop));
-                        pp << QPoint(int((px + prevPx) / 2),
+                        pp << QPoint(int(prevXmiddle), int(yorigin));
+                        pp << QPoint(int(prevXmiddle), int(prevYtop));
+                        pp << QPoint(int((xmiddle + prevXmiddle) / 2),
                                      int((ytop + prevYtop) / 2));
-                        pp << QPoint(int((px + prevPx) / 2),
+                        pp << QPoint(int((xmiddle + prevXmiddle) / 2),
                                      int(yorigin));
                         paint.drawConvexPolygon(QPolygon(pp));
 
                         paint.setBrush(c);
                         pp.clear();
-                        pp << QPoint(int((px + prevPx) / 2),
+                        pp << QPoint(int((xmiddle + prevXmiddle) / 2),
                                      int(yorigin));
-                        pp << QPoint(int((px + prevPx) / 2),
+                        pp << QPoint(int((xmiddle + prevXmiddle) / 2),
                                      int((ytop + prevYtop) / 2));
-                        pp << QPoint(int(px), int(ytop));
-                        pp << QPoint(int(px), int(yorigin));
+                        pp << QPoint(int(xmiddle), int(ytop));
+                        pp << QPoint(int(xmiddle), int(yorigin));
                         paint.drawConvexPolygon(QPolygon(pp));
                     }
 
-                    prevPx = px;
                     prevColour = c;
                     prevYtop = ytop;
 
                 } else {
                     
-                    paint.fillRect(QRect(int(x), int(ytop),
-                                         int(nx) - int(x),
+                    paint.fillRect(QRect(int(xleft), int(ytop),
+                                         int(xright) - int(xleft),
                                          int(yorigin) - int(ytop)),
                                    c);
                 }
+
+                prevXmiddle = xmiddle;
             }
 
             firstBinOfPixel = true;

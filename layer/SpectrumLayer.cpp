@@ -43,6 +43,8 @@ SpectrumLayer::SpectrumLayer() :
     m_showPeaks(false),
     m_newFFTNeeded(true)
 {
+    m_binAlignment = BinsCentredOnScalePoints;
+    
     Preferences *prefs = Preferences::getInstance();
     connect(prefs, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
             this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
@@ -126,7 +128,7 @@ SpectrumLayer::setupFFT()
         m_minbin = 1;
         m_maxbin = newFFT->getHeight();
     }
-    
+
     setSliceableModel(newFFT);
 
     m_biasCurve.clear();
@@ -296,13 +298,19 @@ SpectrumLayer::setWindowSize(int ws)
     SVDEBUG << "setWindowSize: from " << m_windowSize
             << " to " << ws << ": updating min and max bins from "
             << m_minbin << " and " << m_maxbin << " to ";
-    
+    /*
     m_minbin = int(round((double(m_minbin) / m_windowSize) * ws));
+    */
     m_maxbin = int(round((double(m_maxbin) / m_windowSize) * ws));
+
+    m_windowSize = ws;
+
+    int h = getFFTSize() / 2 + 1;
+    if (m_minbin > h) m_minbin = h;
+    if (m_maxbin > h) m_maxbin = h;
 
     SVDEBUG << m_minbin << " and " << m_maxbin << endl;
 
-    m_windowSize = ws;
     m_newFFTNeeded = true;
     emit layerParametersChanged();
 }
@@ -333,13 +341,19 @@ SpectrumLayer::setOversampling(int oversampling)
     SVDEBUG << "setOversampling: from " << m_oversampling
             << " to " << oversampling << ": updating min and max bins from "
             << m_minbin << " and " << m_maxbin << " to ";
-    
+/*    
     m_minbin = int(round((double(m_minbin) / m_oversampling) * oversampling));
+*/
     m_maxbin = int(round((double(m_maxbin) / m_oversampling) * oversampling));
+
+    m_oversampling = oversampling;
+
+    int h = getFFTSize() / 2 + 1;
+    if (m_minbin > h) m_minbin = h;
+    if (m_maxbin > h) m_maxbin = h;
 
     SVDEBUG << m_minbin << " and " << m_maxbin << endl;
     
-    m_oversampling = oversampling;
     m_newFFTNeeded = true;
     
     emit layerParametersChanged();
@@ -376,9 +390,6 @@ SpectrumLayer::getBinForFrequency(double freq) const
 {
     if (!m_sliceableModel) return 0;
     double bin = (freq * getFFTSize()) / m_sliceableModel->getSampleRate();
-    // we assume the frequency of a bin corresponds to the centre of
-    // its visual range
-    bin += 0.5;
     return bin;
 }
 
@@ -396,17 +407,6 @@ SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
     if (!m_sliceableModel) return 0;
 
     double fmin = getFrequencyForBin(m_minbin);
-
-    if (m_binScale == LogBins && m_minbin == 0) {
-        // Avoid too much space going to the first bin, but do so in a
-        // way that usually avoids us shifting left/right as the
-        // window size or oversampling ratio change - i.e. base this
-        // on frequency rather than bin number unless we have a lot of
-        // very low-resolution content
-        fmin = getFrequencyForBin(0.8);
-        if (fmin > 6.0) fmin = 6.0;
-    }
-    
     double fmax = getFrequencyForBin(m_maxbin);
 
     double freq = getScalePointForX(v, x, fmin, fmax);
@@ -417,9 +417,6 @@ double
 SpectrumLayer::getFrequencyForBin(double bin) const
 {
     if (!m_sliceableModel) return 0;
-    // we assume the frequency of a bin corresponds to the centre of
-    // its visual range
-    bin -= 0.5;
     double freq = (bin * m_sliceableModel->getSampleRate()) / getFFTSize();
     return freq;
 }
@@ -438,13 +435,6 @@ SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) con
     if (!m_sliceableModel) return 0;
 
     double fmin = getFrequencyForBin(m_minbin);
-
-    if (m_binScale == LogBins && m_minbin == 0) {
-        // See comment in getFrequencyForX above
-        fmin = getFrequencyForBin(0.8);
-        if (fmin > 6.0) fmin = 6.0;
-    }
-    
     double fmax = getFrequencyForBin(m_maxbin);
     double x = getXForScalePoint(v, freq, fmin, fmax);
     
