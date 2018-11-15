@@ -41,7 +41,8 @@ SpectrumLayer::SpectrumLayer() :
     m_windowHopLevel(3),
     m_oversampling(1),
     m_showPeaks(false),
-    m_newFFTNeeded(true)
+    m_newFFTNeeded(true),
+    m_freqOfMinBin(0.0)
 {
     m_binAlignment = BinsCentredOnScalePoints;
     
@@ -126,6 +127,8 @@ SpectrumLayer::setupFFT()
 
     if (m_minbin == 0 && m_maxbin == 0) {
         m_minbin = 1;
+        m_freqOfMinBin = double(m_minbin * newFFT->getSampleRate())
+            / getFFTSize();
         m_maxbin = newFFT->getHeight();
     }
 
@@ -133,7 +136,9 @@ SpectrumLayer::setupFFT()
 
     m_biasCurve.clear();
     for (int i = 0; i < fftSize; ++i) {
-        m_biasCurve.push_back(1.f / (float(fftSize)/2.f));
+        // Scale by the window size, not the FFT size, because we
+        // don't want to scale down by all the zero bins
+        m_biasCurve.push_back(1.f / (float(m_windowSize)/2.f));
     }
 
     m_newFFTNeeded = false;
@@ -298,12 +303,12 @@ SpectrumLayer::setWindowSize(int ws)
     SVDEBUG << "setWindowSize: from " << m_windowSize
             << " to " << ws << ": updating min and max bins from "
             << m_minbin << " and " << m_maxbin << " to ";
-    /*
-    m_minbin = int(round((double(m_minbin) / m_windowSize) * ws));
-    */
-    m_maxbin = int(round((double(m_maxbin) / m_windowSize) * ws));
 
+    int previousWs = m_windowSize;
     m_windowSize = ws;
+    
+    m_minbin = int(round(getBinForFrequency(m_freqOfMinBin)));
+    m_maxbin = int(round((double(m_maxbin) / previousWs) * m_windowSize));
 
     int h = getFFTSize() / 2 + 1;
     if (m_minbin > h) m_minbin = h;
@@ -341,12 +346,13 @@ SpectrumLayer::setOversampling(int oversampling)
     SVDEBUG << "setOversampling: from " << m_oversampling
             << " to " << oversampling << ": updating min and max bins from "
             << m_minbin << " and " << m_maxbin << " to ";
-/*    
-    m_minbin = int(round((double(m_minbin) / m_oversampling) * oversampling));
-*/
-    m_maxbin = int(round((double(m_maxbin) / m_oversampling) * oversampling));
 
+    int previousOversampling = m_oversampling;
     m_oversampling = oversampling;
+    
+    m_minbin = int(round(getBinForFrequency(m_freqOfMinBin)));
+    m_maxbin = int(round((double(m_maxbin) / previousOversampling) *
+                         m_oversampling));
 
     int h = getFFTSize() / 2 + 1;
     if (m_minbin > h) m_minbin = h;
@@ -355,7 +361,6 @@ SpectrumLayer::setOversampling(int oversampling)
     SVDEBUG << m_minbin << " and " << m_maxbin << endl;
     
     m_newFFTNeeded = true;
-    
     emit layerParametersChanged();
 }
 
@@ -383,6 +388,16 @@ SpectrumLayer::preferenceChanged(PropertyContainer::PropertyName name)
         setWindowType(type);
         return;
     }
+}
+
+bool
+SpectrumLayer::setDisplayExtents(double min, double max)
+{
+    bool result = SliceLayer::setDisplayExtents(min, max);
+    if (result) {
+        m_freqOfMinBin = getFrequencyForBin(m_minbin);
+    }
+    return result;
 }
 
 double

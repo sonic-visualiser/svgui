@@ -1534,7 +1534,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
 
         if (m_colourScale != ColourScaleType::Phase &&
             m_normalization != ColumnNormalization::Hybrid) {
-            params.scaleFactor *= 2.f / float(getFFTSize());
+            params.scaleFactor *= 2.f / float(getWindowSize());
         }
 
         Preferences::SpectrogramSmoothing smoothing = 

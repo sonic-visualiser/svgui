@@ -1203,7 +1203,23 @@ SliceLayer::setDisplayExtents(double min, double max)
 
     m_minbin = int(lrint(min));
     m_maxbin = int(lrint(max));
-    
+
+    if (m_minbin < 0) {
+        m_minbin = 0;
+    }
+    if (m_maxbin < 0) {
+        m_maxbin = 0;
+    }
+    if (m_minbin > m_sliceableModel->getHeight()) {
+        m_minbin = m_sliceableModel->getHeight();
+    }
+    if (m_maxbin > m_sliceableModel->getHeight()) {
+        m_maxbin = m_sliceableModel->getHeight();
+    }
+    if (m_maxbin < m_minbin) {
+        m_maxbin = m_minbin;
+    }
+
     emit layerParametersChanged();
     return true;
 }
@@ -1238,14 +1254,9 @@ SliceLayer::setVerticalZoomStep(int step)
     int dist = m_sliceableModel->getHeight() - step;
     if (dist < 1) dist = 1;
     double centre = m_minbin + (m_maxbin - m_minbin) / 2.0;
-    m_minbin = int(lrint(centre - dist/2.0));
-    if (m_minbin < 0) m_minbin = 0;
-    m_maxbin = m_minbin + dist;
-    if (m_maxbin > m_sliceableModel->getHeight()) m_maxbin = m_sliceableModel->getHeight();
-
-//    SVDEBUG << "SliceLayer::setVerticalZoomStep(" <<step <<"):  after: minbin = " << m_minbin << ", maxbin = " << m_maxbin << endl;
-    
-    emit layerParametersChanged();
+    int minbin = int(lrint(centre - dist/2.0));
+    int maxbin = minbin + dist;
+    setDisplayExtents(minbin, maxbin);
 }
 
 RangeMapper *

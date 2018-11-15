@@ -68,6 +68,8 @@ public:
     virtual void setProperty(const PropertyName &, int value) override;
     virtual void setProperties(const QXmlAttributes &) override;
 
+    virtual bool setDisplayExtents(double min, double max) override;
+    
     virtual bool getXScaleValue(const LayerGeometryProvider *v, int x,
                                 double &value, QString &unit) const override;
 
@@ -122,6 +124,10 @@ protected:
     int                     m_oversampling;
     bool                    m_showPeaks;
     mutable bool            m_newFFTNeeded;
+
+    double                  m_freqOfMinBin; // used to ensure accurate
+                                            // alignment when changing
+                                            // fft size
 
     mutable QMutex m_fftMutex;
 
