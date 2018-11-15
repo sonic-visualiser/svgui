@@ -143,6 +143,37 @@ public:
                        r.width() / m_scaleFactor,
                        r.height() / m_scaleFactor);
     }
+
+    /**
+     * Scale up a size in pixels for a hi-dpi display without pixel
+     * doubling. This is like ViewManager::scalePixelSize, but taking
+     * and returning floating-point values rather than integer
+     * pixels. It is also a little more conservative - it never
+     * shrinks the size, it can only increase or leave it unchanged.
+     */
+    virtual double scaleSize(double size) const {
+        return m_view->scaleSize(size * m_scaleFactor);
+    }
+
+    /**
+     * Scale up pen width for a hi-dpi display without pixel doubling.
+     * This is like scaleSize except that it also scales the
+     * zero-width case.
+     */
+    virtual double scalePenWidth(double width) const {
+        if (width <= 0) { // zero-width pen, produce a scaled one-pixel pen
+            width = 1;
+        }
+        width *= sqrt(double(m_scaleFactor));
+        return m_view->scalePenWidth(width);
+    }
+
+    /**
+     * Apply scalePenWidth to a pen.
+     */
+    virtual QPen scalePen(QPen pen) const {
+        return QPen(pen.color(), scalePenWidth(pen.width()));
+    }
     
     virtual View *getView() { return m_view; }
     virtual const View *getView() const { return m_view; }

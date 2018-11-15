@@ -457,7 +457,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         // thinner pen
         QPen pen;
         if (mh < 10000) {
-            pen = PaintAssistant::scalePen(QPen(getBaseQColor(), 0.8));
+            pen = v->scalePen(QPen(getBaseQColor(), 0.8));
         } else {
             pen = QPen(getBaseQColor(), 1);
         }

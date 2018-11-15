@@ -376,6 +376,10 @@ public:
     int getPaintWidth() const { return getPaintRect().width(); }
     int getPaintHeight() const { return getPaintRect().height(); }
 
+    double scaleSize(double size) const;
+    double scalePenWidth(double width) const;
+    QPen scalePen(QPen pen) const;
+
     typedef std::set<Model *> ModelSet;
     ModelSet getModels();
 

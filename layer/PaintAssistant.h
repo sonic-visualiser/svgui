@@ -47,27 +47,6 @@ public:
     static void drawVisibleText(const LayerGeometryProvider *,
                                 QPainter &p, int x, int y,
                                 QString text, TextStyle style);
-
-    /**
-     * Scale up a size in pixels for a hi-dpi display without pixel
-     * doubling. This is like ViewManager::scalePixelSize, but taking
-     * and returning floating-point values rather than integer
-     * pixels. It is also a little more conservative - it never
-     * shrinks the size, it can only increase or leave it unchanged.
-     */
-    static double scaleSize(double size);
-
-    /**
-     * Scale up pen width for a hi-dpi display without pixel doubling.
-     * This is like scaleSize except that it also scales the
-     * zero-width case.
-     */
-    static double scalePenWidth(double width);
-
-    /**
-     * Apply scalePenWidth to a pen.
-     */
-    static QPen scalePen(QPen pen);
 };
 
 #endif

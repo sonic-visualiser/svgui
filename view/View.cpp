@@ -238,7 +238,7 @@ View::getTextLabelHeight(const Layer *layer, QPainter &paint) const
         }
     }
 
-    int y = ViewManager::scalePixelSize(15) + paint.fontMetrics().ascent();
+    int y = scaleSize(15) + paint.fontMetrics().ascent();
 
     for (std::map<int, Layer *>::const_iterator i = sortedLayers.begin();
          i != sortedLayers.end(); ++i) {
@@ -674,7 +674,7 @@ View::addLayer(Layer *layer)
     QPushButton *cancel = new QPushButton(this);
     cancel->setIcon(IconLoader().load("cancel"));
     cancel->setFlat(true);
-    int scaled20 = ViewManager::scalePixelSize(20);
+    int scaled20 = scaleSize(20);
     cancel->setFixedSize(QSize(scaled20, scaled20));
     connect(cancel, SIGNAL(clicked()), this, SLOT(cancelClicked()));
     
@@ -1593,6 +1593,49 @@ View::getZoomLevelIndex(ZoomLevel z) const
     return n;
 }
 
+double
+View::scaleSize(double size) const
+{
+    static double ratio = 0.0;
+
+    if (ratio == 0.0) {
+        double baseEm;
+#ifdef Q_OS_MAC
+        baseEm = 17.0;
+#else
+        baseEm = 15.0;
+#endif
+        double em = QFontMetrics(QFont()).height();
+        ratio = em / baseEm;
+
+        SVDEBUG << "View::scaleSize: ratio is " << ratio
+                << " (em = " << em << ")" << endl;
+
+        if (ratio < 1.0) {
+            SVDEBUG << "View::scaleSize: rounding ratio up to 1.0" << endl;
+            ratio = 1.0;
+        }
+    }
+
+    return size * ratio;
+}
+
+double
+View::scalePenWidth(double width) const 
+{
+    if (width <= 0) { // zero-width pen, produce a scaled one-pixel pen
+        width = 1;
+    }
+    double ratio = scaleSize(1.0);
+    return width * sqrt(ratio);
+}
+
+QPen
+View::scalePen(QPen pen) const 
+{
+    return QPen(pen.color(), scalePenWidth(pen.width()));
+}
+
 bool
 View::areLayerColoursSignificant() const
 {
@@ -1749,7 +1792,7 @@ View::checkProgress(void *object)
                     timer->start();
                 }
 
-                int scaled20 = ViewManager::scalePixelSize(20);
+                int scaled20 = scaleSize(20);
 
                 cancel->move(0, ph - pb->height()/2 - scaled20/2);
                 cancel->show();
@@ -2170,7 +2213,7 @@ View::drawSelections(QPainter &paint)
             (illuminateFrame >= 0 && i->contains(illuminateFrame));
 
         double h = height();
-        double penWidth = PaintAssistant::scalePenWidth(1.0);
+        double penWidth = scalePenWidth(1.0);
         double half = penWidth/2.0;
 
         paint.setPen(QPen(QColor(150, 150, 255), penWidth));
@@ -2187,7 +2230,7 @@ View::drawSelections(QPainter &paint)
 
         if (illuminateThis) {
             paint.save();
-            penWidth = PaintAssistant::scalePenWidth(2.0);
+            penWidth = scalePenWidth(2.0);
             half = penWidth/2.0;
             paint.setPen(QPen(getForeground(), penWidth));
             if (closeToLeft) {

@@ -178,6 +178,10 @@ public:
                                      QRect rect, bool focus) const = 0;
 
     virtual void updatePaintRect(QRect r) = 0;
+
+    virtual double scaleSize(double size) const = 0;
+    virtual double scalePenWidth(double width) const = 0;
+    virtual QPen scalePen(QPen pen) const = 0;
     
     virtual View *getView() = 0;
     virtual const View *getView() const = 0;

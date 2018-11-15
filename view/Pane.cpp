@@ -688,7 +688,7 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
         c = QColor(240, 240, 240);
     }
 
-    paint.setPen(PaintAssistant::scalePen(c));
+    paint.setPen(scalePen(c));
     int x = width() / 2;
 
     if (!omitLine) {
@@ -1173,7 +1173,7 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
 
     if (!m_manager) return Selection();
 
-    sv_frame_t testFrame = getFrameForX(x - ViewManager::scalePixelSize(5));
+    sv_frame_t testFrame = getFrameForX(x - scaleSize(5));
     if (testFrame < 0) {
         testFrame = getFrameForX(x);
         if (testFrame < 0) return Selection();
@@ -1185,14 +1185,14 @@ Pane::getSelectionAt(int x, bool &closeToLeftEdge, bool &closeToRightEdge) const
     int lx = getXForFrame(selection.getStartFrame());
     int rx = getXForFrame(selection.getEndFrame());
     
-    int fuzz = ViewManager::scalePixelSize(2);
+    int fuzz = scaleSize(2);
     if (x < lx - fuzz || x > rx + fuzz) return Selection();
 
     int width = rx - lx;
-    fuzz = ViewManager::scalePixelSize(3);
+    fuzz = scaleSize(3);
     if (width < 12) fuzz = width / 4;
-    if (fuzz < ViewManager::scalePixelSize(1)) {
-        fuzz = ViewManager::scalePixelSize(1);
+    if (fuzz < scaleSize(1)) {
+        fuzz = scaleSize(1);
     }
 
     if (x < lx + fuzz) closeToLeftEdge = true;

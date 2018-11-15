@@ -565,7 +565,7 @@ TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     }
 
     if (!usePoints.empty()) {
-        int fuzz = ViewManager::scalePixelSize(2);
+        int fuzz = v->scaleSize(2);
         int px = v->getXForFrame(usePoints.begin()->frame);
         if ((px > x && px - x > fuzz) ||
             (px < x && x - px > fuzz + 3)) {
@@ -1061,7 +1061,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             brush = QBrush(Qt::NoBrush);
         }
         
-        paint.setPen(PaintAssistant::scalePen(pen));
+        paint.setPen(v->scalePen(pen));
         paint.setBrush(brush);
         
         if (m_plotStyle == PlotStems) {
@@ -1092,7 +1092,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             m_plotStyle != PlotSegmentation) {
             if (illuminate) {
                 paint.save();
-                paint.setPen(PaintAssistant::scalePen(getForegroundQColor(v)));
+                paint.setPen(v->scalePen(getForegroundQColor(v)));
                 paint.setBrush(getForegroundQColor(v));
             }
             if (m_plotStyle != PlotStems ||
@@ -1114,7 +1114,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 if (m_plotStyle == PlotConnectedPoints) {
                     
                     paint.save();
-                    paint.setPen(PaintAssistant::scalePen(brushColour));
+                    paint.setPen(v->scalePen(brushColour));
                     paint.drawLine(x + w, y, nx, ny);
                     paint.restore();
 
@@ -1173,7 +1173,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             
             if (nx <= x) continue;
 
-            paint.setPen(PaintAssistant::scalePen(QPen(getForegroundQColor(v), 2)));
+            paint.setPen(v->scalePen(QPen(getForegroundQColor(v), 2)));
 
             if (!illuminate) {
                 if (!m_drawSegmentDivisions ||

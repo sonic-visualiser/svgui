@@ -1053,10 +1053,10 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
     }
     
     if (!individualSamplePoints.empty()) {
-        double sz = PaintAssistant::scaleSize(2.0);
+        double sz = v->scaleSize(2.0);
         if (v->getZoomLevel().zone == ZoomLevel::PixelsPerFrame) {
             if (v->getZoomLevel().level < 10) {
-                sz = PaintAssistant::scaleSize(1.2);
+                sz = v->scaleSize(1.2);
             }
         }
         paint->save();
