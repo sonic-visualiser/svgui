@@ -2367,18 +2367,14 @@ Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 void
 Pane::wheelHorizontal(int sign, Qt::KeyboardModifiers mods)
 {
-//    cerr << "wheelHorizontal: sign = " << sign << endl;
-
     // Scroll left or right, rapidly
 
-    wheelHorizontalFine((width() / 4) * sign, mods);
+    wheelHorizontalFine(120 * sign, mods);
 }
 
 void
 Pane::wheelHorizontalFine(int pixels, Qt::KeyboardModifiers)
 {
-//    cerr << "wheelHorizontalFine: pixels = " << pixels << endl;
-
     // Scroll left or right by a fixed number of pixels
 
     if (getStartFrame() < 0 && 
