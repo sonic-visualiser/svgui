@@ -919,9 +919,9 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
 
         case MeterScale:
             if (!mergingChannels) {
-                double r0 = fabs(AudioLevel::multiplier_to_preview
+                double r0 = std::abs(AudioLevel::multiplier_to_preview
                                  (range.min() * gain, m));
-                double r1 = fabs(AudioLevel::multiplier_to_preview
+                double r1 = std::abs(AudioLevel::multiplier_to_preview
                                  (range.max() * gain, m));
                 rangeTop = std::max(r0, r1);
                 meanTop = std::min(r0, r1);

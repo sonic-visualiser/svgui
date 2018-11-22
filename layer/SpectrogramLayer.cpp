@@ -2314,9 +2314,9 @@ public:
     SpectrogramRangeMapper(sv_samplerate_t sr, int /* fftsize */) :
         m_dist(sr / 2),
         m_s2(sqrt(sqrt(2))) { }
-    ~SpectrogramRangeMapper() { }
+    ~SpectrogramRangeMapper() override { }
     
-    virtual int getPositionForValue(double value) const {
+    int getPositionForValue(double value) const override {
 
         double dist = m_dist;
     
@@ -2330,12 +2330,12 @@ public:
         return n;
     }
     
-    virtual int getPositionForValueUnclamped(double value) const {
+    int getPositionForValueUnclamped(double value) const override {
         // We don't really support this
         return getPositionForValue(value);
     }
 
-    virtual double getValueForPosition(int position) const {
+    double getValueForPosition(int position) const override {
 
         // Vertical zoom step 0 shows the entire range from DC ->
         // Nyquist frequency.  Step 1 shows 2^(1/4) of the range of
@@ -2353,12 +2353,12 @@ public:
         return dist;
     }
     
-    virtual double getValueForPositionUnclamped(int position) const {
+    double getValueForPositionUnclamped(int position) const override {
         // We don't really support this
         return getValueForPosition(position);
     }
 
-    virtual QString getUnit() const { return "Hz"; }
+    QString getUnit() const override { return "Hz"; }
 
 protected:
     double m_dist;
