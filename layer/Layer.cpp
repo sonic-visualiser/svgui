@@ -111,7 +111,7 @@ Layer::getPlayParameters()
     if (model) {
         return PlayParameterRepository::getInstance()->getPlayParameters(model);
     }
-    return 0;
+    return nullptr;
 }
 
 void
@@ -169,7 +169,7 @@ sv_frame_t
 Layer::alignToReference(LayerGeometryProvider *v, sv_frame_t frame) const
 {
     const Model *m = getModel();
-    SVDEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
+    SVDEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : nullptr) << endl;
     if (m && m->getAlignmentReference()) {
         return m->alignToReference(frame);
     } else {
@@ -181,7 +181,7 @@ sv_frame_t
 Layer::alignFromReference(LayerGeometryProvider *v, sv_frame_t frame) const
 {
     const Model *m = getModel();
-    SVDEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : 0) << endl;
+    SVDEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : nullptr) << endl;
     if (m && m->getAlignmentReference()) {
         return m->alignFromReference(frame);
     } else {

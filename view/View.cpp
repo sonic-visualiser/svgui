@@ -62,15 +62,15 @@ View::View(QWidget *w, bool showProgress) :
     m_followPlayIsDetached(false),
     m_playPointerFrame(0),
     m_showProgress(showProgress),
-    m_cache(0),
-    m_buffer(0),
+    m_cache(nullptr),
+    m_buffer(nullptr),
     m_cacheValid(false),
     m_cacheCentreFrame(0),
     m_cacheZoomLevel(ZoomLevel::FramesPerPixel, 1024),
     m_selectionCached(false),
     m_deleting(false),
     m_haveSelectedLayer(false),
-    m_manager(0),
+    m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
 //    cerr << "View::View(" << this << ")" << endl;
@@ -264,7 +264,7 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
 
     m_cacheValid = false;
 
-    Layer *selectedLayer = 0;
+    Layer *selectedLayer = nullptr;
 
     for (LayerList::iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
         if (*i == pc) {
@@ -793,7 +793,7 @@ View::getInteractionLayer()
             }
         }
     }
-    return 0;
+    return nullptr;
 }
 
 const Layer *
@@ -808,7 +808,7 @@ View::getSelectedLayer()
     if (m_haveSelectedLayer && !m_layerStack.empty()) {
         return getLayer(getLayerCount() - 1);
     } else {
-        return 0;
+        return nullptr;
     }
 }
 
@@ -1349,12 +1349,12 @@ View::getAligningModel() const
     if (!m_manager ||
         !m_manager->getAlignMode() ||
         !m_manager->getPlaybackModel()) {
-        return 0;
+        return nullptr;
     }
 
-    Model *anyModel = 0;
-    Model *alignedModel = 0;
-    Model *goodModel = 0;
+    Model *anyModel = nullptr;
+    Model *alignedModel = nullptr;
+    Model *goodModel = nullptr;
 
     for (LayerList::const_iterator i = m_layerStack.begin();
          i != m_layerStack.end(); ++i) {
@@ -2022,7 +2022,7 @@ View::paintEvent(QPaintEvent *e)
 
             if (dx > -m_cache->width() && dx < m_cache->width()) {
 
-                m_cache->scroll(dx, 0, m_cache->rect(), 0);
+                m_cache->scroll(dx, 0, m_cache->rect(), nullptr);
 
                 if (dx < 0) {
                     cacheAreaToRepaint = 
@@ -2723,7 +2723,7 @@ View::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
     if (!render(*paint, 0, f0, f1)) {
         delete paint;
         delete image;
-        return 0;
+        return nullptr;
     } else {
         delete paint;
         return image;

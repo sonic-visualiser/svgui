@@ -51,7 +51,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     m_stepSize(0),
     m_blockSize(0),
     m_windowType(HanningWindow),
-    m_parameterBox(0),
+    m_parameterBox(nullptr),
     m_currentSelectionOnly(false)
 {
     setWindowTitle(tr("Plugin Parameters"));
@@ -89,7 +89,7 @@ PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
     QLabel *copyrightLabel = new QLabel(plugin->getCopyright().c_str());
     copyrightLabel->setWordWrap(true);
 
-    QLabel *descriptionLabel = 0;
+    QLabel *descriptionLabel = nullptr;
     if (plugin->getDescription() != "") {
         descriptionLabel = new QLabel(plugin->getDescription().c_str());
         descriptionLabel->setWordWrap(true);

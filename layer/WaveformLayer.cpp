@@ -41,7 +41,7 @@ using std::vector;
 
 WaveformLayer::WaveformLayer() :
     SingleColourLayer(),
-    m_model(0),
+    m_model(nullptr),
     m_gain(1.0f),
     m_autoNormalize(false),
     m_showMeans(true),
@@ -50,7 +50,7 @@ WaveformLayer::WaveformLayer() :
     m_scale(LinearScale),
     m_middleLineHeight(0.5),
     m_aggressive(false),
-    m_cache(0),
+    m_cache(nullptr),
     m_cacheValid(false)
 {
 }
@@ -218,7 +218,7 @@ WaveformLayer::getNewPropertyRangeMapper(const PropertyName &name) const
     if (name == "Gain") {
         return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
     }
-    return 0;
+    return nullptr;
 }
 
 void

@@ -56,7 +56,7 @@
 using namespace std;
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
-    m_model(0),
+    m_model(nullptr),
     m_channel(0),
     m_windowSize(1024),
     m_windowType(HanningWindow),
@@ -83,9 +83,9 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_synchronous(false),
     m_haveDetailedScale(false),
     m_exiting(false),
-    m_fftModel(0),
-    m_wholeCache(0),
-    m_peakCache(0),
+    m_fftModel(nullptr),
+    m_wholeCache(nullptr),
+    m_peakCache(nullptr),
     m_peakCacheDivisor(8)
 {
     QString colourConfigName = "spectrogram-colour";
@@ -148,9 +148,9 @@ SpectrogramLayer::deleteDerivedModels()
     delete m_peakCache;
     delete m_wholeCache;
 
-    m_fftModel = 0;
-    m_peakCache = 0;
-    m_wholeCache = 0;
+    m_fftModel = nullptr;
+    m_peakCache = nullptr;
+    m_wholeCache = nullptr;
 }
 
 pair<ColourScaleType, double>
@@ -582,7 +582,7 @@ SpectrogramLayer::getNewPropertyRangeMapper(const PropertyName &name) const
         return new LinearRangeMapper(-81, -1, -81, -1, tr("dB"), false,
                                      { { -81, Strings::minus_infinity } });
     }
-    return 0;
+    return nullptr;
 }
 
 void
@@ -1372,7 +1372,7 @@ SpectrogramLayer::recreateFFTModel()
     SVDEBUG << "SpectrogramLayer::recreateFFTModel called" << endl;
 
     if (!m_model || !m_model->isOK()) {
-        emit sliceableModelReplaced(m_fftModel, 0);
+        emit sliceableModelReplaced(m_fftModel, nullptr);
         deleteDerivedModels();
         return;
     }
@@ -1381,11 +1381,11 @@ SpectrogramLayer::recreateFFTModel()
     
     if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
-    m_peakCache = 0;
+    m_peakCache = nullptr;
 
     if (m_wholeCache) m_wholeCache->aboutToDelete();
     delete m_wholeCache;
-    m_wholeCache = 0;
+    m_wholeCache = nullptr;
     
     FFTModel *newModel = new FFTModel(m_model,
                                       m_channel,
@@ -1396,12 +1396,12 @@ SpectrogramLayer::recreateFFTModel()
 
     if (!newModel->isOK()) {
         QMessageBox::critical
-            (0, tr("FFT cache failed"),
+            (nullptr, tr("FFT cache failed"),
              tr("Failed to create the FFT model for this spectrogram.\n"
                 "There may be insufficient memory or disc space to continue."));
         delete newModel;
         delete m_fftModel;
-        m_fftModel = 0;
+        m_fftModel = nullptr;
         return;
     }
 
@@ -2473,7 +2473,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
 RangeMapper *
 SpectrogramLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return 0;
+    if (!m_model) return nullptr;
     return new SpectrogramRangeMapper(m_model->getSampleRate(), getFFTSize());
 }
 

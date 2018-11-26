@@ -31,7 +31,7 @@
 TipDialog::TipDialog(QWidget *parent) :
     QDialog(parent),
     m_tipNumber(0),
-    m_label(0),
+    m_label(nullptr),
     m_caption(tr("Tip of the Day"))
 {
     readTips();

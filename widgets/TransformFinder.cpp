@@ -32,8 +32,8 @@
 
 TransformFinder::TransformFinder(QWidget *parent) :
     QDialog(parent),
-    m_resultsFrame(0),
-    m_resultsLayout(0)
+    m_resultsFrame(nullptr),
+    m_resultsLayout(nullptr)
 {
     setWindowTitle(tr("Find a Transform"));
     
@@ -225,11 +225,11 @@ TransformFinder::timeout()
         if (m_sortedResults.size() < sorted.size()) {
             m_infoLabel->setText
                 (tr("Found %n description(s) containing <b>%1</b>, showing the first %2 only",
-                    0, int(sorted.size())).arg(text).arg(m_sortedResults.size()));
+                    nullptr, int(sorted.size())).arg(text).arg(m_sortedResults.size()));
         } else {
             m_infoLabel->setText
                 (tr("Found %n description(s) containing <b>%1</b>",
-                    0, int(sorted.size())).arg(text));
+                    nullptr, int(sorted.size())).arg(text));
         }
 
         return;

@@ -24,11 +24,11 @@ ProgressDialog::ProgressDialog(QString message,
                                int timeBeforeShow,
                                QWidget *parent,
                                Qt::WindowModality modality) : 
-    m_showTimer(0),
+    m_showTimer(nullptr),
     m_timerElapsed(false),
     m_cancelled(false)
 {
-    m_dialog = new QProgressDialog(message, cancellable ? tr("Cancel") : 0,
+    m_dialog = new QProgressDialog(message, cancellable ? tr("Cancel") : nullptr,
                                    0, 100, parent);
     m_dialog->setWindowModality(modality);
 

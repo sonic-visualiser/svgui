@@ -38,8 +38,8 @@ ImageDialog::ImageDialog(QString title,
                          QString label,
                          QWidget *parent) :
     QDialog(parent),
-    m_imagePreview(0),
-    m_remoteFile(0)
+    m_imagePreview(nullptr),
+    m_remoteFile(nullptr)
 {
     setWindowTitle(title);
     
@@ -179,7 +179,7 @@ ImageDialog::updatePreview()
 
         QString fileName = img;
         delete m_remoteFile;
-        m_remoteFile = 0;
+        m_remoteFile = nullptr;
 
         if (FileSource::isRemote(fileName)) {
             QUrl url(fileName);
@@ -197,7 +197,7 @@ ImageDialog::updatePreview()
                                           tr("Failed to download URL \"%1\": %2")
                                           .arg(url.toString()).arg(m_remoteFile->getErrorString()));
                     delete m_remoteFile;
-                    m_remoteFile = 0;
+                    m_remoteFile = nullptr;
                 } else {
                     fileName = m_remoteFile->getLocalFilename();
                 }

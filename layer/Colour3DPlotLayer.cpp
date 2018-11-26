@@ -43,7 +43,7 @@ using std::vector;
 
 
 Colour3DPlotLayer::Colour3DPlotLayer() :
-    m_model(0),
+    m_model(nullptr),
     m_colourScale(ColourScaleType::Linear),
     m_colourScaleSet(false),
     m_colourMap(0),
@@ -59,7 +59,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_miny(0),
     m_maxy(0),
     m_synchronous(false),
-    m_peakCache(0),
+    m_peakCache(nullptr),
     m_peakCacheDivisor(8)
 {
     QSettings settings;
@@ -162,7 +162,7 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 
     if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
-    m_peakCache = 0;
+    m_peakCache = nullptr;
 
     invalidateRenderers();
     invalidateMagnitudes();
@@ -185,7 +185,7 @@ Colour3DPlotLayer::cacheInvalid(sv_frame_t /* startFrame */,
     //!!! should do this only if the range is visible
     if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
-    m_peakCache = 0;
+    m_peakCache = nullptr;
     
     invalidateRenderers();
     invalidateMagnitudes();
@@ -460,7 +460,7 @@ Colour3DPlotLayer::getNewPropertyRangeMapper(const PropertyName &name) const
     if (name == "Gain") {
         return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
     }
-    return 0;
+    return nullptr;
 }
 
 void
@@ -750,7 +750,7 @@ Colour3DPlotLayer::setVerticalZoomStep(int step)
 RangeMapper *
 Colour3DPlotLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return 0;
+    if (!m_model) return nullptr;
 
     return new LinearRangeMapper(0, m_model->getHeight(),
                                  0, m_model->getHeight(), "");
@@ -1020,7 +1020,7 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
 
         Colour3DPlotRenderer::Sources sources;
         sources.verticalBinLayer = this;
-        sources.fft = 0;
+        sources.fft = nullptr;
         sources.source = m_model;
         sources.peakCaches.push_back(getPeakCache());
 

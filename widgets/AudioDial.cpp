@@ -81,7 +81,7 @@ AudioDial::AudioDial(QWidget *parent) :
     m_mappedValue(0),
     m_noMappedUpdate(false),
     m_showTooltip(true),
-    m_rangeMapper(0)
+    m_rangeMapper(nullptr)
 {
     m_mouseDial = false;
     m_mousePressed = false;
