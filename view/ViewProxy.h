@@ -23,59 +23,59 @@ public:
     ViewProxy(View *view, int scaleFactor) :
         m_view(view), m_scaleFactor(scaleFactor) { }
 
-    virtual int getId() const {
+    int getId() const override {
         return m_view->getId();
     }
-    virtual sv_frame_t getStartFrame() const {
+    sv_frame_t getStartFrame() const override {
         return m_view->getStartFrame();
     }
-    virtual sv_frame_t getCentreFrame() const {
+    sv_frame_t getCentreFrame() const override {
         return m_view->getCentreFrame();
     }
-    virtual sv_frame_t getEndFrame() const {
+    sv_frame_t getEndFrame() const override {
         return m_view->getEndFrame();
     }
-    virtual int getXForFrame(sv_frame_t frame) const {
+    int getXForFrame(sv_frame_t frame) const override {
         //!!! not actually correct, if frame lies between view's pixels
         return m_scaleFactor * m_view->getXForFrame(frame);
     }
-    virtual sv_frame_t getFrameForX(int x) const {
+    sv_frame_t getFrameForX(int x) const override {
         sv_frame_t f0 = m_view->getFrameForX(x / m_scaleFactor);
         if (m_scaleFactor == 1) return f0;
         sv_frame_t f1 = m_view->getFrameForX((x / m_scaleFactor) + 1);
         return f0 + ((f1 - f0) * (x % m_scaleFactor)) / m_scaleFactor;
     }
-    virtual int getXForViewX(int viewx) const {
+    int getXForViewX(int viewx) const override {
         return viewx * m_scaleFactor;
     }
-    virtual int getViewXForX(int x) const {
+    int getViewXForX(int x) const override {
         return x / m_scaleFactor;
     }
-    virtual sv_frame_t getModelsStartFrame() const {
+    sv_frame_t getModelsStartFrame() const override {
         return m_view->getModelsStartFrame();
     }
-    virtual sv_frame_t getModelsEndFrame() const {
+    sv_frame_t getModelsEndFrame() const override {
         return m_view->getModelsEndFrame();
     }
-    virtual double getYForFrequency(double frequency,
+    double getYForFrequency(double frequency,
                                     double minFreq, double maxFreq, 
-                                    bool logarithmic) const {
+                                    bool logarithmic) const override {
         return m_scaleFactor *
             m_view->getYForFrequency(frequency, minFreq, maxFreq, logarithmic);
     }
-    virtual double getFrequencyForY(double y, double minFreq, double maxFreq,
-                                    bool logarithmic) const {
+    double getFrequencyForY(double y, double minFreq, double maxFreq,
+                                    bool logarithmic) const override {
         return m_view->getFrequencyForY
             (y / m_scaleFactor, minFreq, maxFreq, logarithmic);
     }
-    virtual int getTextLabelHeight(const Layer *layer, QPainter &paint) const {
+    int getTextLabelHeight(const Layer *layer, QPainter &paint) const override {
         return m_scaleFactor * m_view->getTextLabelHeight(layer, paint);
     }
-    virtual bool getValueExtents(QString unit, double &min, double &max,
-                                 bool &log) const {
+    bool getValueExtents(QString unit, double &min, double &max,
+                                 bool &log) const override {
         return m_view->getValueExtents(unit, min, max, log);
     }
-    virtual ZoomLevel getZoomLevel() const {
+    ZoomLevel getZoomLevel() const override {
         ZoomLevel z = m_view->getZoomLevel();
         //!!!
 //        cerr << "getZoomLevel: from " << z << " to ";
@@ -91,53 +91,53 @@ public:
 //        cerr << z << endl;
         return z;
     }
-    virtual QRect getPaintRect() const {
+    QRect getPaintRect() const override {
         QRect r = m_view->getPaintRect();
         return QRect(r.x() * m_scaleFactor,
                      r.y() * m_scaleFactor,
                      r.width() * m_scaleFactor,
                      r.height() * m_scaleFactor);
     }
-    virtual QSize getPaintSize() const {
+    QSize getPaintSize() const override {
         return getPaintRect().size();
     }
-    virtual int getPaintWidth() const { 
+    int getPaintWidth() const override { 
         return getPaintRect().width();
     }
-    virtual int getPaintHeight() const { 
+    int getPaintHeight() const override { 
         return getPaintRect().height();
     }
-    virtual bool hasLightBackground() const {
+    bool hasLightBackground() const override {
         return m_view->hasLightBackground();
     }
-    virtual QColor getForeground() const {
+    QColor getForeground() const override {
         return m_view->getForeground();
     }
-    virtual QColor getBackground() const {
+    QColor getBackground() const override {
         return m_view->getBackground();
     }
-    virtual ViewManager *getViewManager() const {
+    ViewManager *getViewManager() const override {
         return m_view->getViewManager();
     }
         
-    virtual bool shouldIlluminateLocalFeatures(const Layer *layer,
-                                               QPoint &point) const {
+    bool shouldIlluminateLocalFeatures(const Layer *layer,
+                                               QPoint &point) const override {
         QPoint p;
         bool should = m_view->shouldIlluminateLocalFeatures(layer, p);
         point = QPoint(p.x() * m_scaleFactor, p.y() * m_scaleFactor);
         return should;
     }
 
-    virtual bool shouldShowFeatureLabels() const {
+    bool shouldShowFeatureLabels() const override {
         return m_view->shouldShowFeatureLabels();
     }
 
-    virtual void drawMeasurementRect(QPainter &p, const Layer *layer,
-                                     QRect rect, bool focus) const {
+    void drawMeasurementRect(QPainter &p, const Layer *layer,
+                                     QRect rect, bool focus) const override {
         m_view->drawMeasurementRect(p, layer, rect, focus);
     }
 
-    virtual void updatePaintRect(QRect r) {
+    void updatePaintRect(QRect r) override {
         m_view->update(r.x() / m_scaleFactor,
                        r.y() / m_scaleFactor,
                        r.width() / m_scaleFactor,
@@ -151,14 +151,14 @@ public:
      * pixels. It is also a little more conservative - it never
      * shrinks the size, it can only increase or leave it unchanged.
      */
-    virtual double scaleSize(double size) const {
+    double scaleSize(double size) const override {
         return m_view->scaleSize(size * m_scaleFactor);
     }
 
     /**
      * Integer version of scaleSize.
      */
-    virtual int scalePixelSize(int size) const {
+    int scalePixelSize(int size) const override {
         return m_view->scalePixelSize(size * m_scaleFactor);
     }
     
@@ -167,7 +167,7 @@ public:
      * This is like scaleSize except that it also scales the
      * zero-width case.
      */
-    virtual double scalePenWidth(double width) const {
+    double scalePenWidth(double width) const override {
         if (width <= 0) { // zero-width pen, produce a scaled one-pixel pen
             width = 1;
         }
@@ -178,12 +178,12 @@ public:
     /**
      * Apply scalePenWidth to a pen.
      */
-    virtual QPen scalePen(QPen pen) const {
+    QPen scalePen(QPen pen) const override {
         return QPen(pen.color(), scalePenWidth(pen.width()));
     }
     
-    virtual View *getView() { return m_view; }
-    virtual const View *getView() const { return m_view; }
+    View *getView() override { return m_view; }
+    const View *getView() const override { return m_view; }
 
 private:
     View *m_view;

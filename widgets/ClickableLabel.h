@@ -31,7 +31,7 @@ signals:
     void clicked();
 
 protected:
-    virtual void mousePressEvent(QMouseEvent *) {
+    void mousePressEvent(QMouseEvent *) override {
         emit clicked();
     }
 };

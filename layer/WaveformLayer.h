@@ -36,34 +36,34 @@ public:
     WaveformLayer();
     ~WaveformLayer();
 
-    virtual const ZoomConstraint *getZoomConstraint() const {
+    const ZoomConstraint *getZoomConstraint() const override {
         return m_model ? m_model->getZoomConstraint() : 0;
     }
-    virtual const Model *getModel() const { return m_model; }
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    const Model *getModel() const override { return m_model; }
+    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
+    QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
-    virtual ColourSignificance getLayerColourSignificance() const {
+    ColourSignificance getLayerColourSignificance() const override {
         return ColourAndBackgroundSignificant;
     }
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool detailed, QPainter &) const;
-    virtual void paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const;
+    int getVerticalScaleWidth(LayerGeometryProvider *v, bool detailed, QPainter &) const override;
+    void paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const override;
 
     void setModel(const RangeSummarisableTimeValueModel *model);
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual QString getPropertyIconName(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const;
-    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
-    virtual void setProperty(const PropertyName &, int value);
+    PropertyList getProperties() const override;
+    QString getPropertyLabel(const PropertyName &) const override;
+    QString getPropertyIconName(const PropertyName &) const override;
+    PropertyType getPropertyType(const PropertyName &) const override;
+    QString getPropertyGroupName(const PropertyName &) const override;
+    int getPropertyRangeAndValue(const PropertyName &,
+                                         int *min, int *max, int *deflt) const override;
+    QString getPropertyValueLabel(const PropertyName &,
+                                          int value) const override;
+    RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
+    void setProperty(const PropertyName &, int value) override;
 
     /**
      * Set the gain multiplier for sample values in this view.
@@ -169,29 +169,29 @@ public:
     void setAggressiveCacheing(bool);
     bool getAggressiveCacheing() const { return m_aggressive; }
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *) const;
+    bool isLayerScrollable(const LayerGeometryProvider *) const override;
 
-    virtual int getCompletion(LayerGeometryProvider *) const;
+    int getCompletion(LayerGeometryProvider *) const override;
 
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &log, QString &unit) const;
+    bool getValueExtents(double &min, double &max,
+                                 bool &log, QString &unit) const override;
 
-    virtual bool getYScaleValue(const LayerGeometryProvider *v, int y,
-                                double &value, QString &unit) const;
+    bool getYScaleValue(const LayerGeometryProvider *v, int y,
+                                double &value, QString &unit) const override;
     
-    virtual bool getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
-                                     double &diff, QString &unit) const;
+    bool getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
+                                     double &diff, QString &unit) const override;
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
-    virtual void setProperties(const QXmlAttributes &attributes);
+    void setProperties(const QXmlAttributes &attributes) override;
 
-    virtual int getVerticalZoomSteps(int &defaultStep) const;
-    virtual int getCurrentVerticalZoomStep() const;
-    virtual void setVerticalZoomStep(int);
+    int getVerticalZoomSteps(int &defaultStep) const override;
+    int getCurrentVerticalZoomStep() const override;
+    void setVerticalZoomStep(int) override;
 
-    virtual bool canExistWithoutModel() const { return true; }
+    bool canExistWithoutModel() const override { return true; }
 
 protected:
     double dBscale(double sample, int m) const;
@@ -231,7 +231,7 @@ protected:
 
     float getNormalizeGain(LayerGeometryProvider *v, int channel) const;
 
-    virtual void flagBaseColourChanged() { m_cacheValid = false; }
+    void flagBaseColourChanged() override { m_cacheValid = false; }
 
     float        m_gain;
     bool         m_autoNormalize;

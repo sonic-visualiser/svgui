@@ -32,9 +32,9 @@ signals:
     void activeTabClicked();
 
 protected:
-    virtual void mousePressEvent(QMouseEvent *);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+    void mousePressEvent(QMouseEvent *) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
 };
 
 #endif

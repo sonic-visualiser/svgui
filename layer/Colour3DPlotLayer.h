@@ -46,48 +46,48 @@ public:
     Colour3DPlotLayer();
     ~Colour3DPlotLayer();
 
-    virtual const ZoomConstraint *getZoomConstraint() const {
+    const ZoomConstraint *getZoomConstraint() const override {
         return m_model ? m_model->getZoomConstraint() : 0;
     }
-    virtual const Model *getModel() const { return m_model; }
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
-    virtual void setSynchronousPainting(bool synchronous);
+    const Model *getModel() const override { return m_model; }
+    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
+    void setSynchronousPainting(bool synchronous) override;
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
-    virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
+    int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const override;
+    void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
+    QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
-    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame, 
+    bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame, 
                                     int &resolution,
-                                    SnapType snap) const;
+                                    SnapType snap) const override;
 
-    virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
+    void setLayerDormant(const LayerGeometryProvider *v, bool dormant) override;
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
+    bool isLayerScrollable(const LayerGeometryProvider *v) const override;
 
-    virtual ColourSignificance getLayerColourSignificance() const {
+    ColourSignificance getLayerColourSignificance() const override {
         return ColourHasMeaningfulValue;
     }
 
     void setModel(const DenseThreeDimensionalModel *model);
 
-    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
 
-    virtual PropertyList getProperties() const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual QString getPropertyIconName(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const;
-    virtual QString getPropertyValueIconName(const PropertyName &,
-                                             int value) const;
-    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
-    virtual void setProperty(const PropertyName &, int value);
-    virtual void setProperties(const QXmlAttributes &);
+    PropertyList getProperties() const override;
+    PropertyType getPropertyType(const PropertyName &) const override;
+    QString getPropertyLabel(const PropertyName &) const override;
+    QString getPropertyIconName(const PropertyName &) const override;
+    QString getPropertyGroupName(const PropertyName &) const override;
+    int getPropertyRangeAndValue(const PropertyName &,
+                                         int *min, int *max, int *deflt) const override;
+    QString getPropertyValueLabel(const PropertyName &,
+                                          int value) const override;
+    QString getPropertyValueIconName(const PropertyName &,
+                                             int value) const override;
+    RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
+    void setProperty(const PropertyName &, int value) override;
+    void setProperties(const QXmlAttributes &) override;
     
     void setColourScale(ColourScaleType);
     ColourScaleType getColourScale() const { return m_colourScale; }
@@ -129,24 +129,24 @@ public:
     void setSmooth(bool i);
     bool getSmooth() const;
 
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const;
+    bool getValueExtents(double &min, double &max,
+                                 bool &logarithmic, QString &unit) const override;
 
-    virtual bool getDisplayExtents(double &min, double &max) const;
-    virtual bool setDisplayExtents(double min, double max);
+    bool getDisplayExtents(double &min, double &max) const override;
+    bool setDisplayExtents(double min, double max) override;
 
-    virtual bool getYScaleValue(const LayerGeometryProvider *, int /* y */,
-                                double &/* value */, QString &/* unit */) const;
+    bool getYScaleValue(const LayerGeometryProvider *, int /* y */,
+                                double &/* value */, QString &/* unit */) const override;
 
-    virtual int getVerticalZoomSteps(int &defaultStep) const;
-    virtual int getCurrentVerticalZoomStep() const;
-    virtual void setVerticalZoomStep(int);
-    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
+    int getVerticalZoomSteps(int &defaultStep) const override;
+    int getCurrentVerticalZoomStep() const override;
+    void setVerticalZoomStep(int) override;
+    RangeMapper *getNewVerticalZoomRangeMapper() const override;
 
-    virtual const Model *getSliceableModel() const { return m_model; }
+    const Model *getSliceableModel() const override { return m_model; }
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
 protected slots:
     void cacheInvalid();
@@ -203,7 +203,7 @@ protected:
      * and the vertical scale is the usual way up). Bin number may be
      * fractional, to obtain a position part-way through a bin.
      */
-    double getYForBin(const LayerGeometryProvider *, double bin) const;
+    double getYForBin(const LayerGeometryProvider *, double bin) const override;
     
     /**
      * Return the bin number, possibly fractional, at the given y
@@ -211,7 +211,7 @@ protected:
      * at which the bins "start" (i.e. the bottom of the visible bin,
      * if the vertical scale is the usual way up).
      */
-    double getBinForY(const LayerGeometryProvider *, double y) const;
+    double getBinForY(const LayerGeometryProvider *, double y) const override;
 
     int getColourScaleWidth(QPainter &) const;
 

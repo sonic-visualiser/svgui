@@ -38,65 +38,65 @@ public:
     ImageLayer();
     virtual ~ImageLayer();
 
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
+    QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
-    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
+    bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                     int &resolution,
-                                    SnapType snap) const;
+                                    SnapType snap) const override;
 
-    virtual void drawStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void drawDrag(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void drawEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void drawStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void drawDrag(LayerGeometryProvider *v, QMouseEvent *) override;
+    void drawEnd(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void editStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void editDrag(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void editEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void editStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void editDrag(LayerGeometryProvider *v, QMouseEvent *) override;
+    void editEnd(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
-    virtual void resizeSelection(Selection s, Selection newSize);
-    virtual void deleteSelection(Selection s);
+    void moveSelection(Selection s, sv_frame_t newStartFrame) override;
+    void resizeSelection(Selection s, Selection newSize) override;
+    void deleteSelection(Selection s) override;
 
-    virtual void copy(LayerGeometryProvider *v, Selection s, Clipboard &to);
-    virtual bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
-                       bool interactive);
+    void copy(LayerGeometryProvider *v, Selection s, Clipboard &to) override;
+    bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
+                       bool interactive) override;
 
-    virtual bool editOpen(LayerGeometryProvider *, QMouseEvent *); // on double-click
+    bool editOpen(LayerGeometryProvider *, QMouseEvent *) override; // on double-click
 
-    virtual const Model *getModel() const { return m_model; }
+    const Model *getModel() const override { return m_model; }
     void setModel(ImageModel *model);
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const;
-    virtual void setProperty(const PropertyName &, int value);
+    PropertyList getProperties() const override;
+    QString getPropertyLabel(const PropertyName &) const override;
+    PropertyType getPropertyType(const PropertyName &) const override;
+    int getPropertyRangeAndValue(const PropertyName &,
+                                         int *min, int *max, int *deflt) const override;
+    QString getPropertyValueLabel(const PropertyName &,
+                                          int value) const override;
+    void setProperty(const PropertyName &, int value) override;
 
-    virtual ColourSignificance getLayerColourSignificance() const {
+    ColourSignificance getLayerColourSignificance() const override {
         return ColourAbsent;
     }
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
+    bool isLayerScrollable(const LayerGeometryProvider *v) const override;
 
-    virtual bool isLayerEditable() const { return true; }
+    bool isLayerEditable() const override { return true; }
 
-    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
 
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const;
+    bool getValueExtents(double &min, double &max,
+                                 bool &logarithmic, QString &unit) const override;
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
+    int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const override { return 0; }
 
-    virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
+    void setLayerDormant(const LayerGeometryProvider *v, bool dormant) override;
 
-    void setProperties(const QXmlAttributes &attributes);
+    void setProperties(const QXmlAttributes &attributes) override;
 
     virtual bool addImage(sv_frame_t frame, QString url); // using a command
 

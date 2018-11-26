@@ -49,8 +49,8 @@ public:
     QColor color() const;
     int darkFactor() const;
 
-    virtual QSize sizeHint() const;
-    virtual QSize minimumSizeHint() const;
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
 
 signals:
     void stateChanged(bool);
@@ -69,10 +69,10 @@ public slots:
     void setDarkFactor(int darkfactor);
 
 protected:
-    void paintEvent(QPaintEvent *);
-    void mousePressEvent(QMouseEvent *);
-    void enterEvent(QEvent *);
-    void leaveEvent(QEvent *);
+    void paintEvent(QPaintEvent *) override;
+    void mousePressEvent(QMouseEvent *) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
 
     bool led_state;
     QColor led_color;

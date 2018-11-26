@@ -37,56 +37,56 @@ class TimeValueLayer : public SingleColourLayer,
 public:
     TimeValueLayer();
 
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
-    virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
+    int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const override;
+    void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
-    virtual QString getLabelPreceding(sv_frame_t) const;
+    QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
+    QString getLabelPreceding(sv_frame_t) const override;
 
-    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
+    bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                     int &resolution,
-                                    SnapType snap) const;
-    virtual bool snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
+                                    SnapType snap) const override;
+    bool snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                                       int &resolution,
-                                      SnapType snap) const;
+                                      SnapType snap) const override;
 
-    virtual void drawStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void drawDrag(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void drawEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void drawStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void drawDrag(LayerGeometryProvider *v, QMouseEvent *) override;
+    void drawEnd(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void eraseStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void eraseDrag(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void eraseEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void eraseStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void eraseDrag(LayerGeometryProvider *v, QMouseEvent *) override;
+    void eraseEnd(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void editStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void editDrag(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void editEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void editStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void editDrag(LayerGeometryProvider *v, QMouseEvent *) override;
+    void editEnd(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual bool editOpen(LayerGeometryProvider *v, QMouseEvent *);
+    bool editOpen(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
-    virtual void resizeSelection(Selection s, Selection newSize);
-    virtual void deleteSelection(Selection s);
+    void moveSelection(Selection s, sv_frame_t newStartFrame) override;
+    void resizeSelection(Selection s, Selection newSize) override;
+    void deleteSelection(Selection s) override;
 
-    virtual void copy(LayerGeometryProvider *v, Selection s, Clipboard &to);
-    virtual bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
-                       bool interactive);
+    void copy(LayerGeometryProvider *v, Selection s, Clipboard &to) override;
+    bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
+                       bool interactive) override;
 
-    virtual const Model *getModel() const { return m_model; }
+    const Model *getModel() const override { return m_model; }
     void setModel(SparseTimeValueModel *model);
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual QString getPropertyIconName(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const;
-    virtual void setProperty(const PropertyName &, int value);
+    PropertyList getProperties() const override;
+    QString getPropertyLabel(const PropertyName &) const override;
+    QString getPropertyIconName(const PropertyName &) const override;
+    PropertyType getPropertyType(const PropertyName &) const override;
+    QString getPropertyGroupName(const PropertyName &) const override;
+    int getPropertyRangeAndValue(const PropertyName &,
+                                         int *min, int *max, int *deflt) const override;
+    QString getPropertyValueLabel(const PropertyName &,
+                                          int value) const override;
+    void setProperty(const PropertyName &, int value) override;
 
     void setFillColourMap(int);
     int getFillColourMap() const { return m_colourMap; }
@@ -120,34 +120,34 @@ public:
     void setShowDerivative(bool);
     bool getShowDerivative() const { return m_derivative; }
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
+    bool isLayerScrollable(const LayerGeometryProvider *v) const override;
 
-    virtual bool isLayerEditable() const { return true; }
+    bool isLayerEditable() const override { return true; }
 
-    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
 
-    virtual bool needsTextLabelHeight() const {
+    bool needsTextLabelHeight() const override {
         return m_plotStyle == PlotSegmentation && m_model->hasTextLabels();
     }
 
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const;
+    bool getValueExtents(double &min, double &max,
+                                 bool &logarithmic, QString &unit) const override;
 
-    virtual bool getDisplayExtents(double &min, double &max) const;
-    virtual bool setDisplayExtents(double min, double max);
+    bool getDisplayExtents(double &min, double &max) const override;
+    bool setDisplayExtents(double min, double max) override;
 
-    virtual int getVerticalZoomSteps(int &defaultStep) const;
-    virtual int getCurrentVerticalZoomStep() const;
-    virtual void setVerticalZoomStep(int);
-    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
+    int getVerticalZoomSteps(int &defaultStep) const override;
+    int getCurrentVerticalZoomStep() const override;
+    void setVerticalZoomStep(int) override;
+    RangeMapper *getNewVerticalZoomRangeMapper() const override;
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes);
+    void setProperties(const QXmlAttributes &attributes) override;
 
     /// Override from SingleColourLayer
-    virtual ColourSignificance getLayerColourSignificance() const {
+    ColourSignificance getLayerColourSignificance() const override {
         if (m_plotStyle == PlotSegmentation) {
             return ColourHasMeaningfulValue;
         } else {
@@ -156,7 +156,7 @@ public:
     }
 
     /// Override from SingleColourLayer
-    virtual bool hasLightBackground() const {
+    bool hasLightBackground() const override {
         if (m_plotStyle == PlotSegmentation) {
             return true;
         } else {
@@ -165,10 +165,10 @@ public:
     }
 
     /// VerticalScaleLayer and ColourScaleLayer methods
-    virtual int getYForValue(LayerGeometryProvider *, double value) const;
-    virtual double getValueForY(LayerGeometryProvider *, int y) const;
-    virtual QString getScaleUnits() const;
-    virtual QColor getColourForValue(LayerGeometryProvider *v, double value) const;
+    int getYForValue(LayerGeometryProvider *, double value) const override;
+    double getValueForY(LayerGeometryProvider *, int y) const override;
+    QString getScaleUnits() const override;
+    QColor getColourForValue(LayerGeometryProvider *v, double value) const override;
 
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
@@ -176,7 +176,7 @@ protected:
 
     SparseTimeValueModel::PointList getLocalPoints(LayerGeometryProvider *v, int) const;
 
-    virtual int getDefaultColourHint(bool dark, bool &impose);
+    int getDefaultColourHint(bool dark, bool &impose) override;
 
     SparseTimeValueModel *m_model;
     bool m_editing;

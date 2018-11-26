@@ -59,43 +59,43 @@ public:
     SpectrogramLayer(Configuration = FullRangeDb);
     ~SpectrogramLayer();
 
-    virtual const ZoomConstraint *getZoomConstraint() const { return this; }
-    virtual const Model *getModel() const { return m_model; }
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
-    virtual void setSynchronousPainting(bool synchronous);
+    const ZoomConstraint *getZoomConstraint() const override { return this; }
+    const Model *getModel() const override { return m_model; }
+    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
+    void setSynchronousPainting(bool synchronous) override;
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool detailed, QPainter &) const;
-    virtual void paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const;
+    int getVerticalScaleWidth(LayerGeometryProvider *v, bool detailed, QPainter &) const override;
+    void paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const override;
 
-    virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint cursorPos,
-                                     std::vector<QRect> &extents) const;
-    virtual void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const;
+    bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint cursorPos,
+                                     std::vector<QRect> &extents) const override;
+    void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
+    QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
-    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
+    bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                     int &resolution,
-                                    SnapType snap) const;
+                                    SnapType snap) const override;
 
-    virtual void measureDoubleClick(LayerGeometryProvider *, QMouseEvent *);
+    void measureDoubleClick(LayerGeometryProvider *, QMouseEvent *) override;
 
-    virtual bool hasLightBackground() const;
+    bool hasLightBackground() const override;
 
     void setModel(const DenseTimeValueModel *model);
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual QString getPropertyIconName(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const;
-    virtual QString getPropertyValueIconName(const PropertyName &,
-                                             int value) const;
-    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
-    virtual void setProperty(const PropertyName &, int value);
+    PropertyList getProperties() const override;
+    QString getPropertyLabel(const PropertyName &) const override;
+    QString getPropertyIconName(const PropertyName &) const override;
+    PropertyType getPropertyType(const PropertyName &) const override;
+    QString getPropertyGroupName(const PropertyName &) const override;
+    int getPropertyRangeAndValue(const PropertyName &,
+                                         int *min, int *max, int *deflt) const override;
+    QString getPropertyValueLabel(const PropertyName &,
+                                          int value) const override;
+    QString getPropertyValueIconName(const PropertyName &,
+                                             int value) const override;
+    RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
+    void setProperty(const PropertyName &, int value) override;
 
     /**
      * Specify the channel to use from the source model.
@@ -191,13 +191,13 @@ public:
     void setColourRotation(int);
     int getColourRotation() const;
 
-    virtual VerticalPosition getPreferredFrameCountPosition() const {
+    VerticalPosition getPreferredFrameCountPosition() const override {
         return PositionTop;
     }
 
-    virtual bool isLayerOpaque() const { return true; }
+    bool isLayerOpaque() const override { return true; }
 
-    virtual ColourSignificance getLayerColourSignificance() const {
+    ColourSignificance getLayerColourSignificance() const override {
         return ColourHasMeaningfulValue;
     }
 
@@ -205,36 +205,36 @@ public:
     double getFrequencyForY(const LayerGeometryProvider *v, int y) const;
 
     //!!! VerticalBinLayer methods. Note overlap with get*BinRange()
-    double getYForBin(const LayerGeometryProvider *, double bin) const;
-    double getBinForY(const LayerGeometryProvider *, double y) const;
+    double getYForBin(const LayerGeometryProvider *, double bin) const override;
+    double getBinForY(const LayerGeometryProvider *, double y) const override;
     
-    virtual int getCompletion(LayerGeometryProvider *v) const;
-    virtual QString getError(LayerGeometryProvider *v) const;
+    int getCompletion(LayerGeometryProvider *v) const override;
+    QString getError(LayerGeometryProvider *v) const override;
 
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const;
+    bool getValueExtents(double &min, double &max,
+                                 bool &logarithmic, QString &unit) const override;
 
-    virtual bool getDisplayExtents(double &min, double &max) const;
+    bool getDisplayExtents(double &min, double &max) const override;
 
-    virtual bool setDisplayExtents(double min, double max);
+    bool setDisplayExtents(double min, double max) override;
 
-    virtual bool getYScaleValue(const LayerGeometryProvider *, int, double &, QString &) const;
+    bool getYScaleValue(const LayerGeometryProvider *, int, double &, QString &) const override;
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes);
+    void setProperties(const QXmlAttributes &attributes) override;
 
-    virtual void setLayerDormant(const LayerGeometryProvider *v, bool dormant);
+    void setLayerDormant(const LayerGeometryProvider *v, bool dormant) override;
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *) const;
+    bool isLayerScrollable(const LayerGeometryProvider *) const override;
 
-    virtual int getVerticalZoomSteps(int &defaultStep) const;
-    virtual int getCurrentVerticalZoomStep() const;
-    virtual void setVerticalZoomStep(int);
-    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
+    int getVerticalZoomSteps(int &defaultStep) const override;
+    int getCurrentVerticalZoomStep() const override;
+    void setVerticalZoomStep(int) override;
+    RangeMapper *getNewVerticalZoomRangeMapper() const override;
 
-    virtual const Model *getSliceableModel() const;
+    const Model *getSliceableModel() const override;
 
 protected slots:
     void cacheInvalid();
@@ -334,10 +334,10 @@ protected:
     void paintDetailedScalePhase(LayerGeometryProvider *v,
                                  QPainter &paint, QRect rect) const;
     
-    virtual void updateMeasureRectYCoords(LayerGeometryProvider *v,
-                                          const MeasureRect &r) const;
-    virtual void setMeasureRectYCoord(LayerGeometryProvider *v,
-                                      MeasureRect &r, bool start, int y) const;
+    void updateMeasureRectYCoords(LayerGeometryProvider *v,
+                                          const MeasureRect &r) const override;
+    void setMeasureRectYCoord(LayerGeometryProvider *v,
+                                      MeasureRect &r, bool start, int y) const override;
 };
 
 #endif

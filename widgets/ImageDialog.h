@@ -54,7 +54,7 @@ protected slots:
     void imageEditEdited();
 
 protected:
-    void resizeEvent(QResizeEvent *);
+    void resizeEvent(QResizeEvent *) override;
 
     QLineEdit *m_imageEdit;
     QLineEdit *m_labelEdit;

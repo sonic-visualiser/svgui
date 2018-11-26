@@ -23,13 +23,13 @@ class ShowLayerCommand : public Command
 public:
     ShowLayerCommand(View *view, Layer *layer, bool show, QString commandName) :
         m_view(view), m_layer(layer), m_show(show), m_name(commandName) { }
-    void execute() {
+    void execute() override {
         m_layer->showLayer(m_view, m_show);
     }
-    void unexecute() {
+    void unexecute() override {
         m_layer->showLayer(m_view, !m_show);
     }
-    QString getName() const {
+    QString getName() const override {
         return m_name;
     }
 protected:

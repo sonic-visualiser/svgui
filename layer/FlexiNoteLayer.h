@@ -38,63 +38,63 @@ class FlexiNoteLayer : public SingleColourLayer,
 public:
     FlexiNoteLayer();
 
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
-    virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
+    int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const override;
+    void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
+    QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
-    virtual bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
+    bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                     int &resolution,
-                    SnapType snap) const;
+                    SnapType snap) const override;
 
-    virtual void drawStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void drawDrag(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void drawEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void drawStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void drawDrag(LayerGeometryProvider *v, QMouseEvent *) override;
+    void drawEnd(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void eraseStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void eraseDrag(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void eraseEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void eraseStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void eraseDrag(LayerGeometryProvider *v, QMouseEvent *) override;
+    void eraseEnd(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void editStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void editDrag(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void editEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void editStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void editDrag(LayerGeometryProvider *v, QMouseEvent *) override;
+    void editEnd(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void splitStart(LayerGeometryProvider *v, QMouseEvent *);
-    virtual void splitEnd(LayerGeometryProvider *v, QMouseEvent *);
+    void splitStart(LayerGeometryProvider *v, QMouseEvent *) override;
+    void splitEnd(LayerGeometryProvider *v, QMouseEvent *) override;
     
-    virtual void addNote(LayerGeometryProvider *v, QMouseEvent *e);
+    void addNote(LayerGeometryProvider *v, QMouseEvent *e) override;
 
     virtual void mouseMoveEvent(LayerGeometryProvider *v, QMouseEvent *);
 
-    virtual bool editOpen(LayerGeometryProvider *v, QMouseEvent *);
+    bool editOpen(LayerGeometryProvider *v, QMouseEvent *) override;
 
-    virtual void moveSelection(Selection s, sv_frame_t newStartFrame);
-    virtual void resizeSelection(Selection s, Selection newSize);
-    virtual void deleteSelection(Selection s);
+    void moveSelection(Selection s, sv_frame_t newStartFrame) override;
+    void resizeSelection(Selection s, Selection newSize) override;
+    void deleteSelection(Selection s) override;
     virtual void deleteSelectionInclusive(Selection s);
 
-    virtual void copy(LayerGeometryProvider *v, Selection s, Clipboard &to);
-    virtual bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
-                       bool interactive);
+    void copy(LayerGeometryProvider *v, Selection s, Clipboard &to) override;
+    bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
+                       bool interactive) override;
 
     void splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame);
     void snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selection s);
     void mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive);
 
-    virtual const Model *getModel() const { return m_model; }
+    const Model *getModel() const override { return m_model; }
     void setModel(FlexiNoteModel *model);
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-                      int value) const;
-    virtual void setProperty(const PropertyName &, int value);
+    PropertyList getProperties() const override;
+    QString getPropertyLabel(const PropertyName &) const override;
+    PropertyType getPropertyType(const PropertyName &) const override;
+    QString getPropertyGroupName(const PropertyName &) const override;
+    int getPropertyRangeAndValue(const PropertyName &,
+                                         int *min, int *max, int *deflt) const override;
+    QString getPropertyValueLabel(const PropertyName &,
+                      int value) const override;
+    void setProperty(const PropertyName &, int value) override;
 
     enum VerticalScale {
         AutoAlignScale,
@@ -116,22 +116,22 @@ public:
     void setVerticalScale(VerticalScale scale);
     VerticalScale getVerticalScale() const { return m_verticalScale; }
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *v) const;
+    bool isLayerScrollable(const LayerGeometryProvider *v) const override;
 
-    virtual bool isLayerEditable() const { return true; }
+    bool isLayerEditable() const override { return true; }
 
-    virtual int getCompletion(LayerGeometryProvider *) const { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
 
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &log, QString &unit) const;
+    bool getValueExtents(double &min, double &max,
+                                 bool &log, QString &unit) const override;
 
-    virtual bool getDisplayExtents(double &min, double &max) const;
-    virtual bool setDisplayExtents(double min, double max);
+    bool getDisplayExtents(double &min, double &max) const override;
+    bool setDisplayExtents(double min, double max) override;
 
-    virtual int getVerticalZoomSteps(int &defaultStep) const;
-    virtual int getCurrentVerticalZoomStep() const;
-    virtual void setVerticalZoomStep(int);
-    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
+    int getVerticalZoomSteps(int &defaultStep) const override;
+    int getCurrentVerticalZoomStep() const override;
+    void setVerticalZoomStep(int) override;
+    RangeMapper *getNewVerticalZoomRangeMapper() const override;
 
     /**
      * Add a note-on.  Used when recording MIDI "live".  The note will
@@ -151,17 +151,17 @@ public:
      */
     void abandonNoteOns();
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes);
+    void setProperties(const QXmlAttributes &attributes) override;
     
     void setVerticalRangeToNoteRange(LayerGeometryProvider *v);
 
     /// VerticalScaleLayer methods
-    virtual int getYForValue(LayerGeometryProvider *v, double value) const;
-    virtual double getValueForY(LayerGeometryProvider *v, int y) const;
-    virtual QString getScaleUnits() const;
+    int getYForValue(LayerGeometryProvider *v, double value) const override;
+    double getValueForY(LayerGeometryProvider *v, int y) const override;
+    QString getScaleUnits() const override;
 
 signals:
     void reAnalyseRegion(sv_frame_t, sv_frame_t, float, float);
@@ -171,7 +171,7 @@ protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     bool shouldConvertMIDIToHz() const;
 
-    virtual int getDefaultColourHint(bool dark, bool &impose);
+    int getDefaultColourHint(bool dark, bool &impose) override;
 
     FlexiNoteModel::PointList getLocalPoints(LayerGeometryProvider *v, int) const;
 

@@ -67,14 +67,14 @@ public:
      * Retrieve the id of this object. Views have their own unique
      * ids, but ViewProxy objects share the id of their View.
      */
-    int getId() const { return m_id; }
+    int getId() const override { return m_id; }
     
     /**
      * Retrieve the first visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
      * width and zoom level.  The result may be negative.
      */
-    sv_frame_t getStartFrame() const;
+    sv_frame_t getStartFrame() const override;
 
     /**
      * Set the widget pan based on the given first visible frame.  The
@@ -88,7 +88,7 @@ public:
      * frame values (start, end) are calculated from this based on the
      * zoom and other factors.
      */
-    sv_frame_t getCentreFrame() const { return m_centreFrame; }
+    sv_frame_t getCentreFrame() const override { return m_centreFrame; }
 
     /**
      * Set the centre frame of the visible widget.
@@ -100,7 +100,7 @@ public:
      * This is a calculated value based on the centre-frame, widget
      * width and zoom level.
      */
-    sv_frame_t getEndFrame() const;
+    sv_frame_t getEndFrame() const override;
 
     /**
      * Return the pixel x-coordinate corresponding to a given sample
@@ -110,26 +110,26 @@ public:
      * visible area, as that could lead to overflow. In that situation
      * an error will be logged and 0 returned.
      */
-    int getXForFrame(sv_frame_t frame) const;
+    int getXForFrame(sv_frame_t frame) const override;
 
     /**
      * Return the closest frame to the given pixel x-coordinate.
      */
-    sv_frame_t getFrameForX(int x) const;
+    sv_frame_t getFrameForX(int x) const override;
 
     /**
      * Return the closest pixel x-coordinate corresponding to a given
      * view x-coordinate. Default is no scaling, ViewProxy handles
      * scaling case.
      */
-    int getXForViewX(int viewx) const { return viewx; }
+    int getXForViewX(int viewx) const override { return viewx; }
 
     /**
      * Return the closest view x-coordinate corresponding to a given
      * pixel x-coordinate. Default is no scaling, ViewProxy handles
      * scaling case.
      */
-    int getViewXForX(int x) const { return x; }
+    int getViewXForX(int x) const override { return x; }
 
     /**
      * Return the pixel y-coordinate corresponding to a given
@@ -140,7 +140,7 @@ public:
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
     double getYForFrequency(double frequency, double minFreq, double maxFreq, 
-                           bool logarithmic) const;
+                           bool logarithmic) const override;
 
     /**
      * Return the closest frequency to the given pixel y-coordinate,
@@ -149,13 +149,13 @@ public:
      * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
     double getFrequencyForY(double y, double minFreq, double maxFreq,
-                            bool logarithmic) const;
+                            bool logarithmic) const override;
 
     /**
      * Return the zoom level, i.e. the number of frames per pixel or
      * pixels per frame
      */
-    ZoomLevel getZoomLevel() const;
+    ZoomLevel getZoomLevel() const override;
 
     /**
      * Set the zoom level, i.e. the number of frames per pixel or
@@ -259,7 +259,7 @@ public:
 
     virtual void setViewManager(ViewManager *m);
     virtual void setViewManager(ViewManager *m, sv_frame_t initialFrame);
-    virtual ViewManager *getViewManager() const { return m_manager; }
+    ViewManager *getViewManager() const override { return m_manager; }
 
     virtual void setFollowGlobalPan(bool f);
     virtual bool getFollowGlobalPan() const { return m_followPan; }
@@ -267,17 +267,17 @@ public:
     virtual void setFollowGlobalZoom(bool f);
     virtual bool getFollowGlobalZoom() const { return m_followZoom; }
 
-    virtual bool hasLightBackground() const;
-    virtual QColor getForeground() const;
-    virtual QColor getBackground() const;
+    bool hasLightBackground() const override;
+    QColor getForeground() const override;
+    QColor getBackground() const override;
 
-    virtual void drawMeasurementRect(QPainter &p, const Layer *,
-                                     QRect rect, bool focus) const;
+    void drawMeasurementRect(QPainter &p, const Layer *,
+                                     QRect rect, bool focus) const override;
 
-    virtual bool shouldShowFeatureLabels() const {
+    bool shouldShowFeatureLabels() const override {
         return m_manager && m_manager->shouldShowFeatureLabels();
     }
-    virtual bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const {
+    bool shouldIlluminateLocalFeatures(const Layer *, QPoint &) const override {
         return false;
     }
     virtual bool shouldIlluminateLocalSelection(QPoint &, bool &, bool &) const {
@@ -349,20 +349,20 @@ public:
     virtual bool renderPartToSvgFile(QString filename,
                                      sv_frame_t f0, sv_frame_t f1);
     
-    virtual int getTextLabelHeight(const Layer *layer, QPainter &) const;
+    int getTextLabelHeight(const Layer *layer, QPainter &) const override;
 
-    virtual bool getValueExtents(QString unit, double &min, double &max,
-                                 bool &log) const;
+    bool getValueExtents(QString unit, double &min, double &max,
+                                 bool &log) const override;
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
     // First frame actually in model, to right of scale, if present
     virtual sv_frame_t getFirstVisibleFrame() const;
     virtual sv_frame_t getLastVisibleFrame() const;
 
-    sv_frame_t getModelsStartFrame() const;
-    sv_frame_t getModelsEndFrame() const;
+    sv_frame_t getModelsStartFrame() const override;
+    sv_frame_t getModelsEndFrame() const override;
 
     /**
      * To be called from a layer, to obtain the extent of the surface
@@ -370,16 +370,16 @@ public:
      * of the view (if 1x display scaling is in effect) or of a larger
      * cached pixmap (if greater display scaling is in effect).
      */
-    QRect getPaintRect() const;
+    QRect getPaintRect() const override;
 
-    QSize getPaintSize() const { return getPaintRect().size(); }
-    int getPaintWidth() const { return getPaintRect().width(); }
-    int getPaintHeight() const { return getPaintRect().height(); }
+    QSize getPaintSize() const override { return getPaintRect().size(); }
+    int getPaintWidth() const override { return getPaintRect().width(); }
+    int getPaintHeight() const override { return getPaintRect().height(); }
 
-    double scaleSize(double size) const;
-    int scalePixelSize(int size) const;
-    double scalePenWidth(double width) const;
-    QPen scalePen(QPen pen) const;
+    double scaleSize(double size) const override;
+    int scalePixelSize(int size) const override;
+    double scalePenWidth(double width) const override;
+    QPen scalePen(QPen pen) const override;
 
     typedef std::set<Model *> ModelSet;
     ModelSet getModels();
@@ -390,10 +390,10 @@ public:
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
 
-    void updatePaintRect(QRect r) { update(r); }
+    void updatePaintRect(QRect r) override { update(r); }
     
-    View *getView() { return this; } 
-    const View *getView() const { return this; } 
+    View *getView() override { return this; } 
+    const View *getView() const override { return this; } 
     
 signals:
     void propertyContainerAdded(PropertyContainer *pc);
@@ -446,7 +446,7 @@ protected:
 
     int m_id;
     
-    virtual void paintEvent(QPaintEvent *e);
+    void paintEvent(QPaintEvent *e) override;
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
     virtual void drawPlayPointer(QPainter &);
@@ -552,29 +552,29 @@ public:
     ViewPropertyContainer(View *v);
     virtual ~ViewPropertyContainer();
 
-    PropertyList getProperties() const { return m_v->getProperties(); }
-    QString getPropertyLabel(const PropertyName &n) const {
+    PropertyList getProperties() const override { return m_v->getProperties(); }
+    QString getPropertyLabel(const PropertyName &n) const override {
         return m_v->getPropertyLabel(n);
     }
-    PropertyType getPropertyType(const PropertyName &n) const {
+    PropertyType getPropertyType(const PropertyName &n) const override {
         return m_v->getPropertyType(n);
     }
     int getPropertyRangeAndValue(const PropertyName &n, int *min, int *max,
-                                 int *deflt) const {
+                                 int *deflt) const override {
         return m_v->getPropertyRangeAndValue(n, min, max, deflt);
     }
-    QString getPropertyValueLabel(const PropertyName &n, int value) const {
+    QString getPropertyValueLabel(const PropertyName &n, int value) const override {
         return m_v->getPropertyValueLabel(n, value);
     }
-    QString getPropertyContainerName() const {
+    QString getPropertyContainerName() const override {
         return m_v->getPropertyContainerName();
     }
-    QString getPropertyContainerIconName() const {
+    QString getPropertyContainerIconName() const override {
         return m_v->getPropertyContainerIconName();
     }
 
 public slots:
-    virtual void setProperty(const PropertyName &n, int value) {
+    void setProperty(const PropertyName &n, int value) override {
         m_v->setProperty(n, value);
     }
 
