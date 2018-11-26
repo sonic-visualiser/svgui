@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _TEXT_LAYER_H_
-#define _TEXT_LAYER_H_
+#ifndef SV_TEXT_LAYER_H
+#define SV_TEXT_LAYER_H
 
 #include "SingleColourLayer.h"
 #include "data/model/TextModel.h"

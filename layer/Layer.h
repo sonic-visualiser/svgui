@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _LAYER_H_
-#define _LAYER_H_
+#ifndef SV_LAYER_H
+#define SV_LAYER_H
 
 #include "base/PropertyContainer.h"
 #include "base/XmlExportable.h"

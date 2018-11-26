@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SELECTABLE_LABEL_H_
-#define _SELECTABLE_LABEL_H_
+#ifndef SV_SELECTABLE_LABEL_H
+#define SV_SELECTABLE_LABEL_H
 
 #include <QLabel>
 

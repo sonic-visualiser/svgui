@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _IMAGE_LAYER_H_
-#define _IMAGE_LAYER_H_
+#ifndef SV_IMAGE_LAYER_H
+#define SV_IMAGE_LAYER_H
 
 #include "Layer.h"
 #include "data/model/ImageModel.h"

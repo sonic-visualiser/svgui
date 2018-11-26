@@ -12,8 +12,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _MIDI_FILE_IMPORT_DIALOG_H_
-#define _MIDI_FILE_IMPORT_DIALOG_H_
+#ifndef SV_MIDI_FILE_IMPORT_DIALOG_H
+#define SV_MIDI_FILE_IMPORT_DIALOG_H
 
 #include <QObject>
 

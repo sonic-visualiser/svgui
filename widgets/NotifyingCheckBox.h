@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _NOTIFYING_CHECK_BOX_H_
-#define _NOTIFYING_CHECK_BOX_H_
+#ifndef SV_NOTIFYING_CHECK_BOX_H
+#define SV_NOTIFYING_CHECK_BOX_H
 
 #include <QCheckBox>
 

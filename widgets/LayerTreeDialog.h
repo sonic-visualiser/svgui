@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _LAYER_TREE_DIALOG_H_
-#define _LAYER_TREE_DIALOG_H_
+#ifndef SV_LAYER_TREE_DIALOG_H
+#define SV_LAYER_TREE_DIALOG_H
 
 #include <QDialog>
 

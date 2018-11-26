@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _IMAGE_REGION_FINDER_H_
-#define _IMAGE_REGION_FINDER_H_
+#ifndef SV_IMAGE_REGION_FINDER_H
+#define SV_IMAGE_REGION_FINDER_H
 
 #include <QColor>
 #include <QRect>

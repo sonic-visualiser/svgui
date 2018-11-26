@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _WAVEFORM_LAYER_H_
-#define _WAVEFORM_LAYER_H_
+#ifndef SV_WAVEFORM_LAYER_H
+#define SV_WAVEFORM_LAYER_H
 
 #include <QRect>
 

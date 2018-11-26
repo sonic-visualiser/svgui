@@ -13,7 +13,7 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PROGRESS_DIALOG_H_
+#ifndef SV_PROGRESS_DIALOG_H
 
 #include "base/ProgressReporter.h"
 

@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _INTERACTIVE_FILE_FINDER_H_
-#define _INTERACTIVE_FILE_FINDER_H_
+#ifndef SV_INTERACTIVE_FILE_FINDER_H
+#define SV_INTERACTIVE_FILE_FINDER_H
 
 #include "data/fileio/FileFinder.h"
 

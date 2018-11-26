@@ -12,8 +12,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _CLICKABLE_LABEL_H_
-#define _CLICKABLE_LABEL_H_
+#ifndef SV_CLICKABLE_LABEL_H
+#define SV_CLICKABLE_LABEL_H
 
 #include <QLabel>
 

@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _TIME_RULER_H_
-#define _TIME_RULER_H_
+#ifndef SV_TIME_RULER_H
+#define SV_TIME_RULER_H
 
 #include "SingleColourLayer.h"
 

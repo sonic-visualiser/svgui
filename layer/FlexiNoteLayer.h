@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _FLEXINOTE_LAYER_H_
-#define _FLEXINOTE_LAYER_H_
+#ifndef SV_FLEXINOTE_LAYER_H
+#define SV_FLEXINOTE_LAYER_H
 
 #define NOTE_HEIGHT 16
 

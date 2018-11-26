@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SHOW_LAYER_COMMAND_H_
-#define _SHOW_LAYER_COMMAND_H_
+#ifndef SV_SHOW_LAYER_COMMAND_H
+#define SV_SHOW_LAYER_COMMAND_H
 
 #include "base/Command.h"
 

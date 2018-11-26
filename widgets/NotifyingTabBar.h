@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _NOTIFYING_TAB_BAR_H_
-#define _NOTIFYING_TAB_BAR_H_
+#ifndef SV_NOTIFYING_TAB_BAR_H
+#define SV_NOTIFYING_TAB_BAR_H
 
 #include <QTabBar>
 

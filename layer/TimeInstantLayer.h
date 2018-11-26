@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _TIME_INSTANT_LAYER_H_
-#define _TIME_INSTANT_LAYER_H_
+#ifndef SV_TIME_INSTANT_LAYER_H
+#define SV_TIME_INSTANT_LAYER_H
 
 #include "SingleColourLayer.h"
 #include "data/model/SparseOneDimensionalModel.h"

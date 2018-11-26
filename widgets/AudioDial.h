@@ -12,8 +12,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _AUDIO_DIAL_H_
-#define _AUDIO_DIAL_H_
+#ifndef SV_AUDIO_DIAL_H
+#define SV_AUDIO_DIAL_H
 
 /**
  * A rotary dial widget.
