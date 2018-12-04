@@ -881,7 +881,10 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
 
-    RegionModel::PointList points(m_model->getPoints(frame0, frame1));
+    sv_frame_t wholeFrame0 = v->getFrameForX(0);
+    sv_frame_t wholeFrame1 = v->getFrameForX(v->getPaintWidth());
+
+    RegionModel::PointList points(m_model->getPoints(wholeFrame0, wholeFrame1));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -922,11 +925,13 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         const RegionModel::Point &p(*i);
 
         int x = v->getXForFrame(p.frame);
-        int y = getYForValue(v, p.value);
         int w = v->getXForFrame(p.frame + p.duration) - x;
+        int y = getYForValue(v, p.value);
         int h = 9;
         int ex = x + w;
 
+        int gap = v->scalePixelSize(2);
+        
         RegionModel::PointList::const_iterator j = i;
         ++j;
 
@@ -968,7 +973,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                 paint.setPen(QPen(getForegroundQColor(v->getView()), 2));
             }
 
-            paint.drawRect(x, -1, ex - x, v->getPaintHeight() + 2);
+            paint.drawRect(x, -1, ex - x, v->getPaintHeight() + gap);
 
         } else {
 
@@ -982,7 +987,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
                 QString vlabel = QString("%1%2").arg(p.value).arg(getScaleUnits());
                 PaintAssistant::drawVisibleText(v, paint, 
-                                   x - paint.fontMetrics().width(vlabel) - 2,
+                                   x - paint.fontMetrics().width(vlabel) - gap,
                                    y + paint.fontMetrics().height()/2
                                    - paint.fontMetrics().descent(), 
                                    vlabel, PaintAssistant::OutlinedText);
@@ -991,7 +996,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                     (p.frame, m_model->getSampleRate()).toText(true).c_str();
                 PaintAssistant::drawVisibleText(v, paint, 
                                    x,
-                                   y - h/2 - paint.fontMetrics().descent() - 2,
+                                   y - h/2 - paint.fontMetrics().descent() - gap,
                                    hlabel, PaintAssistant::OutlinedText);
             }
             
@@ -1011,8 +1016,27 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         const RegionModel::Point &p(*i);
 
         int x = v->getXForFrame(p.frame);
+        int w = v->getXForFrame(p.frame + p.duration) - x;
         int y = getYForValue(v, p.value);
 
+        QString label = p.label;
+        if (label == "") {
+            label = QString("%1%2").arg(p.value).arg(getScaleUnits());
+        }
+        int labelWidth = paint.fontMetrics().width(label);
+
+        int gap = v->scalePixelSize(2);
+
+        if (m_plotStyle == PlotSegmentation) {
+            if ((x + w < x0 && x + labelWidth + gap < x0) || x > x1) {
+                continue;
+            }
+        } else {
+            if (x + w < x0 || x - labelWidth - gap > x1) {
+                continue;
+            }
+        }
+        
         bool illuminated = false;
 
         if (m_plotStyle != PlotSegmentation) {
@@ -1027,15 +1051,11 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         }
 
         if (!illuminated) {
-            QString label = p.label;
-            if (label == "") {
-                label = QString("%1%2").arg(p.value).arg(getScaleUnits());
-            }
 
             int labelX, labelY;
 
             if (m_plotStyle != PlotSegmentation) {
-                labelX = x - paint.fontMetrics().width(label) - 2;
+                labelX = x - labelWidth - gap;
                 labelY = y + paint.fontMetrics().height()/2 
                     - paint.fontMetrics().descent();
             } else {
@@ -1047,10 +1067,11 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                     }
                 }
                 lastLabelY = labelY;
-                nextLabelMinX = labelX + paint.fontMetrics().width(label);
+                nextLabelMinX = labelX + labelWidth;
             }
 
-            PaintAssistant::drawVisibleText(v, paint, labelX, labelY, label, PaintAssistant::OutlinedText);
+            PaintAssistant::drawVisibleText(v, paint, labelX, labelY, label,
+                                            PaintAssistant::OutlinedText);
         }
     }
 
