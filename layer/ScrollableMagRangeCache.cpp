@@ -15,6 +15,7 @@
 #include "ScrollableMagRangeCache.h"
 
 #include "base/HitCount.h"
+#include "base/Debug.h"
 
 #include <iostream>
 using namespace std;
@@ -31,8 +32,8 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
               v->getXForFrame(newStartFrame));
 
 #ifdef DEBUG_SCROLLABLE_MAG_RANGE_CACHE
-    cerr << "ScrollableMagRangeCache::scrollTo: start frame " << m_startFrame
-         << " -> " << newStartFrame << ", dx = " << dx << endl;
+    SVDEBUG << "ScrollableMagRangeCache::scrollTo: start frame " << m_startFrame
+            << " -> " << newStartFrame << ", dx = " << dx << endl;
 #endif
 
     if (m_startFrame == newStartFrame) {
@@ -86,11 +87,11 @@ ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
     }
 
 #ifdef DEBUG_SCROLLABLE_MAG_RANGE_CACHE
-    cerr << "maxes (" << m_ranges.size() << ") now: ";
+    SVDEBUG << "maxes (" << m_ranges.size() << ") now: ";
     for (int i = 0; in_range_for(m_ranges, i); ++i) {
-        cerr << m_ranges[i].getMax() << " ";
+        SVDEBUG << m_ranges[i].getMax() << " ";
     }
-    cerr << endl;
+    SVDEBUG << endl;
 #endif
 }
 
@@ -99,11 +100,20 @@ ScrollableMagRangeCache::getRange(int x, int count) const
 {
     MagnitudeRange r;
 #ifdef DEBUG_SCROLLABLE_MAG_RANGE_CACHE
-    cerr << "ScrollableMagRangeCache::getRange(" << x << ", " << count << ")" << endl;
+    SVDEBUG << "ScrollableMagRangeCache::getRange(" << x << ", " << count << ")" << endl;
 #endif
     for (int i = 0; i < count; ++i) {
-        r.sample(m_ranges.at(x + i));
+        const auto &cr = m_ranges.at(x + i);
+        if (cr.isSet()) {
+            r.sample(cr);
+        }
+#ifdef DEBUG_SCROLLABLE_MAG_RANGE_CACHE
+        SVDEBUG << cr.getMin() << "->" << cr.getMax() << " ";
+#endif
     }
+#ifdef DEBUG_SCROLLABLE_MAG_RANGE_CACHE
+    SVDEBUG << endl;
+#endif
     return r;
 }
 
@@ -111,9 +121,9 @@ void
 ScrollableMagRangeCache::sampleColumn(int column, const MagnitudeRange &r)
 {
     if (!in_range_for(m_ranges, column)) {
-        cerr << "ERROR: ScrollableMagRangeCache::sampleColumn: column " << column
-             << " is out of range for cache of width " << m_ranges.size()
-             << " (with start frame " << m_startFrame << ")" << endl;
+        SVCERR << "ERROR: ScrollableMagRangeCache::sampleColumn: column " << column
+               << " is out of range for cache of width " << m_ranges.size()
+               << " (with start frame " << m_startFrame << ")" << endl;
         throw logic_error("column out of range");
     } else {
         m_ranges[column].sample(r);
