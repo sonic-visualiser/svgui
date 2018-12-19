@@ -305,6 +305,14 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     }
 
     MagnitudeRange range = m_magCache.getRange(reqx0, reqx1 - reqx0);
+
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "render: returning rect rendered as " << pr.x() << "," << pr.y()
+            << " " << pr.width() << "x" << pr.height() << endl;
+    SVDEBUG << "render: mag range from cache in x-range " << reqx0
+            << " to " << reqx1 << " is " << range.getMin() << " -> "
+            << range.getMax() << endl;
+#endif
     
     return { pr, range };
 }

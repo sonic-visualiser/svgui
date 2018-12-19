@@ -205,7 +205,7 @@ void
 Colour3DPlotLayer::invalidateMagnitudes()
 {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    cerr << "Colour3DPlotLayer::invalidateMagnitudes called" << endl;
+    SVDEBUG << "Colour3DPlotLayer::invalidateMagnitudes called" << endl;
 #endif
     m_viewMags.clear();
 }
@@ -626,7 +626,7 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
     if (dormant) {
 
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        cerr << "Colour3DPlotLayer::setLayerDormant(" << dormant << ")"
+        SVDEBUG << "Colour3DPlotLayer::setLayerDormant(" << dormant << ")"
                   << endl;
 #endif
 
@@ -1118,8 +1118,9 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
         if (m_viewMags[viewId] != magRange) {
             m_viewMags[viewId] = magRange;
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-            cerr << "mag range in this view has changed: "
-                 << magRange.getMin() << " -> " << magRange.getMax() << endl;
+            SVDEBUG << "mag range in this view has changed: "
+                    << magRange.getMin() << " -> "
+                    << magRange.getMax() << endl;
 #endif
         }
     }
@@ -1127,7 +1128,7 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
     if (!continuingPaint && m_normalizeVisibleArea &&
         m_viewMags[viewId] != m_lastRenderedMags[viewId]) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        cerr << "mag range has changed from last rendered range: re-rendering"
+        SVDEBUG << "mag range has changed from last rendered range: re-rendering"
              << endl;
 #endif
         delete m_renderers[viewId];
@@ -1146,7 +1147,7 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 */
     Profiler profiler("Colour3DPlotLayer::paint");
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-    cerr << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", rect is (" << rect.x() << "," << rect.y() << ") " << rect.width() << "x" << rect.height() << endl;
+    SVDEBUG << "Colour3DPlotLayer::paint(): m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << ", rect is (" << rect.x() << "," << rect.y() << ") " << rect.width() << "x" << rect.height() << endl;
 #endif
 
     int completion = 0;
@@ -1160,7 +1161,7 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 
     if (m_model->getWidth() == 0) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
-        cerr << "Colour3DPlotLayer::paint(): model width == 0, "
+        SVDEBUG << "Colour3DPlotLayer::paint(): model width == 0, "
              << "nothing to paint (yet)" << endl;
 #endif
         return;
@@ -1305,8 +1306,8 @@ Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
         } else if (columnNormalization == "none") {
             setNormalization(ColumnNormalization::None);
         } else {
-            cerr << "NOTE: Unknown or unsupported columnNormalization attribute \""
-                 << columnNormalization << "\"" << endl;
+            SVCERR << "NOTE: Unknown or unsupported columnNormalization attribute \""
+                   << columnNormalization << "\"" << endl;
         }
     }
 
