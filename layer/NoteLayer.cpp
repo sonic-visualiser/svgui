@@ -48,7 +48,7 @@
 
 NoteLayer::NoteLayer() :
     SingleColourLayer(),
-    m_model(0),
+    m_model(nullptr),
     m_editing(false),
     m_dragPointX(0),
     m_dragPointY(0),
@@ -56,7 +56,7 @@ NoteLayer::NoteLayer() :
     m_dragStartY(0),
     m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
-    m_editingCommand(0),
+    m_editingCommand(nullptr),
     m_verticalScale(AutoAlignScale),
     m_scaleMinimum(0),
     m_scaleMaximum(0)
@@ -369,7 +369,7 @@ NoteLayer::setVerticalZoomStep(int step)
 RangeMapper *
 NoteLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return 0;
+    if (!m_model) return nullptr;
     
     RangeMapper *mapper;
 
@@ -378,7 +378,7 @@ NoteLayer::getNewVerticalZoomRangeMapper() const
     QString unit;
     getValueExtents(min, max, logarithmic, unit);
 
-    if (min == max) return 0;
+    if (min == max) return nullptr;
     
     if (logarithmic) {
         mapper = new LogRangeMapper(0, 100, min, max, unit);
@@ -945,7 +945,7 @@ NoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 //    SVDEBUG << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -958,7 +958,7 @@ NoteLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -985,7 +985,7 @@ NoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingCommand->deletePoint(m_editingPoint);
 
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -1004,7 +1004,7 @@ NoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -1065,7 +1065,7 @@ NoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
         finish(m_editingCommand);
     }
 
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 

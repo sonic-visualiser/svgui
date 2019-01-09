@@ -101,7 +101,7 @@ public:
     void setShowPeaks(bool);
     bool getShowPeaks() const { return m_showPeaks; }
 
-    virtual bool needsTextLabelHeight() const { return true; }
+    bool needsTextLabelHeight() const override { return true; }
 
     virtual void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;

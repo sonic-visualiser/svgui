@@ -13,7 +13,7 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PROGRESS_DIALOG_H_
+#ifndef SV_PROGRESS_DIALOG_H
 
 #include "base/ProgressReporter.h"
 
@@ -32,18 +32,18 @@ public:
                    Qt::WindowModality modality = Qt::NonModal);
     virtual ~ProgressDialog();
 
-    virtual bool isDefinite() const;
-    virtual void setDefinite(bool definite);
+    bool isDefinite() const override;
+    void setDefinite(bool definite) override;
 
-    virtual bool wasCancelled() const;
+    bool wasCancelled() const override;
 
 signals:
     void showing();
     void cancelled();
 
 public slots:
-    virtual void setMessage(QString text);
-    virtual void setProgress(int percentage);
+    void setMessage(QString text) override;
+    void setProgress(int percentage) override;
 
 protected slots:
     virtual void showTimerElapsed();

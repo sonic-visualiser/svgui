@@ -36,7 +36,7 @@
 
 TimeRulerLayer::TimeRulerLayer() :
     SingleColourLayer(),
-    m_model(0),
+    m_model(nullptr),
     m_labelHeight(LabelTop)
 {
     

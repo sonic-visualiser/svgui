@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PROPERTY_STACK_H_
-#define _PROPERTY_STACK_H_
+#ifndef SV_PROPERTY_STACK_H
+#define SV_PROPERTY_STACK_H
 
 #include <QFrame>
 #include <QTabWidget>

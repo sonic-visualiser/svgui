@@ -34,11 +34,11 @@
 
 TextLayer::TextLayer() :
     SingleColourLayer(),
-    m_model(0),
+    m_model(nullptr),
     m_editing(false),
     m_originalPoint(0, 0.0, tr("Empty Label")),
     m_editingPoint(0, 0.0, tr("Empty Label")),
-    m_editingCommand(0)
+    m_editingCommand(nullptr)
 {
     
 }
@@ -475,7 +475,7 @@ TextLayer::drawEnd(LayerGeometryProvider *v, QMouseEvent *)
     }
 
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -488,7 +488,7 @@ TextLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -516,7 +516,7 @@ TextLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingCommand->deletePoint(m_editingPoint);
 
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -536,7 +536,7 @@ TextLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -593,7 +593,7 @@ TextLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
         finish(m_editingCommand);
     }
     
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 

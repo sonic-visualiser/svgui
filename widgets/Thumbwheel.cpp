@@ -46,7 +46,7 @@ Thumbwheel::Thumbwheel(Qt::Orientation orientation,
     m_atDefault(true),
     m_clickRotation(m_rotation),
     m_showTooltip(true),
-    m_rangeMapper(0)
+    m_rangeMapper(nullptr)
 {
 }
 

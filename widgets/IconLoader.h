@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _ICON_LOADER_H_
-#define _ICON_LOADER_H_
+#ifndef SV_ICON_LOADER_H
+#define SV_ICON_LOADER_H
 
 #include <QIcon>
 

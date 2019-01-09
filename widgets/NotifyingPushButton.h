@@ -39,8 +39,8 @@ signals:
     void mouseLeft();
 
 protected:
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
 };
 
 #endif

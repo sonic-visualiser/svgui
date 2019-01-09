@@ -12,8 +12,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _MIDI_FILE_IMPORT_DIALOG_H_
-#define _MIDI_FILE_IMPORT_DIALOG_H_
+#ifndef SV_MIDI_FILE_IMPORT_DIALOG_H
+#define SV_MIDI_FILE_IMPORT_DIALOG_H
 
 #include <QObject>
 
@@ -27,11 +27,11 @@ class MIDIFileImportDialog : public QObject,
 public:
     MIDIFileImportDialog(QWidget *parent = 0);
 
-    virtual TrackPreference getTrackImportPreference
+    TrackPreference getTrackImportPreference
     (QStringList trackNames, bool haveSomePercussion,
-     QString &singleTrack) const;
+     QString &singleTrack) const override;
 
-    virtual void showError(QString error);
+    void showError(QString error) override;
 
 protected:
     QWidget *m_parent;

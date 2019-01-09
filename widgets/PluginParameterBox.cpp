@@ -37,7 +37,7 @@
 PluginParameterBox::PluginParameterBox(Vamp::PluginBase *plugin, QWidget *parent) :
     QFrame(parent),
     m_plugin(plugin),
-    m_programCombo(0)
+    m_programCombo(nullptr)
 {
     m_layout = new QGridLayout;
     setLayout(m_layout);
@@ -143,10 +143,10 @@ PluginParameterBox::populate()
 
         ParamRec rec;
         rec.param = params[i];
-        rec.dial = 0;
-        rec.spin = 0;
-        rec.check = 0;
-        rec.combo = 0;
+        rec.dial = nullptr;
+        rec.spin = nullptr;
+        rec.check = nullptr;
+        rec.combo = nullptr;
         
         if (params[i].isQuantized && !valueNames.empty()) {
             
@@ -191,7 +191,7 @@ PluginParameterBox::populate()
                        << "\": invalid range " << min << " -> " << max
                        << " with quantize step " << qtz << endl;
             } else {
-                RangeMapper *rm = 0;
+                RangeMapper *rm = nullptr;
                 if (hint & PortHint::Logarithmic) {
                     rm = new LogRangeMapper(imin, imax, min, max, unit);
                 } else {

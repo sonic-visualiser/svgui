@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _COLOUR_NAME_DIALOG_H_
-#define _COLOUR_NAME_DIALOG_H_
+#ifndef SV_COLOUR_NAME_DIALOG_H
+#define SV_COLOUR_NAME_DIALOG_H
 
 #include <QDialog>
 #include <QColor>

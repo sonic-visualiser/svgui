@@ -62,8 +62,8 @@
 
 //#define DEBUG_PANE
 
-QCursor *Pane::m_measureCursor1 = 0;
-QCursor *Pane::m_measureCursor2 = 0;
+QCursor *Pane::m_measureCursor1 = nullptr;
+QCursor *Pane::m_measureCursor2 = nullptr;
 
 Pane::Pane(QWidget *w) :
     View(w, true),
@@ -79,11 +79,11 @@ Pane::Pane(QWidget *w) :
     m_centreLineVisible(true),
     m_scaleWidth(0),
     m_pendingWheelAngle(0),
-    m_headsUpDisplay(0),
-    m_vpan(0),
-    m_hthumb(0),
-    m_vthumb(0),
-    m_reset(0),
+    m_headsUpDisplay(nullptr),
+    m_vpan(nullptr),
+    m_hthumb(nullptr),
+    m_vthumb(nullptr),
+    m_reset(nullptr),
     m_mouseInWidget(false),
     m_playbackFrameMoveScheduled(false),
     m_playbackFrameMoveTo(0)
@@ -107,7 +107,7 @@ Pane::updateHeadsUpDisplay()
 
     if (!isVisible()) return;
 
-    Layer *layer = 0;
+    Layer *layer = nullptr;
     if (getLayerCount() > 0) {
         layer = getLayer(getLayerCount() - 1);
     }
@@ -252,7 +252,7 @@ Pane::updateVerticalPanner()
     // implement vertical zoom steps as well, but they don't all at
     // the moment.
 
-    Layer *layer = 0;
+    Layer *layer = nullptr;
     if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
     int discard;
     if (layer && layer->getVerticalZoomSteps(discard) == 0) {
@@ -367,8 +367,8 @@ Pane::paintEvent(QPaintEvent *e)
     Layer *topLayer = getTopLayer();
     bool haveSomeTimeXAxis = false;
 
-    const Model *waveformModel = 0; // just for reporting purposes
-    const Model *workModel = 0;
+    const Model *waveformModel = nullptr; // just for reporting purposes
+    const Model *workModel = nullptr;
 
     for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
         --vi;
@@ -511,7 +511,7 @@ Pane::getVerticalScaleWidth() const
 void
 Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 {
-    Layer *scaleLayer = 0;
+    Layer *scaleLayer = nullptr;
 
 //    cerr << "Pane::drawVerticalScale[" << this << "]" << endl;
     
@@ -1131,7 +1131,7 @@ Pane::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
     if (!render(*paint, 0, f0, f1)) {
         delete paint;
         delete image;
-        return 0;
+        return nullptr;
     } else {
         delete paint;
         return image;
@@ -1267,7 +1267,7 @@ Pane::getTopFlexiNoteLayer()
             return m_layerStack[i];
         }
     }
-    return 0;
+    return nullptr;
 }
 
 void
@@ -1869,7 +1869,7 @@ Pane::zoomToRegion(QRect r)
     QString unit;
     double min, max;
     bool log;
-    Layer *layer = 0;
+    Layer *layer = nullptr;
     for (LayerList::const_iterator i = m_layerStack.begin();
          i != m_layerStack.end(); ++i) { 
         if ((*i)->getValueExtents(min, max, log, unit) &&
@@ -2405,7 +2405,7 @@ Pane::horizontalThumbwheelMoved(int value)
 void
 Pane::verticalThumbwheelMoved(int value)
 {
-    Layer *layer = 0;
+    Layer *layer = nullptr;
     if (getLayerCount() > 0) layer = getLayer(getLayerCount() - 1);
     if (layer) {
         int defaultStep = 0;
@@ -2681,7 +2681,7 @@ Pane::viewZoomLevelChanged(View *v, ZoomLevel z, bool locked)
 void
 Pane::propertyContainerSelected(View *v, PropertyContainer *pc)
 {
-    Layer *layer = 0;
+    Layer *layer = nullptr;
 
     if (getLayerCount() > 0) {
         layer = getLayer(getLayerCount() - 1);
@@ -2693,7 +2693,7 @@ Pane::propertyContainerSelected(View *v, PropertyContainer *pc)
     updateHeadsUpDisplay();
 
     if (m_vthumb) {
-        RangeMapper *rm = 0;
+        RangeMapper *rm = nullptr;
         if (layer) rm = layer->getNewVerticalZoomRangeMapper();
         if (rm) m_vthumb->setRangeMapper(rm);
     }
@@ -2708,7 +2708,7 @@ Pane::propertyContainerSelected(View *v, PropertyContainer *pc)
 void
 Pane::verticalZoomChanged()
 {
-    Layer *layer = 0;
+    Layer *layer = nullptr;
 
     if (getLayerCount() > 0) {
 

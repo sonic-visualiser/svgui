@@ -30,12 +30,12 @@
 //#define DEBUG_VIEW_MANAGER 1
 
 ViewManager::ViewManager() :
-    m_playSource(0),
-    m_recordTarget(0),
+    m_playSource(nullptr),
+    m_recordTarget(nullptr),
     m_globalCentreFrame(0),
     m_globalZoom(ZoomLevel::FramesPerPixel, 1024),
     m_playbackFrame(0),
-    m_playbackModel(0),
+    m_playbackModel(nullptr),
     m_mainModelSampleRate(0),
     m_lastLeft(0), 
     m_lastRight(0),

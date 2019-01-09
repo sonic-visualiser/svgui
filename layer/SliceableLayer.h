@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SLICEABLE_LAYER_H_
-#define _SLICEABLE_LAYER_H_
+#ifndef SV_SLICEABLE_LAYER_H
+#define SV_SLICEABLE_LAYER_H
 
 #include "Layer.h"
 

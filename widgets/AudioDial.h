@@ -12,8 +12,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _AUDIO_DIAL_H_
-#define _AUDIO_DIAL_H_
+#ifndef SV_AUDIO_DIAL_H
+#define SV_AUDIO_DIAL_H
 
 /**
  * A rotary dial widget.
@@ -115,15 +115,15 @@ public slots:
 
 protected:
     void drawTick(QPainter &paint, double angle, int size, bool internal);
-    virtual void paintEvent(QPaintEvent *);
+    void paintEvent(QPaintEvent *) override;
 
     // Alternate mouse behavior event handlers.
-    virtual void mousePressEvent(QMouseEvent *pMouseEvent);
-    virtual void mouseMoveEvent(QMouseEvent *pMouseEvent);
-    virtual void mouseReleaseEvent(QMouseEvent *pMouseEvent);
-    virtual void mouseDoubleClickEvent(QMouseEvent *pMouseEvent);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+    void mousePressEvent(QMouseEvent *pMouseEvent) override;
+    void mouseMoveEvent(QMouseEvent *pMouseEvent) override;
+    void mouseReleaseEvent(QMouseEvent *pMouseEvent) override;
+    void mouseDoubleClickEvent(QMouseEvent *pMouseEvent) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
 
 protected slots:
     void updateMappedValue(int value);

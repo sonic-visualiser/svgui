@@ -67,11 +67,11 @@ private slots:
     void selfClicked();
     
 protected:
-    virtual void paintEvent(QPaintEvent *);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
-    virtual void mousePressEvent(QMouseEvent *);
-    virtual void wheelEvent(QWheelEvent *e);
+    void paintEvent(QPaintEvent *) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
+    void mousePressEvent(QMouseEvent *) override;
+    void wheelEvent(QWheelEvent *e) override;
     
     LevelPanWidget *m_lpw;
     int m_pixels;

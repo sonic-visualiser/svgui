@@ -41,18 +41,18 @@
 
 //#define DEBUG_COMMAND_HISTORY 1
 
-CommandHistory *CommandHistory::m_instance = 0;
+CommandHistory *CommandHistory::m_instance = nullptr;
 
 CommandHistory::CommandHistory() :
     m_undoLimit(50),
     m_redoLimit(50),
     m_menuLimit(15),
     m_savedAt(0),
-    m_currentCompound(0),
+    m_currentCompound(nullptr),
     m_executeCompound(false),
-    m_currentBundle(0),
+    m_currentBundle(nullptr),
     m_bundling(false),
-    m_bundleTimer(0),
+    m_bundleTimer(nullptr),
     m_bundleTimeout(3000)
 {
     IconLoader loader;
@@ -254,7 +254,7 @@ CommandHistory::closeBundle()
 #endif
         emit activity(m_currentBundle->getName());
     }
-    m_currentBundle = 0;
+    m_currentBundle = nullptr;
     m_currentBundleName = "";
 }
 
@@ -316,7 +316,7 @@ CommandHistory::endCompoundOperation()
 #endif
 
     MacroCommand *toAdd = m_currentCompound;
-    m_currentCompound = 0;
+    m_currentCompound = nullptr;
 
     if (toAdd->haveCommands()) {
 

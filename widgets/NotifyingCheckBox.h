@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _NOTIFYING_CHECK_BOX_H_
-#define _NOTIFYING_CHECK_BOX_H_
+#ifndef SV_NOTIFYING_CHECK_BOX_H
+#define SV_NOTIFYING_CHECK_BOX_H
 
 #include <QCheckBox>
 
@@ -38,8 +38,8 @@ signals:
     void mouseLeft();
 
 protected:
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
 };
 
 #endif

@@ -111,8 +111,8 @@ mapDiscrete(double norm, vector<QColor> &colours, double &r, double &g, double &
 {
     int n = int(colours.size());
     double m = norm * (n-1);
-    if (m >= n-1) { colours[n-1].getRgbF(&r, &g, &b, 0); return; }
-    if (m <= 0) { colours[0].getRgbF(&r, &g, &b, 0); return; }
+    if (m >= n-1) { colours[n-1].getRgbF(&r, &g, &b, nullptr); return; }
+    if (m <= 0) { colours[0].getRgbF(&r, &g, &b, nullptr); return; }
     int base(int(floor(m)));
     double prop0 = (base + 1.0) - m, prop1 = m - base;
     QColor c0(colours[base]), c1(colours[base+1]);

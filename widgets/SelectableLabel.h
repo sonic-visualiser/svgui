@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _SELECTABLE_LABEL_H_
-#define _SELECTABLE_LABEL_H_
+#ifndef SV_SELECTABLE_LABEL_H
+#define SV_SELECTABLE_LABEL_H
 
 #include <QLabel>
 
@@ -40,11 +40,11 @@ public slots:
     void toggle();
 
 protected:
-    virtual void mousePressEvent(QMouseEvent *e);
-    virtual void mouseReleaseEvent(QMouseEvent *e);
-    virtual void mouseDoubleClickEvent(QMouseEvent *e);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+    void mousePressEvent(QMouseEvent *e) override;
+    void mouseReleaseEvent(QMouseEvent *e) override;
+    void mouseDoubleClickEvent(QMouseEvent *e) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
     void setupStyle();
     QString m_selectedText;
     QString m_unselectedText;

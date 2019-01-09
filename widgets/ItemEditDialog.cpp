@@ -35,21 +35,21 @@ ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
     m_defaultFrame(0),
     m_defaultDuration(0),
     m_defaultValue(0),
-    m_frameTimeSpinBox(0),
-    m_realTimeSecsSpinBox(0),
-    m_realTimeUSecsSpinBox(0),
-    m_frameDurationSpinBox(0),
-    m_realDurationSecsSpinBox(0),
-    m_realDurationUSecsSpinBox(0),
-    m_valueSpinBox(0),
-    m_textField(0)
+    m_frameTimeSpinBox(nullptr),
+    m_realTimeSecsSpinBox(nullptr),
+    m_realTimeUSecsSpinBox(nullptr),
+    m_frameDurationSpinBox(nullptr),
+    m_realDurationSecsSpinBox(nullptr),
+    m_realDurationUSecsSpinBox(nullptr),
+    m_valueSpinBox(nullptr),
+    m_textField(nullptr)
 {
     QGridLayout *grid = new QGridLayout;
     setLayout(grid);
 
-    QGroupBox *timeBox = 0;
-    QGroupBox *valueBox = 0;
-    QGridLayout *subgrid = 0;
+    QGroupBox *timeBox = nullptr;
+    QGroupBox *valueBox = nullptr;
+    QGridLayout *subgrid = nullptr;
 
     int row = 0, subrow = 0;
 
