@@ -21,6 +21,7 @@
 class QTableWidget;
 class QComboBox;
 class QLabel;
+class QFrame;
     
 #include <QDialog>
 
@@ -31,12 +32,19 @@ class CSVFormatDialog : public QDialog
 public:
     CSVFormatDialog(QWidget *parent,
                     CSVFormat initialFormat,
-                    int maxDisplayCols = 5);
+                    int maxDisplayCols);
+
+    CSVFormatDialog(QWidget *parent,
+                    QString csvFilePath, // to guess format of
+                    sv_samplerate_t referenceSampleRate,
+                    int maxDisplayCols);
+
     ~CSVFormatDialog();
 
     CSVFormat getFormat() const;
     
 protected slots:
+    void separatorChanged(QString);
     void timingTypeChanged(int type);
     void sampleRateChanged(QString);
     void windowSizeChanged(QString);
@@ -46,6 +54,8 @@ protected slots:
     void updateModelLabel();
 
 protected:
+    QString m_csvFilePath;
+    sv_samplerate_t m_referenceSampleRate;
     CSVFormat m_format;
     int m_maxDisplayCols;
     
@@ -58,11 +68,17 @@ protected:
     std::map<TimingOption, QString> m_timingLabels;
     TimingOption m_initialTimingOption;
 
+    void init();
+    void repopulate();
     void columnPurposeChangedForAnnotationType(QComboBox *, int purpose);
     void updateComboVisibility();
     void applyStartTimePurpose();
     void removeStartTimePurpose();
+
+    QFrame *m_exampleFrame;
+    int m_exampleFrameRow;
     
+    QComboBox *m_separatorCombo;
     QComboBox *m_timingTypeCombo;
     QLabel *m_sampleRateLabel;
     QComboBox *m_sampleRateCombo;
