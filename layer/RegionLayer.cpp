@@ -878,8 +878,6 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 //    Profiler profiler("RegionLayer::paint", true);
 
     int x0 = rect.left() - 40, x1 = rect.right();
-    sv_frame_t frame0 = v->getFrameForX(x0);
-    sv_frame_t frame1 = v->getFrameForX(x1);
 
     sv_frame_t wholeFrame0 = v->getFrameForX(0);
     sv_frame_t wholeFrame1 = v->getFrameForX(v->getPaintWidth());
