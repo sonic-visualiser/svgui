@@ -1158,7 +1158,10 @@ View::movePlayPointer(sv_frame_t newFrame)
 
             sv_frame_t w = getEndFrame() - getStartFrame();
             w -= w/5;
-            sv_frame_t sf = (m_playPointerFrame / w) * w - w/8;
+            sv_frame_t sf = m_playPointerFrame;
+            if (w > 0) {
+                sf = (sf / w) * w - w/8;
+            }
 
             if (m_manager &&
                 m_manager->isPlaying() &&
