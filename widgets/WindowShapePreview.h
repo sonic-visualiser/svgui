@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _WINDOW_SHAPE_PREVIEW_H_
-#define _WINDOW_SHAPE_PREVIEW_H_
+#ifndef SV_WINDOW_SHAPE_PREVIEW_H
+#define SV_WINDOW_SHAPE_PREVIEW_H
 
 #include <QFrame>
 

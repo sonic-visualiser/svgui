@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _KEY_REFERENCE_H_
-#define _KEY_REFERENCE_H_
+#ifndef SV_KEY_REFERENCE_H
+#define SV_KEY_REFERENCE_H
 
 #include <QObject>
 #include <QString>

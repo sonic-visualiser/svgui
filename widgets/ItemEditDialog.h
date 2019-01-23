@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _ITEM_EDIT_DIALOG_H_
-#define _ITEM_EDIT_DIALOG_H_
+#ifndef SV_ITEM_EDIT_DIALOG_H
+#define SV_ITEM_EDIT_DIALOG_H
 
 #include <QDialog>
 #include <QString>

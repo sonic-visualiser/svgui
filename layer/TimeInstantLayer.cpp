@@ -41,10 +41,10 @@
 
 TimeInstantLayer::TimeInstantLayer() :
     SingleColourLayer(),
-    m_model(0),
+    m_model(nullptr),
     m_editing(false),
     m_editingPoint(0, tr("New Point")),
-    m_editingCommand(0),
+    m_editingCommand(nullptr),
     m_plotStyle(PlotInstants)
 {
 }
@@ -522,7 +522,7 @@ TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
              .toText(false).c_str());
     m_editingCommand->setName(newName);
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -538,7 +538,7 @@ TimeInstantLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -566,7 +566,7 @@ TimeInstantLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingCommand->deletePoint(m_editingPoint);
 
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -586,7 +586,7 @@ TimeInstantLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -630,7 +630,7 @@ TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
         m_editingCommand->setName(newName);
         finish(m_editingCommand);
     }
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 

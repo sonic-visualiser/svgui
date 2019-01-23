@@ -54,11 +54,11 @@
 
 TimeValueLayer::TimeValueLayer() :
     SingleColourLayer(),
-    m_model(0),
+    m_model(nullptr),
     m_editing(false),
     m_originalPoint(0, 0.0, tr("New Point")),
     m_editingPoint(0, 0.0, tr("New Point")),
-    m_editingCommand(0),
+    m_editingCommand(nullptr),
     m_colourMap(0),
     m_colourInverted(false),
     m_plotStyle(PlotConnectedPoints),
@@ -511,7 +511,7 @@ TimeValueLayer::setVerticalZoomStep(int step)
 RangeMapper *
 TimeValueLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return 0;
+    if (!m_model) return nullptr;
     
     RangeMapper *mapper;
 
@@ -520,7 +520,7 @@ TimeValueLayer::getNewVerticalZoomRangeMapper() const
     QString unit;
     getValueExtents(min, max, logarithmic, unit);
 
-    if (min == max) return 0;
+    if (min == max) return nullptr;
     
     if (logarithmic) {
         mapper = new LogRangeMapper(0, 100, min, max, unit);
@@ -1430,7 +1430,7 @@ TimeValueLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 #endif
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -1446,7 +1446,7 @@ TimeValueLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -1475,7 +1475,7 @@ TimeValueLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingCommand->deletePoint(m_editingPoint);
 
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -1496,7 +1496,7 @@ TimeValueLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -1554,7 +1554,7 @@ TimeValueLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
         finish(m_editingCommand);
     }
 
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -1803,7 +1803,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
 
             bool ok = false;
             QString selected = ListInputDialog::getItem
-                (0, tr("Choose value calculation"),
+                (nullptr, tr("Choose value calculation"),
                  text, options, prevSelection, &ok);
 
             if (!ok) {
@@ -1827,7 +1827,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
             if (generation == Labeller::ValueFromCyclicalCounter ||
                 generation == Labeller::ValueFromTwoLevelCounter) {
                 int cycleSize = QInputDialog::getInt
-                    (0, tr("Select cycle size"),
+                    (nullptr, tr("Select cycle size"),
                      tr("Cycle size:"), 4, 2, 16, 1);
                 labeller.setCounterCycleSize(cycleSize);
             }
@@ -1882,7 +1882,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
             }
 #endif
             labeller.setValue<SparseTimeValueModel::Point>
-                (newPoint, (i == points.begin()) ? 0 : &prevPoint);
+                (newPoint, (i == points.begin()) ? nullptr : &prevPoint);
 #ifdef DEBUG_TIME_VALUE_LAYER
             cerr << "New point value = " << newPoint.value << endl;
 #endif

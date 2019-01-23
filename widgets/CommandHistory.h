@@ -22,8 +22,8 @@
    distributed under the GNU Lesser General Public License.
 */
 
-#ifndef _MULTI_VIEW_COMMAND_HISTORY_H_
-#define _MULTI_VIEW_COMMAND_HISTORY_H_
+#ifndef SV_MULTI_VIEW_COMMAND_HISTORY_H
+#define SV_MULTI_VIEW_COMMAND_HISTORY_H
 
 #include <QObject>
 #include <QString>

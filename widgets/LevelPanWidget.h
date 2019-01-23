@@ -47,7 +47,7 @@ public:
     /// Draw a suitably sized copy of the widget's contents to the given device
     void renderTo(QPaintDevice *, QRectF, bool asIfEditable) const;
 
-    QSize sizeHint() const;
+    QSize sizeHint() const override;
                                                
 public slots:
     /// Set level. The basic level range is [0,1] but the scale may go
@@ -70,7 +70,7 @@ public slots:
     void setToDefault();
     
     // public so it can be called from LevelPanToolButton (ew)
-    virtual void wheelEvent(QWheelEvent *ev);
+    void wheelEvent(QWheelEvent *ev) override;
     
 signals:
     void levelChanged(float); // range [0,1]
@@ -80,12 +80,12 @@ signals:
     void mouseLeft();
     
 protected:
-    virtual void mousePressEvent(QMouseEvent *ev);
-    virtual void mouseMoveEvent(QMouseEvent *ev);
-    virtual void mouseReleaseEvent(QMouseEvent *ev);
-    virtual void paintEvent(QPaintEvent *ev);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+    void mousePressEvent(QMouseEvent *ev) override;
+    void mouseMoveEvent(QMouseEvent *ev) override;
+    void mouseReleaseEvent(QMouseEvent *ev) override;
+    void paintEvent(QPaintEvent *ev) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
 
     void emitLevelChanged();
     void emitPanChanged();

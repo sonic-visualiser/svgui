@@ -44,32 +44,32 @@ public:
      * background, false if it has a light colour on a dark
      * background.
      */
-    virtual bool hasLightBackground() const;
+    bool hasLightBackground() const override;
 
     /**
      * Implements Layer::getLayerColourSignificance()
      */
-    virtual ColourSignificance getLayerColourSignificance() const {
+    ColourSignificance getLayerColourSignificance() const override {
         return ColourDistinguishes;
     }
 
-    virtual QPixmap getLayerPresentationPixmap(QSize size) const;
+    QPixmap getLayerPresentationPixmap(QSize size) const override;
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const;
-    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
-    virtual void setProperty(const PropertyName &, int value);
+    PropertyList getProperties() const override;
+    QString getPropertyLabel(const PropertyName &) const override;
+    PropertyType getPropertyType(const PropertyName &) const override;
+    QString getPropertyGroupName(const PropertyName &) const override;
+    int getPropertyRangeAndValue(const PropertyName &,
+                                         int *min, int *max, int *deflt) const override;
+    QString getPropertyValueLabel(const PropertyName &,
+                                          int value) const override;
+    RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
+    void setProperty(const PropertyName &, int value) override;
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
-    virtual void setProperties(const QXmlAttributes &attributes);
+    void setProperties(const QXmlAttributes &attributes) override;
 
     virtual void setDefaultColourFor(LayerGeometryProvider *v);
 

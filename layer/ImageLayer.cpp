@@ -44,11 +44,11 @@ ImageLayer::m_imageMapMutex;
 
 ImageLayer::ImageLayer() :
     Layer(),
-    m_model(0),
+    m_model(nullptr),
     m_editing(false),
     m_originalPoint(0, "", ""),
     m_editingPoint(0, "", ""),
-    m_editingCommand(0)
+    m_editingCommand(nullptr)
 {
 }
 
@@ -614,7 +614,7 @@ ImageLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
     }
 
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -653,7 +653,7 @@ ImageLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -689,7 +689,7 @@ ImageLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
         finish(m_editingCommand);
     }
     
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 

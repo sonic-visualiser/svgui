@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _INTERACTIVE_FILE_FINDER_H_
-#define _INTERACTIVE_FILE_FINDER_H_
+#ifndef SV_INTERACTIVE_FILE_FINDER_H
+#define SV_INTERACTIVE_FILE_FINDER_H
 
 #include "data/fileio/FileFinder.h"
 
@@ -38,11 +38,11 @@ public:
         return m_sessionExtension;
     }
 
-    QString getOpenFileName(FileType type, QString fallbackLocation = "");
-    QString getSaveFileName(FileType type, QString fallbackLocation = "");
-    void registerLastOpenedFilePath(FileType type, QString path);
+    QString getOpenFileName(FileType type, QString fallbackLocation = "") override;
+    QString getSaveFileName(FileType type, QString fallbackLocation = "") override;
+    void registerLastOpenedFilePath(FileType type, QString path) override;
 
-    QString find(FileType type, QString location, QString lastKnownLocation = "");
+    QString find(FileType type, QString location, QString lastKnownLocation = "") override;
 
     static void setParentWidget(QWidget *);
 

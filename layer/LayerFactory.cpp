@@ -371,7 +371,7 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
     } else if (layerType == Image) {
         return new ImageModel(baseModel->getSampleRate(), 1, true);
     } else {
-        return 0;
+        return nullptr;
     }
 }
 
@@ -407,7 +407,7 @@ LayerFactory::setChannel(Layer *layer, int channel)
 Layer *
 LayerFactory::createLayer(LayerType type)
 {
-    Layer *layer = 0;
+    Layer *layer = nullptr;
 
     switch (type) {
 

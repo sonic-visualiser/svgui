@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _PLUGIN_PARAMETER_DIALOG_H_
-#define _PLUGIN_PARAMETER_DIALOG_H_
+#ifndef SV_PLUGIN_PARAMETER_DIALOG_H
+#define SV_PLUGIN_PARAMETER_DIALOG_H
 
 #include <QDialog>
 
@@ -74,7 +74,7 @@ public:
     void getProcessingParameters(int &stepSize, int &blockSize,
                                  WindowType &windowType) const;
 
-    int exec();
+    int exec() override;
 
 signals:
     void pluginConfigurationChanged(QString);

@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _ACTIVITY_LOG_H_
-#define _ACTIVITY_LOG_H_
+#ifndef SV_ACTIVITY_LOG_H
+#define SV_ACTIVITY_LOG_H
 
 #include <QDialog>
 #include <QString>

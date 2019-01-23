@@ -60,14 +60,14 @@ signals:
     void mouseLeft();
 
 protected:
-    virtual void mousePressEvent(QMouseEvent *ev);
-    virtual void mouseDoubleClickEvent(QMouseEvent *ev);
-    virtual void mouseMoveEvent(QMouseEvent *ev);
-    virtual void mouseReleaseEvent(QMouseEvent *ev);
-    virtual void wheelEvent( QWheelEvent *ev );
-    virtual void paintEvent(QPaintEvent *ev);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+    void mousePressEvent(QMouseEvent *ev) override;
+    void mouseDoubleClickEvent(QMouseEvent *ev) override;
+    void mouseMoveEvent(QMouseEvent *ev) override;
+    void mouseReleaseEvent(QMouseEvent *ev) override;
+    void wheelEvent( QWheelEvent *ev ) override;
+    void paintEvent(QPaintEvent *ev) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
 
     int getMaxX() const;
 

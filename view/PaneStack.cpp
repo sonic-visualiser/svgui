@@ -39,7 +39,7 @@
 
 PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     QFrame(parent),
-    m_currentPane(0),
+    m_currentPane(nullptr),
     m_showAccessories(true),
     m_showAlignmentViews(false),
     m_splitter(new QSplitter),
@@ -129,7 +129,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     av->setViewManager(m_viewManager);
     layout->addWidget(av, 2, 1);
 
-    QWidget *properties = 0;
+    QWidget *properties = nullptr;
     if (suppressPropertyBox) {
         properties = new QFrame();
     } else {
@@ -198,7 +198,7 @@ PaneStack::relinkAlignmentViews()
         if (i + 1 < (int)m_panes.size()) {
             m_panes[i].alignmentView->setViewBelow(m_panes[i+1].pane);
         } else {
-            m_panes[i].alignmentView->setViewBelow(0);
+            m_panes[i].alignmentView->setViewBelow(nullptr);
         }
     }
 }
@@ -207,8 +207,8 @@ void
 PaneStack::unlinkAlignmentViews()
 {
     for (int i = 0; i < (int)m_panes.size(); ++i) {
-        m_panes[i].alignmentView->setViewAbove(0);
-        m_panes[i].alignmentView->setViewBelow(0);
+        m_panes[i].alignmentView->setViewAbove(nullptr);
+        m_panes[i].alignmentView->setViewBelow(nullptr);
     }
 }
 
@@ -262,7 +262,7 @@ PaneStack::getPane(int n)
     if (n < (int)m_panes.size()) {
         return m_panes[n].pane;
     } else {
-        return 0;
+        return nullptr;
     }
 }
 
@@ -293,7 +293,7 @@ PaneStack::deletePane(Pane *pane)
     std::vector<PaneRec>::iterator i;
     bool found = false;
 
-    QWidget *stack = 0;
+    QWidget *stack = nullptr;
 
     for (i = m_panes.begin(); i != m_panes.end(); ++i) {
         if (i->pane == pane) {
@@ -344,7 +344,7 @@ PaneStack::deletePane(Pane *pane)
         if (m_panes.size() > 0) {
             setCurrentPane(m_panes[0].pane);
         } else {
-            setCurrentPane(0);
+            setCurrentPane(nullptr);
         }
     }
 
@@ -399,7 +399,7 @@ PaneStack::hidePane(Pane *pane)
                 if (m_panes.size() > 0) {
                     setCurrentPane(m_panes[0].pane);
                 } else {
-                    setCurrentPane(0);
+                    setCurrentPane(nullptr);
                 }
             }
             
@@ -474,7 +474,7 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
         ++i;
     }
 
-    if (found || pane == 0) {
+    if (found || pane == nullptr) {
         m_currentPane = pane;
         emit currentPaneChanged(m_currentPane);
     } else {
@@ -504,7 +504,7 @@ PaneStack::setCurrentLayer(Pane *pane, Layer *layer) // may be null
                         stack->setCurrentIndex
                             (stack->getContainerIndex
                              (pane->getPropertyContainer(0)));
-                        emit currentLayerChanged(pane, 0);
+                        emit currentLayerChanged(pane, nullptr);
                     }
                 }
                 break;
@@ -550,7 +550,7 @@ PaneStack::propertyContainerSelected(View *client, PropertyContainer *pc)
 
     Layer *layer = dynamic_cast<Layer *>(pc);
     if (layer) emit currentLayerChanged(m_currentPane, layer);
-    else emit currentLayerChanged(m_currentPane, 0);
+    else emit currentLayerChanged(m_currentPane, nullptr);
 }
 
 void

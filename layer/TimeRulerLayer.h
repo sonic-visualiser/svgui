@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _TIME_RULER_H_
-#define _TIME_RULER_H_
+#ifndef SV_TIME_RULER_H
+#define SV_TIME_RULER_H
 
 #include "SingleColourLayer.h"
 
@@ -32,41 +32,41 @@ class TimeRulerLayer : public SingleColourLayer
 public:
     TimeRulerLayer();
 
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
     void setModel(Model *);
-    virtual const Model *getModel() const { return m_model; }
+    const Model *getModel() const override { return m_model; }
 
     enum LabelHeight { LabelTop, LabelMiddle, LabelBottom };
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
-    virtual bool snapToFeatureFrame(LayerGeometryProvider *, sv_frame_t &, int &, SnapType) const;
+    bool snapToFeatureFrame(LayerGeometryProvider *, sv_frame_t &, int &, SnapType) const override;
 
-    virtual ColourSignificance getLayerColourSignificance() const {
+    ColourSignificance getLayerColourSignificance() const override {
         return ColourIrrelevant;
     }
 
-    virtual bool getValueExtents(double &, double &, bool &, QString &) const {
+    bool getValueExtents(double &, double &, bool &, QString &) const override {
         return false;
     }
 
-    virtual QString getLayerPresentationName() const;
+    QString getLayerPresentationName() const override;
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const { return 0; }
+    int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const override { return 0; }
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes);
+    void setProperties(const QXmlAttributes &attributes) override;
 
-    virtual bool canExistWithoutModel() const { return true; }
+    bool canExistWithoutModel() const override { return true; }
 
 protected:
     Model *m_model;
     LabelHeight m_labelHeight;
 
-    virtual int getDefaultColourHint(bool dark, bool &impose);
+    int getDefaultColourHint(bool dark, bool &impose) override;
 
     int64_t getMajorTickUSec(LayerGeometryProvider *, bool &quarterTicks) const;
     int getXForUSec(LayerGeometryProvider *, double usec) const;

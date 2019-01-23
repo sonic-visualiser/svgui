@@ -25,8 +25,8 @@ using std::vector;
 
 AlignmentView::AlignmentView(QWidget *w) :
     View(w, false),
-    m_above(0),
-    m_below(0)
+    m_above(nullptr),
+    m_below(nullptr)
 {
     setObjectName(tr("AlignmentView"));
 }
@@ -73,7 +73,7 @@ void
 AlignmentView::setViewAbove(View *v)
 {
     if (m_above) {
-        disconnect(m_above, 0, this, 0);
+        disconnect(m_above, nullptr, this, nullptr);
     }
 
     m_above = v;
@@ -90,7 +90,7 @@ void
 AlignmentView::setViewBelow(View *v)
 {
     if (m_below) {
-        disconnect(m_below, 0, this, 0);
+        disconnect(m_below, nullptr, this, nullptr);
     }
 
     m_below = v;
@@ -106,7 +106,7 @@ AlignmentView::setViewBelow(View *v)
 void
 AlignmentView::paintEvent(QPaintEvent *)
 {
-    if (m_above == 0 || m_below == 0 || !m_manager) return;
+    if (m_above == nullptr || m_below == nullptr || !m_manager) return;
 
     bool darkPalette = false;
     if (m_manager) darkPalette = m_manager->getGlobalDarkBackground();
@@ -147,7 +147,7 @@ AlignmentView::getKeyFrames()
         return getDefaultKeyFrames();
     }
 
-    SparseOneDimensionalModel *m = 0;
+    SparseOneDimensionalModel *m = nullptr;
 
     // get the topmost such
     for (int i = 0; i < m_above->getLayerCount(); ++i) {

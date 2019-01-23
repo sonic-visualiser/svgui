@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _IMAGE_DIALOG_H_
-#define _IMAGE_DIALOG_H_
+#ifndef SV_IMAGE_DIALOG_H
+#define SV_IMAGE_DIALOG_H
 
 #include <QDialog>
 #include <QString>
@@ -54,7 +54,7 @@ protected slots:
     void imageEditEdited();
 
 protected:
-    void resizeEvent(QResizeEvent *);
+    void resizeEvent(QResizeEvent *) override;
 
     QLineEdit *m_imageEdit;
     QLineEdit *m_labelEdit;

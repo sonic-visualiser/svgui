@@ -38,28 +38,28 @@ public:
     void registerView(View *view);
     void unregisterView(View *view);
 
-    virtual QString getPropertyContainerIconName() const { return "panner"; }
+    QString getPropertyContainerIconName() const override { return "panner"; }
 
 public slots:
-    virtual void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame);
-    virtual void modelReplaced();
+    void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame) override;
+    void modelReplaced() override;
 
-    virtual void globalCentreFrameChanged(sv_frame_t);
-    virtual void viewCentreFrameChanged(View *, sv_frame_t);
-    virtual void viewZoomLevelChanged(View *, ZoomLevel, bool);
-    virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
+    void globalCentreFrameChanged(sv_frame_t) override;
+    void viewCentreFrameChanged(View *, sv_frame_t) override;
+    void viewZoomLevelChanged(View *, ZoomLevel, bool) override;
+    void viewManagerPlaybackFrameChanged(sv_frame_t) override;
 
     virtual void setBoxColour(QColor);
     
 protected:
-    virtual void paintEvent(QPaintEvent *e);
-    virtual void mousePressEvent(QMouseEvent *e);
-    virtual void mouseReleaseEvent(QMouseEvent *e);
-    virtual void mouseMoveEvent(QMouseEvent *e);
-    virtual void mouseDoubleClickEvent(QMouseEvent *e);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
-    virtual bool shouldLabelSelections() const { return false; }
+    void paintEvent(QPaintEvent *e) override;
+    void mousePressEvent(QMouseEvent *e) override;
+    void mouseReleaseEvent(QMouseEvent *e) override;
+    void mouseMoveEvent(QMouseEvent *e) override;
+    void mouseDoubleClickEvent(QMouseEvent *e) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
+    bool shouldLabelSelections() const override { return false; }
 
     QColor getFillWithin() const;
     QColor getFillWithout() const;

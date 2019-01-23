@@ -57,8 +57,8 @@
 
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
-    m_showButton(0),
-    m_playButton(0)
+    m_showButton(nullptr),
+    m_playButton(nullptr)
 {
 #ifdef DEBUG_PROPERTY_BOX
     cerr << "PropertyBox[" << this << "(\"" <<
@@ -82,7 +82,7 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     m_mainBox->addWidget(m_mainWidget);
     m_mainBox->insertStretch(2, 10);
 
-    m_viewPlayFrame = 0;
+    m_viewPlayFrame = nullptr;
     populateViewPlayFrame();
 
     m_layout = new QGridLayout;
@@ -129,7 +129,7 @@ PropertyBox::populateViewPlayFrame()
 
     if (m_viewPlayFrame) {
         delete m_viewPlayFrame;
-        m_viewPlayFrame = 0;
+        m_viewPlayFrame = nullptr;
     }
 
     if (!m_container) return;
@@ -644,7 +644,7 @@ PropertyBox::propertyControllerChanged(int value)
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
 
-    Command *c = 0;
+    Command *c = nullptr;
 
     if (type == PropertyContainer::UnitsProperty) {
 

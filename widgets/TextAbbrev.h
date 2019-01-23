@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _TEXT_ABBREV_H_
-#define _TEXT_ABBREV_H_
+#ifndef SV_TEXT_ABBREV_H
+#define SV_TEXT_ABBREV_H
 
 #include <QString>
 #include <QStringList>

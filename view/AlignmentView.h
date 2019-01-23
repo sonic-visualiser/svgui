@@ -24,21 +24,21 @@ class AlignmentView : public View
 
 public:
     AlignmentView(QWidget *parent = 0);
-    virtual QString getPropertyContainerIconName() const { return "alignment"; }
+    QString getPropertyContainerIconName() const override { return "alignment"; }
     
     void setViewAbove(View *view);
     void setViewBelow(View *view);
 
 public slots:
-    virtual void globalCentreFrameChanged(sv_frame_t);
-    virtual void viewCentreFrameChanged(View *, sv_frame_t);
+    void globalCentreFrameChanged(sv_frame_t) override;
+    void viewCentreFrameChanged(View *, sv_frame_t) override;
     virtual void viewAboveZoomLevelChanged(ZoomLevel, bool);
     virtual void viewBelowZoomLevelChanged(ZoomLevel, bool);
-    virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
+    void viewManagerPlaybackFrameChanged(sv_frame_t) override;
 
 protected:
-    virtual void paintEvent(QPaintEvent *e);
-    virtual bool shouldLabelSelections() const { return false; }
+    void paintEvent(QPaintEvent *e) override;
+    bool shouldLabelSelections() const override { return false; }
 
     std::vector<sv_frame_t> getKeyFrames();
     std::vector<sv_frame_t> getDefaultKeyFrames();

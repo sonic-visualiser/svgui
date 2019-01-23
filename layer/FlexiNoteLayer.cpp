@@ -62,7 +62,7 @@ FlexiNoteLayer::FlexiNoteLayer() :
     // m_scaleMinimum(0),
     // m_scaleMaximum(0)
 
-    m_model(0),
+    m_model(nullptr),
     m_editing(false),
     m_intelligentActions(true),
     m_dragPointX(0),
@@ -73,7 +73,7 @@ FlexiNoteLayer::FlexiNoteLayer() :
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_greatestLeftNeighbourFrame(0),
     m_smallestRightNeighbourFrame(0),
-    m_editingCommand(0),
+    m_editingCommand(nullptr),
     m_verticalScale(AutoAlignScale),
     m_editMode(DragNote),
     m_scaleMinimum(34), 
@@ -387,7 +387,7 @@ FlexiNoteLayer::setVerticalZoomStep(int step)
 RangeMapper *
 FlexiNoteLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return 0;
+    if (!m_model) return nullptr;
     
     RangeMapper *mapper;
 
@@ -396,7 +396,7 @@ FlexiNoteLayer::getNewVerticalZoomRangeMapper() const
     QString unit;
     getValueExtents(min, max, logarithmic, unit);
 
-    if (min == max) return 0;
+    if (min == max) return nullptr;
     
     if (logarithmic) {
         mapper = new LogRangeMapper(0, 100, min, max, unit);
@@ -1017,7 +1017,7 @@ FlexiNoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 //    SVDEBUG << "FlexiNoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -1030,7 +1030,7 @@ FlexiNoteLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -1057,7 +1057,7 @@ FlexiNoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingCommand->deletePoint(m_editingPoint);
 
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -1081,7 +1081,7 @@ FlexiNoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -1227,7 +1227,7 @@ FlexiNoteLayer::editEnd(LayerGeometryProvider *v, QMouseEvent *e)
         finish(m_editingCommand);
     }
 
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 }
 
@@ -1246,7 +1246,7 @@ FlexiNoteLayer::splitStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -1276,7 +1276,7 @@ FlexiNoteLayer::splitEnd(LayerGeometryProvider *v, QMouseEvent *e)
 void
 FlexiNoteLayer::splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame)
 {
-    splitNotesAt(v, frame, 0);
+    splitNotesAt(v, frame, nullptr);
 }
 
 void
@@ -1380,7 +1380,7 @@ FlexiNoteLayer::getAssociatedPitchModel(LayerGeometryProvider *v) const
         }
     }
     cerr << "FlexiNoteLayer::getAssociatedPitchModel: failed to find a model" << endl;
-    return 0;
+    return nullptr;
 }
 
 void

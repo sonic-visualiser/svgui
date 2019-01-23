@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _TRANSFORM_FINDER_H_
-#define _TRANSFORM_FINDER_H_
+#ifndef SV_TRANSFORM_FINDER_H
+#define SV_TRANSFORM_FINDER_H
 
 #include <QDialog>
 

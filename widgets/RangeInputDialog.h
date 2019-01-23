@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _RANGE_INPUT_DIALOG_H_
-#define _RANGE_INPUT_DIALOG_H_
+#ifndef SV_RANGE_INPUT_DIALOG_H
+#define SV_RANGE_INPUT_DIALOG_H
 
 #include <QDialog>
 #include <QString>

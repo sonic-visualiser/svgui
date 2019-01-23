@@ -46,7 +46,7 @@
 
 RegionLayer::RegionLayer() :
     SingleColourLayer(),
-    m_model(0),
+    m_model(nullptr),
     m_editing(false),
     m_dragPointX(0),
     m_dragPointY(0),
@@ -54,7 +54,7 @@ RegionLayer::RegionLayer() :
     m_dragStartY(0),
     m_originalPoint(0, 0.0, 0, tr("New Region")),
     m_editingPoint(0, 0.0, 0, tr("New Region")),
-    m_editingCommand(0),
+    m_editingCommand(nullptr),
     m_verticalScale(EqualSpaced),
     m_colourMap(0),
     m_colourInverted(false),
@@ -1200,7 +1200,7 @@ RegionLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
     if (!m_model || !m_editing) return;
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
 
     recalcSpacing();
@@ -1215,7 +1215,7 @@ RegionLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -1244,7 +1244,7 @@ RegionLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingCommand->deletePoint(m_editingPoint);
 
     finish(m_editingCommand);
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
     recalcSpacing();
 }
@@ -1265,7 +1265,7 @@ RegionLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (m_editingCommand) {
         finish(m_editingCommand);
-        m_editingCommand = 0;
+        m_editingCommand = nullptr;
     }
 
     m_editing = true;
@@ -1332,7 +1332,7 @@ RegionLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
         finish(m_editingCommand);
     }
 
-    m_editingCommand = 0;
+    m_editingCommand = nullptr;
     m_editing = false;
     recalcSpacing();
 }

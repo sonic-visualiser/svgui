@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _LABEL_COUNTER_INPUT_DIALOG_H_
-#define _LABEL_COUNTER_INPUT_DIALOG_H_
+#ifndef SV_LABEL_COUNTER_INPUT_DIALOG_H
+#define SV_LABEL_COUNTER_INPUT_DIALOG_H
 
 #include <QDialog>
 #include "data/model/Labeller.h"

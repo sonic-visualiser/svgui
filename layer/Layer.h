@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _LAYER_H_
-#define _LAYER_H_
+#ifndef SV_LAYER_H
+#define SV_LAYER_H
 
 #include "base/PropertyContainer.h"
 #include "base/XmlExportable.h"
@@ -118,9 +118,9 @@ public:
         return true;
     }
 
-    virtual QString getPropertyContainerIconName() const;
+    QString getPropertyContainerIconName() const override;
 
-    virtual QString getPropertyContainerName() const {
+    QString getPropertyContainerName() const override {
         if (m_presentationName != "") return m_presentationName;
         else return objectName();
     }
@@ -366,8 +366,8 @@ public:
      * this superclass implementation with extra attributes describing
      * their particular properties.
      */
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
     /**
      * Set the particular properties of a layer (those specific to the
@@ -412,7 +412,7 @@ public:
      */
     virtual bool isLayerDormant(const LayerGeometryProvider *v) const;
 
-    virtual PlayParameters *getPlayParameters();
+    PlayParameters *getPlayParameters() override;
 
     /**
      * True if this layer will need to place text labels when it is
@@ -593,9 +593,9 @@ protected:
         AddMeasurementRectCommand(Layer *layer, MeasureRect rect) :
             m_layer(layer), m_rect(rect) { }
 
-        virtual QString getName() const;
-        virtual void execute();
-        virtual void unexecute();
+        QString getName() const override;
+        void execute() override;
+        void unexecute() override;
 
     private:
         Layer *m_layer;
@@ -608,9 +608,9 @@ protected:
         DeleteMeasurementRectCommand(Layer *layer, MeasureRect rect) :
             m_layer(layer), m_rect(rect) { }
 
-        virtual QString getName() const;
-        virtual void execute();
-        virtual void unexecute();
+        QString getName() const override;
+        void execute() override;
+        void unexecute() override;
 
     private:
         Layer *m_layer;

@@ -33,7 +33,7 @@
 
 
 SpectrumLayer::SpectrumLayer() :
-    m_originModel(0),
+    m_originModel(nullptr),
     m_channel(-1),
     m_channelSet(false),
     m_windowSize(4096),
@@ -59,7 +59,7 @@ SpectrumLayer::~SpectrumLayer()
     Model *m = const_cast<Model *>
         (static_cast<const Model *>(m_sliceableModel));
     if (m) m->aboutToDelete();
-    m_sliceableModel = 0;
+    m_sliceableModel = nullptr;
     delete m;
 }
 
@@ -76,7 +76,7 @@ SpectrumLayer::setModel(DenseTimeValueModel *model)
         Model *m = const_cast<Model *>
             (static_cast<const Model *>(m_sliceableModel));
         m->aboutToDelete();
-        setSliceableModel(0);
+        setSliceableModel(nullptr);
         delete m;
     }
 
@@ -108,7 +108,7 @@ SpectrumLayer::setupFFT()
         Model *m = const_cast<Model *>
             (static_cast<const Model *>(m_sliceableModel));
         m->aboutToDelete();
-        setSliceableModel(0);
+        setSliceableModel(nullptr);
         delete m;
     }
 

@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _COLOUR_DATABASE_H_
-#define _COLOUR_DATABASE_H_
+#ifndef SV_COLOUR_DATABASE_H
+#define SV_COLOUR_DATABASE_H
 
 #include <QObject>
 #include <QString>

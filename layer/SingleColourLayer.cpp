@@ -35,7 +35,7 @@ SingleColourLayer::SingleColourLayer() :
     // Reference current colour because setDefaulColourFor
     // will unreference it before (possibly) changing it.
     refColor();
-    setDefaultColourFor(0);
+    setDefaultColourFor(nullptr);
 }
 
 SingleColourLayer::~SingleColourLayer()
@@ -125,7 +125,7 @@ SingleColourLayer::getPropertyValueLabel(const PropertyName &name,
 RangeMapper *
 SingleColourLayer::getNewPropertyRangeMapper(const PropertyName &) const
 {
-    return 0;
+    return nullptr;
 }
 
 void

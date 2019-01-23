@@ -32,7 +32,7 @@
 
 
 SliceLayer::SliceLayer() :
-    m_sliceableModel(0),
+    m_sliceableModel(nullptr),
     m_binAlignment(BinsSpanScalePoints),
     m_colourMap(int(ColourMapper::Ice)),
     m_colourInverted(false),
@@ -101,7 +101,7 @@ SliceLayer::modelAboutToBeDeleted(Model *m)
     SVDEBUG << "SliceLayer::modelAboutToBeDeleted(" << m << ")" << endl;
 
     if (m == m_sliceableModel) {
-        setSliceableModel(0);
+        setSliceableModel(nullptr);
     }
 }
 
@@ -1262,7 +1262,7 @@ SliceLayer::setVerticalZoomStep(int step)
 RangeMapper *
 SliceLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_sliceableModel) return 0;
+    if (!m_sliceableModel) return nullptr;
 
     return new LinearRangeMapper(0, m_sliceableModel->getHeight(),
                                  0, m_sliceableModel->getHeight(), "");

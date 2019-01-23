@@ -32,52 +32,52 @@ public:
     SliceLayer();
     ~SliceLayer();
     
-    virtual const Model *getModel() const { return 0; }
+    const Model *getModel() const override { return 0; }
 
     void setSliceableModel(const Model *model);    
 
-    virtual void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
+    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
-    virtual QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const;
+    QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
-    virtual int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const;
-    virtual void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const;
+    int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const override;
+    void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const override;
 
-    virtual ColourSignificance getLayerColourSignificance() const {
+    ColourSignificance getLayerColourSignificance() const override {
         return ColourAndBackgroundSignificant;
     }
 
-    virtual bool hasLightBackground() const;
+    bool hasLightBackground() const override;
 
-    virtual PropertyList getProperties() const;
-    virtual QString getPropertyLabel(const PropertyName &) const;
-    virtual QString getPropertyIconName(const PropertyName &) const;
-    virtual PropertyType getPropertyType(const PropertyName &) const;
-    virtual QString getPropertyGroupName(const PropertyName &) const;
-    virtual int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const;
-    virtual QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const;
-    virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const;
-    virtual void setProperty(const PropertyName &, int value);
-    virtual void setProperties(const QXmlAttributes &);
+    PropertyList getProperties() const override;
+    QString getPropertyLabel(const PropertyName &) const override;
+    QString getPropertyIconName(const PropertyName &) const override;
+    PropertyType getPropertyType(const PropertyName &) const override;
+    QString getPropertyGroupName(const PropertyName &) const override;
+    int getPropertyRangeAndValue(const PropertyName &,
+                                         int *min, int *max, int *deflt) const override;
+    QString getPropertyValueLabel(const PropertyName &,
+                                          int value) const override;
+    RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
+    void setProperty(const PropertyName &, int value) override;
+    void setProperties(const QXmlAttributes &) override;
 
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const;
+    bool getValueExtents(double &min, double &max,
+                                 bool &logarithmic, QString &unit) const override;
 
-    virtual bool getDisplayExtents(double &min, double &max) const;
-    virtual bool setDisplayExtents(double min, double max);
+    bool getDisplayExtents(double &min, double &max) const override;
+    bool setDisplayExtents(double min, double max) override;
 
-    virtual int getVerticalZoomSteps(int &defaultStep) const;
-    virtual int getCurrentVerticalZoomStep() const;
-    virtual void setVerticalZoomStep(int);
-    virtual RangeMapper *getNewVerticalZoomRangeMapper() const;
+    int getVerticalZoomSteps(int &defaultStep) const override;
+    int getCurrentVerticalZoomStep() const override;
+    void setVerticalZoomStep(int) override;
+    RangeMapper *getNewVerticalZoomRangeMapper() const override;
 
     virtual bool hasTimeXAxis() const override { return false; }
 
     virtual void zoomToRegion(const LayerGeometryProvider *, QRect) override;
 
-    virtual bool isLayerScrollable(const LayerGeometryProvider *) const { return false; }
+    bool isLayerScrollable(const LayerGeometryProvider *) const override { return false; }
 
     enum EnergyScale { LinearScale, MeterScale, dBScale, AbsoluteScale };
 
@@ -113,8 +113,8 @@ public:
     void setNormalize(bool n);
     bool getNormalize() const;
 
-    virtual void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const;
+    void toXml(QTextStream &stream, QString indent = "",
+                       QString extraAttributes = "") const override;
 
 public slots:
     void sliceableModelReplaced(const Model *, const Model *);
@@ -153,7 +153,7 @@ protected:
 
     virtual float getThresholdDb() const;
 
-    virtual int getDefaultColourHint(bool dark, bool &impose);
+    int getDefaultColourHint(bool dark, bool &impose) override;
 
     // Determine how the bins are lined up
     // horizontally. BinsCentredOnScalePoint means we operate like a

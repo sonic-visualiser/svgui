@@ -13,8 +13,8 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef _NOTIFYING_TAB_BAR_H_
-#define _NOTIFYING_TAB_BAR_H_
+#ifndef SV_NOTIFYING_TAB_BAR_H
+#define SV_NOTIFYING_TAB_BAR_H
 
 #include <QTabBar>
 
@@ -32,9 +32,9 @@ signals:
     void activeTabClicked();
 
 protected:
-    virtual void mousePressEvent(QMouseEvent *);
-    virtual void enterEvent(QEvent *);
-    virtual void leaveEvent(QEvent *);
+    void mousePressEvent(QMouseEvent *) override;
+    void enterEvent(QEvent *) override;
+    void leaveEvent(QEvent *) override;
 };
 
 #endif

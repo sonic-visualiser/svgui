@@ -81,8 +81,8 @@ public:
     ViewManager();
     virtual ~ViewManager();
 
-    void setAudioPlaySource(AudioPlaySource *source);
-    void setAudioRecordTarget(AudioRecordTarget *target);
+    void setAudioPlaySource(AudioPlaySource *source) override;
+    void setAudioRecordTarget(AudioRecordTarget *target) override;
 
     bool isPlaying() const;
     bool isRecording() const;
@@ -96,22 +96,22 @@ public:
     Model *getPlaybackModel() const;
     void setPlaybackModel(Model *);
 
-    sv_frame_t alignPlaybackFrameToReference(sv_frame_t) const;
-    sv_frame_t alignReferenceToPlaybackFrame(sv_frame_t) const;
+    sv_frame_t alignPlaybackFrameToReference(sv_frame_t) const override;
+    sv_frame_t alignReferenceToPlaybackFrame(sv_frame_t) const override;
 
     bool haveInProgressSelection() const;
     const Selection &getInProgressSelection(bool &exclusive) const;
     void setInProgressSelection(const Selection &selection, bool exclusive);
     void clearInProgressSelection();
 
-    const MultiSelection &getSelection() const;
+    const MultiSelection &getSelection() const override;
 
-    const MultiSelection::SelectionList &getSelections() const;
+    const MultiSelection::SelectionList &getSelections() const override;
     void setSelection(const Selection &selection);
     void addSelection(const Selection &selection);
     void removeSelection(const Selection &selection);
     void clearSelections();
-    sv_frame_t constrainFrameToSelection(sv_frame_t frame) const;
+    sv_frame_t constrainFrameToSelection(sv_frame_t frame) const override;
 
     /**
      * Adding a selection normally emits the selectionChangedByUser
@@ -126,7 +126,7 @@ public:
      * selected area, return the next selection after the given frame.
      * Return the empty selection if no appropriate selection is found.
      */
-    Selection getContainingSelection(sv_frame_t frame, bool defaultToFollowing) const;
+    Selection getContainingSelection(sv_frame_t frame, bool defaultToFollowing) const override;
 
     Clipboard &getClipboard() { return m_clipboard; }
 
@@ -149,16 +149,16 @@ public:
     /// Clear all current view-specific overrides
     void clearToolModeOverrides();
 
-    bool getPlayLoopMode() const { return m_playLoopMode; }
+    bool getPlayLoopMode() const override { return m_playLoopMode; }
     void setPlayLoopMode(bool on);
 
-    bool getPlaySelectionMode() const { return m_playSelectionMode; }
+    bool getPlaySelectionMode() const override { return m_playSelectionMode; }
     void setPlaySelectionMode(bool on);
 
-    bool getPlaySoloMode() const { return m_playSoloMode; }
+    bool getPlaySoloMode() const override { return m_playSoloMode; }
     void setPlaySoloMode(bool on);
 
-    bool getAlignMode() const { return m_alignMode; }
+    bool getAlignMode() const override { return m_alignMode; }
     void setAlignMode(bool on);
 
     void setIlluminateLocalFeatures(bool i) { m_illuminateLocalFeatures = i; }
@@ -354,9 +354,9 @@ protected:
     public:
         SetSelectionCommand(ViewManager *vm, const MultiSelection &ms);
         virtual ~SetSelectionCommand();
-        virtual void execute();
-        virtual void unexecute();
-        virtual QString getName() const;
+        void execute() override;
+        void unexecute() override;
+        QString getName() const override;
 
     protected:
         ViewManager *m_vm;
