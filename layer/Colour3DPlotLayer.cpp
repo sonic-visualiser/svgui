@@ -647,6 +647,9 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 bool
 Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider * /* v */) const
 {
+    // we do our own cacheing, and don't want to be responsible for
+    // guaranteeing to get an invisible seam if someone else scrolls
+    // us and we just fill in
     return false;
 }
 
