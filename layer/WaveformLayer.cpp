@@ -1029,6 +1029,9 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
     }
 
     double penWidth = 1.0;
+    if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel) {
+        penWidth = 0.0;
+    }
     
     if (m_model->isReady()) {
         paint->setPen(QPen(baseColour, penWidth));
