@@ -71,7 +71,7 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     case SessionFile:
         settingsKeyStub = "session";
         title = tr("Select a session file");
-        filter = tr("%1 session files (*.%1)\nRDF files (%3)\nAll files (*.*)")
+        filter = tr("%1 session files (*.%2)\nRDF files (%3)\nAll files (*.*)")
             .arg(QApplication::applicationName())
             .arg(m_sessionExtension)
             .arg(RDFImporter::getKnownExtensions());
@@ -114,11 +114,11 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case SessionOrAudioFile:
         settingsKeyStub = "last";
-        filter = tr("All supported files (*.sv %1 %2)\n%3 session files (*.%4)\nAudio files (%2)\nRDF files (%1)\nAll files (*.*)")
+        filter = tr("All supported files (*.%1 %2 %3)\n%4 session files (*.%1)\nAudio files (%3)\nRDF files (%2)\nAll files (*.*)")
+            .arg(m_sessionExtension)
             .arg(RDFImporter::getKnownExtensions())
             .arg(AudioFileReaderFactory::getKnownExtensions())
-            .arg(QApplication::applicationName())
-            .arg(m_sessionExtension);
+            .arg(QApplication::applicationName());
         break;
 
     case ImageFile:
@@ -147,12 +147,12 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case AnyFile:
         settingsKeyStub = "last";
-        filter = tr("All supported files (*.sv %1 %2 %3)\n%4 session files (*.%5)\nAudio files (%1)\nLayer files (%2)\nRDF files (%3)\nAll files (*.*)")
+        filter = tr("All supported files (*.%1 %2 %3 %4)\n%5 session files (*.%1)\nAudio files (%2)\nLayer files (%3)\nRDF files (%4)\nAll files (*.*)")
+            .arg(m_sessionExtension)
             .arg(AudioFileReaderFactory::getKnownExtensions())
             .arg(DataFileReaderFactory::getKnownExtensions())
             .arg(RDFImporter::getKnownExtensions())
-            .arg(QApplication::applicationName())
-            .arg(m_sessionExtension);
+            .arg(QApplication::applicationName());
         break;
     };
 
@@ -247,7 +247,8 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         settingsKeyStub = "savesession";
         title = tr("Select a session file");
         filter = tr("%1 session files (*.%2)\nAll files (*.*)")
-            .arg(QApplication::applicationName()).arg(m_sessionExtension);
+            .arg(QApplication::applicationName())
+            .arg(m_sessionExtension);
         break;
 
     case AudioFile:
@@ -260,25 +261,29 @@ InteractiveFileFinder::getSaveFileName(FileType type,
     case LayerFile:
         settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
-        filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
+        filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)")
+            .arg(RDFExporter::getSupportedExtensions());
         break;
 
     case LayerFileNoMidi:
         settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
-        filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
+        filter = tr("Sonic Visualiser Layer XML files (*.svl)\nComma-separated data files (*.csv)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)")
+            .arg(RDFExporter::getSupportedExtensions());
         break;
 
     case LayerFileNonSV:
         settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
-        filter = tr("Comma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nRDF/Turtle files (%1)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
+        filter = tr("Comma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nRDF/Turtle files (%1)\nMIDI files (*.mid)\nText files (*.txt)\nAll files (*.*)")
+            .arg(RDFExporter::getSupportedExtensions());
         break;
 
     case LayerFileNoMidiNonSV:
         settingsKeyStub = "savelayer";
         title = tr("Select a file to export to");
-        filter = tr("Comma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)").arg(RDFExporter::getSupportedExtensions());
+        filter = tr("Comma-separated data files (*.csv)\nSonic Visualiser Layer XML files (*.svl)\nRDF/Turtle files (%1)\nText files (*.txt)\nAll files (*.*)")
+            .arg(RDFExporter::getSupportedExtensions());
         break;
 
     case SessionOrAudioFile:
