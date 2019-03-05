@@ -155,6 +155,7 @@ protected:
     NoteModel::Point m_originalPoint;
     NoteModel::Point m_editingPoint;
     NoteModel::EditCommand *m_editingCommand;
+    bool m_editIsOpen;
     VerticalScale m_verticalScale;
 
     typedef std::set<NoteModel::Point, NoteModel::Point::Comparator> NoteSet;
