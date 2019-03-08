@@ -709,9 +709,8 @@ TextLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     for (TextModel::PointList::iterator i = points.begin();
          i != points.end(); ++i) {
         if (s.contains(i->frame)) {
-            Clipboard::Point point(i->frame, i->height, i->label);
-            point.setReferenceFrame(alignToReference(v, i->frame));
-            to.addPoint(point);
+            Event point(i->frame, i->height, i->label);
+            to.addPoint(point.withReferenceFrame(alignToReference(v, i->frame)));
         }
     }
 }
@@ -721,7 +720,7 @@ TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
 {
     if (!m_model) return false;
 
-    const Clipboard::PointList &points = from.getPoints();
+    const EventVector &points = from.getPoints();
 
     bool realign = false;
 
@@ -746,19 +745,18 @@ TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
         new TextModel::EditCommand(m_model, tr("Paste"));
 
     double valueMin = 0.0, valueMax = 1.0;
-    for (Clipboard::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
-        if (i->haveValue()) {
+        if (i->hasValue()) {
             if (i->getValue() < valueMin) valueMin = i->getValue();
             if (i->getValue() > valueMax) valueMax = i->getValue();
         }
     }
     if (valueMax < valueMin + 1.0) valueMax = valueMin + 1.0;
 
-    for (Clipboard::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
         
-        if (!i->haveFrame()) continue;
         sv_frame_t frame = 0;
         
         if (!realign) {
@@ -767,7 +765,7 @@ TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
 
         } else {
 
-            if (i->haveReferenceFrame()) {
+            if (i->hasReferenceFrame()) {
                 frame = i->getReferenceFrame();
                 frame = alignFromReference(v, frame);
             } else {
@@ -777,15 +775,15 @@ TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
 
         TextModel::Point newPoint(frame);
 
-        if (i->haveValue()) {
+        if (i->hasValue()) {
             newPoint.height = float((i->getValue() - valueMin) / (valueMax - valueMin));
         } else {
             newPoint.height = 0.5f;
         }
 
-        if (i->haveLabel()) {
+        if (i->hasLabel()) {
             newPoint.label = i->getLabel();
-        } else if (i->haveValue()) {
+        } else if (i->hasValue()) {
             newPoint.label = QString("%1").arg(i->getValue());
         } else {
             newPoint.label = tr("New Point");

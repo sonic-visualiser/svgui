@@ -1478,9 +1478,8 @@ RegionLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     for (RegionModel::PointList::iterator i = points.begin();
          i != points.end(); ++i) {
         if (s.contains(i->frame)) {
-            Clipboard::Point point(i->frame, i->value, i->duration, i->label);
-            point.setReferenceFrame(alignToReference(v, i->frame));
-            to.addPoint(point);
+            Event point(i->frame, i->value, i->duration, i->label);
+            to.addPoint(point.withReferenceFrame(alignToReference(v, i->frame)));
         }
     }
 }
@@ -1490,7 +1489,7 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
 {
     if (!m_model) return false;
 
-    const Clipboard::PointList &points = from.getPoints();
+    const EventVector &points = from.getPoints();
 
     bool realign = false;
 
@@ -1514,10 +1513,9 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
     RegionModel::EditCommand *command =
         new RegionModel::EditCommand(m_model, tr("Paste"));
 
-    for (Clipboard::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
         
-        if (!i->haveFrame()) continue;
         sv_frame_t frame = 0;
 
         if (!realign) {
@@ -1526,7 +1524,7 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
 
         } else {
 
-            if (i->haveReferenceFrame()) {
+            if (i->hasReferenceFrame()) {
                 frame = i->getReferenceFrame();
                 frame = alignFromReference(v, frame);
             } else {
@@ -1536,16 +1534,15 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
 
         RegionModel::Point newPoint(frame);
   
-        if (i->haveLabel()) newPoint.label = i->getLabel();
-        if (i->haveValue()) newPoint.value = i->getValue();
+        if (i->hasLabel()) newPoint.label = i->getLabel();
+        if (i->hasValue()) newPoint.value = i->getValue();
         else newPoint.value = (m_model->getValueMinimum() +
                                m_model->getValueMaximum()) / 2;
-        if (i->haveDuration()) newPoint.duration = i->getDuration();
+        if (i->hasDuration()) newPoint.duration = i->getDuration();
         else {
             sv_frame_t nextFrame = frame;
-            Clipboard::PointList::const_iterator j = i;
+            EventVector::const_iterator j = i;
             for (; j != points.end(); ++j) {
-                if (!j->haveFrame()) continue;
                 if (j != i) break;
             }
             if (j != points.end()) {

@@ -232,7 +232,7 @@ Layer::clipboardHasDifferentAlignment(LayerGeometryProvider *v, const Clipboard 
     // We either want to be literal all the way through, or aligned
     // all the way through.
 
-    for (Clipboard::PointList::const_iterator i = clip.getPoints().begin();
+    for (EventVector::const_iterator i = clip.getPoints().begin();
          i != clip.getPoints().end(); ++i) {
 
         // In principle, we want to know whether the aligned version
@@ -252,12 +252,12 @@ Layer::clipboardHasDifferentAlignment(LayerGeometryProvider *v, const Clipboard 
         
         sv_frame_t sourceFrame = i->getFrame();
         sv_frame_t referenceFrame = sourceFrame;
-        if (i->haveReferenceFrame()) {
+        if (i->hasReferenceFrame()) {
             referenceFrame = i->getReferenceFrame();
         }
         sv_frame_t myMappedFrame = alignToReference(v, sourceFrame);
 
-//        cerr << "sourceFrame = " << sourceFrame << ", referenceFrame = " << referenceFrame << " (have = " << i->haveReferenceFrame() << "), myMappedFrame = " << myMappedFrame << endl;
+//        cerr << "sourceFrame = " << sourceFrame << ", referenceFrame = " << referenceFrame << " (have = " << i->hasReferenceFrame() << "), myMappedFrame = " << myMappedFrame << endl;
 
         if (myMappedFrame != referenceFrame) return true;
     }

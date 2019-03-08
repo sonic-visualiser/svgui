@@ -811,9 +811,8 @@ ImageLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     for (ImageModel::PointList::iterator i = points.begin();
          i != points.end(); ++i) {
         if (s.contains(i->frame)) {
-            Clipboard::Point point(i->frame, i->label);
-            point.setReferenceFrame(alignToReference(v, i->frame));
-            to.addPoint(point);
+            Event point(i->frame, i->label);
+            to.addPoint(point.withReferenceFrame(alignToReference(v, i->frame)));
         }
     }
 }
@@ -823,7 +822,7 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*
 {
     if (!m_model) return false;
 
-    const Clipboard::PointList &points = from.getPoints();
+    const EventVector &points = from.getPoints();
 
     bool realign = false;
 
@@ -847,11 +846,9 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*
     ImageModel::EditCommand *command =
         new ImageModel::EditCommand(m_model, tr("Paste"));
 
-    for (Clipboard::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
         
-        if (!i->haveFrame()) continue;
-
         sv_frame_t frame = 0;
 
         if (!realign) {
@@ -860,7 +857,7 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*
 
         } else {
 
-            if (i->haveReferenceFrame()) {
+            if (i->hasReferenceFrame()) {
                 frame = i->getReferenceFrame();
                 frame = alignFromReference(v, frame);
             } else {
@@ -872,9 +869,9 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*
 
         //!!! inadequate
         
-        if (i->haveLabel()) {
+        if (i->hasLabel()) {
             newPoint.label = i->getLabel();
-        } else if (i->haveValue()) {
+        } else if (i->hasValue()) {
             newPoint.label = QString("%1").arg(i->getValue());
         } else {
             newPoint.label = tr("New Point");

@@ -761,9 +761,8 @@ TimeInstantLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     for (SparseOneDimensionalModel::PointList::iterator i = points.begin();
          i != points.end(); ++i) {
         if (s.contains(i->frame)) {
-            Clipboard::Point point(i->frame, i->label);
-            point.setReferenceFrame(alignToReference(v, i->frame));
-            to.addPoint(point);
+            Event point(i->frame, i->label);
+            to.addPoint(point.withReferenceFrame(alignToReference(v, i->frame)));
         }
     }
 }
@@ -773,7 +772,7 @@ TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_fram
 {
     if (!m_model) return false;
 
-    const Clipboard::PointList &points = from.getPoints();
+    const EventVector &points = from.getPoints();
 
     bool realign = false;
 
@@ -797,11 +796,9 @@ TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_fram
     SparseOneDimensionalModel::EditCommand *command =
         new SparseOneDimensionalModel::EditCommand(m_model, tr("Paste"));
 
-    for (Clipboard::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
         
-        if (!i->haveFrame()) continue;
-
         sv_frame_t frame = 0;
 
         if (!realign) {
@@ -810,7 +807,7 @@ TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_fram
 
         } else {
 
-            if (i->haveReferenceFrame()) {
+            if (i->hasReferenceFrame()) {
                 frame = i->getReferenceFrame();
                 frame = alignFromReference(v, frame);
             } else {
@@ -825,9 +822,9 @@ TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_fram
         }
 
         SparseOneDimensionalModel::Point newPoint(frame);
-        if (i->haveLabel()) {
+        if (i->hasLabel()) {
             newPoint.label = i->getLabel();
-        } else if (i->haveValue()) {
+        } else if (i->hasValue()) {
             newPoint.label = QString("%1").arg(i->getValue());
         }
         

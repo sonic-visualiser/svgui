@@ -544,24 +544,22 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
 LayerFactory::LayerType
 LayerFactory::getLayerTypeForClipboardContents(const Clipboard &clip)
 {
-    const Clipboard::PointList &contents = clip.getPoints();
+    const EventVector &contents = clip.getPoints();
 
-    bool haveFrame = false;
     bool haveValue = false;
     bool haveDuration = false;
     bool haveLevel = false;
 
-    for (Clipboard::PointList::const_iterator i = contents.begin();
+    for (EventVector::const_iterator i = contents.begin();
          i != contents.end(); ++i) {
-        if (i->haveFrame()) haveFrame = true;
-        if (i->haveValue()) haveValue = true;
-        if (i->haveDuration()) haveDuration = true;
-        if (i->haveLevel()) haveLevel = true;
+        if (i->hasValue()) haveValue = true;
+        if (i->hasDuration()) haveDuration = true;
+        if (i->hasLevel()) haveLevel = true;
     }
 
-    if (haveFrame && haveValue && haveDuration && haveLevel) return Notes;
-    if (haveFrame && haveValue && haveDuration) return Regions;
-    if (haveFrame && haveValue) return TimeValues;
+    if (haveValue && haveDuration && haveLevel) return Notes;
+    if (haveValue && haveDuration) return Regions;
+    if (haveValue) return TimeValues;
     return TimeInstants;
 }
     

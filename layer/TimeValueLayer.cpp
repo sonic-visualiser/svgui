@@ -1692,9 +1692,8 @@ TimeValueLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
     for (SparseTimeValueModel::PointList::iterator i = points.begin();
          i != points.end(); ++i) {
         if (s.contains(i->frame)) {
-            Clipboard::Point point(i->frame, i->value, i->label);
-            point.setReferenceFrame(alignToReference(v, i->frame));
-            to.addPoint(point);
+            Event point(i->frame, i->value, i->label);
+            to.addPoint(point.withReferenceFrame(alignToReference(v, i->frame)));
         }
     }
 }
@@ -1705,7 +1704,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
 {
     if (!m_model) return false;
 
-    const Clipboard::PointList &points = from.getPoints();
+    const EventVector &points = from.getPoints();
 
     bool realign = false;
 
@@ -1746,18 +1745,16 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
 
         ValueAvailability availability = UnknownAvailability;
 
-        for (Clipboard::PointList::const_iterator i = points.begin();
+        for (EventVector::const_iterator i = points.begin();
              i != points.end(); ++i) {
         
-            if (!i->haveFrame()) continue;
-
             if (availability == UnknownAvailability) {
-                if (i->haveValue()) availability = AllValues;
+                if (i->hasValue()) availability = AllValues;
                 else availability = NoValues;
                 continue;
             }
 
-            if (i->haveValue()) {
+            if (i->hasValue()) {
                 if (availability == NoValues) {
                     availability = SomeValues;
                 }
@@ -1768,7 +1765,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
             }
 
             if (!haveUsableLabels) {
-                if (i->haveLabel()) {
+                if (i->hasLabel()) {
                     if (i->getLabel().contains(QRegExp("[0-9]"))) {
                         haveUsableLabels = true;
                     }
@@ -1838,11 +1835,9 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
 
     SparseTimeValueModel::Point prevPoint(0);
 
-    for (Clipboard::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
         
-        if (!i->haveFrame()) continue;
-
         sv_frame_t frame = 0;
 
         if (!realign) {
@@ -1851,7 +1846,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
 
         } else {
 
-            if (i->haveReferenceFrame()) {
+            if (i->hasReferenceFrame()) {
                 frame = i->getReferenceFrame();
                 frame = alignFromReference(v, frame);
             } else {
@@ -1861,16 +1856,16 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
 
         SparseTimeValueModel::Point newPoint(frame);
   
-        if (i->haveLabel()) {
+        if (i->hasLabel()) {
             newPoint.label = i->getLabel();
-        } else if (i->haveValue()) {
+        } else if (i->hasValue()) {
             newPoint.label = QString("%1").arg(i->getValue());
         }
 
         bool usePrev = false;
         SparseTimeValueModel::Point formerPrevPoint = prevPoint;
 
-        if (i->haveValue()) {
+        if (i->hasValue()) {
             newPoint.value = i->getValue();
         } else {
 #ifdef DEBUG_TIME_VALUE_LAYER
