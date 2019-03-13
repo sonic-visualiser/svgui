@@ -390,71 +390,46 @@ NoteLayer::getNewVerticalZoomRangeMapper() const
     return mapper;
 }
 
-NoteModel::PointList
+EventVector
 NoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
-    if (!m_model) return NoteModel::PointList();
-
+    if (!m_model) return {};
+    
     sv_frame_t frame = v->getFrameForX(x);
 
-    NoteModel::PointList onPoints =
-        m_model->getPoints(frame);
+    EventVector local = m_model->getEventsCovering(frame);
+    if (!local.empty()) return local;
 
-    if (!onPoints.empty()) {
-        return onPoints;
-    }
+    int fuzz = ViewManager::scalePixelSize(2);
+    sv_frame_t start = v->getFrameForX(x - fuzz);
+    sv_frame_t end = v->getFrameForX(x + fuzz);
 
-    NoteModel::PointList prevPoints =
-        m_model->getPreviousPoints(frame);
-    NoteModel::PointList nextPoints =
-        m_model->getNextPoints(frame);
+    local = m_model->getEventsStartingWithin(frame, end - frame);
+    if (!local.empty()) return local;
 
-    NoteModel::PointList usePoints = prevPoints;
+    local = m_model->getEventsSpanning(start, frame - start);
+    if (!local.empty()) return local;
 
-    if (prevPoints.empty()) {
-        usePoints = nextPoints;
-    } else if (int(prevPoints.begin()->frame) < v->getStartFrame() &&
-               !(nextPoints.begin()->frame > v->getEndFrame())) {
-        usePoints = nextPoints;
-    } else if (int(nextPoints.begin()->frame) - frame <
-               frame - int(prevPoints.begin()->frame)) {
-        usePoints = nextPoints;
-    }
-
-    if (!usePoints.empty()) {
-        int fuzz = ViewManager::scalePixelSize(2);
-        int px = v->getXForFrame(usePoints.begin()->frame);
-        if ((px > x && px - x > fuzz) ||
-            (px < x && x - px > fuzz + 1)) {
-            usePoints.clear();
-        }
-    }
-
-    return usePoints;
+    return {};
 }
 
 bool
-NoteLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, NoteModel::Point &p) const
+NoteLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &point) const
 {
     if (!m_model) return false;
 
     sv_frame_t frame = v->getFrameForX(x);
 
-    NoteModel::PointList onPoints = m_model->getPoints(frame);
+    EventVector onPoints = m_model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
-//    cerr << "frame " << frame << ": " << onPoints.size() << " candidate points" << endl;
-
     int nearestDistance = -1;
-
-    for (NoteModel::PointList::const_iterator i = onPoints.begin();
-         i != onPoints.end(); ++i) {
-        
-        int distance = getYForValue(v, (*i).value) - y;
+    for (const auto &p: onPoints) {
+        int distance = getYForValue(v, p.getValue()) - y;
         if (distance < 0) distance = -distance;
         if (nearestDistance == -1 || distance < nearestDistance) {
             nearestDistance = distance;
-            p = *i;
+            point = p;
         }
     }
 
@@ -468,7 +443,7 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 
     if (!m_model || !m_model->getSampleRate()) return "";
 
-    NoteModel::PointList points = getLocalPoints(v, x);
+    EventVector points = getLocalPoints(v, x);
 
     if (points.empty()) {
         if (!m_model->isReady()) {
@@ -478,16 +453,17 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
         }
     }
 
-    Note note(0);
-    NoteModel::PointList::iterator i;
+    Event note;
+    EventVector::iterator i;
 
     for (i = points.begin(); i != points.end(); ++i) {
 
-        int y = getYForValue(v, i->value);
+        int y = getYForValue(v, i->getValue());
         int h = 3;
 
         if (m_model->getValueQuantization() != 0.0) {
-            h = y - getYForValue(v, i->value + m_model->getValueQuantization());
+            h = y - getYForValue
+                (v, i->getValue() + m_model->getValueQuantization());
             if (h < 3) h = 3;
         }
 
@@ -499,17 +475,19 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 
     if (i == points.end()) return tr("No local points");
 
-    RealTime rt = RealTime::frame2RealTime(note.frame,
+    RealTime rt = RealTime::frame2RealTime(note.getFrame(),
                                            m_model->getSampleRate());
-    RealTime rd = RealTime::frame2RealTime(note.duration,
+    RealTime rd = RealTime::frame2RealTime(note.getDuration(),
                                            m_model->getSampleRate());
     
     QString pitchText;
 
+    float value = note.getValue();
+    
     if (shouldConvertMIDIToHz()) {
 
-        int mnote = int(lrint(note.value));
-        int cents = int(lrint((note.value - float(mnote)) * 100));
+        int mnote = int(lrint(value));
+        int cents = int(lrint((value - float(mnote)) * 100));
         double freq = Pitch::getFrequencyForPitch(mnote, cents);
         pitchText = tr("%1 (%2, %3 Hz)")
             .arg(Pitch::getPitchLabel(mnote, cents))
@@ -519,18 +497,18 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     } else if (getScaleUnits() == "Hz") {
 
         pitchText = tr("%1 Hz (%2, %3)")
-            .arg(note.value)
-            .arg(Pitch::getPitchLabelForFrequency(note.value))
-            .arg(Pitch::getPitchForFrequency(note.value));
+            .arg(value)
+            .arg(Pitch::getPitchLabelForFrequency(value))
+            .arg(Pitch::getPitchForFrequency(value));
 
     } else {
         pitchText = tr("%1 %2")
-            .arg(note.value).arg(getScaleUnits());
+            .arg(value).arg(getScaleUnits());
     }
 
     QString text;
 
-    if (note.label == "") {
+    if (note.getLabel() == "") {
         text = QString(tr("Time:\t%1\nPitch:\t%2\nDuration:\t%3\nNo label"))
             .arg(rt.toText(true).c_str())
             .arg(pitchText)
@@ -540,11 +518,10 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
             .arg(rt.toText(true).c_str())
             .arg(pitchText)
             .arg(rd.toText(true).c_str())
-            .arg(note.label);
+            .arg(note.getLabel());
     }
 
-    pos = QPoint(v->getXForFrame(note.frame),
-                 getYForValue(v, note.value));
+    pos = QPoint(v->getXForFrame(note.getFrame()), getYForValue(v, value));
     return text;
 }
 
@@ -558,35 +535,35 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     }
 
     resolution = m_model->getResolution();
-    NoteModel::PointList points;
+    EventVector points;
 
     if (snap == SnapNeighbouring) {
         
         points = getLocalPoints(v, v->getXForFrame(frame));
         if (points.empty()) return false;
-        frame = points.begin()->frame;
+        frame = points.begin()->getFrame();
         return true;
     }    
 
-    points = m_model->getPoints(frame, frame);
+    points = m_model->getEventsCovering(frame);
     sv_frame_t snapped = frame;
     bool found = false;
 
-    for (NoteModel::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
         if (snap == SnapRight) {
 
-            if (i->frame > frame) {
-                snapped = i->frame;
+            if (i->getFrame() > frame) {
+                snapped = i->getFrame();
                 found = true;
                 break;
             }
 
         } else if (snap == SnapLeft) {
 
-            if (i->frame <= frame) {
-                snapped = i->frame;
+            if (i->getFrame() <= frame) {
+                snapped = i->getFrame();
                 found = true; // don't break, as the next may be better
             } else {
                 break;
@@ -594,21 +571,21 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 
         } else { // nearest
 
-            NoteModel::PointList::const_iterator j = i;
+            EventVector::const_iterator j = i;
             ++j;
 
             if (j == points.end()) {
 
-                snapped = i->frame;
+                snapped = i->getFrame();
                 found = true;
                 break;
 
-            } else if (j->frame >= frame) {
+            } else if (j->getFrame() >= frame) {
 
-                if (j->frame - frame < frame - i->frame) {
-                    snapped = j->frame;
+                if (j->getFrame() - frame < frame - i->getFrame()) {
+                    snapped = j->getFrame();
                 } else {
-                    snapped = i->frame;
+                    snapped = i->getFrame();
                 }
                 found = true;
                 break;
