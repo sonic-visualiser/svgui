@@ -1108,14 +1108,10 @@ NoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     EventVector points =
         m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
-    SVCERR << "Have " << points.size() << " points to drag" << endl;
-    
     for (Event p: points) {
-        SVCERR << "asking to remove " << p.toXmlString() << endl;
         command->remove(p);
         Event moved = p.withFrame(p.getFrame() +
                                   newStartFrame - s.getStartFrame());
-        SVCERR << "asking to add " << moved.toXmlString() << endl;
         command->add(moved);
     }
 

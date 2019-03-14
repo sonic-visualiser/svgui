@@ -37,7 +37,6 @@
 #include "data/model/SparseOneDimensionalModel.h"
 #include "data/model/SparseTimeValueModel.h"
 #include "data/model/NoteModel.h"
-#include "data/model/FlexiNoteModel.h"
 #include "data/model/RegionModel.h"
 #include "data/model/TextModel.h"
 #include "data/model/ImageModel.h"
@@ -162,12 +161,12 @@ LayerFactory::getValidLayerTypes(Model *model)
     }
 
     if (dynamic_cast<NoteModel *>(model)) {
-        types.insert(Notes);
-    }
-
-    // NOTE: GF: types is a set, so order of insertion does not matter
-    if (dynamic_cast<FlexiNoteModel *>(model)) {
-        types.insert(FlexiNotes);
+        NoteModel *nm = dynamic_cast<NoteModel *>(model);
+        if (nm->getSubtype() == NoteModel::FLEXI_NOTE) {
+            types.insert(FlexiNotes);
+        } else {
+            types.insert(Notes);
+        }
     }
 
     if (dynamic_cast<RegionModel *>(model)) {
@@ -327,8 +326,7 @@ LayerFactory::setModel(Layer *layer, Model *model)
     if (trySetModel<NoteLayer, NoteModel>(layer, model)) 
         return; 
 
-    // GF: added FlexiNoteLayer
-    if (trySetModel<FlexiNoteLayer, FlexiNoteModel>(layer, model)) 
+    if (trySetModel<FlexiNoteLayer, NoteModel>(layer, model)) 
         return; 
         
     if (trySetModel<RegionLayer, RegionModel>(layer, model))
@@ -361,7 +359,7 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
     } else if (layerType == TimeValues) {
         return new SparseTimeValueModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == FlexiNotes) {
-        return new FlexiNoteModel(baseModel->getSampleRate(), 1, true);
+        return new NoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Notes) {
         return new NoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Regions) {
