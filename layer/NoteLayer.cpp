@@ -733,7 +733,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
 
-    NoteModel::PointList points(m_model->getPoints(frame0, frame1));
+    EventVector points(m_model->getEventsSpanning(frame0, frame1 - frame0));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -749,7 +749,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
-    NoteModel::Point illuminatePoint(0);
+    Event illuminatePoint;
     bool shouldIlluminate = false;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
@@ -763,18 +763,18 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
     
-    for (NoteModel::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
-        const NoteModel::Point &p(*i);
+        const Event &p(*i);
 
-        int x = v->getXForFrame(p.frame);
-        int y = getYForValue(v, p.value);
-        int w = v->getXForFrame(p.frame + p.duration) - x;
+        int x = v->getXForFrame(p.getFrame());
+        int y = getYForValue(v, p.getValue());
+        int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int h = 3;
         
         if (m_model->getValueQuantization() != 0.0) {
-            h = y - getYForValue(v, p.value + m_model->getValueQuantization());
+            h = y - getYForValue(v, p.getValue() + m_model->getValueQuantization());
             if (h < 3) h = 3;
         }
 
@@ -782,15 +782,12 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         paint.setPen(getBaseQColor());
         paint.setBrush(brushColour);
 
-        if (shouldIlluminate &&
-            // "illuminatePoint == p"
-            !NoteModel::Point::Comparator()(illuminatePoint, p) &&
-            !NoteModel::Point::Comparator()(p, illuminatePoint)) {
+        if (shouldIlluminate && illuminatePoint == p) {
 
             paint.setPen(v->getForeground());
             paint.setBrush(v->getForeground());
 
-            QString vlabel = QString("%1%2").arg(p.value).arg(getScaleUnits());
+            QString vlabel = QString("%1%2").arg(p.getValue()).arg(getScaleUnits());
             PaintAssistant::drawVisibleText(v, paint, 
                                x - paint.fontMetrics().width(vlabel) - 2,
                                y + paint.fontMetrics().height()/2
@@ -798,7 +795,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                                vlabel, PaintAssistant::OutlinedText);
 
             QString hlabel = RealTime::frame2RealTime
-                (p.frame, m_model->getSampleRate()).toText(true).c_str();
+                (p.getFrame(), m_model->getSampleRate()).toText(true).c_str();
             PaintAssistant::drawVisibleText(v, paint, 
                                x,
                                y - h/2 - paint.fontMetrics().descent() - 2,
@@ -832,7 +829,7 @@ NoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint
 void
 NoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model || m_model->getPoints().empty()) return;
+    if (!m_model || m_model->isEmpty()) return;
 
     QString unit;
     double min, max;
@@ -880,13 +877,12 @@ NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     double value = getValueForY(v, e->y());
 
-    m_editingPoint = NoteModel::Point(frame, float(value), 0, 0.8f, tr("New Point"));
+    m_editingPoint = Event(frame, float(value), 0, 0.8f, tr("New Point"));
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new NoteModel::EditCommand(m_model,
-                                                  tr("Draw Point"));
-    m_editingCommand->addPoint(m_editingPoint);
+    m_editingCommand = new NoteModel::EditCommand(m_model, tr("Draw Point"));
+    m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
 }
@@ -904,7 +900,7 @@ NoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 
     double newValue = getValueForY(v, e->y());
 
-    sv_frame_t newFrame = m_editingPoint.frame;
+    sv_frame_t newFrame = m_editingPoint.getFrame();
     sv_frame_t newDuration = frame - newFrame;
     if (newDuration < 0) {
         newFrame = frame;
@@ -913,11 +909,12 @@ NoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
         newDuration = 1;
     }
 
-    m_editingCommand->deletePoint(m_editingPoint);
-    m_editingPoint.frame = newFrame;
-    m_editingPoint.value = float(newValue);
-    m_editingPoint.duration = newDuration;
-    m_editingCommand->addPoint(m_editingPoint);
+    m_editingCommand->remove(m_editingPoint);
+    m_editingPoint = m_editingPoint
+        .withFrame(newFrame)
+        .withValue(float(newValue))
+        .withDuration(newDuration);
+    m_editingCommand->add(m_editingPoint);
 }
 
 void
@@ -957,13 +954,14 @@ NoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 
     m_editing = false;
 
-    NoteModel::Point p(0);
+    Event p(0);
     if (!getPointToDrag(v, e->x(), e->y(), p)) return;
-    if (p.frame != m_editingPoint.frame || p.value != m_editingPoint.value) return;
+    if (p.getFrame() != m_editingPoint.getFrame() ||
+        p.getValue() != m_editingPoint.getValue()) return;
 
     m_editingCommand = new NoteModel::EditCommand(m_model, tr("Erase Point"));
 
-    m_editingCommand->deletePoint(m_editingPoint);
+    m_editingCommand->remove(m_editingPoint);
 
     finish(m_editingCommand);
     m_editingCommand = nullptr;
@@ -980,8 +978,8 @@ NoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
 
-    m_dragPointX = v->getXForFrame(m_editingPoint.frame);
-    m_dragPointY = getYForValue(v, m_editingPoint.value);
+    m_dragPointX = v->getXForFrame(m_editingPoint.getFrame());
+    m_dragPointY = getYForValue(v, m_editingPoint.getValue());
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -1016,10 +1014,11 @@ NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
                                                       tr("Drag Point"));
     }
 
-    m_editingCommand->deletePoint(m_editingPoint);
-    m_editingPoint.frame = frame;
-    m_editingPoint.value = float(value);
-    m_editingCommand->addPoint(m_editingPoint);
+    m_editingCommand->remove(m_editingPoint);
+    m_editingPoint = m_editingPoint
+        .withFrame(frame)
+        .withValue(float(value));
+    m_editingCommand->add(m_editingPoint);
 }
 
 void
@@ -1032,8 +1031,8 @@ NoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 
         QString newName = m_editingCommand->getName();
 
-        if (m_editingPoint.frame != m_originalPoint.frame) {
-            if (m_editingPoint.value != m_originalPoint.value) {
+        if (m_editingPoint.getFrame() != m_originalPoint.getFrame()) {
+            if (m_editingPoint.getValue() != m_originalPoint.getValue()) {
                 newName = tr("Edit Point");
             } else {
                 newName = tr("Relocate Point");
@@ -1055,10 +1054,10 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
-    NoteModel::Point note(0);
+    Event note(0);
     if (!getPointToDrag(v, e->x(), e->y(), note)) return false;
 
-//    NoteModel::Point note = *points.begin();
+//    Event note = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
         (m_model->getSampleRate(),
@@ -1068,26 +1067,26 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
          ItemEditDialog::ShowText,
          getScaleUnits());
 
-    dialog->setFrameTime(note.frame);
-    dialog->setValue(note.value);
-    dialog->setFrameDuration(note.duration);
-    dialog->setText(note.label);
+    dialog->setFrameTime(note.getFrame());
+    dialog->setValue(note.getValue());
+    dialog->setFrameDuration(note.getDuration());
+    dialog->setText(note.getLabel());
 
     m_editingPoint = note;
     m_editIsOpen = true;
     
     if (dialog->exec() == QDialog::Accepted) {
 
-        NoteModel::Point newNote = note;
-        newNote.frame = dialog->getFrameTime();
-        newNote.value = dialog->getValue();
-        newNote.duration = dialog->getFrameDuration();
-        newNote.label = dialog->getText();
+        Event newNote = note
+            .withFrame(dialog->getFrameTime())
+            .withValue(dialog->getValue())
+            .withDuration(dialog->getFrameDuration())
+            .withLabel(dialog->getText());
         
         NoteModel::EditCommand *command = new NoteModel::EditCommand
             (m_model, tr("Edit Point"));
-        command->deletePoint(note);
-        command->addPoint(newNote);
+        command->remove(note);
+        command->add(newNote);
         finish(command);
     }
 
@@ -1106,18 +1105,18 @@ NoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     NoteModel::EditCommand *command =
         new NoteModel::EditCommand(m_model, tr("Drag Selection"));
 
-    NoteModel::PointList points =
-        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+    EventVector points =
+        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
-    for (NoteModel::PointList::iterator i = points.begin();
-         i != points.end(); ++i) {
-
-        if (s.contains(i->frame)) {
-            NoteModel::Point newPoint(*i);
-            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-            command->deletePoint(*i);
-            command->addPoint(newPoint);
-        }
+    SVCERR << "Have " << points.size() << " points to drag" << endl;
+    
+    for (Event p: points) {
+        SVCERR << "asking to remove " << p.toXmlString() << endl;
+        command->remove(p);
+        Event moved = p.withFrame(p.getFrame() +
+                                  newStartFrame - s.getStartFrame());
+        SVCERR << "asking to add " << moved.toXmlString() << endl;
+        command->add(moved);
     }
 
     finish(command);
@@ -1126,37 +1125,28 @@ NoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 NoteLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model) return;
+    if (!m_model || !s.getDuration()) return;
 
     NoteModel::EditCommand *command =
         new NoteModel::EditCommand(m_model, tr("Resize Selection"));
 
-    NoteModel::PointList points =
-        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+    EventVector points =
+        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
-    double ratio =
-        double(newSize.getEndFrame() - newSize.getStartFrame()) /
-        double(s.getEndFrame() - s.getStartFrame());
+    double ratio = double(newSize.getDuration()) / double(s.getDuration());
+    double oldStart = double(s.getStartFrame());
+    double newStart = double(newSize.getStartFrame());
+    
+    for (Event p: points) {
 
-    for (NoteModel::PointList::iterator i = points.begin();
-         i != points.end(); ++i) {
+        double newFrame = (double(p.getFrame()) - oldStart) * ratio + newStart;
+        double newDuration = double(p.getDuration()) * ratio;
 
-        if (s.contains(i->frame)) {
-
-            double targetStart = double(i->frame);
-            targetStart = double(newSize.getStartFrame()) +
-                targetStart - double(s.getStartFrame()) * ratio;
-
-            double targetEnd = double(i->frame + i->duration);
-            targetEnd = double(newSize.getStartFrame()) +
-                targetEnd - double(s.getStartFrame()) * ratio;
-
-            NoteModel::Point newPoint(*i);
-            newPoint.frame = lrint(targetStart);
-            newPoint.duration = lrint(targetEnd - targetStart);
-            command->deletePoint(*i);
-            command->addPoint(newPoint);
-        }
+        Event newPoint = p
+            .withFrame(lrint(newFrame))
+            .withDuration(lrint(newDuration));
+        command->remove(p);
+        command->add(newPoint);
     }
 
     finish(command);
@@ -1170,15 +1160,11 @@ NoteLayer::deleteSelection(Selection s)
     NoteModel::EditCommand *command =
         new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
 
-    NoteModel::PointList points =
-        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+    EventVector points =
+        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
-    for (NoteModel::PointList::iterator i = points.begin();
-         i != points.end(); ++i) {
-
-        if (s.contains(i->frame)) {
-            command->deletePoint(*i);
-        }
+    for (Event p: points) {
+        command->remove(p);
     }
 
     finish(command);
@@ -1189,20 +1175,17 @@ NoteLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
-    NoteModel::PointList points =
-        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+    EventVector points =
+        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
-    for (NoteModel::PointList::iterator i = points.begin();
-         i != points.end(); ++i) {
-        if (s.contains(i->frame)) {
-            Event point(i->frame, i->value, i->duration, i->level, i->label);
-            to.addPoint(point.withReferenceFrame(alignToReference(v, i->frame)));
-        }
+    for (Event p: points) {
+        to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
     }
 }
 
 bool
-NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
+                 sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     if (!m_model) return false;
 
@@ -1232,6 +1215,8 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
+
+        Event p = *i;
         
         sv_frame_t frame = 0;
 
@@ -1249,15 +1234,12 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
             }
         }
 
-        NoteModel::Point newPoint(frame);
-  
-        if (i->hasLabel()) newPoint.label = i->getLabel();
-        if (i->hasValue()) newPoint.value = i->getValue();
-        else newPoint.value = (m_model->getValueMinimum() +
-                               m_model->getValueMaximum()) / 2;
-        if (i->hasLevel()) newPoint.level = i->getLevel();
-        if (i->hasDuration()) newPoint.duration = i->getDuration();
-        else {
+        Event newPoint = p;
+        if (!p.hasValue()) {
+            newPoint = newPoint.withValue((m_model->getValueMinimum() +
+                                           m_model->getValueMaximum()) / 2);
+        }
+        if (!p.hasDuration()) {
             sv_frame_t nextFrame = frame;
             EventVector::const_iterator j = i;
             for (; j != points.end(); ++j) {
@@ -1267,13 +1249,13 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
                 nextFrame = j->getFrame();
             }
             if (nextFrame == frame) {
-                newPoint.duration = m_model->getResolution();
+                newPoint = newPoint.withDuration(m_model->getResolution());
             } else {
-                newPoint.duration = nextFrame - frame;
+                newPoint = newPoint.withDuration(nextFrame - frame);
             }
         }
         
-        command->addPoint(newPoint);
+        command->add(newPoint);
     }
 
     finish(command);
@@ -1283,7 +1265,8 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
 void
 NoteLayer::addNoteOn(sv_frame_t frame, int pitch, int velocity)
 {
-    m_pendingNoteOns.insert(Note(frame, float(pitch), 0, float(velocity) / 127.f, ""));
+    m_pendingNoteOns.insert(Event(frame, float(pitch), 0,
+                                  float(velocity) / 127.f, QString()));
 }
 
 void
@@ -1291,13 +1274,16 @@ NoteLayer::addNoteOff(sv_frame_t frame, int pitch)
 {
     for (NoteSet::iterator i = m_pendingNoteOns.begin();
          i != m_pendingNoteOns.end(); ++i) {
-        if (lrintf((*i).value) == pitch) {
-            Note note(*i);
+
+        Event p = *i;
+
+        if (lrintf(p.getValue()) == pitch) {
             m_pendingNoteOns.erase(i);
-            note.duration = frame - note.frame;
+            Event note = p.withDuration(frame - p.getFrame());
             if (m_model) {
-                NoteModel::AddPointCommand *c = new NoteModel::AddPointCommand
-                    (m_model, note, tr("Record Note"));
+                NoteModel::EditCommand *c = new NoteModel::EditCommand
+                    (m_model, tr("Record Note"));
+                c->add(note);
                 // execute and bundle:
                 CommandHistory::getInstance()->addCommand(c, true, true);
             }
