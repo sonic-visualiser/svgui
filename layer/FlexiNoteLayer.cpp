@@ -53,16 +53,6 @@
 
 FlexiNoteLayer::FlexiNoteLayer() :
     SingleColourLayer(),
-
-    // m_model(0),
-    // m_editing(false),
-    // m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
-    // m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
-    // m_editingCommand(0),
-    // m_verticalScale(AutoAlignScale),
-    // m_scaleMinimum(0),
-    // m_scaleMaximum(0)
-
     m_model(nullptr),
     m_editing(false),
     m_intelligentActions(true),
@@ -945,7 +935,7 @@ FlexiNoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new NoteModel::EditCommand(m_model, tr("Draw Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model, tr("Draw Point"));
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
@@ -1022,10 +1012,8 @@ FlexiNoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     if (!getPointToDrag(v, e->x(), e->y(), p)) return;
     if (p.getFrame() != m_editingPoint.getFrame() || p.getValue() != m_editingPoint.getValue()) return;
 
-    m_editingCommand = new NoteModel::EditCommand(m_model, tr("Erase Point"));
-
+    m_editingCommand = new ChangeEventsCommand(m_model, tr("Erase Point"));
     m_editingCommand->remove(m_editingPoint);
-
     finish(m_editingCommand);
     m_editingCommand = nullptr;
     m_editing = false;
@@ -1108,10 +1096,8 @@ FlexiNoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     double value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
-        m_editingCommand = new NoteModel::EditCommand(m_model,
-                                                           tr("Drag Point"));
+        m_editingCommand = new ChangeEventsCommand(m_model, tr("Drag Point"));
     }
-
     m_editingCommand->remove(m_editingPoint);
 
     std::cerr << "edit mode: " << m_editMode << " intelligent actions = "
@@ -1285,7 +1271,7 @@ FlexiNoteLayer::splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseE
     
     Event note(*onPoints.begin());
 
-    NoteModel::EditCommand *command = new NoteModel::EditCommand
+    ChangeEventsCommand *command = new ChangeEventsCommand
         (m_model, tr("Edit Point"));
     command->remove(note);
 
@@ -1349,7 +1335,7 @@ FlexiNoteLayer::addNote(LayerGeometryProvider *v, QMouseEvent *e)
     if (!m_intelligentActions || 
         (m_model->getEventsCovering(frame).empty() && duration > 0)) {
         Event newNote(frame, float(value), duration, 100.f, tr("new note"));
-        NoteModel::EditCommand *command = new NoteModel::EditCommand
+        ChangeEventsCommand *command = new ChangeEventsCommand
             (m_model, tr("Add Point"));
         command->add(newNote);
         finish(command);
@@ -1389,7 +1375,7 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selectio
     EventVector points =
         m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
-    NoteModel::EditCommand *command = new NoteModel::EditCommand
+    ChangeEventsCommand *command = new ChangeEventsCommand
         (m_model, tr("Snap Notes"));
 
     cerr << "snapSelectedNotesToPitchTrack: selection is from " << s.getStartFrame() << " to " << s.getEndFrame() << endl;
@@ -1432,8 +1418,8 @@ FlexiNoteLayer::mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive
     EventVector::iterator i = points.begin();
     if (i == points.end()) return;
 
-    NoteModel::EditCommand *command = 
-        new NoteModel::EditCommand(m_model, tr("Merge Notes"));
+    ChangeEventsCommand *command = 
+        new ChangeEventsCommand(m_model, tr("Merge Notes"));
 
     Event newNote(*i);
 
@@ -1600,7 +1586,7 @@ FlexiNoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
             .withDuration(dialog->getFrameDuration())
             .withLabel(dialog->getText());
         
-        NoteModel::EditCommand *command = new NoteModel::EditCommand
+        ChangeEventsCommand *command = new ChangeEventsCommand
             (m_model, tr("Edit Point"));
         command->remove(note);
         command->add(newNote);
@@ -1616,8 +1602,8 @@ FlexiNoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Drag Selection"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Drag Selection"));
 
     EventVector points =
         m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -1637,8 +1623,8 @@ FlexiNoteLayer::resizeSelection(Selection s, Selection newSize)
 {
     if (!m_model || !s.getDuration()) return;
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Resize Selection"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Resize Selection"));
 
     EventVector points =
         m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -1667,8 +1653,8 @@ FlexiNoteLayer::deleteSelection(Selection s)
 {
     if (!m_model) return;
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
 
     EventVector points =
         m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -1685,8 +1671,8 @@ FlexiNoteLayer::deleteSelectionInclusive(Selection s)
 {
     if (!m_model) return;
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
 
     EventVector points =
         m_model->getEventsSpanning(s.getStartFrame(), s.getDuration());
@@ -1737,8 +1723,8 @@ FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
         }
     }
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Paste"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Paste"));
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1807,7 +1793,7 @@ FlexiNoteLayer::addNoteOff(sv_frame_t frame, int pitch)
             m_pendingNoteOns.erase(i);
             Event note = p.withDuration(frame - p.getFrame());
             if (m_model) {
-                NoteModel::EditCommand *c = new NoteModel::EditCommand
+                ChangeEventsCommand *c = new ChangeEventsCommand
                     (m_model, tr("Record Note"));
                 c->add(note);
                 // execute and bundle:

@@ -881,7 +881,7 @@ NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new NoteModel::EditCommand(m_model, tr("Draw Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model, tr("Draw Point"));
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
@@ -959,7 +959,7 @@ NoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
-    m_editingCommand = new NoteModel::EditCommand(m_model, tr("Erase Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model, tr("Erase Point"));
 
     m_editingCommand->remove(m_editingPoint);
 
@@ -1010,7 +1010,7 @@ NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     double value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
-        m_editingCommand = new NoteModel::EditCommand(m_model,
+        m_editingCommand = new ChangeEventsCommand(m_model,
                                                       tr("Drag Point"));
     }
 
@@ -1083,7 +1083,7 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
             .withDuration(dialog->getFrameDuration())
             .withLabel(dialog->getText());
         
-        NoteModel::EditCommand *command = new NoteModel::EditCommand
+        ChangeEventsCommand *command = new ChangeEventsCommand
             (m_model, tr("Edit Point"));
         command->remove(note);
         command->add(newNote);
@@ -1102,8 +1102,8 @@ NoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Drag Selection"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Drag Selection"));
 
     EventVector points =
         m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -1123,8 +1123,8 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
 {
     if (!m_model || !s.getDuration()) return;
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Resize Selection"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Resize Selection"));
 
     EventVector points =
         m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -1153,8 +1153,8 @@ NoteLayer::deleteSelection(Selection s)
 {
     if (!m_model) return;
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Delete Selected Points"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
 
     EventVector points =
         m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -1206,8 +1206,8 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
         }
     }
 
-    NoteModel::EditCommand *command =
-        new NoteModel::EditCommand(m_model, tr("Paste"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Paste"));
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1277,7 +1277,7 @@ NoteLayer::addNoteOff(sv_frame_t frame, int pitch)
             m_pendingNoteOns.erase(i);
             Event note = p.withDuration(frame - p.getFrame());
             if (m_model) {
-                NoteModel::EditCommand *c = new NoteModel::EditCommand
+                ChangeEventsCommand *c = new ChangeEventsCommand
                     (m_model, tr("Record Note"));
                 c->add(note);
                 // execute and bundle:

@@ -154,7 +154,7 @@ protected:
     int m_dragStartY;
     Event m_originalPoint;
     Event m_editingPoint;
-    NoteModel::EditCommand *m_editingCommand;
+    ChangeEventsCommand *m_editingCommand;
     bool m_editIsOpen;
     VerticalScale m_verticalScale;
 
@@ -166,7 +166,7 @@ protected:
 
     bool shouldAutoAlign() const;
 
-    void finish(NoteModel::EditCommand *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
