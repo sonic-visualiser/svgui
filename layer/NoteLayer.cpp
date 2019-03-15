@@ -545,6 +545,11 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
         return true;
     }    
 
+    //!!! I think this is not quite right - we want to be able to snap
+    //!!! to events that are nearby but not covering the given frame,
+    //!!! and I think that worked with the old code. Compare and
+    //!!! revise.
+
     points = m_model->getEventsCovering(frame);
     sv_frame_t snapped = frame;
     bool found = false;
@@ -1212,8 +1217,6 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
-        Event p = *i;
-        
         sv_frame_t frame = 0;
 
         if (!realign) {
@@ -1230,6 +1233,7 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
             }
         }
 
+        Event p = *i;
         Event newPoint = p;
         if (!p.hasValue()) {
             newPoint = newPoint.withValue((m_model->getValueMinimum() +

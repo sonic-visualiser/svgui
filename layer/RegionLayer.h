@@ -141,9 +141,9 @@ protected:
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 
-    RegionModel::PointList getLocalPoints(LayerGeometryProvider *v, int x) const;
+    EventVector getLocalPoints(LayerGeometryProvider *v, int x) const;
 
-    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, RegionModel::Point &) const;
+    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
 
     RegionModel *m_model;
     bool m_editing;
@@ -151,9 +151,9 @@ protected:
     int m_dragPointY;
     int m_dragStartX;
     int m_dragStartY;
-    RegionModel::Point m_originalPoint;
-    RegionModel::Point m_editingPoint;
-    RegionModel::EditCommand *m_editingCommand;
+    Event m_originalPoint;
+    Event m_editingPoint;
+    ChangeEventsCommand *m_editingCommand;
     VerticalScale m_verticalScale;
     int m_colourMap;
     bool m_colourInverted;
@@ -170,7 +170,7 @@ protected:
     int spacingIndexToY(LayerGeometryProvider *v, int i) const;
     double yToSpacingIndex(LayerGeometryProvider *v, int y) const;
 
-    void finish(RegionModel::EditCommand *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
