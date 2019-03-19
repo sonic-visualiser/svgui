@@ -1380,12 +1380,10 @@ RegionLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     for (EventVector::iterator i = points.begin();
          i != points.end(); ++i) {
 
-        if (s.contains(i->getFrame())) {
-            Event newPoint = (*i)
-                .withFrame(i->getFrame() + newStartFrame - s.getStartFrame());
-            command->remove(*i);
-            command->add(newPoint);
-        }
+        Event newPoint = (*i)
+            .withFrame(i->getFrame() + newStartFrame - s.getStartFrame());
+        command->remove(*i);
+        command->add(newPoint);
     }
 
     finish(command);

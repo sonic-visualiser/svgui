@@ -531,19 +531,21 @@ TimeValueLayer::getNewVerticalZoomRangeMapper() const
     return mapper;
 }
 
-SparseTimeValueModel::PointList
+EventVector
 TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
-    if (!m_model) return SparseTimeValueModel::PointList();
+    if (!m_model) return {};
 
     sv_frame_t frame = v->getFrameForX(x);
 
-    SparseTimeValueModel::PointList onPoints =
-        m_model->getPoints(frame);
+    //!!! this is not going to be right - we want "nearby" points and
+    //!!! there's no api for that
+    
+    EventVector local = m_model->getEventsCovering(frame);
+    if (!local.empty()) return local;
 
-    if (!onPoints.empty()) {
-        return onPoints;
-    }
+    return {};
+/*!!!
 
     SparseTimeValueModel::PointList prevPoints =
         m_model->getPreviousPoints(frame);
@@ -574,17 +576,20 @@ TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     }
 
     return usePoints;
+*/
 }
 
 QString
-TimeValueLayer::getLabelPreceding(sv_frame_t frame) const
+TimeValueLayer::getLabelPreceding(sv_frame_t /* frame */) const
 {
-    if (!m_model) return "";
-    SparseTimeValueModel::PointList points = m_model->getPreviousPoints(frame);
-    for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
+    if (!m_model || !m_model->hasTextLabels()) return "";
+/*!!! no corresponding api yet
+    EventVector points = m_model->getPreviousPoints(frame);
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
-        if (i->label != "") return i->label;
+        if (i->getLabel() != "") return i->getLabel();
     }
+*/
     return "";
 }
 
@@ -595,7 +600,7 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
 
     if (!m_model || !m_model->getSampleRate()) return "";
 
-    SparseTimeValueModel::PointList points = getLocalPoints(v, x);
+    EventVector points = getLocalPoints(v, x);
 
     if (points.empty()) {
         if (!m_model->isReady()) {
@@ -605,12 +610,12 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
         }
     }
 
-    sv_frame_t useFrame = points.begin()->frame;
+    sv_frame_t useFrame = points.begin()->getFrame();
 
     RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
     
     QString valueText;
-    float value = points.begin()->value;
+    float value = points.begin()->getValue();
     QString unit = getScaleUnits();
 
     if (unit == "Hz") {
@@ -626,7 +631,7 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
     
     QString text;
 
-    if (points.begin()->label == "") {
+    if (points.begin()->getLabel() == "") {
         text = QString(tr("Time:\t%1\nValue:\t%2\nNo label"))
             .arg(rt.toText(true).c_str())
             .arg(valueText);
@@ -634,16 +639,17 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
         text = QString(tr("Time:\t%1\nValue:\t%2\nLabel:\t%4"))
             .arg(rt.toText(true).c_str())
             .arg(valueText)
-            .arg(points.begin()->label);
+            .arg(points.begin()->getLabel());
     }
 
     pos = QPoint(v->getXForFrame(useFrame),
-                 getYForValue(v, points.begin()->value));
+                 getYForValue(v, points.begin()->getValue()));
     return text;
 }
 
 bool
-TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
+TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v,
+                                   sv_frame_t &frame,
                                    int &resolution,
                                    SnapType snap) const
 {
@@ -652,35 +658,35 @@ TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     }
 
     resolution = m_model->getResolution();
-    SparseTimeValueModel::PointList points;
+    EventVector points;
 
     if (snap == SnapNeighbouring) {
-        
         points = getLocalPoints(v, v->getXForFrame(frame));
         if (points.empty()) return false;
-        frame = points.begin()->frame;
+        frame = points.begin()->getFrame();
         return true;
     }    
 
-    points = m_model->getPoints(frame, frame);
+    //!!! again, wrong api - correct one is not here yet
+    points = m_model->getEventsCovering(frame);
     sv_frame_t snapped = frame;
     bool found = false;
 
-    for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
         if (snap == SnapRight) {
 
-            if (i->frame > frame) {
-                snapped = i->frame;
+            if (i->getFrame() > frame) {
+                snapped = i->getFrame();
                 found = true;
                 break;
             }
 
         } else if (snap == SnapLeft) {
 
-            if (i->frame <= frame) {
-                snapped = i->frame;
+            if (i->getFrame() <= frame) {
+                snapped = i->getFrame();
                 found = true; // don't break, as the next may be better
             } else {
                 break;
@@ -688,21 +694,21 @@ TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 
         } else { // nearest
 
-            SparseTimeValueModel::PointList::const_iterator j = i;
+            EventVector::const_iterator j = i;
             ++j;
 
             if (j == points.end()) {
 
-                snapped = i->frame;
+                snapped = i->getFrame();
                 found = true;
                 break;
 
-            } else if (j->frame >= frame) {
+            } else if (j->getFrame() >= frame) {
 
-                if (j->frame - frame < frame - i->frame) {
-                    snapped = j->frame;
+                if (j->getFrame() - frame < frame - i->getFrame()) {
+                    snapped = j->getFrame();
                 } else {
-                    snapped = i->frame;
+                    snapped = i->getFrame();
                 }
                 found = true;
                 break;
@@ -725,18 +731,24 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame
 
     resolution = m_model->getResolution();
 
-    const SparseTimeValueModel::PointList &points = m_model->getPoints();
-    SparseTimeValueModel::PointList close = m_model->getPoints(frame, frame);
+    /*!!! todo: overhaul the logic of this function (and supporting
+          apis in EventSeries / SparseTimeValueModel)
 
-    SparseTimeValueModel::PointList::const_iterator i;
+    const EventVector &points = m_model->getPoints();
+    EventVector close = m_model->getPoints(frame, frame);
+    */
+    const EventVector &points = m_model->getAllEvents();
+    EventVector close = {};
+
+    EventVector::const_iterator i;
 
     sv_frame_t matchframe = frame;
     double matchvalue = 0.0;
 
     for (i = close.begin(); i != close.end(); ++i) {
-        if (i->frame > frame) break;
-        matchvalue = i->value;
-        matchframe = i->frame;
+        if (i->getFrame() > frame) break;
+        matchvalue = i->getValue();
+        matchframe = i->getFrame();
     }
 
     sv_frame_t snapped = frame;
@@ -766,18 +778,18 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame
 
         if (snap == SnapRight) {
 
-            if (i->frame > matchframe &&
-                fabs(i->value - matchvalue) < epsilon) {
-                snapped = i->frame;
+            if (i->getFrame() > matchframe &&
+                fabs(i->getValue() - matchvalue) < epsilon) {
+                snapped = i->getFrame();
                 found = true;
                 break;
             }
 
         } else if (snap == SnapLeft) {
 
-            if (i->frame < matchframe) {
-                if (fabs(i->value - matchvalue) < epsilon) {
-                    snapped = i->frame;
+            if (i->getFrame() < matchframe) {
+                if (fabs(i->getValue() - matchvalue) < epsilon) {
+                    snapped = i->getFrame();
                     found = true; // don't break, as the next may be better
                 }
             } else if (found || distant) {
@@ -926,8 +938,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_frame_t frame1 = v->getFrameForX(x1);
     if (m_derivative) --frame0;
 
-    SparseTimeValueModel::PointList points(m_model->getPoints
-                                           (frame0, frame1));
+    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -952,12 +963,13 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_frame_t illuminateFrame = -1;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
-        SparseTimeValueModel::PointList localPoints =
-            getLocalPoints(v, localPos.x());
+        EventVector localPoints = getLocalPoints(v, localPos.x());
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "TimeValueLayer: " << localPoints.size() << " local points" << endl;
 #endif
-        if (!localPoints.empty()) illuminateFrame = localPoints.begin()->frame;
+        if (!localPoints.empty()) {
+            illuminateFrame = localPoints.begin()->getFrame();
+        }
     }
 
     int w =
@@ -990,21 +1002,21 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     
     sv_frame_t prevFrame = 0;
 
-    for (SparseTimeValueModel::PointList::const_iterator i = points.begin();
+    for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
         if (m_derivative && i == points.begin()) continue;
 
-        const SparseTimeValueModel::Point &p(*i);
+        Event p(*i);
 
-        double value = p.value;
+        double value = p.getValue();
         if (m_derivative) {
-            SparseTimeValueModel::PointList::const_iterator j = i;
+            EventVector::const_iterator j = i;
             --j;
-            value -= j->value;
+            value -= j->getValue();
         }
 
-        int x = v->getXForFrame(p.frame);
+        int x = v->getXForFrame(p.getFrame());
         int y = getYForValue(v, value);
 
         bool gap = false;
@@ -1013,8 +1025,8 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 // Treat zeros as gaps
                 continue;
             }
-            gap = (p.frame > prevFrame &&
-                   (p.frame - prevFrame >= m_model->getResolution() * 2));
+            gap = (p.getFrame() > prevFrame &&
+                   (p.getFrame() - prevFrame >= m_model->getResolution() * 2));
         }
 
         if (m_plotStyle != PlotSegmentation) {
@@ -1031,20 +1043,20 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
         int nx = v->getXForFrame(nf);
         int ny = y;
 
-        SparseTimeValueModel::PointList::const_iterator j = i;
+        EventVector::const_iterator j = i;
         ++j;
 
         if (j != points.end()) {
-            const SparseTimeValueModel::Point &q(*j);
-            nvalue = q.value;
-            if (m_derivative) nvalue -= p.value;
-            nf = q.frame;
+            Event q(*j);
+            nvalue = q.getValue();
+            if (m_derivative) nvalue -= p.getValue();
+            nf = q.getFrame();
             nx = v->getXForFrame(nf);
             ny = getYForValue(v, nvalue);
             haveNext = true;
         }
 
-//        cout << "frame = " << p.frame << ", x = " << x << ", haveNext = " << haveNext 
+//        cout << "frame = " << p.getFrame() << ", x = " << x << ", haveNext = " << haveNext 
 //                  << ", nx = " << nx << endl;
 
         QPen pen(getBaseQColor());
@@ -1074,7 +1086,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
         bool illuminate = false;
 
-        if (illuminateFrame == p.frame) {
+        if (illuminateFrame == p.getFrame()) {
 
             // not equipped to illuminate the right section in line
             // or curve mode
@@ -1138,7 +1150,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                     if (m_plotStyle == PlotDiscreteCurves) {
                         bool nextGap =
                             (nvalue == 0.0) ||
-                            (nf - p.frame >= m_model->getResolution() * 2);
+                            (nf - p.getFrame() >= m_model->getResolution() * 2);
                         if (nextGap) {
                             x1 = x0;
                             y1 = y0;
@@ -1188,7 +1200,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
         if (v->shouldShowFeatureLabels()) {
 
-            QString label = p.label;
+            QString label = p.getLabel();
             bool italic = false;
 
             if (label == "" &&
@@ -1196,7 +1208,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                  m_plotStyle == PlotSegmentation ||
                  m_plotStyle == PlotConnectedPoints)) {
                 char lc[20];
-                snprintf(lc, 20, "%.3g", p.value);
+                snprintf(lc, 20, "%.3g", p.getValue());
                 label = lc;
                 italic = true;
             }
@@ -1209,15 +1221,16 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 if (haveRoom ||
                     (!haveNext &&
                      (pointCount == 0 || !italic))) {
-                    PaintAssistant::drawVisibleText(v, paint, x + 5, textY, label,
-                                       italic ?
-                                       PaintAssistant::OutlinedItalicText :
-                                       PaintAssistant::OutlinedText);
+                    PaintAssistant::drawVisibleText
+                        (v, paint, x + 5, textY, label,
+                         italic ?
+                         PaintAssistant::OutlinedItalicText :
+                         PaintAssistant::OutlinedText);
                 }
             }
         }
 
-        prevFrame = p.frame;
+        prevFrame = p.getFrame();
         ++pointCount;
     }
 
@@ -1261,7 +1274,7 @@ TimeValueLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &
 void
 TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model || m_model->getPoints().empty()) return;
+    if (!m_model || m_model->isEmpty()) return;
 
     QString unit;
     double min, max;
@@ -1328,13 +1341,13 @@ TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     bool havePoint = false;
 
-    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->x());
     if (!points.empty()) {
-        for (SparseTimeValueModel::PointList::iterator i = points.begin();
+        for (EventVector::iterator i = points.begin();
              i != points.end(); ++i) {
-            if (((i->frame / resolution) * resolution) != frame) {
+            if (((i->getFrame() / resolution) * resolution) != frame) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                cerr << "ignoring out-of-range frame at " << i->frame << endl;
+                cerr << "ignoring out-of-range frame at " << i->getFrame() << endl;
 #endif
                 continue;
             }
@@ -1344,17 +1357,15 @@ TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     }
 
     if (!havePoint) {
-        m_editingPoint = SparseTimeValueModel::Point
-            (frame, float(value), tr("New Point"));
+        m_editingPoint = Event(frame, float(value), tr("New Point"));
     }
 
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
-                                                             tr("Draw Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model, tr("Draw Point"));
     if (!havePoint) {
-        m_editingCommand->addPoint(m_editingPoint);
+        m_editingCommand->add(m_editingPoint);
     }
 
     m_editing = true;
@@ -1376,7 +1387,7 @@ TimeValueLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 
     double value = getValueForY(v, e->y());
 
-    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->x());
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << points.size() << " points" << endl;
@@ -1385,41 +1396,41 @@ TimeValueLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     bool havePoint = false;
 
     if (!points.empty()) {
-        for (SparseTimeValueModel::PointList::iterator i = points.begin();
+        for (EventVector::iterator i = points.begin();
              i != points.end(); ++i) {
-            if (i->frame == m_editingPoint.frame &&
-                i->value == m_editingPoint.value) {
+            if (i->getFrame() == m_editingPoint.getFrame() &&
+                i->getValue() == m_editingPoint.getValue()) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                cerr << "ignoring current editing point at " << i->frame << ", " << i->value << endl;
+                cerr << "ignoring current editing point at " << i->getFrame() << ", " << i->getValue() << endl;
 #endif
                 continue;
             }
-            if (((i->frame / resolution) * resolution) != frame) {
+            if (((i->getFrame() / resolution) * resolution) != frame) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-                cerr << "ignoring out-of-range frame at " << i->frame << endl;
+                cerr << "ignoring out-of-range frame at " << i->getFrame() << endl;
 #endif
                 continue;
             }
 #ifdef DEBUG_TIME_VALUE_LAYER
-            cerr << "adjusting to new point at " << i->frame << ", " << i->value << endl;
+            cerr << "adjusting to new point at " << i->getFrame() << ", " << i->getValue() << endl;
 #endif
             m_editingPoint = *i;
             m_originalPoint = m_editingPoint;
-            m_editingCommand->deletePoint(m_editingPoint);
+            m_editingCommand->remove(m_editingPoint);
             havePoint = true;
         }
     }
 
     if (!havePoint) {
-        if (frame == m_editingPoint.frame) {
-            m_editingCommand->deletePoint(m_editingPoint);
+        if (frame == m_editingPoint.getFrame()) {
+            m_editingCommand->remove(m_editingPoint);
         }
     }
 
-//    m_editingCommand->deletePoint(m_editingPoint);
-    m_editingPoint.frame = frame;
-    m_editingPoint.value = float(value);
-    m_editingCommand->addPoint(m_editingPoint);
+    m_editingPoint = m_editingPoint
+        .withFrame(frame)
+        .withValue(float(value));
+    m_editingCommand->add(m_editingPoint);
 }
 
 void
@@ -1439,7 +1450,7 @@ TimeValueLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return;
 
-    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -1464,16 +1475,13 @@ TimeValueLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 
     m_editing = false;
 
-    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return;
-    if (points.begin()->frame != m_editingPoint.frame ||
-        points.begin()->value != m_editingPoint.value) return;
+    if (points.begin()->getFrame() != m_editingPoint.getFrame() ||
+        points.begin()->getValue() != m_editingPoint.getValue()) return;
 
-    m_editingCommand = new SparseTimeValueModel::EditCommand
-        (m_model, tr("Erase Point"));
-
-    m_editingCommand->deletePoint(m_editingPoint);
-
+    m_editingCommand = new ChangeEventsCommand(m_model, tr("Erase Point"));
+    m_editingCommand->remove(m_editingPoint);
     finish(m_editingCommand);
     m_editingCommand = nullptr;
     m_editing = false;
@@ -1488,7 +1496,7 @@ TimeValueLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (!m_model) return;
 
-    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -1518,14 +1526,14 @@ TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     double value = getValueForY(v, e->y());
 
     if (!m_editingCommand) {
-        m_editingCommand = new SparseTimeValueModel::EditCommand(m_model,
-                                                                 tr("Drag Point"));
+        m_editingCommand = new ChangeEventsCommand(m_model, tr("Drag Point"));
     }
 
-    m_editingCommand->deletePoint(m_editingPoint);
-    m_editingPoint.frame = frame;
-    m_editingPoint.value = float(value);
-    m_editingCommand->addPoint(m_editingPoint);
+    m_editingCommand->remove(m_editingPoint);
+    m_editingPoint = m_editingPoint
+        .withFrame(frame)
+        .withValue(float(value));
+    m_editingCommand->add(m_editingPoint);
 }
 
 void
@@ -1540,8 +1548,8 @@ TimeValueLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 
         QString newName = m_editingCommand->getName();
 
-        if (m_editingPoint.frame != m_originalPoint.frame) {
-            if (m_editingPoint.value != m_originalPoint.value) {
+        if (m_editingPoint.getFrame() != m_originalPoint.getFrame()) {
+            if (m_editingPoint.getValue() != m_originalPoint.getValue()) {
                 newName = tr("Edit Point");
             } else {
                 newName = tr("Relocate Point");
@@ -1563,10 +1571,10 @@ TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_model) return false;
 
-    SparseTimeValueModel::PointList points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return false;
 
-    SparseTimeValueModel::Point point = *points.begin();
+    Event point = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
         (m_model->getSampleRate(),
@@ -1575,21 +1583,21 @@ TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
          ItemEditDialog::ShowText,
          getScaleUnits());
 
-    dialog->setFrameTime(point.frame);
-    dialog->setValue(point.value);
-    dialog->setText(point.label);
+    dialog->setFrameTime(point.getFrame());
+    dialog->setValue(point.getValue());
+    dialog->setText(point.getLabel());
 
     if (dialog->exec() == QDialog::Accepted) {
 
-        SparseTimeValueModel::Point newPoint = point;
-        newPoint.frame = dialog->getFrameTime();
-        newPoint.value = dialog->getValue();
-        newPoint.label = dialog->getText();
+        Event newPoint = point
+            .withFrame(dialog->getFrameTime())
+            .withValue(dialog->getValue())
+            .withLabel(dialog->getText());
         
-        SparseTimeValueModel::EditCommand *command =
-            new SparseTimeValueModel::EditCommand(m_model, tr("Edit Point"));
-        command->deletePoint(point);
-        command->addPoint(newPoint);
+        ChangeEventsCommand *command =
+            new ChangeEventsCommand(m_model, tr("Edit Point"));
+        command->remove(point);
+        command->add(newPoint);
         finish(command);
     }
 
@@ -1602,22 +1610,18 @@ TimeValueLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
     if (!m_model) return;
 
-    SparseTimeValueModel::EditCommand *command =
-        new SparseTimeValueModel::EditCommand(m_model,
-                                              tr("Drag Selection"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Drag Selection"));
 
-    SparseTimeValueModel::PointList points =
-        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+    EventVector points =
+        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
-    for (SparseTimeValueModel::PointList::iterator i = points.begin();
-         i != points.end(); ++i) {
+    for (Event p: points) {
 
-        if (s.contains(i->frame)) {
-            SparseTimeValueModel::Point newPoint(*i);
-            newPoint.frame = i->frame + newStartFrame - s.getStartFrame();
-            command->deletePoint(*i);
-            command->addPoint(newPoint);
-        }
+        Event newPoint = p.withFrame
+            (p.getFrame() + newStartFrame - s.getStartFrame());
+        command->remove(p);
+        command->add(newPoint);
     }
 
     finish(command);
@@ -1626,33 +1630,26 @@ TimeValueLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 TimeValueLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model) return;
+    if (!m_model || !s.getDuration()) return;
 
-    SparseTimeValueModel::EditCommand *command =
-        new SparseTimeValueModel::EditCommand(m_model,
-                                              tr("Resize Selection"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Resize Selection"));
 
-    SparseTimeValueModel::PointList points =
-        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+    EventVector points =
+        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
-    double ratio =
-        double(newSize.getEndFrame() - newSize.getStartFrame()) /
-        double(s.getEndFrame() - s.getStartFrame());
+    double ratio = double(newSize.getDuration()) / double(s.getDuration());
+    double oldStart = double(s.getStartFrame());
+    double newStart = double(newSize.getStartFrame());
 
-    for (SparseTimeValueModel::PointList::iterator i = points.begin();
-         i != points.end(); ++i) {
+    for (Event p: points) {
+        
+        double newFrame = (double(p.getFrame()) - oldStart) * ratio + newStart;
 
-        if (s.contains(i->frame)) {
-
-            double target = double(i->frame);
-            target = double(newSize.getStartFrame()) +
-                target - double(s.getStartFrame()) * ratio;
-
-            SparseTimeValueModel::Point newPoint(*i);
-            newPoint.frame = lrint(target);
-            command->deletePoint(*i);
-            command->addPoint(newPoint);
-        }
+        Event newPoint = p
+            .withFrame(lrint(newFrame));
+        command->remove(p);
+        command->add(newPoint);
     }
 
     finish(command);
@@ -1663,19 +1660,14 @@ TimeValueLayer::deleteSelection(Selection s)
 {
     if (!m_model) return;
 
-    SparseTimeValueModel::EditCommand *command =
-        new SparseTimeValueModel::EditCommand(m_model,
-                                              tr("Delete Selected Points"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
 
-    SparseTimeValueModel::PointList points =
-        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+    EventVector points =
+        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
-    for (SparseTimeValueModel::PointList::iterator i = points.begin();
-         i != points.end(); ++i) {
-
-        if (s.contains(i->frame)) {
-            command->deletePoint(*i);
-        }
+    for (Event p: points) {
+        command->remove(p);
     }
 
     finish(command);
@@ -1686,15 +1678,11 @@ TimeValueLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
     if (!m_model) return;
 
-    SparseTimeValueModel::PointList points =
-        m_model->getPoints(s.getStartFrame(), s.getEndFrame());
+    EventVector points =
+        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
-    for (SparseTimeValueModel::PointList::iterator i = points.begin();
-         i != points.end(); ++i) {
-        if (s.contains(i->frame)) {
-            Event point(i->frame, i->value, i->label);
-            to.addPoint(point.withReferenceFrame(alignToReference(v, i->frame)));
-        }
+    for (Event p: points) {
+        to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
     }
 }
 
@@ -1725,8 +1713,8 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
         }
     }
 
-    SparseTimeValueModel::EditCommand *command =
-        new SparseTimeValueModel::EditCommand(m_model, tr("Paste"));
+    ChangeEventsCommand *command =
+        new ChangeEventsCommand(m_model, tr("Paste"));
 
     enum ValueAvailability {
         UnknownAvailability,
@@ -1833,7 +1821,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
         }
     }
 
-    SparseTimeValueModel::Point prevPoint(0);
+    Event prevPoint;
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1854,45 +1842,46 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
             }
         }
 
-        SparseTimeValueModel::Point newPoint(frame);
-  
-        if (i->hasLabel()) {
-            newPoint.label = i->getLabel();
-        } else if (i->hasValue()) {
-            newPoint.label = QString("%1").arg(i->getValue());
+        Event newPoint = *i;
+        if (!i->hasLabel() && i->hasValue()) {
+            newPoint = newPoint.withLabel(QString("%1").arg(i->getValue()));
         }
 
         bool usePrev = false;
-        SparseTimeValueModel::Point formerPrevPoint = prevPoint;
+        Event formerPrevPoint = prevPoint;
 
-        if (i->hasValue()) {
-            newPoint.value = i->getValue();
-        } else {
+        if (!i->hasValue()) {
 #ifdef DEBUG_TIME_VALUE_LAYER
-            cerr << "Setting value on point at " << newPoint.frame << " from labeller";
+            cerr << "Setting value on point at " << newPoint.getFrame() << " from labeller";
             if (i == points.begin()) {
                 cerr << ", no prev point" << endl;
             } else {
-                cerr << ", prev point is at " << prevPoint.frame << endl;
+                cerr << ", prev point is at " << prevPoint.getFrame() << endl;
             }
 #endif
-            labeller.setValue<SparseTimeValueModel::Point>
+
+            Labeller::Revaluing valuing = 
+                labeller.revalue
                 (newPoint, (i == points.begin()) ? nullptr : &prevPoint);
+            
 #ifdef DEBUG_TIME_VALUE_LAYER
-            cerr << "New point value = " << newPoint.value << endl;
+            cerr << "New point value = " << newPoint.getValue() << endl;
 #endif
-            if (labeller.actingOnPrevPoint() && i != points.begin()) {
+            if (valuing.first == Labeller::AppliesToPreviousEvent) {
                 usePrev = true;
+                prevPoint = valuing.second;
+            } else {
+                newPoint = valuing.second;
             }
         }
 
         if (usePrev) {
-            command->deletePoint(formerPrevPoint);
-            command->addPoint(prevPoint);
+            command->remove(formerPrevPoint);
+            command->add(prevPoint);
         }
 
         prevPoint = newPoint;
-        command->addPoint(newPoint);
+        command->add(newPoint);
     }
 
     finish(command);

@@ -1451,8 +1451,8 @@ FlexiNoteLayer::updateNoteValueFromPitchCurve(LayerGeometryProvider *v, Event &n
         
     std::cerr << model->getTypeName() << std::endl;
 
-    SparseModel<TimeValuePoint>::PointList dataPoints =
-        model->getPoints(note.getFrame(), note.getFrame() + note.getDuration());
+    EventVector dataPoints =
+        model->getEventsWithin(note.getFrame(), note.getDuration());
    
     std::cerr << "frame " << note.getFrame() << ": " << dataPoints.size() << " candidate points" << std::endl;
    
@@ -1460,12 +1460,9 @@ FlexiNoteLayer::updateNoteValueFromPitchCurve(LayerGeometryProvider *v, Event &n
 
     std::vector<double> pitchValues;
    
-    for (SparseModel<TimeValuePoint>::PointList::const_iterator i =
+    for (EventVector::const_iterator i =
              dataPoints.begin(); i != dataPoints.end(); ++i) {
-        if (i->frame >= note.getFrame() &&
-            i->frame < note.getFrame() + note.getDuration()) {
-            pitchValues.push_back(i->value);
-        }
+        pitchValues.push_back(i->getValue());
     }
         
     if (pitchValues.empty()) return false;
