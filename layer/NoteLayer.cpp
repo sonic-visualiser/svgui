@@ -534,72 +534,33 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
+    // SnapLeft / SnapRight: return frame of nearest feature in that
+    // direction no matter how far away
+    //
+    // SnapNeighbouring: return frame of feature that would be used in
+    // an editing operation, i.e. closest feature in either direction
+    // but only if it is "close enough"
+
     resolution = m_model->getResolution();
-    EventVector points;
 
     if (snap == SnapNeighbouring) {
-        
-        points = getLocalPoints(v, v->getXForFrame(frame));
+        EventVector points = getLocalPoints(v, v->getXForFrame(frame));
         if (points.empty()) return false;
         frame = points.begin()->getFrame();
         return true;
     }    
 
-    //!!! I think this is not quite right - we want to be able to snap
-    //!!! to events that are nearby but not covering the given frame,
-    //!!! and I think that worked with the old code. Compare and
-    //!!! revise.
-
-    points = m_model->getEventsCovering(frame);
-    sv_frame_t snapped = frame;
-    bool found = false;
-
-    for (EventVector::const_iterator i = points.begin();
-         i != points.end(); ++i) {
-
-        if (snap == SnapRight) {
-
-            if (i->getFrame() > frame) {
-                snapped = i->getFrame();
-                found = true;
-                break;
-            }
-
-        } else if (snap == SnapLeft) {
-
-            if (i->getFrame() <= frame) {
-                snapped = i->getFrame();
-                found = true; // don't break, as the next may be better
-            } else {
-                break;
-            }
-
-        } else { // nearest
-
-            EventVector::const_iterator j = i;
-            ++j;
-
-            if (j == points.end()) {
-
-                snapped = i->getFrame();
-                found = true;
-                break;
-
-            } else if (j->getFrame() >= frame) {
-
-                if (j->getFrame() - frame < frame - i->getFrame()) {
-                    snapped = j->getFrame();
-                } else {
-                    snapped = i->getFrame();
-                }
-                found = true;
-                break;
-            }
-        }
+    Event e;
+    if (m_model->getNearestEventMatching
+        (frame,
+         [](Event) { return true; },
+         snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
+         e)) {
+        frame = e.getFrame();
+        return true;
     }
 
-    frame = snapped;
-    return found;
+    return false;
 }
 
 void

@@ -445,83 +445,69 @@ RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
+    // SnapLeft / SnapRight: return frame of nearest feature in that
+    // direction no matter how far away
+    //
+    // SnapNeighbouring: return frame of feature that would be used in
+    // an editing operation, i.e. closest feature in either direction
+    // but only if it is "close enough"
+
     resolution = m_model->getResolution();
-    EventVector points;
 
     if (snap == SnapNeighbouring) {
-        
-        points = getLocalPoints(v, v->getXForFrame(frame));
+        EventVector points = getLocalPoints(v, v->getXForFrame(frame));
         if (points.empty()) return false;
         frame = points.begin()->getFrame();
         return true;
     }    
 
-    //!!! I think this is not quite right - we want to be able to snap
-    //!!! to events that are nearby but not covering the given frame,
-    //!!! and I think that worked with the old code. Compare and
-    //!!! revise.
+    // Normally we snap to the start frame of whichever event we
+    // find. However here, for SnapRight only, if the end frame of
+    // whichever event we would have snapped to had we been snapping
+    // left is closer than the start frame of the next event to the
+    // right, then we snap to that frame instead. Clear?
     
-    points = m_model->getEventsCovering(frame);
-    sv_frame_t snapped = frame;
-    bool found = false;
+    Event left;
+    bool haveLeft = false;
+    if (m_model->getNearestEventMatching
+        (frame, [](Event) { return true; }, EventSeries::Backward, left)) {
+        haveLeft = true;
+    }
 
-    for (EventVector::const_iterator i = points.begin();
-         i != points.end(); ++i) {
+    if (snap == SnapLeft) {
+        frame = left.getFrame();
+        return haveLeft;
+    }
 
-        if (snap == SnapRight) {
+    Event right;
+    bool haveRight = false;
+    if (m_model->getNearestEventMatching
+        (frame, [](Event) { return true; }, EventSeries::Forward, right)) {
+        haveRight = true;
+    }
 
-            // The best frame to snap to is the end frame of whichever
-            // feature we would have snapped to the start frame of if
-            // we had been snapping left.
-
-            if (i->getFrame() <= frame) {
-                if (i->getFrame() + i->getDuration() > frame) {
-                    snapped = i->getFrame() + i->getDuration();
-                    found = true; // don't break, as the next may be better
-                }
-            } else {
-                if (!found) {
-                    snapped = i->getFrame();
-                    found = true;
-                }
-                break;
-            }
-
-        } else if (snap == SnapLeft) {
-
-            if (i->getFrame() <= frame) {
-                snapped = i->getFrame();
-                found = true; // don't break, as the next may be better
-            } else {
-                break;
-            }
-
-        } else { // nearest
-
-            EventVector::const_iterator j = i;
-            ++j;
-
-            if (j == points.end()) {
-
-                snapped = i->getFrame();
-                found = true;
-                break;
-
-            } else if (j->getFrame() >= frame) {
-
-                if (j->getFrame() - frame < frame - i->getFrame()) {
-                    snapped = j->getFrame();
+    if (haveLeft) {
+        sv_frame_t leftEnd = left.getFrame() + left.getDuration();
+        if (leftEnd > frame) {
+            if (haveRight) {
+                if (leftEnd - frame < right.getFrame() - frame) {
+                    frame = leftEnd;
                 } else {
-                    snapped = i->getFrame();
+                    frame = right.getFrame();
                 }
-                found = true;
-                break;
+            } else {
+                frame = leftEnd;
             }
+            return true;
         }
     }
 
-    frame = snapped;
-    return found;
+    if (haveRight) {
+        frame = right.getFrame();
+        return true;
+    }
+
+    return false;
 }
 
 bool
@@ -533,82 +519,41 @@ RegionLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
         return Layer::snapToSimilarFeature(v, frame, resolution, snap);
     }
 
+    // snap is only permitted to be SnapLeft or SnapRight here.  We
+    // don't do the same trick as in snapToFeatureFrame, of snapping
+    // to the end of a feature sometimes.
+    
     resolution = m_model->getResolution();
 
-    /*!!! todo: overhaul the logic of this function (and supporting
-          apis in EventSeries / RegionModel)
+    Event ref;
+    Event e;
+    float matchvalue;
+    bool found;
 
-    const EventVector &points = m_model->getPoints();
-    EventVector close = m_model->getPoints(frame, frame);
-    */
-    EventVector points = m_model->getAllEvents();
-    EventVector close = {};
+    found = m_model->getNearestEventMatching
+        (frame, [](Event) { return true; }, EventSeries::Backward, ref);
+
+    if (!found) {
+        return false;
+    }
+
+    matchvalue = ref.getValue();
     
-    EventVector::const_iterator i;
+    found = m_model->getNearestEventMatching
+        (frame,
+         [matchvalue](Event e) {
+             double epsilon = 0.0001;
+             return fabs(e.getValue() - matchvalue) < epsilon;
+         },
+         snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
+         e);
 
-    sv_frame_t matchframe = frame;
-    double matchvalue = 0.f;
-
-    for (i = close.begin(); i != close.end(); ++i) {
-        if (i->getFrame() > frame) break;
-        matchvalue = i->getValue();
-        matchframe = i->getFrame();
+    if (!found) {
+        return false;
     }
 
-    sv_frame_t snapped = frame;
-    bool found = false;
-    bool distant = false;
-    double epsilon = 0.0001;
-
-    i = close.begin();
-
-    // Scan through the close points first, then the more distant ones
-    // if no suitable close one is found. So the while-termination
-    // condition here can only happen once i has passed through the
-    // whole of the close container and then the whole of the separate
-    // points container. The two iterators are totally distinct, but
-    // have the same type so we cheekily use the same variable and a
-    // single loop for both.
-
-    while (i != points.end()) {
-
-        if (!distant) {
-            if (i == close.end()) {
-                // switch from the close container to the points container
-                i = points.begin();
-                distant = true;
-            }
-        }
-
-        if (snap == SnapRight) {
-
-            if (i->getFrame() > matchframe &&
-                fabs(i->getValue() - matchvalue) < epsilon) {
-                snapped = i->getFrame();
-                found = true;
-                break;
-            }
-
-        } else if (snap == SnapLeft) {
-
-            if (i->getFrame() < matchframe) {
-                if (fabs(i->getValue() - matchvalue) < epsilon) {
-                    snapped = i->getFrame();
-                    found = true; // don't break, as the next may be better
-                }
-            } else if (found || distant) {
-                break;
-            }
-
-        } else { 
-            // no other snap types supported
-        }
-
-        ++i;
-    }
-
-    frame = snapped;
-    return found;
+    frame = e.getFrame();
+    return true;
 }
 
 QString

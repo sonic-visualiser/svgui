@@ -662,10 +662,6 @@ TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v,
 
     // SnapLeft / SnapRight: return frame of nearest feature in that
     // direction no matter how far away
-    // 
-    // SnapNearest: return frame of nearest feature in either
-    // direction no matter how far away - I'm fairly sure this is
-    // never actually used
     //
     // SnapNeighbouring: return frame of feature that would be used in
     // an editing operation, i.e. closest feature in either direction
@@ -703,6 +699,8 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v,
         return Layer::snapToSimilarFeature(v, frame, resolution, snap);
     }
 
+    // snap is only permitted to be SnapLeft or SnapRight here.
+    
     resolution = m_model->getResolution();
 
     Event ref;
