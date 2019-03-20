@@ -536,60 +536,63 @@ TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
     if (!m_model) return {};
 
-    sv_frame_t frame = v->getFrameForX(x);
-
-    //!!! this is not going to be right - we want "nearby" points and
-    //!!! there's no api for that
+    // Return all points at a frame f, where f is the closest frame to
+    // pixel coordinate x whose pixel coordinate is both within a
+    // small (but somewhat arbitrary) fuzz distance from x and within
+    // the current view. If there is no such frame, return an empty
+    // vector.
     
-    EventVector local = m_model->getEventsCovering(frame);
-    if (!local.empty()) return local;
+    sv_frame_t frame = v->getFrameForX(x);
+    
+    EventVector exact = m_model->getEventsStartingAt(frame);
+    if (!exact.empty()) return exact;
 
-    return {};
-/*!!!
+    // overspill == 1, so one event either side of the given span
+    EventVector neighbouring = m_model->getEventsWithin
+        (frame, m_model->getResolution(), 1);
 
-    SparseTimeValueModel::PointList prevPoints =
-        m_model->getPreviousPoints(frame);
-    SparseTimeValueModel::PointList nextPoints =
-        m_model->getNextPoints(frame);
-
-    SparseTimeValueModel::PointList usePoints = prevPoints;
-
-    if (prevPoints.empty()) {
-        usePoints = nextPoints;
-    } else if (nextPoints.empty()) {
-        // stick with prevPoints
-    } else if (prevPoints.begin()->frame < v->getStartFrame() &&
-               !(nextPoints.begin()->frame > v->getEndFrame())) {
-        usePoints = nextPoints;
-    } else if (nextPoints.begin()->frame - frame <
-               frame - prevPoints.begin()->frame) {
-        usePoints = nextPoints;
-    }
-
-    if (!usePoints.empty()) {
-        double fuzz = v->scaleSize(2);
-        int px = v->getXForFrame(usePoints.begin()->frame);
-        if ((px > x && px - x > fuzz) ||
-            (px < x && x - px > fuzz + 3)) {
-            usePoints.clear();
+    double fuzz = v->scaleSize(2);
+    sv_frame_t suitable = 0;
+    bool have = false;
+    
+    for (Event e: neighbouring) {
+        sv_frame_t f = e.getFrame();
+        if (f < v->getStartFrame() || f > v->getEndFrame()) {
+            continue;
+        }
+        int px = v->getXForFrame(f);
+        if ((px > x && px - x > fuzz) || (px < x && x - px > fuzz + 3)) {
+            continue;
+        }
+        if (!have) {
+            suitable = f;
+            have = true;
+        } else if (llabs(frame - f) < llabs(suitable - f)) {
+            suitable = f;
         }
     }
 
-    return usePoints;
-*/
+    if (have) {
+        return m_model->getEventsStartingAt(suitable);
+    } else {
+        return {};
+    }
 }
 
 QString
-TimeValueLayer::getLabelPreceding(sv_frame_t /* frame */) const
+TimeValueLayer::getLabelPreceding(sv_frame_t frame) const
 {
     if (!m_model || !m_model->hasTextLabels()) return "";
-/*!!! no corresponding api yet
-    EventVector points = m_model->getPreviousPoints(frame);
-    for (EventVector::const_iterator i = points.begin();
-         i != points.end(); ++i) {
-        if (i->getLabel() != "") return i->getLabel();
+
+    Event e;
+    if (m_model->getNearestEventMatching
+        (frame,
+         [](Event e) { return e.hasLabel() && e.getLabel() != ""; },
+         EventSeries::Backward,
+         e)) {
+        return e.getLabel();
     }
-*/
+
     return "";
 }
 
@@ -657,71 +660,42 @@ TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v,
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
+    // SnapLeft / SnapRight: return frame of nearest feature in that
+    // direction no matter how far away
+    // 
+    // SnapNearest: return frame of nearest feature in either
+    // direction no matter how far away - I'm fairly sure this is
+    // never actually used
+    //
+    // SnapNeighbouring: return frame of feature that would be used in
+    // an editing operation, i.e. closest feature in either direction
+    // but only if it is "close enough"
+    
     resolution = m_model->getResolution();
-    EventVector points;
 
     if (snap == SnapNeighbouring) {
-        points = getLocalPoints(v, v->getXForFrame(frame));
+        EventVector points = getLocalPoints(v, v->getXForFrame(frame));
         if (points.empty()) return false;
         frame = points.begin()->getFrame();
         return true;
-    }    
-
-    //!!! again, wrong api - correct one is not here yet
-    points = m_model->getEventsCovering(frame);
-    sv_frame_t snapped = frame;
-    bool found = false;
-
-    for (EventVector::const_iterator i = points.begin();
-         i != points.end(); ++i) {
-
-        if (snap == SnapRight) {
-
-            if (i->getFrame() > frame) {
-                snapped = i->getFrame();
-                found = true;
-                break;
-            }
-
-        } else if (snap == SnapLeft) {
-
-            if (i->getFrame() <= frame) {
-                snapped = i->getFrame();
-                found = true; // don't break, as the next may be better
-            } else {
-                break;
-            }
-
-        } else { // nearest
-
-            EventVector::const_iterator j = i;
-            ++j;
-
-            if (j == points.end()) {
-
-                snapped = i->getFrame();
-                found = true;
-                break;
-
-            } else if (j->getFrame() >= frame) {
-
-                if (j->getFrame() - frame < frame - i->getFrame()) {
-                    snapped = j->getFrame();
-                } else {
-                    snapped = i->getFrame();
-                }
-                found = true;
-                break;
-            }
-        }
     }
 
-    frame = snapped;
-    return found;
+    Event e;
+    if (m_model->getNearestEventMatching
+        (frame,
+         [](Event) { return true; },
+         snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
+         e)) {
+        frame = e.getFrame();
+        return true;
+    }
+
+    return false;
 }
 
 bool
-TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
+TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v,
+                                     sv_frame_t &frame,
                                      int &resolution,
                                      SnapType snap) const
 {
@@ -731,80 +705,35 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame
 
     resolution = m_model->getResolution();
 
-    /*!!! todo: overhaul the logic of this function (and supporting
-          apis in EventSeries / SparseTimeValueModel)
+    Event ref;
+    Event e;
+    float matchvalue;
+    bool found;
 
-    const EventVector &points = m_model->getPoints();
-    EventVector close = m_model->getPoints(frame, frame);
-    */
-    const EventVector &points = m_model->getAllEvents();
-    EventVector close = {};
+    found = m_model->getNearestEventMatching
+        (frame, [](Event) { return true; }, EventSeries::Backward, ref);
 
-    EventVector::const_iterator i;
-
-    sv_frame_t matchframe = frame;
-    double matchvalue = 0.0;
-
-    for (i = close.begin(); i != close.end(); ++i) {
-        if (i->getFrame() > frame) break;
-        matchvalue = i->getValue();
-        matchframe = i->getFrame();
+    if (!found) {
+        return false;
     }
 
-    sv_frame_t snapped = frame;
-    bool found = false;
-    bool distant = false;
-    double epsilon = 0.0001;
+    matchvalue = ref.getValue();
+    
+    found = m_model->getNearestEventMatching
+        (frame,
+         [matchvalue](Event e) {
+             double epsilon = 0.0001;
+             return fabs(e.getValue() - matchvalue) < epsilon;
+         },
+         snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
+         e);
 
-    i = close.begin();
-
-    // Scan through the close points first, then the more distant ones
-    // if no suitable close one is found. So the while-termination
-    // condition here can only happen once i has passed through the
-    // whole of the close container and then the whole of the separate
-    // points container. The two iterators are totally distinct, but
-    // have the same type so we cheekily use the same variable and a
-    // single loop for both.
-
-    while (i != points.end()) {
-
-        if (!distant) {
-            if (i == close.end()) {
-                // switch from the close container to the points container
-                i = points.begin();
-                distant = true;
-            }
-        }
-
-        if (snap == SnapRight) {
-
-            if (i->getFrame() > matchframe &&
-                fabs(i->getValue() - matchvalue) < epsilon) {
-                snapped = i->getFrame();
-                found = true;
-                break;
-            }
-
-        } else if (snap == SnapLeft) {
-
-            if (i->getFrame() < matchframe) {
-                if (fabs(i->getValue() - matchvalue) < epsilon) {
-                    snapped = i->getFrame();
-                    found = true; // don't break, as the next may be better
-                }
-            } else if (found || distant) {
-                break;
-            }
-
-        } else { 
-            // no other snap types supported
-        }
-
-        ++i;
+    if (!found) {
+        return false;
     }
 
-    frame = snapped;
-    return found;
+    frame = e.getFrame();
+    return true;
 }
 
 void

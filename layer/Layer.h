@@ -161,7 +161,6 @@ public:
     enum SnapType {
         SnapLeft,
         SnapRight,
-        SnapNearest,
         SnapNeighbouring
     };
 
@@ -171,13 +170,12 @@ public:
      *
      * If snap is SnapLeft or SnapRight, adjust the frame to match
      * that of the nearest feature in the given direction regardless
-     * of how far away it is.  If snap is SnapNearest, adjust the
-     * frame to that of the nearest feature in either direction.  If
-     * snap is SnapNeighbouring, adjust the frame to that of the
-     * nearest feature if it is close, and leave it alone (returning
-     * false) otherwise.  SnapNeighbouring should always choose the
-     * same feature that would be used in an editing operation through
-     * calls to editStart etc.
+     * of how far away it is. If snap is SnapNeighbouring, adjust the
+     * frame to that of the nearest feature in either direction if it
+     * is close, and leave it alone (returning false) otherwise.
+     * SnapNeighbouring should always choose the same feature that
+     * would be used in an editing operation through calls to
+     * editStart etc.
      *
      * Return true if a suitable feature was found and frame adjusted
      * accordingly.  Return false if no suitable feature was available

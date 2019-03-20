@@ -1189,7 +1189,6 @@ Colour3DPlotLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &fram
     switch (snap) {
     case SnapLeft:  frame = left;  break;
     case SnapRight: frame = right; break;
-    case SnapNearest:
     case SnapNeighbouring:
         if (frame - left > right - frame) frame = right;
         else frame = left;
