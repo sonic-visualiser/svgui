@@ -48,11 +48,11 @@ public:
     QString getLabelPreceding(sv_frame_t) const override;
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-                                    int &resolution,
-                                    SnapType snap) const override;
+                            int &resolution,
+                            SnapType snap) const override;
     bool snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
-                                      int &resolution,
-                                      SnapType snap) const override;
+                              int &resolution,
+                              SnapType snap) const override;
 
     void drawStart(LayerGeometryProvider *v, QMouseEvent *) override;
     void drawDrag(LayerGeometryProvider *v, QMouseEvent *) override;

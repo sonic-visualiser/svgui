@@ -1796,8 +1796,6 @@ View::checkProgress(void *object)
 
             } else {
 
-//                cerr << "progress = " << completion << endl;
-
                 if (!pb->isVisible()) {
                     i->second.lastCheck = 0;
                     timer->setInterval(2000);

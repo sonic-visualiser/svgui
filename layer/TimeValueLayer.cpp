@@ -938,7 +938,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_frame_t frame1 = v->getFrameForX(x1);
     if (m_derivative) --frame0;
 
-    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0));
+    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0, 1));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -949,7 +949,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::paint: resolution is "
-              << m_model->getResolution() << " frames" << endl;
+         << m_model->getResolution() << " frames" << endl;
 #endif
 
     double min = m_model->getValueMinimum();
