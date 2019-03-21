@@ -57,6 +57,7 @@ NoteLayer::NoteLayer() :
     m_originalPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingPoint(0, 0.0, 0, 1.f, tr("New Point")),
     m_editingCommand(nullptr),
+    m_editIsOpen(false),
     m_verticalScale(AutoAlignScale),
     m_scaleMinimum(0),
     m_scaleMaximum(0)
@@ -777,6 +778,9 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
         shouldIlluminate = getPointToDrag(v, localPos.x(), localPos.y(),
                                           illuminatePoint);
+    } else if (m_editIsOpen) {
+        shouldIlluminate = true;
+        illuminatePoint = m_editingPoint;
     }
 
     paint.save();
@@ -1092,6 +1096,9 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     dialog->setFrameDuration(note.duration);
     dialog->setText(note.label);
 
+    m_editingPoint = note;
+    m_editIsOpen = true;
+    
     if (dialog->exec() == QDialog::Accepted) {
 
         NoteModel::Point newNote = note;
@@ -1107,6 +1114,9 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
         finish(command);
     }
 
+    m_editingPoint = 0;
+    m_editIsOpen = false;
+        
     delete dialog;
     return true;
 }
