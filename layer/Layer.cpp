@@ -373,8 +373,24 @@ Layer::DeleteMeasurementRectCommand::unexecute()
 void
 Layer::measureStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    setMeasureRectFromPixrect(v, m_draggingRect,
-                              QRect(e->x(), e->y(), 0, 0));
+    m_draggingRect.haveFrames = hasTimeXAxis();
+
+    // NB if haveFrames, then pixrect x and width will be rewritten on
+    // every paint according to the current locations of the
+    // definitive frame values. So we should set the start frame value
+    // once on measureStart, and then not modify it on drag (to avoid
+    // drift from repeated conversion back and forth).
+    
+    m_draggingRect.pixrect = QRect(e->x(), e->y(), 0, 0);
+
+    if (m_draggingRect.haveFrames) {
+        m_draggingRect.startFrame = v->getFrameForX(e->x());
+        m_draggingRect.endFrame = v->getFrameForX(e->x());
+    }
+
+    setMeasureRectYCoord(v, m_draggingRect, true, e->y());
+    setMeasureRectYCoord(v, m_draggingRect, false, e->y());
+
     m_haveDraggingRect = true;
 }
 
@@ -383,11 +399,15 @@ Layer::measureDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_haveDraggingRect) return;
 
-    setMeasureRectFromPixrect(v, m_draggingRect,
-                              QRect(m_draggingRect.pixrect.x(),
-                                    m_draggingRect.pixrect.y(),
-                                    e->x() - m_draggingRect.pixrect.x(),
-                                    e->y() - m_draggingRect.pixrect.y()));
+    m_draggingRect.pixrect.setHeight(e->y() - m_draggingRect.pixrect.y());
+
+    if (m_draggingRect.haveFrames) {
+        m_draggingRect.endFrame = v->getFrameForX(e->x());
+    } else {
+        m_draggingRect.pixrect.setWidth(e->x() - m_draggingRect.pixrect.x());
+    }
+
+    setMeasureRectYCoord(v, m_draggingRect, false, e->y());
 }
 
 void
