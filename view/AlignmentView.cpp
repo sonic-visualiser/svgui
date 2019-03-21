@@ -165,10 +165,9 @@ AlignmentView::getKeyFrames()
 
     vector<sv_frame_t> keyFrames;
 
-    const SparseOneDimensionalModel::PointList pp = m->getPoints();
-    for (SparseOneDimensionalModel::PointList::const_iterator pi = pp.begin();
-         pi != pp.end(); ++pi) {
-        keyFrames.push_back(pi->frame);
+    EventVector pp = m->getAllEvents();
+    for (EventVector::const_iterator pi = pp.begin(); pi != pp.end(); ++pi) {
+        keyFrames.push_back(pi->getFrame());
     }
 
     return keyFrames;
@@ -193,8 +192,3 @@ AlignmentView::getDefaultKeyFrames()
     return keyFrames;
 }
 
-
-
-
-
-    

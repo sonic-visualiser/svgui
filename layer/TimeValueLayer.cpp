@@ -1619,7 +1619,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
 {
     if (!m_model) return false;
 
-    const EventVector &points = from.getPoints();
+    EventVector points = from.getPoints();
 
     bool realign = false;
 
