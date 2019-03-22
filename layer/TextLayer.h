@@ -96,18 +96,18 @@ protected:
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 
-    TextModel::PointList getLocalPoints(LayerGeometryProvider *v, int x, int y) const;
+    EventVector getLocalPoints(LayerGeometryProvider *v, int x, int y) const;
 
-    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, TextModel::Point &) const;
+    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
 
     TextModel *m_model;
     bool m_editing;
     QPoint m_editOrigin;
-    TextModel::Point m_originalPoint;
-    TextModel::Point m_editingPoint;
-    TextModel::EditCommand *m_editingCommand;
+    Event m_originalPoint;
+    Event m_editingPoint;
+    ChangeEventsCommand *m_editingCommand;
 
-    void finish(TextModel::EditCommand *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }

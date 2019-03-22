@@ -1860,7 +1860,7 @@ SpectrogramLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                                   QPoint cursorPos) const
 {
     paint.save();
-
+    
     int sw = getVerticalScaleWidth(v, m_haveDetailedScale, paint);
 
     QFont fn = paint.font();
