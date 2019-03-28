@@ -234,7 +234,7 @@ View::getTextLabelHeight(const Layer *layer, QPainter &paint) const
     for (LayerList::const_iterator i = m_layerStack.begin();
          i != m_layerStack.end(); ++i) { 
         if ((*i)->needsTextLabelHeight()) {
-            sortedLayers[getObjectExportId(*i)] = *i;
+            sortedLayers[(*i)->getExportId()] = *i;
         }
     }
 
