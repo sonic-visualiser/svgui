@@ -58,19 +58,52 @@ InteractiveFileFinder::setApplicationSessionExtension(QString extension)
 }
 
 QString
-InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
+InteractiveFileFinder::getOpenFileName(FileType type,
+                                       QString fallbackLocation)
+{
+    QStringList names = getOpenFileNames(type,
+                                         fallbackLocation,
+                                         false);
+    if (names.empty()) return "";
+    else return names[0];
+}
+
+QStringList
+InteractiveFileFinder::getOpenFileNames(FileType type,
+                                        QString fallbackLocation)
+{
+    return getOpenFileNames(type,
+                            fallbackLocation,
+                            true);
+}
+
+QStringList
+InteractiveFileFinder::getOpenFileNames(FileType type,
+                                        QString fallbackLocation,
+                                        bool multiple)
 {
     QString settingsKeyStub;
     QString lastPath = fallbackLocation;
     
-    QString title = tr("Select file");
+    QString title;
+    if (multiple) {
+        title = tr("Select one or more files");
+    } else {
+        title = tr("Select file");
+    }
     QString filter = tr("All files (*.*)");
 
+    QStringList names;
+    
     switch (type) {
 
     case SessionFile:
         settingsKeyStub = "session";
-        title = tr("Select a session file");
+        if (multiple) {
+            title = tr("Select one or more session files");
+        } else {
+            title = tr("Select a session file");
+        }
         filter = tr("%1 session files (*.%2)\nRDF files (%3)\nAll files (*.*)")
             .arg(QApplication::applicationName())
             .arg(m_sessionExtension)
@@ -79,7 +112,11 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
 
     case AudioFile:
         settingsKeyStub = "audio";
-        title = "Select an audio file";
+        if (multiple) {
+            title = tr("Select one or more audio files");
+        } else {
+            title = tr("Select an audio file");
+        }
         filter = tr("Audio files (%1)\nAll files (*.*)")
             .arg(AudioFileReaderFactory::getKnownExtensions());
         break;
@@ -173,8 +210,6 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     settings.beginGroup("FileFinder");
     lastPath = settings.value(settingsKeyStub + "path", lastPath).toString();
 
-    QString path = "";
-
     // Use our own QFileDialog just for symmetry with getSaveFileName below
 
     QFileDialog dialog(m_parent);
@@ -183,52 +218,61 @@ InteractiveFileFinder::getOpenFileName(FileType type, QString fallbackLocation)
     dialog.setDirectory(lastPath);
 
     dialog.setAcceptMode(QFileDialog::AcceptOpen);
-    dialog.setFileMode(QFileDialog::ExistingFile);
+
+    if (multiple) {
+        dialog.setFileMode(QFileDialog::ExistingFiles);
+    } else {
+        dialog.setFileMode(QFileDialog::ExistingFile);
+    }
+
+    QString testPath = "";
+    QString pathToRemember = "";
     
     if (dialog.exec()) {
-        QStringList files = dialog.selectedFiles();
-        if (!files.empty()) path = *files.begin();
+        names = dialog.selectedFiles();
         
-        QFileInfo fi(path);
+        if (!multiple && !names.empty()) {
+            testPath = *names.begin();
+            QFileInfo fi(testPath);
         
-        if (!fi.exists()) {
+            if (!fi.exists()) {
+                QMessageBox::critical(nullptr, tr("File does not exist"),
+                                      tr("<b>File not found</b><p>File \"%1\" does not exist").arg(testPath));
             
-            QMessageBox::critical(nullptr, tr("File does not exist"),
-                                  tr("<b>File not found</b><p>File \"%1\" does not exist").arg(path));
-            path = "";
+            } else if (!fi.isReadable()) {
             
-        } else if (!fi.isReadable()) {
+                QMessageBox::critical(nullptr, tr("File is not readable"),
+                                      tr("<b>File is not readable</b><p>File \"%1\" can not be read").arg(testPath));
             
-            QMessageBox::critical(nullptr, tr("File is not readable"),
-                                  tr("<b>File is not readable</b><p>File \"%1\" can not be read").arg(path));
-            path = "";
+            } else if (fi.isDir()) {
             
-        } else if (fi.isDir()) {
-            
-            QMessageBox::critical(nullptr, tr("Directory selected"),
-                                  tr("<b>Directory selected</b><p>File \"%1\" is a directory").arg(path));
-            path = "";
+                QMessageBox::critical(nullptr, tr("Directory selected"),
+                                      tr("<b>Directory selected</b><p>File \"%1\" is a directory").arg(testPath));
 
-        } else if (!fi.isFile()) {
+            } else if (!fi.isFile()) {
             
-            QMessageBox::critical(nullptr, tr("Non-file selected"),
-                                  tr("<b>Not a file</b><p>Path \"%1\" is not a file").arg(path));
-            path = "";
+                QMessageBox::critical(nullptr, tr("Non-file selected"),
+                                      tr("<b>Not a file</b><p>Path \"%1\" is not a file").arg(testPath));
             
-        } else if (fi.size() == 0) {
+            } else if (fi.size() == 0) {
             
-            QMessageBox::critical(nullptr, tr("File is empty"),
-                                  tr("<b>File is empty</b><p>File \"%1\" is empty").arg(path));
-            path = "";
-        }                
+                QMessageBox::critical(nullptr, tr("File is empty"),
+                                      tr("<b>File is empty</b><p>File \"%1\" is empty").arg(testPath));
+
+            } else {
+                pathToRemember = testPath;
+            }
+        }
     }
 
-    if (path != "") {
+    if (pathToRemember != "") {
         settings.setValue(settingsKeyStub + "path",
-                          QFileInfo(path).absoluteDir().canonicalPath());
+                          QFileInfo(pathToRemember)
+                          .absoluteDir()
+                          .canonicalPath());
     }
     
-    return path;
+    return names;
 }
 
 QString

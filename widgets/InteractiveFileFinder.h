@@ -38,11 +38,21 @@ public:
         return m_sessionExtension;
     }
 
-    QString getOpenFileName(FileType type, QString fallbackLocation = "") override;
-    QString getSaveFileName(FileType type, QString fallbackLocation = "") override;
-    void registerLastOpenedFilePath(FileType type, QString path) override;
+    QString getOpenFileName(FileType type,
+                            QString fallbackLocation = "") override;
+    
+    QStringList getOpenFileNames(FileType type,
+                                 QString fallbackLocation = "") override;
+    
+    QString getSaveFileName(FileType type,
+                            QString fallbackLocation = "") override;
+    
+    void registerLastOpenedFilePath(FileType type,
+                                    QString path) override;
 
-    QString find(FileType type, QString location, QString lastKnownLocation = "") override;
+    QString find(FileType type,
+                 QString location,
+                 QString lastKnownLocation = "") override;
 
     static void setParentWidget(QWidget *);
 
@@ -54,6 +64,10 @@ protected:
 
     QString findRelative(QString location, QString relativeTo);
     QString locateInteractive(FileType type, QString thing);
+
+    QStringList getOpenFileNames(FileType type,
+                                 QString fallbackLocation,
+                                 bool multiple);
 
     QString m_sessionExtension;
     QString m_lastLocatedLocation;
