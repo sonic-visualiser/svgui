@@ -74,8 +74,8 @@
 // Constructor.
 AudioDial::AudioDial(QWidget *parent) :
     QDial(parent),
-    m_knobColor(Qt::black),
-    m_meterColor(Qt::white),
+    m_knobColor(Qt::black),  // shorthand for "background colour" in paint()
+    m_meterColor(Qt::white), // shorthand for "foreground colour" in paint()
     m_defaultValue(0),
     m_defaultMappedValue(0),
     m_mappedValue(0),
@@ -131,15 +131,28 @@ void AudioDial::paintEvent(QPaintEvent *)
     int numTicks = 1 + (maximum() + ns - minimum()) / ns;
         
     QColor knobColor(m_knobColor);
-    if (knobColor == Qt::black)
-        knobColor = palette().window().color();
+    if (knobColor == Qt::black) {
+        knobColor = palette().window().color().light(150);
+    }
+    bool knobIsDark =
+        (knobColor.red() + knobColor.green() + knobColor.blue() <= 384);
 
     QColor meterColor(m_meterColor);
-    if (!isEnabled())
+    if (!isEnabled()) {
         meterColor = palette().mid().color();
-    else if (m_meterColor == Qt::white)
-        meterColor = palette().highlight().color();
+    } else if (m_meterColor == Qt::white) {
+        if (knobIsDark) {
+            meterColor = palette().light().color();
+        } else {
+            meterColor = palette().highlight().color();
+        }
+    }
 
+    QColor notchColor(palette().dark().color());
+    if (knobIsDark) {
+        notchColor = palette().light().color();
+    }
+    
     int m_size = width() < height() ? width() : height();
     int scale = 1;
     int width = m_size - 2*scale;
@@ -169,7 +182,11 @@ void AudioDial::paintEvent(QPaintEvent *)
     int pos = indent-1 + (width-2*indent) / 20;
     int darkWidth = (width-2*indent) * 3 / 4;
     while (darkWidth) {
-        c = c.light(102);
+        if (knobIsDark) {
+            c = c.dark(102);
+        } else {
+            c = c.light(102);
+        }
         pen.setColor(c);
         paint.setPen(pen);
         paint.drawEllipse(pos, pos, darkWidth, darkWidth);
@@ -184,7 +201,7 @@ void AudioDial::paintEvent(QPaintEvent *)
 
     if ( notchesVisible() ) {
 //        cerr << "Notches visible" << endl;
-        pen.setColor(palette().dark().color());
+        pen.setColor(notchColor);
         pen.setWidth(scale);
         paint.setPen(pen);
         for (int i = 0; i < numTicks; ++i) {
@@ -220,7 +237,11 @@ void AudioDial::paintEvent(QPaintEvent *)
     // Knob shadow...
 
     int shadowAngle = -720;
-    c = knobColor.dark();
+    if (knobIsDark) {
+        c = knobColor.light();
+    } else {
+        c = knobColor.dark();
+    }
     for (int arc = 120; arc < 2880; arc += 240) {
         pen.setColor(c);
         paint.setPen(pen);
@@ -228,7 +249,11 @@ void AudioDial::paintEvent(QPaintEvent *)
                       width-2*indent, width-2*indent, shadowAngle + arc, 240);
         paint.drawArc(indent, indent,
                       width-2*indent, width-2*indent, shadowAngle - arc, 240);
-        c = c.light(110);
+        if (knobIsDark) {
+            c = c.dark(110);
+        } else {
+            c = c.light(110);
+        }
     }
 
     // Scale shadow, omitting the bottom part...
@@ -255,7 +280,11 @@ void AudioDial::paintEvent(QPaintEvent *)
 
     // Scale ends...
 
-    pen.setColor(palette().shadow().color());
+    if (knobIsDark) {
+        pen.setColor(palette().mid().color());
+    } else {
+        pen.setColor(palette().shadow().color());
+    }
     pen.setWidth(scale);
     paint.setPen(pen);
     for (int i = 0; i < numTicks; ++i) {
@@ -278,8 +307,15 @@ void AudioDial::paintEvent(QPaintEvent *)
     double x = hyp - len * sin(angle);
     double y = hyp + len * cos(angle);
 
-    c = palette().dark().color();
-    pen.setColor(isEnabled() ? c.dark(130) : c);
+    c = notchColor;
+    if (isEnabled()) {
+        if (knobIsDark) {
+            c = c.light(130);
+        } else {
+            c = c.dark(130);
+        }
+    }
+    pen.setColor(c);
     pen.setWidth(scale * 2);
     paint.setPen(pen);
     paint.drawLine(int(x0), int(y0), int(x), int(y));
