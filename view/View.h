@@ -430,6 +430,16 @@ public slots:
     virtual void viewManagerPlaybackFrameChanged(sv_frame_t);
     virtual void viewZoomLevelChanged(View *, ZoomLevel, bool);
 
+    /**
+     * A property container has been selected, for example in the
+     * associated property stack. The property container may be a
+     * layer, in which case the effect should be to raise that layer
+     * to the front of the view and select it; or it may be the view's
+     * own property container, in which case the effect is to switch
+     * to a mode in which no layer is selected.
+     *
+     * (This is the main slot for raising a layer.)
+     */
     virtual void propertyContainerSelected(View *, PropertyContainer *pc);
 
     virtual void selectionChanged();
