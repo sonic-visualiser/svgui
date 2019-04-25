@@ -73,8 +73,9 @@ void
 PaneStack::setShowAlignmentViews(bool show)
 {
     m_showAlignmentViews = show;
-    foreach (const PaneRec &r, m_panes) {
-        r.alignmentView->setVisible(m_showAlignmentViews);
+    for (int i = 0; in_range_for(m_panes, i); ++i) {
+        m_panes[i].alignmentView->setVisible(m_showAlignmentViews &&
+                                             in_range_for(m_panes, i+1));
     }
 }
 
@@ -125,8 +126,8 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
 
     AlignmentView *av = new AlignmentView(frame);
     av->setFixedHeight(40);//!!!
-    av->setVisible(m_showAlignmentViews);
     av->setViewManager(m_viewManager);
+    av->setVisible(false); // for now
     layout->addWidget(av, 2, 1);
 
     QWidget *properties = nullptr;
@@ -197,8 +198,10 @@ PaneStack::relinkAlignmentViews()
         m_panes[i].alignmentView->setViewAbove(m_panes[i].pane);
         if (i + 1 < (int)m_panes.size()) {
             m_panes[i].alignmentView->setViewBelow(m_panes[i+1].pane);
+            m_panes[i].alignmentView->setVisible(true);
         } else {
             m_panes[i].alignmentView->setViewBelow(nullptr);
+            m_panes[i].alignmentView->setVisible(false);
         }
     }
 }
@@ -406,12 +409,11 @@ PaneStack::hidePane(Pane *pane)
             showOrHidePaneAccessories();
             emit paneHidden(pane);
             emit paneHidden();
+            relinkAlignmentViews();
             return;
         }
         ++i;
     }
-
-    relinkAlignmentViews();
 
     SVCERR << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << endl;
 }
@@ -431,13 +433,12 @@ PaneStack::showPane(Pane *pane)
             //!!! update current pane
 
             showOrHidePaneAccessories();
+            relinkAlignmentViews();
 
             return;
         }
         ++i;
     }
-
-    relinkAlignmentViews();
 
     SVCERR << "WARNING: PaneStack::showPane(" << pane << "): Pane not found in hidden panes" << endl;
 }
