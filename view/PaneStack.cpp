@@ -125,7 +125,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     layout->setColumnStretch(1, 20);
 
     AlignmentView *av = new AlignmentView(frame);
-    av->setFixedHeight(40);//!!!
+    av->setFixedHeight(ViewManager::scalePixelSize(20));
     av->setViewManager(m_viewManager);
     av->setVisible(false); // for now
     layout->addWidget(av, 2, 1);
