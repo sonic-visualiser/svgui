@@ -18,6 +18,8 @@
 
 #include <QPainter>
 
+//#define DEBUG_COLOUR_DATABASE 1
+
 ColourDatabase
 ColourDatabase::m_instance;
 
@@ -85,24 +87,70 @@ ColourDatabase::getColourIndex(QColor col) const
     return -1;
 }
 
+int
+ColourDatabase::getNearbyColourIndex(QColor col) const
+{
+    int index = 0;
+    int closestIndex = -1;
+    int closestDistance = 0;
+
+    for (auto &c: m_colours) {
+        int distance =
+            std::abs(col.red() - c.colour.red()) +
+            std::abs(col.green() - c.colour.green()) +
+            std::abs(col.blue() - c.colour.blue());
+#ifdef DEBUG_COLOUR_DATABASE
+        SVDEBUG << "getNearbyColourIndex: comparing " << c.colour.name()
+                << " to " << col.name() << ": distance = " << distance << endl;
+#endif
+        if (closestIndex < 0 || distance < closestDistance) {
+            closestIndex = index;
+            closestDistance = distance;
+#ifdef DEBUG_COLOUR_DATABASE
+            SVDEBUG << "(this is the best so far)" << endl;
+#endif
+        }
+        ++index;
+    }
+
+#ifdef DEBUG_COLOUR_DATABASE
+    SVDEBUG << "returning " << closestIndex << endl;
+#endif
+    return closestIndex;
+}
+
 QColor
 ColourDatabase::getContrastingColour(int c) const
 {
     QColor col = getColour(c);
-    if (col.red() > col.blue()) {
-        if (col.green() > col.blue()) {
-            return Qt::blue;
+    QColor contrasting = Qt::red;
+    bool dark = (col.red() < 240 && col.green() < 240 && col.blue() < 240);
+    if (dark) {
+        if (col.red() > col.blue()) {
+            if (col.green() > col.blue()) {
+                contrasting = Qt::blue;
+            } else {
+                contrasting = Qt::yellow;
+            }
         } else {
-            return Qt::yellow;
+            if (col.green() > col.blue()) {
+                contrasting = Qt::yellow;
+            } else {
+                contrasting = Qt::red;
+            }
         }
     } else {
-        if (col.green() > col.blue()) {
-            return Qt::yellow;
+        if (col.red() > 230 && col.green() > 230 && col.blue() > 230) {
+            contrasting = QColor(30, 150, 255);
         } else {
-            return Qt::red;
+            contrasting = QColor(255, 188, 80);
         }
     }
-    return Qt::red;
+#ifdef DEBUG_COLOUR_DATABASE
+    SVDEBUG << "getContrastingColour(" << col.name() << "): dark = " << dark
+            << ", returning " << contrasting.name() << endl;
+#endif
+    return contrasting;
 }
 
 bool
