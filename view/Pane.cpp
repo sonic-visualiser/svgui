@@ -2298,11 +2298,19 @@ Pane::wheelEvent(QWheelEvent *e)
         // Coarse wheel information (or vertical zoom, which is
         // necessarily coarse itself)
 
-        // Sometimes on Linux we're seeing absurdly extreme angles on
-        // the first wheel event -- discard those entirely
-        if (abs(m_pendingWheelAngle) >= 600) {
-            m_pendingWheelAngle = 0;
-            return;
+        // Sometimes on Linux we're seeing very extreme angles on the
+        // first wheel event. They could be spurious, or they could be
+        // a result of the user frantically wheeling away while the
+        // pane was unresponsive for some reason. We don't want to
+        // discard them, as that makes the application feel even less
+        // responsive, but if we take them literally we risk changing
+        // the view so radically that the user won't recognise what
+        // has happened. Clamp them instead.
+        if (m_pendingWheelAngle > 600) {
+            m_pendingWheelAngle = 600;
+        }
+        if (m_pendingWheelAngle < -600) {
+            m_pendingWheelAngle = -600;
         }
 
         while (abs(m_pendingWheelAngle) >= 120) {
