@@ -113,7 +113,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
                     << predicted << " (" << m_secondsPerXPixel << " x "
                     << rect.width() << ")" << endl;
 #endif
-            if (predicted < 0.2) {
+            if (predicted < 0.175) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
                 SVDEBUG << "Predicted time looks fast enough: no partial renders"
                         << endl;
@@ -301,7 +301,12 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
     if (!timeConstrained && (pr != rect)) {
         SVCERR << "WARNING: failed to render entire requested rect "
-             << "even when not time-constrained" << endl;
+               << "even when not time-constrained: requested "
+               << rect.x() << "," << rect.y() << " "
+               << rect.width() << "x" << rect.height() << ", have "
+               << pr.x() << "," << pr.y() << " "
+               << pr.width() << "x" << pr.height()
+               << endl;
     }
 
     MagnitudeRange range = m_magCache.getRange(reqx0, reqx1 - reqx0);
@@ -599,6 +604,11 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
     for (int ix = 0; in_range_for(m_sources.peakCaches, ix); ++ix) {
         int bpp = m_sources.peakCaches[ix]->getColumnsPerPeak();
         ZoomLevel equivZoom(ZoomLevel::FramesPerPixel, binResolution * bpp);
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+        SVDEBUG << "getPreferredPeakCache: zoomLevel = " << zoomLevel
+                << ", cache " << ix << " has bpp = " << bpp
+                << " for equivZoom = " << equivZoom << endl;
+#endif
         if (zoomLevel >= equivZoom) {
             // this peak cache would work, though it might not be best
             if (bpp > binsPerPeak) {
@@ -612,9 +622,9 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "getPreferredPeakCache: zoomLevel = " << zoomLevel
             << ", binResolution " << binResolution 
-            << ", binsPerPeak " << binsPerPeak
-            << ", peakCacheIndex " << peakCacheIndex
             << ", peakCaches " << m_sources.peakCaches.size()
+            << ": preferring peakCacheIndex " << peakCacheIndex
+            << " for binsPerPeak " << binsPerPeak
             << endl;
 #endif
 }
@@ -1263,7 +1273,8 @@ Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
     
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "across " << xPixelCount << " x-pixels, seconds per x-pixel = "
-            << m_secondsPerXPixel << endl;
+            << m_secondsPerXPixel << " (total = "
+            << (xPixelCount * m_secondsPerXPixel) << endl;
 #endif
     }
 }
