@@ -50,6 +50,7 @@
 
 //#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
+//#define DEBUG_PROGRESS_STUFF 1
 
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
@@ -1736,9 +1737,16 @@ View::cancelClicked()
 void
 View::checkProgress(void *object)
 {
-    if (!m_showProgress) return;
+    if (!m_showProgress) {
+#ifdef DEBUG_PROGRESS_STUFF
+        SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
+               << "m_showProgress is off" << endl;
+#endif
+        return;
+    }
 
     int ph = height();
+    bool found = false;
 
     for (ProgressMap::iterator i = m_progressBars.begin();
          i != m_progressBars.end(); ++i) {
@@ -1748,6 +1756,8 @@ View::checkProgress(void *object)
 
         if (i->first == object) {
 
+            found = true;
+            
             // The timer is used to test for stalls.  If the progress
             // bar does not get updated for some length of time, the
             // timer prompts it to go back into "indeterminate" mode
@@ -1756,6 +1766,12 @@ View::checkProgress(void *object)
             int completion = i->first->getCompletion(this);
             QString text = i->first->getPropertyContainerName();
             QString error = i->first->getError(this);
+
+#ifdef DEBUG_PROGRESS_STUFF
+            SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
+                   << "found progress bar " << pb << " for layer at height " << ph
+                   << ": completion = " << completion << endl;
+#endif
 
             if (error != "" && error != m_lastError) {
                 QMessageBox::critical(this, tr("Layer rendering error"), error);
@@ -1778,7 +1794,12 @@ View::checkProgress(void *object)
                      (wfm = dynamic_cast<RangeSummarisableTimeValueModel *>
                       (model->getSourceModel())))) {
                     completion = wfm->getAlignmentCompletion();
-//                    SVDEBUG << "View::checkProgress: Alignment completion = " << completion << endl;
+
+#ifdef DEBUG_PROGRESS_STUFF
+                    SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
+                           << "alignment completion = " << completion << endl;
+#endif
+                
                     if (completion < 100) {
                         text = tr("Alignment");
                     }
@@ -1821,6 +1842,14 @@ View::checkProgress(void *object)
             }
         }
     }
+
+    if (!found) {
+#ifdef DEBUG_PROGRESS_STUFF
+        SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
+               << "failed to find layer " << object << " in progress map"
+               << endl;
+#endif
+    }
 }
 
 void
@@ -1829,9 +1858,16 @@ View::progressCheckStalledTimerElapsed()
     QObject *s = sender();
     QTimer *t = qobject_cast<QTimer *>(s);
     if (!t) return;
+
     for (ProgressMap::iterator i =  m_progressBars.begin();
          i != m_progressBars.end(); ++i) {
+
         if (i->second.checkTimer == t) {
+
+#ifdef DEBUG_PROGRESS_STUFF
+            SVCERR << "View[" << this << "]::progressCheckStalledTimerElapsed for layer " << i->first << endl;
+#endif
+    
             int value = i->second.bar->value();
             if (value > 0 && value == i->second.lastCheck) {
                 i->second.bar->setMaximum(0); // indeterminate
