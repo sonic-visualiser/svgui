@@ -21,6 +21,7 @@
 #include <QPalette>
 #include <QFile>
 #include <QSvgRenderer>
+#include <QSettings>
 
 #include <vector>
 #include <set>
@@ -73,6 +74,11 @@ IconLoader::load(QString name)
 bool
 IconLoader::shouldInvert() const
 {
+    QSettings settings;
+    settings.beginGroup("IconLoader");
+    if (!settings.value("invert-icons-on-dark-background", true).toBool()) {
+        return false;
+    }
     QColor bg = QApplication::palette().window().color();
     bool darkBackground = (bg.red() + bg.green() + bg.blue() <= 384);
     return darkBackground;
