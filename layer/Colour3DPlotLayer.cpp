@@ -147,9 +147,10 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
 
     connectSignals(m_model);
 
-    connect(m_model, SIGNAL(modelChanged()), this, SLOT(modelChanged()));
+    connect(m_model, SIGNAL(modelChanged()),
+            this, SLOT(handleModelChanged()));
     connect(m_model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this, SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
+            this, SLOT(handleModelChangedWithin(sv_frame_t, sv_frame_t)));
 
     m_peakResolution = 256;
     if (model->getResolution() > 512) {
@@ -160,35 +161,22 @@ Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
         m_peakResolution = 128;
     }
 
-    if (m_peakCache) m_peakCache->aboutToDelete();
-    delete m_peakCache;
-    m_peakCache = nullptr;
-
-    invalidateRenderers();
-    invalidateMagnitudes();
+    invalidatePeakCache();
 
     emit modelReplaced();
     emit sliceableModelReplaced(oldModel, model);
 }
 
 void
-Colour3DPlotLayer::cacheInvalid()
+Colour3DPlotLayer::invalidatePeakCache()
 {
+    // renderers use the peak cache, so we must invalidate those too
     invalidateRenderers();
     invalidateMagnitudes();
-}
-
-void
-Colour3DPlotLayer::cacheInvalid(sv_frame_t /* startFrame */,
-                                sv_frame_t /* endFrame */)
-{
-    //!!! should do this only if the range is visible
+    
     if (m_peakCache) m_peakCache->aboutToDelete();
     delete m_peakCache;
     m_peakCache = nullptr;
-    
-    invalidateRenderers();
-    invalidateMagnitudes();
 }
 
 void
@@ -220,7 +208,7 @@ Colour3DPlotLayer::getPeakCache() const
 }
 
 void
-Colour3DPlotLayer::modelChanged()
+Colour3DPlotLayer::handleModelChanged()
 {
     if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
         if (m_model) {
@@ -231,11 +219,12 @@ Colour3DPlotLayer::modelChanged()
             }
         }
     }
-    cacheInvalid();
+    invalidatePeakCache();
+    emit modelChanged();
 }
 
 void
-Colour3DPlotLayer::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
+Colour3DPlotLayer::handleModelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 {
     if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
         if (m_model && m_model->getWidth() > 50) {
@@ -246,7 +235,7 @@ Colour3DPlotLayer::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame
             }
         }
     }
-    cacheInvalid(startFrame, endFrame);
+    emit modelChangedWithin(startFrame, endFrame);
 }
 
 Layer::PropertyList
@@ -620,6 +609,13 @@ Colour3DPlotLayer::getSmooth() const
     return m_smooth;
 }
 
+bool
+Colour3DPlotLayer::hasLightBackground() const 
+{
+    return ColourMapper(m_colourMap, m_colourInverted, 1.f, 255.f)
+        .hasLightBackground();
+}
+
 void
 Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 {
@@ -636,7 +632,7 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 
         Layer::setLayerDormant(v, true);
 
-        cacheInvalid();
+        invalidatePeakCache(); // for memory-saving purposes
         
     } else {
 
