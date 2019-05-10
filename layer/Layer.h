@@ -549,6 +549,10 @@ public:
     virtual bool canExistWithoutModel() const { return false; }
 
 public slots:
+    /**
+     * Change the visibility status (dormancy) of the layer in the
+     * given view.
+     */
     void showLayer(LayerGeometryProvider *, bool show);
 
 signals:
