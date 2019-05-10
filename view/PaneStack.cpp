@@ -55,6 +55,7 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     layout->setSpacing(0);
 
     m_autoResizeLayout = new QVBoxLayout;
+    m_autoResizeLayout->setMargin(0);
     m_autoResizeLayout->setSpacing(0);
     m_autoResizeStack->setLayout(m_autoResizeLayout);
     m_autoResizeStack->hide();
