@@ -497,46 +497,54 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
     settings.beginGroup("LayerDefaults");
     QString defaults = settings.value(getLayerTypeName(type), "").toString();
     if (defaults == "") return;
+    setLayerProperties(layer, defaults);
+    settings.endGroup();
+}
 
-//    cerr << "defaults=\"" << defaults << "\"" << endl;
-
-    QString xml = layer->toXmlString();
+void
+LayerFactory::setLayerProperties(Layer *layer, QString newXml)
+{
     QDomDocument docOld, docNew;
-    
-    if (docOld.setContent(xml, false) &&
-        docNew.setContent(defaults, false)) {
+    QString oldXml = layer->toXmlString();
+
+    if (!docOld.setContent(oldXml, false)) {
+        SVCERR << "LayerFactory::setLayerProperties: Failed to parse XML for existing layer properties! XML string is: " << oldXml << endl;
+        return;
+    }
+
+    if (!docNew.setContent(newXml, false)) {
+        SVCERR << "LayerFactory::setLayerProperties: Failed to parse XML: " << newXml << endl;
+        return;
+    }
         
-        QXmlAttributes attrs;
+    QXmlAttributes attrs;
         
-        QDomElement layerElt = docNew.firstChildElement("layer");
-        QDomNamedNodeMap attrNodes = layerElt.attributes();
+    QDomElement layerElt = docNew.firstChildElement("layer");
+    QDomNamedNodeMap attrNodes = layerElt.attributes();
         
-        for (int i = 0; i < attrNodes.length(); ++i) {
-            QDomAttr attr = attrNodes.item(i).toAttr();
-            if (attr.isNull()) continue;
+    for (int i = 0; i < attrNodes.length(); ++i) {
+        QDomAttr attr = attrNodes.item(i).toAttr();
+        if (attr.isNull()) continue;
 //            cerr << "append \"" << attr.name()
 //                      << "\" -> \"" << attr.value() << "\""
 //                      << endl;
-            attrs.append(attr.name(), "", "", attr.value());
-        }
-        
-        layerElt = docOld.firstChildElement("layer");
-        attrNodes = layerElt.attributes();
-        for (int i = 0; i < attrNodes.length(); ++i) {
-            QDomAttr attr = attrNodes.item(i).toAttr();
-            if (attr.isNull()) continue;
-            if (attrs.value(attr.name()) == "") {
+        attrs.append(attr.name(), "", "", attr.value());
+    }
+    
+    layerElt = docOld.firstChildElement("layer");
+    attrNodes = layerElt.attributes();
+    for (int i = 0; i < attrNodes.length(); ++i) {
+        QDomAttr attr = attrNodes.item(i).toAttr();
+        if (attr.isNull()) continue;
+        if (attrs.value(attr.name()) == "") {
 //                cerr << "append \"" << attr.name()
 //                          << "\" -> \"" << attr.value() << "\""
 //                          << endl;
-                attrs.append(attr.name(), "", "", attr.value());
-            }
+            attrs.append(attr.name(), "", "", attr.value());
         }
-        
-        layer->setProperties(attrs);
     }
-
-    settings.endGroup();
+    
+    layer->setProperties(attrs);
 }
 
 LayerFactory::LayerType

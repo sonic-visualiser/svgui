@@ -68,7 +68,19 @@ public:
 
     Layer *createLayer(LayerType type);
 
+    /**
+     * Set the default properties of a layer, from the XML string
+     * contained in the LayerDefaults settings group for the given
+     * layer type. Leave unchanged any properties not mentioned in the
+     * settings.
+     */
     void setLayerDefaultProperties(LayerType type, Layer *layer);
+
+    /**
+     * Set the properties of a layer, from the XML string
+     * provided. Leave unchanged any properties not mentioned.
+     */
+    void setLayerProperties(Layer *layer, QString xmlString);
 
     QString getLayerPresentationName(LayerType type);
 
