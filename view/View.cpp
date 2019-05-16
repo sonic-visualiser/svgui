@@ -1757,6 +1757,16 @@ View::checkProgress(void *object)
         if (i->first == object) {
 
             found = true;
+
+            if (i->first->isLayerDormant(this)) {
+                // A dormant (invisible) layer can still be busy
+                // generating, but we don't usually want to indicate
+                // it because it probably means it's a duplicate of a
+                // visible layer
+                cancel->hide();
+                pb->hide();
+                continue;
+            }
             
             // The timer is used to test for stalls.  If the progress
             // bar does not get updated for some length of time, the
