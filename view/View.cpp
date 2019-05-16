@@ -1745,6 +1745,11 @@ View::checkProgress(void *object)
         return;
     }
 
+    QSettings settings;
+    settings.beginGroup("View");
+    bool showCancelButton = settings.value("showcancelbuttons", true).toBool();
+    settings.endGroup();
+    
     int ph = height();
     bool found = false;
 
@@ -1833,13 +1838,23 @@ View::checkProgress(void *object)
                     timer->start();
                 }
 
-                int scaled20 = scalePixelSize(20);
+                if (showCancelButton) {
+                
+                    int scaled20 = scalePixelSize(20);
 
-                cancel->move(0, ph - pb->height()/2 - scaled20/2);
-                cancel->show();
+                    cancel->move(0, ph - pb->height()/2 - scaled20/2);
+                    cancel->show();
 
-                pb->setValue(completion);
-                pb->move(scaled20, ph - pb->height());
+                    pb->setValue(completion);
+                    pb->move(scaled20, ph - pb->height());
+
+                } else {
+
+                    cancel->hide();
+
+                    pb->setValue(completion);
+                    pb->move(0, ph - pb->height());
+                }
 
                 pb->show();
                 pb->update();
