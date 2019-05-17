@@ -79,9 +79,17 @@ public:
     ResizeMode getResizeMode() const { return m_resizeMode; }
     void setResizeMode(ResizeMode);
 
+    // Set whether the current-pane indicators and close buttons are
+    // shown. The default is true.
+    void setShowPaneAccessories(bool show);
+
+    // Set whether a close button is shown on the first pane as well
+    // as others. (It may be reasonable to omit the close button from
+    // what is presumably the main pane in some applications.)  The
+    // default is true.
+    void setShowCloseButtonOnFirstPane(bool);
+
     void setPropertyStackMinWidth(int mw);
-    
-    void setShowPaneAccessories(bool show); // current indicator, close button
 
     void setShowAlignmentViews(bool show);
 
@@ -139,6 +147,7 @@ protected:
     std::vector<PaneRec> m_hiddenPanes;
 
     bool m_showAccessories;
+    bool m_showCloseButtonOnFirstPane;
     bool m_showAlignmentViews;
 
     QSplitter *m_splitter; // constitutes the stack in UserResizeable mode

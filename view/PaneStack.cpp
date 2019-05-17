@@ -41,6 +41,7 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     QFrame(parent),
     m_currentPane(nullptr),
     m_showAccessories(true),
+    m_showCloseButtonOnFirstPane(true),
     m_showAlignmentViews(false),
     m_splitter(new QSplitter),
     m_autoResizeStack(new QWidget),
@@ -81,6 +82,12 @@ PaneStack::setShowPaneAccessories(bool show)
 }
 
 void
+PaneStack::setShowCloseButtonOnFirstPane(bool show)
+{
+    m_showCloseButtonOnFirstPane = show;
+}
+
+void
 PaneStack::setShowAlignmentViews(bool show)
 {
     m_showAlignmentViews = show;
@@ -116,6 +123,9 @@ PaneStack::addPane(bool suppressPropertyBox)
     xButton->setFixedSize(QSize(16, 16));
     xButton->setFlat(true);
     xButton->setVisible(m_showAccessories);
+    if (m_panes.empty() && !m_showCloseButtonOnFirstPane) {
+        xButton->setVisible(false);
+    }
     layout->addWidget(xButton, 1, 0);
     connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
 
@@ -123,7 +133,8 @@ PaneStack::addPane(bool suppressPropertyBox)
     connect(currentIndicator, SIGNAL(clicked()), this, SLOT(indicatorClicked()));
     layout->addWidget(currentIndicator, 2, 0);
     layout->setRowStretch(1, 20);
-    currentIndicator->setMinimumWidth(8);
+    currentIndicator->setMinimumWidth(16);
+    currentIndicator->setMinimumHeight(16);
     currentIndicator->setScaledContents(true);
     currentIndicator->setVisible(m_showAccessories);
 
@@ -381,8 +392,15 @@ PaneStack::showOrHidePaneAccessories()
     bool multi = (getPaneCount() > 1);
     for (std::vector<PaneRec>::iterator i = m_panes.begin();
          i != m_panes.end(); ++i) {
-        i->xButton->setVisible(multi && m_showAccessories);
-        i->currentIndicator->setVisible(multi && m_showAccessories);
+        bool visible = (multi && m_showAccessories);
+        bool xvisible = visible;
+        if (i == m_panes.begin()) {
+            if (!m_showCloseButtonOnFirstPane) {
+                xvisible = false;
+            }
+        }
+        i->xButton->setVisible(xvisible);
+        i->currentIndicator->setVisible(visible);
     }
 }
 
