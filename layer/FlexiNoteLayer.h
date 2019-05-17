@@ -16,12 +16,10 @@
 #ifndef SV_FLEXINOTE_LAYER_H
 #define SV_FLEXINOTE_LAYER_H
 
-#define NOTE_HEIGHT 16
-
 #include "SingleColourLayer.h"
 #include "VerticalScaleLayer.h"
 
-#include "data/model/FlexiNoteModel.h"
+#include "data/model/NoteModel.h"
 
 #include <QObject>
 #include <QColor>
@@ -84,7 +82,7 @@ public:
     void mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive);
 
     const Model *getModel() const override { return m_model; }
-    void setModel(FlexiNoteModel *model);
+    void setModel(NoteModel *model);
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -173,39 +171,39 @@ protected:
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 
-    FlexiNoteModel::PointList getLocalPoints(LayerGeometryProvider *v, int) const;
+    EventVector getLocalPoints(LayerGeometryProvider *v, int) const;
 
-    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, FlexiNoteModel::Point &) const;
-    bool getNoteToEdit(LayerGeometryProvider *v, int x, int y, FlexiNoteModel::Point &) const;
-    void getRelativeMousePosition(LayerGeometryProvider *v, FlexiNoteModel::Point &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
+    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
+    bool getNoteToEdit(LayerGeometryProvider *v, int x, int y, Event &) const;
+    void getRelativeMousePosition(LayerGeometryProvider *v, Event &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
     SparseTimeValueModel *getAssociatedPitchModel(LayerGeometryProvider *v) const;
-    bool updateNoteValueFromPitchCurve(LayerGeometryProvider *v, FlexiNoteModel::Point &note) const;
+    bool updateNoteValueFromPitchCurve(LayerGeometryProvider *v, Event &note) const;
     void splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseEvent *e);
 
-    FlexiNoteModel *m_model;
+    NoteModel *m_model;
     bool m_editing;
     bool m_intelligentActions;
     int m_dragPointX;
     int m_dragPointY;
     int m_dragStartX;
     int m_dragStartY;
-    FlexiNoteModel::Point m_originalPoint;
-    FlexiNoteModel::Point m_editingPoint;
+    Event m_originalPoint;
+    Event m_editingPoint;
     sv_frame_t m_greatestLeftNeighbourFrame;
     sv_frame_t m_smallestRightNeighbourFrame;
-    FlexiNoteModel::EditCommand *m_editingCommand;
+    ChangeEventsCommand *m_editingCommand;
     VerticalScale m_verticalScale;
     EditMode m_editMode;
 
-    typedef std::set<FlexiNoteModel::Point, FlexiNoteModel::Point::Comparator> FlexiNoteSet;
-    FlexiNoteSet m_pendingNoteOns;
+    typedef std::set<Event> NoteSet;
+    NoteSet m_pendingNoteOns;
 
     mutable double m_scaleMinimum;
     mutable double m_scaleMaximum;
 
     bool shouldAutoAlign() const;
 
-    void finish(FlexiNoteModel::EditCommand *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }

@@ -37,7 +37,6 @@
 #include "data/model/SparseOneDimensionalModel.h"
 #include "data/model/SparseTimeValueModel.h"
 #include "data/model/NoteModel.h"
-#include "data/model/FlexiNoteModel.h"
 #include "data/model/RegionModel.h"
 #include "data/model/TextModel.h"
 #include "data/model/ImageModel.h"
@@ -162,12 +161,12 @@ LayerFactory::getValidLayerTypes(Model *model)
     }
 
     if (dynamic_cast<NoteModel *>(model)) {
-        types.insert(Notes);
-    }
-
-    // NOTE: GF: types is a set, so order of insertion does not matter
-    if (dynamic_cast<FlexiNoteModel *>(model)) {
-        types.insert(FlexiNotes);
+        NoteModel *nm = dynamic_cast<NoteModel *>(model);
+        if (nm->getSubtype() == NoteModel::FLEXI_NOTE) {
+            types.insert(FlexiNotes);
+        } else {
+            types.insert(Notes);
+        }
     }
 
     if (dynamic_cast<RegionModel *>(model)) {
@@ -327,8 +326,7 @@ LayerFactory::setModel(Layer *layer, Model *model)
     if (trySetModel<NoteLayer, NoteModel>(layer, model)) 
         return; 
 
-    // GF: added FlexiNoteLayer
-    if (trySetModel<FlexiNoteLayer, FlexiNoteModel>(layer, model)) 
+    if (trySetModel<FlexiNoteLayer, NoteModel>(layer, model)) 
         return; 
         
     if (trySetModel<RegionLayer, RegionModel>(layer, model))
@@ -361,7 +359,7 @@ LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
     } else if (layerType == TimeValues) {
         return new SparseTimeValueModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == FlexiNotes) {
-        return new FlexiNoteModel(baseModel->getSampleRate(), 1, true);
+        return new NoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Notes) {
         return new NoteModel(baseModel->getSampleRate(), 1, true);
     } else if (layerType == Regions) {
@@ -499,69 +497,75 @@ LayerFactory::setLayerDefaultProperties(LayerType type, Layer *layer)
     settings.beginGroup("LayerDefaults");
     QString defaults = settings.value(getLayerTypeName(type), "").toString();
     if (defaults == "") return;
+    setLayerProperties(layer, defaults);
+    settings.endGroup();
+}
 
-//    cerr << "defaults=\"" << defaults << "\"" << endl;
-
-    QString xml = layer->toXmlString();
+void
+LayerFactory::setLayerProperties(Layer *layer, QString newXml)
+{
     QDomDocument docOld, docNew;
-    
-    if (docOld.setContent(xml, false) &&
-        docNew.setContent(defaults, false)) {
+    QString oldXml = layer->toXmlString();
+
+    if (!docOld.setContent(oldXml, false)) {
+        SVCERR << "LayerFactory::setLayerProperties: Failed to parse XML for existing layer properties! XML string is: " << oldXml << endl;
+        return;
+    }
+
+    if (!docNew.setContent(newXml, false)) {
+        SVCERR << "LayerFactory::setLayerProperties: Failed to parse XML: " << newXml << endl;
+        return;
+    }
         
-        QXmlAttributes attrs;
+    QXmlAttributes attrs;
         
-        QDomElement layerElt = docNew.firstChildElement("layer");
-        QDomNamedNodeMap attrNodes = layerElt.attributes();
+    QDomElement layerElt = docNew.firstChildElement("layer");
+    QDomNamedNodeMap attrNodes = layerElt.attributes();
         
-        for (int i = 0; i < attrNodes.length(); ++i) {
-            QDomAttr attr = attrNodes.item(i).toAttr();
-            if (attr.isNull()) continue;
+    for (int i = 0; i < attrNodes.length(); ++i) {
+        QDomAttr attr = attrNodes.item(i).toAttr();
+        if (attr.isNull()) continue;
 //            cerr << "append \"" << attr.name()
 //                      << "\" -> \"" << attr.value() << "\""
 //                      << endl;
-            attrs.append(attr.name(), "", "", attr.value());
-        }
-        
-        layerElt = docOld.firstChildElement("layer");
-        attrNodes = layerElt.attributes();
-        for (int i = 0; i < attrNodes.length(); ++i) {
-            QDomAttr attr = attrNodes.item(i).toAttr();
-            if (attr.isNull()) continue;
-            if (attrs.value(attr.name()) == "") {
+        attrs.append(attr.name(), "", "", attr.value());
+    }
+    
+    layerElt = docOld.firstChildElement("layer");
+    attrNodes = layerElt.attributes();
+    for (int i = 0; i < attrNodes.length(); ++i) {
+        QDomAttr attr = attrNodes.item(i).toAttr();
+        if (attr.isNull()) continue;
+        if (attrs.value(attr.name()) == "") {
 //                cerr << "append \"" << attr.name()
 //                          << "\" -> \"" << attr.value() << "\""
 //                          << endl;
-                attrs.append(attr.name(), "", "", attr.value());
-            }
+            attrs.append(attr.name(), "", "", attr.value());
         }
-        
-        layer->setProperties(attrs);
     }
-
-    settings.endGroup();
+    
+    layer->setProperties(attrs);
 }
 
 LayerFactory::LayerType
 LayerFactory::getLayerTypeForClipboardContents(const Clipboard &clip)
 {
-    const Clipboard::PointList &contents = clip.getPoints();
+    const EventVector &contents = clip.getPoints();
 
-    bool haveFrame = false;
     bool haveValue = false;
     bool haveDuration = false;
     bool haveLevel = false;
 
-    for (Clipboard::PointList::const_iterator i = contents.begin();
+    for (EventVector::const_iterator i = contents.begin();
          i != contents.end(); ++i) {
-        if (i->haveFrame()) haveFrame = true;
-        if (i->haveValue()) haveValue = true;
-        if (i->haveDuration()) haveDuration = true;
-        if (i->haveLevel()) haveLevel = true;
+        if (i->hasValue()) haveValue = true;
+        if (i->hasDuration()) haveDuration = true;
+        if (i->hasLevel()) haveLevel = true;
     }
 
-    if (haveFrame && haveValue && haveDuration && haveLevel) return Notes;
-    if (haveFrame && haveValue && haveDuration) return Regions;
-    if (haveFrame && haveValue) return TimeValues;
+    if (haveValue && haveDuration && haveLevel) return Notes;
+    if (haveValue && haveDuration) return Regions;
+    if (haveValue) return TimeValues;
     return TimeInstants;
 }
     

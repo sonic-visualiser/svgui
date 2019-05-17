@@ -25,6 +25,7 @@
 class QWidget;
 class QLabel;
 class QStackedWidget;
+class QVBoxLayout;
 class QSplitter;
 class QGridLayout;
 class QPushButton;
@@ -41,10 +42,10 @@ class PaneStack : public QFrame
     Q_OBJECT
 
 public:
-    PaneStack(QWidget *parent, ViewManager *viewManager);
+    PaneStack(QWidget *parent,
+              ViewManager *viewManager);
 
     Pane *addPane(bool suppressPropertyBox = false); // I own the returned value
-    Pane *insertPane(int index, bool suppressPropertyBox = false); // I own the returned value
     void deletePane(Pane *pane); // Deletes the pane, but _not_ its layers
 
     int getPaneCount() const; // Returns only count of visible panes
@@ -69,6 +70,14 @@ public:
 
     LayoutStyle getLayoutStyle() const { return m_layoutStyle; }
     void setLayoutStyle(LayoutStyle style);
+
+    enum ResizeMode {
+        UserResizeable = 0,
+        AutoResizeOnly = 1
+    };
+
+    ResizeMode getResizeMode() const { return m_resizeMode; }
+    void setResizeMode(ResizeMode);
 
     void setPropertyStackMinWidth(int mw);
     
@@ -132,7 +141,10 @@ protected:
     bool m_showAccessories;
     bool m_showAlignmentViews;
 
-    QSplitter *m_splitter;
+    QSplitter *m_splitter; // constitutes the stack in UserResizeable mode
+    QWidget *m_autoResizeStack; // constitutes the stack in AutoResizeOnly mode
+    QVBoxLayout *m_autoResizeLayout;
+
     QStackedWidget *m_propertyStackStack;
 
     ViewManager *m_viewManager; // I don't own this
@@ -145,6 +157,7 @@ protected:
     void relinkAlignmentViews();
 
     LayoutStyle m_layoutStyle;
+    ResizeMode m_resizeMode;
 };
 
 #endif

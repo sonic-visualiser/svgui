@@ -112,7 +112,7 @@ public:
     int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const override { return 0; }
 
 protected:
-    SparseOneDimensionalModel::PointList getLocalPoints(LayerGeometryProvider *v, int) const;
+    EventVector getLocalPoints(LayerGeometryProvider *v, int) const;
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 
@@ -120,11 +120,11 @@ protected:
 
     SparseOneDimensionalModel *m_model;
     bool m_editing;
-    SparseOneDimensionalModel::Point m_editingPoint;
-    SparseOneDimensionalModel::EditCommand *m_editingCommand;
+    Event m_editingPoint;
+    ChangeEventsCommand *m_editingCommand;
     PlotStyle m_plotStyle;
 
-    void finish(SparseOneDimensionalModel::EditCommand *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }

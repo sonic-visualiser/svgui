@@ -1411,7 +1411,10 @@ SpectrogramLayer::recreateFFTModel()
     FFTModel *oldModel = m_fftModel;
     m_fftModel = newModel;
 
-    if (canStoreWholeCache()) { // i.e. if enough memory
+    bool createWholeCache = false;
+    checkCacheSpace(&m_peakCacheDivisor, &createWholeCache);
+    
+    if (createWholeCache) {
         m_wholeCache = new Dense3DModelPeakCache(m_fftModel, 1);
         m_peakCache = new Dense3DModelPeakCache(m_wholeCache, m_peakCacheDivisor);
     } else {
@@ -1422,12 +1425,14 @@ SpectrogramLayer::recreateFFTModel()
     delete oldModel;
 }
 
-bool
-SpectrogramLayer::canStoreWholeCache() const
+void
+SpectrogramLayer::checkCacheSpace(int *suggestedPeakDivisor,
+                                  bool *createWholeCache) const
 {
-    if (!m_fftModel) {
-        return false; // or true, doesn't really matter
-    }
+    *suggestedPeakDivisor = 8;
+    *createWholeCache = false;
+    
+    if (!m_fftModel) return;
 
     size_t sz =
         size_t(m_fftModel->getWidth()) *
@@ -1436,23 +1441,28 @@ SpectrogramLayer::canStoreWholeCache() const
 
     try {
         SVDEBUG << "Requesting advice from StorageAdviser on whether to create whole-model cache" << endl;
+        // The lower amount here is the amount required for the
+        // slightly higher-resolution version of the peak cache
+        // without a whole-model cache; the higher amount is that for
+        // the whole-model cache. The factors of 1024 are because
+        // StorageAdviser rather stupidly works in kilobytes
         StorageAdviser::Recommendation recommendation =
             StorageAdviser::recommend
             (StorageAdviser::Criteria(StorageAdviser::SpeedCritical |
                                       StorageAdviser::PrecisionCritical |
                                       StorageAdviser::FrequentLookupLikely),
-             sz / 1024, sz / 1024);
-        if ((recommendation & StorageAdviser::UseDisc) ||
-            (recommendation & StorageAdviser::ConserveSpace)) {
+             (sz / 8) / 1024, sz / 1024);
+        if (recommendation & StorageAdviser::UseDisc) {
             SVDEBUG << "Seems inadvisable to create whole-model cache" << endl;
-            return false;
-        } else {
+        } else if (recommendation & StorageAdviser::ConserveSpace) {
+            SVDEBUG << "Seems inadvisable to create whole-model cache but acceptable to use the slightly higher-resolution peak cache" << endl;
+            *suggestedPeakDivisor = 4;
+        } else  {
             SVDEBUG << "Seems fine to create whole-model cache" << endl;
-            return true;
+            *createWholeCache = true;
         }
     } catch (const InsufficientDiscSpace &) {
         SVDEBUG << "Seems like a terrible idea to create whole-model cache" << endl;
-        return false;
     }
 }
 
@@ -1792,7 +1802,6 @@ SpectrogramLayer::snapToFeatureFrame(LayerGeometryProvider *,
     switch (snap) {
     case SnapLeft:  frame = left;  break;
     case SnapRight: frame = right; break;
-    case SnapNearest:
     case SnapNeighbouring:
         if (frame - left > right - frame) frame = right;
         else frame = left;
@@ -1861,7 +1870,7 @@ SpectrogramLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                                   QPoint cursorPos) const
 {
     paint.save();
-
+    
     int sw = getVerticalScaleWidth(v, m_haveDetailedScale, paint);
 
     QFont fn = paint.font();

@@ -142,9 +142,9 @@ protected:
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 
-    NoteModel::PointList getLocalPoints(LayerGeometryProvider *v, int) const;
+    EventVector getLocalPoints(LayerGeometryProvider *v, int) const;
 
-    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, NoteModel::Point &) const;
+    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
 
     NoteModel *m_model;
     bool m_editing;
@@ -152,13 +152,13 @@ protected:
     int m_dragPointY;
     int m_dragStartX;
     int m_dragStartY;
-    NoteModel::Point m_originalPoint;
-    NoteModel::Point m_editingPoint;
-    NoteModel::EditCommand *m_editingCommand;
+    Event m_originalPoint;
+    Event m_editingPoint;
+    ChangeEventsCommand *m_editingCommand;
     bool m_editIsOpen;
     VerticalScale m_verticalScale;
 
-    typedef std::set<NoteModel::Point, NoteModel::Point::Comparator> NoteSet;
+    typedef std::set<Event> NoteSet;
     NoteSet m_pendingNoteOns;
 
     mutable double m_scaleMinimum;
@@ -166,7 +166,7 @@ protected:
 
     bool shouldAutoAlign() const;
 
-    void finish(NoteModel::EditCommand *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }

@@ -43,22 +43,33 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     m_showAccessories(true),
     m_showAlignmentViews(false),
     m_splitter(new QSplitter),
+    m_autoResizeStack(new QWidget),
     m_propertyStackStack(new QStackedWidget),
     m_viewManager(viewManager),
     m_propertyStackMinWidth(100),
-    m_layoutStyle(PropertyStackPerPaneLayout)
+    m_layoutStyle(PropertyStackPerPaneLayout),
+    m_resizeMode(UserResizeable)
 {
     QHBoxLayout *layout = new QHBoxLayout;
     layout->setMargin(0);
     layout->setSpacing(0);
 
+    m_autoResizeLayout = new QVBoxLayout;
+    m_autoResizeLayout->setMargin(0);
+    m_autoResizeLayout->setSpacing(0);
+    m_autoResizeStack->setLayout(m_autoResizeLayout);
+    m_autoResizeStack->hide();
+    layout->addWidget(m_autoResizeStack);
+    layout->setStretchFactor(m_autoResizeStack, 1);
+
     m_splitter->setOrientation(Qt::Vertical);
     m_splitter->setOpaqueResize(false);
-
+    m_splitter->show();
     layout->addWidget(m_splitter);
     layout->setStretchFactor(m_splitter, 1);
-    layout->addWidget(m_propertyStackStack);
+    
     m_propertyStackStack->hide();
+    layout->addWidget(m_propertyStackStack);
 
     setLayout(layout);
 }
@@ -73,37 +84,44 @@ void
 PaneStack::setShowAlignmentViews(bool show)
 {
     m_showAlignmentViews = show;
-    foreach (const PaneRec &r, m_panes) {
-        r.alignmentView->setVisible(m_showAlignmentViews);
+    // each alignment view shows alignment between the pane above and
+    // the pane it is attached to: so pane 0 doesn't have a visible one
+    for (int i = 1; in_range_for(m_panes, i); ++i) {
+        m_panes[i].alignmentView->setVisible(m_showAlignmentViews);
     }
 }
 
 Pane *
 PaneStack::addPane(bool suppressPropertyBox)
 {
-    return insertPane(getPaneCount(), suppressPropertyBox);
-}
-
-Pane *
-PaneStack::insertPane(int index, bool suppressPropertyBox)
-{
     QFrame *frame = new QFrame;
 
     QGridLayout *layout = new QGridLayout;
     layout->setMargin(0);
-    layout->setSpacing(2);
+    layout->setHorizontalSpacing(m_viewManager->scalePixelSize(2));
+    if (m_showAlignmentViews) {
+        layout->setVerticalSpacing(0);
+    } else {
+        layout->setVerticalSpacing(m_viewManager->scalePixelSize(2));
+    }
+
+    AlignmentView *av = new AlignmentView(frame);
+    av->setFixedHeight(ViewManager::scalePixelSize(20));
+    av->setViewManager(m_viewManager);
+    av->setVisible(false); // for now
+    layout->addWidget(av, 0, 1);
 
     QPushButton *xButton = new QPushButton(frame);
     xButton->setIcon(IconLoader().load("cross"));
     xButton->setFixedSize(QSize(16, 16));
     xButton->setFlat(true);
     xButton->setVisible(m_showAccessories);
-    layout->addWidget(xButton, 0, 0);
+    layout->addWidget(xButton, 1, 0);
     connect(xButton, SIGNAL(clicked()), this, SLOT(paneDeleteButtonClicked()));
 
     ClickableLabel *currentIndicator = new ClickableLabel(frame);
     connect(currentIndicator, SIGNAL(clicked()), this, SLOT(indicatorClicked()));
-    layout->addWidget(currentIndicator, 1, 0);
+    layout->addWidget(currentIndicator, 2, 0);
     layout->setRowStretch(1, 20);
     currentIndicator->setMinimumWidth(8);
     currentIndicator->setScaledContents(true);
@@ -120,14 +138,8 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     } else {
         pane->setViewManager(m_viewManager);
     }
-    layout->addWidget(pane, 0, 1, 2, 1);
+    layout->addWidget(pane, 1, 1, 2, 1);
     layout->setColumnStretch(1, 20);
-
-    AlignmentView *av = new AlignmentView(frame);
-    av->setFixedHeight(40);//!!!
-    av->setVisible(m_showAlignmentViews);
-    av->setViewManager(m_viewManager);
-    layout->addWidget(av, 2, 1);
 
     QWidget *properties = nullptr;
     if (suppressPropertyBox) {
@@ -142,7 +154,7 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
                 this, SIGNAL(contextHelpChanged(const QString &)));
     }
     if (m_layoutStyle == PropertyStackPerPaneLayout) {
-        layout->addWidget(properties, 0, 2, 2, 1);
+        layout->addWidget(properties, 1, 2, 2, 1);
     } else {
         properties->setParent(m_propertyStackStack);
         m_propertyStackStack->addWidget(properties);
@@ -160,7 +172,13 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
     m_panes.push_back(rec);
 
     frame->setLayout(layout);
-    m_splitter->insertWidget(index, frame);
+
+    if (m_resizeMode == UserResizeable) {
+        m_splitter->addWidget(frame);
+    } else {
+        m_autoResizeLayout->addWidget(frame);
+        frame->adjustSize();
+    }
 
     connect(pane, SIGNAL(propertyContainerAdded(PropertyContainer *)),
             this, SLOT(propertyContainerAdded(PropertyContainer *)));
@@ -193,20 +211,19 @@ PaneStack::insertPane(int index, bool suppressPropertyBox)
 void
 PaneStack::relinkAlignmentViews()
 {
-    for (int i = 0; i < (int)m_panes.size(); ++i) {
-        m_panes[i].alignmentView->setViewAbove(m_panes[i].pane);
-        if (i + 1 < (int)m_panes.size()) {
-            m_panes[i].alignmentView->setViewBelow(m_panes[i+1].pane);
-        } else {
-            m_panes[i].alignmentView->setViewBelow(nullptr);
-        }
+    if (m_panes.empty()) return;
+    m_panes[0].alignmentView->hide();
+    for (int i = 1; in_range_for(m_panes, i); ++i) {
+        m_panes[i].alignmentView->setViewAbove(m_panes[i-1].pane);
+        m_panes[i].alignmentView->setViewBelow(m_panes[i].pane);
+        m_panes[i].alignmentView->setVisible(true);
     }
 }
 
 void
 PaneStack::unlinkAlignmentViews()
 {
-    for (int i = 0; i < (int)m_panes.size(); ++i) {
+    for (int i = 0; in_range_for(m_panes, i); ++i) {
         m_panes[i].alignmentView->setViewAbove(nullptr);
         m_panes[i].alignmentView->setViewBelow(nullptr);
     }
@@ -406,12 +423,11 @@ PaneStack::hidePane(Pane *pane)
             showOrHidePaneAccessories();
             emit paneHidden(pane);
             emit paneHidden();
+            relinkAlignmentViews();
             return;
         }
         ++i;
     }
-
-    relinkAlignmentViews();
 
     SVCERR << "WARNING: PaneStack::hidePane(" << pane << "): Pane not found in visible panes" << endl;
 }
@@ -431,13 +447,12 @@ PaneStack::showPane(Pane *pane)
             //!!! update current pane
 
             showOrHidePaneAccessories();
+            relinkAlignmentViews();
 
             return;
         }
         ++i;
     }
-
-    relinkAlignmentViews();
 
     SVCERR << "WARNING: PaneStack::showPane(" << pane << "): Pane not found in hidden panes" << endl;
 }
@@ -655,6 +670,10 @@ PaneStack::indicatorClicked()
 void
 PaneStack::sizePanesEqually()
 {
+    if (m_resizeMode == AutoResizeOnly) {
+        return;
+    }
+    
     QList<int> sizes = m_splitter->sizes();
     if (sizes.empty()) return;
 
@@ -710,5 +729,21 @@ PaneStack::sizePanesEqually()
 */
 
     m_splitter->setSizes(sizes);
+}
+
+void
+PaneStack::setResizeMode(ResizeMode mode)
+{
+    if (mode == UserResizeable) {
+        m_autoResizeStack->hide();
+        m_splitter->show();
+    } else {
+        m_autoResizeStack->show();
+        m_splitter->hide();
+    }
+    m_resizeMode = mode;
+
+    // we don't actually move any existing panes yet! let's do that
+    // only if we turn out to need it, shall we?
 }
 

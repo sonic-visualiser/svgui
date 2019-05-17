@@ -105,12 +105,12 @@ protected slots:
     void fileSourceReady();
 
 protected:
-    ImageModel::PointList getLocalPoints(LayerGeometryProvider *v, int x, int y) const;
+    EventVector getLocalPoints(LayerGeometryProvider *v, int x, int y) const;
 
     bool getImageOriginalSize(QString name, QSize &size) const;
     QImage getImage(LayerGeometryProvider *v, QString name, QSize maxSize) const;
 
-    void drawImage(LayerGeometryProvider *v, QPainter &paint, const ImageModel::Point &p,
+    void drawImage(LayerGeometryProvider *v, QPainter &paint, const Event &p,
                    int x, int nx) const;
 
     //!!! how to reap no-longer-used images?
@@ -130,11 +130,11 @@ protected:
     ImageModel *m_model;
     bool m_editing;
     QPoint m_editOrigin;
-    ImageModel::Point m_originalPoint;
-    ImageModel::Point m_editingPoint;
-    ImageModel::EditCommand *m_editingCommand;
+    Event m_originalPoint;
+    Event m_editingPoint;
+    ChangeEventsCommand *m_editingCommand;
 
-    void finish(ImageModel::EditCommand *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }

@@ -129,6 +129,8 @@ public:
     void setSmooth(bool i);
     bool getSmooth() const;
 
+    bool hasLightBackground() const override;
+
     bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const override;
 
@@ -149,10 +151,8 @@ public:
                        QString extraAttributes = "") const override;
 
 protected slots:
-    void cacheInvalid();
-    void cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame);
-    void modelChanged();
-    void modelChangedWithin(sv_frame_t, sv_frame_t);
+    void handleModelChanged();
+    void handleModelChangedWithin(sv_frame_t, sv_frame_t);
 
 protected:
     const DenseThreeDimensionalModel *m_model; // I do not own this
@@ -185,6 +185,7 @@ protected:
     mutable Dense3DModelPeakCache *m_peakCache;
     const int m_peakCacheDivisor;
     Dense3DModelPeakCache *getPeakCache() const;
+    void invalidatePeakCache();
 
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;

@@ -174,15 +174,15 @@ protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     bool shouldAutoAlign() const;
 
-    SparseTimeValueModel::PointList getLocalPoints(LayerGeometryProvider *v, int) const;
+    EventVector getLocalPoints(LayerGeometryProvider *v, int) const;
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 
     SparseTimeValueModel *m_model;
     bool m_editing;
-    SparseTimeValueModel::Point m_originalPoint;
-    SparseTimeValueModel::Point m_editingPoint;
-    SparseTimeValueModel::EditCommand *m_editingCommand;
+    Event m_originalPoint;
+    Event m_editingPoint;
+    ChangeEventsCommand *m_editingCommand;
     int m_colourMap;
     bool m_colourInverted;
     PlotStyle m_plotStyle;
@@ -193,7 +193,7 @@ protected:
     mutable double m_scaleMinimum;
     mutable double m_scaleMaximum;
 
-    void finish(SparseTimeValueModel::EditCommand *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
