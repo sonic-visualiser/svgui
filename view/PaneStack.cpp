@@ -132,7 +132,7 @@ PaneStack::addPane(bool suppressPropertyBox)
     ClickableLabel *currentIndicator = new ClickableLabel(frame);
     connect(currentIndicator, SIGNAL(clicked()), this, SLOT(indicatorClicked()));
     layout->addWidget(currentIndicator, 2, 0);
-    layout->setRowStretch(1, 20);
+    layout->setRowStretch(2, 20);
     currentIndicator->setMinimumWidth(16);
     currentIndicator->setMinimumHeight(16);
     currentIndicator->setScaledContents(true);
@@ -223,6 +223,7 @@ void
 PaneStack::relinkAlignmentViews()
 {
     if (m_panes.empty()) return;
+    if (!m_showAlignmentViews) return;
     m_panes[0].alignmentView->hide();
     for (int i = 1; in_range_for(m_panes, i); ++i) {
         m_panes[i].alignmentView->setViewAbove(m_panes[i-1].pane);
