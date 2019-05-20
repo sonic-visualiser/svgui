@@ -304,7 +304,15 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
 
-    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0));
+    int overspill = 0;
+    if (m_plotStyle == PlotSegmentation) {
+        // We need to start painting at the prior point, so we can
+        // fill in the visible part of its segmentation area
+        overspill = 1;
+    }
+    
+    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0,
+                                                overspill));
 
     bool odd = false;
     if (m_plotStyle == PlotSegmentation && !points.empty()) {
