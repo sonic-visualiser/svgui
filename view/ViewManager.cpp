@@ -211,7 +211,7 @@ ViewManager::alignPlaybackFrameToReference(sv_frame_t frame) const
 #ifdef DEBUG_VIEW_MANAGER
     cerr << "ViewManager::alignPlaybackFrameToReference(" << frame << "): playback model is " << m_playbackModel << endl;
 #endif
-    if (!m_playbackModel) {
+    if (!m_playbackModel || !m_alignMode) {
         return frame;
     } else {
         sv_frame_t f = m_playbackModel->alignToReference(frame);
@@ -228,7 +228,7 @@ ViewManager::alignReferenceToPlaybackFrame(sv_frame_t frame) const
 #ifdef DEBUG_VIEW_MANAGER
     cerr << "ViewManager::alignReferenceToPlaybackFrame(" << frame << "): playback model is " << m_playbackModel << endl;
 #endif
-    if (!m_playbackModel) {
+    if (!m_playbackModel || !m_alignMode) {
         return frame;
     } else {
         sv_frame_t f = m_playbackModel->alignFromReference(frame);
