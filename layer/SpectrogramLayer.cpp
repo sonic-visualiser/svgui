@@ -1274,7 +1274,7 @@ const
 
         for (int s = s0i; s <= s1i; ++s) {
 
-            double binfreq = (double(sr) * q) / m_windowSize;
+            double binfreq = (double(sr) * q) / getFFTSize();
             if (q == q0i) freqMin = binfreq;
             if (q == q1i) freqMax = binfreq;
 
