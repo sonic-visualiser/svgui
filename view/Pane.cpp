@@ -519,12 +519,12 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
     bool log;
     QString unit;
 
-    // If the top layer has no scale and reports no display
-    // extents, but does report a unit, then the scale should be
-    // drawn from any underlying layer with a scale and that unit.
-    // If the top layer has no scale and no value extents at all,
-    // then the scale should be drawn from any underlying layer
-    // with a scale regardless of unit.
+    // If the top layer has no scale and reports no display extents,
+    // but does report a unit, then the scale should be drawn from any
+    // (visible) underlying layer with a scale and that unit.  If the
+    // top layer has no scale and no value extents at all, then the
+    // scale should be drawn from any (visible) underlying layer with
+    // a scale regardless of unit.
 
     int sw = topLayer->getVerticalScaleWidth
         (this, m_manager->shouldShowVerticalColourScale(), paint);
@@ -548,6 +548,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
                     --vi;
                         
                     if ((*vi) == topLayer) continue;
+                    if ((*vi)->isLayerDormant(this)) continue;
                         
                     sw = (*vi)->getVerticalScaleWidth
                         (this, m_manager->shouldShowVerticalColourScale(), paint);
@@ -568,6 +569,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
                     --vi;
                         
                     if ((*vi) == topLayer) continue;
+                    if ((*vi)->isLayerDormant(this)) continue;
                         
                     if ((*vi)->getDisplayExtents(min, max)) {
                             
