@@ -245,6 +245,24 @@ public:
     void setZoomWheelsEnabled(bool enable);
     bool getZoomWheelsEnabled() const { return m_zoomWheelsEnabled; }
 
+    /** 
+     * Enable or disable opportunistic editing. This allows certain
+     * edits while not in edit modes - e.g. double-click on an item
+     * while in navigate mode to open an edit dialog. It is enabled by
+     * default, but it may be undesirable if the application is
+     * intended to be "read-only".
+     *
+     * This setting makes no difference to behaviour when actually in
+     * editing modes.
+     * 
+     * Unlike some other options, this is considered to be
+     * application-build-specific and is not restored from settings.
+     */
+    void setOpportunisticEditingEnabled(bool enable);
+    bool getOpportunisticEditingEnabled() const {
+        return m_opportunisticEditingEnabled;
+    }
+
     void setGlobalDarkBackground(bool dark);
     bool getGlobalDarkBackground() const;
 
@@ -303,6 +321,9 @@ signals:
     /** Emitted when the zoom wheels have been toggled. */
     void zoomWheelsEnabledChanged();
 
+    /** Emitted when editing-enabled has been toggled. */
+    void opportunisticEditingEnabledChanged();
+    
     /** Emitted when any loggable activity has occurred. */
     void activity(QString);
 
@@ -366,6 +387,7 @@ protected:
 
     OverlayMode m_overlayMode;
     bool m_zoomWheelsEnabled;
+    bool m_opportunisticEditingEnabled;
     bool m_showCentreLine;
     bool m_illuminateLocalFeatures;
     bool m_showWorkTitle;

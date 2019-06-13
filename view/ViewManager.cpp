@@ -47,6 +47,7 @@ ViewManager::ViewManager() :
     m_alignMode(false),
     m_overlayMode(StandardOverlays),
     m_zoomWheelsEnabled(true),
+    m_opportunisticEditingEnabled(true),
     m_showCentreLine(true),
     m_illuminateLocalFeatures(true),
     m_showWorkTitle(false),
@@ -746,6 +747,15 @@ ViewManager::setZoomWheelsEnabled(bool enabled)
     settings.beginGroup("MainWindow");
     settings.setValue("zoom-wheels-enabled", m_zoomWheelsEnabled);
     settings.endGroup();
+}
+
+void
+ViewManager::setOpportunisticEditingEnabled(bool enabled)
+{
+    if (m_opportunisticEditingEnabled != enabled) {
+        m_opportunisticEditingEnabled = enabled;
+        emit opportunisticEditingEnabledChanged();
+    }
 }
 
 void

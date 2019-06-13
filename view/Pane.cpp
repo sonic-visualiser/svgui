@@ -2189,8 +2189,9 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         return;
     }
 
-    if (mode == ViewManager::NavigateMode ||
-        mode == ViewManager::EditMode) {
+    if (mode == ViewManager::EditMode ||
+        (mode == ViewManager::NavigateMode &&
+         m_manager->getOpportunisticEditingEnabled())) {
 
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
