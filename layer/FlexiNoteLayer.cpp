@@ -53,7 +53,6 @@
 
 FlexiNoteLayer::FlexiNoteLayer() :
     SingleColourLayer(),
-    m_model(nullptr),
     m_editing(false),
     m_intelligentActions(true),
     m_dragPointX(0),
@@ -73,15 +72,16 @@ FlexiNoteLayer::FlexiNoteLayer() :
 }
 
 void
-FlexiNoteLayer::setModel(NoteModel *model) 
+FlexiNoteLayer::setModel(ModelId modelId) 
 {
-    if (m_model == model) return;
-    m_model = model;
+    if (m_model == modelId) return;
+    
+    auto model = ModelById::getAs<NoteModel>(modelId);
+    if (!model) throw std::logic_error("Not a NoteModel");
+
+    m_model = modelId;
 
     connectSignals(m_model);
-
-    // m_scaleMinimum = 0;
-    // m_scaleMaximum = 0;
 
     emit modelReplaced();
 }
@@ -123,7 +123,8 @@ FlexiNoteLayer::getPropertyGroupName(const PropertyName &name) const
 QString
 FlexiNoteLayer::getScaleUnits() const
 {
-    if (m_model) return m_model->getScaleUnits();
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (model) return model->getScaleUnits();
     else return "";
 }
 
@@ -144,7 +145,8 @@ FlexiNoteLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Scale Units") {
 
         if (deflt) *deflt = 0;
-        if (m_model) {
+        auto model = ModelById::getAs<NoteModel>(m_model);
+        if (model) {
             val = UnitDatabase::getInstance()->getUnitId
                 (getScaleUnits());
         }
@@ -179,8 +181,9 @@ FlexiNoteLayer::setProperty(const PropertyName &name, int value)
     if (name == "Vertical Scale") {
         setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
-        if (m_model) {
-            m_model->setScaleUnits
+        auto model = ModelById::getAs<NoteModel>(m_model);
+        if (model) {
+            model->setScaleUnits
                 (UnitDatabase::getInstance()->getUnitById(value));
             emit modelChanged();
         }
@@ -215,13 +218,22 @@ FlexiNoteLayer::shouldConvertMIDIToHz() const
 //    return false;
 }
 
+int
+FlexiNoteLayer::getCompletion(LayerGeometryProvider *) const
+{
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
+
 bool
 FlexiNoteLayer::getValueExtents(double &min, double &max,
                                 bool &logarithmic, QString &unit) const
 {
-    if (!m_model) return false;
-    min = m_model->getValueMinimum();
-    max = m_model->getValueMaximum();
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
+    min = model->getValueMinimum();
+    max = model->getValueMaximum();
 
     if (shouldConvertMIDIToHz()) {
         unit = "Hz";
@@ -238,7 +250,8 @@ FlexiNoteLayer::getValueExtents(double &min, double &max,
 bool
 FlexiNoteLayer::getDisplayExtents(double &min, double &max) const
 {
-    if (!m_model || shouldAutoAlign()) {
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || shouldAutoAlign()) {
 //        std::cerr << "No model or shouldAutoAlign()" << std::endl;
         return false;
     }
@@ -250,8 +263,8 @@ FlexiNoteLayer::getDisplayExtents(double &min, double &max) const
     }
 
     if (m_scaleMinimum == m_scaleMaximum) {
-        min = m_model->getValueMinimum();
-        max = m_model->getValueMaximum();
+        min = model->getValueMinimum();
+        max = model->getValueMaximum();
     } else {
         min = m_scaleMinimum;
         max = m_scaleMaximum;
@@ -272,7 +285,8 @@ FlexiNoteLayer::getDisplayExtents(double &min, double &max) const
 bool
 FlexiNoteLayer::setDisplayExtents(double min, double max)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
 
     if (min == max) {
         if (min == 0.f) {
@@ -297,7 +311,8 @@ int
 FlexiNoteLayer::getVerticalZoomSteps(int &defaultStep) const
 {
     if (shouldAutoAlign()) return 0;
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return 0;
 
     defaultStep = 0;
     return 100;
@@ -307,7 +322,8 @@ int
 FlexiNoteLayer::getCurrentVerticalZoomStep() const
 {
     if (shouldAutoAlign()) return 0;
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return 0;
 
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return 0;
@@ -328,7 +344,8 @@ void
 FlexiNoteLayer::setVerticalZoomStep(int step)
 {
     if (shouldAutoAlign()) return;
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return;
@@ -378,7 +395,8 @@ FlexiNoteLayer::setVerticalZoomStep(int step)
 RangeMapper *
 FlexiNoteLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return nullptr;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return nullptr;
     
     RangeMapper *mapper;
 
@@ -401,21 +419,22 @@ FlexiNoteLayer::getNewVerticalZoomRangeMapper() const
 EventVector
 FlexiNoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
-    if (!m_model) return {};
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return {};
     
     sv_frame_t frame = v->getFrameForX(x);
 
-    EventVector local = m_model->getEventsCovering(frame);
+    EventVector local = model->getEventsCovering(frame);
     if (!local.empty()) return local;
 
     int fuzz = ViewManager::scalePixelSize(2);
     sv_frame_t start = v->getFrameForX(x - fuzz);
     sv_frame_t end = v->getFrameForX(x + fuzz);
 
-    local = m_model->getEventsStartingWithin(frame, end - frame);
+    local = model->getEventsStartingWithin(frame, end - frame);
     if (!local.empty()) return local;
 
-    local = m_model->getEventsSpanning(start, frame - start);
+    local = model->getEventsSpanning(start, frame - start);
     if (!local.empty()) return local;
 
     return {};
@@ -424,11 +443,12 @@ FlexiNoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 bool
 FlexiNoteLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &point) const
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
 
     sv_frame_t frame = v->getFrameForX(x);
 
-    EventVector onPoints = m_model->getEventsCovering(frame);
+    EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
     int nearestDistance = -1;
@@ -448,11 +468,12 @@ bool
 FlexiNoteLayer::getNoteToEdit(LayerGeometryProvider *v, int x, int y, Event &point) const
 {
     // GF: find the note that is closest to the cursor
-    if (!m_model) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
 
     sv_frame_t frame = v->getFrameForX(x);
 
-    EventVector onPoints = m_model->getEventsCovering(frame);
+    EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
     int nearestDistance = -1;
@@ -473,12 +494,13 @@ FlexiNoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
 {
     int x = pos.x();
 
-    if (!m_model || !m_model->getSampleRate()) return "";
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !model->getSampleRate()) return "";
 
     EventVector points = getLocalPoints(v, x);
 
     if (points.empty()) {
-        if (!m_model->isReady()) {
+        if (!model->isReady()) {
             return tr("In progress");
         } else {
             return tr("No local points");
@@ -493,9 +515,9 @@ FlexiNoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
         int y = getYForValue(v, i->getValue());
         int h = NOTE_HEIGHT; // GF: larger notes
 
-        if (m_model->getValueQuantization() != 0.0) {
+        if (model->getValueQuantization() != 0.0) {
             h = y - getYForValue
-                (v, i->getValue() + m_model->getValueQuantization());
+                (v, i->getValue() + model->getValueQuantization());
             if (h < NOTE_HEIGHT) h = NOTE_HEIGHT;
         }
 
@@ -509,9 +531,9 @@ FlexiNoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
     if (i == points.end()) return tr("No local points");
 
     RealTime rt = RealTime::frame2RealTime(note.getFrame(),
-                                           m_model->getSampleRate());
+                                           model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(note.getDuration(),
-                                           m_model->getSampleRate());
+                                           model->getSampleRate());
     
     QString pitchText;
 
@@ -562,11 +584,12 @@ FlexiNoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                    int &resolution,
                                    SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
     EventVector points;
 
     if (snap == SnapNeighbouring) {
@@ -577,7 +600,7 @@ FlexiNoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
         return true;
     }    
 
-    points = m_model->getEventsCovering(frame);
+    points = model->getEventsCovering(frame);
     sv_frame_t snapped = frame;
     bool found = false;
 
@@ -650,8 +673,9 @@ FlexiNoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
 
         if (!v->getValueExtents(queryUnits, min, max, log)) {
 
-            min = m_model->getValueMinimum();
-            max = m_model->getValueMaximum();
+            auto model = ModelById::getAs<NoteModel>(m_model);
+            min = model->getValueMinimum();
+            max = model->getValueMaximum();
 
             if (shouldConvertMIDIToHz()) {
                 min = Pitch::getFrequencyForPitch(int(lrint(min)));
@@ -752,16 +776,16 @@ FlexiNoteLayer::getValueForY(LayerGeometryProvider *v, int y) const
 bool
 FlexiNoteLayer::shouldAutoAlign() const
 {
-    if (!m_model) return false;
     return (m_verticalScale == AutoAlignScale);
 }
 
 void
 FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !model->isOK()) return;
 
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("FlexiNoteLayer::paint", true);
@@ -770,7 +794,7 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
 
-    EventVector points(m_model->getEventsSpanning(frame0, frame1 - frame0));
+    EventVector points(model->getEventsSpanning(frame0, frame1 - frame0));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -779,10 +803,10 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     brushColour.setAlpha(80);
 
 //    SVDEBUG << "FlexiNoteLayer::paint: resolution is "
-//        << m_model->getResolution() << " frames" << endl;
+//        << model->getResolution() << " frames" << endl;
 
-    double min = m_model->getValueMinimum();
-    double max = m_model->getValueMaximum();
+    double min = model->getValueMinimum();
+    double max = model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
@@ -810,8 +834,8 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int h = NOTE_HEIGHT; //GF: larger notes
     
-        if (m_model->getValueQuantization() != 0.0) {
-            h = y - getYForValue(v, p.getValue() + m_model->getValueQuantization());
+        if (model->getValueQuantization() != 0.0) {
+            h = y - getYForValue(v, p.getValue() + model->getValueQuantization());
             if (h < NOTE_HEIGHT) h = NOTE_HEIGHT; //GF: larger notes
         }
 
@@ -827,7 +851,7 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             paint.setPen(v->getForeground());
         
             QString vlabel = tr("freq: %1%2")
-                .arg(p.getValue()).arg(m_model->getScaleUnits());
+                .arg(p.getValue()).arg(model->getScaleUnits());
             PaintAssistant::drawVisibleText
                 (v, paint, 
                  x,
@@ -837,7 +861,7 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
             QString hlabel = tr("dur: %1")
                 .arg(RealTime::frame2RealTime
-                     (p.getDuration(), m_model->getSampleRate()).toText(true)
+                     (p.getDuration(), model->getSampleRate()).toText(true)
                      .c_str());
             PaintAssistant::drawVisibleText
                 (v, paint, 
@@ -869,7 +893,7 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 int
 FlexiNoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
-    if (!m_model || shouldAutoAlign()) {
+    if (shouldAutoAlign()) {
         return 0;
     } else  {
         if (m_verticalScale == LogScale || m_verticalScale == MIDIRangeScale) {
@@ -883,7 +907,8 @@ FlexiNoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &
 void
 FlexiNoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model || m_model->isEmpty()) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || model->isEmpty()) return;
 
     QString unit;
     double min, max;
@@ -923,11 +948,12 @@ FlexiNoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double value = getValueForY(v, e->y());
 
@@ -935,7 +961,7 @@ FlexiNoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Draw Point"));
+    m_editingCommand = new ChangeEventsCommand<Model>(m_model, tr("Draw Point"));
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
@@ -946,11 +972,12 @@ FlexiNoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "FlexiNoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double newValue = getValueForY(v, e->y());
 
@@ -975,7 +1002,8 @@ void
 FlexiNoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "FlexiNoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
     finish(m_editingCommand);
     m_editingCommand = nullptr;
     m_editing = false;
@@ -984,7 +1012,8 @@ FlexiNoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 void
 FlexiNoteLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
@@ -1004,15 +1033,15 @@ FlexiNoteLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 void
 FlexiNoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
-
+    if (!m_editing) return;
     m_editing = false;
 
     Event p(0);
     if (!getPointToDrag(v, e->x(), e->y(), p)) return;
-    if (p.getFrame() != m_editingPoint.getFrame() || p.getValue() != m_editingPoint.getValue()) return;
+    if (p.getFrame() != m_editingPoint.getFrame() ||
+        p.getValue() != m_editingPoint.getValue()) return;
 
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Erase Point"));
+    m_editingCommand = new ChangeEventsCommand<Model>(m_model, tr("Erase Point"));
     m_editingCommand->remove(m_editingPoint);
     finish(m_editingCommand);
     m_editingCommand = nullptr;
@@ -1025,7 +1054,8 @@ FlexiNoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 //    SVDEBUG << "FlexiNoteLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editStart(" << e->x() << "," << e->y() << ")" << std::endl;
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
@@ -1056,7 +1086,7 @@ FlexiNoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_greatestLeftNeighbourFrame = -1;
     m_smallestRightNeighbourFrame = std::numeric_limits<int>::max();
 
-    EventVector allEvents = m_model->getAllEvents();
+    EventVector allEvents = model->getAllEvents();
     
     for (auto currentNote: allEvents) {
         
@@ -1082,7 +1112,8 @@ FlexiNoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 //    SVDEBUG << "FlexiNoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
     std::cerr << "FlexiNoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << std::endl;
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
 
     int xdist = e->x() - m_dragStartX;
     int ydist = e->y() - m_dragStartY;
@@ -1091,12 +1122,13 @@ FlexiNoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 
     sv_frame_t dragFrame = v->getFrameForX(newx);
     if (dragFrame < 0) dragFrame = 0;
-    dragFrame = dragFrame / m_model->getResolution() * m_model->getResolution();
+    dragFrame = dragFrame / model->getResolution() * model->getResolution();
     
     double value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
-        m_editingCommand = new ChangeEventsCommand(m_model, tr("Drag Point"));
+        m_editingCommand =
+            new ChangeEventsCommand<Model>(m_model, tr("Drag Point"));
     }
     m_editingCommand->remove(m_editingPoint);
 
@@ -1182,7 +1214,8 @@ FlexiNoteLayer::editEnd(LayerGeometryProvider *v, QMouseEvent *e)
     std::cerr << "FlexiNoteLayer::editEnd("
               << e->x() << "," << e->y() << ")" << std::endl;
     
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
 
     if (m_editingCommand) {
 
@@ -1218,9 +1251,11 @@ FlexiNoteLayer::editEnd(LayerGeometryProvider *v, QMouseEvent *e)
 void
 FlexiNoteLayer::splitStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
+
     // GF: note splitting starts (!! remove printing soon)
     std::cerr << "splitStart (n.b. editStart will be called later, if the user drags the mouse)" << std::endl;
-    if (!m_model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
     // m_originalPoint = m_editingPoint;
@@ -1241,9 +1276,10 @@ FlexiNoteLayer::splitStart(LayerGeometryProvider *v, QMouseEvent *e)
 void
 FlexiNoteLayer::splitEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
+    auto model = ModelById::getAs<NoteModel>(m_model);
     // GF: note splitting ends. (!! remove printing soon)
     std::cerr << "splitEnd" << std::endl;
-    if (!m_model || !m_editing || m_editMode != SplitNote) return;
+    if (!model || !m_editing || m_editMode != SplitNote) return;
 
     int xdist = e->x() - m_dragStartX;
     int ydist = e->y() - m_dragStartY;
@@ -1266,13 +1302,15 @@ FlexiNoteLayer::splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame)
 void
 FlexiNoteLayer::splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseEvent *e)
 {
-    EventVector onPoints = m_model->getEventsCovering(frame);
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
+    
+    EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return;
     
     Event note(*onPoints.begin());
 
-    ChangeEventsCommand *command = new ChangeEventsCommand
-        (m_model, tr("Edit Point"));
+    auto command = new ChangeEventsCommand<Model>(m_model, tr("Edit Point"));
     command->remove(note);
 
     if (!e || !(e->modifiers() & Qt::ShiftModifier)) {
@@ -1306,15 +1344,16 @@ FlexiNoteLayer::splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseE
 void
 FlexiNoteLayer::addNote(LayerGeometryProvider *v, QMouseEvent *e)
 {
+    auto model = ModelById::getAs<NoteModel>(m_model);
     std::cerr << "addNote" << std::endl;
-    if (!m_model) return;
+    if (!model) return;
 
     sv_frame_t duration = 10000;
     
     sv_frame_t frame = v->getFrameForX(e->x());
     double value = getValueForY(v, e->y());
     
-    EventVector noteList = m_model->getAllEvents();
+    EventVector noteList = model->getAllEvents();
 
     if (m_intelligentActions) {
         sv_frame_t smallestRightNeighbourFrame = 0;
@@ -1333,16 +1372,15 @@ FlexiNoteLayer::addNote(LayerGeometryProvider *v, QMouseEvent *e)
     }
 
     if (!m_intelligentActions || 
-        (m_model->getEventsCovering(frame).empty() && duration > 0)) {
+        (model->getEventsCovering(frame).empty() && duration > 0)) {
         Event newNote(frame, float(value), duration, 100.f, tr("new note"));
-        ChangeEventsCommand *command = new ChangeEventsCommand
-            (m_model, tr("Add Point"));
+        auto command = new ChangeEventsCommand<Model>(m_model, tr("Add Point"));
         command->add(newNote);
         finish(command);
     }
 }
 
-SparseTimeValueModel *
+ModelId
 FlexiNoteLayer::getAssociatedPitchModel(LayerGeometryProvider *v) const
 {
     // Better than we used to do, but still not very satisfactory
@@ -1354,29 +1392,28 @@ FlexiNoteLayer::getAssociatedPitchModel(LayerGeometryProvider *v) const
         if (layer &&
             layer->getLayerPresentationName() != "candidate") {
 //            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
-            SparseTimeValueModel *model = qobject_cast<SparseTimeValueModel *>
-                (layer->getModel());
-//            cerr << "FlexiNoteLayer::getAssociatedPitchModel: and its model is " << model << endl;
+            auto modelId = layer->getModel();
+            auto model = ModelById::getAs<SparseTimeValueModel>(modelId);
             if (model && model->getScaleUnits() == "Hz") {
-                cerr << "FlexiNoteLayer::getAssociatedPitchModel: it's good, returning " << model << endl;
-                return model;
+//                cerr << "FlexiNoteLayer::getAssociatedPitchModel: it's good, returning " << model << endl;
+                return modelId;
             }
         }
     }
-    cerr << "FlexiNoteLayer::getAssociatedPitchModel: failed to find a model" << endl;
-    return nullptr;
+//    cerr << "FlexiNoteLayer::getAssociatedPitchModel: failed to find a model" << endl;
+    return {};
 }
 
 void
 FlexiNoteLayer::snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
-    ChangeEventsCommand *command = new ChangeEventsCommand
-        (m_model, tr("Snap Notes"));
+    auto command = new ChangeEventsCommand<Model>(m_model, tr("Snap Notes"));
 
     cerr << "snapSelectedNotesToPitchTrack: selection is from " << s.getStartFrame() << " to " << s.getEndFrame() << endl;
 
@@ -1408,18 +1445,20 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selectio
 void
 FlexiNoteLayer::mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive)
 {
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
+    
     EventVector points;
     if (inclusive) {
-        points = m_model->getEventsSpanning(s.getStartFrame(), s.getDuration());
+        points = model->getEventsSpanning(s.getStartFrame(), s.getDuration());
     } else {
-        points = m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        points = model->getEventsWithin(s.getStartFrame(), s.getDuration());
     }
         
     EventVector::iterator i = points.begin();
     if (i == points.end()) return;
 
-    ChangeEventsCommand *command = 
-        new ChangeEventsCommand(m_model, tr("Merge Notes"));
+    auto command = new ChangeEventsCommand<Model>(m_model, tr("Merge Notes"));
 
     Event newNote(*i);
 
@@ -1446,7 +1485,8 @@ FlexiNoteLayer::mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive
 bool
 FlexiNoteLayer::updateNoteValueFromPitchCurve(LayerGeometryProvider *v, Event &note) const
 {
-    SparseTimeValueModel *model = getAssociatedPitchModel(v);
+    ModelId modelId = getAssociatedPitchModel(v);
+    auto model = ModelById::getAs<SparseTimeValueModel>(modelId);
     if (!model) return false;
         
     std::cerr << model->getTypeName() << std::endl;
@@ -1525,8 +1565,7 @@ FlexiNoteLayer::mouseMoveEvent(LayerGeometryProvider *v, QMouseEvent *e)
 void
 FlexiNoteLayer::getRelativeMousePosition(LayerGeometryProvider *v, Event &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const
 {
-    // GF: TODO: consoloidate the tolerance values
-    if (!m_model) return;
+    // GF: TODO: consolidate the tolerance values
 
     int ctol = 0;
     int noteStartX = v->getXForFrame(note.getFrame());
@@ -1555,7 +1594,8 @@ bool
 FlexiNoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
     std::cerr << "Opening note editor dialog" << std::endl;
-    if (!m_model) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
 
     Event note(0);
     if (!getPointToDrag(v, e->x(), e->y(), note)) return false;
@@ -1563,7 +1603,7 @@ FlexiNoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 //    Event note = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
-        (m_model->getSampleRate(),
+        (model->getSampleRate(),
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowDuration |
          ItemEditDialog::ShowValue |
@@ -1583,8 +1623,7 @@ FlexiNoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
             .withDuration(dialog->getFrameDuration())
             .withLabel(dialog->getText());
         
-        ChangeEventsCommand *command = new ChangeEventsCommand
-            (m_model, tr("Edit Point"));
+        auto command = new ChangeEventsCommand<Model>(m_model, tr("Edit Point"));
         command->remove(note);
         command->add(newNote);
         finish(command);
@@ -1597,13 +1636,13 @@ FlexiNoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 void
 FlexiNoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
-    if (!m_model) return;
-
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Drag Selection"));
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
+    
+    auto command = new ChangeEventsCommand<Model>(m_model, tr("Drag Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -1618,13 +1657,13 @@ FlexiNoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 FlexiNoteLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model || !s.getDuration()) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !s.getDuration()) return;
 
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Resize Selection"));
+    auto command = new ChangeEventsCommand<Model>(m_model, tr("Resize Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     double ratio = double(newSize.getDuration()) / double(s.getDuration());
     double oldStart = double(s.getStartFrame());
@@ -1648,13 +1687,14 @@ FlexiNoteLayer::resizeSelection(Selection s, Selection newSize)
 void
 FlexiNoteLayer::deleteSelection(Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
+    auto command =
+        new ChangeEventsCommand<Model>(m_model, tr("Delete Selected Points"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -1666,13 +1706,14 @@ FlexiNoteLayer::deleteSelection(Selection s)
 void
 FlexiNoteLayer::deleteSelectionInclusive(Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
+    auto command =
+        new ChangeEventsCommand<Model>(m_model, tr("Delete Selected Points"));
 
     EventVector points =
-        m_model->getEventsSpanning(s.getStartFrame(), s.getDuration());
+        model->getEventsSpanning(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -1684,10 +1725,11 @@ FlexiNoteLayer::deleteSelectionInclusive(Selection s)
 void
 FlexiNoteLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
@@ -1697,7 +1739,8 @@ FlexiNoteLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 bool
 FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*frameOffset */, bool /* interactive */)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
 
     const EventVector &points = from.getPoints();
 
@@ -1720,8 +1763,7 @@ FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
         }
     }
 
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Paste"));
+    auto command = new ChangeEventsCommand<Model>(m_model, tr("Paste"));
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1745,8 +1787,8 @@ FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
         Event p = *i;
         Event newPoint = p;
         if (!p.hasValue()) {
-            newPoint = newPoint.withValue((m_model->getValueMinimum() +
-                                           m_model->getValueMaximum()) / 2);
+            newPoint = newPoint.withValue((model->getValueMinimum() +
+                                           model->getValueMaximum()) / 2);
         }
         if (!p.hasDuration()) {
             sv_frame_t nextFrame = frame;
@@ -1758,7 +1800,7 @@ FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
                 nextFrame = j->getFrame();
             }
             if (nextFrame == frame) {
-                newPoint = newPoint.withDuration(m_model->getResolution());
+                newPoint = newPoint.withDuration(model->getResolution());
             } else {
                 newPoint = newPoint.withDuration(nextFrame - frame);
             }
@@ -1789,13 +1831,11 @@ FlexiNoteLayer::addNoteOff(sv_frame_t frame, int pitch)
         if (lrintf(p.getValue()) == pitch) {
             m_pendingNoteOns.erase(i);
             Event note = p.withDuration(frame - p.getFrame());
-            if (m_model) {
-                ChangeEventsCommand *c = new ChangeEventsCommand
-                    (m_model, tr("Record Note"));
-                c->add(note);
-                // execute and bundle:
-                CommandHistory::getInstance()->addCommand(c, true, true);
-            }
+            auto c = new ChangeEventsCommand<Model>
+                (m_model, tr("Record Note"));
+            c->add(note);
+            // execute and bundle:
+            CommandHistory::getInstance()->addCommand(c, true, true);
             break;
         }
     }
@@ -1840,10 +1880,13 @@ FlexiNoteLayer::setProperties(const QXmlAttributes &attributes)
 void
 FlexiNoteLayer::setVerticalRangeToNoteRange(LayerGeometryProvider *v)
 {
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
+    
     double minf = std::numeric_limits<double>::max();
     double maxf = 0;
     bool hasNotes = 0;
-    EventVector allPoints = m_model->getAllEvents();
+    EventVector allPoints = model->getAllEvents();
     for (EventVector::const_iterator i = allPoints.begin();
          i != allPoints.end(); ++i) {
         hasNotes = 1;

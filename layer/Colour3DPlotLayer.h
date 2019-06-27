@@ -46,23 +46,28 @@ public:
     Colour3DPlotLayer();
     ~Colour3DPlotLayer();
 
-    const ZoomConstraint *getZoomConstraint() const override {
-        return m_model ? m_model->getZoomConstraint() : 0;
-    }
-    const Model *getModel() const override { return m_model; }
-    void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
+    ModelId getModel() const override { return m_model; }
+
+    const ZoomConstraint *getZoomConstraint() const override;
+    
+    void paint(LayerGeometryProvider *v,
+               QPainter &paint, QRect rect) const override;
     void setSynchronousPainting(bool synchronous) override;
 
-    int getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &) const override;
-    void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const override;
+    int getVerticalScaleWidth(LayerGeometryProvider *v,
+                              bool, QPainter &) const override;
+    void paintVerticalScale(LayerGeometryProvider *v,
+                            bool, QPainter &paint, QRect rect) const override;
 
-    QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
+    QString getFeatureDescription(LayerGeometryProvider *v,
+                                  QPoint &) const override;
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame, 
-                                    int &resolution,
-                                    SnapType snap) const override;
+                            int &resolution,
+                            SnapType snap) const override;
 
-    void setLayerDormant(const LayerGeometryProvider *v, bool dormant) override;
+    void setLayerDormant(const LayerGeometryProvider *v,
+                         bool dormant) override;
 
     bool isLayerScrollable(const LayerGeometryProvider *v) const override;
 
@@ -70,9 +75,9 @@ public:
         return ColourHasMeaningfulValue;
     }
 
-    void setModel(const DenseThreeDimensionalModel *model);
+    void setModel(ModelId model); // a DenseThreeDimensionalModel
 
-    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override;
 
     PropertyList getProperties() const override;
     PropertyType getPropertyType(const PropertyName &) const override;
@@ -80,11 +85,11 @@ public:
     QString getPropertyIconName(const PropertyName &) const override;
     QString getPropertyGroupName(const PropertyName &) const override;
     int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const override;
+                                 int *min, int *max, int *deflt) const override;
     QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const override;
+                                  int value) const override;
     QString getPropertyValueIconName(const PropertyName &,
-                                             int value) const override;
+                                     int value) const override;
     RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
     void setProperty(const PropertyName &, int value) override;
     void setProperties(const QXmlAttributes &) override;
@@ -132,30 +137,30 @@ public:
     bool hasLightBackground() const override;
 
     bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const override;
+                         bool &logarithmic, QString &unit) const override;
 
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
 
     bool getYScaleValue(const LayerGeometryProvider *, int /* y */,
-                                double &/* value */, QString &/* unit */) const override;
+                        double &/* value */, QString &/* unit */) const override;
 
     int getVerticalZoomSteps(int &defaultStep) const override;
     int getCurrentVerticalZoomStep() const override;
     void setVerticalZoomStep(int) override;
     RangeMapper *getNewVerticalZoomRangeMapper() const override;
 
-    const Model *getSliceableModel() const override { return m_model; }
+    ModelId getSliceableModel() const override { return m_model; }
 
     void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const override;
+               QString extraAttributes = "") const override;
 
 protected slots:
     void handleModelChanged();
     void handleModelChangedWithin(sv_frame_t, sv_frame_t);
 
 protected:
-    const DenseThreeDimensionalModel *m_model; // I do not own this
+    ModelId m_model; // A DenseThreeDimensionalModel
     
     ColourScaleType m_colourScale;
     bool m_colourScaleSet;
@@ -184,8 +189,8 @@ protected:
 
     mutable Dense3DModelPeakCache *m_peakCache;
     const int m_peakCacheDivisor;
-    Dense3DModelPeakCache *getPeakCache() const;
     void invalidatePeakCache();
+    Dense3DModelPeakCache *getPeakCache() const;
 
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;

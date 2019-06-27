@@ -81,8 +81,8 @@ public:
     void snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selection s);
     void mergeNotes(LayerGeometryProvider *v, Selection s, bool inclusive);
 
-    const Model *getModel() const override { return m_model; }
-    void setModel(NoteModel *model);
+    ModelId getModel() const override { return m_model; }
+    void setModel(ModelId model); // a NoteModel please
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -118,10 +118,10 @@ public:
 
     bool isLayerEditable() const override { return true; }
 
-    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override;
 
     bool getValueExtents(double &min, double &max,
-                                 bool &log, QString &unit) const override;
+                         bool &log, QString &unit) const override;
 
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
@@ -176,11 +176,11 @@ protected:
     bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
     bool getNoteToEdit(LayerGeometryProvider *v, int x, int y, Event &) const;
     void getRelativeMousePosition(LayerGeometryProvider *v, Event &note, int x, int y, bool &closeToLeft, bool &closeToRight, bool &closeToTop, bool &closeToBottom) const;
-    SparseTimeValueModel *getAssociatedPitchModel(LayerGeometryProvider *v) const;
+    ModelId getAssociatedPitchModel(LayerGeometryProvider *v) const;
     bool updateNoteValueFromPitchCurve(LayerGeometryProvider *v, Event &note) const;
     void splitNotesAt(LayerGeometryProvider *v, sv_frame_t frame, QMouseEvent *e);
 
-    NoteModel *m_model;
+    ModelId m_model;
     bool m_editing;
     bool m_intelligentActions;
     int m_dragPointX;
@@ -191,7 +191,7 @@ protected:
     Event m_editingPoint;
     sv_frame_t m_greatestLeftNeighbourFrame;
     sv_frame_t m_smallestRightNeighbourFrame;
-    ChangeEventsCommand *m_editingCommand;
+    ChangeEventsCommand<Model> *m_editingCommand;
     VerticalScale m_verticalScale;
     EditMode m_editMode;
 
@@ -203,7 +203,7 @@ protected:
 
     bool shouldAutoAlign() const;
 
-    void finish(ChangeEventsCommand *command) {
+    void finish(ChangeEventsCommand<Model> *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }

@@ -34,14 +34,15 @@ public:
     // spectrogram that was constructed from a DenseTimeValueModel).
     // The SliceableLayer retains ownership of the model, and will
     // emit sliceableModelReplaced if it is about to become invalid.
-    virtual const Model *getSliceableModel() const = 0;
-
+    virtual ModelId getSliceableModel() const = 0;
+/*!!!
 signals:
     // Emitted when a model that was obtained through
     // getSliceableModel is about to be deleted.  If replacement is
     // non-NULL, it may be used instead.
     void sliceableModelReplaced(const Model *modelToBeReplaced,
                                 const Model *replacement);
+*/
 };
 
 #endif

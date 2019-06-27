@@ -20,6 +20,8 @@
 #include "base/XmlExportable.h"
 #include "base/Selection.h"
 
+#include "data/model/Model.h"
+
 #include "widgets/CommandHistory.h"
 
 #include "system/System.h"
@@ -36,7 +38,6 @@
 #include <iostream>
 
 class ZoomConstraint;
-class Model;
 class QPainter;
 class View;
 class LayerGeometryProvider;
@@ -59,10 +60,10 @@ public:
     Layer();
     virtual ~Layer();
 
-    virtual const Model *getModel() const = 0;
-    Model *getModel() {
-        return const_cast<Model *>(const_cast<const Layer *>(this)->getModel());
-    }
+    /**
+     * Return the ID of the model represented in this layer.
+     */
+    virtual ModelId getModel() const = 0;
     
     /**
      * Return a zoom constraint object defining the supported zoom
@@ -570,7 +571,7 @@ signals:
     void verticalZoomChanged();
 
 protected:
-    void connectSignals(const Model *);
+    void connectSignals(ModelId);
 
     virtual sv_frame_t alignToReference(LayerGeometryProvider *v, sv_frame_t frame) const;
     virtual sv_frame_t alignFromReference(LayerGeometryProvider *v, sv_frame_t frame) const;
