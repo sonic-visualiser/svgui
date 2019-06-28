@@ -43,8 +43,16 @@ TextLayer::TextLayer() :
     
 }
 
+int
+TextLayer::getCompletion(LayerGeometryProvider *) const
+{
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
+
 void
-TextLayer::setModel(TextModel *model)
+TextLayer::setModel(ModelId model)
 {
     if (m_model == model) return;
     m_model = model;

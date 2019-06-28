@@ -63,6 +63,14 @@ RegionLayer::RegionLayer() :
     
 }
 
+int
+RegionLayer::getCompletion(LayerGeometryProvider *) const
+{
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
+
 void
 RegionLayer::setModel(RegionModel *model)
 {

@@ -65,8 +65,16 @@ NoteLayer::NoteLayer() :
     SVDEBUG << "constructed NoteLayer" << endl;
 }
 
+int
+NoteLayer::getCompletion(LayerGeometryProvider *) const
+{
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
+
 void
-NoteLayer::setModel(NoteModel *model)
+NoteLayer::setModel(ModelId model)
 {        
     if (m_model == model) return;
     m_model = model;

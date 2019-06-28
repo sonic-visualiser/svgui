@@ -111,10 +111,8 @@ PlayParameters *
 Layer::getPlayParameters() 
 {
 //    cerr << "Layer (" << this << ", " << objectName() << ")::getPlayParameters: model is "<< getModel() << endl;
-    auto model = ModelById::get(getModel());
-    if (model) {
-        return PlayParameterRepository::getInstance()->getPlayParameters(model);
-    }
+    return PlayParameterRepository::getInstance()->getPlayParameters
+        (getModel().untyped);
     return nullptr;
 }
 

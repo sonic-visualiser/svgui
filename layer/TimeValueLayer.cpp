@@ -71,21 +71,31 @@ TimeValueLayer::TimeValueLayer() :
     
 }
 
-void
-TimeValueLayer::setModel(SparseTimeValueModel *model)
+int
+TimeValueLayer::getCompletion(LayerGeometryProvider *) const
 {
-    if (m_model == model) return;
-    m_model = model;
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
+
+void
+TimeValueLayer::setModel(ModelId modelId)
+{
+    if (m_model == modelId) return;
+    m_model = modelId;
+
+    auto newModel = ModelById::getAs<SparseOneDimensionalModel>(modelId);
 
     connectSignals(m_model);
 
     m_scaleMinimum = 0;
     m_scaleMaximum = 0;
 
-    if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
+    if (newModel && newModel->getRDFTypeURI().endsWith("Segment")) {
         setPlotStyle(PlotSegmentation);
     }
-    if (m_model && m_model->getRDFTypeURI().endsWith("Change")) {
+    if (newModel && m_model->getRDFTypeURI().endsWith("Change")) {
         setPlotStyle(PlotSegmentation);
     }
 
@@ -150,6 +160,14 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
         return tr("Plot Type");
     }
     return SingleColourLayer::getPropertyGroupName(name);
+}
+
+bool
+TimeValueLayer::needsTextLabelHeight() const
+{
+    auto model = ModelById::get(m_model);
+    if (!model) return false;
+    return m_plotStyle == PlotSegmentation && model->hasTextLabels();
 }
 
 QString

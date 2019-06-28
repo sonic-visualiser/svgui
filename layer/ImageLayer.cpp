@@ -541,7 +541,7 @@ ImageLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new ChangeEventsCommand<Model>(m_model, "Add Image");
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, "Add Image");
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
@@ -604,7 +604,7 @@ ImageLayer::addImage(sv_frame_t frame, QString url)
 
     Event point = Event(frame).withURI(url);
     auto command =
-        new ChangeEventsCommand<Model>(m_model, "Add Image");
+        new ChangeEventsCommand(m_model.untyped, "Add Image");
     command->add(point);
     finish(command);
     return true;
@@ -646,7 +646,7 @@ ImageLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     frame = (frame / model->getResolution()) * model->getResolution();
 
     if (!m_editingCommand) {
-        m_editingCommand = new ChangeEventsCommand<Model>(m_model, tr("Move Image"));
+        m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Move Image"));
     }
 
     m_editingCommand->remove(m_editingPoint);
@@ -691,7 +691,7 @@ ImageLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
         checkAddSource(dialog.getImage());
 
         auto command =
-            new ChangeEventsCommand<Model>(m_model, tr("Edit Image"));
+            new ChangeEventsCommand(m_model.untyped, tr("Edit Image"));
         command->remove(*points.begin());
         command->add(points.begin()->
                      withURI(dialog.getImage()).withLabel(dialog.getLabel()));
@@ -708,7 +708,7 @@ ImageLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
     if (!model) return;
 
     auto command =
-        new ChangeEventsCommand<Model>(m_model, tr("Drag Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Drag Selection"));
 
     EventVector points =
         model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -730,7 +730,7 @@ ImageLayer::resizeSelection(Selection s, Selection newSize)
     if (!model) return;
 
     auto command =
-        new ChangeEventsCommand<Model>(m_model, tr("Resize Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Resize Selection"));
 
     EventVector points =
         model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -759,7 +759,7 @@ ImageLayer::deleteSelection(Selection s)
     if (!model) return;
 
     auto command =
-        new ChangeEventsCommand<Model>(m_model, tr("Delete Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Delete Selection"));
 
     EventVector points =
         model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
@@ -812,7 +812,7 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*
         }
     }
 
-    auto command = new ChangeEventsCommand<Model>(m_model, tr("Paste"));
+    auto command = new ChangeEventsCommand(m_model.untyped, tr("Paste"));
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {

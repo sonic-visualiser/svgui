@@ -32,9 +32,9 @@ public:
     SliceLayer();
     ~SliceLayer();
     
-    const Model *getModel() const override { return 0; }
+    ModelId getModel() const override { return {}; }
 
-    void setSliceableModel(const Model *model);    
+    void setSliceableModel(ModelId model);
 
     void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
@@ -117,8 +117,7 @@ public:
                        QString extraAttributes = "") const override;
 
 public slots:
-    void sliceableModelReplaced(const Model *, const Model *);
-    void modelAboutToBeDeleted(Model *);
+    void sliceableModelReplaced(ModelId, ModelId);
 
 protected:
     /// Convert a (possibly non-integral) bin into x-coord. May be overridden
@@ -171,28 +170,28 @@ protected:
         BinsSpanScalePoints
     };
 
-    const DenseThreeDimensionalModel *m_sliceableModel;
-    BinAlignment                      m_binAlignment;
-    int                               m_colourMap;
-    bool                              m_colourInverted;
-    EnergyScale                       m_energyScale;
-    SamplingMode                      m_samplingMode;
-    PlotStyle                         m_plotStyle;
-    BinScale                          m_binScale;
-    bool                              m_normalize;
-    float                             m_threshold;
-    float                             m_initialThreshold;
-    float                             m_gain;
-    int                               m_minbin;
-    int                               m_maxbin;
-    mutable std::vector<int>          m_scalePoints;
-    mutable int                       m_scalePaintHeight;
-    mutable std::map<int, int>        m_xorigins; // LayerGeometryProvider id -> x
-    mutable std::map<int, int>        m_yorigins; // LayerGeometryProvider id -> y
-    mutable std::map<int, int>        m_heights;  // LayerGeometryProvider id -> h
-    mutable sv_frame_t                m_currentf0;
-    mutable sv_frame_t                m_currentf1;
-    mutable std::vector<float>        m_values;
+    ModelId                     m_sliceableModel; // a DenseThreeDimensionalModel
+    BinAlignment                m_binAlignment;
+    int                         m_colourMap;
+    bool                        m_colourInverted;
+    EnergyScale                 m_energyScale;
+    SamplingMode                m_samplingMode;
+    PlotStyle                   m_plotStyle;
+    BinScale                    m_binScale;
+    bool                        m_normalize;
+    float                       m_threshold;
+    float                       m_initialThreshold;
+    float                       m_gain;
+    int                         m_minbin;
+    int                         m_maxbin;
+    mutable std::vector<int>    m_scalePoints;
+    mutable int                 m_scalePaintHeight;
+    mutable std::map<int, int>  m_xorigins; // LayerGeometryProvider id -> x
+    mutable std::map<int, int>  m_yorigins; // LayerGeometryProvider id -> y
+    mutable std::map<int, int>  m_heights;  // LayerGeometryProvider id -> h
+    mutable sv_frame_t          m_currentf0;
+    mutable sv_frame_t          m_currentf1;
+    mutable std::vector<float>  m_values;
 };
 
 #endif

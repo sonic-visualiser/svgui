@@ -60,26 +60,41 @@ WaveformLayer::~WaveformLayer()
     delete m_cache;
 }
 
-void
-WaveformLayer::setModel(const RangeSummarisableTimeValueModel *model)
+const ZoomConstraint *
+WaveformLayer::getZoomConstraint() const
 {
+    auto model = ModelById::get(m_model);
+    if (model) return m_model->getZoomConstraint();
+    else return nullptr;
+}
+
+void
+WaveformLayer::setModel(ModelId modelId)
+{
+    auto oldModel = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    auto newModel = ModelById::getAs<RangeSummarisableTimeValueModel>(modelId);
+
+    if (!newModel) {
+        SVCERR << "WARNING: WaveformLayer::setModel: Model is not a RangeSummarisableTimeValueModel" << endl;
+    }
+    
     bool channelsChanged = false;
     if (m_channel == -1) {
-        if (!m_model) {
-            if (model) {
+        if (!oldModel) {
+            if (newModel) {
                 channelsChanged = true;
             }
         } else {
-            if (model &&
-                m_model->getChannelCount() != model->getChannelCount()) {
+            if (newModel &&
+                oldModel->getChannelCount() != newModel->getChannelCount()) {
                 channelsChanged = true;
             }
         }
     }
 
-    m_model = model;
+    m_model = modelId;
     m_cacheValid = false;
-    if (!m_model || !m_model->isOK()) return;
+    if (!newModel || !newModel->isOK()) return;
 
     connectSignals(m_model);
 

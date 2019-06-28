@@ -53,19 +53,29 @@ TimeInstantLayer::~TimeInstantLayer()
 {
 }
 
-void
-TimeInstantLayer::setModel(SparseOneDimensionalModel *model)
+int
+TimeInstantLayer::getCompletion(LayerGeometryProvider *) const
 {
-    if (m_model == model) return;
-    m_model = model;
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
 
+void
+TimeInstantLayer::setModel(ModelId modelId)
+{
+    if (m_model == modelId) return;
+    m_model = modelId;
+
+    auto newModel = ModelById::getAs<SparseOneDimensionalModel>(modelId);
+    
     connectSignals(m_model);
 
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::setModel(" << model << ")" << endl;
+    cerr << "TimeInstantLayer::setModel(" << modelId << ")" << endl;
 #endif
 
-    if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
+    if (newModel && newModel->getRDFTypeURI().endsWith("Segment")) {
         setPlotStyle(PlotSegmentation);
     }
 
@@ -146,6 +156,14 @@ TimeInstantLayer::setPlotStyle(PlotStyle style)
     if (m_plotStyle == style) return;
     m_plotStyle = style;
     emit layerParametersChanged();
+}
+
+bool
+TimeInstantLayer::needsTextLabelHeight() const
+{
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (model) return m_model->hasTextLabels();
+    else return false;
 }
 
 bool

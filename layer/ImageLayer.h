@@ -132,9 +132,9 @@ protected:
     QPoint m_editOrigin;
     Event m_originalPoint;
     Event m_editingPoint;
-    ChangeEventsCommand<Model> *m_editingCommand;
+    ChangeEventsCommand *m_editingCommand;
 
-    void finish(ChangeEventsCommand<Model> *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }

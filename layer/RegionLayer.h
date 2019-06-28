@@ -76,8 +76,8 @@ public:
     bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive) override;
 
-    const Model *getModel() const override { return m_model; }
-    void setModel(RegionModel *model);
+    ModelId getModel() const override { return m_model; }
+    void setModel(ModelId model); // a RegionModel
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -114,7 +114,7 @@ public:
 
     bool isLayerEditable() const override { return true; }
 
-    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override;
 
     bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const override;
@@ -145,7 +145,7 @@ protected:
 
     bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
 
-    RegionModel *m_model;
+    ModelId m_model;
     bool m_editing;
     int m_dragPointX;
     int m_dragPointY;

@@ -191,7 +191,7 @@ protected:
     Event m_editingPoint;
     sv_frame_t m_greatestLeftNeighbourFrame;
     sv_frame_t m_smallestRightNeighbourFrame;
-    ChangeEventsCommand<Model> *m_editingCommand;
+    ChangeEventsCommand *m_editingCommand;
     VerticalScale m_verticalScale;
     EditMode m_editMode;
 
@@ -203,7 +203,7 @@ protected:
 
     bool shouldAutoAlign() const;
 
-    void finish(ChangeEventsCommand<Model> *command) {
+    void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }

@@ -34,8 +34,8 @@ public:
 
     void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
-    void setModel(Model *);
-    const Model *getModel() const override { return m_model; }
+    void setModel(ModelId);
+    ModelId getModel() const override { return m_model; }
 
     enum LabelHeight { LabelTop, LabelMiddle, LabelBottom };
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
@@ -63,7 +63,7 @@ public:
     bool canExistWithoutModel() const override { return true; }
 
 protected:
-    Model *m_model;
+    ModelId m_model;
     LabelHeight m_labelHeight;
 
     int getDefaultColourHint(bool dark, bool &impose) override;

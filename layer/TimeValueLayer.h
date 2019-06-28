@@ -74,8 +74,8 @@ public:
     bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive) override;
 
-    const Model *getModel() const override { return m_model; }
-    void setModel(SparseTimeValueModel *model);
+    ModelId getModel() const override { return m_model; }
+    void setModel(ModelId model); // a SparseTimeValueModel
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -124,11 +124,9 @@ public:
 
     bool isLayerEditable() const override { return true; }
 
-    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override;
 
-    bool needsTextLabelHeight() const override {
-        return m_plotStyle == PlotSegmentation && m_model->hasTextLabels();
-    }
+    bool needsTextLabelHeight() const override;
 
     bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const override;
@@ -178,7 +176,7 @@ protected:
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 
-    SparseTimeValueModel *m_model;
+    ModelId m_model;
     bool m_editing;
     Event m_originalPoint;
     Event m_editingPoint;
