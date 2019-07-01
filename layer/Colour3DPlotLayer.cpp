@@ -143,32 +143,33 @@ Colour3DPlotLayer::setSynchronousPainting(bool synchronous)
 void
 Colour3DPlotLayer::setModel(ModelId modelId)
 {
-    SVDEBUG << "Colour3DPlotLayer::setModel(" << modelId << ")" << endl;
-
+    auto newModel = ModelById::getAs<DenseThreeDimensionalModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a DenseThreeDimensionalModel");
+    }
+    
     if (m_model == modelId) return;
-    
-    auto model = ModelById::getAs<DenseThreeDimensionalModel>(modelId);
-    if (!model) throw std::logic_error("Not a DenseThreeDimensionalModel");
-    
-//!!!    const DenseThreeDimensionalModel *oldModel = m_model;
     m_model = modelId;
 
-    connectSignals(m_model);
+    if (newModel) {
+        connectSignals(m_model);
 
-    connect(model.get(), SIGNAL(modelChanged()),
-            this, SLOT(handleModelChanged()));
-    connect(model.get(), SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this, SLOT(handleModelChangedWithin(sv_frame_t, sv_frame_t)));
+        connect(newModel.get(), SIGNAL(modelChanged()),
+                this, SLOT(handleModelChanged()));
+        connect(newModel.get(), SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
+                this, SLOT(handleModelChangedWithin(sv_frame_t, sv_frame_t)));
 
-    m_peakResolution = 256;
-    if (model->getResolution() > 512) {
-        m_peakResolution = 16;
-    } else if (model->getResolution() > 128) {
-        m_peakResolution = 64;
-    } else if (model->getResolution() > 2) {
-        m_peakResolution = 128;
+        m_peakResolution = 256;
+        if (newModel->getResolution() > 512) {
+            m_peakResolution = 16;
+        } else if (newModel->getResolution() > 128) {
+            m_peakResolution = 64;
+        } else if (newModel->getResolution() > 2) {
+            m_peakResolution = 128;
+        }
     }
-
+    
     invalidatePeakCache();
 
     emit modelReplaced();
@@ -900,6 +901,11 @@ Colour3DPlotLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter
     auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
     if (!model) return 0;
 
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11 which
+    // is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
     QString sampleText = QString("[%1]").arg(model->getHeight());
     int tw = paint.fontMetrics().width(sampleText);
     bool another = false;
@@ -959,18 +965,20 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 
         int msw = paint.fontMetrics().width(maxstr);
 
-        QMatrix m;
+        QTransform m;
         m.translate(cw - 6, ch + 10);
         m.rotate(-90);
 
-        paint.setWorldMatrix(m);
+        paint.setWorldTransform(m);
 
-        PaintAssistant::drawVisibleText(v, paint, 2, 0, minstr, PaintAssistant::OutlinedText);
+        PaintAssistant::drawVisibleText(v, paint, 2, 0, minstr,
+                                        PaintAssistant::OutlinedText);
 
         m.translate(ch - msw - 2, 0);
-        paint.setWorldMatrix(m);
+        paint.setWorldTransform(m);
 
-        PaintAssistant::drawVisibleText(v, paint, 0, 0, maxstr, PaintAssistant::OutlinedText);
+        PaintAssistant::drawVisibleText(v, paint, 0, 0, maxstr,
+                                        PaintAssistant::OutlinedText);
 
         paint.restore();
     }

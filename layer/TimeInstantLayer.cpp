@@ -64,19 +64,19 @@ TimeInstantLayer::getCompletion(LayerGeometryProvider *) const
 void
 TimeInstantLayer::setModel(ModelId modelId)
 {
+    auto newModel = ModelById::getAs<SparseOneDimensionalModel>(modelId);
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a SparseOneDimensionalModel");
+    }
+    
     if (m_model == modelId) return;
     m_model = modelId;
 
-    auto newModel = ModelById::getAs<SparseOneDimensionalModel>(modelId);
-    
-    connectSignals(m_model);
-
-#ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::setModel(" << modelId << ")" << endl;
-#endif
-
-    if (newModel && newModel->getRDFTypeURI().endsWith("Segment")) {
-        setPlotStyle(PlotSegmentation);
+    if (newModel) {
+        connectSignals(m_model);
+        if (newModel->getRDFTypeURI().endsWith("Segment")) {
+            setPlotStyle(PlotSegmentation);
+        }
     }
 
     emit modelReplaced();

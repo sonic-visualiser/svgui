@@ -52,14 +52,20 @@ TextLayer::getCompletion(LayerGeometryProvider *) const
 }
 
 void
-TextLayer::setModel(ModelId model)
+TextLayer::setModel(ModelId modelId)
 {
-    if (m_model == model) return;
-    m_model = model;
+    auto newModel = ModelById::getAs<TextModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a TextModel");
+    }
+    
+    if (m_model == modelId) return;
+    m_model = modelId;
 
-    connectSignals(m_model);
-
-//    SVDEBUG << "TextLayer::setModel(" << model << ")" << endl;
+    if (newModel) {
+        connectSignals(m_model);
+    }
 
     emit modelReplaced();
 }

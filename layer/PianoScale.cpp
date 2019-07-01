@@ -58,7 +58,7 @@ PianoScale::paintPianoVertical(LayerGeometryProvider *v,
             QColor col = Qt::gray;
             if (i == 61) { // filling middle C
                 col = Qt::blue;
-                col = col.light(150);
+                col = col.lighter(150);
             }
             if (ppy - y > 2) {
                 paint.fillRect(x0 + 1,
@@ -129,7 +129,7 @@ PianoScale::paintPianoHorizontal(LayerGeometryProvider *v,
             QColor col = Qt::gray;
             if (i == 61) { // filling middle C
                 col = Qt::blue;
-                col = col.light(150);
+                col = col.lighter(150);
             }
             if (x - ppx > 2) {
                 paint.fillRect((px + ppx) / 2 + 1,

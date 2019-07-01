@@ -43,7 +43,7 @@ TimeRulerLayer::TimeRulerLayer() :
 }
 
 void
-TimeRulerLayer::setModel(Model *model)
+TimeRulerLayer::setModel(ModelId model)
 {
     if (m_model == model) return;
     m_model = model;

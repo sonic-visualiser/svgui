@@ -56,6 +56,11 @@ HorizontalFrequencyScale::paintScale(LayerGeometryProvider *v,
     int marginx = -1;
 
     for (int i = 0; i < n; ++i) {
+
+        // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+        // replacement (horizontalAdvance) was only added in Qt 5.11
+        // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         
         double val = ticks[i].value;
         QString label = QString::fromStdString(ticks[i].label);

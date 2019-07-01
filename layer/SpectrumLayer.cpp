@@ -64,14 +64,22 @@ SpectrumLayer::~SpectrumLayer()
 }
 
 void
-SpectrumLayer::setModel(DenseTimeValueModel *model)
+SpectrumLayer::setModel(ModelId modelId)
 {
-    SVDEBUG << "SpectrumLayer::setModel(" << model << ") from " << m_originModel << endl;
+    auto newModel = ModelById::getAs<DenseTimeValueModel>(modelId);
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a DenseTimeValueModel");
+    }
     
-    if (m_originModel == model) return;
+    if (m_originModel == modelId) return;
+    m_originModel = modelId;
 
-    m_originModel = model;
-
+    if (newModel) {
+        //...
+    }
+    
+    //!!! todo - all of this
+    
     if (m_sliceableModel) {
         Model *m = const_cast<Model *>
             (static_cast<const Model *>(m_sliceableModel));

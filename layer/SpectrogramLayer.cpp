@@ -208,24 +208,27 @@ SpectrogramLayer::convertFromColumnNorm(ColumnNormalization norm, bool visible)
 }
 
 void
-SpectrogramLayer::setModel(const DenseTimeValueModel *model)
+SpectrogramLayer::setModel(ModelId modelId)
 {
-//    cerr << "SpectrogramLayer(" << this << "): setModel(" << model << ")" << endl;
+    auto newModel = ModelById::getAs<DenseTimeValueModel>(modelId);
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a DenseTimeValueModel");
+    }
+    
+    if (modelId == m_model) return;
+    m_model = modelId;
 
-    if (model == m_model) return;
+    if (newModel) {
+        recreateFFTModel();
 
-    m_model = model;
+        connectSignals(m_model);
 
-    recreateFFTModel();
-
-    if (!m_model || !m_model->isOK()) return;
-
-    connectSignals(m_model);
-
-    connect(m_model, SIGNAL(modelChanged()), this, SLOT(cacheInvalid()));
-    connect(m_model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this, SLOT(cacheInvalid(sv_frame_t, sv_frame_t)));
-
+        connect(newModel.get(), SIGNAL(modelChanged()),
+                this, SLOT(cacheInvalid()));
+        connect(newModel.get(), SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
+                this, SLOT(cacheInvalid(sv_frame_t, sv_frame_t)));
+    }
+    
     emit modelReplaced();
 }
 

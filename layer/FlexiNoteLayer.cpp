@@ -74,14 +74,18 @@ FlexiNoteLayer::FlexiNoteLayer() :
 void
 FlexiNoteLayer::setModel(ModelId modelId) 
 {
-    if (m_model == modelId) return;
+    auto newModel = ModelById::getAs<NoteModel>(modelId);
     
-    auto model = ModelById::getAs<NoteModel>(modelId);
-    if (!model) throw std::logic_error("Not a NoteModel");
-
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a NoteModel");
+    }
+    
+    if (m_model == modelId) return;
     m_model = modelId;
 
-    connectSignals(m_model);
+    if (newModel) {
+        connectSignals(m_model);
+    }
 
     emit modelReplaced();
 }

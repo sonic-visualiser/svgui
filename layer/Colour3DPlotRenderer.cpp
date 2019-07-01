@@ -531,6 +531,11 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
         int rw = rx1 - rx0;
         if (rw < 1) rw = 1;
 
+        // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+        // replacement (horizontalAdvance) was only added in Qt 5.11
+        // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        
         bool showLabel = (rw > 10 &&
                           paint.fontMetrics().width("0.000000") < rw - 3 &&
                           paint.fontMetrics().height() < (h / sh));

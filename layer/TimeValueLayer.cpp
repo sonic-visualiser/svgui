@@ -82,27 +82,30 @@ TimeValueLayer::getCompletion(LayerGeometryProvider *) const
 void
 TimeValueLayer::setModel(ModelId modelId)
 {
+    auto newModel = ModelById::getAs<SparseTimeValueModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a SparseTimeValueModel");
+    }
+    
     if (m_model == modelId) return;
     m_model = modelId;
 
-    auto newModel = ModelById::getAs<SparseOneDimensionalModel>(modelId);
+    if (newModel) {
+        
+        connectSignals(m_model);
 
-    connectSignals(m_model);
+        m_scaleMinimum = 0;
+        m_scaleMaximum = 0;
 
-    m_scaleMinimum = 0;
-    m_scaleMaximum = 0;
-
-    if (newModel && newModel->getRDFTypeURI().endsWith("Segment")) {
-        setPlotStyle(PlotSegmentation);
+        if (newModel->getRDFTypeURI().endsWith("Segment")) {
+            setPlotStyle(PlotSegmentation);
+        }
+        if (newModel->getRDFTypeURI().endsWith("Change")) {
+            setPlotStyle(PlotSegmentation);
+        }
     }
-    if (newModel && m_model->getRDFTypeURI().endsWith("Change")) {
-        setPlotStyle(PlotSegmentation);
-    }
-
-#ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::setModel(" << model << ")" << endl;
-#endif
-
+    
     emit modelReplaced();
 }
 

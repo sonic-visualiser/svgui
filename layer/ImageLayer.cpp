@@ -67,14 +67,18 @@ ImageLayer::getCompletion(LayerGeometryProvider *) const
 void
 ImageLayer::setModel(ModelId modelId)
 {
+    auto newModel = ModelById::getAs<ImageModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not an ImageModel");
+    }
+    
     if (m_model == modelId) return;
-    
-    auto model = ModelById::getAs<ImageModel>(modelId);
-    if (!model) throw std::logic_error("Not an ImageModel");
-    
     m_model = modelId;
 
-    connectSignals(m_model);
+    if (newModel) {
+        connectSignals(m_model);
+    }
 
     emit modelReplaced();
 }
@@ -354,6 +358,11 @@ ImageLayer::drawImage(LayerGeometryProvider *v, QPainter &paint, const Event &p,
         if (likelyWidth > availableWidth) {
             likelyWidth = availableWidth;
         }
+
+        // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+        // replacement (horizontalAdvance) was only added in Qt 5.11
+        // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
         int singleWidth = paint.fontMetrics().width(label);
         if (singleWidth < availableWidth && singleWidth < likelyWidth * 2) {

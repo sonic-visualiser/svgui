@@ -46,7 +46,6 @@
 
 RegionLayer::RegionLayer() :
     SingleColourLayer(),
-    m_model(nullptr),
     m_editing(false),
     m_dragPointX(0),
     m_dragPointY(0),
@@ -72,25 +71,35 @@ RegionLayer::getCompletion(LayerGeometryProvider *) const
 }
 
 void
-RegionLayer::setModel(RegionModel *model)
+RegionLayer::setModel(ModelId modelId)
 {
-    if (m_model == model) return;
-    m_model = model;
-
-    connectSignals(m_model);
-
-    connect(m_model, SIGNAL(modelChanged()), this, SLOT(recalcSpacing()));
-    recalcSpacing();
-
-//    SVDEBUG << "RegionLayer::setModel(" << model << ")" << endl;
-
-    if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
-        setPlotStyle(PlotSegmentation);
+    auto oldModel = ModelById::getAs<RegionModel>(m_model);
+    auto newModel = ModelById::getAs<RegionModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a RegionModel");
     }
-    if (m_model && m_model->getRDFTypeURI().endsWith("Change")) {
-        setPlotStyle(PlotSegmentation);
-    }
+    
+    if (m_model == modelId) return;
+    m_model = modelId;
 
+    if (newModel) {
+    
+        connectSignals(m_model);
+
+        connect(newModel.get(), SIGNAL(modelChanged()),
+                this, SLOT(recalcSpacing()));
+    
+        recalcSpacing();
+
+        if (newModel->getRDFTypeURI().endsWith("Segment")) {
+            setPlotStyle(PlotSegmentation);
+        }
+        if (newModel->getRDFTypeURI().endsWith("Change")) {
+            setPlotStyle(PlotSegmentation);
+        }
+    }
+    
     emit modelReplaced();
 }
 
@@ -165,9 +174,10 @@ RegionLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Scale Units") {
 
         if (deflt) *deflt = 0;
-        if (m_model) {
+        auto model = ModelById::getAs<RegionModel>(m_model);
+        if (model) {
             val = UnitDatabase::getInstance()->getUnitId
-                (getScaleUnits());
+                (model->getScaleUnits());
         }
 
     } else {
@@ -214,8 +224,9 @@ RegionLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Vertical Scale") {
         setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
-        if (m_model) {
-            m_model->setScaleUnits
+        auto model = ModelById::getAs<RegionModel>(m_model);
+        if (model) {
+            model->setScaleUnits
                 (UnitDatabase::getInstance()->getUnitById(value));
             emit modelChanged();
         }
@@ -265,11 +276,13 @@ RegionLayer::recalcSpacing()
 {
     m_spacingMap.clear();
     m_distributionMap.clear();
-    if (!m_model) return;
+
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return;
 
 //    SVDEBUG << "RegionLayer::recalcSpacing" << endl;
 
-    EventVector allEvents = m_model->getAllEvents();
+    EventVector allEvents = model->getAllEvents();
     for (const Event &e: allEvents) {
         m_distributionMap[e.getValue()]++;
 //        SVDEBUG << "RegionLayer::recalcSpacing: value found: " << e.getValue() << " (now have " << m_distributionMap[e.getValue()] << " of this value)" <<  endl;
@@ -288,9 +301,10 @@ bool
 RegionLayer::getValueExtents(double &min, double &max,
                            bool &logarithmic, QString &unit) const
 {
-    if (!m_model) return false;
-    min = m_model->getValueMinimum();
-    max = m_model->getValueMaximum();
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return false;
+    min = model->getValueMinimum();
+    max = model->getValueMaximum();
     unit = getScaleUnits();
 
     if (m_verticalScale == LogScale) logarithmic = true;
@@ -301,12 +315,13 @@ RegionLayer::getValueExtents(double &min, double &max,
 bool
 RegionLayer::getDisplayExtents(double &min, double &max) const
 {
-    if (!m_model ||
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model ||
         m_verticalScale == AutoAlignScale ||
         m_verticalScale == EqualSpaced) return false;
 
-    min = m_model->getValueMinimum();
-    max = m_model->getValueMaximum();
+    min = model->getValueMinimum();
+    max = model->getValueMaximum();
 
     return true;
 }
@@ -314,21 +329,22 @@ RegionLayer::getDisplayExtents(double &min, double &max) const
 EventVector
 RegionLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
-    if (!m_model) return EventVector();
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return EventVector();
 
     sv_frame_t frame = v->getFrameForX(x);
 
-    EventVector local = m_model->getEventsCovering(frame);
+    EventVector local = model->getEventsCovering(frame);
     if (!local.empty()) return local;
 
     int fuzz = ViewManager::scalePixelSize(2);
     sv_frame_t start = v->getFrameForX(x - fuzz);
     sv_frame_t end = v->getFrameForX(x + fuzz);
 
-    local = m_model->getEventsStartingWithin(frame, end - frame);
+    local = model->getEventsStartingWithin(frame, end - frame);
     if (!local.empty()) return local;
 
-    local = m_model->getEventsSpanning(start, frame - start);
+    local = model->getEventsSpanning(start, frame - start);
     if (!local.empty()) return local;
 
     return {};
@@ -337,11 +353,12 @@ RegionLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 bool
 RegionLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &point) const
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return false;
 
     sv_frame_t frame = v->getFrameForX(x);
 
-    EventVector onPoints = m_model->getEventsCovering(frame);
+    EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
     int nearestDistance = -1;
@@ -360,9 +377,10 @@ RegionLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &point
 QString
 RegionLayer::getLabelPreceding(sv_frame_t frame) const
 {
-    if (!m_model) return "";
-    EventVector points = m_model->getEventsStartingWithin
-        (m_model->getStartFrame(), frame - m_model->getStartFrame());
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return "";
+    EventVector points = model->getEventsStartingWithin
+        (model->getStartFrame(), frame - model->getStartFrame());
     if (!points.empty()) {
         for (auto i = points.rbegin(); i != points.rend(); ++i) {
             if (i->getLabel() != QString()) {
@@ -378,12 +396,13 @@ RegionLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
-    if (!m_model || !m_model->getSampleRate()) return "";
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || !model->getSampleRate()) return "";
 
     EventVector points = getLocalPoints(v, x);
 
     if (points.empty()) {
-        if (!m_model->isReady()) {
+        if (!model->isReady()) {
             return tr("In progress");
         } else {
             return tr("No local points");
@@ -401,9 +420,9 @@ RegionLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
         int y = getYForValue(v, i->getValue());
         int h = 3;
 
-        if (m_model->getValueQuantization() != 0.0) {
+        if (model->getValueQuantization() != 0.0) {
             h = y - getYForValue
-                (v, i->getValue() + m_model->getValueQuantization());
+                (v, i->getValue() + model->getValueQuantization());
             if (h < 3) h = 3;
         }
 
@@ -416,9 +435,9 @@ RegionLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     if (i == points.end()) return tr("No local points");
 
     RealTime rt = RealTime::frame2RealTime(region.getFrame(),
-                                           m_model->getSampleRate());
+                                           model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(region.getDuration(),
-                                           m_model->getSampleRate());
+                                           model->getSampleRate());
     
     QString valueText;
 
@@ -449,7 +468,8 @@ RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                 int &resolution,
                                 SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
@@ -460,7 +480,7 @@ RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     // an editing operation, i.e. closest feature in either direction
     // but only if it is "close enough"
 
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
 
     if (snap == SnapNeighbouring) {
         EventVector points = getLocalPoints(v, v->getXForFrame(frame));
@@ -477,7 +497,7 @@ RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     
     Event left;
     bool haveLeft = false;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame, [](Event) { return true; }, EventSeries::Backward, left)) {
         haveLeft = true;
     }
@@ -489,7 +509,7 @@ RegionLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 
     Event right;
     bool haveRight = false;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame, [](Event) { return true; }, EventSeries::Forward, right)) {
         haveRight = true;
     }
@@ -523,7 +543,8 @@ RegionLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                                   int &resolution,
                                   SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) {
         return Layer::snapToSimilarFeature(v, frame, resolution, snap);
     }
 
@@ -531,14 +552,14 @@ RegionLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
     // don't do the same trick as in snapToFeatureFrame, of snapping
     // to the end of a feature sometimes.
     
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
 
     Event ref;
     Event e;
     float matchvalue;
     bool found;
 
-    found = m_model->getNearestEventMatching
+    found = model->getNearestEventMatching
         (frame, [](Event) { return true; }, EventSeries::Backward, ref);
 
     if (!found) {
@@ -547,7 +568,7 @@ RegionLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
 
     matchvalue = ref.getValue();
     
-    found = m_model->getNearestEventMatching
+    found = model->getNearestEventMatching
         (frame,
          [matchvalue](Event e) {
              double epsilon = 0.0001;
@@ -567,7 +588,8 @@ RegionLayer::snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
 QString
 RegionLayer::getScaleUnits() const
 {
-    if (m_model) return m_model->getScaleUnits();
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (model) return model->getScaleUnits();
     else return "";
 }
 
@@ -578,6 +600,9 @@ RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max,
     max = 0.0;
     log = false;
 
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return;
+
     QString queryUnits;
     queryUnits = getScaleUnits();
 
@@ -585,8 +610,8 @@ RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max,
 
         if (!v->getValueExtents(queryUnits, min, max, log)) {
 
-            min = m_model->getValueMinimum();
-            max = m_model->getValueMaximum();
+            min = model->getValueMinimum();
+            max = model->getValueMaximum();
 
 //            cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 
@@ -611,8 +636,8 @@ RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max,
 
     } else {
 
-        min = m_model->getValueMinimum();
-        max = m_model->getValueMaximum();
+        min = model->getValueMinimum();
+        max = model->getValueMaximum();
 
         if (m_verticalScale == LogScale) {
             LogRange::mapRange(min, max);
@@ -816,9 +841,10 @@ RegionLayer::getDefaultColourHint(bool darkbg, bool &impose)
 void
 RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || !model->isOK()) return;
 
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("RegionLayer::paint", true);
@@ -828,7 +854,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     sv_frame_t wholeFrame0 = v->getFrameForX(0);
     sv_frame_t wholeFrame1 = v->getFrameForX(v->getPaintWidth());
 
-    EventVector points(m_model->getEventsSpanning(wholeFrame0,
+    EventVector points(model->getEventsSpanning(wholeFrame0,
                                                   wholeFrame1 - wholeFrame0));
     if (points.empty()) return;
 
@@ -838,10 +864,10 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     brushColour.setAlpha(80);
 
 //    SVDEBUG << "RegionLayer::paint: resolution is "
-//              << m_model->getResolution() << " frames" << endl;
+//              << model->getResolution() << " frames" << endl;
 
-    double min = m_model->getValueMinimum();
-    double max = m_model->getValueMaximum();
+    double min = model->getValueMinimum();
+    double max = model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
@@ -886,9 +912,9 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             if (nx < ex) ex = nx;
         }
 
-        if (m_model->getValueQuantization() != 0.0) {
+        if (model->getValueQuantization() != 0.0) {
             h = y - getYForValue
-                (v, p.getValue() + m_model->getValueQuantization());
+                (v, p.getValue() + model->getValueQuantization());
             if (h < 3) h = 3;
         }
 
@@ -925,6 +951,11 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                 paint.setPen(v->getForeground());
                 paint.setBrush(v->getForeground());
 
+                // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+                // replacement (horizontalAdvance) was only added in Qt 5.11
+                // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
                 QString vlabel =
                     QString("%1%2").arg(p.getValue()).arg(getScaleUnits());
                 PaintAssistant::drawVisibleText(v, paint, 
@@ -934,7 +965,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                                    vlabel, PaintAssistant::OutlinedText);
                 
                 QString hlabel = RealTime::frame2RealTime
-                    (p.getFrame(), m_model->getSampleRate()).toText(true).c_str();
+                    (p.getFrame(), model->getSampleRate()).toText(true).c_str();
                 PaintAssistant::drawVisibleText(v, paint, 
                                    x,
                                    y - h/2 - paint.fontMetrics().descent() - gap,
@@ -1017,7 +1048,8 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 int
 RegionLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
-    if (!m_model || 
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || 
         m_verticalScale == AutoAlignScale || 
         m_verticalScale == EqualSpaced) {
         return 0;
@@ -1039,7 +1071,8 @@ RegionLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &pai
 void
 RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model || m_model->isEmpty()) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || model->isEmpty()) return;
 
     QString unit;
     double min, max;
@@ -1082,11 +1115,12 @@ RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint,
 void
 RegionLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double value = getValueForY(v, e->y());
 
@@ -1094,8 +1128,7 @@ RegionLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new ChangeEventsCommand(m_model,
-                                                    tr("Draw Region"));
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Draw Region"));
     m_editingCommand->add(m_editingPoint);
 
     recalcSpacing();
@@ -1106,11 +1139,12 @@ RegionLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 void
 RegionLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double newValue = m_editingPoint.getValue();
     if (m_verticalScale != EqualSpaced) newValue = getValueForY(v, e->y());
@@ -1137,7 +1171,8 @@ RegionLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 void
 RegionLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || !m_editing) return;
     finish(m_editingCommand);
     m_editingCommand = nullptr;
     m_editing = false;
@@ -1148,7 +1183,8 @@ RegionLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 void
 RegionLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
@@ -1169,7 +1205,8 @@ RegionLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 void
 RegionLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || !m_editing) return;
 
     m_editing = false;
 
@@ -1179,7 +1216,7 @@ RegionLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
         p.getValue() != m_editingPoint.getValue()) return;
 
     m_editingCommand = new ChangeEventsCommand
-        (m_model, tr("Erase Region"));
+        (m_model.untyped, tr("Erase Region"));
 
     m_editingCommand->remove(m_editingPoint);
 
@@ -1192,7 +1229,8 @@ RegionLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 void
 RegionLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) {
         return;
@@ -1217,7 +1255,8 @@ RegionLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 void
 RegionLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || !m_editing) return;
 
     int xdist = e->x() - m_dragStartX;
     int ydist = e->y() - m_dragStartY;
@@ -1226,7 +1265,7 @@ RegionLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 
     sv_frame_t frame = v->getFrameForX(newx);
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     // Do not bisect between two values, if one of those values is
     // that of the point we're actually moving ...
@@ -1238,7 +1277,7 @@ RegionLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     double value = getValueForY(v, newy, avoid);
 
     if (!m_editingCommand) {
-        m_editingCommand = new ChangeEventsCommand(m_model,
+        m_editingCommand = new ChangeEventsCommand(m_model.untyped,
                                                       tr("Drag Region"));
     }
 
@@ -1253,7 +1292,8 @@ RegionLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 void
 RegionLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || !m_editing) return;
 
     if (m_editingCommand) {
 
@@ -1281,13 +1321,14 @@ RegionLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 bool
 RegionLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return false;
 
     Event region(0);
     if (!getPointToDrag(v, e->x(), e->y(), region)) return false;
 
     ItemEditDialog *dialog = new ItemEditDialog
-        (m_model->getSampleRate(),
+        (model->getSampleRate(),
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowDuration |
          ItemEditDialog::ShowValue |
@@ -1308,7 +1349,7 @@ RegionLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
             .withLabel(dialog->getText());
         
         ChangeEventsCommand *command = new ChangeEventsCommand
-            (m_model, tr("Edit Region"));
+            (m_model.untyped, tr("Edit Region"));
         command->remove(region);
         command->add(newRegion);
         finish(command);
@@ -1322,13 +1363,14 @@ RegionLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 void
 RegionLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Drag Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Drag Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (EventVector::iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1346,13 +1388,14 @@ RegionLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 RegionLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model || !s.getDuration()) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model || !s.getDuration()) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Resize Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Resize Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     double ratio = double(newSize.getDuration()) / double(s.getDuration());
     double oldStart = double(s.getStartFrame());
@@ -1377,13 +1420,14 @@ RegionLayer::resizeSelection(Selection s, Selection newSize)
 void
 RegionLayer::deleteSelection(Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
+        new ChangeEventsCommand(m_model.untyped, tr("Delete Selected Points"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (EventVector::iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1400,10 +1444,11 @@ RegionLayer::deleteSelection(Selection s)
 void
 RegionLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return;
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
@@ -1413,7 +1458,8 @@ RegionLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 bool
 RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) return false;
 
     const EventVector &points = from.getPoints();
 
@@ -1437,7 +1483,7 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
     }
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Paste"));
+        new ChangeEventsCommand(m_model.untyped, tr("Paste"));
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1461,8 +1507,8 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
         Event p = *i;
         Event newPoint = p;
         if (!p.hasValue()) {
-            newPoint = newPoint.withValue((m_model->getValueMinimum() +
-                                           m_model->getValueMaximum()) / 2);
+            newPoint = newPoint.withValue((model->getValueMinimum() +
+                                           model->getValueMaximum()) / 2);
         }
         if (!p.hasDuration()) {
             sv_frame_t nextFrame = frame;
@@ -1474,7 +1520,7 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
                 nextFrame = j->getFrame();
             }
             if (nextFrame == frame) {
-                newPoint = newPoint.withDuration(m_model->getResolution());
+                newPoint = newPoint.withDuration(model->getResolution());
             } else {
                 newPoint = newPoint.withDuration(nextFrame - frame);
             }

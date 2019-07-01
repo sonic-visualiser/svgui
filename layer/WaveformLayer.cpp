@@ -74,9 +74,14 @@ WaveformLayer::setModel(ModelId modelId)
     auto oldModel = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
     auto newModel = ModelById::getAs<RangeSummarisableTimeValueModel>(modelId);
 
-    if (!newModel) {
-        SVCERR << "WARNING: WaveformLayer::setModel: Model is not a RangeSummarisableTimeValueModel" << endl;
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a RangeSummarisableTimeValueModel");
     }
+    
+    if (m_model == modelId) return;
+    m_model = modelId;
+
+    m_cacheValid = false;
     
     bool channelsChanged = false;
     if (m_channel == -1) {
@@ -92,12 +97,10 @@ WaveformLayer::setModel(ModelId modelId)
         }
     }
 
-    m_model = modelId;
-    m_cacheValid = false;
-    if (!newModel || !newModel->isOK()) return;
-
-    connectSignals(m_model);
-
+    if (newModel) {
+        connectSignals(m_model);
+    }
+        
     emit modelReplaced();
 
     if (channelsChanged) emit layerParametersChanged();

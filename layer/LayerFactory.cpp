@@ -133,55 +133,55 @@ LayerFactory::isLayerSliceable(const Layer *layer)
 }
 
 LayerFactory::LayerTypeSet
-LayerFactory::getValidLayerTypes(Model *model)
+LayerFactory::getValidLayerTypes(ModelId modelId)
 {
     LayerTypeSet types;
 
-    if (dynamic_cast<DenseThreeDimensionalModel *>(model)) {
+    if (ModelById::getAs<DenseThreeDimensionalModel>(modelId)) {
         types.insert(Colour3DPlot);
         types.insert(Slice);
     }
 
-    if (dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
+    if (ModelById::getAs<RangeSummarisableTimeValueModel>(modelId)) {
         types.insert(Waveform);
     }
 
-    if (dynamic_cast<DenseTimeValueModel *>(model)) {
+    if (ModelById::getAs<DenseTimeValueModel>(modelId)) {
         types.insert(Spectrogram);
         types.insert(MelodicRangeSpectrogram);
         types.insert(PeakFrequencySpectrogram);
     }
 
-    if (dynamic_cast<SparseOneDimensionalModel *>(model)) {
+    if (ModelById::getAs<SparseOneDimensionalModel>(modelId)) {
         types.insert(TimeInstants);
     }
 
-    if (dynamic_cast<SparseTimeValueModel *>(model)) {
+    if (ModelById::getAs<SparseTimeValueModel>(modelId)) {
         types.insert(TimeValues);
     }
 
-    if (dynamic_cast<NoteModel *>(model)) {
-        NoteModel *nm = dynamic_cast<NoteModel *>(model);
-        if (nm->getSubtype() == NoteModel::FLEXI_NOTE) {
+    if (ModelById::getAs<NoteModel>(modelId)) {
+        auto nm = ModelById::getAs<NoteModel>(modelId);
+        if (nm && nm->getSubtype() == NoteModel::FLEXI_NOTE) {
             types.insert(FlexiNotes);
         } else {
             types.insert(Notes);
         }
     }
 
-    if (dynamic_cast<RegionModel *>(model)) {
+    if (ModelById::getAs<RegionModel>(modelId)) {
         types.insert(Regions);
     }
 
-    if (dynamic_cast<TextModel *>(model)) {
+    if (ModelById::getAs<TextModel>(modelId)) {
         types.insert(Text);
     }
 
-    if (dynamic_cast<ImageModel *>(model)) {
+    if (ModelById::getAs<ImageModel>(modelId)) {
         types.insert(Image);
     }
 
-    if (dynamic_cast<DenseTimeValueModel *>(model)) {
+    if (ModelById::getAs<DenseTimeValueModel>(modelId)) {
         types.insert(Spectrum);
     }
 
@@ -300,11 +300,8 @@ LayerFactory::getLayerTypeForName(QString name)
 }
 
 void
-LayerFactory::setModel(Layer *layer, Model *model)
+LayerFactory::setModel(Layer *layer, ModelId model)
 {
-//    if (trySetModel<WaveformLayer, RangeSummarisableTimeValueModel>(layer, model))
-//        return;
-        
     if (trySetModel<WaveformLayer, WaveFileModel>(layer, model))
         return;
 
@@ -341,35 +338,34 @@ LayerFactory::setModel(Layer *layer, Model *model)
     if (trySetModel<Colour3DPlotLayer, DenseThreeDimensionalModel>(layer, model))
         return;
 
-    if (trySetModel<SpectrogramLayer, DenseTimeValueModel>(layer, model))
-        return;
-
     if (trySetModel<SpectrumLayer, DenseTimeValueModel>(layer, model)) 
         return;
-
-//    if (trySetModel<SliceLayer, DenseThreeDimensionalModel>(layer, model)) 
-//        return;
 }
 
-Model *
-LayerFactory::createEmptyModel(LayerType layerType, Model *baseModel)
+std::shared_ptr<Model>
+LayerFactory::createEmptyModel(LayerType layerType, ModelId baseModelId)
 {
+    auto baseModel = ModelById::get(baseModelId);
+    if (!baseModel) return {};
+
+    sv_samplerate_t rate = baseModel->getSampleRate();
+    
     if (layerType == TimeInstants) {
-        return new SparseOneDimensionalModel(baseModel->getSampleRate(), 1);
+        return std::make_shared<SparseOneDimensionalModel>(rate, 1);
     } else if (layerType == TimeValues) {
-        return new SparseTimeValueModel(baseModel->getSampleRate(), 1, true);
+        return std::make_shared<SparseTimeValueModel>(rate, 1, true);
     } else if (layerType == FlexiNotes) {
-        return new NoteModel(baseModel->getSampleRate(), 1, true);
+        return std::make_shared<NoteModel>(rate, 1, true);
     } else if (layerType == Notes) {
-        return new NoteModel(baseModel->getSampleRate(), 1, true);
+        return std::make_shared<NoteModel>(rate, 1, true);
     } else if (layerType == Regions) {
-        return new RegionModel(baseModel->getSampleRate(), 1, true);
+        return std::make_shared<RegionModel>(rate, 1, true);
     } else if (layerType == Text) {
-        return new TextModel(baseModel->getSampleRate(), 1, true);
+        return std::make_shared<TextModel>(rate, 1, true);
     } else if (layerType == Image) {
-        return new ImageModel(baseModel->getSampleRate(), 1, true);
+        return std::make_shared<ImageModel>(rate, 1, true);
     } else {
-        return nullptr;
+        return {};
     }
 }
 
