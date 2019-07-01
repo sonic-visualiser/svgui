@@ -306,7 +306,7 @@ protected:
 
     int getFFTSize() const; // m_windowSize * getOversampling()
 
-    ModelId m_fftModel;
+    ModelId m_fftModel; // an FFTModel
     Dense3DModelPeakCache *m_wholeCache;
     Dense3DModelPeakCache *m_peakCache;
     Dense3DModelPeakCache *getPeakCache() const { return m_peakCache; }

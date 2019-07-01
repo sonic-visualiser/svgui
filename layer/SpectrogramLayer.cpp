@@ -56,7 +56,6 @@
 using namespace std;
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
-    m_model(nullptr),
     m_channel(0),
     m_windowSize(1024),
     m_windowType(HanningWindow),
@@ -83,7 +82,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_synchronous(false),
     m_haveDetailedScale(false),
     m_exiting(false),
-    m_fftModel(nullptr),
     m_wholeCache(nullptr),
     m_peakCache(nullptr),
     m_peakCacheDivisor(8)

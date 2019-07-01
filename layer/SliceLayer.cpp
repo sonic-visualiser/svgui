@@ -32,7 +32,6 @@
 
 
 SliceLayer::SliceLayer() :
-    m_sliceableModel(nullptr),
     m_binAlignment(BinsSpanScalePoints),
     m_colourMap(int(ColourMapper::Ice)),
     m_colourInverted(false),
@@ -57,27 +56,24 @@ SliceLayer::~SliceLayer()
 }
 
 void
-SliceLayer::setSliceableModel(const Model *model)
+SliceLayer::setSliceableModel(ModelId modelId)
 {
-    const DenseThreeDimensionalModel *sliceable =
-        dynamic_cast<const DenseThreeDimensionalModel *>(model);
-
-    if (model && !sliceable) {
-        cerr << "WARNING: SliceLayer::setSliceableModel(" << model
-                  << "): model is not a DenseThreeDimensionalModel" << endl;
+    auto newModel = ModelById::getAs<DenseThreeDimensionalModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a DenseThreeDimensionalModel");
     }
 
-    if (m_sliceableModel == sliceable) return;
+    if (m_sliceableModel == modelId) return;
+    m_sliceableModel = modelId;
 
-    m_sliceableModel = sliceable;
+    if (newModel) {
+        connectSignals(m_sliceableModel);
 
-    if (!m_sliceableModel) return;
-
-    connectSignals(m_sliceableModel);
-
-    if (m_minbin == 0 && m_maxbin == 0) {
-        m_minbin = 0;
-        m_maxbin = m_sliceableModel->getHeight();
+        if (m_minbin == 0 && m_maxbin == 0) {
+            m_minbin = 0;
+            m_maxbin = newModel->getHeight();
+        }
     }
     
     emit modelReplaced();
@@ -85,16 +81,15 @@ SliceLayer::setSliceableModel(const Model *model)
 }
 
 void
-SliceLayer::sliceableModelReplaced(const Model *orig, const Model *replacement)
+SliceLayer::sliceableModelReplaced(ModelId orig, ModelId replacement)
 {
     SVDEBUG << "SliceLayer::sliceableModelReplaced(" << orig << ", " << replacement << ")" << endl;
 
     if (orig == m_sliceableModel) {
-        setSliceableModel
-            (dynamic_cast<const DenseThreeDimensionalModel *>(replacement));
+        setSliceableModel(replacement);
     }
 }
-
+/*!!!
 void
 SliceLayer::modelAboutToBeDeleted(Model *m)
 {
@@ -104,7 +99,7 @@ SliceLayer::modelAboutToBeDeleted(Model *m)
         setSliceableModel(nullptr);
     }
 }
-
+*/
 QString
 SliceLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
 {
@@ -119,7 +114,10 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
 {
     minbin = 0;
     maxbin = 0;
-    if (!m_sliceableModel) return "";
+    
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return "";
 
     if (m_binAlignment == BinsSpanScalePoints) {
         minbin = int(getBinForX(v, p.x()));
@@ -129,13 +127,13 @@ SliceLayer::getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &p,
         maxbin = int(getBinForX(v, p.x() + 1) + 0.5);
     }        
 
-    int mh = m_sliceableModel->getHeight();
+    int mh = sliceableModel->getHeight();
     if (minbin >= mh) minbin = mh - 1;
     if (maxbin >= mh) maxbin = mh - 1;
     if (minbin < 0) minbin = 0;
     if (maxbin < 0) maxbin = 0;
     
-    sv_samplerate_t sampleRate = m_sliceableModel->getSampleRate();
+    sv_samplerate_t sampleRate = sliceableModel->getSampleRate();
 
     sv_frame_t f0 = m_currentf0;
     sv_frame_t f1 = m_currentf1;
@@ -420,9 +418,11 @@ SliceLayer::getValueForY(const LayerGeometryProvider *v, double y) const
 void
 SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_sliceableModel ||
-        !m_sliceableModel->isOK() ||
-        !m_sliceableModel->isReady()) return;
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel ||
+        !sliceableModel->isOK() ||
+        !sliceableModel->isReady()) return;
 
     Profiler profiler("SliceLayer::paint()");
 
@@ -442,7 +442,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         }
     }
 
-    int mh = m_sliceableModel->getHeight();
+    int mh = sliceableModel->getHeight();
     int bin0 = 0;
     if (m_maxbin > m_minbin) {
         mh = m_maxbin - m_minbin;
@@ -493,7 +493,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
 //    cerr << "centre frame " << v->getCentreFrame() << ", x " << f0x << ", f0 " << f0 << ", f1 " << f1 << endl;
 
-    int res = m_sliceableModel->getResolution();
+    int res = sliceableModel->getResolution();
     int col0 = int(f0 / res);
     int col1 = col0;
     if (m_samplingMode != NearestSample) col1 = int(f1 / res);
@@ -512,7 +512,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     for (int col = col0; col <= col1; ++col) {
         DenseThreeDimensionalModel::Column column =
-            m_sliceableModel->getColumn(col);
+            sliceableModel->getColumn(col);
         for (int bin = 0; bin < mh; ++bin) {
             float value = column[bin0 + bin];
             if (bin < cs) value *= curve[bin];
@@ -674,6 +674,11 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 int
 SliceLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint) const
 {
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
     int width;
     if (m_energyScale == LinearScale || m_energyScale == AbsoluteScale) {
         width = std::max(paint.fontMetrics().width("0.0") + 13,
@@ -1166,10 +1171,12 @@ bool
 SliceLayer::getValueExtents(double &min, double &max, bool &logarithmic,
                             QString &unit) const
 {
-    if (!m_sliceableModel) return false;
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return false;
     
     min = 0;
-    max = double(m_sliceableModel->getHeight());
+    max = double(sliceableModel->getHeight());
 
     logarithmic = (m_binScale == BinScale::LogBins);
     unit = "";
@@ -1180,9 +1187,11 @@ SliceLayer::getValueExtents(double &min, double &max, bool &logarithmic,
 bool
 SliceLayer::getDisplayExtents(double &min, double &max) const
 {
-    if (!m_sliceableModel) return false;
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return false;
 
-    double hmax = double(m_sliceableModel->getHeight());
+    double hmax = double(sliceableModel->getHeight());
     
     min = m_minbin;
     max = m_maxbin;
@@ -1199,7 +1208,9 @@ SliceLayer::getDisplayExtents(double &min, double &max) const
 bool
 SliceLayer::setDisplayExtents(double min, double max)
 {
-    if (!m_sliceableModel) return false;
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return false;
 
     m_minbin = int(lrint(min));
     m_maxbin = int(lrint(max));
@@ -1210,11 +1221,11 @@ SliceLayer::setDisplayExtents(double min, double max)
     if (m_maxbin < 0) {
         m_maxbin = 0;
     }
-    if (m_minbin > m_sliceableModel->getHeight()) {
-        m_minbin = m_sliceableModel->getHeight();
+    if (m_minbin > sliceableModel->getHeight()) {
+        m_minbin = sliceableModel->getHeight();
     }
-    if (m_maxbin > m_sliceableModel->getHeight()) {
-        m_maxbin = m_sliceableModel->getHeight();
+    if (m_maxbin > sliceableModel->getHeight()) {
+        m_maxbin = sliceableModel->getHeight();
     }
     if (m_maxbin < m_minbin) {
         m_maxbin = m_minbin;
@@ -1227,31 +1238,37 @@ SliceLayer::setDisplayExtents(double min, double max)
 int
 SliceLayer::getVerticalZoomSteps(int &defaultStep) const
 {
-    if (!m_sliceableModel) return 0;
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return 0;
 
     defaultStep = 0;
-    int h = m_sliceableModel->getHeight();
+    int h = sliceableModel->getHeight();
     return h;
 }
 
 int
 SliceLayer::getCurrentVerticalZoomStep() const
 {
-    if (!m_sliceableModel) return 0;
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return 0;
 
     double min, max;
     getDisplayExtents(min, max);
-    return m_sliceableModel->getHeight() - int(lrint(max - min));
+    return sliceableModel->getHeight() - int(lrint(max - min));
 }
 
 void
 SliceLayer::setVerticalZoomStep(int step)
 {
-    if (!m_sliceableModel) return;
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return;
 
 //    SVDEBUG << "SliceLayer::setVerticalZoomStep(" <<step <<"): before: minbin = " << m_minbin << ", maxbin = " << m_maxbin << endl;
 
-    int dist = m_sliceableModel->getHeight() - step;
+    int dist = sliceableModel->getHeight() - step;
     if (dist < 1) dist = 1;
     double centre = m_minbin + (m_maxbin - m_minbin) / 2.0;
     int minbin = int(lrint(centre - dist/2.0));
@@ -1262,10 +1279,12 @@ SliceLayer::setVerticalZoomStep(int step)
 RangeMapper *
 SliceLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_sliceableModel) return nullptr;
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return nullptr;
 
-    return new LinearRangeMapper(0, m_sliceableModel->getHeight(),
-                                 0, m_sliceableModel->getHeight(), "");
+    return new LinearRangeMapper(0, sliceableModel->getHeight(),
+                                 0, sliceableModel->getHeight(), "");
 }
 
 void
