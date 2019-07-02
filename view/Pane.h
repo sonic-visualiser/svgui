@@ -129,12 +129,12 @@ protected:
     void drawVerticalScale(QRect r, Layer *, QPainter &);
     void drawFeatureDescription(Layer *, QPainter &);
     void drawCentreLine(sv_samplerate_t, QPainter &, bool omitLine);
-    void drawModelTimeExtents(QRect, QPainter &, const Model *);
-    void drawDurationAndRate(QRect, const Model *, sv_samplerate_t, QPainter &);
-    void drawWorkTitle(QRect, QPainter &, const Model *);
+    void drawModelTimeExtents(QRect, QPainter &, const Model &);
+    void drawDurationAndRate(QRect, const Model &, sv_samplerate_t, QPainter &);
+    void drawWorkTitle(QRect, QPainter &, const Model &);
     void drawLayerNames(QRect, QPainter &);
     void drawEditingSelection(QPainter &);
-    void drawAlignmentStatus(QRect, QPainter &, const Model *, bool down);
+    void drawAlignmentStatus(QRect, QPainter &, const Model &, bool down);
 
     virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1) override;
 

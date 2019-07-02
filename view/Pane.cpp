@@ -367,23 +367,27 @@ Pane::paintEvent(QPaintEvent *e)
     Layer *topLayer = getTopLayer();
     bool haveSomeTimeXAxis = false;
 
-    const Model *waveformModel = nullptr; // just for reporting purposes
-    const Model *workModel = nullptr;
+    std::shared_ptr<const Model> waveformModel; // just for reporting purposes
+    std::shared_ptr<const Model> workModel;
 
     for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
         --vi;
         if (!haveSomeTimeXAxis && (*vi)->hasTimeXAxis()) {
             haveSomeTimeXAxis = true;
         }
-        if (dynamic_cast<WaveformLayer *>(*vi)) {
-            waveformModel = (*vi)->getModel();
-            workModel = waveformModel;
-        } else {
-            Model *m = (*vi)->getModel();
-            if (dynamic_cast<WaveFileModel *>(m)) {
-                workModel = m;
-            } else if (m && dynamic_cast<WaveFileModel *>(m->getSourceModel())) {
-                workModel = m->getSourceModel();
+        auto model = ModelById::get((*vi)->getModel());
+
+        if (model) {
+            if (dynamic_cast<WaveformLayer *>(*vi)) {
+                waveformModel = model;
+                workModel = waveformModel;
+            } else {
+                if (std::dynamic_pointer_cast<WaveFileModel>(model)) {
+                    workModel = model;
+                } else if (auto wm = ModelById::getAs<WaveFileModel>
+                           (model->getSourceModel())) {
+                    workModel = wm;
+                }
             }
         }
                 
@@ -393,7 +397,7 @@ Pane::paintEvent(QPaintEvent *e)
     // Block off left and right extents so we can see where the main model ends
     
     if (workModel && hasTopLayerTimeXAxis()) {
-        drawModelTimeExtents(r, paint, workModel);
+        drawModelTimeExtents(r, paint, *workModel);
     }
 
     // Crosshairs for mouse movement in measure mode
@@ -448,7 +452,7 @@ Pane::paintEvent(QPaintEvent *e)
         sampleRate &&
         m_manager &&
         m_manager->shouldShowDuration()) {
-        drawDurationAndRate(r, waveformModel, sampleRate, paint);
+        drawDurationAndRate(r, *waveformModel, sampleRate, paint);
     }
 
     bool haveWorkTitle = false;
@@ -456,14 +460,14 @@ Pane::paintEvent(QPaintEvent *e)
     if (workModel &&
         m_manager &&
         m_manager->shouldShowWorkTitle()) {
-        drawWorkTitle(r, paint, workModel);
+        drawWorkTitle(r, paint, *workModel);
         haveWorkTitle = true;
     }
 
     if (workModel &&
         m_manager &&
         m_manager->getAlignMode()) {
-        drawAlignmentStatus(r, paint, workModel, haveWorkTitle);
+        drawAlignmentStatus(r, paint, *workModel, haveWorkTitle);
     }
 
     if (m_manager &&
@@ -632,6 +636,11 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
         
         paint.save();
         
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
         int tabStop =
             paint.fontMetrics().width(tr("Some lengthy prefix:"));
         
@@ -750,7 +759,7 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
 }
 
 void
-Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
+Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model &model)
 {
     paint.save();
     
@@ -764,7 +773,7 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
         paint.setPen(Qt::white);
     }
 
-    sv_frame_t f0 = model->getStartFrame();
+    sv_frame_t f0 = model.getStartFrame();
 
     if (f0 > getStartFrame() && f0 < getEndFrame()) {
         int x0 = getXForFrame(f0);
@@ -774,7 +783,7 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
         }
     }
 
-    sv_frame_t f1 = model->getEndFrame();
+    sv_frame_t f1 = model.getEndFrame();
     
     if (f1 > getStartFrame() && f1 < getEndFrame()) {
         int x1 = getXForFrame(f1);
@@ -788,14 +797,14 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
 }
 
 void
-Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
+Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model &model,
                           bool down)
 {
-    const Model *reference = model->getAlignmentReference();
+    ModelId reference = model.getAlignmentReference();
 /*
     if (!reference) {
         cerr << "Pane[" << this << "]::drawAlignmentStatus: No reference" << endl;
-    } else if (reference == model) {
+    } else if (reference == model.getId()) {
         cerr << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << endl;
     } else {
         cerr << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << endl;
@@ -804,12 +813,12 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
     QString text;
     int completion = 100;
 
-    if (reference == model) {
+    if (reference == model.getId()) {
         text = tr("Reference");
-    } else if (!reference) {
+    } else if (reference.isNone()) {
         text = tr("Unaligned");
     } else {
-        completion = model->getAlignmentCompletion();
+        completion = model.getAlignmentCompletion();
         if (completion == 0) {
             text = tr("Unaligned");
         } else if (completion < 100) {
@@ -848,10 +857,10 @@ Pane::modelAlignmentCompletionChanged()
 }
 
 void
-Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
+Pane::drawWorkTitle(QRect r, QPainter &paint, const Model &model)
 {
-    QString title = model->getTitle();
-    QString maker = model->getMaker();
+    QString title = model.getTitle();
+    QString maker = model.getMaker();
 //SVDEBUG << "Pane::drawWorkTitle: title=\"" << title//<< "\", maker=\"" << maker << "\"" << endl;
     if (title == "") return;
 
@@ -1025,7 +1034,7 @@ Pane::drawEditingSelection(QPainter &paint)
 }
 
 void
-Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
+Pane::drawDurationAndRate(QRect r, const Model &waveformModel,
                           sv_samplerate_t sampleRate, QPainter &paint)
 {
     int fontHeight = paint.fontMetrics().height();
@@ -1033,8 +1042,8 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
 
     if (r.y() + r.height() < height() - fontHeight - 6) return;
 
-    sv_samplerate_t modelRate = waveformModel->getSampleRate();
-    sv_samplerate_t nativeRate = waveformModel->getNativeRate();
+    sv_samplerate_t modelRate = waveformModel.getSampleRate();
+    sv_samplerate_t nativeRate = waveformModel.getNativeRate();
     sv_samplerate_t playbackRate = m_manager->getPlaybackSampleRate();
         
     QString srNote = "";
@@ -1053,7 +1062,7 @@ Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
     }
 
     QString desc = tr("%1 / %2Hz%3")
-        .arg(RealTime::frame2RealTime(waveformModel->getEndFrame(),
+        .arg(RealTime::frame2RealTime(waveformModel.getEndFrame(),
                                       sampleRate)
              .toText(false).c_str())
         .arg(nativeRate)

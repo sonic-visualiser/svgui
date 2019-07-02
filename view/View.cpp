@@ -632,9 +632,9 @@ View::getBackground() const
 
     if (widgetLight == light) {
         if (widgetLight) {
-            return widgetbg.light();
+            return widgetbg.lighter();
         } else {
-            return widgetbg.dark();
+            return widgetbg.darker();
         }
     }
     else if (light) return Qt::white;
@@ -924,11 +924,20 @@ View::setPlaybackFollow(PlaybackFollowMode m)
 void
 View::modelChanged()
 {
-    QObject *obj = sender();
-
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr << "View(" << this << ")::modelChanged()" << endl;
 #endif
+
+    QObject *obj = sender();
+    
+    ModelId model;
+    if (Model *modelPtr = qobject_cast<Model *>(obj)) {
+        model = modelPtr->getId();
+    } else if (Layer *layerPtr = qobject_cast<Layer *>(obj)) {
+        model = layerPtr->getModel();
+    } else {
+        return;
+    }
     
     // If the model that has changed is not used by any of the cached
     // layers, we won't need to recreate the cache
@@ -939,7 +948,7 @@ View::modelChanged()
     LayerList scrollables = getScrollableBackLayers(false, discard);
     for (LayerList::const_iterator i = scrollables.begin();
          i != scrollables.end(); ++i) {
-        if (*i == obj || (*i)->getModel() == obj) {
+        if ((*i)->getModel() == model) {
             recreate = true;
             break;
         }
@@ -960,6 +969,15 @@ void
 View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 {
     QObject *obj = sender();
+    
+    ModelId model;
+    if (Model *modelPtr = qobject_cast<Model *>(obj)) {
+        model = modelPtr->getId();
+    } else if (Layer *layerPtr = qobject_cast<Layer *>(obj)) {
+        model = layerPtr->getModel();
+    } else {
+        return;
+    }
 
     sv_frame_t myStartFrame = getStartFrame();
     sv_frame_t myEndFrame = getEndFrame();
@@ -986,7 +1004,7 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
     LayerList scrollables = getScrollableBackLayers(false, discard);
     for (LayerList::const_iterator i = scrollables.begin();
          i != scrollables.end(); ++i) {
-        if (*i == obj || (*i)->getModel() == obj) {
+        if ((*i)->getModel() == model) {
             recreate = true;
             break;
         }
@@ -1270,11 +1288,13 @@ View::getModelsStartFrame() const
     bool first = true;
     sv_frame_t startFrame = 0;
 
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
+    for (Layer *layer: m_layerStack) {
 
-        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
+        auto model = ModelById::get(layer->getModel());
 
-            sv_frame_t thisStartFrame = (*i)->getModel()->getStartFrame();
+        if (model && model->isOK()) {
+
+            sv_frame_t thisStartFrame = model->getStartFrame();
 
             if (first || thisStartFrame < startFrame) {
                 startFrame = thisStartFrame;
@@ -1282,6 +1302,7 @@ View::getModelsStartFrame() const
             first = false;
         }
     }
+    
     return startFrame;
 }
 
@@ -1291,11 +1312,13 @@ View::getModelsEndFrame() const
     bool first = true;
     sv_frame_t endFrame = 0;
 
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
+    for (Layer *layer: m_layerStack) {
 
-        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
+        auto model = ModelById::get(layer->getModel());
 
-            sv_frame_t thisEndFrame = (*i)->getModel()->getEndFrame();
+        if (model && model->isOK()) {
+
+            sv_frame_t thisEndFrame = model->getEndFrame();
 
             if (first || thisEndFrame > endFrame) {
                 endFrame = thisEndFrame;
@@ -1317,11 +1340,15 @@ View::getModelsSampleRate() const
 
     //!!! nah, this wants to always return the sr of the main model!
 
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
-        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
-            return (*i)->getModel()->getSampleRate();
+    for (Layer *layer: m_layerStack) {
+
+        auto model = ModelById::get(layer->getModel());
+
+        if (model && model->isOK()) {
+            return model->getSampleRate();
         }
     }
+
     return 0;
 }
 
@@ -1338,52 +1365,49 @@ View::getModels()
             continue;
         }
 
-        if (layer && layer->getModel()) {
-            Model *model = layer->getModel();
-            models.insert(model);
+        if (layer && !layer->getModel().isNone()) {
+            models.insert(layer->getModel());
         }
     }
 
     return models;
 }
 
-Model *
+ModelId
 View::getAligningModel() const
 {
     if (!m_manager ||
         !m_manager->getAlignMode() ||
         !m_manager->getPlaybackModel()) {
-        return nullptr;
+        return {};
     }
 
-    Model *anyModel = nullptr;
-    Model *alignedModel = nullptr;
-    Model *goodModel = nullptr;
+    ModelId anyModel;
+    ModelId alignedModel;
+    ModelId goodModel;
 
-    for (LayerList::const_iterator i = m_layerStack.begin();
-         i != m_layerStack.end(); ++i) {
-
-        Layer *layer = *i;
+    for (auto layer: m_layerStack) {
 
         if (!layer) continue;
         if (dynamic_cast<TimeRulerLayer *>(layer)) continue;
 
-        Model *model = (*i)->getModel();
+        auto model = ModelById::get(layer->getModel());
         if (!model) continue;
 
-        anyModel = model;
+        anyModel = model->getId();
 
-        if (model->getAlignmentReference()) {
-            alignedModel = model;
+        if (!model->getAlignmentReference().isNone()) {
+            alignedModel = model->getId();
             if (layer->isLayerOpaque() ||
-                dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
-                goodModel = model;
+                std::dynamic_pointer_cast
+                <RangeSummarisableTimeValueModel>(model)) {
+                goodModel = model->getId();
             }
         }
     }
 
-    if (goodModel) return goodModel;
-    else if (alignedModel) return alignedModel;
+    if (!goodModel.isNone()) return goodModel;
+    else if (!alignedModel.isNone()) return alignedModel;
     else return anyModel;
 }
 
@@ -1391,7 +1415,7 @@ sv_frame_t
 View::alignFromReference(sv_frame_t f) const
 {
     if (!m_manager || !m_manager->getAlignMode()) return f;
-    Model *aligningModel = getAligningModel();
+    auto aligningModel = ModelById::get(getAligningModel());
     if (!aligningModel) return f;
     return aligningModel->alignFromReference(f);
 }
@@ -1400,7 +1424,7 @@ sv_frame_t
 View::alignToReference(sv_frame_t f) const
 {
     if (!m_manager->getAlignMode()) return f;
-    Model *aligningModel = getAligningModel();
+    auto aligningModel = ModelById::get(getAligningModel());
     if (!aligningModel) return f;
     return aligningModel->alignToReference(f);
 }
@@ -1412,7 +1436,7 @@ View::getAlignedPlaybackFrame() const
     sv_frame_t pf = m_manager->getPlaybackFrame();
     if (!m_manager->getAlignMode()) return pf;
 
-    Model *aligningModel = getAligningModel();
+    auto aligningModel = ModelById::get(getAligningModel());
     if (!aligningModel) return pf;
 
     sv_frame_t af = aligningModel->alignFromReference(pf);
@@ -1727,9 +1751,11 @@ View::cancelClicked()
         if (i->second.cancel == cancel) {
 
             Layer *layer = i->first;
-            Model *model = layer->getModel();
+/*!!!            Model *model = layer->getModel();
 
+            //!!! todo: restore this behaviour
             if (model) model->abandon();
+*/
         }
     }
 }

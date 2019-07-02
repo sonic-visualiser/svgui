@@ -27,6 +27,8 @@
 #include "base/XmlExportable.h"
 #include "base/BaseTypes.h"
 
+#include "data/model/Model.h"
+
 // #define DEBUG_VIEW_WIDGET_PAINT 1
 
 class Layer;
@@ -381,11 +383,11 @@ public:
     double scalePenWidth(double width) const override;
     QPen scalePen(QPen pen) const override;
 
-    typedef std::set<Model *> ModelSet;
+    typedef std::set<ModelId> ModelSet;
     ModelSet getModels();
 
     //!!!
-    Model *getAligningModel() const;
+    ModelId getAligningModel() const;
     sv_frame_t alignFromReference(sv_frame_t) const;
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;

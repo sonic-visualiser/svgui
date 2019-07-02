@@ -60,9 +60,8 @@ Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
         if (m_modelTestTime.elapsed() < 1000) {
             for (LayerList::const_iterator i = m_layerStack.begin();
                  i != m_layerStack.end(); ++i) {
-                if ((*i)->getModel() &&
-                    (!(*i)->getModel()->isOK() ||
-                     !(*i)->getModel()->isReady())) {
+                auto model = ModelById::get((*i)->getModel());
+                if (model && (!model->isOK() || !model->isReady())) {
                     return;
                 }
             }
