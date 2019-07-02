@@ -54,7 +54,6 @@
 
 TimeValueLayer::TimeValueLayer() :
     SingleColourLayer(),
-    m_model(nullptr),
     m_editing(false),
     m_originalPoint(0, 0.0, tr("New Point")),
     m_editingPoint(0, 0.0, tr("New Point")),
@@ -168,7 +167,7 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
 bool
 TimeValueLayer::needsTextLabelHeight() const
 {
-    auto model = ModelById::get(m_model);
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return false;
     return m_plotStyle == PlotSegmentation && model->hasTextLabels();
 }
@@ -176,7 +175,8 @@ TimeValueLayer::needsTextLabelHeight() const
 QString
 TimeValueLayer::getScaleUnits() const
 {
-    if (m_model) return m_model->getScaleUnits();
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (model) return model->getScaleUnits();
     else return "";
 }
 
@@ -213,7 +213,8 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Scale Units") {
 
         if (deflt) *deflt = 0;
-        if (m_model) {
+        auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+        if (model) {
             val = UnitDatabase::getInstance()->getUnitId
                 (getScaleUnits());
         }
@@ -279,8 +280,9 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Vertical Scale") {
         setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
-        if (m_model) {
-            m_model->setScaleUnits
+        auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+        if (model) {
+            model->setScaleUnits
                 (UnitDatabase::getInstance()->getUnitById(value));
             emit modelChanged();
         }
@@ -356,10 +358,11 @@ bool
 TimeValueLayer::getValueExtents(double &min, double &max,
                                 bool &logarithmic, QString &unit) const
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return false;
 
-    min = m_model->getValueMinimum();
-    max = m_model->getValueMaximum();
+    min = model->getValueMinimum();
+    max = model->getValueMaximum();
 
     logarithmic = (m_verticalScale == LogScale);
 
@@ -396,7 +399,8 @@ TimeValueLayer::getValueExtents(double &min, double &max,
 bool
 TimeValueLayer::getDisplayExtents(double &min, double &max) const
 {
-    if (!m_model || shouldAutoAlign()) return false;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || shouldAutoAlign()) return false;
 
     if (m_scaleMinimum == m_scaleMaximum) {
         bool log;
@@ -422,7 +426,8 @@ TimeValueLayer::getDisplayExtents(double &min, double &max) const
 bool
 TimeValueLayer::setDisplayExtents(double min, double max)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return false;
 
     if (min == max) {
         if (min == 0.f) {
@@ -447,7 +452,8 @@ int
 TimeValueLayer::getVerticalZoomSteps(int &defaultStep) const
 {
     if (shouldAutoAlign()) return 0;
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return 0;
 
     defaultStep = 0;
     return 100;
@@ -457,7 +463,8 @@ int
 TimeValueLayer::getCurrentVerticalZoomStep() const
 {
     if (shouldAutoAlign()) return 0;
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return 0;
 
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return 0;
@@ -480,7 +487,8 @@ void
 TimeValueLayer::setVerticalZoomStep(int step)
 {
     if (shouldAutoAlign()) return;
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return;
 
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return;
@@ -532,7 +540,8 @@ TimeValueLayer::setVerticalZoomStep(int step)
 RangeMapper *
 TimeValueLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return nullptr;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return nullptr;
     
     RangeMapper *mapper;
 
@@ -555,7 +564,8 @@ TimeValueLayer::getNewVerticalZoomRangeMapper() const
 EventVector
 TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
-    if (!m_model) return {};
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return {};
 
     // Return all points at a frame f, where f is the closest frame to
     // pixel coordinate x whose pixel coordinate is both within a
@@ -565,12 +575,12 @@ TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     
     sv_frame_t frame = v->getFrameForX(x);
     
-    EventVector exact = m_model->getEventsStartingAt(frame);
+    EventVector exact = model->getEventsStartingAt(frame);
     if (!exact.empty()) return exact;
 
     // overspill == 1, so one event either side of the given span
-    EventVector neighbouring = m_model->getEventsWithin
-        (frame, m_model->getResolution(), 1);
+    EventVector neighbouring = model->getEventsWithin
+        (frame, model->getResolution(), 1);
 
     double fuzz = v->scaleSize(2);
     sv_frame_t suitable = 0;
@@ -594,7 +604,7 @@ TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     }
 
     if (have) {
-        return m_model->getEventsStartingAt(suitable);
+        return model->getEventsStartingAt(suitable);
     } else {
         return {};
     }
@@ -603,10 +613,11 @@ TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 QString
 TimeValueLayer::getLabelPreceding(sv_frame_t frame) const
 {
-    if (!m_model || !m_model->hasTextLabels()) return "";
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !model->hasTextLabels()) return "";
 
     Event e;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame,
          [](Event e) { return e.hasLabel() && e.getLabel() != ""; },
          EventSeries::Backward,
@@ -622,12 +633,13 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
 {
     int x = pos.x();
 
-    if (!m_model || !m_model->getSampleRate()) return "";
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !model->getSampleRate()) return "";
 
     EventVector points = getLocalPoints(v, x);
 
     if (points.empty()) {
-        if (!m_model->isReady()) {
+        if (!model->isReady()) {
             return tr("In progress");
         } else {
             return tr("No local points");
@@ -636,7 +648,7 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
 
     sv_frame_t useFrame = points.begin()->getFrame();
 
-    RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
+    RealTime rt = RealTime::frame2RealTime(useFrame, model->getSampleRate());
     
     QString valueText;
     float value = points.begin()->getValue();
@@ -677,7 +689,8 @@ TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v,
                                    int &resolution,
                                    SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
@@ -688,7 +701,7 @@ TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v,
     // an editing operation, i.e. closest feature in either direction
     // but only if it is "close enough"
     
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
 
     if (snap == SnapNeighbouring) {
         EventVector points = getLocalPoints(v, v->getXForFrame(frame));
@@ -698,7 +711,7 @@ TimeValueLayer::snapToFeatureFrame(LayerGeometryProvider *v,
     }
 
     Event e;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame,
          [](Event) { return true; },
          snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
@@ -716,20 +729,21 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v,
                                      int &resolution,
                                      SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) {
         return Layer::snapToSimilarFeature(v, frame, resolution, snap);
     }
 
     // snap is only permitted to be SnapLeft or SnapRight here.
     
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
 
     Event ref;
     Event e;
     float matchvalue;
     bool found;
 
-    found = m_model->getNearestEventMatching
+    found = model->getNearestEventMatching
         (frame, [](Event) { return true; }, EventSeries::Backward, ref);
 
     if (!found) {
@@ -738,7 +752,7 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v,
 
     matchvalue = ref.getValue();
     
-    found = m_model->getNearestEventMatching
+    found = model->getNearestEventMatching
         (frame,
          [matchvalue](Event e) {
              double epsilon = 0.0001;
@@ -762,11 +776,14 @@ TimeValueLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
     max = 0.0;
     log = false;
 
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return;
+
     if (shouldAutoAlign()) {
 
         if (!v->getValueExtents(getScaleUnits(), min, max, log)) {
-            min = m_model->getValueMinimum();
-            max = m_model->getValueMaximum();
+            min = model->getValueMinimum();
+            max = model->getValueMaximum();
         } else if (log) {
             LogRange::mapRange(min, max);
         }
@@ -833,7 +850,6 @@ TimeValueLayer::getValueForY(LayerGeometryProvider *v, int y) const
 bool
 TimeValueLayer::shouldAutoAlign() const
 {
-    if (!m_model) return false;
     QString unit = getScaleUnits();
     return (m_verticalScale == AutoAlignScale && unit != "");
 }
@@ -872,9 +888,10 @@ TimeValueLayer::getDefaultColourHint(bool darkbg, bool &impose)
 void
 TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !model->isOK()) return;
 
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
     paint.setRenderHint(QPainter::Antialiasing, false);
@@ -886,7 +903,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_frame_t frame1 = v->getFrameForX(x1);
     if (m_derivative) --frame0;
 
-    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0, 1));
+    EventVector points(model->getEventsWithin(frame0, frame1 - frame0, 1));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -897,11 +914,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::paint: resolution is "
-         << m_model->getResolution() << " frames" << endl;
+         << model->getResolution() << " frames" << endl;
 #endif
 
-    double min = m_model->getValueMinimum();
-    double max = m_model->getValueMaximum();
+    double min = model->getValueMinimum();
+    double max = model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
     int origin = int(nearbyint(v->getPaintHeight() -
@@ -921,7 +938,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     }
 
     int w =
-        v->getXForFrame(frame0 + m_model->getResolution()) -
+        v->getXForFrame(frame0 + model->getResolution()) -
         v->getXForFrame(frame0);
 
     if (m_plotStyle == PlotStems) {
@@ -974,7 +991,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 continue;
             }
             gap = (p.getFrame() > prevFrame &&
-                   (p.getFrame() - prevFrame >= m_model->getResolution() * 2));
+                   (p.getFrame() - prevFrame >= model->getResolution() * 2));
         }
 
         if (m_plotStyle != PlotSegmentation) {
@@ -1098,7 +1115,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                     if (m_plotStyle == PlotDiscreteCurves) {
                         bool nextGap =
                             (nvalue == 0.0) ||
-                            (nf - p.getFrame() >= m_model->getResolution() * 2);
+                            (nf - p.getFrame() >= model->getResolution() * 2);
                         if (nextGap) {
                             x1 = x0;
                             y1 = y0;
@@ -1161,6 +1178,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 italic = true;
             }
 
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
             if (label != "") {
                 // Quick test for 20px before we do the slower test using metrics
                 bool haveRoom = (nx > x + 20);
@@ -1200,7 +1222,8 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 int
 TimeValueLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) {
         return 0;
     } else if (shouldAutoAlign() && !valueExtentsMatchMine(v)) {
         return 0;
@@ -1222,7 +1245,8 @@ TimeValueLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &
 void
 TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model || m_model->isEmpty()) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || model->isEmpty()) return;
 
     QString unit;
     double min, max;
@@ -1278,10 +1302,11 @@ TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
-    int resolution = m_model->getResolution();
+    int resolution = model->getResolution();
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
@@ -1311,7 +1336,7 @@ TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Draw Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Draw Point"));
     if (!havePoint) {
         m_editingCommand->add(m_editingPoint);
     }
@@ -1326,10 +1351,11 @@ TimeValueLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
-    int resolution = m_model->getResolution();
+    int resolution = model->getResolution();
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
@@ -1387,7 +1413,8 @@ TimeValueLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::drawEnd" << endl;
 #endif
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !m_editing) return;
     finish(m_editingCommand);
     m_editingCommand = nullptr;
     m_editing = false;
@@ -1396,7 +1423,8 @@ TimeValueLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 void
 TimeValueLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return;
 
     EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return;
@@ -1419,7 +1447,8 @@ TimeValueLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 void
 TimeValueLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !m_editing) return;
 
     m_editing = false;
 
@@ -1428,7 +1457,7 @@ TimeValueLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     if (points.begin()->getFrame() != m_editingPoint.getFrame() ||
         points.begin()->getValue() != m_editingPoint.getValue()) return;
 
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Erase Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Erase Point"));
     m_editingCommand->remove(m_editingPoint);
     finish(m_editingCommand);
     m_editingCommand = nullptr;
@@ -1442,7 +1471,8 @@ TimeValueLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return;
 
     EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return;
@@ -1465,16 +1495,17 @@ TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
 #endif
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double value = getValueForY(v, e->y());
 
     if (!m_editingCommand) {
-        m_editingCommand = new ChangeEventsCommand(m_model, tr("Drag Point"));
+        m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Drag Point"));
     }
 
     m_editingCommand->remove(m_editingPoint);
@@ -1490,7 +1521,8 @@ TimeValueLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << "TimeValueLayer::editEnd" << endl;
 #endif
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !m_editing) return;
 
     if (m_editingCommand) {
 
@@ -1517,7 +1549,8 @@ TimeValueLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 bool
 TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return false;
 
     EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return false;
@@ -1525,7 +1558,7 @@ TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     Event point = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
-        (m_model->getSampleRate(),
+        (model->getSampleRate(),
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowValue |
          ItemEditDialog::ShowText,
@@ -1543,7 +1576,7 @@ TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
             .withLabel(dialog->getText());
         
         ChangeEventsCommand *command =
-            new ChangeEventsCommand(m_model, tr("Edit Point"));
+            new ChangeEventsCommand(m_model.untyped, tr("Edit Point"));
         command->remove(point);
         command->add(newPoint);
         finish(command);
@@ -1556,13 +1589,14 @@ TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 void
 TimeValueLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Drag Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Drag Selection"));
 
     EventVector points =
-        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
 
@@ -1578,13 +1612,14 @@ TimeValueLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 TimeValueLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model || !s.getDuration()) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model || !s.getDuration()) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Resize Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Resize Selection"));
 
     EventVector points =
-        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
     double ratio = double(newSize.getDuration()) / double(s.getDuration());
     double oldStart = double(s.getStartFrame());
@@ -1606,13 +1641,14 @@ TimeValueLayer::resizeSelection(Selection s, Selection newSize)
 void
 TimeValueLayer::deleteSelection(Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
+        new ChangeEventsCommand(m_model.untyped, tr("Delete Selected Points"));
 
     EventVector points =
-        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -1624,10 +1660,11 @@ TimeValueLayer::deleteSelection(Selection s)
 void
 TimeValueLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return;
 
     EventVector points =
-        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
@@ -1638,7 +1675,8 @@ bool
 TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */,
                       bool interactive)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
+    if (!model) return false;
 
     EventVector points = from.getPoints();
 
@@ -1662,7 +1700,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
     }
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Paste"));
+        new ChangeEventsCommand(m_model.untyped, tr("Paste"));
 
     enum ValueAvailability {
         UnknownAvailability,
@@ -1675,7 +1713,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
 
     bool haveUsableLabels = false;
     Labeller labeller;
-    labeller.setSampleRate(m_model->getSampleRate());
+    labeller.setSampleRate(model->getSampleRate());
 
     if (interactive) {
 

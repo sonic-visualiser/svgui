@@ -41,7 +41,6 @@ using std::vector;
 
 WaveformLayer::WaveformLayer() :
     SingleColourLayer(),
-    m_model(nullptr),
     m_gain(1.0f),
     m_autoNormalize(false),
     m_showMeans(true),
@@ -64,7 +63,7 @@ const ZoomConstraint *
 WaveformLayer::getZoomConstraint() const
 {
     auto model = ModelById::get(m_model);
-    if (model) return m_model->getZoomConstraint();
+    if (model) return model->getZoomConstraint();
     else return nullptr;
 }
 
@@ -114,7 +113,8 @@ WaveformLayer::getProperties() const
     list.push_back("Gain");
     list.push_back("Normalize Visible Area");
 
-    if (m_model && m_model->getChannelCount() > 1 && m_channel == -1) {
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (model && model->getChannelCount() > 1 && m_channel == -1) {
         list.push_back("Channels");
     }
 
@@ -341,8 +341,9 @@ int
 WaveformLayer::getCompletion(LayerGeometryProvider *) const
 {
     int completion = 100;
-    if (!m_model || !m_model->isOK()) return completion;
-    if (m_model->isReady(&completion)) return 100;
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model || !model->isOK()) return completion;
+    if (model->isReady(&completion)) return 100;
     return completion;
 }
 
@@ -379,9 +380,10 @@ WaveformLayer::getChannelArrangement(int &min, int &max,
                                      bool &merging, bool &mixing)
     const
 {
-    if (!m_model || !m_model->isOK()) return 0;
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model || !model->isOK()) return 0;
 
-    int channels = m_model->getChannelCount();
+    int channels = model->getChannelCount();
     if (channels == 0) return 0;
 
     int rawChannels = channels;
@@ -424,6 +426,9 @@ WaveformLayer::getSourceFramesForX(LayerGeometryProvider *v,
                                    int x, int modelZoomLevel,
                                    sv_frame_t &f0, sv_frame_t &f1) const
 {
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model) return false;
+    
     sv_frame_t viewFrame = v->getFrameForX(x);
     if (viewFrame < 0) {
         f0 = 0;
@@ -444,17 +449,20 @@ WaveformLayer::getSourceFramesForX(LayerGeometryProvider *v,
         f1 = f1 * modelZoomLevel;
     }
     
-    return (f0 < m_model->getEndFrame());
+    return (f0 < model->getEndFrame());
 }
 
 float
 WaveformLayer::getNormalizeGain(LayerGeometryProvider *v, int channel) const
 {
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model) return 0.f;
+    
     sv_frame_t startFrame = v->getStartFrame();
     sv_frame_t endFrame = v->getEndFrame();
 
-    sv_frame_t modelStart = m_model->getStartFrame();
-    sv_frame_t modelEnd = m_model->getEndFrame();
+    sv_frame_t modelStart = model->getStartFrame();
+    sv_frame_t modelEnd = model->getEndFrame();
     
     sv_frame_t rangeStart, rangeEnd;
             
@@ -468,7 +476,7 @@ WaveformLayer::getNormalizeGain(LayerGeometryProvider *v, int channel) const
     if (rangeEnd < rangeStart) rangeEnd = rangeStart;
 
     RangeSummarisableTimeValueModel::Range range =
-        m_model->getSummary(channel, rangeStart, rangeEnd - rangeStart);
+        model->getSummary(channel, rangeStart, rangeEnd - rangeStart);
 
     int minChannel = 0, maxChannel = 0;
     bool mergingChannels = false, mixingChannels = false;
@@ -478,7 +486,7 @@ WaveformLayer::getNormalizeGain(LayerGeometryProvider *v, int channel) const
 
     if (mergingChannels || mixingChannels) {
         RangeSummarisableTimeValueModel::Range otherRange =
-            m_model->getSummary(1, rangeStart, rangeEnd - rangeStart);
+            model->getSummary(1, rangeStart, rangeEnd - rangeStart);
         range.setMax(std::max(range.max(), otherRange.max()));
         range.setMin(std::min(range.min(), otherRange.min()));
         range.setAbsmean(std::min(range.absmean(), otherRange.absmean()));
@@ -490,7 +498,8 @@ WaveformLayer::getNormalizeGain(LayerGeometryProvider *v, int channel) const
 void
 WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) {
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model || !model->isOK()) {
         return;
     }
   
@@ -594,7 +603,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
         desiredBlockSize = zoomLevel.level;
     }
-    int blockSize = m_model->getSummaryBlockSize(desiredBlockSize);
+    int blockSize = model->getSummaryBlockSize(desiredBlockSize);
 
     sv_frame_t frame0;
     sv_frame_t frame1;
@@ -643,7 +652,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     }
 
     if (m_aggressive) {
-        if (m_model->isReady() && rect == v->getPaintRect()) {
+        if (model->isReady() && rect == v->getPaintRect()) {
             m_cacheValid = true;
             m_cacheZoomLevel = zoomLevel;
         }
@@ -660,9 +669,12 @@ WaveformLayer::getSummaryRanges(int minChannel, int maxChannel,
                                 int blockSize, RangeVec &ranges)
     const
 {
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model) return;
+    
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
         ranges.push_back({});
-        m_model->getSummaries(ch, frame0, frame1 - frame0,
+        model->getSummaries(ch, frame0, frame1 - frame0,
                               ranges[ch - minChannel], blockSize);
 #ifdef DEBUG_WAVEFORM_PAINT
             SVCERR << "channel " << ch << ": " << ranges[ch - minChannel].size() << " ranges from " << frame0 << " to " << frame1 << " at zoom level " << blockSize << endl;
@@ -672,9 +684,9 @@ WaveformLayer::getSummaryRanges(int minChannel, int maxChannel,
     if (mixingOrMerging) {
         if (minChannel != 0 || maxChannel != 0) {
             throw std::logic_error("Internal error: min & max channels should be 0 when merging or mixing all channels");
-        } else if (m_model->getChannelCount() > 1) {
+        } else if (model->getChannelCount() > 1) {
             ranges.push_back({});
-            m_model->getSummaries
+            model->getSummaries
                 (1, frame0, frame1 - frame0, ranges[1], blockSize);
         }
     }
@@ -687,11 +699,14 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
                                     int oversampleBy, RangeVec &ranges)
     const
 {
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model) return;
+    
     if (mixingOrMerging) {
         if (minChannel != 0 || maxChannel != 0) {
             throw std::logic_error("Internal error: min & max channels should be 0 when merging or mixing all channels");
         }
-        if (m_model->getChannelCount() > 1) {
+        if (model->getChannelCount() > 1) {
             // call back on self for the individual channels with
             // mixingOrMerging false
             getOversampledRanges
@@ -704,8 +719,8 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
     // sample rate, not the oversampled rate
 
     sv_frame_t tail = 16;
-    sv_frame_t startFrame = m_model->getStartFrame();
-    sv_frame_t endFrame = m_model->getEndFrame();
+    sv_frame_t startFrame = model->getStartFrame();
+    sv_frame_t endFrame = model->getEndFrame();
 
     sv_frame_t rf0 = frame0 - tail;
     if (rf0 < startFrame) {
@@ -724,7 +739,7 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
     
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
         floatvec_t oversampled = WaveformOversampler::getOversampledData
-            (m_model, ch, frame0, frame1 - frame0, oversampleBy);
+            (*model, ch, frame0, frame1 - frame0, oversampleBy);
         RangeSummarisableTimeValueModel::RangeBlock rr;
         for (float v: oversampled) {
             RangeSummarisableTimeValueModel::Range r;
@@ -756,6 +771,9 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
                             sv_frame_t frame1)
     const
 {
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model) return;
+    
     int x0 = rect.left();
     int y0 = rect.top();
 
@@ -777,9 +795,9 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
     if (midColour == Qt::black) {
         midColour = Qt::gray;
     } else if (v->hasLightBackground()) {
-        midColour = midColour.light(150);
+        midColour = midColour.lighter(150);
     } else {
-        midColour = midColour.light(50);
+        midColour = midColour.lighter(50);
     }
 
     double gain = m_effectiveGains[ch];
@@ -1051,7 +1069,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
         penWidth = 0.0;
     }
     
-    if (m_model->isReady()) {
+    if (model->isReady()) {
         paint->setPen(QPen(baseColour, penWidth));
     } else {
         paint->setPen(QPen(midColour, penWidth));
@@ -1154,7 +1172,8 @@ WaveformLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) cons
 {
     int x = pos.x();
 
-    if (!m_model || !m_model->isOK()) return "";
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model || !model->isOK()) return "";
 
     ZoomLevel zoomLevel = v->getZoomLevel();
 
@@ -1163,15 +1182,15 @@ WaveformLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) cons
         desiredBlockSize = zoomLevel.level;
     }
 
-    int blockSize = m_model->getSummaryBlockSize(desiredBlockSize);
+    int blockSize = model->getSummaryBlockSize(desiredBlockSize);
 
     sv_frame_t f0, f1;
     if (!getSourceFramesForX(v, x, blockSize, f0, f1)) return "";
     
     QString text;
 
-    RealTime rt0 = RealTime::frame2RealTime(f0, m_model->getSampleRate());
-    RealTime rt1 = RealTime::frame2RealTime(f1, m_model->getSampleRate());
+    RealTime rt0 = RealTime::frame2RealTime(f0, model->getSampleRate());
+    RealTime rt1 = RealTime::frame2RealTime(f1, model->getSampleRate());
 
     if (f1 != f0 + 1 && (rt0.sec != rt1.sec || rt0.msec() != rt1.msec())) {
         text += tr("Time:\t%1 - %2")
@@ -1192,7 +1211,7 @@ WaveformLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) cons
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
 
         RangeSummarisableTimeValueModel::RangeBlock ranges;
-        m_model->getSummaries(ch, f0, f1 - f0, ranges, blockSize);
+        model->getSummaries(ch, f0, f1 - f0, ranges, blockSize);
 
         if (ranges.empty()) continue;
         
@@ -1392,6 +1411,11 @@ WaveformLayer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y
 int
 WaveformLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint) const
 {
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
     if (m_scale == LinearScale) {
         return paint.fontMetrics().width("0.0") + 13;
     } else {
@@ -1403,7 +1427,8 @@ WaveformLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &pa
 void
 WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) {
+    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
+    if (!model || !model->isOK()) {
         return;
     }
 
