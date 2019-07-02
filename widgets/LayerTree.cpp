@@ -77,7 +77,7 @@ ModelMetadataModel::~ModelMetadataModel()
 void
 ModelMetadataModel::rebuildModelSet()
 {
-    std::set<Model *> unfound = m_models;
+    std::set<ModelId> unfound = m_models;
 
     for (int i = 0; i < m_stack->getPaneCount(); ++i) {
 
@@ -89,26 +89,23 @@ ModelMetadataModel::rebuildModelSet()
             Layer *layer = pane->getLayer(j);
             if (!layer) continue;
 
-            Model *model = layer->getModel();
-            if (!model) continue;
+            ModelId modelId = layer->getModel();
+            if (modelId.isNone()) continue;
 
             if (m_waveModelsOnly) {
-                if (!dynamic_cast<WaveFileModel *>(model)) continue;
+                if (!ModelById::getAs<WaveFileModel>(modelId)) continue;
             }
 
-            if (m_models.find(model) == m_models.end()) {
-                connect(model, SIGNAL(aboutToBeDeleted()),
-                        this, SLOT(rebuildModelSet()));
-                m_models.insert(model);
+            if (m_models.find(modelId) == m_models.end()) {
+                m_models.insert(modelId);
             } else {
-                unfound.erase(model);
+                unfound.erase(modelId);
             }
         }
     }
 
-    for (std::set<Model *>::iterator i = unfound.begin();
-         i != unfound.end(); ++i) {
-        m_models.erase(*i);
+    for (ModelId m: unfound) {
+        m_models.erase(m);
     }
 
     SVDEBUG << "ModelMetadataModel::rebuildModelSet: " << m_models.size() << " models" << endl;
@@ -173,11 +170,12 @@ ModelMetadataModel::data(const QModelIndex &index, int role) const
     int row = index.row(), col = index.column();
 
     //!!! not exactly the ideal use of a std::set
-    std::set<Model *>::iterator itr = m_models.begin();
+    std::set<ModelId>::iterator itr = m_models.begin();
     for (int i = 0; i < row && itr != m_models.end(); ++i, ++itr);
     if (itr == m_models.end()) return QVariant();
 
-    Model *model = *itr;
+    auto model = ModelById::get(*itr);
+    if (!model) return QVariant();
 
     if (role != Qt::DisplayRole) {
         if (m_waveModelsOnly && col == m_modelNameColumn &&
@@ -444,7 +442,7 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
                     return QVariant(Qt::AlignHCenter);
                 }
             } else if (col == m_modelNameColumn) {
-                Model *model = layer->getModel();
+                auto model = ModelById::get(layer->getModel());
                 if (model && role == Qt::DisplayRole) {
                     return QVariant(model->objectName());
                 }

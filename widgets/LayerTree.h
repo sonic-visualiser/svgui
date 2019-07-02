@@ -19,6 +19,8 @@
 
 #include <QAbstractItemModel>
 
+#include "data/model/Model.h"
+
 #include <set>
 
 class PaneStack;
@@ -26,7 +28,6 @@ class View;
 class Pane;
 class Layer;
 class PropertyContainer;
-class Model;
 
 class ModelMetadataModel : public QAbstractItemModel
 {
@@ -73,7 +74,7 @@ protected:
     int m_modelSourceColumn;
     int m_columnCount;
 
-    std::set<Model *> m_models;
+    std::set<ModelId> m_models;
 };
 
 class LayerTreeModel : public QAbstractItemModel
