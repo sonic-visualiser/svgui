@@ -426,7 +426,12 @@ Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
     if (fullColumn.empty()) {
         
         if (peakCacheIndex >= 0) {
-            fullColumn = m_sources.peakCaches[peakCacheIndex]->getColumn(sx);
+            auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
+                (m_sources.peakCaches[peakCacheIndex]);
+            if (!peakCache) {
+                return vector<float>(nbins, 0.f);
+            }                
+            fullColumn = peakCache->getColumn(sx);
         } else {
             auto model = ModelById::getAs<DenseThreeDimensionalModel>
                 (m_sources.source);
@@ -621,7 +626,10 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
     int binResolution = model->getResolution();
     
     for (int ix = 0; in_range_for(m_sources.peakCaches, ix); ++ix) {
-        int bpp = m_sources.peakCaches[ix]->getColumnsPerPeak();
+        auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
+            (m_sources.peakCaches[ix]);
+        if (!peakCache) continue;
+        int bpp = peakCache->getColumnsPerPeak();
         ZoomLevel equivZoom(ZoomLevel::FramesPerPixel, binResolution * bpp);
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
         SVDEBUG << "getPreferredPeakCache: zoomLevel = " << zoomLevel
@@ -956,14 +964,24 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     Profiler profiler("Colour3DPlotRenderer::renderDrawBuffer");
     
     int divisor = 1;
-    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
-    if (!model) return 0;
-    
-    const DenseThreeDimensionalModel *sourceModel = model.get();
+
+    std::shared_ptr<DenseThreeDimensionalModel> sourceModel;
+
     if (peakCacheIndex >= 0) {
-        divisor = m_sources.peakCaches[peakCacheIndex]->getColumnsPerPeak();
-        sourceModel = m_sources.peakCaches[peakCacheIndex];
+        auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
+            (m_sources.peakCaches[peakCacheIndex]);
+        if (peakCache) {
+            divisor = peakCache->getColumnsPerPeak();
+            sourceModel = peakCache;
+        }
     }
+
+    if (!sourceModel) {
+        sourceModel = ModelById::getAs<DenseThreeDimensionalModel>
+            (m_sources.source);
+    }
+    
+    if (!sourceModel) return 0;
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "renderDrawBuffer: w = " << w << ", h = " << h

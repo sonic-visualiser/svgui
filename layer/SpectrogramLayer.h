@@ -306,10 +306,11 @@ protected:
 
     int getFFTSize() const; // m_windowSize * getOversampling()
 
+    // We take responsibility for registering/deregistering these
+    // models and caches with ModelById
     ModelId m_fftModel; // an FFTModel
-    Dense3DModelPeakCache *m_wholeCache;
-    Dense3DModelPeakCache *m_peakCache;
-    Dense3DModelPeakCache *getPeakCache() const { return m_peakCache; }
+    ModelId m_wholeCache; // a Dense3DModelPeakCache
+    ModelId m_peakCache; // a Dense3DModelPeakCache
     int m_peakCacheDivisor;
     void checkCacheSpace(int *suggestedPeakDivisor,
                          bool *createWholeCache) const;

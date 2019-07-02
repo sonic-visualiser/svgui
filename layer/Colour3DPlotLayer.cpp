@@ -183,8 +183,10 @@ Colour3DPlotLayer::invalidatePeakCache()
     invalidateRenderers();
     invalidateMagnitudes();
 
-    delete m_peakCache;
-    m_peakCache = nullptr;
+    if (!m_peakCache.isNone()) {
+        ModelById::release(m_peakCache);
+        m_peakCache = {};
+    }
 }
 
 void
@@ -206,11 +208,14 @@ Colour3DPlotLayer::invalidateMagnitudes()
     m_viewMags.clear();
 }
 
-Dense3DModelPeakCache *
+ModelId
 Colour3DPlotLayer::getPeakCache() const
 {
-    if (!m_peakCache) {
-        m_peakCache = new Dense3DModelPeakCache(m_model, m_peakCacheDivisor);
+    if (m_peakCache.isNone()) {
+        auto peakCache = std::make_shared<Dense3DModelPeakCache>
+            (m_model, m_peakCacheDivisor);
+        ModelById::add(peakCache);
+        m_peakCache = peakCache->getId();
     }
     return m_peakCache;
 }

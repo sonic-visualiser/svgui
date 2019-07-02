@@ -187,10 +187,10 @@ protected:
     static std::pair<ColumnNormalization, bool> convertToColumnNorm(int value);
     static int convertFromColumnNorm(ColumnNormalization norm, bool visible);
 
-    mutable Dense3DModelPeakCache *m_peakCache;
+    mutable ModelId m_peakCache;
     const int m_peakCacheDivisor;
     void invalidatePeakCache();
-    Dense3DModelPeakCache *getPeakCache() const;
+    ModelId getPeakCache() const;
 
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;

@@ -54,8 +54,8 @@ public:
         // These must all outlive this class
         const VerticalBinLayer *verticalBinLayer; // always
         ModelId source; // always; a DenseThreeDimensionalModel
-        ModelId fft; // optionally
-        std::vector<Dense3DModelPeakCache *> peakCaches; // zero or more
+        ModelId fft; // optionally; an FFTModel; used for phase/peak-freq modes
+        std::vector<ModelId> peakCaches; // zero or more
     };        
 
     struct Parameters {
