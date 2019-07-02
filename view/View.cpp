@@ -1750,8 +1750,9 @@ View::cancelClicked()
 
         if (i->second.cancel == cancel) {
 
+/*!!!
             Layer *layer = i->first;
-/*!!!            Model *model = layer->getModel();
+            Model *model = layer->getModel();
 
             //!!! todo: restore this behaviour
             if (model) model->abandon();
@@ -1819,20 +1820,21 @@ View::checkProgress(void *object)
                 m_lastError = error;
             }
 
-            Model *model = i->first->getModel();
-            RangeSummarisableTimeValueModel *wfm = 
-                dynamic_cast<RangeSummarisableTimeValueModel *>(model);
+            ModelId modelId = i->first->getModel();
+
+            auto model = ModelById::get(modelId);
+            auto wfm = std::dynamic_pointer_cast
+                <RangeSummarisableTimeValueModel>(model);
 
             if (completion > 0) {
                 pb->setMaximum(100); // was 0, for indeterminate start
             }
 
             if (completion >= 100) {
-
-                //!!!
+                
                 if (wfm ||
                     (model && 
-                     (wfm = dynamic_cast<RangeSummarisableTimeValueModel *>
+                     (wfm = ModelById::getAs<RangeSummarisableTimeValueModel>
                       (model->getSourceModel())))) {
                     completion = wfm->getAlignmentCompletion();
 
@@ -2366,6 +2368,11 @@ View::drawSelections(QPainter &paint)
                       (i->getEndFrame() - i->getStartFrame(), sampleRate)
                       .toText(true)))
                 .arg(i->getEndFrame() - i->getStartFrame());
+            
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
             int sw = metrics.width(startText),
                 ew = metrics.width(endText),
