@@ -1378,7 +1378,7 @@ View::getAligningModel() const
 {
     if (!m_manager ||
         !m_manager->getAlignMode() ||
-        !m_manager->getPlaybackModel()) {
+        m_manager->getPlaybackModel().isNone()) {
         return {};
     }
 

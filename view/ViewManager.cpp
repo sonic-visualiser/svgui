@@ -35,7 +35,6 @@ ViewManager::ViewManager() :
     m_globalCentreFrame(0),
     m_globalZoom(ZoomLevel::FramesPerPixel, 1024),
     m_playbackFrame(0),
-    m_playbackModel(nullptr),
     m_mainModelSampleRate(0),
     m_lastLeft(0), 
     m_lastRight(0),
@@ -194,14 +193,14 @@ ViewManager::setPlaybackFrame(sv_frame_t f)
     }
 }
 
-Model *
+ModelId
 ViewManager::getPlaybackModel() const
 {
     return m_playbackModel;
 }
 
 void
-ViewManager::setPlaybackModel(Model *model)
+ViewManager::setPlaybackModel(ModelId model)
 {
     m_playbackModel = model;
 }
@@ -212,10 +211,14 @@ ViewManager::alignPlaybackFrameToReference(sv_frame_t frame) const
 #ifdef DEBUG_VIEW_MANAGER
     cerr << "ViewManager::alignPlaybackFrameToReference(" << frame << "): playback model is " << m_playbackModel << endl;
 #endif
-    if (!m_playbackModel || !m_alignMode) {
+    if (m_playbackModel.isNone() || !m_alignMode) {
         return frame;
     } else {
-        sv_frame_t f = m_playbackModel->alignToReference(frame);
+        auto playbackModel = ModelById::get(m_playbackModel);
+        if (!playbackModel) {
+            return frame;
+        } 
+        sv_frame_t f = playbackModel->alignToReference(frame);
 #ifdef DEBUG_VIEW_MANAGER
         cerr << "aligned frame = " << f << endl;
 #endif
@@ -229,10 +232,14 @@ ViewManager::alignReferenceToPlaybackFrame(sv_frame_t frame) const
 #ifdef DEBUG_VIEW_MANAGER
     cerr << "ViewManager::alignReferenceToPlaybackFrame(" << frame << "): playback model is " << m_playbackModel << endl;
 #endif
-    if (!m_playbackModel || !m_alignMode) {
+    if (m_playbackModel.isNone() || !m_alignMode) {
         return frame;
     } else {
-        sv_frame_t f = m_playbackModel->alignFromReference(frame);
+        auto playbackModel = ModelById::get(m_playbackModel);
+        if (!playbackModel) {
+            return frame;
+        } 
+        sv_frame_t f = playbackModel->alignFromReference(frame);
 #ifdef DEBUG_VIEW_MANAGER
         cerr << "aligned frame = " << f << endl;
 #endif

@@ -36,7 +36,7 @@
 
 #include <iostream>
 
-ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
+ModelDataTableDialog::ModelDataTableDialog(ModelId tabularModelId,
                                            QString title, QWidget *parent) :
     QMainWindow(parent),
     m_currentRow(0),
@@ -119,7 +119,7 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
     m_tableView->setSortingEnabled(true);
     m_tableView->sortByColumn(0, Qt::AscendingOrder);
 
-    m_table = new ModelDataTableModel(model);
+    m_table = new ModelDataTableModel(tabularModelId);
     m_tableView->setModel(m_table);
 
     m_tableView->horizontalHeader()->setStretchLastSection(true);
