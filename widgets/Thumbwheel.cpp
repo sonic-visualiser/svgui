@@ -466,7 +466,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
 
     QPainter paint(&m_cache);
     paint.setClipRect(m_cache.rect());
-    paint.fillRect(subclip, palette().background().color());
+    paint.fillRect(subclip, palette().window().color());
 
     paint.setRenderHint(QPainter::Antialiasing, true);
 
@@ -564,7 +564,7 @@ Thumbwheel::paintEvent(QPaintEvent *)
         }
 
         paint.setPen(fc);
-        paint.setBrush(palette().background().color());
+        paint.setBrush(palette().window().color());
 
         if (m_orientation == Qt::Horizontal) {
             paint.drawRect(QRectF(x0, bw, x1 - x0, h - bw*2));

@@ -49,7 +49,7 @@ LEDButton::LEDButton(QWidget *parent) :
     QColor col(Qt::green);
     d = new LEDButton::LEDButtonPrivate;
     d->dark_factor = 300;
-    d->offcolor = col.dark(300);
+    d->offcolor = col.darker(300);
     
     setColor(col);
 }
@@ -61,7 +61,7 @@ LEDButton::LEDButton(const QColor& col, QWidget *parent) :
 {
     d = new LEDButton::LEDButtonPrivate;
     d->dark_factor = 300;
-    d->offcolor = col.dark(300);
+    d->offcolor = col.darker(300);
 
     setColor(col);
 }
@@ -72,7 +72,7 @@ LEDButton::LEDButton(const QColor& col, bool state, QWidget *parent) :
 {
     d = new LEDButton::LEDButtonPrivate;
     d->dark_factor = 300;
-    d->offcolor = col.dark(300);
+    d->offcolor = col.darker(300);
 
     setColor(col);
 }
@@ -160,7 +160,7 @@ LEDButton::paintEvent(QPaintEvent *)
 
     // Now draw the bright spot on the LED:
     while (light_width) {
-        color = color.light( light_quote );                      // make color lighter
+        color = color.lighter( light_quote );                      // make color lighter
         pen.setColor( color );                                   // set color as pen color
         paint.setPen( pen );                                     // select the pen for drawing
         paint.drawEllipse( pos, pos, light_width, light_width ); // draw the ellipse (circle)
@@ -197,7 +197,7 @@ LEDButton::paintEvent(QPaintEvent *)
         int w = width - pen.width()/2;
         paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle + arc, 240);
         paint.drawArc(pen.width()/2 + 1, pen.width()/2 + 1, w - 2, w - 2, angle - arc, 240);
-        color = color.dark(110); //FIXME: this should somehow use the contrast value
+        color = color.darker(110); //FIXME: this should somehow use the contrast value
     }        // end for ( angle = 720; angle < 6480; angle += 160 )
 
     paint.end();
@@ -238,7 +238,7 @@ LEDButton::setColor(const QColor& col)
 {
     if(led_color!=col) {
         led_color = col;
-        d->offcolor = col.dark(d->dark_factor);
+        d->offcolor = col.darker(d->dark_factor);
         update();
     }
 }
@@ -248,7 +248,7 @@ LEDButton::setDarkFactor(int darkfactor)
 {
     if (d->dark_factor != darkfactor) {
         d->dark_factor = darkfactor;
-        d->offcolor = led_color.dark(darkfactor);
+        d->offcolor = led_color.darker(darkfactor);
         update();
     }
 }

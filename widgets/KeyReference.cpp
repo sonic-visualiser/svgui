@@ -21,7 +21,7 @@
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 
 KeyReference::KeyReference() :
     m_text(nullptr),
@@ -185,9 +185,9 @@ KeyReference::show()
     layout->addWidget(bb);
 
     m_dialog->show();
-    
-    QDesktopWidget *desktop = QApplication::desktop();
-    QRect available = desktop->availableGeometry();
+
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect available = screen->availableGeometry();
 
     int width = available.width() * 3 / 5;
     int height = available.height() * 2 / 3;

@@ -162,7 +162,7 @@ Panner::paintEvent(QPaintEvent *)
     QPainter paint(this);
     paint.setRenderHint(QPainter::Antialiasing, false);
 
-    QColor bg(palette().background().color());
+    QColor bg(palette().window().color());
     bg.setAlpha(m_backgroundAlpha);
 
     int penWidth = WidgetScale::scalePixelSize(1);

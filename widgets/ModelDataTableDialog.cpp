@@ -30,7 +30,7 @@
 #include <QDialogButtonBox>
 #include <QHeaderView>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QAction>
 #include <QToolBar>
 
@@ -144,8 +144,8 @@ ModelDataTableDialog::ModelDataTableDialog(TabularModel *model,
     grid->addWidget(bb, 2, 0);
     grid->setRowStretch(2, 0);
     
-    QDesktopWidget *desktop = QApplication::desktop();
-    QRect available = desktop->availableGeometry();
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect available = screen->availableGeometry();
 
     int width = available.width() / 3;
     int height = available.height() / 2;
