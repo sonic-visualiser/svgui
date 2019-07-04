@@ -107,13 +107,11 @@ Layer::setObjectName(const QString &name)
     emit layerNameChanged();
 }
 
-PlayParameters *
+std::shared_ptr<PlayParameters>
 Layer::getPlayParameters() 
 {
-//    cerr << "Layer (" << this << ", " << objectName() << ")::getPlayParameters: model is "<< getModel() << endl;
     return PlayParameterRepository::getInstance()->getPlayParameters
         (getModel().untyped);
-    return nullptr;
 }
 
 void

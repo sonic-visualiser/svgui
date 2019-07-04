@@ -142,7 +142,7 @@ PropertyBox::populateViewPlayFrame()
                 this, SLOT(populateViewPlayFrame()));
     }
 
-    PlayParameters *params = m_container->getPlayParameters();
+    auto params = m_container->getPlayParameters();
     if (!params && !layer) return;
 
     m_viewPlayFrame = new QFrame;
@@ -175,7 +175,7 @@ PropertyBox::populateViewPlayFrame()
                 this, SLOT(mouseEnteredWidget()));
         connect(m_playButton, SIGNAL(mouseLeft()),
                 this, SLOT(mouseLeftWidget()));
-        connect(params, SIGNAL(playAudibleChanged(bool)),
+        connect(params.get(), SIGNAL(playAudibleChanged(bool)),
                 this, SLOT(playAudibleChanged(bool)));
 
         LevelPanToolButton *levelPan = new LevelPanToolButton;
@@ -186,9 +186,9 @@ PropertyBox::populateViewPlayFrame()
                 this, SLOT(playGainControlChanged(float)));
         connect(levelPan, SIGNAL(panChanged(float)),
                 this, SLOT(playPanControlChanged(float)));
-        connect(params, SIGNAL(playGainChanged(float)),
+        connect(params.get(), SIGNAL(playGainChanged(float)),
                 levelPan, SLOT(setLevel(float)));
-        connect(params, SIGNAL(playPanChanged(float)),
+        connect(params.get(), SIGNAL(playPanChanged(float)),
                 levelPan, SLOT(setPan(float)));
         connect(levelPan, SIGNAL(mouseEntered()),
                 this, SLOT(mouseEnteredWidget()));
@@ -674,7 +674,7 @@ PropertyBox::playAudibleChanged(bool audible)
 void
 PropertyBox::playAudibleButtonChanged(bool audible)
 {
-    PlayParameters *params = m_container->getPlayParameters();
+    auto params = m_container->getPlayParameters();
     if (!params) return;
 
     if (params->isPlayAudible() != audible) {
@@ -690,7 +690,7 @@ PropertyBox::playGainControlChanged(float gain)
 {
     QObject *obj = sender();
 
-    PlayParameters *params = m_container->getPlayParameters();
+    auto params = m_container->getPlayParameters();
     if (!params) return;
 
     if (params->getPlayGain() != gain) {
@@ -708,7 +708,7 @@ PropertyBox::playPanControlChanged(float pan)
 {
     QObject *obj = sender();
 
-    PlayParameters *params = m_container->getPlayParameters();
+    auto params = m_container->getPlayParameters();
     if (!params) return;
 
     if (params->getPlayPan() != pan) {
@@ -724,7 +724,7 @@ PropertyBox::playPanControlChanged(float pan)
 void
 PropertyBox::editPlayParameters()
 {
-    PlayParameters *params = m_container->getPlayParameters();
+    auto params = m_container->getPlayParameters();
     if (!params) return;
 
     QString clip = params->getPlayClipId();
@@ -774,7 +774,7 @@ PropertyBox::editPlayParameters()
 void
 PropertyBox::playClipChanged(QString id)
 {
-    PlayParameters *params = m_container->getPlayParameters();
+    auto params = m_container->getPlayParameters();
     if (!params) return;
 
     params->setPlayClipId(id);
@@ -823,7 +823,7 @@ PropertyBox::updateContextHelp(QObject *o)
 
     } else if (wname == "playParamButton") {
  
-        PlayParameters *params = m_container->getPlayParameters();
+        auto params = m_container->getPlayParameters();
         if (params) {
             help = tr("Change sound used for playback (currently \"%1\")")
                 .arg(params->getPlayClipId());

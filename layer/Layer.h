@@ -411,7 +411,12 @@ public:
      */
     virtual bool isLayerDormant(const LayerGeometryProvider *v) const;
 
-    PlayParameters *getPlayParameters() override;
+    /**
+     * Return the play parameters for this layer, if any. The return
+     * value is a shared_ptr that can be passed to (e.g.)
+     * PlayParameterRepository::EditCommand to change the parameters.
+     */
+    std::shared_ptr<PlayParameters> getPlayParameters() override;
 
     /**
      * True if this layer will need to place text labels when it is

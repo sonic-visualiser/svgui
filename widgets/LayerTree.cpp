@@ -296,9 +296,9 @@ LayerTreeModel::LayerTreeModel(PaneStack *stack, QObject *parent) :
         for (int j = 0; j < pane->getLayerCount(); ++j) {
             Layer *layer = pane->getLayer(j);
             if (!layer) continue;
-            PlayParameters *params = layer->getPlayParameters();
+            auto params = layer->getPlayParameters();
             if (!params) continue;
-            connect(params, SIGNAL(playAudibleChanged(bool)),
+            connect(params.get(), SIGNAL(playAudibleChanged(bool)),
                     this, SLOT(playParametersAudibilityChanged(bool)));
         }
     }
@@ -378,7 +378,7 @@ LayerTreeModel::playParametersAudibilityChanged(bool a)
         for (int j = 0; j < pane->getLayerCount(); ++j) {
             Layer *layer = pane->getLayer(j);
             if (!layer) continue;
-            if (layer->getPlayParameters() == params) {
+            if (layer->getPlayParameters().get() == params) { // ugh
                 SVDEBUG << "LayerTreeModel::playParametersAudibilityChanged("
                           << params << "," << a << "): row " << pane->getLayerCount() - j - 1 << ", col " << 2 << endl;
 
@@ -434,7 +434,7 @@ LayerTreeModel::data(const QModelIndex &index, int role) const
                 }
             } else if (col == m_layerPlayedColumn) {
                 if (role == Qt::CheckStateRole) {
-                    PlayParameters *params = layer->getPlayParameters();
+                    auto params = layer->getPlayParameters();
                     if (params) return QVariant(params->isPlayMuted() ?
                                                 Qt::Unchecked : Qt::Checked);
                     else return QVariant();
@@ -475,7 +475,7 @@ LayerTreeModel::setData(const QModelIndex &index, const QVariant &value, int rol
         }
     } else if (col == m_layerPlayedColumn) {
         if (role == Qt::CheckStateRole) {
-            PlayParameters *params = layer->getPlayParameters();
+            auto params = layer->getPlayParameters();
             if (params) {
                 params->setPlayMuted(value.toInt() == Qt::Unchecked);
                 emit dataChanged(index, index);
