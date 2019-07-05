@@ -156,8 +156,8 @@ public:
                QString extraAttributes = "") const override;
 
 protected slots:
-    void handleModelChanged();
-    void handleModelChangedWithin(sv_frame_t, sv_frame_t);
+    void handleModelChanged(ModelId);
+    void handleModelChangedWithin(ModelId, sv_frame_t, sv_frame_t);
 
 protected:
     ModelId m_model; // A DenseThreeDimensionalModel

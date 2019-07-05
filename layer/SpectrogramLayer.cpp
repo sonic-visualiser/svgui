@@ -215,10 +215,12 @@ SpectrogramLayer::setModel(ModelId modelId)
 
         connectSignals(m_model);
 
-        connect(newModel.get(), SIGNAL(modelChanged()),
-                this, SLOT(cacheInvalid()));
-        connect(newModel.get(), SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-                this, SLOT(cacheInvalid(sv_frame_t, sv_frame_t)));
+        connect(newModel.get(),
+                SIGNAL(modelChanged(ModelId)),
+                this, SLOT(cacheInvalid(ModelId)));
+        connect(newModel.get(),
+                SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+                this, SLOT(cacheInvalid(ModelId, sv_frame_t, sv_frame_t)));
     }
     
     emit modelReplaced();
@@ -1058,7 +1060,7 @@ SpectrogramLayer::isLayerScrollable(const LayerGeometryProvider *) const
 }
 
 void
-SpectrogramLayer::cacheInvalid()
+SpectrogramLayer::cacheInvalid(ModelId)
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::cacheInvalid()" << endl;
@@ -1070,6 +1072,7 @@ SpectrogramLayer::cacheInvalid()
 
 void
 SpectrogramLayer::cacheInvalid(
+    ModelId,
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     sv_frame_t from, sv_frame_t to
 #else 
@@ -1417,8 +1420,7 @@ SpectrogramLayer::recreateFFTModel()
         return;
     }
 
-    ModelById::add(newFFTModel);
-    m_fftModel = newFFTModel->getId();
+    m_fftModel = ModelById::add(newFFTModel);
 
     bool createWholeCache = false;
     checkCacheSpace(&m_peakCacheDivisor, &createWholeCache);
@@ -1426,20 +1428,17 @@ SpectrogramLayer::recreateFFTModel()
     if (createWholeCache) {
 
         auto whole = std::make_shared<Dense3DModelPeakCache>(m_fftModel, 1);
-        ModelById::add(whole);
-        m_wholeCache = whole->getId();
+        m_wholeCache = ModelById::add(whole);
 
         auto peaks = std::make_shared<Dense3DModelPeakCache>(m_wholeCache,
                                                              m_peakCacheDivisor);
-        ModelById::add(peaks);
-        m_peakCache = peaks->getId();
+        m_peakCache = ModelById::add(peaks);
 
     } else {
 
         auto peaks = std::make_shared<Dense3DModelPeakCache>(m_fftModel,
                                                              m_peakCacheDivisor);
-        ModelById::add(peaks);
-        m_peakCache = peaks->getId();
+        m_peakCache = ModelById::add(peaks);
     }
 }
 

@@ -237,8 +237,8 @@ public:
     ModelId getSliceableModel() const override;
 
 protected slots:
-    void cacheInvalid();
-    void cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame);
+    void cacheInvalid(ModelId);
+    void cacheInvalid(ModelId, sv_frame_t startFrame, sv_frame_t endFrame);
     
     void preferenceChanged(PropertyContainer::PropertyName name);
 

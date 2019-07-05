@@ -930,7 +930,7 @@ ImageLayer::fileSourceReady()
     m_images.erase(img);
     for (ViewImageMap::iterator i = m_scaled.begin(); i != m_scaled.end(); ++i) {
         i->second.erase(img);
-        emit modelChanged();
+        emit modelChanged(getModel());
     }
 }
 

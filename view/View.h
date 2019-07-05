@@ -417,10 +417,10 @@ signals:
     void contextHelpChanged(const QString &);
 
 public slots:
-    virtual void modelChanged();
-    virtual void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame);
-    virtual void modelCompletionChanged();
-    virtual void modelAlignmentCompletionChanged();
+    virtual void modelChanged(ModelId);
+    virtual void modelChangedWithin(ModelId, sv_frame_t startFrame, sv_frame_t endFrame);
+    virtual void modelCompletionChanged(ModelId);
+    virtual void modelAlignmentCompletionChanged(ModelId);
     virtual void modelReplaced();
     virtual void layerParametersChanged();
     virtual void layerParameterRangesChanged();
@@ -504,7 +504,7 @@ protected:
 
     void movePlayPointer(sv_frame_t f);
 
-    void checkProgress(void *object);
+    void checkProgress(ModelId);
     int getProgressBarWidth() const; // if visible
 
     int effectiveDevicePixelRatio() const;

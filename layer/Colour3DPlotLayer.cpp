@@ -155,10 +155,10 @@ Colour3DPlotLayer::setModel(ModelId modelId)
     if (newModel) {
         connectSignals(m_model);
 
-        connect(newModel.get(), SIGNAL(modelChanged()),
-                this, SLOT(handleModelChanged()));
-        connect(newModel.get(), SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-                this, SLOT(handleModelChangedWithin(sv_frame_t, sv_frame_t)));
+        connect(newModel.get(), SIGNAL(modelChanged(ModelId)),
+                this, SLOT(handleModelChanged(ModelId)));
+        connect(newModel.get(), SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+                this, SLOT(handleModelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
 
         m_peakResolution = 256;
         if (newModel->getResolution() > 512) {
@@ -214,14 +214,13 @@ Colour3DPlotLayer::getPeakCache() const
     if (m_peakCache.isNone()) {
         auto peakCache = std::make_shared<Dense3DModelPeakCache>
             (m_model, m_peakCacheDivisor);
-        ModelById::add(peakCache);
-        m_peakCache = peakCache->getId();
+        m_peakCache = ModelById::add(peakCache);
     }
     return m_peakCache;
 }
 
 void
-Colour3DPlotLayer::handleModelChanged()
+Colour3DPlotLayer::handleModelChanged(ModelId modelId)
 {
     if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
         auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
@@ -234,11 +233,13 @@ Colour3DPlotLayer::handleModelChanged()
         }
     }
     invalidatePeakCache();
-    emit modelChanged();
+    emit modelChanged(modelId);
 }
 
 void
-Colour3DPlotLayer::handleModelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
+Colour3DPlotLayer::handleModelChangedWithin(ModelId modelId,
+                                            sv_frame_t startFrame,
+                                            sv_frame_t endFrame)
 {
     if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
         auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
@@ -250,7 +251,7 @@ Colour3DPlotLayer::handleModelChangedWithin(sv_frame_t startFrame, sv_frame_t en
             }
         }
     }
-    emit modelChangedWithin(startFrame, endFrame);
+    emit modelChangedWithin(modelId, startFrame, endFrame);
 }
 
 Layer::PropertyList

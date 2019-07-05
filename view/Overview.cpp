@@ -42,7 +42,7 @@ Overview::Overview(QWidget *w) :
 }
 
 void
-Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
+Overview::modelChangedWithin(ModelId modelId, sv_frame_t startFrame, sv_frame_t endFrame)
 {
     using namespace std::rel_ops;
     
@@ -70,7 +70,7 @@ Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
         }
     }
 
-    View::modelChangedWithin(startFrame, endFrame);
+    View::modelChangedWithin(modelId, startFrame, endFrame);
 }
 
 void

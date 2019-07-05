@@ -562,10 +562,10 @@ public slots:
     void showLayer(LayerGeometryProvider *, bool show);
 
 signals:
-    void modelChanged();
-    void modelCompletionChanged();
-    void modelAlignmentCompletionChanged();
-    void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame);
+    void modelChanged(ModelId);
+    void modelCompletionChanged(ModelId);
+    void modelAlignmentCompletionChanged(ModelId);
+    void modelChangedWithin(ModelId, sv_frame_t startFrame, sv_frame_t endFrame);
     void modelReplaced();
 
     void layerParametersChanged();

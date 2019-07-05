@@ -116,8 +116,7 @@ SpectrumLayer::setupFFT()
         m_maxbin = newFFT->getHeight();
     }
 
-    ModelById::add(newFFT);
-    setSliceableModel(newFFT->getId());
+    setSliceableModel(ModelById::add(newFFT));
 
     m_biasCurve.clear();
     for (int i = 0; i < fftSize; ++i) {

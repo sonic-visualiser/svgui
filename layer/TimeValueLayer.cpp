@@ -284,7 +284,7 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
         if (model) {
             model->setScaleUnits
                 (UnitDatabase::getInstance()->getUnitById(value));
-            emit modelChanged();
+            emit modelChanged(m_model);
         }
     } else if (name == "Draw Segment Division Lines") {
         setDrawSegmentDivisions(value > 0.5);

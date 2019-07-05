@@ -51,17 +51,17 @@ Layer::connectSignals(ModelId modelId)
     auto model = ModelById::get(modelId);
     if (!model) return;
     
-    connect(model.get(), SIGNAL(modelChanged()),
-            this, SIGNAL(modelChanged()));
+    connect(model.get(), SIGNAL(modelChanged(ModelId)),
+            this, SIGNAL(modelChanged(ModelId)));
 
-    connect(model.get(), SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)));
+    connect(model.get(), SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+            this, SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
 
-    connect(model.get(), SIGNAL(completionChanged()),
-            this, SIGNAL(modelCompletionChanged()));
+    connect(model.get(), SIGNAL(completionChanged(ModelId)),
+            this, SIGNAL(modelCompletionChanged(ModelId)));
 
-    connect(model.get(), SIGNAL(alignmentCompletionChanged()),
-            this, SIGNAL(modelAlignmentCompletionChanged()));
+    connect(model.get(), SIGNAL(alignmentCompletionChanged(ModelId)),
+            this, SIGNAL(modelAlignmentCompletionChanged(ModelId)));
 }
 
 QString

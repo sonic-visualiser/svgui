@@ -706,14 +706,14 @@ View::addLayer(Layer *layer)
             this,    SLOT(layerMeasurementRectsChanged()));
     connect(layer, SIGNAL(layerNameChanged()),
             this,    SLOT(layerNameChanged()));
-    connect(layer, SIGNAL(modelChanged()),
-            this,    SLOT(modelChanged()));
-    connect(layer, SIGNAL(modelCompletionChanged()),
-            this,    SLOT(modelCompletionChanged()));
-    connect(layer, SIGNAL(modelAlignmentCompletionChanged()),
-            this,    SLOT(modelAlignmentCompletionChanged()));
-    connect(layer, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this,    SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
+    connect(layer, SIGNAL(modelChanged(ModelId)),
+            this,    SLOT(modelChanged(ModelId)));
+    connect(layer, SIGNAL(modelCompletionChanged(ModelId)),
+            this,    SLOT(modelCompletionChanged(ModelId)));
+    connect(layer, SIGNAL(modelAlignmentCompletionChanged(ModelId)),
+            this,    SLOT(modelAlignmentCompletionChanged(ModelId)));
+    connect(layer, SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+            this,    SLOT(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
     connect(layer, SIGNAL(modelReplaced()),
             this,    SLOT(modelReplaced()));
 
@@ -761,14 +761,14 @@ View::removeLayer(Layer *layer)
                this,    SLOT(layerParameterRangesChanged()));
     disconnect(layer, SIGNAL(layerNameChanged()),
                this,    SLOT(layerNameChanged()));
-    disconnect(layer, SIGNAL(modelChanged()),
-               this,    SLOT(modelChanged()));
-    disconnect(layer, SIGNAL(modelCompletionChanged()),
-               this,    SLOT(modelCompletionChanged()));
-    disconnect(layer, SIGNAL(modelAlignmentCompletionChanged()),
-               this,    SLOT(modelAlignmentCompletionChanged()));
-    disconnect(layer, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-               this,    SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
+    disconnect(layer, SIGNAL(modelChanged(ModelId)),
+               this,    SLOT(modelChanged(ModelId)));
+    disconnect(layer, SIGNAL(modelCompletionChanged(ModelId)),
+               this,    SLOT(modelCompletionChanged(ModelId)));
+    disconnect(layer, SIGNAL(modelAlignmentCompletionChanged(ModelId)),
+               this,    SLOT(modelAlignmentCompletionChanged(ModelId)));
+    disconnect(layer, SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+               this,    SLOT(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
     disconnect(layer, SIGNAL(modelReplaced()),
                this,    SLOT(modelReplaced()));
 
@@ -922,23 +922,12 @@ View::setPlaybackFollow(PlaybackFollowMode m)
 }
 
 void
-View::modelChanged()
+View::modelChanged(ModelId modelId)
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr << "View(" << this << ")::modelChanged()" << endl;
 #endif
 
-    QObject *obj = sender();
-    
-    ModelId model;
-    if (Model *modelPtr = qobject_cast<Model *>(obj)) {
-        model = modelPtr->getId();
-    } else if (Layer *layerPtr = qobject_cast<Layer *>(obj)) {
-        model = layerPtr->getModel();
-    } else {
-        return;
-    }
-    
     // If the model that has changed is not used by any of the cached
     // layers, we won't need to recreate the cache
     
@@ -948,7 +937,7 @@ View::modelChanged()
     LayerList scrollables = getScrollableBackLayers(false, discard);
     for (LayerList::const_iterator i = scrollables.begin();
          i != scrollables.end(); ++i) {
-        if ((*i)->getModel() == model) {
+        if ((*i)->getModel() == modelId) {
             recreate = true;
             break;
         }
@@ -960,25 +949,15 @@ View::modelChanged()
 
     emit layerModelChanged();
 
-    checkProgress(obj);
+    checkProgress(modelId);
 
     update();
 }
 
 void
-View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
+View::modelChangedWithin(ModelId modelId,
+                         sv_frame_t startFrame, sv_frame_t endFrame)
 {
-    QObject *obj = sender();
-    
-    ModelId model;
-    if (Model *modelPtr = qobject_cast<Model *>(obj)) {
-        model = modelPtr->getId();
-    } else if (Layer *layerPtr = qobject_cast<Layer *>(obj)) {
-        model = layerPtr->getModel();
-    } else {
-        return;
-    }
-
     sv_frame_t myStartFrame = getStartFrame();
     sv_frame_t myEndFrame = getEndFrame();
 
@@ -987,11 +966,11 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 #endif
 
     if (myStartFrame > 0 && endFrame < myStartFrame) {
-        checkProgress(obj);
+        checkProgress(modelId);
         return;
     }
     if (startFrame > myEndFrame) {
-        checkProgress(obj);
+        checkProgress(modelId);
         return;
     }
 
@@ -1004,7 +983,7 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
     LayerList scrollables = getScrollableBackLayers(false, discard);
     for (LayerList::const_iterator i = scrollables.begin();
          i != scrollables.end(); ++i) {
-        if ((*i)->getModel() == model) {
+        if ((*i)->getModel() == modelId) {
             recreate = true;
             break;
         }
@@ -1017,27 +996,21 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
     if (startFrame < myStartFrame) startFrame = myStartFrame;
     if (endFrame > myEndFrame) endFrame = myEndFrame;
 
-    checkProgress(obj);
+    checkProgress(modelId);
 
     update();
 }    
 
 void
-View::modelCompletionChanged()
+View::modelCompletionChanged(ModelId modelId)
 {
-//    cerr << "View(" << this << ")::modelCompletionChanged()" << endl;
-
-    QObject *obj = sender();
-    checkProgress(obj);
+    checkProgress(modelId);
 }
 
 void
-View::modelAlignmentCompletionChanged()
+View::modelAlignmentCompletionChanged(ModelId modelId)
 {
-//    cerr << "View(" << this << ")::modelAlignmentCompletionChanged()" << endl;
-
-    QObject *obj = sender();
-    checkProgress(obj);
+    checkProgress(modelId);
 }
 
 void
@@ -1391,17 +1364,18 @@ View::getAligningModel() const
         if (!layer) continue;
         if (dynamic_cast<TimeRulerLayer *>(layer)) continue;
 
-        auto model = ModelById::get(layer->getModel());
+        ModelId thisId = layer->getModel();
+        auto model = ModelById::get(thisId);
         if (!model) continue;
 
-        anyModel = model->getId();
+        anyModel = thisId;
 
         if (!model->getAlignmentReference().isNone()) {
-            alignedModel = model->getId();
+            alignedModel = thisId;
             if (layer->isLayerOpaque() ||
                 std::dynamic_pointer_cast
                 <RangeSummarisableTimeValueModel>(model)) {
-                goodModel = model->getId();
+                goodModel = thisId;
             }
         }
     }
@@ -1762,11 +1736,11 @@ View::cancelClicked()
 }
 
 void
-View::checkProgress(void *object)
+View::checkProgress(ModelId modelId)
 {
     if (!m_showProgress) {
 #ifdef DEBUG_PROGRESS_STUFF
-        SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
+        SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
                << "m_showProgress is off" << endl;
 #endif
         return;
@@ -1786,7 +1760,7 @@ View::checkProgress(void *object)
         QProgressBar *pb = i->second.bar;
         QPushButton *cancel = i->second.cancel;
 
-        if (i->first == object) {
+        if (i->first && i->first->getModel() == modelId) {
 
             found = true;
 
@@ -1819,8 +1793,6 @@ View::checkProgress(void *object)
                 QMessageBox::critical(this, tr("Layer rendering error"), error);
                 m_lastError = error;
             }
-
-            ModelId modelId = i->first->getModel();
 
             auto model = ModelById::get(modelId);
             auto wfm = std::dynamic_pointer_cast
