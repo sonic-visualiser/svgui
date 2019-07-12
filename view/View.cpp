@@ -1748,6 +1748,7 @@ View::checkProgress(ModelId modelId)
 
     QSettings settings;
     settings.beginGroup("View");
+    //!!! perhaps alignments in general should not be cancellable?
     bool showCancelButton = settings.value("showcancelbuttons", true).toBool();
     settings.endGroup();
     
