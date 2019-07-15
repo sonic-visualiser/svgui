@@ -1719,19 +1719,18 @@ View::cancelClicked()
     QPushButton *cancel = qobject_cast<QPushButton *>(sender());
     if (!cancel) return;
 
+    Layer *layer = nullptr;
+    
     for (ProgressMap::iterator i = m_progressBars.begin();
          i != m_progressBars.end(); ++i) {
-
         if (i->second.cancel == cancel) {
-
-/*!!!
-            Layer *layer = i->first;
-            Model *model = layer->getModel();
-
-            //!!! todo: restore this behaviour
-            if (model) model->abandon();
-*/
+            layer = i->first;
+            break;
         }
+    }
+
+    if (layer) {
+        emit cancelButtonPressed(layer);
     }
 }
 

@@ -408,6 +408,8 @@ signals:
 
     void layerModelChanged();
 
+    void cancelButtonPressed(Layer *);
+    
     void centreFrameChanged(sv_frame_t frame,
                             bool globalScroll,
                             PlaybackFollowMode followMode);
