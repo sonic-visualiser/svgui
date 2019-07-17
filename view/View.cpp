@@ -1747,7 +1747,6 @@ View::checkProgress(ModelId modelId)
 
     QSettings settings;
     settings.beginGroup("View");
-    //!!! perhaps alignments in general should not be cancellable?
     bool showCancelButton = settings.value("showcancelbuttons", true).toBool();
     settings.endGroup();
     
@@ -1808,7 +1807,13 @@ View::checkProgress(ModelId modelId)
                     (model && 
                      (wfm = ModelById::getAs<RangeSummarisableTimeValueModel>
                       (model->getSourceModel())))) {
+
                     completion = wfm->getAlignmentCompletion();
+
+                    // We don't allow cancelling alignment operations
+                    // - they aren't usually all that expensive, and
+                    // it would leave things in a very uncertain state
+                    showCancelButton = false;
 
 #ifdef DEBUG_PROGRESS_STUFF
                     SVCERR << "View[" << this << "]::checkProgress(" << object << "): "

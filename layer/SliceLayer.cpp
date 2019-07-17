@@ -89,17 +89,7 @@ SliceLayer::sliceableModelReplaced(ModelId orig, ModelId replacement)
         setSliceableModel(replacement);
     }
 }
-/*!!!
-void
-SliceLayer::modelAboutToBeDeleted(Model *m)
-{
-    SVDEBUG << "SliceLayer::modelAboutToBeDeleted(" << m << ")" << endl;
 
-    if (m == m_sliceableModel) {
-        setSliceableModel(nullptr);
-    }
-}
-*/
 QString
 SliceLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
 {

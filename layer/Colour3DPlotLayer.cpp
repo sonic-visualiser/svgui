@@ -173,7 +173,6 @@ Colour3DPlotLayer::setModel(ModelId modelId)
     invalidatePeakCache();
 
     emit modelReplaced();
-//!!!    emit sliceableModelReplaced(oldModel, model);
 }
 
 void
