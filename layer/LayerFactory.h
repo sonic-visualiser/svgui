@@ -104,8 +104,10 @@ protected:
     bool trySetModel(Layer *layerBase, ModelId modelId) {
         LayerClass *layer = dynamic_cast<LayerClass *>(layerBase);
         if (!layer) return false;
-        auto model = ModelById::getAs<ModelClass>(modelId);
-        if (!model) return false;
+        if (!modelId.isNone()) {
+            auto model = ModelById::getAs<ModelClass>(modelId);
+            if (!model) return false;
+        }
         layer->setModel(modelId);
         return true;
     }
