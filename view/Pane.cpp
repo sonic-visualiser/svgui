@@ -367,33 +367,49 @@ Pane::paintEvent(QPaintEvent *e)
     Layer *topLayer = getTopLayer();
     bool haveSomeTimeXAxis = false;
 
-    const Model *waveformModel = nullptr; // just for reporting purposes
-    const Model *workModel = nullptr;
+    ModelId waveformModelId; // just for reporting purposes
+    ModelId workModelId;
 
-    for (LayerList::iterator vi = m_layerStack.end(); vi != m_layerStack.begin(); ) {
+    for (LayerList::iterator vi = m_layerStack.end();
+         vi != m_layerStack.begin(); ) {
+
         --vi;
+
         if (!haveSomeTimeXAxis && (*vi)->hasTimeXAxis()) {
             haveSomeTimeXAxis = true;
         }
-        if (dynamic_cast<WaveformLayer *>(*vi)) {
-            waveformModel = (*vi)->getModel();
-            workModel = waveformModel;
-        } else {
-            Model *m = (*vi)->getModel();
-            if (dynamic_cast<WaveFileModel *>(m)) {
-                workModel = m;
-            } else if (m && dynamic_cast<WaveFileModel *>(m->getSourceModel())) {
-                workModel = m->getSourceModel();
+
+        ModelId modelId = (*vi)->getModel();
+        if (!modelId.isNone()) {
+            if (dynamic_cast<WaveformLayer *>(*vi)) {
+                waveformModelId = modelId;
+                workModelId = modelId;
+            } else {
+                if (ModelById::isa<WaveFileModel>(modelId)) {
+                    workModelId = modelId;
+                } else {
+                    auto model = ModelById::get(modelId);
+                    if (model) {
+                        ModelId sourceId = model->getSourceModel();
+                        if (ModelById::isa<WaveFileModel>(sourceId)) {
+                            workModelId = sourceId;
+                        }
+                    }
+                }
             }
         }
                 
-        if (waveformModel && workModel && haveSomeTimeXAxis) break;
+        if (!waveformModelId.isNone() &&
+            !workModelId.isNone() &&
+            haveSomeTimeXAxis) {
+            break;
+        }
     }
 
     // Block off left and right extents so we can see where the main model ends
     
-    if (workModel && hasTopLayerTimeXAxis()) {
-        drawModelTimeExtents(r, paint, workModel);
+    if (!workModelId.isNone() && hasTopLayerTimeXAxis()) {
+        drawModelTimeExtents(r, paint, workModelId);
     }
 
     // Crosshairs for mouse movement in measure mode
@@ -444,26 +460,26 @@ Pane::paintEvent(QPaintEvent *e)
     
     paint.setPen(QColor(50, 50, 50));
 
-    if (waveformModel &&
+    if (!waveformModelId.isNone() &&
         sampleRate &&
         m_manager &&
         m_manager->shouldShowDuration()) {
-        drawDurationAndRate(r, waveformModel, sampleRate, paint);
+        drawDurationAndRate(r, waveformModelId, sampleRate, paint);
     }
 
     bool haveWorkTitle = false;
 
-    if (workModel &&
+    if (!workModelId.isNone() &&
         m_manager &&
         m_manager->shouldShowWorkTitle()) {
-        drawWorkTitle(r, paint, workModel);
+        drawWorkTitle(r, paint, workModelId);
         haveWorkTitle = true;
     }
 
-    if (workModel &&
+    if (!workModelId.isNone() &&
         m_manager &&
         m_manager->getAlignMode()) {
-        drawAlignmentStatus(r, paint, workModel, haveWorkTitle);
+        drawAlignmentStatus(r, paint, workModelId, haveWorkTitle);
     }
 
     if (m_manager &&
@@ -632,6 +648,11 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
         
         paint.save();
         
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
         int tabStop =
             paint.fontMetrics().width(tr("Some lengthy prefix:"));
         
@@ -750,8 +771,11 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
 }
 
 void
-Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
+Pane::drawModelTimeExtents(QRect r, QPainter &paint, ModelId modelId)
 {
+    auto model = ModelById::get(modelId);
+    if (!model) return;
+
     paint.save();
     
     QBrush brush;
@@ -788,14 +812,17 @@ Pane::drawModelTimeExtents(QRect r, QPainter &paint, const Model *model)
 }
 
 void
-Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
+Pane::drawAlignmentStatus(QRect r, QPainter &paint, ModelId modelId,
                           bool down)
 {
-    const Model *reference = model->getAlignmentReference();
+    auto model = ModelById::get(modelId);
+    if (!model) return;
+    
+    ModelId reference = model->getAlignmentReference();
 /*
     if (!reference) {
         cerr << "Pane[" << this << "]::drawAlignmentStatus: No reference" << endl;
-    } else if (reference == model) {
+    } else if (reference == model->getId()) {
         cerr << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << endl;
     } else {
         cerr << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << endl;
@@ -804,9 +831,9 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
     QString text;
     int completion = 100;
 
-    if (reference == model) {
+    if (reference == modelId) {
         text = tr("Reference");
-    } else if (!reference) {
+    } else if (reference.isNone()) {
         text = tr("Unaligned");
     } else {
         completion = model->getAlignmentCompletion();
@@ -841,15 +868,18 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, const Model *model,
 }
 
 void
-Pane::modelAlignmentCompletionChanged()
+Pane::modelAlignmentCompletionChanged(ModelId modelId)
 {
-    View::modelAlignmentCompletionChanged();
+    View::modelAlignmentCompletionChanged(modelId);
     update(QRect(0, 0, 300, 100));
 }
 
 void
-Pane::drawWorkTitle(QRect r, QPainter &paint, const Model *model)
+Pane::drawWorkTitle(QRect r, QPainter &paint, ModelId modelId)
 {
+    auto model = ModelById::get(modelId);
+    if (!model) return;
+    
     QString title = model->getTitle();
     QString maker = model->getMaker();
 //SVDEBUG << "Pane::drawWorkTitle: title=\"" << title//<< "\", maker=\"" << maker << "\"" << endl;
@@ -1025,9 +1055,12 @@ Pane::drawEditingSelection(QPainter &paint)
 }
 
 void
-Pane::drawDurationAndRate(QRect r, const Model *waveformModel,
+Pane::drawDurationAndRate(QRect r, ModelId waveformModelId,
                           sv_samplerate_t sampleRate, QPainter &paint)
 {
+    auto waveformModel = ModelById::get(waveformModelId);
+    if (!waveformModel) return;
+    
     int fontHeight = paint.fontMetrics().height();
     int fontAscent = paint.fontMetrics().ascent();
 

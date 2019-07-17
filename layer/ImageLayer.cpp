@@ -43,8 +43,6 @@ QMutex
 ImageLayer::m_imageMapMutex;
 
 ImageLayer::ImageLayer() :
-    Layer(),
-    m_model(nullptr),
     m_editing(false),
     m_editingCommand(nullptr)
 {
@@ -58,13 +56,29 @@ ImageLayer::~ImageLayer()
     }
 }
 
-void
-ImageLayer::setModel(ImageModel *model)
+int
+ImageLayer::getCompletion(LayerGeometryProvider *) const
 {
-    if (m_model == model) return;
-    m_model = model;
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
 
-    connectSignals(m_model);
+void
+ImageLayer::setModel(ModelId modelId)
+{
+    auto newModel = ModelById::getAs<ImageModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not an ImageModel");
+    }
+    
+    if (m_model == modelId) return;
+    m_model = modelId;
+
+    if (newModel) {
+        connectSignals(m_model);
+    }
 
     emit modelReplaced();
 }
@@ -122,10 +136,11 @@ ImageLayer::isLayerScrollable(const LayerGeometryProvider *) const
 EventVector
 ImageLayer::getLocalPoints(LayerGeometryProvider *v, int x, int ) const
 {
-    if (!m_model) return {};
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) return {};
 
 //    SVDEBUG << "ImageLayer::getLocalPoints(" << x << "," << y << "):";
-    EventVector points(m_model->getAllEvents());
+    EventVector points(model->getAllEvents());
 
     EventVector rv;
 
@@ -169,12 +184,13 @@ ImageLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
-    if (!m_model || !m_model->getSampleRate()) return "";
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model || !model->getSampleRate()) return "";
 
     EventVector points = getLocalPoints(v, x, pos.y());
 
     if (points.empty()) {
-        if (!m_model->isReady()) {
+        if (!model->isReady()) {
             return tr("In progress");
         } else {
             return "";
@@ -183,7 +199,7 @@ ImageLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 
 //    int useFrame = points.begin()->frame;
 
-//    RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
+//    RealTime rt = RealTime::frame2RealTime(useFrame, model->getSampleRate());
 
     QString text;
 /*    
@@ -208,11 +224,12 @@ ImageLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                int &resolution,
                                SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
 
     if (snap == SnapNeighbouring) {
         EventVector points = getLocalPoints(v, v->getXForFrame(frame), -1);
@@ -222,7 +239,7 @@ ImageLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     }    
 
     Event e;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame,
          [](Event) { return true; },
          snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
@@ -237,9 +254,10 @@ ImageLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
 void
 ImageLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model || !model->isOK()) return;
 
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("ImageLayer::paint", true);
@@ -250,7 +268,7 @@ ImageLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
 
-    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0, 2));
+    EventVector points(model->getEventsWithin(frame0, frame1 - frame0, 2));
     if (points.empty()) return;
 
     paint.save();
@@ -340,6 +358,11 @@ ImageLayer::drawImage(LayerGeometryProvider *v, QPainter &paint, const Event &p,
         if (likelyWidth > availableWidth) {
             likelyWidth = availableWidth;
         }
+
+        // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+        // replacement (horizontalAdvance) was only added in Qt 5.11
+        // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
         int singleWidth = paint.fontMetrics().width(label);
         if (singleWidth < availableWidth && singleWidth < likelyWidth * 2) {
@@ -513,20 +536,21 @@ ImageLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "ImageLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model) {
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) {
         SVDEBUG << "ImageLayer::drawStart: no model" << endl;
         return;
     }
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     m_editingPoint = Event(frame);
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new ChangeEventsCommand(m_model, "Add Image");
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, "Add Image");
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
@@ -537,11 +561,12 @@ ImageLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "ImageLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     m_editingCommand->remove(m_editingPoint);
     m_editingPoint = m_editingPoint
@@ -553,7 +578,8 @@ void
 ImageLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "ImageLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model || !m_editing) return;
 
     ImageDialog dialog(tr("Select image"), "", "");
 
@@ -586,8 +612,8 @@ ImageLayer::addImage(sv_frame_t frame, QString url)
     }
 
     Event point = Event(frame).withURI(url);
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, "Add Image");
+    auto command =
+        new ChangeEventsCommand(m_model.untyped, "Add Image");
     command->add(point);
     finish(command);
     return true;
@@ -598,7 +624,8 @@ ImageLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "ImageLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) return;
 
     EventVector points = getLocalPoints(v, e->x(), e->y());
     if (points.empty()) return;
@@ -618,16 +645,17 @@ ImageLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 void
 ImageLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
     sv_frame_t frame = m_originalPoint.getFrame() + frameDiff;
 
     if (frame < 0) frame = 0;
-    frame = (frame / m_model->getResolution()) * m_model->getResolution();
+    frame = (frame / model->getResolution()) * model->getResolution();
 
     if (!m_editingCommand) {
-        m_editingCommand = new ChangeEventsCommand(m_model, tr("Move Image"));
+        m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Move Image"));
     }
 
     m_editingCommand->remove(m_editingPoint);
@@ -640,7 +668,8 @@ void
 ImageLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "ImageLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model || !m_editing) return;
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -653,7 +682,8 @@ ImageLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 bool
 ImageLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) return false;
 
     EventVector points = getLocalPoints(v, e->x(), e->y());
     if (points.empty()) return false;
@@ -669,8 +699,8 @@ ImageLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 
         checkAddSource(dialog.getImage());
 
-        ChangeEventsCommand *command =
-            new ChangeEventsCommand(m_model, tr("Edit Image"));
+        auto command =
+            new ChangeEventsCommand(m_model.untyped, tr("Edit Image"));
         command->remove(*points.begin());
         command->add(points.begin()->
                      withURI(dialog.getImage()).withLabel(dialog.getLabel()));
@@ -683,13 +713,14 @@ ImageLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 void
 ImageLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) return;
 
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Drag Selection"));
+    auto command =
+        new ChangeEventsCommand(m_model.untyped, tr("Drag Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -704,13 +735,14 @@ ImageLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 ImageLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) return;
 
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Resize Selection"));
+    auto command =
+        new ChangeEventsCommand(m_model.untyped, tr("Resize Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     double ratio = double(newSize.getDuration()) / double(s.getDuration());
     double oldStart = double(s.getStartFrame());
@@ -732,13 +764,14 @@ ImageLayer::resizeSelection(Selection s, Selection newSize)
 void
 ImageLayer::deleteSelection(Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) return;
 
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Delete Selection"));
+    auto command =
+        new ChangeEventsCommand(m_model.untyped, tr("Delete Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -750,10 +783,11 @@ ImageLayer::deleteSelection(Selection s)
 void
 ImageLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) return;
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
@@ -763,7 +797,8 @@ ImageLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 bool
 ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    if (!model) return false;
 
     const EventVector &points = from.getPoints();
 
@@ -786,8 +821,7 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*
         }
     }
 
-    ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Paste"));
+    auto command = new ChangeEventsCommand(m_model.untyped, tr("Paste"));
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -863,7 +897,8 @@ ImageLayer::checkAddSource(QString img) const
 void
 ImageLayer::checkAddSources()
 {
-    const EventVector &points(m_model->getAllEvents());
+    auto model = ModelById::getAs<ImageModel>(m_model);
+    const EventVector &points(model->getAllEvents());
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -895,7 +930,7 @@ ImageLayer::fileSourceReady()
     m_images.erase(img);
     for (ViewImageMap::iterator i = m_scaled.begin(); i != m_scaled.end(); ++i) {
         i->second.erase(img);
-        emit modelChanged();
+        emit modelChanged(getModel());
     }
 }
 

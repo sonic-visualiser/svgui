@@ -36,10 +36,8 @@ public:
     WaveformLayer();
     ~WaveformLayer();
 
-    const ZoomConstraint *getZoomConstraint() const override {
-        return m_model ? m_model->getZoomConstraint() : 0;
-    }
-    const Model *getModel() const override { return m_model; }
+    const ZoomConstraint *getZoomConstraint() const override;
+    ModelId getModel() const override { return m_model; }
     void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
     QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
@@ -51,7 +49,7 @@ public:
     int getVerticalScaleWidth(LayerGeometryProvider *v, bool detailed, QPainter &) const override;
     void paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const override;
 
-    void setModel(const RangeSummarisableTimeValueModel *model);
+    void setModel(ModelId model); // a RangeSummarisableTimeValueModel
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -196,7 +194,7 @@ public:
 protected:
     double dBscale(double sample, int m) const;
 
-    const RangeSummarisableTimeValueModel *m_model; // I do not own this
+    ModelId m_model; 
 
     typedef std::vector<RangeSummarisableTimeValueModel::RangeBlock> RangeVec;
 

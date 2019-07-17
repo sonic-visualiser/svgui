@@ -132,7 +132,7 @@ void AudioDial::paintEvent(QPaintEvent *)
         
     QColor knobColor(m_knobColor);
     if (knobColor == Qt::black) {
-        knobColor = palette().window().color().light(150);
+        knobColor = palette().window().color().lighter(150);
     }
     bool knobIsDark =
         (knobColor.red() + knobColor.green() + knobColor.blue() <= 384);
@@ -183,9 +183,9 @@ void AudioDial::paintEvent(QPaintEvent *)
     int darkWidth = (width-2*indent) * 3 / 4;
     while (darkWidth) {
         if (knobIsDark) {
-            c = c.dark(102);
+            c = c.darker(102);
         } else {
-            c = c.light(102);
+            c = c.lighter(102);
         }
         pen.setColor(c);
         paint.setPen(pen);
@@ -238,9 +238,9 @@ void AudioDial::paintEvent(QPaintEvent *)
 
     int shadowAngle = -720;
     if (knobIsDark) {
-        c = knobColor.light();
+        c = knobColor.lighter();
     } else {
-        c = knobColor.dark();
+        c = knobColor.darker();
     }
     for (int arc = 120; arc < 2880; arc += 240) {
         pen.setColor(c);
@@ -250,9 +250,9 @@ void AudioDial::paintEvent(QPaintEvent *)
         paint.drawArc(indent, indent,
                       width-2*indent, width-2*indent, shadowAngle - arc, 240);
         if (knobIsDark) {
-            c = c.dark(110);
+            c = c.darker(110);
         } else {
-            c = c.light(110);
+            c = c.lighter(110);
         }
     }
 
@@ -266,7 +266,7 @@ void AudioDial::paintEvent(QPaintEvent *)
         int arc = i * 240 + 120;
         paint.drawArc(scale/2, scale/2,
                       width-scale, width-scale, shadowAngle + arc, 240);
-        c = c.light(110);
+        c = c.lighter(110);
     }
     c = palette().shadow().color();
     for (int i = 0; i < 12; ++i) {
@@ -275,7 +275,7 @@ void AudioDial::paintEvent(QPaintEvent *)
         int arc = i * 240 + 120;
         paint.drawArc(scale/2, scale/2,
                       width-scale, width-scale, shadowAngle - arc, 240);
-        c = c.light(110);
+        c = c.lighter(110);
     }
 
     // Scale ends...
@@ -310,9 +310,9 @@ void AudioDial::paintEvent(QPaintEvent *)
     c = notchColor;
     if (isEnabled()) {
         if (knobIsDark) {
-            c = c.light(130);
+            c = c.lighter(130);
         } else {
-            c = c.dark(130);
+            c = c.darker(130);
         }
     }
     pen.setColor(c);

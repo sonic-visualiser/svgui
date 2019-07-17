@@ -33,7 +33,6 @@
 
 
 SpectrumLayer::SpectrumLayer() :
-    m_originModel(nullptr),
     m_channel(-1),
     m_channelSet(false),
     m_windowSize(4096),
@@ -56,29 +55,19 @@ SpectrumLayer::SpectrumLayer() :
 
 SpectrumLayer::~SpectrumLayer()
 {
-    Model *m = const_cast<Model *>
-        (static_cast<const Model *>(m_sliceableModel));
-    if (m) m->aboutToDelete();
-    m_sliceableModel = nullptr;
-    delete m;
+    ModelById::release(m_sliceableModel);
 }
 
 void
-SpectrumLayer::setModel(DenseTimeValueModel *model)
+SpectrumLayer::setModel(ModelId modelId)
 {
-    SVDEBUG << "SpectrumLayer::setModel(" << model << ") from " << m_originModel << endl;
-    
-    if (m_originModel == model) return;
-
-    m_originModel = model;
-
-    if (m_sliceableModel) {
-        Model *m = const_cast<Model *>
-            (static_cast<const Model *>(m_sliceableModel));
-        m->aboutToDelete();
-        setSliceableModel(nullptr);
-        delete m;
+    auto newModel = ModelById::getAs<DenseTimeValueModel>(modelId);
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a DenseTimeValueModel");
     }
+    
+    if (m_originModel == modelId) return;
+    m_originModel = modelId;
 
     m_newFFTNeeded = true;
 
@@ -104,26 +93,21 @@ SpectrumLayer::setChannel(int channel)
 void
 SpectrumLayer::setupFFT()
 {
-    if (m_sliceableModel) {
-        Model *m = const_cast<Model *>
-            (static_cast<const Model *>(m_sliceableModel));
-        m->aboutToDelete();
-        setSliceableModel(nullptr);
-        delete m;
-    }
+    ModelById::release(m_sliceableModel);
+    m_sliceableModel = {};
 
-    if (!m_originModel) {
+    if (m_originModel.isNone()) {
         return;
     }
 
     int fftSize = getFFTSize();
 
-    FFTModel *newFFT = new FFTModel(m_originModel,
-                                    m_channel,
-                                    m_windowType,
-                                    m_windowSize,
-                                    getWindowIncrement(),
-                                    fftSize);
+    auto newFFT = std::make_shared<FFTModel>(m_originModel,
+                                             m_channel,
+                                             m_windowType,
+                                             m_windowSize,
+                                             getWindowIncrement(),
+                                             fftSize);
 
     if (m_minbin == 0 && m_maxbin == 0) {
         m_minbin = 1;
@@ -132,7 +116,7 @@ SpectrumLayer::setupFFT()
         m_maxbin = newFFT->getHeight();
     }
 
-    setSliceableModel(newFFT);
+    setSliceableModel(ModelById::add(newFFT));
 
     m_biasCurve.clear();
     for (int i = 0; i < fftSize; ++i) {
@@ -403,15 +387,19 @@ SpectrumLayer::setDisplayExtents(double min, double max)
 double
 SpectrumLayer::getBinForFrequency(double freq) const
 {
-    if (!m_sliceableModel) return 0;
-    double bin = (freq * getFFTSize()) / m_sliceableModel->getSampleRate();
+    auto sliceableModel = ModelById::getAs<DenseThreeDimensionalModel>
+        (m_sliceableModel);
+    if (!sliceableModel) return 0;
+    double bin = (freq * getFFTSize()) / sliceableModel->getSampleRate();
     return bin;
 }
 
 double
 SpectrumLayer::getBinForX(const LayerGeometryProvider *v, double x) const
 {
-    if (!m_sliceableModel) return 0;
+    auto sliceableModel = ModelById::getAs<DenseThreeDimensionalModel>
+        (m_sliceableModel);
+    if (!sliceableModel) return 0;
     double bin = getBinForFrequency(getFrequencyForX(v, x));
     return bin;
 }
@@ -419,7 +407,9 @@ SpectrumLayer::getBinForX(const LayerGeometryProvider *v, double x) const
 double
 SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 {
-    if (!m_sliceableModel) return 0;
+    auto sliceableModel = ModelById::getAs<DenseThreeDimensionalModel>
+        (m_sliceableModel);
+    if (!sliceableModel) return 0;
 
     double fmin = getFrequencyForBin(m_minbin);
     double fmax = getFrequencyForBin(m_maxbin);
@@ -431,15 +421,19 @@ SpectrumLayer::getFrequencyForX(const LayerGeometryProvider *v, double x) const
 double
 SpectrumLayer::getFrequencyForBin(double bin) const
 {
-    if (!m_sliceableModel) return 0;
-    double freq = (bin * m_sliceableModel->getSampleRate()) / getFFTSize();
+    auto sliceableModel = ModelById::getAs<DenseThreeDimensionalModel>
+        (m_sliceableModel);
+    if (!sliceableModel) return 0;
+    double freq = (bin * sliceableModel->getSampleRate()) / getFFTSize();
     return freq;
 }
 
 double
 SpectrumLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
 {
-    if (!m_sliceableModel) return 0;
+    auto sliceableModel = ModelById::getAs<DenseThreeDimensionalModel>
+        (m_sliceableModel);
+    if (!sliceableModel) return 0;
     double x = getXForFrequency(v, getFrequencyForBin(bin));
     return x;
 }
@@ -447,7 +441,9 @@ SpectrumLayer::getXForBin(const LayerGeometryProvider *v, double bin) const
 double
 SpectrumLayer::getXForFrequency(const LayerGeometryProvider *v, double freq) const
 {
-    if (!m_sliceableModel) return 0;
+    auto sliceableModel = ModelById::getAs<DenseThreeDimensionalModel>
+        (m_sliceableModel);
+    if (!sliceableModel) return 0;
 
     double fmin = getFrequencyForBin(m_minbin);
     double fmax = getFrequencyForBin(m_maxbin);
@@ -475,8 +471,12 @@ SpectrumLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
 
         if (value > 0.0) {
             value = 10.0 * log10(value);
-            if (value < m_threshold) value = m_threshold;
-        } else value = m_threshold;
+            if (value < m_threshold) {
+                value = m_threshold;
+            }
+        } else {
+            value = m_threshold;
+        }
 
         unit = "dBV";
 
@@ -513,6 +513,11 @@ SpectrumLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
 
     int sw = getVerticalScaleWidth(v, false, paint);
 
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
     QRect value(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
                 paint.fontMetrics().width("0.0000001 V") + 2,
                 paint.fontMetrics().height());
@@ -543,7 +548,9 @@ void
 SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                                QPoint cursorPos) const
 {
-    if (!m_sliceableModel) return;
+    auto sliceableModel = ModelById::getAs<DenseThreeDimensionalModel>
+        (m_sliceableModel);
+    if (!sliceableModel) return;
 
     paint.save();
     QFont fn = paint.font();
@@ -630,7 +637,9 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
 QString
 SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
 {
-    if (!m_sliceableModel) return "";
+    auto sliceableModel = ModelById::getAs<DenseThreeDimensionalModel>
+        (m_sliceableModel);
+    if (!sliceableModel) return "";
 
     int minbin = 0, maxbin = 0, range = 0;
     QString genericDesc = SliceLayer::getFeatureDescriptionAux
@@ -651,10 +660,10 @@ SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
     
     QString binstr;
     QString hzstr;
-    int minfreq = int(lrint((minbin * m_sliceableModel->getSampleRate()) /
+    int minfreq = int(lrint((minbin * sliceableModel->getSampleRate()) /
                             getFFTSize()));
     int maxfreq = int(lrint((std::max(maxbin, minbin)
-                             * m_sliceableModel->getSampleRate()) /
+                             * sliceableModel->getSampleRate()) /
                             getFFTSize()));
 
     if (maxbin != minbin) {
@@ -698,7 +707,7 @@ SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
 
     QString description;
 
-    if (range > int(m_sliceableModel->getResolution())) {
+    if (range > int(sliceableModel->getResolution())) {
         description = tr("%1\nBin:\t%2 (%3)\n%4 value:\t%5\ndB:\t%6")
             .arg(genericDesc)
             .arg(binstr)
@@ -722,8 +731,8 @@ SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
 void
 SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_originModel || !m_originModel->isOK() ||
-        !m_originModel->isReady()) {
+    auto originModel = ModelById::get(m_originModel);
+    if (!originModel || !originModel->isOK() || !originModel->isReady()) {
         SVDEBUG << "SpectrumLayer::paint: no origin model, or origin model not OK or not ready" << endl;
         return;
     }
@@ -733,8 +742,8 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         const_cast<SpectrumLayer *>(this)->setupFFT(); //ugh
     }
 
-    FFTModel *fft = dynamic_cast<FFTModel *>
-        (const_cast<DenseThreeDimensionalModel *>(m_sliceableModel));
+    auto fft = ModelById::getAs<FFTModel>(m_sliceableModel);
+    if (!fft) return;
 
     double thresh = (pow(10, -6) / m_gain) * (getFFTSize() / 2.0); // -60dB adj
 

@@ -41,7 +41,7 @@ public:
     QString getPropertyContainerIconName() const override { return "panner"; }
 
 public slots:
-    void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame) override;
+    void modelChangedWithin(ModelId, sv_frame_t startFrame, sv_frame_t endFrame) override;
     void modelReplaced() override;
 
     void globalCentreFrameChanged(sv_frame_t) override;

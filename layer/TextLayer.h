@@ -62,8 +62,8 @@ public:
 
     bool editOpen(LayerGeometryProvider *, QMouseEvent *) override; // on double-click
 
-    const Model *getModel() const override { return m_model; }
-    void setModel(TextModel *model);
+    ModelId getModel() const override { return m_model; }
+    void setModel(ModelId model); // a TextModel
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -78,7 +78,7 @@ public:
 
     bool isLayerEditable() const override { return true; }
 
-    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override;
 
     bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const override;
@@ -100,7 +100,7 @@ protected:
 
     bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
 
-    TextModel *m_model;
+    ModelId m_model;
     bool m_editing;
     QPoint m_editOrigin;
     Event m_originalPoint;

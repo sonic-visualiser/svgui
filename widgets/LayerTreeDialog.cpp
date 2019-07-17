@@ -25,7 +25,7 @@
 #include <QDialogButtonBox>
 #include <QHeaderView>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 
 LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     QDialog(parent),
@@ -89,8 +89,8 @@ LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     grid->addWidget(bb, 2, 0);
     grid->setRowStretch(2, 0);
     
-    QDesktopWidget *desktop = QApplication::desktop();
-    QRect available = desktop->availableGeometry();
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect available = screen->availableGeometry();
 
     int width = available.width() / 2;
     int height = available.height() / 3;

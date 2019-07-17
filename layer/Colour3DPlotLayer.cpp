@@ -43,7 +43,6 @@ using std::vector;
 
 
 Colour3DPlotLayer::Colour3DPlotLayer() :
-    m_model(nullptr),
     m_colourScale(ColourScaleType::Linear),
     m_colourScaleSet(false),
     m_colourMap(0),
@@ -59,20 +58,26 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_miny(0),
     m_maxy(0),
     m_synchronous(false),
-    m_peakCache(nullptr),
     m_peakCacheDivisor(8)
 {
     QSettings settings;
     settings.beginGroup("Preferences");
-    setColourMap(settings.value("colour-3d-plot-colour", ColourMapper::Green).toInt());
+    setColourMap(settings.value("colour-3d-plot-colour",
+                                ColourMapper::Green).toInt());
     settings.endGroup();
 }
 
 Colour3DPlotLayer::~Colour3DPlotLayer()
 {
     invalidateRenderers();
-    if (m_peakCache) m_peakCache->aboutToDelete();
-    delete m_peakCache;
+}
+
+const ZoomConstraint *
+Colour3DPlotLayer::getZoomConstraint() const 
+{
+    auto model = ModelById::get(m_model);
+    if (model) return model->getZoomConstraint();
+    else return nullptr;
 }
 
 ColourScaleType
@@ -136,35 +141,38 @@ Colour3DPlotLayer::setSynchronousPainting(bool synchronous)
 }
 
 void
-Colour3DPlotLayer::setModel(const DenseThreeDimensionalModel *model)
+Colour3DPlotLayer::setModel(ModelId modelId)
 {
-    SVDEBUG << "Colour3DPlotLayer::setModel(" << model << ")" << endl;
+    auto newModel = ModelById::getAs<DenseThreeDimensionalModel>(modelId);
     
-    if (m_model == model) return;
-    const DenseThreeDimensionalModel *oldModel = m_model;
-    m_model = model;
-    if (!m_model || !m_model->isOK()) return;
-
-    connectSignals(m_model);
-
-    connect(m_model, SIGNAL(modelChanged()),
-            this, SLOT(handleModelChanged()));
-    connect(m_model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this, SLOT(handleModelChangedWithin(sv_frame_t, sv_frame_t)));
-
-    m_peakResolution = 256;
-    if (model->getResolution() > 512) {
-        m_peakResolution = 16;
-    } else if (model->getResolution() > 128) {
-        m_peakResolution = 64;
-    } else if (model->getResolution() > 2) {
-        m_peakResolution = 128;
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a DenseThreeDimensionalModel");
     }
+    
+    if (m_model == modelId) return;
+    m_model = modelId;
 
+    if (newModel) {
+        connectSignals(m_model);
+
+        connect(newModel.get(), SIGNAL(modelChanged(ModelId)),
+                this, SLOT(handleModelChanged(ModelId)));
+        connect(newModel.get(), SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+                this, SLOT(handleModelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
+
+        m_peakResolution = 256;
+        if (newModel->getResolution() > 512) {
+            m_peakResolution = 16;
+        } else if (newModel->getResolution() > 128) {
+            m_peakResolution = 64;
+        } else if (newModel->getResolution() > 2) {
+            m_peakResolution = 128;
+        }
+    }
+    
     invalidatePeakCache();
 
     emit modelReplaced();
-    emit sliceableModelReplaced(oldModel, model);
 }
 
 void
@@ -173,10 +181,11 @@ Colour3DPlotLayer::invalidatePeakCache()
     // renderers use the peak cache, so we must invalidate those too
     invalidateRenderers();
     invalidateMagnitudes();
-    
-    if (m_peakCache) m_peakCache->aboutToDelete();
-    delete m_peakCache;
-    m_peakCache = nullptr;
+
+    if (!m_peakCache.isNone()) {
+        ModelById::release(m_peakCache);
+        m_peakCache = {};
+    }
 }
 
 void
@@ -198,21 +207,24 @@ Colour3DPlotLayer::invalidateMagnitudes()
     m_viewMags.clear();
 }
 
-Dense3DModelPeakCache *
+ModelId
 Colour3DPlotLayer::getPeakCache() const
 {
-    if (!m_peakCache) {
-        m_peakCache = new Dense3DModelPeakCache(m_model, m_peakCacheDivisor);
+    if (m_peakCache.isNone()) {
+        auto peakCache = std::make_shared<Dense3DModelPeakCache>
+            (m_model, m_peakCacheDivisor);
+        m_peakCache = ModelById::add(peakCache);
     }
     return m_peakCache;
 }
 
 void
-Colour3DPlotLayer::handleModelChanged()
+Colour3DPlotLayer::handleModelChanged(ModelId modelId)
 {
     if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
-        if (m_model) {
-            if (m_model->shouldUseLogValueScale()) {
+        auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+        if (model) {
+            if (model->shouldUseLogValueScale()) {
                 setColourScale(ColourScaleType::Log);
             } else {
                 m_colourScaleSet = true;
@@ -220,22 +232,25 @@ Colour3DPlotLayer::handleModelChanged()
         }
     }
     invalidatePeakCache();
-    emit modelChanged();
+    emit modelChanged(modelId);
 }
 
 void
-Colour3DPlotLayer::handleModelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
+Colour3DPlotLayer::handleModelChangedWithin(ModelId modelId,
+                                            sv_frame_t startFrame,
+                                            sv_frame_t endFrame)
 {
     if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
-        if (m_model && m_model->getWidth() > 50) {
-            if (m_model->shouldUseLogValueScale()) {
+        auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+        if (model && model->getWidth() > 50) {
+            if (model->shouldUseLogValueScale()) {
                 setColourScale(ColourScaleType::Log);
             } else {
                 m_colourScaleSet = true;
             }
         }
     }
-    emit modelChangedWithin(startFrame, endFrame);
+    emit modelChangedWithin(modelId, startFrame, endFrame);
 }
 
 Layer::PropertyList
@@ -649,14 +664,23 @@ Colour3DPlotLayer::isLayerScrollable(const LayerGeometryProvider * /* v */) cons
     return false;
 }
 
+int
+Colour3DPlotLayer::getCompletion(LayerGeometryProvider *) const
+{
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
+
 bool
 Colour3DPlotLayer::getValueExtents(double &min, double &max,
                                    bool &logarithmic, QString &unit) const
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return false;
 
     min = 0;
-    max = double(m_model->getHeight());
+    max = double(model->getHeight());
 
     logarithmic = (m_binScale == BinScale::Log);
     unit = "";
@@ -667,9 +691,10 @@ Colour3DPlotLayer::getValueExtents(double &min, double &max,
 bool
 Colour3DPlotLayer::getDisplayExtents(double &min, double &max) const
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return false;
 
-    double hmax = double(m_model->getHeight());
+    double hmax = double(model->getHeight());
     
     min = m_miny;
     max = m_maxy;
@@ -686,8 +711,6 @@ Colour3DPlotLayer::getDisplayExtents(double &min, double &max) const
 bool
 Colour3DPlotLayer::setDisplayExtents(double min, double max)
 {
-    if (!m_model) return false;
-
     m_miny = int(lrint(min));
     m_maxy = int(lrint(max));
     
@@ -707,37 +730,40 @@ Colour3DPlotLayer::getYScaleValue(const LayerGeometryProvider *, int,
 int
 Colour3DPlotLayer::getVerticalZoomSteps(int &defaultStep) const
 {
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return 0;
 
     defaultStep = 0;
-    int h = m_model->getHeight();
+    int h = model->getHeight();
     return h;
 }
 
 int
 Colour3DPlotLayer::getCurrentVerticalZoomStep() const
 {
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return 0;
 
     double min, max;
     getDisplayExtents(min, max);
-    return m_model->getHeight() - int(lrint(max - min));
+    return model->getHeight() - int(lrint(max - min));
 }
 
 void
 Colour3DPlotLayer::setVerticalZoomStep(int step)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return;
 
 //    SVDEBUG << "Colour3DPlotLayer::setVerticalZoomStep(" <<step <<"): before: miny = " << m_miny << ", maxy = " << m_maxy << endl;
 
-    int dist = m_model->getHeight() - step;
+    int dist = model->getHeight() - step;
     if (dist < 1) dist = 1;
     double centre = m_miny + (m_maxy - m_miny) / 2.0;
     m_miny = int(lrint(centre - dist/2.0));
     if (m_miny < 0) m_miny = 0;
     m_maxy = m_miny + dist;
-    if (m_maxy > m_model->getHeight()) m_maxy = m_model->getHeight();
+    if (m_maxy > model->getHeight()) m_maxy = model->getHeight();
 
     invalidateRenderers();
     
@@ -749,18 +775,23 @@ Colour3DPlotLayer::setVerticalZoomStep(int step)
 RangeMapper *
 Colour3DPlotLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return nullptr;
+    //!!! most of our uses of model in these functions is just to
+    //!!! retrieve the model's height - perhaps we should cache it
+    
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return nullptr;
 
-    return new LinearRangeMapper(0, m_model->getHeight(),
-                                 0, m_model->getHeight(), "");
+    return new LinearRangeMapper(0, model->getHeight(),
+                                 0, model->getHeight(), "");
 }
 
 double
 Colour3DPlotLayer::getYForBin(const LayerGeometryProvider *v, double bin) const
 {
     double y = bin;
-    if (!m_model) return y;
-    double mn = 0, mx = m_model->getHeight();
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return y;
+    double mn = 0, mx = model->getHeight();
     getDisplayExtents(mn, mx);
     double h = v->getPaintHeight();
     if (m_binScale == BinScale::Linear) {
@@ -777,8 +808,9 @@ double
 Colour3DPlotLayer::getBinForY(const LayerGeometryProvider *v, double y) const
 {
     double bin = y;
-    if (!m_model) return bin;
-    double mn = 0, mx = m_model->getHeight();
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return bin;
+    double mn = 0, mx = model->getHeight();
     getDisplayExtents(mn, mx);
     double h = v->getPaintHeight();
     if (m_binScale == BinScale::Linear) {
@@ -798,17 +830,18 @@ Colour3DPlotLayer::getBinForY(const LayerGeometryProvider *v, double y) const
 QString
 Colour3DPlotLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
-    if (!m_model) return "";
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return "";
 
     int x = pos.x();
     int y = pos.y();
 
-    sv_frame_t modelStart = m_model->getStartFrame();
-    int modelResolution = m_model->getResolution();
+    sv_frame_t modelStart = model->getStartFrame();
+    int modelResolution = model->getResolution();
 
     double srRatio =
         v->getViewManager()->getMainModelSampleRate() /
-        m_model->getSampleRate();
+        model->getSampleRate();
 
     int sx0 = int((double(v->getFrameForX(x)) / srRatio - double(modelStart)) /
                   modelResolution);
@@ -816,7 +849,7 @@ Colour3DPlotLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) 
     int f0 = sx0 * modelResolution;
     int f1 =  f0 + modelResolution;
 
-    int sh = m_model->getHeight();
+    int sh = model->getHeight();
 
     int symin = m_miny;
     int symax = m_maxy;
@@ -832,26 +865,26 @@ Colour3DPlotLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) 
 
     int sy = getIBinForY(v, y);
 
-    if (sy < 0 || sy >= m_model->getHeight()) {
+    if (sy < 0 || sy >= model->getHeight()) {
         return "";
     }
 
     if (m_invertVertical) {
-        sy = m_model->getHeight() - sy - 1;
+        sy = model->getHeight() - sy - 1;
     }
 
-    float value = m_model->getValueAt(sx0, sy);
+    float value = model->getValueAt(sx0, sy);
 
 //    cerr << "bin value (" << sx0 << "," << sy << ") is " << value << endl;
     
-    QString binName = m_model->getBinName(sy);
+    QString binName = model->getBinName(sy);
     if (binName == "") binName = QString("[%1]").arg(sy + 1);
     else binName = QString("%1 [%2]").arg(binName).arg(sy + 1);
 
     QString text = tr("Time:\t%1 - %2\nBin:\t%3\nValue:\t%4")
-        .arg(RealTime::frame2RealTime(f0, m_model->getSampleRate())
+        .arg(RealTime::frame2RealTime(f0, model->getSampleRate())
              .toText(true).c_str())
-        .arg(RealTime::frame2RealTime(f1, m_model->getSampleRate())
+        .arg(RealTime::frame2RealTime(f1, model->getSampleRate())
              .toText(true).c_str())
         .arg(binName)
         .arg(value);
@@ -870,15 +903,21 @@ Colour3DPlotLayer::getColourScaleWidth(QPainter &p) const
 int
 Colour3DPlotLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint) const
 {
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return 0;
 
-    QString sampleText = QString("[%1]").arg(m_model->getHeight());
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11 which
+    // is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+    QString sampleText = QString("[%1]").arg(model->getHeight());
     int tw = paint.fontMetrics().width(sampleText);
     bool another = false;
 
-    for (int i = 0; i < m_model->getHeight(); ++i) {
-        if (m_model->getBinName(i).length() > sampleText.length()) {
-            sampleText = m_model->getBinName(i);
+    for (int i = 0; i < model->getHeight(); ++i) {
+        if (model->getBinName(i).length() > sampleText.length()) {
+            sampleText = model->getBinName(i);
             another = true;
         }
     }
@@ -892,7 +931,8 @@ Colour3DPlotLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter
 void
 Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return;
 
     int h = rect.height(), w = rect.width();
 
@@ -930,25 +970,27 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 
         int msw = paint.fontMetrics().width(maxstr);
 
-        QMatrix m;
+        QTransform m;
         m.translate(cw - 6, ch + 10);
         m.rotate(-90);
 
-        paint.setWorldMatrix(m);
+        paint.setWorldTransform(m);
 
-        PaintAssistant::drawVisibleText(v, paint, 2, 0, minstr, PaintAssistant::OutlinedText);
+        PaintAssistant::drawVisibleText(v, paint, 2, 0, minstr,
+                                        PaintAssistant::OutlinedText);
 
         m.translate(ch - msw - 2, 0);
-        paint.setWorldMatrix(m);
+        paint.setWorldTransform(m);
 
-        PaintAssistant::drawVisibleText(v, paint, 0, 0, maxstr, PaintAssistant::OutlinedText);
+        PaintAssistant::drawVisibleText(v, paint, 0, 0, maxstr,
+                                        PaintAssistant::OutlinedText);
 
         paint.restore();
     }
 
     paint.setPen(v->getForeground());
 
-    int sh = m_model->getHeight();
+    int sh = model->getHeight();
 
     int symin = m_miny;
     int symax = m_maxy;
@@ -994,10 +1036,10 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 
             int idx = i - 1;
             if (m_invertVertical) {
-                idx = m_model->getHeight() - idx - 1;
+                idx = model->getHeight() - idx - 1;
             }
 
-            QString text = m_model->getBinName(idx);
+            QString text = model->getBinName(idx);
             if (text == "") text = QString("[%1]").arg(idx + 1);
 
             int ty = y0 + (h/2) - (paint.fontMetrics().height()/2) +
@@ -1013,13 +1055,15 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
 Colour3DPlotRenderer *
 Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
 {
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return nullptr;
+    
     int viewId = v->getId();
     
     if (m_renderers.find(viewId) == m_renderers.end()) {
 
         Colour3DPlotRenderer::Sources sources;
         sources.verticalBinLayer = this;
-        sources.fft = nullptr;
         sources.source = m_model;
         sources.peakCaches.push_back(getPeakCache());
 
@@ -1037,16 +1081,16 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
             maxValue = m_viewMags[viewId].getMax();
         } else if (m_normalization == ColumnNormalization::Hybrid) {
             minValue = 0;
-            maxValue = log10(m_model->getMaximumLevel() + 1.0);
+            maxValue = log10(model->getMaximumLevel() + 1.0);
         } else if (m_normalization == ColumnNormalization::None) {
-            minValue = m_model->getMinimumLevel();
-            maxValue = m_model->getMaximumLevel();
+            minValue = model->getMinimumLevel();
+            maxValue = model->getMaximumLevel();
         }
 
         SVDEBUG << "Colour3DPlotLayer: rebuilding renderer, value range is "
                 << minValue << " -> " << maxValue
-                << " (model min = " << m_model->getMinimumLevel()
-                << ", max = " << m_model->getMaximumLevel() << ")"
+                << " (model min = " << model->getMinimumLevel()
+                << ", max = " << model->getMaximumLevel() << ")"
                 << endl;
 
         if (maxValue <= minValue) {
@@ -1139,9 +1183,10 @@ Colour3DPlotLayer::paintWithRenderer(LayerGeometryProvider *v,
 void
 Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
 /*
-    if (m_model) {
-        SVDEBUG << "Colour3DPlotLayer::paint: model says shouldUseLogValueScale = " << m_model->shouldUseLogValueScale() << endl;
+    if (model) {
+        SVDEBUG << "Colour3DPlotLayer::paint: model says shouldUseLogValueScale = " << model->shouldUseLogValueScale() << endl;
     }
 */
     Profiler profiler("Colour3DPlotLayer::paint");
@@ -1150,7 +1195,7 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 #endif
 
     int completion = 0;
-    if (!m_model || !m_model->isOK() || !m_model->isReady(&completion)) {
+    if (!model || !model->isOK() || !model->isReady(&completion)) {
         if (completion > 0) {
             paint.fillRect(0, 10, v->getPaintWidth() * completion / 100,
                            10, QColor(120, 120, 120));
@@ -1158,7 +1203,7 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
         return;
     }
 
-    if (m_model->getWidth() == 0) {
+    if (model->getWidth() == 0) {
 #ifdef DEBUG_COLOUR_3D_PLOT_LAYER_PAINT
         SVDEBUG << "Colour3DPlotLayer::paint(): model width == 0, "
              << "nothing to paint (yet)" << endl;
@@ -1174,11 +1219,12 @@ Colour3DPlotLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &fram
                                       int &resolution,
                                       SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
     sv_frame_t left = (frame / resolution) * resolution;
     sv_frame_t right = left + resolution;
 

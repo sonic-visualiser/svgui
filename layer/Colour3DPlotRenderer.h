@@ -23,16 +23,16 @@
 #include "base/ColumnOp.h"
 #include "base/MagnitudeRange.h"
 
+#include "data/model/Model.h"
+
 #include <QRect>
 #include <QPainter>
 #include <QImage>
 
 class LayerGeometryProvider;
 class VerticalBinLayer;
-class DenseThreeDimensionalModel;
-class Dense3DModelPeakCache;
-class FFTModel;
 class RenderTimer;
+class Dense3DModelPeakCache;
 
 enum class BinDisplay {
     AllBins,
@@ -49,13 +49,13 @@ class Colour3DPlotRenderer
 {
 public:
     struct Sources {
-        Sources() : verticalBinLayer(0), source(0), fft(0) { }
+        Sources() : verticalBinLayer(0) { }
         
         // These must all outlive this class
-        const VerticalBinLayer *verticalBinLayer;  // always
-        const DenseThreeDimensionalModel *source;  // always
-        const FFTModel *fft;                       // optionally
-        std::vector<Dense3DModelPeakCache *> peakCaches; // zero or more
+        const VerticalBinLayer *verticalBinLayer; // always
+        ModelId source; // always; a DenseThreeDimensionalModel
+        ModelId fft; // optionally; an FFTModel; used for phase/peak-freq modes
+        std::vector<ModelId> peakCaches; // zero or more
     };        
 
     struct Parameters {

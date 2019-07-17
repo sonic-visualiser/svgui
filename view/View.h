@@ -27,6 +27,8 @@
 #include "base/XmlExportable.h"
 #include "base/BaseTypes.h"
 
+#include "data/model/Model.h"
+
 // #define DEBUG_VIEW_WIDGET_PAINT 1
 
 class Layer;
@@ -381,11 +383,11 @@ public:
     double scalePenWidth(double width) const override;
     QPen scalePen(QPen pen) const override;
 
-    typedef std::set<Model *> ModelSet;
+    typedef std::set<ModelId> ModelSet;
     ModelSet getModels();
 
     //!!!
-    Model *getAligningModel() const;
+    ModelId getAligningModel() const;
     sv_frame_t alignFromReference(sv_frame_t) const;
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
@@ -406,6 +408,8 @@ signals:
 
     void layerModelChanged();
 
+    void cancelButtonPressed(Layer *);
+    
     void centreFrameChanged(sv_frame_t frame,
                             bool globalScroll,
                             PlaybackFollowMode followMode);
@@ -415,10 +419,10 @@ signals:
     void contextHelpChanged(const QString &);
 
 public slots:
-    virtual void modelChanged();
-    virtual void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame);
-    virtual void modelCompletionChanged();
-    virtual void modelAlignmentCompletionChanged();
+    virtual void modelChanged(ModelId);
+    virtual void modelChangedWithin(ModelId, sv_frame_t startFrame, sv_frame_t endFrame);
+    virtual void modelCompletionChanged(ModelId);
+    virtual void modelAlignmentCompletionChanged(ModelId);
     virtual void modelReplaced();
     virtual void layerParametersChanged();
     virtual void layerParameterRangesChanged();
@@ -502,7 +506,7 @@ protected:
 
     void movePlayPointer(sv_frame_t f);
 
-    void checkProgress(void *object);
+    void checkProgress(ModelId);
     int getProgressBarWidth() const; // if visible
 
     int effectiveDevicePixelRatio() const;

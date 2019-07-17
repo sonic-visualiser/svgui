@@ -147,25 +147,26 @@ AlignmentView::getKeyFrames()
         return getDefaultKeyFrames();
     }
 
-    SparseOneDimensionalModel *m = nullptr;
+    ModelId m;
 
     // get the topmost such
     for (int i = 0; i < m_above->getLayerCount(); ++i) {
         if (qobject_cast<TimeInstantLayer *>(m_above->getLayer(i))) {
-            SparseOneDimensionalModel *mm = 
-                qobject_cast<SparseOneDimensionalModel *>
-                (m_above->getLayer(i)->getModel());
-            if (mm) m = mm;
+            ModelId mm = m_above->getLayer(i)->getModel();
+            if (ModelById::isa<SparseOneDimensionalModel>(mm)) {
+                m = mm;
+            }
         }
     }
 
-    if (!m) {
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m);
+    if (!model) {
         return getDefaultKeyFrames();
     }
 
     vector<sv_frame_t> keyFrames;
 
-    EventVector pp = m->getAllEvents();
+    EventVector pp = model->getAllEvents();
     for (EventVector::const_iterator pi = pp.begin(); pi != pp.end(); ++pi) {
         keyFrames.push_back(pi->getFrame());
     }

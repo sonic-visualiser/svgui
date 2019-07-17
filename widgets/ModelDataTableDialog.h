@@ -20,7 +20,8 @@
 
 #include "base/BaseTypes.h"
 
-class TabularModel;
+#include "data/model/Model.h"
+
 class ModelDataTableModel;
 class QTableView;
 class QModelIndex;
@@ -33,7 +34,7 @@ class ModelDataTableDialog : public QMainWindow
     Q_OBJECT
     
 public:
-    ModelDataTableDialog(TabularModel *model,
+    ModelDataTableDialog(ModelId tabularModelId,
                          QString title, QWidget *parent =0);
     ~ModelDataTableDialog();
 

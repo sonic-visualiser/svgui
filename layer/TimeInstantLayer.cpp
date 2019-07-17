@@ -41,7 +41,6 @@
 
 TimeInstantLayer::TimeInstantLayer() :
     SingleColourLayer(),
-    m_model(nullptr),
     m_editing(false),
     m_editingPoint(0, tr("New Point")),
     m_editingCommand(nullptr),
@@ -53,20 +52,30 @@ TimeInstantLayer::~TimeInstantLayer()
 {
 }
 
-void
-TimeInstantLayer::setModel(SparseOneDimensionalModel *model)
+int
+TimeInstantLayer::getCompletion(LayerGeometryProvider *) const
 {
-    if (m_model == model) return;
-    m_model = model;
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
 
-    connectSignals(m_model);
+void
+TimeInstantLayer::setModel(ModelId modelId)
+{
+    auto newModel = ModelById::getAs<SparseOneDimensionalModel>(modelId);
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a SparseOneDimensionalModel");
+    }
+    
+    if (m_model == modelId) return;
+    m_model = modelId;
 
-#ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::setModel(" << model << ")" << endl;
-#endif
-
-    if (m_model && m_model->getRDFTypeURI().endsWith("Segment")) {
-        setPlotStyle(PlotSegmentation);
+    if (newModel) {
+        connectSignals(m_model);
+        if (newModel->getRDFTypeURI().endsWith("Segment")) {
+            setPlotStyle(PlotSegmentation);
+        }
     }
 
     emit modelReplaced();
@@ -149,6 +158,14 @@ TimeInstantLayer::setPlotStyle(PlotStyle style)
 }
 
 bool
+TimeInstantLayer::needsTextLabelHeight() const
+{
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (model) return model->hasTextLabels();
+    else return false;
+}
+
+bool
 TimeInstantLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     QPoint discard;
@@ -158,7 +175,8 @@ TimeInstantLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 EventVector
 TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
-    if (!m_model) return {};
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return {};
 
     // Return a set of points that all have the same frame number, the
     // nearest to the given x coordinate, and that are within a
@@ -166,12 +184,12 @@ TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 
     sv_frame_t frame = v->getFrameForX(x);
 
-    EventVector exact = m_model->getEventsStartingAt(frame);
+    EventVector exact = model->getEventsStartingAt(frame);
     if (!exact.empty()) return exact;
 
     // overspill == 1, so one event either side of the given span
-    EventVector neighbouring = m_model->getEventsWithin
-        (frame, m_model->getResolution(), 1);
+    EventVector neighbouring = model->getEventsWithin
+        (frame, model->getResolution(), 1);
 
     double fuzz = v->scaleSize(2);
     sv_frame_t suitable = 0;
@@ -195,7 +213,7 @@ TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     }
 
     if (have) {
-        return m_model->getEventsStartingAt(suitable);
+        return model->getEventsStartingAt(suitable);
     } else {
         return {};
     }
@@ -204,10 +222,11 @@ TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 QString
 TimeInstantLayer::getLabelPreceding(sv_frame_t frame) const
 {
-    if (!m_model || !m_model->hasTextLabels()) return "";
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model || !model->hasTextLabels()) return "";
 
     Event e;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame,
          [](Event e) { return e.hasLabel() && e.getLabel() != ""; },
          EventSeries::Backward,
@@ -223,12 +242,13 @@ TimeInstantLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
 {
     int x = pos.x();
 
-    if (!m_model || !m_model->getSampleRate()) return "";
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model || !model->getSampleRate()) return "";
 
     EventVector points = getLocalPoints(v, x);
 
     if (points.empty()) {
-        if (!m_model->isReady()) {
+        if (!model->isReady()) {
             return tr("In progress");
         } else {
             return tr("No local points");
@@ -237,7 +257,7 @@ TimeInstantLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
 
     sv_frame_t useFrame = points.begin()->getFrame();
 
-    RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
+    RealTime rt = RealTime::frame2RealTime(useFrame, model->getSampleRate());
     
     QString text;
 
@@ -259,7 +279,8 @@ TimeInstantLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame
                                      int &resolution,
                                      SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
@@ -270,7 +291,7 @@ TimeInstantLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame
     // an editing operation, i.e. closest feature in either direction
     // but only if it is "close enough"
     
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
 
     if (snap == SnapNeighbouring) {
         EventVector points = getLocalPoints(v, v->getXForFrame(frame));
@@ -280,7 +301,7 @@ TimeInstantLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame
     }
 
     Event e;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame,
          [](Event) { return true; },
          snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
@@ -295,7 +316,8 @@ TimeInstantLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame
 void
 TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model || !model->isOK()) return;
 
 //    Profiler profiler("TimeInstantLayer::paint", true);
 
@@ -311,12 +333,12 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         overspill = 1;
     }
     
-    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0,
+    EventVector points(model->getEventsWithin(frame0, frame1 - frame0,
                                                 overspill));
 
     bool odd = false;
     if (m_plotStyle == PlotSegmentation && !points.empty()) {
-        int index = m_model->getRowForFrame(points.begin()->getFrame());
+        int index = model->getRowForFrame(points.begin()->getFrame());
         odd = ((index % 2) == 1);
     }
 
@@ -337,13 +359,13 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         } else if (getBaseQColor() == Qt::darkGreen) {
             oddBrushColour = Qt::green;
         } else {
-            oddBrushColour = oddBrushColour.light(150);
+            oddBrushColour = oddBrushColour.lighter(150);
         }
         oddBrushColour.setAlpha(100);
     }
 
 //    SVDEBUG << "TimeInstantLayer::paint: resolution is "
-//              << m_model->getResolution() << " frames" << endl;
+//              << model->getResolution() << " frames" << endl;
 
     QPoint localPos;
     sv_frame_t illuminateFrame = -1;
@@ -369,7 +391,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         if (x == prevX && m_plotStyle == PlotInstants &&
             p.getFrame() != illuminateFrame) continue;
 
-        int iw = v->getXForFrame(p.getFrame() + m_model->getResolution()) - x;
+        int iw = v->getXForFrame(p.getFrame() + model->getResolution()) - x;
         if (iw < 2) {
             if (iw < 1) {
                 iw = 2;
@@ -405,7 +427,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
                 Event q(*j);
                 nx = v->getXForFrame(q.getFrame());
             } else {
-                nx = v->getXForFrame(m_model->getEndFrame());
+                nx = v->getXForFrame(model->getEndFrame());
             }
 
             if (nx >= x) {
@@ -424,6 +446,11 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         paint.setPen(getBaseQColor());
         
         if (p.getLabel() != "") {
+            
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
             // only draw if there's enough room from here to the next point
 
@@ -454,16 +481,17 @@ TimeInstantLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     cerr << "TimeInstantLayer::drawStart(" << e->x() << ")" << endl;
 #endif
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     m_editingPoint = Event(frame, tr("New Point"));
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Draw Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Draw Point"));
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
@@ -476,11 +504,12 @@ TimeInstantLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     cerr << "TimeInstantLayer::drawDrag(" << e->x() << ")" << endl;
 #endif
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
     m_editingCommand->remove(m_editingPoint);
     m_editingPoint = m_editingPoint.withFrame(frame);
     m_editingCommand->add(m_editingPoint);
@@ -492,10 +521,11 @@ TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << endl;
 #endif
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model || !m_editing) return;
     QString newName = tr("Add Point at %1 s")
         .arg(RealTime::frame2RealTime(m_editingPoint.getFrame(),
-                                      m_model->getSampleRate())
+                                      model->getSampleRate())
              .toText(false).c_str());
     m_editingCommand->setName(newName);
     finish(m_editingCommand);
@@ -506,7 +536,8 @@ TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 void
 TimeInstantLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return;
 
     EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return;
@@ -529,7 +560,8 @@ TimeInstantLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 void
 TimeInstantLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model || !m_editing) return;
 
     m_editing = false;
 
@@ -537,7 +569,7 @@ TimeInstantLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     if (points.empty()) return;
     if (points.begin()->getFrame() != m_editingPoint.getFrame()) return;
 
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Erase Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Erase Point"));
     m_editingCommand->remove(m_editingPoint);
     finish(m_editingCommand);
     m_editingCommand = nullptr;
@@ -551,7 +583,8 @@ TimeInstantLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     cerr << "TimeInstantLayer::editStart(" << e->x() << ")" << endl;
 #endif
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return;
 
     EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return;
@@ -573,14 +606,15 @@ TimeInstantLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     cerr << "TimeInstantLayer::editDrag(" << e->x() << ")" << endl;
 #endif
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     if (!m_editingCommand) {
-        m_editingCommand = new ChangeEventsCommand(m_model, tr("Drag Point"));
+        m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Drag Point"));
     }
 
     m_editingCommand->remove(m_editingPoint);
@@ -594,11 +628,12 @@ TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << endl;
 #endif
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model || !m_editing) return;
     if (m_editingCommand) {
         QString newName = tr("Move Point to %1 s")
             .arg(RealTime::frame2RealTime(m_editingPoint.getFrame(),
-                                          m_model->getSampleRate())
+                                          model->getSampleRate())
                  .toText(false).c_str());
         m_editingCommand->setName(newName);
         finish(m_editingCommand);
@@ -610,7 +645,8 @@ TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 bool
 TimeInstantLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return false;
 
     EventVector points = getLocalPoints(v, e->x());
     if (points.empty()) return false;
@@ -618,7 +654,7 @@ TimeInstantLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     Event point = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
-        (m_model->getSampleRate(),
+        (model->getSampleRate(),
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowText);
 
@@ -632,7 +668,7 @@ TimeInstantLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
             .withLabel(dialog->getText());
         
         ChangeEventsCommand *command =
-            new ChangeEventsCommand(m_model, tr("Edit Point"));
+            new ChangeEventsCommand(m_model.untyped, tr("Edit Point"));
         command->remove(point);
         command->add(newPoint);
         finish(command);
@@ -645,13 +681,14 @@ TimeInstantLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 void
 TimeInstantLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Drag Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Drag Selection"));
 
     EventVector points =
-        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
     for (auto p: points) {
         Event newPoint = p
@@ -666,13 +703,14 @@ TimeInstantLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 TimeInstantLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Resize Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Resize Selection"));
 
     EventVector points =
-        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
     double ratio = double(newSize.getDuration()) / double(s.getDuration());
     double oldStart = double(s.getStartFrame());
@@ -694,13 +732,14 @@ TimeInstantLayer::resizeSelection(Selection s, Selection newSize)
 void
 TimeInstantLayer::deleteSelection(Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Delete Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Delete Selection"));
 
     EventVector points =
-        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
     for (auto p: points) {
         command->remove(p);
@@ -712,10 +751,11 @@ TimeInstantLayer::deleteSelection(Selection s)
 void
 TimeInstantLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return;
 
     EventVector points =
-        m_model->getEventsWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsWithin(s.getStartFrame(), s.getDuration());
 
     for (auto p: points) {
         to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
@@ -725,7 +765,8 @@ TimeInstantLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 bool
 TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset, bool)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
+    if (!model) return false;
 
     EventVector points = from.getPoints();
 
@@ -749,7 +790,7 @@ TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_fram
     }
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Paste"));
+        new ChangeEventsCommand(m_model.untyped, tr("Paste"));
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {

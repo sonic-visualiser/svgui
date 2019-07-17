@@ -19,8 +19,9 @@
 #include <QString>
 #include <set>
 
+#include "data/model/Model.h"
+
 class Layer;
-class Model;
 class Clipboard;
 
 class LayerFactory
@@ -56,7 +57,7 @@ public:
     virtual ~LayerFactory();
 
     typedef std::set<LayerType> LayerTypeSet;
-    LayerTypeSet getValidLayerTypes(Model *model);
+    LayerTypeSet getValidLayerTypes(ModelId modelId);
 
     /**
      * Return the set of layer types that an end user should be
@@ -86,8 +87,8 @@ public:
 
     bool isLayerSliceable(const Layer *);
 
-    void setModel(Layer *layer, Model *model);
-    Model *createEmptyModel(LayerType type, Model *baseModel);
+    void setModel(Layer *layer, ModelId model);
+    std::shared_ptr<Model> createEmptyModel(LayerType type, ModelId baseModel);
 
     int getChannel(Layer *layer);
     void setChannel(Layer *layer, int channel);
@@ -100,12 +101,14 @@ public:
 
 protected:
     template <typename LayerClass, typename ModelClass>
-    bool trySetModel(Layer *layerBase, Model *modelBase) {
+    bool trySetModel(Layer *layerBase, ModelId modelId) {
         LayerClass *layer = dynamic_cast<LayerClass *>(layerBase);
         if (!layer) return false;
-        ModelClass *model = dynamic_cast<ModelClass *>(modelBase);
-        if (!model) return false;
-        layer->setModel(model);
+        if (!modelId.isNone()) {
+            auto model = ModelById::getAs<ModelClass>(modelId);
+            if (!model) return false;
+        }
+        layer->setModel(modelId);
         return true;
     }
 

@@ -37,8 +37,8 @@ public:
     SpectrumLayer();
     ~SpectrumLayer();
     
-    void setModel(DenseTimeValueModel *model);
-    virtual const Model *getModel() const override { return m_originModel; }
+    void setModel(ModelId model); // a DenseTimeValueModel
+    virtual ModelId getModel() const override { return m_originModel; }
 
     virtual bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint cursorPos,
                                      std::vector<QRect> &extents) const override;
@@ -115,7 +115,7 @@ protected slots:
     void preferenceChanged(PropertyContainer::PropertyName name);
 
 protected:
-    DenseTimeValueModel    *m_originModel;
+    ModelId                 m_originModel; // a DenseTimeValueModel
     int                     m_channel;
     bool                    m_channelSet;
     int                     m_windowSize;

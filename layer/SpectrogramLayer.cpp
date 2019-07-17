@@ -56,7 +56,6 @@
 using namespace std;
 
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
-    m_model(nullptr),
     m_channel(0),
     m_windowSize(1024),
     m_windowType(HanningWindow),
@@ -83,9 +82,6 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_synchronous(false),
     m_haveDetailedScale(false),
     m_exiting(false),
-    m_fftModel(nullptr),
-    m_wholeCache(nullptr),
-    m_peakCache(nullptr),
     m_peakCacheDivisor(8)
 {
     QString colourConfigName = "spectrogram-colour";
@@ -140,17 +136,13 @@ SpectrogramLayer::~SpectrogramLayer()
 void
 SpectrogramLayer::deleteDerivedModels()
 {
-    if (m_fftModel) m_fftModel->aboutToDelete();
-    if (m_peakCache) m_peakCache->aboutToDelete();
-    if (m_wholeCache) m_wholeCache->aboutToDelete();
+    ModelById::release(m_fftModel);
+    ModelById::release(m_peakCache);
+    ModelById::release(m_wholeCache);
 
-    delete m_fftModel;
-    delete m_peakCache;
-    delete m_wholeCache;
-
-    m_fftModel = nullptr;
-    m_peakCache = nullptr;
-    m_wholeCache = nullptr;
+    m_fftModel = {};
+    m_peakCache = {};
+    m_wholeCache = {};
 }
 
 pair<ColourScaleType, double>
@@ -208,24 +200,29 @@ SpectrogramLayer::convertFromColumnNorm(ColumnNormalization norm, bool visible)
 }
 
 void
-SpectrogramLayer::setModel(const DenseTimeValueModel *model)
+SpectrogramLayer::setModel(ModelId modelId)
 {
-//    cerr << "SpectrogramLayer(" << this << "): setModel(" << model << ")" << endl;
+    auto newModel = ModelById::getAs<DenseTimeValueModel>(modelId);
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a DenseTimeValueModel");
+    }
+    
+    if (modelId == m_model) return;
+    m_model = modelId;
 
-    if (model == m_model) return;
+    if (newModel) {
+        recreateFFTModel();
 
-    m_model = model;
+        connectSignals(m_model);
 
-    recreateFFTModel();
-
-    if (!m_model || !m_model->isOK()) return;
-
-    connectSignals(m_model);
-
-    connect(m_model, SIGNAL(modelChanged()), this, SLOT(cacheInvalid()));
-    connect(m_model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this, SLOT(cacheInvalid(sv_frame_t, sv_frame_t)));
-
+        connect(newModel.get(),
+                SIGNAL(modelChanged(ModelId)),
+                this, SLOT(cacheInvalid(ModelId)));
+        connect(newModel.get(),
+                SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+                this, SLOT(cacheInvalid(ModelId, sv_frame_t, sv_frame_t)));
+    }
+    
     emit modelReplaced();
 }
 
@@ -1063,7 +1060,7 @@ SpectrogramLayer::isLayerScrollable(const LayerGeometryProvider *) const
 }
 
 void
-SpectrogramLayer::cacheInvalid()
+SpectrogramLayer::cacheInvalid(ModelId)
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::cacheInvalid()" << endl;
@@ -1075,6 +1072,7 @@ SpectrogramLayer::cacheInvalid()
 
 void
 SpectrogramLayer::cacheInvalid(
+    ModelId,
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     sv_frame_t from, sv_frame_t to
 #else 
@@ -1106,7 +1104,10 @@ SpectrogramLayer::hasLightBackground() const
 double
 SpectrogramLayer::getEffectiveMinFrequency() const
 {
-    sv_samplerate_t sr = m_model->getSampleRate();
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return 0.0;
+    
+    sv_samplerate_t sr = model->getSampleRate();
     double minf = double(sr) / getFFTSize();
 
     if (m_minFrequency > 0.0) {
@@ -1121,7 +1122,10 @@ SpectrogramLayer::getEffectiveMinFrequency() const
 double
 SpectrogramLayer::getEffectiveMaxFrequency() const
 {
-    sv_samplerate_t sr = m_model->getSampleRate();
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return 0.0;
+    
+    sv_samplerate_t sr = model->getSampleRate();
     double maxf = double(sr) / 2;
 
     if (m_maxFrequency > 0.0) {
@@ -1147,10 +1151,13 @@ SpectrogramLayer::getYBinRange(LayerGeometryProvider *v, int y, double &q0, doub
 double
 SpectrogramLayer::getYForBin(const LayerGeometryProvider *v, double bin) const
 {
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return 0.0;
+    
     double minf = getEffectiveMinFrequency();
     double maxf = getEffectiveMaxFrequency();
     bool logarithmic = (m_binScale == BinScale::Log);
-    sv_samplerate_t sr = m_model->getSampleRate();
+    sv_samplerate_t sr = model->getSampleRate();
 
     double freq = (bin * sr) / getFFTSize();
     
@@ -1162,7 +1169,10 @@ SpectrogramLayer::getYForBin(const LayerGeometryProvider *v, double bin) const
 double
 SpectrogramLayer::getBinForY(const LayerGeometryProvider *v, double y) const
 {
-    sv_samplerate_t sr = m_model->getSampleRate();
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return 0.0;
+
+    sv_samplerate_t sr = model->getSampleRate();
     double minf = getEffectiveMinFrequency();
     double maxf = getEffectiveMaxFrequency();
 
@@ -1179,8 +1189,11 @@ SpectrogramLayer::getBinForY(const LayerGeometryProvider *v, double y) const
 bool
 SpectrogramLayer::getXBinRange(LayerGeometryProvider *v, int x, double &s0, double &s1) const
 {
-    sv_frame_t modelStart = m_model->getStartFrame();
-    sv_frame_t modelEnd = m_model->getEndFrame();
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return false;
+
+    sv_frame_t modelStart = model->getStartFrame();
+    sv_frame_t modelEnd = model->getEndFrame();
 
     // Each pixel column covers an exact range of sample frames:
     sv_frame_t f0 = v->getFrameForX(x) - modelStart;
@@ -1203,6 +1216,9 @@ SpectrogramLayer::getXBinRange(LayerGeometryProvider *v, int x, double &s0, doub
 bool
 SpectrogramLayer::getXBinSourceRange(LayerGeometryProvider *v, int x, RealTime &min, RealTime &max) const
 {
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return false;
+
     double s0 = 0, s1 = 0;
     if (!getXBinRange(v, x, s0, s1)) return false;
     
@@ -1214,8 +1230,8 @@ SpectrogramLayer::getXBinSourceRange(LayerGeometryProvider *v, int x, RealTime &
     int w1 = s1i * windowIncrement + windowIncrement +
         (m_windowSize - windowIncrement)/2 - 1;
     
-    min = RealTime::frame2RealTime(w0, m_model->getSampleRate());
-    max = RealTime::frame2RealTime(w1, m_model->getSampleRate());
+    min = RealTime::frame2RealTime(w0, model->getSampleRate());
+    max = RealTime::frame2RealTime(w1, model->getSampleRate());
     return true;
 }
 
@@ -1223,13 +1239,16 @@ bool
 SpectrogramLayer::getYBinSourceRange(LayerGeometryProvider *v, int y, double &freqMin, double &freqMax)
 const
 {
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return false;
+
     double q0 = 0, q1 = 0;
     if (!getYBinRange(v, y, q0, q1)) return false;
 
     int q0i = int(q0 + 0.001);
     int q1i = int(q1);
 
-    sv_samplerate_t sr = m_model->getSampleRate();
+    sv_samplerate_t sr = model->getSampleRate();
 
     for (int q = q0i; q <= q1i; ++q) {
         if (q == q0i) freqMin = (sr * q) / getFFTSize();
@@ -1244,11 +1263,12 @@ SpectrogramLayer::getAdjustedYBinSourceRange(LayerGeometryProvider *v, int x, in
                                              double &adjFreqMin, double &adjFreqMax)
 const
 {
-    if (!m_model || !m_model->isOK() || !m_model->isReady()) {
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model || !model->isOK() || !model->isReady()) {
         return false;
     }
 
-    FFTModel *fft = getFFTModel();
+    auto fft = ModelById::getAs<FFTModel>(m_fftModel);
     if (!fft) return false;
 
     double s0 = 0, s1 = 0;
@@ -1263,7 +1283,7 @@ const
     int q0i = int(q0 + 0.001);
     int q1i = int(q1);
 
-    sv_samplerate_t sr = m_model->getSampleRate();
+    sv_samplerate_t sr = model->getSampleRate();
 
     bool haveAdj = false;
 
@@ -1311,7 +1331,8 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
                                       double &min, double &max,
                                       double &phaseMin, double &phaseMax) const
 {
-    if (!m_model || !m_model->isOK() || !m_model->isReady()) {
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model || !model->isOK() || !model->isReady()) {
         return false;
     }
 
@@ -1329,7 +1350,7 @@ SpectrogramLayer::getXYBinSourceRange(LayerGeometryProvider *v, int x, int y,
 
     bool rv = false;
 
-    FFTModel *fft = getFFTModel();
+    auto fft = ModelById::getAs<FFTModel>(m_fftModel);
 
     if (fft) {
 
@@ -1374,55 +1395,51 @@ SpectrogramLayer::recreateFFTModel()
 {
     SVDEBUG << "SpectrogramLayer::recreateFFTModel called" << endl;
 
-    if (!m_model || !m_model->isOK()) {
-        emit sliceableModelReplaced(m_fftModel, nullptr);
-        deleteDerivedModels();
-        return;
+    { // scope, avoid hanging on to this pointer
+        auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+        if (!model || !model->isOK()) {
+            deleteDerivedModels();
+            return;
+        }
     }
-
-    if (m_fftModel) m_fftModel->aboutToDelete();
     
-    if (m_peakCache) m_peakCache->aboutToDelete();
-    delete m_peakCache;
-    m_peakCache = nullptr;
+    deleteDerivedModels();
 
-    if (m_wholeCache) m_wholeCache->aboutToDelete();
-    delete m_wholeCache;
-    m_wholeCache = nullptr;
-    
-    FFTModel *newModel = new FFTModel(m_model,
-                                      m_channel,
-                                      m_windowType,
-                                      m_windowSize,
-                                      getWindowIncrement(),
-                                      getFFTSize());
+    auto newFFTModel = std::make_shared<FFTModel>(m_model,
+                                                  m_channel,
+                                                  m_windowType,
+                                                  m_windowSize,
+                                                  getWindowIncrement(),
+                                                  getFFTSize());
 
-    if (!newModel->isOK()) {
+    if (!newFFTModel->isOK()) {
         QMessageBox::critical
             (nullptr, tr("FFT cache failed"),
              tr("Failed to create the FFT model for this spectrogram.\n"
                 "There may be insufficient memory or disc space to continue."));
-        delete newModel;
-        delete m_fftModel;
-        m_fftModel = nullptr;
         return;
     }
 
-    FFTModel *oldModel = m_fftModel;
-    m_fftModel = newModel;
+    m_fftModel = ModelById::add(newFFTModel);
 
     bool createWholeCache = false;
     checkCacheSpace(&m_peakCacheDivisor, &createWholeCache);
     
     if (createWholeCache) {
-        m_wholeCache = new Dense3DModelPeakCache(m_fftModel, 1);
-        m_peakCache = new Dense3DModelPeakCache(m_wholeCache, m_peakCacheDivisor);
-    } else {
-        m_peakCache = new Dense3DModelPeakCache(m_fftModel, m_peakCacheDivisor);
-    }
 
-    emit sliceableModelReplaced(oldModel, m_fftModel);
-    delete oldModel;
+        auto whole = std::make_shared<Dense3DModelPeakCache>(m_fftModel, 1);
+        m_wholeCache = ModelById::add(whole);
+
+        auto peaks = std::make_shared<Dense3DModelPeakCache>(m_wholeCache,
+                                                             m_peakCacheDivisor);
+        m_peakCache = ModelById::add(peaks);
+
+    } else {
+
+        auto peaks = std::make_shared<Dense3DModelPeakCache>(m_fftModel,
+                                                             m_peakCacheDivisor);
+        m_peakCache = ModelById::add(peaks);
+    }
 }
 
 void
@@ -1431,12 +1448,13 @@ SpectrogramLayer::checkCacheSpace(int *suggestedPeakDivisor,
 {
     *suggestedPeakDivisor = 8;
     *createWholeCache = false;
-    
-    if (!m_fftModel) return;
+
+    auto fftModel = ModelById::getAs<FFTModel>(m_fftModel);
+    if (!fftModel) return;
 
     size_t sz =
-        size_t(m_fftModel->getWidth()) *
-        size_t(m_fftModel->getHeight()) *
+        size_t(fftModel->getWidth()) *
+        size_t(fftModel->getHeight()) *
         sizeof(float);
 
     try {
@@ -1466,7 +1484,7 @@ SpectrogramLayer::checkCacheSpace(int *suggestedPeakDivisor,
     }
 }
 
-const Model *
+ModelId
 SpectrogramLayer::getSliceableModel() const
 {
     return m_fftModel;
@@ -1496,10 +1514,10 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
 
         Colour3DPlotRenderer::Sources sources;
         sources.verticalBinLayer = this;
-        sources.fft = getFFTModel();
+        sources.fft = m_fftModel;
         sources.source = sources.fft;
-        if (m_peakCache) sources.peakCaches.push_back(m_peakCache);
-        if (m_wholeCache) sources.peakCaches.push_back(m_wholeCache);
+        if (!m_peakCache.isNone()) sources.peakCaches.push_back(m_peakCache);
+        if (!m_wholeCache.isNone()) sources.peakCaches.push_back(m_wholeCache);
 
         ColourScale::Parameters cparams;
         cparams.colourMap = m_colourMap;
@@ -1635,7 +1653,8 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     cerr << "SpectrogramLayer::paint(): rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
 #endif
 
-    if (!m_model || !m_model->isOK() || !m_model->isReady()) {
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model || !model->isOK() || !model->isReady()) {
         return;
     }
 
@@ -1649,8 +1668,10 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
 {
     Profiler profiler("SpectrogramLayer::illuminateLocalFeatures");
 
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    
     QPoint localPos;
-    if (!v->shouldIlluminateLocalFeatures(this, localPos) || !m_model) {
+    if (!v->shouldIlluminateLocalFeatures(this, localPos) || !model) {
         return;
     }
 
@@ -1708,8 +1729,9 @@ SpectrogramLayer::getFrequencyForY(const LayerGeometryProvider *v, int y) const
 int
 SpectrogramLayer::getCompletion(LayerGeometryProvider *) const
 {
-    if (!m_fftModel) return 100;
-    int completion = m_fftModel->getCompletion();
+    auto fftModel = ModelById::getAs<FFTModel>(m_fftModel);
+    if (!fftModel) return 100;
+    int completion = fftModel->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
@@ -1719,17 +1741,19 @@ SpectrogramLayer::getCompletion(LayerGeometryProvider *) const
 QString
 SpectrogramLayer::getError(LayerGeometryProvider *) const
 {
-    if (!m_fftModel) return "";
-    return m_fftModel->getError();
+    auto fftModel = ModelById::getAs<FFTModel>(m_fftModel);
+    if (!fftModel) return "";
+    return fftModel->getError();
 }
 
 bool
 SpectrogramLayer::getValueExtents(double &min, double &max,
                                   bool &logarithmic, QString &unit) const
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return false;
 
-    sv_samplerate_t sr = m_model->getSampleRate();
+    sv_samplerate_t sr = model->getSampleRate();
     min = double(sr) / getFFTSize();
     max = double(sr) / 2;
     
@@ -1751,12 +1775,13 @@ SpectrogramLayer::getDisplayExtents(double &min, double &max) const
 bool
 SpectrogramLayer::setDisplayExtents(double min, double max)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return false;
 
 //    SVDEBUG << "SpectrogramLayer::setDisplayExtents: " << min << "->" << max << endl;
 
     if (min < 0) min = 0;
-    if (max > m_model->getSampleRate()/2.0) max = m_model->getSampleRate()/2.0;
+    if (max > model->getSampleRate()/2.0) max = model->getSampleRate()/2.0;
     
     int minf = int(lrint(min));
     int maxf = int(lrint(max));
@@ -1831,6 +1856,11 @@ SpectrogramLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
                                       QPoint cursorPos,
                                       vector<QRect> &extents) const
 {
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
     QRect vertical(cursorPos.x() - 12, 0, 12, v->getPaintHeight());
     extents.push_back(vertical);
 
@@ -1869,6 +1899,9 @@ void
 SpectrogramLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                                   QPoint cursorPos) const
 {
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return;
+
     paint.save();
     
     int sw = getVerticalScaleWidth(v, m_haveDetailedScale, paint);
@@ -1885,35 +1918,39 @@ SpectrogramLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     
     double fundamental = getFrequencyForY(v, cursorPos.y());
 
-    PaintAssistant::drawVisibleText(v, paint,
-                       sw + 2,
-                       cursorPos.y() - 2,
-                       QString("%1 Hz").arg(fundamental),
-                       PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText
+        (v, paint,
+         sw + 2,
+         cursorPos.y() - 2,
+         QString("%1 Hz").arg(fundamental),
+         PaintAssistant::OutlinedText);
 
     if (Pitch::isFrequencyInMidiRange(fundamental)) {
         QString pitchLabel = Pitch::getPitchLabelForFrequency(fundamental);
-        PaintAssistant::drawVisibleText(v, paint,
-                           sw + 2,
-                           cursorPos.y() + paint.fontMetrics().ascent() + 2,
-                           pitchLabel,
-                           PaintAssistant::OutlinedText);
+        PaintAssistant::drawVisibleText
+            (v, paint,
+             sw + 2,
+             cursorPos.y() + paint.fontMetrics().ascent() + 2,
+             pitchLabel,
+             PaintAssistant::OutlinedText);
     }
 
     sv_frame_t frame = v->getFrameForX(cursorPos.x());
-    RealTime rt = RealTime::frame2RealTime(frame, m_model->getSampleRate());
+    RealTime rt = RealTime::frame2RealTime(frame, model->getSampleRate());
     QString rtLabel = QString("%1 s").arg(rt.toText(true).c_str());
     QString frameLabel = QString("%1").arg(frame);
-    PaintAssistant::drawVisibleText(v, paint,
-                       cursorPos.x() - paint.fontMetrics().width(frameLabel) - 2,
-                       v->getPaintHeight() - 2,
-                       frameLabel,
-                       PaintAssistant::OutlinedText);
-    PaintAssistant::drawVisibleText(v, paint,
-                       cursorPos.x() + 2,
-                       v->getPaintHeight() - 2,
-                       rtLabel,
-                       PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText
+        (v, paint,
+         cursorPos.x() - paint.fontMetrics().width(frameLabel) - 2,
+         v->getPaintHeight() - 2,
+         frameLabel,
+         PaintAssistant::OutlinedText);
+    PaintAssistant::drawVisibleText
+        (v, paint,
+         cursorPos.x() + 2,
+         v->getPaintHeight() - 2,
+         rtLabel,
+         PaintAssistant::OutlinedText);
 
     int harmonic = 2;
 
@@ -1949,7 +1986,8 @@ SpectrogramLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
     int x = pos.x();
     int y = pos.y();
 
-    if (!m_model || !m_model->isOK()) return "";
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model || !model->isOK()) return "";
 
     double magMin = 0, magMax = 0;
     double phaseMin = 0, phaseMax = 0;
@@ -2068,7 +2106,8 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 int
 SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, QPainter &paint) const
 {
-    if (!m_model || !m_model->isOK()) return 0;
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model || !model->isOK()) return 0;
 
     int cw = 0;
     if (detailed) cw = getColourScaleWidth(paint);
@@ -2076,7 +2115,7 @@ SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, 
     int tw = paint.fontMetrics().width(QString("%1")
                                      .arg(m_maxFrequency > 0 ?
                                           m_maxFrequency - 1 :
-                                          m_model->getSampleRate() / 2));
+                                          model->getSampleRate() / 2));
 
     int fw = paint.fontMetrics().width(tr("43Hz"));
     if (tw < fw) tw = fw;
@@ -2090,7 +2129,8 @@ void
 SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
                                      QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) {
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model || !model->isOK()) {
         return;
     }
 
@@ -2110,7 +2150,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
     int pkw = (m_binScale == BinScale::Log ? 10 : 0);
 
     int bins = getFFTSize() / 2;
-    sv_samplerate_t sr = m_model->getSampleRate();
+    sv_samplerate_t sr = model->getSampleRate();
 
     if (m_maxFrequency > 0) {
         bins = int((double(m_maxFrequency) * getFFTSize()) / sr + 0.1);
@@ -2380,9 +2420,10 @@ protected:
 int
 SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
 {
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return 0;
 
-    sv_samplerate_t sr = m_model->getSampleRate();
+    sv_samplerate_t sr = model->getSampleRate();
 
     SpectrogramRangeMapper mapper(sr, getFFTSize());
 
@@ -2403,12 +2444,13 @@ SpectrogramLayer::getVerticalZoomSteps(int &defaultStep) const
 int
 SpectrogramLayer::getCurrentVerticalZoomStep() const
 {
-    if (!m_model) return 0;
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return 0;
 
     double dmin, dmax;
     getDisplayExtents(dmin, dmax);
     
-    SpectrogramRangeMapper mapper(m_model->getSampleRate(), getFFTSize());
+    SpectrogramRangeMapper mapper(model->getSampleRate(), getFFTSize());
     int n = mapper.getPositionForValue(dmax - dmin);
 //    SVDEBUG << "SpectrogramLayer::getCurrentVerticalZoomStep: " << n << endl;
     return n;
@@ -2417,14 +2459,15 @@ SpectrogramLayer::getCurrentVerticalZoomStep() const
 void
 SpectrogramLayer::setVerticalZoomStep(int step)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return;
 
     double dmin = m_minFrequency, dmax = m_maxFrequency;
 //    getDisplayExtents(dmin, dmax);
 
 //    cerr << "current range " << dmin << " -> " << dmax << ", range " << dmax-dmin << ", mid " << (dmax + dmin)/2 << endl;
     
-    sv_samplerate_t sr = m_model->getSampleRate();
+    sv_samplerate_t sr = model->getSampleRate();
     SpectrogramRangeMapper mapper(sr, getFFTSize());
     double newdist = mapper.getValueForPosition(step);
 
@@ -2485,8 +2528,9 @@ SpectrogramLayer::setVerticalZoomStep(int step)
 RangeMapper *
 SpectrogramLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return nullptr;
-    return new SpectrogramRangeMapper(m_model->getSampleRate(), getFFTSize());
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return nullptr;
+    return new SpectrogramRangeMapper(model->getSampleRate(), getFFTSize());
 }
 
 void

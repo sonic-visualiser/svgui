@@ -19,7 +19,7 @@
 #include <QDialogButtonBox>
 #include <QFileInfo>
 #include <QHeaderView>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QApplication>
 
 #include "plugin/FeatureExtractionPluginFactory.h"
@@ -129,8 +129,8 @@ PluginReviewDialog::populate()
     int twidth = m_table->horizontalHeader()->length();
     int theight = m_table->verticalHeader()->length();
     
-    QDesktopWidget *desktop = QApplication::desktop();
-    QRect available = desktop->availableGeometry();
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QRect available = screen->availableGeometry();
 
     int width = std::min(twidth + 30, (available.width() * 3) / 4);
     int height = std::min(theight + 30, (available.height() * 3) / 4);

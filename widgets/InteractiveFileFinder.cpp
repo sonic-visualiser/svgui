@@ -388,7 +388,7 @@ InteractiveFileFinder::getSaveFileName(FileType type,
     dialog.setDirectory(lastPath);
     dialog.setAcceptMode(QFileDialog::AcceptSave);
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setConfirmOverwrite(false); // we'll do that
+    dialog.setOption(QFileDialog::DontConfirmOverwrite, true); // we'll do that
     
     QString defaultSuffix;
     if (type == SessionFile) {

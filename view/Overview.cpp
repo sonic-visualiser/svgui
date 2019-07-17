@@ -42,7 +42,7 @@ Overview::Overview(QWidget *w) :
 }
 
 void
-Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
+Overview::modelChangedWithin(ModelId modelId, sv_frame_t startFrame, sv_frame_t endFrame)
 {
     using namespace std::rel_ops;
     
@@ -60,9 +60,8 @@ Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
         if (m_modelTestTime.elapsed() < 1000) {
             for (LayerList::const_iterator i = m_layerStack.begin();
                  i != m_layerStack.end(); ++i) {
-                if ((*i)->getModel() &&
-                    (!(*i)->getModel()->isOK() ||
-                     !(*i)->getModel()->isReady())) {
+                auto model = ModelById::get((*i)->getModel());
+                if (model && (!model->isOK() || !model->isReady())) {
                     return;
                 }
             }
@@ -71,7 +70,7 @@ Overview::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
         }
     }
 
-    View::modelChangedWithin(startFrame, endFrame);
+    View::modelChangedWithin(modelId, startFrame, endFrame);
 }
 
 void

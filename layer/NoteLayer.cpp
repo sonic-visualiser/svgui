@@ -48,7 +48,6 @@
 
 NoteLayer::NoteLayer() :
     SingleColourLayer(),
-    m_model(nullptr),
     m_editing(false),
     m_dragPointX(0),
     m_dragPointY(0),
@@ -65,16 +64,30 @@ NoteLayer::NoteLayer() :
     SVDEBUG << "constructed NoteLayer" << endl;
 }
 
+int
+NoteLayer::getCompletion(LayerGeometryProvider *) const
+{
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
+
 void
-NoteLayer::setModel(NoteModel *model)
-{        
-    if (m_model == model) return;
-    m_model = model;
+NoteLayer::setModel(ModelId modelId)
+{
+    auto newModel = ModelById::getAs<NoteModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a NoteModel");
+    }
+    
+    if (m_model == modelId) return;
+    m_model = modelId;
 
-    connectSignals(m_model);
-
-//    SVDEBUG << "NoteLayer::setModel(" << model << ")" << endl;
-
+    if (newModel) {
+        connectSignals(m_model);
+    }
+    
     m_scaleMinimum = 0;
     m_scaleMaximum = 0;
 
@@ -118,7 +131,8 @@ NoteLayer::getPropertyGroupName(const PropertyName &name) const
 QString
 NoteLayer::getScaleUnits() const
 {
-    if (m_model) return m_model->getScaleUnits();
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (model) return model->getScaleUnits();
     else return "";
 }
 
@@ -139,9 +153,10 @@ NoteLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Scale Units") {
 
         if (deflt) *deflt = 0;
-        if (m_model) {
+        auto model = ModelById::getAs<NoteModel>(m_model);
+        if (model) {
             val = UnitDatabase::getInstance()->getUnitId
-                (getScaleUnits());
+                (model->getScaleUnits());
         }
 
     } else {
@@ -174,10 +189,11 @@ NoteLayer::setProperty(const PropertyName &name, int value)
     if (name == "Vertical Scale") {
         setVerticalScale(VerticalScale(value));
     } else if (name == "Scale Units") {
-        if (m_model) {
-            m_model->setScaleUnits
+        auto model = ModelById::getAs<NoteModel>(m_model);
+        if (model) {
+            model->setScaleUnits
                 (UnitDatabase::getInstance()->getUnitById(value));
-            emit modelChanged();
+            emit modelChanged(m_model);
         }
     } else {
         return SingleColourLayer::setProperty(name, value);
@@ -214,9 +230,10 @@ bool
 NoteLayer::getValueExtents(double &min, double &max,
                            bool &logarithmic, QString &unit) const
 {
-    if (!m_model) return false;
-    min = m_model->getValueMinimum();
-    max = m_model->getValueMaximum();
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
+    min = model->getValueMinimum();
+    max = model->getValueMaximum();
 
     if (shouldConvertMIDIToHz()) {
         unit = "Hz";
@@ -225,7 +242,9 @@ NoteLayer::getValueExtents(double &min, double &max,
     } else unit = getScaleUnits();
 
     if (m_verticalScale == MIDIRangeScale ||
-        m_verticalScale == LogScale) logarithmic = true;
+        m_verticalScale == LogScale) {
+        logarithmic = true;
+    }
 
     return true;
 }
@@ -233,7 +252,8 @@ NoteLayer::getValueExtents(double &min, double &max,
 bool
 NoteLayer::getDisplayExtents(double &min, double &max) const
 {
-    if (!m_model || shouldAutoAlign()) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || shouldAutoAlign()) return false;
 
     if (m_verticalScale == MIDIRangeScale) {
         min = Pitch::getFrequencyForPitch(0);
@@ -242,8 +262,8 @@ NoteLayer::getDisplayExtents(double &min, double &max) const
     }
 
     if (m_scaleMinimum == m_scaleMaximum) {
-        min = m_model->getValueMinimum();
-        max = m_model->getValueMaximum();
+        min = model->getValueMinimum();
+        max = model->getValueMaximum();
     } else {
         min = m_scaleMinimum;
         max = m_scaleMaximum;
@@ -264,7 +284,7 @@ NoteLayer::getDisplayExtents(double &min, double &max) const
 bool
 NoteLayer::setDisplayExtents(double min, double max)
 {
-    if (!m_model) return false;
+    if (m_model.isNone()) return false;
 
     if (min == max) {
         if (min == 0.f) {
@@ -288,9 +308,7 @@ NoteLayer::setDisplayExtents(double min, double max)
 int
 NoteLayer::getVerticalZoomSteps(int &defaultStep) const
 {
-    if (shouldAutoAlign()) return 0;
-    if (!m_model) return 0;
-
+    if (shouldAutoAlign() || m_model.isNone()) return 0;
     defaultStep = 0;
     return 100;
 }
@@ -298,8 +316,7 @@ NoteLayer::getVerticalZoomSteps(int &defaultStep) const
 int
 NoteLayer::getCurrentVerticalZoomStep() const
 {
-    if (shouldAutoAlign()) return 0;
-    if (!m_model) return 0;
+    if (shouldAutoAlign() || m_model.isNone()) return 0;
 
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return 0;
@@ -319,8 +336,7 @@ NoteLayer::getCurrentVerticalZoomStep() const
 void
 NoteLayer::setVerticalZoomStep(int step)
 {
-    if (shouldAutoAlign()) return;
-    if (!m_model) return;
+    if (shouldAutoAlign() || m_model.isNone()) return;
 
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return;
@@ -370,7 +386,7 @@ NoteLayer::setVerticalZoomStep(int step)
 RangeMapper *
 NoteLayer::getNewVerticalZoomRangeMapper() const
 {
-    if (!m_model) return nullptr;
+    if (m_model.isNone()) return nullptr;
     
     RangeMapper *mapper;
 
@@ -393,21 +409,22 @@ NoteLayer::getNewVerticalZoomRangeMapper() const
 EventVector
 NoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 {
-    if (!m_model) return {};
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return {};
     
     sv_frame_t frame = v->getFrameForX(x);
 
-    EventVector local = m_model->getEventsCovering(frame);
+    EventVector local = model->getEventsCovering(frame);
     if (!local.empty()) return local;
 
     int fuzz = ViewManager::scalePixelSize(2);
     sv_frame_t start = v->getFrameForX(x - fuzz);
     sv_frame_t end = v->getFrameForX(x + fuzz);
 
-    local = m_model->getEventsStartingWithin(frame, end - frame);
+    local = model->getEventsStartingWithin(frame, end - frame);
     if (!local.empty()) return local;
 
-    local = m_model->getEventsSpanning(start, frame - start);
+    local = model->getEventsSpanning(start, frame - start);
     if (!local.empty()) return local;
 
     return {};
@@ -416,11 +433,12 @@ NoteLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 bool
 NoteLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &point) const
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
 
     sv_frame_t frame = v->getFrameForX(x);
 
-    EventVector onPoints = m_model->getEventsCovering(frame);
+    EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
     int nearestDistance = -1;
@@ -441,12 +459,13 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
-    if (!m_model || !m_model->getSampleRate()) return "";
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !model->getSampleRate()) return "";
 
     EventVector points = getLocalPoints(v, x);
 
     if (points.empty()) {
-        if (!m_model->isReady()) {
+        if (!model->isReady()) {
             return tr("In progress");
         } else {
             return tr("No local points");
@@ -461,9 +480,9 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
         int y = getYForValue(v, i->getValue());
         int h = 3;
 
-        if (m_model->getValueQuantization() != 0.0) {
+        if (model->getValueQuantization() != 0.0) {
             h = y - getYForValue
-                (v, i->getValue() + m_model->getValueQuantization());
+                (v, i->getValue() + model->getValueQuantization());
             if (h < 3) h = 3;
         }
 
@@ -476,9 +495,9 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     if (i == points.end()) return tr("No local points");
 
     RealTime rt = RealTime::frame2RealTime(note.getFrame(),
-                                           m_model->getSampleRate());
+                                           model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(note.getDuration(),
-                                           m_model->getSampleRate());
+                                           model->getSampleRate());
     
     QString pitchText;
 
@@ -530,7 +549,8 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                               int &resolution,
                               SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
@@ -541,7 +561,7 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     // an editing operation, i.e. closest feature in either direction
     // but only if it is "close enough"
 
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
 
     if (snap == SnapNeighbouring) {
         EventVector points = getLocalPoints(v, v->getXForFrame(frame));
@@ -551,7 +571,7 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     }    
 
     Event e;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame,
          [](Event) { return true; },
          snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
@@ -570,6 +590,9 @@ NoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, b
     max = 0.0;
     log = false;
 
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
+    
     QString queryUnits;
     if (shouldConvertMIDIToHz()) queryUnits = "Hz";
     else queryUnits = getScaleUnits();
@@ -578,8 +601,8 @@ NoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, b
 
         if (!v->getValueExtents(queryUnits, min, max, log)) {
 
-            min = m_model->getValueMinimum();
-            max = m_model->getValueMaximum();
+            min = model->getValueMinimum();
+            max = model->getValueMaximum();
 
             if (shouldConvertMIDIToHz()) {
                 min = Pitch::getFrequencyForPitch(int(lrint(min)));
@@ -681,16 +704,17 @@ NoteLayer::getValueForY(LayerGeometryProvider *v, int y) const
 bool
 NoteLayer::shouldAutoAlign() const
 {
-    if (!m_model) return false;
+    if (m_model.isNone()) return false;
     return (m_verticalScale == AutoAlignScale);
 }
 
 void
 NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !model->isOK()) return;
 
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("NoteLayer::paint", true);
@@ -699,7 +723,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
 
-    EventVector points(m_model->getEventsSpanning(frame0, frame1 - frame0));
+    EventVector points(model->getEventsSpanning(frame0, frame1 - frame0));
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
@@ -708,10 +732,10 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     brushColour.setAlpha(80);
 
 //    SVDEBUG << "NoteLayer::paint: resolution is "
-//              << m_model->getResolution() << " frames" << endl;
+//              << model->getResolution() << " frames" << endl;
 
-    double min = m_model->getValueMinimum();
-    double max = m_model->getValueMaximum();
+    double min = model->getValueMinimum();
+    double max = model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
@@ -739,8 +763,8 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int h = 3;
         
-        if (m_model->getValueQuantization() != 0.0) {
-            h = y - getYForValue(v, p.getValue() + m_model->getValueQuantization());
+        if (model->getValueQuantization() != 0.0) {
+            h = y - getYForValue(v, p.getValue() + model->getValueQuantization());
             if (h < 3) h = 3;
         }
 
@@ -753,6 +777,11 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             paint.setPen(v->getForeground());
             paint.setBrush(v->getForeground());
 
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
             QString vlabel = QString("%1%2").arg(p.getValue()).arg(getScaleUnits());
             PaintAssistant::drawVisibleText(v, paint, 
                                x - paint.fontMetrics().width(vlabel) - 2,
@@ -761,7 +790,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                                vlabel, PaintAssistant::OutlinedText);
 
             QString hlabel = RealTime::frame2RealTime
-                (p.getFrame(), m_model->getSampleRate()).toText(true).c_str();
+                (p.getFrame(), model->getSampleRate()).toText(true).c_str();
             PaintAssistant::drawVisibleText(v, paint, 
                                x,
                                y - h/2 - paint.fontMetrics().descent() - 2,
@@ -777,7 +806,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 int
 NoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint) const
 {
-    if (!m_model) {
+    if (m_model.isNone()) {
         return 0;
     }
 
@@ -795,7 +824,8 @@ NoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint
 void
 NoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect) const
 {
-    if (!m_model || m_model->isEmpty()) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || model->isEmpty()) return;
 
     QString unit;
     double min, max;
@@ -835,11 +865,12 @@ NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double value = getValueForY(v, e->y());
 
@@ -847,7 +878,7 @@ NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Draw Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Draw Point"));
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
@@ -858,11 +889,12 @@ NoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double newValue = getValueForY(v, e->y());
 
@@ -887,7 +919,8 @@ void
 NoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
     finish(m_editingCommand);
     m_editingCommand = nullptr;
     m_editing = false;
@@ -896,7 +929,8 @@ NoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 void
 NoteLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
@@ -916,7 +950,8 @@ NoteLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 void
 NoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
 
     m_editing = false;
 
@@ -925,7 +960,7 @@ NoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Erase Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Erase Point"));
 
     m_editingCommand->remove(m_editingPoint);
 
@@ -939,7 +974,8 @@ NoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
@@ -962,7 +998,8 @@ NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
 
     int xdist = e->x() - m_dragStartX;
     int ydist = e->y() - m_dragStartY;
@@ -971,13 +1008,13 @@ NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 
     sv_frame_t frame = v->getFrameForX(newx);
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double value = getValueForY(v, newy);
 
     if (!m_editingCommand) {
-        m_editingCommand = new ChangeEventsCommand(m_model,
-                                                      tr("Drag Point"));
+        m_editingCommand = new ChangeEventsCommand
+            (m_model.untyped, tr("Drag Point"));
     }
 
     m_editingCommand->remove(m_editingPoint);
@@ -991,7 +1028,8 @@ void
 NoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !m_editing) return;
 
     if (m_editingCommand) {
 
@@ -1018,7 +1056,8 @@ NoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 bool
 NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
 
     Event note(0);
     if (!getPointToDrag(v, e->x(), e->y(), note)) return false;
@@ -1026,7 +1065,7 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 //    Event note = *points.begin();
 
     ItemEditDialog *dialog = new ItemEditDialog
-        (m_model->getSampleRate(),
+        (model->getSampleRate(),
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowDuration |
          ItemEditDialog::ShowValue |
@@ -1050,7 +1089,7 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
             .withLabel(dialog->getText());
         
         ChangeEventsCommand *command = new ChangeEventsCommand
-            (m_model, tr("Edit Point"));
+            (m_model.untyped, tr("Edit Point"));
         command->remove(note);
         command->add(newNote);
         finish(command);
@@ -1066,13 +1105,14 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 void
 NoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Drag Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Drag Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -1087,13 +1127,14 @@ NoteLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 NoteLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model || !s.getDuration()) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model || !s.getDuration()) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Resize Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Resize Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     double ratio = double(newSize.getDuration()) / double(s.getDuration());
     double oldStart = double(s.getStartFrame());
@@ -1117,13 +1158,14 @@ NoteLayer::resizeSelection(Selection s, Selection newSize)
 void
 NoteLayer::deleteSelection(Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Delete Selected Points"));
+        new ChangeEventsCommand(m_model.untyped, tr("Delete Selected Points"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -1135,10 +1177,11 @@ NoteLayer::deleteSelection(Selection s)
 void
 NoteLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return;
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
@@ -1149,7 +1192,8 @@ bool
 NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
                  sv_frame_t /* frameOffset */, bool /* interactive */)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return false;
 
     const EventVector &points = from.getPoints();
 
@@ -1173,7 +1217,7 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
     }
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Paste"));
+        new ChangeEventsCommand(m_model.untyped, tr("Paste"));
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -1197,8 +1241,8 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
         Event p = *i;
         Event newPoint = p;
         if (!p.hasValue()) {
-            newPoint = newPoint.withValue((m_model->getValueMinimum() +
-                                           m_model->getValueMaximum()) / 2);
+            newPoint = newPoint.withValue((model->getValueMinimum() +
+                                           model->getValueMaximum()) / 2);
         }
         if (!p.hasDuration()) {
             sv_frame_t nextFrame = frame;
@@ -1210,7 +1254,7 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
                 nextFrame = j->getFrame();
             }
             if (nextFrame == frame) {
-                newPoint = newPoint.withDuration(m_model->getResolution());
+                newPoint = newPoint.withDuration(model->getResolution());
             } else {
                 newPoint = newPoint.withDuration(nextFrame - frame);
             }
@@ -1233,6 +1277,8 @@ NoteLayer::addNoteOn(sv_frame_t frame, int pitch, int velocity)
 void
 NoteLayer::addNoteOff(sv_frame_t frame, int pitch)
 {
+    auto model = ModelById::getAs<NoteModel>(m_model);
+
     for (NoteSet::iterator i = m_pendingNoteOns.begin();
          i != m_pendingNoteOns.end(); ++i) {
 
@@ -1241,9 +1287,9 @@ NoteLayer::addNoteOff(sv_frame_t frame, int pitch)
         if (lrintf(p.getValue()) == pitch) {
             m_pendingNoteOns.erase(i);
             Event note = p.withDuration(frame - p.getFrame());
-            if (m_model) {
+            if (model) {
                 ChangeEventsCommand *c = new ChangeEventsCommand
-                    (m_model, tr("Record Note"));
+                    (m_model.untyped, tr("Record Note"));
                 c->add(note);
                 // execute and bundle:
                 CommandHistory::getInstance()->addCommand(c, true, true);

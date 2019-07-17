@@ -43,8 +43,8 @@ public:
     QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-                                    int &resolution,
-                                    SnapType snap) const override;
+                            int &resolution,
+                            SnapType snap) const override;
 
     void drawStart(LayerGeometryProvider *v, QMouseEvent *) override;
     void drawDrag(LayerGeometryProvider *v, QMouseEvent *) override;
@@ -64,16 +64,16 @@ public:
 
     bool editOpen(LayerGeometryProvider *, QMouseEvent *) override; // on double-click
 
-    const Model *getModel() const override { return m_model; }
-    void setModel(ImageModel *model);
+    ModelId getModel() const override { return m_model; }
+    void setModel(ModelId model); // an ImageModel please
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
     PropertyType getPropertyType(const PropertyName &) const override;
     int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const override;
+                                 int *min, int *max, int *deflt) const override;
     QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const override;
+                                  int value) const override;
     void setProperty(const PropertyName &, int value) override;
 
     ColourSignificance getLayerColourSignificance() const override {
@@ -84,13 +84,13 @@ public:
 
     bool isLayerEditable() const override { return true; }
 
-    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override;
 
     bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const override;
+                         bool &logarithmic, QString &unit) const override;
 
     void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const override;
+               QString extraAttributes = "") const override;
 
     int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const override { return 0; }
 
@@ -127,7 +127,7 @@ protected:
     QString getLocalFilename(QString img) const;
     void checkAddSource(QString img) const;
 
-    ImageModel *m_model;
+    ModelId m_model; // an ImageModel
     bool m_editing;
     QPoint m_editOrigin;
     Event m_originalPoint;

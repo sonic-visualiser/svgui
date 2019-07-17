@@ -36,14 +36,13 @@
 
 TimeRulerLayer::TimeRulerLayer() :
     SingleColourLayer(),
-    m_model(nullptr),
     m_labelHeight(LabelTop)
 {
     
 }
 
 void
-TimeRulerLayer::setModel(Model *model)
+TimeRulerLayer::setModel(ModelId model)
 {
     if (m_model == model) return;
     m_model = model;
@@ -54,7 +53,8 @@ bool
 TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                                    int &resolution, SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::get(m_model);
+    if (!model) {
         resolution = 1;
         return false;
     }
@@ -62,7 +62,7 @@ TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     bool q;
     int64_t tickUSec = getMajorTickUSec(v, q);
     RealTime rtick = RealTime::fromMicroseconds(tickUSec);
-    sv_samplerate_t rate = m_model->getSampleRate();
+    sv_samplerate_t rate = model->getSampleRate();
     
     RealTime rt = RealTime::frame2RealTime(frame, rate);
     double ratio = rt / rtick;
@@ -137,9 +137,10 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
                                  bool &quarterTicks) const
 {
     // return value is in microseconds
-    if (!m_model || !v) return 1000 * 1000;
+    auto model = ModelById::get(m_model);
+    if (!model || !v) return 1000 * 1000;
 
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return 1000 * 1000;
 
     sv_frame_t startFrame = v->getStartFrame();
@@ -147,6 +148,11 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
     if (endFrame == startFrame) {
         endFrame = startFrame + 1;
     }
+
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
     int exampleWidth = QFontMetrics(QFont()).width("10:42.987654");
     int minPixelSpacing = v->getXForViewX(exampleWidth);
@@ -210,7 +216,8 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
 int
 TimeRulerLayer::getXForUSec(LayerGeometryProvider *v, double us) const
 {
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    auto model = ModelById::get(m_model);
+    sv_samplerate_t sampleRate = model->getSampleRate();
     double dframe = (us * sampleRate) / 1000000.0;
     double eps = 1e-7;
     sv_frame_t frame = sv_frame_t(floor(dframe + eps));
@@ -249,9 +256,10 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
            << ") [" << rect.width() << "x" << rect.height() << "]" << endl;
 #endif
     
-    if (!m_model || !m_model->isOK()) return;
+    auto model = ModelById::get(m_model);
+    if (!model || !model->isOK()) return;
 
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
     sv_frame_t startFrame = v->getFrameForX(rect.x() - 50);

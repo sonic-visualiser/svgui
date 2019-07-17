@@ -64,8 +64,8 @@ public:
     bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
                        bool interactive) override;
 
-    const Model *getModel() const override { return m_model; }
-    void setModel(SparseOneDimensionalModel *model);
+    ModelId getModel() const override { return m_model; }
+    void setModel(ModelId model); // a SparseOneDimensionalModel
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -88,9 +88,9 @@ public:
 
     bool isLayerEditable() const override { return true; }
 
-    int getCompletion(LayerGeometryProvider *) const override { return m_model->getCompletion(); }
+    int getCompletion(LayerGeometryProvider *) const override;
 
-    bool needsTextLabelHeight() const override { return m_model->hasTextLabels(); }
+    bool needsTextLabelHeight() const override;
 
     bool getValueExtents(double &, double &, bool &, QString &) const override {
         return false;
@@ -118,7 +118,7 @@ protected:
 
     bool clipboardAlignmentDiffers(LayerGeometryProvider *v, const Clipboard &) const;
 
-    SparseOneDimensionalModel *m_model;
+    ModelId m_model;
     bool m_editing;
     Event m_editingPoint;
     ChangeEventsCommand *m_editingCommand;

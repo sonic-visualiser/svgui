@@ -113,6 +113,11 @@ WindowShapePreview::updateLabels()
     path.addRect(0, 0, w, h + 1);
     timePainter.drawPath(path);
 
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
     QFont font;
     font.setPixelSize(int(10 * scaleRatio));
     font.setItalic(true);

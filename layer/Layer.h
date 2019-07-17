@@ -20,6 +20,8 @@
 #include "base/XmlExportable.h"
 #include "base/Selection.h"
 
+#include "data/model/Model.h"
+
 #include "widgets/CommandHistory.h"
 
 #include "system/System.h"
@@ -36,7 +38,6 @@
 #include <iostream>
 
 class ZoomConstraint;
-class Model;
 class QPainter;
 class View;
 class LayerGeometryProvider;
@@ -59,10 +60,10 @@ public:
     Layer();
     virtual ~Layer();
 
-    virtual const Model *getModel() const = 0;
-    Model *getModel() {
-        return const_cast<Model *>(const_cast<const Layer *>(this)->getModel());
-    }
+    /**
+     * Return the ID of the model represented in this layer.
+     */
+    virtual ModelId getModel() const = 0;
     
     /**
      * Return a zoom constraint object defining the supported zoom
@@ -410,7 +411,12 @@ public:
      */
     virtual bool isLayerDormant(const LayerGeometryProvider *v) const;
 
-    PlayParameters *getPlayParameters() override;
+    /**
+     * Return the play parameters for this layer, if any. The return
+     * value is a shared_ptr that can be passed to (e.g.)
+     * PlayParameterRepository::EditCommand to change the parameters.
+     */
+    std::shared_ptr<PlayParameters> getPlayParameters() override;
 
     /**
      * True if this layer will need to place text labels when it is
@@ -556,10 +562,10 @@ public slots:
     void showLayer(LayerGeometryProvider *, bool show);
 
 signals:
-    void modelChanged();
-    void modelCompletionChanged();
-    void modelAlignmentCompletionChanged();
-    void modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame);
+    void modelChanged(ModelId);
+    void modelCompletionChanged(ModelId);
+    void modelAlignmentCompletionChanged(ModelId);
+    void modelChangedWithin(ModelId, sv_frame_t startFrame, sv_frame_t endFrame);
     void modelReplaced();
 
     void layerParametersChanged();
@@ -570,7 +576,7 @@ signals:
     void verticalZoomChanged();
 
 protected:
-    void connectSignals(const Model *);
+    void connectSignals(ModelId);
 
     virtual sv_frame_t alignToReference(LayerGeometryProvider *v, sv_frame_t frame) const;
     virtual sv_frame_t alignFromReference(LayerGeometryProvider *v, sv_frame_t frame) const;

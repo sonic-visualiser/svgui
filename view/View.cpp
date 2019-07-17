@@ -632,9 +632,9 @@ View::getBackground() const
 
     if (widgetLight == light) {
         if (widgetLight) {
-            return widgetbg.light();
+            return widgetbg.lighter();
         } else {
-            return widgetbg.dark();
+            return widgetbg.darker();
         }
     }
     else if (light) return Qt::white;
@@ -706,14 +706,14 @@ View::addLayer(Layer *layer)
             this,    SLOT(layerMeasurementRectsChanged()));
     connect(layer, SIGNAL(layerNameChanged()),
             this,    SLOT(layerNameChanged()));
-    connect(layer, SIGNAL(modelChanged()),
-            this,    SLOT(modelChanged()));
-    connect(layer, SIGNAL(modelCompletionChanged()),
-            this,    SLOT(modelCompletionChanged()));
-    connect(layer, SIGNAL(modelAlignmentCompletionChanged()),
-            this,    SLOT(modelAlignmentCompletionChanged()));
-    connect(layer, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this,    SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
+    connect(layer, SIGNAL(modelChanged(ModelId)),
+            this,    SLOT(modelChanged(ModelId)));
+    connect(layer, SIGNAL(modelCompletionChanged(ModelId)),
+            this,    SLOT(modelCompletionChanged(ModelId)));
+    connect(layer, SIGNAL(modelAlignmentCompletionChanged(ModelId)),
+            this,    SLOT(modelAlignmentCompletionChanged(ModelId)));
+    connect(layer, SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+            this,    SLOT(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
     connect(layer, SIGNAL(modelReplaced()),
             this,    SLOT(modelReplaced()));
 
@@ -761,14 +761,14 @@ View::removeLayer(Layer *layer)
                this,    SLOT(layerParameterRangesChanged()));
     disconnect(layer, SIGNAL(layerNameChanged()),
                this,    SLOT(layerNameChanged()));
-    disconnect(layer, SIGNAL(modelChanged()),
-               this,    SLOT(modelChanged()));
-    disconnect(layer, SIGNAL(modelCompletionChanged()),
-               this,    SLOT(modelCompletionChanged()));
-    disconnect(layer, SIGNAL(modelAlignmentCompletionChanged()),
-               this,    SLOT(modelAlignmentCompletionChanged()));
-    disconnect(layer, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-               this,    SLOT(modelChangedWithin(sv_frame_t, sv_frame_t)));
+    disconnect(layer, SIGNAL(modelChanged(ModelId)),
+               this,    SLOT(modelChanged(ModelId)));
+    disconnect(layer, SIGNAL(modelCompletionChanged(ModelId)),
+               this,    SLOT(modelCompletionChanged(ModelId)));
+    disconnect(layer, SIGNAL(modelAlignmentCompletionChanged(ModelId)),
+               this,    SLOT(modelAlignmentCompletionChanged(ModelId)));
+    disconnect(layer, SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+               this,    SLOT(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
     disconnect(layer, SIGNAL(modelReplaced()),
                this,    SLOT(modelReplaced()));
 
@@ -922,14 +922,12 @@ View::setPlaybackFollow(PlaybackFollowMode m)
 }
 
 void
-View::modelChanged()
+View::modelChanged(ModelId modelId)
 {
-    QObject *obj = sender();
-
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     cerr << "View(" << this << ")::modelChanged()" << endl;
 #endif
-    
+
     // If the model that has changed is not used by any of the cached
     // layers, we won't need to recreate the cache
     
@@ -939,7 +937,7 @@ View::modelChanged()
     LayerList scrollables = getScrollableBackLayers(false, discard);
     for (LayerList::const_iterator i = scrollables.begin();
          i != scrollables.end(); ++i) {
-        if (*i == obj || (*i)->getModel() == obj) {
+        if ((*i)->getModel() == modelId) {
             recreate = true;
             break;
         }
@@ -951,16 +949,15 @@ View::modelChanged()
 
     emit layerModelChanged();
 
-    checkProgress(obj);
+    checkProgress(modelId);
 
     update();
 }
 
 void
-View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
+View::modelChangedWithin(ModelId modelId,
+                         sv_frame_t startFrame, sv_frame_t endFrame)
 {
-    QObject *obj = sender();
-
     sv_frame_t myStartFrame = getStartFrame();
     sv_frame_t myEndFrame = getEndFrame();
 
@@ -969,11 +966,11 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
 #endif
 
     if (myStartFrame > 0 && endFrame < myStartFrame) {
-        checkProgress(obj);
+        checkProgress(modelId);
         return;
     }
     if (startFrame > myEndFrame) {
-        checkProgress(obj);
+        checkProgress(modelId);
         return;
     }
 
@@ -986,7 +983,7 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
     LayerList scrollables = getScrollableBackLayers(false, discard);
     for (LayerList::const_iterator i = scrollables.begin();
          i != scrollables.end(); ++i) {
-        if (*i == obj || (*i)->getModel() == obj) {
+        if ((*i)->getModel() == modelId) {
             recreate = true;
             break;
         }
@@ -999,27 +996,21 @@ View::modelChangedWithin(sv_frame_t startFrame, sv_frame_t endFrame)
     if (startFrame < myStartFrame) startFrame = myStartFrame;
     if (endFrame > myEndFrame) endFrame = myEndFrame;
 
-    checkProgress(obj);
+    checkProgress(modelId);
 
     update();
 }    
 
 void
-View::modelCompletionChanged()
+View::modelCompletionChanged(ModelId modelId)
 {
-//    cerr << "View(" << this << ")::modelCompletionChanged()" << endl;
-
-    QObject *obj = sender();
-    checkProgress(obj);
+    checkProgress(modelId);
 }
 
 void
-View::modelAlignmentCompletionChanged()
+View::modelAlignmentCompletionChanged(ModelId modelId)
 {
-//    cerr << "View(" << this << ")::modelAlignmentCompletionChanged()" << endl;
-
-    QObject *obj = sender();
-    checkProgress(obj);
+    checkProgress(modelId);
 }
 
 void
@@ -1270,11 +1261,13 @@ View::getModelsStartFrame() const
     bool first = true;
     sv_frame_t startFrame = 0;
 
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
+    for (Layer *layer: m_layerStack) {
 
-        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
+        auto model = ModelById::get(layer->getModel());
 
-            sv_frame_t thisStartFrame = (*i)->getModel()->getStartFrame();
+        if (model && model->isOK()) {
+
+            sv_frame_t thisStartFrame = model->getStartFrame();
 
             if (first || thisStartFrame < startFrame) {
                 startFrame = thisStartFrame;
@@ -1282,6 +1275,7 @@ View::getModelsStartFrame() const
             first = false;
         }
     }
+    
     return startFrame;
 }
 
@@ -1291,11 +1285,13 @@ View::getModelsEndFrame() const
     bool first = true;
     sv_frame_t endFrame = 0;
 
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
+    for (Layer *layer: m_layerStack) {
 
-        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
+        auto model = ModelById::get(layer->getModel());
 
-            sv_frame_t thisEndFrame = (*i)->getModel()->getEndFrame();
+        if (model && model->isOK()) {
+
+            sv_frame_t thisEndFrame = model->getEndFrame();
 
             if (first || thisEndFrame > endFrame) {
                 endFrame = thisEndFrame;
@@ -1317,11 +1313,15 @@ View::getModelsSampleRate() const
 
     //!!! nah, this wants to always return the sr of the main model!
 
-    for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
-        if ((*i)->getModel() && (*i)->getModel()->isOK()) {
-            return (*i)->getModel()->getSampleRate();
+    for (Layer *layer: m_layerStack) {
+
+        auto model = ModelById::get(layer->getModel());
+
+        if (model && model->isOK()) {
+            return model->getSampleRate();
         }
     }
+
     return 0;
 }
 
@@ -1338,52 +1338,50 @@ View::getModels()
             continue;
         }
 
-        if (layer && layer->getModel()) {
-            Model *model = layer->getModel();
-            models.insert(model);
+        if (layer && !layer->getModel().isNone()) {
+            models.insert(layer->getModel());
         }
     }
 
     return models;
 }
 
-Model *
+ModelId
 View::getAligningModel() const
 {
     if (!m_manager ||
         !m_manager->getAlignMode() ||
-        !m_manager->getPlaybackModel()) {
-        return nullptr;
+        m_manager->getPlaybackModel().isNone()) {
+        return {};
     }
 
-    Model *anyModel = nullptr;
-    Model *alignedModel = nullptr;
-    Model *goodModel = nullptr;
+    ModelId anyModel;
+    ModelId alignedModel;
+    ModelId goodModel;
 
-    for (LayerList::const_iterator i = m_layerStack.begin();
-         i != m_layerStack.end(); ++i) {
-
-        Layer *layer = *i;
+    for (auto layer: m_layerStack) {
 
         if (!layer) continue;
         if (dynamic_cast<TimeRulerLayer *>(layer)) continue;
 
-        Model *model = (*i)->getModel();
+        ModelId thisId = layer->getModel();
+        auto model = ModelById::get(thisId);
         if (!model) continue;
 
-        anyModel = model;
+        anyModel = thisId;
 
-        if (model->getAlignmentReference()) {
-            alignedModel = model;
+        if (!model->getAlignmentReference().isNone()) {
+            alignedModel = thisId;
             if (layer->isLayerOpaque() ||
-                dynamic_cast<RangeSummarisableTimeValueModel *>(model)) {
-                goodModel = model;
+                std::dynamic_pointer_cast
+                <RangeSummarisableTimeValueModel>(model)) {
+                goodModel = thisId;
             }
         }
     }
 
-    if (goodModel) return goodModel;
-    else if (alignedModel) return alignedModel;
+    if (!goodModel.isNone()) return goodModel;
+    else if (!alignedModel.isNone()) return alignedModel;
     else return anyModel;
 }
 
@@ -1391,7 +1389,7 @@ sv_frame_t
 View::alignFromReference(sv_frame_t f) const
 {
     if (!m_manager || !m_manager->getAlignMode()) return f;
-    Model *aligningModel = getAligningModel();
+    auto aligningModel = ModelById::get(getAligningModel());
     if (!aligningModel) return f;
     return aligningModel->alignFromReference(f);
 }
@@ -1400,7 +1398,7 @@ sv_frame_t
 View::alignToReference(sv_frame_t f) const
 {
     if (!m_manager->getAlignMode()) return f;
-    Model *aligningModel = getAligningModel();
+    auto aligningModel = ModelById::get(getAligningModel());
     if (!aligningModel) return f;
     return aligningModel->alignToReference(f);
 }
@@ -1412,7 +1410,7 @@ View::getAlignedPlaybackFrame() const
     sv_frame_t pf = m_manager->getPlaybackFrame();
     if (!m_manager->getAlignMode()) return pf;
 
-    Model *aligningModel = getAligningModel();
+    auto aligningModel = ModelById::get(getAligningModel());
     if (!aligningModel) return pf;
 
     sv_frame_t af = aligningModel->alignFromReference(pf);
@@ -1721,25 +1719,27 @@ View::cancelClicked()
     QPushButton *cancel = qobject_cast<QPushButton *>(sender());
     if (!cancel) return;
 
+    Layer *layer = nullptr;
+    
     for (ProgressMap::iterator i = m_progressBars.begin();
          i != m_progressBars.end(); ++i) {
-
         if (i->second.cancel == cancel) {
-
-            Layer *layer = i->first;
-            Model *model = layer->getModel();
-
-            if (model) model->abandon();
+            layer = i->first;
+            break;
         }
+    }
+
+    if (layer) {
+        emit cancelButtonPressed(layer);
     }
 }
 
 void
-View::checkProgress(void *object)
+View::checkProgress(ModelId modelId)
 {
     if (!m_showProgress) {
 #ifdef DEBUG_PROGRESS_STUFF
-        SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
+        SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
                << "m_showProgress is off" << endl;
 #endif
         return;
@@ -1759,7 +1759,7 @@ View::checkProgress(void *object)
         QProgressBar *pb = i->second.bar;
         QPushButton *cancel = i->second.cancel;
 
-        if (i->first == object) {
+        if (i->first && i->first->getModel() == modelId) {
 
             found = true;
 
@@ -1793,22 +1793,27 @@ View::checkProgress(void *object)
                 m_lastError = error;
             }
 
-            Model *model = i->first->getModel();
-            RangeSummarisableTimeValueModel *wfm = 
-                dynamic_cast<RangeSummarisableTimeValueModel *>(model);
+            auto model = ModelById::get(modelId);
+            auto wfm = std::dynamic_pointer_cast
+                <RangeSummarisableTimeValueModel>(model);
 
             if (completion > 0) {
                 pb->setMaximum(100); // was 0, for indeterminate start
             }
 
             if (completion >= 100) {
-
-                //!!!
+                
                 if (wfm ||
                     (model && 
-                     (wfm = dynamic_cast<RangeSummarisableTimeValueModel *>
+                     (wfm = ModelById::getAs<RangeSummarisableTimeValueModel>
                       (model->getSourceModel())))) {
+
                     completion = wfm->getAlignmentCompletion();
+
+                    // We don't allow cancelling alignment operations
+                    // - they aren't usually all that expensive, and
+                    // it would leave things in a very uncertain state
+                    showCancelButton = false;
 
 #ifdef DEBUG_PROGRESS_STUFF
                     SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
@@ -2340,6 +2345,11 @@ View::drawSelections(QPainter &paint)
                       (i->getEndFrame() - i->getStartFrame(), sampleRate)
                       .toText(true)))
                 .arg(i->getEndFrame() - i->getStartFrame());
+            
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
             int sw = metrics.width(startText),
                 ew = metrics.width(endText),

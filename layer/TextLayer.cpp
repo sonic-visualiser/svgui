@@ -34,7 +34,6 @@
 
 TextLayer::TextLayer() :
     SingleColourLayer(),
-    m_model(nullptr),
     m_editing(false),
     m_originalPoint(0, 0.0, tr("Empty Label")),
     m_editingPoint(0, 0.0, tr("Empty Label")),
@@ -43,15 +42,29 @@ TextLayer::TextLayer() :
     
 }
 
-void
-TextLayer::setModel(TextModel *model)
+int
+TextLayer::getCompletion(LayerGeometryProvider *) const
 {
-    if (m_model == model) return;
-    m_model = model;
+    auto model = ModelById::get(m_model);
+    if (model) return model->getCompletion();
+    else return 0;
+}
 
-    connectSignals(m_model);
+void
+TextLayer::setModel(ModelId modelId)
+{
+    auto newModel = ModelById::getAs<TextModel>(modelId);
+    
+    if (!modelId.isNone() && !newModel) {
+        throw std::logic_error("Not a TextModel");
+    }
+    
+    if (m_model == modelId) return;
+    m_model = modelId;
 
-//    SVDEBUG << "TextLayer::setModel(" << model << ")" << endl;
+    if (newModel) {
+        connectSignals(m_model);
+    }
 
     emit modelReplaced();
 }
@@ -111,14 +124,15 @@ TextLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 EventVector
 TextLayer::getLocalPoints(LayerGeometryProvider *v, int x, int y) const
 {
-    if (!m_model) return {};
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return {};
 
     int overlap = ViewManager::scalePixelSize(150);
     
     sv_frame_t frame0 = v->getFrameForX(-overlap);
     sv_frame_t frame1 = v->getFrameForX(v->getPaintWidth() + overlap);
     
-    EventVector points(m_model->getEventsSpanning(frame0, frame1 - frame0));
+    EventVector points(model->getEventsSpanning(frame0, frame1 - frame0));
 
     EventVector rv;
     QFontMetrics metrics = QFontMetrics(QFont());
@@ -156,11 +170,12 @@ TextLayer::getLocalPoints(LayerGeometryProvider *v, int x, int y) const
 bool
 TextLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &p) const
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return false;
 
     sv_frame_t a = v->getFrameForX(x - ViewManager::scalePixelSize(120));
     sv_frame_t b = v->getFrameForX(x + ViewManager::scalePixelSize(10));
-    EventVector onPoints = m_model->getEventsWithin(a, b);
+    EventVector onPoints = model->getEventsWithin(a, b);
     if (onPoints.empty()) return false;
 
     double nearestDistance = -1;
@@ -186,12 +201,13 @@ TextLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 {
     int x = pos.x();
 
-    if (!m_model || !m_model->getSampleRate()) return "";
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model || !model->getSampleRate()) return "";
 
     EventVector points = getLocalPoints(v, x, pos.y());
 
     if (points.empty()) {
-        if (!m_model->isReady()) {
+        if (!model->isReady()) {
             return tr("In progress");
         } else {
             return "";
@@ -200,7 +216,7 @@ TextLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 
     sv_frame_t useFrame = points.begin()->getFrame();
 
-    RealTime rt = RealTime::frame2RealTime(useFrame, m_model->getSampleRate());
+    RealTime rt = RealTime::frame2RealTime(useFrame, model->getSampleRate());
     
     QString text;
 
@@ -224,7 +240,8 @@ TextLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                               int &resolution,
                               SnapType snap) const
 {
-    if (!m_model) {
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
 
@@ -235,7 +252,7 @@ TextLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     // an editing operation, i.e. closest feature in either direction
     // but only if it is "close enough"
 
-    resolution = m_model->getResolution();
+    resolution = model->getResolution();
 
     if (snap == SnapNeighbouring) {
         EventVector points = getLocalPoints(v, v->getXForFrame(frame), -1);
@@ -245,7 +262,7 @@ TextLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     }    
 
     Event e;
-    if (m_model->getNearestEventMatching
+    if (model->getNearestEventMatching
         (frame,
          [](Event) { return true; },
          snap == SnapLeft ? EventSeries::Backward : EventSeries::Forward,
@@ -274,9 +291,10 @@ TextLayer::getHeightForY(LayerGeometryProvider *v, int y) const
 void
 TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
-    if (!m_model || !m_model->isOK()) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model || !model->isOK()) return;
 
-    sv_samplerate_t sampleRate = m_model->getSampleRate();
+    sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
 //    Profiler profiler("TextLayer::paint", true);
@@ -286,7 +304,7 @@ TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     sv_frame_t frame0 = v->getFrameForX(x0 - overlap);
     sv_frame_t frame1 = v->getFrameForX(x1 + overlap);
 
-    EventVector points(m_model->getEventsWithin(frame0, frame1 - frame0, 2));
+    EventVector points(model->getEventsWithin(frame0, frame1 - frame0, 2));
     if (points.empty()) return;
 
     QColor brushColour(getBaseQColor());
@@ -299,7 +317,7 @@ TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     penColour = v->getForeground();
 
 //    SVDEBUG << "TextLayer::paint: resolution is "
-//              << m_model->getResolution() << " frames" << endl;
+//              << model->getResolution() << " frames" << endl;
 
     QPoint localPos;
     Event illuminatePoint(0);
@@ -379,14 +397,15 @@ TextLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model) {
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) {
         SVDEBUG << "TextLayer::drawStart: no model" << endl;
         return;
     }
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double height = getHeightForY(v, e->y());
 
@@ -394,7 +413,7 @@ TextLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
-    m_editingCommand = new ChangeEventsCommand(m_model, "Add Label");
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, "Add Label");
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
@@ -405,11 +424,12 @@ TextLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "TextLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
-    frame = frame / m_model->getResolution() * m_model->getResolution();
+    frame = frame / model->getResolution() * model->getResolution();
 
     double height = getHeightForY(v, e->y());
 
@@ -424,7 +444,8 @@ void
 TextLayer::drawEnd(LayerGeometryProvider *v, QMouseEvent *)
 {
 //    SVDEBUG << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model || !m_editing) return;
 
     bool ok = false;
     QString label = QInputDialog::getText(v->getView(), tr("Enter label"),
@@ -447,7 +468,8 @@ TextLayer::drawEnd(LayerGeometryProvider *v, QMouseEvent *)
 void
 TextLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
 
@@ -467,7 +489,8 @@ TextLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 void
 TextLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model || !m_editing) return;
 
     m_editing = false;
 
@@ -476,7 +499,7 @@ TextLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
-    m_editingCommand = new ChangeEventsCommand(m_model, tr("Erase Point"));
+    m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Erase Point"));
     m_editingCommand->remove(m_editingPoint);
     finish(m_editingCommand);
     m_editingCommand = nullptr;
@@ -488,7 +511,8 @@ TextLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 //    SVDEBUG << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
 
-    if (!m_model) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) {
         return;
@@ -508,7 +532,8 @@ TextLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 void
 TextLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model || !m_editing) return;
 
     sv_frame_t frameDiff =
         v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
@@ -519,10 +544,10 @@ TextLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     double height = m_originalPoint.getValue() + heightDiff;
 
     if (frame < 0) frame = 0;
-    frame = (frame / m_model->getResolution()) * m_model->getResolution();
+    frame = (frame / model->getResolution()) * model->getResolution();
 
     if (!m_editingCommand) {
-        m_editingCommand = new ChangeEventsCommand(m_model, tr("Drag Label"));
+        m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Drag Label"));
     }
 
     m_editingCommand->remove(m_editingPoint);
@@ -536,7 +561,8 @@ void
 TextLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
 //    SVDEBUG << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
-    if (!m_model || !m_editing) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model || !m_editing) return;
 
     if (m_editingCommand) {
 
@@ -563,7 +589,8 @@ TextLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 bool
 TextLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return false;
 
     Event text;
     if (!getPointToDrag(v, e->x(), e->y(), text)) return false;
@@ -576,7 +603,7 @@ TextLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
                                   QLineEdit::Normal, label, &ok);
     if (ok && label != text.getLabel()) {
         ChangeEventsCommand *command =
-            new ChangeEventsCommand(m_model, tr("Re-Label Point"));
+            new ChangeEventsCommand(m_model.untyped, tr("Re-Label Point"));
         command->remove(text);
         command->add(text.withLabel(label));
         finish(command);
@@ -588,13 +615,14 @@ TextLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 void
 TextLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Drag Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Drag Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -609,13 +637,14 @@ TextLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 void
 TextLayer::resizeSelection(Selection s, Selection newSize)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Resize Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Resize Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     double ratio = double(newSize.getDuration()) / double(s.getDuration());
     double oldStart = double(s.getStartFrame());
@@ -637,13 +666,14 @@ TextLayer::resizeSelection(Selection s, Selection newSize)
 void
 TextLayer::deleteSelection(Selection s)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return;
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Delete Selection"));
+        new ChangeEventsCommand(m_model.untyped, tr("Delete Selection"));
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         command->remove(p);
@@ -655,10 +685,11 @@ TextLayer::deleteSelection(Selection s)
 void
 TextLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
-    if (!m_model) return;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return;
 
     EventVector points =
-        m_model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
+        model->getEventsStartingWithin(s.getStartFrame(), s.getDuration());
 
     for (Event p: points) {
         to.addPoint(p.withReferenceFrame(alignToReference(v, p.getFrame())));
@@ -668,7 +699,8 @@ TextLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 bool
 TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
-    if (!m_model) return false;
+    auto model = ModelById::getAs<TextModel>(m_model);
+    if (!model) return false;
 
     const EventVector &points = from.getPoints();
 
@@ -692,7 +724,7 @@ TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
     }
 
     ChangeEventsCommand *command =
-        new ChangeEventsCommand(m_model, tr("Paste"));
+        new ChangeEventsCommand(m_model.untyped, tr("Paste"));
 
     double valueMin = 0.0, valueMax = 1.0;
     for (EventVector::const_iterator i = points.begin();

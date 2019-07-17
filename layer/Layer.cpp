@@ -46,19 +46,22 @@ Layer::~Layer()
 }
 
 void
-Layer::connectSignals(const Model *model)
+Layer::connectSignals(ModelId modelId)
 {
-    connect(model, SIGNAL(modelChanged()),
-            this, SIGNAL(modelChanged()));
+    auto model = ModelById::get(modelId);
+    if (!model) return;
+    
+    connect(model.get(), SIGNAL(modelChanged(ModelId)),
+            this, SIGNAL(modelChanged(ModelId)));
 
-    connect(model, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)),
-            this, SIGNAL(modelChangedWithin(sv_frame_t, sv_frame_t)));
+    connect(model.get(), SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
+            this, SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
 
-    connect(model, SIGNAL(completionChanged()),
-            this, SIGNAL(modelCompletionChanged()));
+    connect(model.get(), SIGNAL(completionChanged(ModelId)),
+            this, SIGNAL(modelCompletionChanged(ModelId)));
 
-    connect(model, SIGNAL(alignmentCompletionChanged()),
-            this, SIGNAL(modelAlignmentCompletionChanged()));
+    connect(model.get(), SIGNAL(alignmentCompletionChanged(ModelId)),
+            this, SIGNAL(modelAlignmentCompletionChanged(ModelId)));
 }
 
 QString
@@ -84,7 +87,8 @@ Layer::getLayerPresentationName() const
         (factory->getLayerType(this));
 
     QString modelName;
-    if (getModel()) modelName = getModel()->objectName();
+    auto model = ModelById::get(getModel());
+    if (model) modelName = model->objectName();
             
     QString text;
     if (modelName != "") {
@@ -103,15 +107,11 @@ Layer::setObjectName(const QString &name)
     emit layerNameChanged();
 }
 
-PlayParameters *
+std::shared_ptr<PlayParameters>
 Layer::getPlayParameters() 
 {
-//    cerr << "Layer (" << this << ", " << objectName() << ")::getPlayParameters: model is "<< getModel() << endl;
-    const Model *model = getModel();
-    if (model) {
-        return PlayParameterRepository::getInstance()->getPlayParameters(model);
-    }
-    return nullptr;
+    return PlayParameterRepository::getInstance()->getPlayParameters
+        (getModel().untyped);
 }
 
 void
@@ -143,10 +143,10 @@ Layer::getXScaleValue(const LayerGeometryProvider *v, int x, double &value, QStr
 {
     if (!hasTimeXAxis()) return false;
 
-    const Model *m = getModel();
-    if (!m) return false;
+    auto model = ModelById::get(getModel());
+    if (!model) return false;
 
-    value = double(v->getFrameForX(x)) / m->getSampleRate();
+    value = double(v->getFrameForX(x)) / model->getSampleRate();
     unit = "s";
     return true;
 }
@@ -168,10 +168,9 @@ Layer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
 sv_frame_t
 Layer::alignToReference(LayerGeometryProvider *v, sv_frame_t frame) const
 {
-    const Model *m = getModel();
-    SVDEBUG << "Layer::alignToReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : nullptr) << endl;
-    if (m && m->getAlignmentReference()) {
-        return m->alignToReference(frame);
+    auto model = ModelById::get(getModel());
+    if (model && !model->getAlignmentReference().isNone()) {
+        return model->alignToReference(frame);
     } else {
         return v->getView()->alignToReference(frame);
     }
@@ -180,10 +179,9 @@ Layer::alignToReference(LayerGeometryProvider *v, sv_frame_t frame) const
 sv_frame_t
 Layer::alignFromReference(LayerGeometryProvider *v, sv_frame_t frame) const
 {
-    const Model *m = getModel();
-    SVDEBUG << "Layer::alignFromReference(" << frame << "): model = " << m << ", alignment reference = " << (m ? m->getAlignmentReference() : nullptr) << endl;
-    if (m && m->getAlignmentReference()) {
-        return m->alignFromReference(frame);
+    auto model = ModelById::get(getModel());
+    if (model && !model->getAlignmentReference().isNone()) {
+        return model->alignFromReference(frame);
     } else {
         return v->getView()->alignFromReference(frame);
     }
@@ -644,12 +642,16 @@ Layer::toXml(QTextStream &stream,
             .arg(extraAttributes).arg(encodeEntities(m_presentationName));
     }
 
+    int modelExportId = -1;
+    auto model = ModelById::get(getModel());
+    if (model) modelExportId = model->getExportId();
+    
     stream << QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5")
         .arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
                             (LayerFactory::getInstance()->getLayerType(this))))
         .arg(getExportId())
         .arg(encodeEntities(objectName()))
-        .arg(getModel() ? getModel()->getExportId() : -1)
+        .arg(modelExportId)
         .arg(extraAttributes);
 
     if (m_measureRects.empty()) {
@@ -678,12 +680,16 @@ Layer::toBriefXml(QTextStream &stream,
             .arg(extraAttributes).arg(encodeEntities(m_presentationName));
     }
 
+    int modelExportId = -1;
+    auto model = ModelById::get(getModel());
+    if (model) modelExportId = model->getExportId();
+
     stream << QString("<layer id=\"%2\" type=\"%1\" name=\"%3\" model=\"%4\" %5/>\n")
         .arg(encodeEntities(LayerFactory::getInstance()->getLayerTypeName
                             (LayerFactory::getInstance()->getLayerType(this))))
         .arg(getExportId())
         .arg(encodeEntities(objectName()))
-        .arg(getModel() ? getModel()->getExportId() : -1)
+        .arg(modelExportId)
         .arg(extraAttributes);
 }
 

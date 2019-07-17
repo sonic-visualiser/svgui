@@ -29,6 +29,8 @@
 #include "base/BaseTypes.h"
 #include "base/ZoomLevel.h"
 
+#include "data/model/Model.h"
+
 class AudioPlaySource;
 class AudioRecordTarget;
 class Model;
@@ -93,8 +95,8 @@ public:
     sv_frame_t getPlaybackFrame() const; // the set method is a slot
 
     // Only meaningful in solo mode, and used for optional alignment feature
-    Model *getPlaybackModel() const;
-    void setPlaybackModel(Model *);
+    ModelId getPlaybackModel() const;
+    void setPlaybackModel(ModelId);
 
     sv_frame_t alignPlaybackFrameToReference(sv_frame_t) const override;
     sv_frame_t alignReferenceToPlaybackFrame(sv_frame_t) const override;
@@ -347,7 +349,7 @@ protected:
     sv_frame_t m_globalCentreFrame;
     ZoomLevel m_globalZoom;
     mutable sv_frame_t m_playbackFrame;
-    Model *m_playbackModel; //!!!
+    ModelId m_playbackModel;
     sv_samplerate_t m_mainModelSampleRate;
 
     float m_lastLeft;

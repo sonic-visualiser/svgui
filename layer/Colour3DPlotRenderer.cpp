@@ -334,7 +334,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 Colour3DPlotRenderer::RenderType
 Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 {
-    const DenseThreeDimensionalModel *model = m_sources.source;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
     if (!model || !v || !(v->getViewManager())) {
         return DrawBufferPixelResolution; // or anything
     }
@@ -398,7 +398,7 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
     }
 
     if (m_params.colourScale.getScale() == ColourScaleType::Phase &&
-        m_sources.fft) {
+        !m_sources.fft.isNone()) {
         return column;
     } else {
         column = ColumnOp::applyGain(column, m_params.scaleFactor);
@@ -414,27 +414,36 @@ Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
     Profiler profiler("Colour3DPlotRenderer::getColumn");
 
     ColumnOp::Column column;
+    ColumnOp::Column fullColumn;
 
-    if (m_params.colourScale.getScale() == ColourScaleType::Phase &&
-        m_sources.fft) {
-
-        ColumnOp::Column fullColumn = m_sources.fft->getPhases(sx);
-
-        column = vector<float>(fullColumn.data() + minbin,
-                               fullColumn.data() + minbin + nbins);
-
-    } else {
-
-        ColumnOp::Column fullColumn =
-            (peakCacheIndex >= 0 ?
-             m_sources.peakCaches[peakCacheIndex] :
-             m_sources.source)
-            ->getColumn(sx);
-                
-        column = vector<float>(fullColumn.data() + minbin,
-                               fullColumn.data() + minbin + nbins);
+    if (m_params.colourScale.getScale() == ColourScaleType::Phase) {
+        auto fftModel = ModelById::getAs<FFTModel>(m_sources.fft);
+        if (fftModel) {
+            fullColumn = fftModel->getPhases(sx);
+        }
     }
 
+    if (fullColumn.empty()) {
+        
+        if (peakCacheIndex >= 0) {
+            auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
+                (m_sources.peakCaches[peakCacheIndex]);
+            if (!peakCache) {
+                return vector<float>(nbins, 0.f);
+            }                
+            fullColumn = peakCache->getColumn(sx);
+        } else {
+            auto model = ModelById::getAs<DenseThreeDimensionalModel>
+                (m_sources.source);
+            if (!model) {
+                return vector<float>(nbins, 0.f);
+            }
+            fullColumn = model->getColumn(sx);
+        }
+    }
+
+    column = vector<float>(fullColumn.data() + minbin,
+                           fullColumn.data() + minbin + nbins);
     return column;
 }
 
@@ -451,7 +460,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
     bool illuminate = v->shouldIlluminateLocalFeatures
         (m_sources.verticalBinLayer, illuminatePos);
 
-    const DenseThreeDimensionalModel *model = m_sources.source;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
+    if (!model) return magRange;
     
     int x0 = rect.left();
     int x1 = rect.right() + 1;
@@ -526,6 +536,11 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
         int rw = rx1 - rx0;
         if (rw < 1) rw = 1;
 
+        // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+        // replacement (horizontalAdvance) was only added in Qt 5.11
+        // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        
         bool showLabel = (rw > 10 &&
                           paint.fontMetrics().width("0.000000") < rw - 3 &&
                           paint.fontMetrics().height() < (h / sh));
@@ -602,7 +617,7 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
     peakCacheIndex = -1;
     binsPerPeak = -1;
 
-    const DenseThreeDimensionalModel *model = m_sources.source;
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
     if (!model) return;
     if (m_params.binDisplay == BinDisplay::PeakFrequencies) return;
     if (m_params.colourScale.getScale() == ColourScaleType::Phase) return;
@@ -611,7 +626,10 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
     int binResolution = model->getResolution();
     
     for (int ix = 0; in_range_for(m_sources.peakCaches, ix); ++ix) {
-        int bpp = m_sources.peakCaches[ix]->getColumnsPerPeak();
+        auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
+            (m_sources.peakCaches[ix]);
+        if (!peakCache) continue;
+        int bpp = peakCache->getColumnsPerPeak();
         ZoomLevel equivZoom(ZoomLevel::FramesPerPixel, binResolution * bpp);
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
         SVDEBUG << "getPreferredPeakCache: zoomLevel = " << zoomLevel
@@ -653,10 +671,8 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     // buffer is at the same resolution as the target in the cache, so
     // no extra scaling needed.
 
-    const DenseThreeDimensionalModel *model = m_sources.source;
-    if (!model || !model->isOK() || !model->isReady()) {
-        throw std::logic_error("no source model provided, or model not ready");
-    }
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
+    if (!model) return;
 
     int h = v->getPaintHeight();
 
@@ -794,10 +810,8 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     // buffer is at bin resolution, i.e. buffer x == source column
     // number. We use toolkit smooth scaling for interpolation.
 
-    const DenseThreeDimensionalModel *model = m_sources.source;
-    if (!model || !model->isOK() || !model->isReady()) {
-        throw std::logic_error("no source model provided, or model not ready");
-    }
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
+    if (!model) return;
 
     // The draw buffer will contain a fragment at bin resolution. We
     // need to ensure that it starts and ends at points where a
@@ -950,11 +964,24 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     Profiler profiler("Colour3DPlotRenderer::renderDrawBuffer");
     
     int divisor = 1;
-    const DenseThreeDimensionalModel *sourceModel = m_sources.source;
+
+    std::shared_ptr<DenseThreeDimensionalModel> sourceModel;
+
     if (peakCacheIndex >= 0) {
-        divisor = m_sources.peakCaches[peakCacheIndex]->getColumnsPerPeak();
-        sourceModel = m_sources.peakCaches[peakCacheIndex];
+        auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
+            (m_sources.peakCaches[peakCacheIndex]);
+        if (peakCache) {
+            divisor = peakCache->getColumnsPerPeak();
+            sourceModel = peakCache;
+        }
     }
+
+    if (!sourceModel) {
+        sourceModel = ModelById::getAs<DenseThreeDimensionalModel>
+            (m_sources.source);
+    }
+    
+    if (!sourceModel) return 0;
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "renderDrawBuffer: w = " << w << ", h = " << h
@@ -1125,7 +1152,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                       RenderTimer::SlowRender :
                       RenderTimer::NoTimeout);
 
-    const FFTModel *fft = m_sources.fft;
+    auto fft = ModelById::getAs<FFTModel>(m_sources.fft);
+    if (!fft) return 0;
 
     int sh = fft->getHeight();
     

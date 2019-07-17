@@ -26,7 +26,7 @@
 #include <QDialogButtonBox>
 #include <QScrollArea>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QTimer>
 #include <QAction>
 
@@ -92,8 +92,8 @@ TransformFinder::TransformFinder(QWidget *parent) :
     connect(down, SIGNAL(triggered()), this, SLOT(down()));
     addAction(down);
 
-    QDesktopWidget *desktop = QApplication::desktop();
-    QRect available = desktop->availableGeometry();
+    QScreen *screen = QApplication::primaryScreen();
+    QRect available = screen->availableGeometry();
 
     int width = available.width() / 2;
     int height = available.height() / 2;

@@ -60,7 +60,7 @@ public:
     ~SpectrogramLayer();
 
     const ZoomConstraint *getZoomConstraint() const override { return this; }
-    const Model *getModel() const override { return m_model; }
+    ModelId getModel() const override { return m_model; }
     void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
     void setSynchronousPainting(bool synchronous) override;
 
@@ -81,7 +81,7 @@ public:
 
     bool hasLightBackground() const override;
 
-    void setModel(const DenseTimeValueModel *model);
+    void setModel(ModelId model); // a DenseTimeValueModel
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -234,16 +234,16 @@ public:
     void setVerticalZoomStep(int) override;
     RangeMapper *getNewVerticalZoomRangeMapper() const override;
 
-    const Model *getSliceableModel() const override;
+    ModelId getSliceableModel() const override;
 
 protected slots:
-    void cacheInvalid();
-    void cacheInvalid(sv_frame_t startFrame, sv_frame_t endFrame);
+    void cacheInvalid(ModelId);
+    void cacheInvalid(ModelId, sv_frame_t startFrame, sv_frame_t endFrame);
     
     void preferenceChanged(PropertyContainer::PropertyName name);
 
 protected:
-    const DenseTimeValueModel *m_model; // I do not own this
+    ModelId m_model; // a DenseTimeValueModel
 
     int                 m_channel;
     int                 m_windowSize;
@@ -306,11 +306,11 @@ protected:
 
     int getFFTSize() const; // m_windowSize * getOversampling()
 
-    FFTModel *m_fftModel;
-    FFTModel *getFFTModel() const { return m_fftModel; }
-    Dense3DModelPeakCache *m_wholeCache;
-    Dense3DModelPeakCache *m_peakCache;
-    Dense3DModelPeakCache *getPeakCache() const { return m_peakCache; }
+    // We take responsibility for registering/deregistering these
+    // models and caches with ModelById
+    ModelId m_fftModel; // an FFTModel
+    ModelId m_wholeCache; // a Dense3DModelPeakCache
+    ModelId m_peakCache; // a Dense3DModelPeakCache
     int m_peakCacheDivisor;
     void checkCacheSpace(int *suggestedPeakDivisor,
                          bool *createWholeCache) const;

@@ -38,6 +38,11 @@ TextAbbrev::getFuzzLength(QString ellipsis)
 int
 TextAbbrev::getFuzzWidth(const QFontMetrics &metrics, QString ellipsis)
 {
+    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
+    // replacement (horizontalAdvance) was only added in Qt 5.11
+    // which is too new for us
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
     int width = metrics.width(ellipsis);
     return width * 2;
 }
