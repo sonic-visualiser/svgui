@@ -1783,7 +1783,7 @@ View::checkProgress(ModelId modelId)
             QString error = i->first->getError(this);
 
 #ifdef DEBUG_PROGRESS_STUFF
-            SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
+            SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
                    << "found progress bar " << pb << " for layer at height " << ph
                    << ": completion = " << completion << endl;
 #endif
@@ -1816,7 +1816,7 @@ View::checkProgress(ModelId modelId)
                     showCancelButton = false;
 
 #ifdef DEBUG_PROGRESS_STUFF
-                    SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
+                    SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
                            << "alignment completion = " << completion << endl;
 #endif
                 
@@ -1875,8 +1875,8 @@ View::checkProgress(ModelId modelId)
 
     if (!found) {
 #ifdef DEBUG_PROGRESS_STUFF
-        SVCERR << "View[" << this << "]::checkProgress(" << object << "): "
-               << "failed to find layer " << object << " in progress map"
+        SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
+               << "failed to find layer for model in progress map"
                << endl;
 #endif
     }
