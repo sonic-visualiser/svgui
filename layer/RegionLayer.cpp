@@ -87,7 +87,7 @@ RegionLayer::setModel(ModelId modelId)
     
         connectSignals(m_model);
 
-        connect(newModel.get(), SIGNAL(modelChanged()),
+        connect(newModel.get(), SIGNAL(modelChanged(ModelId)),
                 this, SLOT(recalcSpacing()));
     
         recalcSpacing();
