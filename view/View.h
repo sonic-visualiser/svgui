@@ -386,8 +386,14 @@ public:
     typedef std::set<ModelId> ModelSet;
     ModelSet getModels();
 
+    //!!!??? poor name, probably poor api, consider this
+    void setUseAligningProxy(bool uap) {
+        m_useAligningProxy = uap;
+    }
+    
     //!!!
     ModelId getAligningModel() const;
+    void getAligningAndReferenceModels(ModelId &aligning, ModelId &reference) const;
     sv_frame_t alignFromReference(sv_frame_t) const;
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
@@ -533,6 +539,8 @@ protected:
     LayerList           m_layerStack; // I don't own these, but see dtor note above
     LayerList           m_fixedOrderLayers;
     bool                m_haveSelectedLayer;
+
+    bool                m_useAligningProxy;
 
     QString             m_lastError;
 

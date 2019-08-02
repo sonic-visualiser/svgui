@@ -17,33 +17,60 @@
 
 #include "layer/LayerGeometryProvider.h"
 
+#include "data/model/AlignmentModel.h"
+
 class ViewProxy : public LayerGeometryProvider
 {
 public:
+    /**
+     * Create a standard ViewProxy for the given view, mapping using
+     * the given scale factor. The scale factor is generally used with
+     * pixel-doubled "retina" Mac displays and is usually 1 elsewhere.
+     */
     ViewProxy(View *view, int scaleFactor) :
         m_view(view), m_scaleFactor(scaleFactor) { }
+
+    /**
+     * Create a re-aligning ViewProxy for the given view, mapping
+     * using the given scale factor. The scale factor is generally
+     * used with pixel-doubled "retina" Mac displays and is usually 1
+     * elsewhere. 
+     * 
+     * Coordinates are mapped through the given alignment model, such
+     * that frame values passed from the caller are mapped "from
+     * reference" by that alignment before being used by the view or
+     * converted to pixel coordinates, and returned values are mapped
+     * back "to reference" before being passed back to the caller.
+     * 
+     * This form of proxy may be created specially for rendering a
+     * single layer which comes from a different alignment to that of
+     * the rest of the containing view.
+     */
+    ViewProxy(View *view, int scaleFactor, ModelId alignment) :
+        m_view(view), m_scaleFactor(scaleFactor), m_alignment(alignment) { }
 
     int getId() const override {
         return m_view->getId();
     }
     sv_frame_t getStartFrame() const override {
-        return m_view->getStartFrame();
+        return alignToReference(m_view->getStartFrame());
     }
     sv_frame_t getCentreFrame() const override {
-        return m_view->getCentreFrame();
+        return alignToReference(m_view->getCentreFrame());
     }
     sv_frame_t getEndFrame() const override {
-        return m_view->getEndFrame();
+        return alignToReference(m_view->getEndFrame());
     }
     int getXForFrame(sv_frame_t frame) const override {
         //!!! not actually correct, if frame lies between view's pixels
-        return m_scaleFactor * m_view->getXForFrame(frame);
+        return m_scaleFactor * m_view->getXForFrame(alignFromReference(frame));
     }
     sv_frame_t getFrameForX(int x) const override {
         sv_frame_t f0 = m_view->getFrameForX(x / m_scaleFactor);
         if (m_scaleFactor == 1) return f0;
         sv_frame_t f1 = m_view->getFrameForX((x / m_scaleFactor) + 1);
-        return f0 + ((f1 - f0) * (x % m_scaleFactor)) / m_scaleFactor;
+        sv_frame_t f = f0 + ((f1 - f0) * (x % m_scaleFactor)) / m_scaleFactor;
+        return alignToReference(f);
     }
     int getXForViewX(int viewx) const override {
         return viewx * m_scaleFactor;
@@ -52,10 +79,10 @@ public:
         return x / m_scaleFactor;
     }
     sv_frame_t getModelsStartFrame() const override {
-        return m_view->getModelsStartFrame();
+        return alignToReference(m_view->getModelsStartFrame());
     }
     sv_frame_t getModelsEndFrame() const override {
-        return m_view->getModelsEndFrame();
+        return alignToReference(m_view->getModelsEndFrame());
     }
     double getYForFrequency(double frequency,
                                     double minFreq, double maxFreq, 
@@ -188,6 +215,23 @@ public:
 private:
     View *m_view;
     int m_scaleFactor;
+    ModelId m_alignment;
+
+    sv_frame_t alignToReference(sv_frame_t frame) const {
+        if (auto am = ModelById::getAs<AlignmentModel>(m_alignment)) {
+            return am->toReference(frame);
+        } else {
+            return frame;
+        }
+    }
+
+    sv_frame_t alignFromReference(sv_frame_t frame) const {
+        if (auto am = ModelById::getAs<AlignmentModel>(m_alignment)) {
+            return am->fromReference(frame);
+        } else {
+            return frame;
+        }
+    }
 };
 
 #endif

@@ -388,12 +388,9 @@ Pane::paintEvent(QPaintEvent *e)
                 if (ModelById::isa<WaveFileModel>(modelId)) {
                     workModelId = modelId;
                 } else {
-                    auto model = ModelById::get(modelId);
-                    if (model) {
-                        ModelId sourceId = model->getSourceModel();
-                        if (ModelById::isa<WaveFileModel>(sourceId)) {
-                            workModelId = sourceId;
-                        }
+                    ModelId sourceId = (*vi)->getSourceModel();
+                    if (ModelById::isa<WaveFileModel>(sourceId)) {
+                        workModelId = sourceId;
                     }
                 }
             }

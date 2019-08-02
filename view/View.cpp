@@ -71,6 +71,7 @@ View::View(QWidget *w, bool showProgress) :
     m_selectionCached(false),
     m_deleting(false),
     m_haveSelectedLayer(false),
+    m_useAligningProxy(false),
     m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
@@ -1349,15 +1350,22 @@ View::getModels()
 ModelId
 View::getAligningModel() const
 {
+    ModelId aligning, reference;
+    getAligningAndReferenceModels(aligning, reference);
+    return aligning;
+}
+
+void
+View::getAligningAndReferenceModels(ModelId &aligning,
+                                    ModelId &reference) const
+{
     if (!m_manager ||
         !m_manager->getAlignMode() ||
         m_manager->getPlaybackModel().isNone()) {
-        return {};
+        return;
     }
 
     ModelId anyModel;
-    ModelId alignedModel;
-    ModelId goodModel;
 
     for (auto layer: m_layerStack) {
 
@@ -1371,18 +1379,27 @@ View::getAligningModel() const
         anyModel = thisId;
 
         if (!model->getAlignmentReference().isNone()) {
-            alignedModel = thisId;
+
             if (layer->isLayerOpaque() ||
                 std::dynamic_pointer_cast
                 <RangeSummarisableTimeValueModel>(model)) {
-                goodModel = thisId;
+
+                aligning = thisId;
+                reference = model->getAlignmentReference();
+                return;
+
+            } else if (aligning.isNone()) {
+                
+                aligning = thisId;
+                reference = model->getAlignmentReference();
             }
         }
     }
 
-    if (!goodModel.isNone()) return goodModel;
-    else if (!alignedModel.isNone()) return alignedModel;
-    else return anyModel;
+    if (aligning.isNone()) {
+        aligning = anyModel;
+        reference = {};
+    }
 }
 
 sv_frame_t
@@ -2132,11 +2149,32 @@ View::paintEvent(QPaintEvent *e)
         throw std::logic_error("ERROR: shouldRepaintCache is true, but shouldUseCache is false: this can't lead to the correct result");
     }
 
+    // Create the ViewProxy for geometry provision, using the
+    // device-pixel ratio for pixel-doubled hi-dpi rendering as
+    // appropriate.
+
+    ViewProxy proxy(this, dpratio);
+
+    // Some layers may need an aligning proxy. If a layer's model has
+    // a source model that is the reference model for the aligning
+    // model, and the layer is tagged as to be aligned, then we use an
+    // aligning proxy.
+    
+    ModelId alignmentModelId;
+    ModelId alignmentReferenceId;
+    auto aligningModel = ModelById::get(getAligningModel());
+    if (aligningModel) {
+        alignmentModelId = aligningModel->getAlignment();
+        alignmentReferenceId = aligningModel->getAlignmentReference();
+        SVCERR << "alignmentModelId = " << alignmentModelId << " (reference =  " << alignmentReferenceId << ")" << endl;
+    } else {
+        SVCERR << "no aligningModel" << endl;
+    }
+    ViewProxy aligningProxy(this, dpratio, alignmentModelId);
+    
     // Scrollable (cacheable) items first. If we are repainting the
     // cache, then we paint these to the cache; otherwise straight to
     // the buffer.
-
-    ViewProxy proxy(this, dpratio);
     QRect areaToPaint;
     QPainter paint;
 
@@ -2164,11 +2202,22 @@ View::paintEvent(QPaintEvent *e)
         paint.setRenderHint(QPainter::Antialiasing, false);
         paint.save();
 
-#ifdef DEBUG_VIEW_WIDGET_PAINT
-        cerr << "Painting scrollable layer " << *i << " using proxy with shouldRepaintCache = " << shouldRepaintCache << ", dpratio = " << dpratio << ", areaToPaint = " << areaToPaint.x() << "," << areaToPaint.y() << " " << areaToPaint.width() << "x" << areaToPaint.height() << endl;
-#endif
+        Layer *layer = *i;
+        
+        bool useAligningProxy = false;
+        if (m_useAligningProxy) {
+            if (layer->getModel() == alignmentReferenceId ||
+                layer->getSourceModel() == alignmentReferenceId) {
+                useAligningProxy = true;
+            }
+        }
 
-        (*i)->paint(&proxy, paint, areaToPaint);
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+        cerr << "Painting scrollable layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with shouldRepaintCache = " << shouldRepaintCache << ", useAligningProxy = " << useAligningProxy << ", dpratio = " << dpratio << ", areaToPaint = " << areaToPaint.x() << "," << areaToPaint.y() << " " << areaToPaint.width() << "x" << areaToPaint.height() << endl;
+#endif
+        
+        layer->paint(useAligningProxy ? &aligningProxy : &proxy,
+                     paint, areaToPaint);
 
         paint.restore();
     }
@@ -2204,12 +2253,23 @@ View::paintEvent(QPaintEvent *e)
         
     for (LayerList::iterator i = nonScrollables.begin(); 
          i != nonScrollables.end(); ++i) {
+        
+        Layer *layer = *i;
+        
+        bool useAligningProxy = false;
+        if (m_useAligningProxy) {
+            if (layer->getModel() == alignmentReferenceId ||
+                layer->getSourceModel() == alignmentReferenceId) {
+                useAligningProxy = true;
+            }
+        }
 
-//        Profiler profiler2("View::paintEvent non-cacheable");
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        cerr << "Painting non-scrollable layer " << *i << " without proxy with shouldRepaintCache = " << shouldRepaintCache << ", dpratio = " << dpratio << ", requestedPaintArea = " << requestedPaintArea.x() << "," << requestedPaintArea.y() << " " << requestedPaintArea.width() << "x" << requestedPaintArea.height() << endl;
+        cerr << "Painting non-scrollable layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with shouldRepaintCache = " << shouldRepaintCache << ", useAligningProxy = " << useAligningProxy << ", dpratio = " << dpratio << ", requestedPaintArea = " << requestedPaintArea.x() << "," << requestedPaintArea.y() << " " << requestedPaintArea.width() << "x" << requestedPaintArea.height() << endl;
 #endif
-        (*i)->paint(&proxy, paint, requestedPaintArea);
+
+        layer->paint(useAligningProxy ? &aligningProxy : &proxy,
+                     paint, requestedPaintArea);
     }
         
     paint.end();
