@@ -64,6 +64,13 @@ public:
      * Return the ID of the model represented in this layer.
      */
     virtual ModelId getModel() const = 0;
+
+    /**
+     * Return the ID of the source model for the model represented in
+     * this layer. If the model has no other source, or there is no
+     * model here, return None.
+     */
+    ModelId getSourceModel() const;
     
     /**
      * Return a zoom constraint object defining the supported zoom

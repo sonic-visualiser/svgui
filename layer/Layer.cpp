@@ -64,6 +64,18 @@ Layer::connectSignals(ModelId modelId)
             this, SIGNAL(modelAlignmentCompletionChanged(ModelId)));
 }
 
+ModelId
+Layer::getSourceModel() const
+{
+    ModelId sourceId;
+    auto model = ModelById::get(getModel());
+    while (model && !model->getSourceModel().isNone()) {
+        sourceId = model->getSourceModel();
+        model = ModelById::get(sourceId);
+    }
+    return sourceId;
+}
+
 QString
 Layer::getPropertyContainerIconName() const
 {
