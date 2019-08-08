@@ -67,7 +67,7 @@ public:
     }
     sv_frame_t getFrameForX(int x) const override {
         sv_frame_t f0 = m_view->getFrameForX(x / m_scaleFactor);
-        if (m_scaleFactor == 1) return f0;
+        if (m_scaleFactor == 1) return alignToReference(f0);
         sv_frame_t f1 = m_view->getFrameForX((x / m_scaleFactor) + 1);
         sv_frame_t f = f0 + ((f1 - f0) * (x % m_scaleFactor)) / m_scaleFactor;
         return alignToReference(f);
