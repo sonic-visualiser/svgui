@@ -894,6 +894,10 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
+#ifdef DEBUG_TIME_VALUE_LAYER
+    SVCERR << "TimeValueLayer[" << this << ", model " << getModel() << "]::paint in " << v->getId() << endl;
+#endif
+    
     paint.setRenderHint(QPainter::Antialiasing, false);
 
 //    Profiler profiler("TimeValueLayer::paint", true);
@@ -904,6 +908,16 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     if (m_derivative) --frame0;
 
     EventVector points(model->getEventsWithin(frame0, frame1 - frame0, 1));
+
+#ifdef DEBUG_TIME_VALUE_LAYER
+    SVCERR << "TimeValueLayer[" << this << "]::paint in " << v->getId()
+           << ": pixel extents " << x0 << " to " << x1 << ", frame extents "
+           << frame0 << " to " << frame1 << " yielding " << points.size()
+           << " points (of " << model->getAllEvents().size()
+           << " from frames " << model->getStartFrame() << " to "
+           << model->getEndFrame() << ")" << endl;
+#endif
+    
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());

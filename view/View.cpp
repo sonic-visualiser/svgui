@@ -2166,7 +2166,7 @@ View::paintEvent(QPaintEvent *e)
     if (aligningModel) {
         alignmentModelId = aligningModel->getAlignment();
         alignmentReferenceId = aligningModel->getAlignmentReference();
-        SVCERR << "alignmentModelId = " << alignmentModelId << " (reference =  " << alignmentReferenceId << ")" << endl;
+        SVCERR << "alignmentModelId = " << alignmentModelId << " (reference = " << alignmentReferenceId << ")" << endl;
     } else {
         SVCERR << "no aligningModel" << endl;
     }
