@@ -2166,9 +2166,13 @@ View::paintEvent(QPaintEvent *e)
     if (aligningModel) {
         alignmentModelId = aligningModel->getAlignment();
         alignmentReferenceId = aligningModel->getAlignmentReference();
+#ifdef DEBUG_VIEW_WIDGET_PAINT
         SVCERR << "alignmentModelId = " << alignmentModelId << " (reference = " << alignmentReferenceId << ")" << endl;
+#endif
     } else {
+#ifdef DEBUG_VIEW_WIDGET_PAINT
         SVCERR << "no aligningModel" << endl;
+#endif
     }
     ViewProxy aligningProxy(this, dpratio, alignmentModelId);
     

@@ -32,19 +32,32 @@ public:
 public slots:
     void globalCentreFrameChanged(sv_frame_t) override;
     void viewCentreFrameChanged(View *, sv_frame_t) override;
+    
     virtual void viewAboveZoomLevelChanged(ZoomLevel, bool);
     virtual void viewBelowZoomLevelChanged(ZoomLevel, bool);
+    
     void viewManagerPlaybackFrameChanged(sv_frame_t) override;
+
+    void keyFramesChanged();
 
 protected:
     void paintEvent(QPaintEvent *e) override;
     bool shouldLabelSelections() const override { return false; }
 
-    std::vector<sv_frame_t> getKeyFrames();
+    void buildKeyFrameMap();
+
+    std::vector<sv_frame_t> getKeyFrames(View *, sv_frame_t &resolution);
     std::vector<sv_frame_t> getDefaultKeyFrames();
+
+    ModelId getSalientModel(View *);
+
+    void reconnectModels();
 
     View *m_above;
     View *m_below;
+
+    QMutex m_keyFrameMutex;
+    std::multimap<sv_frame_t, sv_frame_t> m_keyFrameMap;
 };
 
 #endif

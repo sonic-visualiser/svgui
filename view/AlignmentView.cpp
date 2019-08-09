@@ -21,7 +21,10 @@
 
 #include "layer/TimeInstantLayer.h"
 
+//#define DEBUG_ALIGNMENT_VIEW 1
+
 using std::vector;
+using std::set;
 
 AlignmentView::AlignmentView(QWidget *w) :
     View(w, false),
@@ -29,6 +32,19 @@ AlignmentView::AlignmentView(QWidget *w) :
     m_below(nullptr)
 {
     setObjectName(tr("AlignmentView"));
+}
+
+void
+AlignmentView::keyFramesChanged()
+{
+#ifdef DEBUG_ALIGNMENT_VIEW
+    SVCERR << "AlignmentView " << getId() << "::keyFramesChanged" << endl;
+#endif
+    
+    // This is just a notification that we need to rebuild it - so all
+    // we do here is clear it, and it'll be rebuilt on demand later
+    QMutexLocker locker(&m_keyFrameMutex);
+    m_keyFrameMap.clear();
 }
 
 void
@@ -83,7 +99,17 @@ AlignmentView::setViewAbove(View *v)
 		SIGNAL(zoomLevelChanged(ZoomLevel, bool)),
                 this, 
 		SLOT(viewAboveZoomLevelChanged(ZoomLevel, bool)));
+        connect(m_above,
+                SIGNAL(propertyContainerAdded(PropertyContainer *)),
+                this,
+                SLOT(keyFramesChanged()));
+        connect(m_above,
+                SIGNAL(layerModelChanged()),
+                this,
+                SLOT(keyFramesChanged()));
     }
+
+    keyFramesChanged();
 }
 
 void
@@ -100,14 +126,28 @@ AlignmentView::setViewBelow(View *v)
 		SIGNAL(zoomLevelChanged(ZoomLevel, bool)),
                 this, 
 		SLOT(viewBelowZoomLevelChanged(ZoomLevel, bool)));
+        connect(m_below,
+                SIGNAL(propertyContainerAdded(PropertyContainer *)),
+                this,
+                SLOT(keyFramesChanged()));
+        connect(m_below,
+                SIGNAL(layerModelChanged()),
+                this,
+                SLOT(keyFramesChanged()));
     }
+
+    keyFramesChanged();
 }
 
 void
 AlignmentView::paintEvent(QPaintEvent *)
 {
     if (m_above == nullptr || m_below == nullptr || !m_manager) return;
-
+    
+#ifdef DEBUG_ALIGNMENT_VIEW
+    SVCERR << "AlignmentView " << getId() << "::paintEvent" << endl;
+#endif
+    
     bool darkPalette = false;
     if (m_manager) darkPalette = m_manager->getGlobalDarkBackground();
 
@@ -127,43 +167,132 @@ AlignmentView::paintEvent(QPaintEvent *)
 
     paint.fillRect(rect(), bg);
 
-    vector<sv_frame_t> keyFrames = getKeyFrames();
+    QMutexLocker locker(&m_keyFrameMutex);
 
-    foreach (sv_frame_t f, keyFrames) {
-        int ax = m_above->getXForFrame(f);
-        sv_frame_t rf = m_above->alignToReference(f);
-        sv_frame_t bf = m_below->alignFromReference(rf);
+    if (m_keyFrameMap.empty()) {
+        reconnectModels();
+        buildKeyFrameMap();
+    }
+
+#ifdef DEBUG_ALIGNMENT_VIEW
+    SVCERR << "AlignmentView " << getId() << "::paintEvent: painting "
+           << m_keyFrameMap.size() << " mappings" << endl;
+#endif
+
+    for (const auto &km: m_keyFrameMap) {
+
+        sv_frame_t af = km.first;
+        sv_frame_t bf = km.second;
+
+        int ax = m_above->getXForFrame(af);
         int bx = m_below->getXForFrame(bf);
-        paint.drawLine(ax, 0, bx, height());
+
+        if (ax >= 0 || ax < width() || bx >= 0 || bx < width()) {
+            paint.drawLine(ax, 0, bx, height());
+        }
     }
 
     paint.end();
-}
+}        
 
-vector<sv_frame_t>
-AlignmentView::getKeyFrames()
+void
+AlignmentView::reconnectModels()
 {
-    if (!m_above) {
-        return getDefaultKeyFrames();
-    }
+    vector<ModelId> toConnect { 
+        getSalientModel(m_above),
+        getSalientModel(m_below)
+    };
 
-    ModelId m;
-
-    // get the topmost such
-    for (int i = 0; i < m_above->getLayerCount(); ++i) {
-        if (qobject_cast<TimeInstantLayer *>(m_above->getLayer(i))) {
-            ModelId mm = m_above->getLayer(i)->getModel();
-            if (ModelById::isa<SparseOneDimensionalModel>(mm)) {
-                m = mm;
+    for (auto modelId: toConnect) {
+        if (auto model = ModelById::get(modelId)) {
+            auto referenceId = model->getAlignmentReference();
+            if (!referenceId.isNone()) {
+                toConnect.push_back(referenceId);
             }
         }
     }
 
+    for (auto modelId: toConnect) {
+        if (auto model = ModelById::get(modelId)) {
+            auto ptr = model.get();
+            disconnect(ptr, 0, this, 0);
+            connect(ptr, SIGNAL(modelChanged(ModelId)),
+                    this, SLOT(keyFramesChanged()));
+            connect(ptr, SIGNAL(completionChanged(ModelId)),
+                    this, SLOT(keyFramesChanged()));
+            connect(ptr, SIGNAL(alignmentCompletionChanged(ModelId)),
+                    this, SLOT(keyFramesChanged()));
+        }
+    }
+}
+
+void
+AlignmentView::buildKeyFrameMap()
+{
+#ifdef DEBUG_ALIGNMENT_VIEW
+    SVCERR << "AlignmentView " << getId() << "::buildKeyFrameMap" << endl;
+#endif
+    
+    sv_frame_t resolution = 1;
+
+    set<sv_frame_t> keyFramesBelow;
+    for (auto f: getKeyFrames(m_below, resolution)) {
+        keyFramesBelow.insert(f);
+    }
+
+    vector<sv_frame_t> keyFrames = getKeyFrames(m_above, resolution);
+
+    foreach (sv_frame_t f, keyFrames) {
+
+        sv_frame_t rf = m_above->alignToReference(f);
+        sv_frame_t bf = m_below->alignFromReference(rf);
+
+        bool mappedSomething = false;
+        
+        if (resolution > 1) {
+            if (keyFramesBelow.find(bf) == keyFramesBelow.end()) {
+
+                sv_frame_t f1 = f + resolution;
+                sv_frame_t rf1 = m_above->alignToReference(f1);
+                sv_frame_t bf1 = m_below->alignFromReference(rf1);
+
+                for (sv_frame_t probe = bf + 1; probe <= bf1; ++probe) {
+                    if (keyFramesBelow.find(probe) != keyFramesBelow.end()) {
+                        m_keyFrameMap.insert({ f, probe });
+                        mappedSomething = true;
+                    }
+                }
+            }
+        }
+
+        if (!mappedSomething) {
+            m_keyFrameMap.insert({ f, bf });
+        }
+    }
+
+#ifdef DEBUG_ALIGNMENT_VIEW
+    SVCERR << "AlignmentView " << getId() << "::buildKeyFrameMap: have "
+           << m_keyFrameMap.size() << " mappings" << endl;
+#endif
+}
+
+vector<sv_frame_t>
+AlignmentView::getKeyFrames(View *view, sv_frame_t &resolution)
+{
+    resolution = 1;
+    
+    if (!view) {
+        return getDefaultKeyFrames();
+    }
+
+    ModelId m = getSalientModel(view);
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m);
     if (!model) {
         return getDefaultKeyFrames();
     }
 
+    resolution = model->getResolution();
+    
     vector<sv_frame_t> keyFrames;
 
     EventVector pp = model->getAllEvents();
@@ -192,4 +321,23 @@ AlignmentView::getDefaultKeyFrames()
     
     return keyFrames;
 }
+
+ModelId
+AlignmentView::getSalientModel(View *view)
+{
+    ModelId m;
+    
+    // get the topmost such
+    for (int i = 0; i < view->getLayerCount(); ++i) {
+        if (qobject_cast<TimeInstantLayer *>(view->getLayer(i))) {
+            ModelId mm = view->getLayer(i)->getModel();
+            if (ModelById::isa<SparseOneDimensionalModel>(mm)) {
+                m = mm;
+            }
+        }
+    }
+
+    return m;
+}
+
 
