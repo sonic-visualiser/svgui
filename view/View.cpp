@@ -75,12 +75,12 @@ View::View(QWidget *w, bool showProgress) :
     m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
-//    cerr << "View::View(" << this << ")" << endl;
+//    cerr << "View::View(" << getId() << ")" << endl;
 }
 
 View::~View()
 {
-//    cerr << "View::~View(" << this << ")" << endl;
+//    cerr << "View::~View(" << getId() << ")" << endl;
 
     m_deleting = true;
     delete m_propertyContainer;
@@ -343,7 +343,7 @@ View::setCentreFrame(sv_frame_t f, bool e)
         if (m_zoomLevel.zone == ZoomLevel::PixelsPerFrame) {
 
 #ifdef DEBUG_VIEW
-            SVCERR << "View(" << this << ")::setCentreFrame: in PixelsPerFrame zone, so change must be visible" << endl;
+            SVCERR << "View(" << getId() << ")::setCentreFrame: in PixelsPerFrame zone, so change must be visible" << endl;
 #endif
             update();
             changeVisible = true;
@@ -356,7 +356,7 @@ View::setCentreFrame(sv_frame_t f, bool e)
             if (newPixel != formerPixel) {
 
 #ifdef DEBUG_VIEW
-                SVCERR << "View(" << this << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
+                SVCERR << "View(" << getId() << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
 #endif
                 // ensure the centre frame is a multiple of the zoom level
                 m_centreFrame = sv_frame_t(newPixel) * m_zoomLevel.level;
@@ -376,7 +376,7 @@ View::setCentreFrame(sv_frame_t f, bool e)
         if (e) {
             sv_frame_t rf = alignToReference(m_centreFrame);
 #ifdef DEBUG_VIEW
-            cerr << "View[" << this << "]::setCentreFrame(" << f
+            cerr << "View[" << getId() << "]::setCentreFrame(" << f
                  << "): m_centreFrame = " << m_centreFrame
                  << ", emitting centreFrameChanged with aligned frame "
                  << rf << endl;
@@ -925,8 +925,8 @@ View::setPlaybackFollow(PlaybackFollowMode m)
 void
 View::modelChanged(ModelId modelId)
 {
-#ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << this << ")::modelChanged()" << endl;
+#if defined(DEBUG_VIEW_WIDGET_PAINT) || defined(DEBUG_PROGRESS_STUFF)
+    cerr << "View[" << getId() << "]::modelChanged(" << modelId << ")" << endl;
 #endif
 
     // If the model that has changed is not used by any of the cached
@@ -963,7 +963,7 @@ View::modelChangedWithin(ModelId modelId,
     sv_frame_t myEndFrame = getEndFrame();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << this << ")::modelChangedWithin(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << endl;
+    cerr << "View(" << getId() << ")::modelChangedWithin(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << endl;
 #endif
 
     if (myStartFrame > 0 && endFrame < myStartFrame) {
@@ -1005,12 +1005,18 @@ View::modelChangedWithin(ModelId modelId,
 void
 View::modelCompletionChanged(ModelId modelId)
 {
+#ifdef DEBUG_PROGRESS_STUFF
+    cerr << "View[" << getId() << "]::modelCompletionChanged(" << modelId << ")" << endl;
+#endif
     checkProgress(modelId);
 }
 
 void
 View::modelAlignmentCompletionChanged(ModelId modelId)
 {
+#ifdef DEBUG_PROGRESS_STUFF
+    cerr << "View[" << getId() << "]::modelAlignmentCompletionChanged(" << modelId << ")" << endl;
+#endif
     checkProgress(modelId);
 }
 
@@ -1018,7 +1024,7 @@ void
 View::modelReplaced()
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << this << ")::modelReplaced()" << endl;
+    cerr << "View(" << getId() << ")::modelReplaced()" << endl;
 #endif
     m_cacheValid = false;
     update();
@@ -1068,7 +1074,7 @@ View::globalCentreFrameChanged(sv_frame_t rf)
     if (m_followPan) {
         sv_frame_t f = alignFromReference(rf);
 #ifdef DEBUG_VIEW
-        cerr << "View[" << this << "]::globalCentreFrameChanged(" << rf
+        cerr << "View[" << getId() << "]::globalCentreFrameChanged(" << rf
                   << "): setting centre frame to " << f << endl;
 #endif
         setCentreFrame(f, false);
@@ -1105,7 +1111,7 @@ void
 View::movePlayPointer(sv_frame_t newFrame)
 {
 #ifdef DEBUG_VIEW
-    cerr << "View(" << this << ")::movePlayPointer(" << newFrame << ")" << endl;
+    cerr << "View(" << getId() << ")::movePlayPointer(" << newFrame << ")" << endl;
 #endif
 
     if (m_playPointerFrame == newFrame) return;
@@ -1221,7 +1227,7 @@ void
 View::viewZoomLevelChanged(View *p, ZoomLevel z, bool locked)
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr  << "View[" << this << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << endl;
+    cerr  << "View[" << getId() << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << endl;
 #endif
     if (m_followZoom && p != this && locked) {
         setZoomLevel(z);
@@ -1460,7 +1466,7 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
 //        SVDEBUG << "View::getScrollableBackLayers: calling isLayerDormant on layer " << *i << endl;
 //        cerr << "(name is " << (*i)->objectName() << ")"
 //                  << endl;
-//        SVDEBUG << "View::getScrollableBackLayers: I am " << this << endl;
+//        SVDEBUG << "View::getScrollableBackLayers: I am " << getId() << endl;
         if ((*i)->isLayerDormant(this)) continue;
         if ((*i)->isLayerOpaque()) {
             // You can't see anything behind an opaque layer!
@@ -1756,7 +1762,7 @@ View::checkProgress(ModelId modelId)
 {
     if (!m_showProgress) {
 #ifdef DEBUG_PROGRESS_STUFF
-        SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
+        SVCERR << "View[" << getId() << "]::checkProgress(" << modelId << "): "
                << "m_showProgress is off" << endl;
 #endif
         return;
@@ -1779,16 +1785,7 @@ View::checkProgress(ModelId modelId)
         if (i->first && i->first->getModel() == modelId) {
 
             found = true;
-
-            if (i->first->isLayerDormant(this)) {
-                // A dormant (invisible) layer can still be busy
-                // generating, but we don't usually want to indicate
-                // it because it probably means it's a duplicate of a
-                // visible layer
-                cancel->hide();
-                pb->hide();
-                continue;
-            }
+            bool isAlignmentProgress = false;
             
             // The timer is used to test for stalls.  If the progress
             // bar does not get updated for some length of time, the
@@ -1800,7 +1797,7 @@ View::checkProgress(ModelId modelId)
             QString error = i->first->getError(this);
 
 #ifdef DEBUG_PROGRESS_STUFF
-            SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
+            SVCERR << "View[" << getId() << "]::checkProgress(" << modelId << "): "
                    << "found progress bar " << pb << " for layer at height " << ph
                    << ": completion = " << completion << endl;
 #endif
@@ -1825,6 +1822,8 @@ View::checkProgress(ModelId modelId)
                      (wfm = ModelById::getAs<RangeSummarisableTimeValueModel>
                       (model->getSourceModel())))) {
 
+                    isAlignmentProgress = true;
+
                     completion = wfm->getAlignmentCompletion();
 
                     // We don't allow cancelling alignment operations
@@ -1833,7 +1832,7 @@ View::checkProgress(ModelId modelId)
                     showCancelButton = false;
 
 #ifdef DEBUG_PROGRESS_STUFF
-                    SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
+                    SVCERR << "View[" << getId() << "]::checkProgress(" << modelId << "): "
                            << "alignment completion = " << completion << endl;
 #endif
                 
@@ -1852,6 +1851,20 @@ View::checkProgress(ModelId modelId)
                 cancel->hide();
                 timer->stop();
 
+            } else if (i->first->isLayerDormant(this) && !isAlignmentProgress) {
+
+                // A dormant (invisible) layer can still be busy
+                // generating, but we don't usually want to indicate
+                // it because it probably means it's a duplicate of a
+                // visible layer
+#ifdef DEBUG_PROGRESS_STUFF
+                SVCERR << "View[" << getId() << "]::checkProgress("
+                       << modelId << "): layer is dormant" << endl;
+#endif
+                pb->hide();
+                cancel->hide();
+                timer->stop();
+                
             } else {
 
                 if (!pb->isVisible()) {
@@ -1881,7 +1894,9 @@ View::checkProgress(ModelId modelId)
                 pb->show();
                 pb->update();
 
-                ph -= pb->height();
+                if (pb->isVisible()) {
+                    ph -= pb->height();
+                }
             }
         } else {
             if (pb->isVisible()) {
@@ -1892,7 +1907,7 @@ View::checkProgress(ModelId modelId)
 
     if (!found) {
 #ifdef DEBUG_PROGRESS_STUFF
-        SVCERR << "View[" << this << "]::checkProgress(" << modelId << "): "
+        SVCERR << "View[" << getId() << "]::checkProgress(" << modelId << "): "
                << "failed to find layer for model in progress map"
                << endl;
 #endif
@@ -1911,11 +1926,12 @@ View::progressCheckStalledTimerElapsed()
 
         if (i->second.checkTimer == t) {
 
+            int value = i->second.bar->value();
+
 #ifdef DEBUG_PROGRESS_STUFF
-            SVCERR << "View[" << this << "]::progressCheckStalledTimerElapsed for layer " << i->first << endl;
+            SVCERR << "View[" << getId() << "]::progressCheckStalledTimerElapsed for layer " << i->first << ": value is " << value << endl;
 #endif
     
-            int value = i->second.bar->value();
             if (value > 0 && value == i->second.lastCheck) {
                 i->second.bar->setMaximum(0); // indeterminate
             }
@@ -2032,7 +2048,7 @@ View::paintEvent(QPaintEvent *e)
     LayerList nonScrollables = getNonScrollableFrontLayers(true, layersChanged);
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << this << ")::paintEvent: have " << scrollables.size()
+    cerr << "View(" << getId() << ")::paintEvent: have " << scrollables.size()
               << " scrollable back layers and " << nonScrollables.size()
               << " non-scrollable front layers" << endl;
 #endif
@@ -2062,7 +2078,7 @@ View::paintEvent(QPaintEvent *e)
         cacheAreaToRepaint = wholeArea;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        cerr << "View(" << this << "): cache " << m_cache << ", cache zoom "
+        cerr << "View(" << getId() << "): cache " << m_cache << ", cache zoom "
                   << m_cacheZoomLevel << ", zoom " << m_zoomLevel << endl;
 #endif
 
@@ -2082,7 +2098,7 @@ View::paintEvent(QPaintEvent *e)
                 shouldRepaintCache = false;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << this << ")::paintEvent: cache is invalid but only small area requested, will repaint directly instead" << endl;
+                cerr << "View(" << getId() << ")::paintEvent: cache is invalid but only small area requested, will repaint directly instead" << endl;
 #endif
             } else {
 
@@ -2093,7 +2109,7 @@ View::paintEvent(QPaintEvent *e)
                 }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << this << ")::paintEvent: cache is invalid, will repaint whole" << endl;
+                cerr << "View(" << getId() << ")::paintEvent: cache is invalid, will repaint whole" << endl;
 #endif
             }
 
@@ -2119,18 +2135,18 @@ View::paintEvent(QPaintEvent *e)
                 count.partial();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << this << ")::paintEvent: scrolled cache by " << dx << endl;
+                cerr << "View(" << getId() << ")::paintEvent: scrolled cache by " << dx << endl;
 #endif
             } else {
                 count.miss();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << this << ")::paintEvent: scrolling too far" << endl;
+                cerr << "View(" << getId() << ")::paintEvent: scrolling too far" << endl;
 #endif
             }
 
         } else {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-            cerr << "View(" << this << ")::paintEvent: cache is good" << endl;
+            cerr << "View(" << getId() << ")::paintEvent: cache is good" << endl;
 #endif
             count.hit();
             shouldRepaintCache = false;
@@ -2138,7 +2154,7 @@ View::paintEvent(QPaintEvent *e)
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << this << ")::paintEvent: m_cacheValid = " << m_cacheValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
+    cerr << "View(" << getId() << ")::paintEvent: m_cacheValid = " << m_cacheValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
 #endif
 
     if (shouldRepaintCache && !shouldUseCache) {
@@ -2961,7 +2977,7 @@ View::toXml(QTextStream &stream,
 ViewPropertyContainer::ViewPropertyContainer(View *v) :
     m_v(v)
 {
-//    cerr << "ViewPropertyContainer: " << this << " is owned by View " << v << endl;
+//    cerr << "ViewPropertyContainer: " << getId() << " is owned by View " << v << endl;
     connect(m_v, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
             this, SIGNAL(propertyChanged(PropertyContainer::PropertyName)));
 }
