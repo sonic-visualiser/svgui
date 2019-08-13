@@ -308,6 +308,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
                     pr.x(), pr.y(), pr.width(), pr.height());
 
     if (!timeConstrained && (pr != rect)) {
+        QRect cva = m_cache.getValidArea();
         SVCERR << "WARNING: failed to render entire requested rect "
                << "even when not time-constrained: wanted "
                << rect.x() << "," << rect.y() << " "
@@ -315,6 +316,10 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
                << pr.x() << "," << pr.y() << " "
                << pr.width() << "x" << pr.height()
                << ", after request of width " << (x1 - x0)
+               << endl
+               << "(cache valid area is "
+               << cva.x() << "," << cva.y() << " "
+               << cva.width() << "x" << cva.height() << ")"
                << endl;
     }
 
@@ -849,6 +854,9 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     for (int x = x0 + repaintWidth; ; ++x) {
         sv_frame_t f = v->getFrameForX(x);
         if ((f / binResolution) * binResolution == f) {
+            if (v->getXForFrame(f) < x0 + repaintWidth) {
+                continue;
+            }
             if (rightCropFrame == -1) rightCropFrame = f;
             else if (x > x0 + repaintWidth + 2) {
                 rightBoundaryFrame = f;
@@ -897,8 +905,10 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "scaling draw buffer from width " << m_drawBuffer.width()
-            << " to " << (scaledRight - scaledLeft) << " (nb drawBufferWidth = "
-            << drawBufferWidth << ")" << endl;
+            << " to " << (scaledRight - scaledLeft)
+            << " (nb drawBufferWidth = "
+            << drawBufferWidth << ", attainedWidth = "
+            << attainedWidth << ")" << endl;
 #endif
 
     QImage scaled = scaleDrawBufferImage
@@ -921,9 +931,24 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     if (sourceLeft < 0) {
         sourceLeft = 0;
     }
+
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "leftBoundaryFrame = " << leftBoundaryFrame
+            << ", leftCropFrame = " << leftCropFrame
+            << ", scaledLeft = " << scaledLeft
+            << ", scaledLeftCrop = " << scaledLeftCrop
+            << endl;
+    SVDEBUG << "rightBoundaryFrame = " << rightBoundaryFrame
+            << ", rightCropFrame = " << rightCropFrame
+            << ", scaledRight = " << scaledRight
+            << ", scaledRightCrop = " << scaledRightCrop
+            << endl;
+#endif
     
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "repaintWidth = " << repaintWidth
+    SVDEBUG << "x0 = " << x0
+            << ", repaintWidth = " << repaintWidth
+            << ", targetLeft = " << targetLeft 
             << ", targetWidth = " << targetWidth << endl;
 #endif
     
