@@ -513,6 +513,8 @@ protected:
     void movePlayPointer(sv_frame_t f);
 
     void checkProgress(ModelId);
+    void checkAlignmentProgress(ModelId);
+    
     int getProgressBarWidth() const; // if visible
 
     int effectiveDevicePixelRatio() const;
@@ -551,11 +553,17 @@ protected:
     struct ProgressBarRec {
         QPushButton *cancel;
         QProgressBar *bar;
-        int lastCheck;
-        QTimer *checkTimer;
+        int lastStallCheckValue;
+        QTimer *stallCheckTimer;
     };
     typedef std::map<Layer *, ProgressBarRec> ProgressMap;
-    ProgressMap m_progressBars; // I own the ProgressBars
+    ProgressMap m_progressBars; // I own the ProgressBarRecs and their contents
+
+    struct AlignmentProgressBarRec {
+        ModelId alignedModel;
+        QProgressBar *bar;
+    };
+    AlignmentProgressBarRec m_alignmentProgressBar;
 
     ViewManager *m_manager; // I don't own this
     ViewPropertyContainer *m_propertyContainer; // I own this

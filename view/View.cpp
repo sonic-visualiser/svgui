@@ -72,6 +72,7 @@ View::View(QWidget *w, bool showProgress) :
     m_deleting(false),
     m_haveSelectedLayer(false),
     m_useAligningProxy(false),
+    m_alignmentProgressBar({ {}, nullptr }),
     m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
@@ -683,9 +684,9 @@ View::addLayer(Layer *layer)
     ProgressBarRec pbr;
     pbr.cancel = cancel;
     pbr.bar = pb;
-    pbr.lastCheck = 0;
-    pbr.checkTimer = new QTimer();
-    connect(pbr.checkTimer, SIGNAL(timeout()), this,
+    pbr.lastStallCheckValue = 0;
+    pbr.stallCheckTimer = new QTimer();
+    connect(pbr.stallCheckTimer, SIGNAL(timeout()), this,
             SLOT(progressCheckStalledTimerElapsed()));
 
     m_progressBars[layer] = pbr;
@@ -749,7 +750,7 @@ View::removeLayer(Layer *layer)
             if (m_progressBars.find(layer) != m_progressBars.end()) {
                 delete m_progressBars[layer].bar;
                 delete m_progressBars[layer].cancel;
-                delete m_progressBars[layer].checkTimer;
+                delete m_progressBars[layer].stallCheckTimer;
                 m_progressBars.erase(layer);
             }
             break;
@@ -1017,7 +1018,7 @@ View::modelAlignmentCompletionChanged(ModelId modelId)
 #ifdef DEBUG_PROGRESS_STUFF
     cerr << "View[" << getId() << "]::modelAlignmentCompletionChanged(" << modelId << ")" << endl;
 #endif
-    checkProgress(modelId);
+    checkAlignmentProgress(modelId);
 }
 
 void
@@ -1768,6 +1769,10 @@ View::checkProgress(ModelId modelId)
         return;
     }
 
+#ifdef DEBUG_PROGRESS_STUFF
+    SVCERR << "View[" << getId() << "]::checkProgress(" << modelId << ")" << endl;
+#endif
+
     QSettings settings;
     settings.beginGroup("View");
     bool showCancelButton = settings.value("showcancelbuttons", true).toBool();
@@ -1775,6 +1780,10 @@ View::checkProgress(ModelId modelId)
     
     int ph = height();
     bool found = false;
+
+    if (m_alignmentProgressBar.bar) {
+        ph -= m_alignmentProgressBar.bar->height();
+    }
 
     for (ProgressMap::iterator i = m_progressBars.begin();
          i != m_progressBars.end(); ++i) {
@@ -1785,15 +1794,13 @@ View::checkProgress(ModelId modelId)
         if (i->first && i->first->getModel() == modelId) {
 
             found = true;
-            bool isAlignmentProgress = false;
             
             // The timer is used to test for stalls.  If the progress
             // bar does not get updated for some length of time, the
             // timer prompts it to go back into "indeterminate" mode
-            QTimer *timer = i->second.checkTimer;
+            QTimer *timer = i->second.stallCheckTimer;
 
             int completion = i->first->getCompletion(this);
-            QString text = i->first->getPropertyContainerName();
             QString error = i->first->getError(this);
 
 #ifdef DEBUG_PROGRESS_STUFF
@@ -1807,41 +1814,12 @@ View::checkProgress(ModelId modelId)
                 m_lastError = error;
             }
 
-            auto model = ModelById::get(modelId);
-            auto wfm = std::dynamic_pointer_cast
-                <RangeSummarisableTimeValueModel>(model);
-
             if (completion > 0) {
                 pb->setMaximum(100); // was 0, for indeterminate start
             }
 
-            if (completion >= 100) {
-                
-                if (wfm ||
-                    (model && 
-                     (wfm = ModelById::getAs<RangeSummarisableTimeValueModel>
-                      (model->getSourceModel())))) {
-
-                    isAlignmentProgress = true;
-
-                    completion = wfm->getAlignmentCompletion();
-
-                    // We don't allow cancelling alignment operations
-                    // - they aren't usually all that expensive, and
-                    // it would leave things in a very uncertain state
-                    showCancelButton = false;
-
-#ifdef DEBUG_PROGRESS_STUFF
-                    SVCERR << "View[" << getId() << "]::checkProgress(" << modelId << "): "
-                           << "alignment completion = " << completion << endl;
-#endif
-                
-                    if (completion < 100) {
-                        text = tr("Alignment");
-                    }
-                }
-
-            } else if (wfm) {
+            if (completion < 100 &&
+                ModelById::isa<RangeSummarisableTimeValueModel>(modelId)) {
                 update(); // ensure duration &c gets updated
             }
 
@@ -1851,7 +1829,7 @@ View::checkProgress(ModelId modelId)
                 cancel->hide();
                 timer->stop();
 
-            } else if (i->first->isLayerDormant(this) && !isAlignmentProgress) {
+            } else if (i->first->isLayerDormant(this)) {
 
                 // A dormant (invisible) layer can still be busy
                 // generating, but we don't usually want to indicate
@@ -1868,7 +1846,7 @@ View::checkProgress(ModelId modelId)
             } else {
 
                 if (!pb->isVisible()) {
-                    i->second.lastCheck = 0;
+                    i->second.lastStallCheckValue = 0;
                     timer->setInterval(2000);
                     timer->start();
                 }
@@ -1915,6 +1893,72 @@ View::checkProgress(ModelId modelId)
 }
 
 void
+View::checkAlignmentProgress(ModelId modelId)
+{
+    if (!m_showProgress) {
+#ifdef DEBUG_PROGRESS_STUFF
+        SVCERR << "View[" << getId() << "]::checkAlignmentProgress(" << modelId << "): "
+               << "m_showProgress is off" << endl;
+#endif
+        return;
+    }
+
+#ifdef DEBUG_PROGRESS_STUFF
+    SVCERR << "View[" << getId() << "]::checkAlignmentProgress(" << modelId << ")" << endl;
+#endif
+
+    if (!m_alignmentProgressBar.alignedModel.isNone() &&
+        modelId != m_alignmentProgressBar.alignedModel) {
+#ifdef DEBUG_PROGRESS_STUFF
+        SVCERR << "View[" << getId() << "]::checkAlignmentProgress(" << modelId << "): Different model (we're currently showing alignment progress for " << modelId << ", ignoring" << endl;
+#endif
+        return;
+    }
+    
+    auto model = ModelById::get(modelId);
+    if (!model) {
+#ifdef DEBUG_PROGRESS_STUFF
+        SVCERR << "View[" << getId() << "]::checkAlignmentProgress(" << modelId << "): Model gone" << endl;
+#endif
+        m_alignmentProgressBar.alignedModel = {};
+        delete m_alignmentProgressBar.bar;
+        m_alignmentProgressBar.bar = nullptr;
+        return;
+    }
+
+    int completion = model->getAlignmentCompletion();
+
+#ifdef DEBUG_PROGRESS_STUFF
+    SVCERR << "View[" << getId() << "]::checkAlignmentProgress(" << modelId << "): Completion is " << completion << endl;
+#endif
+
+    int ph = height();
+
+    if (completion >= 100) {
+        m_alignmentProgressBar.alignedModel = {};
+        delete m_alignmentProgressBar.bar;
+        m_alignmentProgressBar.bar = nullptr;
+        return;
+    }
+
+    QProgressBar *pb = m_alignmentProgressBar.bar;
+    if (!pb) {
+        pb = new QProgressBar(this);
+        pb->setMinimum(0);
+        pb->setMaximum(100);
+        pb->setFixedWidth(80);
+        pb->setTextVisible(false);
+        m_alignmentProgressBar.alignedModel = modelId;
+        m_alignmentProgressBar.bar = pb;
+    }
+        
+    pb->setValue(completion);
+    pb->move(0, ph - pb->height());
+    pb->show();
+    pb->update();
+}
+
+void
 View::progressCheckStalledTimerElapsed()
 {
     QObject *s = sender();
@@ -1924,7 +1968,7 @@ View::progressCheckStalledTimerElapsed()
     for (ProgressMap::iterator i =  m_progressBars.begin();
          i != m_progressBars.end(); ++i) {
 
-        if (i->second.checkTimer == t) {
+        if (i->second.stallCheckTimer == t) {
 
             int value = i->second.bar->value();
 
@@ -1932,10 +1976,10 @@ View::progressCheckStalledTimerElapsed()
             SVCERR << "View[" << getId() << "]::progressCheckStalledTimerElapsed for layer " << i->first << ": value is " << value << endl;
 #endif
     
-            if (value > 0 && value == i->second.lastCheck) {
+            if (value > 0 && value == i->second.lastStallCheckValue) {
                 i->second.bar->setMaximum(0); // indeterminate
             }
-            i->second.lastCheck = value;
+            i->second.lastStallCheckValue = value;
             return;
         }
     }
@@ -1944,6 +1988,10 @@ View::progressCheckStalledTimerElapsed()
 int
 View::getProgressBarWidth() const
 {
+    if (m_alignmentProgressBar.bar) {
+        return m_alignmentProgressBar.bar->width();
+    }
+    
     for (ProgressMap::const_iterator i = m_progressBars.begin();
          i != m_progressBars.end(); ++i) {
         if (i->second.bar && i->second.bar->isVisible()) {
