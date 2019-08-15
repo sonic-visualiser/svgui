@@ -35,6 +35,7 @@
 
 //!!! ugh
 #include "data/model/WaveFileModel.h"
+#include "data/model/AlignmentModel.h"
 
 #include <QPaintEvent>
 #include <QPainter>
@@ -834,10 +835,19 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, ModelId modelId,
         text = tr("Unaligned");
     } else {
         completion = model->getAlignmentCompletion();
+        int relativePitch = 0;
+        if (auto alignmentModel =
+            ModelById::getAs<AlignmentModel>(model->getAlignment())) {
+            relativePitch = alignmentModel->getRelativePitch();
+        }
         if (completion == 0) {
             text = tr("Unaligned");
         } else if (completion < 100) {
             text = tr("Aligning: %1%").arg(completion);
+        } else if (relativePitch < 0) {
+            text = tr("Aligned at -%1 cents").arg(-relativePitch);
+        } else if (relativePitch > 0) {
+            text = tr("Aligned at +%1 cents").arg(relativePitch);
         } else {
             text = tr("Aligned");
         }
