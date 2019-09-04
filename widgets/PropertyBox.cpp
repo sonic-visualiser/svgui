@@ -639,7 +639,8 @@ PropertyBox::propertyControllerChanged(int value)
     QString name = obj->objectName();
 
 #ifdef DEBUG_PROPERTY_BOX
-    SVDEBUG << "PropertyBox::propertyControllerChanged(" << name              << ", " << value << ")" << endl;
+    SVDEBUG << "PropertyBox::propertyControllerChanged(" << name
+            << ", " << value << ")" << endl;
 #endif
     
     PropertyContainer::PropertyType type = m_container->getPropertyType(name);
