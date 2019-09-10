@@ -109,13 +109,15 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
         } else if (m_secondsPerXPixelValid) {
             double predicted = m_secondsPerXPixel * rect.width();
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "Predicted time for width " << rect.width() << " = "
+            SVDEBUG << "render " << m_sources.source
+                    << ": Predicted time for width " << rect.width() << " = "
                     << predicted << " (" << m_secondsPerXPixel << " x "
                     << rect.width() << ")" << endl;
 #endif
             if (predicted < 0.175) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-                SVDEBUG << "Predicted time looks fast enough: no partial renders"
+                SVDEBUG << "render " << m_sources.source
+                        << ": Predicted time looks fast enough: no partial renders"
                         << endl;
 #endif
                 timeConstrained = false;
@@ -146,14 +148,15 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     }
     
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "cache start " << m_cache.getStartFrame()
-         << " valid left " << m_cache.getValidLeft()
-         << " valid right " << m_cache.getValidRight()
-         << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": cache start " << m_cache.getStartFrame()
+            << " valid left " << m_cache.getValidLeft()
+            << " valid right " << m_cache.getValidRight()
+            << endl;
     SVDEBUG << " view start " << startFrame
-         << " x0 " << x0
-         << " x1 " << x1
-         << endl;
+            << " x0 " << x0
+            << " x1 " << x1
+            << endl;
 #endif
 
     static HitCount count("Colour3DPlotRenderer: image cache");
@@ -297,7 +300,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     } else { // must be DrawBufferPixelResolution, handled DirectTranslucent earlier
 
         if (timeConstrained && justInvalidated) {
-            SVDEBUG << "render: just invalidated cache in time-constrained context, that's all we're doing for now - wait for next update to start filling" << endl;
+            SVDEBUG << "render " << m_sources.source << ": just invalidated cache in time-constrained context, that's all we're doing for now - wait for next update to start filling" << endl;
         } else {
             renderToCachePixelResolution(v, x0, x1 - x0, rightToLeft, timeConstrained);
         }
@@ -326,9 +329,11 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     MagnitudeRange range = m_magCache.getRange(reqx0, reqx1 - reqx0);
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "render: returning rect rendered as " << pr.x() << "," << pr.y()
+    SVDEBUG << "render " << m_sources.source
+            << ": returning rect rendered as " << pr.x() << "," << pr.y()
             << " " << pr.width() << "x" << pr.height() << endl;
-    SVDEBUG << "render: mag range from cache in x-range " << reqx0
+    SVDEBUG << "render " << m_sources.source
+            << ": mag range from cache in x-range " << reqx0
             << " to " << reqx1 << " is " << range.getMin() << " -> "
             << range.getMax() << endl;
 #endif
@@ -652,7 +657,8 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
     }
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "getPreferredPeakCache: zoomLevel = " << zoomLevel
+    SVDEBUG << "render " << m_sources.source
+            << ": getPreferredPeakCache: zoomLevel = " << zoomLevel
             << ", binResolution " << binResolution 
             << ", peakCaches " << m_sources.peakCaches.size()
             << ": preferring peakCacheIndex " << peakCacheIndex
@@ -669,7 +675,8 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
 {
     Profiler profiler("Colour3DPlotRenderer::renderToCachePixelResolution");
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "renderToCachePixelResolution" << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": renderToCachePixelResolution" << endl;
 #endif
     
     // Draw to the draw buffer, and then copy from there. The draw
@@ -808,7 +815,8 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
 {
     Profiler profiler("Colour3DPlotRenderer::renderToCacheBinResolution");
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "renderToCacheBinResolution" << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": renderToCacheBinResolution" << endl;
 #endif
     
     // Draw to the draw buffer, and then scale-copy from there. Draw
@@ -1341,7 +1349,7 @@ Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "across " << xPixelCount << " x-pixels, seconds per x-pixel = "
             << m_secondsPerXPixel << " (total = "
-            << (xPixelCount * m_secondsPerXPixel) << endl;
+            << (xPixelCount * m_secondsPerXPixel) << ")" << endl;
 #endif
     }
 }
