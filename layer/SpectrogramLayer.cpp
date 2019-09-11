@@ -1430,7 +1430,7 @@ SpectrogramLayer::recreateFFTModel()
         auto whole = std::make_shared<Dense3DModelPeakCache>(m_fftModel, 1);
         m_wholeCache = ModelById::add(whole);
 
-        auto peaks = std::make_shared<Dense3DModelPeakCache>(m_wholeCache,
+        auto peaks = std::make_shared<Dense3DModelPeakCache>(m_fftModel,
                                                              m_peakCacheDivisor);
         m_peakCache = ModelById::add(peaks);
 
