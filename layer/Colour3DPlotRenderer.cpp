@@ -153,7 +153,8 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             << " valid left " << m_cache.getValidLeft()
             << " valid right " << m_cache.getValidRight()
             << endl;
-    SVDEBUG << " view start " << startFrame
+    SVDEBUG << "render " << m_sources.source
+            << ": view start " << startFrame
             << " x0 " << x0
             << " x1 " << x1
             << endl;
@@ -169,7 +170,8 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             m_cache.getValidRight() >= x1) {
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "cache hit" << endl;
+            SVDEBUG << "render " << m_sources.source
+                    << ": cache hit" << endl;
 #endif
             count.hit();
             
@@ -182,7 +184,8 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
         } else {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "cache partial hit" << endl;
+            SVDEBUG << "render " << m_sources.source
+                    << ": cache partial hit" << endl;
 #endif
             count.partial();
             
@@ -300,7 +303,8 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     } else { // must be DrawBufferPixelResolution, handled DirectTranslucent earlier
 
         if (timeConstrained && justInvalidated) {
-            SVDEBUG << "render " << m_sources.source << ": just invalidated cache in time-constrained context, that's all we're doing for now - wait for next update to start filling" << endl;
+            SVDEBUG << "render " << m_sources.source
+                    << ": invalidated cache in time-constrained context, that's all we're doing for now - wait for next update to start filling" << endl;
         } else {
             renderToCachePixelResolution(v, x0, x1 - x0, rightToLeft, timeConstrained);
         }
@@ -642,7 +646,8 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
         int bpp = peakCache->getColumnsPerPeak();
         ZoomLevel equivZoom(ZoomLevel::FramesPerPixel, binResolution * bpp);
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-        SVDEBUG << "getPreferredPeakCache: zoomLevel = " << zoomLevel
+        SVDEBUG << "render " << m_sources.source
+                << ": getPreferredPeakCache: zoomLevel = " << zoomLevel
                 << ", cache " << ix << " has bpp = " << bpp
                 << " for equivZoom = " << equivZoom << endl;
 #endif
@@ -676,7 +681,7 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     Profiler profiler("Colour3DPlotRenderer::renderToCachePixelResolution");
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
-            << ": renderToCachePixelResolution" << endl;
+            << ": [PIXEL] renderToCachePixelResolution" << endl;
 #endif
     
     // Draw to the draw buffer, and then copy from there. The draw
@@ -816,7 +821,7 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     Profiler profiler("Colour3DPlotRenderer::renderToCacheBinResolution");
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
-            << ": renderToCacheBinResolution" << endl;
+            << ": [BIN] renderToCacheBinResolution" << endl;
 #endif
     
     // Draw to the draw buffer, and then scale-copy from there. Draw
@@ -891,7 +896,8 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     }
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "[BIN] binResolution " << binResolution << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": binResolution " << binResolution << endl;
 #endif
     
     for (int y = 0; y < h; ++y) {
@@ -912,7 +918,8 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     int scaledRight = v->getXForFrame(rightBoundaryFrame);
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "scaling draw buffer from width " << m_drawBuffer.width()
+    SVDEBUG << "render " << m_sources.source
+            << ": scaling draw buffer from width " << m_drawBuffer.width()
             << " to " << (scaledRight - scaledLeft)
             << " (nb drawBufferWidth = "
             << drawBufferWidth << ", attainedWidth = "
@@ -941,12 +948,14 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     }
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "leftBoundaryFrame = " << leftBoundaryFrame
+    SVDEBUG << "render " << m_sources.source
+            << ": leftBoundaryFrame = " << leftBoundaryFrame
             << ", leftCropFrame = " << leftCropFrame
             << ", scaledLeft = " << scaledLeft
             << ", scaledLeftCrop = " << scaledLeftCrop
             << endl;
-    SVDEBUG << "rightBoundaryFrame = " << rightBoundaryFrame
+    SVDEBUG << "render " << m_sources.source
+            << ": rightBoundaryFrame = " << rightBoundaryFrame
             << ", rightCropFrame = " << rightCropFrame
             << ", scaledRight = " << scaledRight
             << ", scaledRightCrop = " << scaledRightCrop
@@ -954,7 +963,8 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
 #endif
     
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "x0 = " << x0
+    SVDEBUG << "render " << m_sources.source
+            << ": x0 = " << x0
             << ", repaintWidth = " << repaintWidth
             << ", targetLeft = " << targetLeft 
             << ", targetWidth = " << targetWidth << endl;
@@ -1017,11 +1027,13 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     if (!sourceModel) return 0;
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "renderDrawBuffer: w = " << w << ", h = " << h
+    SVDEBUG << "render " << m_sources.source
+            << ": renderDrawBuffer: w = " << w << ", h = " << h
             << ", peakCacheIndex = " << peakCacheIndex << " (divisor = "
             << divisor << "), rightToLeft = " << rightToLeft
             << ", timeConstrained = " << timeConstrained << endl;
-    SVDEBUG << "renderDrawBuffer: normalization = " << int(m_params.normalization)
+    SVDEBUG << "render " << m_sources.source
+            << ": renderDrawBuffer: normalization = " << int(m_params.normalization)
             << ", binDisplay = " << int(m_params.binDisplay)
             << ", binScale = " << int(m_params.binScale)
             << ", alwaysOpaque = " << m_params.alwaysOpaque
@@ -1038,8 +1050,11 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     if (minbin + nbins > sh) nbins = sh - minbin;
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "minbin = " << minbin << ", nbins = " << nbins << ", last binfory = "
-         << binfory[h-1] << " (rounds to " << int(binfory[h-1]) << ") (model height " << sh << ")" << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": minbin = " << minbin << ", nbins = " << nbins
+            << ", last binfory = " << binfory[h-1]
+            << " (rounds to " << int(binfory[h-1])
+            << ") (model height " << sh << ")" << endl;
 #endif
     
     int psx = -1;
@@ -1061,8 +1076,10 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     int modelWidth = sourceModel->getWidth();
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "modelWidth " << modelWidth << ", divisor " << divisor << endl;
-    SVDEBUG << "start = " << start << ", finish = " << finish << ", step = " << step << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": modelWidth " << modelWidth << ", divisor " << divisor << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": start = " << start << ", finish = " << finish << ", step = " << step << endl;
 #endif
     
     for (int x = start; x != finish; x += step) {
@@ -1154,7 +1171,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         double fractionComplete = double(xPixelCount) / double(w);
         if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "out of time with xPixelCount = " << xPixelCount << endl;
+            SVDEBUG << "render " << m_sources.source
+                    << ": out of time with xPixelCount = " << xPixelCount << endl;
 #endif
             updateTimings(timer, xPixelCount);
             return xPixelCount;
@@ -1164,7 +1182,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     updateTimings(timer, xPixelCount);
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "completed with xPixelCount = " << xPixelCount << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": completed with xPixelCount = " << xPixelCount << endl;
 #endif
     return xPixelCount;
 }
@@ -1177,6 +1196,11 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                                                       bool rightToLeft,
                                                       bool timeConstrained)
 {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "render " << m_sources.source
+            << ": [PEAK] renderDrawBufferPeakFrequencies" << endl;
+#endif
+
     // Callers must have checked that the appropriate subset of
     // Sources data members are set for the supplied flags (e.g. that
     // fft model exists)
@@ -1217,7 +1241,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 
     int modelWidth = fft->getWidth();
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "modelWidth " << modelWidth << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": modelWidth " << modelWidth << endl;
 #endif
     
     double minFreq =
@@ -1228,7 +1253,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
     bool logarithmic = (m_params.binScale == BinScale::Log);
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "start = " << start << ", finish = " << finish
+    SVDEBUG << "render " << m_sources.source
+            << ": start = " << start << ", finish = " << finish
             << ", step = " << step << endl;
 #endif
     
@@ -1314,7 +1340,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 
         } else {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "pixel peak column for range " << sx0 << " to " << sx1
+            SVDEBUG << "render " << m_sources.source
+                    << ": pixel peak column for range " << sx0 << " to " << sx1
                     << " is empty" << endl;
 #endif
         }
@@ -1322,7 +1349,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         double fractionComplete = double(xPixelCount) / double(w);
         if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "out of time" << endl;
+            SVDEBUG << "render " << m_sources.source
+                    << ": out of time" << endl;
 #endif
             updateTimings(timer, xPixelCount);
             return xPixelCount;
@@ -1347,7 +1375,9 @@ Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
         m_secondsPerXPixelValid = true;
     
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "across " << xPixelCount << " x-pixels, seconds per x-pixel = "
+    SVDEBUG << "render " << m_sources.source
+            << ": across " << xPixelCount
+            << " x-pixels, seconds per x-pixel = "
             << m_secondsPerXPixel << " (total = "
             << (xPixelCount * m_secondsPerXPixel) << ")" << endl;
 #endif
