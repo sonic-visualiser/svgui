@@ -33,6 +33,7 @@ class LayerGeometryProvider;
 class VerticalBinLayer;
 class RenderTimer;
 class Dense3DModelPeakCache;
+class DenseThreeDimensionalModel;
 
 enum class BinDisplay {
     AllBins,
@@ -323,9 +324,9 @@ private:
         const;
     
     ColumnOp::Column getColumn(int sx, int minbin, int nbins,
-                               int peakCacheIndex) const; // -1 => don't use cache
+                               std::shared_ptr<DenseThreeDimensionalModel> source) const;
     ColumnOp::Column getColumnRaw(int sx, int minbin, int nbins,
-                                  int peakCacheIndex) const; // -1 => don't use cache
+                                  std::shared_ptr<DenseThreeDimensionalModel> source) const;
 
     void getPreferredPeakCache(const LayerGeometryProvider *,
                                int &peakCacheIndex, int &binsPerPeak) const;

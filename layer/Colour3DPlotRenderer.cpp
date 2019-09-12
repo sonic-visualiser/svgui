@@ -36,6 +36,7 @@
 using namespace std::rel_ops;
 
 //#define DEBUG_COLOUR_PLOT_REPAINT 1
+//#define DEBUG_COLOUR_PLOT_CACHE_SELECTION 1
 
 using namespace std;
 
@@ -387,7 +388,7 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 
 ColumnOp::Column
 Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
-                                int peakCacheIndex) const
+                                shared_ptr<DenseThreeDimensionalModel> source) const
 {
     // order:
     // get column -> scale -> normalise -> record extents ->
@@ -400,15 +401,15 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
     
     if (m_params.showDerivative && sx > 0) {
 
-        auto prev = getColumnRaw(sx - 1, minbin, nbins, peakCacheIndex);
-        column = getColumnRaw(sx, minbin, nbins, peakCacheIndex);
+        auto prev = getColumnRaw(sx - 1, minbin, nbins, source);
+        column = getColumnRaw(sx, minbin, nbins, source);
         
         for (int i = 0; i < nbins; ++i) {
             column[i] -= prev[i];
         }
 
     } else {
-        column = getColumnRaw(sx, minbin, nbins, peakCacheIndex);
+        column = getColumnRaw(sx, minbin, nbins, source);
     }
 
     if (m_params.colourScale.getScale() == ColourScaleType::Phase &&
@@ -423,7 +424,7 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
 
 ColumnOp::Column
 Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
-                                   int peakCacheIndex) const
+                                   shared_ptr<DenseThreeDimensionalModel> source) const
 {
     Profiler profiler("Colour3DPlotRenderer::getColumn");
 
@@ -438,24 +439,9 @@ Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
     }
 
     if (fullColumn.empty()) {
-        
-        if (peakCacheIndex >= 0) {
-            auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
-                (m_sources.peakCaches[peakCacheIndex]);
-            if (!peakCache) {
-                return vector<float>(nbins, 0.f);
-            }                
-            fullColumn = peakCache->getColumn(sx);
-        } else {
-            auto model = ModelById::getAs<DenseThreeDimensionalModel>
-                (m_sources.source);
-            if (!model) {
-                return vector<float>(nbins, 0.f);
-            }
-            fullColumn = model->getColumn(sx);
-        }
+        fullColumn = source->getColumn(sx);
     }
-
+    
     column = vector<float>(fullColumn.data() + minbin,
                            fullColumn.data() + minbin + nbins);
     return column;
@@ -526,7 +512,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             // peak pick -> distribute/interpolate -> apply display gain
 
             // this does the first three:
-            preparedColumn = getColumn(sx, minbin, nbins, -1);
+            preparedColumn = getColumn(sx, minbin, nbins, model);
             
             magRange.sample(preparedColumn);
 
@@ -645,7 +631,7 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
         if (!peakCache) continue;
         int bpp = peakCache->getColumnsPerPeak();
         ZoomLevel equivZoom(ZoomLevel::FramesPerPixel, binResolution * bpp);
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
+#ifdef DEBUG_COLOUR_PLOT_CACHE_SELECTION
         SVDEBUG << "render " << m_sources.source
                 << ": getPreferredPeakCache: zoomLevel = " << zoomLevel
                 << ", cache " << ix << " has bpp = " << bpp
@@ -661,7 +647,7 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
         }
     }
 
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
+#ifdef DEBUG_COLOUR_PLOT_CACHE_SELECTION
     SVDEBUG << "render " << m_sources.source
             << ": getPreferredPeakCache: zoomLevel = " << zoomLevel
             << ", binResolution " << binResolution 
@@ -1119,7 +1105,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
                 // this does the first three:
                 ColumnOp::Column column = getColumn(sx, minbin, nbins,
-                                                    peakCacheIndex);
+                                                    sourceModel);
 
                 magRange.sample(column);
 
@@ -1284,7 +1270,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             }
 
             if (sx != psx) {
-                preparedColumn = getColumn(sx, minbin, nbins, -1);
+                preparedColumn = getColumn(sx, minbin, nbins, fft);
                 magRange.sample(preparedColumn);
                 psx = sx;
             }
