@@ -55,10 +55,14 @@ class SpectrogramLayer : public VerticalBinLayer,
 
 public:
     enum Configuration { FullRangeDb, MelodicRange, MelodicPeaks };
-    
+
+    /**
+     * Construct a SpectrogramLayer with default parameters
+     * appropriate for the given configuration.
+     */
     SpectrogramLayer(Configuration = FullRangeDb);
     ~SpectrogramLayer();
-
+    
     const ZoomConstraint *getZoomConstraint() const override { return this; }
     ModelId getModel() const override { return m_model; }
     void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
@@ -89,7 +93,7 @@ public:
     PropertyType getPropertyType(const PropertyName &) const override;
     QString getPropertyGroupName(const PropertyName &) const override;
     int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const override;
+                                 int *min, int *max, int *deflt) const override;
     QString getPropertyValueLabel(const PropertyName &,
                                           int value) const override;
     QString getPropertyValueIconName(const PropertyName &,
@@ -132,6 +136,20 @@ public:
      */
     void setThreshold(float threshold);
     float getThreshold() const;
+
+    /**
+     * Mark the spectrogram layer as having a fixed range in the
+     * vertical axis. This indicates that the visible frequency range
+     * is determined entirely by the configuration requested on
+     * construction, and that setMinFrequency, setMaxFrequency, and
+     * setDisplayExtents will never be called. This may allow some
+     * cache-size-related optimisations. It should be called
+     * immediately after construction, if at all.
+     *
+     * Note that this cannot be reversed on a given object (this call
+     * takes no argument and there is no inverse call).
+     */
+    void setVerticallyFixed();
 
     void setMinFrequency(int);
     int getMinFrequency() const;
@@ -259,6 +277,7 @@ protected:
     int                 m_minFrequency;
     int                 m_maxFrequency;
     int                 m_initialMaxFrequency;
+    bool                m_verticallyFixed;
     ColourScaleType     m_colourScale;
     double              m_colourScaleMultiple;
     int                 m_colourMap;

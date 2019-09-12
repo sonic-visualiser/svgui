@@ -70,6 +70,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_minFrequency(10),
     m_maxFrequency(8000),
     m_initialMaxFrequency(8000),
+    m_verticallyFixed(false),
     m_colourScale(ColourScaleType::Log),
     m_colourScaleMultiple(1.0),
     m_colourMap(0),
@@ -131,6 +132,14 @@ SpectrogramLayer::~SpectrogramLayer()
 {
     invalidateRenderers();
     deleteDerivedModels();
+}
+
+void
+SpectrogramLayer::setVerticallyFixed()
+{
+    if (m_verticallyFixed) return;
+    m_verticallyFixed = true;
+    recreateFFTModel();
 }
 
 void
@@ -845,6 +854,10 @@ SpectrogramLayer::setMinFrequency(int mf)
 {
     if (m_minFrequency == mf) return;
 
+    if (m_verticallyFixed) {
+        throw std::logic_error("setMinFrequency called with value differing from the default, on SpectrogramLayer with verticallyFixed true");
+    }
+
 //    SVDEBUG << "SpectrogramLayer::setMinFrequency: " << mf << endl;
 
     invalidateRenderers();
@@ -866,16 +879,16 @@ SpectrogramLayer::setMaxFrequency(int mf)
 {
     if (m_maxFrequency == mf) return;
 
+    if (m_verticallyFixed) {
+        throw std::logic_error("setMaxFrequency called with value differing from the default, on SpectrogramLayer with verticallyFixed true");
+    }
+    
 //    SVDEBUG << "SpectrogramLayer::setMaxFrequency: " << mf << endl;
 
     invalidateRenderers();
     invalidateMagnitudes();
     
     m_maxFrequency = mf;
-
-    if (auto fftModel = ModelById::getAs<FFTModel>(m_fftModel)) {
-        fftModel->setMaximumFrequency(m_maxFrequency);
-    }
     
     emit layerParametersChanged();
 }
@@ -1424,7 +1437,9 @@ SpectrogramLayer::recreateFFTModel()
         return;
     }
 
-    newFFTModel->setMaximumFrequency(getMaxFrequency());
+    if (m_verticallyFixed) {
+        newFFTModel->setMaximumFrequency(getMaxFrequency());
+    }
     
     m_fftModel = ModelById::add(newFFTModel);
 
@@ -1797,12 +1812,13 @@ SpectrogramLayer::setDisplayExtents(double min, double max)
     invalidateRenderers();
     invalidateMagnitudes();
 
+    if (m_verticallyFixed &&
+        (m_minFrequency != minf || m_maxFrequency != maxf)) {
+        throw std::logic_error("setDisplayExtents called with values differing from the defaults, on SpectrogramLayer with verticallyFixed true");
+    }
+
     m_minFrequency = minf;
     m_maxFrequency = maxf;
-
-    if (auto fftModel = ModelById::getAs<FFTModel>(m_fftModel)) {
-        fftModel->setMaximumFrequency(m_maxFrequency);
-    }
     
     emit layerParametersChanged();
 
