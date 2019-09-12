@@ -872,6 +872,10 @@ SpectrogramLayer::setMaxFrequency(int mf)
     invalidateMagnitudes();
     
     m_maxFrequency = mf;
+
+    if (auto fftModel = ModelById::getAs<FFTModel>(m_fftModel)) {
+        fftModel->setMaximumFrequency(m_maxFrequency);
+    }
     
     emit layerParametersChanged();
 }
@@ -1420,6 +1424,8 @@ SpectrogramLayer::recreateFFTModel()
         return;
     }
 
+    newFFTModel->setMaximumFrequency(getMaxFrequency());
+    
     m_fftModel = ModelById::add(newFFTModel);
 
     bool createWholeCache = false;
@@ -1793,6 +1799,10 @@ SpectrogramLayer::setDisplayExtents(double min, double max)
 
     m_minFrequency = minf;
     m_maxFrequency = maxf;
+
+    if (auto fftModel = ModelById::getAs<FFTModel>(m_fftModel)) {
+        fftModel->setMaximumFrequency(m_maxFrequency);
+    }
     
     emit layerParametersChanged();
 
