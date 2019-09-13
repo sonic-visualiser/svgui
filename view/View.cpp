@@ -397,7 +397,7 @@ View::getXForFrame(sv_frame_t frame) const
     // nearest boundary.
     
     sv_frame_t level = m_zoomLevel.level;
-    sv_frame_t fdiff = frame - getCentreFrame();
+    sv_frame_t fdiff = frame - m_centreFrame;
     int result = 0;
 
     bool inRange = false;
@@ -414,6 +414,8 @@ View::getXForFrame(sv_frame_t frame) const
         sv_frame_t adjusted;
 
         if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+            sv_frame_t roundedCentreFrame = (m_centreFrame / level) * level;
+            fdiff = frame - roundedCentreFrame;
             adjusted = fdiff / level;
             if ((fdiff < 0) && ((fdiff % level) != 0)) {
                 --adjusted; // round to the left
@@ -442,6 +444,21 @@ View::getXForFrame(sv_frame_t frame) const
         return 0;
     }
 
+#ifdef DEBUG_VIEW
+    if (m_zoomLevel.zone == ZoomLevel::PixelsPerFrame) {
+        sv_frame_t reversed = getFrameForX(result);
+        if (reversed != frame) {
+            SVCERR << "View[" << getId() << "]::getXForFrame: WARNING: Converted frame " << frame << " to x " << result << " in PixelsPerFrame zone, but the reverse conversion gives frame " << reversed << " (error = " << reversed - frame << ")" << endl;
+            SVCERR << "(centre frame = " << getCentreFrame() << ", fdiff = "
+                   << fdiff << ", level = " << level << ", centre % level = "
+                   << (getCentreFrame() % level) << ", fdiff % level = "
+                   << (fdiff % level) << ", frame % level = "
+                   << (frame % level) << ", reversed % level = "
+                   << (reversed % level) << ")" << endl;
+        }
+    }
+#endif
+
     return result;
 }
 
@@ -450,18 +467,27 @@ View::getFrameForX(int x) const
 {
     // Note, this must always return a value that is on a zoom-level
     // boundary - regardless of whether the nominal centre frame is on
-    // such a boundary or not.
+    // such a boundary or not. (It is legitimate for the centre frame
+    // not to be on a zoom-level boundary, because the centre frame
+    // may be shared with other views having different zoom levels.)
+
+    // In FramesPerPixel mode, the frame returned for a given x should
+    // be the first for which getXForFrame(frame) == x; a corollary is
+    // that if the centre frame is not on a zoom-level boundary, then
+    // getFrameForX(x) should not return the centre frame for any x.
     
-    // In PixelsPerFrame mode, the frame should be the one immediately
-    // left of the given pixel, not necessarily the nearest.
+    // In PixelsPerFrame mode, the frame returned should be the one
+    // immediately left of the given pixel, not necessarily the
+    // nearest.
 
     int diff = x - (width()/2);
     sv_frame_t level = m_zoomLevel.level;
     sv_frame_t fdiff, result;
     
     if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+        sv_frame_t roundedCentreFrame = (m_centreFrame / level) * level;
         fdiff = diff * level;
-        result = ((fdiff + m_centreFrame) / level) * level;
+        result = fdiff + roundedCentreFrame;
     } else {
         fdiff = diff / level;
         if ((diff < 0) && ((diff % level) != 0)) {
@@ -471,6 +497,7 @@ View::getFrameForX(int x) const
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
+/*
     if (x == 0) {
         SVCERR << "getFrameForX(" << x << "): diff = " << diff << ", fdiff = "
                << fdiff << ", m_centreFrame = " << m_centreFrame
@@ -479,6 +506,22 @@ View::getFrameForX(int x) const
                << ", nominal " << fdiff + m_centreFrame
                << ", will return " << result
                << endl;
+    }
+*/    
+#endif
+    
+#ifdef DEBUG_VIEW
+    if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+        int reversed = getXForFrame(result);
+        if (reversed != x) {
+            SVCERR << "View[" << getId() << "]::getFrameForX: WARNING: Converted pixel " << x << " to frame " << result << " in FramesPerPixel zone, but the reverse conversion gives pixel " << reversed << " (error = " << reversed - x << ")" << endl;
+            SVCERR << "(centre frame = " << getCentreFrame()
+                   << ", width/2 = " << width()/2 << ", diff = " << diff
+                   << ", fdiff = " << fdiff << ", level = " << level
+                   << ", centre % level = " << (getCentreFrame() % level)
+                   << ", fdiff % level = " << (fdiff % level)
+                   << ", frame % level = " << (result % level) << ")" << endl;
+        }
     }
 #endif
     
