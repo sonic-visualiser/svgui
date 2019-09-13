@@ -1485,7 +1485,9 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         return;
     }
 
-//    cerr << "mouseReleaseEvent" << endl;
+#ifdef DEBUG_PANE
+    SVCERR << "Pane[" << getId() << "]::mouseReleaseEvent" << endl;
+#endif
 
     ViewManager::ToolMode mode = ViewManager::NavigateMode;
     if (m_manager) mode = m_manager->getToolModeFor(this);
@@ -1980,9 +1982,11 @@ Pane::dragTopLayer(QMouseEvent *e)
     if (m_dragMode == HorizontalDrag ||
         m_dragMode == FreeDrag) {
 
-        sv_frame_t frameOff = getFrameForX(e->x()) - getFrameForX(m_clickPos.x());
+        sv_frame_t fromFrame = getFrameForX(m_clickPos.x());
+        sv_frame_t toFrame = getFrameForX(e->x());
+        sv_frame_t frameOff = toFrame - fromFrame;
+
         sv_frame_t newCentreFrame = m_dragCentreFrame;
-        
         if (frameOff < 0) {
             newCentreFrame -= frameOff;
         } else if (newCentreFrame >= frameOff) {
@@ -1991,9 +1995,15 @@ Pane::dragTopLayer(QMouseEvent *e)
             newCentreFrame = 0;
         }
 
-#ifdef DEBUG_PANE       
-        SVDEBUG << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame <<
-            ", models end frame = " << getModelsEndFrame() << endl;
+#ifdef DEBUG_PANE
+        SVDEBUG << "Pane::dragTopLayer: dragged from x = "
+                << m_clickPos.x() << " to " << e->x()
+                << ", from frame = " << fromFrame
+                << " to " << toFrame
+                << ", for frame offset of " << frameOff << endl;
+        SVDEBUG << "Pane::dragTopLayer: newCentreFrame = " << newCentreFrame
+                << ", dragCentreFrame = " << m_dragCentreFrame
+                << ", models end frame = " << getModelsEndFrame() << endl;
 #endif
 
         if (newCentreFrame >= getModelsEndFrame()) {
