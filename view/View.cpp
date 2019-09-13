@@ -76,12 +76,12 @@ View::View(QWidget *w, bool showProgress) :
     m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
-//    cerr << "View::View(" << getId() << ")" << endl;
+//    SVCERR << "View::View[" << getId() << "]" << endl;
 }
 
 View::~View()
 {
-//    cerr << "View::~View(" << getId() << ")" << endl;
+//    SVCERR << "View::~View[" << getId() << "]" << endl;
 
     m_deleting = true;
     delete m_propertyContainer;
@@ -332,7 +332,7 @@ View::setCentreFrame(sv_frame_t f, bool e)
     bool changeVisible = false;
 
 #ifdef DEBUG_VIEW
-    SVCERR << "View::setCentreFrame: from " << m_centreFrame
+    SVCERR << "View[" << getId() << "]::setCentreFrame: from " << m_centreFrame
            << " to " << f << endl;
 #endif
 
@@ -344,7 +344,7 @@ View::setCentreFrame(sv_frame_t f, bool e)
         if (m_zoomLevel.zone == ZoomLevel::PixelsPerFrame) {
 
 #ifdef DEBUG_VIEW
-            SVCERR << "View(" << getId() << ")::setCentreFrame: in PixelsPerFrame zone, so change must be visible" << endl;
+            SVCERR << "View[" << getId() << "]::setCentreFrame: in PixelsPerFrame zone, so change must be visible" << endl;
 #endif
             update();
             changeVisible = true;
@@ -357,14 +357,14 @@ View::setCentreFrame(sv_frame_t f, bool e)
             if (newPixel != formerPixel) {
 
 #ifdef DEBUG_VIEW
-                SVCERR << "View(" << getId() << ")::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
+                SVCERR << "View[" << getId() << "]::setCentreFrame: newPixel " << newPixel << ", formerPixel " << formerPixel << endl;
 #endif
                 // ensure the centre frame is a multiple of the zoom level
                 m_centreFrame = sv_frame_t(newPixel) * m_zoomLevel.level;
 
 #ifdef DEBUG_VIEW
-                SVCERR << "View(" << this
-                       << ")::setCentreFrame: centre frame rounded to "
+                SVCERR << "View[" << getId()
+                       << "]::setCentreFrame: centre frame rounded to "
                        << m_centreFrame << " (zoom level is "
                        << m_zoomLevel.level << ")" << endl;
 #endif
@@ -377,7 +377,7 @@ View::setCentreFrame(sv_frame_t f, bool e)
         if (e) {
             sv_frame_t rf = alignToReference(m_centreFrame);
 #ifdef DEBUG_VIEW
-            cerr << "View[" << getId() << "]::setCentreFrame(" << f
+            SVCERR << "View[" << getId() << "]::setCentreFrame(" << f
                  << "): m_centreFrame = " << m_centreFrame
                  << ", emitting centreFrameChanged with aligned frame "
                  << rf << endl;
@@ -927,7 +927,7 @@ void
 View::modelChanged(ModelId modelId)
 {
 #if defined(DEBUG_VIEW_WIDGET_PAINT) || defined(DEBUG_PROGRESS_STUFF)
-    cerr << "View[" << getId() << "]::modelChanged(" << modelId << ")" << endl;
+    SVCERR << "View[" << getId() << "]::modelChanged(" << modelId << ")" << endl;
 #endif
 
     // If the model that has changed is not used by any of the cached
@@ -964,7 +964,7 @@ View::modelChangedWithin(ModelId modelId,
     sv_frame_t myEndFrame = getEndFrame();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << getId() << ")::modelChangedWithin(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << endl;
+    SVCERR << "View[" << getId() << "]::modelChangedWithin(" << startFrame << "," << endFrame << ") [me " << myStartFrame << "," << myEndFrame << "]" << endl;
 #endif
 
     if (myStartFrame > 0 && endFrame < myStartFrame) {
@@ -1007,7 +1007,7 @@ void
 View::modelCompletionChanged(ModelId modelId)
 {
 #ifdef DEBUG_PROGRESS_STUFF
-    cerr << "View[" << getId() << "]::modelCompletionChanged(" << modelId << ")" << endl;
+    SVCERR << "View[" << getId() << "]::modelCompletionChanged(" << modelId << ")" << endl;
 #endif
     checkProgress(modelId);
 }
@@ -1016,7 +1016,7 @@ void
 View::modelAlignmentCompletionChanged(ModelId modelId)
 {
 #ifdef DEBUG_PROGRESS_STUFF
-    cerr << "View[" << getId() << "]::modelAlignmentCompletionChanged(" << modelId << ")" << endl;
+    SVCERR << "View[" << getId() << "]::modelAlignmentCompletionChanged(" << modelId << ")" << endl;
 #endif
     checkAlignmentProgress(modelId);
 }
@@ -1025,7 +1025,7 @@ void
 View::modelReplaced()
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << getId() << ")::modelReplaced()" << endl;
+    SVCERR << "View[" << getId() << "]::modelReplaced()" << endl;
 #endif
     m_cacheValid = false;
     update();
@@ -1075,7 +1075,7 @@ View::globalCentreFrameChanged(sv_frame_t rf)
     if (m_followPan) {
         sv_frame_t f = alignFromReference(rf);
 #ifdef DEBUG_VIEW
-        cerr << "View[" << getId() << "]::globalCentreFrameChanged(" << rf
+        SVCERR << "View[" << getId() << "]::globalCentreFrameChanged(" << rf
                   << "): setting centre frame to " << f << endl;
 #endif
         setCentreFrame(f, false);
@@ -1096,13 +1096,13 @@ View::viewManagerPlaybackFrameChanged(sv_frame_t f)
     }
 
 #ifdef DEBUG_VIEW        
-    cerr << "View::viewManagerPlaybackFrameChanged(" << f << ")" << endl;
+    SVCERR << "View[" << getId() << "]::viewManagerPlaybackFrameChanged(" << f << ")" << endl;
 #endif
 
     f = getAlignedPlaybackFrame();
 
 #ifdef DEBUG_VIEW
-    cerr << " -> aligned frame = " << f << endl;
+    SVCERR << " -> aligned frame = " << f << endl;
 #endif
 
     movePlayPointer(f);
@@ -1112,12 +1112,19 @@ void
 View::movePlayPointer(sv_frame_t newFrame)
 {
 #ifdef DEBUG_VIEW
-    cerr << "View(" << getId() << ")::movePlayPointer(" << newFrame << ")" << endl;
+    SVCERR << "View[" << getId() << "]::movePlayPointer(" << newFrame << ")" << endl;
 #endif
 
     if (m_playPointerFrame == newFrame) return;
     bool visibleChange =
         (getXForFrame(m_playPointerFrame) != getXForFrame(newFrame));
+
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+    SVCERR << "View[" << getId() << "]::movePlayPointer: moving from "
+           << m_playPointerFrame << " to " << newFrame << ", visible = "
+           << visibleChange << endl;
+#endif
+    
     sv_frame_t oldPlayPointerFrame = m_playPointerFrame;
     m_playPointerFrame = newFrame;
     if (!visibleChange) return;
@@ -1176,7 +1183,7 @@ View::movePlayPointer(sv_frame_t newFrame)
             }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-            cerr << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
+            SVCERR << "PlaybackScrollPage: f = " << m_playPointerFrame << ", sf = " << sf << ", start frame "
                  << getStartFrame() << endl;
 #endif
 
@@ -1186,7 +1193,7 @@ View::movePlayPointer(sv_frame_t newFrame)
             int xnew = getXForFrame(m_playPointerFrame);
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-            cerr << "xnew = " << xnew << ", width = " << width() << endl;
+            SVCERR << "xnew = " << xnew << ", width = " << width() << endl;
 #endif
 
             bool shouldScroll = (xnew > (width() * 7) / 8);
@@ -1228,7 +1235,7 @@ void
 View::viewZoomLevelChanged(View *p, ZoomLevel z, bool locked)
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr  << "View[" << getId() << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << endl;
+    SVCERR  << "View[" << getId() << "]: viewZoomLevelChanged(" << p << ", " << z << ", " << locked << ")" << endl;
 #endif
     if (m_followZoom && p != this && locked) {
         setZoomLevel(z);
@@ -1465,7 +1472,7 @@ View::getScrollableBackLayers(bool testChanged, bool &changed) const
 
     for (LayerList::const_iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
 //        SVDEBUG << "View::getScrollableBackLayers: calling isLayerDormant on layer " << *i << endl;
-//        cerr << "(name is " << (*i)->objectName() << ")"
+//        SVCERR << "(name is " << (*i)->objectName() << ")"
 //                  << endl;
 //        SVDEBUG << "View::getScrollableBackLayers: I am " << getId() << endl;
         if ((*i)->isLayerDormant(this)) continue;
@@ -1565,7 +1572,7 @@ View::countZoomLevels() const
         level = getZoomConstraintLevel
             (level.incremented(), ZoomConstraint::RoundUp);
     }
-//    cerr << "View::countZoomLevels: " << n << endl;
+//    SVCERR << "View::countZoomLevels: " << n << endl;
     return n;
 }
 
@@ -1578,7 +1585,7 @@ View::getZoomLevelByIndex(int ix) const
     ZoomLevel level = min;
     while (true) {
         if (n == ix) {
-//            cerr << "View::getZoomLevelByIndex: " << ix << " -> " << level
+//            SVCERR << "View::getZoomLevelByIndex: " << ix << " -> " << level
 //                 << endl;
             return level;
         }
@@ -1589,7 +1596,7 @@ View::getZoomLevelByIndex(int ix) const
         level = getZoomConstraintLevel
             (level.incremented(), ZoomConstraint::RoundUp);
     }
-//    cerr << "View::getZoomLevelByIndex: " << ix << " -> " << max << " (max)"
+//    SVCERR << "View::getZoomLevelByIndex: " << ix << " -> " << max << " (max)"
 //         << endl;
     return max;
 }
@@ -1603,7 +1610,7 @@ View::getZoomLevelIndex(ZoomLevel z) const
     ZoomLevel level = min;
     while (true) {
         if (z == level) {
-//            cerr << "View::getZoomLevelIndex: " << z << " -> " << n
+//            SVCERR << "View::getZoomLevelIndex: " << z << " -> " << n
 //                 << endl;
             return n;
         }
@@ -1614,7 +1621,7 @@ View::getZoomLevelIndex(ZoomLevel z) const
         level = getZoomConstraintLevel
             (level.incremented(), ZoomConstraint::RoundUp);
     }
-//    cerr << "View::getZoomLevelIndex: " << z << " -> " << n << " (max)"
+//    SVCERR << "View::getZoomLevelIndex: " << z << " -> " << n << " (max)"
 //         << endl;
     return n;
 }
@@ -2030,7 +2037,13 @@ void
 View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
-//    cerr << "View::paintEvent: centre frame is " << m_centreFrame << endl;
+
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+    {
+        sv_frame_t startFrame = getStartFrame();
+        SVCERR << "View[" << getId() << "]::paintEvent: centre frame is " << m_centreFrame << " (start frame " << startFrame << ", height " << height() << ")" << endl;
+    }
+#endif
 
     if (m_layerStack.empty()) {
         QFrame::paintEvent(e);
@@ -2096,7 +2109,7 @@ View::paintEvent(QPaintEvent *e)
     LayerList nonScrollables = getNonScrollableFrontLayers(true, layersChanged);
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << getId() << ")::paintEvent: have " << scrollables.size()
+    SVCERR << "View[" << getId() << "]::paintEvent: have " << scrollables.size()
               << " scrollable back layers and " << nonScrollables.size()
               << " non-scrollable front layers" << endl;
 #endif
@@ -2126,7 +2139,7 @@ View::paintEvent(QPaintEvent *e)
         cacheAreaToRepaint = wholeArea;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        cerr << "View(" << getId() << "): cache " << m_cache << ", cache zoom "
+        SVCERR << "View[" << getId() << "]: cache " << m_cache << ", cache zoom "
                   << m_cacheZoomLevel << ", zoom " << m_zoomLevel << endl;
 #endif
 
@@ -2146,7 +2159,7 @@ View::paintEvent(QPaintEvent *e)
                 shouldRepaintCache = false;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << getId() << ")::paintEvent: cache is invalid but only small area requested, will repaint directly instead" << endl;
+                SVCERR << "View[" << getId() << "]::paintEvent: cache is invalid but only small area requested, will repaint directly instead" << endl;
 #endif
             } else {
 
@@ -2157,13 +2170,17 @@ View::paintEvent(QPaintEvent *e)
                 }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << getId() << ")::paintEvent: cache is invalid, will repaint whole" << endl;
+                SVCERR << "View[" << getId() << "]::paintEvent: cache is invalid, will repaint whole" << endl;
 #endif
             }
 
             count.miss();
             
         } else if (m_cacheCentreFrame != m_centreFrame) {
+
+#ifdef DEBUG_VIEW_WIDGET_PAINT
+            SVCERR << "View[" << getId() << "]::paintEvent: cache centre frame is " << m_cacheCentreFrame << endl;
+#endif
 
             int dx = dpratio * (getXForFrame(m_cacheCentreFrame) -
                                 getXForFrame(m_centreFrame));
@@ -2183,18 +2200,18 @@ View::paintEvent(QPaintEvent *e)
                 count.partial();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << getId() << ")::paintEvent: scrolled cache by " << dx << endl;
+                SVCERR << "View[" << getId() << "]::paintEvent: scrolled cache by " << dx << endl;
 #endif
             } else {
                 count.miss();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                cerr << "View(" << getId() << ")::paintEvent: scrolling too far" << endl;
+                SVCERR << "View[" << getId() << "]::paintEvent: scrolling too far" << endl;
 #endif
             }
 
         } else {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-            cerr << "View(" << getId() << ")::paintEvent: cache is good" << endl;
+            SVCERR << "View[" << getId() << "]::paintEvent: cache is good" << endl;
 #endif
             count.hit();
             shouldRepaintCache = false;
@@ -2202,7 +2219,7 @@ View::paintEvent(QPaintEvent *e)
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    cerr << "View(" << getId() << ")::paintEvent: m_cacheValid = " << m_cacheValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
+    SVCERR << "View[" << getId() << "]::paintEvent: m_cacheValid = " << m_cacheValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
 #endif
 
     if (shouldRepaintCache && !shouldUseCache) {
@@ -2281,7 +2298,7 @@ View::paintEvent(QPaintEvent *e)
         }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        cerr << "Painting scrollable layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with shouldRepaintCache = " << shouldRepaintCache << ", useAligningProxy = " << useAligningProxy << ", dpratio = " << dpratio << ", areaToPaint = " << areaToPaint.x() << "," << areaToPaint.y() << " " << areaToPaint.width() << "x" << areaToPaint.height() << endl;
+        SVCERR << "Painting scrollable layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with shouldRepaintCache = " << shouldRepaintCache << ", useAligningProxy = " << useAligningProxy << ", dpratio = " << dpratio << ", areaToPaint = " << areaToPaint.x() << "," << areaToPaint.y() << " " << areaToPaint.width() << "x" << areaToPaint.height() << endl;
 #endif
         
         layer->paint(useAligningProxy ? &aligningProxy : &proxy,
@@ -2333,7 +2350,7 @@ View::paintEvent(QPaintEvent *e)
         }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        cerr << "Painting non-scrollable layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with shouldRepaintCache = " << shouldRepaintCache << ", useAligningProxy = " << useAligningProxy << ", dpratio = " << dpratio << ", requestedPaintArea = " << requestedPaintArea.x() << "," << requestedPaintArea.y() << " " << requestedPaintArea.width() << "x" << requestedPaintArea.height() << endl;
+        SVCERR << "Painting non-scrollable layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with shouldRepaintCache = " << shouldRepaintCache << ", useAligningProxy = " << useAligningProxy << ", dpratio = " << dpratio << ", requestedPaintArea = " << requestedPaintArea.x() << "," << requestedPaintArea.y() << " " << requestedPaintArea.width() << "x" << requestedPaintArea.height() << endl;
 #endif
 
         layer->paint(useAligningProxy ? &aligningProxy : &proxy,
@@ -2884,7 +2901,7 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
                 paint.save();
                 paint.translate(xorigin + x, 0);
 
-                cerr << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
+                SVCERR << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
 
                 (*i)->setSynchronousPainting(true);
 
@@ -3025,7 +3042,7 @@ View::toXml(QTextStream &stream,
 ViewPropertyContainer::ViewPropertyContainer(View *v) :
     m_v(v)
 {
-//    cerr << "ViewPropertyContainer: " << getId() << " is owned by View " << v << endl;
+//    SVCERR << "ViewPropertyContainer: " << getId() << " is owned by View " << v << endl;
     connect(m_v, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
             this, SIGNAL(propertyChanged(PropertyContainer::PropertyName)));
 }
