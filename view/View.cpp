@@ -2281,8 +2281,9 @@ View::paintEvent(QPaintEvent *e)
 
     // Some layers may need an aligning proxy. If a layer's model has
     // a source model that is the reference model for the aligning
-    // model, and the layer is tagged as to be aligned, then we use an
-    // aligning proxy.
+    // model, and the layer is tagged as to be aligned, then we might
+    // use an aligning proxy. Note this is actually made use of only
+    // if m_useAligningProxy is true further down.
     
     ModelId alignmentModelId;
     ModelId alignmentReferenceId;
