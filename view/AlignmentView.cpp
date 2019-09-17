@@ -307,7 +307,9 @@ vector<sv_frame_t>
 AlignmentView::getDefaultKeyFrames()
 {
     vector<sv_frame_t> keyFrames;
+    return keyFrames;
 
+#ifdef NOT_REALLY
     if (!m_above || !m_manager) return keyFrames;
 
     sv_samplerate_t rate = m_manager->getMainModelSampleRate();
@@ -320,6 +322,7 @@ AlignmentView::getDefaultKeyFrames()
     }
     
     return keyFrames;
+#endif
 }
 
 ModelId
