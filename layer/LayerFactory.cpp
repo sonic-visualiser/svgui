@@ -78,7 +78,7 @@ LayerFactory::getLayerPresentationName(LayerType type)
     case Notes:        return Layer::tr("Notes");
     case FlexiNotes:   return Layer::tr("Flexible Notes");
     case Regions:      return Layer::tr("Regions");
-    case TimeFrequencyBoxes: return Layer::tr("Time-Frequency Boxes");
+    case TimeFrequencyBox: return Layer::tr("Time-Frequency Box");
     case Text:         return Layer::tr("Text");
     case Image:        return Layer::tr("Images");
     case Colour3DPlot: return Layer::tr("Colour 3D Plot");
@@ -177,7 +177,7 @@ LayerFactory::getValidLayerTypes(ModelId modelId)
     }
 
     if (ModelById::getAs<TimeFrequencyBoxModel>(modelId)) {
-        types.insert(TimeFrequencyBoxes);
+        types.insert(TimeFrequencyBox);
     }
 
     if (ModelById::getAs<TextModel>(modelId)) {
@@ -210,7 +210,7 @@ LayerFactory::getValidEmptyLayerTypes()
 //    types.insert(FlexiNotes);
     types.insert(Notes);
     types.insert(Regions);
-    types.insert(TimeFrequencyBoxes);
+    types.insert(TimeFrequencyBox);
     types.insert(Text);
     types.insert(Image);
     //!!! and in principle Colour3DPlot -- now that's a challenge
@@ -228,7 +228,7 @@ LayerFactory::getLayerType(const Layer *layer)
     if (dynamic_cast<const FlexiNoteLayer *>(layer)) return FlexiNotes;
     if (dynamic_cast<const NoteLayer *>(layer)) return Notes;
     if (dynamic_cast<const RegionLayer *>(layer)) return Regions;
-    if (dynamic_cast<const TimeFrequencyBoxLayer *>(layer)) return TimeFrequencyBoxes;
+    if (dynamic_cast<const TimeFrequencyBoxLayer *>(layer)) return TimeFrequencyBox;
     if (dynamic_cast<const TextLayer *>(layer)) return Text;
     if (dynamic_cast<const ImageLayer *>(layer)) return Image;
     if (dynamic_cast<const Colour3DPlotLayer *>(layer)) return Colour3DPlot;
@@ -249,7 +249,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case Notes: return "notes";
     case FlexiNotes: return "flexinotes";
     case Regions: return "regions";
-    case TimeFrequencyBoxes: return "timefrequencyboxes";
+    case TimeFrequencyBox: return "timefrequencybox";
     case Text: return "text";
     case Image: return "image";
     case Colour3DPlot: return "colour3d";
@@ -276,7 +276,7 @@ LayerFactory::getLayerTypeName(LayerType type)
     case Notes: return "notes";
     case FlexiNotes: return "flexinotes";
     case Regions: return "regions";
-    case TimeFrequencyBoxes: return "timefrequencyboxes";
+    case TimeFrequencyBox: return "timefrequencybox";
     case Text: return "text";
     case Image: return "image";
     case Colour3DPlot: return "colour3dplot";
@@ -302,7 +302,7 @@ LayerFactory::getLayerTypeForName(QString name)
     if (name == "notes") return Notes;
     if (name == "flexinotes") return FlexiNotes;
     if (name == "regions") return Regions;
-    if (name == "timefrequencyboxes") return TimeFrequencyBoxes;
+    if (name == "timefrequencybox") return TimeFrequencyBox;
     if (name == "text") return Text;
     if (name == "image") return Image;
     if (name == "colour3dplot") return Colour3DPlot;
@@ -375,7 +375,7 @@ LayerFactory::createEmptyModel(LayerType layerType, ModelId baseModelId)
         return std::make_shared<NoteModel>(rate, 1, true);
     } else if (layerType == Regions) {
         return std::make_shared<RegionModel>(rate, 1, true);
-    } else if (layerType == TimeFrequencyBoxes) {
+    } else if (layerType == TimeFrequencyBox) {
         return std::make_shared<TimeFrequencyBoxModel>(rate, 1, true);
     } else if (layerType == Text) {
         return std::make_shared<TextModel>(rate, 1, true);
@@ -454,7 +454,7 @@ LayerFactory::createLayer(LayerType type)
         layer = new RegionLayer;
         break;
 
-    case TimeFrequencyBoxes:
+    case TimeFrequencyBox:
         layer = new TimeFrequencyBoxLayer;
         break;
 

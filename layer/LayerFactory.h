@@ -38,7 +38,7 @@ public:
         Notes,
         FlexiNotes,
         Regions,
-        TimeFrequencyBoxes,
+        TimeFrequencyBox,
         Text,
         Image,
         Colour3DPlot,
