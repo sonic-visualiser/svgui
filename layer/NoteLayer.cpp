@@ -1062,13 +1062,12 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     Event note(0);
     if (!getPointToDrag(v, e->x(), e->y(), note)) return false;
 
-//    Event note = *points.begin();
-
     ItemEditDialog *dialog = new ItemEditDialog
         (model->getSampleRate(),
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowDuration |
          ItemEditDialog::ShowValue |
+         ItemEditDialog::ShowLevel |
          ItemEditDialog::ShowText,
          getScaleUnits());
 

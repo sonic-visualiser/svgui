@@ -939,16 +939,24 @@ TimeFrequencyBoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     Event region(0);
     if (!getPointToDrag(v, e->x(), e->y(), region)) return false;
 
+    ItemEditDialog::LabelOptions labelOptions;
+    labelOptions.valueLabel = tr("Minimum Frequency");
+    labelOptions.levelLabel = tr("Frequency Extent");
+    labelOptions.valueUnits = getScaleUnits();
+    labelOptions.levelUnits = getScaleUnits();
+    
     ItemEditDialog *dialog = new ItemEditDialog
         (model->getSampleRate(),
          ItemEditDialog::ShowTime |
          ItemEditDialog::ShowDuration |
          ItemEditDialog::ShowValue |
+         ItemEditDialog::ShowLevel |
          ItemEditDialog::ShowText,
-         getScaleUnits());
+         labelOptions);
 
     dialog->setFrameTime(region.getFrame());
     dialog->setValue(region.getValue());
+    dialog->setLevel(region.getLevel());
     dialog->setFrameDuration(region.getDuration());
     dialog->setText(region.getLabel());
 
@@ -957,6 +965,7 @@ TimeFrequencyBoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
         Event newTimeFrequencyBox = region
             .withFrame(dialog->getFrameTime())
             .withValue(dialog->getValue())
+            .withLevel(dialog->getLevel())
             .withDuration(dialog->getFrameDuration())
             .withLabel(dialog->getText());
         
@@ -1143,12 +1152,11 @@ TimeFrequencyBoxLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv
 
 void
 TimeFrequencyBoxLayer::toXml(QTextStream &stream,
-                 QString indent, QString extraAttributes) const
+                             QString indent, QString extraAttributes) const
 {
     QString s;
 
-    s += QString("verticalScale=\"%1\" ")
-        .arg(m_verticalScale);
+    s += QString("verticalScale=\"%1\" ").arg(m_verticalScale);
     
     SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
 }

@@ -28,13 +28,30 @@
 #include <float.h> // for FLT_MIN/MAX
 
 
+ItemEditDialog::LabelOptions::LabelOptions() :
+    valueLabel(tr("Value")),
+    levelLabel(tr("Level"))
+{
+}
+
 ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
-                               QString valueUnits, QWidget *parent) :
+                               QString scaleUnits, QWidget *parent) :
+    ItemEditDialog(sampleRate, options,
+                   [] (QString units) {
+                       ItemEditDialog::LabelOptions options;
+                       options.valueUnits = units;
+                       return options;
+                   }(scaleUnits),
+                   parent) {};
+
+ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
+                               LabelOptions labelOptions, QWidget *parent) :
     QDialog(parent),
     m_sampleRate(sampleRate),
     m_defaultFrame(0),
     m_defaultDuration(0),
     m_defaultValue(0),
+    m_defaultLevel(0),
     m_frameTimeSpinBox(nullptr),
     m_realTimeSecsSpinBox(nullptr),
     m_realTimeUSecsSpinBox(nullptr),
@@ -42,6 +59,7 @@ ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
     m_realDurationSecsSpinBox(nullptr),
     m_realDurationUSecsSpinBox(nullptr),
     m_valueSpinBox(nullptr),
+    m_levelSpinBox(nullptr),
     m_textField(nullptr)
 {
     QGridLayout *grid = new QGridLayout;
@@ -129,7 +147,9 @@ ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
         ++subrow;
     }
 
-    if ((options & ShowValue) || (options & ShowText)) {
+    if ((options & ShowValue) ||
+        (options & ShowLevel) ||
+        (options & ShowText)) {
 
         valueBox = new QGroupBox;
         valueBox->setTitle(tr("Properties"));
@@ -145,16 +165,34 @@ ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
 
     if (options & ShowValue) {
         
-        subgrid->addWidget(new QLabel(tr("Value:")), subrow, 0);
+        subgrid->addWidget(new QLabel(tr("%1:").arg(labelOptions.valueLabel)),
+                           subrow, 0);
 
         m_valueSpinBox = new QDoubleSpinBox;
-        m_valueSpinBox->setSuffix(QString(" %1").arg(valueUnits));
+        m_valueSpinBox->setSuffix(QString(" %1").arg(labelOptions.valueUnits));
         m_valueSpinBox->setDecimals(10);
         m_valueSpinBox->setMinimum(-1e10);
         m_valueSpinBox->setMaximum(1e10);
         connect(m_valueSpinBox, SIGNAL(valueChanged(double)),
                 this, SLOT(valueChanged(double)));
         subgrid->addWidget(m_valueSpinBox, subrow, 1);
+
+        ++subrow;
+    }
+
+    if (options & ShowLevel) {
+        
+        subgrid->addWidget(new QLabel(tr("%1:").arg(labelOptions.levelLabel)),
+                           subrow, 0);
+
+        m_levelSpinBox = new QDoubleSpinBox;
+        m_levelSpinBox->setSuffix(QString(" %1").arg(labelOptions.levelUnits));
+        m_levelSpinBox->setDecimals(10);
+        m_levelSpinBox->setMinimum(-1e10);
+        m_levelSpinBox->setMaximum(1e10);
+        connect(m_levelSpinBox, SIGNAL(levelChanged(double)),
+                this, SLOT(levelChanged(double)));
+        subgrid->addWidget(m_levelSpinBox, subrow, 1);
 
         ++subrow;
     }
@@ -175,6 +213,8 @@ ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
         m_textField->setFocus(Qt::OtherFocusReason);
     } else if (options & ShowValue) {
         m_valueSpinBox->setFocus(Qt::OtherFocusReason);
+    } else if (options & ShowLevel) {
+        m_levelSpinBox->setFocus(Qt::OtherFocusReason);
     }
     
     QDialogButtonBox *bb = new QDialogButtonBox(Qt::Horizontal);
@@ -271,6 +311,22 @@ ItemEditDialog::getValue() const
 }
 
 void
+ItemEditDialog::setLevel(float v)
+{
+    if (!m_levelSpinBox) return;
+
+    m_levelSpinBox->setValue(v);
+    m_defaultLevel = v;
+    m_resetButton->setEnabled(false);
+}
+
+float
+ItemEditDialog::getLevel() const
+{
+    return float(m_levelSpinBox->value());
+}
+
+void
 ItemEditDialog::setText(QString text)
 {
     if (!m_textField) return;
@@ -363,6 +419,12 @@ ItemEditDialog::valueChanged(double)
 }
 
 void
+ItemEditDialog::levelChanged(double)
+{
+    m_resetButton->setEnabled(true);
+}
+
+void
 ItemEditDialog::textChanged(QString)
 {
     m_resetButton->setEnabled(true);
@@ -374,6 +436,7 @@ ItemEditDialog::reset()
     setFrameTime(m_defaultFrame);
     setFrameDuration(m_defaultDuration);
     setValue(m_defaultValue);
+    setLevel(m_defaultLevel);
     setText(m_defaultText);
     m_resetButton->setEnabled(false);
 }
