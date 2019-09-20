@@ -524,9 +524,6 @@ TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
     paint.setPen(getBaseQColor());
 
-    QColor brushColour(getBaseQColor());
-    brushColour.setAlpha(80);
-
 //    SVDEBUG << "TimeFrequencyBoxLayer::paint: resolution is "
 //              << model->getResolution() << " frames" << endl;
 
@@ -546,6 +543,8 @@ TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
 
+    QFontMetrics fm = paint.fontMetrics();
+        
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
@@ -554,11 +553,10 @@ TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
         int x = v->getXForFrame(p.getFrame());
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int y = getYForValue(v, p.getValue());
-        int h = getYForValue(v, p.getValue() + fabsf(p.getLevel()));
+        int h = getYForValue(v, p.getValue() + fabsf(p.getLevel())) - y;
         int ex = x + w;
-
         int gap = v->scalePixelSize(2);
-        
+
         EventVector::const_iterator j = i;
         ++j;
 
@@ -569,39 +567,84 @@ TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
         }
 
         if (w < 1) w = 1;
-        if (h < 1) h = 1;
 
         paint.setPen(getBaseQColor());
-        paint.setBrush(brushColour);
+        paint.setBrush(Qt::NoBrush);
 
-        if (shouldIlluminate && illuminatePoint == p) {
+        if ((shouldIlluminate && illuminatePoint == p) ||
+            (m_editing && m_editingPoint == p)) {
 
-            paint.setPen(v->getForeground());
-            paint.setBrush(v->getForeground());
+            paint.setPen(QPen(getBaseQColor(), v->scalePixelSize(2)));
                 
             // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
             // replacement (horizontalAdvance) was only added in Qt 5.11
             // which is too new for us
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-            QString vlabel =
-                QString("%1%2 - %3%4")
-                .arg(p.getValue()).arg(getScaleUnits())
-                .arg(p.getValue() + fabsf(p.getLevel())).arg(getScaleUnits());
-            PaintAssistant::drawVisibleText
-                (v, paint, 
-                 x - paint.fontMetrics().width(vlabel) - gap,
-                 y + paint.fontMetrics().height()/2
-                 - paint.fontMetrics().descent(), 
-                 vlabel, PaintAssistant::OutlinedText);
-                
-            QString hlabel = RealTime::frame2RealTime
+            if (abs(h) > 2 * fm.height()) {
+            
+                QString y0label = QString("%1 %2")
+                    .arg(p.getValue())
+                    .arg(getScaleUnits());
+
+                QString y1label = QString("%1 %2")
+                    .arg(p.getValue() + fabsf(p.getLevel()))
+                    .arg(getScaleUnits());
+
+                PaintAssistant::drawVisibleText
+                    (v, paint, 
+                     x - fm.width(y0label) - gap,
+                     y - fm.descent(), 
+                     y0label, PaintAssistant::OutlinedText);
+
+                PaintAssistant::drawVisibleText
+                    (v, paint, 
+                     x - fm.width(y1label) - gap,
+                     y + h + fm.ascent(), 
+                     y1label, PaintAssistant::OutlinedText);
+
+            } else {
+            
+                QString ylabel = QString("%1 %2 - %3 %4")
+                    .arg(p.getValue())
+                    .arg(getScaleUnits())
+                    .arg(p.getValue() + fabsf(p.getLevel()))
+                    .arg(getScaleUnits());
+
+                PaintAssistant::drawVisibleText
+                    (v, paint, 
+                     x - fm.width(ylabel) - gap,
+                     y - fm.descent(), 
+                     ylabel, PaintAssistant::OutlinedText);
+            }
+            
+            QString t0label = RealTime::frame2RealTime
                 (p.getFrame(), model->getSampleRate()).toText(true).c_str();
+
+            QString t1label = RealTime::frame2RealTime
+                (p.getFrame() + p.getDuration(), model->getSampleRate())
+                .toText(true).c_str();
+
             PaintAssistant::drawVisibleText
-                (v, paint, 
-                 x,
-                 y - h/2 - paint.fontMetrics().descent() - gap,
-                 hlabel, PaintAssistant::OutlinedText);
+                (v, paint, x, y + fm.ascent() + gap,
+                 t0label, PaintAssistant::OutlinedText);
+
+            if (w > fm.width(t0label) + fm.width(t1label) + gap * 3) {
+
+                PaintAssistant::drawVisibleText
+                    (v, paint,
+                     x + w - fm.width(t1label),
+                     y + fm.ascent() + gap,
+                     t1label, PaintAssistant::OutlinedText);
+
+            } else {
+
+                PaintAssistant::drawVisibleText
+                    (v, paint,
+                     x + w - fm.width(t1label),
+                     y + fm.ascent() + fm.height() + gap,
+                     t1label, PaintAssistant::OutlinedText);
+            }                
         }
 
         paint.drawRect(x, y, w, h);
@@ -612,18 +655,18 @@ TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
         const Event &p(*i);
 
+        QString label = p.getLabel();
+        if (label == "") continue;
+
+        if (shouldIlluminate && illuminatePoint == p) {
+            continue; // already handled this in illumination special case
+        }
+        
         int x = v->getXForFrame(p.getFrame());
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int y = getYForValue(v, p.getValue());
 
-        QString label = p.getLabel();
-        if (label == "") {
-            label =
-                QString("%1%2 - %3%4")
-                .arg(p.getValue()).arg(getScaleUnits())
-                .arg(p.getValue() + fabsf(p.getLevel())).arg(getScaleUnits());
-        }
-        int labelWidth = paint.fontMetrics().width(label);
+        int labelWidth = fm.width(label);
 
         int gap = v->scalePixelSize(2);
 
@@ -631,23 +674,13 @@ TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
             continue;
         }
         
-        bool illuminated = false;
+        int labelX, labelY;
 
-        if (shouldIlluminate && illuminatePoint == p) {
-            illuminated = true;
-        }
+        labelX = x - labelWidth - gap;
+        labelY = y - fm.descent();
 
-        if (!illuminated) {
-
-            int labelX, labelY;
-
-            labelX = x - labelWidth - gap;
-            labelY = y + paint.fontMetrics().height()/2 
-                - paint.fontMetrics().descent();
-
-            PaintAssistant::drawVisibleText(v, paint, labelX, labelY, label,
-                                            PaintAssistant::OutlinedText);
-        }
+        PaintAssistant::drawVisibleText(v, paint, labelX, labelY, label,
+                                        PaintAssistant::OutlinedText);
     }
 
     paint.restore();
@@ -700,9 +733,6 @@ TimeFrequencyBoxLayer::paintVerticalScale(LayerGeometryProvider *v,
     }
 }
 
-//!!! All of the editing operations still need to be updated for
-//!!! vertical frequency range instead of just value
-
 void
 TimeFrequencyBoxLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
@@ -713,9 +743,9 @@ TimeFrequencyBoxLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->y());
+    double frequency = getValueForY(v, e->y());
 
-    m_editingPoint = Event(frame, float(value), 0, "");
+    m_editingPoint = Event(frame, float(frequency), 0, "");
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
@@ -732,26 +762,34 @@ TimeFrequencyBoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
-    if (frame < 0) frame = 0;
-    frame = frame / model->getResolution() * model->getResolution();
+    sv_frame_t dragFrame = v->getFrameForX(e->x());
+    if (dragFrame < 0) dragFrame = 0;
+    dragFrame = dragFrame / model->getResolution() * model->getResolution();
 
-    double newValue = getValueForY(v, e->y());
+    sv_frame_t eventFrame = m_originalPoint.getFrame();
+    sv_frame_t eventDuration = dragFrame - eventFrame;
+    if (eventDuration < 0) {
+        eventFrame = eventFrame + eventDuration;
+        eventDuration = -eventDuration;
+    } else if (eventDuration == 0) {
+        eventDuration = model->getResolution();
+    }
 
-    sv_frame_t newFrame = m_editingPoint.getFrame();
-    sv_frame_t newDuration = frame - newFrame;
-    if (newDuration < 0) {
-        newFrame = frame;
-        newDuration = -newDuration;
-    } else if (newDuration == 0) {
-        newDuration = 1;
+    double dragFrequency = getValueForY(v, e->y());
+
+    double eventFrequency = m_originalPoint.getValue();
+    double eventFreqDiff = dragFrequency - eventFrequency;
+    if (eventFreqDiff < 0) {
+        eventFrequency = eventFrequency + eventFreqDiff;
+        eventFreqDiff = -eventFreqDiff;
     }
 
     m_editingCommand->remove(m_editingPoint);
     m_editingPoint = m_editingPoint
-        .withFrame(newFrame)
-        .withValue(float(newValue))
-        .withDuration(newDuration);
+        .withFrame(eventFrame)
+        .withDuration(eventDuration)
+        .withValue(float(eventFrequency))
+        .withLevel(float(eventFreqDiff));
     m_editingCommand->add(m_editingPoint);
 }
 
