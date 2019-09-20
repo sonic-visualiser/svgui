@@ -249,7 +249,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case Notes: return "notes";
     case FlexiNotes: return "flexinotes";
     case Regions: return "regions";
-    case TimeFrequencyBox: return "timefrequencybox";
+    case TimeFrequencyBox: return "timefreq";
     case Text: return "text";
     case Image: return "image";
     case Colour3DPlot: return "colour3d";
