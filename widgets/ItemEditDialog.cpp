@@ -38,9 +38,9 @@ ItemEditDialog::ItemEditDialog(sv_samplerate_t sampleRate, int options,
                                QString scaleUnits, QWidget *parent) :
     ItemEditDialog(sampleRate, options,
                    [] (QString units) {
-                       ItemEditDialog::LabelOptions options;
-                       options.valueUnits = units;
-                       return options;
+                       ItemEditDialog::LabelOptions labelOptions;
+                       labelOptions.valueUnits = units;
+                       return labelOptions;
                    }(scaleUnits),
                    parent) {};
 
