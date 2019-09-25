@@ -404,7 +404,17 @@ WaveformLayer::getChannelArrangement(int &min, int &max,
         channels = 1;
     }
 
-    merging = (m_channelMode == MergeChannels && rawChannels > 1);
+    // "Merging" -> "butterfly mode" - use +ve side of "waveform" for
+    // channel 0 and -ve side for channel 1. If we only have one
+    // channel, we still do this but just duplicate channel 0 onto
+    // channel 1 - this is the only way to get a classic-looking
+    // waveform with meter or db scale from a single-channel file,
+    // although it isn't currently exposed in the SV UI
+    merging = (m_channelMode == MergeChannels);
+
+    // "Mixing" -> produce a single waveform from the mean of the
+    // channels. Unlike merging, this really does only make sense if
+    // we have >1 channel.
     mixing = (m_channelMode == MixChannels && rawChannels > 1);
 
 //    SVDEBUG << "WaveformLayer::getChannelArrangement: min " << min << ", max " << max << ", merging " << merging << ", channels " << channels << endl;
@@ -485,11 +495,13 @@ WaveformLayer::getNormalizeGain(LayerGeometryProvider *v, int channel) const
                                 mergingChannels, mixingChannels);
 
     if (mergingChannels || mixingChannels) {
-        RangeSummarisableTimeValueModel::Range otherRange =
-            model->getSummary(1, rangeStart, rangeEnd - rangeStart);
-        range.setMax(std::max(range.max(), otherRange.max()));
-        range.setMin(std::min(range.min(), otherRange.min()));
-        range.setAbsmean(std::min(range.absmean(), otherRange.absmean()));
+        if (model->getChannelCount() > 1) {
+            RangeSummarisableTimeValueModel::Range otherRange =
+                model->getSummary(1, rangeStart, rangeEnd - rangeStart);
+            range.setMax(std::max(range.max(), otherRange.max()));
+            range.setMin(std::min(range.min(), otherRange.min()));
+            range.setAbsmean(std::min(range.absmean(), otherRange.absmean()));
+        }
     }
 
     return float(1.0 / std::max(fabs(range.max()), fabs(range.min())));
@@ -688,6 +700,8 @@ WaveformLayer::getSummaryRanges(int minChannel, int maxChannel,
             ranges.push_back({});
             model->getSummaries
                 (1, frame0, frame1 - frame0, ranges[1], blockSize);
+        } else {
+            ranges.push_back(ranges[0]);
         }
     }
 }
@@ -711,6 +725,12 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
             // mixingOrMerging false
             getOversampledRanges
                 (0, 1, false, frame0, frame1, oversampleBy, ranges);
+            return;
+        } else {
+            // call back on self for a single channel, then duplicate
+            getOversampledRanges
+                (0, 0, false, frame0, frame1, oversampleBy, ranges);
+            ranges.push_back(ranges[0]);
             return;
         }
     }
