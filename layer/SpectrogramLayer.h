@@ -230,7 +230,7 @@ public:
     QString getError(LayerGeometryProvider *v) const override;
 
     bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const override;
+                         bool &logarithmic, QString &unit) const override;
 
     bool getDisplayExtents(double &min, double &max) const override;
 

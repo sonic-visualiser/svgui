@@ -20,9 +20,10 @@
 
 /**
  * Interface for layers in which the Y axis corresponds to bin number
- * rather than scale value. Colour3DPlotLayer is the obvious example.
- * Conceptually these are always SliceableLayers as well, and this
- * subclasses from SliceableLayer to avoid a big inheritance mess.
+ * rather than scale value. Colour3DPlotLayer and SpectrogramLayer are
+ * obvious examples.  Conceptually these are always SliceableLayers as
+ * well, and this subclasses from SliceableLayer to avoid a big
+ * inheritance mess.
  */
 class VerticalBinLayer : public SliceableLayer
 {
