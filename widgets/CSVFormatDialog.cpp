@@ -318,6 +318,9 @@ CSVFormatDialog::updateModelLabel()
     case CSVFormat::TwoDimensionalModelWithDurationAndPitch:
         s = f->getLayerPresentationName(LayerFactory::Notes);
         break;
+    case CSVFormat::TwoDimensionalModelWithDurationAndExtent:
+        s = f->getLayerPresentationName(LayerFactory::Boxes);
+        break;
     case CSVFormat::ThreeDimensionalModel:
         s = f->getLayerPresentationName(LayerFactory::Colour3DPlot);
         break;
@@ -582,6 +585,8 @@ CSVFormatDialog::updateFormatFromDialog()
     if (haveStartTime && haveDuration) {
         if (havePitch) {
             m_format.setModelType(CSVFormat::TwoDimensionalModelWithDurationAndPitch);
+        } else if (valueCount == 2) {
+            m_format.setModelType(CSVFormat::TwoDimensionalModelWithDurationAndExtent);
         } else {
             m_format.setModelType(CSVFormat::TwoDimensionalModelWithDuration);
         }
