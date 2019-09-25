@@ -32,7 +32,7 @@ SVGUI_HEADERS += \
            layer/SpectrumLayer.h \
            layer/TextLayer.h \
            layer/TimeInstantLayer.h \
-           layer/TimeFrequencyBoxLayer.h \
+           layer/BoxLayer.h \
            layer/TimeRulerLayer.h \
            layer/TimeValueLayer.h \
            layer/VerticalScaleLayer.h \
@@ -122,7 +122,7 @@ SVGUI_SOURCES += \
            layer/SpectrumLayer.cpp \
            layer/TextLayer.cpp \
            layer/TimeInstantLayer.cpp \
-           layer/TimeFrequencyBoxLayer.cpp \
+           layer/BoxLayer.cpp \
            layer/TimeRulerLayer.cpp \
            layer/TimeValueLayer.cpp \
            layer/WaveformLayer.cpp \

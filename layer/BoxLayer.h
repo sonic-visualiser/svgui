@@ -12,13 +12,13 @@
     COPYING included with this distribution for more information.
 */
 
-#ifndef SV_TIME_FREQUENCY_BOX_LAYER_H
-#define SV_TIME_FREQUENCY_BOX_LAYER_H
+#ifndef SV_BOX_LAYER_H
+#define SV_BOX_LAYER_H
 
 #include "SingleColourLayer.h"
 #include "VerticalScaleLayer.h"
 
-#include "data/model/TimeFrequencyBoxModel.h"
+#include "data/model/BoxModel.h"
 
 #include <QObject>
 #include <QColor>
@@ -28,13 +28,13 @@
 class View;
 class QPainter;
 
-class TimeFrequencyBoxLayer : public SingleColourLayer,
+class BoxLayer : public SingleColourLayer,
                               public VerticalScaleLayer
 {
     Q_OBJECT
 
 public:
-    TimeFrequencyBoxLayer();
+    BoxLayer();
 
     void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
 
@@ -71,7 +71,7 @@ public:
                sv_frame_t frameOffset, bool interactive) override;
 
     ModelId getModel() const override { return m_model; }
-    void setModel(ModelId model); // a TimeFrequencyBoxModel
+    void setModel(ModelId model); // a BoxModel
 
     PropertyList getProperties() const override;
     QString getPropertyLabel(const PropertyName &) const override;
@@ -102,6 +102,8 @@ public:
                                  bool &log, QString &unit) const override;
 
     bool getDisplayExtents(double &min, double &max) const override;
+
+    bool adoptExtents(double min, double max, QString unit) override;
 
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;

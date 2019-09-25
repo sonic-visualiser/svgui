@@ -12,7 +12,7 @@
     COPYING included with this distribution for more information.
 */
 
-#include "TimeFrequencyBoxLayer.h"
+#include "BoxLayer.h"
 
 #include "data/model/Model.h"
 #include "base/RealTime.h"
@@ -27,7 +27,7 @@
 
 #include "view/View.h"
 
-#include "data/model/TimeFrequencyBoxModel.h"
+#include "data/model/BoxModel.h"
 
 #include "widgets/ItemEditDialog.h"
 #include "widgets/TextAbbrev.h"
@@ -41,7 +41,7 @@
 #include <iostream>
 #include <cmath>
 
-TimeFrequencyBoxLayer::TimeFrequencyBoxLayer() :
+BoxLayer::BoxLayer() :
     SingleColourLayer(),
     m_editing(false),
     m_dragPointX(0),
@@ -50,13 +50,14 @@ TimeFrequencyBoxLayer::TimeFrequencyBoxLayer() :
     m_dragStartY(0),
     m_originalPoint(0, 0.0, 0, tr("New Box")),
     m_editingPoint(0, 0.0, 0, tr("New Box")),
-    m_editingCommand(nullptr)
+    m_editingCommand(nullptr),
+    m_verticalScale(AutoAlignScale)
 {
     
 }
 
 int
-TimeFrequencyBoxLayer::getCompletion(LayerGeometryProvider *) const
+BoxLayer::getCompletion(LayerGeometryProvider *) const
 {
     auto model = ModelById::get(m_model);
     if (model) return model->getCompletion();
@@ -64,13 +65,13 @@ TimeFrequencyBoxLayer::getCompletion(LayerGeometryProvider *) const
 }
 
 void
-TimeFrequencyBoxLayer::setModel(ModelId modelId)
+BoxLayer::setModel(ModelId modelId)
 {
-    auto oldModel = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
-    auto newModel = ModelById::getAs<TimeFrequencyBoxModel>(modelId);
+    auto oldModel = ModelById::getAs<BoxModel>(m_model);
+    auto newModel = ModelById::getAs<BoxModel>(modelId);
     
     if (!modelId.isNone() && !newModel) {
-        throw std::logic_error("Not a TimeFrequencyBoxModel");
+        throw std::logic_error("Not a BoxModel");
     }
     
     if (m_model == modelId) return;
@@ -84,38 +85,41 @@ TimeFrequencyBoxLayer::setModel(ModelId modelId)
 }
 
 Layer::PropertyList
-TimeFrequencyBoxLayer::getProperties() const
+BoxLayer::getProperties() const
 {
     PropertyList list = SingleColourLayer::getProperties();
     list.push_back("Vertical Scale");
+    list.push_back("Scale Units");
     return list;
 }
 
 QString
-TimeFrequencyBoxLayer::getPropertyLabel(const PropertyName &name) const
+BoxLayer::getPropertyLabel(const PropertyName &name) const
 {
     if (name == "Vertical Scale") return tr("Vertical Scale");
+    if (name == "Scale Units") return tr("Scale Units");
     return SingleColourLayer::getPropertyLabel(name);
 }
 
 Layer::PropertyType
-TimeFrequencyBoxLayer::getPropertyType(const PropertyName &name) const
+BoxLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Vertical Scale") return ValueProperty;
+    if (name == "Scale Units") return UnitsProperty;
     return SingleColourLayer::getPropertyType(name);
 }
 
 QString
-TimeFrequencyBoxLayer::getPropertyGroupName(const PropertyName &name) const
+BoxLayer::getPropertyGroupName(const PropertyName &name) const
 {
-    if (name == "Vertical Scale") {
+    if (name == "Vertical Scale" || name == "Scale Units") {
         return tr("Scale");
     }
     return SingleColourLayer::getPropertyGroupName(name);
 }
 
 int
-TimeFrequencyBoxLayer::getPropertyRangeAndValue(const PropertyName &name,
+BoxLayer::getPropertyRangeAndValue(const PropertyName &name,
                                     int *min, int *max, int *deflt) const
 {
     int val = 0;
@@ -128,6 +132,15 @@ TimeFrequencyBoxLayer::getPropertyRangeAndValue(const PropertyName &name,
         
         val = int(m_verticalScale);
 
+    } else if (name == "Scale Units") {
+
+        if (deflt) *deflt = 0;
+        auto model = ModelById::getAs<BoxModel>(m_model);
+        if (model) {
+            val = UnitDatabase::getInstance()->getUnitId
+                (model->getScaleUnits());
+        }
+
     } else {
         val = SingleColourLayer::getPropertyRangeAndValue(name, min, max, deflt);
     }
@@ -136,7 +149,7 @@ TimeFrequencyBoxLayer::getPropertyRangeAndValue(const PropertyName &name,
 }
 
 QString
-TimeFrequencyBoxLayer::getPropertyValueLabel(const PropertyName &name,
+BoxLayer::getPropertyValueLabel(const PropertyName &name,
                                    int value) const
 {
     if (name == "Vertical Scale") {
@@ -151,17 +164,24 @@ TimeFrequencyBoxLayer::getPropertyValueLabel(const PropertyName &name,
 }
 
 void
-TimeFrequencyBoxLayer::setProperty(const PropertyName &name, int value)
+BoxLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Vertical Scale") {
         setVerticalScale(VerticalScale(value));
+    } else if (name == "Scale Units") {
+        auto model = ModelById::getAs<BoxModel>(m_model);
+        if (model) {
+            model->setScaleUnits
+                (UnitDatabase::getInstance()->getUnitById(value));
+            emit modelChanged(m_model);
+        }
     } else {
         return SingleColourLayer::setProperty(name, value);
     }
 }
 
 void
-TimeFrequencyBoxLayer::setVerticalScale(VerticalScale scale)
+BoxLayer::setVerticalScale(VerticalScale scale)
 {
     if (m_verticalScale == scale) return;
     m_verticalScale = scale;
@@ -169,20 +189,20 @@ TimeFrequencyBoxLayer::setVerticalScale(VerticalScale scale)
 }
 
 bool
-TimeFrequencyBoxLayer::isLayerScrollable(const LayerGeometryProvider *v) const
+BoxLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
 bool
-TimeFrequencyBoxLayer::getValueExtents(double &min, double &max,
-                                       bool &logarithmic, QString &unit) const
+BoxLayer::getValueExtents(double &min, double &max,
+                          bool &logarithmic, QString &unit) const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return false;
-    min = model->getFrequencyMinimum();
-    max = model->getFrequencyMaximum();
+    min = model->getValueMinimum();
+    max = model->getValueMaximum();
     unit = getScaleUnits();
 
     if (m_verticalScale == LogScale) logarithmic = true;
@@ -191,21 +211,34 @@ TimeFrequencyBoxLayer::getValueExtents(double &min, double &max,
 }
 
 bool
-TimeFrequencyBoxLayer::getDisplayExtents(double &min, double &max) const
+BoxLayer::getDisplayExtents(double &min, double &max) const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || m_verticalScale == AutoAlignScale) return false;
 
-    min = model->getFrequencyMinimum();
-    max = model->getFrequencyMaximum();
+    min = model->getValueMinimum();
+    max = model->getValueMaximum();
 
     return true;
 }
 
-EventVector
-TimeFrequencyBoxLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
+bool
+BoxLayer::adoptExtents(double min, double max, QString unit)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
+    if (!model) return false;
+    if (model->getScaleUnits() == "") {
+        model->setScaleUnits(unit);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+EventVector
+BoxLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
+{
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return EventVector();
 
     sv_frame_t frame = v->getFrameForX(x);
@@ -227,10 +260,10 @@ TimeFrequencyBoxLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 }
 
 bool
-TimeFrequencyBoxLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y,
+BoxLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y,
                                       Event &point) const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return false;
 
     sv_frame_t frame = v->getFrameForX(x);
@@ -252,9 +285,9 @@ TimeFrequencyBoxLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y,
 }
 
 QString
-TimeFrequencyBoxLayer::getLabelPreceding(sv_frame_t frame) const
+BoxLayer::getLabelPreceding(sv_frame_t frame) const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return "";
     EventVector points = model->getEventsStartingWithin
         (model->getStartFrame(), frame - model->getStartFrame());
@@ -269,12 +302,12 @@ TimeFrequencyBoxLayer::getLabelPreceding(sv_frame_t frame) const
 }
 
 QString
-TimeFrequencyBoxLayer::getFeatureDescription(LayerGeometryProvider *v,
+BoxLayer::getFeatureDescription(LayerGeometryProvider *v,
                                              QPoint &pos) const
 {
     int x = pos.x();
 
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !model->getSampleRate()) return "";
 
     EventVector points = getLocalPoints(v, x);
@@ -317,12 +350,12 @@ TimeFrequencyBoxLayer::getFeatureDescription(LayerGeometryProvider *v,
     QString text;
 
     if (box.getLabel() == "") {
-        text = QString(tr("Time:\t%1\nDuration:\t%2\nFrequency:\t%3\nNo label"))
+        text = QString(tr("Time:\t%1\nDuration:\t%2\nValue:\t%3\nNo label"))
             .arg(rt.toText(true).c_str())
             .arg(rd.toText(true).c_str())
             .arg(rangeText);
     } else {
-        text = QString(tr("Time:\t%1\nDuration:\t%2\nFrequency:\t%3\nLabel:\t%4"))
+        text = QString(tr("Time:\t%1\nDuration:\t%2\nValue:\t%3\nLabel:\t%4"))
             .arg(rt.toText(true).c_str())
             .arg(rd.toText(true).c_str())
             .arg(rangeText)
@@ -335,12 +368,12 @@ TimeFrequencyBoxLayer::getFeatureDescription(LayerGeometryProvider *v,
 }
 
 bool
-TimeFrequencyBoxLayer::snapToFeatureFrame(LayerGeometryProvider *v,
+BoxLayer::snapToFeatureFrame(LayerGeometryProvider *v,
                                           sv_frame_t &frame,
                                           int &resolution,
                                           SnapType snap) const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) {
         return Layer::snapToFeatureFrame(v, frame, resolution, snap);
     }
@@ -411,15 +444,15 @@ TimeFrequencyBoxLayer::snapToFeatureFrame(LayerGeometryProvider *v,
 }
 
 QString
-TimeFrequencyBoxLayer::getScaleUnits() const
+BoxLayer::getScaleUnits() const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (model) return model->getScaleUnits();
     else return "";
 }
 
 void
-TimeFrequencyBoxLayer::getScaleExtents(LayerGeometryProvider *v,
+BoxLayer::getScaleExtents(LayerGeometryProvider *v,
                                        double &min, double &max,
                                        bool &log) const
 {
@@ -427,7 +460,7 @@ TimeFrequencyBoxLayer::getScaleExtents(LayerGeometryProvider *v,
     max = 0.0;
     log = false;
 
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
     QString queryUnits;
@@ -437,23 +470,23 @@ TimeFrequencyBoxLayer::getScaleExtents(LayerGeometryProvider *v,
 
         if (!v->getValueExtents(queryUnits, min, max, log)) {
 
-            min = model->getFrequencyMinimum();
-            max = model->getFrequencyMaximum();
+            min = model->getValueMinimum();
+            max = model->getValueMaximum();
 
-//            cerr << "TimeFrequencyBoxLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
+//            cerr << "BoxLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 
         } else if (log) {
 
             LogRange::mapRange(min, max);
 
-//            cerr << "TimeFrequencyBoxLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
+//            cerr << "BoxLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 
         }
 
     } else {
 
-        min = model->getFrequencyMinimum();
-        max = model->getFrequencyMaximum();
+        min = model->getValueMinimum();
+        max = model->getValueMaximum();
 
         if (m_verticalScale == LogScale) {
             LogRange::mapRange(min, max);
@@ -465,7 +498,7 @@ TimeFrequencyBoxLayer::getScaleExtents(LayerGeometryProvider *v,
 }
 
 int
-TimeFrequencyBoxLayer::getYForValue(LayerGeometryProvider *v, double val) const
+BoxLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
@@ -473,7 +506,7 @@ TimeFrequencyBoxLayer::getYForValue(LayerGeometryProvider *v, double val) const
 
     getScaleExtents(v, min, max, logarithmic);
 
-//    cerr << "TimeFrequencyBoxLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
+//    cerr << "BoxLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
 //    cerr << "h = " << h << ", margin = " << margin << endl;
 
     if (logarithmic) {
@@ -484,7 +517,7 @@ TimeFrequencyBoxLayer::getYForValue(LayerGeometryProvider *v, double val) const
 }
 
 double
-TimeFrequencyBoxLayer::getValueForY(LayerGeometryProvider *v, int y) const
+BoxLayer::getValueForY(LayerGeometryProvider *v, int y) const
 {
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
@@ -502,16 +535,16 @@ TimeFrequencyBoxLayer::getValueForY(LayerGeometryProvider *v, int y) const
 }
 
 void
-TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
+BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
                              QRect rect) const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !model->isOK()) return;
 
     sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
-//    Profiler profiler("TimeFrequencyBoxLayer::paint", true);
+//    Profiler profiler("BoxLayer::paint", true);
 
     int x0 = rect.left() - 40, x1 = rect.right();
 
@@ -524,11 +557,11 @@ TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
     paint.setPen(getBaseQColor());
 
-//    SVDEBUG << "TimeFrequencyBoxLayer::paint: resolution is "
+//    SVDEBUG << "BoxLayer::paint: resolution is "
 //              << model->getResolution() << " frames" << endl;
 
-    double min = model->getFrequencyMinimum();
-    double max = model->getFrequencyMaximum();
+    double min = model->getValueMinimum();
+    double max = model->getValueMaximum();
     if (max == min) max = min + 1.0;
 
     QPoint localPos;
@@ -687,10 +720,10 @@ TimeFrequencyBoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 }
 
 int
-TimeFrequencyBoxLayer::getVerticalScaleWidth(LayerGeometryProvider *v,
+BoxLayer::getVerticalScaleWidth(LayerGeometryProvider *v,
                                              bool, QPainter &paint) const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || m_verticalScale == AutoAlignScale) {
         return 0;
     } else {
@@ -703,10 +736,10 @@ TimeFrequencyBoxLayer::getVerticalScaleWidth(LayerGeometryProvider *v,
 }
 
 void
-TimeFrequencyBoxLayer::paintVerticalScale(LayerGeometryProvider *v,
+BoxLayer::paintVerticalScale(LayerGeometryProvider *v,
                                           bool, QPainter &paint, QRect) const
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || model->isEmpty()) return;
 
     QString unit;
@@ -734,32 +767,32 @@ TimeFrequencyBoxLayer::paintVerticalScale(LayerGeometryProvider *v,
 }
 
 void
-TimeFrequencyBoxLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
+BoxLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
     sv_frame_t frame = v->getFrameForX(e->x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double frequency = getValueForY(v, e->y());
+    double value = getValueForY(v, e->y());
 
-    m_editingPoint = Event(frame, float(frequency), 0, "");
+    m_editingPoint = Event(frame, float(value), 0, "");
     m_originalPoint = m_editingPoint;
 
     if (m_editingCommand) finish(m_editingCommand);
     m_editingCommand = new ChangeEventsCommand(m_model.untyped,
-                                               tr("Draw Time-Frequency Box"));
+                                               tr("Draw Box"));
     m_editingCommand->add(m_editingPoint);
 
     m_editing = true;
 }
 
 void
-TimeFrequencyBoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
+BoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
     sv_frame_t dragFrame = v->getFrameForX(e->x());
@@ -775,12 +808,12 @@ TimeFrequencyBoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
         eventDuration = model->getResolution();
     }
 
-    double dragFrequency = getValueForY(v, e->y());
+    double dragValue = getValueForY(v, e->y());
 
-    double eventFrequency = m_originalPoint.getValue();
-    double eventFreqDiff = dragFrequency - eventFrequency;
+    double eventValue = m_originalPoint.getValue();
+    double eventFreqDiff = dragValue - eventValue;
     if (eventFreqDiff < 0) {
-        eventFrequency = eventFrequency + eventFreqDiff;
+        eventValue = eventValue + eventFreqDiff;
         eventFreqDiff = -eventFreqDiff;
     }
 
@@ -788,15 +821,15 @@ TimeFrequencyBoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     m_editingPoint = m_editingPoint
         .withFrame(eventFrame)
         .withDuration(eventDuration)
-        .withValue(float(eventFrequency))
+        .withValue(float(eventValue))
         .withLevel(float(eventFreqDiff));
     m_editingCommand->add(m_editingPoint);
 }
 
 void
-TimeFrequencyBoxLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
+BoxLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
     finish(m_editingCommand);
     m_editingCommand = nullptr;
@@ -804,9 +837,9 @@ TimeFrequencyBoxLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 }
 
 void
-TimeFrequencyBoxLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
+BoxLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
@@ -820,14 +853,14 @@ TimeFrequencyBoxLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
 }
 
 void
-TimeFrequencyBoxLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
+BoxLayer::eraseDrag(LayerGeometryProvider *, QMouseEvent *)
 {
 }
 
 void
-TimeFrequencyBoxLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
+BoxLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
     m_editing = false;
@@ -838,7 +871,7 @@ TimeFrequencyBoxLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
         p.getValue() != m_editingPoint.getValue()) return;
 
     m_editingCommand = new ChangeEventsCommand
-        (m_model.untyped, tr("Erase Time-Frequency Box"));
+        (m_model.untyped, tr("Erase Box"));
 
     m_editingCommand->remove(m_editingPoint);
 
@@ -848,9 +881,9 @@ TimeFrequencyBoxLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 }
 
 void
-TimeFrequencyBoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
+BoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
     if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) {
@@ -873,9 +906,9 @@ TimeFrequencyBoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 }
 
 void
-TimeFrequencyBoxLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
+BoxLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
     int xdist = e->x() - m_dragStartX;
@@ -892,7 +925,7 @@ TimeFrequencyBoxLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     if (!m_editingCommand) {
         m_editingCommand = new ChangeEventsCommand
             (m_model.untyped,
-             tr("Drag Time-Frequency Box"));
+             tr("Drag Box"));
     }
 
     m_editingCommand->remove(m_editingPoint);
@@ -903,9 +936,9 @@ TimeFrequencyBoxLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 }
 
 void
-TimeFrequencyBoxLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
+BoxLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
     if (m_editingCommand) {
@@ -914,9 +947,9 @@ TimeFrequencyBoxLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 
         if (m_editingPoint.getFrame() != m_originalPoint.getFrame()) {
             if (m_editingPoint.getValue() != m_originalPoint.getValue()) {
-                newName = tr("Edit Time-Frequency Box");
+                newName = tr("Edit Box");
             } else {
-                newName = tr("Relocate Time-Frequency Box");
+                newName = tr("Relocate Box");
             }
         } else {
             newName = tr("Change Point Value");
@@ -931,17 +964,17 @@ TimeFrequencyBoxLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 }
 
 bool
-TimeFrequencyBoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
+BoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return false;
 
     Event region(0);
     if (!getPointToDrag(v, e->x(), e->y(), region)) return false;
 
     ItemEditDialog::LabelOptions labelOptions;
-    labelOptions.valueLabel = tr("Minimum Frequency");
-    labelOptions.levelLabel = tr("Frequency Extent");
+    labelOptions.valueLabel = tr("Minimum Value");
+    labelOptions.levelLabel = tr("Value Extent");
     labelOptions.valueUnits = getScaleUnits();
     labelOptions.levelUnits = getScaleUnits();
     
@@ -962,7 +995,7 @@ TimeFrequencyBoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (dialog->exec() == QDialog::Accepted) {
 
-        Event newTimeFrequencyBox = region
+        Event newBox = region
             .withFrame(dialog->getFrameTime())
             .withValue(dialog->getValue())
             .withLevel(dialog->getLevel())
@@ -970,9 +1003,9 @@ TimeFrequencyBoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
             .withLabel(dialog->getText());
         
         ChangeEventsCommand *command = new ChangeEventsCommand
-            (m_model.untyped, tr("Edit Time-Frequency Box"));
+            (m_model.untyped, tr("Edit Box"));
         command->remove(region);
-        command->add(newTimeFrequencyBox);
+        command->add(newBox);
         finish(command);
     }
 
@@ -981,9 +1014,9 @@ TimeFrequencyBoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 }
 
 void
-TimeFrequencyBoxLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
+BoxLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
     ChangeEventsCommand *command =
@@ -1005,9 +1038,9 @@ TimeFrequencyBoxLayer::moveSelection(Selection s, sv_frame_t newStartFrame)
 }
 
 void
-TimeFrequencyBoxLayer::resizeSelection(Selection s, Selection newSize)
+BoxLayer::resizeSelection(Selection s, Selection newSize)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !s.getDuration()) return;
 
     ChangeEventsCommand *command =
@@ -1036,9 +1069,9 @@ TimeFrequencyBoxLayer::resizeSelection(Selection s, Selection newSize)
 }
 
 void
-TimeFrequencyBoxLayer::deleteSelection(Selection s)
+BoxLayer::deleteSelection(Selection s)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
     ChangeEventsCommand *command =
@@ -1059,9 +1092,9 @@ TimeFrequencyBoxLayer::deleteSelection(Selection s)
 }    
 
 void
-TimeFrequencyBoxLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
+BoxLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
     EventVector points =
@@ -1073,9 +1106,9 @@ TimeFrequencyBoxLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to
 }
 
 bool
-TimeFrequencyBoxLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+BoxLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
 {
-    auto model = ModelById::getAs<TimeFrequencyBoxModel>(m_model);
+    auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return false;
 
     const EventVector &points = from.getPoints();
@@ -1124,8 +1157,8 @@ TimeFrequencyBoxLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv
         Event p = *i;
         Event newPoint = p;
         if (!p.hasValue()) {
-            newPoint = newPoint.withValue((model->getFrequencyMinimum() +
-                                           model->getFrequencyMaximum()) / 2);
+            newPoint = newPoint.withValue((model->getValueMinimum() +
+                                           model->getValueMaximum()) / 2);
         }
         if (!p.hasDuration()) {
             sv_frame_t nextFrame = frame;
@@ -1151,7 +1184,7 @@ TimeFrequencyBoxLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv
 }
 
 void
-TimeFrequencyBoxLayer::toXml(QTextStream &stream,
+BoxLayer::toXml(QTextStream &stream,
                              QString indent, QString extraAttributes) const
 {
     QString s;
@@ -1162,7 +1195,7 @@ TimeFrequencyBoxLayer::toXml(QTextStream &stream,
 }
 
 void
-TimeFrequencyBoxLayer::setProperties(const QXmlAttributes &attributes)
+BoxLayer::setProperties(const QXmlAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
