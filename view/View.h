@@ -354,7 +354,7 @@ public:
     int getTextLabelHeight(const Layer *layer, QPainter &) const override;
 
     bool getValueExtents(QString unit, double &min, double &max,
-                                 bool &log) const override;
+                         bool &log) const override;
 
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;

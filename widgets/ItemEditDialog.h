@@ -34,10 +34,26 @@ public:
         ShowTime       = 1 << 0,
         ShowDuration   = 1 << 1,
         ShowValue      = 1 << 2,
-        ShowText       = 1 << 3
+        ShowText       = 1 << 3,
+        ShowLevel      = 1 << 4
     };
 
-    ItemEditDialog(sv_samplerate_t sampleRate, int options, QString valueUnits = "",
+    struct LabelOptions {
+        LabelOptions();
+        QString valueLabel;
+        QString levelLabel;
+        QString valueUnits;
+        QString levelUnits;
+    };
+    
+    ItemEditDialog(sv_samplerate_t sampleRate,
+                   int options,
+                   LabelOptions labelOptions = {},
+                   QWidget *parent = 0);
+    
+    ItemEditDialog(sv_samplerate_t sampleRate,
+                   int options,
+                   QString scaleUnits,
                    QWidget *parent = 0);
 
     void setFrameTime(sv_frame_t frame);
@@ -55,6 +71,9 @@ public:
     void setValue(float value);
     float getValue() const;
 
+    void setLevel(float level);
+    float getLevel() const;
+
     void setText(QString text);
     QString getText() const;
 
@@ -66,6 +85,7 @@ protected slots:
     void realDurationSecsChanged(int);
     void realDurationUSecsChanged(int);
     void valueChanged(double);
+    void levelChanged(double);
     void textChanged(QString);
     void reset();
 
@@ -74,6 +94,7 @@ protected:
     sv_frame_t m_defaultFrame;
     sv_frame_t m_defaultDuration;
     float m_defaultValue;
+    float m_defaultLevel;
     QString m_defaultText;
     QSpinBox *m_frameTimeSpinBox;
     QSpinBox *m_realTimeSecsSpinBox;
@@ -82,6 +103,7 @@ protected:
     QSpinBox *m_realDurationSecsSpinBox;
     QSpinBox *m_realDurationUSecsSpinBox;
     QDoubleSpinBox *m_valueSpinBox;
+    QDoubleSpinBox *m_levelSpinBox;
     QLineEdit *m_textField;
     QPushButton *m_resetButton;
 };

@@ -488,6 +488,17 @@ public:
     }
 
     /**
+     * Consider using the given value extents and units for this
+     * layer. This may be called on a new layer when added, to prepare
+     * it for editing, and the extents are those of the layer
+     * underneath it. May not be appropriate for most layer types.
+     */
+    virtual bool adoptExtents(double /* min */, double /* max */,
+                              QString /* unit */) {
+        return false;
+    }
+    
+    /**
      * Return the value and unit at the given x coordinate in the
      * given view.  This is for descriptive purposes using the
      * measurement tool.  The default implementation works correctly

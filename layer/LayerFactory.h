@@ -38,6 +38,7 @@ public:
         Notes,
         FlexiNotes,
         Regions,
+        Boxes,
         Text,
         Image,
         Colour3DPlot,
