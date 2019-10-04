@@ -61,7 +61,6 @@ PaneStack::PaneStack(QWidget *parent,
         m_autoResizeLayout->setMargin(0);
         m_autoResizeLayout->setSpacing(0);
         m_autoResizeStack->setLayout(m_autoResizeLayout);
-        m_autoResizeStack->hide();
         layout->addWidget(m_autoResizeStack);
         layout->setStretchFactor(m_autoResizeStack, 1);
 
@@ -70,7 +69,6 @@ PaneStack::PaneStack(QWidget *parent,
         m_splitter = new QSplitter;
         m_splitter->setOrientation(Qt::Vertical);
         m_splitter->setOpaqueResize(false);
-        m_splitter->show();
         layout->addWidget(m_splitter);
         layout->setStretchFactor(m_splitter, 1);
     }
