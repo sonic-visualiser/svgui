@@ -37,37 +37,47 @@
 
 //#define DEBUG_PANE_STACK 1
 
-PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
+PaneStack::PaneStack(QWidget *parent,
+                     ViewManager *viewManager,
+                     int options) :
     QFrame(parent),
     m_currentPane(nullptr),
-    m_showAccessories(true),
-    m_showCloseButtonOnFirstPane(true),
-    m_showAlignmentViews(false),
-    m_splitter(new QSplitter),
-    m_autoResizeStack(new QWidget),
+    m_options(options),
+    m_splitter(nullptr),
+    m_autoResizeStack(nullptr),
     m_propertyStackStack(new QStackedWidget),
     m_viewManager(viewManager),
     m_propertyStackMinWidth(100),
-    m_layoutStyle(PropertyStackPerPaneLayout),
-    m_resizeMode(UserResizeable)
+    m_layoutStyle(PropertyStackPerPaneLayout)
 {
     QHBoxLayout *layout = new QHBoxLayout;
     layout->setMargin(0);
     layout->setSpacing(0);
 
-    m_autoResizeLayout = new QVBoxLayout;
-    m_autoResizeLayout->setMargin(0);
-    m_autoResizeLayout->setSpacing(0);
-    m_autoResizeStack->setLayout(m_autoResizeLayout);
-    m_autoResizeStack->hide();
-    layout->addWidget(m_autoResizeStack);
-    layout->setStretchFactor(m_autoResizeStack, 1);
+    if (m_options & int(Option::NoUserResize)) {
 
-    m_splitter->setOrientation(Qt::Vertical);
-    m_splitter->setOpaqueResize(false);
-    m_splitter->show();
-    layout->addWidget(m_splitter);
-    layout->setStretchFactor(m_splitter, 1);
+        m_autoResizeStack = new QWidget;
+        m_autoResizeLayout = new QVBoxLayout;
+        m_autoResizeLayout->setMargin(0);
+        m_autoResizeLayout->setSpacing(0);
+        m_autoResizeStack->setLayout(m_autoResizeLayout);
+        m_autoResizeStack->hide();
+        layout->addWidget(m_autoResizeStack);
+        layout->setStretchFactor(m_autoResizeStack, 1);
+
+    } else {
+    
+        m_splitter = new QSplitter;
+        m_splitter->setOrientation(Qt::Vertical);
+        m_splitter->setOpaqueResize(false);
+        m_splitter->show();
+        layout->addWidget(m_splitter);
+        layout->setStretchFactor(m_splitter, 1);
+    }
+
+    if (m_options & int(Option::NoPropertyStacks)) {
+        m_layoutStyle = HiddenPropertyStacksLayout;
+    }
     
     m_propertyStackStack->hide();
     layout->addWidget(m_propertyStackStack);
@@ -75,38 +85,15 @@ PaneStack::PaneStack(QWidget *parent, ViewManager *viewManager) :
     setLayout(layout);
 }
 
-void
-PaneStack::setShowPaneAccessories(bool show)
-{
-    m_showAccessories = show;
-}
-
-void
-PaneStack::setShowCloseButtonOnFirstPane(bool show)
-{
-    m_showCloseButtonOnFirstPane = show;
-}
-
-void
-PaneStack::setShowAlignmentViews(bool show)
-{
-    m_showAlignmentViews = show;
-    // each alignment view shows alignment between the pane above and
-    // the pane it is attached to: so pane 0 doesn't have a visible one
-    for (int i = 1; in_range_for(m_panes, i); ++i) {
-        m_panes[i].alignmentView->setVisible(m_showAlignmentViews);
-    }
-}
-
 Pane *
-PaneStack::addPane(bool suppressPropertyBox)
+PaneStack::addPane()
 {
     QFrame *frame = new QFrame;
 
     QGridLayout *layout = new QGridLayout;
     layout->setMargin(0);
     layout->setHorizontalSpacing(m_viewManager->scalePixelSize(2));
-    if (m_showAlignmentViews) {
+    if (m_options & int(Option::ShowAlignmentViews)) {
         layout->setVerticalSpacing(0);
     } else {
         layout->setVerticalSpacing(m_viewManager->scalePixelSize(2));
@@ -122,8 +109,8 @@ PaneStack::addPane(bool suppressPropertyBox)
     xButton->setIcon(IconLoader().load("cross"));
     xButton->setFixedSize(QSize(16, 16));
     xButton->setFlat(true);
-    xButton->setVisible(m_showAccessories);
-    if (m_panes.empty() && !m_showCloseButtonOnFirstPane) {
+    xButton->setVisible(!(m_options & int(Option::NoPaneAccessories)));
+    if (m_panes.empty() && (m_options & int(Option::NoCloseOnFirstPane))) {
         xButton->setVisible(false);
     }
     layout->addWidget(xButton, 1, 0);
@@ -136,7 +123,7 @@ PaneStack::addPane(bool suppressPropertyBox)
     currentIndicator->setMinimumWidth(16);
     currentIndicator->setMinimumHeight(16);
     currentIndicator->setScaledContents(true);
-    currentIndicator->setVisible(m_showAccessories);
+    currentIndicator->setVisible(!(m_options & int(Option::NoPaneAccessories)));
 
     sv_frame_t initialCentreFrame = -1;
     if (!m_panes.empty()) {
@@ -153,7 +140,7 @@ PaneStack::addPane(bool suppressPropertyBox)
     layout->setColumnStretch(1, 20);
 
     QWidget *properties = nullptr;
-    if (suppressPropertyBox) {
+    if (m_options & int(Option::NoPropertyStacks)) {
         properties = new QFrame();
     } else {
         properties = new PropertyStack(frame, pane);
@@ -184,11 +171,11 @@ PaneStack::addPane(bool suppressPropertyBox)
 
     frame->setLayout(layout);
 
-    if (m_resizeMode == UserResizeable) {
-        m_splitter->addWidget(frame);
-    } else {
+    if (m_options & int(Option::NoUserResize)) {
         m_autoResizeLayout->addWidget(frame);
         frame->adjustSize();
+    } else {
+        m_splitter->addWidget(frame);
     }
 
     connect(pane, SIGNAL(propertyContainerAdded(PropertyContainer *)),
@@ -223,12 +210,15 @@ void
 PaneStack::relinkAlignmentViews()
 {
     if (m_panes.empty()) return;
-    if (!m_showAlignmentViews) return;
     m_panes[0].alignmentView->hide();
     for (int i = 1; in_range_for(m_panes, i); ++i) {
-        m_panes[i].alignmentView->setViewAbove(m_panes[i-1].pane);
-        m_panes[i].alignmentView->setViewBelow(m_panes[i].pane);
-        m_panes[i].alignmentView->setVisible(true);
+        if (!(m_options & int(Option::ShowAlignmentViews))) {
+            m_panes[i].alignmentView->hide();
+        } else {
+            m_panes[i].alignmentView->setViewAbove(m_panes[i-1].pane);
+            m_panes[i].alignmentView->setViewBelow(m_panes[i].pane);
+            m_panes[i].alignmentView->show();
+        }
     }
 }
 
@@ -254,6 +244,11 @@ PaneStack::setPropertyStackMinWidth(int mw)
 void
 PaneStack::setLayoutStyle(LayoutStyle style)
 {
+    if (m_options & int(Option::NoPropertyStacks)) {
+        SVCERR << "NOTE: PaneStack::setLayoutStyle called on PaneStack with NoPropertyStacks option set - this does nothing, its style is always equivalent to HiddenPropertyStacksLayout" << endl;
+        return;
+    }
+    
     if (style == m_layoutStyle) return;
     m_layoutStyle = style;
 
@@ -261,7 +256,7 @@ PaneStack::setLayoutStyle(LayoutStyle style)
 
     switch (style) {
 
-    case NoPropertyStacks:
+    case HiddenPropertyStacksLayout:
     case SinglePropertyStackLayout:
         
         for (i = m_panes.begin(); i != m_panes.end(); ++i) {
@@ -269,7 +264,7 @@ PaneStack::setLayoutStyle(LayoutStyle style)
             i->propertyStack->setParent(m_propertyStackStack);
             m_propertyStackStack->addWidget(i->propertyStack);
         }
-        m_propertyStackStack->setVisible(style != NoPropertyStacks);
+        m_propertyStackStack->setVisible(style != HiddenPropertyStacksLayout);
         break;
 
     case PropertyStackPerPaneLayout:
@@ -393,10 +388,10 @@ PaneStack::showOrHidePaneAccessories()
     bool multi = (getPaneCount() > 1);
     for (std::vector<PaneRec>::iterator i = m_panes.begin();
          i != m_panes.end(); ++i) {
-        bool visible = (multi && m_showAccessories);
+        bool visible = (multi && !(m_options & int(Option::NoPaneAccessories)));
         bool xvisible = visible;
         if (i == m_panes.begin()) {
-            if (!m_showCloseButtonOnFirstPane) {
+            if (m_options & int(Option::NoCloseOnFirstPane)) {
                 xvisible = false;
             }
         }
@@ -689,7 +684,7 @@ PaneStack::indicatorClicked()
 void
 PaneStack::sizePanesEqually()
 {
-    if (m_resizeMode == AutoResizeOnly) {
+    if (m_options & int(Option::NoUserResize)) {
         return;
     }
     
@@ -748,21 +743,5 @@ PaneStack::sizePanesEqually()
 */
 
     m_splitter->setSizes(sizes);
-}
-
-void
-PaneStack::setResizeMode(ResizeMode mode)
-{
-    if (mode == UserResizeable) {
-        m_autoResizeStack->hide();
-        m_splitter->show();
-    } else {
-        m_autoResizeStack->show();
-        m_splitter->hide();
-    }
-    m_resizeMode = mode;
-
-    // we don't actually move any existing panes yet! let's do that
-    // only if we turn out to need it, shall we?
 }
 

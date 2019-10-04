@@ -42,10 +42,23 @@ class PaneStack : public QFrame
     Q_OBJECT
 
 public:
+    /// These options are for things that must be set on construction,
+    /// and can't be changed afterwards
+    enum class Option {
+        Default = 0x0,
+        NoUserResize = 0x1,       // Suppress resize handles, auto-size only
+        NoPropertyStacks = 0x2,   // Never create property stacks
+        NoPaneAccessories = 0x4,  // Suppress current-pane and close button
+        NoCloseOnFirstPane = 0x8, // Omit close button from the top pane
+        ShowAlignmentViews = 0x10 // Include AlignmentViews between panes
+    };
+    typedef int Options;
+    
     PaneStack(QWidget *parent,
-              ViewManager *viewManager);
+              ViewManager *viewManager,
+              Options options = 0);
 
-    Pane *addPane(bool suppressPropertyBox = false); // I own the returned value
+    Pane *addPane(); // I own the returned value
     void deletePane(Pane *pane); // Deletes the pane, but _not_ its layers
 
     int getPaneCount() const; // Returns only count of visible panes
@@ -62,8 +75,9 @@ public:
     void setCurrentLayer(Pane *pane, Layer *layer);
     Pane *getCurrentPane();
 
+    /// Runtime-switchable layout style for property stacks
     enum LayoutStyle {
-        NoPropertyStacks = 0,
+        HiddenPropertyStacksLayout = 0,
         SinglePropertyStackLayout = 1,
         PropertyStackPerPaneLayout = 2
     };
@@ -71,27 +85,7 @@ public:
     LayoutStyle getLayoutStyle() const { return m_layoutStyle; }
     void setLayoutStyle(LayoutStyle style);
 
-    enum ResizeMode {
-        UserResizeable = 0,
-        AutoResizeOnly = 1
-    };
-
-    ResizeMode getResizeMode() const { return m_resizeMode; }
-    void setResizeMode(ResizeMode);
-
-    // Set whether the current-pane indicators and close buttons are
-    // shown. The default is true.
-    void setShowPaneAccessories(bool show);
-
-    // Set whether a close button is shown on the first pane as well
-    // as others. (It may be reasonable to omit the close button from
-    // what is presumably the main pane in some applications.)  The
-    // default is true.
-    void setShowCloseButtonOnFirstPane(bool);
-
     void setPropertyStackMinWidth(int mw);
-
-    void setShowAlignmentViews(bool show);
 
     void sizePanesEqually();
 
@@ -146,12 +140,9 @@ protected:
     std::vector<PaneRec> m_panes;
     std::vector<PaneRec> m_hiddenPanes;
 
-    bool m_showAccessories;
-    bool m_showCloseButtonOnFirstPane;
-    bool m_showAlignmentViews;
-
-    QSplitter *m_splitter; // constitutes the stack in UserResizeable mode
-    QWidget *m_autoResizeStack; // constitutes the stack in AutoResizeOnly mode
+    int m_options;
+    QSplitter *m_splitter; // constitutes the stack in default mode
+    QWidget *m_autoResizeStack; // constitutes the stack in NoUserResize mode
     QVBoxLayout *m_autoResizeLayout;
 
     QStackedWidget *m_propertyStackStack;
@@ -166,7 +157,6 @@ protected:
     void relinkAlignmentViews();
 
     LayoutStyle m_layoutStyle;
-    ResizeMode m_resizeMode;
 };
 
 #endif
