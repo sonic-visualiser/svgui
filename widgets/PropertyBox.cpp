@@ -61,7 +61,7 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     m_playButton(nullptr)
 {
 #ifdef DEBUG_PROPERTY_BOX
-    cerr << "PropertyBox[" << this << "(\"" <<
+    SVDEBUG << "PropertyBox[" << this << "(\"" <<
         container->getPropertyContainerName() << "\" at " << container << ")]::PropertyBox" << endl;
 #endif
 
@@ -109,14 +109,14 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
             this, SLOT(unitDatabaseChanged()));
 
 #ifdef DEBUG_PROPERTY_BOX
-    cerr << "PropertyBox[" << this << "]::PropertyBox returning" << endl;
+    SVDEBUG << "PropertyBox[" << this << "]::PropertyBox returning" << endl;
 #endif
 }
 
 PropertyBox::~PropertyBox()
 {
 #ifdef DEBUG_PROPERTY_BOX
-    cerr << "PropertyBox[" << this << "]::~PropertyBox" << endl;
+    SVDEBUG << "PropertyBox[" << this << "]::~PropertyBox" << endl;
 #endif
 }
 
@@ -124,7 +124,7 @@ void
 PropertyBox::populateViewPlayFrame()
 {
 #ifdef DEBUG_PROPERTY_BOX
-    cerr << "PropertyBox[" << this << ":" << m_container << "]::populateViewPlayFrame" << endl;
+    SVDEBUG << "PropertyBox[" << this << ":" << m_container << "]::populateViewPlayFrame" << endl;
 #endif
 
     if (m_viewPlayFrame) {
@@ -248,12 +248,12 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     QString iconName = m_container->getPropertyIconName(name);
 
 #ifdef DEBUG_PROPERTY_BOX
-    cerr << "PropertyBox[" << this
+    SVDEBUG << "PropertyBox[" << this
               << "(\"" << m_container->getPropertyContainerName()
               << "\")]";
-    cerr << "::updatePropertyEditor(\"" << name << "\", "
+    SVDEBUG << "::updatePropertyEditor(\"" << name << "\", "
          << rangeChanged << "):";
-    cerr << " type " << type << ", value " << value
+    SVDEBUG << " type " << type << ", value " << value
          << ", have " << have << ", group \"" << groupName << "\"" << endl;
 #endif
 
@@ -287,7 +287,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     QGridLayout *groupLayout = m_groupLayouts[groupName];
 
 #ifdef DEBUG_PROPERTY_BOX
-    cerr << "groupName becomes \"" << groupName << "\", groupLabel = \""
+    SVDEBUG << "groupName becomes \"" << groupName << "\", groupLabel = \""
          << groupLabel << "\", groupLayout = " << groupLayout << endl;
 #endif
     
@@ -303,7 +303,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
         if (!(button = qobject_cast<QAbstractButton *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
-            cerr << "PropertyBox: creating new checkbox" << endl;
+            SVDEBUG << "PropertyBox: creating new checkbox" << endl;
 #endif
             if (iconName != "") {
 #ifdef Q_OS_MAC
@@ -360,7 +360,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             }
         } else {
 #ifdef DEBUG_PROPERTY_BOX 
-            cerr << "PropertyBox: creating new dial" << endl;
+            SVDEBUG << "PropertyBox: creating new dial" << endl;
 #endif
             dial = new AudioDial();
             dial->setObjectName(name);
@@ -408,7 +408,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         if (!(cb = qobject_cast<ColourComboBox *>(existing))) {
 
 #ifdef DEBUG_PROPERTY_BOX 
-            cerr << "PropertyBox: creating new colour combobox" << endl;
+            SVDEBUG << "PropertyBox: creating new colour combobox" << endl;
 #endif
             cb = new ColourComboBox(true);
             cb->setObjectName(name);
@@ -447,7 +447,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
         if (!(cb = qobject_cast<ColourMapComboBox *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
-            cerr << "PropertyBox: creating new colourmap combobox" << endl;
+            SVDEBUG << "PropertyBox: creating new colourmap combobox" << endl;
 #endif
             cb = new ColourMapComboBox(false);
             cb->setObjectName(name);
@@ -487,7 +487,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 
         if (!(cb = qobject_cast<NotifyingComboBox *>(existing))) {
 #ifdef DEBUG_PROPERTY_BOX 
-            cerr << "PropertyBox: creating new combobox" << endl;
+            SVDEBUG << "PropertyBox: creating new combobox" << endl;
 #endif
             cb = new NotifyingComboBox();
             cb->setObjectName(name);
@@ -607,13 +607,13 @@ void
 PropertyBox::unitDatabaseChanged()
 {
 #ifdef DEBUG_PROPERTY_BOX
-    cerr << "PropertyBox[" << this << "]: unitDatabaseChanged" << endl;
+    SVDEBUG << "PropertyBox[" << this << "]: unitDatabaseChanged" << endl;
 #endif
     blockSignals(true);
 
-//    cerr << "my container is " << m_container << endl;
-//    cerr << "my container's name is... " << endl;
-//    cerr << m_container->objectName() << endl;
+//    SVDEBUG << "my container is " << m_container << endl;
+//    SVDEBUG << "my container's name is... " << endl;
+//    SVDEBUG << m_container->objectName() << endl;
 
     PropertyContainer::PropertyList properties = m_container->getProperties();
     for (size_t i = 0; i < properties.size(); ++i) {

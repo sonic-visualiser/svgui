@@ -85,15 +85,29 @@ PropertyStack::repopulate()
     blockSignals(true);
 
 #ifdef DEBUG_PROPERTY_STACK
-    cerr << "PropertyStack[" << this << "]::repopulate" << endl;
+    SVDEBUG << "PropertyStack[" << this << "]::repopulate" << endl;
 #endif
     
+#ifdef DEBUG_PROPERTY_STACK
+    SVDEBUG << "PropertyStack[" << this << "]::repopulate: removing tabs" << endl;
+#endif
     while (count() > 0) {
         removeTab(0);
     }
+
+#ifdef DEBUG_PROPERTY_STACK
+    SVDEBUG << "PropertyStack[" << this << "]::repopulate: deleting boxes" << endl;
+#endif
     for (size_t i = 0; i < m_boxes.size(); ++i) {
+#ifdef DEBUG_PROPERTY_STACK
+        SVDEBUG << "(" << i << " of " << m_boxes.size() << ": " << m_boxes[i]->getContainer()->getPropertyContainerName() << ")" << endl;
+#endif
         delete m_boxes[i];
     }
+
+#ifdef DEBUG_PROPERTY_STACK
+    SVDEBUG << "PropertyStack[" << this << "]::repopulate: done, clearing m_boxes" << endl;
+#endif
     m_boxes.clear();
     
     for (int i = 0; i < m_client->getPropertyContainerCount(); ++i) {
@@ -102,9 +116,9 @@ PropertyStack::repopulate()
         QString name = container->getPropertyContainerName();
         
 #ifdef DEBUG_PROPERTY_STACK
-        cerr << "PropertyStack[" << this << "]::repopulate: client " << m_client
-             << " returns container " << container << " (name " << name
-             << ") at position " << i << endl;
+        SVDEBUG << "PropertyStack[" << this << "]::repopulate: client " << m_client
+                << " returns container " << container << " (name " << name
+                << ") at position " << i << endl;
 #endif
 
         PropertyBox *box = new PropertyBox(container);
@@ -183,16 +197,30 @@ PropertyStack::getContainerIndex(PropertyContainer *pc) const
 }
 
 void
-PropertyStack::propertyContainerAdded(PropertyContainer *)
+PropertyStack::propertyContainerAdded(PropertyContainer *
+#ifdef DEBUG_PROPERTY_STACK
+                                      c
+#endif
+    )
 {
     if (sender() != m_client) return;
+#ifdef DEBUG_PROPERTY_STACK
+    SVDEBUG << "PropertyStack::propertyContainerAdded(" << (c ? c->getPropertyContainerName() : "(none)") << ")" << endl;
+#endif
     repopulate();
 }
 
 void
-PropertyStack::propertyContainerRemoved(PropertyContainer *)
+PropertyStack::propertyContainerRemoved(PropertyContainer *
+#ifdef DEBUG_PROPERTY_STACK
+                                      c
+#endif
+    )
 {
     if (sender() != m_client) return;
+#ifdef DEBUG_PROPERTY_STACK
+    SVDEBUG << "PropertyStack::propertyContainerAdded(" << (c ? c->getPropertyContainerName() : "(none)") << ")" << endl;
+#endif
     repopulate();
 }
 
