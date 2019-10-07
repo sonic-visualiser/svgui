@@ -270,7 +270,7 @@ PaneStack::setLayoutStyle(LayoutStyle style)
         for (i = m_panes.begin(); i != m_panes.end(); ++i) {
             m_propertyStackStack->removeWidget(i->propertyStack);
             i->propertyStack->setParent(i->frame);
-            i->layout->addWidget(i->propertyStack, 0, 2, 2, 1);
+            i->layout->addWidget(i->propertyStack, 1, 2, 2, 1);
             i->propertyStack->show();
         }
         m_propertyStackStack->hide();
