@@ -91,17 +91,19 @@ PaneStack::addPane()
     QGridLayout *layout = new QGridLayout;
     layout->setMargin(0);
     layout->setHorizontalSpacing(m_viewManager->scalePixelSize(2));
+
+    AlignmentView *av = nullptr;
+
     if (m_options & int(Option::ShowAlignmentViews)) {
         layout->setVerticalSpacing(0);
+        av = new AlignmentView(frame);
+        av->setFixedHeight(ViewManager::scalePixelSize(20));
+        av->setViewManager(m_viewManager);
+        av->setVisible(false); // for now
+        layout->addWidget(av, 0, 1);
     } else {
         layout->setVerticalSpacing(m_viewManager->scalePixelSize(2));
     }
-
-    AlignmentView *av = new AlignmentView(frame);
-    av->setFixedHeight(ViewManager::scalePixelSize(20));
-    av->setViewManager(m_viewManager);
-    av->setVisible(false); // for now
-    layout->addWidget(av, 0, 1);
 
     QPushButton *xButton = new QPushButton(frame);
     xButton->setIcon(IconLoader().load("cross"));
@@ -208,14 +210,17 @@ void
 PaneStack::relinkAlignmentViews()
 {
     if (m_panes.empty()) return;
-    m_panes[0].alignmentView->hide();
+    auto av = m_panes[0].alignmentView;
+    if (av) av->hide();
     for (int i = 1; in_range_for(m_panes, i); ++i) {
+        av = m_panes[i].alignmentView;
+        if (!av) continue;
         if (!(m_options & int(Option::ShowAlignmentViews))) {
-            m_panes[i].alignmentView->hide();
+            av->hide();
         } else {
-            m_panes[i].alignmentView->setViewAbove(m_panes[i-1].pane);
-            m_panes[i].alignmentView->setViewBelow(m_panes[i].pane);
-            m_panes[i].alignmentView->show();
+            av->setViewAbove(m_panes[i-1].pane);
+            av->setViewBelow(m_panes[i].pane);
+            av->show();
         }
     }
 }
@@ -224,8 +229,10 @@ void
 PaneStack::unlinkAlignmentViews()
 {
     for (int i = 0; in_range_for(m_panes, i); ++i) {
-        m_panes[i].alignmentView->setViewAbove(nullptr);
-        m_panes[i].alignmentView->setViewBelow(nullptr);
+        auto av = m_panes[i].alignmentView;
+        if (!av) continue;
+        av->setViewAbove(nullptr);
+        av->setViewBelow(nullptr);
     }
 }
 
