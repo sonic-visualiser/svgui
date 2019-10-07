@@ -223,7 +223,7 @@ BoxLayer::getDisplayExtents(double &min, double &max) const
 }
 
 bool
-BoxLayer::adoptExtents(double min, double max, QString unit)
+BoxLayer::adoptExtents(double /* min */, double /* max */, QString unit)
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return false;
