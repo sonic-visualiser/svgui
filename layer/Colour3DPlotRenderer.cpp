@@ -779,7 +779,8 @@ Colour3DPlotRenderer::scaleDrawBufferImage(QImage image,
     }
     
     // Same format as the target cache
-    QImage target(targetWidth, targetHeight, QImage::Format_ARGB32_Premultiplied);
+    QImage target(targetWidth, targetHeight,
+                  QImage::Format_ARGB32_Premultiplied);
 
     for (int y = 0; y < targetHeight; ++y) {
 
@@ -788,12 +789,15 @@ Colour3DPlotRenderer::scaleDrawBufferImage(QImage image,
         int sy = int((uint64_t(y) * sourceHeight) / targetHeight);
         if (sy == sourceHeight) --sy;
 
+        // The source image is 8-bit indexed
+        const uchar *sourceLine = image.constScanLine(sy);
+        
         for (int x = 0; x < targetWidth; ++x) {
 
             int sx = int((uint64_t(x) * sourceWidth) / targetWidth);
             if (sx == sourceWidth) --sx;
-            
-            targetLine[x] = image.pixel(sx, sy);
+
+            targetLine[x] = image.color(sourceLine[sx]);
         }
     }
 
