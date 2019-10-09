@@ -133,9 +133,25 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
     sv_frame_t startFrame = v->getStartFrame();
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "render " << m_sources.source
+            << ": cache size is " << m_cache.getSize().width()
+            << "x" << m_cache.getSize().height()
+            << " at zoom level " << m_cache.getZoomLevel() << endl;
+#endif
+
+    bool justCreated = m_cache.getSize().isEmpty();
+    
     bool justInvalidated =
         (m_cache.getSize() != v->getPaintSize() ||
          m_cache.getZoomLevel() != v->getZoomLevel());
+
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "render " << m_sources.source
+            << ": justCreated = " << justCreated
+            << ", justInvalidated = " << justInvalidated
+            << endl;
+#endif
     
     m_cache.resize(v->getPaintSize());
     m_cache.setZoomLevel(v->getZoomLevel());
@@ -303,7 +319,7 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
     } else { // must be DrawBufferPixelResolution, handled DirectTranslucent earlier
 
-        if (timeConstrained && justInvalidated) {
+        if (timeConstrained && !justCreated && justInvalidated) {
             SVDEBUG << "render " << m_sources.source
                     << ": invalidated cache in time-constrained context, that's all we're doing for now - wait for next update to start filling" << endl;
         } else {
