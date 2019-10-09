@@ -1686,8 +1686,8 @@ TimeValueLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 }
 
 bool
-TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */,
-                      bool interactive)
+TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
+                      sv_frame_t /* frameOffset */, bool interactive)
 {
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return false;
@@ -1842,7 +1842,8 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
             }
         }
 
-        Event newPoint = *i;
+        Event newPoint = i->withFrame(frame);
+        
         if (!i->hasLabel() && i->hasValue()) {
             newPoint = newPoint.withLabel(QString("%1").arg(i->getValue()));
         }

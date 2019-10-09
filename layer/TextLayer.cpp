@@ -697,7 +697,8 @@ TextLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 }
 
 bool
-TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
+                 sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     auto model = ModelById::getAs<TextModel>(m_model);
     if (!model) return false;
@@ -755,7 +756,8 @@ TextLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* 
             }
         }
 
-        Event p = *i;
+        Event p = i->withFrame(frame);
+
         Event newPoint = p;
         if (p.hasValue()) {
             newPoint = newPoint.withValue(float((i->getValue() - valueMin) /

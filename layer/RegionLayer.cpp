@@ -1456,7 +1456,8 @@ RegionLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 }
 
 bool
-RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
+                   sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     auto model = ModelById::getAs<RegionModel>(m_model);
     if (!model) return false;
@@ -1504,7 +1505,8 @@ RegionLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /
             }
         }
 
-        Event p = *i;
+        Event p = i->withFrame(frame);
+
         Event newPoint = p;
         if (!p.hasValue()) {
             newPoint = newPoint.withValue((model->getValueMinimum() +

@@ -763,7 +763,8 @@ TimeInstantLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 }
 
 bool
-TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset, bool)
+TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
+                        sv_frame_t frameOffset, bool)
 {
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model) return false;
@@ -817,7 +818,8 @@ TimeInstantLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_fram
             else frame = 0;
         }
 
-        Event newPoint = *i;
+        Event newPoint = i->withFrame(frame);
+        
         if (!i->hasLabel() && i->hasValue()) {
             newPoint = newPoint.withLabel(QString("%1").arg(i->getValue()));
         }

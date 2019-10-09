@@ -1106,7 +1106,8 @@ BoxLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 }
 
 bool
-BoxLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+BoxLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
+                sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return false;
@@ -1154,7 +1155,8 @@ BoxLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* f
             }
         }
 
-        Event p = *i;
+        Event p = i->withFrame(frame);
+        
         Event newPoint = p;
         if (!p.hasValue()) {
             newPoint = newPoint.withValue((model->getValueMinimum() +

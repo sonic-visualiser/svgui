@@ -795,7 +795,8 @@ ImageLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 }
 
 bool
-ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /* frameOffset */, bool /* interactive */)
+ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
+                  sv_frame_t /* frameOffset */, bool /* interactive */)
 {
     auto model = ModelById::getAs<ImageModel>(m_model);
     if (!model) return false;
@@ -842,7 +843,8 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*
             }
         }
 
-        Event p = *i;
+        Event p = i->withFrame(frame);
+
         Event newPoint = p;
 
         //!!! inadequate

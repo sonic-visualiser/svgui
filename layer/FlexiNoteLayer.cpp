@@ -1740,7 +1740,8 @@ FlexiNoteLayer::copy(LayerGeometryProvider *v, Selection s, Clipboard &to)
 }
 
 bool
-FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t /*frameOffset */, bool /* interactive */)
+FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
+                      sv_frame_t /*frameOffset */, bool /* interactive */)
 {
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model) return false;
@@ -1787,7 +1788,8 @@ FlexiNoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_
             }
         }
 
-        Event p = *i;
+        Event p = i->withFrame(frame);
+
         Event newPoint = p;
         if (!p.hasValue()) {
             newPoint = newPoint.withValue((model->getValueMinimum() +

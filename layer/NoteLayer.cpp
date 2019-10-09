@@ -1237,7 +1237,8 @@ NoteLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
             }
         }
 
-        Event p = *i;
+        Event p = i->withFrame(frame);
+        
         Event newPoint = p;
         if (!p.hasValue()) {
             newPoint = newPoint.withValue((model->getValueMinimum() +
