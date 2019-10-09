@@ -791,13 +791,21 @@ Colour3DPlotRenderer::scaleDrawBufferImage(QImage image,
 
         // The source image is 8-bit indexed
         const uchar *sourceLine = image.constScanLine(sy);
+
+        int psx = -1;
+        QRgb colour = {};
         
         for (int x = 0; x < targetWidth; ++x) {
 
             int sx = int((uint64_t(x) * sourceWidth) / targetWidth);
             if (sx == sourceWidth) --sx;
 
-            targetLine[x] = image.color(sourceLine[sx]);
+            if (sx > psx) {
+                colour = image.color(sourceLine[sx]);
+            }
+            
+            targetLine[x] = colour;
+            psx = sx;
         }
     }
 
