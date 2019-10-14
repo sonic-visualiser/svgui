@@ -223,10 +223,14 @@ BoxLayer::getDisplayExtents(double &min, double &max) const
 }
 
 bool
-BoxLayer::adoptExtents(double /* min */, double /* max */, QString unit)
+BoxLayer::adoptExtents(double min, double max, QString unit)
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return false;
+
+    SVDEBUG << "BoxLayer[" << this << "]::adoptExtents: min " << min
+            << ", max " << max << ", unit " << unit << endl;
+    
     if (model->getScaleUnits() == "") {
         model->setScaleUnits(unit);
         return true;

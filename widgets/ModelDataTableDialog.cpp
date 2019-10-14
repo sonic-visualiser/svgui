@@ -75,14 +75,6 @@ ModelDataTableDialog::ModelDataTableDialog(ModelId tabularModelId,
 
     CommandHistory::getInstance()->registerToolbar(toolbar);
 
-/*
-    action = new QAction(il.load("dataedit"), tr("Edit Selected Item"), this);
-    action->setShortcut(tr("Edit"));
-    action->setStatusTip(tr("Edit the selected item"));
-    connect(action, SIGNAL(triggered()), this, SLOT(editRow()));
-    toolbar->addAction(action);
-*/
-
     QFrame *mainFrame = new QFrame;
     setCentralWidget(mainFrame);
 
