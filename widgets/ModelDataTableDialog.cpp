@@ -36,6 +36,8 @@
 
 #include <iostream>
 
+//#define DEBUG_MODEL_DATA_TABLE_DIALOG 1
+
 ModelDataTableDialog::ModelDataTableDialog(ModelId tabularModelId,
                                            QString title, QWidget *parent) :
     QMainWindow(parent),
@@ -162,6 +164,26 @@ ModelDataTableDialog::~ModelDataTableDialog()
 void
 ModelDataTableDialog::userScrolledToFrame(sv_frame_t frame)
 {
+#ifdef DEBUG_MODEL_DATA_TABLE_DIALOG
+    SVDEBUG << "ModelDataTableDialog::userScrolledToFrame " << frame << endl;
+#endif
+
+    // The table may contain more than one row with the same frame. If
+    // our current row has the same frame as the one passed in, we
+    // should do nothing - this avoids e.g. the situation where the
+    // user clicks on the second of two equal-framed rows, we fire
+    // scrollToFrame() from viewClicked(), that calls back here, and
+    // we end up switching the selection to the first of the two rows
+    // instead of the one the user clicked on.
+
+    if (m_table->getFrameForModelIndex(m_table->index(m_currentRow, 0)) ==
+        frame) {
+#ifdef DEBUG_MODEL_DATA_TABLE_DIALOG
+        SVDEBUG << "ModelDataTableDialog::userScrolledToFrame: Already have this frame current; calling makeCurrent" << endl;
+#endif
+        return;
+    }
+    
     QModelIndex index = m_table->getModelIndexForFrame(frame);
     makeCurrent(index.row());
 }
@@ -241,24 +263,31 @@ ModelDataTableDialog::makeCurrent(int row)
 void
 ModelDataTableDialog::viewClicked(const QModelIndex &index)
 {
-//    SVDEBUG << "ModelDataTableDialog::viewClicked: " << index.row() << ", " << index.column() << endl;
+#ifdef DEBUG_MODEL_DATA_TABLE_DIALOG
+    SVDEBUG << "ModelDataTableDialog::viewClicked: " << index.row() << ", " << index.column() << endl;
+#endif
+
     emit scrollToFrame(m_table->getFrameForModelIndex(index));
 }
 
 void
 ModelDataTableDialog::viewPressed(const QModelIndex &)
 {
-//    SVDEBUG << "ModelDataTableDialog::viewPressed: " << index.row() << ", " << index.column() << endl;
+#ifdef DEBUG_MODEL_DATA_TABLE_DIALOG
+    SVDEBUG << "ModelDataTableDialog::viewPressed: " << index.row() << ", " << index.column() << endl;
+#endif
 }
 
 void
 ModelDataTableDialog::currentChanged(const QModelIndex &current,
                                      const QModelIndex &previous)
 {
+#ifdef DEBUG_MODEL_DATA_TABLE_DIALOG
     SVDEBUG << "ModelDataTableDialog::currentChanged: from "
             << previous.row() << ", " << previous.column()
             << " to " << current.row() << ", " << current.column() 
             << endl;
+#endif
     m_currentRow = current.row();
     m_table->setCurrentRow(m_currentRow);
 }
@@ -281,7 +310,9 @@ ModelDataTableDialog::deleteRows()
     // Remove rows in reverse order, so as not to pull the rug from
     // under our own feet
     for (auto ri = selectedRows.rbegin(); ri != selectedRows.rend(); ++ri) {
+#ifdef DEBUG_MODEL_DATA_TABLE_DIALOG
         SVDEBUG << "ModelDataTableDialog: removing row " << *ri << endl;
+#endif
         m_table->removeRow(*ri);
     }
 }
@@ -306,8 +337,9 @@ ModelDataTableDialog::togglePlayTracking()
 void
 ModelDataTableDialog::currentChangedThroughResort(const QModelIndex &index)
 {
-//    SVDEBUG << "ModelDataTableDialog::currentChangedThroughResort: row = " << index.row() << endl;
-//  m_tableView->scrollTo(index);
+#ifdef DEBUG_MODEL_DATA_TABLE_DIALOG
+    SVDEBUG << "ModelDataTableDialog::currentChangedThroughResort: row = " << index.row() << endl;
+#endif
     makeCurrent(index.row());
 }
 
