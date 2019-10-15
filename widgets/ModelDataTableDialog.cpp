@@ -287,6 +287,8 @@ ModelDataTableDialog::currentChanged(const QModelIndex &current,
             << previous.row() << ", " << previous.column()
             << " to " << current.row() << ", " << current.column() 
             << endl;
+#else
+    (void)previous; // unused
 #endif
     m_currentRow = current.row();
     m_table->setCurrentRow(m_currentRow);
