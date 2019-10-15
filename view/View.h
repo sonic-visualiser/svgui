@@ -502,6 +502,8 @@ protected:
     LayerList getScrollableBackLayers(bool testChanged, bool &changed) const;
     LayerList getNonScrollableFrontLayers(bool testChanged, bool &changed) const;
 
+    Layer *getScaleProvidingLayerForUnit(QString unit) const;
+    
     ZoomLevel getZoomConstraintLevel(ZoomLevel level,
                                      ZoomConstraint::RoundingDirection dir =
                                      ZoomConstraint::RoundNearest) const;

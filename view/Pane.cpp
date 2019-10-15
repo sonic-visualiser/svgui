@@ -61,7 +61,8 @@
 
 #include "widgets/KeyReference.h" //!!! should probably split KeyReference into a data class in base and another that shows the widget
 
-//#define DEBUG_PANE
+//#define DEBUG_PANE 1
+//#define DEBUG_PANE_SCALE_CHOICE 1
 
 QCursor *Pane::m_measureCursor1 = nullptr;
 QCursor *Pane::m_measureCursor2 = nullptr;
@@ -525,99 +526,120 @@ Pane::getVerticalScaleWidth() const
 void
 Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 {
-    Layer *scaleLayer = nullptr;
-
-//    cerr << "Pane::drawVerticalScale[" << this << "]" << endl;
-    
     double min, max;
     bool log;
     QString unit;
 
-    // If the top layer has no scale and reports no display extents,
-    // but does report a unit, then the scale should be drawn from any
-    // (visible) underlying layer with a scale and that unit.  If the
-    // top layer has no scale and no value extents at all, then the
-    // scale should be drawn from any (visible) underlying layer with
-    // a scale regardless of unit.
-
-    int sw = topLayer->getVerticalScaleWidth
-        (this, m_manager->shouldShowVerticalColourScale(), paint);
+    bool includeColourScale = m_manager->shouldShowVerticalColourScale();
     
-    if (sw > 0) {
-        scaleLayer = topLayer;
-        m_scaleWidth = sw;
+    Layer *scaleLayer = nullptr;
+    int scaleWidth = 0;
 
+    // If the topmost layer is prepared to draw a scale, then use it.
+    //
+    // Otherwise: find the topmost layer that has value extents,
+    // i.e. for which a scale is relevant at all.
+    //
+    // If that layer is prepared to draw a scale directly, then use
+    // it. This could be the case even if the layer has no unit and so
+    // does not participate in scale-providing / auto-align layers.
+    // 
+    // Otherwise, request the scale-providing layer for that layer
+    // from the view, and if there is one and it can draw a scale, use
+    // that.
+    //
+    // In all cases ignore dormant layers, and if we hit an opaque
+    // layer before finding any with value extents, give up.
+
+    if (topLayer && !topLayer->isLayerDormant(this)) {
+        scaleWidth = topLayer->getVerticalScaleWidth
+            (this, includeColourScale, paint);
+
+#ifdef DEBUG_PANE_SCALE_CHOICE
+        SVCERR << "Pane[" << getId() << "]::drawVerticalScale: Top layer ("
+               << topLayer << ") offers vertical scale width of " << scaleWidth
+               << endl;
+#endif
+    }
+
+    if (scaleWidth > 0) {
+        scaleLayer = topLayer;
     } else {
 
-        bool hasDisplayExtents = topLayer->getDisplayExtents(min, max);
-        bool hasValueExtents = topLayer->getValueExtents(min, max, log, unit);
-            
-        if (!hasDisplayExtents) {
+        for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) {
+            Layer *layer = *i;
 
-            if (!hasValueExtents) {
-
-                for (LayerList::iterator vi = m_layerStack.end();
-                     vi != m_layerStack.begin(); ) {
-                        
-                    --vi;
-                        
-                    if ((*vi) == topLayer) continue;
-                    if ((*vi)->isLayerDormant(this)) continue;
-                        
-                    sw = (*vi)->getVerticalScaleWidth
-                        (this, m_manager->shouldShowVerticalColourScale(), paint);
-                        
-                    if (sw > 0) {
-                        scaleLayer = *vi;
-                        m_scaleWidth = sw;
-                        break;
-                    }
-                }
-            } else if (unit != "") { // && hasValueExtents && !hasDisplayExtents
-
-                QString requireUnit = unit;
-
-                for (LayerList::iterator vi = m_layerStack.end();
-                     vi != m_layerStack.begin(); ) {
-                        
-                    --vi;
-                        
-                    if ((*vi) == topLayer) continue;
-                    if ((*vi)->isLayerDormant(this)) continue;
-                        
-                    if ((*vi)->getDisplayExtents(min, max)) {
-                            
-                        // search no further than this: if the
-                        // scale from this layer isn't suitable,
-                        // we'll have to draw no scale (else we'd
-                        // risk ending up with the wrong scale)
-                            
-                        if ((*vi)->getValueExtents(min, max, log, unit) &&
-                            unit == requireUnit) {
-
-                            sw = (*vi)->getVerticalScaleWidth
-                                (this, m_manager->shouldShowVerticalColourScale(), paint);
-                            if (sw > 0) {
-                                scaleLayer = *vi;
-                                m_scaleWidth = sw;
-                            }
-                        }
-                        break;
-                    }
-                }
+            if (layer->isLayerDormant(this)) {
+#ifdef DEBUG_PANE_SCALE_CHOICE
+                SVCERR << "Pane[" << getId() << "]::drawVerticalScale: "
+                       << "Layer " << layer << " is dormant, skipping" << endl;
+#endif
+                continue;
             }
+
+            if (layer->getValueExtents(min, max, log, unit)) {
+                scaleLayer = layer;
+
+#ifdef DEBUG_PANE_SCALE_CHOICE
+                SVCERR << "Pane[" << getId() << "]::drawVerticalScale: "
+                       << "Layer " << layer << " has value extents (unit = "
+                       << unit << "), using this layer or unit" << endl;
+#endif
+                break;
+            }
+
+            if (layer->isLayerOpaque()) {
+#ifdef DEBUG_PANE
+                SVCERR << "Pane[" << getId() << "]::drawVerticalScale: "
+                       << "Layer " << layer
+                       << " is opaque, searching no further" << endl;
+#endif
+                break;
+            }
+        }
+
+        if (scaleLayer) {
+            scaleWidth = scaleLayer->getVerticalScaleWidth
+                (this, includeColourScale, paint);
+
+#ifdef DEBUG_PANE_SCALE_CHOICE
+            SVCERR << "Pane[" << getId() << "]::drawVerticalScale: Layer "
+                   << topLayer << " offers vertical scale width of "
+                   << scaleWidth << endl;
+#endif
+        }
+        
+        if (scaleWidth == 0 && unit != "") {
+#ifdef DEBUG_PANE_SCALE_CHOICE
+            SVDEBUG << "Pane[" << getId()
+                    << "]::drawVerticalScale: No good scale layer, then, "
+                    << "but we have a unit of " << unit
+                    << " - seeking scale-providing layer for that" << endl;
+#endif
+            
+            scaleLayer = getScaleProvidingLayerForUnit(unit);
+            
+#ifdef DEBUG_PANE_SCALE_CHOICE
+            SVDEBUG << "Pane[" << getId()
+                    << "]::drawVerticalScale: That returned "
+                    << scaleLayer << endl;
+#endif
         }
     }
 
-    if (!scaleLayer) m_scaleWidth = 0;
-
-//    cerr << "m_scaleWidth = " << m_scaleWidth << ", r.left = " << r.left() << endl;
-    
+    if (scaleWidth > 0) {
+        m_scaleWidth = scaleWidth;
+    } else if (scaleLayer) {
+        m_scaleWidth = scaleLayer->getVerticalScaleWidth
+            (this, includeColourScale, paint);
+    } else {
+        m_scaleWidth = 0;
+    }
+        
     if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
 
 //      Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
-//      SVDEBUG << "Pane::paintEvent: calling paint.save() in vertical scale block" << endl;
         paint.save();
             
         paint.setPen(Qt::NoPen);
@@ -629,8 +651,8 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
         paint.setBrush(Qt::NoBrush);
         scaleLayer->paintVerticalScale
-            (this, m_manager->shouldShowVerticalColourScale(),
-             paint, QRect(0, 0, m_scaleWidth, height()));
+            (this, includeColourScale, paint,
+             QRect(0, 0, m_scaleWidth, height()));
         
         paint.restore();
     }

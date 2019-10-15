@@ -197,10 +197,34 @@ View::getVisibleExtentsForUnit(QString unit,
                                double &min, double &max,
                                bool &log) const
 {
-    bool have = false;
+    Layer *layer = getScaleProvidingLayerForUnit(unit);
+    if (!layer) {
+        return false;
+    }
 
-    // Iterate in reverse order, so as to return display extents of
-    // topmost layer that fits the bill
+    //!!! clumsy
+
+    QString layerUnit;
+    double layerMin, layerMax;
+
+    if (layer->getValueExtents(layerMin, layerMax, log, layerUnit)) {
+        if (layer->getDisplayExtents(min, max)) {
+            return true;
+        } else {
+            min = layerMin;
+            max = layerMax;
+            return true;
+        }
+    } else {
+        return false;
+    }
+}
+        
+Layer *
+View::getScaleProvidingLayerForUnit(QString unit) const
+{
+    // Iterate in reverse order, so as to use topmost layer that fits
+    // the bill
     
     for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
 
@@ -221,26 +245,10 @@ View::getVisibleExtentsForUnit(QString unit,
             continue;
         }
 
-        double displayMin = 0.0, displayMax = 0.0;
-        
-        if (layer->getDisplayExtents(displayMin, displayMax)) {
-
-            min = displayMin;
-            max = displayMax;
-            log = layerLog;
-            have = true;
-            break;
-
-        } else {
-
-            if (!have || layerMin < min) min = layerMin;
-            if (!have || layerMax > max) max = layerMax;
-            if (!have && layerLog) log = true;
-            have = true;
-        }
+        return layer;
     }
 
-    return have;
+    return nullptr;
 }
 
 bool
