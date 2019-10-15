@@ -472,7 +472,7 @@ BoxLayer::getScaleExtents(LayerGeometryProvider *v,
 
     if (m_verticalScale == AutoAlignScale) {
 
-        if (!v->getValueExtents(queryUnits, min, max, log)) {
+        if (!v->getVisibleExtentsForUnit(queryUnits, min, max, log)) {
 
             min = model->getValueMinimum();
             max = model->getValueMaximum();

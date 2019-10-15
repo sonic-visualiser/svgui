@@ -457,18 +457,20 @@ public:
      * these values if known.
      *
      * This function returns the "normal" extents for the layer, not
-     * necessarily the extents actually in use in the display.
+     * necessarily the extents actually in use in the display (see
+     * getDisplayExtents).
      */
     virtual bool getValueExtents(double &min, double &max,
                                  bool &logarithmic, QString &unit) const = 0;
 
     /**
-     * Return the minimum and maximum values within the displayed
-     * range for the y axis, if only a subset of the whole range of
-     * the model (returned by getValueExtents) is being displayed.
-     * Return false if the layer is not imposing a particular display
-     * extent (using the normal layer extents or deferring to whatever
-     * is in use for the same units elsewhere in the view).
+     * Return the minimum and maximum values within the visible area
+     * for the y axis of this layer.
+     *
+     * Return false if the layer has no display extents of its
+     * own. This could be because the layer is "auto-aligning" against
+     * another layer with the same units elsewhere in the view, or
+     * because the layer has no concept of a vertical scale at all.
      */
     virtual bool getDisplayExtents(double & /* min */,
                                    double & /* max */) const {

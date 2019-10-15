@@ -106,10 +106,6 @@ public slots:
     void mouseEnteredWidget();
     void mouseLeftWidget();
 
-    bool getTopLayerDisplayExtents(double &valueMin, double &valueMax,
-                                   double &displayMin, double &displayMax,
-                                   QString *unit = 0);
-
 protected slots:
     void playbackScheduleTimerElapsed();
 
@@ -154,6 +150,9 @@ protected:
 
     bool canTopLayerMoveVertical();
     bool setTopLayerDisplayExtents(double displayMin, double displayMax);
+    bool getTopLayerDisplayExtents(double &valueMin, double &valueMax,
+                                   double &displayMin, double &displayMax,
+                                   QString *unit = 0);
 
     void dragTopLayer(QMouseEvent *e);
     void dragExtendSelection(QMouseEvent *e);

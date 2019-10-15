@@ -95,27 +95,23 @@ public:
         return m_view->getFrequencyForY
             (y / m_scaleFactor, minFreq, maxFreq, logarithmic);
     }
-    int getTextLabelHeight(const Layer *layer, QPainter &paint) const override {
-        return m_scaleFactor * m_view->getTextLabelHeight(layer, paint);
+    int getTextLabelYCoord(const Layer *layer, QPainter &paint) const override {
+        return m_scaleFactor * m_view->getTextLabelYCoord(layer, paint);
     }
-    bool getValueExtents(QString unit, double &min, double &max,
-                                 bool &log) const override {
-        return m_view->getValueExtents(unit, min, max, log);
+    bool getVisibleExtentsForUnit(QString unit, double &min, double &max,
+                                  bool &log) const override {
+        return m_view->getVisibleExtentsForUnit(unit, min, max, log);
     }
     ZoomLevel getZoomLevel() const override {
         ZoomLevel z = m_view->getZoomLevel();
-        //!!!
-//        cerr << "getZoomLevel: from " << z << " to ";
         if (z.zone == ZoomLevel::FramesPerPixel) {
             z.level /= m_scaleFactor;
             if (z.level < 1) {
                 z.level = 1;
             }
         } else {
-            //!!!???
             z.level *= m_scaleFactor;
         }
-//        cerr << z << endl;
         return z;
     }
     QRect getPaintRect() const override {

@@ -193,36 +193,94 @@ View::getPropertyContainer(int i)
 }
 
 bool
-View::getValueExtents(QString unit, double &min, double &max, bool &log) const
+View::getVisibleExtentsForUnit(QString unit,
+                               double &min, double &max,
+                               bool &log) const
 {
     bool have = false;
 
-    for (LayerList::const_iterator i = m_layerStack.begin();
-         i != m_layerStack.end(); ++i) { 
+    // Iterate in reverse order, so as to return display extents of
+    // topmost layer that fits the bill
+    
+    for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
 
+        Layer *layer = *i;
+
+        if (layer->isLayerDormant(this)) {
+            continue;
+        }
+        
         QString layerUnit;
         double layerMin = 0.0, layerMax = 0.0;
-        double displayMin = 0.0, displayMax = 0.0;
         bool layerLog = false;
 
-        if ((*i)->getValueExtents(layerMin, layerMax, layerLog, layerUnit) &&
-            layerUnit.toLower() == unit.toLower()) {
+        if (!layer->getValueExtents(layerMin, layerMax, layerLog, layerUnit)) {
+            continue;
+        }
+        if (layerUnit.toLower() != unit.toLower()) {
+            continue;
+        }
 
-            if ((*i)->getDisplayExtents(displayMin, displayMax)) {
+        double displayMin = 0.0, displayMax = 0.0;
+        
+        if (layer->getDisplayExtents(displayMin, displayMax)) {
 
-                min = displayMin;
-                max = displayMax;
-                log = layerLog;
-                have = true;
-                break;
+            min = displayMin;
+            max = displayMax;
+            log = layerLog;
+            have = true;
+            break;
 
-            } else {
+        } else {
 
-                if (!have || layerMin < min) min = layerMin;
-                if (!have || layerMax > max) max = layerMax;
-                if (layerLog) log = true;
-                have = true;
-            }
+            if (!have || layerMin < min) min = layerMin;
+            if (!have || layerMax > max) max = layerMax;
+            if (!have && layerLog) log = true;
+            have = true;
+        }
+    }
+
+    return have;
+}
+
+bool
+View::getVisibleExtentsForAnyUnit(double &min, double &max,
+                                  bool &log, QString &unit) const
+{
+    bool have = false;
+
+    // Iterate in reverse order, so as to return display extents of
+    // topmost layer that fits the bill
+    
+    for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
+
+        Layer *layer = *i;
+
+        if (layer->isLayerDormant(this)) {
+            continue;
+        }
+        
+        QString layerUnit;
+        double layerMin = 0.0, layerMax = 0.0;
+        bool layerLog = false;
+
+        if (!layer->getValueExtents(layerMin, layerMax, layerLog, layerUnit)) {
+            continue;
+        }
+        if (layerUnit == "") {
+            continue;
+        }
+
+        double displayMin = 0.0, displayMax = 0.0;
+        
+        if (layer->getDisplayExtents(displayMin, displayMax)) {
+
+            min = displayMin;
+            max = displayMax;
+            log = layerLog;
+            unit = layerUnit;
+            have = true;
+            break;
         }
     }
 
@@ -230,7 +288,7 @@ View::getValueExtents(QString unit, double &min, double &max, bool &log) const
 }
 
 int
-View::getTextLabelHeight(const Layer *layer, QPainter &paint) const
+View::getTextLabelYCoord(const Layer *layer, QPainter &paint) const
 {
     std::map<int, Layer *> sortedLayers;
 

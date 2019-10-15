@@ -675,7 +675,7 @@ FlexiNoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
 
     if (shouldAutoAlign()) {
 
-        if (!v->getValueExtents(queryUnits, min, max, log)) {
+        if (!v->getVisibleExtentsForUnit(queryUnits, min, max, log)) {
 
             auto model = ModelById::getAs<NoteModel>(m_model);
             min = model->getValueMinimum();

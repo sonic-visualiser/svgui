@@ -608,7 +608,7 @@ RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max,
 
     if (m_verticalScale == AutoAlignScale) {
 
-        if (!v->getValueExtents(queryUnits, min, max, log)) {
+        if (!v->getVisibleExtentsForUnit(queryUnits, min, max, log)) {
 
             min = model->getValueMinimum();
             max = model->getValueMaximum();
@@ -1027,7 +1027,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                     - paint.fontMetrics().descent();
             } else {
                 labelX = x + 5;
-                labelY = v->getTextLabelHeight(this, paint);
+                labelY = v->getTextLabelYCoord(this, paint);
                 if (labelX < nextLabelMinX) {
                     if (lastLabelY < v->getPaintHeight()/2) {
                         labelY = lastLabelY + fontHeight;

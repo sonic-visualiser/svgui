@@ -781,7 +781,7 @@ TimeValueLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
 
     if (shouldAutoAlign()) {
 
-        if (!v->getValueExtents(getScaleUnits(), min, max, log)) {
+        if (!v->getVisibleExtentsForUnit(getScaleUnits(), min, max, log)) {
             min = model->getValueMinimum();
             max = model->getValueMaximum();
         } else if (log) {
@@ -968,7 +968,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     int textY = 0;
     if (m_plotStyle == PlotSegmentation) {
-        textY = v->getTextLabelHeight(this, paint);
+        textY = v->getTextLabelYCoord(this, paint);
     } else {
         int originY = getYForValue(v, 0.f);
         if (originY > 0 && originY < v->getPaintHeight()) {

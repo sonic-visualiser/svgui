@@ -378,7 +378,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     }
         
     int prevX = -1;
-    int textY = v->getTextLabelHeight(this, paint);
+    int textY = v->getTextLabelYCoord(this, paint);
     
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {

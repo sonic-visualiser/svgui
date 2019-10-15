@@ -350,11 +350,25 @@ public:
      */
     virtual bool renderPartToSvgFile(QString filename,
                                      sv_frame_t f0, sv_frame_t f1);
-    
-    int getTextLabelHeight(const Layer *layer, QPainter &) const override;
 
-    bool getValueExtents(QString unit, double &min, double &max,
-                         bool &log) const override;
+    /**
+     * Return the visible vertical extents for the given unit, if any.
+     * Overridden from LayerGeometryProvider (see docs there).
+     */
+    bool getVisibleExtentsForUnit(QString unit, double &min, double &max,
+                                  bool &log) const override;
+
+    /**
+     * Return some visible vertical extents and unit. That is, if at
+     * least one non-dormant layer has a non-empty unit and returns
+     * some values from its getDisplayExtents() method, return the
+     * extents and unit from the topmost of those. Otherwise return
+     * false.
+     */
+    bool getVisibleExtentsForAnyUnit(double &min, double &max,
+                                     bool &logarithmic, QString &unit) const;
+    
+    int getTextLabelYCoord(const Layer *layer, QPainter &) const override;
 
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;

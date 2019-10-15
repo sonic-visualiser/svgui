@@ -142,10 +142,32 @@ public:
                                     double minFreq, double maxFreq,
                                     bool logarithmic) const = 0;
 
-    virtual int getTextLabelHeight(const Layer *layer, QPainter &) const = 0;
+    /**
+     * Return a y-coordinate at which text labels for individual items
+     * in a layer may be drawn, so as not to overlap with those of
+     * other layers. The returned coordinate will be near the top of
+     * the visible widget, but adjusted downward depending on how many
+     * other visible layers return true from their implementation of
+     * Layer::needsTextLabelHeight().
+     */
+    virtual int getTextLabelYCoord(const Layer *layer, QPainter &) const = 0;
 
-    virtual bool getValueExtents(QString unit, double &min, double &max,
-                                 bool &log) const = 0;
+    /**
+     * Return the visible vertical extents for the given unit, if any.
+     * That is:
+     * 
+     * - if at least one non-dormant layer uses the same unit and
+     *   returns some values from its getDisplayExtents() method,
+     *   return the extents from the topmost of those
+     *
+     * - otherwise, if at least one non-dormant layer uses the same
+     *   unit, return the union of the value extents of all of those
+     * 
+     * - otherwise return false
+     */
+    virtual bool getVisibleExtentsForUnit(QString unit,
+                                          double &min, double &max,
+                                          bool &log) const = 0;
 
     /**
      * Return the zoom level, i.e. the number of frames per pixel or

@@ -630,7 +630,7 @@ Layer::valueExtentsMatchMine(LayerGeometryProvider *v) const
         return false;
     }
 
-    if (!v->getValueExtents(unit, min, max, logarithmic)) {
+    if (!v->getVisibleExtentsForUnit(unit, min, max, logarithmic)) {
         return false;
     }
 
