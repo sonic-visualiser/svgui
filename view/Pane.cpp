@@ -535,6 +535,11 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
     Layer *scaleLayer = nullptr;
     int scaleWidth = 0;
 
+#ifdef DEBUG_PANE_SCALE_CHOICE
+        SVCERR << "Pane[" << getId() << "]::drawVerticalScale: Have "
+               << getLayerCount() << " layer(s)" << endl;
+#endif
+
     // If the topmost layer is prepared to draw a scale, then use it.
     //
     // Otherwise: find the topmost layer that has value extents,
@@ -557,13 +562,19 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
 #ifdef DEBUG_PANE_SCALE_CHOICE
         SVCERR << "Pane[" << getId() << "]::drawVerticalScale: Top layer ("
-               << topLayer << ") offers vertical scale width of " << scaleWidth
+               << topLayer << ", " << topLayer->getLayerPresentationName()
+               << ") offers vertical scale width of " << scaleWidth
                << endl;
 #endif
     }
 
     if (scaleWidth > 0) {
         scaleLayer = topLayer;
+
+#ifdef DEBUG_PANE_SCALE_CHOICE
+        SVCERR << "Pane[" << getId() << "]::drawVerticalScale: Accepting that"
+               << endl;
+#endif
     } else {
 
         for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) {
@@ -572,7 +583,9 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
             if (layer->isLayerDormant(this)) {
 #ifdef DEBUG_PANE_SCALE_CHOICE
                 SVCERR << "Pane[" << getId() << "]::drawVerticalScale: "
-                       << "Layer " << layer << " is dormant, skipping" << endl;
+                       << "Layer " << layer << ", "
+                       << layer->getLayerPresentationName()
+                       << " is dormant, skipping" << endl;
 #endif
                 continue;
             }
@@ -582,7 +595,9 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
 #ifdef DEBUG_PANE_SCALE_CHOICE
                 SVCERR << "Pane[" << getId() << "]::drawVerticalScale: "
-                       << "Layer " << layer << " has value extents (unit = "
+                       << "Layer " << layer
+                       << ", " << layer->getLayerPresentationName()
+                       << " has value extents (unit = "
                        << unit << "), using this layer or unit" << endl;
 #endif
                 break;
@@ -592,6 +607,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 #ifdef DEBUG_PANE
                 SVCERR << "Pane[" << getId() << "]::drawVerticalScale: "
                        << "Layer " << layer
+                       << ", " << layer->getLayerPresentationName()
                        << " is opaque, searching no further" << endl;
 #endif
                 break;
@@ -604,7 +620,9 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 
 #ifdef DEBUG_PANE_SCALE_CHOICE
             SVCERR << "Pane[" << getId() << "]::drawVerticalScale: Layer "
-                   << topLayer << " offers vertical scale width of "
+                   << scaleLayer << ", "
+                   << scaleLayer->getLayerPresentationName()
+                   << " offers vertical scale width of "
                    << scaleWidth << endl;
 #endif
         }
@@ -612,7 +630,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
         if (scaleWidth == 0 && unit != "") {
 #ifdef DEBUG_PANE_SCALE_CHOICE
             SVDEBUG << "Pane[" << getId()
-                    << "]::drawVerticalScale: No good scale layer, then, "
+                    << "]::drawVerticalScale: No good scale layer, "
                     << "but we have a unit of " << unit
                     << " - seeking scale-providing layer for that" << endl;
 #endif
@@ -621,8 +639,11 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
             
 #ifdef DEBUG_PANE_SCALE_CHOICE
             SVDEBUG << "Pane[" << getId()
-                    << "]::drawVerticalScale: That returned "
-                    << scaleLayer << endl;
+                    << "]::drawVerticalScale: That returned layer "
+                    << scaleLayer << ", "
+                    << (scaleLayer ? scaleLayer->getLayerPresentationName()
+                        : "(none)")
+                    <<  endl;
 #endif
         }
     }
