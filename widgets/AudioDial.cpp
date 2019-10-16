@@ -142,7 +142,7 @@ void AudioDial::paintEvent(QPaintEvent *)
         meterColor = palette().mid().color();
     } else if (m_meterColor == Qt::white) {
         if (knobIsDark) {
-            meterColor = palette().light().color();
+            meterColor = palette().text().color();
         } else {
             meterColor = palette().highlight().color();
         }
@@ -150,7 +150,7 @@ void AudioDial::paintEvent(QPaintEvent *)
 
     QColor notchColor(palette().dark().color());
     if (knobIsDark) {
-        notchColor = palette().light().color();
+        notchColor = palette().text().color();
     }
     
     int m_size = width() < height() ? width() : height();
@@ -200,7 +200,6 @@ void AudioDial::paintEvent(QPaintEvent *)
     // Tick notches...
 
     if ( notchesVisible() ) {
-//        cerr << "Notches visible" << endl;
         pen.setColor(notchColor);
         pen.setWidth(scale);
         paint.setPen(pen);
