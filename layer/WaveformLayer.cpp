@@ -355,18 +355,43 @@ bool
 WaveformLayer::getValueExtents(double &min, double &max,
                                bool &log, QString &unit) const
 {
-    unit = "V";
-
-    // There is no point in returning extents here unless we have a
-    // scale that anyone else can actually calculate with, which is
-    // only the case if getDisplayExtents is returning successfully
+    // This function serves two purposes. It's used to gather min and
+    // max values for a given unit, for cases where there are
+    // auto-align layers out there that aren't providing extents of
+    // their own and that have no specific other layer with display
+    // extents to align to. It's also used to determine whether a
+    // layer might be capable of drawing a scale for itself.
+    //
+    // This makes our situation a bit tricky. There's no point in
+    // returning extents that anyone else might try to align to unless
+    // we have a scale that they can actually calculate with, which is
+    // only the case for certain linear/log arrangements (see
+    // getDisplayExtents - we can test this case by checking whether
+    // getDisplayExtents returns successfully).
+    //
+    // However, there is a point in returning something that indicates
+    // our own capacity to draw a scale. If we don't do that, then we
+    // won't get a scale at all if e.g. we have a time-instant layer
+    // on top (or something else that doesn't care about the y axis).
+    //
+    // Our "solution" to this is to always return true and our
+    // extents, but with an empty unit unless we have the sort of nice
+    // linear/log scale that others can actually align to.
+    //
+    // It might be better to respond to capability requests - can draw
+    // scale, care about scale, can align unit X etc.
     
     if (getDisplayExtents(min, max)) {
+        unit = "V";
         log = (m_scale == dBScale);
-        return true;
     } else {
-        return false;
+        max = 1.0;
+        min = -1.0;
+        log = false;
+        unit = "";
     }
+
+    return true;
 }
 
 bool
