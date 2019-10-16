@@ -38,6 +38,8 @@
 
 using std::vector;
 
+double
+WaveformLayer::m_dBMin = -50.0;
 
 WaveformLayer::WaveformLayer() :
     SingleColourLayer(),
@@ -46,6 +48,7 @@ WaveformLayer::WaveformLayer() :
     m_showMeans(true),
     m_channelMode(SeparateChannels),
     m_channel(-1),
+    m_channelCount(0),
     m_scale(LinearScale),
     m_middleLineHeight(0.5),
     m_aggressive(false),
@@ -76,10 +79,12 @@ WaveformLayer::setModel(ModelId modelId)
     if (!modelId.isNone() && !newModel) {
         throw std::logic_error("Not a RangeSummarisableTimeValueModel");
     }
-    
+
     if (m_model == modelId) return;
     m_model = modelId;
 
+    // NB newModel may legitimately be null
+    
     m_cacheValid = false;
     
     bool channelsChanged = false;
@@ -97,6 +102,7 @@ WaveformLayer::setModel(ModelId modelId)
     }
 
     if (newModel) {
+        m_channelCount = newModel->getChannelCount();
         connectSignals(m_model);
     }
         
@@ -112,9 +118,7 @@ WaveformLayer::getProperties() const
     list.push_back("Scale");
     list.push_back("Gain");
     list.push_back("Normalize Visible Area");
-
-    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
-    if (model && model->getChannelCount() > 1 && m_channel == -1) {
+    if (m_channelCount > 1 && m_channel == -1) {
         list.push_back("Channels");
     }
 
@@ -349,20 +353,57 @@ WaveformLayer::getCompletion(LayerGeometryProvider *) const
 
 bool
 WaveformLayer::getValueExtents(double &min, double &max,
-                               bool &, QString &unit) const
+                               bool &log, QString &unit) const
 {
-    if (m_scale == LinearScale) {
-        min = 0.0;
-        max = 1.0;
-        unit = "V";
-    } else if (m_scale == MeterScale) {
-        return false; //!!!
+    unit = "V";
+
+    // There is no point in returning extents here unless we have a
+    // scale that anyone else can actually calculate with, which is
+    // only the case if getDisplayExtents is returning successfully
+    
+    if (getDisplayExtents(min, max)) {
+        log = (m_scale == dBScale);
+        return true;
     } else {
-        min = AudioLevel::multiplier_to_dB(0.0);
-        max = AudioLevel::multiplier_to_dB(1.0);
-        unit = "dB";
+        return false;
     }
-    return true;
+}
+
+bool
+WaveformLayer::getDisplayExtents(double &min, double &max) const
+{
+    // If we have a single channel visible and either linear or log
+    // (dB) scale, then we have a continuous scale that runs from -1
+    // to 1 or -dBMin to 0 and we can offer it as an alignment target
+    // for other layers with the same unit. We can also do this in
+    // butterfly mode, but only with linear scale. Otherwise no.
+
+    if (m_scale == MeterScale) {
+        return false;
+    }
+    
+    if (m_channelCount > 1) {
+        if (m_channelMode == SeparateChannels) {
+            return false;
+        }
+        if (m_channelMode == MergeChannels && m_scale != LinearScale) {
+            return false;
+        }
+    }
+
+    if (m_scale == LinearScale) {
+        max = 1.0;
+        min = -1.0;
+        return true;
+    }
+
+    if (m_scale == dBScale) {
+        max = 1.0;
+        min = AudioLevel::dB_to_multiplier(m_dBMin);
+        return true;
+    }
+
+    return false;
 }
 
 double
@@ -370,9 +411,9 @@ WaveformLayer::dBscale(double sample, int m) const
 {
     if (sample < 0.0) return dBscale(-sample, m);
     double dB = AudioLevel::multiplier_to_dB(sample);
-    if (dB < -50.0) return 0;
+    if (dB < m_dBMin) return 0;
     if (dB > 0.0) return m;
-    return ((dB + 50.0) * m) / 50.0;
+    return ((dB - m_dBMin) * m) / (-m_dBMin);
 }
 
 int
@@ -380,10 +421,7 @@ WaveformLayer::getChannelArrangement(int &min, int &max,
                                      bool &merging, bool &mixing)
     const
 {
-    auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
-    if (!model || !model->isOK()) return 0;
-
-    int channels = model->getChannelCount();
+    int channels = m_channelCount;
     if (channels == 0) return 0;
 
     int rawChannels = channels;
@@ -495,7 +533,7 @@ WaveformLayer::getNormalizeGain(LayerGeometryProvider *v, int channel) const
                                 mergingChannels, mixingChannels);
 
     if (mergingChannels || mixingChannels) {
-        if (model->getChannelCount() > 1) {
+        if (m_channelCount > 1) {
             RangeSummarisableTimeValueModel::Range otherRange =
                 model->getSummary(1, rangeStart, rangeEnd - rangeStart);
             range.setMax(std::max(range.max(), otherRange.max()));
@@ -696,7 +734,7 @@ WaveformLayer::getSummaryRanges(int minChannel, int maxChannel,
     if (mixingOrMerging) {
         if (minChannel != 0 || maxChannel != 0) {
             throw std::logic_error("Internal error: min & max channels should be 0 when merging or mixing all channels");
-        } else if (model->getChannelCount() > 1) {
+        } else if (m_channelCount > 1) {
             ranges.push_back({});
             model->getSummaries
                 (1, frame0, frame1 - frame0, ranges[1], blockSize);
@@ -720,7 +758,7 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
         if (minChannel != 0 || maxChannel != 0) {
             throw std::logic_error("Internal error: min & max channels should be 0 when merging or mixing all channels");
         }
-        if (model->getChannelCount() > 1) {
+        if (m_channelCount > 1) {
             // call back on self for the individual channels with
             // mixingOrMerging false
             getOversampledRanges
@@ -1343,7 +1381,7 @@ WaveformLayer::getValueForY(const LayerGeometryProvider *v, int y, int &channel)
 
     int vy = my - y;
     double value = 0;
-    double thresh = -50.f;
+    double thresh = m_dBMin;
 
     switch (m_scale) {
 
@@ -1374,7 +1412,7 @@ WaveformLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
 
     if (m_scale == dBScale || m_scale == MeterScale) {
 
-        double thresh = -50.f;
+        double thresh = m_dBMin;
         
         if (value > 0.0) {
             value = 10.0 * log10(value);
@@ -1407,7 +1445,7 @@ WaveformLayer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y
 
     if (m_scale == dBScale || m_scale == MeterScale) {
 
-        double thresh = -50.0;
+        double thresh = m_dBMin;
 
         if (v1 == v0) diff = thresh;
         else {

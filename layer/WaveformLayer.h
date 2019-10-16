@@ -174,6 +174,8 @@ public:
     bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const override;
 
+    bool getDisplayExtents(double & min, double &max) const override;
+
     bool getYScaleValue(const LayerGeometryProvider *v, int y,
                                 double &value, QString &unit) const override;
     
@@ -236,9 +238,12 @@ protected:
     bool         m_showMeans;
     ChannelMode  m_channelMode;
     int          m_channel;
+    int          m_channelCount;
     Scale        m_scale;
     double       m_middleLineHeight;
     bool         m_aggressive;
+
+    static double m_dBMin;
 
     mutable std::vector<float> m_effectiveGains;
 
