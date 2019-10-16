@@ -51,6 +51,7 @@
 //#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
 //#define DEBUG_PROGRESS_STUFF 1
+//#define DEBUG_VIEW_SCALE_CHOICE 1
 
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
@@ -197,40 +198,73 @@ View::getVisibleExtentsForUnit(QString unit,
                                double &min, double &max,
                                bool &log) const
 {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+    SVCERR << "View[" << getId() << "]::getVisibleExtentsForUnit("
+           << unit << ")" << endl;
+#endif
+    
     Layer *layer = getScaleProvidingLayerForUnit(unit);
-    if (!layer) {
-        return false;
-    }
-
-    //!!! clumsy
 
     QString layerUnit;
     double layerMin, layerMax;
 
-    if (layer->getValueExtents(layerMin, layerMax, log, layerUnit)) {
-        if (layer->getDisplayExtents(min, max)) {
-            return true;
-        } else {
-            min = layerMin;
-            max = layerMax;
-            return true;
+    if (!layer) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+        SVCERR << "View[" << getId() << "]::getVisibleExtentsForUnit("
+               << unit << "): No scale-providing layer for this unit, "
+               << "taking union of extents of layers with this unit" << endl;
+#endif
+        bool haveAny = false;
+        bool layerLog;
+        for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
+            Layer *layer = *i;
+            if (layer->getValueExtents(layerMin, layerMax,
+                                       layerLog, layerUnit)) {
+                if (unit.toLower() != layerUnit.toLower()) {
+                    continue;
+                }
+                if (!haveAny || layerMin < min) {
+                    min = layerMin;
+                }
+                if (!haveAny || layerMax > max) {
+                    max = layerMax;
+                }
+                if (!haveAny || layerLog) {
+                    log = layerLog;
+                }
+                haveAny = true;
+            }
         }
-    } else {
-        return false;
+        return haveAny;
     }
+
+    return (layer->getValueExtents(layerMin, layerMax, log, layerUnit) &&
+            layer->getDisplayExtents(min, max));
 }
         
 Layer *
 View::getScaleProvidingLayerForUnit(QString unit) const
 {
-    // Iterate in reverse order, so as to use topmost layer that fits
-    // the bill
+    // Return the layer which is used to provide the min/max/log for
+    // any auto-align layer of a given unit. This is also the layer
+    // that will draw the scale, if possible. It is the topmost
+    // visible layer having that unit that is not also auto-aligning.
+    // If there is none such, return null.
     
     for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
 
         Layer *layer = *i;
 
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+        SVCERR << "View[" << getId() << "]::getScaleProvidingLayerForUnit("
+               << unit << "): Looking at layer " << layer
+               << " (" << layer->getLayerPresentationName() << ")" << endl;
+#endif
+
         if (layer->isLayerDormant(this)) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVCERR << "... it's dormant" << endl;
+#endif
             continue;
         }
         
@@ -239,11 +273,29 @@ View::getScaleProvidingLayerForUnit(QString unit) const
         bool layerLog = false;
 
         if (!layer->getValueExtents(layerMin, layerMax, layerLog, layerUnit)) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVCERR << "... it has no value extents" << endl;
+#endif
             continue;
         }
         if (layerUnit.toLower() != unit.toLower()) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVCERR << "... it has the wrong unit (" << layerUnit << ")" << endl;
+#endif
             continue;
         }
+
+        double displayMin = 0.0, displayMax = 0.0;
+        if (!layer->getDisplayExtents(displayMin, displayMax)) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVCERR << "... it has no display extents (is auto-aligning or not alignable)" << endl;
+#endif
+            continue;
+        }
+
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+        SVCERR << "... it's good" << endl;
+#endif
 
         return layer;
     }
