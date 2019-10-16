@@ -784,8 +784,18 @@ TimeValueLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
         if (!v->getVisibleExtentsForUnit(getScaleUnits(), min, max, log)) {
             min = model->getValueMinimum();
             max = model->getValueMaximum();
-        } else if (log) {
-            LogRange::mapRange(min, max);
+        } else {
+#ifdef DEBUG_TIME_VALUE_LAYER
+            SVCERR << "getScaleExtents: view returned min = " << min
+                   << ", max = " << max << ", log = " << log << endl;
+#endif
+            if (log) {
+                LogRange::mapRange(min, max);
+#ifdef DEBUG_TIME_VALUE_LAYER
+                SVCERR << "getScaleExtents: mapped to min = " << min
+                       << ", max = " << max << endl;
+#endif
+            }
         }
 
     } else if (m_verticalScale == PlusMinusOneScale) {
@@ -818,12 +828,15 @@ TimeValueLayer::getYForValue(LayerGeometryProvider *v, double val) const
     getScaleExtents(v, min, max, logarithmic);
 
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "getYForValue(" << val << "): min " << min << ", max "
-              << max << ", log " << logarithmic << endl;
+    SVCERR << "getYForValue(" << val << "): min " << min << ", max "
+           << max << ", log " << logarithmic << endl;
 #endif
 
     if (logarithmic) {
         val = LogRange::map(val);
+#ifdef DEBUG_TIME_VALUE_LAYER
+        SVCERR << "-> " << val << endl;
+#endif
     }
 
     return int(h - ((val - min) * h) / (max - min));
