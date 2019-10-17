@@ -41,7 +41,8 @@ public:
     void setLabelHeight(LabelHeight h) { m_labelHeight = h; }
     LabelHeight getLabelHeight() const { return m_labelHeight; }
 
-    bool snapToFeatureFrame(LayerGeometryProvider *, sv_frame_t &, int &, SnapType) const override;
+    bool snapToFeatureFrame(LayerGeometryProvider *, sv_frame_t &, int &,
+                            SnapType, int) const override;
 
     ColourSignificance getLayerColourSignificance() const override {
         return ColourIrrelevant;

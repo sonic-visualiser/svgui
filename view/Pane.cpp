@@ -1440,7 +1440,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             if (layer && !m_shiftPressed &&
                 !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
                 layer->snapToFeatureFrame(this, snapFrame,
-                                          resolution, Layer::SnapLeft);
+                                          resolution, Layer::SnapLeft, e->y());
             }
         
             if (snapFrame < 0) snapFrame = 0;
@@ -2173,9 +2173,9 @@ Pane::dragExtendSelection(QMouseEvent *e)
     if (layer && !m_shiftPressed &&
         !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
         layer->snapToFeatureFrame(this, snapFrameLeft,
-                                  resolution, Layer::SnapLeft);
+                                  resolution, Layer::SnapLeft, e->y());
         layer->snapToFeatureFrame(this, snapFrameRight,
-                                  resolution, Layer::SnapRight);
+                                  resolution, Layer::SnapRight, e->y());
     }
         
 //        cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;

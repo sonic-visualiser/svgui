@@ -39,8 +39,8 @@ public:
     QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-                                    int &resolution,
-                                    SnapType snap) const override;
+                            int &resolution,
+                            SnapType snap, int ycoord) const override;
 
     void drawStart(LayerGeometryProvider *v, QMouseEvent *) override;
     void drawDrag(LayerGeometryProvider *v, QMouseEvent *) override;

@@ -49,7 +49,7 @@ public:
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                             int &resolution,
-                            SnapType snap) const override;
+                            SnapType snap, int ycoord) const override;
     bool snapToSimilarFeature(LayerGeometryProvider *v, sv_frame_t &frame,
                               int &resolution,
                               SnapType snap) const override;

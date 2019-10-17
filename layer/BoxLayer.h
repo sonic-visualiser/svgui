@@ -46,7 +46,7 @@ public:
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                             int &resolution,
-                            SnapType snap) const override;
+                            SnapType snap, int ycoord) const override;
 
     void drawStart(LayerGeometryProvider *v, QMouseEvent *) override;
     void drawDrag(LayerGeometryProvider *v, QMouseEvent *) override;
@@ -118,9 +118,12 @@ public:
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
 
-    EventVector getLocalPoints(LayerGeometryProvider *v, int x) const;
-
-    bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
+    // Return the event that "most closely contains" the given
+    // coordinates, if any; or the closest event that spans the given
+    // x coordinate in the time axis; or false otherwise. This
+    // subsumes the uses of both getPointToDrag and getLocalPoints in
+    // some other layer implementations.
+    bool getLocalPoint(LayerGeometryProvider *v, int x, int y, Event &) const;
 
     ModelId m_model;
     bool m_editing;

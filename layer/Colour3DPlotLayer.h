@@ -64,7 +64,7 @@ public:
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame, 
                             int &resolution,
-                            SnapType snap) const override;
+                            SnapType snap, int ycoord) const override;
 
     void setLayerDormant(const LayerGeometryProvider *v,
                          bool dormant) override;

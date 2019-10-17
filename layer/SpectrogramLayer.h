@@ -78,8 +78,8 @@ public:
     QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-                                    int &resolution,
-                                    SnapType snap) const override;
+                            int &resolution,
+                            SnapType snap, int ycoord) const override;
 
     void measureDoubleClick(LayerGeometryProvider *, QMouseEvent *) override;
 

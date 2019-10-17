@@ -185,6 +185,13 @@ public:
      * would be used in an editing operation through calls to
      * editStart etc.
      *
+     * If ycoord is non-negative, it contains the y coordinate at
+     * which the interaction that prompts this snap is taking place
+     * (e.g. of the mouse press used for a selection action). Layers
+     * that have objects at multiple different heights may choose to
+     * use this information. If the current action has no particular y
+     * coordinate associated with it, ycoord will be passed as -1.
+     *
      * Return true if a suitable feature was found and frame adjusted
      * accordingly.  Return false if no suitable feature was available
      * (and leave frame unmodified).  If returning true, also return
@@ -193,7 +200,8 @@ public:
     virtual bool snapToFeatureFrame(LayerGeometryProvider * /* v */,
                                     sv_frame_t & /* frame */,
                                     int &resolution,
-                                    SnapType /* snap */) const {
+                                    SnapType /* snap */,
+                                    int /* ycoord */) const {
         resolution = 1;
         return false;
     }

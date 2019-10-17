@@ -1215,13 +1215,15 @@ Colour3DPlotLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) 
 }
 
 bool
-Colour3DPlotLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
+Colour3DPlotLayer::snapToFeatureFrame(LayerGeometryProvider *v,
+                                      sv_frame_t &frame,
                                       int &resolution,
-                                      SnapType snap) const
+                                      SnapType snap,
+                                      int ycoord) const
 {
     auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
     if (!model) {
-        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap, ycoord);
     }
 
     resolution = model->getResolution();

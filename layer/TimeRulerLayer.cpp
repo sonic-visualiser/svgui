@@ -51,7 +51,7 @@ TimeRulerLayer::setModel(ModelId model)
 
 bool
 TimeRulerLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
-                                   int &resolution, SnapType snap) const
+                                   int &resolution, SnapType snap, int) const
 {
     auto model = ModelById::get(m_model);
     if (!model) {

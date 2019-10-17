@@ -1844,7 +1844,7 @@ bool
 SpectrogramLayer::snapToFeatureFrame(LayerGeometryProvider *,
                                      sv_frame_t &frame,
                                      int &resolution,
-                                     SnapType snap) const
+                                     SnapType snap, int) const
 {
     resolution = getWindowIncrement();
     sv_frame_t left = (frame / resolution) * resolution;

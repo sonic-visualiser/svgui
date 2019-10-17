@@ -239,36 +239,12 @@ BoxLayer::adoptExtents(double min, double max, QString unit)
     }
 }
 
-EventVector
-BoxLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
-{
-    auto model = ModelById::getAs<BoxModel>(m_model);
-    if (!model) return EventVector();
-
-    sv_frame_t frame = v->getFrameForX(x);
-
-    EventVector local = model->getEventsCovering(frame);
-    if (!local.empty()) return local;
-
-    int fuzz = ViewManager::scalePixelSize(2);
-    sv_frame_t start = v->getFrameForX(x - fuzz);
-    sv_frame_t end = v->getFrameForX(x + fuzz);
-
-    local = model->getEventsStartingWithin(frame, end - frame);
-    if (!local.empty()) return local;
-
-    local = model->getEventsSpanning(start, frame - start);
-    if (!local.empty()) return local;
-
-    return {};
-}
-
 bool
-BoxLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y,
-                         Event &point) const
+BoxLayer::getLocalPoint(LayerGeometryProvider *v, int x, int y,
+                        Event &point) const
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
-    if (!model) return false;
+    if (!model || !model->isReady()) return false;
 
     sv_frame_t frame = v->getFrameForX(x);
 
@@ -308,9 +284,10 @@ BoxLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y,
     } else {
         int nearestDistance = -1;
         for (const auto &p: onPoints) {
+            const auto r = getRange(p);
             int distance = std::min
-                (getYForValue(v, p.getValue()) - y,
-                 getYForValue(v, p.getValue() + fabsf(p.getLevel())) - y);
+                (getYForValue(v, r.first) - y,
+                 getYForValue(v, r.second) - y);
             if (distance < 0) distance = -distance;
             if (nearestDistance == -1 || distance < nearestDistance) {
                 nearestDistance = distance;
@@ -343,14 +320,12 @@ QString
 BoxLayer::getFeatureDescription(LayerGeometryProvider *v,
                                 QPoint &pos) const
 {
-    int x = pos.x();
-
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !model->getSampleRate()) return "";
-
-    EventVector points = getLocalPoints(v, x);
-
-    if (points.empty()) {
+    
+    Event box;
+    
+    if (!getLocalPoint(v, pos.x(), pos.y(), box)) {
         if (!model->isReady()) {
             return tr("In progress");
         } else {
@@ -358,32 +333,17 @@ BoxLayer::getFeatureDescription(LayerGeometryProvider *v,
         }
     }
 
-    Event box;
-    EventVector::iterator i;
-
-    for (i = points.begin(); i != points.end(); ++i) {
-
-        int y0 = getYForValue(v, i->getValue());
-        int y1 = getYForValue(v, i->getValue() + fabsf(i->getLevel()));
-
-        if (pos.y() >= y0 && pos.y() <= y1) {
-            box = *i;
-            break;
-        }
-    }
-
-    if (i == points.end()) return tr("No local points");
-
     RealTime rt = RealTime::frame2RealTime(box.getFrame(),
                                            model->getSampleRate());
     RealTime rd = RealTime::frame2RealTime(box.getDuration(),
                                            model->getSampleRate());
     
     QString rangeText;
-
+    auto r = getRange(box);
+    
     rangeText = tr("%1 %2 - %3 %4")
-        .arg(box.getValue()).arg(getScaleUnits())
-        .arg(box.getValue() + fabsf(box.getLevel())).arg(getScaleUnits());
+        .arg(r.first).arg(getScaleUnits())
+        .arg(r.second).arg(getScaleUnits());
 
     QString text;
 
@@ -409,11 +369,12 @@ bool
 BoxLayer::snapToFeatureFrame(LayerGeometryProvider *v,
                              sv_frame_t &frame,
                              int &resolution,
-                             SnapType snap) const
+                             SnapType snap,
+                             int ycoord) const
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) {
-        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap, ycoord);
     }
 
     // SnapLeft / SnapRight: return frame of nearest feature in that
@@ -425,57 +386,52 @@ BoxLayer::snapToFeatureFrame(LayerGeometryProvider *v,
 
     resolution = model->getResolution();
 
+    Event containing;
+
+    if (getLocalPoint(v, v->getXForFrame(frame), ycoord, containing)) {
+
+        switch (snap) {
+
+        case SnapLeft:
+        case SnapNeighbouring:
+            frame = containing.getFrame();
+            return true;
+
+        case SnapRight:
+            frame = containing.getFrame() + containing.getDuration();
+            return true;
+        }
+    }
+    
     if (snap == SnapNeighbouring) {
-        EventVector points = getLocalPoints(v, v->getXForFrame(frame));
-        if (points.empty()) return false;
-        frame = points.begin()->getFrame();
-        return true;
+        return false;
     }    
 
-    // Normally we snap to the start frame of whichever event we
-    // find. However here, for SnapRight only, if the end frame of
-    // whichever event we would have snapped to had we been snapping
-    // left is closer than the start frame of the next event to the
-    // right, then we snap to that frame instead. Clear?
+    // We aren't actually contained (in time) by any single event, so
+    // seek the next one in the relevant direction
+
+    Event e;
     
-    Event left;
-    bool haveLeft = false;
-    if (model->getNearestEventMatching
-        (frame, [](Event) { return true; }, EventSeries::Backward, left)) {
-        haveLeft = true;
-    }
-
     if (snap == SnapLeft) {
-        frame = left.getFrame();
-        return haveLeft;
-    }
+        if (model->getNearestEventMatching
+            (frame, [](Event) { return true; }, EventSeries::Backward, e)) {
 
-    Event right;
-    bool haveRight = false;
-    if (model->getNearestEventMatching
-        (frame, [](Event) { return true; }, EventSeries::Forward, right)) {
-        haveRight = true;
-    }
-
-    if (haveLeft) {
-        sv_frame_t leftEnd = left.getFrame() + left.getDuration();
-        if (leftEnd > frame) {
-            if (haveRight) {
-                if (leftEnd - frame < right.getFrame() - frame) {
-                    frame = leftEnd;
-                } else {
-                    frame = right.getFrame();
-                }
+            if (e.getFrame() + e.getDuration() < frame) {
+                frame = e.getFrame() + e.getDuration();
             } else {
-                frame = leftEnd;
+                frame = e.getFrame();
             }
             return true;
         }
     }
+    
+    if (snap == SnapRight) {
+        if (model->getNearestEventMatching
+            (frame, [](Event) { return true; }, EventSeries::Forward, e)) {
 
-    if (haveRight) {
-        frame = right.getFrame();
-        return true;
+            frame = e.getFrame();
+            return true;
+        }
     }
 
     return false;
@@ -607,8 +563,8 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
     bool shouldIlluminate = false;
 
     if (v->shouldIlluminateLocalFeatures(this, localPos)) {
-        shouldIlluminate = getPointToDrag(v, localPos.x(), localPos.y(),
-                                          illuminatePoint);
+        shouldIlluminate = getLocalPoint(v, localPos.x(), localPos.y(),
+                                         illuminatePoint);
     }
 
     paint.save();
@@ -620,11 +576,12 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
          i != points.end(); ++i) {
 
         const Event &p(*i);
+        const auto r = getRange(p);
 
         int x = v->getXForFrame(p.getFrame());
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
-        int y = getYForValue(v, p.getValue());
-        int h = getYForValue(v, p.getValue() + fabsf(p.getLevel())) - y;
+        int y = getYForValue(v, r.first);
+        int h = getYForValue(v, r.second) - y;
         int ex = x + w;
         int gap = v->scalePixelSize(2);
 
@@ -655,11 +612,11 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
             if (abs(h) > 2 * fm.height()) {
             
                 QString y0label = QString("%1 %2")
-                    .arg(p.getValue())
+                    .arg(r.first)
                     .arg(getScaleUnits());
 
                 QString y1label = QString("%1 %2")
-                    .arg(p.getValue() + fabsf(p.getLevel()))
+                    .arg(r.second)
                     .arg(getScaleUnits());
 
                 PaintAssistant::drawVisibleText
@@ -677,9 +634,9 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
             } else {
             
                 QString ylabel = QString("%1 %2 - %3 %4")
-                    .arg(p.getValue())
+                    .arg(r.first)
                     .arg(getScaleUnits())
-                    .arg(p.getValue() + fabsf(p.getLevel()))
+                    .arg(r.second)
                     .arg(getScaleUnits());
 
                 PaintAssistant::drawVisibleText
@@ -880,7 +837,7 @@ BoxLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
-    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
+    if (!getLocalPoint(v, e->x(), e->y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -904,7 +861,7 @@ BoxLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editing = false;
 
     Event p(0);
-    if (!getPointToDrag(v, e->x(), e->y(), p)) return;
+    if (!getLocalPoint(v, e->x(), e->y(), p)) return;
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
@@ -924,7 +881,7 @@ BoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
-    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) {
+    if (!getLocalPoint(v, e->x(), e->y(), m_editingPoint)) {
         return;
     }
 
@@ -1008,7 +965,7 @@ BoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     if (!model) return false;
 
     Event region(0);
-    if (!getPointToDrag(v, e->x(), e->y(), region)) return false;
+    if (!getLocalPoint(v, e->x(), e->y(), region)) return false;
 
     ItemEditDialog::LabelOptions labelOptions;
     labelOptions.valueLabel = tr("Minimum Value");

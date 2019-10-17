@@ -238,11 +238,11 @@ TextLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
 bool
 TextLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                               int &resolution,
-                              SnapType snap) const
+                              SnapType snap, int ycoord) const
 {
     auto model = ModelById::getAs<TextModel>(m_model);
     if (!model) {
-        return Layer::snapToFeatureFrame(v, frame, resolution, snap);
+        return Layer::snapToFeatureFrame(v, frame, resolution, snap, ycoord);
     }
 
     // SnapLeft / SnapRight: return frame of nearest feature in that
