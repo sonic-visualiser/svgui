@@ -247,9 +247,22 @@ View::getScaleProvidingLayerForUnit(QString unit) const
 {
     // Return the layer which is used to provide the min/max/log for
     // any auto-align layer of a given unit. This is also the layer
-    // that will draw the scale, if possible. It is the topmost
-    // visible layer having that unit that is not also auto-aligning.
-    // If there is none such, return null.
+    // that will draw the scale, if possible.
+    //
+    // The returned layer is
+    // 
+    // - the topmost visible layer having that unit that is not also
+    // auto-aligning; or if there is no such layer,
+    //
+    // - the topmost layer of any visibility having that unit that is
+    // not also auto-aligning (because a dormant layer can still draw
+    // a scale, and it makes sense for layers aligned to it not to
+    // jump about when its visibility is toggled); or if there is no
+    // such layer,
+    //
+    // - none
+
+    Layer *dormantOption = nullptr;
     
     for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
 
@@ -260,13 +273,6 @@ View::getScaleProvidingLayerForUnit(QString unit) const
                << unit << "): Looking at layer " << layer
                << " (" << layer->getLayerPresentationName() << ")" << endl;
 #endif
-
-        if (layer->isLayerDormant(this)) {
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-            SVCERR << "... it's dormant" << endl;
-#endif
-            continue;
-        }
         
         QString layerUnit;
         double layerMin = 0.0, layerMax = 0.0;
@@ -278,6 +284,7 @@ View::getScaleProvidingLayerForUnit(QString unit) const
 #endif
             continue;
         }
+
         if (layerUnit.toLower() != unit.toLower()) {
 #ifdef DEBUG_VIEW_SCALE_CHOICE
             SVCERR << "... it has the wrong unit (" << layerUnit << ")" << endl;
@@ -293,14 +300,23 @@ View::getScaleProvidingLayerForUnit(QString unit) const
             continue;
         }
 
+        if (layer->isLayerDormant(this)) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVCERR << "... it's dormant" << endl;
+#endif
+            if (!dormantOption) {
+                dormantOption = layer;
+            }
+            continue;
+        }
+
 #ifdef DEBUG_VIEW_SCALE_CHOICE
         SVCERR << "... it's good" << endl;
 #endif
-
         return layer;
     }
 
-    return nullptr;
+    return dormantOption;
 }
 
 bool
