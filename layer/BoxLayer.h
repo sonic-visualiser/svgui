@@ -133,6 +133,10 @@ protected:
     ChangeEventsCommand *m_editingCommand;
     VerticalScale m_verticalScale;
 
+    std::pair<float, float> getRange(const Event &e) const {
+        return { e.getValue(), e.getValue() + fabsf(e.getLevel()) };
+    }
+    
     void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();
         if (c) CommandHistory::getInstance()->addCommand(c, false);

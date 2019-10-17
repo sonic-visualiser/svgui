@@ -265,7 +265,7 @@ BoxLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 
 bool
 BoxLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y,
-                                      Event &point) const
+                         Event &point) const
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return false;
@@ -275,13 +275,47 @@ BoxLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y,
     EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
-    int nearestDistance = -1;
+    Event bestContaining;
     for (const auto &p: onPoints) {
-        int distance = getYForValue(v, p.getValue()) - y;
-        if (distance < 0) distance = -distance;
-        if (nearestDistance == -1 || distance < nearestDistance) {
-            nearestDistance = distance;
-            point = p;
+        auto r = getRange(p);
+        if (y > getYForValue(v, r.first) || y < getYForValue(v, r.second)) {
+            SVCERR << "inPoints: rejecting " << p.toXmlString() << endl;
+            continue;
+        }
+        SVCERR << "inPoints: looking at " << p.toXmlString() << endl;
+        if (bestContaining == Event()) {
+            bestContaining = p;
+            continue;
+        }
+        auto br = getRange(bestContaining);
+        if (r.first < br.first && r.second > br.second) {
+            continue;
+        }
+        if (r.first > br.first && r.second < br.second) {
+            bestContaining = p;
+            continue;
+        }
+        if (p.getFrame() > bestContaining.getFrame() &&
+            p.getFrame() + p.getDuration() <
+            bestContaining.getFrame() + bestContaining.getDuration()) {
+            bestContaining = p;
+            continue;
+        }
+    }
+
+    if (bestContaining != Event()) {
+        point = bestContaining;
+    } else {
+        int nearestDistance = -1;
+        for (const auto &p: onPoints) {
+            int distance = std::min
+                (getYForValue(v, p.getValue()) - y,
+                 getYForValue(v, p.getValue() + fabsf(p.getLevel())) - y);
+            if (distance < 0) distance = -distance;
+            if (nearestDistance == -1 || distance < nearestDistance) {
+                nearestDistance = distance;
+                point = p;
+            }
         }
     }
 
@@ -307,7 +341,7 @@ BoxLayer::getLabelPreceding(sv_frame_t frame) const
 
 QString
 BoxLayer::getFeatureDescription(LayerGeometryProvider *v,
-                                             QPoint &pos) const
+                                QPoint &pos) const
 {
     int x = pos.x();
 
@@ -373,9 +407,9 @@ BoxLayer::getFeatureDescription(LayerGeometryProvider *v,
 
 bool
 BoxLayer::snapToFeatureFrame(LayerGeometryProvider *v,
-                                          sv_frame_t &frame,
-                                          int &resolution,
-                                          SnapType snap) const
+                             sv_frame_t &frame,
+                             int &resolution,
+                             SnapType snap) const
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) {
