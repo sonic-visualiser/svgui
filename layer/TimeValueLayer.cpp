@@ -915,7 +915,8 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
 //    Profiler profiler("TimeValueLayer::paint", true);
 
-    int x0 = rect.left(), x1 = rect.right();
+    int x0 = rect.left();
+    int x1 = x0 + rect.width();
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
     if (m_derivative) --frame0;

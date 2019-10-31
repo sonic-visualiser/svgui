@@ -299,7 +299,9 @@ TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
 //    Profiler profiler("TextLayer::paint", true);
 
-    int x0 = rect.left(), x1 = rect.right();
+    int x0 = rect.left();
+    int x1 = x0 + rect.width();
+    
     int overlap = ViewManager::scalePixelSize(150);
     sv_frame_t frame0 = v->getFrameForX(x0 - overlap);
     sv_frame_t frame1 = v->getFrameForX(x1 + overlap);

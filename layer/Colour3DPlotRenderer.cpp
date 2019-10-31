@@ -480,7 +480,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
     if (!model) return magRange;
     
     int x0 = rect.left();
-    int x1 = rect.right() + 1;
+    int x1 = x0 + rect.width();
 
     int h = v->getPaintHeight();
 

@@ -540,7 +540,8 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
 //    Profiler profiler("BoxLayer::paint", true);
 
-    int x0 = rect.left() - 40, x1 = rect.right();
+    int x0 = rect.left() - 40;
+    int x1 = x0 + rect.width() + 80;
 
     sv_frame_t wholeFrame0 = v->getFrameForX(0);
     sv_frame_t wholeFrame1 = v->getFrameForX(v->getPaintWidth());
