@@ -27,6 +27,17 @@
 class View;
 class QPainter;
 
+/**
+ * Layer for displaying and editing notes, i.e. discrete events with
+ * start time, duration, value that represents pitch, and optionally a
+ * level that represents velocity.
+ *
+ * For the purposes of public API, integration with other classes, and
+ * display alignment, the y-coordinate (value) of the layer always has
+ * a unit of Hz. The model itself may have another unit, such as MIDI
+ * pitch, but the layer always converts to and from Hz behind the
+ * scenes.
+ */
 class NoteLayer : public SingleColourLayer,
                   public VerticalScaleLayer
 {
@@ -65,8 +76,8 @@ public:
     void deleteSelection(Selection s) override;
 
     void copy(LayerGeometryProvider *v, Selection s, Clipboard &to) override;
-    bool paste(LayerGeometryProvider *v, const Clipboard &from, sv_frame_t frameOffset,
-                       bool interactive) override;
+    bool paste(LayerGeometryProvider *v, const Clipboard &from,
+               sv_frame_t frameOffset, bool interactive) override;
 
     ModelId getModel() const override { return m_model; }
     void setModel(ModelId model); // a NoteModel
@@ -76,9 +87,9 @@ public:
     PropertyType getPropertyType(const PropertyName &) const override;
     QString getPropertyGroupName(const PropertyName &) const override;
     int getPropertyRangeAndValue(const PropertyName &,
-                                         int *min, int *max, int *deflt) const override;
+                                 int *min, int *max, int *deflt) const override;
     QString getPropertyValueLabel(const PropertyName &,
-                                          int value) const override;
+                                  int value) const override;
     void setProperty(const PropertyName &, int value) override;
 
     enum VerticalScale {
@@ -98,7 +109,7 @@ public:
     int getCompletion(LayerGeometryProvider *) const override;
 
     bool getValueExtents(double &min, double &max,
-                                 bool &log, QString &unit) const override;
+                         bool &log, QString &unit) const override;
 
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
@@ -138,7 +149,6 @@ public:
 
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
-    bool shouldConvertMIDIToHz() const;
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 
@@ -146,7 +156,14 @@ protected:
 
     bool getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &) const;
 
+    double convertValueFromEventValue(float eventValue) const;
+    float convertValueToEventValue(double value) const;
+    
+    double valueOf(const Event &e) const;
+    Event eventWithValue(const Event &e, double value) const;
+    
     ModelId m_model;
+    bool m_modelUsesHz;
     bool m_editing;
     int m_dragPointX;
     int m_dragPointY;
