@@ -321,11 +321,20 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
 //    Profiler profiler("TimeInstantLayer::paint", true);
 
-    int x0 = rect.left(), x1 = rect.right();
+    int x0 = rect.left();
+    int x1 = x0 + rect.width();
 
-    sv_frame_t frame0 = v->getFrameForX(x0);
+    sv_frame_t resolution = model->getResolution();
+    
+    sv_frame_t frame0 = v->getFrameForX(x0) - resolution;
     sv_frame_t frame1 = v->getFrameForX(x1);
 
+#ifdef DEBUG_TIME_INSTANT_LAYER
+    SVCERR << "TimeInstantLayer[" << this << "]::paint: x0 = "
+           << x0 << ", x1 = " << x1 << ", frame0 = " << frame0
+           << ", frame1 = " << frame1 << endl;
+#endif
+    
     int overspill = 0;
     if (m_plotStyle == PlotSegmentation) {
         // We need to start painting at the prior point, so we can
@@ -334,7 +343,13 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     }
     
     EventVector points(model->getEventsWithin(frame0, frame1 - frame0,
-                                                overspill));
+                                              overspill));
+
+#ifdef DEBUG_TIME_INSTANT_LAYER
+    SVCERR << "TimeInstantLayer[" << this << "]::paint: have " << points.size()
+           << " point(s) with overspill = " << overspill << " from model "
+           << getModel() << endl;
+#endif
 
     bool odd = false;
     if (m_plotStyle == PlotSegmentation && !points.empty()) {
@@ -364,9 +379,6 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         oddBrushColour.setAlpha(100);
     }
 
-//    SVDEBUG << "TimeInstantLayer::paint: resolution is "
-//              << model->getResolution() << " frames" << endl;
-
     QPoint localPos;
     sv_frame_t illuminateFrame = -1;
 
@@ -388,8 +400,18 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         ++j;
 
         int x = v->getXForFrame(p.getFrame());
+
+#ifdef DEBUG_TIME_INSTANT_LAYER
+        SVCERR << "point frame = " << p.getFrame() << " -> x = " << x << endl;
+#endif
+        
         if (x == prevX && m_plotStyle == PlotInstants &&
-            p.getFrame() != illuminateFrame) continue;
+            p.getFrame() != illuminateFrame) {
+#ifdef DEBUG_TIME_INSTANT_LAYER
+            SVCERR << "(skipping)" << endl;
+#endif
+            continue;
+        }
 
         int iw = v->getXForFrame(p.getFrame() + model->getResolution()) - x;
         if (iw < 2) {
@@ -410,6 +432,10 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
             paint.setPen(brushColour);
         }
 
+#ifdef DEBUG_TIME_INSTANT_LAYER
+        SVCERR << "m_plotStyle = " << m_plotStyle << ", iw = " << iw << endl;
+#endif
+        
         if (m_plotStyle == PlotInstants) {
             if (iw > 1) {
                 paint.drawRect(x, 0, iw - 1, v->getPaintHeight() - 1);
@@ -516,7 +542,11 @@ TimeInstantLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
+TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *
+#ifdef DEBUG_TIME_INSTANT_LAYER
+                          e
+#endif
+    )
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << endl;
@@ -623,7 +653,11 @@ TimeInstantLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 }
 
 void
-TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
+TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *
+#ifdef DEBUG_TIME_INSTANT_LAYER
+                          e
+#endif
+    )
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
     cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << endl;

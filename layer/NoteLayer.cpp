@@ -714,7 +714,9 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
 //    Profiler profiler("NoteLayer::paint", true);
 
-    int x0 = rect.left(), x1 = rect.right();
+    int x0 = rect.left();
+    int x1 = x0 + rect.width();
+    
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
 
