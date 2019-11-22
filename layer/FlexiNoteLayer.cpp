@@ -824,14 +824,19 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
-    
-    int noteNumber = 0;
+
+    int noteNumber = -1;
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
-        ++noteNumber;
         const Event &p(*i);
+
+        if (noteNumber < 0) {
+            noteNumber = model->getIndexForEvent(p);
+        } else {
+            noteNumber ++;
+        }
 
         int x = v->getXForFrame(p.getFrame());
         int y = getYForValue(v, p.getValue());
