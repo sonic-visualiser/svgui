@@ -65,6 +65,9 @@ public:
     
     const ZoomConstraint *getZoomConstraint() const override { return this; }
     ModelId getModel() const override { return m_model; }
+
+    ModelId getExportModel(LayerGeometryProvider *) const override;
+
     void paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const override;
     void setSynchronousPainting(bool synchronous) override;
 
@@ -72,7 +75,7 @@ public:
     void paintVerticalScale(LayerGeometryProvider *v, bool detailed, QPainter &paint, QRect rect) const override;
 
     bool getCrosshairExtents(LayerGeometryProvider *, QPainter &, QPoint cursorPos,
-                                     std::vector<QRect> &extents) const override;
+                             std::vector<QRect> &extents) const override;
     void paintCrosshairs(LayerGeometryProvider *, QPainter &, QPoint) const override;
 
     QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;

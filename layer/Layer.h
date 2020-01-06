@@ -71,6 +71,30 @@ public:
      * model here, return None.
      */
     ModelId getSourceModel() const;
+
+    /**
+     * Return the ID of a model representing the contents of this
+     * layer in a form suitable for export to a tabular file format
+     * such as CSV.
+     *
+     * In most cases this will be the same as returned by
+     * getModel(). The exceptions are those layers such as
+     * SpectrogramLayer, that are "only" alternative views of
+     * time-domain sample data. For such layers, getModel() will
+     * return the backing time-domain data, for example as a
+     * ReadOnlyWaveFileModel; but getExportModel() will return a
+     * model, possibly "local to" the layer, which adapts this into
+     * the form shown in the layer for a given view so that the export
+     * matches the layer's visible contents.
+     *
+     * Because this is supposed to match the contents of the view
+     * rather than the backing model, it's necessary to pass in a view
+     * (or LayerGeometryProvider) so that the layer can retrieve its
+     * vertical extents for export.
+     */
+    virtual ModelId getExportModel(LayerGeometryProvider *) const {
+        return getModel();
+    }
     
     /**
      * Return a zoom constraint object defining the supported zoom
