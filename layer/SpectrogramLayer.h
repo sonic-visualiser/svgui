@@ -334,6 +334,7 @@ protected:
     ModelId m_wholeCache; // a Dense3DModelPeakCache
     ModelId m_peakCache; // a Dense3DModelPeakCache
     int m_peakCacheDivisor;
+    mutable std::vector<ModelId> m_exporters; // used and waiting to be released
     void checkCacheSpace(int *suggestedPeakDivisor,
                          bool *createWholeCache) const;
     void recreateFFTModel();
