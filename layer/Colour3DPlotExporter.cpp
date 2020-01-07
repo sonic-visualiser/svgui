@@ -135,7 +135,7 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
         if (binDisplay == BinDisplay::PeakFrequencies) {
             
             FFTModel::PeakSet peaks = fftModel->getPeakFrequencies
-                (FFTModel::AllPeaks, i, minbin, minbin + nbins + 1);
+                (FFTModel::AllPeaks, i, minbin, minbin + nbins - 1);
 
             for (const auto &p: peaks) {
 
