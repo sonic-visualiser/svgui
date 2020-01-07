@@ -19,6 +19,32 @@
 
 #include "VerticalBinLayer.h"
 
+Colour3DPlotExporter::Colour3DPlotExporter(Sources sources, Parameters params) :
+    m_sources(sources),
+    m_params(params)
+{
+    SVCERR << "Colour3DPlotExporter::Colour3DPlotExporter: constructed at "
+           << this << endl;
+}
+
+Colour3DPlotExporter::~Colour3DPlotExporter()
+{
+    SVCERR << "Colour3DPlotExporter[" << this << "]::~Colour3DPlotExporter"
+           << endl;
+}
+
+void
+Colour3DPlotExporter::discardSources()
+{
+    SVCERR << "Colour3DPlotExporter[" << this << "]::discardSources"
+           << endl;
+    QMutexLocker locker(&m_mutex);
+    m_sources.verticalBinLayer = nullptr;
+    m_sources.source = {};
+    m_sources.fft = {};
+    m_sources.provider = nullptr;
+}
+
 QString
 Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
                                             DataExportOptions options,
@@ -28,6 +54,8 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
     QMutexLocker locker(&m_mutex);
 
     BinDisplay binDisplay = m_params.binDisplay;
+
+    (void)options; //!!!
 
     auto model =
         ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
@@ -39,6 +67,10 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
 
     if (!model || !layer) {
         SVCERR << "ERROR: Colour3DPlotExporter::toDelimitedDataString: Source model and layer required" << endl;
+        return {};
+    }
+    if ((binDisplay == BinDisplay::PeakFrequencies) && !fftModel) {
+        SVCERR << "ERROR: Colour3DPlotExporter::toDelimitedDataString: FFT model required in peak frequencies mode" << endl;
         return {};
     }
 
@@ -57,6 +89,14 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
 
     //!!! todo: what about the other export types besides
     //!!! delimited-data-string ?
+
+    //!!! todo: scripted regression tests for layer exports (of all
+    //!!! types)
+
+    //!!! todo: export selected region only (we have the necessaries
+    //!!! here, but it needs support higher up)
+
+    //!!! todo: option to include timestamps for columns
     
     if (provider) {
 
@@ -73,14 +113,50 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
     QString s;
     
     for (int i = 0; i < w; ++i) {
+        
         sv_frame_t fr = model->getStartFrame() + i * model->getResolution();
         if (fr < startFrame || fr >= startFrame + duration) {
             continue;
         }
+
+        // Unlike Colour3DPlotRenderer, we don't want to scale or
+        // normalise
+        
+        //!!! (should we be handling phase layer type?)
+
+        auto column = model->getColumn(i);
+        column = ColumnOp::Column(column.data() + minbin,
+                                  column.data() + minbin + nbins);
+        
+        //!!! todo: peaks, frequencies (the things we came here for)
+
         QStringList list;
 
-        //...
+        if (binDisplay == BinDisplay::PeakFrequencies) {
+            
+            FFTModel::PeakSet peaks = fftModel->getPeakFrequencies
+                (FFTModel::AllPeaks, i, minbin, minbin + nbins + 1);
 
+            for (const auto &p: peaks) {
+
+                int bin = p.first;
+                double freq = p.second;
+                float mag = column[bin - minbin];
+
+                list << QString("%1").arg(freq) << QString("%1").arg(mag);
+            }
+
+        } else {
+        
+            if (binDisplay == BinDisplay::PeakBins) {
+                column = ColumnOp::peakPick(column);
+            }
+        
+            for (auto value: column) {
+                list << QString("%1").arg(value);
+            }
+        }
+        
         s += list.join(delimiter) + "\n";
     }
 

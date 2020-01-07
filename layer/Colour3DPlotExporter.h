@@ -39,22 +39,59 @@ public:
         BinDisplay binDisplay;
     };
     
-    Colour3DPlotExporter(Sources sources, Parameters parameters) :
-        m_sources(sources),
-        m_params(parameters)
-    { }
+    Colour3DPlotExporter(Sources sources, Parameters parameters);
+    ~Colour3DPlotExporter();
 
-    void discardSources() {
-        QMutexLocker locker(&m_mutex);
-        m_sources.verticalBinLayer = nullptr;
-        m_sources.source = {};
-        m_sources.fft = {};
-        m_sources.provider = nullptr;
-    }
+    void discardSources();
 
     QString toDelimitedDataString(QString, DataExportOptions,
                                   sv_frame_t, sv_frame_t) const override;
 
+    
+    // Further Model methods that we just delegate
+
+    bool isOK() const override {
+        if (auto model = ModelById::get(m_sources.source)) {
+            return model->isOK();
+        }
+        return false;
+    }
+        
+    sv_frame_t getStartFrame() const override { 
+        if (auto model = ModelById::get(m_sources.source)) {
+            return model->getStartFrame();
+        }
+        return 0;
+    }
+    
+    sv_frame_t getTrueEndFrame() const override { 
+        if (auto model = ModelById::get(m_sources.source)) {
+            return model->getTrueEndFrame();
+        }
+        return 0;
+    }
+    
+    sv_samplerate_t getSampleRate() const override { 
+        if (auto model = ModelById::get(m_sources.source)) {
+            return model->getSampleRate();
+        }
+        return 0;
+    }
+
+    QString getTypeName() const override {
+        if (auto model = ModelById::get(m_sources.source)) {
+            return model->getTypeName();
+        }
+        return "(exporter)"; // internal fallback, no translation needed
+    }
+
+    int getCompletion() const override {
+        if (auto model = ModelById::get(m_sources.source)) {
+            return model->getCompletion();
+        }
+        return 0;
+    }
+    
 private:
     Sources m_sources;
     Parameters m_params;
