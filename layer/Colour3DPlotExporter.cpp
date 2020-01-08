@@ -90,11 +90,8 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
     //!!! todo: what about the other export types besides
     //!!! delimited-data-string ?
 
-    //!!! todo: scripted regression tests for layer exports (of all
-    //!!! types)
-
-    //!!! todo: export selected region only (we have the necessaries
-    //!!! here, but it needs support higher up)
+    //!!! todo: export selections only (we have the necessaries here,
+    //!!! but it needs support higher up)
 
     //!!! todo: option to include timestamps for columns
     
@@ -121,15 +118,17 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
 
         // Unlike Colour3DPlotRenderer, we don't want to scale or
         // normalise
+
+        //!!! (but might we want to threshold? we get a lot of
+        //!!! spurious output [i.e. elements not readily visible on
+        //!!! screen] for peak freqs)
         
-        //!!! (should we be handling phase layer type?)
+        //!!! (+ should we be handling phase layer type?)
 
         auto column = model->getColumn(i);
         column = ColumnOp::Column(column.data() + minbin,
                                   column.data() + minbin + nbins);
         
-        //!!! todo: peaks, frequencies (the things we came here for)
-
         QStringList list;
 
         if (binDisplay == BinDisplay::PeakFrequencies) {
