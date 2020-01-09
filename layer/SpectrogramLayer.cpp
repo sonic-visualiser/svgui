@@ -146,14 +146,13 @@ SpectrogramLayer::setVerticallyFixed()
 ModelId
 SpectrogramLayer::getExportModel(LayerGeometryProvider *v) const
 {
-    //!!! Creating Colour3DPlotExporters is cheap, so perhaps we
-    // should create one on every call - calls probably being
-    // infrequent - to avoid having to worry about view lifecycles. We
-    // can't delete them on the same call of course as we need to
-    // return a valid id, so we could push them onto a list that then
-    // gets cleared (with calls to
+    // Creating Colour3DPlotExporters is cheap, so we create one on
+    // every call - calls probably being infrequent - to avoid having
+    // to worry about view lifecycles. We can't delete them on the
+    // same call of course as we need to return a valid id, so we push
+    // them onto a list that then gets cleared (with calls to
     // Colour3DPlotExporter::discardSources() and
-    // ModelById::release()) in deleteDerivedModels()
+    // ModelById::release()) in deleteDerivedModels().
 
     Colour3DPlotExporter::Sources sources;
     sources.verticalBinLayer = this;
@@ -163,6 +162,14 @@ SpectrogramLayer::getExportModel(LayerGeometryProvider *v) const
         
     Colour3DPlotExporter::Parameters params;
     params.binDisplay = m_binDisplay;
+    params.scaleFactor = 1.0;
+    if (m_colourScale != ColourScaleType::Phase &&
+        m_normalization != ColumnNormalization::Hybrid) {
+        params.scaleFactor *= 2.f / float(getWindowSize());
+    }
+    params.threshold = m_threshold; // matching ColourScale in getRenderer
+    params.gain = m_gain; // matching ColourScale in getRenderer
+    params.normalization = m_normalization;
     
     ModelId exporter = ModelById::add
         (std::make_shared<Colour3DPlotExporter>(sources, params));
