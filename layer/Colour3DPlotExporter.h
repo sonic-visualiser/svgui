@@ -33,10 +33,36 @@ public:
 
     struct Parameters {
         Parameters() :
-            binDisplay(BinDisplay::AllBins) { }
+            binDisplay(BinDisplay::AllBins),
+            scaleFactor(1.0),
+            threshold(0.0),
+            gain(1.0),
+            normalization(ColumnNormalization::None) { }
 
         /** Selection of bins to include in the export. */
         BinDisplay binDisplay;
+
+        /** Initial scale factor (e.g. for FFT scaling). This factor
+         *  is actually applied to exported values, in contrast to the
+         *  gain value below based on the ColourScale parameter. */
+        double scaleFactor;
+
+        /** Threshold below which every value is mapped to background
+         *  pixel 0 in the display, matching the ColourScale object
+         *  parameters. This is used for thresholding in
+         *  peak-frequency output only. */
+        double threshold;
+
+        /** Gain that is applied before thresholding, in the display,
+         *  matching the ColourScale object parameters. This is used
+         *  only to determined the thresholding level. The exported
+         *  values have the scaleFactor applied, but not this gain. */
+        double gain;
+
+        /** Type of column normalization. Again, this is only used to
+         *  calculate thresholding level. The exported values are
+         *  un-normalized. */
+        ColumnNormalization normalization;
     };
     
     Colour3DPlotExporter(Sources sources, Parameters parameters);

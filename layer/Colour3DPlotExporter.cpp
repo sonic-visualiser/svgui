@@ -115,19 +115,15 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
         if (fr < startFrame || fr >= startFrame + duration) {
             continue;
         }
-
-        // Unlike Colour3DPlotRenderer, we don't want to scale or
-        // normalise
-
-        //!!! (but might we want to threshold? we get a lot of
-        //!!! spurious output [i.e. elements not readily visible on
-        //!!! screen] for peak freqs)
         
-        //!!! (+ should we be handling phase layer type?)
+        //!!! (+ phase layer type)
 
         auto column = model->getColumn(i);
         column = ColumnOp::Column(column.data() + minbin,
                                   column.data() + minbin + nbins);
+
+        // The scale factor is always applied
+        column = ColumnOp::applyGain(column, m_params.scaleFactor);
         
         QStringList list;
 
@@ -136,13 +132,28 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
             FFTModel::PeakSet peaks = fftModel->getPeakFrequencies
                 (FFTModel::AllPeaks, i, minbin, minbin + nbins - 1);
 
+            // We don't apply normalisation or gain to the output, but
+            // we *do* perform thresholding when exporting the
+            // peak-frequency spectrogram, to give the user an
+            // opportunity to cut irrelevant peaks. And to make that
+            // match the display, we have to apply both normalisation
+            // and gain locally for thresholding
+
+            auto toTest = ColumnOp::normalize(column, m_params.normalization);
+            toTest = ColumnOp::applyGain(toTest, m_params.gain);
+            
             for (const auto &p: peaks) {
 
                 int bin = p.first;
-                double freq = p.second;
-                float mag = column[bin - minbin];
 
-                list << QString("%1").arg(freq) << QString("%1").arg(mag);
+                if (toTest[bin - minbin] < m_params.threshold) {
+                    continue;
+                }
+
+                double freq = p.second;
+                double value = column[bin - minbin];
+                
+                list << QString("%1").arg(freq) << QString("%1").arg(value);
             }
 
         } else {
@@ -160,23 +171,5 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
     }
 
     return s;
-    
-
-    //!!! For reference, this is the body of
-    //!!! EditableDenseThreeDimensionalModel::toDelimitedDataString
-    /*
-    QString s;
-    for (int i = 0; in_range_for(m_data, i); ++i) {
-        sv_frame_t fr = m_startFrame + i * m_resolution;
-        if (fr >= startFrame && fr < startFrame + duration) {
-            QStringList list;
-            for (int j = 0; in_range_for(m_data.at(i), j); ++j) {
-                list << QString("%1").arg(m_data.at(i).at(j));
-            }
-            s += list.join(delimiter) + "\n";
-        }
-    }
-    return s;
-    */    
 }
 
