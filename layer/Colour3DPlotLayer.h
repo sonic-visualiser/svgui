@@ -48,6 +48,8 @@ public:
 
     ModelId getModel() const override { return m_model; }
 
+    ModelId getExportModel(LayerGeometryProvider *) const override;
+
     const ZoomConstraint *getZoomConstraint() const override;
     
     void paint(LayerGeometryProvider *v,
@@ -192,6 +194,8 @@ protected:
     void invalidatePeakCache();
     ModelId getPeakCache() const;
 
+    mutable std::vector<ModelId> m_exporters; // used, waiting to be released
+    
     typedef std::map<int, MagnitudeRange> ViewMagMap; // key is view id
     mutable ViewMagMap m_viewMags;
     mutable ViewMagMap m_lastRenderedMags; // when in normalizeVisibleArea mode
