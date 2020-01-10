@@ -127,6 +127,18 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
         
         QStringList list;
 
+        switch (m_params.timestampFormat) {
+        case TimestampFormat::None:
+            break;
+        case TimestampFormat::Frames:
+            list << QString("%1").arg(fr);
+            break;
+        case TimestampFormat::Seconds:
+            list << QString("%1").arg(RealTime::frame2RealTime
+                                      (fr, model->getSampleRate()).toDouble());
+            break;
+        }
+        
         if (binDisplay == BinDisplay::PeakFrequencies) {
             
             FFTModel::PeakSet peaks = fftModel->getPeakFrequencies
