@@ -34,7 +34,7 @@ Overview::Overview(QWidget *w) :
     m_followPan = false;
     m_followZoom = false;
     setPlaybackFollow(PlaybackIgnore);
-    m_modelTestTime.start();
+    m_modelTestTimer.start();
 
     bool light = hasLightBackground();
     if (light) m_boxColour = Qt::darkGray;
@@ -57,7 +57,7 @@ Overview::modelChangedWithin(ModelId modelId, sv_frame_t startFrame, sv_frame_t 
     }
 
     if (!zoomChanged) {
-        if (m_modelTestTime.elapsed() < 1000) {
+        if (m_modelTestTimer.elapsed() < 1000) {
             for (LayerList::const_iterator i = m_layerStack.begin();
                  i != m_layerStack.end(); ++i) {
                 auto model = ModelById::get((*i)->getModel());
@@ -66,7 +66,7 @@ Overview::modelChangedWithin(ModelId modelId, sv_frame_t startFrame, sv_frame_t 
                 }
             }
         } else {
-            m_modelTestTime.restart();
+            m_modelTestTimer.restart();
         }
     }
 

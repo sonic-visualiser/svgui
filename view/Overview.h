@@ -19,7 +19,7 @@
 #include "View.h"
 
 #include <QPoint>
-#include <QTime>
+#include <QElapsedTimer>
 
 class QWidget;
 class QPaintEvent;
@@ -68,7 +68,7 @@ protected:
     QPoint m_mousePos;
     bool m_clickedInRange;
     sv_frame_t m_dragCentreFrame;
-    QTime m_modelTestTime;
+    QElapsedTimer m_modelTestTimer;
     QColor m_boxColour;
     
     typedef std::set<View *> ViewSet;

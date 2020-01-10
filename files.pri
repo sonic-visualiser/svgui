@@ -1,5 +1,6 @@
 
 SVGUI_HEADERS += \
+           layer/Colour3DPlotExporter.h \
            layer/Colour3DPlotLayer.h \
            layer/Colour3DPlotRenderer.h \
            layer/ColourDatabase.h \
@@ -95,6 +96,7 @@ SVGUI_HEADERS += \
            widgets/WindowTypeSelector.h
 
 SVGUI_SOURCES += \
+           layer/Colour3DPlotExporter.cpp \
            layer/Colour3DPlotLayer.cpp \
            layer/Colour3DPlotRenderer.cpp \
            layer/ColourDatabase.cpp \

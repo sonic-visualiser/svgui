@@ -862,7 +862,7 @@ View::addLayer(Layer *layer)
     pbr.cancel = cancel;
     pbr.bar = pb;
     pbr.lastStallCheckValue = 0;
-    pbr.stallCheckTimer = new QTimer();
+    pbr.stallCheckTimer = new QTimer(this);
     connect(pbr.stallCheckTimer, SIGNAL(timeout()), this,
             SLOT(progressCheckStalledTimerElapsed()));
 

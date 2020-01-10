@@ -27,7 +27,7 @@ class ProgressDialog : public ProgressReporter
 public:
     ProgressDialog(QString message,
                    bool cancellable,
-                   int timeBeforeShow = 0,
+                   int timeBeforeShow = 0, /* milliseconds */
                    QWidget *parent = 0,
                    Qt::WindowModality modality = Qt::NonModal);
     virtual ~ProgressDialog();
