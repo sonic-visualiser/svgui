@@ -46,16 +46,90 @@ Colour3DPlotExporter::discardSources()
 }
 
 QString
+Colour3DPlotExporter::getDelimitedDataHeaderLine(QString delimiter,
+                                                 DataExportOptions) const
+{
+    auto model =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
+    
+    auto layer = m_sources.verticalBinLayer;
+    auto provider = m_sources.provider;
+    
+    if (!model || !layer) {
+        SVCERR << "ERROR: Colour3DPlotExporter::getDelimitedDataHeaderLine: Source model and layer required" << endl;
+        return {};
+    }
+
+    int minbin = 0;
+    int sh = model->getHeight();
+    int nbins = sh;
+    
+    if (provider) {
+
+        minbin = layer->getIBinForY(provider, provider->getPaintHeight());
+        if (minbin >= sh) minbin = sh - 1;
+        if (minbin < 0) minbin = 0;
+    
+        nbins = layer->getIBinForY(provider, 0) - minbin + 1;
+        if (minbin + nbins > sh) nbins = sh - minbin;
+    }
+
+    QStringList list;
+
+    switch (m_params.timestampFormat) {
+    case TimestampFormat::None:
+        break;
+    case TimestampFormat::Frames:
+        list << "FRAME";
+        break;
+    case TimestampFormat::Seconds:
+        list << "TIME";
+        break;
+    }
+    
+    if (m_params.binDisplay == BinDisplay::PeakFrequencies) {
+        for (int i = 0; i < nbins/4; ++i) {
+            list << QString("FREQ %1").arg(i+1)
+                 << QString("MAG %1").arg(i+1);
+        }
+    } else {
+        bool hasValues = model->hasBinValues();
+        QString unit = (hasValues ? model->getBinValueUnit() : "");
+        for (int i = minbin; i < minbin + nbins; ++i) {
+            QString name = model->getBinName(i);
+            if (name == "") {
+                if (hasValues) {
+                    if (unit != "") {
+                        name = QString("BIN %1: %2 %3")
+                            .arg(i+1)
+                            .arg(model->getBinValue(i))
+                            .arg(unit);
+                    } else {
+                        name = QString("BIN %1: %2")
+                            .arg(i+1)
+                            .arg(model->getBinValue(i));
+                    }
+                } else {
+                    name = QString("BIN %1")
+                        .arg(i+1);
+                }
+            }
+            list << name;
+        }
+    }
+
+    return list.join(delimiter);
+}
+
+QString
 Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
-                                            DataExportOptions options,
+                                            DataExportOptions,
                                             sv_frame_t startFrame,
                                             sv_frame_t duration) const
 {
     QMutexLocker locker(&m_mutex);
 
     BinDisplay binDisplay = m_params.binDisplay;
-
-    (void)options; //!!!
 
     auto model =
         ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
@@ -77,23 +151,6 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
     int minbin = 0;
     int sh = model->getHeight();
     int nbins = sh;
-
-    //!!! todo: consider what to do about the actual Colour 3D Plot
-    //!!! Layer. In the existing application, this is exported full
-    //!!! height. If we switch to using this code, we will be
-    //!!! exporting only the displayed height. This is backward
-    //!!! incompatible, but also not directly interpretable without
-    //!!! any guide in the exported file as to what the bin indices
-    //!!! are. Perhaps we should have a flag to export full height,
-    //!!! and default to using it.
-
-    //!!! todo: what about the other export types besides
-    //!!! delimited-data-string ?
-
-    //!!! todo: export selections only (we have the necessaries here,
-    //!!! but it needs support higher up)
-
-    //!!! todo: option to include timestamps for columns
     
     if (provider) {
 
@@ -134,8 +191,8 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
             list << QString("%1").arg(fr);
             break;
         case TimestampFormat::Seconds:
-            list << QString("%1").arg(RealTime::frame2RealTime
-                                      (fr, model->getSampleRate()).toDouble());
+            list << RealTime::frame2RealTime(fr, model->getSampleRate())
+                .toString().c_str();
             break;
         }
         

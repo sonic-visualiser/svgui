@@ -80,7 +80,9 @@ public:
     ~Colour3DPlotExporter();
 
     void discardSources();
-
+    
+    QString getDelimitedDataHeaderLine(QString, DataExportOptions) const override;
+    
     QString toDelimitedDataString(QString, DataExportOptions,
                                   sv_frame_t, sv_frame_t) const override;
 
