@@ -235,8 +235,10 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
                 list << QString("%1").arg(value);
             }
         }
-        
-        s += list.join(delimiter) + "\n";
+
+        if (!list.empty()) {
+            s += list.join(delimiter) + "\n";
+        }
     }
 
     return s;
