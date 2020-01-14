@@ -31,20 +31,13 @@ public:
         const LayerGeometryProvider *provider; // optionally
     };
 
-    enum class TimestampFormat {
-        None,
-        Seconds,
-        Frames
-    };
-
     struct Parameters {
         Parameters() :
             binDisplay(BinDisplay::AllBins),
             scaleFactor(1.0),
             threshold(0.0),
             gain(1.0),
-            normalization(ColumnNormalization::None),
-            timestampFormat(TimestampFormat::None) { }
+            normalization(ColumnNormalization::None) { }
 
         /** Selection of bins to include in the export. */
         BinDisplay binDisplay;
@@ -70,10 +63,6 @@ public:
          *  calculate thresholding level. The exported values are
          *  un-normalized. */
         ColumnNormalization normalization;
-
-        /** Format to use for the timestamp column. If None, no
-         *  timestamp column will be included. */
-        TimestampFormat timestampFormat;
     };
     
     Colour3DPlotExporter(Sources sources, Parameters parameters);

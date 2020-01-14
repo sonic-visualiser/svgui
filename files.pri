@@ -53,6 +53,7 @@ SVGUI_HEADERS += \
            widgets/ColourNameDialog.h \
            widgets/CommandHistory.h \
            widgets/CSVAudioFormatDialog.h \
+           widgets/CSVExportDialog.h \
            widgets/CSVFormatDialog.h \
            widgets/Fader.h \
            widgets/InteractiveFileFinder.h \
@@ -141,6 +142,7 @@ SVGUI_SOURCES += \
            widgets/ColourNameDialog.cpp \
            widgets/CommandHistory.cpp \
            widgets/CSVAudioFormatDialog.cpp \
+           widgets/CSVExportDialog.cpp \
            widgets/CSVFormatDialog.cpp \
            widgets/Fader.cpp \
            widgets/InteractiveFileFinder.cpp \
