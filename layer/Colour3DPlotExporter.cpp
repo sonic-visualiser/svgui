@@ -47,7 +47,7 @@ Colour3DPlotExporter::discardSources()
 
 QString
 Colour3DPlotExporter::getDelimitedDataHeaderLine(QString delimiter,
-                                                 DataExportOptions) const
+                                                 DataExportOptions opts) const
 {
     auto model =
         ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
@@ -76,15 +76,12 @@ Colour3DPlotExporter::getDelimitedDataHeaderLine(QString delimiter,
 
     QStringList list;
 
-    switch (m_params.timestampFormat) {
-    case TimestampFormat::None:
-        break;
-    case TimestampFormat::Frames:
-        list << "FRAME";
-        break;
-    case TimestampFormat::Seconds:
-        list << "TIME";
-        break;
+    if (opts & DataExportAlwaysIncludeTimestamp) {
+        if (opts & DataExportWriteTimeInFrames) {
+            list << "FRAME";
+        } else {
+            list << "TIME";
+        }
     }
     
     if (m_params.binDisplay == BinDisplay::PeakFrequencies) {
@@ -123,7 +120,7 @@ Colour3DPlotExporter::getDelimitedDataHeaderLine(QString delimiter,
 
 QString
 Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
-                                            DataExportOptions,
+                                            DataExportOptions opts,
                                             sv_frame_t startFrame,
                                             sv_frame_t duration) const
 {
@@ -184,16 +181,13 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
         
         QStringList list;
 
-        switch (m_params.timestampFormat) {
-        case TimestampFormat::None:
-            break;
-        case TimestampFormat::Frames:
-            list << QString("%1").arg(fr);
-            break;
-        case TimestampFormat::Seconds:
-            list << RealTime::frame2RealTime(fr, model->getSampleRate())
-                .toString().c_str();
-            break;
+        if (opts & DataExportAlwaysIncludeTimestamp) {
+            if (opts & DataExportWriteTimeInFrames) {
+                list << QString("%1").arg(fr);
+            } else {
+                list << RealTime::frame2RealTime(fr, model->getSampleRate())
+                    .toString().c_str();
+            }
         }
         
         if (binDisplay == BinDisplay::PeakFrequencies) {
