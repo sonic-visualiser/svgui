@@ -225,42 +225,15 @@ Colour3DPlotLayer::getExportModel(LayerGeometryProvider *v) const
 
     auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
     if (!model) return {};
-    int viewId = v->getId();
     
     Colour3DPlotExporter::Sources sources;
     sources.verticalBinLayer = this;
     sources.source = m_model;
     sources.provider = v;
         
-    double minValue = 0.0;
-    double maxValue = 1.0;
-        
-    if (m_normalizeVisibleArea && m_viewMags[viewId].isSet()) {
-        minValue = m_viewMags[viewId].getMin();
-        maxValue = m_viewMags[viewId].getMax();
-    } else if (m_normalization == ColumnNormalization::Hybrid) {
-        minValue = 0;
-        maxValue = log10(model->getMaximumLevel() + 1.0);
-    } else if (m_normalization == ColumnNormalization::None) {
-        minValue = model->getMinimumLevel();
-        maxValue = model->getMaximumLevel();
-    }
-
-    if (maxValue <= minValue) {
-        maxValue = minValue + 0.1f;
-
-        if (!(maxValue > minValue)) { // one of them must be NaN or Inf
-            SVCERR << "WARNING: Colour3DPlotLayer::getExportModel: resetting "
-                   << "minValue and maxValue to zero and one" << endl;
-            minValue = 0.f;
-            maxValue = 1.f;
-        }
-    }
-        
     Colour3DPlotExporter::Parameters params;
-    params.threshold = minValue;
-    params.gain = m_gain; // matching ColourScale in getRenderer
-    params.normalization = m_normalization;
+    // No thresholding for Colour3DPlot layers, so no need for gain or
+    // normalisaion values either
     
     ModelId exporter = ModelById::add
         (std::make_shared<Colour3DPlotExporter>(sources, params));
