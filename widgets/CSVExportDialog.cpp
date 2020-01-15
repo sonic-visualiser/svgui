@@ -45,6 +45,7 @@ CSVExportDialog::CSVExportDialog(Configuration config, QWidget *parent) :
     QVBoxLayout *vbox = new QVBoxLayout;
     
     QLabel *label = new QLabel(intro);
+    label->setWordWrap(true);
     vbox->addWidget(label);
 
     int space = ViewManager::scalePixelSize(2);
@@ -133,7 +134,7 @@ CSVExportDialog::CSVExportDialog(Configuration config, QWidget *parent) :
     m_selectionOnly = new QRadioButton
         (tr("Export only the current selection"));
     QRadioButton *fullDuration = new QRadioButton
-        (tr("Export the full duration of the model"));
+        (tr("Export the full duration of the layer"));
 
     selectionGroup->addButton(m_selectionOnly);
     selectionGroup->addButton(fullDuration);
@@ -155,7 +156,7 @@ CSVExportDialog::CSVExportDialog(Configuration config, QWidget *parent) :
         m_viewOnly = new QRadioButton
             (tr("Export only the height of the visible view"));
         QRadioButton *fullHeight = new QRadioButton
-            (tr("Export the full height of the model"));
+            (tr("Export the full height of the layer"));
 
         viewGroup->addButton(m_viewOnly);
         viewGroup->addButton(fullHeight);
