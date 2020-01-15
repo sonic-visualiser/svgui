@@ -39,7 +39,10 @@ public:
             gain(1.0),
             normalization(ColumnNormalization::None) { }
 
-        /** Selection of bins to include in the export. */
+        /** Selection of bins to include in the export. If a
+         *  LayerGeometryProvider is also included in Sources, then
+         *  the set of bins will also be constrained to the vertical
+         *  range of that. */
         BinDisplay binDisplay;
 
         /** Initial scale factor (e.g. for FFT scaling). This factor
