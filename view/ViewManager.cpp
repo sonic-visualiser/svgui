@@ -781,13 +781,44 @@ ViewManager::setGlobalDarkBackground(bool dark)
         m_lightPalette = QApplication::palette();
     }
 
-#ifndef Q_OS_MAC
+#ifdef Q_OS_MAC
+    return;
+#endif
+    
     if (dark) {
+
+#ifdef Q_OS_WIN32
+        // Some UI elements on Windows don't use the palette. 
+
+        QString existingStyleSheet = qApp->styleSheet();
+        if (existingStyleSheet == "") {
+            QString styleSheet =
+                "QFrame { background: #202020; color: #f0f0f0; }\n"
+                "QAbstractButton { background: #202020; color: #f0f0f0; }\n"
+                "QDialog { background-color: #202020; }\n"
+                "QToolBar { background-color: #202020; }\n"
+                "QMenuBar { background-color: #404040; }\n"
+                "QMenuBar::item:selected { background-color: #707070; }\n"
+                "QMenuBar::item:pressed { background-color: #707070; }\n"
+                "QComboBox { background-color: #404040; }\n"
+                "QTabWidget::pane { border: 1px solid #c7c7c7; top: -1px; }\n"
+                "QTabBar::tab { background-color: #404040; border: 1px solid #c7c7c7; bottom: -1px; padding: 5px; }\n"
+                "QTabBar::tab:selected { background-color: #707070; }\n"
+                ;
+            qApp->setStyleSheet(styleSheet);
+        }
+#endif
+
         QApplication::setPalette(m_darkPalette);
+        
     } else {
+
+#ifdef Q_OS_WIN32
+        qApp->setStyleSheet("");
+#endif
+        
         QApplication::setPalette(m_lightPalette);
     }
-#endif
 }
 
 bool
