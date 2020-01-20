@@ -24,6 +24,7 @@
 
 #include <QSettings>
 #include <QApplication>
+#include <QStyleFactory>
 
 #include <iostream>
 
@@ -788,24 +789,17 @@ ViewManager::setGlobalDarkBackground(bool dark)
     if (dark) {
 
 #ifdef Q_OS_WIN32
-        // Some UI elements on Windows don't use the palette. 
+        // The Windows Vista style doesn't use the palette for many of
+        // its controls. They can be styled with stylesheets, but that
+        // takes a lot of fiddly and fragile custom bits. Easier and
+        // more reliable to switch to a non-Vista style which does use
+        // the palette.
 
-        QString existingStyleSheet = qApp->styleSheet();
-        if (existingStyleSheet == "") {
-            QString styleSheet =
-                "QFrame { background: #202020; color: #f0f0f0; }\n"
-                "QAbstractButton { background: #202020; color: #f0f0f0; }\n"
-                "QDialog { background-color: #202020; }\n"
-                "QToolBar { background-color: #202020; }\n"
-                "QMenuBar { background-color: #404040; }\n"
-                "QMenuBar::item:selected { background-color: #707070; }\n"
-                "QMenuBar::item:pressed { background-color: #707070; }\n"
-                "QComboBox { background-color: #404040; }\n"
-                "QTabWidget::pane { border: 1px solid #c7c7c7; top: -1px; }\n"
-                "QTabBar::tab { background-color: #404040; border: 1px solid #c7c7c7; bottom: -1px; padding: 5px; }\n"
-                "QTabBar::tab:selected { background-color: #707070; }\n"
-                ;
-            qApp->setStyleSheet(styleSheet);
+        QStyle *plainWindowsStyle = QStyleFactory::create("windows");
+        if (!plainWindowsStyle) {
+            SVCERR << "Failed to load plain Windows style" << endl;
+        } else {
+            qApp->setStyle(plainWindowsStyle);
         }
 #endif
 
@@ -814,7 +808,14 @@ ViewManager::setGlobalDarkBackground(bool dark)
     } else {
 
 #ifdef Q_OS_WIN32
-        qApp->setStyleSheet("");
+        // Switch back to Vista style
+        
+        QStyle *fancyWindowsStyle = QStyleFactory::create("windowsvista");
+        if (!fancyWindowsStyle) {
+            SVCERR << "Failed to load fancy Windows style" << endl;
+        } else {
+            qApp->setStyle(fancyWindowsStyle);
+        }
 #endif
         
         QApplication::setPalette(m_lightPalette);
