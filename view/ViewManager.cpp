@@ -105,6 +105,10 @@ ViewManager::ViewManager() :
                                  QColor("#000000"),  // Base
                                  QColor("#202020")); // Window
 
+        m_darkPalette.setColor(QPalette::Highlight, QColor(25, 130, 220));
+        m_darkPalette.setColor(QPalette::Link, QColor(50, 175, 255));
+        m_darkPalette.setColor(QPalette::LinkVisited, QColor(50, 175, 255));
+        
         m_darkPalette.setColor(QPalette::Disabled, QPalette::WindowText,
                                QColor("#808080"));
         m_darkPalette.setColor(QPalette::Disabled, QPalette::Text,
