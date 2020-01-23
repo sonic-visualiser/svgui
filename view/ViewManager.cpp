@@ -22,6 +22,8 @@
 #include "View.h"
 #include "Overview.h"
 
+#include "system/System.h"
+
 #include <QSettings>
 #include <QApplication>
 #include <QStyleFactory>
@@ -87,7 +89,14 @@ ViewManager::ViewManager() :
                                   QColor("#ffffff"),  // BrightText
                                   QColor("#ffffff"),  // Base
                                   QColor("#efefef")); // Window
-                                  
+
+        m_lightPalette.setColor(QPalette::Highlight, Qt::darkBlue);
+        if (!OSReportsDarkThemeActive()) {
+            int r, g, b;
+            if (OSQueryAccentColour(r, g, b)) {
+                m_lightPalette.setColor(QPalette::Highlight, QColor(r, g, b));
+            }
+        }
 
     } else {
         // i.e. widgets are currently light; create a dark palette in
@@ -106,6 +115,13 @@ ViewManager::ViewManager() :
                                  QColor("#202020")); // Window
 
         m_darkPalette.setColor(QPalette::Highlight, QColor(25, 130, 220));
+        if (OSReportsDarkThemeActive()) {
+            int r, g, b;
+            if (OSQueryAccentColour(r, g, b)) {
+                m_darkPalette.setColor(QPalette::Highlight, QColor(r, g, b));
+            }
+        }
+        
         m_darkPalette.setColor(QPalette::Link, QColor(50, 175, 255));
         m_darkPalette.setColor(QPalette::LinkVisited, QColor(50, 175, 255));
         
