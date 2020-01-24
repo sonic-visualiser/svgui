@@ -29,7 +29,32 @@ class ColourComboBox : public NotifyingComboBox
 public:
     ColourComboBox(bool withAddNewColourEntry, QWidget *parent = 0);
 
+    /**
+     * Add an entry at the top of the combo for "no colour selected",
+     * with the given label.
+     */
+    void includeUnsetEntry(QString label);
+
+    /**
+     * Get the current colour index. This is the same as
+     * QComboBox::currentIndex() if there is no unset entry, or 1 less
+     * than it if includeUnsetEntry() has been used. So if there is an
+     * unset entry, and it is selected, this returns -1.
+     */
+    int getCurrentColourIndex() const {
+        int index = currentIndex();
+        if (m_unsetEntry == "") {
+            return index;
+        } else {
+            return index - 1;
+        }
+    }
+
 signals:
+    /**
+     * Emitted when the current index is changed. The argument is the
+     * value returned by getCurrentColourIndex()
+     */
     void colourChanged(int colourIndex);
 
 private slots:
@@ -38,6 +63,7 @@ private slots:
     
 private:
     bool m_withAddNewColourEntry;
+    QString m_unsetEntry;
 };
 
 #endif
