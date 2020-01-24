@@ -22,8 +22,11 @@
 #include "View.h"
 #include "Overview.h"
 
+#include "system/System.h"
+
 #include <QSettings>
 #include <QApplication>
+#include <QStyleFactory>
 
 #include <iostream>
 
@@ -72,20 +75,11 @@ ViewManager::ViewManager() :
     settings.endGroup();
 
     if (getGlobalDarkBackground()) {
-/*
-        cerr << "dark palette:" << endl;
-        cerr << "window = " << QApplication::palette().color(QPalette::Window).name() << endl;
-        cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name() << endl;
-        cerr << "base = " << QApplication::palette().color(QPalette::Base).name() << endl;
-        cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name() << endl;
-        cerr << "text = " << QApplication::palette().color(QPalette::Text).name() << endl;
-        cerr << "button = " << QApplication::palette().color(QPalette::Button).name() << endl;
-        cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name() << endl;
-        cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name() << endl;
-        cerr << "light = " << QApplication::palette().color(QPalette::Light).name() << endl;
-        cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name() << endl;
-        cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name() << endl;
-*/
+        // i.e. widgets are already dark; create a light palette in
+        // case we are asked to switch to it, but don't create a dark
+        // one because it will be assigned from the actual application
+        // palette if we switch
+        
         m_lightPalette = QPalette(QColor("#000000"),  // WindowText
                                   QColor("#dddfe4"),  // Button
                                   QColor("#ffffff"),  // Light
@@ -95,32 +89,48 @@ ViewManager::ViewManager() :
                                   QColor("#ffffff"),  // BrightText
                                   QColor("#ffffff"),  // Base
                                   QColor("#efefef")); // Window
-                                  
+
+        m_lightPalette.setColor(QPalette::Highlight, Qt::darkBlue);
+        if (!OSReportsDarkThemeActive()) {
+            int r, g, b;
+            if (OSQueryAccentColour(r, g, b)) {
+                m_lightPalette.setColor(QPalette::Highlight, QColor(r, g, b));
+            }
+        }
 
     } else {
-/*
-        cerr << "light palette:" << endl;
-        cerr << "window = " << QApplication::palette().color(QPalette::Window).name() << endl;
-        cerr << "windowtext = " << QApplication::palette().color(QPalette::WindowText).name() << endl;
-        cerr << "base = " << QApplication::palette().color(QPalette::Base).name() << endl;
-        cerr << "alternatebase = " << QApplication::palette().color(QPalette::AlternateBase).name() << endl;
-        cerr << "text = " << QApplication::palette().color(QPalette::Text).name() << endl;
-        cerr << "button = " << QApplication::palette().color(QPalette::Button).name() << endl;
-        cerr << "buttontext = " << QApplication::palette().color(QPalette::ButtonText).name() << endl;
-        cerr << "brighttext = " << QApplication::palette().color(QPalette::BrightText).name() << endl;
-        cerr << "light = " << QApplication::palette().color(QPalette::Light).name() << endl;
-        cerr << "dark = " << QApplication::palette().color(QPalette::Dark).name() << endl;
-        cerr << "mid = " << QApplication::palette().color(QPalette::Mid).name() << endl;
-*/
-        m_darkPalette = QPalette(QColor("#ffffff"),  // WindowText
+        // i.e. widgets are currently light; create a dark palette in
+        // case we are asked to switch to it, but don't create a light
+        // one because it will be assigned from the actual application
+        // palette if we switch
+        
+        m_darkPalette = QPalette(QColor("#f0f0f0"),  // WindowText
                                  QColor("#3e3e3e"),  // Button
                                  QColor("#808080"),  // Light
                                  QColor("#1e1e1e"),  // Dark
                                  QColor("#404040"),  // Mid
-                                 QColor("#ffffff"),  // Text
+                                 QColor("#f0f0f0"),  // Text
                                  QColor("#ffffff"),  // BrightText
                                  QColor("#000000"),  // Base
                                  QColor("#202020")); // Window
+
+        m_darkPalette.setColor(QPalette::Highlight, QColor(25, 130, 220));
+        if (OSReportsDarkThemeActive()) {
+            int r, g, b;
+            if (OSQueryAccentColour(r, g, b)) {
+                m_darkPalette.setColor(QPalette::Highlight, QColor(r, g, b));
+            }
+        }
+        
+        m_darkPalette.setColor(QPalette::Link, QColor(50, 175, 255));
+        m_darkPalette.setColor(QPalette::LinkVisited, QColor(50, 175, 255));
+        
+        m_darkPalette.setColor(QPalette::Disabled, QPalette::WindowText,
+                               QColor("#808080"));
+        m_darkPalette.setColor(QPalette::Disabled, QPalette::Text,
+                               QColor("#808080"));
+        m_darkPalette.setColor(QPalette::Disabled, QPalette::Shadow,
+                               QColor("#000000"));
     }
 }
 
@@ -792,13 +802,44 @@ ViewManager::setGlobalDarkBackground(bool dark)
         m_lightPalette = QApplication::palette();
     }
 
-#ifndef Q_OS_MAC
+#ifdef Q_OS_MAC
+    return;
+#endif
+    
     if (dark) {
+
+#ifdef Q_OS_WIN32
+        // The Windows Vista style doesn't use the palette for many of
+        // its controls. They can be styled with stylesheets, but that
+        // takes a lot of fiddly and fragile custom bits. Easier and
+        // more reliable to switch to a non-Vista style which does use
+        // the palette.
+
+        QStyle *plainWindowsStyle = QStyleFactory::create("windows");
+        if (!plainWindowsStyle) {
+            SVCERR << "Failed to load plain Windows style" << endl;
+        } else {
+            qApp->setStyle(plainWindowsStyle);
+        }
+#endif
+
         QApplication::setPalette(m_darkPalette);
+        
     } else {
+
+#ifdef Q_OS_WIN32
+        // Switch back to Vista style
+        
+        QStyle *fancyWindowsStyle = QStyleFactory::create("windowsvista");
+        if (!fancyWindowsStyle) {
+            SVCERR << "Failed to load fancy Windows style" << endl;
+        } else {
+            qApp->setStyle(fancyWindowsStyle);
+        }
+#endif
+        
         QApplication::setPalette(m_lightPalette);
     }
-#endif
 }
 
 bool

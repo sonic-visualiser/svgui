@@ -38,15 +38,29 @@ ColourComboBox::ColourComboBox(bool withAddNewColourEntry, QWidget *parent) :
     connect(this, SIGNAL(activated(int)), this, SLOT(comboActivated(int)));
     connect(ColourDatabase::getInstance(), SIGNAL(colourDatabaseChanged()),
             this, SLOT(rebuild()));
-
-    if (count() < 20 && count() > maxVisibleItems()) {
-        setMaxVisibleItems(count());
-    }
 }
 
 void
-ColourComboBox::comboActivated(int index)
+ColourComboBox::includeUnsetEntry(QString entry)
 {
+    m_unsetEntry = entry;
+    
+    rebuild();
+
+    blockSignals(true);
+    int ix = currentIndex();
+    setCurrentIndex(ix + 1);
+    blockSignals(false);
+}
+
+void
+ColourComboBox::comboActivated(int comboIndex)
+{
+    int index = comboIndex;
+    if (m_unsetEntry != "") {
+        index = comboIndex - 1; // so index is the colour index
+    }
+    
     if (!m_withAddNewColourEntry ||
         index < int(ColourDatabase::getInstance()->getColourCount())) {
         emit colourChanged(index);
@@ -81,6 +95,10 @@ ColourComboBox::rebuild()
     
     clear();
 
+    if (m_unsetEntry != "") {
+        addItem(m_unsetEntry);
+    }
+    
     int size = (QFontMetrics(QFont()).height() * 2) / 3;
     if (size < 12) size = 12;
     
@@ -95,6 +113,12 @@ ColourComboBox::rebuild()
     }
 
     setCurrentIndex(ix);
+
+    if (count() < 18) {
+        setMaxVisibleItems(count());
+    } else {
+        setMaxVisibleItems(10);
+    }
     
     blockSignals(false);
 }
