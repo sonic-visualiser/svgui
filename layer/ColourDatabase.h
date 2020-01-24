@@ -71,13 +71,20 @@ public:
      */
     bool haveColour(QColor c) const;
 
+    enum WithBackgroundMode {
+        WithAnyBackground,
+        WithDarkBackground,
+        WithLightBackground
+    };
+    
     /**
      * Return the index of the colour in the database that is closest
-     * to the given one, by some simplistic measure (Manhattan
-     * distance in RGB space). This always returns some valid index,
-     * unless the database is empty, in which case it returns -1.
+     * to the given one, by some simple measure. This always returns
+     * some valid index, unless the database is empty, in which case
+     * it returns -1.
      */
-    int getNearbyColourIndex(QColor c) const;
+    int getNearbyColourIndex(QColor c,
+                             WithBackgroundMode mode = WithAnyBackground) const;
 
     /**
      * Add a colour to the database, with the associated name. Return
@@ -110,9 +117,9 @@ public:
 
     /**
      * Return a colour that contrasts with the one at index c,
-     * according to some simplistic algorithm. The returned colour is
-     * not necessarily in the database; pass it to
-     * getNearbyColourIndex if you need one that is.
+     * according to some simple algorithm. The returned colour is not
+     * necessarily in the database; pass it to getNearbyColourIndex if
+     * you need one that is.
      */
     QColor getContrastingColour(int c) const;
 

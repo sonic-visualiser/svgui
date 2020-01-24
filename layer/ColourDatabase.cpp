@@ -88,17 +88,44 @@ ColourDatabase::getColourIndex(QColor col) const
 }
 
 int
-ColourDatabase::getNearbyColourIndex(QColor col) const
+ColourDatabase::getNearbyColourIndex(QColor col, WithBackgroundMode mode) const
 {
-    int index = 0;
+    int index = -1;
     int closestIndex = -1;
-    int closestDistance = 0;
+    double closestDistance = 0;
 
     for (auto &c: m_colours) {
-        int distance =
-            std::abs(col.red() - c.colour.red()) +
-            std::abs(col.green() - c.colour.green()) +
-            std::abs(col.blue() - c.colour.blue());
+
+        ++index;
+
+        if (mode == WithDarkBackground && !c.darkbg) {
+#ifdef DEBUG_COLOUR_DATABASE
+            SVDEBUG << "getNearbyColourIndex: dark background requested, skipping " << c.colour.name() << endl;
+#endif
+            continue;
+        }
+        if (mode == WithLightBackground && c.darkbg) {
+#ifdef DEBUG_COLOUR_DATABASE
+            SVDEBUG << "getNearbyColourIndex: light background requested, skipping " << c.colour.name() << endl;
+#endif
+            continue;
+        }
+
+        // This distance formula is "one of the better low-cost
+        // approximations" according to
+        // https://en.wikipedia.org/w/index.php?title=Color_difference&oldid=936888327
+        
+        double r1 = col.red(), r2 = c.colour.red();
+        double g1 = col.green(), g2 = c.colour.green();
+        double b1 = col.blue(), b2 = c.colour.blue();
+
+        double rav = (r1 + r2) / 2.0;
+        double rterm = (2.0 + rav / 256.0) * (r1 - r2) * (r1 - r2);
+        double gterm = 4.0 * (g1 - g2) * (g1 - g2);
+        double bterm = (2.0 + (255 - rav) / 256.0) * (b1 - b2) * (b1 - b2);
+        
+        double distance = sqrt(rterm + gterm + bterm);
+
 #ifdef DEBUG_COLOUR_DATABASE
         SVDEBUG << "getNearbyColourIndex: comparing " << c.colour.name()
                 << " to " << col.name() << ": distance = " << distance << endl;
@@ -110,7 +137,6 @@ ColourDatabase::getNearbyColourIndex(QColor col) const
             SVDEBUG << "(this is the best so far)" << endl;
 #endif
         }
-        ++index;
     }
 
 #ifdef DEBUG_COLOUR_DATABASE
