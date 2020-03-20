@@ -43,7 +43,7 @@
 
 #include "base/Debug.h"
 
-PluginParameterDialog::PluginParameterDialog(Vamp::PluginBase *plugin,
+PluginParameterDialog::PluginParameterDialog(std::shared_ptr<Vamp::PluginBase> plugin,
                                              QWidget *parent) :
     QDialog(parent),
     m_plugin(plugin),
@@ -368,9 +368,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
 
     if (showWindowSize) {
 
-        Vamp::Plugin *fePlugin = dynamic_cast<Vamp::Plugin *>(m_plugin);
-        if (!fePlugin) fePlugin = dynamic_cast<Vamp::PluginHostAdapter *>(m_plugin);
-        if (!fePlugin) fePlugin = dynamic_cast<Vamp::HostExt::PluginWrapper *>(m_plugin);
+        auto fePlugin = std::dynamic_pointer_cast<Vamp::Plugin>(m_plugin);
         int size = 1024;
         int increment = 1024;
         if (fePlugin) {
