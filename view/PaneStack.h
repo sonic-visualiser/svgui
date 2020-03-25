@@ -92,7 +92,9 @@ public:
 signals:
     void currentPaneChanged(Pane *pane);
     void currentLayerChanged(Pane *pane, Layer *layer);
-    void rightButtonMenuRequested(Pane *pane, QPoint position);
+    void paneRightButtonMenuRequested(Pane *pane, QPoint position);
+    void panePropertiesRightButtonMenuRequested(Pane *, QPoint);
+    void layerPropertiesRightButtonMenuRequested(Pane *, Layer *, QPoint);
     void propertyStacksResized(int width);
     void propertyStacksResized();
     void contextHelpChanged(const QString &);
@@ -115,6 +117,8 @@ public slots:
     void propertyContainerAdded(PropertyContainer *);
     void propertyContainerRemoved(PropertyContainer *);
     void propertyContainerSelected(View *client, PropertyContainer *);
+    void propertyContainerContextMenuRequested(View *, PropertyContainer *,
+                                               QPoint);
     void viewSelected(View *v);
     void paneInteractedWith();
     void rightButtonMenuRequested(QPoint);

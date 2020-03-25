@@ -45,6 +45,10 @@ PropertyStack::PropertyStack(QWidget *parent, View *client) :
     connect(bar, SIGNAL(mouseLeft()), this, SLOT(mouseLeftTabBar()));
     connect(bar, SIGNAL(activeTabClicked()), this, SLOT(activeTabClicked()));
 
+    bar->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(bar, SIGNAL(customContextMenuRequested(const QPoint &)),
+            this, SLOT(tabBarContextMenuRequested(const QPoint &)));
+    
     setTabBar(bar);
 
     setElideMode(Qt::ElideNone); 
@@ -162,6 +166,19 @@ PropertyStack::repopulate()
     }    
 
     blockSignals(false);
+}
+
+void
+PropertyStack::tabBarContextMenuRequested(const QPoint &pos)
+{
+    int tab = tabBar()->tabAt(pos);
+    if (!in_range_for(m_boxes, tab)) {
+        return;
+    }
+
+    emit propertyContainerContextMenuRequested(m_client,
+                                               m_boxes[tab]->getContainer(),
+                                               mapToGlobal(pos));
 }
 
 bool

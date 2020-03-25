@@ -146,6 +146,8 @@ PaneStack::addPane()
         properties = new PropertyStack(frame, pane);
         connect(properties, SIGNAL(propertyContainerSelected(View *, PropertyContainer *)),
                 this, SLOT(propertyContainerSelected(View *, PropertyContainer *)));
+        connect(properties, SIGNAL(propertyContainerContextMenuRequested(View *, PropertyContainer *, QPoint)),
+                this, SLOT(propertyContainerContextMenuRequested(View *, PropertyContainer *, QPoint)));
         connect(properties, SIGNAL(viewSelected(View  *)),
                 this, SLOT(viewSelected(View *)));
         connect(properties, SIGNAL(contextHelpChanged(const QString &)),
@@ -588,6 +590,23 @@ PaneStack::propertyContainerSelected(View *client, PropertyContainer *pc)
 }
 
 void
+PaneStack::propertyContainerContextMenuRequested(View *client,
+                                                 PropertyContainer *pc,
+                                                 QPoint pos)
+{
+    Pane *pane = dynamic_cast<Pane *>(client);
+    Layer *layer = dynamic_cast<Layer *>(pc);
+
+    if (pane) {
+        if (layer) {
+            emit layerPropertiesRightButtonMenuRequested(pane, layer, pos);
+        } else {
+            emit panePropertiesRightButtonMenuRequested(pane, pos);
+        }
+    }
+}
+
+void
 PaneStack::viewSelected(View *v)
 {
     Pane *p = dynamic_cast<Pane *>(v);
@@ -607,7 +626,7 @@ PaneStack::rightButtonMenuRequested(QPoint position)
 {
     Pane *pane = dynamic_cast<Pane *>(sender());
     if (!pane) return;
-    emit rightButtonMenuRequested(pane, position);
+    emit paneRightButtonMenuRequested(pane, position);
 }
 
 void

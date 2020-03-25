@@ -40,6 +40,9 @@ public:
 signals:
     void viewSelected(View *client);
     void propertyContainerSelected(View *client, PropertyContainer *container);
+    void propertyContainerContextMenuRequested(View *client,
+                                               PropertyContainer *container,
+                                               QPoint pos);
     void contextHelpChanged(const QString &);
 
 public slots:
@@ -54,6 +57,7 @@ public slots:
     void mouseEnteredTabBar();
     void mouseLeftTabBar();
     void activeTabClicked();
+    void tabBarContextMenuRequested(const QPoint &);
 
 protected slots:
     void selectedContainerChanged(int);
