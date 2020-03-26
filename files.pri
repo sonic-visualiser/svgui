@@ -68,6 +68,7 @@ SVGUI_HEADERS += \
            widgets/LevelPanToolButton.h \
            widgets/LevelPanWidget.h \
            widgets/ListInputDialog.h \
+           widgets/MenuTitle.h \
            widgets/MIDIFileImportDialog.h \
            widgets/ModelDataTableDialog.h \
            widgets/NotifyingCheckBox.h \
