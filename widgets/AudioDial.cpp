@@ -49,8 +49,11 @@
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QInputDialog>
+#include <QMenu>
 
 #include "base/Profiler.h"
+
+#include "MenuTitle.h"
 
 
 
@@ -68,8 +71,6 @@
 #define AUDIO_DIAL_RANGE (AUDIO_DIAL_MAX - AUDIO_DIAL_MIN)
 
 
-//static int dialsExtant = 0;
-
 
 // Constructor.
 AudioDial::AudioDial(QWidget *parent) :
@@ -81,11 +82,15 @@ AudioDial::AudioDial(QWidget *parent) :
     m_mappedValue(0),
     m_noMappedUpdate(false),
     m_showTooltip(true),
+    m_provideContextMenu(true),
+    m_lastContextMenu(nullptr),
     m_rangeMapper(nullptr)
 {
     m_mouseDial = false;
     m_mousePressed = false;
-//    ++dialsExtant;
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)),
+            this, SLOT(contextMenuRequested(const QPoint &)));
 }
 
 
@@ -93,14 +98,42 @@ AudioDial::AudioDial(QWidget *parent) :
 AudioDial::~AudioDial (void)
 {
     delete m_rangeMapper;
-//    --dialsExtant;
+    delete m_lastContextMenu;
 }
 
+void AudioDial::contextMenuRequested(const QPoint &pos)
+{
+    if (!m_provideContextMenu) {
+        return;
+    }
+    
+    if (m_lastContextMenu) {
+        delete m_lastContextMenu;
+    }
+    
+    QMenu *m = new QMenu;
+
+    if (m_title == "") {
+        MenuTitle::addTitle(m, tr("Dial"));
+    } else {        
+        MenuTitle::addTitle(m, m_title);
+    }
+
+    m->addAction(tr("&Edit..."),
+                 [=]() {
+                     edit();
+                 });
+    m->addAction(tr("&Reset to Default"),
+                 [=]() {
+                     setToDefault();
+                 });
+
+    m->popup(mapToGlobal(pos));
+    m_lastContextMenu = m;
+}
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)
 {
-//    cerr << "AudioDial[" << this << "][\"" << objectName() << "\"::setRangeMapper(" << mapper << ") [current is " << m_rangeMapper << "] (have " << dialsExtant << " dials extant)" << endl;
-
     if (m_rangeMapper == mapper) return;
 
     if (!m_rangeMapper && mapper) {
@@ -422,6 +455,12 @@ void AudioDial::setShowToolTip(bool show)
 }
 
 
+void AudioDial::setProvideContextMenu(bool provide)
+{
+    m_provideContextMenu = provide;
+}
+
+
 double AudioDial::mappedValue() const
 {
     if (m_rangeMapper) {
@@ -442,31 +481,36 @@ void AudioDial::updateMappedValue(int value)
         }
     }
 
-    if (m_showTooltip) {
-        QString name = objectName();
-        QString label;
-        if (m_rangeMapper) {
-            label = m_rangeMapper->getLabel(value);
-        }
-        QString text;
-        if (label != "") {
-            if (name != "") {
-                text = tr("%1: %2").arg(name).arg(label);
-            } else {
-                text = label;
-            }
+    QString name = objectName();
+    QString label;
+    if (m_rangeMapper) {
+        label = m_rangeMapper->getLabel(value);
+    }
+    QString text;
+    if (label != "") {
+        if (name != "") {
+            text = tr("%1: %2").arg(name).arg(label);
         } else {
-            QString unit = "";
-            if (m_rangeMapper) {
-                unit = m_rangeMapper->getUnit();
-            }
-            if (name != "") {
-                text = tr("%1: %2%3").arg(name).arg(m_mappedValue).arg(unit);
-            } else {
-                text = tr("%2%3").arg(m_mappedValue).arg(unit);
-            }
+            text = label;
         }
+    } else {
+        QString unit = "";
+        if (m_rangeMapper) {
+            unit = m_rangeMapper->getUnit();
+        }
+        if (name != "") {
+            text = tr("%1: %2%3").arg(name).arg(m_mappedValue).arg(unit);
+        } else {
+            text = tr("%2%3").arg(m_mappedValue).arg(unit);
+        }
+    }
+
+    m_title = text;
+
+    if (m_showTooltip) {
         setToolTip(text);
+    } else {
+        setToolTip("");
     }
 }
 
@@ -509,6 +553,11 @@ void AudioDial::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
         return;
     }
 
+    edit();
+}
+
+void AudioDial::edit()
+{
     bool ok = false;
 
     if (m_rangeMapper) {

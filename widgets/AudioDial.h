@@ -42,6 +42,7 @@
 #include <map>
 
 class RangeMapper;
+class QMenu;
 
 /**
  * AudioDial is a nicer-looking QDial that by default reacts to mouse
@@ -78,6 +79,7 @@ public:
     int defaultValue() const { return m_defaultValue; }
 
     void setShowToolTip(bool show);
+    void setProvideContextMenu(bool provide);
 
 signals:
     void mouseEntered();
@@ -113,6 +115,8 @@ public slots:
 
     void setToDefault();
 
+    void edit();
+
 protected:
     void drawTick(QPainter &paint, double angle, int size, bool internal);
     void paintEvent(QPaintEvent *) override;
@@ -127,6 +131,7 @@ protected:
 
 protected slots:
     void updateMappedValue(int value);
+    void contextMenuRequested(const QPoint &);
 
 private:
     QColor m_knobColor;
@@ -143,6 +148,11 @@ private:
     QPoint m_posMouse;
 
     bool m_showTooltip;
+    bool m_provideContextMenu;
+
+    QString m_title;
+
+    QMenu *m_lastContextMenu;
 
     RangeMapper *m_rangeMapper;
 };
