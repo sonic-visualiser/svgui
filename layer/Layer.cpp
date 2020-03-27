@@ -89,6 +89,12 @@ Layer::setPresentationName(QString name)
     m_presentationName = name;
 }
 
+bool
+Layer::isPresentationNameSet() const
+{
+    return (m_presentationName != "");
+}
+
 QString
 Layer::getLayerPresentationName() const
 {

@@ -159,6 +159,8 @@ public:
 
     virtual void setPresentationName(QString name);
 
+    virtual bool isPresentationNameSet() const;
+
     virtual QString getLayerPresentationName() const;
     virtual QPixmap getLayerPresentationPixmap(QSize) const { return QPixmap(); }
 
