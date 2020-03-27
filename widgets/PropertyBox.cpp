@@ -29,6 +29,7 @@
 #include "LevelPanWidget.h"
 #include "LevelPanToolButton.h"
 #include "WidgetScale.h"
+#include "MenuTitle.h"
 
 #include "NotifyingCheckBox.h"
 #include "NotifyingComboBox.h"
@@ -48,6 +49,7 @@
 #include <QColorDialog>
 #include <QInputDialog>
 #include <QDir>
+#include <QMenu>
 
 #include <cassert>
 #include <iostream>
@@ -58,7 +60,8 @@
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
     m_showButton(nullptr),
-    m_playButton(nullptr)
+    m_playButton(nullptr),
+    m_lastContextMenu(nullptr)
 {
 #ifdef DEBUG_PROPERTY_BOX
     SVDEBUG << "PropertyBox[" << this << "(\"" <<
@@ -118,6 +121,7 @@ PropertyBox::~PropertyBox()
 #ifdef DEBUG_PROPERTY_BOX
     SVDEBUG << "PropertyBox[" << this << "]::~PropertyBox" << endl;
 #endif
+    delete m_lastContextMenu;
 }
 
 void
@@ -328,6 +332,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseLeftWidget()));
             button->setToolTip(propertyLabel);
 
+            button->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(button, SIGNAL(customContextMenuRequested(const QPoint &)),
+                    this, SLOT(contextMenuRequested(const QPoint &)));
+
             if (existing) {
                 groupLayout->replaceWidget(existing, button);
                 delete existing;
@@ -421,6 +429,10 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseLeftWidget()));
 
             cb->setToolTip(propertyLabel);
+
+            cb->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(cb, SIGNAL(customContextMenuRequested(const QPoint &)),
+                    this, SLOT(contextMenuRequested(const QPoint &)));
 
             if (existing) {
                 groupLayout->replaceWidget(existing, cb);
@@ -535,6 +547,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
                     this, SLOT(mouseLeftWidget()));
 
             cb->setToolTip(propertyLabel);
+
+            cb->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(cb, SIGNAL(customContextMenuRequested(const QPoint &)),
+                    this, SLOT(contextMenuRequested(const QPoint &)));
+            
             groupLayout->addWidget(cb, 0, groupLayout->columnCount());
             m_propertyControllers[name] = cb;
         } else if (existing != cb) {
@@ -664,6 +681,47 @@ PropertyBox::propertyControllerChanged(int value)
     if (c) CommandHistory::getInstance()->addCommand(c, true, true);
     
     updateContextHelp(obj);
+}
+
+void
+PropertyBox::contextMenuRequested(const QPoint &pos)
+{
+    QObject *obj = sender();
+    QString name = obj->objectName();
+    
+    PropertyContainer::PropertyType type = m_container->getPropertyType(name);
+    QString label = m_container->getPropertyLabel(name);
+    int min = 0, max = 0, value = 0, deflt = 0;
+    value = m_container->getPropertyRangeAndValue(name, &min, &max, &deflt);
+
+    delete m_lastContextMenu;
+    QMenu *m = new QMenu;
+    m_lastContextMenu = m;
+
+    if (auto button = qobject_cast<QAbstractButton *>(obj)) {
+        if (value > 0) {
+            MenuTitle::addTitle(m, tr("%1: On").arg(label));
+        } else {
+            MenuTitle::addTitle(m, tr("%1: Off").arg(label));
+        }
+
+        m->addAction(tr("&Reset to Default"),
+                     [=]() {
+                         button->setChecked(deflt > 0);
+                     });
+
+    } else if (auto cb = qobject_cast<QComboBox *>(obj)) {
+        MenuTitle::addTitle(m, tr("%1: %2").arg(label).arg(cb->itemText(value)));
+        m->addAction(tr("&Reset to Default"),
+                     [=]() {
+                         cb->setCurrentIndex(deflt);
+                     });
+    } else {
+        // AudioDial has its own context menu, we don't handle it here
+        return;
+    }
+        
+    m->popup(qobject_cast<QWidget *>(sender())->mapToGlobal(pos));
 }
 
 void

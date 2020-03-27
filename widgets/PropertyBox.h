@@ -29,6 +29,7 @@ class QLabel;
 class LEDButton;
 class QToolButton;
 class NotifyingPushButton;
+class QMenu;
 
 class PropertyBox : public QFrame
 {
@@ -68,6 +69,8 @@ protected slots:
     void mouseEnteredWidget();
     void mouseLeftWidget();
 
+    void contextMenuRequested(const QPoint &);
+
 protected:
     void updatePropertyEditor(PropertyContainer::PropertyName,
                               bool rangeChanged = false);
@@ -81,6 +84,7 @@ protected:
     QVBoxLayout *m_mainBox;
     LEDButton *m_showButton;
     QToolButton *m_playButton;
+    QMenu *m_lastContextMenu;
     std::map<QString, QGridLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };

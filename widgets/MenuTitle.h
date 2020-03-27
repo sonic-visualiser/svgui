@@ -21,6 +21,7 @@
 #include <QWidgetAction>
 #include <QLabel>
 #include <QApplication>
+#include <QMenu>
 
 class MenuTitle
 {
