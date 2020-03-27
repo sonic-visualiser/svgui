@@ -24,6 +24,9 @@
 #include <QInputDialog>
 #include <QPainter>
 #include <QPainterPath>
+#include <QMenu>
+
+#include "MenuTitle.h"
 
 #include <cmath>
 #include <iostream>
@@ -46,13 +49,51 @@ Thumbwheel::Thumbwheel(Qt::Orientation orientation,
     m_atDefault(true),
     m_clickRotation(m_rotation),
     m_showTooltip(true),
+    m_provideContextMenu(true),
+    m_lastContextMenu(nullptr),
     m_rangeMapper(nullptr)
 {
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)),
+            this, SLOT(contextMenuRequested(const QPoint &)));
 }
 
 Thumbwheel::~Thumbwheel()
 {
     delete m_rangeMapper;
+    delete m_lastContextMenu;
+}
+
+void
+Thumbwheel::contextMenuRequested(const QPoint &pos)
+{
+    if (!m_provideContextMenu) {
+        return;
+    }
+    
+    if (m_lastContextMenu) {
+        delete m_lastContextMenu;
+    }
+    
+    QMenu *m = new QMenu;
+
+    if (m_title == "") {
+        MenuTitle::addTitle(m, tr("Thumbwheel"));
+    } else {        
+        MenuTitle::addTitle(m, m_title);
+    }
+
+    m->addAction(tr("&Edit..."),
+                 [=]() {
+                     edit();
+                 });
+    m->addAction(tr("&Reset to Default"),
+                 [=]() {
+                     resetToDefault();
+                 });
+
+    m->popup(mapToGlobal(pos));
+    m_lastContextMenu = m;
 }
 
 void
@@ -183,7 +224,11 @@ Thumbwheel::setValue(int value)
 
     m_rotation = float(m_value - m_min) / float(m_max - m_min);
     m_cache = QImage();
-    if (isVisible()) update();
+
+    if (isVisible()) {
+        update();
+        updateTitle();
+    }
 }
 
 void
@@ -223,17 +268,30 @@ Thumbwheel::updateMappedValue(int value)
         }
     }
 
+    updateTitle();
+}
+
+void
+Thumbwheel::updateTitle()
+{    
+    QString name = objectName();
+    QString unit = "";
+    QString text;
+    double mappedValue = getMappedValue();
+
+    if (m_rangeMapper) unit = m_rangeMapper->getUnit();
+    if (name != "") {
+        text = tr("%1: %2%3").arg(name).arg(mappedValue).arg(unit);
+    } else {
+        text = tr("%2%3").arg(mappedValue).arg(unit);
+    }
+
+    m_title = text;
+
     if (m_showTooltip) {
-        QString name = objectName();
-        QString unit = "";
-        QString text;
-        if (m_rangeMapper) unit = m_rangeMapper->getUnit();
-        if (name != "") {
-            text = tr("%1: %2%3").arg(name).arg(m_mappedValue).arg(unit);
-        } else {
-            text = tr("%2%3").arg(m_mappedValue).arg(unit);
-        }
         setToolTip(text);
+    } else {
+        setToolTip("");
     }
 }
 
@@ -323,6 +381,12 @@ Thumbwheel::mouseDoubleClickEvent(QMouseEvent *mouseEvent)
         return;
     }
 
+    edit();
+}
+
+void
+Thumbwheel::edit()
+{
     bool ok = false;
 
     if (m_rangeMapper) {

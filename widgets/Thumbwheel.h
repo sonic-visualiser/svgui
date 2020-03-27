@@ -24,6 +24,7 @@
 #include "WheelCounter.h"
 
 class RangeMapper;
+class QMenu;
 
 class Thumbwheel : public QWidget
 {
@@ -46,6 +47,7 @@ public:
     double getMappedValue() const;
 
     void setShowToolTip(bool show);
+    void setProvideContextMenu(bool provide);
 
     QSize sizeHint() const override;
 
@@ -66,9 +68,12 @@ public slots:
     void setMappedValue(double mappedValue);
     void scroll(bool up);
     void resetToDefault();
+    void edit();
 
 protected slots:
     void updateMappedValue(int value);
+    void updateTitle();
+    void contextMenuRequested(const QPoint &);
 
 protected:
     void mousePressEvent(QMouseEvent *e) override;
@@ -96,6 +101,9 @@ protected:
     QPoint m_clickPos;
     float m_clickRotation;
     bool m_showTooltip;
+    bool m_provideContextMenu;
+    QString m_title;
+    QMenu *m_lastContextMenu;
     RangeMapper *m_rangeMapper;
     QImage m_cache;
     WheelCounter m_wheelCounter;
