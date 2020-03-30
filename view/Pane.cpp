@@ -32,6 +32,7 @@
 #include "layer/LayerFactory.h"
 #include "layer/FlexiNoteLayer.h"
 
+#include "widgets/MenuTitle.h"
 
 //!!! ugh
 #include "data/model/WaveFileModel.h"
@@ -46,6 +47,7 @@
 #include <QTextStream>
 #include <QMimeData>
 #include <QApplication>
+#include <QMenu>
 
 #include <iostream>
 #include <cmath>
@@ -54,6 +56,7 @@
 #include <QFrame>
 #include <QGridLayout>
 #include <QPushButton>
+
 #include "widgets/Thumbwheel.h"
 #include "widgets/Panner.h"
 #include "widgets/RangeInputDialog.h"
@@ -86,6 +89,7 @@ Pane::Pane(QWidget *w) :
     m_hthumb(nullptr),
     m_vthumb(nullptr),
     m_reset(nullptr),
+    m_lastVerticalPannerContextMenu(nullptr),
     m_mouseInWidget(false),
     m_playbackFrameMoveScheduled(false),
     m_playbackFrameMoveTo(0)
@@ -100,6 +104,11 @@ Pane::Pane(QWidget *w) :
             this, SLOT(zoomToRegion(QRect)));
 
     cerr << "Pane::Pane(" << this << ") returning" << endl;
+}
+
+Pane::~Pane()
+{
+    delete m_lastVerticalPannerContextMenu;
 }
 
 void
@@ -148,6 +157,11 @@ Pane::updateHeadsUpDisplay()
                 this, SLOT(editVerticalPannerExtents()));
         connect(m_vpan, SIGNAL(mouseEntered()), this, SLOT(mouseEnteredWidget()));
         connect(m_vpan, SIGNAL(mouseLeft()), this, SLOT(mouseLeftWidget()));
+
+        // Panner doesn't provide its own context menu
+        m_vpan->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(m_vpan, SIGNAL(customContextMenuRequested(const QPoint &)),
+                this, SLOT(verticalPannerContextMenuRequested(const QPoint &)));
 
         m_vthumb = new Thumbwheel(Qt::Vertical);
         m_vthumb->setObjectName(tr("Vertical Zoom"));
@@ -2540,6 +2554,44 @@ Pane::verticalPannerMoved(float , float y0, float , float h)
 }
 
 void
+Pane::verticalPannerContextMenuRequested(const QPoint &pos)
+{
+    Panner *panner = qobject_cast<Panner *>(sender());
+    if (!panner) {
+        return;
+    }
+
+    double vmin, vmax, dmin, dmax;
+    QString unit;
+    if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax, &unit)) {
+        return;
+    }
+    
+    delete m_lastVerticalPannerContextMenu;
+    QMenu *m = new QMenu;
+    m_lastVerticalPannerContextMenu = m;
+
+    MenuTitle::addTitle(m, tr("Vertical Range: %1 - %2 %3")
+                        .arg(dmin).arg(dmax).arg(unit));
+
+    m->addAction(tr("&Edit..."),
+                 [=]() {
+                     editVerticalPannerExtents();
+                 });
+    m->addAction(tr("&Reset to Default"),
+                 [=]() {
+                     if (m_vthumb) {
+                         // This determines the "size" of the panner box
+                         m_vthumb->resetToDefault();
+                     }
+                     panner->resetToDefault();
+                 });
+
+    m->popup(panner->mapToGlobal(pos));
+    m_lastVerticalPannerContextMenu = m;
+}
+
+void
 Pane::editVerticalPannerExtents()
 {
     if (!m_vpan || !m_manager || !m_manager->getZoomWheelsEnabled()) return;
@@ -2552,7 +2604,7 @@ Pane::editVerticalPannerExtents()
     }
 
     RangeInputDialog dialog(tr("Enter new range"),
-                            tr("New vertical display range, from %1 to %2 %4:")
+                            tr("New vertical display range, from %1 to %2 %3:")
                             .arg(vmin).arg(vmax).arg(unit),
                             unit, float(vmin), float(vmax), this);
     dialog.setRange(float(dmin), float(dmax));

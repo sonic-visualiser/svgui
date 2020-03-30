@@ -30,6 +30,7 @@ class Thumbwheel;
 class Panner;
 class NotifyingPushButton;
 class KeyReference;
+class QMenu;
 
 class Pane : public View
 {
@@ -37,6 +38,8 @@ class Pane : public View
 
 public:
     Pane(QWidget *parent = 0);
+    virtual ~Pane();
+    
     virtual QString getPropertyContainerIconName() const override { return "pane"; }
 
     virtual bool shouldIlluminateLocalFeatures(const Layer *layer,
@@ -91,11 +94,12 @@ public slots:
     virtual void modelAlignmentCompletionChanged(ModelId) override;
 
     // local slots, not overrides
-    virtual void horizontalThumbwheelMoved(int value);
-    virtual void verticalThumbwheelMoved(int value);
-    virtual void verticalZoomChanged();
-    virtual void verticalPannerMoved(float x, float y, float w, float h);
-    virtual void editVerticalPannerExtents();
+    void horizontalThumbwheelMoved(int value);
+    void verticalThumbwheelMoved(int value);
+    void verticalZoomChanged();
+    void verticalPannerMoved(float x, float y, float w, float h);
+    void verticalPannerContextMenuRequested(const QPoint &);
+    void editVerticalPannerExtents();
 
     virtual void layerParametersChanged() override;
 
@@ -207,6 +211,7 @@ protected:
     Thumbwheel *m_hthumb;
     Thumbwheel *m_vthumb;
     NotifyingPushButton *m_reset;
+    QMenu *m_lastVerticalPannerContextMenu;
 
     bool m_mouseInWidget;
 
