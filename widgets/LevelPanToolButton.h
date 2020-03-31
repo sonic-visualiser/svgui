@@ -18,6 +18,7 @@
 #include <QToolButton>
 
 class LevelPanWidget;
+class QMenu;
 
 class LevelPanToolButton : public QToolButton
 {
@@ -37,6 +38,9 @@ public:
     bool includesMute() const;
 
     void setImageSize(int pixels);
+
+    /// Specify whether a right-click context menu is provided
+    void setProvideContextMenu(bool);
                         
     void setBigImageSize(int pixels);
                         
@@ -55,6 +59,9 @@ public slots:
 
     void setEnabled(bool enabled);
     
+protected slots:
+    void contextMenuRequested(const QPoint &);
+
 signals:
     void levelChanged(float);
     void panChanged(float);
@@ -78,6 +85,8 @@ protected:
     int m_pixelsBig;
     bool m_muted;
     float m_savedLevel;
+    bool m_provideContextMenu;
+    QMenu *m_lastContextMenu;
 };
 
 #endif

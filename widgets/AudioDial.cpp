@@ -106,12 +106,10 @@ void AudioDial::contextMenuRequested(const QPoint &pos)
     if (!m_provideContextMenu) {
         return;
     }
-    
-    if (m_lastContextMenu) {
-        delete m_lastContextMenu;
-    }
-    
-    QMenu *m = new QMenu;
+
+    delete m_lastContextMenu;
+    m_lastContextMenu = new QMenu;
+    auto m = m_lastContextMenu;
 
     if (m_title == "") {
         MenuTitle::addTitle(m, tr("Dial"));
@@ -129,7 +127,6 @@ void AudioDial::contextMenuRequested(const QPoint &pos)
                  });
 
     m->popup(mapToGlobal(pos));
-    m_lastContextMenu = m;
 }
 
 void AudioDial::setRangeMapper(RangeMapper *mapper)

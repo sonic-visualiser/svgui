@@ -71,11 +71,9 @@ Thumbwheel::contextMenuRequested(const QPoint &pos)
         return;
     }
     
-    if (m_lastContextMenu) {
-        delete m_lastContextMenu;
-    }
-    
-    QMenu *m = new QMenu;
+    delete m_lastContextMenu;
+    m_lastContextMenu = new QMenu;
+    auto m = m_lastContextMenu;
 
     if (m_title == "") {
         MenuTitle::addTitle(m, tr("Thumbwheel"));
@@ -93,7 +91,6 @@ Thumbwheel::contextMenuRequested(const QPoint &pos)
                  });
 
     m->popup(mapToGlobal(pos));
-    m_lastContextMenu = m;
 }
 
 void
@@ -119,6 +116,12 @@ Thumbwheel::setShowToolTip(bool show)
     m_noMappedUpdate = true;
     updateMappedValue(getValue());
     m_noMappedUpdate = false;
+}
+
+void
+Thumbwheel::setProvideContextMenu(bool provide)
+{
+    m_provideContextMenu = provide;
 }
 
 void

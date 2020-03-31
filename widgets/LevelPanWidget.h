@@ -71,7 +71,7 @@ public slots:
     
     // public so it can be called from LevelPanToolButton (ew)
     void wheelEvent(QWheelEvent *ev) override;
-    
+
 signals:
     void levelChanged(float); // range [0,1]
     void panChanged(float); // range [-1,1]

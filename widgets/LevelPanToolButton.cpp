@@ -21,8 +21,11 @@
 #include <QMouseEvent>
 #include <QStylePainter>
 #include <QStyleOptionToolButton>
+#include <QMenu>
 
 #include "base/Debug.h"
+#include "base/AudioLevel.h"
+#include "MenuTitle.h"
 
 #include <iostream>
 using std::cerr;
@@ -33,7 +36,9 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
     m_pixels(32),
     m_pixelsBig(32 * 3),
     m_muted(false),
-    m_savedLevel(1.f)
+    m_savedLevel(1.f),
+    m_provideContextMenu(true),
+    m_lastContextMenu(nullptr)
 {
     m_lpw = new LevelPanWidget();
 
@@ -56,10 +61,15 @@ LevelPanToolButton::LevelPanToolButton(QWidget *parent) :
 
     setImageSize(m_pixels);
     setBigImageSize(m_pixelsBig);
+    
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)),
+            this, SLOT(contextMenuRequested(const QPoint &)));
 }
 
 LevelPanToolButton::~LevelPanToolButton()
 {
+    delete m_lastContextMenu;
 }
 
 void
@@ -107,6 +117,12 @@ LevelPanToolButton::setImageSize(int pixels)
     QPixmap px(m_pixels, m_pixels);
     px.fill(Qt::transparent);
     setIcon(px);
+}
+
+void
+LevelPanToolButton::setProvideContextMenu(bool provide)
+{
+    m_provideContextMenu = provide;
 }
 
 void
@@ -179,6 +195,44 @@ LevelPanToolButton::selfClicked()
         emit levelChanged(0.f);
     }
     update();
+}
+
+void
+LevelPanToolButton::contextMenuRequested(const QPoint &pos)
+{
+    if (!m_provideContextMenu) {
+        return;
+    }
+    
+    delete m_lastContextMenu;
+    m_lastContextMenu = new QMenu;
+    auto m = m_lastContextMenu;
+
+    QString title;
+
+    if (m_muted) {
+        title = tr("Muted");
+    } else {
+        // Pan is actually stereo balance in most applications...
+        auto level = AudioLevel::multiplier_to_dB(m_lpw->getLevel());
+        auto pan = m_lpw->getPan();
+        if (pan == 0) {
+            title = tr("Level: %1 dB - Balance: Middle").arg(level);
+        } else if (pan > 0) {
+            title = tr("Level: %1 dB - Balance: +%2").arg(level).arg(pan);
+        } else {
+            title = tr("Level: %1 dB - Balance: %2").arg(level).arg(pan);
+        }
+    }
+    
+    MenuTitle::addTitle(m, title);
+
+    m->addAction(tr("&Reset to Default"),
+                 [=]() {
+                     m_lpw->setToDefault();
+                 });
+
+    m->popup(mapToGlobal(pos));
 }
 
 void
