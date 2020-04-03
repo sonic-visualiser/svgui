@@ -34,7 +34,8 @@
 
 #include <cmath>
 
-PluginParameterBox::PluginParameterBox(Vamp::PluginBase *plugin, QWidget *parent) :
+PluginParameterBox::PluginParameterBox(std::shared_ptr<Vamp::PluginBase> plugin,
+                                       QWidget *parent) :
     QFrame(parent),
     m_plugin(plugin),
     m_programCombo(nullptr)
@@ -100,7 +101,7 @@ PluginParameterBox::populate()
         float value = m_plugin->getParameter(params[i].identifier);
 
         int hint = PortHint::NoHint;
-        RealTimePluginInstance *rtpi = dynamic_cast<RealTimePluginInstance *>
+        auto rtpi = std::dynamic_pointer_cast<RealTimePluginInstance>
             (m_plugin);
         if (rtpi) {
             hint = rtpi->getParameterDisplayHint(i);

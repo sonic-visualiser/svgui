@@ -90,13 +90,13 @@ PluginReviewDialog::populate()
 
     for (QString id: dssiIds) {
         auto descriptor = dssiFactory->getPluginDescriptor(id);
-        if (!descriptor) continue;
+        if (descriptor.name == "") continue;
         m_table->setItem(row, typeCol, new QTableWidgetItem
                          (tr("DSSI")));
         m_table->setItem(row, idCol, new QTableWidgetItem
-                         (QString::fromStdString(descriptor->label)));
+                         (QString::fromStdString(descriptor.label)));
         m_table->setItem(row, nameCol, new QTableWidgetItem
-                         (QString::fromStdString(descriptor->name)));
+                         (QString::fromStdString(descriptor.name)));
         QString path = dssiFactory->getPluginLibraryPath(id);
         m_table->setItem(row, libCol, new QTableWidgetItem
                          (QFileInfo(path).fileName()));
@@ -107,13 +107,13 @@ PluginReviewDialog::populate()
 
     for (QString id: ladspaIds) {
         auto descriptor = ladspaFactory->getPluginDescriptor(id);
-        if (!descriptor) continue;
+        if (descriptor.name == "") continue;
         m_table->setItem(row, typeCol, new QTableWidgetItem
                          (tr("LADSPA")));
         m_table->setItem(row, idCol, new QTableWidgetItem
-                         (QString::fromStdString(descriptor->label)));
+                         (QString::fromStdString(descriptor.label)));
         m_table->setItem(row, nameCol, new QTableWidgetItem
-                         (QString::fromStdString(descriptor->name)));
+                         (QString::fromStdString(descriptor.name)));
         QString path = ladspaFactory->getPluginLibraryPath(id);
         m_table->setItem(row, libCol, new QTableWidgetItem
                          (QFileInfo(path).fileName()));

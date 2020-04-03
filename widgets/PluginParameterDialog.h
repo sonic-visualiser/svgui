@@ -43,7 +43,8 @@ class PluginParameterDialog : public QDialog
     Q_OBJECT
     
 public:
-    PluginParameterDialog(Vamp::PluginBase *, QWidget *parent = 0);
+    PluginParameterDialog(std::shared_ptr<Vamp::PluginBase> plugin,
+                          QWidget *parent = 0);
     ~PluginParameterDialog();
 
     void setChannelArrangement(int sourceChannels,
@@ -61,7 +62,7 @@ public:
                                  QString defaultName);
     void setShowSelectionOnlyOption(bool show);
 
-    Vamp::PluginBase *getPlugin() { return m_plugin; }
+    std::shared_ptr<Vamp::PluginBase> getPlugin() { return m_plugin; }
 
     int getChannel() const { return m_channel; }
 
@@ -93,7 +94,7 @@ protected slots:
     void dialogAccepted();
 
 protected:
-    Vamp::PluginBase *m_plugin;
+    std::shared_ptr<Vamp::PluginBase> m_plugin;
 
     int m_channel;
     int m_stepSize;

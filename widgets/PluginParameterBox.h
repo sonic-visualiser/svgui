@@ -32,10 +32,11 @@ class PluginParameterBox : public QFrame
     Q_OBJECT
     
 public:
-    PluginParameterBox(Vamp::PluginBase *, QWidget *parent = 0);
+    PluginParameterBox(std::shared_ptr<Vamp::PluginBase>,
+                       QWidget *parent = 0);
     ~PluginParameterBox();
 
-    Vamp::PluginBase *getPlugin() { return m_plugin; }
+    std::shared_ptr<Vamp::PluginBase> getPlugin() { return m_plugin; }
 
 signals:
     void pluginConfigurationChanged(QString);
@@ -51,7 +52,7 @@ protected:
     void updateProgramCombo();
 
     QGridLayout *m_layout;
-    Vamp::PluginBase *m_plugin;
+    std::shared_ptr<Vamp::PluginBase> m_plugin;
 
     struct ParamRec {
         AudioDial *dial;
