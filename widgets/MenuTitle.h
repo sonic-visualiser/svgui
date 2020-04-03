@@ -30,8 +30,8 @@ public:
 
 #ifdef Q_OS_LINUX
         static int leftIndent = 
-            (ViewManager::scalePixelSize(5) + 
-             2 * qApp->style()->pixelMetric(QStyle::PM_SmallIconSize));
+            (ViewManager::scalePixelSize(8) +
+             qApp->style()->pixelMetric(QStyle::PM_SmallIconSize));
 #else
 #ifdef Q_OS_WIN
         static int leftIndent =
