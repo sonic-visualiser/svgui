@@ -45,9 +45,8 @@ Colour3DPlotExporter::discardSources()
     m_sources.provider = nullptr;
 }
 
-QString
-Colour3DPlotExporter::getDelimitedDataHeaderLine(QString delimiter,
-                                                 DataExportOptions opts) const
+QVector<QString>
+Colour3DPlotExporter::getStringExportHeaders(DataExportOptions opts) const
 {
     auto model =
         ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
@@ -74,19 +73,19 @@ Colour3DPlotExporter::getDelimitedDataHeaderLine(QString delimiter,
         if (minbin + nbins > sh) nbins = sh - minbin;
     }
 
-    QStringList list;
+    QVector<QString> headers;
 
     if (opts & DataExportAlwaysIncludeTimestamp) {
         if (opts & DataExportWriteTimeInFrames) {
-            list << "FRAME";
+            headers << "FRAME";
         } else {
-            list << "TIME";
+            headers << "TIME";
         }
     }
     
     if (m_params.binDisplay == BinDisplay::PeakFrequencies) {
         for (int i = 0; i < nbins/4; ++i) {
-            list << QString("FREQ %1").arg(i+1)
+            headers << QString("FREQ %1").arg(i+1)
                  << QString("MAG %1").arg(i+1);
         }
     } else {
@@ -111,18 +110,17 @@ Colour3DPlotExporter::getDelimitedDataHeaderLine(QString delimiter,
                         .arg(i+1);
                 }
             }
-            list << name;
+            headers << name;
         }
     }
 
-    return list.join(delimiter);
+    return headers;
 }
 
-QString
-Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
-                                            DataExportOptions opts,
-                                            sv_frame_t startFrame,
-                                            sv_frame_t duration) const
+QVector<QVector<QString>>
+Colour3DPlotExporter::toStringExportRows(DataExportOptions opts,
+                                         sv_frame_t startFrame,
+                                         sv_frame_t duration) const
 {
     QMutexLocker locker(&m_mutex);
 
@@ -161,7 +159,7 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
 
     int w = model->getWidth();
 
-    QString s;
+    QVector<QVector<QString>> rows;
     
     for (int i = 0; i < w; ++i) {
         
@@ -179,13 +177,13 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
         // The scale factor is always applied
         column = ColumnOp::applyGain(column, m_params.scaleFactor);
         
-        QStringList list;
-
+        QVector<QString> row;
+ 
         if (opts & DataExportAlwaysIncludeTimestamp) {
             if (opts & DataExportWriteTimeInFrames) {
-                list << QString("%1").arg(fr);
+                row << QString("%1").arg(fr);
             } else {
-                list << RealTime::frame2RealTime(fr, model->getSampleRate())
+                row << RealTime::frame2RealTime(fr, model->getSampleRate())
                     .toString().c_str();
             }
         }
@@ -216,7 +214,7 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
                 double freq = p.second;
                 double value = column[bin - minbin];
                 
-                list << QString("%1").arg(freq) << QString("%1").arg(value);
+                row << QString("%1").arg(freq) << QString("%1").arg(value);
             }
 
         } else {
@@ -226,15 +224,15 @@ Colour3DPlotExporter::toDelimitedDataString(QString delimiter,
             }
         
             for (auto value: column) {
-                list << QString("%1").arg(value);
+                row << QString("%1").arg(value);
             }
         }
 
-        if (!list.empty()) {
-            s += list.join(delimiter) + "\n";
+        if (!row.empty()) {
+            rows.push_back(row);
         }
     }
 
-    return s;
+    return rows;
 }
 

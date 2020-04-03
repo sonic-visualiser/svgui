@@ -73,11 +73,13 @@ public:
 
     void discardSources();
     
-    QString getDelimitedDataHeaderLine(QString, DataExportOptions) const override;
+    QVector<QString>
+    getStringExportHeaders(DataExportOptions options) const override;
     
-    QString toDelimitedDataString(QString, DataExportOptions,
-                                  sv_frame_t, sv_frame_t) const override;
-
+    QVector<QVector<QString>>
+    toStringExportRows(DataExportOptions options,
+                       sv_frame_t startFrame,
+                       sv_frame_t duration) const override;
     
     // Further Model methods that we just delegate
 
