@@ -689,7 +689,6 @@ PropertyBox::contextMenuRequested(const QPoint &pos)
     QObject *obj = sender();
     QString name = obj->objectName();
     
-    PropertyContainer::PropertyType type = m_container->getPropertyType(name);
     QString label = m_container->getPropertyLabel(name);
     int min = 0, max = 0, value = 0, deflt = 0;
     value = m_container->getPropertyRangeAndValue(name, &min, &max, &deflt);
