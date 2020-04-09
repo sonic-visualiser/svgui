@@ -22,6 +22,8 @@
 
 #include <vamp-hostsdk/PluginBase.h>
 
+#include <memory>
+
 class PluginParameterBox;
 class QWidget;
 class QPushButton;

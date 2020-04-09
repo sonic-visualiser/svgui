@@ -20,6 +20,7 @@
 
 #include <QFrame>
 #include <map>
+#include <memory>
 
 class AudioDial;
 class QDoubleSpinBox;
