@@ -458,8 +458,8 @@ Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
         fullColumn = source->getColumn(sx);
     }
     
-    column = vector<float>(fullColumn.data() + minbin,
-                           fullColumn.data() + minbin + nbins);
+    column = ColumnOp::Column(fullColumn.data() + minbin,
+                              fullColumn.data() + minbin + nbins);
     return column;
 }
 
@@ -511,7 +511,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
 
     int psx = -1;
 
-    vector<float> preparedColumn;
+    ColumnOp::Column preparedColumn;
 
     int modelWidth = model->getWidth();
 
@@ -1085,7 +1085,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
     int xPixelCount = 0;
     
-    vector<float> preparedColumn;
+    ColumnOp::Column preparedColumn;
 
     int modelWidth = sourceModel->getWidth();
 
@@ -1116,7 +1116,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 //        SVDEBUG << "x = " << x << ", binforx[x] = " << binforx[x] << ", sx range " << sx0 << " -> " << sx1 << endl;
 #endif
 
-        vector<float> pixelPeakColumn;
+        ColumnOp::Column pixelPeakColumn;
         MagnitudeRange magRange;
         
         for (int sx = sx0; sx < sx1; ++sx) {
@@ -1251,7 +1251,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
     
     int xPixelCount = 0;
     
-    vector<float> preparedColumn;
+    ColumnOp::Column preparedColumn;
 
     int modelWidth = fft->getWidth();
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
@@ -1288,7 +1288,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         if (sx0 < 0) continue;
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
-        vector<float> pixelPeakColumn;
+        ColumnOp::Column pixelPeakColumn;
         MagnitudeRange magRange;
         
         for (int sx = sx0; sx < sx1; ++sx) {
