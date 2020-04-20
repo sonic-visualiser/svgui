@@ -296,9 +296,13 @@ TransformFinder::timeout()
         }
         selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; System identifier: %1")
             .arg(XmlExportable::encodeEntities(desc.identifier));
-        if (desc.infoUrl != "") {
+        if (desc.provider.infoUrl != "") {
             selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; More information: <a href=\"%1\">%1</a>")
-                .arg(desc.infoUrl);
+                .arg(desc.provider.infoUrl);
+        }
+        if (desc.provider.downloadUrl != "") {
+            selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Downloads: <a href=\"%1\">%1</a>")
+                .arg(desc.provider.downloadUrl);
         }
         selectedText += tr("</small>");
 
