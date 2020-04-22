@@ -285,25 +285,53 @@ TransformFinder::timeout()
                 .arg(XmlExportable::encodeEntities(desc.description));
         }
 
+        QString indentation = tr("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash;");
+        
         selectedText += tr("<small>");
         if (desc.type != TransformDescription::UnknownType) {
-            selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Plugin type: %1")
-                .arg(XmlExportable::encodeEntities(factory->getTransformTypeName(desc.type)));
+            selectedText += tr("<br>%1 Plugin type: %2")
+                .arg(indentation)
+                .arg(XmlExportable::encodeEntities
+                     (factory->getTransformTypeName(desc.type)));
         }
         if (desc.category != "") {
-            selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Category: %1")
+            selectedText += tr("<br>%1 Category: %2")
+                .arg(indentation)
                 .arg(XmlExportable::encodeEntities(desc.category));
         }
-        selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; System identifier: %1")
+        selectedText += tr("<br>%1 System identifier: %2")
+            .arg(indentation)
             .arg(XmlExportable::encodeEntities(desc.identifier));
         if (desc.provider.infoUrl != "") {
-            selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; More information: <a href=\"%1\">%1</a>")
+            selectedText += tr("<br>%1 More information: <a href=\"%2\">%2</a>")
+                .arg(indentation)
                 .arg(desc.provider.infoUrl);
         }
-        if (desc.provider.downloadUrl != "") {
-            selectedText += tr("<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&mdash; Downloads: <a href=\"%1\">%1</a>")
-                .arg(desc.provider.downloadUrl);
+        if (status != TransformFactory::TransformInstalled) {
+            bool haveSuitableDownloadLink =
+                (desc.provider.downloadUrl != "" &&
+                 desc.provider.hasDownloadForThisPlatform());
+            if (haveSuitableDownloadLink) {
+                selectedText += tr("<br>%1 Download for %2: <a href=\"%3\">%3</a>")
+                    .arg(indentation)
+                    .arg(desc.provider.thisPlatformName())
+                    .arg(desc.provider.downloadUrl);
+            }
+            if (!desc.provider.foundInPacks.empty()) {
+                QStringList packsLinks;
+                for (auto p: desc.provider.foundInPacks) {
+                    packsLinks <<
+                        tr("<a href=\"%1\">%2</a>").arg(p.second).arg(p.first);
+                }
+                selectedText +=
+                    (haveSuitableDownloadLink ?
+                     tr("<br>%1 Also available in: %2") :
+                     tr("<br>%1 Available in: %2"))
+                    .arg(indentation)
+                    .arg(packsLinks.join(tr(", ")));
+            }
         }
+
         selectedText += tr("</small>");
 
         if (i >= (int)m_labels.size()) {
