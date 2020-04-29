@@ -308,6 +308,8 @@ LayerFactory::getLayerTypeForName(QString name)
     if (name == "colour3dplot") return Colour3DPlot;
     if (name == "spectrum") return Spectrum;
     if (name == "slice") return Slice;
+    if (name == "melodicrange") return MelodicRangeSpectrogram;
+    if (name == "peakfrequency") return PeakFrequencySpectrogram;
     return UnknownLayer;
 }
 
