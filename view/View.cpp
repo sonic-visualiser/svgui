@@ -3003,10 +3003,20 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 
     bool someLayersIncomplete = false;
 
+#ifdef DEBUG_VIEW
+    SVDEBUG << "View::render: checking completion" << endl;
+#endif
+    
     for (LayerList::iterator i = m_layerStack.begin();
          i != m_layerStack.end(); ++i) {
 
         int c = (*i)->getCompletion(this);
+
+#ifdef DEBUG_VIEW
+        SVDEBUG << "layer " << (*i)->getLayerPresentationName() << " says "
+                << c << endl;
+#endif
+        
         if (c < 100) {
             someLayersIncomplete = true;
             break;
@@ -3022,6 +3032,10 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 
         while (layerCompletion < 100) {
 
+#ifdef DEBUG_VIEW
+            SVDEBUG << "View::render: checking completion (again)" << endl;
+#endif
+    
             for (LayerList::iterator i = m_layerStack.begin();
                  i != m_layerStack.end(); ++i) {
 
@@ -3029,6 +3043,11 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
                 if (i == m_layerStack.begin() || c < layerCompletion) {
                     layerCompletion = c;
                 }
+
+#ifdef DEBUG_VIEW
+                SVDEBUG << "layer " << (*i)->getLayerPresentationName() << " says "
+                        << c << ", layerCompletion now " << layerCompletion << endl;
+#endif
             }
 
             if (layerCompletion >= 100) break;
@@ -3044,6 +3063,10 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
         }
     }
 
+#ifdef DEBUG_VIEW
+    SVDEBUG << "View::render: ok, we're ready" << endl;
+#endif
+    
     QProgressDialog progress(tr("Rendering image..."),
                              tr("Cancel"), 0, w / width(), this);
 
