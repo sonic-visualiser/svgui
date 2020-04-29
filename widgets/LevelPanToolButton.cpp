@@ -227,10 +227,7 @@ LevelPanToolButton::contextMenuRequested(const QPoint &pos)
     
     MenuTitle::addTitle(m, title);
 
-    m->addAction(tr("&Reset to Default"),
-                 [=]() {
-                     m_lpw->setToDefault();
-                 });
+    m->addAction(tr("&Reset to Default"), m_lpw, SLOT(setToDefault()));
 
     m->popup(mapToGlobal(pos));
 }

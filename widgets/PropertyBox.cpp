@@ -61,7 +61,8 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
     m_showButton(nullptr),
     m_playButton(nullptr),
-    m_lastContextMenu(nullptr)
+    m_lastContextMenu(nullptr),
+    m_contextMenuOn(nullptr)
 {
 #ifdef DEBUG_PROPERTY_BOX
     SVDEBUG << "PropertyBox[" << this << "(\"" <<
@@ -695,32 +696,48 @@ PropertyBox::contextMenuRequested(const QPoint &pos)
 
     delete m_lastContextMenu;
     QMenu *m = new QMenu;
-    m_lastContextMenu = m;
 
-    if (auto button = qobject_cast<QAbstractButton *>(obj)) {
+    m_lastContextMenu = m;
+    m_contextMenuOn = obj;
+
+    if (qobject_cast<QAbstractButton *>(obj)) {
         if (value > 0) {
             MenuTitle::addTitle(m, tr("%1: On").arg(label));
         } else {
             MenuTitle::addTitle(m, tr("%1: Off").arg(label));
         }
-
-        m->addAction(tr("&Reset to Default"),
-                     [=]() {
-                         button->setChecked(deflt > 0);
-                     });
+        m->addAction(tr("&Reset to Default"), this,
+                     SLOT(propertyControllerResetRequested()));
 
     } else if (auto cb = qobject_cast<QComboBox *>(obj)) {
         MenuTitle::addTitle(m, tr("%1: %2").arg(label).arg(cb->itemText(value)));
-        m->addAction(tr("&Reset to Default"),
-                     [=]() {
-                         cb->setCurrentIndex(deflt);
-                     });
+        m->addAction(tr("&Reset to Default"), this,
+                     SLOT(propertyControllerResetRequested()));
+
     } else {
         // AudioDial has its own context menu, we don't handle it here
         return;
     }
         
     m->popup(qobject_cast<QWidget *>(sender())->mapToGlobal(pos));
+}
+
+void
+PropertyBox::propertyControllerResetRequested()
+{
+    if (!m_contextMenuOn) return;
+    
+    QString name = m_contextMenuOn->objectName();
+    
+    QString label = m_container->getPropertyLabel(name);
+    int min = 0, max = 0, value = 0, deflt = 0;
+    value = m_container->getPropertyRangeAndValue(name, &min, &max, &deflt);
+    
+    if (auto button = qobject_cast<QAbstractButton *>(m_contextMenuOn)) {
+        button->setChecked(deflt > 0);
+    } else if (auto cb = qobject_cast<QComboBox *>(m_contextMenuOn)) {
+        cb->setCurrentIndex(deflt);
+    }
 }
 
 void

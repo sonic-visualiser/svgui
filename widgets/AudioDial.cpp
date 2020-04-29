@@ -117,14 +117,8 @@ void AudioDial::contextMenuRequested(const QPoint &pos)
         MenuTitle::addTitle(m, m_title);
     }
 
-    m->addAction(tr("&Edit..."),
-                 [=]() {
-                     edit();
-                 });
-    m->addAction(tr("&Reset to Default"),
-                 [=]() {
-                     setToDefault();
-                 });
+    m->addAction(tr("&Edit..."), this, SLOT(edit()));
+    m->addAction(tr("&Reset to Default"), this, SLOT(setToDefault()));
 
     m->popup(mapToGlobal(pos));
 }

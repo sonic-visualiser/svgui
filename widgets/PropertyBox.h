@@ -54,6 +54,7 @@ public slots:
 protected slots:
     void propertyControllerChanged(int);
     void propertyControllerChanged(bool);
+    void propertyControllerResetRequested();
 
     void playAudibleChanged(bool);
     void playAudibleButtonChanged(bool);
@@ -85,6 +86,7 @@ protected:
     LEDButton *m_showButton;
     QToolButton *m_playButton;
     QMenu *m_lastContextMenu;
+    QObject *m_contextMenuOn;
     std::map<QString, QGridLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };

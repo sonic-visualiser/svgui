@@ -81,14 +81,8 @@ Thumbwheel::contextMenuRequested(const QPoint &pos)
         MenuTitle::addTitle(m, m_title);
     }
 
-    m->addAction(tr("&Edit..."),
-                 [=]() {
-                     edit();
-                 });
-    m->addAction(tr("&Reset to Default"),
-                 [=]() {
-                     resetToDefault();
-                 });
+    m->addAction(tr("&Edit..."), this, SLOT(edit()));
+    m->addAction(tr("&Reset to Default"), this, SLOT(resetToDefault()));
 
     m->popup(mapToGlobal(pos));
 }
