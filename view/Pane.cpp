@@ -2556,11 +2556,6 @@ Pane::verticalPannerMoved(float , float y0, float , float h)
 void
 Pane::verticalPannerContextMenuRequested(const QPoint &pos)
 {
-    Panner *panner = qobject_cast<Panner *>(sender());
-    if (!panner) {
-        return;
-    }
-
     double vmin, vmax, dmin, dmax;
     QString unit;
     if (!getTopLayerDisplayExtents(vmin, vmax, dmin, dmax, &unit)) {
@@ -2574,20 +2569,10 @@ Pane::verticalPannerContextMenuRequested(const QPoint &pos)
     MenuTitle::addTitle(m, tr("Vertical Range: %1 - %2 %3")
                         .arg(dmin).arg(dmax).arg(unit));
 
-    m->addAction(tr("&Edit..."),
-                 [=]() {
-                     editVerticalPannerExtents();
-                 });
-    m->addAction(tr("&Reset to Default"),
-                 [=]() {
-                     if (m_vthumb) {
-                         // This determines the "size" of the panner box
-                         m_vthumb->resetToDefault();
-                     }
-                     panner->resetToDefault();
-                 });
+    m->addAction(tr("&Edit..."), this, SLOT(editVerticalPannerExtents()));
+    m->addAction(tr("&Reset to Default"), this, SLOT(resetVerticalPannerExtents()));
 
-    m->popup(panner->mapToGlobal(pos));
+    m->popup(m_vpan->mapToGlobal(pos));
     m_lastVerticalPannerContextMenu = m;
 }
 
@@ -2615,6 +2600,16 @@ Pane::editVerticalPannerExtents()
         setTopLayerDisplayExtents(newmin, newmax);
         updateVerticalPanner();
     }
+}
+
+void
+Pane::resetVerticalPannerExtents()
+{
+    if (m_vthumb) {
+        // This determines the "size" of the panner box
+        m_vthumb->resetToDefault();
+    }
+    m_vpan->resetToDefault();
 }
 
 void

@@ -100,6 +100,7 @@ public slots:
     void verticalPannerMoved(float x, float y, float w, float h);
     void verticalPannerContextMenuRequested(const QPoint &);
     void editVerticalPannerExtents();
+    void resetVerticalPannerExtents();
 
     virtual void layerParametersChanged() override;
 
