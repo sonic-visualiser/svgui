@@ -730,8 +730,8 @@ PropertyBox::propertyControllerResetRequested()
     QString name = m_contextMenuOn->objectName();
     
     QString label = m_container->getPropertyLabel(name);
-    int min = 0, max = 0, value = 0, deflt = 0;
-    value = m_container->getPropertyRangeAndValue(name, &min, &max, &deflt);
+    int min = 0, max = 0, deflt = 0;
+    (void)m_container->getPropertyRangeAndValue(name, &min, &max, &deflt);
     
     if (auto button = qobject_cast<QAbstractButton *>(m_contextMenuOn)) {
         button->setChecked(deflt > 0);
