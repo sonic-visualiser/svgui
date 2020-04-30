@@ -530,6 +530,8 @@ protected:
 
     void checkProgress(ModelId);
     void checkAlignmentProgress(ModelId);
+
+    bool waitForLayersToBeReady(); // returns false if user cancelled waiting
     
     int getProgressBarWidth() const; // if visible
 

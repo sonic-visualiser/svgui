@@ -2992,19 +2992,12 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 }
 
 bool
-View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
+View::waitForLayersToBeReady()
 {
-    int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
-    int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
-
-    int w = x1 - x0;
-
-    sv_frame_t origCentreFrame = m_centreFrame;
-
     bool someLayersIncomplete = false;
 
 #ifdef DEBUG_VIEW
-    SVDEBUG << "View::render: checking completion" << endl;
+    SVDEBUG << "View::waitForLayersToBeReady: checking completion" << endl;
 #endif
     
     for (LayerList::iterator i = m_layerStack.begin();
@@ -3064,8 +3057,31 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
     }
 
 #ifdef DEBUG_VIEW
-    SVDEBUG << "View::render: ok, we're ready" << endl;
+    SVDEBUG << "View::waitForLayersToBeReady: ok, we're ready" << endl;
 #endif
+
+    return true;
+}
+
+bool
+View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
+{
+    int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
+    int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
+
+    int w = x1 - x0;
+
+#ifdef DEBUG_VIEW
+    SVDEBUG << "View::render: Render request is for frames " << f0
+            << " to " << f1 << " (pixels " << x0 << " to " << x1
+            << ", width " << w << ")" << endl;
+#endif
+
+    if (!waitForLayersToBeReady()) {
+        return false;
+    }
+
+    sv_frame_t origCentreFrame = m_centreFrame;
     
     QProgressDialog progress(tr("Rendering image..."),
                              tr("Cancel"), 0, w / width(), this);
@@ -3123,6 +3139,10 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 QImage *
 View::renderToNewImage()
 {
+    if (!waitForLayersToBeReady()) {
+        return nullptr;
+    }
+    
     sv_frame_t f0 = getModelsStartFrame();
     sv_frame_t f1 = getModelsEndFrame();
 
