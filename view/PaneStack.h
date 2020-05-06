@@ -160,6 +160,9 @@ protected:
     void unlinkAlignmentViews();
     void relinkAlignmentViews();
 
+    void resizeEvent(QResizeEvent *) override;
+    void adjustAlignmentViewHeights(int forMyHeight);
+
     LayoutStyle m_layoutStyle;
 };
 

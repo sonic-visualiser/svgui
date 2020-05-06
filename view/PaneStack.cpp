@@ -32,6 +32,7 @@
 #include <QPushButton>
 #include <QSplitter>
 #include <QStackedWidget>
+#include <QResizeEvent>
 
 #include <iostream>
 
@@ -225,6 +226,8 @@ PaneStack::relinkAlignmentViews()
             av->show();
         }
     }
+
+    adjustAlignmentViewHeights(size().height());
 }
 
 void
@@ -235,6 +238,44 @@ PaneStack::unlinkAlignmentViews()
         if (!av) continue;
         av->setViewAbove(nullptr);
         av->setViewBelow(nullptr);
+    }
+}
+
+void
+PaneStack::resizeEvent(QResizeEvent *ev)
+{
+    adjustAlignmentViewHeights(ev->size().height());
+}
+
+void
+PaneStack::adjustAlignmentViewHeights(int forMyHeight)
+{
+    if (!(m_options & int(Option::ShowAlignmentViews))) return;
+    if (!(m_options & int(Option::NoUserResize))) return;
+    if (!isVisible()) return;
+
+    int heightPerPane = forMyHeight / int(m_panes.size());
+
+    SVCERR << "heightPerPane = " << heightPerPane << " ("
+           << forMyHeight << "/" << m_panes.size() << ")" << endl;
+    
+    int roomForAlignmentView = heightPerPane / 4;
+    int min = ViewManager::scalePixelSize(6);
+    int max = ViewManager::scalePixelSize(25);
+    int alignmentHeight = roomForAlignmentView;
+    if (alignmentHeight < min) {
+        alignmentHeight = min;
+    }
+    if (alignmentHeight > max) {
+        alignmentHeight = max;
+    }
+
+    SVCERR << "alignmentHeight = " << alignmentHeight << endl;
+    
+    for (int i = 0; in_range_for(m_panes, i); ++i) {
+        auto av = m_panes[i].alignmentView;
+        if (!av) continue;
+        av->setFixedHeight(alignmentHeight);
     }
 }
 
