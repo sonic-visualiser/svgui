@@ -2199,8 +2199,19 @@ View::setPaintFont(QPainter &paint)
     }
 
     QFont font(paint.font());
-    font.setPointSize(Preferences::getInstance()->getViewFontSize()
-                      * scaleFactor);
+    int pointSize = Preferences::getInstance()->getViewFontSize() * scaleFactor;
+    font.setPointSize(pointSize);
+
+    int h = height();
+    int fh = QFontMetrics(font).height();
+    if (pointSize > 6) {
+        if (h < fh * 2.1) {
+            font.setPointSize(pointSize - 2);
+        } else if (h < fh * 3.1) {
+            font.setPointSize(pointSize - 1);
+        }
+    }
+    
     paint.setFont(font);
 }
 
