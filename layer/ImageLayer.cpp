@@ -32,6 +32,8 @@
 #include <QMutexLocker>
 #include <QTextStream>
 #include <QMessageBox>
+#include <QFileInfo>
+#include <QImageReader>
 
 #include <iostream>
 #include <cmath>
@@ -39,8 +41,11 @@
 ImageLayer::ImageMap
 ImageLayer::m_images;
 
+ImageLayer::FileSourceMap
+ImageLayer::m_fileSources;
+
 QMutex
-ImageLayer::m_imageMapMutex;
+ImageLayer::m_staticMutex;
 
 ImageLayer::ImageLayer() :
     m_editing(false),
@@ -464,7 +469,7 @@ ImageLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
         // Delete the images named in the view's scaled map from the
         // general image map as well.  They can always be re-loaded
         // if it turns out another view still needs them.
-        QMutexLocker locker(&m_imageMapMutex);
+        QMutexLocker locker(&m_staticMutex);
         for (ImageMap::iterator i = m_scaled[v].begin();
              i != m_scaled[v].end(); ++i) {
             m_images.erase(i->first);
@@ -480,7 +485,7 @@ ImageLayer::getImageOriginalSize(QString name, QSize &size) const
 {
 //    cerr << "getImageOriginalSize: \"" << name << "\"" << endl;
 
-    QMutexLocker locker(&m_imageMapMutex);
+    QMutexLocker locker(&m_staticMutex);
     if (m_images.find(name) == m_images.end()) {
 //        cerr << "don't have, trying to open local" << endl;
         m_images[name] = QImage(getLocalFilename(name));
@@ -509,7 +514,7 @@ ImageLayer::getImage(LayerGeometryProvider *v, QString name, QSize maxSize) cons
         return m_scaled[v][name];
     }
 
-    QMutexLocker locker(&m_imageMapMutex);
+    QMutexLocker locker(&m_staticMutex);
 
     if (m_images.find(name) == m_images.end()) {
         m_images[name] = QImage(getLocalFilename(name));
@@ -587,7 +592,7 @@ ImageLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 
     if (dialog.exec() == QDialog::Accepted) {
 
-        checkAddSource(dialog.getImage());
+        checkAddSourceAndConnect(dialog.getImage());
 
         m_editingPoint = m_editingPoint
             .withURI(dialog.getImage())
@@ -601,14 +606,32 @@ ImageLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 }
 
 bool
+ImageLayer::isImageFileSupported(QString url)
+{
+    QMutexLocker locker(&m_staticMutex);
+    QString filename = getLocalFilename(url);
+    QString ext = QFileInfo(filename).suffix().toLower();
+    auto formats = QImageReader::supportedImageFormats();
+    for (auto f: formats) {
+        if (QString::fromLatin1(f).toLower() == ext) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
 ImageLayer::addImage(sv_frame_t frame, QString url)
 {
-    QImage image(getLocalFilename(url));
-    if (image.isNull()) {
-        cerr << "Failed to open image from url \"" << url << "\" (local filename \"" << getLocalFilename(url) << "\"" << endl;
-        delete m_fileSources[url];
-        m_fileSources.erase(url);
-        return false;
+    {
+        QMutexLocker locker(&m_staticMutex);
+        QImage image(getLocalFilename(url));
+        if (image.isNull()) {
+            SVCERR << "Failed to open image from url \"" << url << "\" (local filename \"" << getLocalFilename(url) << "\"" << endl;
+            delete m_fileSources[url];
+            m_fileSources.erase(url);
+            return false;
+        }
     }
 
     Event point = Event(frame).withURI(url);
@@ -697,7 +720,7 @@ ImageLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
 
     if (dialog.exec() == QDialog::Accepted) {
 
-        checkAddSource(dialog.getImage());
+        checkAddSourceAndConnect(dialog.getImage());
 
         auto command =
             new ChangeEventsCommand(m_model.untyped, tr("Edit Image"));
@@ -865,21 +888,38 @@ ImageLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
 }
 
 QString
-ImageLayer::getLocalFilename(QString img) const
+ImageLayer::getLocalFilename(QString img)
 {
+    // called with mutex held
+    
     if (m_fileSources.find(img) == m_fileSources.end()) {
-        checkAddSource(img);
+        checkAddSource(img, false);
         if (m_fileSources.find(img) == m_fileSources.end()) {
             return img;
         }
     }
+    
     return m_fileSources[img]->getLocalFilename();
 }
 
 void
-ImageLayer::checkAddSource(QString img) const
+ImageLayer::checkAddSourceAndConnect(QString img)
+{
+    checkAddSource(img, true);
+
+    QMutexLocker locker(&m_staticMutex);
+    if (m_fileSources.find(img) != m_fileSources.end()) {
+        connect(m_fileSources.at(img), SIGNAL(ready()),
+                this, SLOT(fileSourceReady()));
+    }
+}
+
+void
+ImageLayer::checkAddSource(QString img, bool synchronise)
 {
     SVDEBUG << "ImageLayer::checkAddSource(" << img << "): yes, trying..." << endl;
+
+    QMutexLocker locker(synchronise ? &m_staticMutex : nullptr);
 
     if (m_fileSources.find(img) != m_fileSources.end()) {
         return;
@@ -888,9 +928,8 @@ ImageLayer::checkAddSource(QString img) const
     ProgressDialog dialog(tr("Opening image URL..."), true, 2000);
     FileSource *rf = new FileSource(img, &dialog);
     if (rf->isOK()) {
-        cerr << "ok, adding it (local filename = " << rf->getLocalFilename() << ")" << endl;
+        SVDEBUG << "ok, adding it (local filename = " << rf->getLocalFilename() << ")" << endl;
         m_fileSources[img] = rf;
-        connect(rf, SIGNAL(ready()), this, SLOT(fileSourceReady()));
     } else {
         delete rf;
     }
@@ -905,7 +944,7 @@ ImageLayer::checkAddSources()
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
         
-        checkAddSource((*i).getURI());
+        checkAddSourceAndConnect(i->getURI());
     }
 }
 
@@ -917,21 +956,30 @@ ImageLayer::fileSourceReady()
     FileSource *rf = dynamic_cast<FileSource *>(sender());
     if (!rf) return;
 
-    QString img;
-    for (FileSourceMap::const_iterator i = m_fileSources.begin();
-         i != m_fileSources.end(); ++i) {
-        if (i->second == rf) {
-            img = i->first;
+    bool shouldEmit = false;
+    
+    {
+        QMutexLocker locker(&m_staticMutex);
+    
+        QString img;
+        for (FileSourceMap::const_iterator i = m_fileSources.begin();
+             i != m_fileSources.end(); ++i) {
+            if (i->second == rf) {
+                img = i->first;
 //            cerr << "it's image \"" << img << "\"" << endl;
-            break;
+                break;
+            }
+        }
+        if (img == "") return;
+
+        m_images.erase(img);
+        for (ViewImageMap::iterator i = m_scaled.begin(); i != m_scaled.end(); ++i) {
+            i->second.erase(img);
+            shouldEmit = true;
         }
     }
-    if (img == "") return;
 
-    QMutexLocker locker(&m_imageMapMutex);
-    m_images.erase(img);
-    for (ViewImageMap::iterator i = m_scaled.begin(); i != m_scaled.end(); ++i) {
-        i->second.erase(img);
+    if (shouldEmit) {
         emit modelChanged(getModel());
     }
 }

@@ -98,6 +98,8 @@ public:
 
     void setProperties(const QXmlAttributes &attributes) override;
 
+    static bool isImageFileSupported(QString url); // based on extension alone
+    
     virtual bool addImage(sv_frame_t frame, QString url); // using a command
 
 protected slots:
@@ -120,12 +122,14 @@ protected:
     typedef std::map<QString, FileSource *> FileSourceMap;
 
     static ImageMap m_images;
-    static QMutex m_imageMapMutex;
-    mutable ViewImageMap m_scaled;
-    mutable FileSourceMap m_fileSources;
+    static FileSourceMap m_fileSources;
+    static QMutex m_staticMutex;
 
-    QString getLocalFilename(QString img) const;
-    void checkAddSource(QString img) const;
+    mutable ViewImageMap m_scaled;
+
+    static QString getLocalFilename(QString img);
+    static void checkAddSource(QString img, bool synchronise);
+    void checkAddSourceAndConnect(QString img);
 
     ModelId m_model; // an ImageModel
     bool m_editing;
