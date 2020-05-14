@@ -22,11 +22,15 @@
 #include <QFile>
 #include <QSvgRenderer>
 #include <QSettings>
+#include <QMutex>
+#include <QMutexLocker>
 
 #include <vector>
 #include <set>
+#include <map>
 
 #include "base/Debug.h"
+#include "base/Profiler.h"
 
 using namespace std;
 
@@ -58,16 +62,29 @@ static set<QString> autoInvertExceptions {
     "zoom"
 };
 
-static vector<int> sizes { 0, 16, 22, 24, 32, 48, 64, 128 };
-
 QIcon
 IconLoader::load(QString name)
 {
+    Profiler profiler("IconLoader::load");
+
+    static QMutex mutex;
+    static map<QString, QIcon> icons;
+    static const vector<int> sizes { 0, 16, 22, 24, 32, 48, 64, 128 };
+
+    QMutexLocker locker(&mutex);
+
+    if (icons.find(name) != icons.end()) {
+        return icons.at(name);
+    }
+
     QIcon icon;
     for (int sz: sizes) {
         QPixmap pmap(loadPixmap(name, sz));
         if (!pmap.isNull()) icon.addPixmap(pmap);
     }
+
+    icons[name] = icon;
+    
     return icon;
 }
 
