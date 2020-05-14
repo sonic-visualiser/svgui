@@ -25,6 +25,7 @@
 #include "CommandHistory.h"
 
 #include "base/Command.h"
+#include "base/Profiler.h"
 
 #include "IconLoader.h"
 
@@ -470,6 +471,8 @@ CommandHistory::clipStack(CommandStack &stack, int limit)
 void
 CommandHistory::clearStack(CommandStack &stack)
 {
+    Profiler profiler("CommandHistory::clearStack");
+    
     while (!stack.empty()) {
         Command *command = stack.top();
         // Not safe to call getName() on a command about to be deleted
