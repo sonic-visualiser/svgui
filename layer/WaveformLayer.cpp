@@ -27,6 +27,7 @@
 #include "data/model/WaveformOversampler.h"
 
 #include <QPainter>
+#include <QPainterPath>
 #include <QPixmap>
 #include <QTextStream>
 

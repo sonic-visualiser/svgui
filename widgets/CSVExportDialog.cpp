@@ -70,7 +70,7 @@ CSVExportDialog::CSVExportDialog(Configuration config, QWidget *parent) :
         defaultSeparator = '\t';
     }
     
-    rowColLayout->addWidget(new QLabel(tr("Column separator:"), 0, 0));
+    rowColLayout->addWidget(new QLabel(tr("Column separator:")));
     m_separatorCombo = new QComboBox;
     for (auto p: separators) {
         if (p.second == '\t' || p.second == ' ') {
