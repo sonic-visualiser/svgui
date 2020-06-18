@@ -28,6 +28,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QDialogButtonBox>
+#include <QCheckBox>
 
 #include <iostream>
 #include <cmath>
@@ -76,6 +77,9 @@ CSVFormatDialog::init()
 {
     setModal(true);
     setWindowTitle(tr("Select Data Format"));
+
+    m_tabText = tr("<tab>");
+    m_whitespaceText = tr("<whitespace>");
     
     QGridLayout *layout = new QGridLayout;
 
@@ -87,7 +91,7 @@ CSVFormatDialog::init()
 
     m_exampleFrame = nullptr;
     m_exampleFrameRow = row++;
-
+    
     std::set<QChar> plausible = m_format.getPlausibleSeparators();
     SVDEBUG << "Have " << plausible.size() << " plausible separator(s)" << endl;
 
@@ -97,7 +101,13 @@ CSVFormatDialog::init()
         layout->addWidget(new QLabel(tr("Column separator:")), row, 0);
         m_separatorCombo = new QComboBox;
         for (QChar c: plausible) {
-            m_separatorCombo->addItem(QString(c));
+            if (c == '\t') {
+                m_separatorCombo->addItem(m_tabText);
+            } else if (c == ' ') {
+                m_separatorCombo->addItem(m_whitespaceText);
+            } else {
+                m_separatorCombo->addItem(QString(c));
+            }
             if (c == m_format.getSeparator()) {
                 m_separatorCombo->setCurrentIndex(m_separatorCombo->count()-1);
             }
@@ -107,7 +117,18 @@ CSVFormatDialog::init()
         layout->addWidget(m_separatorCombo, row++, 1);
         connect(m_separatorCombo, SIGNAL(activated(QString)),
                 this, SLOT(separatorChanged(QString)));
+
+    } else {
+        m_separatorCombo = nullptr;
     }
+
+    layout->addWidget(new QLabel(tr("First row contains column headings:")), row, 0);
+    m_headerCheckBox = new QCheckBox;
+    m_headerCheckBox->setChecked
+        (m_format.getHeaderStatus() == CSVFormat::HeaderPresent);
+    layout->addWidget(m_headerCheckBox, row++, 1);
+    connect(m_headerCheckBox, SIGNAL(toggled(bool)),
+            this, SLOT(headerChanged(bool)));
 
     layout->addWidget(new QLabel(tr("Timing is specified:")), row, 0);
     
@@ -197,6 +218,9 @@ CSVFormatDialog::repopulate()
 
     QFont fp;
     fp.setPointSize(int(floor(fp.pointSize() * 0.9)));
+
+    QFont fpi(fp);
+    fpi.setItalic(true);
     
     int columns = m_format.getColumnCount();
     QList<QStringList> example = m_format.getExample();
@@ -242,7 +266,12 @@ CSVFormatDialog::repopulate()
             label->setTextFormat(Qt::PlainText);
             QString text = TextAbbrev::abbreviate(example[j][i], 35);
             label->setText(text);
-            label->setFont(fp);
+            if (j == 0 &&
+                m_format.getHeaderStatus() == CSVFormat::HeaderPresent) {
+                label->setFont(fpi);
+            } else {
+                label->setFont(fp);
+            }
             label->setPalette(palette);
             label->setIndent(8);
             exampleLayout->addWidget(label, j+1, i);
@@ -390,12 +419,29 @@ CSVFormatDialog::updateComboVisibility()
 }
 
 void
+CSVFormatDialog::headerChanged(bool header)
+{
+    m_format.setHeaderStatus(header ?
+                             CSVFormat::HeaderPresent :
+                             CSVFormat::HeaderAbsent);
+    m_format.guessFormatFor(m_csvFilePath);
+
+    repopulate();
+}
+
+void
 CSVFormatDialog::separatorChanged(QString sep)
 {
     if (sep == "" || m_csvFilePath == "") {
         return;
     }
 
+    if (sep == m_tabText) {
+        sep = "\t";
+    } else if (sep == m_whitespaceText) {
+        sep = " ";
+    }
+    
     m_format.setSeparator(sep[0]);
     m_format.guessFormatFor(m_csvFilePath);
 

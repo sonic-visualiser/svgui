@@ -22,6 +22,7 @@ class QTableWidget;
 class QComboBox;
 class QLabel;
 class QFrame;
+class QCheckBox;
     
 #include <QDialog>
 
@@ -44,6 +45,7 @@ public:
     CSVFormat getFormat() const;
     
 protected slots:
+    void headerChanged(bool);
     void separatorChanged(QString);
     void timingTypeChanged(int type);
     void sampleRateChanged(QString);
@@ -75,9 +77,13 @@ protected:
     void applyStartTimePurpose();
     void removeStartTimePurpose();
 
+    QString m_tabText;
+    QString m_whitespaceText;
+    
     QFrame *m_exampleFrame;
     int m_exampleFrameRow;
-    
+
+    QCheckBox *m_headerCheckBox;
     QComboBox *m_separatorCombo;
     QComboBox *m_timingTypeCombo;
     QLabel *m_sampleRateLabel;
