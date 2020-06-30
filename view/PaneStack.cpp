@@ -253,6 +253,7 @@ PaneStack::adjustAlignmentViewHeights(int forMyHeight)
     if (!(m_options & int(Option::ShowAlignmentViews))) return;
     if (!(m_options & int(Option::NoUserResize))) return;
     if (!isVisible()) return;
+    if (m_panes.empty()) return;
 
     int heightPerPane = forMyHeight / int(m_panes.size());
 
