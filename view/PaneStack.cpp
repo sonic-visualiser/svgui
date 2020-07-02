@@ -221,8 +221,9 @@ PaneStack::relinkAlignmentViews()
         if (!(m_options & int(Option::ShowAlignmentViews))) {
             av->hide();
         } else {
-            av->setViewAbove(m_panes[i-1].pane);
-            av->setViewBelow(m_panes[i].pane);
+            av->setAboveView(m_panes[i-1].pane);
+            av->setBelowView(m_panes[i].pane);
+            av->setReferenceView(m_panes[0].pane);
             av->show();
         }
     }
@@ -236,8 +237,9 @@ PaneStack::unlinkAlignmentViews()
     for (int i = 0; in_range_for(m_panes, i); ++i) {
         auto av = m_panes[i].alignmentView;
         if (!av) continue;
-        av->setViewAbove(nullptr);
-        av->setViewBelow(nullptr);
+        av->setAboveView(nullptr);
+        av->setBelowView(nullptr);
+        av->setReferenceView(nullptr);
     }
 }
 

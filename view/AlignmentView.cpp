@@ -29,7 +29,10 @@ using std::set;
 AlignmentView::AlignmentView(QWidget *w) :
     View(w, false),
     m_above(nullptr),
-    m_below(nullptr)
+    m_below(nullptr),
+    m_reference(nullptr),
+    m_leftmostAbove(-1),
+    m_rightmostAbove(-1)
 {
     setObjectName(tr("AlignmentView"));
 }
@@ -41,10 +44,11 @@ AlignmentView::keyFramesChanged()
     SVCERR << "AlignmentView " << getId() << "::keyFramesChanged" << endl;
 #endif
     
-    // This is just a notification that we need to rebuild it - so all
-    // we do here is clear it, and it'll be rebuilt on demand later
-    QMutexLocker locker(&m_keyFrameMutex);
-    m_keyFrameMap.clear();
+    // This is just a notification that we need to rebuild - so all we
+    // do here is clear, and rebuild on demand later
+    QMutexLocker locker(&m_mapsMutex);
+    m_fromAboveMap.clear();
+    m_fromReferenceMap.clear();
 }
 
 void
@@ -86,7 +90,7 @@ AlignmentView::viewBelowZoomLevelChanged(ZoomLevel, bool)
 }
 
 void
-AlignmentView::setViewAbove(View *v)
+AlignmentView::setAboveView(View *v)
 {
     if (m_above) {
         disconnect(m_above, nullptr, this, nullptr);
@@ -113,7 +117,7 @@ AlignmentView::setViewAbove(View *v)
 }
 
 void
-AlignmentView::setViewBelow(View *v)
+AlignmentView::setBelowView(View *v)
 {
     if (m_below) {
         disconnect(m_below, nullptr, this, nullptr);
@@ -137,6 +141,12 @@ AlignmentView::setViewBelow(View *v)
     }
 
     keyFramesChanged();
+}
+
+void
+AlignmentView::setReferenceView(View *view)
+{
+    m_reference = view;
 }
 
 void
@@ -167,28 +177,54 @@ AlignmentView::paintEvent(QPaintEvent *)
 
     paint.fillRect(rect(), bg);
 
-    QMutexLocker locker(&m_keyFrameMutex);
+    QMutexLocker locker(&m_mapsMutex);
 
-    if (m_keyFrameMap.empty()) {
+    if (m_fromAboveMap.empty()) {
         reconnectModels();
-        buildKeyFrameMap();
+        buildMaps();
     }
 
 #ifdef DEBUG_ALIGNMENT_VIEW
     SVCERR << "AlignmentView " << getId() << "::paintEvent: painting "
-           << m_keyFrameMap.size() << " mappings" << endl;
+           << m_fromAboveMap.size() << " mappings" << endl;
 #endif
 
-    for (const auto &km: m_keyFrameMap) {
+    int w = width();
+    int h = height();
 
-        sv_frame_t af = km.first;
-        sv_frame_t bf = km.second;
+    if (m_leftmostAbove > 0) {
+    
+        for (const auto &km: m_fromAboveMap) {
 
-        int ax = m_above->getXForFrame(af);
-        int bx = m_below->getXForFrame(bf);
+            sv_frame_t af = km.first;
+            sv_frame_t bf = km.second;
+            
+            if (af < m_leftmostAbove || af > m_rightmostAbove) {
+                continue;
+            }
 
-        if (ax >= 0 || ax < width() || bx >= 0 || bx < width()) {
-            paint.drawLine(ax, 0, bx, height());
+            int ax = m_above->getXForFrame(af);
+            int bx = m_below->getXForFrame(bf);
+
+            if (ax >= 0 || ax < w || bx >= 0 || bx < w) {
+                paint.drawLine(ax, 0, bx, h);
+            }
+        }
+    } else if (m_reference != nullptr) {
+        // the below has nothing in common with the above: show things
+        // in common with the reference instead
+    
+        for (const auto &km: m_fromReferenceMap) {
+            
+            sv_frame_t af = km.first;
+            sv_frame_t bf = km.second;
+
+            int ax = m_reference->getXForFrame(af);
+            int bx = m_below->getXForFrame(bf);
+
+            if (ax >= 0 || ax < w || bx >= 0 || bx < w) {
+                paint.drawLine(ax, 0, bx, h);
+            }
         }
     }
 
@@ -227,10 +263,10 @@ AlignmentView::reconnectModels()
 }
 
 void
-AlignmentView::buildKeyFrameMap()
+AlignmentView::buildMaps()
 {
 #ifdef DEBUG_ALIGNMENT_VIEW
-    SVCERR << "AlignmentView " << getId() << "::buildKeyFrameMap" << endl;
+    SVCERR << "AlignmentView " << getId() << "::buildMaps" << endl;
 #endif
     
     sv_frame_t resolution = 1;
@@ -240,13 +276,40 @@ AlignmentView::buildKeyFrameMap()
         keyFramesBelow.insert(f);
     }
 
+    foreach(sv_frame_t f, keyFramesBelow) {
+        sv_frame_t rf = m_below->alignToReference(f);
+        m_fromReferenceMap.insert({ rf, f });
+    }
+    
     vector<sv_frame_t> keyFrames = getKeyFrames(m_above, resolution);
 
+    // These are the most extreme leftward and rightward frames in
+    // "above" that have distinct corresponding frames in
+    // "below". Anything left of m_leftmostAbove or right of
+    // m_rightmostAbove maps effectively off one end or the other of
+    // the below view. (They don't actually map off the ends, they
+    // just all map to the same first/last destination frame. But we
+    // don't want to display their mappings, as they're just noise.)
+    m_leftmostAbove = -1;
+    m_rightmostAbove = -1;
+
+    sv_frame_t prevRf = -1;
+    sv_frame_t prevBf = -1;
+    
     foreach (sv_frame_t f, keyFrames) {
 
         sv_frame_t rf = m_above->alignToReference(f);
         sv_frame_t bf = m_below->alignFromReference(rf);
 
+        if (prevBf > 0 && bf > prevBf) {
+            if (m_leftmostAbove < 0 && prevBf > 0 && bf > prevBf) {
+                m_leftmostAbove = prevRf;
+            }
+            m_rightmostAbove = rf;
+        }
+        prevRf = rf;
+        prevBf = bf;
+        
         bool mappedSomething = false;
         
         if (resolution > 1) {
@@ -258,7 +321,7 @@ AlignmentView::buildKeyFrameMap()
 
                 for (sv_frame_t probe = bf + 1; probe <= bf1; ++probe) {
                     if (keyFramesBelow.find(probe) != keyFramesBelow.end()) {
-                        m_keyFrameMap.insert({ f, probe });
+                        m_fromAboveMap.insert({ f, probe });
                         mappedSomething = true;
                     }
                 }
@@ -266,13 +329,13 @@ AlignmentView::buildKeyFrameMap()
         }
 
         if (!mappedSomething) {
-            m_keyFrameMap.insert({ f, bf });
+            m_fromAboveMap.insert({ f, bf });
         }
     }
 
 #ifdef DEBUG_ALIGNMENT_VIEW
-    SVCERR << "AlignmentView " << getId() << "::buildKeyFrameMap: have "
-           << m_keyFrameMap.size() << " mappings" << endl;
+    SVCERR << "AlignmentView " << getId() << "::buildMaps: have "
+           << m_fromAboveMap.size() << " mappings" << endl;
 #endif
 }
 
