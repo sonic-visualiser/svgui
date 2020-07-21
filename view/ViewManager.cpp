@@ -93,7 +93,7 @@ ViewManager::ViewManager() :
         m_lightPalette.setColor(QPalette::Highlight, Qt::darkBlue);
         if (!OSReportsDarkThemeActive()) {
             int r, g, b;
-            if (OSQueryAccentColour(r, g, b)) {
+            if (OSQueryAccentColour(&r, &g, &b)) {
                 m_lightPalette.setColor(QPalette::Highlight, QColor(r, g, b));
             }
         }
@@ -117,7 +117,7 @@ ViewManager::ViewManager() :
         m_darkPalette.setColor(QPalette::Highlight, QColor(25, 130, 220));
         if (OSReportsDarkThemeActive()) {
             int r, g, b;
-            if (OSQueryAccentColour(r, g, b)) {
+            if (OSQueryAccentColour(&r, &g, &b)) {
                 m_darkPalette.setColor(QPalette::Highlight, QColor(r, g, b));
             }
         }
