@@ -26,8 +26,9 @@ public:
     AlignmentView(QWidget *parent = 0);
     QString getPropertyContainerIconName() const override { return "alignment"; }
     
-    void setViewAbove(View *view);
-    void setViewBelow(View *view);
+    void setAboveView(View *view);
+    void setBelowView(View *view);
+    void setReferenceView(View *view);
 
 public slots:
     void globalCentreFrameChanged(sv_frame_t) override;
@@ -44,7 +45,7 @@ protected:
     void paintEvent(QPaintEvent *e) override;
     bool shouldLabelSelections() const override { return false; }
 
-    void buildKeyFrameMap();
+    void buildMaps();
 
     std::vector<sv_frame_t> getKeyFrames(View *, sv_frame_t &resolution);
     std::vector<sv_frame_t> getDefaultKeyFrames();
@@ -55,9 +56,13 @@ protected:
 
     View *m_above;
     View *m_below;
+    View *m_reference;
 
-    QMutex m_keyFrameMutex;
-    std::multimap<sv_frame_t, sv_frame_t> m_keyFrameMap;
+    QMutex m_mapsMutex;
+    std::multimap<sv_frame_t, sv_frame_t> m_fromAboveMap;
+    std::multimap<sv_frame_t, sv_frame_t> m_fromReferenceMap;
+    sv_frame_t m_leftmostAbove;
+    sv_frame_t m_rightmostAbove;
 };
 
 #endif
