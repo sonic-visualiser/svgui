@@ -102,8 +102,6 @@ Pane::Pane(QWidget *w) :
 
     connect(this, SIGNAL(regionOutlined(QRect)), 
             this, SLOT(zoomToRegion(QRect)));
-
-    cerr << "Pane::Pane(" << this << ") returning" << endl;
 }
 
 Pane::~Pane()
