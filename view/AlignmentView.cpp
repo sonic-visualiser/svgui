@@ -205,7 +205,16 @@ AlignmentView::paintEvent(QPaintEvent *)
             sv_frame_t af = km.first;
             sv_frame_t bf = km.second;
             
-            if (af < m_leftmostAbove || af > m_rightmostAbove) {
+            if (af < m_leftmostAbove) {
+#ifdef DEBUG_ALIGNMENT_VIEW
+                SVCERR << "AlignmentView: af " << af << " < m_leftmostAbove " << m_leftmostAbove << endl;
+#endif
+                continue;
+            }
+            if (af > m_rightmostAbove) {
+#ifdef DEBUG_ALIGNMENT_VIEW
+                SVCERR << "AlignmentView: af " << af << " > m_rightmostAbove " << m_rightmostAbove << endl;
+#endif
                 continue;
             }
 
@@ -305,21 +314,21 @@ AlignmentView::buildMaps()
     m_leftmostAbove = -1;
     m_rightmostAbove = -1;
 
-    sv_frame_t prevRf = -1;
+    sv_frame_t prevAf = -1;
     sv_frame_t prevBf = -1;
     
-    foreach (sv_frame_t f, keyFrames) {
+    foreach (sv_frame_t af, keyFrames) {
 
-        sv_frame_t rf = m_above->alignToReference(f);
+        sv_frame_t rf = m_above->alignToReference(af);
         sv_frame_t bf = m_below->alignFromReference(rf);
 
         if (prevBf > 0 && bf > prevBf) {
-            if (m_leftmostAbove < 0 && prevBf > 0 && bf > prevBf) {
-                m_leftmostAbove = prevRf;
+            if (m_leftmostAbove < 0) {
+                m_leftmostAbove = prevAf;
             }
-            m_rightmostAbove = rf;
+            m_rightmostAbove = af;
         }
-        prevRf = rf;
+        prevAf = af;
         prevBf = bf;
         
         bool mappedSomething = false;
@@ -327,13 +336,13 @@ AlignmentView::buildMaps()
         if (resolution > 1) {
             if (keyFramesBelow.find(bf) == keyFramesBelow.end()) {
 
-                sv_frame_t f1 = f + resolution;
-                sv_frame_t rf1 = m_above->alignToReference(f1);
+                sv_frame_t af1 = af + resolution;
+                sv_frame_t rf1 = m_above->alignToReference(af1);
                 sv_frame_t bf1 = m_below->alignFromReference(rf1);
 
                 for (sv_frame_t probe = bf + 1; probe <= bf1; ++probe) {
                     if (keyFramesBelow.find(probe) != keyFramesBelow.end()) {
-                        m_fromAboveMap.insert({ f, probe });
+                        m_fromAboveMap.insert({ af, probe });
                         mappedSomething = true;
                     }
                 }
@@ -341,7 +350,7 @@ AlignmentView::buildMaps()
         }
 
         if (!mappedSomething) {
-            m_fromAboveMap.insert({ f, bf });
+            m_fromAboveMap.insert({ af, bf });
         }
     }
 
