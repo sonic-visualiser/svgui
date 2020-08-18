@@ -192,8 +192,14 @@ AlignmentView::paintEvent(QPaintEvent *)
     int w = width();
     int h = height();
 
-    if (m_leftmostAbove > 0) {
-    
+    if (m_leftmostAbove >= 0) {
+
+#ifdef DEBUG_ALIGNMENT_VIEW
+        SVCERR << "AlignmentView: m_leftmostAbove = " << m_leftmostAbove
+               << ", we have a relationship with the pane above us: showing "
+               << "mappings in relation to that" << endl;
+#endif
+
         for (const auto &km: m_fromAboveMap) {
 
             sv_frame_t af = km.first;
@@ -213,7 +219,13 @@ AlignmentView::paintEvent(QPaintEvent *)
     } else if (m_reference != nullptr) {
         // the below has nothing in common with the above: show things
         // in common with the reference instead
-    
+
+#ifdef DEBUG_ALIGNMENT_VIEW
+        SVCERR << "AlignmentView: m_leftmostAbove = " << m_leftmostAbove
+               << ", we have no relationship with the pane above us: showing "
+               << "mappings in relation to the reference instead" << endl;
+#endif
+
         for (const auto &km: m_fromReferenceMap) {
             
             sv_frame_t af = km.first;
