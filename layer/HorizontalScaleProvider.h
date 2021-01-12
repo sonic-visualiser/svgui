@@ -26,6 +26,8 @@ class LayerGeometryProvider;
 class HorizontalScaleProvider
 {
 public:
+    virtual ~HorizontalScaleProvider() { }
+    
     virtual double getFrequencyForX(const LayerGeometryProvider *,
                                     double x)
         const = 0;

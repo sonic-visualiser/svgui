@@ -31,6 +31,7 @@ class LayerGeometryProvider;
 class ColourScaleLayer
 {
 public:
+    virtual ~ColourScaleLayer() { }
     virtual QString getScaleUnits() const = 0;
     virtual QColor getColourForValue(LayerGeometryProvider *v, double value) const = 0;
 };

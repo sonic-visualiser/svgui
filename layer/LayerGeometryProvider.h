@@ -65,6 +65,7 @@ protected:
     
 public:
     LayerGeometryProvider() { }
+    virtual ~LayerGeometryProvider() { }
     
     /**
      * Retrieve the id of this object.
