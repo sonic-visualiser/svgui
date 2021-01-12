@@ -377,8 +377,18 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
     double rateRatio = v->getViewManager()->getMainModelSampleRate() / modelRate;
     double relativeBinResolution = binResolution * rateRatio;
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "decideRenderType: binResolution " << binResolution
+            << ", zoomLevel = " << zoomLevel << ", modelRate " << modelRate
+            << ", rateRatio " << rateRatio << ", relativeBinResolution "
+            << relativeBinResolution << endl;
+#endif
+
     if (m_params.binDisplay == BinDisplay::PeakFrequencies) {
         // no alternative works here
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+        SVDEBUG << "decideRenderType: binDisplay is PeakFrequencies, must use pixel resolution" << endl;
+#endif
         return DrawBufferPixelResolution;
     }
 
@@ -386,18 +396,38 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 
         // consider translucent option -- only if not smoothing & not
         // explicitly requested opaque & sufficiently zoomed-in
+
+        ZoomLevel threshold(ZoomLevel::FramesPerPixel,
+                            int(round(relativeBinResolution / 3)));
         
         if (model->getHeight() * 3 < v->getPaintHeight() &&
-            zoomLevel < ZoomLevel(ZoomLevel::FramesPerPixel,
-                                  int(round(relativeBinResolution / 3)))) {
+            zoomLevel < threshold) {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+            SVDEBUG << "decideRenderType: zoomLevel " << zoomLevel
+                    << " < threshold " << threshold
+                    << " and not opaque or smoothed; "
+                    << "using DirectTranslucent mode" << endl;
+#endif
             return DirectTranslucent;
         }
     }
 
-    if (ZoomLevel(ZoomLevel::FramesPerPixel,
-                  int(round(relativeBinResolution))) > zoomLevel) {
+    ZoomLevel threshold(ZoomLevel::FramesPerPixel,
+                        int(round(relativeBinResolution)));
+
+    if (zoomLevel < threshold) {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+        SVDEBUG << "decideRenderType: zoomLevel " << zoomLevel
+                << " < threshold " << threshold
+                << ", drawing at bin resolution" << endl;
+#endif
         return DrawBufferBinResolution;
     } else {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+        SVDEBUG << "decideRenderType: zoomLevel " << zoomLevel
+                << " >= threshold " << threshold
+                << ", drawing at pixel resolution" << endl;
+#endif
         return DrawBufferPixelResolution;
     }
 }
