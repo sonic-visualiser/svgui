@@ -1432,8 +1432,7 @@ bool
 WaveformLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
                               double &value, QString &unit) const
 {
-    int channel;
-
+    int channel = 0;
     value = getValueForY(v, y, channel);
 
     if (m_scale == dBScale || m_scale == MeterScale) {
@@ -1458,7 +1457,7 @@ bool
 WaveformLayer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y1,
                                    double &diff, QString &unit) const
 {
-    int c0, c1;
+    int c0 = 0, c1 = 0;
     double v0 = getValueForY(v, y0, c0);
     double v1 = getValueForY(v, y1, c1);
 
