@@ -362,6 +362,35 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     return { pr, range };
 }
 
+bool
+Colour3DPlotRenderer::getBinResolutions(const LayerGeometryProvider *v,
+                                        int &binResolution,
+                                        double &renderBinResolution) const
+{
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_sources.source);
+    if (!model || !v || !(v->getViewManager())) {
+        binResolution = 1;
+        renderBinResolution = 1.0;
+        return false;
+    }
+
+    binResolution = model->getResolution();
+    ZoomLevel zoomLevel = v->getZoomLevel();
+    sv_samplerate_t modelRate = model->getSampleRate();
+
+    double rateRatio = v->getViewManager()->getMainModelSampleRate() / modelRate;
+    renderBinResolution = binResolution * rateRatio;
+
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "Colour3DPlotRenderer: binResolution " << binResolution
+            << ", zoomLevel = " << zoomLevel << ", modelRate " << modelRate
+            << ", rateRatio " << rateRatio << ", renderBinResolution "
+            << renderBinResolution << endl;
+#endif
+
+    return true;
+}
+
 Colour3DPlotRenderer::RenderType
 Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 {
@@ -370,19 +399,11 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
         return DrawBufferPixelResolution; // or anything
     }
 
-    int binResolution = model->getResolution();
-    ZoomLevel zoomLevel = v->getZoomLevel();
-    sv_samplerate_t modelRate = model->getSampleRate();
-
-    double rateRatio = v->getViewManager()->getMainModelSampleRate() / modelRate;
-    double relativeBinResolution = binResolution * rateRatio;
-
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "decideRenderType: binResolution " << binResolution
-            << ", zoomLevel = " << zoomLevel << ", modelRate " << modelRate
-            << ", rateRatio " << rateRatio << ", relativeBinResolution "
-            << relativeBinResolution << endl;
-#endif
+    int binResolution;
+    double renderBinResolution;
+    if (!getBinResolutions(v, binResolution, renderBinResolution)) {
+        return DrawBufferPixelResolution; // or anything
+    }
 
     if (m_params.binDisplay == BinDisplay::PeakFrequencies) {
         // no alternative works here
@@ -392,13 +413,15 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
         return DrawBufferPixelResolution;
     }
 
+    ZoomLevel zoomLevel = v->getZoomLevel();
+
     if (!m_params.alwaysOpaque && !m_params.interpolate) {
 
         // consider translucent option -- only if not smoothing & not
         // explicitly requested opaque & sufficiently zoomed-in
 
         ZoomLevel threshold(ZoomLevel::FramesPerPixel,
-                            int(round(relativeBinResolution / 3)));
+                            int(round(renderBinResolution / 3)));
         
         if (model->getHeight() * 3 < v->getPaintHeight() &&
             zoomLevel < threshold) {
@@ -413,7 +436,7 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
     }
 
     ZoomLevel threshold(ZoomLevel::FramesPerPixel,
-                        int(round(relativeBinResolution)));
+                        int(round(renderBinResolution)));
 
     if (zoomLevel < threshold) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
@@ -669,14 +692,17 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
     if (m_params.colourScale.getScale() == ColourScaleType::Phase) return;
     
     ZoomLevel zoomLevel = v->getZoomLevel();
-    int binResolution = model->getResolution();
-    
+    int binResolution;
+    double renderBinResolution;
+    if (!getBinResolutions(v, binResolution, renderBinResolution)) return;
+
     for (int ix = 0; in_range_for(m_sources.peakCaches, ix); ++ix) {
         auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
             (m_sources.peakCaches[ix]);
         if (!peakCache) continue;
         int bpp = peakCache->getColumnsPerPeak();
-        ZoomLevel equivZoom(ZoomLevel::FramesPerPixel, binResolution * bpp);
+        ZoomLevel equivZoom(ZoomLevel::FramesPerPixel,
+                            round(renderBinResolution * bpp));
 #ifdef DEBUG_COLOUR_PLOT_CACHE_SELECTION
         SVDEBUG << "render " << m_sources.source
                 << ": getPreferredPeakCache: zoomLevel = " << zoomLevel
@@ -696,7 +722,7 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
 #ifdef DEBUG_COLOUR_PLOT_CACHE_SELECTION
     SVDEBUG << "render " << m_sources.source
             << ": getPreferredPeakCache: zoomLevel = " << zoomLevel
-            << ", binResolution " << binResolution 
+            << ", renderBinResolution " << renderBinResolution
             << ", peakCaches " << m_sources.peakCaches.size()
             << ": preferring peakCacheIndex " << peakCacheIndex
             << " for binsPerPeak " << binsPerPeak
@@ -730,11 +756,13 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     vector<int> binforx(repaintWidth);
     vector<double> binfory(h);
     
-    int binResolution = model->getResolution();
+    int binResolution;
+    double renderBinResolution;
+    if (!getBinResolutions(v, binResolution, renderBinResolution)) return;
 
     for (int x = 0; x < repaintWidth; ++x) {
         sv_frame_t f0 = v->getFrameForX(x0 + x);
-        double s0 = double(f0 - model->getStartFrame()) / binResolution;
+        double s0 = double(f0 - model->getStartFrame()) / renderBinResolution;
         binforx[x] = int(s0 + 0.0001);
     }
 
@@ -801,6 +829,11 @@ Colour3DPlotRenderer::scaleDrawBufferImage(QImage image,
     // should be using DrawBufferPixelResolution mode instead
     
     if (targetWidth < sourceWidth || targetHeight < sourceHeight) {
+        SVCERR << "ERROR: Colour3DPlotRenderer::scaleDrawBufferImage: "
+               << "targetWidth " << targetWidth
+               << " < sourceWidth " << sourceWidth
+               << " or targetHeight " << targetHeight
+               << " < sourceHeight " << sourceHeight << endl;
         throw std::logic_error("Colour3DPlotRenderer::scaleDrawBufferImage: Can only use this function when making the image larger; should be rendering DrawBufferPixelResolution instead");
     }
 
@@ -889,17 +922,22 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     sv_frame_t leftBoundaryFrame = -1, leftCropFrame = -1;
     sv_frame_t rightBoundaryFrame = -1, rightCropFrame = -1;
 
+    int binResolution;
+    double renderBinResolution;
+    if (!getBinResolutions(v, binResolution, renderBinResolution)) return;
+
     int drawBufferWidth;
-    int binResolution = model->getResolution();
 
     // These loops should eventually terminate provided that
     // getFrameForX always returns a multiple of the zoom level,
     // i.e. there is some x for which getFrameForX(x) == 0 and
     // subsequent return values are equally spaced
+
+    int edgeBinResolution = int(round(renderBinResolution));
     
     for (int x = x0; ; --x) {
         sv_frame_t f = v->getFrameForX(x);
-        if ((f / binResolution) * binResolution == f) {
+        if (sv_frame_t (f / edgeBinResolution) * edgeBinResolution == f) {
             if (leftCropFrame == -1) leftCropFrame = f;
             else if (x < x0 - 2) {
                 leftBoundaryFrame = f;
@@ -910,7 +948,7 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     
     for (int x = x0 + repaintWidth; ; ++x) {
         sv_frame_t f = v->getFrameForX(x);
-        if ((f / binResolution) * binResolution == f) {
+        if (sv_frame_t (f / edgeBinResolution) * edgeBinResolution == f) {
             if (v->getXForFrame(f) < x0 + repaintWidth) {
                 continue;
             }
@@ -923,7 +961,7 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     }
 
     drawBufferWidth = int
-        ((rightBoundaryFrame - leftBoundaryFrame) / binResolution);
+        ((rightBoundaryFrame - leftBoundaryFrame) / renderBinResolution);
     
     int h = v->getPaintHeight();
 
@@ -936,12 +974,12 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
     vector<double> binfory(h);
     
     for (int x = 0; x < drawBufferWidth; ++x) {
-        binforx[x] = int(leftBoundaryFrame / binResolution) + x;
+        binforx[x] = int(leftBoundaryFrame / renderBinResolution) + x;
     }
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
-            << ": binResolution " << binResolution << endl;
+            << ": renderBinResolution " << renderBinResolution << endl;
 #endif
     
     for (int y = 0; y < h; ++y) {

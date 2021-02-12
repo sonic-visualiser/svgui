@@ -281,6 +281,10 @@ private:
 
     double m_secondsPerXPixel;
     bool m_secondsPerXPixelValid;
+
+    bool getBinResolutions(const LayerGeometryProvider *v,
+                           int &binResolution,
+                           double &renderBinResolution) const;
     
     RenderResult render(const LayerGeometryProvider *v,
                         QPainter &paint, QRect rect, bool timeConstrained);
