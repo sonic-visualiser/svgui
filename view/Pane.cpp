@@ -1343,10 +1343,10 @@ Pane::registerShortcuts(KeyReference &kr)
                         tr("Zoom in or out in time axis"));
     kr.registerShortcut(tr("Scroll"), tr("Ctrl+Wheel"),
                         tr("Scroll rapidly left or right in time axis"));
-    kr.registerShortcut(tr("Zoom Vertically"), tr("Shift+Wheel"), 
-                        tr("Zoom in or out in the vertical axis"));
-    kr.registerShortcut(tr("Scroll Vertically"), tr("Alt+Wheel"), 
+    kr.registerShortcut(tr("Scroll Vertically"), tr("Shift+Wheel"), 
                         tr("Scroll up or down in the vertical axis"));
+    kr.registerShortcut(tr("Zoom Vertically"), tr("Alt+Wheel"), 
+                        tr("Zoom in or out in the vertical axis"));
     kr.registerShortcut(tr("Navigate"), tr("Middle"), 
                         tr("Click middle button and drag to navigate with any tool"));
     kr.registerShortcut(tr("Relocate"), tr("Double-Click Middle"), 
@@ -1367,6 +1367,23 @@ Pane::getTopFlexiNoteLayer()
     return nullptr;
 }
 
+static QString
+modifierNames(Qt::KeyboardModifiers m)
+{
+    QStringList s;
+    if (m & Qt::ShiftModifier) s << "Shift";
+    if (m & Qt::ControlModifier) s << "Ctrl";
+    if (m & Qt::AltModifier) s << "Alt";
+    if (m & Qt::MetaModifier) s << "Meta";
+    if (m & Qt::KeypadModifier) s << "Keypad";
+    if (m & Qt::GroupSwitchModifier) s << "GroupSwitch";
+    m &= (~ (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier |
+             Qt::MetaModifier | Qt::KeypadModifier | Qt::GroupSwitchModifier));
+    if (m) s << QString(" (residue %1)").arg(m);
+    if (s.empty()) return "(none)";
+    else return s.join(" | ");
+}
+
 void
 Pane::mousePressEvent(QMouseEvent *e)
 {
@@ -1376,7 +1393,9 @@ Pane::mousePressEvent(QMouseEvent *e)
         return;
     }
 
-//    cerr << "mousePressEvent" << endl;
+    SVDEBUG << "Pane[" << getId() << "]::mousePressEvent: buttons = "
+            << e->buttons() << ", modifiers = "
+            << modifierNames(e->modifiers()) << endl;
 
     m_clickPos = e->pos();
     m_mousePos = m_clickPos;
@@ -1666,11 +1685,13 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 void
 Pane::mouseMoveEvent(QMouseEvent *e)
 {
+//    SVDEBUG << "Pane[" << getId() << "]::mouseMoveEvent: buttons = "
+//            << e->buttons() << ", modifiers = "
+//            << modifierNames(e->modifiers()) << endl;
+
     if (!e || (e->buttons() & Qt::RightButton)) {
         return;
     }
-
-//    cerr << "mouseMoveEvent" << endl;
 
     QPoint pos = e->pos();
     updateContextHelp(&pos);
@@ -2266,11 +2287,13 @@ Pane::edgeScrollMaybe(int x)
 void
 Pane::mouseDoubleClickEvent(QMouseEvent *e)
 {
+    SVDEBUG << "Pane[" << getId() << "]::mouseDoubleClickEvent: buttons = "
+            << e->buttons() << ", modifiers = "
+            << modifierNames(e->modifiers()) << endl;
+    
     if (e->buttons() & Qt::RightButton) {
         return;
     }
-
-    cerr << "mouseDoubleClickEvent" << endl;
 
     m_clickPos = e->pos();
     m_clickedInRange = true;
@@ -2362,7 +2385,11 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-//    cerr << "wheelEvent, delta " << e->delta() << ", angleDelta " << e->angleDelta().x() << "," << e->angleDelta().y() << ", pixelDelta " << e->pixelDelta().x() << "," << e->pixelDelta().y() << ", modifiers " << e->modifiers() << endl;
+    SVDEBUG << "Pane[" << getId() << "]::wheelEvent: delta = " << e->delta()
+            << ", angleDelta = (" << e->angleDelta().x()
+            << "," << e->angleDelta().y() << "), pixelDelta = ("
+            << e->pixelDelta().x() << "," << e->pixelDelta().y()
+            << "), modifiers = " << modifierNames(e->modifiers()) << endl;
 
     e->accept(); // we never want wheel events on the pane to be propagated
     
@@ -2376,13 +2403,27 @@ Pane::wheelEvent(QWheelEvent *e)
     int d = dy;
     bool horizontal = false;
 
-    if (abs(dx) > abs(dy)) {
+    if (e->modifiers() & Qt::ControlModifier) {
+        // treat a vertical wheel as horizontal
+        SVDEBUG << "Ctrl held, treating as horizontal" << endl;
+        if (abs(dx) > abs(dy)) {
+            d = dx; // ok, it was horizontal already
+        }
+        horizontal = true;
+    } else if (e->modifiers() & Qt::AltModifier) {
+        // treat a horizontal wheel as vertical - this is because Qt
+        // intercepts the event when Alt is pressed and pretends
+        // vertical is horizontal, so we're just undoing that
+        SVDEBUG << "Alt held, treating as vertical" << endl;
+        if (abs(dx) > abs(dy)) {
+            d = dx; // it was coerced to horizontal, so get the right delta
+        }
+        horizontal = false;
+    } else if (abs(dx) > abs(dy)) {
+        SVDEBUG << "Direction is primarily horizontal" << endl;
         d = dx;
         horizontal = true;
-    } else if (e->modifiers() & Qt::ControlModifier) {
-        // treat a vertical wheel as horizontal
-        horizontal = true;
-    }
+    }        
 
     if (e->phase() == Qt::ScrollBegin ||
         std::abs(d) >= 120 ||
@@ -2439,7 +2480,8 @@ Pane::wheelEvent(QWheelEvent *e)
 void
 Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 {
-//    cerr << "wheelVertical: sign = " << sign << endl;
+    SVDEBUG << "Pane[" << getId() << "]::wheelVertical: sign = " << sign
+            << ", modifiers = " << modifierNames(mods) << endl;
 
     if (mods & Qt::ShiftModifier) {
 
@@ -2621,10 +2663,11 @@ void
 Pane::dragEnterEvent(QDragEnterEvent *e)
 {
     QStringList formats(e->mimeData()->formats());
-    cerr << "dragEnterEvent: format: "
-              << formats.join(",")
-              << ", possibleActions: " << e->possibleActions()
-              << ", proposedAction: " << e->proposedAction() << endl;
+
+    SVDEBUG << "Pane[" << getId() << "]::dragEnterEvent: format: "
+            << formats.join(",")
+            << ", possibleActions: " << e->possibleActions()
+            << ", proposedAction: " << e->proposedAction() << endl;
     
     if (e->mimeData()->hasFormat("text/uri-list") ||
         e->mimeData()->hasFormat("text/plain")) {
@@ -2641,8 +2684,8 @@ Pane::dragEnterEvent(QDragEnterEvent *e)
 void
 Pane::dropEvent(QDropEvent *e)
 {
-    cerr << "dropEvent: text: \"" << e->mimeData()->text()
-              << "\"" << endl;
+    SVDEBUG << "Pane[" << getId() << "]::dropEvent: text: \""
+            << e->mimeData()->text() << "\"" << endl;
 
     if (e->mimeData()->hasFormat("text/uri-list") || 
         e->mimeData()->hasFormat("text/plain")) {
