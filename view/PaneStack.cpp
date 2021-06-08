@@ -391,7 +391,7 @@ PaneStack::deletePane(Pane *pane)
         }
 
         if (!found) {
-            cerr << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << endl;
+            SVCERR << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << endl;
             return;
         }
     }
@@ -803,11 +803,11 @@ PaneStack::sizePanesEqually()
     }
 
 /*
-    cerr << "sizes: ";
+    SVCERR << "sizes: ";
     for (int i = 0; i < sizes.size(); ++i) {
-        cerr << sizes[i] << " ";
+        SVCERR << sizes[i] << " ";
     }
-    cerr << endl;
+    SVCERR << endl;
 */
 
     m_splitter->setSizes(sizes);

@@ -384,7 +384,7 @@ NoteLayer::setVerticalZoomStep(int step)
         newmax = (newdist + sqrt(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
-//        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
+//        SVCERR << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
         double dmid = (dmax + dmin) / 2;

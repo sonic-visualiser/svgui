@@ -85,7 +85,7 @@ LEDButton::~LEDButton()
 void
 LEDButton::mousePressEvent(QMouseEvent *e)
 {
-    cerr << "LEDButton(" << this << ")::mousePressEvent" << endl;
+    SVDEBUG << "LEDButton(" << this << ")::mousePressEvent" << endl;
 
     if (e->buttons() & Qt::LeftButton) {
         toggle();

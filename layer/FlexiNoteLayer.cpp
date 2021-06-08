@@ -280,7 +280,7 @@ FlexiNoteLayer::getDisplayExtents(double &min, double &max) const
     }
 
 #ifdef DEBUG_NOTE_LAYER
-    cerr << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << endl;
+    SVCERR << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << endl;
 #endif
 
     return true;
@@ -304,7 +304,7 @@ FlexiNoteLayer::setDisplayExtents(double min, double max)
     m_scaleMaximum = max;
 
 #ifdef DEBUG_NOTE_LAYER
-    cerr << "FlexiNoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
+    SVCERR << "FlexiNoteLayer::setDisplayExtents: min = " << min << ", max = " << max << endl;
 #endif
     
     emit layerParametersChanged();
@@ -373,7 +373,7 @@ FlexiNoteLayer::setVerticalZoomStep(int step)
         newmax = (newdist + sqrt(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
-//        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
+//        SVCERR << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
         double dmid = (dmax + dmin) / 2;
@@ -390,7 +390,7 @@ FlexiNoteLayer::setVerticalZoomStep(int step)
     }
     
 #ifdef DEBUG_NOTE_LAYER
-    cerr << "FlexiNoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
+    SVCERR << "FlexiNoteLayer::setVerticalZoomStep: " << step << ": " << newmin << " -> " << newmax << " (range " << newdist << ")" << endl;
 #endif
 
     setDisplayExtents(newmin, newmax);
@@ -656,7 +656,7 @@ FlexiNoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
         }
     }
 
-    cerr << "snapToFeatureFrame: frame " << frame << " -> snapped " << snapped << ", found = " << found << endl;
+    SVCERR << "snapToFeatureFrame: frame " << frame << " -> snapped " << snapped << ", found = " << found << endl;
 
     frame = snapped;
     return found;
@@ -687,7 +687,7 @@ FlexiNoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
             }
 
 #ifdef DEBUG_NOTE_LAYER
-            cerr << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
+            SVCERR << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 #endif
 
         } else if (log) {
@@ -695,7 +695,7 @@ FlexiNoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
             LogRange::mapRange(min, max);
 
 #ifdef DEBUG_NOTE_LAYER
-            cerr << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
+            SVCERR << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
 #endif
         }
 
@@ -730,27 +730,27 @@ FlexiNoteLayer::getYForValue(LayerGeometryProvider *v, double val) const
     getScaleExtents(v, min, max, logarithmic);
 
 #ifdef DEBUG_NOTE_LAYER
-    cerr << "FlexiNoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
+    SVCERR << "FlexiNoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
 #endif
 
     if (shouldConvertMIDIToHz()) {
         val = Pitch::getFrequencyForPitch(int(lrint(val)),
                                           int(lrint((val - floor(val)) * 100.0)));
 #ifdef DEBUG_NOTE_LAYER
-        cerr << "shouldConvertMIDIToHz true, val now = " << val << endl;
+        SVCERR << "shouldConvertMIDIToHz true, val now = " << val << endl;
 #endif
     }
 
     if (logarithmic) {
         val = LogRange::map(val);
 #ifdef DEBUG_NOTE_LAYER
-        cerr << "logarithmic true, val now = " << val << endl;
+        SVCERR << "logarithmic true, val now = " << val << endl;
 #endif
     }
 
     int y = int(h - ((val - min) * h) / (max - min)) - 1;
 #ifdef DEBUG_NOTE_LAYER
-    cerr << "y = " << y << endl;
+    SVCERR << "y = " << y << endl;
 #endif
     return y;
 }
@@ -1394,22 +1394,22 @@ FlexiNoteLayer::getAssociatedPitchModel(LayerGeometryProvider *v) const
 {
     // Better than we used to do, but still not very satisfactory
 
-//    cerr << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
+//    SVCERR << "FlexiNoteLayer::getAssociatedPitchModel()" << endl;
 
     for (int i = 0; i < v->getView()->getLayerCount(); ++i) {
         Layer *layer = v->getView()->getLayer(i);
         if (layer &&
             layer->getLayerPresentationName() != "candidate") {
-//            cerr << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
+//            SVCERR << "FlexiNoteLayer::getAssociatedPitchModel: looks like our layer is " << layer << endl;
             auto modelId = layer->getModel();
             auto model = ModelById::getAs<SparseTimeValueModel>(modelId);
             if (model && model->getScaleUnits() == "Hz") {
-//                cerr << "FlexiNoteLayer::getAssociatedPitchModel: it's good, returning " << model << endl;
+//                SVCERR << "FlexiNoteLayer::getAssociatedPitchModel: it's good, returning " << model << endl;
                 return modelId;
             }
         }
     }
-//    cerr << "FlexiNoteLayer::getAssociatedPitchModel: failed to find a model" << endl;
+//    SVCERR << "FlexiNoteLayer::getAssociatedPitchModel: failed to find a model" << endl;
     return {};
 }
 
@@ -1424,21 +1424,21 @@ FlexiNoteLayer::snapSelectedNotesToPitchTrack(LayerGeometryProvider *v, Selectio
 
     auto command = new ChangeEventsCommand(m_model.untyped, tr("Snap Notes"));
 
-    cerr << "snapSelectedNotesToPitchTrack: selection is from " << s.getStartFrame() << " to " << s.getEndFrame() << endl;
+    SVCERR << "snapSelectedNotesToPitchTrack: selection is from " << s.getStartFrame() << " to " << s.getEndFrame() << endl;
 
     for (EventVector::iterator i = points.begin();
          i != points.end(); ++i) {
 
         Event note(*i);
 
-        cerr << "snapSelectedNotesToPitchTrack: looking at note from " << note.getFrame() << " to " << note.getFrame() + note.getDuration() << endl;
+        SVCERR << "snapSelectedNotesToPitchTrack: looking at note from " << note.getFrame() << " to " << note.getFrame() + note.getDuration() << endl;
 
         if (!s.contains(note.getFrame()) &&
             !s.contains(note.getFrame() + note.getDuration() - 1)) {
             continue;
         }
 
-        cerr << "snapSelectedNotesToPitchTrack: making new note" << endl;
+        SVCERR << "snapSelectedNotesToPitchTrack: making new note" << endl;
         Event newNote(note);
 
         command->remove(note);
@@ -1553,19 +1553,19 @@ FlexiNoteLayer::mouseMoveEvent(LayerGeometryProvider *v, QMouseEvent *e)
     if (closeToLeft) {
         v->getView()->setCursor(Qt::SizeHorCursor);
         m_editMode = LeftBoundary;
-        cerr << "edit mode -> LeftBoundary" << endl;
+        SVCERR << "edit mode -> LeftBoundary" << endl;
     } else if (closeToRight) {
         v->getView()->setCursor(Qt::SizeHorCursor);
         m_editMode = RightBoundary;
-        cerr << "edit mode -> RightBoundary" << endl;
+        SVCERR << "edit mode -> RightBoundary" << endl;
     } else if (closeToTop) {
         v->getView()->setCursor(Qt::CrossCursor);
         m_editMode = DragNote;
-        cerr << "edit mode -> DragNote" << endl;
+        SVCERR << "edit mode -> DragNote" << endl;
     } else if (closeToBottom) {
         v->getView()->setCursor(Qt::UpArrowCursor);
         m_editMode = SplitNote;
-        cerr << "edit mode -> SplitNote" << endl;
+        SVCERR << "edit mode -> SplitNote" << endl;
     } else {
         v->getView()->setCursor(Qt::ArrowCursor);
     }
@@ -1595,7 +1595,7 @@ FlexiNoteLayer::getRelativeMousePosition(LayerGeometryProvider *v, Event &note, 
     if (y >= noteStartY - tol && y <= noteStartY + tol) closeToTop = true;
     if (y >= noteEndY - tol && y <= noteEndY + tol) closeToBottom = true;
 
-//    cerr << "FlexiNoteLayer::getRelativeMousePosition: close to: left " << closeToLeft << " right " << closeToRight << " top " << closeToTop << " bottom " << closeToBottom << endl;
+//    SVCERR << "FlexiNoteLayer::getRelativeMousePosition: close to: left " << closeToLeft << " right " << closeToRight << " top " << closeToTop << " bottom " << closeToBottom << endl;
 }
 
 

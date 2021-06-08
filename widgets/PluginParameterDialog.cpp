@@ -317,7 +317,7 @@ PluginParameterDialog::setChannelArrangement(int sourceChannels,
         } else {
 
             if (m_haveChannelBoxData) {
-                cerr << "WARNING: PluginParameterDialog::setChannelArrangement: Calling more than once on same dialog is not currently implemented" << endl;
+                SVCERR << "WARNING: PluginParameterDialog::setChannelArrangement: Calling more than once on same dialog is not currently implemented" << endl;
                 return;
             }
             
@@ -362,7 +362,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
                                                 bool showFrequencyDomainOptions)
 {
     if (m_haveWindowBoxData) {
-        cerr << "WARNING: PluginParameterDialog::setShowProcessingOptions: Calling more than once on same dialog is not currently implemented" << endl;
+        SVCERR << "WARNING: PluginParameterDialog::setShowProcessingOptions: Calling more than once on same dialog is not currently implemented" << endl;
         return;
     }
 
@@ -373,7 +373,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
         int increment = 1024;
         if (fePlugin) {
             size = int(fePlugin->getPreferredBlockSize());
-            cerr << "Feature extraction plugin \"" << fePlugin->getName() << "\" reports preferred block size as " << size << endl;
+            SVCERR << "Feature extraction plugin \"" << fePlugin->getName() << "\" reports preferred block size as " << size << endl;
             if (size == 0) size = 1024;
             increment = int(fePlugin->getPreferredStepSize());
             if (increment == 0) {
@@ -394,7 +394,7 @@ PluginParameterDialog::setShowProcessingOptions(bool showWindowSize,
             windowLayout->addWidget(new QLabel(tr("Audio frames per block:")), 0, 0);
         }
 
-        cerr << "size: " << size << ", increment: " << increment << endl;
+        SVCERR << "size: " << size << ", increment: " << increment << endl;
 
         QComboBox *blockSizeCombo = new QComboBox;
         blockSizeCombo->setEditable(true);
@@ -547,7 +547,7 @@ void
 PluginParameterDialog::blockSizeComboChanged(const QString &text)
 {
     m_blockSize = text.toInt();
-    cerr << "Block size changed to " << m_blockSize << endl;
+    SVCERR << "Block size changed to " << m_blockSize << endl;
 }
 
 void
@@ -555,7 +555,7 @@ PluginParameterDialog::incrementComboChanged(const QString &text)
 {
     m_stepSize = text.toInt();
     //!!! rename increment to step size throughout
-    cerr << "Increment changed to " << m_stepSize << endl;
+    SVCERR << "Increment changed to " << m_stepSize << endl;
 }
 
 void

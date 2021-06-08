@@ -317,7 +317,7 @@ LayerTreeModel::paneAdded()
 void
 LayerTreeModel::paneAboutToBeDeleted(Pane *pane)
 {
-    cerr << "paneDeleted: " << pane << endl;
+    SVCERR << "paneDeleted: " << pane << endl;
     m_deletedPanes.insert(pane);
     emit layoutChanged();
 }

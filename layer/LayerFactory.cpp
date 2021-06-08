@@ -97,7 +97,7 @@ LayerFactory::getLayerPresentationName(LayerType type)
 
     case UnknownLayer:
     default:
-        cerr << "WARNING: LayerFactory::getLayerPresentationName passed unknown layer" << endl;
+        SVCERR << "WARNING: LayerFactory::getLayerPresentationName passed unknown layer" << endl;
         return Layer::tr("Unknown Layer");
     }
 }
@@ -259,7 +259,7 @@ LayerFactory::getLayerIconName(LayerType type)
     case PeakFrequencySpectrogram: return "spectrogram";
     case UnknownLayer:
     default:
-        cerr << "WARNING: LayerFactory::getLayerIconName passed unknown layer" << endl;
+        SVCERR << "WARNING: LayerFactory::getLayerIconName passed unknown layer" << endl;
         return "unknown";
     }
 }
@@ -286,7 +286,7 @@ LayerFactory::getLayerTypeName(LayerType type)
     case PeakFrequencySpectrogram: return "peakfrequency";
     case UnknownLayer:
     default:
-        cerr << "WARNING: LayerFactory::getLayerTypeName passed unknown layer" << endl;
+        SVCERR << "WARNING: LayerFactory::getLayerTypeName passed unknown layer" << endl;
         return "unknown";
     }
 }
@@ -490,12 +490,12 @@ LayerFactory::createLayer(LayerType type)
 
     case UnknownLayer:
     default:
-        cerr << "WARNING: LayerFactory::createLayer passed unknown layer" << endl;
+        SVCERR << "WARNING: LayerFactory::createLayer passed unknown layer" << endl;
         break;
     }
 
     if (!layer) {
-        cerr << "LayerFactory::createLayer: Unknown layer type " 
+        SVCERR << "LayerFactory::createLayer: Unknown layer type " 
                   << type << endl;
     } else {
 //        SVDEBUG << "LayerFactory::createLayer: Setting object name "
@@ -544,7 +544,7 @@ LayerFactory::setLayerProperties(Layer *layer, QString newXml)
     for (int i = 0; i < attrNodes.length(); ++i) {
         QDomAttr attr = attrNodes.item(i).toAttr();
         if (attr.isNull()) continue;
-//            cerr << "append \"" << attr.name()
+//            SVCERR << "append \"" << attr.name()
 //                      << "\" -> \"" << attr.value() << "\""
 //                      << endl;
         attrs.append(attr.name(), "", "", attr.value());
@@ -556,7 +556,7 @@ LayerFactory::setLayerProperties(Layer *layer, QString newXml)
         QDomAttr attr = attrNodes.item(i).toAttr();
         if (attr.isNull()) continue;
         if (attrs.value(attr.name()) == "") {
-//                cerr << "append \"" << attr.name()
+//                SVCERR << "append \"" << attr.name()
 //                          << "\" -> \"" << attr.value() << "\""
 //                          << endl;
             attrs.append(attr.name(), "", "", attr.value());

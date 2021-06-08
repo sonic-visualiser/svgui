@@ -223,7 +223,7 @@ Pane::updateHeadsUpDisplay()
             m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
             m_vthumb->blockSignals(false);
 
-//            cerr << "Vertical thumbwheel: min 0, max " << max
+//            SVCERR << "Vertical thumbwheel: min 0, max " << max
 //                      << ", default " << defaultStep << ", value "
 //                      << m_vthumb->getValue() << endl;
 
@@ -874,11 +874,11 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, ModelId modelId,
     ModelId reference = model->getAlignmentReference();
 /*
     if (!reference) {
-        cerr << "Pane[" << this << "]::drawAlignmentStatus: No reference" << endl;
+        SVCERR << "Pane[" << this << "]::drawAlignmentStatus: No reference" << endl;
     } else if (reference == model->getId()) {
-        cerr << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << endl;
+        SVCERR << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << endl;
     } else {
-        cerr << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << endl;
+        SVCERR << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << endl;
     }
 */
     QString text;
@@ -1006,7 +1006,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     std::vector<QPixmap> pixmaps;
     for (LayerList::iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
         texts.push_back((*i)->getLayerPresentationName());
-//        cerr << "Pane " << this << ": Layer presentation name for " << *i << ": "
+//        SVCERR << "Pane " << this << ": Layer presentation name for " << *i << ": "
 //                  << texts[texts.size()-1] << endl;
         pixmaps.push_back((*i)->getLayerPresentationPixmap
                           (QSize(fontAscent, fontAscent)));
@@ -1024,7 +1024,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     
         for (int i = 0; i < texts.size(); ++i) {
 
-//            cerr << "Pane "<< this << ": text " << i << ": " << texts[i] << endl;
+//            SVCERR << "Pane "<< this << ": text " << i << ": " << texts[i] << endl;
             
             if (i + 1 == texts.size()) {
                 paint.setPen(getForeground());
@@ -2006,12 +2006,12 @@ Pane::zoomToRegion(QRect r)
         }
         double rmin = min + ((max - min) * (height() - y1)) / height();
         double rmax = min + ((max - min) * (height() - y0)) / height();
-        cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << endl;
+        SVCERR << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << endl;
         if (log) {
             rmin = pow(10, rmin);
             rmax = pow(10, rmax);
         }
-        cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << endl;
+        SVCERR << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << endl;
 
         layer->setDisplayExtents(rmin, rmax);
         updateVerticalPanner();
@@ -2100,12 +2100,12 @@ Pane::dragTopLayer(QMouseEvent *e)
 
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
 
-//            cerr << "ydiff = " << ydiff << endl;
+//            SVCERR << "ydiff = " << ydiff << endl;
 
             int ydiff = e->y() - m_clickPos.y();
             double perpix = (dmax - dmin) / height();
             double valdiff = ydiff * perpix;
-//            cerr << "valdiff = " << valdiff << endl;
+//            SVCERR << "valdiff = " << valdiff << endl;
 
             if (m_dragMode == UnresolvedDrag && ydiff != 0) {
                 m_dragMode = VerticalDrag;
@@ -2121,7 +2121,7 @@ Pane::dragTopLayer(QMouseEvent *e)
                 newmin -= newmax - vmax;
                 newmax -= newmax - vmax;
             }
-//            cerr << "(" << dmin << ", " << dmax << ") -> ("
+//            SVCERR << "(" << dmin << ", " << dmax << ") -> ("
 //                      << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << endl;
 
             setTopLayerDisplayExtents(newmin, newmax);
@@ -2211,7 +2211,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
                                   resolution, Layer::SnapRight, e->y());
     }
         
-//        cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
+//        SVCERR << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
 
     if (snapFrameLeft < 0) snapFrameLeft = 0;
     if (snapFrameRight < 0) snapFrameRight = 0;
@@ -2588,7 +2588,7 @@ Pane::verticalPannerMoved(float , float y0, float , float h)
     double y1 = y0 + h;
     double newmax = vmin + ((1.0 - y0) * (vmax - vmin));
     double newmin = vmin + ((1.0 - y1) * (vmax - vmin));
-//    cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
+//    SVCERR << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
 //              << "," << h << ") -> (" << newmin << "," << newmax << ")" << endl;
     setTopLayerDisplayExtents(newmin, newmax);
 }
@@ -2854,7 +2854,7 @@ Pane::zoomWheelsEnabledChanged()
 void
 Pane::viewZoomLevelChanged(View *v, ZoomLevel z, bool locked)
 {
-//    cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
+//    SVCERR << "Pane[" << this << "]::zoomLevelChanged (global now "
 //              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << endl;
 
     View::viewZoomLevelChanged(v, z, locked);
