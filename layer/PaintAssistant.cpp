@@ -30,8 +30,8 @@
 void
 PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
                                         double minVal, double maxVal,
-                                        Scale scale, int &mult,
-                                        std::vector<int> *vy)
+                                        Scale scale, AudioLevel::Quantity sort,
+                                        int &mult, std::vector<int> *vy)
 {
     static double meterdbs[] = { -40, -30, -20, -15, -10,
                                 -5, -3, -2, -1, -0.5, 0 };
@@ -77,7 +77,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             break;
             
         case MeterScale: // ... min, max
-            val = AudioLevel::dB_to_multiplier(meterdbs[i]);
+            val = AudioLevel::dB_to_quantity(meterdbs[i], sort);
             text = QString("%1").arg(meterdbs[i]);
             if (i == n) text = "0dB";
             if (i == 0) {
@@ -87,7 +87,7 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             break;
 
         case dBScale: // ... min, max
-            val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10);
+            val = AudioLevel::dB_to_quantity(-(10*n) + i * 10, sort);
             text = QString("%1").arg(-(10*n) + i * 10);
             if (i == n) text = "0dB";
             if (i == 0) {
@@ -99,11 +99,11 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 
         if (val < minVal || val > maxVal) continue;
 
-        int y = getYForValue(scale, val, minVal, maxVal, rect.y(), h);
+        int y = getYForValue(scale, sort, val, minVal, maxVal, rect.y(), h);
             
         int ny = y;
         if (nval != 0.0) {
-            ny = getYForValue(scale, nval, minVal, maxVal, rect.y(), h);
+            ny = getYForValue(scale, sort, nval, minVal, maxVal, rect.y(), h);
         }
 
 //        SVDEBUG << "PaintAssistant::paintVerticalLevelScale: val = "
@@ -158,20 +158,21 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
 }
 
 static int
-dBscale(double sample, int m, double maxVal, double minVal) 
+dBscale(AudioLevel::Quantity sort, double sample,
+        int m, double maxVal, double minVal) 
 {
-    if (sample < 0.0) return dBscale(-sample, m, maxVal, minVal);
-    double dB = AudioLevel::multiplier_to_dB(sample);
-    double mindB = AudioLevel::multiplier_to_dB(minVal);
-    double maxdB = AudioLevel::multiplier_to_dB(maxVal);
+    if (sample < 0.0) return dBscale(sort, -sample, m, maxVal, minVal);
+    double dB = AudioLevel::quantity_to_dB(sample, sort);
+    double mindB = AudioLevel::quantity_to_dB(minVal, sort);
+    double maxdB = AudioLevel::quantity_to_dB(maxVal, sort);
     if (dB < mindB) return 0;
     if (dB > 0.0) return m;
     return int(((dB - mindB) * m) / (maxdB - mindB) + 0.1);
 }
 
 int
-PaintAssistant::getYForValue(Scale scale, double value, 
-                             double minVal, double maxVal,
+PaintAssistant::getYForValue(Scale scale, AudioLevel::Quantity sort,
+                             double value, double minVal, double maxVal,
                              int minY, int height)
 {
     int vy = 0;
@@ -183,12 +184,15 @@ PaintAssistant::getYForValue(Scale scale, double value,
         break;
 
     case MeterScale:
-        vy = minY + height - AudioLevel::multiplier_to_preview
-            ((value - minVal) / (maxVal - minVal), height);
+        vy = minY + height - AudioLevel::dB_to_fader
+            (AudioLevel::quantity_to_dB((value - minVal) / (maxVal - minVal),
+                                        sort),
+             height,
+             AudioLevel::Scale::Preview);
         break;
 
     case dBScale:
-        vy = minY + height - dBscale(value, height, maxVal, minVal);
+        vy = minY + height - dBscale(sort, value, height, maxVal, minVal);
         break;
     }
 

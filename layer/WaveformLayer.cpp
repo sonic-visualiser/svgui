@@ -179,7 +179,7 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
         *max = 50;
         *deflt = 0;
 
-        val = int(lrint(log10(m_gain) * 20.0));
+        val = int(round(AudioLevel::voltage_to_dB(m_gain)));
         if (val < *min) val = *min;
         if (val > *max) val = *max;
 
@@ -248,7 +248,7 @@ void
 WaveformLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-        setGain(float(pow(10, float(value)/20.0)));
+        setGain(AudioLevel::dB_to_voltage(value));
     } else if (name == "Normalize Visible Area") {
         setAutoNormalize(value ? true : false);
     } else if (name == "Channels") {
@@ -425,7 +425,7 @@ WaveformLayer::getDisplayExtents(double &min, double &max) const
 
     if (m_scale == dBScale) {
         max = 1.0;
-        min = AudioLevel::dB_to_multiplier(m_dBMin);
+        min = AudioLevel::dB_to_voltage(m_dBMin);
         return true;
     }
 
@@ -436,10 +436,16 @@ double
 WaveformLayer::dBscale(double sample, int m) const
 {
     if (sample < 0.0) return dBscale(-sample, m);
-    double dB = AudioLevel::multiplier_to_dB(sample);
+    double dB = AudioLevel::voltage_to_dB(sample);
     if (dB < m_dBMin) return 0;
     if (dB > 0.0) return m;
     return ((dB - m_dBMin) * m) / (-m_dBMin);
+}
+
+double
+WaveformLayer::dBscaleMeter(double sample, int m) const
+{
+    return AudioLevel::voltage_to_fader(sample, m, AudioLevel::Scale::Preview);
 }
 
 int
@@ -1039,25 +1045,18 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
 
         case MeterScale:
             if (!mergingChannels) {
-                double r0 = std::abs(AudioLevel::multiplier_to_preview
-                                 (range.min() * gain, m));
-                double r1 = std::abs(AudioLevel::multiplier_to_preview
-                                 (range.max() * gain, m));
+                double r0 = std::abs(dBscaleMeter(range.min() * gain, m));
+                double r1 = std::abs(dBscaleMeter(range.max() * gain, m));
                 rangeTop = std::max(r0, r1);
                 meanTop = std::min(r0, r1);
                 if (mixingChannels) rangeBottom = meanTop;
-                else rangeBottom = AudioLevel::multiplier_to_preview
-                         (range.absmean() * gain, m);
+                else rangeBottom = dBscaleMeter(range.absmean() * gain, m);
                 meanBottom  = rangeBottom;
             } else {
-                rangeBottom = -AudioLevel::multiplier_to_preview
-                    (range.min() * gain, m);
-                rangeTop = AudioLevel::multiplier_to_preview
-                    (range.max() * gain, m);
-                meanBottom = -AudioLevel::multiplier_to_preview
-                    (range.absmean() * gain, m);
-                meanTop = AudioLevel::multiplier_to_preview
-                    (range.absmean() * gain, m);
+                rangeBottom = -dBscaleMeter(range.min() * gain, m);
+                rangeTop = dBscaleMeter(range.max() * gain, m);
+                meanBottom = -dBscaleMeter(range.absmean() * gain, m);
+                meanTop = dBscaleMeter(range.absmean() * gain, m);
             }
             break;
         }
@@ -1223,11 +1222,11 @@ WaveformLayer::paintChannelScaleGuides(LayerGeometryProvider *v,
                 break;
 
             case MeterScale:
-                val = AudioLevel::dB_to_multiplier(meterdbs[i]) * gain;
+                val = AudioLevel::dB_to_voltage(meterdbs[i]) * gain;
                 break;
 
             case dBScale:
-                val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10) * gain;
+                val = AudioLevel::dB_to_voltage(-(10*n) + i * 10) * gain;
                 break;
             }
 
@@ -1323,8 +1322,8 @@ WaveformLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) cons
             max = double(imax)/10000;
         }
 
-        int db = int(AudioLevel::multiplier_to_dB(std::max(fabsf(range.min()),
-                                                           fabsf(range.max())))
+        int db = int(AudioLevel::voltage_to_dB(std::max(fabsf(range.min()),
+                                                        fabsf(range.max())))
                      * 100);
 
         if (!singleValue) {
@@ -1369,7 +1368,7 @@ WaveformLayer::getYForValue(const LayerGeometryProvider *v, double value, int ch
         break;
 
     case MeterScale:
-        vy = AudioLevel::multiplier_to_preview(value, m);
+        vy = int(dBscaleMeter(value, m));
         break;
 
     case dBScale:
@@ -1416,12 +1415,12 @@ WaveformLayer::getValueForY(const LayerGeometryProvider *v, int y, int &channel)
         break;
 
     case MeterScale:
-        value = AudioLevel::preview_to_multiplier(vy, m);
+        value = AudioLevel::fader_to_voltage(vy, m, AudioLevel::Scale::Preview);
         break;
 
     case dBScale:
         value = (-thresh * double(vy)) / m + thresh;
-        value = AudioLevel::dB_to_multiplier(value);
+        value = AudioLevel::dB_to_voltage(value);
         break;
     }
 
@@ -1440,11 +1439,11 @@ WaveformLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
         double thresh = m_dBMin;
         
         if (value > 0.0) {
-            value = 10.0 * log10(value);
+            value = AudioLevel::voltage_to_dB(value);
             if (value < thresh) value = thresh;
         } else value = thresh;
 
-        unit = "dBV";
+        unit = "dB";
 
     } else {
         unit = "V";
@@ -1476,12 +1475,11 @@ WaveformLayer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y
         else {
             if (v1 > v0) diff = v0 / v1;
             else diff = v1 / v0;
-
-            diff = 10.0 * log10(diff);
+            diff = AudioLevel::voltage_to_dB(diff);
             if (diff < thresh) diff = thresh;
         }
 
-        unit = "dBV";
+        unit = "dB";
 
     } else {
         diff = fabs(v1 - v0);
@@ -1554,7 +1552,7 @@ WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pain
                 break;
 
             case MeterScale:
-                val = AudioLevel::dB_to_multiplier(meterdbs[i]) * gain;
+                val = AudioLevel::dB_to_voltage(meterdbs[i]) * gain;
                 text = QString("%1").arg(meterdbs[i]);
                 if (i == n) text = tr("0dB");
                 if (i == 0) {
@@ -1564,7 +1562,7 @@ WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pain
                 break;
 
             case dBScale:
-                val = AudioLevel::dB_to_multiplier(-(10*n) + i * 10) * gain;
+                val = AudioLevel::dB_to_voltage(-(10*n) + i * 10) * gain;
                 text = QString("%1").arg(-(10*n) + i * 10);
                 if (i == n) text = tr("0dB");
                 if (i == 0) {
@@ -1708,7 +1706,7 @@ WaveformLayer::getVerticalZoomSteps(int &defaultStep) const
 int
 WaveformLayer::getCurrentVerticalZoomStep() const
 {
-    int val = int(lrint(log10(m_gain) * 20.0) + 50);
+    int val = int(round(AudioLevel::voltage_to_dB(m_gain) + 50));
     if (val < 0) val = 0;
     if (val > 100) val = 100;
     return val;
@@ -1717,6 +1715,6 @@ WaveformLayer::getCurrentVerticalZoomStep() const
 void
 WaveformLayer::setVerticalZoomStep(int step)
 {
-    setGain(powf(10, float(step - 50) / 20.f));
+    setGain(AudioLevel::dB_to_voltage(step - 50));
 }
 

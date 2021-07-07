@@ -316,6 +316,34 @@ SliceLayer::getScalePointForX(const LayerGeometryProvider *v,
     return p;
 }
 
+UnitDatabase::Quantity
+SliceLayer::getValueQuantity() const
+{
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    QString unit;
+    if (sliceableModel) {
+        unit = sliceableModel->getValueUnit();
+    }
+    return UnitDatabase::getUnitQuantity(unit);
+}
+
+AudioLevel::Quantity
+SliceLayer::getValueALQuantity() const
+{
+    // This is called by functions that have no use for
+    // UnitDatabase::Quantity::Other, because they have already
+    // decided they're doing dB somehow
+    
+    AudioLevel::Quantity quantity = AudioLevel::Quantity::RootPower;
+    UnitDatabase::Quantity uq = getValueQuantity();
+    switch (uq) {
+    case UnitDatabase::Quantity::Power: return AudioLevel::Quantity::Power;
+    case UnitDatabase::Quantity::RootPower: return AudioLevel::Quantity::RootPower;
+    case UnitDatabase::Quantity::Other: return AudioLevel::Quantity::RootPower;
+    }
+}
+
 double
 SliceLayer::getYForValue(const LayerGeometryProvider *v, double value, double &norm) const
 {
@@ -333,20 +361,28 @@ SliceLayer::getYForValue(const LayerGeometryProvider *v, double value, double &n
 
     if (h <= 0) return y;
 
+    AudioLevel::Quantity sort = getValueALQuantity();
+    
     switch (m_energyScale) {
 
     case dBScale:
     {
         double db = thresh;
-        if (value > 0.0) db = 10.0 * log10(fabs(value));
-        if (db < thresh) db = thresh;
+        if (value > 0.0) {
+            db = AudioLevel::quantity_to_dB(value, sort);
+        }
+        if (db < thresh) {
+            db = thresh;
+        }
         norm = (db - thresh) / -thresh;
         y = yorigin - (double(h) * norm);
         break;
     }
     
     case MeterScale:
-        y = AudioLevel::multiplier_to_preview(value, h);
+        y = AudioLevel::dB_to_fader
+            (AudioLevel::quantity_to_dB(value, sort), h,
+             AudioLevel::Scale::Preview);
         norm = double(y) / double(h);
         y = yorigin - y;
         break;
@@ -381,6 +417,8 @@ SliceLayer::getValueForY(const LayerGeometryProvider *v, double y) const
 
     if (h <= 0) return value;
 
+    AudioLevel::Quantity sort = getValueALQuantity();
+
     y = yorigin - y;
 
     switch (m_energyScale) {
@@ -388,12 +426,15 @@ SliceLayer::getValueForY(const LayerGeometryProvider *v, double y) const
     case dBScale:
     {
         double db = ((y / h) * -thresh) + thresh;
-        value = pow(10.0, db/10.0);
+        value = AudioLevel::dB_to_quantity(db, sort);
         break;
     }
 
     case MeterScale:
-        value = AudioLevel::preview_to_multiplier(int(lrint(y)), h);
+        value = AudioLevel::dB_to_quantity
+            (AudioLevel::fader_to_dB(int(round(y)), h,
+                                     AudioLevel::Scale::Preview),
+             sort);
         break;
 
     case LinearScale:
@@ -683,9 +724,11 @@ SliceLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint
 void
 SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const
 {
+    AudioLevel::Quantity sort = getValueALQuantity();
+
     double thresh = m_threshold;
     if (m_energyScale != LinearScale && m_energyScale != AbsoluteScale) {
-        thresh = AudioLevel::dB_to_multiplier(getThresholdDb());
+        thresh = AudioLevel::dB_to_quantity(getThresholdDb(), sort);
     }
     
 //    int h = (rect.height() * 3) / 4;
@@ -700,10 +743,17 @@ SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, 
 
     int mult = 1;
 
+    PaintAssistant::Scale pscale;
+    switch (m_energyScale) {
+    case LinearScale: default: pscale = PaintAssistant::LinearScale; break;
+    case MeterScale: pscale = PaintAssistant::MeterScale; break;
+    case dBScale: pscale = PaintAssistant::dBScale; break;
+    case AbsoluteScale: pscale = PaintAssistant::LinearScale; break;
+    }
+    
     PaintAssistant::paintVerticalLevelScale
         (paint, actual, thresh, 1.0 / m_gain,
-         PaintAssistant::Scale(m_energyScale),
-         mult,
+         pscale, sort, mult,
          const_cast<std::vector<int> *>(&m_scalePoints));
 
     // Ugly hack (but then everything about this scale drawing is a
@@ -808,6 +858,8 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
     if (!max) max = &garbage1;
     if (!deflt) deflt = &garbage2;
 
+    AudioLevel::Quantity sort = getValueALQuantity();
+
     if (name == "Gain") {
 
         *min = -50;
@@ -816,7 +868,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
 //        cerr << "gain is " << m_gain << ", mode is " << m_samplingMode << endl;
 
-        val = int(lrint(log10(m_gain) * 20.0));
+        val = int(round(AudioLevel::quantity_to_dB(m_gain, sort)));
         if (val < *min) val = *min;
         if (val > *max) val = *max;
 
@@ -825,11 +877,11 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
         *min = -80;
         *max = 0;
 
-        *deflt = int(lrint(AudioLevel::multiplier_to_dB(m_initialThreshold)));
+        *deflt = int(round(AudioLevel::quantity_to_dB(m_initialThreshold, sort)));
         if (*deflt < *min) *deflt = *min;
         if (*deflt > *max) *deflt = *max;
 
-        val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
+        val = int(lrint(AudioLevel::quantity_to_dB(m_threshold, sort)));
         if (val < *min) val = *min;
         if (val > *max) val = *max;
 
@@ -945,11 +997,13 @@ SliceLayer::getNewPropertyRangeMapper(const PropertyName &name) const
 void
 SliceLayer::setProperty(const PropertyName &name, int value)
 {
+    AudioLevel::Quantity sort = getValueALQuantity();
+
     if (name == "Gain") {
-        setGain(powf(10, float(value)/20.0f));
+        setGain(AudioLevel::dB_to_quantity(value, sort));
     } else if (name == "Threshold") {
         if (value == -80) setThreshold(0.0f);
-        else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
+        setThreshold(AudioLevel::dB_to_quantity(value, sort));
     } else if (name == "Colour" && usesSolidColour()) {
         setFillColourMap(value);
     } else if (name == "Scale") {
@@ -1055,8 +1109,9 @@ SliceLayer::setGain(float gain)
 float
 SliceLayer::getThresholdDb() const
 {
+    AudioLevel::Quantity sort = getValueALQuantity();
     if (m_threshold == 0.0) return -80.f;
-    float db = float(AudioLevel::multiplier_to_dB(m_threshold));
+    float db = float(AudioLevel::quantity_to_dB(m_threshold, sort));
     return db;
 }
 

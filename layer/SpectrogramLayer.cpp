@@ -204,8 +204,8 @@ SpectrogramLayer::convertToColourScale(int value)
     switch (value) {
     case 0: return { ColourScaleType::Linear, 1.0 };
     case 1: return { ColourScaleType::Meter, 1.0 };
-    case 2: return { ColourScaleType::Log, 2.0 }; // dB^2 (i.e. log of power)
-    case 3: return { ColourScaleType::Log, 1.0 }; // dB   (of magnitude)
+    case 2: return { ColourScaleType::Log, 2.0 };
+    case 3: return { ColourScaleType::Log, 1.0 };
     case 4: return { ColourScaleType::Phase, 1.0 };
     default: return { ColourScaleType::Linear, 1.0 };
     }
@@ -367,11 +367,11 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
         *min = -50;
         *max = 50;
 
-        *deflt = int(lrint(log10(m_initialGain) * 20.0));
-        if (*deflt < *min) *deflt = *min;
-        if (*deflt > *max) *deflt = *max;
+        *deflt = int(round(AudioLevel::voltage_to_dB(m_initialGain)));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
-        val = int(lrint(log10(m_gain) * 20.0));
+        val = int(round(AudioLevel::voltage_to_dB(m_gain)));
         if (val < *min) val = *min;
         if (val > *max) val = *max;
 
@@ -380,11 +380,11 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
         *min = -81;
         *max = -1;
 
-        *deflt = int(lrint(AudioLevel::multiplier_to_dB(m_initialThreshold)));
-        if (*deflt < *min) *deflt = *min;
-        if (*deflt > *max) *deflt = *max;
+        *deflt = int(round(AudioLevel::voltage_to_dB(m_initialThreshold)));
+        if (val < *min) val = *min;
+        if (val > *max) val = *max;
 
-        val = int(lrint(AudioLevel::multiplier_to_dB(m_threshold)));
+        val = int(round(AudioLevel::voltage_to_dB(m_threshold)));
         if (val < *min) val = *min;
         if (val > *max) val = *max;
 
@@ -520,8 +520,8 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
         default:
         case 0: return tr("Linear");
         case 1: return tr("Meter");
-        case 2: return tr("dBV^2");
-        case 3: return tr("dBV");
+        case 2: return tr("dB^2");
+        case 3: return tr("dB");
         case 4: return tr("Phase");
         }
     }
@@ -639,10 +639,10 @@ void
 SpectrogramLayer::setProperty(const PropertyName &name, int value)
 {
     if (name == "Gain") {
-        setGain(float(pow(10, float(value)/20.0)));
+        setGain(AudioLevel::dB_to_voltage(value));
     } else if (name == "Threshold") {
         if (value == -81) setThreshold(0.0);
-        else setThreshold(float(AudioLevel::dB_to_multiplier(value)));
+        else setThreshold(AudioLevel::dB_to_voltage(value));
     } else if (name == "Colour Rotation") {
         setColourRotation(value);
     } else if (name == "Colour") {
@@ -2134,8 +2134,8 @@ SpectrogramLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) c
     }   
 
     if (haveValues) {
-        double dbMin = AudioLevel::multiplier_to_dB(magMin);
-        double dbMax = AudioLevel::multiplier_to_dB(magMax);
+        double dbMin = AudioLevel::voltage_to_dB(magMin);
+        double dbMax = AudioLevel::voltage_to_dB(magMax);
         QString dbMinString;
         QString dbMaxString;
         if (dbMin == AudioLevel::DB_FLOOR) {
@@ -2315,8 +2315,8 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     if (min < m_threshold) min = m_threshold;
     if (max <= min) max = min + 0.1;
         
-    double dBmin = AudioLevel::multiplier_to_dB(min);
-    double dBmax = AudioLevel::multiplier_to_dB(max);
+    double dBmin = AudioLevel::voltage_to_dB(min);
+    double dBmax = AudioLevel::voltage_to_dB(max);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
     cerr << "paintVerticalScale: for view id " << v->getId()
@@ -2335,8 +2335,8 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
          << endl;
 #endif
         
-    paint.drawText((cw + 6 - paint.fontMetrics().width("dBFS")) / 2,
-                   2 + textHeight + toff, "dBFS");
+    paint.drawText((cw + 6 - paint.fontMetrics().width("dB")) / 2,
+                   2 + textHeight + toff, "dB");
 
     paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
                    2 + textHeight * topLines + toff + textHeight/2, top);
@@ -2355,7 +2355,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
         double dBval = dBmin + (((dBmax - dBmin) * i) / (ch - 1));
         int idb = int(dBval);
 
-        double value = AudioLevel::dB_to_multiplier(dBval);
+        double value = AudioLevel::dB_to_voltage(dBval);
         paint.setPen(getRenderer(v)->getColour(value));
 
         int y = textHeight * topLines + 4 + ch - i;
