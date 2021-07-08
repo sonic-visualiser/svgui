@@ -122,16 +122,16 @@ LevelPanWidget::clampPan(int pan) const
 int
 LevelPanWidget::audioLevelToNotch(float audioLevel) const
 {
-    int notch = AudioLevel::multiplier_to_fader
-        (audioLevel, m_maxNotch, AudioLevel::ShortFader);
+    int notch = AudioLevel::voltage_to_fader
+        (audioLevel, m_maxNotch, AudioLevel::Scale::Sigmoid);
     return clampNotch(notch);
 }
 
 float
 LevelPanWidget::notchToAudioLevel(int notch) const
 {
-    return float(AudioLevel::fader_to_multiplier
-                 (notch, m_maxNotch, AudioLevel::ShortFader));
+    return float(AudioLevel::fader_to_voltage
+                 (notch, m_maxNotch, AudioLevel::Scale::Sigmoid));
 }
 
 void

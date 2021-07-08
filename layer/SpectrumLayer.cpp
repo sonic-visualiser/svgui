@@ -466,11 +466,23 @@ SpectrumLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
                               double &value, QString &unit) const
 {
     value = getValueForY(v, y);
-
+    unit = "V";
+    
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (sliceableModel) {
+        unit = sliceableModel->getValueUnit();
+    }
+    
+    AudioLevel::Quantity sort = AudioLevel::Quantity::RootPower;
+    if (UnitDatabase::getUnitQuantity(unit) == UnitDatabase::Quantity::Power) {
+        sort = AudioLevel::Quantity::Power;
+    }
+    
     if (m_energyScale == dBScale || m_energyScale == MeterScale) {
 
         if (value > 0.0) {
-            value = 10.0 * log10(value);
+            value = AudioLevel::quantity_to_dB(value, sort);
             if (value < m_threshold) {
                 value = m_threshold;
             }
@@ -478,10 +490,7 @@ SpectrumLayer::getYScaleValue(const LayerGeometryProvider *v, int y,
             value = m_threshold;
         }
 
-        unit = "dBV";
-
-    } else {
-        unit = "V";
+        unit = "dB";
     }
 
     return true;
@@ -492,10 +501,8 @@ SpectrumLayer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y
                                    double &diff, QString &unit) const
 {
     bool rv = SliceLayer::getYScaleDifference(v, y0, y1, diff, unit);
-    if (rv && (unit == "dBV")) unit = "dB";
     return rv;
 }
-
 
 bool
 SpectrumLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
@@ -524,7 +531,7 @@ SpectrumLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
     extents.push_back(value);
 
     QRect log(sw, cursorPos.y() + 2,
-              paint.fontMetrics().width("-80.000 dBV") + 2,
+              paint.fontMetrics().width("-80.000 dB") + 2,
               paint.fontMetrics().height());
     extents.push_back(log);
 
@@ -596,12 +603,13 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
                        PaintAssistant::OutlinedText);
 
     if (value > m_threshold) {
-        double db = 10.0 * log10(value);
+        AudioLevel::Quantity sort = getValueALQuantity();
+        double db = AudioLevel::quantity_to_dB(value, sort);
         PaintAssistant::drawVisibleText(v, paint,
                                         xorigin + 2,
                                         cursorPos.y() + 2 +
                                         paint.fontMetrics().ascent(),
-                                        QString("%1 dBV").arg(db),
+                                        QString("%1 dB").arg(db),
                                         PaintAssistant::OutlinedText);
     }
     
@@ -685,8 +693,9 @@ SpectrumLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &p) const
     }
     
     QString dbstr;
-    double mindb = AudioLevel::multiplier_to_dB(minvalue);
-    double maxdb = AudioLevel::multiplier_to_dB(maxvalue);
+    AudioLevel::Quantity sort = getValueALQuantity();
+    double mindb = AudioLevel::quantity_to_dB(minvalue, sort);
+    double maxdb = AudioLevel::quantity_to_dB(maxvalue, sort);
     QString mindbstr;
     QString maxdbstr;
     if (mindb == AudioLevel::DB_FLOOR) {

@@ -19,6 +19,8 @@
 #include "SingleColourLayer.h"
 
 #include "base/Window.h"
+#include "base/UnitDatabase.h"
+#include "base/AudioLevel.h"
 
 #include "data/model/DenseThreeDimensionalModel.h"
 
@@ -63,7 +65,7 @@ public:
     void setProperties(const QXmlAttributes &) override;
 
     bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const override;
+                         bool &logarithmic, QString &unit) const override;
 
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
@@ -136,8 +138,8 @@ protected:
     double getScalePointForX(const LayerGeometryProvider *,
                              double x, double pmin, double pmax) const;
 
-    virtual double getYForValue(const LayerGeometryProvider *v, double value, double &norm) const;
-    virtual double getValueForY(const LayerGeometryProvider *v, double y) const;
+    double getYForValue(const LayerGeometryProvider *v, double value, double &norm) const;
+    double getValueForY(const LayerGeometryProvider *v, double y) const;
     
     virtual QString getFeatureDescriptionAux(LayerGeometryProvider *v, QPoint &,
                                              bool includeBinDescription,
@@ -152,6 +154,9 @@ protected:
 
     virtual float getThresholdDb() const;
 
+    UnitDatabase::Quantity getValueQuantity() const;
+    AudioLevel::Quantity getValueALQuantity() const;
+    
     int getDefaultColourHint(bool dark, bool &impose) override;
 
     // Determine how the bins are lined up

@@ -195,6 +195,7 @@ public:
 
 protected:
     double dBscale(double sample, int m) const;
+    double dBscaleMeter(double sample, int m) const;
 
     ModelId m_model; 
 
