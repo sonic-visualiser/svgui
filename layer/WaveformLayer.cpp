@@ -40,7 +40,7 @@
 using std::vector;
 
 double
-WaveformLayer::m_dBMin = -50.0;
+WaveformLayer::m_dBMin = -80.0;
 
 WaveformLayer::WaveformLayer() :
     SingleColourLayer(),
