@@ -44,7 +44,8 @@ TimeInstantLayer::TimeInstantLayer() :
     m_editing(false),
     m_editingPoint(0, tr("New Point")),
     m_editingCommand(nullptr),
-    m_plotStyle(PlotInstants)
+    m_plotStyle(PlotInstants),
+    m_propertiesExplicitlySet(false)
 {
 }
 
@@ -73,8 +74,10 @@ TimeInstantLayer::setModel(ModelId modelId)
 
     if (newModel) {
         connectSignals(m_model);
-        if (newModel->getRDFTypeURI().endsWith("Segment")) {
-            setPlotStyle(PlotSegmentation);
+        if (!m_propertiesExplicitlySet) {
+            if (newModel->getRDFTypeURI().endsWith("Segment")) {
+                setPlotStyle(PlotSegmentation);
+            }
         }
     }
 
@@ -892,5 +895,7 @@ TimeInstantLayer::setProperties(const QXmlAttributes &attributes)
     PlotStyle style = (PlotStyle)
         attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
+
+    m_propertiesExplicitlySet = true;
 }
 

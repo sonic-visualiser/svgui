@@ -158,6 +158,7 @@ protected:
     int m_colourMap;
     bool m_colourInverted;
     PlotStyle m_plotStyle;
+    bool m_propertiesExplicitlySet;
 
     typedef std::map<double, int> SpacingMap;
 

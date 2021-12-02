@@ -57,7 +57,8 @@ RegionLayer::RegionLayer() :
     m_verticalScale(EqualSpaced),
     m_colourMap(0),
     m_colourInverted(false),
-    m_plotStyle(PlotLines)
+    m_plotStyle(PlotLines),
+    m_propertiesExplicitlySet(false)
 {
     
 }
@@ -92,11 +93,13 @@ RegionLayer::setModel(ModelId modelId)
     
         recalcSpacing();
 
-        if (newModel->getRDFTypeURI().endsWith("Segment")) {
-            setPlotStyle(PlotSegmentation);
-        }
-        if (newModel->getRDFTypeURI().endsWith("Change")) {
-            setPlotStyle(PlotSegmentation);
+        if (!m_propertiesExplicitlySet) {
+            if (newModel->getRDFTypeURI().endsWith("Segment")) {
+                setPlotStyle(PlotSegmentation);
+            }
+            if (newModel->getRDFTypeURI().endsWith("Change")) {
+                setPlotStyle(PlotSegmentation);
+            }
         }
     }
     
@@ -1585,6 +1588,8 @@ RegionLayer::setProperties(const QXmlAttributes &attributes)
             setFillColourMap(colourMap);
         }
     }
+
+    m_propertiesExplicitlySet = true;
 }
 
 
