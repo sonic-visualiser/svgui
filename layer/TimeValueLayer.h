@@ -117,6 +117,9 @@ public:
     void setDrawSegmentDivisions(bool);
     bool getDrawSegmentDivisions() const { return m_drawSegmentDivisions; }
 
+    void setFillSegments(bool);
+    bool getFillSegments() const { return m_fillSegments; }
+
     void setShowDerivative(bool);
     bool getShowDerivative() const { return m_derivative; }
 
@@ -186,7 +189,9 @@ protected:
     PlotStyle m_plotStyle;
     VerticalScale m_verticalScale;
     bool m_drawSegmentDivisions;
+    bool m_fillSegments;
     bool m_derivative;
+    bool m_propertiesExplicitlySet;
 
     mutable double m_scaleMinimum;
     mutable double m_scaleMaximum;
