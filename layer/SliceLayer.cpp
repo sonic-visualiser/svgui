@@ -335,13 +335,13 @@ SliceLayer::getValueALQuantity() const
     // UnitDatabase::Quantity::Other, because they have already
     // decided they're doing dB somehow
     
-    AudioLevel::Quantity quantity = AudioLevel::Quantity::RootPower;
     UnitDatabase::Quantity uq = getValueQuantity();
     switch (uq) {
     case UnitDatabase::Quantity::Power: return AudioLevel::Quantity::Power;
     case UnitDatabase::Quantity::RootPower: return AudioLevel::Quantity::RootPower;
     case UnitDatabase::Quantity::Other: return AudioLevel::Quantity::RootPower;
     }
+    return AudioLevel::Quantity::RootPower;
 }
 
 double
@@ -541,9 +541,13 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     getBiasCurve(curve);
     int cs = int(curve.size());
 
+    int modelWidth = sliceableModel->getWidth();
+    
     for (int col = col0; col <= col1; ++col) {
+        if (col >= modelWidth) break;
         DenseThreeDimensionalModel::Column column =
             sliceableModel->getColumn(col);
+        if (column.size() == 0) continue;
         for (int bin = 0; bin < mh; ++bin) {
             float value = column[bin0 + bin];
             if (bin < cs) value *= curve[bin];
