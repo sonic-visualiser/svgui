@@ -46,6 +46,7 @@ WaveformLayer::WaveformLayer() :
     SingleColourLayer(),
     m_gain(1.0f),
     m_autoNormalize(false),
+    m_oversampling(true),
     m_showMeans(true),
     m_channelMode(SeparateChannels),
     m_channel(-1),
@@ -119,6 +120,7 @@ WaveformLayer::getProperties() const
     list.push_back("Scale");
     list.push_back("Gain");
     list.push_back("Normalize Visible Area");
+    list.push_back("Show Oversampling");
     if (m_channelCount > 1 && m_channel == -1) {
         list.push_back("Channels");
     }
@@ -132,6 +134,7 @@ WaveformLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Scale") return tr("Scale");
     if (name == "Gain") return tr("Gain");
     if (name == "Normalize Visible Area") return tr("Normalize Visible Area");
+    if (name == "Show Oversampling") return tr("Interpolate");
     if (name == "Channels") return tr("Channels");
     return SingleColourLayer::getPropertyLabel(name);
 }
@@ -140,6 +143,7 @@ QString
 WaveformLayer::getPropertyIconName(const PropertyName &name) const
 {
     if (name == "Normalize Visible Area") return "normalise";
+    if (name == "Show Oversampling") return "interpolate";
     return "";
 }
 
@@ -148,6 +152,7 @@ WaveformLayer::getPropertyType(const PropertyName &name) const
 {
     if (name == "Gain") return RangeProperty;
     if (name == "Normalize Visible Area") return ToggleProperty;
+    if (name == "Show Oversampling") return ToggleProperty;
     if (name == "Channels") return ValueProperty;
     if (name == "Scale") return ValueProperty;
     return SingleColourLayer::getPropertyType(name);
@@ -158,6 +163,7 @@ WaveformLayer::getPropertyGroupName(const PropertyName &name) const
 {
     if (name == "Gain" ||
         name == "Normalize Visible Area" ||
+        name == "Show Oversampling" ||
         name == "Scale") return tr("Scale");
     return QString();
 }
@@ -187,6 +193,11 @@ WaveformLayer::getPropertyRangeAndValue(const PropertyName &name,
 
         val = (m_autoNormalize ? 1 : 0);
         *deflt = 0;
+
+    } else if (name == "Show Oversampling") {
+
+        val = (m_oversampling ? 1 : 0);
+        *deflt = 1;
 
     } else if (name == "Channels") {
 
@@ -251,6 +262,8 @@ WaveformLayer::setProperty(const PropertyName &name, int value)
         setGain(AudioLevel::dB_to_voltage(value));
     } else if (name == "Normalize Visible Area") {
         setAutoNormalize(value ? true : false);
+    } else if (name == "Show Oversampling") {
+        setShowOversampledLines(value ? true : false);
     } else if (name == "Channels") {
         if (value == 1) setChannelMode(MixChannels);
         else if (value == 2) setChannelMode(MergeChannels);
@@ -282,6 +295,15 @@ WaveformLayer::setAutoNormalize(bool autoNormalize)
 {
     if (m_autoNormalize == autoNormalize) return;
     m_autoNormalize = autoNormalize;
+    m_cacheValid = false;
+    emit layerParametersChanged();
+}
+
+void
+WaveformLayer::setShowOversampledLines(bool oversample)
+{
+    if (m_oversampling == oversample) return;
+    m_oversampling = oversample;
     m_cacheValid = false;
     emit layerParametersChanged();
 }
@@ -834,6 +856,7 @@ WaveformLayer::getOversampledRanges(int minChannel, int maxChannel,
         for (float v: oversampled) {
             RangeSummarisableTimeValueModel::Range r;
             r.sample(v);
+            r.setAbsmean(fabsf(v));
             rr.push_back(r);
         }
         ranges.push_back(rr);
@@ -1157,21 +1180,26 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
     } else {
         paint->setPen(QPen(midColour, penWidth));
     }
-    paint->drawPath(waveformPath);
 
-    if (!clipPath.isEmpty()) {
-        paint->save();
-        paint->setPen(QPen(ColourDatabase::getInstance()->
-                           getContrastingColour(m_colour), penWidth));
-        paint->drawPath(clipPath);
-        paint->restore();
-    }
+    if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel ||
+        m_oversampling) {
+        
+        paint->drawPath(waveformPath);
 
-    if (!meanPath.isEmpty()) {
-        paint->save();
-        paint->setPen(QPen(midColour, penWidth));
-        paint->drawPath(meanPath);
-        paint->restore();
+        if (!clipPath.isEmpty()) {
+            paint->save();
+            paint->setPen(QPen(ColourDatabase::getInstance()->
+                               getContrastingColour(m_colour), penWidth));
+            paint->drawPath(clipPath);
+            paint->restore();
+        }
+
+        if (!meanPath.isEmpty()) {
+            paint->save();
+            paint->setPen(QPen(midColour, penWidth));
+            paint->drawPath(meanPath);
+            paint->restore();
+        }
     }
     
     if (!individualSamplePoints.empty()) {
@@ -1645,7 +1673,7 @@ WaveformLayer::toXml(QTextStream &stream,
                  "scale=\"%6\" "
                  "middleLineHeight=\"%7\" "
                  "aggressive=\"%8\" "
-                 "autoNormalize=\"%9\"")
+                 "%9")
         .arg(m_gain)
         .arg(m_showMeans)
         .arg(true) // Option removed, but effectively always on, so
@@ -1655,7 +1683,10 @@ WaveformLayer::toXml(QTextStream &stream,
         .arg(m_scale)
         .arg(m_middleLineHeight)
         .arg(m_aggressive)
-        .arg(m_autoNormalize);
+        .arg(QString("autoNormalize=\"%1\" "
+                     "oversampling=\"%2\"")
+             .arg(m_autoNormalize)
+             .arg(m_oversampling));
 
     SingleColourLayer::toXml(stream, indent, extraAttributes + " " + s);
 }
@@ -1694,6 +1725,11 @@ WaveformLayer::setProperties(const QXmlAttributes &attributes)
     bool autoNormalize = (attributes.value("autoNormalize") == "1" ||
                           attributes.value("autoNormalize") == "true");
     setAutoNormalize(autoNormalize);
+
+    bool oversampling = (attributes.value("oversampling") == "" ||
+                         attributes.value("oversampling") == "1" ||
+                         attributes.value("oversampling") == "true");
+    setShowOversampledLines(oversampling);
 }
 
 int
