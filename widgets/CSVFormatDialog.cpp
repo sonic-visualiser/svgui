@@ -29,6 +29,7 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 #include <QCheckBox>
+#include <QSettings>
 
 #include <iostream>
 #include <cmath>
@@ -60,6 +61,12 @@ CSVFormatDialog::CSVFormatDialog(QWidget *parent,
 {
     m_format = CSVFormat(csvFilePath);
     m_format.setSampleRate(referenceSampleRate);
+
+    QSettings settings;
+    settings.beginGroup("CSVImport");
+    m_format.setIncrement(settings.value("last-increment", 1024).toInt());
+    settings.endGroup();
+    
     init();
 }
 
@@ -165,21 +172,21 @@ CSVFormatDialog::init()
     connect(m_sampleRateCombo, SIGNAL(editTextChanged(QString)),
             this, SLOT(sampleRateChanged(QString)));
 
-    m_windowSizeLabel = new QLabel(tr("Frame increment between rows:"));
-    layout->addWidget(m_windowSizeLabel, row, 0);
+    m_incrementLabel = new QLabel(tr("Frame increment between rows:"));
+    layout->addWidget(m_incrementLabel, row, 0);
     
-    m_windowSizeCombo = new QComboBox;
+    m_incrementCombo = new QComboBox;
     for (int i = 0; i <= 16; ++i) {
         int value = 1 << i;
-        m_windowSizeCombo->addItem(QString("%1").arg(value));
+        m_incrementCombo->addItem(QString("%1").arg(value));
     }
-    m_windowSizeCombo->setEditable(true);
+    m_incrementCombo->setEditable(true);
     
-    layout->addWidget(m_windowSizeCombo, row++, 1);
-    connect(m_windowSizeCombo, SIGNAL(activated(QString)),
-            this, SLOT(windowSizeChanged(QString)));
-    connect(m_windowSizeCombo, SIGNAL(editTextChanged(QString)),
-            this, SLOT(windowSizeChanged(QString)));
+    layout->addWidget(m_incrementCombo, row++, 1);
+    connect(m_incrementCombo, SIGNAL(activated(QString)),
+            this, SLOT(incrementChanged(QString)));
+    connect(m_incrementCombo, SIGNAL(editTextChanged(QString)),
+            this, SLOT(incrementChanged(QString)));
 
     m_modelLabel = new QLabel;
     QFont f(m_modelLabel->font());
@@ -190,12 +197,23 @@ CSVFormatDialog::init()
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                 QDialogButtonBox::Cancel);
     layout->addWidget(bb, row++, 0, 1, 4);
-    connect(bb, SIGNAL(accepted()), this, SLOT(accept()));
+    connect(bb, SIGNAL(accepted()), this, SLOT(accepted()));
     connect(bb, SIGNAL(rejected()), this, SLOT(reject()));
 
     setLayout(layout);
 
     repopulate();
+}
+
+void
+CSVFormatDialog::accepted()
+{
+    QSettings settings;
+    settings.beginGroup("CSVImport");
+    settings.setValue("last-increment", int(m_format.getIncrement()));
+    settings.endGroup();
+
+    accept();
 }
 
 void
@@ -310,8 +328,8 @@ CSVFormatDialog::repopulate()
     
     for (int i = 0; i <= 16; ++i) {
         int value = 1 << i;
-        if (value == int(m_format.getWindowSize())) {
-            m_windowSizeCombo->setCurrentIndex(i);
+        if (value == int(m_format.getIncrement())) {
+            m_incrementCombo->setCurrentIndex(i);
         }
     }
 
@@ -414,8 +432,8 @@ CSVFormatDialog::updateComboVisibility()
     m_sampleRateCombo->setEnabled(wantRate);
     m_sampleRateLabel->setEnabled(wantRate);
 
-    m_windowSizeCombo->setEnabled(wantWindow);
-    m_windowSizeLabel->setEnabled(wantWindow);
+    m_incrementCombo->setEnabled(wantWindow);
+    m_incrementLabel->setEnabled(wantWindow);
 }
 
 void
@@ -470,11 +488,11 @@ CSVFormatDialog::sampleRateChanged(QString rateString)
 }
 
 void
-CSVFormatDialog::windowSizeChanged(QString sizeString)
+CSVFormatDialog::incrementChanged(QString sizeString)
 {
     bool ok = false;
     int size = sizeString.toInt(&ok);
-    if (ok) m_format.setWindowSize(size);
+    if (ok) m_format.setIncrement(size);
 }
 
 void
