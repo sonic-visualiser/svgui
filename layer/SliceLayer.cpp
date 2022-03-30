@@ -720,7 +720,8 @@ SliceLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint
         width = std::max(paint.fontMetrics().width("0.0") + 13,
                          paint.fontMetrics().width("x10-10"));
     } else {
-        width = std::max(paint.fontMetrics().width(tr("0dB")),
+        width = std::max(std::max(paint.fontMetrics().width(tr("0dB")),
+                                  paint.fontMetrics().width(tr("-160"))),
                          paint.fontMetrics().width(tr("-Inf"))) + 13;
     }
     return width;
@@ -879,7 +880,7 @@ SliceLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == "Threshold") {
         
-        *min = -80;
+        *min = getMinThresholdDb();
         *max = 0;
 
         *deflt = int(round(AudioLevel::quantity_to_dB(m_initialThreshold, sort)));
@@ -994,7 +995,8 @@ SliceLayer::getNewPropertyRangeMapper(const PropertyName &name) const
         return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
     }
     if (name == "Threshold") {
-        return new LinearRangeMapper(-80, 0, -80, 0, tr("dB"));
+        float min = getMinThresholdDb();
+        return new LinearRangeMapper(min, 0, min, 0, tr("dB"));
     }
     return SingleColourLayer::getNewPropertyRangeMapper(name);
 }
@@ -1007,7 +1009,7 @@ SliceLayer::setProperty(const PropertyName &name, int value)
     if (name == "Gain") {
         setGain(AudioLevel::dB_to_quantity(value, sort));
     } else if (name == "Threshold") {
-        if (value == -80) setThreshold(0.0f);
+        if (value <= getMinThresholdDb()) setThreshold(0.0f);
         setThreshold(AudioLevel::dB_to_quantity(value, sort));
     } else if (name == "Colour" && usesSolidColour()) {
         setFillColourMap(value);
@@ -1112,12 +1114,26 @@ SliceLayer::setGain(float gain)
 }
 
 float
+SliceLayer::getMinThresholdDb() const
+{
+    AudioLevel::Quantity sort = getValueALQuantity();
+    if (sort == AudioLevel::Quantity::Power) {
+        return -80.f;
+    } else {
+        return -160.f;
+    }
+}
+
+float
 SliceLayer::getThresholdDb() const
 {
     AudioLevel::Quantity sort = getValueALQuantity();
-    if (m_threshold == 0.0) return -80.f;
-    float db = float(AudioLevel::quantity_to_dB(m_threshold, sort));
-    return db;
+    if (m_threshold == 0.0) {
+        return getMinThresholdDb();
+    } else {
+        float db = float(AudioLevel::quantity_to_dB(m_threshold, sort));
+        return db;
+    }
 }
 
 int

@@ -153,6 +153,7 @@ protected:
     virtual void getBiasCurve(BiasCurve &) const { return; }
 
     virtual float getThresholdDb() const;
+    virtual float getMinThresholdDb() const;
 
     UnitDatabase::Quantity getValueQuantity() const;
     AudioLevel::Quantity getValueALQuantity() const;

@@ -87,14 +87,17 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
             break;
 
         case dBScale: // ... min, max
-            val = AudioLevel::dB_to_quantity(-(10*n) + i * 10, sort);
-            text = QString("%1").arg(-(10*n) + i * 10);
+        {   double step = (sort == AudioLevel::Quantity::Power ? 10 : 20);
+            double dB = -(step * n) + i * step;
+            val = AudioLevel::dB_to_quantity(dB, sort);
+            text = QString("%1").arg(dB);
             if (i == n) text = "0dB";
             if (i == 0) {
                 text = Strings::minus_infinity;
                 val = 0.0;
             }
             break;
+        }
         }
 
         if (val < minVal || val > maxVal) continue;
