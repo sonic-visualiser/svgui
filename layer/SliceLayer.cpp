@@ -544,6 +544,7 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     int modelWidth = sliceableModel->getWidth();
     
     for (int col = col0; col <= col1; ++col) {
+        if (col < 0) continue;
         if (col >= modelWidth) break;
         DenseThreeDimensionalModel::Column column =
             sliceableModel->getColumn(col);
