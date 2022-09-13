@@ -195,6 +195,7 @@ protected:
     mutable std::map<int, int>  m_xorigins; // LayerGeometryProvider id -> x
     mutable std::map<int, int>  m_yorigins; // LayerGeometryProvider id -> y
     mutable std::map<int, int>  m_heights;  // LayerGeometryProvider id -> h
+    mutable int                 m_cachedScaleFactor;
     mutable sv_frame_t          m_currentf0;
     mutable sv_frame_t          m_currentf1;
     mutable std::vector<float>  m_values;

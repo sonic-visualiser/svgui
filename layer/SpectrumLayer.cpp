@@ -570,6 +570,11 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     paint.setPen(mapper.getContrastingColour());
 
     int xorigin = m_xorigins[v->getId()];
+
+    if (v->getScaleFactor() != m_cachedScaleFactor) {
+        xorigin = (xorigin * v->getScaleFactor()) / m_cachedScaleFactor;
+    }
+    
     paint.drawLine(xorigin, cursorPos.y(), v->getPaintWidth(), cursorPos.y());
     paint.drawLine(cursorPos.x(), cursorPos.y(), cursorPos.x(), v->getPaintHeight());
     
@@ -597,10 +602,10 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     double value = getValueForY(v, cursorPos.y());
 
     PaintAssistant::drawVisibleText(v, paint,
-                       xorigin + 2,
-                       cursorPos.y() - 2,
-                       QString("%1 V").arg(value),
-                       PaintAssistant::OutlinedText);
+                                    xorigin + 2,
+                                    cursorPos.y() - 2,
+                                    QString("%1 V").arg(value),
+                                    PaintAssistant::OutlinedText);
 
     if (value > m_threshold) {
         AudioLevel::Quantity sort = getValueALQuantity();

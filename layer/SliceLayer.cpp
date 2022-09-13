@@ -45,6 +45,7 @@ SliceLayer::SliceLayer() :
     m_gain(1.0),
     m_minbin(0),
     m_maxbin(0),
+    m_cachedScaleFactor(1),
     m_currentf0(0),
     m_currentf1(0)
 {
@@ -200,6 +201,11 @@ SliceLayer::getXForScalePoint(const LayerGeometryProvider *v,
 
     int pw = v->getPaintWidth();
     int origin = m_xorigins[v->getId()];
+
+    if (v->getScaleFactor() != m_cachedScaleFactor) {
+        origin = (origin * v->getScaleFactor()) / m_cachedScaleFactor;
+    }
+    
     int w = pw - origin;
     if (w < 1) w = 1;
 
@@ -275,6 +281,10 @@ SliceLayer::getScalePointForX(const LayerGeometryProvider *v,
 
     int pw = v->getPaintWidth();
     int origin = m_xorigins[v->getId()];
+
+    if (v->getScaleFactor() != m_cachedScaleFactor) {
+        origin = (origin * v->getScaleFactor()) / m_cachedScaleFactor;
+    }
 
     int w = pw - origin;
     if (w < 1) w = 1;
@@ -355,6 +365,12 @@ SliceLayer::getYForValue(const LayerGeometryProvider *v, double value, double &n
 
     int yorigin = m_yorigins[v->getId()];
     int h = m_heights[v->getId()];
+
+    if (v->getScaleFactor() != m_cachedScaleFactor) {
+        yorigin = (yorigin * v->getScaleFactor()) / m_cachedScaleFactor;
+        h = (h * v->getScaleFactor()) / m_cachedScaleFactor;
+    }
+    
     double thresh = getThresholdDb();
 
     double y = 0.0;
@@ -413,6 +429,12 @@ SliceLayer::getValueForY(const LayerGeometryProvider *v, double y) const
 
     int yorigin = m_yorigins[v->getId()];
     int h = m_heights[v->getId()];
+
+    if (v->getScaleFactor() != m_cachedScaleFactor) {
+        yorigin = (yorigin * v->getScaleFactor()) / m_cachedScaleFactor;
+        h = (h * v->getScaleFactor()) / m_cachedScaleFactor;
+    }
+
     double thresh = getThresholdDb();
 
     if (h <= 0) return value;
@@ -497,14 +519,21 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     int xorigin = getVerticalScaleWidth(v, true, paint) + 1;
     m_xorigins[v->getId()] = xorigin; // for use in getFeatureDescription
-    
+
+/* comment out while testing simpler variant below, to try to
+ * understand why the crosshair coords are wrong
+
     int yorigin = v->getPaintHeight() - getHorizontalScaleHeight(v, paint) -
         paint.fontMetrics().height();
     int h = yorigin - paint.fontMetrics().height() - 8;
-
+*/
+    int yorigin = v->getPaintHeight() - v->scalePixelSize(35);
+    int h = yorigin - v->scalePixelSize(20);
+    
     m_yorigins[v->getId()] = yorigin; // for getYForValue etc
     m_heights[v->getId()] = h;
-
+    m_cachedScaleFactor = v->getScaleFactor();
+    
     if (h <= 0) return;
 
     QPainterPath path;
