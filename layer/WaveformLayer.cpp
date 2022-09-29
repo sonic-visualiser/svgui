@@ -20,6 +20,7 @@
 #include "base/Profiler.h"
 #include "base/RangeMapper.h"
 #include "base/Strings.h"
+#include "base/ScaleTickIntervals.h"
 
 #include "ColourDatabase.h"
 #include "PaintAssistant.h"
@@ -1526,7 +1527,21 @@ WaveformLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &pa
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
     if (m_scale == LinearScale) {
-        return paint.fontMetrics().width("0.0") + 13;
+        QString sampleText = "0.0";
+        if (m_gain != 1.f) {
+            std::cerr << "gain = " << m_gain << std::endl;
+            int n = int(ceil(log10(m_gain)));
+            std::cerr << "n = " << n << std::endl;
+            if (n > 2) {
+                sampleText = "0.0e+00";
+            } else {
+                while (n > 0) {
+                    sampleText += "0";
+                    --n;
+                }
+            }
+        }
+        return paint.fontMetrics().width(sampleText) + 13;
     } else {
         return std::max(paint.fontMetrics().width(tr("0dB")),
                         paint.fontMetrics().width(Strings::minus_infinity)) + 13;
@@ -1554,14 +1569,19 @@ WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pain
 
     double gain = m_gain;
 
+    int n = 10;
+
+    std::vector<ScaleTickIntervals::Tick> linearTicks;
+    if (m_scale == LinearScale) {
+        linearTicks = ScaleTickIntervals::linear({ 0.0, 1.0 / gain, n });
+    }
+
     for (int ch = minChannel; ch <= maxChannel; ++ch) {
 
         int lastLabelledY = -1;
 
         if (ch < (int)m_effectiveGains.size()) gain = m_effectiveGains[ch];
-
-        int n = 10;
-
+        
         for (int i = 0; i <= n; ++i) {
 
             double val = 0.0, nval = 0.0;
@@ -1570,13 +1590,27 @@ WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pain
             switch (m_scale) {
                 
             case LinearScale:
-                val = (i * gain) / n;
-                text = QString("%1").arg(double(i) / n);
-                if (i == 0) text = "0.0";
-                else {
-                    nval = -val;
-                    if (i == n) text = "1.0";
+                if (in_range_for(linearTicks, i)) {
+                    val = linearTicks[i].value * gain;
+                    text = QString::fromUtf8(linearTicks[i].label.c_str());
+                    if (i != 0) {
+                        nval = -val;
+                    }
+                } else {
+                    val = linearTicks[0].value * gain;
+                    text = QString::fromUtf8(linearTicks[0].label.c_str());
                 }
+                    
+                /*
+                val = double(i) / n;
+                text = QString("%1").arg(double(i) / (gain * n), 0, 'g', 2);
+//                if (i == 0) text = "0.0";
+//                else {
+                if (i != 0) {
+                    nval = -val;
+//                    if (i == n) text = "1.0";
+                }
+                */
                 break;
 
             case MeterScale:
@@ -1627,7 +1661,9 @@ WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pain
                 } else {
                     ty += toff;
                 }
-                paint.drawText(tx, ty, text);
+                if (!(i == n && ch > 0)) {
+                    paint.drawText(tx, ty, text);
+                }
 
                 lastLabelledY = ty - toff;
 
