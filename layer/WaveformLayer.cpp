@@ -1529,9 +1529,7 @@ WaveformLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &pa
     if (m_scale == LinearScale) {
         QString sampleText = "0.0";
         if (m_gain != 1.f) {
-            std::cerr << "gain = " << m_gain << std::endl;
             int n = int(ceil(log10(m_gain)));
-            std::cerr << "n = " << n << std::endl;
             if (n > 2) {
                 sampleText = "0.0e+00";
             } else {
