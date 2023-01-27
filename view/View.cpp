@@ -1338,7 +1338,18 @@ View::movePlayPointer(sv_frame_t newFrame)
         } else {
 
             int xold = getXForFrame(oldPlayPointerFrame);
-            update(xold - 4, 0, 9, height());
+
+            // Update the area a little to the left of the old
+            // pointer, in case the repaint does a poor job of
+            // identifying e.g. tail ends of labels that started to
+            // the left of it and which would be erased otherwise. (As
+            // it does seem to.)
+            //
+            // Previously we had lagWidth effectively hardcoded as 4.
+            // 
+            int lagWidth = 60;
+            update(xold < lagWidth ? 0 : xold - lagWidth, 0,
+                   lagWidth + 5, height());
 
             sv_frame_t w = getEndFrame() - getStartFrame();
             w -= w/5;
@@ -1391,7 +1402,8 @@ View::movePlayPointer(sv_frame_t newFrame)
                 bool changed = setCentreFrame(newCentre, false);
                 if (changed) {
                     xold = getXForFrame(oldPlayPointerFrame);
-                    update(xold - 4, 0, 9, height());
+                    update(xold < lagWidth ? 0 : xold - lagWidth, 0,
+                           lagWidth + 5, height());
                 }
             }
 
