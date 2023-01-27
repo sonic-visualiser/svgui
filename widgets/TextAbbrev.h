@@ -18,6 +18,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <set>
 
 class QFontMetrics;
 
@@ -101,7 +102,7 @@ protected:
                                      const QFontMetrics &metrics,
                                      int targetWidthReduction,
                                      QString ellipsis);
-    static int getPrefixLength(const QStringList &texts);
+    static std::set<QString> getCommonPrefixes(const QStringList &texts);
 };
 
 #endif

@@ -1013,7 +1013,8 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     }
 
     int maxTextWidth = width() / 3;
-    texts = TextAbbrev::abbreviate(texts, paint.fontMetrics(), maxTextWidth);
+    texts = TextAbbrev::abbreviate(texts, paint.fontMetrics(), maxTextWidth,
+                                   TextAbbrev::ElideEndAndCommonPrefixes);
 
     int llx = width() - maxTextWidth - 5;
     if (m_manager->getZoomWheelsEnabled()) {
