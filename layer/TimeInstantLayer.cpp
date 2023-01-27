@@ -473,28 +473,34 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         }
 
         paint.setPen(getBaseQColor());
+
+        QString label = p.getLabel();
         
-        if (p.getLabel() != "") {
+        if (label != "") {
+
+            // Handle labels with newlines in them properly, by
+            // querying (and also drawing with, in PaintAssistant) a
+            // bounding rect rather than using drawText to draw a
+            // single line only
             
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            QRectF boundingRect = paint.boundingRect
+                (QRectF(), Qt::AlignTop | Qt::AlignLeft, label);
 
             // only draw if there's enough room from here to the next point
 
-            int lw = paint.fontMetrics().width(p.getLabel());
             bool good = true;
 
             if (j != points.end()) {
                 int nx = v->getXForFrame(j->getFrame());
-                if (nx >= x && nx - x - iw - 3 <= lw) good = false;
+                if (nx >= x && nx - x - iw - 3 <= boundingRect.width()) {
+                    good = false;
+                }
             }
 
             if (good) {
                 PaintAssistant::drawVisibleText(v, paint,
                                                 x + iw + 2, textY,
-                                                p.getLabel(),
+                                                label,
                                                 PaintAssistant::OutlinedText);
             }
         }
