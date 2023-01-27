@@ -852,8 +852,11 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
 //    Profiler profiler("RegionLayer::paint", true);
 
-    int x0 = rect.left() - 40;
-    int x1 = x0 + rect.width() + 80;
+    // Allow margin so as to improve our odds of repainting the heads
+    // or tails of labels
+    int margin = 100;
+    int x0 = (rect.left() < margin) ? 0 : (rect.left() - margin);
+    int x1 = rect.left() + rect.width() + margin;
 
     sv_frame_t wholeFrame0 = v->getFrameForX(0);
     sv_frame_t wholeFrame1 = v->getFrameForX(v->getPaintWidth());

@@ -2473,7 +2473,12 @@ View::paintEvent(QPaintEvent *e)
     }
 
     setPaintFont(paint);
-    paint.setClipRect(areaToPaint);
+
+    // This clipping is not a good idea I think - layers often
+    // intentionally paint outside the lines a little because they
+    // don't have a very precise idea about e.g. parts of text labels
+    // which overlay an area
+//    paint.setClipRect(areaToPaint);
 
     paint.setPen(getBackground());
     paint.setBrush(getBackground());
