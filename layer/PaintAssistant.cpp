@@ -224,12 +224,19 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
         boxColour = surroundColour;
         boxColour.setAlpha(127);
 
+        QRectF boundingRect = paint.boundingRect
+            (QRectF(), Qt::AlignTop | Qt::AlignLeft, text);
+
+        QRectF textRect = boundingRect.translated
+            (QPointF(x, y - paint.fontMetrics().ascent()));
+
+        QRectF boxRect(textRect.x() - 2, textRect.y() - 2,
+                       textRect.width() + 4, textRect.height() + 4);
+
         paint.setPen(Qt::NoPen);
         paint.setBrush(boxColour);
         
-        QRect r = paint.fontMetrics().boundingRect(text);
-        r.translate(QPoint(x, y));
-        paint.drawRect(r);
+        paint.drawRect(boxRect);
         paint.setBrush(Qt::NoBrush);
 
         paint.setPen(surroundColour);
@@ -237,13 +244,17 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
         for (int dx = -1; dx <= 1; ++dx) {
             for (int dy = -1; dy <= 1; ++dy) {
                 if (!(dx || dy)) continue;
-                paint.drawText(x + dx, y + dy, text);
+                paint.drawText(textRect.translated(QPointF(dx, dy)),
+                               Qt::AlignTop | Qt::AlignLeft,
+                               text);
             }
         }
 
         paint.setPen(penColour);
 
-        paint.drawText(x, y, text);
+        paint.drawText(textRect,
+                       Qt::AlignTop | Qt::AlignLeft,
+                       text);
 
         paint.restore();
 
