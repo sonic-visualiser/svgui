@@ -946,7 +946,8 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             if (shouldIlluminate && illuminatePoint == p) {
                 paint.setPen(thickForegroundPen);
             } else {
-                paint.setPen(thinForegroundPen);
+                // may be even thinner than thinForegroundPen
+                paint.setPen(QPen(getForegroundQColor(v->getView()), 1));
             }
             paint.setBrush(getColourForValue(v, p.getValue()));
 
