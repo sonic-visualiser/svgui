@@ -1030,6 +1030,10 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     
     sv_frame_t prevFrame = 0;
 
+    bool clippingRequired = (m_plotStyle == PlotSegmentation);
+    paint.setClipRect(rect);
+    paint.setClipping(clippingRequired);
+
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
@@ -1232,6 +1236,8 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
         if (v->shouldShowFeatureLabels()) {
 
+            paint.setClipping(false);
+            
             QString label = p.getLabel();
             bool italic = false;
 
@@ -1265,6 +1271,8 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                          PaintAssistant::OutlinedText);
                 }
             }
+
+            paint.setClipping(clippingRequired);
         }
 
         prevFrame = p.getFrame();

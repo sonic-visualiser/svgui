@@ -907,6 +907,10 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     int barHeight = v->scalePixelSize(7);
     bool barHeightTweaked = false;
+
+    bool clippingRequired = (m_plotStyle == PlotSegmentation);
+    paint.setClipRect(rect);
+    paint.setClipping(clippingRequired);
     
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -957,6 +961,8 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
             if (shouldIlluminate && illuminatePoint == p) {
 
+                paint.setClipping(false);
+                
                 paint.setPen(thinForegroundPen);
                 paint.setBrush(v->getForeground());
 
@@ -979,6 +985,8 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                      x, y - barHeight/2 - paint.fontMetrics().descent() - gap,
                      hlabel, PaintAssistant::OutlinedText);
 
+                paint.setClipping(clippingRequired);
+                
             } else {
                 paint.setPen(basePen);
                 paint.setBrush(brushColour);
@@ -996,6 +1004,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
     int lastLabelY = 0;
 
     paint.setPen(thinForegroundPen);
+    paint.setClipping(false);
     
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {

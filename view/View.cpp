@@ -2477,7 +2477,9 @@ View::paintEvent(QPaintEvent *e)
     // This clipping is not a good idea I think - layers often
     // intentionally paint outside the lines a little because they
     // don't have a very precise idea about e.g. parts of text labels
-    // which overlay an area
+    // which overlay an area. We pass areaToPaint to the paint
+    // function anyway, so if clipping matters to it, it should enable
+    // it itself
 //    paint.setClipRect(areaToPaint);
 
     paint.setPen(getBackground());
