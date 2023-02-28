@@ -397,6 +397,10 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         
     int prevX = -1;
     int textY = v->getTextLabelYCoord(this, paint);
+
+    bool clippingRequired = (m_plotStyle == PlotSegmentation);
+    paint.setClipRect(rect);
+    paint.setClipping(clippingRequired);
     
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -481,6 +485,8 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         
         if (label != "") {
 
+            paint.setClipping(false);
+            
             // Handle labels with newlines in them properly, by
             // querying (and also drawing with, in PaintAssistant) a
             // bounding rect rather than using drawText to draw a
@@ -506,6 +512,8 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
                                                 label,
                                                 PaintAssistant::OutlinedText);
             }
+
+            paint.setClipping(clippingRequired);
         }
 
         prevX = x;
