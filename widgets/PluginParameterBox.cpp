@@ -137,7 +137,8 @@ PluginParameterBox::populate()
         QLabel *label = new QLabel(name);
         if (params[i].description != "") {
             label->setToolTip(QString("<qt>%1</qt>")
-                              .arg(params[i].description.c_str())
+                              .arg(XmlExportable::encodeEntities
+                                   (params[i].description.c_str()))
                               .replace("\n", "<br>"));
         }
         m_layout->addWidget(label, i + offset, 0);
