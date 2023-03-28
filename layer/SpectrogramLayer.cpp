@@ -32,6 +32,7 @@
 
 #include "ColourMapper.h"
 #include "PianoScale.h"
+#include "NoteDelimiters.h"
 #include "PaintAssistant.h"
 #include "Colour3DPlotRenderer.h"
 #include "Colour3DPlotExporter.h"
@@ -84,7 +85,8 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_synchronous(false),
     m_haveDetailedScale(false),
     m_exiting(false),
-    m_peakCacheDivisor(8)
+    m_peakCacheDivisor(8),
+    m_delimiters(false)
 {
     QString colourConfigName = "spectrogram-colour";
     int colourConfigDefault = int(ColourMapper::Green);
@@ -2208,7 +2210,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
 
     //!!! cache this?
     
-    int h = rect.height(), w = rect.width();
+    int h = rect.height(), w = this->getVerticalScaleWidth(v, detailed, paint);
     int textHeight = paint.fontMetrics().height();
 
     if (detailed && (h > textHeight * 3 + 10)) {
@@ -2276,9 +2278,17 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
 
         // piano keyboard
 
+        auto m_scaleWidth = this->getVerticalScaleWidth
+            (v, detailed, paint);
         PianoScale().paintPianoVertical
-            (v, paint, QRect(w - pkw - 1, 0, pkw, h),
-             getEffectiveMinFrequency(), getEffectiveMaxFrequency());
+            (v, paint, QRect(m_scaleWidth - pkw - 1, 0, pkw, h),
+                getEffectiveMinFrequency(), getEffectiveMaxFrequency());
+
+        if (m_delimiters) {
+            NoteDelimiters().paintDelimitersVertical
+                (v, paint, QRect(m_scaleWidth, 0, rect.width(), h),
+                    getEffectiveMinFrequency(), getEffectiveMaxFrequency());
+        }
     }
 
     m_haveDetailedScale = detailed;

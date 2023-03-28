@@ -292,6 +292,7 @@ protected:
     bool                m_normalizeVisibleArea;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
+    bool                m_delimiters;
 
     mutable bool        m_haveDetailedScale;
 
