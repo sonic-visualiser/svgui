@@ -30,9 +30,9 @@
 using std::cerr;
 using std::endl;
 
-#ifndef NO_PRINT_ACTIVITY
-#define PRINT_ACTIVITY 1
-#endif
+//#ifndef NO_PRINT_ACTIVITY
+//#define PRINT_ACTIVITY 1
+//#endif
 
 ActivityLog::ActivityLog() : QDialog()
 {
