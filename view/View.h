@@ -568,6 +568,11 @@ protected:
 
     QString             m_lastError;
 
+#ifdef Q_OS_MAC
+    bool                m_useRetinaResolution;
+    bool                m_useRetinaResolutionChecked;
+#endif
+    
     // caches for use in getScrollableBackLayers, getNonScrollableFrontLayers
     mutable LayerList m_lastScrollableBackLayers;
     mutable LayerList m_lastNonScrollableBackLayers;

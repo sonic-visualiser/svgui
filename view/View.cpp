@@ -73,6 +73,10 @@ View::View(QWidget *w, bool showProgress) :
     m_deleting(false),
     m_haveSelectedLayer(false),
     m_useAligningProxy(false),
+#ifdef Q_OS_MAC
+    m_useRetinaResolution(true),
+    m_useRetinaResolutionChecked(false),
+#endif
     m_alignmentProgressBar({ {}, nullptr }),
     m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
@@ -742,13 +746,21 @@ View::effectiveDevicePixelRatio() const
 {
 #ifdef Q_OS_MAC
     int dpratio = devicePixelRatio();
+    // devicePixelRatio can change if the window is moved, so we don't
+    // want to cache it. But we no longer allow the scaledHiDpi
+    // setting to be changed without recommending a restart, so we
+    // will cache that.
     if (dpratio > 1) {
-        QSettings settings;
-        settings.beginGroup("Preferences");
-        if (!settings.value("scaledHiDpi", true).toBool()) {
+        if (!m_useRetinaResolutionChecked) {
+            QSettings settings;
+            settings.beginGroup("Preferences");
+            m_useRetinaResolution = settings.value("scaledHiDpi", true).toBool();
+            m_useRetinaResolutionChecked = true;
+            settings.endGroup();
+        }
+        if (!m_useRetinaResolution) {
             dpratio = 1;
         }
-        settings.endGroup();
     }
     return dpratio;
 #else
