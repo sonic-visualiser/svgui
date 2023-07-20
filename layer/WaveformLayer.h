@@ -78,6 +78,14 @@ public:
     bool getAutoNormalize() const { return m_autoNormalize; }
 
     /**
+     * Set whether to show interpolated (oversampled) lines between
+     * points when zooming closer than one pixel per sample. The
+     * default is to do so.
+     */
+    void setShowOversampledLines(bool);
+    bool getShowOversampledLines() const { return m_oversampling; }
+    
+    /**
      * Set whether to display mean values as a lighter-coloured area
      * beneath the peaks.  Rendering will be slightly faster without
      * but arguably prettier with.
@@ -195,6 +203,7 @@ public:
 
 protected:
     double dBscale(double sample, int m) const;
+    double dBscaleMeter(double sample, int m) const;
 
     ModelId m_model; 
 
@@ -235,6 +244,7 @@ protected:
 
     float        m_gain;
     bool         m_autoNormalize;
+    bool         m_oversampling;
     bool         m_showMeans;
     ChannelMode  m_channelMode;
     int          m_channel;

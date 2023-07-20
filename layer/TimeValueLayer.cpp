@@ -63,7 +63,9 @@ TimeValueLayer::TimeValueLayer() :
     m_plotStyle(PlotConnectedPoints),
     m_verticalScale(AutoAlignScale),
     m_drawSegmentDivisions(true),
+    m_fillSegments(true),
     m_derivative(false),
+    m_propertiesExplicitlySet(false),
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
@@ -97,11 +99,20 @@ TimeValueLayer::setModel(ModelId modelId)
         m_scaleMinimum = 0;
         m_scaleMaximum = 0;
 
-        if (newModel->getRDFTypeURI().endsWith("Segment")) {
-            setPlotStyle(PlotSegmentation);
-        }
-        if (newModel->getRDFTypeURI().endsWith("Change")) {
-            setPlotStyle(PlotSegmentation);
+        if (!m_propertiesExplicitlySet) {
+            if (newModel->getRDFTypeURI().endsWith("Segment")) {
+                setPlotStyle(PlotSegmentation);
+            }
+            if (newModel->getRDFTypeURI().endsWith("Change")) {
+                setPlotStyle(PlotSegmentation);
+            }
+            if (newModel->getRDFTypeURI().endsWith("Onset")) {
+                // Certain plugins may have a notion of onsets with value,
+                // which generally we want to display just as onsets by
+                // default.
+                setPlotStyle(PlotSegmentation);
+                setFillSegments(false);
+            }
         }
     }
     
@@ -116,6 +127,7 @@ TimeValueLayer::getProperties() const
     list.push_back("Vertical Scale");
     list.push_back("Scale Units");
     list.push_back("Draw Segment Division Lines");
+    list.push_back("Fill Segment Colours");
     list.push_back("Show Derivative");
     return list;
 }
@@ -127,6 +139,7 @@ TimeValueLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Vertical Scale") return tr("Vertical Scale");
     if (name == "Scale Units") return tr("Scale Units");
     if (name == "Draw Segment Division Lines") return tr("Draw Segment Division Lines");
+    if (name == "Fill Segment Colours") return tr("Fill Segment Colours");
     if (name == "Show Derivative") return tr("Show Derivative");
     return SingleColourLayer::getPropertyLabel(name);
 }
@@ -135,6 +148,7 @@ QString
 TimeValueLayer::getPropertyIconName(const PropertyName &name) const
 {
     if (name == "Draw Segment Division Lines") return "lines";
+    if (name == "Fill Segment Colours") return "fill";
     if (name == "Show Derivative") return "derivative";
     return "";
 }
@@ -147,6 +161,7 @@ TimeValueLayer::getPropertyType(const PropertyName &name) const
     if (name == "Scale Units") return UnitsProperty;
     if (name == "Colour" && m_plotStyle == PlotSegmentation) return ColourMapProperty;
     if (name == "Draw Segment Division Lines") return ToggleProperty;
+    if (name == "Fill Segment Colours") return ToggleProperty;
     if (name == "Show Derivative") return ToggleProperty;
     return SingleColourLayer::getPropertyType(name);
 }
@@ -158,7 +173,7 @@ TimeValueLayer::getPropertyGroupName(const PropertyName &name) const
         return tr("Scale");
     }
     if (name == "Plot Type" || name == "Draw Segment Division Lines" ||
-        name == "Show Derivative") {
+        name == "Fill Segment Colours" || name == "Show Derivative") {
         return tr("Plot Type");
     }
     return SingleColourLayer::getPropertyGroupName(name);
@@ -226,6 +241,13 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
         if (deflt) *deflt = 1;
         val = (m_drawSegmentDivisions ? 1.0 : 0.0);
 
+    } else if (name == "Fill Segment Colours") {
+
+        if (min) *min = 0;
+        if (max) *max = 1;
+        if (deflt) *deflt = 1;
+        val = (m_fillSegments ? 1.0 : 0.0);
+
     } else if (name == "Show Derivative") {
 
         if (min) *min = 0;
@@ -288,6 +310,8 @@ TimeValueLayer::setProperty(const PropertyName &name, int value)
         }
     } else if (name == "Draw Segment Division Lines") {
         setDrawSegmentDivisions(value > 0.5);
+    } else if (name == "Fill Segment Colours") {
+        setFillSegments(value > 0.5);
     } else if (name == "Show Derivative") {
         setShowDerivative(value > 0.5);
     } else {
@@ -329,6 +353,14 @@ TimeValueLayer::setDrawSegmentDivisions(bool draw)
 {
     if (m_drawSegmentDivisions == draw) return;
     m_drawSegmentDivisions = draw;
+    emit layerParametersChanged();
+}
+
+void
+TimeValueLayer::setFillSegments(bool fill)
+{
+    if (m_fillSegments == fill) return;
+    m_fillSegments = fill;
     emit layerParametersChanged();
 }
 
@@ -915,8 +947,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
 //    Profiler profiler("TimeValueLayer::paint", true);
 
-    int x0 = rect.left();
-    int x1 = x0 + rect.width();
+    // Allow margin so as to improve our odds of repainting the heads
+    // or tails of labels
+    int margin = 100;
+    int x0 = (rect.left() < margin) ? 0 : (rect.left() - margin);
+    int x1 = rect.left() + rect.width() + margin;
     sv_frame_t frame0 = v->getFrameForX(x0);
     sv_frame_t frame1 = v->getFrameForX(x1);
     if (m_derivative) --frame0;
@@ -995,6 +1030,10 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     
     sv_frame_t prevFrame = 0;
 
+    bool clippingRequired = (m_plotStyle == PlotSegmentation);
+    paint.setClipRect(rect);
+    paint.setClipping(clippingRequired);
+
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
@@ -1060,7 +1099,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             brush = QBrush(Qt::NoBrush);
         } else if (m_plotStyle == PlotSegmentation) {
             pen = QPen(getForegroundQColor(v));
-            brush = QBrush(getColourForValue(v, value));
+            if (m_fillSegments) {
+                brush = QBrush(getColourForValue(v, value));
+            } else {
+                brush = QBrush(Qt::NoBrush);
+            }
         } else if (m_plotStyle == PlotLines ||
                    m_plotStyle == PlotCurve) {
             brush = QBrush(Qt::NoBrush);
@@ -1188,11 +1231,13 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 }
             }
 
-            paint.drawRect(x, -1, nx - x, v->getPaintHeight() + 1);
+            paint.drawRect(x, -1, nx - x, v->getPaintHeight() + 2);
         }
 
         if (v->shouldShowFeatureLabels()) {
 
+            paint.setClipping(false);
+            
             QString label = p.getLabel();
             bool italic = false;
 
@@ -1226,6 +1271,8 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                          PaintAssistant::OutlinedText);
                 }
             }
+
+            paint.setClipping(clippingRequired);
         }
 
         prevFrame = p.getFrame();
@@ -1914,12 +1961,14 @@ TimeValueLayer::toXml(QTextStream &stream,
                  "scaleMinimum=\"%3\" "
                  "scaleMaximum=\"%4\" "
                  "drawDivisions=\"%5\" "
-                 "derivative=\"%6\" ")
+                 "fillSegments=\"%6\" "
+                 "derivative=\"%7\" ")
         .arg(m_plotStyle)
         .arg(m_verticalScale)
         .arg(m_scaleMinimum)
         .arg(m_scaleMaximum)
         .arg(m_drawSegmentDivisions ? "true" : "false")
+        .arg(m_fillSegments ? "true" : "false")
         .arg(m_derivative ? "true" : "false");
     
     // New-style colour map attribute, by string id rather than by
@@ -1965,6 +2014,11 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
     bool draw = (attributes.value("drawDivisions").trimmed() == "true");
     setDrawSegmentDivisions(draw);
 
+    // This must default to true, since it was always true before the
+    // option was introduced
+    bool fill = (attributes.value("fillSegments").trimmed() != "false");
+    setFillSegments(fill);
+
     bool derivative = (attributes.value("derivative").trimmed() == "true");
     setShowDerivative(derivative);
 
@@ -1974,5 +2028,7 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
     cerr << "from properties: min = " << min << ", max = " << max << endl;
 #endif
     if (ok && alsoOk && min != max) setDisplayExtents(min, max);
+
+    m_propertiesExplicitlySet = true;
 }
 

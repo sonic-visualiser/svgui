@@ -19,6 +19,10 @@
 #include <QApplication>
 
 #include <iostream>
+#include <map>
+
+using std::set;
+using std::map;
 
 QString
 TextAbbrev::getDefaultEllipsis()
@@ -185,32 +189,59 @@ TextAbbrev::abbreviate(const QStringList &texts, const QFontMetrics &metrics,
     return results;
 }
 
+static QStringList
+replacePrefixes(const QStringList &texts,
+                const map<QString, QString> &replacements)
+{
+    QStringList results;
+    for (auto text : texts) {
+        bool found = false;
+        for (auto p : replacements) {
+            if (text.startsWith(p.first)) {
+                results.push_back
+                    (p.second +
+                     text.right(text.length() - p.first.length()));
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            results.push_back(text);
+        }
+    }
+
+    return results;
+}
+
 QStringList
 TextAbbrev::elidePrefixes(const QStringList &texts,
                           int targetReduction,
                           QString ellipsis)
 {
     if (texts.empty()) return texts;
-    int plen = getPrefixLength(texts);
+
+    auto prefixes = getCommonPrefixes(texts);
     int fl = getFuzzLength(ellipsis);
-    if (plen < fl) return texts;
 
-    QString prefix = texts[0].left(plen);
-    int truncated = plen;
-    if (plen >= targetReduction + fl) {
-        truncated = plen - targetReduction;
-    } else {
-        truncated = fl;
-    }
-    prefix = abbreviate(prefix, truncated, ElideEnd, false, ellipsis);
+    map<QString, QString> reduced;
+    
+    for (auto pfx : prefixes) {
 
-    QStringList results;
-    for (int i = 0; i < texts.size(); ++i) {
-        results.push_back
-            (prefix + texts[i].right(texts[i].length() - plen));
+        int plen = pfx.length();
+        if (plen < fl) continue;
+
+        int truncated = plen;
+        if (plen >= targetReduction + fl) {
+            truncated = plen - targetReduction;
+        } else {
+            truncated = fl;
+        }
+
+        reduced[pfx] = abbreviate(pfx, truncated, ElideEnd, false, ellipsis);
     }
-    return results;
-}
+
+    return replacePrefixes(texts, reduced);
+}    
 
 QStringList
 TextAbbrev::elidePrefixes(const QStringList &texts,
@@ -219,58 +250,68 @@ TextAbbrev::elidePrefixes(const QStringList &texts,
                           QString ellipsis)
 {
     if (texts.empty()) return texts;
-    int plen = getPrefixLength(texts);
+
+    auto prefixes = getCommonPrefixes(texts);
     int fl = getFuzzLength(ellipsis);
-    if (plen < fl) return texts;
 
-    QString prefix = texts[0].left(plen);
-    int pwid = metrics.width(prefix);
-    int twid = pwid - targetWidthReduction;
-    if (twid < metrics.width(ellipsis) * 2) twid = metrics.width(ellipsis) * 2;
-    prefix = abbreviate(prefix, metrics, twid, ElideEnd, ellipsis);
+    map<QString, QString> reduced;
+    
+    for (auto pfx : prefixes) {
 
-    QStringList results;
-    for (int i = 0; i < texts.size(); ++i) {
-        results.push_back
-            (prefix + texts[i].right(texts[i].length() - plen));
+        int plen = pfx.length();
+        if (plen < fl) continue;
+
+        int pwid = metrics.width(pfx);
+        int twid = pwid - targetWidthReduction;
+        if (twid < metrics.width(ellipsis) * 2) {
+            twid = metrics.width(ellipsis) * 2;
+        }
+        reduced[pfx] = abbreviate(pfx, metrics, twid, ElideEnd, ellipsis);
     }
-    return results;
+
+    return replacePrefixes(texts, reduced);
 }
 
 static bool
-havePrefix(QString prefix, const QStringList &texts)
+isCommonPrefix(QString prefix, const QStringList &texts)
 {
-    for (int i = 1; i < texts.size(); ++i) {
-        if (!texts[i].startsWith(prefix)) return false;
+    int n = 0;
+    for (auto text : texts) {
+        if (text.startsWith(prefix)) {
+            if (++n > 1) {
+                return true;
+            }
+        }
     }
-    return true;
+    return false;
 }
 
-int
-TextAbbrev::getPrefixLength(const QStringList &texts)
+set<QString>
+TextAbbrev::getCommonPrefixes(const QStringList &texts)
 {
-    QString reference = texts[0];
-
-    if (reference == "" || havePrefix(reference, texts)) {
-        return reference.length();
-    }
-
-    int candidate = reference.length();
+    set<QString> prefixes;
     QString splitChars(";:,./#-!()$_+=[]{}\\");
+    
+    for (auto text : texts) {
 
-    while (--candidate > 1) {
-        if (splitChars.contains(reference[candidate])) {
-            if (havePrefix(reference.left(candidate), texts)) {
-                break;
+        if (isCommonPrefix(text, texts)) {
+            prefixes.insert(text);
+            continue;
+        }
+
+        int candidate = text.length();
+
+        while (--candidate > 1) {
+            if (splitChars.contains(text[candidate])) {
+                QString prefix = text.left(candidate);
+                if (isCommonPrefix(prefix, texts)) {
+                    prefixes.insert(prefix);
+                    break;
+                }
             }
         }
     }
 
-//    SVDEBUG << "TextAbbrev::getPrefixLength: prefix length is " << candidate << endl;
-//    for (int i = 0; i < texts.size(); ++i) {
-//        cerr << texts[i].left(candidate) << "|" << texts[i].right(texts[i].length() - candidate) << endl;
-//    }
-
-    return candidate;
+    return prefixes;
 }
 

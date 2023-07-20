@@ -20,6 +20,8 @@
 #include <QPen>
 #include <vector>
 
+#include "base/AudioLevel.h"
+
 class QPainter;
 class Layer;
 class LayerGeometryProvider;
@@ -31,11 +33,12 @@ public:
 
     static void paintVerticalLevelScale(QPainter &p, QRect rect,
                                         double minVal, double maxVal,
-                                        Scale scale, int &multRtn,
+                                        Scale scale, AudioLevel::Quantity sort,
+                                        int &multRtn,
                                         std::vector<int> *markCoordRtns = 0);
 
-    static int getYForValue(Scale scale, double value,
-                            double minVal, double maxVal,
+    static int getYForValue(Scale scale, AudioLevel::Quantity sort,
+                            double value, double minVal, double maxVal,
                             int minY, int height);
 
     enum TextStyle {

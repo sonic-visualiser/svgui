@@ -139,7 +139,8 @@ ColourScale::getPixel(double value) const
     int pixel = 0;
 
     if (m_params.scaleType == ColourScaleType::Meter) {
-        pixel = AudioLevel::multiplier_to_preview(proportion, m_maxPixel-1) + 1;
+        pixel = AudioLevel::voltage_to_fader(proportion, m_maxPixel-1,
+                                             AudioLevel::Scale::Preview) + 1;
     } else {
         pixel = int(proportion * maxPixF) + 1;
     }

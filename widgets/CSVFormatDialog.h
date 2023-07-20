@@ -49,11 +49,13 @@ protected slots:
     void separatorChanged(QString);
     void timingTypeChanged(int type);
     void sampleRateChanged(QString);
-    void windowSizeChanged(QString);
+    void incrementChanged(QString);
     void columnPurposeChanged(int purpose);
 
     void updateFormatFromDialog();
     void updateModelLabel();
+
+    void accepted();
 
 protected:
     QString m_csvFilePath;
@@ -88,8 +90,8 @@ protected:
     QComboBox *m_timingTypeCombo;
     QLabel *m_sampleRateLabel;
     QComboBox *m_sampleRateCombo;
-    QLabel *m_windowSizeLabel;
-    QComboBox *m_windowSizeCombo;
+    QLabel *m_incrementLabel;
+    QComboBox *m_incrementCombo;
     QLabel *m_modelLabel;
 
     QList<QComboBox *> m_columnPurposeCombos;

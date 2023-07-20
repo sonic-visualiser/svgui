@@ -44,7 +44,8 @@ TimeInstantLayer::TimeInstantLayer() :
     m_editing(false),
     m_editingPoint(0, tr("New Point")),
     m_editingCommand(nullptr),
-    m_plotStyle(PlotInstants)
+    m_plotStyle(PlotInstants),
+    m_propertiesExplicitlySet(false)
 {
 }
 
@@ -73,8 +74,10 @@ TimeInstantLayer::setModel(ModelId modelId)
 
     if (newModel) {
         connectSignals(m_model);
-        if (newModel->getRDFTypeURI().endsWith("Segment")) {
-            setPlotStyle(PlotSegmentation);
+        if (!m_propertiesExplicitlySet) {
+            if (newModel->getRDFTypeURI().endsWith("Segment")) {
+                setPlotStyle(PlotSegmentation);
+            }
         }
     }
 
@@ -321,8 +324,11 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
 //    Profiler profiler("TimeInstantLayer::paint", true);
 
-    int x0 = rect.left();
-    int x1 = x0 + rect.width();
+    // Allow margin so as to improve our odds of repainting the heads
+    // or tails of labels
+    int margin = 100;
+    int x0 = (rect.left() < margin) ? 0 : (rect.left() - margin);
+    int x1 = rect.left() + rect.width() + margin;
 
     sv_frame_t resolution = model->getResolution();
     
@@ -391,6 +397,10 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         
     int prevX = -1;
     int textY = v->getTextLabelYCoord(this, paint);
+
+    bool clippingRequired = (m_plotStyle == PlotSegmentation);
+    paint.setClipRect(rect);
+    paint.setClipping(clippingRequired);
     
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -470,30 +480,40 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         }
 
         paint.setPen(getBaseQColor());
+
+        QString label = p.getLabel();
         
-        if (p.getLabel() != "") {
+        if (label != "") {
+
+            paint.setClipping(false);
             
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            // Handle labels with newlines in them properly, by
+            // querying (and also drawing with, in PaintAssistant) a
+            // bounding rect rather than using drawText to draw a
+            // single line only
+            
+            QRectF boundingRect = paint.boundingRect
+                (QRectF(), Qt::AlignTop | Qt::AlignLeft, label);
 
             // only draw if there's enough room from here to the next point
 
-            int lw = paint.fontMetrics().width(p.getLabel());
             bool good = true;
 
             if (j != points.end()) {
                 int nx = v->getXForFrame(j->getFrame());
-                if (nx >= x && nx - x - iw - 3 <= lw) good = false;
+                if (nx >= x && nx - x - iw - 3 <= boundingRect.width()) {
+                    good = false;
+                }
             }
 
             if (good) {
                 PaintAssistant::drawVisibleText(v, paint,
                                                 x + iw + 2, textY,
-                                                p.getLabel(),
+                                                label,
                                                 PaintAssistant::OutlinedText);
             }
+
+            paint.setClipping(clippingRequired);
         }
 
         prevX = x;
@@ -892,5 +912,7 @@ TimeInstantLayer::setProperties(const QXmlAttributes &attributes)
     PlotStyle style = (PlotStyle)
         attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
+
+    m_propertiesExplicitlySet = true;
 }
 

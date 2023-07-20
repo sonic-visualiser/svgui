@@ -57,7 +57,8 @@ RegionLayer::RegionLayer() :
     m_verticalScale(EqualSpaced),
     m_colourMap(0),
     m_colourInverted(false),
-    m_plotStyle(PlotLines)
+    m_plotStyle(PlotLines),
+    m_propertiesExplicitlySet(false)
 {
     
 }
@@ -92,11 +93,13 @@ RegionLayer::setModel(ModelId modelId)
     
         recalcSpacing();
 
-        if (newModel->getRDFTypeURI().endsWith("Segment")) {
-            setPlotStyle(PlotSegmentation);
-        }
-        if (newModel->getRDFTypeURI().endsWith("Change")) {
-            setPlotStyle(PlotSegmentation);
+        if (!m_propertiesExplicitlySet) {
+            if (newModel->getRDFTypeURI().endsWith("Segment")) {
+                setPlotStyle(PlotSegmentation);
+            }
+            if (newModel->getRDFTypeURI().endsWith("Change")) {
+                setPlotStyle(PlotSegmentation);
+            }
         }
     }
     
@@ -128,7 +131,7 @@ RegionLayer::getPropertyType(const PropertyName &name) const
     if (name == "Scale Units") return UnitsProperty;
     if (name == "Vertical Scale") return ValueProperty;
     if (name == "Plot Type") return ValueProperty;
-    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ValueProperty;
+    if (name == "Colour" && m_plotStyle == PlotSegmentation) return ColourMapProperty;
     return SingleColourLayer::getPropertyType(name);
 }
 
@@ -251,6 +254,8 @@ RegionLayer::setPlotStyle(PlotStyle style)
                               m_plotStyle == PlotSegmentation);
     m_plotStyle = style;
     if (colourTypeChanged) {
+        SVDEBUG << "RegionLayer::setPlotStyle: colour type changed, emitting layerParameterRangesChanged" << endl;
+        SVDEBUG << "RegionLayer::setPlotStyle: plot style is now " << m_plotStyle << endl;
         emit layerParameterRangesChanged();
     }
     emit layerParametersChanged();
@@ -849,8 +854,11 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
 //    Profiler profiler("RegionLayer::paint", true);
 
-    int x0 = rect.left() - 40;
-    int x1 = x0 + rect.width() + 80;
+    // Allow margin so as to improve our odds of repainting the heads
+    // or tails of labels
+    int margin = 100;
+    int x0 = (rect.left() < margin) ? 0 : (rect.left() - margin);
+    int x1 = rect.left() + rect.width() + margin;
 
     sv_frame_t wholeFrame0 = v->getFrameForX(0);
     sv_frame_t wholeFrame1 = v->getFrameForX(v->getPaintWidth());
@@ -891,6 +899,19 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     int fontHeight = paint.fontMetrics().height();
 
+    QPen thinForegroundPen(getForegroundQColor(v->getView()),
+                           v->scalePenWidth(1));
+    QPen thickForegroundPen(getForegroundQColor(v->getView()),
+                            v->scalePenWidth(2));
+    QPen basePen(getBaseQColor(), v->scalePenWidth(1));
+
+    int barHeight = v->scalePixelSize(7);
+    bool barHeightTweaked = false;
+
+    bool clippingRequired = (m_plotStyle == PlotSegmentation);
+    paint.setClipRect(rect);
+    paint.setClipping(clippingRequired);
+    
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
@@ -899,7 +920,6 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         int x = v->getXForFrame(p.getFrame());
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int y = getYForValue(v, p.getValue());
-        int h = 9;
         int ex = x + w;
 
         int gap = v->scalePixelSize(2);
@@ -913,35 +933,27 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             if (nx < ex) ex = nx;
         }
 
-        if (model->getValueQuantization() != 0.0) {
-            h = y - getYForValue
+        if (!barHeightTweaked && model->getValueQuantization() != 0.0) {
+            barHeight = y - getYForValue
                 (v, p.getValue() + model->getValueQuantization());
-            if (h < 3) h = 3;
+            int minh = v->scalePixelSize(3);
+            if (barHeight < minh) barHeight = minh;
+            barHeightTweaked = true;
         }
 
         if (w < 1) w = 1;
 
         if (m_plotStyle == PlotSegmentation) {
-            paint.setPen(getForegroundQColor(v->getView()));
-            paint.setBrush(getColourForValue(v, p.getValue()));
-        } else {
-            paint.setPen(getBaseQColor());
-            paint.setBrush(brushColour);
-        }
-
-        if (m_plotStyle == PlotSegmentation) {
 
             if (ex <= x) continue;
 
-            if (!shouldIlluminate || illuminatePoint != p) {
-
-                paint.setPen(QPen(getForegroundQColor(v->getView()), 1));
-                paint.drawLine(x, 0, x, v->getPaintHeight());
-                paint.setPen(Qt::NoPen);
-
+            if (shouldIlluminate && illuminatePoint == p) {
+                paint.setPen(thickForegroundPen);
             } else {
-                paint.setPen(QPen(getForegroundQColor(v->getView()), 2));
+                // may be even thinner than thinForegroundPen
+                paint.setPen(QPen(getForegroundQColor(v->getView()), 1));
             }
+            paint.setBrush(getColourForValue(v, p.getValue()));
 
             paint.drawRect(x, -1, ex - x, v->getPaintHeight() + gap);
 
@@ -949,40 +961,51 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
             if (shouldIlluminate && illuminatePoint == p) {
 
-                paint.setPen(v->getForeground());
+                paint.setClipping(false);
+                
+                paint.setPen(thinForegroundPen);
                 paint.setBrush(v->getForeground());
-
-                // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-                // replacement (horizontalAdvance) was only added in Qt 5.11
-                // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
                 QString vlabel =
                     QString("%1%2").arg(p.getValue()).arg(getScaleUnits());
-                PaintAssistant::drawVisibleText(v, paint, 
-                                   x - paint.fontMetrics().width(vlabel) - gap,
-                                   y + paint.fontMetrics().height()/2
-                                   - paint.fontMetrics().descent(), 
-                                   vlabel, PaintAssistant::OutlinedText);
+
+                QRectF vlabelRect = paint.boundingRect
+                    (QRectF(), Qt::AlignTop | Qt::AlignLeft, vlabel);
+
+                PaintAssistant::drawVisibleText
+                    (v, paint, 
+                     x - vlabelRect.width() - gap,
+                     y + vlabelRect.height()/2 - paint.fontMetrics().descent(), 
+                     vlabel, PaintAssistant::OutlinedText);
                 
                 QString hlabel = RealTime::frame2RealTime
                     (p.getFrame(), model->getSampleRate()).toText(true).c_str();
-                PaintAssistant::drawVisibleText(v, paint, 
-                                   x,
-                                   y - h/2 - paint.fontMetrics().descent() - gap,
-                                   hlabel, PaintAssistant::OutlinedText);
+                PaintAssistant::drawVisibleText
+                    (v, paint,
+                     x, y - barHeight/2 - paint.fontMetrics().descent() - gap,
+                     hlabel, PaintAssistant::OutlinedText);
+
+                paint.setClipping(clippingRequired);
+                
+            } else {
+                paint.setPen(basePen);
+                paint.setBrush(brushColour);
             }
-            
-            paint.drawLine(x, y-1, x + w, y-1);
-            paint.drawLine(x, y+1, x + w, y+1);
-            paint.drawLine(x, y - h/2, x, y + h/2);
-            paint.drawLine(x+w, y - h/2, x + w, y + h/2);
+
+            int one = v->scalePixelSize(1);
+            paint.drawLine(x, y-one, x + w, y-one);
+            paint.drawLine(x, y+one, x + w, y+one);
+            paint.drawLine(x, y - barHeight/2, x, y + barHeight/2);
+            paint.drawLine(x+w, y - barHeight/2, x + w, y + barHeight/2);
         }
     }
 
     int nextLabelMinX = -100;
     int lastLabelY = 0;
 
+    paint.setPen(thinForegroundPen);
+    paint.setClipping(false);
+    
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
@@ -996,7 +1019,11 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
         if (label == "") {
             label = QString("%1%2").arg(p.getValue()).arg(getScaleUnits());
         }
-        int labelWidth = paint.fontMetrics().width(label);
+
+        QRectF labelRect = paint.boundingRect
+            (QRectF(), Qt::AlignTop | Qt::AlignLeft, label);
+
+        int labelWidth = labelRect.width();
 
         int gap = v->scalePixelSize(2);
 
@@ -1010,22 +1037,38 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             }
         }
         
-        bool illuminated = false;
-
+        bool shouldDrawLabel = true;
+        bool drawLabelToLeft = false;
+        
         if (m_plotStyle != PlotSegmentation) {
-            if (shouldIlluminate && illuminatePoint == p) {
-                illuminated = true;
+
+            drawLabelToLeft = ((y + barHeight + fontHeight) >
+                               v->getPaintHeight());
+            
+            if (shouldIlluminate && illuminatePoint == p && drawLabelToLeft) {
+                shouldDrawLabel = false;
             }
         }
 
-        if (!illuminated) {
+        if (shouldDrawLabel) {
 
             int labelX, labelY;
 
+//            SVDEBUG << "region label: x " << x << ", nextLabelMinX " << nextLabelMinX << endl;
+
             if (m_plotStyle != PlotSegmentation) {
-                labelX = x - labelWidth - gap;
-                labelY = y + paint.fontMetrics().height()/2 
-                    - paint.fontMetrics().descent();
+                if (drawLabelToLeft) {
+                    labelX = x - labelWidth - gap;
+                    labelY = y + fontHeight/2 - paint.fontMetrics().descent();
+                } else {
+                    labelX = x;
+                    labelY = y + barHeight - v->scalePixelSize(2) +
+                        paint.fontMetrics().ascent();
+                }
+                if (labelX < nextLabelMinX && labelY == lastLabelY &&
+                    !drawLabelToLeft) {
+                    labelY = labelY + fontHeight;
+                }
             } else {
                 labelX = x + 5;
                 labelY = v->getTextLabelYCoord(this, paint);
@@ -1034,10 +1077,13 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
                         labelY = lastLabelY + fontHeight;
                     }
                 }
-                lastLabelY = labelY;
-                nextLabelMinX = labelX + labelWidth;
             }
 
+            nextLabelMinX = labelX + labelWidth;
+            lastLabelY = labelY;
+
+//            SVDEBUG << "region label: at " << labelX << "," << labelY << " label " << label << " with nextLabelMinX now " << nextLabelMinX << endl;
+            
             PaintAssistant::drawVisibleText(v, paint, labelX, labelY, label,
                                             PaintAssistant::OutlinedText);
         }
@@ -1585,6 +1631,8 @@ RegionLayer::setProperties(const QXmlAttributes &attributes)
             setFillColourMap(colourMap);
         }
     }
+
+    m_propertiesExplicitlySet = true;
 }
 
 

@@ -156,6 +156,8 @@ WindowShapePreview::updateLabels()
             output[i].imag() * output[i].imag();
         float db = mindb;
         if (power > 0) {
+            //!!! NO! The one time we actually use the root-power
+            //!!! formula, it's for power...
             db = 20.f * log10f(power);
             if (first || db > maxdb) maxdb = db;
             if (first || db < mindb) mindb = db;

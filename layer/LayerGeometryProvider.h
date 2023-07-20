@@ -71,7 +71,7 @@ public:
      * Retrieve the id of this object.
      */
     virtual int getId() const = 0;
-
+    
     /**
      * Retrieve the first visible sample frame on the widget.
      * This is a calculated value based on the centre-frame, widget
@@ -206,6 +206,14 @@ public:
     virtual int scalePixelSize(int size) const = 0;
     virtual double scalePenWidth(double width) const = 0;
     virtual QPen scalePen(QPen pen) const = 0;
+
+    /**
+     * Retrieve the pixel scale factor for this object. Mostly we
+     * don't want to use this - call the geometry accessors instead
+     * which will do the right calculations. This is sometimes useful
+     * if we want to check whether something has changed.
+     */
+    virtual int getScaleFactor() const = 0;
     
     virtual View *getView() = 0;
     virtual const View *getView() const = 0;

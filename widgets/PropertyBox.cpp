@@ -269,6 +269,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     }
     
     if (!have) {
+#ifdef DEBUG_PROPERTY_BOX 
+        SVDEBUG << "PropertyBox: this property is new to us" << endl;
+#endif
         if (m_groupLayouts.find(groupName) == m_groupLayouts.end()) {
             QWidget *labelWidget = new QLabel(groupLabel, m_mainWidget);
             m_layout->addWidget(labelWidget, row, 0);
@@ -306,7 +309,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
         QAbstractButton *button;
 
-        if (!(button = qobject_cast<QAbstractButton *>(existing))) {
+        if ((button = qobject_cast<QAbstractButton *>(existing))) {
+#ifdef DEBUG_PROPERTY_BOX 
+            SVDEBUG << "PropertyBox: we already have a checkbox" << endl;
+#endif
+        } else {
 #ifdef DEBUG_PROPERTY_BOX 
             SVDEBUG << "PropertyBox: creating new checkbox" << endl;
 #endif
@@ -360,7 +367,13 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
         AudioDial *dial;
 
         if ((dial = qobject_cast<AudioDial *>(existing))) {
+#ifdef DEBUG_PROPERTY_BOX 
+            SVDEBUG << "PropertyBox: we already have a dial" << endl;
+#endif
             if (rangeChanged) {
+#ifdef DEBUG_PROPERTY_BOX 
+                SVDEBUG << "PropertyBox: range changed, respecifying" << endl;
+#endif
                 dial->blockSignals(true);
                 dial->setMinimum(min);
                 dial->setMaximum(max);
@@ -414,8 +427,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
         ColourComboBox *cb;
         
-        if (!(cb = qobject_cast<ColourComboBox *>(existing))) {
-
+        if ((cb = qobject_cast<ColourComboBox *>(existing))) {
+#ifdef DEBUG_PROPERTY_BOX 
+            SVDEBUG << "PropertyBox: we already have a colour combobox" << endl;
+#endif
+        } else {
 #ifdef DEBUG_PROPERTY_BOX 
             SVDEBUG << "PropertyBox: creating new colour combobox" << endl;
 #endif
@@ -458,7 +474,11 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
         ColourMapComboBox *cb;
 
-        if (!(cb = qobject_cast<ColourMapComboBox *>(existing))) {
+        if ((cb = qobject_cast<ColourMapComboBox *>(existing))) {
+#ifdef DEBUG_PROPERTY_BOX 
+            SVDEBUG << "PropertyBox: we already have a colourmap combobox" << endl;
+#endif
+        } else {
 #ifdef DEBUG_PROPERTY_BOX 
             SVDEBUG << "PropertyBox: creating new colourmap combobox" << endl;
 #endif
@@ -498,17 +518,50 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     {
         NotifyingComboBox *cb;
 
-        if (!(cb = qobject_cast<NotifyingComboBox *>(existing))) {
+        // Check for a normal NotifyingComboBox. Be careful because
+        // ColourComboBox and ColourMapComboBox both inherit from it,
+        // but we don't want to use either of those
+        if (!(qobject_cast<ColourComboBox *>(existing)) &&
+            !(qobject_cast<ColourMapComboBox *>(existing)) &&
+            (cb = qobject_cast<NotifyingComboBox *>(existing))) {
+#ifdef DEBUG_PROPERTY_BOX 
+            SVDEBUG << "PropertyBox: we already have a combobox" << endl;
+#endif
+        } else {
 #ifdef DEBUG_PROPERTY_BOX 
             SVDEBUG << "PropertyBox: creating new combobox" << endl;
 #endif
             cb = new NotifyingComboBox();
             cb->setObjectName(name);
             cb->setDuplicatesEnabled(false);
+            
+            connect(cb, SIGNAL(activated(int)),
+                    this, SLOT(propertyControllerChanged(int)));
+            connect(cb, SIGNAL(mouseEntered()),
+                    this, SLOT(mouseEnteredWidget()));
+            connect(cb, SIGNAL(mouseLeft()),
+                    this, SLOT(mouseLeftWidget()));
+
+            cb->setToolTip(propertyLabel);
+
+            cb->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(cb, SIGNAL(customContextMenuRequested(const QPoint &)),
+                    this, SLOT(contextMenuRequested(const QPoint &)));
+
+            if (existing) {
+                groupLayout->replaceWidget(existing, cb);
+                delete existing;
+            } else {
+                groupLayout->addWidget(cb, 0, groupLayout->columnCount());
+            }
+
+            m_propertyControllers[name] = cb;
         }
 
         if (!have || rangeChanged) {
-
+#ifdef DEBUG_PROPERTY_BOX 
+            SVDEBUG << "PropertyBox: new property or range changed, respecifying" << endl;
+#endif
             cb->blockSignals(true);
             cb->clear();
             cb->setEditable(false);
@@ -539,27 +592,6 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
             }
         }
 
-        if (!have) {
-            connect(cb, SIGNAL(activated(int)),
-                    this, SLOT(propertyControllerChanged(int)));
-            connect(cb, SIGNAL(mouseEntered()),
-                    this, SLOT(mouseEnteredWidget()));
-            connect(cb, SIGNAL(mouseLeft()),
-                    this, SLOT(mouseLeftWidget()));
-
-            cb->setToolTip(propertyLabel);
-
-            cb->setContextMenuPolicy(Qt::CustomContextMenu);
-            connect(cb, SIGNAL(customContextMenuRequested(const QPoint &)),
-                    this, SLOT(contextMenuRequested(const QPoint &)));
-            
-            groupLayout->addWidget(cb, 0, groupLayout->columnCount());
-            m_propertyControllers[name] = cb;
-        } else if (existing != cb) {
-            groupLayout->replaceWidget(existing, cb);
-            delete existing;
-        }
-
         cb->blockSignals(true);
         if (type == PropertyContainer::ValueProperty) {
             if (cb->currentIndex() != value) {
@@ -582,6 +614,9 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
     }
 
     case PropertyContainer::InvalidProperty:
+#ifdef DEBUG_PROPERTY_BOX 
+        SVDEBUG << "PropertyBox: invalid property" << endl;
+#endif
     default:
         break;
     }
@@ -613,6 +648,10 @@ PropertyBox::propertyContainerPropertyRangeChanged(PropertyContainer *)
 {
     blockSignals(true);
 
+#ifdef DEBUG_PROPERTY_BOX
+    SVDEBUG << "PropertyBox::propertyContainerPropertyRangeChanged called" << endl;
+#endif
+    
     PropertyContainer::PropertyList properties = m_container->getProperties();
     for (size_t i = 0; i < properties.size(); ++i) {
         updatePropertyEditor(properties[i], true);

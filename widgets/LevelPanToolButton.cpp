@@ -214,7 +214,7 @@ LevelPanToolButton::contextMenuRequested(const QPoint &pos)
         title = tr("Muted");
     } else {
         // Pan is actually stereo balance in most applications...
-        auto level = AudioLevel::multiplier_to_dB(m_lpw->getLevel());
+        auto level = AudioLevel::voltage_to_dB(m_lpw->getLevel());
         auto pan = m_lpw->getPan();
         if (pan == 0) {
             title = tr("Level: %1 dB - Balance: Middle").arg(level);

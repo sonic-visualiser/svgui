@@ -73,6 +73,10 @@ View::View(QWidget *w, bool showProgress) :
     m_deleting(false),
     m_haveSelectedLayer(false),
     m_useAligningProxy(false),
+#ifdef Q_OS_MAC
+    m_useRetinaResolution(true),
+    m_useRetinaResolutionChecked(false),
+#endif
     m_alignmentProgressBar({ {}, nullptr }),
     m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
@@ -742,13 +746,21 @@ View::effectiveDevicePixelRatio() const
 {
 #ifdef Q_OS_MAC
     int dpratio = devicePixelRatio();
+    // devicePixelRatio can change if the window is moved, so we don't
+    // want to cache it. But we no longer allow the scaledHiDpi
+    // setting to be changed without recommending a restart, so we
+    // will cache that.
     if (dpratio > 1) {
-        QSettings settings;
-        settings.beginGroup("Preferences");
-        if (!settings.value("scaledHiDpi", true).toBool()) {
+        if (!m_useRetinaResolutionChecked) {
+            QSettings settings;
+            settings.beginGroup("Preferences");
+            m_useRetinaResolution = settings.value("scaledHiDpi", true).toBool();
+            m_useRetinaResolutionChecked = true;
+            settings.endGroup();
+        }
+        if (!m_useRetinaResolution) {
             dpratio = 1;
         }
-        settings.endGroup();
     }
     return dpratio;
 #else
@@ -1338,7 +1350,18 @@ View::movePlayPointer(sv_frame_t newFrame)
         } else {
 
             int xold = getXForFrame(oldPlayPointerFrame);
-            update(xold - 4, 0, 9, height());
+
+            // Update the area a little to the left of the old
+            // pointer, in case the repaint does a poor job of
+            // identifying e.g. tail ends of labels that started to
+            // the left of it and which would be erased otherwise. (As
+            // it does seem to.)
+            //
+            // Previously we had lagWidth effectively hardcoded as 4.
+            // 
+            int lagWidth = 60;
+            update(xold < lagWidth ? 0 : xold - lagWidth, 0,
+                   lagWidth + 5, height());
 
             sv_frame_t w = getEndFrame() - getStartFrame();
             w -= w/5;
@@ -1391,7 +1414,8 @@ View::movePlayPointer(sv_frame_t newFrame)
                 bool changed = setCentreFrame(newCentre, false);
                 if (changed) {
                     xold = getXForFrame(oldPlayPointerFrame);
-                    update(xold - 4, 0, 9, height());
+                    update(xold < lagWidth ? 0 : xold - lagWidth, 0,
+                           lagWidth + 5, height());
                 }
             }
 
@@ -2461,7 +2485,14 @@ View::paintEvent(QPaintEvent *e)
     }
 
     setPaintFont(paint);
-    paint.setClipRect(areaToPaint);
+
+    // This clipping is not a good idea I think - layers often
+    // intentionally paint outside the lines a little because they
+    // don't have a very precise idea about e.g. parts of text labels
+    // which overlay an area. We pass areaToPaint to the paint
+    // function anyway, so if clipping matters to it, it should enable
+    // it itself
+//    paint.setClipRect(areaToPaint);
 
     paint.setPen(getBackground());
     paint.setBrush(getBackground());

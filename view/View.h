@@ -70,6 +70,8 @@ public:
      * ids, but ViewProxy objects share the id of their View.
      */
     int getId() const override { return m_id; }
+
+
     
     /**
      * Retrieve the first visible sample frame on the widget.
@@ -413,6 +415,8 @@ public:
     sv_frame_t getAlignedPlaybackFrame() const;
 
     void updatePaintRect(QRect r) override { update(r); }
+
+    int getScaleFactor() const override { return 1; } // See ViewProxy
     
     View *getView() override { return this; } 
     const View *getView() const override { return this; } 
@@ -564,6 +568,11 @@ protected:
 
     QString             m_lastError;
 
+#ifdef Q_OS_MAC
+    bool                m_useRetinaResolution;
+    bool                m_useRetinaResolutionChecked;
+#endif
+    
     // caches for use in getScrollableBackLayers, getNonScrollableFrontLayers
     mutable LayerList m_lastScrollableBackLayers;
     mutable LayerList m_lastNonScrollableBackLayers;

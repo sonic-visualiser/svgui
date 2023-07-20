@@ -123,6 +123,7 @@ protected:
     Event m_editingPoint;
     ChangeEventsCommand *m_editingCommand;
     PlotStyle m_plotStyle;
+    bool m_propertiesExplicitlySet;
 
     void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();

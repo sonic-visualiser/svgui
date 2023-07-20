@@ -52,6 +52,9 @@ public:
     int getId() const override {
         return m_view->getId();
     }
+    int getScaleFactor() const override {
+        return m_scaleFactor;
+    }
     sv_frame_t getStartFrame() const override {
         return alignToReference(m_view->getStartFrame());
     }

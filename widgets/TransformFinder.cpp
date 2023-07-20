@@ -123,9 +123,9 @@ void
 TransformFinder::setupBeforeSearchLabel()
 {
     bool haveInstalled =
-        TransformFactory::getInstance()->haveInstalledTransforms();
+        TransformFactory::getInstance()->haveAnyInstalledTransforms();
     bool haveUninstalled =
-        TransformFactory::getInstance()->haveUninstalledTransforms();
+        TransformFactory::getInstance()->haveAnyUninstalledTransforms();
 
     m_beforeSearchLabel->setWordWrap(true);
     m_beforeSearchLabel->setOpenExternalLinks(true);
@@ -251,7 +251,7 @@ TransformFinder::timeout()
         QString suffix;
 
         if (status == TransformFactory::TransformInstalled) {
-            desc = factory->getTransformDescription(tid);
+            desc = factory->getInstalledTransformDescription(tid);
         } else {
             desc = factory->getUninstalledTransformDescription(tid);
             suffix = tr("<i> (not installed)</i>");

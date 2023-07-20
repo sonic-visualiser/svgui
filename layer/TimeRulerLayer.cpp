@@ -283,8 +283,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     if (incus < 1000) {
         // Temporarily switch to usec display mode (if we aren't using
         // it already)
-        prefs->blockSignals(true);
-        prefs->setTimeToTextMode(Preferences::TimeToTextUs);
+        prefs->setTimeToTextModeUnsaved(Preferences::TimeToTextUs);
     }
     
     // Calculate the number of ticks per increment -- approximate
@@ -415,8 +414,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
         us += incus;
     }
     
-    prefs->setTimeToTextMode(origTimeTextMode);
-    prefs->blockSignals(false);
+    prefs->setTimeToTextModeUnsaved(origTimeTextMode);
 
     paint.restore();
 }
