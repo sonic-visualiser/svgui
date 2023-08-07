@@ -65,6 +65,7 @@ TimeValueLayer::TimeValueLayer() :
     m_drawSegmentDivisions(true),
     m_fillSegments(true),
     m_derivative(false),
+    m_permitValueEditOfSegmentation(true), // for backward compatibility
     m_propertiesExplicitlySet(false),
     m_scaleMinimum(0),
     m_scaleMaximum(0)
@@ -369,6 +370,14 @@ TimeValueLayer::setShowDerivative(bool show)
 {
     if (m_derivative == show) return;
     m_derivative = show;
+    emit layerParametersChanged();
+}
+
+void
+TimeValueLayer::setPermitValueEditOfSegmentation(bool permit)
+{
+    if (m_permitValueEditOfSegmentation == permit) return;
+    m_permitValueEditOfSegmentation = permit;
     emit layerParametersChanged();
 }
 
@@ -1578,6 +1587,14 @@ TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     frame = frame / model->getResolution() * model->getResolution();
 
     double value = getValueForY(v, e->y());
+
+    if (m_plotStyle == PlotSegmentation && !m_permitValueEditOfSegmentation) {
+        // Do not allow dragging up/down
+        value = m_editingPoint.getValue();
+        if (frame == m_editingPoint.getFrame()) {
+            return;
+        }
+    }
 
     if (!m_editingCommand) {
         m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Drag Point"));

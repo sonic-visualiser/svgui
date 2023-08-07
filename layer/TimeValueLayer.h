@@ -123,6 +123,9 @@ public:
     void setShowDerivative(bool);
     bool getShowDerivative() const { return m_derivative; }
 
+    void setPermitValueEditOfSegmentation(bool);
+    bool getPermitValueEditOfSegmentation() const { return m_permitValueEditOfSegmentation; }
+    
     bool isLayerScrollable(const LayerGeometryProvider *v) const override;
 
     bool isLayerEditable() const override { return true; }
@@ -191,6 +194,7 @@ protected:
     bool m_drawSegmentDivisions;
     bool m_fillSegments;
     bool m_derivative;
+    bool m_permitValueEditOfSegmentation;
     bool m_propertiesExplicitlySet;
 
     mutable double m_scaleMinimum;
