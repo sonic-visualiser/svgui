@@ -135,10 +135,13 @@ public:
     bool needsTextLabelHeight() const override;
 
     bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const override;
+                         bool &logarithmic, QString &unit) const override;
 
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
+
+    void overrideHighlightForPointsAt(sv_frame_t);
+    void removeOverrideHighlight();
 
     int getVerticalZoomSteps(int &defaultStep) const override;
     int getCurrentVerticalZoomStep() const override;
@@ -196,6 +199,8 @@ protected:
     bool m_derivative;
     bool m_permitValueEditOfSegmentation;
     bool m_propertiesExplicitlySet;
+    bool m_overrideHighlight;
+    sv_frame_t m_highlightOverrideFrame;
 
     mutable double m_scaleMinimum;
     mutable double m_scaleMaximum;

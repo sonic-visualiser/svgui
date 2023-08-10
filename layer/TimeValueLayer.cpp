@@ -67,6 +67,8 @@ TimeValueLayer::TimeValueLayer() :
     m_derivative(false),
     m_permitValueEditOfSegmentation(true), // for backward compatibility
     m_propertiesExplicitlySet(false),
+    m_overrideHighlight(false),
+    m_highlightOverrideFrame(0),
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
@@ -487,6 +489,21 @@ TimeValueLayer::setDisplayExtents(double min, double max)
     
     emit layerParametersChanged();
     return true;
+}
+
+void
+TimeValueLayer::overrideHighlightForPointsAt(sv_frame_t frame)
+{
+    m_highlightOverrideFrame = frame;
+    m_overrideHighlight = true;
+    emit layerParametersChanged();
+}
+
+void
+TimeValueLayer::removeOverrideHighlight()
+{
+    m_overrideHighlight = false;
+    emit layerParametersChanged();
 }
 
 int
@@ -999,7 +1016,14 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     QPoint localPos;
     sv_frame_t illuminateFrame = -1;
 
-    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
+    if (m_overrideHighlight) {
+
+        illuminateFrame = m_highlightOverrideFrame;
+#ifdef DEBUG_TIME_VALUE_LAYER
+        cerr << "TimeValueLayer: using highlight override frame " << illuminateFrame << endl;
+#endif
+
+    } else if (v->shouldIlluminateLocalFeatures(this, localPos)) {
         EventVector localPoints = getLocalPoints(v, localPos.x());
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "TimeValueLayer: " << localPoints.size() << " local points" << endl;
@@ -1097,6 +1121,20 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             haveNext = true;
         }
 
+        bool illuminate = false;
+
+        if (illuminateFrame == p.getFrame()) {
+
+            // not equipped to illuminate the right section in line
+            // or curve mode
+
+            if (m_plotStyle != PlotCurve &&
+                m_plotStyle != PlotDiscreteCurves &&
+                m_plotStyle != PlotLines) {
+                illuminate = true;
+            }
+        }
+
 //        cout << "frame = " << p.getFrame() << ", x = " << x << ", haveNext = " << haveNext 
 //                  << ", nx = " << nx << endl;
 
@@ -1110,6 +1148,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             pen = QPen(getForegroundQColor(v));
             if (m_fillSegments) {
                 brush = QBrush(getColourForValue(v, value));
+            } else if (illuminate) {
+                QColor solid = ColourMapper(m_colourMap, m_colourInverted,
+                                            0.0, 1.0).map(0.5);
+                brush = QBrush
+                    (QColor(solid.red(), solid.green(), solid.blue(), 120));
             } else {
                 brush = QBrush(Qt::NoBrush);
             }
@@ -1126,20 +1169,6 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 paint.drawLine(x + w/2, y + 1, x + w/2, origin);
             } else if (y > origin + 1) {
                 paint.drawLine(x + w/2, origin, x + w/2, y - 1);
-            }
-        }
-
-        bool illuminate = false;
-
-        if (illuminateFrame == p.getFrame()) {
-
-            // not equipped to illuminate the right section in line
-            // or curve mode
-
-            if (m_plotStyle != PlotCurve &&
-                m_plotStyle != PlotDiscreteCurves &&
-                m_plotStyle != PlotLines) {
-                illuminate = true;
             }
         }
 
