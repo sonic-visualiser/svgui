@@ -1067,6 +1067,9 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     paint.setClipRect(rect);
     paint.setClipping(clippingRequired);
 
+    bool illuminated = false;
+    sv_frame_t illuminatedFrame = 0;
+    
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
@@ -1313,6 +1316,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             paint.setClipping(clippingRequired);
         }
 
+        if (illuminate) {
+            illuminated = true;
+            illuminatedFrame = illuminateFrame;
+        }
+
         prevFrame = p.getFrame();
         ++pointCount;
     }
@@ -1330,6 +1338,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     // looks like save/restore doesn't deal with this:
     paint.setRenderHint(QPainter::Antialiasing, false);
+
+    if (illuminated) {
+        // emit (but with const cast)
+        const_cast<TimeValueLayer *>(this)->frameIlluminated(illuminatedFrame);
+    }
 }
 
 int

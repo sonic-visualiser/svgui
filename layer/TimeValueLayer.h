@@ -177,6 +177,9 @@ public:
     QString getScaleUnits() const override;
     QColor getColourForValue(LayerGeometryProvider *v, double value) const override;
 
+signals:
+    void frameIlluminated(sv_frame_t);
+    
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     bool shouldAutoAlign() const;
