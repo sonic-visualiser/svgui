@@ -1265,10 +1265,16 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             paint.setPen(v->scalePen(QPen(getForegroundQColor(v), 2)));
 
             if (!illuminate) {
-                if (!m_drawSegmentDivisions ||
-                    nx < x + 5 ||
-                    x >= v->getPaintWidth() - 1) {
+                if (!m_drawSegmentDivisions) {
                     paint.setPen(Qt::NoPen);
+                } else if (x >= v->getPaintWidth() - 1) {
+                    paint.setPen(Qt::NoPen);
+                } else if (nx < x + 5) {
+                    if (m_fillSegments) {
+                        paint.setPen(Qt::NoPen);
+                    } else {
+                        paint.setPen(QPen(getForegroundQColor(v), 1));
+                    }
                 }
             }
 
