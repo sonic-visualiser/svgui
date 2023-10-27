@@ -1054,7 +1054,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
             int labelX, labelY;
 
-            SVDEBUG << "region label: x " << x << ", nextLabelMinX " << nextLabelMinX << endl;
+//            SVDEBUG << "region label: x " << x << ", nextLabelMinX " << nextLabelMinX << endl;
 
             if (m_plotStyle != PlotSegmentation) {
                 if (drawLabelToLeft) {
@@ -1082,7 +1082,7 @@ RegionLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             nextLabelMinX = labelX + labelWidth;
             lastLabelY = labelY;
 
-            SVDEBUG << "region label: at " << labelX << "," << labelY << " label " << label << " with nextLabelMinX now " << nextLabelMinX << endl;
+//            SVDEBUG << "region label: at " << labelX << "," << labelY << " label " << label << " with nextLabelMinX now " << nextLabelMinX << endl;
             
             PaintAssistant::drawVisibleText(v, paint, labelX, labelY, label,
                                             PaintAssistant::OutlinedText);
