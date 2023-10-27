@@ -35,6 +35,9 @@ public:
     // The SliceableLayer retains ownership of the model, and will
     // emit sliceableModelReplaced if it is about to become invalid.
     virtual ModelId getSliceableModel() const = 0;
+
+signals:
+    void sliceableModelReplaced(ModelId, ModelId);
 };
 
 #endif
