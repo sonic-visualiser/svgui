@@ -158,6 +158,8 @@ Colour3DPlotLayer::setModel(ModelId modelId)
         throw std::logic_error("Not a DenseThreeDimensionalModel");
     }
     
+    ModelId oldModelId = m_model;
+    
     if (m_model == modelId) return;
     m_model = modelId;
 
@@ -182,6 +184,7 @@ Colour3DPlotLayer::setModel(ModelId modelId)
     invalidatePeakCache();
 
     emit modelReplaced();
+    emit sliceableModelReplaced(oldModelId, m_model);
 }
 
 void

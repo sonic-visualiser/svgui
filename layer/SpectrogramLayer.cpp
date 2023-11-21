@@ -259,6 +259,8 @@ SpectrogramLayer::setModel(ModelId modelId)
     if (!modelId.isNone() && !newModel) {
         throw std::logic_error("Not a DenseTimeValueModel");
     }
+
+    ModelId oldModelId = m_model;
     
     if (modelId == m_model) return;
     m_model = modelId;
@@ -277,6 +279,7 @@ SpectrogramLayer::setModel(ModelId modelId)
     }
     
     emit modelReplaced();
+    emit sliceableModelReplaced(oldModelId, m_model);
 }
 
 Layer::PropertyList

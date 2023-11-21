@@ -2250,6 +2250,8 @@ View::paintEvent(QPaintEvent *e)
 {
 //    Profiler prof("View::paintEvent", false);
 
+    QFrame::paintEvent(e);
+
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     {
         sv_frame_t startFrame = getStartFrame();
@@ -2258,7 +2260,6 @@ View::paintEvent(QPaintEvent *e)
 #endif
 
     if (m_layerStack.empty()) {
-        QFrame::paintEvent(e);
         return;
     }
 
@@ -2594,8 +2595,6 @@ View::paintEvent(QPaintEvent *e)
     drawPlayPointer(paint);
 
     paint.end();
-
-    QFrame::paintEvent(e);
 }
 
 void

@@ -201,9 +201,9 @@ InteractiveFileFinder::getOpenFileNames(FileType type,
             lastPath = ".";
         }
     } else if (QFileInfo(lastPath).isDir()) {
-        lastPath = QFileInfo(lastPath).canonicalPath();
+        lastPath = QFileInfo(lastPath).canonicalFilePath();
     } else {
-        lastPath = QFileInfo(lastPath).absoluteDir().canonicalPath();
+        lastPath = QFileInfo(lastPath).canonicalPath();
     }
 
     QSettings settings;

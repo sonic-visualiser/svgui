@@ -65,7 +65,10 @@ TimeValueLayer::TimeValueLayer() :
     m_drawSegmentDivisions(true),
     m_fillSegments(true),
     m_derivative(false),
+    m_permitValueEditOfSegmentation(true), // for backward compatibility
     m_propertiesExplicitlySet(false),
+    m_overrideHighlight(false),
+    m_highlightOverrideFrame(0),
     m_scaleMinimum(0),
     m_scaleMaximum(0)
 {
@@ -372,6 +375,14 @@ TimeValueLayer::setShowDerivative(bool show)
     emit layerParametersChanged();
 }
 
+void
+TimeValueLayer::setPermitValueEditOfSegmentation(bool permit)
+{
+    if (m_permitValueEditOfSegmentation == permit) return;
+    m_permitValueEditOfSegmentation = permit;
+    emit layerParametersChanged();
+}
+
 bool
 TimeValueLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
@@ -478,6 +489,21 @@ TimeValueLayer::setDisplayExtents(double min, double max)
     
     emit layerParametersChanged();
     return true;
+}
+
+void
+TimeValueLayer::overrideHighlightForPointsAt(sv_frame_t frame)
+{
+    m_highlightOverrideFrame = frame;
+    m_overrideHighlight = true;
+    emit layerParametersChanged();
+}
+
+void
+TimeValueLayer::removeOverrideHighlight()
+{
+    m_overrideHighlight = false;
+    emit layerParametersChanged();
 }
 
 int
@@ -990,7 +1016,14 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     QPoint localPos;
     sv_frame_t illuminateFrame = -1;
 
-    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
+    if (m_overrideHighlight) {
+
+        illuminateFrame = m_highlightOverrideFrame;
+#ifdef DEBUG_TIME_VALUE_LAYER
+        cerr << "TimeValueLayer: using highlight override frame " << illuminateFrame << endl;
+#endif
+
+    } else if (v->shouldIlluminateLocalFeatures(this, localPos)) {
         EventVector localPoints = getLocalPoints(v, localPos.x());
 #ifdef DEBUG_TIME_VALUE_LAYER
         cerr << "TimeValueLayer: " << localPoints.size() << " local points" << endl;
@@ -1034,6 +1067,9 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     paint.setClipRect(rect);
     paint.setClipping(clippingRequired);
 
+    bool illuminated = false;
+    sv_frame_t illuminatedFrame = 0;
+    
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
@@ -1088,6 +1124,20 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             haveNext = true;
         }
 
+        bool illuminate = false;
+
+        if (illuminateFrame == p.getFrame()) {
+
+            // not equipped to illuminate the right section in line
+            // or curve mode
+
+            if (m_plotStyle != PlotCurve &&
+                m_plotStyle != PlotDiscreteCurves &&
+                m_plotStyle != PlotLines) {
+                illuminate = true;
+            }
+        }
+
 //        cout << "frame = " << p.getFrame() << ", x = " << x << ", haveNext = " << haveNext 
 //                  << ", nx = " << nx << endl;
 
@@ -1101,6 +1151,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             pen = QPen(getForegroundQColor(v));
             if (m_fillSegments) {
                 brush = QBrush(getColourForValue(v, value));
+            } else if (illuminate) {
+                QColor solid = ColourMapper(m_colourMap, m_colourInverted,
+                                            0.0, 1.0).map(0.5);
+                brush = QBrush
+                    (QColor(solid.red(), solid.green(), solid.blue(), 120));
             } else {
                 brush = QBrush(Qt::NoBrush);
             }
@@ -1117,20 +1172,6 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 paint.drawLine(x + w/2, y + 1, x + w/2, origin);
             } else if (y > origin + 1) {
                 paint.drawLine(x + w/2, origin, x + w/2, y - 1);
-            }
-        }
-
-        bool illuminate = false;
-
-        if (illuminateFrame == p.getFrame()) {
-
-            // not equipped to illuminate the right section in line
-            // or curve mode
-
-            if (m_plotStyle != PlotCurve &&
-                m_plotStyle != PlotDiscreteCurves &&
-                m_plotStyle != PlotLines) {
-                illuminate = true;
             }
         }
 
@@ -1224,10 +1265,16 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             paint.setPen(v->scalePen(QPen(getForegroundQColor(v), 2)));
 
             if (!illuminate) {
-                if (!m_drawSegmentDivisions ||
-                    nx < x + 5 ||
-                    x >= v->getPaintWidth() - 1) {
+                if (!m_drawSegmentDivisions) {
                     paint.setPen(Qt::NoPen);
+                } else if (x >= v->getPaintWidth() - 1) {
+                    paint.setPen(Qt::NoPen);
+                } else if (nx < x + 5) {
+                    if (m_fillSegments) {
+                        paint.setPen(Qt::NoPen);
+                    } else {
+                        paint.setPen(QPen(getForegroundQColor(v), 1));
+                    }
                 }
             }
 
@@ -1275,6 +1322,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             paint.setClipping(clippingRequired);
         }
 
+        if (illuminate) {
+            illuminated = true;
+            illuminatedFrame = illuminateFrame;
+        }
+
         prevFrame = p.getFrame();
         ++pointCount;
     }
@@ -1292,6 +1344,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     // looks like save/restore doesn't deal with this:
     paint.setRenderHint(QPainter::Antialiasing, false);
+
+    if (illuminated) {
+        // emit (but with const cast)
+        const_cast<TimeValueLayer *>(this)->frameIlluminated(illuminatedFrame);
+    }
 }
 
 int
@@ -1578,6 +1635,14 @@ TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     frame = frame / model->getResolution() * model->getResolution();
 
     double value = getValueForY(v, e->y());
+
+    if (m_plotStyle == PlotSegmentation && !m_permitValueEditOfSegmentation) {
+        // Do not allow dragging up/down
+        value = m_editingPoint.getValue();
+        if (frame == m_editingPoint.getFrame()) {
+            return;
+        }
+    }
 
     if (!m_editingCommand) {
         m_editingCommand = new ChangeEventsCommand(m_model.untyped, tr("Drag Point"));

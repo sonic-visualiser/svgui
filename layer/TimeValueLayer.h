@@ -123,6 +123,9 @@ public:
     void setShowDerivative(bool);
     bool getShowDerivative() const { return m_derivative; }
 
+    void setPermitValueEditOfSegmentation(bool);
+    bool getPermitValueEditOfSegmentation() const { return m_permitValueEditOfSegmentation; }
+    
     bool isLayerScrollable(const LayerGeometryProvider *v) const override;
 
     bool isLayerEditable() const override { return true; }
@@ -132,10 +135,13 @@ public:
     bool needsTextLabelHeight() const override;
 
     bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const override;
+                         bool &logarithmic, QString &unit) const override;
 
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
+
+    void overrideHighlightForPointsAt(sv_frame_t);
+    void removeOverrideHighlight();
 
     int getVerticalZoomSteps(int &defaultStep) const override;
     int getCurrentVerticalZoomStep() const override;
@@ -171,6 +177,9 @@ public:
     QString getScaleUnits() const override;
     QColor getColourForValue(LayerGeometryProvider *v, double value) const override;
 
+signals:
+    void frameIlluminated(sv_frame_t);
+    
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     bool shouldAutoAlign() const;
@@ -191,7 +200,10 @@ protected:
     bool m_drawSegmentDivisions;
     bool m_fillSegments;
     bool m_derivative;
+    bool m_permitValueEditOfSegmentation;
     bool m_propertiesExplicitlySet;
+    bool m_overrideHighlight;
+    sv_frame_t m_highlightOverrideFrame;
 
     mutable double m_scaleMinimum;
     mutable double m_scaleMaximum;
