@@ -361,7 +361,7 @@ Overview::mouseDoubleClickEvent(QMouseEvent *e)
 }
 
 void
-Overview::enterEvent(QEvent *)
+Overview::enterEvent(QEnterEvent *)
 {
     emit contextHelpChanged(tr("Click and drag to navigate; double-click to jump"));
 }

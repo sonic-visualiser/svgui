@@ -62,7 +62,7 @@ public:
                                           int value) const override;
     RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
     void setProperty(const PropertyName &, int value) override;
-    void setProperties(const QXmlAttributes &) override;
+    void setProperties(const LayerAttributes &) override;
 
     bool getValueExtents(double &min, double &max,
                          bool &logarithmic, QString &unit) const override;

@@ -2051,7 +2051,7 @@ TimeValueLayer::toXml(QTextStream &stream,
 }
 
 void
-TimeValueLayer::setProperties(const QXmlAttributes &attributes)
+TimeValueLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 

@@ -904,7 +904,7 @@ TimeInstantLayer::toXml(QTextStream &stream,
 }
 
 void
-TimeInstantLayer::setProperties(const QXmlAttributes &attributes)
+TimeInstantLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 

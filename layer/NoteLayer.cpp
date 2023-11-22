@@ -779,11 +779,6 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             paint.setPen(v->getForeground());
             paint.setBrush(v->getForeground());
 
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
             QString vlabel;
             if (m_modelUsesHz) {
                 vlabel = QString("%1%2")
@@ -796,7 +791,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             }
             
             PaintAssistant::drawVisibleText(v, paint, 
-                               x - paint.fontMetrics().width(vlabel) - 2,
+                               x - paint.fontMetrics().horizontalAdvance(vlabel) - 2,
                                y + paint.fontMetrics().height()/2
                                  - paint.fontMetrics().descent(), 
                                vlabel, PaintAssistant::OutlinedText);
@@ -1347,7 +1342,7 @@ NoteLayer::toXml(QTextStream &stream,
 }
 
 void
-NoteLayer::setProperties(const QXmlAttributes &attributes)
+NoteLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 

@@ -1213,7 +1213,7 @@ SliceLayer::toXml(QTextStream &stream,
 }
 
 void
-SliceLayer::setProperties(const QXmlAttributes &attributes)
+SliceLayer::setProperties(const LayerAttributes &attributes)
 {
     bool ok = false;
 

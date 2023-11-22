@@ -57,7 +57,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *e) override;
     void mouseMoveEvent(QMouseEvent *e) override;
     void mouseDoubleClickEvent(QMouseEvent *e) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
     bool shouldLabelSelections() const override { return false; }
 

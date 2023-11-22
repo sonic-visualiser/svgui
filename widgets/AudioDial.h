@@ -126,7 +126,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *pMouseEvent) override;
     void mouseReleaseEvent(QMouseEvent *pMouseEvent) override;
     void mouseDoubleClickEvent(QMouseEvent *pMouseEvent) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 
 protected slots:

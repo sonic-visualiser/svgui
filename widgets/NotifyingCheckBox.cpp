@@ -20,7 +20,7 @@ NotifyingCheckBox::~NotifyingCheckBox()
 }
 
 void
-NotifyingCheckBox::enterEvent(QEvent *e)
+NotifyingCheckBox::enterEvent(QEnterEvent *e)
 {
     QCheckBox::enterEvent(e);
     emit mouseEntered();

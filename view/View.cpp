@@ -2710,14 +2710,9 @@ View::drawSelections(QPainter &paint)
                       .toText(true)))
                 .arg(i->getEndFrame() - i->getStartFrame());
             
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-            int sw = metrics.width(startText),
-                ew = metrics.width(endText),
-                dw = metrics.width(durationText);
+            int sw = metrics.horizontalAdvance(startText),
+                ew = metrics.horizontalAdvance(endText),
+                dw = metrics.horizontalAdvance(durationText);
 
             int sy = metrics.ascent() + metrics.height() + 4;
             int ey = sy;
@@ -2864,7 +2859,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
             axs = QString("%1 (%2)").arg(axs)
                 .arg(Pitch::getPitchLabelForFrequency(v0));
         }
-        aw = paint.fontMetrics().width(axs);
+        aw = paint.fontMetrics().horizontalAdvance(axs);
         ++labelCount;
     }
 
@@ -2877,7 +2872,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
                 bxs = QString("%1 (%2)").arg(bxs)
                     .arg(Pitch::getPitchLabelForFrequency(v1));
             }
-            bw = paint.fontMetrics().width(bxs);
+            bw = paint.fontMetrics().horizontalAdvance(bxs);
         }
     }
 
@@ -2885,7 +2880,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         
     if (b0 && b1 && v1 != v0 && u0 == u1) {
         dxs = QString("[%1 %2]").arg(fabs(v1 - v0)).arg(u1);
-        dw = paint.fontMetrics().width(dxs);
+        dw = paint.fontMetrics().horizontalAdvance(dxs);
     }
     
     b0 = false;
@@ -2899,7 +2894,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
             ays = QString("%1 (%2)").arg(ays)
                 .arg(Pitch::getPitchLabelForFrequency(v0));
         }
-        aw = std::max(aw, paint.fontMetrics().width(ays));
+        aw = std::max(aw, paint.fontMetrics().horizontalAdvance(ays));
         ++labelCount;
     }
 
@@ -2912,7 +2907,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
                 bys = QString("%1 (%2)").arg(bys)
                     .arg(Pitch::getPitchLabelForFrequency(v1));
             }
-            bw = std::max(bw, paint.fontMetrics().width(bys));
+            bw = std::max(bw, paint.fontMetrics().horizontalAdvance(bys));
         }
     }
 
@@ -2939,7 +2934,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         } else {
             dys = QString("[%1]").arg(dy);
         }
-        dw = std::max(dw, paint.fontMetrics().width(dys));
+        dw = std::max(dw, paint.fontMetrics().horizontalAdvance(dys));
     }
 
     int mw = r.width();

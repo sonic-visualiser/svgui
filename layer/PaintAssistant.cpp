@@ -117,14 +117,9 @@ PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
         
         if (spaceForLabel) {
             
-            // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-            // replacement (horizontalAdvance) was only added in Qt 5.11
-            // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
             int tx = 3;
-            if (paint.fontMetrics().width(text) < w - 10) {
-                tx = w - 10 - paint.fontMetrics().width(text);
+            if (paint.fontMetrics().horizontalAdvance(text) < w - 10) {
+                tx = w - 10 - paint.fontMetrics().horizontalAdvance(text);
             }
             
             int ty = y;

@@ -604,11 +604,6 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
             (m_editing && m_editingPoint == p)) {
 
             paint.setPen(QPen(getBaseQColor(), v->scalePixelSize(2)));
-                
-            // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-            // replacement (horizontalAdvance) was only added in Qt 5.11
-            // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
             if (abs(h) > 2 * fm.height()) {
             
@@ -622,13 +617,13 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
                 PaintAssistant::drawVisibleText
                     (v, paint, 
-                     x - fm.width(y0label) - gap,
+                     x - fm.horizontalAdvance(y0label) - gap,
                      y - fm.descent(), 
                      y0label, PaintAssistant::OutlinedText);
 
                 PaintAssistant::drawVisibleText
                     (v, paint, 
-                     x - fm.width(y1label) - gap,
+                     x - fm.horizontalAdvance(y1label) - gap,
                      y + h + fm.ascent(), 
                      y1label, PaintAssistant::OutlinedText);
 
@@ -642,7 +637,7 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
                 PaintAssistant::drawVisibleText
                     (v, paint, 
-                     x - fm.width(ylabel) - gap,
+                     x - fm.horizontalAdvance(ylabel) - gap,
                      y - fm.descent(), 
                      ylabel, PaintAssistant::OutlinedText);
             }
@@ -658,11 +653,11 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
                 (v, paint, x, y + fm.ascent() + gap,
                  t0label, PaintAssistant::OutlinedText);
 
-            if (w > fm.width(t0label) + fm.width(t1label) + gap * 3) {
+            if (w > fm.horizontalAdvance(t0label) + fm.horizontalAdvance(t1label) + gap * 3) {
 
                 PaintAssistant::drawVisibleText
                     (v, paint,
-                     x + w - fm.width(t1label),
+                     x + w - fm.horizontalAdvance(t1label),
                      y + fm.ascent() + gap,
                      t1label, PaintAssistant::OutlinedText);
 
@@ -670,7 +665,7 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
                 PaintAssistant::drawVisibleText
                     (v, paint,
-                     x + w - fm.width(t1label),
+                     x + w - fm.horizontalAdvance(t1label),
                      y + fm.ascent() + fm.height() + gap,
                      t1label, PaintAssistant::OutlinedText);
             }                
@@ -695,7 +690,7 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int y = getYForValue(v, p.getValue());
 
-        int labelWidth = fm.width(label);
+        int labelWidth = fm.horizontalAdvance(label);
 
         int gap = v->scalePixelSize(2);
 
@@ -1193,7 +1188,7 @@ BoxLayer::toXml(QTextStream &stream,
 }
 
 void
-BoxLayer::setProperties(const QXmlAttributes &attributes)
+BoxLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 

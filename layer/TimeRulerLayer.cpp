@@ -149,12 +149,7 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
         endFrame = startFrame + 1;
     }
 
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-    int exampleWidth = QFontMetrics(QFont()).width("10:42.987654");
+    int exampleWidth = QFontMetrics(QFont()).horizontalAdvance("10:42.987654");
     int minPixelSpacing = v->getXForViewX(exampleWidth);
 
     RealTime rtStart = RealTime::frame2RealTime(startFrame, sampleRate);
@@ -336,7 +331,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             QString text(QString::fromStdString(rt.toText()));
             
             QFontMetrics metrics = paint.fontMetrics();
-            int tw = metrics.width(text);
+            int tw = metrics.horizontalAdvance(text);
 
             if (tw < 50 &&
                 (x < rect.x() - tw/2 ||
@@ -443,7 +438,7 @@ TimeRulerLayer::toXml(QTextStream &stream,
 }
 
 void
-TimeRulerLayer::setProperties(const QXmlAttributes &attributes)
+TimeRulerLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 }

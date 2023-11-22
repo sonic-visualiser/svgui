@@ -96,7 +96,7 @@ public:
 
     void setLayerDormant(const LayerGeometryProvider *v, bool dormant) override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     static bool isImageFileSupported(QString url); // based on extension alone
     

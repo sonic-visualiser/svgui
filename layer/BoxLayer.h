@@ -108,7 +108,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     /// VerticalScaleLayer methods
     int getYForValue(LayerGeometryProvider *v, double value) const override;

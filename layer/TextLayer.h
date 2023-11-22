@@ -88,7 +88,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
 protected:
     int getYForHeight(LayerGeometryProvider *v, double height) const;

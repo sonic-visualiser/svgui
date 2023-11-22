@@ -20,7 +20,7 @@ NotifyingPushButton::~NotifyingPushButton()
 }
 
 void
-NotifyingPushButton::enterEvent(QEvent *e)
+NotifyingPushButton::enterEvent(QEnterEvent *e)
 {
     QPushButton::enterEvent(e);
     emit mouseEntered();

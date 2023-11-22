@@ -1877,7 +1877,7 @@ FlexiNoteLayer::toXml(QTextStream &stream,
 }
 
 void
-FlexiNoteLayer::setProperties(const QXmlAttributes &attributes)
+FlexiNoteLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 

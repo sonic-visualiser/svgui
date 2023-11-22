@@ -1332,7 +1332,7 @@ Colour3DPlotLayer::toXml(QTextStream &stream,
 }
 
 void
-Colour3DPlotLayer::setProperties(const QXmlAttributes &attributes)
+Colour3DPlotLayer::setProperties(const LayerAttributes &attributes)
 {
     bool ok = false, alsoOk = false;
 

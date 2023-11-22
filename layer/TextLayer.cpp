@@ -799,7 +799,7 @@ TextLayer::toXml(QTextStream &stream,
 }
 
 void
-TextLayer::setProperties(const QXmlAttributes &attributes)
+TextLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 }

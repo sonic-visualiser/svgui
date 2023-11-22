@@ -578,7 +578,7 @@ LevelPanWidget::paintEvent(QPaintEvent *)
 }
 
 void
-LevelPanWidget::enterEvent(QEvent *e)
+LevelPanWidget::enterEvent(QEnterEvent *e)
 {
     QWidget::enterEvent(e);
     emit mouseEntered();
@@ -587,7 +587,7 @@ LevelPanWidget::enterEvent(QEvent *e)
 void
 LevelPanWidget::leaveEvent(QEvent *e)
 {
-    QWidget::enterEvent(e);
+    QWidget::leaveEvent(e);
     emit mouseLeft();
 }
 

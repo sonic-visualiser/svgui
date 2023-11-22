@@ -992,7 +992,7 @@ ImageLayer::toXml(QTextStream &stream,
 }
 
 void
-ImageLayer::setProperties(const QXmlAttributes &)
+ImageLayer::setProperties(const LayerAttributes &)
 {
 }
 

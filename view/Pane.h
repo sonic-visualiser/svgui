@@ -120,7 +120,7 @@ protected:
     virtual void mouseReleaseEvent(QMouseEvent *e) override;
     virtual void mouseMoveEvent(QMouseEvent *e) override;
     virtual void mouseDoubleClickEvent(QMouseEvent *e) override;
-    virtual void enterEvent(QEvent *e) override;
+    virtual void enterEvent(QEnterEvent *e) override;
     virtual void leaveEvent(QEvent *e) override;
     virtual void wheelEvent(QWheelEvent *e) override;
     virtual void resizeEvent(QResizeEvent *e) override;

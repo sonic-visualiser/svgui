@@ -59,7 +59,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     bool canExistWithoutModel() const override { return true; }
 

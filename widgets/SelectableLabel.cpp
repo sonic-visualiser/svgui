@@ -129,7 +129,7 @@ SelectableLabel::mouseReleaseEvent(QMouseEvent *e)
 }
 
 void
-SelectableLabel::enterEvent(QEvent *)
+SelectableLabel::enterEvent(QEnterEvent *)
 {
 //    cerr << "enterEvent" << endl;
 //    QPalette palette = QApplication::palette();

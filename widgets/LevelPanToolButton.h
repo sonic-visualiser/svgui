@@ -75,7 +75,7 @@ private slots:
     
 protected:
     void paintEvent(QPaintEvent *) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void wheelEvent(QWheelEvent *e) override;

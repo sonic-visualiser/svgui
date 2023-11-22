@@ -52,14 +52,14 @@ PaneStack::PaneStack(QWidget *parent,
     m_layoutStyle(PropertyStackPerPaneLayout)
 {
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     if (m_options & int(Option::NoUserResize)) {
 
         m_autoResizeStack = new QWidget;
         m_autoResizeLayout = new QVBoxLayout;
-        m_autoResizeLayout->setMargin(0);
+        m_autoResizeLayout->setContentsMargins(0, 0, 0, 0);
         m_autoResizeLayout->setSpacing(0);
         m_autoResizeStack->setLayout(m_autoResizeLayout);
         layout->addWidget(m_autoResizeStack);
@@ -90,7 +90,7 @@ PaneStack::addPane()
     QFrame *frame = new QFrame;
 
     QGridLayout *layout = new QGridLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setHorizontalSpacing(m_viewManager->scalePixelSize(2));
 
     AlignmentView *av = nullptr;
@@ -534,10 +534,10 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
     // background drawn transparent in Qt 4.1 -- I can't quite see why
     
     QPixmap selectedMap(1, 1);
-    selectedMap.fill(QApplication::palette().color(QPalette::Foreground));
+    selectedMap.fill(QApplication::palette().color(QPalette::WindowText));
     
     QPixmap unselectedMap(1, 1);
-    unselectedMap.fill(QApplication::palette().color(QPalette::Background));
+    unselectedMap.fill(QApplication::palette().color(QPalette::Window));
 
     bool found = false;
 

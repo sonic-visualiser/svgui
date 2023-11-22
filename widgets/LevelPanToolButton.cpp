@@ -250,7 +250,7 @@ LevelPanToolButton::paintEvent(QPaintEvent *)
 }
 
 void
-LevelPanToolButton::enterEvent(QEvent *e)
+LevelPanToolButton::enterEvent(QEnterEvent *e)
 {
     QToolButton::enterEvent(e);
     emit mouseEntered();

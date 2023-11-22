@@ -37,7 +37,7 @@ NotifyingTabBar::mousePressEvent(QMouseEvent *e)
 }
 
 void
-NotifyingTabBar::enterEvent(QEvent *e)
+NotifyingTabBar::enterEvent(QEnterEvent *e)
 {
     QTabBar::enterEvent(e);
     emit mouseEntered();

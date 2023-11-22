@@ -20,7 +20,7 @@ NotifyingComboBox::~NotifyingComboBox()
 }
 
 void
-NotifyingComboBox::enterEvent(QEvent *e)
+NotifyingComboBox::enterEvent(QEnterEvent *e)
 {
     QComboBox::enterEvent(e);
     emit mouseEntered();

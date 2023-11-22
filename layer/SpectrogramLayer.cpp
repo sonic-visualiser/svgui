@@ -2703,7 +2703,7 @@ SpectrogramLayer::toXml(QTextStream &stream,
 }
 
 void
-SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
+SpectrogramLayer::setProperties(const LayerAttributes &attributes)
 {
     bool ok = false;
 

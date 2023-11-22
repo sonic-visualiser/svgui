@@ -523,7 +523,7 @@ void AudioDial::mousePressEvent(QMouseEvent *mouseEvent)
 {
     if (m_mouseDial) {
         QDial::mousePressEvent(mouseEvent);
-    } else if (mouseEvent->button() == Qt::MidButton ||
+    } else if (mouseEvent->button() == Qt::MiddleButton ||
                ((mouseEvent->button() == Qt::LeftButton) &&
                 (mouseEvent->modifiers() & Qt::ControlModifier))) {
         setToDefault();
@@ -643,7 +643,7 @@ void AudioDial::mouseReleaseEvent(QMouseEvent *mouseEvent)
 }
 
 void
-AudioDial::enterEvent(QEvent *e)
+AudioDial::enterEvent(QEnterEvent *e)
 {
     QDial::enterEvent(e);
     emit mouseEntered();
@@ -652,7 +652,7 @@ AudioDial::enterEvent(QEvent *e)
 void
 AudioDial::leaveEvent(QEvent *e)
 {
-    QDial::enterEvent(e);
+    QDial::leaveEvent(e);
     emit mouseLeft();
 }
 

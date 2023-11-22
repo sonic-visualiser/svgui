@@ -330,7 +330,7 @@ Layer::MeasureRect::toXml(QTextStream &stream, QString indent) const
 }
 
 void
-Layer::addMeasurementRect(const QXmlAttributes &attributes)
+Layer::addMeasurementRect(const LayerAttributes &attributes)
 {
     MeasureRect rect;
     QString fs = attributes.value("startFrame");

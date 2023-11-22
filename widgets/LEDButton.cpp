@@ -96,7 +96,7 @@ LEDButton::mousePressEvent(QMouseEvent *e)
 }
 
 void
-LEDButton::enterEvent(QEvent *)
+LEDButton::enterEvent(QEnterEvent *)
 {
     emit mouseEntered();
 }

@@ -33,7 +33,7 @@ signals:
 
 protected:
     void mousePressEvent(QMouseEvent *) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 };
 

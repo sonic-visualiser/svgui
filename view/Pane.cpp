@@ -2362,7 +2362,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 }
 
 void
-Pane::enterEvent(QEvent *)
+Pane::enterEvent(QEnterEvent *)
 {
     m_mouseInWidget = true;
 }

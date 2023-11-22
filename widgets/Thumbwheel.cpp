@@ -344,7 +344,7 @@ Thumbwheel::getShowScale() const
 }
 
 void
-Thumbwheel::enterEvent(QEvent *)
+Thumbwheel::enterEvent(QEnterEvent *)
 {
     emit mouseEntered();
 }

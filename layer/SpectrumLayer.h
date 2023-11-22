@@ -66,7 +66,7 @@ public:
                                           int value) const override;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
     virtual void setProperty(const PropertyName &, int value) override;
-    virtual void setProperties(const QXmlAttributes &) override;
+    virtual void setProperties(const LayerAttributes &) override;
 
     virtual bool setDisplayExtents(double min, double max) override;
     

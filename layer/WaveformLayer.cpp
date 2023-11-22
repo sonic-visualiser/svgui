@@ -1726,7 +1726,7 @@ WaveformLayer::toXml(QTextStream &stream,
 }
 
 void
-WaveformLayer::setProperties(const QXmlAttributes &attributes)
+WaveformLayer::setProperties(const LayerAttributes &attributes)
 {
     bool ok = false;
 

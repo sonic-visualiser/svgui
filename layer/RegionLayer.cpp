@@ -1609,7 +1609,7 @@ RegionLayer::toXml(QTextStream &stream,
 }
 
 void
-RegionLayer::setProperties(const QXmlAttributes &attributes)
+RegionLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
@@ -1621,7 +1621,7 @@ RegionLayer::setProperties(const QXmlAttributes &attributes)
         attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
     
-    QString colourMapId = attributes.value("fillColourMap");
+    QString colourMapId = attributes.value("fillColourMap").toString();
     int colourMap = ColourMapper::getColourMapById(colourMapId);
     if (colourMap >= 0) {
         setFillColourMap(colourMap);

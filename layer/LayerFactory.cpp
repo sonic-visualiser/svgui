@@ -536,7 +536,7 @@ LayerFactory::setLayerProperties(Layer *layer, QString newXml)
         return;
     }
         
-    QXmlAttributes attrs;
+    LayerAttributes attrs;
         
     QDomElement layerElt = docNew.firstChildElement("layer");
     QDomNamedNodeMap attrNodes = layerElt.attributes();
