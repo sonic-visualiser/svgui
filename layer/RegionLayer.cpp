@@ -1621,7 +1621,7 @@ RegionLayer::setProperties(const LayerAttributes &attributes)
         attributes.value("plotStyle").toInt(&ok);
     if (ok) setPlotStyle(style);
     
-    QString colourMapId = attributes.value("fillColourMap").toString();
+    QString colourMapId = attributes.value("fillColourMap");
     int colourMap = ColourMapper::getColourMapById(colourMapId);
     if (colourMap >= 0) {
         setFillColourMap(colourMap);

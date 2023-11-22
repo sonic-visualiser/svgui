@@ -29,7 +29,7 @@
 
 #include "IconLoader.h"
 
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QMenu>
 #include <QToolBar>
 #include <QString>
@@ -530,7 +530,7 @@ CommandHistory::updateActions()
             menuAction->setEnabled(true);
 
             QString commandName = stack.top()->getName();
-            commandName.replace(QRegExp("&"), "");
+            commandName.replace(QRegularExpression("&"), "");
 
             QString text = (undo ? tr("&Undo %1") : tr("Re&do %1"))
                 .arg(commandName);
@@ -551,7 +551,7 @@ CommandHistory::updateActions()
             stack.pop();
 
             QString commandName = command->getName();
-            commandName.replace(QRegExp("&"), "");
+            commandName.replace(QRegularExpression("&"), "");
 
             QString text;
             if (undo) text = tr("&Undo %1").arg(commandName);

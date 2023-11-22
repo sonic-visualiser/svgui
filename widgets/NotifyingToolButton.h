@@ -39,7 +39,7 @@ signals:
     void mouseLeft();
 
 protected:
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 };
 

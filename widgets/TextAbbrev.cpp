@@ -42,12 +42,7 @@ TextAbbrev::getFuzzLength(QString ellipsis)
 int
 TextAbbrev::getFuzzWidth(const QFontMetrics &metrics, QString ellipsis)
 {
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-    int width = metrics.width(ellipsis);
+    int width = metrics.horizontalAdvance(ellipsis);
     return width * 2;
 }
 
@@ -99,7 +94,7 @@ TextAbbrev::abbreviate(QString text,
 {
     if (ellipsis == "") ellipsis = getDefaultEllipsis();
 
-    int tw = metrics.width(text);
+    int tw = metrics.horizontalAdvance(text);
 
     if (tw <= maxWidth) {
         maxWidth = tw;
@@ -119,7 +114,7 @@ TextAbbrev::abbreviate(QString text,
             break;
         }
 
-        tw = metrics.width(text);
+        tw = metrics.horizontalAdvance(text);
     }
 
     maxWidth = tw;
@@ -168,7 +163,7 @@ TextAbbrev::abbreviate(const QStringList &texts, const QFontMetrics &metrics,
 
         int maxOrigWidth = 0;
         for (int i = 0; i < texts.size(); ++i) {
-            int w = metrics.width(texts[i]);
+            int w = metrics.horizontalAdvance(texts[i]);
             if (w > maxOrigWidth) maxOrigWidth = w;
         }
 
@@ -261,10 +256,10 @@ TextAbbrev::elidePrefixes(const QStringList &texts,
         int plen = pfx.length();
         if (plen < fl) continue;
 
-        int pwid = metrics.width(pfx);
+        int pwid = metrics.horizontalAdvance(pfx);
         int twid = pwid - targetWidthReduction;
-        if (twid < metrics.width(ellipsis) * 2) {
-            twid = metrics.width(ellipsis) * 2;
+        if (twid < metrics.horizontalAdvance(ellipsis) * 2) {
+            twid = metrics.horizontalAdvance(ellipsis) * 2;
         }
         reduced[pfx] = abbreviate(pfx, metrics, twid, ElideEnd, ellipsis);
     }

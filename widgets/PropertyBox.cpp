@@ -90,7 +90,7 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
     populateViewPlayFrame();
 
     m_layout = new QGridLayout;
-    m_layout->setMargin(0);
+    m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setHorizontalSpacing(2);
     m_layout->setVerticalSpacing(1);
     m_mainWidget->setLayout(m_layout);
@@ -157,7 +157,8 @@ PropertyBox::populateViewPlayFrame()
     QGridLayout *layout = new QGridLayout;
     m_viewPlayFrame->setLayout(layout);
 
-    layout->setMargin(layout->margin() / 2);
+    int thinMargin = layout->contentsMargins().top() / 2;
+    layout->setContentsMargins(thinMargin, thinMargin, thinMargin, thinMargin);
 
 #ifdef DEBUG_PROPERTY_BOX
     SVDEBUG << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName() << ") params " << params << endl;

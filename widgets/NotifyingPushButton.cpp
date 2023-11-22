@@ -29,7 +29,7 @@ NotifyingPushButton::enterEvent(QEnterEvent *e)
 void
 NotifyingPushButton::leaveEvent(QEvent *e)
 {
-    QPushButton::enterEvent(e);
+    QPushButton::leaveEvent(e);
     emit mouseLeft();
 }
 

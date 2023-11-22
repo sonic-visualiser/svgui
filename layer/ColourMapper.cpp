@@ -107,7 +107,7 @@ static vector<QColor> cividis = convertStrings({
     false);
 
 static void
-mapDiscrete(double norm, vector<QColor> &colours, double &r, double &g, double &b)
+mapDiscrete(double norm, vector<QColor> &colours, float &r, float &g, float &b)
 {
     int n = int(colours.size());
     double m = norm * (n-1);
@@ -272,7 +272,7 @@ ColourMapper::map(double value) const
         norm = 1.0 - norm;
     }
     
-    double h = 0.0, s = 0.0, v = 0.0, r = 0.0, g = 0.0, b = 0.0;
+    float h = 0.0, s = 0.0, v = 0.0, r = 0.0, g = 0.0, b = 0.0;
     bool hsv = true;
 
     double blue = 0.6666, pieslice = 0.3333;

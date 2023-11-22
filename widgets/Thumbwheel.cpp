@@ -358,7 +358,7 @@ Thumbwheel::leaveEvent(QEvent *)
 void
 Thumbwheel::mousePressEvent(QMouseEvent *e)
 {
-    if (e->button() == Qt::MidButton ||
+    if (e->button() == Qt::MiddleButton ||
         ((e->button() == Qt::LeftButton) &&
          (e->modifiers() & Qt::ControlModifier))) {
         resetToDefault();

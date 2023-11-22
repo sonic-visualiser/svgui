@@ -29,7 +29,7 @@ NotifyingCheckBox::enterEvent(QEnterEvent *e)
 void
 NotifyingCheckBox::leaveEvent(QEvent *e)
 {
-    QCheckBox::enterEvent(e);
+    QCheckBox::leaveEvent(e);
     emit mouseLeft();
 }
 

@@ -67,7 +67,7 @@ PluginParameterDialog::PluginParameterDialog(std::shared_ptr<Vamp::PluginBase> p
     pluginBox->setLayout(subgrid);
 
     subgrid->setSpacing(0);
-    subgrid->setMargin(10);
+    subgrid->setContentsMargins(10, 10, 10, 10);
 
     QFont boldFont(pluginBox->font());
     boldFont.setBold(true);
@@ -183,7 +183,7 @@ PluginParameterDialog::PluginParameterDialog(std::shared_ptr<Vamp::PluginBase> p
     grid->setRowStretch(2, 10);
 
     QHBoxLayout *paramLayout = new QHBoxLayout;
-    paramLayout->setMargin(0);
+    paramLayout->setContentsMargins(0, 0, 0, 0);
     paramBox->setLayout(paramLayout);
 
     QScrollArea *scroll = new QScrollArea;
@@ -199,7 +199,7 @@ PluginParameterDialog::PluginParameterDialog(std::shared_ptr<Vamp::PluginBase> p
 
     m_advanced = new QFrame;
     QVBoxLayout *advancedLayout = new QVBoxLayout;
-    advancedLayout->setMargin(0);
+    advancedLayout->setContentsMargins(0, 0, 0, 0);
     m_advanced->setLayout(advancedLayout);
     grid->addWidget(m_advanced, 3, 0);
 

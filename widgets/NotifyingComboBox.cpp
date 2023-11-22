@@ -29,7 +29,7 @@ NotifyingComboBox::enterEvent(QEnterEvent *e)
 void
 NotifyingComboBox::leaveEvent(QEvent *e)
 {
-    QComboBox::enterEvent(e);
+    QComboBox::leaveEvent(e);
     emit mouseLeft();
 }
 

@@ -364,12 +364,7 @@ ImageLayer::drawImage(LayerGeometryProvider *v, QPainter &paint, const Event &p,
             likelyWidth = availableWidth;
         }
 
-        // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-        // replacement (horizontalAdvance) was only added in Qt 5.11
-        // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-        int singleWidth = paint.fontMetrics().width(label);
+        int singleWidth = paint.fontMetrics().horizontalAdvance(label);
         if (singleWidth < availableWidth && singleWidth < likelyWidth * 2) {
             likelyWidth = singleWidth + 4;
         }
@@ -407,7 +402,7 @@ ImageLayer::drawImage(LayerGeometryProvider *v, QPainter &paint, const Event &p,
         font.setItalic(true);
         paint.setFont(font);
 
-        int tw = paint.fontMetrics().width(additionalText);
+        int tw = paint.fontMetrics().horizontalAdvance(additionalText);
         if (tw > availableWidth) {
             tw = availableWidth;
         }

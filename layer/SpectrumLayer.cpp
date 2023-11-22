@@ -981,7 +981,7 @@ SpectrumLayer::setProperties(const LayerAttributes &attributes)
     int oversampling = attributes.value("oversampling").toUInt(&ok);
     if (ok) setOversampling(oversampling);
 
-    bool showPeaks = (attributes.value("showPeaks").toString().trimmed() == "true");
+    bool showPeaks = (attributes.value("showPeaks").trimmed() == "true");
     setShowPeaks(showPeaks);
 }
 

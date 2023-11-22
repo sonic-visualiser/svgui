@@ -42,7 +42,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QTextStream>
 #include <QMessageBox>
 #include <QInputDialog>
@@ -1298,16 +1298,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 italic = true;
             }
 
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
             if (label != "") {
                 // Quick test for 20px before we do the slower test using metrics
                 bool haveRoom = (nx > x + 20);
                 haveRoom = (haveRoom &&
-                            (nx > x + 6 + paint.fontMetrics().width(label)));
+                            (nx > x + 6 + paint.fontMetrics().horizontalAdvance(label)));
                 if (haveRoom ||
                     (!haveNext &&
                      (pointCount == 0 || !italic))) {
@@ -1880,7 +1875,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
 
             if (!haveUsableLabels) {
                 if (i->hasLabel()) {
-                    if (i->getLabel().contains(QRegExp("[0-9]"))) {
+                    if (i->getLabel().contains(QRegularExpression("[0-9]"))) {
                         haveUsableLabels = true;
                     }
                 }

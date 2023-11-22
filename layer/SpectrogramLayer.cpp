@@ -1929,11 +1929,6 @@ SpectrogramLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
                                       QPoint cursorPos,
                                       vector<QRect> &extents) const
 {
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
     QRect vertical(cursorPos.x() - 12, 0, 12, v->getPaintHeight());
     extents.push_back(vertical);
 
@@ -1943,22 +1938,22 @@ SpectrogramLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
     int sw = getVerticalScaleWidth(v, m_haveDetailedScale, paint);
 
     QRect freq(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
-               paint.fontMetrics().width("123456 Hz") + 2,
+               paint.fontMetrics().horizontalAdvance("123456 Hz") + 2,
                paint.fontMetrics().height());
     extents.push_back(freq);
 
     QRect pitch(sw, cursorPos.y() + 2,
-                paint.fontMetrics().width("C#10+50c") + 2,
+                paint.fontMetrics().horizontalAdvance("C#10+50c") + 2,
                 paint.fontMetrics().height());
     extents.push_back(pitch);
 
     QRect rt(cursorPos.x(),
              v->getPaintHeight() - paint.fontMetrics().height() - 2,
-             paint.fontMetrics().width("1234.567 s"),
+             paint.fontMetrics().horizontalAdvance("1234.567 s"),
              paint.fontMetrics().height());
     extents.push_back(rt);
 
-    int w(paint.fontMetrics().width("1234567890") + 2);
+    int w(paint.fontMetrics().horizontalAdvance("1234567890") + 2);
     QRect frame(cursorPos.x() - w - 2,
                 v->getPaintHeight() - paint.fontMetrics().height() - 2,
                 w,
@@ -2014,7 +2009,7 @@ SpectrogramLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     QString frameLabel = QString("%1").arg(frame);
     PaintAssistant::drawVisibleText
         (v, paint,
-         cursorPos.x() - paint.fontMetrics().width(frameLabel) - 2,
+         cursorPos.x() - paint.fontMetrics().horizontalAdvance(frameLabel) - 2,
          v->getPaintHeight() - 2,
          frameLabel,
          PaintAssistant::OutlinedText);
@@ -2171,7 +2166,7 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 {
     int cw;
 
-    cw = paint.fontMetrics().width("-80dB");
+    cw = paint.fontMetrics().horizontalAdvance("-80dB");
 
     return cw;
 }
@@ -2185,12 +2180,12 @@ SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, 
     int cw = 0;
     if (detailed) cw = getColourScaleWidth(paint);
 
-    int tw = paint.fontMetrics().width(QString("%1")
+    int tw = paint.fontMetrics().horizontalAdvance(QString("%1")
                                      .arg(m_maxFrequency > 0 ?
                                           m_maxFrequency - 1 :
                                           model->getSampleRate() / 2));
 
-    int fw = paint.fontMetrics().width(tr("43Hz"));
+    int fw = paint.fontMetrics().horizontalAdvance(tr("43Hz"));
     if (tw < fw) tw = fw;
 
     int tickw = (m_binScale == BinScale::Log ? 10 : 4);
@@ -2268,7 +2263,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
         paint.drawLine(cw + 7, h - vy, w - pkw - 1, h - vy);
 
         if (h - vy - textHeight >= -2) {
-            int tx = w - 3 - paint.fontMetrics().width(text) - max(tickw, pkw);
+            int tx = w - 3 - paint.fontMetrics().horizontalAdvance(text) - max(tickw, pkw);
             paint.drawText(tx, h - vy + toff, text);
         }
 
@@ -2303,7 +2298,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     int toff = -textHeight + paint.fontMetrics().ascent() + 2;
 
     int cw = getColourScaleWidth(paint);
-    int cbw = paint.fontMetrics().width("dB");
+    int cbw = paint.fontMetrics().horizontalAdvance("dB");
 
     int topLines = 2;
 
@@ -2338,13 +2333,13 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
          << endl;
 #endif
         
-    paint.drawText((cw + 6 - paint.fontMetrics().width("dB")) / 2,
+    paint.drawText((cw + 6 - paint.fontMetrics().horizontalAdvance("dB")) / 2,
                    2 + textHeight + toff, "dB");
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(top),
                    2 + textHeight * topLines + toff + textHeight/2, top);
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(bottom),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(bottom),
                    h + toff - 3 - textHeight/2, bottom);
 
     paint.save();
@@ -2376,7 +2371,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
                      idb % 5 == 0))) {
             paint.setPen(v->getForeground());
             QString text = QString("%1").arg(idb);
-            paint.drawText(3 + cw - cbw - paint.fontMetrics().width(text),
+            paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(text),
                            y + toff + textHeight/2, text);
             paint.drawLine(5 + cw - cbw, y, 8 + cw - cbw, y);
             lasty = y;
@@ -2400,7 +2395,7 @@ SpectrogramLayer::paintDetailedScalePhase(LayerGeometryProvider *v,
 
     // Phase is not measured in dB of course, but this places the
     // scale at the same position as in the magnitude spectrogram
-    int cbw = paint.fontMetrics().width("dB");
+    int cbw = paint.fontMetrics().horizontalAdvance("dB");
 
     int topLines = 1;
 
@@ -2412,13 +2407,13 @@ SpectrogramLayer::paintDetailedScalePhase(LayerGeometryProvider *v,
     double min = -M_PI;
     double max =  M_PI;
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(top),
                    2 + textHeight * topLines + toff + textHeight/2, top);
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(middle),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(middle),
                    2 + textHeight * topLines + ch/2 + toff + textHeight/2, middle);
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(bottom),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(bottom),
                    h + toff - 3 - textHeight/2, bottom);
 
     paint.save();

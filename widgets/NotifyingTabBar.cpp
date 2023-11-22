@@ -46,7 +46,7 @@ NotifyingTabBar::enterEvent(QEnterEvent *e)
 void
 NotifyingTabBar::leaveEvent(QEvent *e)
 {
-    QTabBar::enterEvent(e);
+    QTabBar::leaveEvent(e);
     emit mouseLeft();
 }
 

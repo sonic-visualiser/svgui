@@ -20,7 +20,7 @@ NotifyingToolButton::~NotifyingToolButton()
 }
 
 void
-NotifyingToolButton::enterEvent(QEvent *e)
+NotifyingToolButton::enterEvent(QEnterEvent *e)
 {
     QToolButton::enterEvent(e);
     emit mouseEntered();
@@ -29,7 +29,7 @@ NotifyingToolButton::enterEvent(QEvent *e)
 void
 NotifyingToolButton::leaveEvent(QEvent *e)
 {
-    QToolButton::enterEvent(e);
+    QToolButton::leaveEvent(e);
     emit mouseLeft();
 }
 

@@ -943,13 +943,8 @@ Colour3DPlotLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter
     auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
     if (!model) return 0;
 
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11 which
-    // is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
     QString sampleText = QString("[%1]").arg(model->getHeight());
-    int tw = paint.fontMetrics().width(sampleText);
+    int tw = paint.fontMetrics().horizontalAdvance(sampleText);
     bool another = false;
 
     for (int i = 0; i < model->getHeight(); ++i) {
@@ -959,7 +954,7 @@ Colour3DPlotLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter
         }
     }
     if (another) {
-        tw = std::max(tw, paint.fontMetrics().width(sampleText));
+        tw = std::max(tw, paint.fontMetrics().horizontalAdvance(sampleText));
     }
 
     return tw + 13 + getColourScaleWidth(paint);
@@ -1005,7 +1000,7 @@ Colour3DPlotLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &
             paint.setFont(font);
         }
 
-        int msw = paint.fontMetrics().width(maxstr);
+        int msw = paint.fontMetrics().horizontalAdvance(maxstr);
 
         QTransform m;
         m.translate(cw - 6, ch + 10);

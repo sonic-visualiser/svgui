@@ -45,13 +45,14 @@ class Clipboard;
 class RangeMapper;
 
 /**
- * This replaces the Qt5 LayerAttributes, which is no longer in
- * Qt6. LayerAttributes was effectively a QList underneath rather than
+ * This replaces the Qt5 QXmlAttributes, which is no longer in
+ * Qt6. QXmlAttributes was effectively a QList underneath rather than
  * a QMap, since attributes in XML were ordered and could be
  * duplicated. But QMap is closer to the proper API and discouraging
- * duplicate attribute names is actually a good thing for us.
+ * duplicate attribute names is actually a good thing for us. We don't
+ * need support for XML namespaces, only name and value.
  */
-typedef QMap<QString, QVariant> LayerAttributes;
+typedef QMap<QString, QString> LayerAttributes;
 
 /**
  * The base class for visual representations of the data found in a

@@ -739,19 +739,14 @@ SliceLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 int
 SliceLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint) const
 {
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
     int width;
     if (m_energyScale == LinearScale || m_energyScale == AbsoluteScale) {
-        width = std::max(paint.fontMetrics().width("0.0") + 13,
-                         paint.fontMetrics().width("x10-10"));
+        width = std::max(paint.fontMetrics().horizontalAdvance("0.0") + 13,
+                         paint.fontMetrics().horizontalAdvance("x10-10"));
     } else {
-        width = std::max(std::max(paint.fontMetrics().width(tr("0dB")),
-                                  paint.fontMetrics().width(tr("-160"))),
-                         paint.fontMetrics().width(tr("-Inf"))) + 13;
+        width = std::max(std::max(paint.fontMetrics().horizontalAdvance(tr("0dB")),
+                                  paint.fontMetrics().horizontalAdvance(tr("-160"))),
+                         paint.fontMetrics().horizontalAdvance(tr("-Inf"))) + 13;
     }
     return width;
 }
@@ -805,7 +800,7 @@ SliceLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, 
         QString a = tr("x10");
         QString b = QString("%1").arg(-log);
         paint.drawText(3, 8 + paint.fontMetrics().ascent(), a);
-        paint.drawText(3 + paint.fontMetrics().width(a),
+        paint.drawText(3 + paint.fontMetrics().horizontalAdvance(a),
                        3 + paint.fontMetrics().ascent(), b);
     }
 }

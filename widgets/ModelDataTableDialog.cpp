@@ -96,7 +96,7 @@ ModelDataTableDialog::ModelDataTableDialog(ModelId tabularModelId,
     box->setLayout(subgrid);
 
     subgrid->setSpacing(0);
-    subgrid->setMargin(5);
+    subgrid->setContentsMargins(5, 5, 5, 5);
 
     subgrid->addWidget(new QLabel(tr("Find:")), 1, 0);
     subgrid->addWidget(new QLabel(tr(" ")), 1, 1);

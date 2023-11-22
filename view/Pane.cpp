@@ -48,6 +48,7 @@
 #include <QMimeData>
 #include <QApplication>
 #include <QMenu>
+#include <QRegularExpression>
 
 #include <iostream>
 #include <cmath>
@@ -126,7 +127,7 @@ Pane::updateHeadsUpDisplay()
         m_headsUpDisplay = new QFrame(this);
 
         QGridLayout *layout = new QGridLayout;
-        layout->setMargin(0);
+        layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(0);
         m_headsUpDisplay->setLayout(layout);
         
@@ -700,14 +701,9 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
     if (desc != "") {
         
         paint.save();
-        
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
         int tabStop =
-            paint.fontMetrics().width(tr("Some lengthy prefix:"));
+            paint.fontMetrics().horizontalAdvance(tr("Some lengthy prefix:"));
         
         QRect boundingRect = 
             paint.fontMetrics().boundingRect
@@ -809,7 +805,7 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
                           (m_centreFrame, sampleRate)
                           .toText(true)));
             
-            int tw = paint.fontMetrics().width(text);
+            int tw = paint.fontMetrics().horizontalAdvance(text);
             int x = width()/2 - 4 - tw;
             
             PaintAssistant::drawVisibleText(this, paint, x, y, text, PaintAssistant::OutlinedText);
@@ -916,7 +912,7 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, ModelId modelId,
 
     int y = 5;
     if (down) y += paint.fontMetrics().height();
-    int w = paint.fontMetrics().width(text);
+    int w = paint.fontMetrics().horizontalAdvance(text);
     int h = paint.fontMetrics().height();
     if (r.top() > h + y || r.left() > w + m_scaleWidth + 5) {
         paint.restore();
@@ -958,7 +954,7 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, ModelId modelId)
     paint.setFont(font);
 
     int y = 5;
-    int w = paint.fontMetrics().width(text);
+    int w = paint.fontMetrics().horizontalAdvance(text);
     int h = paint.fontMetrics().height();
     if (r.top() > h + y || r.left() > w + m_scaleWidth + 5) {
         paint.restore();
@@ -1159,7 +1155,7 @@ Pane::drawDurationAndRate(QRect r, ModelId waveformModelId,
     int pbw = getProgressBarWidth();
     if (x < pbw + 5) x = pbw + 5;
 
-    if (r.x() < x + paint.fontMetrics().width(desc)) {
+    if (r.x() < x + paint.fontMetrics().horizontalAdvance(desc)) {
         PaintAssistant::drawVisibleText(this, paint, x,
                         height() - fontHeight + fontAscent - 6,
                         desc, PaintAssistant::OutlinedText);
@@ -1417,7 +1413,7 @@ Pane::mousePressEvent(QMouseEvent *e)
     m_releasing = false;
 
     if (mode == ViewManager::NavigateMode ||
-        (e->buttons() & Qt::MidButton) ||
+        (e->buttons() & Qt::MiddleButton) ||
         (mode == ViewManager::MeasureMode &&
          (e->buttons() & Qt::LeftButton) && m_shiftPressed)) {
 
@@ -1705,7 +1701,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         // the window after pressing button first time).
 
         if (!(e->buttons() & Qt::LeftButton) &&
-            !(e->buttons() & Qt::MidButton)) {
+            !(e->buttons() & Qt::MiddleButton)) {
             m_clickedInRange = false;
             return;
         }
@@ -2309,7 +2305,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     if (m_manager) mode = m_manager->getToolModeFor(this);
 
     bool relocate = (mode == ViewManager::NavigateMode ||
-                     (e->buttons() & Qt::MidButton));
+                     (e->buttons() & Qt::MiddleButton));
 
     if (mode == ViewManager::SelectMode) {
         m_clickedInRange = false;
@@ -2386,8 +2382,9 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-    SVDEBUG << "Pane[" << getId() << "]::wheelEvent: delta = " << e->delta()
-            << ", angleDelta = (" << e->angleDelta().x()
+    SVDEBUG << "Pane[" << getId() << "]::wheelEvent: pixelDelta = ("
+            << e->pixelDelta().x() << "," << e->pixelDelta().y()
+            << "), angleDelta = (" << e->angleDelta().x()
             << "," << e->angleDelta().y() << "), pixelDelta = ("
             << e->pixelDelta().x() << "," << e->pixelDelta().y()
             << "), modifiers = " << modifierNames(e->modifiers()) << endl;
@@ -2703,8 +2700,8 @@ Pane::dropEvent(QDropEvent *e)
             SVDEBUG << "accepting... data is \"" << e->mimeData()->data("text/uri-list").data() << "\"" << endl;
             emit dropAccepted(QString::fromLocal8Bit
                               (e->mimeData()->data("text/uri-list").data())
-                              .split(QRegExp("[\\r\\n]+"), 
-                                     QString::SkipEmptyParts));
+                              .split(QRegularExpression("[\\r\\n]+"), 
+                                     Qt::SkipEmptyParts));
         } else {
             emit dropAccepted(QString::fromLocal8Bit
                               (e->mimeData()->data("text/plain").data()));

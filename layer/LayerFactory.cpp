@@ -547,7 +547,7 @@ LayerFactory::setLayerProperties(Layer *layer, QString newXml)
 //            SVCERR << "append \"" << attr.name()
 //                      << "\" -> \"" << attr.value() << "\""
 //                      << endl;
-        attrs.append(attr.name(), "", "", attr.value());
+        attrs[attr.name()] = attr.value();
     }
     
     layerElt = docOld.firstChildElement("layer");
@@ -559,7 +559,7 @@ LayerFactory::setLayerProperties(Layer *layer, QString newXml)
 //                SVCERR << "append \"" << attr.name()
 //                          << "\" -> \"" << attr.value() << "\""
 //                          << endl;
-            attrs.append(attr.name(), "", "", attr.value());
+            attrs[attr.name()] = attr.value();
         }
     }
     

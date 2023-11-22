@@ -75,7 +75,7 @@ LevelPanToolButton::~LevelPanToolButton()
 void
 LevelPanToolButton::mousePressEvent(QMouseEvent *e)
 {
-    if (e->button() == Qt::MidButton ||
+    if (e->button() == Qt::MiddleButton ||
         ((e->button() == Qt::LeftButton) &&
          (e->modifiers() & Qt::ControlModifier))) {
         m_lpw->setToDefault();
@@ -259,7 +259,7 @@ LevelPanToolButton::enterEvent(QEnterEvent *e)
 void
 LevelPanToolButton::leaveEvent(QEvent *e)
 {
-    QToolButton::enterEvent(e);
+    QToolButton::leaveEvent(e);
     emit mouseLeft();
 }
 

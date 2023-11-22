@@ -41,7 +41,7 @@ void
 WindowTypeSelector::init(WindowType defaultType)
 {
     QVBoxLayout *layout = new QVBoxLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
 
     // The WindowType enum is in rather a ragbag order -- reorder it here
