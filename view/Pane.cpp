@@ -734,7 +734,7 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
         QTextOption option;
         option.setWrapMode(QTextOption::NoWrap);
         option.setAlignment(Qt::AlignRight | Qt::AlignTop);
-        option.setTabStop(tabStop);
+        option.setTabStopDistance(tabStop);
         paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
                               boundingRect.width(),
                               boundingRect.height()),
