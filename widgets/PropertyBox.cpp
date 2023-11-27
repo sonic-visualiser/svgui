@@ -84,7 +84,7 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 
     m_mainWidget = new QWidget;
     m_mainBox->addWidget(m_mainWidget);
-    m_mainBox->insertStretch(2, 10);
+    m_mainBox->addStretch(10);
 
     m_viewPlayFrame = nullptr;
     populateViewPlayFrame();
