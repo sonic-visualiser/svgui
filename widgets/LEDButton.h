@@ -14,7 +14,7 @@
 
 /*
     This is a modified version of a source file from the KDE
-    libraries.  Copyright (c) 1998-2004 Jörg Habenicht, Richard J
+    libraries.  Copyright (c) 1998-2004 Joerg Habenicht, Richard J
     Moore and others, distributed under the GNU Lesser General Public
     License.
 
