@@ -82,6 +82,16 @@ View::View(QWidget *w, bool showProgress) :
     m_propertyContainer(new ViewPropertyContainer(this))
 {
 //    SVCERR << "View::View[" << getId() << "]" << endl;
+
+    static bool remarked = false;
+    if (!remarked) {
+#ifdef CACHE_IS_QIMAGE
+        SVDEBUG << "View caches are QImages" << endl;
+#else 
+        SVDEBUG << "View caches are QPixmaps" << endl;
+#endif
+        remarked = true;
+    }
 }
 
 View::~View()
@@ -2336,7 +2346,11 @@ View::paintEvent(QPaintEvent *e)
 
     if (!m_buffer || wholeSize != m_buffer->size()) {
         delete m_buffer;
+#ifdef CACHE_IS_QIMAGE
+        m_buffer = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
+#else
         m_buffer = new QPixmap(wholeSize);
+#endif
     }
 
     bool shouldUseCache = false;
@@ -2379,7 +2393,11 @@ View::paintEvent(QPaintEvent *e)
                 if (!m_cache ||
                     m_cache->size() != wholeSize) {
                     delete m_cache;
+#ifdef CACHE_IS_QIMAGE
+                    m_cache = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
+#else
                     m_cache = new QPixmap(wholeSize);
+#endif
                 }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -2400,8 +2418,19 @@ View::paintEvent(QPaintEvent *e)
 
             if (dx > -m_cache->width() && dx < m_cache->width()) {
 
+#ifdef CACHE_IS_QIMAGE
+                int mx0 = std::max(0, -dx);
+                int mx1 = std::max(0, dx);
+                int mw = m_cache->width() - std::max(dx, -dx);
+                
+                for (int row = 0; row < m_cache->height(); ++row) {
+                    QRgb *sl = reinterpret_cast<QRgb *>(m_cache->scanLine(row));
+                    breakfastquay::v_move(sl + mx1, sl + mx0, mw);
+                }
+#else
                 m_cache->scroll(dx, 0, m_cache->rect(), nullptr);
-
+#endif
+                
                 if (dx < 0) {
                     cacheAreaToRepaint = 
                         QRect(m_cache->width() + dx, 0, -dx, m_cache->height());
@@ -2539,7 +2568,11 @@ View::paintEvent(QPaintEvent *e)
 
     if (shouldUseCache) {
         paint.begin(m_buffer);
+#ifdef CACHE_IS_QIMAGE
+        paint.drawImage(requestedPaintArea, *m_cache, requestedPaintArea);
+#else
         paint.drawPixmap(requestedPaintArea, *m_cache, requestedPaintArea);
+#endif
         paint.end();
     }
 
@@ -2588,8 +2621,13 @@ View::paintEvent(QPaintEvent *e)
     if (e) paint.setClipRect(e->rect());
 
     QRect finalPaintRect = e ? e->rect() : rect();
+#ifdef CACHE_IS_QIMAGE
+    paint.drawImage(finalPaintRect, *m_buffer, 
+                    scaledRect(finalPaintRect, dpratio));
+#else
     paint.drawPixmap(finalPaintRect, *m_buffer, 
                      scaledRect(finalPaintRect, dpratio));
+#endif
 
     drawSelections(paint);
     drawPlayPointer(paint);
