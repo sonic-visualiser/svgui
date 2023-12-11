@@ -227,6 +227,10 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
         }
     } else {
         // cache is completely invalid
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+        SVDEBUG << "render " << m_sources.source
+                << ": cache miss" << endl;
+#endif
         count.miss();
         m_cache.setStartFrame(startFrame);
         m_magCache.setStartFrame(startFrame);
@@ -384,6 +388,7 @@ Colour3DPlotRenderer::getBinResolutions(const LayerGeometryProvider *v,
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "Colour3DPlotRenderer: binResolution " << binResolution
             << ", zoomLevel = " << zoomLevel << ", modelRate " << modelRate
+            << ", main model rate " << v->getViewManager()->getMainModelSampleRate()
             << ", rateRatio " << rateRatio << ", renderBinResolution "
             << renderBinResolution << endl;
 #endif
@@ -755,10 +760,23 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
     double renderBinResolution;
     if (!getBinResolutions(v, binResolution, renderBinResolution)) return;
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "renderToCachePixelResolution: binResolution = "
+            << binResolution << ", renderBinResolution = "
+            << renderBinResolution << endl;
+#endif
+    
     for (int x = 0; x < repaintWidth; ++x) {
         sv_frame_t f0 = v->getFrameForX(x0 + x);
         double s0 = double(f0 - model->getStartFrame()) / renderBinResolution;
         binforx[x] = int(s0 + 0.0001);
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+        SVDEBUG << "renderToCachePixelResolution: getFrameForX("
+                << x0 << " + " << x << ") yields " << f0
+                << " with model start frame " << model->getStartFrame()
+                << " giving s0 = " << s0 << ", so binforx[" << x << "] == "
+                << binforx[x] << endl;
+#endif
     }
 
     int peakCacheIndex = -1;
@@ -791,6 +809,11 @@ Colour3DPlotRenderer::renderToCachePixelResolution(const LayerGeometryProvider *
                                          timeConstrained);
     }
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "renderToCachePixelResolution: attainedWidth = "
+            << attainedWidth << endl;
+#endif
+    
     if (attainedWidth == 0) return;
 
     // draw buffer is pixel resolution, no scaling factors or padding involved
@@ -989,6 +1012,11 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
                                          false,
                                          false);
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "renderToCacheBinResolution: attainedWidth = "
+            << attainedWidth << endl;
+#endif
+
     if (attainedWidth == 0) return;
 
     int scaledLeft = v->getXForFrame(leftBoundaryFrame);
@@ -1166,7 +1194,13 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         
         ++xPixelCount;
         
-        if (binforx[x] < 0) continue;
+        if (binforx[x] < 0) {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+            SVDEBUG << "binforx[" << x << "] == " << binforx[x] << ", skipping"
+                    << endl;
+#endif
+            continue;
+        }
 
         int sx0 = binforx[x] / divisor;
         int sx1 = sx0;
@@ -1176,7 +1210,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-//        SVDEBUG << "x = " << x << ", binforx[x] = " << binforx[x] << ", sx range " << sx0 << " -> " << sx1 << endl;
+        SVDEBUG << "x = " << x << ", binforx[x] = " << binforx[x] << ", sx range " << sx0 << " -> " << sx1 << endl;
 #endif
 
         ColumnOp::Column pixelPeakColumn;
@@ -1200,6 +1234,10 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
                 magRange.sample(column);
 
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+                SVDEBUG << "at sx = " << sx << ", sampled column giving mag range now = " << magRange.getMin() << " -> " << magRange.getMax() << endl;
+#endif
+                
                 if (m_params.binDisplay == BinDisplay::PeakBins) {
                     column = ColumnOp::peakPick(column);
                 }

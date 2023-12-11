@@ -731,7 +731,7 @@ void
 SpectrogramLayer::invalidateRenderers()
 {
 #ifdef DEBUG_SPECTROGRAM
-    cerr << "SpectrogramLayer::invalidateRenderers called" << endl;
+    SVDEBUG << "SpectrogramLayer::invalidateRenderers called" << endl;
 #endif
 
     for (ViewRendererMap::iterator i = m_renderers.begin();
@@ -1096,7 +1096,7 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
     if (dormant) {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "SpectrogramLayer::setLayerDormant(" << dormant << ")"
+        SVDEBUG << "SpectrogramLayer::setLayerDormant(" << dormant << ")"
                   << endl;
 #endif
 
@@ -1127,7 +1127,7 @@ void
 SpectrogramLayer::cacheInvalid(ModelId)
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::cacheInvalid()" << endl;
+    SVDEBUG << "SpectrogramLayer::cacheInvalid()" << endl;
 #endif
 
     invalidateRenderers();
@@ -1145,7 +1145,7 @@ SpectrogramLayer::cacheInvalid(
     )
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
+    SVDEBUG << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
 #endif
 
     // We used to call invalidateMagnitudes(from, to) to invalidate
@@ -1562,7 +1562,7 @@ void
 SpectrogramLayer::invalidateMagnitudes()
 {
 #ifdef DEBUG_SPECTROGRAM
-    cerr << "SpectrogramLayer::invalidateMagnitudes called" << endl;
+    SVDEBUG << "SpectrogramLayer::invalidateMagnitudes called" << endl;
 #endif
     m_viewMags.clear();
 }
@@ -1675,7 +1675,7 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
         result = renderer->renderTimeConstrained(v, paint, rect);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "rect width from this paint: " << result.rendered.width()
+        SVDEBUG << "rect width from this paint: " << result.rendered.width()
              << ", mag range in this paint: " << result.range.getMin() << " -> "
              << result.range.getMax() << endl;
 #endif
@@ -1692,7 +1692,7 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
         if (m_viewMags[viewId] != magRange) {
             m_viewMags[viewId] = magRange;
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "mag range in this view has changed: "
+            SVDEBUG << "mag range in this view has changed: "
                  << magRange.getMin() << " -> " << magRange.getMax() << endl;
 #endif
         }
@@ -1701,7 +1701,7 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
     if (!continuingPaint && m_normalizeVisibleArea &&
         m_viewMags[viewId] != m_lastRenderedMags[viewId]) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "mag range has changed from last rendered range: re-rendering"
+        SVDEBUG << "mag range has changed from last rendered range: re-rendering"
              << endl;
 #endif
         delete m_renderers[viewId];
@@ -1716,9 +1716,9 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     Profiler profiler("SpectrogramLayer::paint", false);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::paint() entering: m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
+    SVDEBUG << "SpectrogramLayer::paint() entering: m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
     
-    cerr << "SpectrogramLayer::paint(): rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
+    SVDEBUG << "SpectrogramLayer::paint(): rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
 #endif
 
     auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
@@ -1744,7 +1744,7 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer: illuminateLocalFeatures("
+    SVDEBUG << "SpectrogramLayer: illuminateLocalFeatures("
               << localPos.x() << "," << localPos.y() << ")" << endl;
 #endif
 
@@ -1764,7 +1764,7 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
         int y0 = int(getYForFrequency(v, f0));
         
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "SpectrogramLayer: illuminate "
+        SVDEBUG << "SpectrogramLayer: illuminate "
                   << x0 << "," << y1 << " -> " << x1 << "," << y0 << endl;
 #endif
         
@@ -1801,7 +1801,7 @@ SpectrogramLayer::getCompletion(LayerGeometryProvider *) const
     if (!fftModel) return 100;
     int completion = fftModel->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
+    SVDEBUG << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
     return completion;
 }
@@ -2317,7 +2317,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     double dBmax = AudioLevel::voltage_to_dB(max);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "paintVerticalScale: for view id " << v->getId()
+    SVDEBUG << "paintVerticalScale: for view id " << v->getId()
          << ": min = " << min << ", max = " << max
          << ", dBmin = " << dBmin << ", dBmax = " << dBmax << endl;
 #endif
@@ -2329,7 +2329,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     bottom = QString("%1").arg(lrint(dBmin));
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "adjusted dB range to min = " << dBmin << ", max = " << dBmax
+    SVDEBUG << "adjusted dB range to min = " << dBmin << ", max = " << dBmax
          << endl;
 #endif
         
@@ -2533,7 +2533,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
     double dmin = m_minFrequency, dmax = m_maxFrequency;
 //    getDisplayExtents(dmin, dmax);
 
-//    cerr << "current range " << dmin << " -> " << dmax << ", range " << dmax-dmin << ", mid " << (dmax + dmin)/2 << endl;
+//    SVDEBUG << "current range " << dmin << " -> " << dmax << ", range " << dmax-dmin << ", mid " << (dmax + dmin)/2 << endl;
     
     sv_samplerate_t sr = model->getSampleRate();
     SpectrogramRangeMapper mapper(sr, getFFTSize());
@@ -2567,7 +2567,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
         newmax = (newdist + sqrt(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
-//        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
+//        SVDEBUG << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
         double dmid = (dmax + dmin) / 2;
@@ -2787,7 +2787,7 @@ SpectrogramLayer::setProperties(const LayerAttributes &attributes)
         } else if (columnNormalization == "none") {
             setNormalization(ColumnNormalization::None);
         } else {
-            SVCERR << "NOTE: Unknown or unsupported columnNormalization attribute \""
+            SVDEBUG << "NOTE: Unknown or unsupported columnNormalization attribute \""
                  << columnNormalization << "\"" << endl;
         }
     }
