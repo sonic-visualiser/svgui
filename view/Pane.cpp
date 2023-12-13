@@ -82,6 +82,7 @@ Pane::Pane(QWidget *w) :
     m_editing(false),
     m_releasing(false),
     m_centreLineVisible(true),
+    m_selectionSnap(true),
     m_scaleWidth(0),
     m_pendingWheelAngle(0),
     m_headsUpDisplay(nullptr),
@@ -354,6 +355,12 @@ Pane::setCentreLineVisible(bool visible)
 {
     m_centreLineVisible = visible;
     update();
+}
+
+void
+Pane::setSelectionSnapToFeatures(bool snap)
+{
+    m_selectionSnap = snap;
 }
 
 void
@@ -1469,7 +1476,9 @@ Pane::mousePressEvent(QMouseEvent *e)
             sv_frame_t snapFrame = mouseFrame;
     
             Layer *layer = getInteractionLayer();
-            if (layer && !m_shiftPressed &&
+            bool shouldSnap = m_selectionSnap;
+            if (m_shiftPressed) shouldSnap = !shouldSnap;
+            if (layer && shouldSnap &&
                 !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
                 layer->snapToFeatureFrame(this, snapFrame,
                                           resolution, Layer::SnapLeft, e->y());
@@ -2204,7 +2213,9 @@ Pane::dragExtendSelection(QMouseEvent *e)
     sv_frame_t snapFrameRight = mouseFrame;
     
     Layer *layer = getInteractionLayer();
-    if (layer && !m_shiftPressed &&
+    bool shouldSnap = m_selectionSnap;
+    if (m_shiftPressed) shouldSnap = !shouldSnap;
+    if (layer && shouldSnap &&
         !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
         layer->snapToFeatureFrame(this, snapFrameLeft,
                                   resolution, Layer::SnapLeft, e->y());
@@ -2945,13 +2956,21 @@ Pane::updateContextHelp(const QPoint *pos)
         if (haveSelection) {
 #ifdef Q_OS_MAC
             if (editable) {
-                help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; hold Cmd for multi-select; middle-click and drag to navigate");
+                if (m_selectionSnap) {
+                    help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; hold Cmd for multi-select; middle-click and drag to navigate");
+                } else {
+                    help = tr("Click and drag to select a range; hold Shift to snap to items; hold Cmd for multi-select; middle-click and drag to navigate");
+                }
             } else {
                 help = tr("Click and drag to select a range; hold Cmd for multi-select; middle-click and drag to navigate");
             }
 #else
             if (editable) {
-                help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; hold Ctrl for multi-select; middle-click and drag to navigate");
+                if (m_selectionSnap) {
+                    help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; hold Ctrl for multi-select; middle-click and drag to navigate");
+                } else {
+                    help = tr("Click and drag to select a range; hold Shift to snap to items; hold Ctrl for multi-select; middle-click and drag to navigate");
+                }
             } else {
                 help = tr("Click and drag to select a range; hold Ctrl for multi-select; middle-click and drag to navigate");
             }                
@@ -2967,7 +2986,11 @@ Pane::updateContextHelp(const QPoint *pos)
             }
         } else {
             if (editable) {
-                help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; middle-click to navigate");
+                if (m_selectionSnap) {
+                    help = tr("Click and drag to select a range; hold Shift to avoid snapping to items; middle-click to navigate");
+                } else {
+                    help = tr("Click and drag to select a range; hold Shift to snap to items; middle-click to navigate");
+                }
             } else {
                 help = tr("Click and drag to select a range; middle-click and drag to navigate");
             }

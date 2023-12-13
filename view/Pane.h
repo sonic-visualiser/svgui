@@ -51,6 +51,14 @@ public:
     void setCentreLineVisible(bool visible);
     bool getCentreLineVisible() const { return m_centreLineVisible; }
 
+    /** Set whether to snap to features by default when dragging a
+        selection. The default is true unless Shift is pressed;
+        setting this to false reverses the behaviour (no snapping
+        unless Shift is pressed).
+    */
+    void setSelectionSnapToFeatures(bool snap);
+    bool getSelectionSnapToFeatures() const { return m_selectionSnap; }
+    
     virtual sv_frame_t getFirstVisibleFrame() const override;
 
     int getVerticalScaleWidth() const;
@@ -184,6 +192,7 @@ protected:
     sv_frame_t m_dragCentreFrame;
     double m_dragStartMinValue;
     bool m_centreLineVisible;
+    bool m_selectionSnap;
     sv_frame_t m_selectionStartFrame;
     Selection m_editingSelection;
     int m_editingSelectionEdge;
