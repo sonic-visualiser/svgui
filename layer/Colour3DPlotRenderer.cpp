@@ -490,9 +490,9 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
         !m_sources.fft.isNone()) {
         return column;
     } else {
-        column = ColumnOp::applyGain(column, m_params.scaleFactor);
-        column = ColumnOp::normalize(column, m_params.normalization);
-        return column;
+        return ColumnOp::normalize(ColumnOp::applyGain(column,
+                                                       m_params.scaleFactor),
+                                   m_params.normalization);
     }
 }
 
@@ -502,7 +502,6 @@ Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
 {
     Profiler profiler("Colour3DPlotRenderer::getColumn");
 
-    ColumnOp::Column column;
     ColumnOp::Column fullColumn;
 
     if (m_params.colourScale.getScale() == ColourScaleType::Phase) {
@@ -516,9 +515,8 @@ Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
         fullColumn = source->getColumn(sx);
     }
     
-    column = ColumnOp::Column(fullColumn.data() + minbin,
-                              fullColumn.data() + minbin + nbins);
-    return column;
+    return ColumnOp::Column(fullColumn.data() + minbin,
+                            fullColumn.data() + minbin + nbins);
 }
 
 MagnitudeRange
