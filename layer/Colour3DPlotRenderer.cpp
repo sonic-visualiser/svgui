@@ -634,7 +634,6 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
                 continue;
             }
 
-            QColor pen(255, 255, 255, 80);
             QColor brush(colour);
 
             if (rw > 3 && r.height() > 3) {
@@ -1178,6 +1177,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     int modelWidth = sourceModel->getWidth();
 
     QRgb *target = reinterpret_cast<QRgb *>(m_drawBuffer.bits());
+    int targetWidth = m_drawBuffer.width();
     
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
@@ -1276,13 +1276,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 QColor c = m_params.colourScale.getColourForPixel
                     (m_params.colourScale.getPixel(pixelPeakColumn[y]),
                      m_params.colourRotation);
-                target[py * w + x] = c.rgba();
-                /*!!!
-                m_drawBuffer.setPixel
-                    (x,
-                     py,
-                     m_params.colourScale.getPixel(pixelPeakColumn[y]));
-                */
+                target[py * targetWidth + x] = c.rgba();
             }
             
             m_magRanges.push_back(magRange);
