@@ -379,7 +379,6 @@ Colour3DPlotRenderer::getBinResolutions(const LayerGeometryProvider *v,
     }
 
     binResolution = model->getResolution();
-    ZoomLevel zoomLevel = v->getZoomLevel();
     sv_samplerate_t modelRate = model->getSampleRate();
 
     double rateRatio = v->getViewManager()->getMainModelSampleRate() / modelRate;
@@ -387,7 +386,7 @@ Colour3DPlotRenderer::getBinResolutions(const LayerGeometryProvider *v,
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "Colour3DPlotRenderer: binResolution " << binResolution
-            << ", zoomLevel = " << zoomLevel << ", modelRate " << modelRate
+            << ", modelRate " << modelRate
             << ", main model rate " << v->getViewManager()->getMainModelSampleRate()
             << ", rateRatio " << rateRatio << ", renderBinResolution "
             << renderBinResolution << endl;
@@ -1178,6 +1177,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
     int modelWidth = sourceModel->getWidth();
 
+    QRgb *target = reinterpret_cast<QRgb *>(m_drawBuffer.bits());
+    
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
             << ": modelWidth " << modelWidth << ", divisor " << divisor << endl;
@@ -1272,10 +1273,16 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 } else {
                     py = h - y - 1;
                 }
+                QColor c = m_params.colourScale.getColourForPixel
+                    (m_params.colourScale.getPixel(pixelPeakColumn[y]),
+                     m_params.colourRotation);
+                target[py * w + x] = c.rgba();
+                /*!!!
                 m_drawBuffer.setPixel
                     (x,
                      py,
                      m_params.colourScale.getPixel(pixelPeakColumn[y]));
+                */
             }
             
             m_magRanges.push_back(magRange);
@@ -1500,16 +1507,9 @@ Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
 void
 Colour3DPlotRenderer::recreateDrawBuffer(int w, int h)
 {
-    m_drawBuffer = QImage(w, h, QImage::Format_Indexed8);
-
-    for (int pixel = 0; pixel < 256; ++pixel) {
-        m_drawBuffer.setColor
-            ((unsigned char)pixel,
-             m_params.colourScale.getColourForPixel
-             (pixel, m_params.colourRotation).rgb());
-    }
-
-    m_drawBuffer.fill(0);
+    m_drawBuffer = QImage(w, h, QImage::Format_ARGB32_Premultiplied);
+    m_drawBuffer.fill(m_params.colourScale.getColourForPixel
+                      (0, m_params.colourRotation));
     m_magRanges.clear();
 }
 
@@ -1519,7 +1519,8 @@ Colour3DPlotRenderer::clearDrawBuffer(int w, int h)
     if (m_drawBuffer.width() < w || m_drawBuffer.height() != h) {
         recreateDrawBuffer(w, h);
     } else {
-        m_drawBuffer.fill(0);
+        m_drawBuffer.fill(m_params.colourScale.getColourForPixel
+                          (0, m_params.colourRotation));
         m_magRanges.clear();
     }
 }
