@@ -463,6 +463,8 @@ ColumnOp::Column
 Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
                                 shared_ptr<DenseThreeDimensionalModel> source) const
 {
+    Profiler profiler("Colour3DPlotRenderer::getColumn");
+
     // order:
     // get column -> scale -> normalise -> record extents ->
     // peak pick -> distribute/interpolate -> apply display gain
@@ -499,23 +501,18 @@ ColumnOp::Column
 Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
                                    shared_ptr<DenseThreeDimensionalModel> source) const
 {
-    Profiler profiler("Colour3DPlotRenderer::getColumn");
-
-    ColumnOp::Column fullColumn;
+    Profiler profiler("Colour3DPlotRenderer::getColumnRaw");
 
     if (m_params.colourScale.getScale() == ColourScaleType::Phase) {
         auto fftModel = ModelById::getAs<FFTModel>(m_sources.fft);
         if (fftModel) {
-            fullColumn = fftModel->getPhases(sx);
+            auto fullColumn = fftModel->getPhases(sx);
+            return ColumnOp::Column(fullColumn.data() + minbin,
+                                    fullColumn.data() + minbin + nbins);
         }
     }
 
-    if (fullColumn.empty()) {
-        fullColumn = source->getColumn(sx);
-    }
-    
-    return ColumnOp::Column(fullColumn.data() + minbin,
-                            fullColumn.data() + minbin + nbins);
+    return source->getColumn(sx, minbin, nbins);
 }
 
 MagnitudeRange
