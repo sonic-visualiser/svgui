@@ -997,11 +997,29 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
         binfory[y] = m_sources.verticalBinLayer->getBinForY(v, h - y - 1);
     }
 
+    int fullResolutionCacheIndex = -1;
+
+    // If there is a peak cache with divisor 1, use it in preference
+    // to the original source - it's presumably quicker, otherwise our
+    // caller wouldn't have provided it. If we don't find one,
+    // fullResolutionCacheIndex will remain at -1 which indicates to
+    // use the original source direct
+    for (int ix = 0; in_range_for(m_sources.peakCaches, ix); ++ix) {
+        auto peakCache = ModelById::getAs<Dense3DModelPeakCache>
+            (m_sources.peakCaches[ix]);
+        if (!peakCache) continue;
+        int bpp = peakCache->getColumnsPerPeak();
+        if (bpp == 1) {
+            fullResolutionCacheIndex = ix;
+            break;
+        }
+    }
+    
     int attainedWidth = renderDrawBuffer(drawBufferWidth,
                                          h,
                                          binforx,
                                          binfory,
-                                         -1,
+                                         fullResolutionCacheIndex,
                                          false,
                                          false);
 
@@ -1136,6 +1154,9 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
             << ", binScale = " << int(m_params.binScale)
             << ", alwaysOpaque = " << m_params.alwaysOpaque
             << ", interpolate = " << m_params.interpolate << endl;
+    SVDEBUG << "render " << m_sources.source
+            << ": using sourceModel of type " << sourceModel->getTypeName()
+            << endl;
 #endif
     
     int sh = sourceModel->getHeight();
@@ -1279,8 +1300,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 } else {
                     py = h - y - 1;
                 }
-                target[py * targetWidth + x] = colourmap.at
-                    (m_params.colourScale.getPixel(pixelPeakColumn[y]));
+                auto pixel = m_params.colourScale.getPixel(pixelPeakColumn[y]);
+                target[py * targetWidth + x] = colourmap.at(pixel);
             }
             
             m_magRanges.push_back(magRange);
@@ -1327,6 +1348,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                       RenderTimer::SlowRender :
                       RenderTimer::NoTimeout);
 
+    Profiler profiler("Colour3DPlotRenderer::renderDrawBufferPeakFrequencies");
+    
     auto fft = ModelById::getAs<FFTModel>(m_sources.fft);
     if (!fft) return 0;
 
@@ -1368,6 +1391,9 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
     double maxFreq =
         (double(minbin + nbins - 1) * fft->getSampleRate()) / fft->getFFTSize();
 
+    QRgb *target = reinterpret_cast<QRgb *>(m_drawBuffer.bits());
+    int targetWidth = m_drawBuffer.width();
+    
     bool logarithmic = (m_params.binScale == BinScale::Log);
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
@@ -1376,6 +1402,15 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             << ", step = " << step << endl;
 #endif
     
+    vector<QRgb> colourmap;
+    colourmap.reserve(256);
+    for (int pixel = 0; pixel < 256; ++pixel) {
+        colourmap.push_back
+            (m_params.colourScale.getColourForPixel
+                            (pixel, m_params.colourRotation)
+             .rgba());
+    }
+
     for (int x = start; x != finish; x += step) {
         
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -1450,8 +1485,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 //                        << " -> y = " << y << ", iy = " << iy << ", value = "
 //                        << value << ", pixel " << pixel << "\n";
 #endif
-                
-                m_drawBuffer.setPixel(x, iy, pixel);
+
+                target[iy * targetWidth + x] = colourmap.at(pixel);
             }
 
             m_magRanges.push_back(magRange);
