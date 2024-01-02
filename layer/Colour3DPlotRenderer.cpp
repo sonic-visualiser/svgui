@@ -1182,6 +1182,15 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     SVDEBUG << "render " << m_sources.source
             << ": start = " << start << ", finish = " << finish << ", step = " << step << endl;
 #endif
+
+    vector<QRgb> colourmap;
+    colourmap.reserve(256);
+    for (int pixel = 0; pixel < 256; ++pixel) {
+        colourmap.push_back
+            (m_params.colourScale.getColourForPixel
+                            (pixel, m_params.colourRotation)
+             .rgba());
+    }
     
     for (int x = start; x != finish; x += step) {
 
@@ -1270,10 +1279,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 } else {
                     py = h - y - 1;
                 }
-                QColor c = m_params.colourScale.getColourForPixel
-                    (m_params.colourScale.getPixel(pixelPeakColumn[y]),
-                     m_params.colourRotation);
-                target[py * targetWidth + x] = c.rgba();
+                target[py * targetWidth + x] = colourmap.at
+                    (m_params.colourScale.getPixel(pixelPeakColumn[y]));
             }
             
             m_magRanges.push_back(magRange);
