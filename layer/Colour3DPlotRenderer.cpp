@@ -106,23 +106,6 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             // sums are easier this way. Calculating boundaries later
             // will be fiddly for partial paints otherwise.
             timeConstrained = false;
-
-        } else if (m_secondsPerXPixelValid) {
-            double predicted = m_secondsPerXPixel * rect.width();
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "render " << m_sources.source
-                    << ": Predicted time for width " << rect.width() << " = "
-                    << predicted << " (" << m_secondsPerXPixel << " x "
-                    << rect.width() << ")" << endl;
-#endif
-            if (predicted < 0.175) {
-#ifdef DEBUG_COLOUR_PLOT_REPAINT
-                SVDEBUG << "render " << m_sources.source
-                        << ": Predicted time looks fast enough: no partial renders"
-                        << endl;
-#endif
-                timeConstrained = false;
-            }
         }
     }
             
@@ -1116,10 +1099,6 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     // Callers must have checked that the appropriate subset of
     // Sources data members are set for the supplied flags (e.g. that
     // peakCache corresponding to peakCacheIndex exists)
-    
-    RenderTimer timer(timeConstrained ?
-                      RenderTimer::FastRender :
-                      RenderTimer::NoTimeout);
 
     Profiler profiler("Colour3DPlotRenderer::renderDrawBuffer");
     
@@ -1213,6 +1192,12 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                             (pixel, m_params.colourRotation)
              .rgba());
     }
+
+    m_magRanges = vector<MagnitudeRange>(w);
+    
+    RenderTimer timer(timeConstrained ?
+                      RenderTimer::FastRender :
+                      RenderTimer::NoTimeout);
     
     for (int x = start; x != finish; x += step) {
 
@@ -1241,15 +1226,19 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 #endif
 
         ColumnOp::Column pixelPeakColumn;
-        MagnitudeRange magRange;
+        MagnitudeRange &magRange = m_magRanges.at(x);
         
         for (int sx = sx0; sx < sx1; ++sx) {
+
+            // sx is the source column index, and we are stepping
+            // through the source columns that contribute to current
+            // on-canvas pixel x
 
             if (sx < 0 || sx >= modelWidth) {
                 continue;
             }
 
-            if (sx != psx) {
+            if (sx != psx) { // psx is index of existing preparedColumn, or -1
                 
                 // order:
                 // get column -> scale -> normalise -> record extents ->
@@ -1282,9 +1271,10 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 psx = sx;
             }
 
-            if (sx == sx0) {
+            if (sx == sx0) { // first source column for this pixel
                 pixelPeakColumn = preparedColumn;
-            } else {
+
+            } else { // second or subsequent source column for this pixel
                 for (int i = 0; in_range_for(pixelPeakColumn, i); ++i) {
                     pixelPeakColumn[i] = std::max(pixelPeakColumn[i],
                                                   preparedColumn[i]);
@@ -1292,30 +1282,33 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
             }
         }
 
-        if (!pixelPeakColumn.empty()) {
-
+        if (pixelPeakColumn.empty()) {
             for (int y = 0; y < h; ++y) {
-                int py;
-                if (m_params.invertVertical) {
-                    py = y;
-                } else {
-                    py = h - y - 1;
-                }
+                target[y * targetWidth + x] = colourmap.at(0);
+            }
+        } else if (m_params.invertVertical) {
+            for (int y = 0; y < h; ++y) {
                 auto pixel = m_params.colourScale.getPixel(pixelPeakColumn[y]);
+                target[y * targetWidth + x] = colourmap.at(pixel);
+            }
+        } else {
+            for (int y = h-1; y >= 0; --y) {
+                auto pixel = m_params.colourScale.getPixel(pixelPeakColumn[y]);
+                int py = h - y - 1;
                 target[py * targetWidth + x] = colourmap.at(pixel);
             }
-            
-            m_magRanges.push_back(magRange);
-        }
-
-        double fractionComplete = double(xPixelCount) / double(w);
-        if (timer.outOfTime(fractionComplete)) {
+        }            
+                
+        if (xPixelCount % 16 == 0) {
+            double fractionComplete = double(xPixelCount) / double(w);
+            if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "render " << m_sources.source
-                    << ": out of time with xPixelCount = " << xPixelCount << endl;
+                SVDEBUG << "render " << m_sources.source
+                        << ": out of time with xPixelCount = " << xPixelCount << endl;
 #endif
-            updateTimings(timer, xPixelCount);
-            return xPixelCount;
+                updateTimings(timer, xPixelCount);
+                return xPixelCount;
+            }
         }
     }
 
@@ -1412,6 +1405,8 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
              .rgba());
     }
 
+    m_magRanges = vector<MagnitudeRange>(w);
+
     for (int x = start; x != finish; x += step) {
         
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -1429,7 +1424,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         if (sx1 <= sx0) sx1 = sx0 + 1;
 
         ColumnOp::Column pixelPeakColumn;
-        MagnitudeRange magRange;
+        MagnitudeRange &magRange = m_magRanges.at(x);
         
         for (int sx = sx0; sx < sx1; ++sx) {
 
@@ -1500,14 +1495,16 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 #endif
         }
 
-        double fractionComplete = double(xPixelCount) / double(w);
-        if (timer.outOfTime(fractionComplete)) {
+        if (xPixelCount % 16 == 0) {
+            double fractionComplete = double(xPixelCount) / double(w);
+            if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-            SVDEBUG << "render " << m_sources.source
-                    << ": out of time" << endl;
+                SVDEBUG << "render " << m_sources.source
+                        << ": out of time" << endl;
 #endif
-            updateTimings(timer, xPixelCount);
-            return xPixelCount;
+                updateTimings(timer, xPixelCount);
+                return xPixelCount;
+            }
         }
     }
 
