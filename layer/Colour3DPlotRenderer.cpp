@@ -1170,8 +1170,6 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
     int xPixelCount = 0;
     
-    ColumnOp::Column preparedColumn;
-
     int modelWidth = sourceModel->getWidth();
 
     QRgb *target = reinterpret_cast<QRgb *>(m_drawBuffer.bits());
@@ -1193,12 +1191,14 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
              .rgba());
     }
 
-    m_magRanges = vector<MagnitudeRange>(w);
+    ColumnOp::Column preparedColumn;
+    ColumnOp::Column aggregateColumn(nbins, 0.f);
+    ColumnOp::Column distributedColumn(h, 0.f);
     
     RenderTimer timer(timeConstrained ?
                       RenderTimer::FastRender :
                       RenderTimer::NoTimeout);
-    
+
     for (int x = start; x != finish; x += step) {
 
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -1225,8 +1225,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
         SVDEBUG << "x = " << x << ", binforx[x] = " << binforx[x] << ", sx range " << sx0 << " -> " << sx1 << endl;
 #endif
 
-        ColumnOp::Column pixelPeakColumn;
         MagnitudeRange &magRange = m_magRanges.at(x);
+        bool haveAnything = false;
         
         for (int sx = sx0; sx < sx1; ++sx) {
 
@@ -1245,57 +1245,62 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 // peak pick -> distribute/interpolate -> apply display gain
 
                 // this does the first three:
-                ColumnOp::Column column = getColumn(sx, minbin, nbins,
-                                                    sourceModel);
+                preparedColumn = getColumn(sx, minbin, nbins, sourceModel);
 
-                magRange.sample(column);
+                magRange.sample(preparedColumn);
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
                 SVDEBUG << "at sx = " << sx << ", sampled column giving mag range now = " << magRange.getMin() << " -> " << magRange.getMax() << endl;
 #endif
                 
                 if (m_params.binDisplay == BinDisplay::PeakBins) {
-                    column = ColumnOp::peakPick(column);
+                    preparedColumn = ColumnOp::peakPick(preparedColumn);
                 }
 
-                preparedColumn =
-                    ColumnOp::distribute(column,
-                                         h,
-                                         binfory,
-                                         minbin,
-                                         m_params.interpolate);
-
-                // Display gain belongs to the colour scale and is
-                // applied by the colour scale object when mapping it
+                // (Display gain belongs to the colour scale and is
+                // applied by the colour scale object when mapping it)
                 
                 psx = sx;
             }
 
             if (sx == sx0) { // first source column for this pixel
-                pixelPeakColumn = preparedColumn;
+                haveAnything = true;
+                aggregateColumn = preparedColumn;
 
             } else { // second or subsequent source column for this pixel
-                for (int i = 0; in_range_for(pixelPeakColumn, i); ++i) {
-                    pixelPeakColumn[i] = std::max(pixelPeakColumn[i],
+                for (int i = 0; i < nbins; ++i) {
+                    aggregateColumn[i] = std::max(aggregateColumn[i],
                                                   preparedColumn[i]);
                 }
             }
         }
 
-        if (pixelPeakColumn.empty()) {
+        if (!haveAnything) {
             for (int y = 0; y < h; ++y) {
                 target[y * targetWidth + x] = colourmap.at(0);
             }
-        } else if (m_params.invertVertical) {
-            for (int y = 0; y < h; ++y) {
-                auto pixel = m_params.colourScale.getPixel(pixelPeakColumn[y]);
-                target[y * targetWidth + x] = colourmap.at(pixel);
-            }
         } else {
-            for (int y = h-1; y >= 0; --y) {
-                auto pixel = m_params.colourScale.getPixel(pixelPeakColumn[y]);
-                int py = h - y - 1;
-                target[py * targetWidth + x] = colourmap.at(pixel);
+
+            ColumnOp::distribute(distributedColumn,
+                                 aggregateColumn,
+                                 h,
+                                 binfory,
+                                 minbin,
+                                 m_params.interpolate);
+
+            if (m_params.invertVertical) {
+                for (int y = 0; y < h; ++y) {
+                    auto value = distributedColumn[y];
+                    auto pixel = m_params.colourScale.getPixel(value);
+                    target[y * targetWidth + x] = colourmap.at(pixel);
+                }
+            } else {
+                for (int y = h-1; y >= 0; --y) {
+                    auto value = distributedColumn[y];
+                    auto pixel = m_params.colourScale.getPixel(value);
+                    int py = h - y - 1;
+                    target[py * targetWidth + x] = colourmap.at(pixel);
+                }
             }
         }            
                 
@@ -1405,8 +1410,6 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
              .rgba());
     }
 
-    m_magRanges = vector<MagnitudeRange>(w);
-
     for (int x = start; x != finish; x += step) {
         
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -1485,8 +1488,6 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                 target[iy * targetWidth + x] = colourmap.at(pixel);
             }
 
-            m_magRanges.push_back(magRange);
-
         } else {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
             SVDEBUG << "render " << m_sources.source
@@ -1541,7 +1542,7 @@ Colour3DPlotRenderer::recreateDrawBuffer(int w, int h)
     m_drawBuffer = QImage(w, h, QImage::Format_ARGB32_Premultiplied);
     m_drawBuffer.fill(m_params.colourScale.getColourForPixel
                       (0, m_params.colourRotation));
-    m_magRanges.clear();
+    m_magRanges = vector<MagnitudeRange>(w);
 }
 
 void
@@ -1552,7 +1553,7 @@ Colour3DPlotRenderer::clearDrawBuffer(int w, int h)
     } else {
         m_drawBuffer.fill(m_params.colourScale.getColourForPixel
                           (0, m_params.colourRotation));
-        m_magRanges.clear();
+        m_magRanges = vector<MagnitudeRange>(w);
     }
 }
 
