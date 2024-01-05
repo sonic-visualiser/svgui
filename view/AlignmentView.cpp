@@ -297,7 +297,7 @@ AlignmentView::buildMaps()
         keyFramesBelow.insert(f);
     }
 
-    foreach(sv_frame_t f, keyFramesBelow) {
+    for (sv_frame_t f : keyFramesBelow) {
         sv_frame_t rf = m_below->alignToReference(f);
         m_fromReferenceMap.insert({ rf, f });
     }
@@ -317,7 +317,7 @@ AlignmentView::buildMaps()
     sv_frame_t prevAf = -1;
     sv_frame_t prevBf = -1;
     
-    foreach (sv_frame_t af, keyFrames) {
+    for (sv_frame_t af : keyFrames) {
 
         sv_frame_t rf = m_above->alignToReference(af);
         sv_frame_t bf = m_below->alignFromReference(rf);

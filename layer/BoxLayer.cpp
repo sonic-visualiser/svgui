@@ -763,11 +763,11 @@ BoxLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
     m_editingPoint = Event(frame, float(value), 0, "");
     m_originalPoint = m_editingPoint;
@@ -786,7 +786,7 @@ BoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t dragFrame = v->getFrameForX(e->x());
+    sv_frame_t dragFrame = v->getFrameForX(e->position().x());
     if (dragFrame < 0) dragFrame = 0;
     dragFrame = dragFrame / model->getResolution() * model->getResolution();
 
@@ -799,7 +799,7 @@ BoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
         eventDuration = model->getResolution();
     }
 
-    double dragValue = getValueForY(v, e->y());
+    double dragValue = getValueForY(v, e->position().y());
 
     double eventValue = m_originalPoint.getValue();
     double eventFreqDiff = dragValue - eventValue;
@@ -833,7 +833,7 @@ BoxLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
-    if (!getLocalPoint(v, e->x(), e->y(), m_editingPoint)) return;
+    if (!getLocalPoint(v, e->position().x(), e->position().y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -857,7 +857,7 @@ BoxLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editing = false;
 
     Event p(0);
-    if (!getLocalPoint(v, e->x(), e->y(), p)) return;
+    if (!getLocalPoint(v, e->position().x(), e->position().y(), p)) return;
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
@@ -877,7 +877,7 @@ BoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
-    if (!getLocalPoint(v, e->x(), e->y(), m_editingPoint)) {
+    if (!getLocalPoint(v, e->position().x(), e->position().y(), m_editingPoint)) {
         return;
     }
 
@@ -892,8 +892,8 @@ BoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     }
 
     m_editing = true;
-    m_dragStartX = e->x();
-    m_dragStartY = e->y();
+    m_dragStartX = e->position().x();
+    m_dragStartY = e->position().y();
 }
 
 void
@@ -902,8 +902,8 @@ BoxLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
-    int xdist = e->x() - m_dragStartX;
-    int ydist = e->y() - m_dragStartY;
+    int xdist = e->position().x() - m_dragStartX;
+    int ydist = e->position().y() - m_dragStartY;
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
@@ -961,7 +961,9 @@ BoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     if (!model) return false;
 
     Event region(0);
-    if (!getLocalPoint(v, e->x(), e->y(), region)) return false;
+    if (!getLocalPoint(v, e->position().x(), e->position().y(), region)) {
+        return false;
+    }
 
     ItemEditDialog::LabelOptions labelOptions;
     labelOptions.valueLabel = tr("Minimum Value");

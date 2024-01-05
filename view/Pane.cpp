@@ -1435,7 +1435,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             // location. This will happen only if nothing else of
             // interest happens (double-click, drag) before the
             // timeout.
-            schedulePlaybackFrameMove(getFrameForX(e->x()));
+            schedulePlaybackFrameMove(getFrameForX(e->position().x()));
         }
 
     } else if (mode == ViewManager::SelectMode) {
@@ -1443,7 +1443,7 @@ Pane::mousePressEvent(QMouseEvent *e)
         if (!hasTopLayerTimeXAxis()) return;
 
         bool closeToLeft = false, closeToRight = false;
-        Selection selection = getSelectionAt(e->x(), closeToLeft, closeToRight);
+        Selection selection = getSelectionAt(e->position().x(), closeToLeft, closeToRight);
 
         if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
 
@@ -1460,7 +1460,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             
         } else {
             
-            sv_frame_t mouseFrame = getFrameForX(e->x());
+            sv_frame_t mouseFrame = getFrameForX(e->position().x());
             int resolution = 1;
             sv_frame_t snapFrame = mouseFrame;
     
@@ -1468,7 +1468,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             if (layer && !m_shiftPressed &&
                 !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
                 layer->snapToFeatureFrame(this, snapFrame,
-                                          resolution, Layer::SnapLeft, e->y());
+                                          resolution, Layer::SnapLeft, e->position().y());
             }
         
             if (snapFrame < 0) snapFrame = 0;
@@ -1569,7 +1569,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         mouseMoveEvent(e);
     }
 
-    sv_frame_t mouseFrame = e ? getFrameForX(e->x()) : 0;
+    sv_frame_t mouseFrame = e ? getFrameForX(e->position().x()) : 0;
     if (mouseFrame < 0) mouseFrame = 0;
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
@@ -1728,7 +1728,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     
         if (mode == ViewManager::SelectMode && hasTopLayerTimeXAxis()) {
             bool closeToLeft = false, closeToRight = false;
-            getSelectionAt(e->x(), closeToLeft, closeToRight);
+            getSelectionAt(e->position().x(), closeToLeft, closeToRight);
             if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
                 setCursor(Qt::SizeHorCursor);
             } else {
@@ -1847,8 +1847,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
                 if (layer) {
 
-                    int x = e->x();
-                    int y = e->y();
+                    int x = e->position().x();
+                    int y = e->position().y();
                     if (m_dragMode == VerticalDrag) x = m_clickPos.x();
                     else if (m_dragMode == HorizontalDrag) y = m_clickPos.y();
 
@@ -1913,8 +1913,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
                 if (layer && layer->isLayerEditable()) {
 
-                    int x = e->x();
-                    int y = e->y();
+                    int x = e->position().x();
+                    int y = e->position().y();
                     if (m_dragMode == VerticalDrag) x = m_clickPos.x();
                     else if (m_dragMode == HorizontalDrag) y = m_clickPos.y();
 
@@ -1936,7 +1936,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         Layer *layer = getTopLayer();
         if (layer) {
             layer->measureDrag(this, e);
-            if (layer->hasTimeXAxis()) edgeScrollMaybe(e->x());
+            if (layer->hasTimeXAxis()) edgeScrollMaybe(e->position().x());
         }
 
         update();
@@ -2056,7 +2056,7 @@ Pane::dragTopLayer(QMouseEvent *e)
         m_dragMode == FreeDrag) {
 
         sv_frame_t fromFrame = getFrameForX(m_clickPos.x());
-        sv_frame_t toFrame = getFrameForX(e->x());
+        sv_frame_t toFrame = getFrameForX(e->position().x());
         sv_frame_t frameOff = toFrame - fromFrame;
 
         sv_frame_t newCentreFrame = m_dragCentreFrame;
@@ -2070,7 +2070,7 @@ Pane::dragTopLayer(QMouseEvent *e)
 
 #ifdef DEBUG_PANE
         SVDEBUG << "Pane::dragTopLayer: dragged from x = "
-                << m_clickPos.x() << " to " << e->x()
+                << m_clickPos.x() << " to " << e->position().x()
                 << ", from frame = " << fromFrame
                 << " to " << toFrame
                 << ", for frame offset of " << frameOff << endl;
@@ -2099,7 +2099,7 @@ Pane::dragTopLayer(QMouseEvent *e)
 
 //            SVCERR << "ydiff = " << ydiff << endl;
 
-            int ydiff = e->y() - m_clickPos.y();
+            int ydiff = e->position().y() - m_clickPos.y();
             double perpix = (dmax - dmin) / height();
             double valdiff = ydiff * perpix;
 //            SVCERR << "valdiff = " << valdiff << endl;
@@ -2194,7 +2194,7 @@ Pane::updateDragMode(DragMode dragMode,
 void
 Pane::dragExtendSelection(QMouseEvent *e)
 {
-    sv_frame_t mouseFrame = getFrameForX(e->x());
+    sv_frame_t mouseFrame = getFrameForX(e->position().x());
     int resolution = 1;
     sv_frame_t snapFrameLeft = mouseFrame;
     sv_frame_t snapFrameRight = mouseFrame;
@@ -2203,9 +2203,9 @@ Pane::dragExtendSelection(QMouseEvent *e)
     if (layer && !m_shiftPressed &&
         !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
         layer->snapToFeatureFrame(this, snapFrameLeft,
-                                  resolution, Layer::SnapLeft, e->y());
+                                  resolution, Layer::SnapLeft, e->position().y());
         layer->snapToFeatureFrame(this, snapFrameRight,
-                                  resolution, Layer::SnapRight, e->y());
+                                  resolution, Layer::SnapRight, e->position().y());
     }
         
 //        SVCERR << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
@@ -2241,7 +2241,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
         m_manager->setInProgressSelection(sel, !m_resizing && !m_ctrlPressed);
 
         if (!same) {
-            edgeScrollMaybe(e->x());
+            edgeScrollMaybe(e->position().x());
         }
     }
 
@@ -2310,7 +2310,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     if (mode == ViewManager::SelectMode) {
         m_clickedInRange = false;
         if (m_manager) m_manager->clearInProgressSelection();
-        emit doubleClickSelectInvoked(getFrameForX(e->x()));
+        emit doubleClickSelectInvoked(getFrameForX(e->position().x()));
         return;
     }
 
@@ -2332,7 +2332,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 
     if (relocate) {
 
-        sv_frame_t f = getFrameForX(e->x());
+        sv_frame_t f = getFrameForX(e->position().x());
 
         setCentreFrame(f);
 
@@ -2719,7 +2719,7 @@ Pane::editSelectionStart(QMouseEvent *e)
     }
 
     bool closeToLeft, closeToRight;
-    Selection s(getSelectionAt(e->x(), closeToLeft, closeToRight));
+    Selection s(getSelectionAt(e->position().x(), closeToLeft, closeToRight));
     if (s.isEmpty()) return false;
     m_editingSelection = s;
     m_editingSelectionEdge = (closeToLeft ? -1 : closeToRight ? 1 : 0);

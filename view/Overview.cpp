@@ -272,7 +272,7 @@ Overview::paintEvent(QPaintEvent *e)
     paint.setBrush(getFillWithin());
     paint.drawRoundedRect(primary, 4, 4);
     
-    foreach (QRect vr, rects) {
+    for (QRect vr : rects) {
         paint.setBrush(Qt::NoBrush);
         paint.setPen(QPen(m_boxColour, 2));
         paint.drawRoundedRect(vr, 4, 4);
@@ -312,7 +312,7 @@ Overview::mouseMoveEvent(QMouseEvent *e)
 {
     if (!m_clickedInRange) return;
 
-    int xoff = int(e->x()) - int(m_clickPos.x());
+    int xoff = int(e->position().x()) - int(m_clickPos.x());
     sv_frame_t frameOff = sv_frame_t(round(m_zoomLevel.pixelsToFrames(xoff)));
     
     sv_frame_t newCentreFrame = m_dragCentreFrame;
@@ -336,7 +336,7 @@ Overview::mouseMoveEvent(QMouseEvent *e)
         pixel) {
         sv_frame_t rf = alignToReference(newCentreFrame);
 #ifdef DEBUG_OVERVIEW
-        cerr << "Overview::mouseMoveEvent: x " << e->x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << endl;
+        cerr << "Overview::mouseMoveEvent: x " << e->position().x() << " and click x " << m_clickPos.x() << " -> frame " << newCentreFrame << " -> rf " << rf << endl;
 #endif
         if (m_followPlay == PlaybackScrollContinuous ||
             m_followPlay == PlaybackScrollPageWithCentre) {
@@ -350,7 +350,7 @@ Overview::mouseMoveEvent(QMouseEvent *e)
 void
 Overview::mouseDoubleClickEvent(QMouseEvent *e)
 {
-    sv_frame_t frame = getFrameForX(e->x());
+    sv_frame_t frame = getFrameForX(e->position().x());
     sv_frame_t rf = 0;
     if (frame > 0) rf = alignToReference(frame);
 #ifdef DEBUG_OVERVIEW

@@ -534,7 +534,7 @@ ImageLayer::getImage(LayerGeometryProvider *v, QString name, QSize maxSize) cons
 void
 ImageLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "ImageLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::drawStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<ImageModel>(m_model);
     if (!model) {
@@ -542,7 +542,7 @@ ImageLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
         return;
     }
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
@@ -559,12 +559,12 @@ ImageLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 void
 ImageLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "ImageLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::drawDrag(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<ImageModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
@@ -577,7 +577,7 @@ ImageLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 void
 ImageLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-//    SVDEBUG << "ImageLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::drawEnd(" << e->position().x() << "," << e->position().y() << ")" << endl;
     auto model = ModelById::getAs<ImageModel>(m_model);
     if (!model || !m_editing) return;
 
@@ -640,12 +640,12 @@ ImageLayer::addImage(sv_frame_t frame, QString url)
 void
 ImageLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "ImageLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::editStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<ImageModel>(m_model);
     if (!model) return;
 
-    EventVector points = getLocalPoints(v, e->x(), e->y());
+    EventVector points = getLocalPoints(v, e->position().x(), e->position().y());
     if (points.empty()) return;
 
     m_editOrigin = e->pos();
@@ -666,7 +666,7 @@ ImageLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<ImageModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frameDiff = v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
+    sv_frame_t frameDiff = v->getFrameForX(e->position().x()) - v->getFrameForX(m_editOrigin.x());
     sv_frame_t frame = m_originalPoint.getFrame() + frameDiff;
 
     if (frame < 0) frame = 0;
@@ -685,7 +685,7 @@ ImageLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 void
 ImageLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-//    SVDEBUG << "ImageLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "ImageLayer::editEnd(" << e->position().x() << "," << e->position().y() << ")" << endl;
     auto model = ModelById::getAs<ImageModel>(m_model);
     if (!model || !m_editing) return;
 
@@ -703,7 +703,7 @@ ImageLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<ImageModel>(m_model);
     if (!model) return false;
 
-    EventVector points = getLocalPoints(v, e->x(), e->y());
+    EventVector points = getLocalPoints(v, e->position().x(), e->position().y());
     if (points.empty()) return false;
 
     QString image = points.begin()->getURI();

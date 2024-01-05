@@ -1426,22 +1426,22 @@ void
 TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
+    cerr << "TimeValueLayer::drawStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     int resolution = model->getResolution();
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
     bool havePoint = false;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (!points.empty()) {
         for (EventVector::iterator i = points.begin();
              i != points.end(); ++i) {
@@ -1475,20 +1475,20 @@ void
 TimeValueLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
+    cerr << "TimeValueLayer::drawDrag(" << e->position().x() << "," << e->position().y() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     int resolution = model->getResolution();
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << points.size() << " points" << endl;
@@ -1553,7 +1553,7 @@ TimeValueLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -1579,7 +1579,7 @@ TimeValueLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 
     m_editing = false;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
     if (points.begin()->getFrame() != m_editingPoint.getFrame() ||
         points.begin()->getValue() != m_editingPoint.getValue()) return;
@@ -1595,13 +1595,13 @@ void
 TimeValueLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
+    cerr << "TimeValueLayer::editStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -1619,17 +1619,17 @@ void
 TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
+    cerr << "TimeValueLayer::editDrag(" << e->position().x() << "," << e->position().y() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
     if (m_plotStyle == PlotSegmentation && !m_permitValueEditOfSegmentation) {
         // Do not allow dragging up/down
@@ -1687,7 +1687,7 @@ TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return false;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return false;
 
     Event point = *points.begin();

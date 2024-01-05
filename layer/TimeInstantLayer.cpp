@@ -524,13 +524,13 @@ void
 TimeInstantLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::drawStart(" << e->x() << ")" << endl;
+    cerr << "TimeInstantLayer::drawStart(" << e->position().x() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
@@ -547,13 +547,13 @@ void
 TimeInstantLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::drawDrag(" << e->x() << ")" << endl;
+    cerr << "TimeInstantLayer::drawDrag(" << e->position().x() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
     m_editingCommand->remove(m_editingPoint);
@@ -569,7 +569,7 @@ TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *
     )
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::drawEnd(" << e->x() << ")" << endl;
+    cerr << "TimeInstantLayer::drawEnd(" << e->position().x() << ")" << endl;
 #endif
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model || !m_editing) return;
@@ -589,7 +589,7 @@ TimeInstantLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model) return;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -615,7 +615,7 @@ TimeInstantLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 
     m_editing = false;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
     if (points.begin()->getFrame() != m_editingPoint.getFrame()) return;
 
@@ -630,13 +630,13 @@ void
 TimeInstantLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::editStart(" << e->x() << ")" << endl;
+    cerr << "TimeInstantLayer::editStart(" << e->position().x() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model) return;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -653,13 +653,13 @@ void
 TimeInstantLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::editDrag(" << e->x() << ")" << endl;
+    cerr << "TimeInstantLayer::editDrag(" << e->position().x() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
@@ -680,7 +680,7 @@ TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *
     )
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::editEnd(" << e->x() << ")" << endl;
+    cerr << "TimeInstantLayer::editEnd(" << e->position().x() << ")" << endl;
 #endif
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model || !m_editing) return;
@@ -702,7 +702,7 @@ TimeInstantLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model) return false;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return false;
 
     Event point = *points.begin();
