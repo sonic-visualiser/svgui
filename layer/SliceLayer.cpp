@@ -31,6 +31,8 @@
 #include <QTextStream>
 
 
+namespace sv {
+
 SliceLayer::SliceLayer() :
     m_binAlignment(BinsSpanScalePoints),
     m_colourMap(int(ColourMapper::Ice)),
@@ -1390,4 +1392,6 @@ SliceLayer::zoomToRegion(const LayerGeometryProvider *v, QRect rect)
     
     setDisplayExtents(floor(bin0), ceil(bin1));
 }
+
+} // end namespace sv
 

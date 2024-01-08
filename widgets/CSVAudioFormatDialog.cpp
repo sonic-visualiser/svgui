@@ -34,6 +34,8 @@
 
 #include "base/Debug.h"
 
+namespace sv {
+
 CSVAudioFormatDialog::CSVAudioFormatDialog(QWidget *parent, CSVFormat format,
                                            int maxDisplayCols) :
     QDialog(parent),
@@ -217,4 +219,6 @@ CSVAudioFormatDialog::updateFormatFromDialog()
 }
 
 
+
+} // end namespace sv
 

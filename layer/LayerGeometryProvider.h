@@ -22,6 +22,8 @@
 #include <QMutexLocker>
 #include <QPainter>
 
+namespace sv {
+
 class ViewManager;
 class View;
 class Layer;
@@ -218,5 +220,7 @@ public:
     virtual View *getView() = 0;
     virtual const View *getView() const = 0;
 };
+
+} // end namespace sv
 
 #endif

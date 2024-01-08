@@ -23,9 +23,11 @@
 
 #include "base/ScaleTickIntervals.h"
 
+namespace sv {
+
 int
 LinearNumericalScale::getWidth(LayerGeometryProvider *,
-                                   QPainter &paint)
+                               QPainter &paint)
 {
    return paint.fontMetrics().horizontalAdvance("-000.00") + 10;
 }
@@ -77,3 +79,5 @@ LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
         prevy = y;
     }
 }
+} // end namespace sv
+

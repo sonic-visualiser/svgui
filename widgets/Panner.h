@@ -20,6 +20,8 @@
 
 #include "WheelCounter.h"
 
+namespace sv {
+
 class Panner : public QWidget
 {
     Q_OBJECT
@@ -156,6 +158,8 @@ protected:
 
     WheelCounter m_wheelCounter;
 };
+
+} // end namespace sv
 
 #endif
 

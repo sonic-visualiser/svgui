@@ -36,11 +36,14 @@
 
 #include <iostream>
 
-class ZoomConstraint;
 class QPainter;
+class QMouseEvent;
+
+namespace sv {
+
+class ZoomConstraint;
 class View;
 class LayerGeometryProvider;
-class QMouseEvent;
 class Clipboard;
 class RangeMapper;
 
@@ -727,6 +730,8 @@ private:
     mutable QMutex m_dormancyMutex;
     mutable std::map<const void *, bool> m_dormancy;
 };
+
+} // end namespace sv
 
 #endif
 

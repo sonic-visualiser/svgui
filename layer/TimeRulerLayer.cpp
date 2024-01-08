@@ -34,6 +34,8 @@
 //#define DEBUG_TIME_RULER_LAYER 1
 
 
+namespace sv {
+
 TimeRulerLayer::TimeRulerLayer() :
     SingleColourLayer(),
     m_labelHeight(LabelTop)
@@ -442,4 +444,6 @@ TimeRulerLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 }
+
+} // end namespace sv
 

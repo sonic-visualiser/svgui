@@ -36,6 +36,8 @@
 
 #include "base/Debug.h"
 
+namespace sv {
+
 CSVFormatDialog::CSVFormatDialog(QWidget *parent,
                                  CSVFormat format,
                                  int maxDisplayCols) :
@@ -668,4 +670,6 @@ CSVFormatDialog::updateFormatFromDialog()
 }
 
 
+
+} // end namespace sv
 

@@ -27,6 +27,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 void
 PaintAssistant::paintVerticalLevelScale(QPainter &paint, QRect rect,
                                         double minVal, double maxVal,
@@ -259,4 +261,6 @@ PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
     }
 }
 
+
+} // end namespace sv
 

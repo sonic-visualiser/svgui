@@ -24,6 +24,8 @@
 
 #include "LayerGeometryProvider.h"
 
+namespace sv {
+
 int
 LogColourScale::getWidth(LayerGeometryProvider *,
                             QPainter &paint)
@@ -96,3 +98,5 @@ LogColourScale::paintVertical(LayerGeometryProvider *v,
         val += inc;
     }
 }
+} // end namespace sv
+

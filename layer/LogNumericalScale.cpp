@@ -24,6 +24,8 @@
 
 #include <cmath>
 
+namespace sv {
+
 int
 LogNumericalScale::getWidth(LayerGeometryProvider *,
                             QPainter &paint)
@@ -78,4 +80,6 @@ LogNumericalScale::paintVertical(LayerGeometryProvider *v,
         prevy = y;
     }
 }
+
+} // end namespace sv
 

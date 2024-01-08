@@ -22,6 +22,8 @@
 
 #include "base/Preferences.h"
 
+namespace sv {
+
 WindowTypeSelector::WindowTypeSelector(WindowType defaultType)
 {
     init(defaultType);
@@ -116,4 +118,6 @@ WindowTypeSelector::windowIndexChanged(int index)
     m_windowShape->setWindowType(m_windowType);
     emit windowTypeChanged(type);
 }
+
+} // end namespace sv
 

@@ -26,6 +26,8 @@ class QCheckBox;
     
 #include <QDialog>
 
+namespace sv {
+
 class CSVFormatDialog : public QDialog
 {
     Q_OBJECT
@@ -97,5 +99,7 @@ protected:
     QList<QComboBox *> m_columnPurposeCombos;
     int m_fuzzyColumn;
 };
+
+} // end namespace sv
 
 #endif

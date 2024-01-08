@@ -46,6 +46,8 @@
 
 //#define DEBUG_NOTE_LAYER 1
 
+namespace sv {
+
 NoteLayer::NoteLayer() :
     SingleColourLayer(),
     m_modelUsesHz(true),
@@ -1358,4 +1360,6 @@ NoteLayer::setProperties(const LayerAttributes &attributes)
     if (ok && alsoOk && min != max) setDisplayExtents(min, max);
 }
 
+
+} // end namespace sv
 

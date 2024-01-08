@@ -15,6 +15,8 @@
 
 #include "NotifyingPushButton.h"
 
+namespace sv {
+
 NotifyingPushButton::~NotifyingPushButton()
 {
 }
@@ -32,4 +34,6 @@ NotifyingPushButton::leaveEvent(QEvent *e)
     QPushButton::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

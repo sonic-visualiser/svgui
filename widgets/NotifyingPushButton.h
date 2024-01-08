@@ -18,6 +18,8 @@
 
 #include <QPushButton>
 
+namespace sv {
+
 /**
  * Very trivial enhancement to QPushButton to make it emit signals
  * when the mouse enters and leaves (for context help). See also
@@ -42,6 +44,8 @@ protected:
     void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 };
+
+} // end namespace sv
 
 #endif
 

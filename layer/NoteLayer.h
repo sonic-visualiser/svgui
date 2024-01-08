@@ -24,8 +24,11 @@
 #include <QObject>
 #include <QColor>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 
 /**
  * Layer for displaying and editing notes, i.e. discrete events with
@@ -188,6 +191,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

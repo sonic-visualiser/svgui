@@ -27,6 +27,8 @@
 #include <iostream>
 
 
+namespace sv {
+
 ModelMetadataModel::ModelMetadataModel(PaneStack *stack, bool waveModelsOnly,
                                QObject *parent) :
     QAbstractItemModel(parent),
@@ -588,4 +590,6 @@ LayerTreeModel::columnCount(const QModelIndex &parent) const
 
     return 1;
 }
+
+} // end namespace sv
 

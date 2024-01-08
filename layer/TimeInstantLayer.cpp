@@ -39,6 +39,8 @@
 
 //#define DEBUG_TIME_INSTANT_LAYER 1
 
+namespace sv {
+
 TimeInstantLayer::TimeInstantLayer() :
     SingleColourLayer(),
     m_editing(false),
@@ -915,4 +917,6 @@ TimeInstantLayer::setProperties(const LayerAttributes &attributes)
 
     m_propertiesExplicitlySet = true;
 }
+
+} // end namespace sv
 

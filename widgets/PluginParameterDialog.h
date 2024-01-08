@@ -24,13 +24,16 @@
 
 #include <memory>
 
-class PluginParameterBox;
 class QWidget;
 class QPushButton;
 class QLabel;
 class QGroupBox;
 class QComboBox;
 class QCheckBox;
+
+namespace sv {
+
+class PluginParameterBox;
 
 /**
  * A dialog for editing the parameters of a given plugin, using a
@@ -130,6 +133,8 @@ protected:
     QWidget *m_advanced;
     bool m_advancedVisible;
 };
+
+} // end namespace sv
 
 #endif
 

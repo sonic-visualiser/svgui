@@ -27,6 +27,8 @@
 #include <cmath>
 #include <cassert>
 
+namespace sv {
+
 using std::cerr;
 using std::endl;
 
@@ -590,4 +592,6 @@ LevelPanWidget::leaveEvent(QEvent *e)
     QWidget::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

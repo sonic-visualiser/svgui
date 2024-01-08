@@ -25,6 +25,8 @@ class QLineEdit;
 class QCheckBox;
 class QPushButton;
 
+namespace sv {
+
 class ColourNameDialog : public QDialog
 {
     Q_OBJECT
@@ -52,5 +54,7 @@ protected:
 
     void fillColourLabel();
 };
+
+} // end namespace sv
 
 #endif

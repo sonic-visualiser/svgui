@@ -19,6 +19,8 @@
 
 #include "data/fileio/MIDIFileReader.h"
 
+namespace sv {
+
 class MIDIFileImportDialog : public QObject,
                              public MIDIFileImportPreferenceAcquirer
 {
@@ -36,5 +38,7 @@ public:
 protected:
     QWidget *m_parent;
 };
+
+} // end namespace sv
 
 #endif

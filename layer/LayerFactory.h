@@ -21,6 +21,8 @@
 
 #include "data/model/Model.h"
 
+namespace sv {
+
 class Layer;
 class Clipboard;
 
@@ -115,6 +117,8 @@ protected:
 
     static LayerFactory *m_instance;
 };
+
+} // end namespace sv
 
 #endif
 

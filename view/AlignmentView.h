@@ -18,6 +18,8 @@
 
 #include "View.h"
 
+namespace sv {
+
 class AlignmentView : public View
 {
     Q_OBJECT
@@ -64,5 +66,7 @@ protected:
     sv_frame_t m_leftmostAbove;
     sv_frame_t m_rightmostAbove;
 };
+
+} // end namespace sv
 
 #endif

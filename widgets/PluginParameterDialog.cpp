@@ -43,6 +43,8 @@
 
 #include "base/Debug.h"
 
+namespace sv {
+
 PluginParameterDialog::PluginParameterDialog(std::shared_ptr<Vamp::PluginBase> plugin,
                                              QWidget *parent) :
     QDialog(parent),
@@ -643,4 +645,6 @@ PluginParameterDialog::dialogAccepted()
     
     accept();
 }
+
+} // end namespace sv
 

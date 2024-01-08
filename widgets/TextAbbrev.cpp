@@ -21,6 +21,8 @@
 #include <iostream>
 #include <map>
 
+namespace sv {
+
 using std::set;
 using std::map;
 
@@ -309,4 +311,6 @@ TextAbbrev::getCommonPrefixes(const QStringList &texts)
 
     return prefixes;
 }
+
+} // end namespace sv
 

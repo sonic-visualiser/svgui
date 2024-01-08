@@ -53,6 +53,8 @@
 //#define DEBUG_PROGRESS_STUFF 1
 //#define DEBUG_VIEW_SCALE_CHOICE 1
 
+namespace sv {
+
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
     m_id(getNextId()),
@@ -3345,3 +3347,6 @@ ViewPropertyContainer::ViewPropertyContainer(View *v) :
 ViewPropertyContainer::~ViewPropertyContainer()
 {
 }
+
+} // end namespace sv
+

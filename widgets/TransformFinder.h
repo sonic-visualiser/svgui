@@ -26,9 +26,12 @@
 class QVBoxLayout;
 class QScrollArea;
 class QLabel;
-class SelectableLabel;
 class QWidget;
 class QTimer;
+
+namespace sv {
+
+class SelectableLabel;
 
 class TransformFinder : public QDialog
 {
@@ -67,6 +70,8 @@ protected:
     SortedResults m_sortedResults;
     int m_upToDateCount;
 };
+
+} // end namespace sv
 
 #endif
 

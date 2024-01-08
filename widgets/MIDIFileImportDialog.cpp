@@ -17,6 +17,8 @@
 #include <QMessageBox>
 #include <QInputDialog>
 
+namespace sv {
+
 MIDIFileImportDialog::MIDIFileImportDialog(QWidget *parent) :
     m_parent(parent)
 {
@@ -69,4 +71,6 @@ MIDIFileImportDialog::showError(QString error)
 {
     QMessageBox::critical(nullptr, tr("Error in MIDI file import"), error);
 }
+
+} // end namespace sv
 

@@ -23,6 +23,8 @@
 
 //#define DEBUG_ALIGNMENT_VIEW 1
 
+namespace sv {
+
 using std::vector;
 using std::set;
 
@@ -427,4 +429,6 @@ AlignmentView::getSalientModel(View *view)
     return m;
 }
 
+
+} // end namespace sv
 

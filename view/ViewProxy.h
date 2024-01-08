@@ -19,6 +19,8 @@
 
 #include "data/model/AlignmentModel.h"
 
+namespace sv {
+
 class ViewProxy : public LayerGeometryProvider
 {
 public:
@@ -232,5 +234,7 @@ private:
         }
     }
 };
+
+} // end namespace sv
 
 #endif

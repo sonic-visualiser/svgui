@@ -24,9 +24,12 @@
 
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
-class View;
 class QPainter;
 class QPixmap;
+
+namespace sv {
+
+class View;
 
 class WaveformLayer : public SingleColourLayer
 {
@@ -261,5 +264,7 @@ protected:
     mutable bool m_cacheValid;
     mutable ZoomLevel m_cacheZoomLevel;
 };
+
+} // end namespace sv
 
 #endif

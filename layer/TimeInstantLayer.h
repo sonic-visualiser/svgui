@@ -22,8 +22,11 @@
 #include <QObject>
 #include <QColor>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 
 class TimeInstantLayer : public SingleColourLayer
 {
@@ -130,6 +133,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

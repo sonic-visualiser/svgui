@@ -23,6 +23,8 @@
 #include <QPixmap>
 #include <vector>
 
+namespace sv {
+
 class ColourDatabase : public QObject
 {
     Q_OBJECT
@@ -159,5 +161,7 @@ protected:
 
     static ColourDatabase m_instance;
 };
+
+} // end namespace sv
 
 #endif

@@ -18,6 +18,8 @@
 
 #include "NotifyingComboBox.h"
 
+namespace sv {
+
 /**
  * Colour map picker combo box with optional swatches
  */
@@ -38,6 +40,8 @@ private slots:
 private:
     bool m_includeSwatches;
 };
+
+} // end namespace sv
 
 #endif
 

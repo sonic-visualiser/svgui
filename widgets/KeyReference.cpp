@@ -23,6 +23,8 @@
 #include <QApplication>
 #include <QScreen>
 
+namespace sv {
+
 KeyReference::KeyReference() :
     m_text(nullptr),
     m_dialog(nullptr)
@@ -216,3 +218,5 @@ KeyReference::hide()
         m_dialog->hide();
     }
 }
+} // end namespace sv
+

@@ -30,6 +30,8 @@
 
 #include <iostream>
 
+namespace sv {
+
 InteractiveFileFinder 
 InteractiveFileFinder::m_instance;
 
@@ -676,4 +678,6 @@ InteractiveFileFinder::locateInteractive(FileType type, QString thing)
     return path;
 }
 
+
+} // end namespace sv
 

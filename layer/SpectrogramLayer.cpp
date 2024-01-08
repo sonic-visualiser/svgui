@@ -56,6 +56,8 @@
 
 using namespace std;
 
+namespace sv {
+
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_channel(0),
     m_windowSize(1024),
@@ -2821,3 +2823,5 @@ SpectrogramLayer::setProperties(const LayerAttributes &attributes)
     }
 }
     
+} // end namespace sv
+

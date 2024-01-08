@@ -33,6 +33,8 @@
 #include <vector>
 
 #include <utility>
+namespace sv {
+
 using namespace std::rel_ops;
 
 //#define DEBUG_COLOUR_PLOT_REPAINT 1
@@ -1565,3 +1567,5 @@ Colour3DPlotRenderer::findSimilarRegionExtents(QPoint p) const
     QRect rect = finder.findRegionExtents(&image, p);
     return rect;
 }
+} // end namespace sv
+

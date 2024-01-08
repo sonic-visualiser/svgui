@@ -32,6 +32,8 @@ using namespace std;
 
 //!!! todo: remember & re-apply last set of options chosen for this layer type
 
+namespace sv {
+
 CSVExportDialog::CSVExportDialog(Configuration config, QWidget *parent) :
     QDialog(parent),
     m_config(config)
@@ -231,4 +233,6 @@ CSVExportDialog::shouldConstrainToSelection() const
 {
     return m_selectionOnly && m_selectionOnly->isChecked();
 }
+
+} // end namespace sv
 

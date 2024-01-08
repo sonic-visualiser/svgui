@@ -46,6 +46,8 @@
 #include <iostream>
 #include <cmath>
 #include <utility>
+namespace sv {
+
 #include <limits> // GF: included to compile std::numerical_limits on linux
 #include <vector>
 
@@ -1917,4 +1919,6 @@ FlexiNoteLayer::setVerticalRangeToNoteRange(LayerGeometryProvider *v)
     }
 }
 
+
+} // end namespace sv
 

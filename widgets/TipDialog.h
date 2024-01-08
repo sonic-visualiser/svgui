@@ -27,6 +27,8 @@
 class QLabel;
 class QXmlInputSource;
 
+namespace sv {
+
 class TipDialog : public QDialog
 {
     Q_OBJECT
@@ -81,5 +83,7 @@ protected:
         bool m_inHtml;
     };
 };
+
+} // end namespace sv
 
 #endif

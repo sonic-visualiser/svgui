@@ -33,6 +33,8 @@
 #include <iostream>
 
 
+namespace sv {
+
 class LEDButton::LEDButtonPrivate
 {
     friend class LEDButton;
@@ -288,4 +290,6 @@ LEDButton::minimumSizeHint() const
 {
     return WidgetScale::scaleQSize(QSize(17, 17));
 }
+
+} // end namespace sv
 

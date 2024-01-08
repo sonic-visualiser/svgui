@@ -42,6 +42,8 @@
 
 //#define DEBUG_COMMAND_HISTORY 1
 
+namespace sv {
+
 CommandHistory *CommandHistory::m_instance = nullptr;
 
 CommandHistory::CommandHistory() :
@@ -567,4 +569,6 @@ CommandHistory::updateActions()
         }
     }
 }
+
+} // end namespace sv
 

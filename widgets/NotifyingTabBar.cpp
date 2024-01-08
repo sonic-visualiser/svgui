@@ -17,6 +17,8 @@
 
 #include <iostream>
 
+namespace sv {
+
 NotifyingTabBar::NotifyingTabBar(QWidget *parent) :
     QTabBar(parent)
 {
@@ -49,4 +51,6 @@ NotifyingTabBar::leaveEvent(QEvent *e)
     QTabBar::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

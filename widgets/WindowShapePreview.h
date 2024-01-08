@@ -22,6 +22,8 @@
 
 class QLabel;
 
+namespace sv {
+
 class WindowShapePreview : public QFrame
 {
     Q_OBJECT
@@ -40,5 +42,7 @@ protected:
 
     void updateLabels();
 };
+
+} // end namespace sv
 
 #endif

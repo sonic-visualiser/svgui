@@ -22,6 +22,8 @@
 class QLineEdit;
 class QLabel;
 class QPushButton;
+namespace sv {
+
 class FileSource;
 
 class ImageDialog : public QDialog
@@ -67,5 +69,7 @@ protected:
 
     FileSource *m_remoteFile;
 };
+
+} // end namespace sv
 
 #endif

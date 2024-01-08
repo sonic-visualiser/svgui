@@ -18,6 +18,8 @@
 
 #include "base/Command.h"
 
+namespace sv {
+
 class ShowLayerCommand : public Command
 {
 public:
@@ -38,5 +40,7 @@ protected:
     bool m_show;
     QString m_name;
 };
+
+} // end namespace sv
 
 #endif

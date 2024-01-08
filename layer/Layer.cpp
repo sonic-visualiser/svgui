@@ -34,6 +34,8 @@
 
 #include <cmath>
 
+namespace sv {
+
 Layer::Layer() :
     m_haveDraggingRect(false),
     m_haveCurrentMeasureRect(false)
@@ -710,4 +712,6 @@ Layer::toBriefXml(QTextStream &stream,
         .arg(modelExportId)
         .arg(extraAttributes);
 }
+
+} // end namespace sv
 

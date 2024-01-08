@@ -20,6 +20,8 @@
 
 class QEvent;
 
+namespace sv {
+
 class PluginReviewDialog : public QDialog
 {
     Q_OBJECT
@@ -33,5 +35,7 @@ public:
 private:
     QTableWidget *m_table;
 };
+
+} // end namespace sv
 
 #endif

@@ -28,6 +28,8 @@
 #include <QColor>
 #include <QMutex>
 
+namespace sv {
+
 class SpectrumLayer : public SliceLayer,
                       public HorizontalScaleProvider
 {
@@ -150,5 +152,7 @@ protected:
         else return m_windowSize / (1 << (m_windowHopLevel - 1));
     }
 };
+
+} // end namespace sv
 
 #endif

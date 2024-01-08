@@ -30,6 +30,8 @@
 #include <QTimer>
 #include <QAction>
 
+namespace sv {
+
 TransformFinder::TransformFinder(QWidget *parent) :
     QDialog(parent),
     m_resultsFrame(nullptr),
@@ -435,4 +437,6 @@ TransformFinder::down()
         }
     }
 }
+
+} // end namespace sv
 

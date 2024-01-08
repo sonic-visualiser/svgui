@@ -26,6 +26,8 @@
 
 #include <QColor>
 
+namespace sv {
+
 class SliceLayer : public SingleColourLayer
 {
     Q_OBJECT
@@ -200,5 +202,7 @@ protected:
     mutable sv_frame_t          m_currentf1;
     mutable std::vector<float>  m_values;
 };
+
+} // end namespace sv
 
 #endif

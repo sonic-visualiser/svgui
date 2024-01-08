@@ -27,8 +27,11 @@
 
 #include <map>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 
 class RegionLayer : public SingleColourLayer,
                     public VerticalScaleLayer,
@@ -176,6 +179,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

@@ -27,6 +27,8 @@
 #include <QApplication>
 #include <QScreen>
 
+namespace sv {
+
 LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     QDialog(parent),
     m_paneStack(stack)
@@ -108,4 +110,6 @@ LayerTreeDialog::~LayerTreeDialog()
 {
     delete m_layerModel;
 }
+
+} // end namespace sv
 

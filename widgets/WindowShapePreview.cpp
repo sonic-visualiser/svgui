@@ -31,6 +31,8 @@
 using namespace std;
 
 
+namespace sv {
+
 WindowShapePreview::WindowShapePreview(QWidget *parent) :
     QFrame(parent),
     m_windowType(HanningWindow)
@@ -214,4 +216,6 @@ WindowShapePreview::setWindowType(WindowType type)
     m_windowType = type;
     updateLabels();
 }
+
+} // end namespace sv
 

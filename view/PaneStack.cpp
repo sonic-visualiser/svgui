@@ -38,6 +38,8 @@
 
 //#define DEBUG_PANE_STACK 1
 
+namespace sv {
+
 PaneStack::PaneStack(QWidget *parent,
                      ViewManager *viewManager,
                      int options) :
@@ -812,4 +814,6 @@ PaneStack::sizePanesEqually()
 
     m_splitter->setSizes(sizes);
 }
+
+} // end namespace sv
 

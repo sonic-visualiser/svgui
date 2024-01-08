@@ -32,6 +32,8 @@
 #include <QTextStream>
 
 
+namespace sv {
+
 SpectrumLayer::SpectrumLayer() :
     m_channel(-1),
     m_channelSet(false),
@@ -986,3 +988,5 @@ SpectrumLayer::setProperties(const LayerAttributes &attributes)
 }
 
     
+} // end namespace sv
+

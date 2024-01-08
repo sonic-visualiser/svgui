@@ -32,6 +32,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 TextLayer::TextLayer() :
     SingleColourLayer(),
     m_editing(false),
@@ -805,4 +807,6 @@ TextLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 }
+
+} // end namespace sv
 

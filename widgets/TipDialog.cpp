@@ -28,6 +28,8 @@
 
 #include <iostream>
 
+namespace sv {
+
 TipDialog::TipDialog(QWidget *parent) :
     QDialog(parent),
     m_tipNumber(0),
@@ -295,3 +297,5 @@ TipDialog::TipFileParser::fatalError(const QXmlParseException &exception)
     SVCERR << errorString << endl;
     return QXmlDefaultHandler::fatalError(exception);
 }
+} // end namespace sv
+

@@ -35,11 +35,14 @@
 #include <QImage>
 #include <QPixmap>
 
-class View;
 class QPainter;
 class QImage;
 class QPixmap;
 class QTimer;
+
+namespace sv {
+
+class View;
 class FFTModel;
 class Dense3DModelPeakCache;
 
@@ -365,5 +368,7 @@ protected:
     void setMeasureRectYCoord(LayerGeometryProvider *v,
                                       MeasureRect &r, bool start, int y) const override;
 };
+
+} // end namespace sv
 
 #endif

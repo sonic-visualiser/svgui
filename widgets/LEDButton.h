@@ -33,6 +33,8 @@
 
 class QColor;
 
+namespace sv {
+
 class LEDButton : public QWidget
 {
     Q_OBJECT
@@ -80,5 +82,7 @@ protected:
     class LEDButtonPrivate;
     LEDButtonPrivate *d;
 };
+
+} // end namespace sv
 
 #endif

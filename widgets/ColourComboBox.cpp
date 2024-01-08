@@ -28,6 +28,8 @@
 
 using namespace std;
 
+namespace sv {
+
 ColourComboBox::ColourComboBox(bool withAddNewColourEntry, QWidget *parent) :
     NotifyingComboBox(parent),
     m_withAddNewColourEntry(withAddNewColourEntry)
@@ -122,4 +124,6 @@ ColourComboBox::rebuild()
     
     blockSignals(false);
 }
+
+} // end namespace sv
 

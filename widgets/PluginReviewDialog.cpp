@@ -25,6 +25,8 @@
 #include "plugin/FeatureExtractionPluginFactory.h"
 #include "plugin/RealTimePluginFactory.h"
 
+namespace sv {
+
 PluginReviewDialog::PluginReviewDialog(QWidget *parent) :
     QDialog(parent)
 {
@@ -137,4 +139,6 @@ PluginReviewDialog::populate()
 
     resize(width, height);
 }
+
+} // end namespace sv
 

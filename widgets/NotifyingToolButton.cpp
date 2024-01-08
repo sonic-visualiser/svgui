@@ -15,6 +15,8 @@
 
 #include "NotifyingToolButton.h"
 
+namespace sv {
+
 NotifyingToolButton::~NotifyingToolButton()
 {
 }
@@ -32,4 +34,6 @@ NotifyingToolButton::leaveEvent(QEvent *e)
     QToolButton::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

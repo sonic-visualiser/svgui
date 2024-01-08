@@ -34,6 +34,8 @@
 
 using namespace std;
 
+namespace sv {
+
 static set<QString> autoInvertExceptions {
     // These are the icons that look OK in their default colours, even
     // in a colour scheme with a black background.  (They may also be
@@ -226,4 +228,6 @@ IconLoader::invertPixmap(QPixmap pmap)
     pmap = QPixmap::fromImage(img);
     return pmap;
 }
+
+} // end namespace sv
 

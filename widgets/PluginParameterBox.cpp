@@ -34,6 +34,8 @@
 
 #include <cmath>
 
+namespace sv {
+
 PluginParameterBox::PluginParameterBox(std::shared_ptr<Vamp::PluginBase> plugin,
                                        QWidget *parent) :
     QFrame(parent),
@@ -440,4 +442,6 @@ PluginParameterBox::updateProgramCombo()
     }
 }
 
+
+} // end namespace sv
 

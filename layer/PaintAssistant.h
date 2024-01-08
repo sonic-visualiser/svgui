@@ -23,6 +23,8 @@
 #include "base/AudioLevel.h"
 
 class QPainter;
+namespace sv {
+
 class Layer;
 class LayerGeometryProvider;
 
@@ -51,5 +53,7 @@ public:
                                 QPainter &p, int x, int y,
                                 QString text, TextStyle style);
 };
+
+} // end namespace sv
 
 #endif

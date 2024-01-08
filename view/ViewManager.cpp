@@ -32,6 +32,8 @@
 
 //#define DEBUG_VIEW_MANAGER 1
 
+namespace sv {
+
 ViewManager::ViewManager() :
     m_playSource(nullptr),
     m_recordTarget(nullptr),
@@ -876,4 +878,6 @@ ViewManager::scalePixelSize(int pixels)
     if (pixels != 0 && scaled == 0) scaled = 1;
     return scaled;
 }
+
+} // end namespace sv
 

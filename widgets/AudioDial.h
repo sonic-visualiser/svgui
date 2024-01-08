@@ -15,7 +15,7 @@
 #ifndef SV_AUDIO_DIAL_H
 #define SV_AUDIO_DIAL_H
 
-/**
+/*
  * A rotary dial widget.
  *
  * Based on an original design by Thorsten Wilms.
@@ -41,8 +41,11 @@
 #include <QDial>
 #include <map>
 
-class RangeMapper;
 class QMenu;
+
+namespace sv {
+
+class RangeMapper;
 
 /**
  * AudioDial is a nicer-looking QDial that by default reacts to mouse
@@ -56,7 +59,6 @@ class QMenu;
  * respond to radial mouse motion in the same way as QDial (the
  * default is no).
  */
-
 class AudioDial : public QDial
 {
     Q_OBJECT
@@ -157,6 +159,8 @@ private:
     RangeMapper *m_rangeMapper;
 };
 
+
+} // end namespace sv
 
 #endif  // __AudioDial_h
 

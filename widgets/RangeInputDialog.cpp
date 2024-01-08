@@ -22,6 +22,8 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 
+namespace sv {
+
 RangeInputDialog::RangeInputDialog(QString title, QString message,
                                    QString unit, float min, float max, 
                                    QWidget *parent) :
@@ -119,4 +121,6 @@ RangeInputDialog::rangeEndChanged(double max)
     }
     emit rangeChanged(float(min), float(max));
 }
+
+} // end namespace sv
 

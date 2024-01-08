@@ -19,6 +19,9 @@
 #include <QRect>
 
 class QPainter;
+
+namespace sv {
+
 class LayerGeometryProvider;
 class VerticalScaleLayer;
 
@@ -31,6 +34,8 @@ public:
     (LayerGeometryProvider *v, const VerticalScaleLayer *layer,
      QPainter &paint, int x0, double minf, double maxf);
 };
+
+} // end namespace sv
 
 #endif
 

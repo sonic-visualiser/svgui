@@ -26,10 +26,13 @@ class QWidget;
 class QGridLayout;
 class QVBoxLayout;
 class QLabel;
-class LEDButton;
 class QToolButton;
-class NotifyingPushButton;
 class QMenu;
+
+namespace sv {
+
+class LEDButton;
+class NotifyingPushButton;
 
 class PropertyBox : public QFrame
 {
@@ -90,5 +93,7 @@ protected:
     std::map<QString, QGridLayout *> m_groupLayouts;
     std::map<QString, QWidget *> m_propertyControllers;
 };
+
+} // end namespace sv
 
 #endif

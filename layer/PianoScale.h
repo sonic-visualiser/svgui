@@ -19,6 +19,8 @@
 #include <QRect>
 
 class QPainter;
+namespace sv {
+
 class LayerGeometryProvider;
 class HorizontalScaleProvider;
 
@@ -33,6 +35,8 @@ public:
     (LayerGeometryProvider *v, const HorizontalScaleProvider *p,
      QPainter &paint, QRect rect);
 };
+
+} // end namespace sv
 
 #endif
 

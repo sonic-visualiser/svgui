@@ -23,6 +23,8 @@
 
 #include <cmath>
 
+namespace sv {
+
 int
 HorizontalFrequencyScale::getHeight(LayerGeometryProvider *,
                                     QPainter &paint)
@@ -74,4 +76,6 @@ HorizontalFrequencyScale::paintScale(LayerGeometryProvider *v,
         marginx = x + tw + 10;
     }
 }
+
+} // end namespace sv
 

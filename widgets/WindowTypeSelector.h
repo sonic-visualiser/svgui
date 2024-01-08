@@ -20,8 +20,11 @@
 
 #include "base/Window.h"
 
-class WindowShapePreview;
 class QComboBox;
+
+namespace sv {
+
+class WindowShapePreview;
 
 class WindowTypeSelector : public QFrame
 {
@@ -51,5 +54,7 @@ protected:
 
     void init(WindowType type);
 };
+
+} // end namespace sv
 
 #endif

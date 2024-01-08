@@ -31,13 +31,15 @@
 
 // #define DEBUG_VIEW_WIDGET_PAINT 1
 
-class Layer;
-class ViewPropertyContainer;
-
 class QPushButton;
 
 #include <map>
 #include <set>
+
+namespace sv {
+
+class Layer;
+class ViewPropertyContainer;
 
 /**
  * View is the base class of widgets that display one or more
@@ -657,6 +659,8 @@ public slots:
 protected:
     View *m_v;
 };
+
+} // end namespace sv
 
 #endif
 

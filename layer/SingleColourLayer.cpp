@@ -24,6 +24,8 @@
 
 //#define DEBUG_COLOUR_SELECTION 1
 
+namespace sv {
+
 SingleColourLayer::ColourRefCount 
 SingleColourLayer::m_colourRefCount;
 
@@ -335,3 +337,5 @@ void SingleColourLayer::unrefColor()
         m_colourRefCount[m_colour]--;
     }
 }
+} // end namespace sv
+

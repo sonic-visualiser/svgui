@@ -18,6 +18,8 @@
 
 #include <QTabBar>
 
+namespace sv {
+
 class NotifyingTabBar : public QTabBar
 {
     Q_OBJECT
@@ -36,5 +38,7 @@ protected:
     void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 };
+
+} // end namespace sv
 
 #endif

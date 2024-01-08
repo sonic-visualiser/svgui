@@ -31,6 +31,8 @@
 #include <cmath>
 #include <iostream>
 
+namespace sv {
+
 Thumbwheel::Thumbwheel(Qt::Orientation orientation,
                        QWidget *parent) :
     QWidget(parent),
@@ -647,4 +649,6 @@ Thumbwheel::sizeHint() const
         return QSize(12, 80);
     }
 }
+
+} // end namespace sv
 

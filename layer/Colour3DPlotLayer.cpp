@@ -38,6 +38,8 @@
 
 #include <cassert>
 
+namespace sv {
+
 using std::vector;
 
 //#define DEBUG_COLOUR_3D_PLOT_LAYER_PAINT 1
@@ -1414,4 +1416,6 @@ Colour3DPlotLayer::setProperties(const LayerAttributes &attributes)
     //!!! SpectrogramLayer, compare with prior SV versions, compare
     //!!! with Tony v1 and v2 and their save files
 }
+
+} // end namespace sv
 

@@ -41,6 +41,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 BoxLayer::BoxLayer() :
     SingleColourLayer(),
     m_editing(false),
@@ -1200,4 +1202,6 @@ BoxLayer::setProperties(const LayerAttributes &attributes)
     if (ok) setVerticalScale(scale);
 }
 
+
+} // end namespace sv
 

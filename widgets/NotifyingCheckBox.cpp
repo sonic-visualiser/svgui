@@ -15,6 +15,8 @@
 
 #include "NotifyingCheckBox.h"
 
+namespace sv {
+
 NotifyingCheckBox::~NotifyingCheckBox()
 {
 }
@@ -32,4 +34,6 @@ NotifyingCheckBox::leaveEvent(QEvent *e)
     QCheckBox::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

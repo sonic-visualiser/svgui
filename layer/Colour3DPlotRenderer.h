@@ -29,6 +29,8 @@
 #include <QPainter>
 #include <QImage>
 
+namespace sv {
+
 class LayerGeometryProvider;
 class VerticalBinLayer;
 class RenderTimer;
@@ -337,6 +339,8 @@ private:
 
     void updateTimings(const RenderTimer &timer, int xPixelCount);
 };
+
+} // end namespace sv
 
 #endif
 

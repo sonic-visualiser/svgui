@@ -57,6 +57,8 @@
 
 //#define DEBUG_PROPERTY_BOX 1
 
+namespace sv {
+
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
     m_showButton(nullptr),
@@ -1004,4 +1006,6 @@ PropertyBox::mouseLeftWidget()
     }
 }
 
+
+} // end namespace sv
 

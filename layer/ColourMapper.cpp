@@ -27,6 +27,8 @@
 
 using namespace std;
 
+namespace sv {
+
 static vector<QColor> convertStrings(const vector<QString> &strs,
                                      bool reversed)
 {
@@ -271,6 +273,10 @@ ColourMapper::map(double value) const
     if (m_inverted) {
         norm = 1.0 - norm;
     }
+
+#if defined(_MSC_VER)
+#pragma warning(disable:4305) // truncation from double to float
+#endif
     
     float h = 0.0, s = 0.0, v = 0.0, r = 0.0, g = 0.0, b = 0.0;
     bool hsv = true;
@@ -540,4 +546,6 @@ ColourMapper::getExamplePixmap(QSize size) const
     return pmap;
 }
 
+
+} // end namespace sv
 

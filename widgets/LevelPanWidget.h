@@ -19,6 +19,8 @@
 
 #include "WheelCounter.h"
 
+namespace sv {
+
 /**
  * A simple widget for coarse level and pan control.
  */
@@ -125,5 +127,7 @@ protected:
     double thinLineWidth(QRectF) const;
     double cornerRadius(QRectF) const;
 };
+
+} // end namespace sv
 
 #endif

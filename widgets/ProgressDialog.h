@@ -20,6 +20,8 @@
 class QProgressDialog;
 class QTimer;
 
+namespace sv {
+
 class ProgressDialog : public ProgressReporter
 {
     Q_OBJECT
@@ -55,5 +57,7 @@ protected:
     bool m_timerElapsed;
     bool m_cancelled;
 };
+
+} // end namespace sv
 
 #endif

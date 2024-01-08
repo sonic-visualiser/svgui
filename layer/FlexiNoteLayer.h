@@ -24,8 +24,11 @@
 #include <QObject>
 #include <QColor>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 class SparseTimeValueModel;
 
 class FlexiNoteLayer : public SingleColourLayer,
@@ -208,6 +211,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

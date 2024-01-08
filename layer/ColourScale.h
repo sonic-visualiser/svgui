@@ -27,6 +27,8 @@ enum class ColourScaleType {
     Absolute
 };
 
+namespace sv {
+
 /**
  * Map values within a range onto a set of colours, with a given
  * distribution (linear, log etc) and optional colourmap rotation.
@@ -119,5 +121,7 @@ private:
     double m_mappedMax;
     static int m_maxPixel;
 };
+
+} // end namespace sv
 
 #endif

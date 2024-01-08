@@ -22,6 +22,8 @@
 
 #include "LayerGeometryProvider.h"
 
+namespace sv {
+
 int
 LinearColourScale::getWidth(LayerGeometryProvider *,
                             QPainter &paint)
@@ -94,3 +96,5 @@ LinearColourScale::paintVertical(LayerGeometryProvider *v,
         val += inc;
     }
 }
+} // end namespace sv
+

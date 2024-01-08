@@ -68,6 +68,8 @@
 //#define DEBUG_PANE 1
 //#define DEBUG_PANE_SCALE_CHOICE 1
 
+namespace sv {
+
 QCursor *Pane::m_measureCursor1 = nullptr;
 QCursor *Pane::m_measureCursor2 = nullptr;
 
@@ -3035,4 +3037,6 @@ Pane::toXml(QTextStream &stream,
      .arg(m_centreLineVisible).arg(height()).arg(extraAttributes));
 }
 
+
+} // end namespace sv
 

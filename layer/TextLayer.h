@@ -22,8 +22,11 @@
 #include <QObject>
 #include <QColor>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 
 class TextLayer : public SingleColourLayer
 {
@@ -112,6 +115,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

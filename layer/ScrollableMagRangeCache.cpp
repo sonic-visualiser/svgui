@@ -22,6 +22,8 @@ using namespace std;
 
 //#define DEBUG_SCROLLABLE_MAG_RANGE_CACHE 1
 
+namespace sv {
+
 void
 ScrollableMagRangeCache::scrollTo(const LayerGeometryProvider *v,
                                   sv_frame_t newStartFrame)
@@ -129,4 +131,6 @@ ScrollableMagRangeCache::sampleColumn(int column, const MagnitudeRange &r)
         m_ranges[column].sample(r);
     }
 }
+
+} // end namespace sv
 

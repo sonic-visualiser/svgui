@@ -38,6 +38,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 ImageLayer::ImageMap
 ImageLayer::m_images;
 
@@ -990,4 +992,6 @@ void
 ImageLayer::setProperties(const LayerAttributes &)
 {
 }
+
+} // end namespace sv
 

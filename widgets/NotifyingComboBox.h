@@ -18,6 +18,8 @@
 
 #include <QComboBox>
 
+namespace sv {
+
 /**
  * Very trivial enhancement to QComboBox to make it emit signals when
  * the mouse enters and leaves (for context help).
@@ -41,6 +43,8 @@ protected:
     void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 };
+
+} // end namespace sv
 
 #endif
 

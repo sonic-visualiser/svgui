@@ -18,6 +18,8 @@
 
 #include <QLabel>
 
+namespace sv {
+
 class SelectableLabel : public QLabel
 {
     Q_OBJECT
@@ -51,5 +53,7 @@ protected:
     bool m_selected;
     bool m_swallowRelease;
 };
+
+} // end namespace sv
 
 #endif

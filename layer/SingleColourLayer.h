@@ -21,6 +21,8 @@
 #include <vector>
 #include <map>
 
+namespace sv {
+
 class SingleColourLayer : public Layer
 {
     Q_OBJECT
@@ -97,5 +99,7 @@ private:
     void refColor();
     void unrefColor();
 };
+
+} // end namespace sv
 
 #endif

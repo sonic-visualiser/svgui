@@ -26,6 +26,8 @@
 //#define DEBUG_OVERVIEW 1
 
 
+namespace sv {
+
 Overview::Overview(QWidget *w) :
     View(w, false),
     m_clickedInRange(false),
@@ -372,4 +374,6 @@ Overview::leaveEvent(QEvent *)
     emit contextHelpChanged("");
 }
 
+
+} // end namespace sv
 

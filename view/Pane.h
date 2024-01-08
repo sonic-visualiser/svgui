@@ -25,12 +25,15 @@
 
 class QWidget;
 class QPaintEvent;
+class QMenu;
+
+namespace sv {
+
 class Layer;
 class Thumbwheel;
 class Panner;
 class NotifyingPushButton;
 class KeyReference;
-class QMenu;
 
 class Pane : public View
 {
@@ -222,6 +225,8 @@ protected:
     static QCursor *m_measureCursor1;
     static QCursor *m_measureCursor2;
 };
+
+} // end namespace sv
 
 #endif
 

@@ -24,9 +24,12 @@
 
 #include "data/model/DenseThreeDimensionalModel.h"
 
-class View;
 class QPainter;
 class QImage;
+
+namespace sv {
+
+class View;
 
 /**
  * This is a view that displays dense 3-D data (time, some sort of
@@ -227,5 +230,7 @@ protected:
 
     void paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 };
+
+} // end namespace sv
 
 #endif

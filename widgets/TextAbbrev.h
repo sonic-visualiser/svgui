@@ -22,6 +22,8 @@
 
 class QFontMetrics;
 
+namespace sv {
+
 class TextAbbrev 
 {
 public:
@@ -104,6 +106,8 @@ protected:
                                      QString ellipsis);
     static std::set<QString> getCommonPrefixes(const QStringList &texts);
 };
+
+} // end namespace sv
 
 #endif
 

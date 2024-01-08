@@ -20,6 +20,8 @@
 
 #include "LayerGeometryProvider.h"
 
+namespace sv {
+
 /**
  * A cached set of magnitude range records for a view that scrolls
  * horizontally, such as a spectrogram. The cache object holds a
@@ -135,5 +137,7 @@ private:
     sv_frame_t m_startFrame;
     ZoomLevel m_zoomLevel;
 };
+
+} // end namespace sv
 
 #endif

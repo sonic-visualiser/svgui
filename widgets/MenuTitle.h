@@ -23,6 +23,8 @@
 #include <QApplication>
 #include <QMenu>
 
+namespace sv {
+
 class MenuTitle
 {
 public:
@@ -52,5 +54,7 @@ public:
         m->addSeparator();
     }
 };
+
+} // end namespace sv
 
 #endif

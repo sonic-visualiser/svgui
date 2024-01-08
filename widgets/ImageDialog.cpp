@@ -33,6 +33,8 @@
 
 #include <iostream>
 
+namespace sv {
+
 ImageDialog::ImageDialog(QString title,
                          QString image,
                          QString label,
@@ -240,4 +242,6 @@ ImageDialog::browseClicked()
 }
 
 
+
+} // end namespace sv
 

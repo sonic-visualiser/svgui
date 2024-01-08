@@ -28,6 +28,8 @@
 #include "MenuTitle.h"
 
 #include <iostream>
+namespace sv {
+
 using std::cerr;
 using std::endl;
 
@@ -263,4 +265,6 @@ LevelPanToolButton::leaveEvent(QEvent *e)
     emit mouseLeft();
 }
 
+
+} // end namespace sv
 

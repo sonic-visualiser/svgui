@@ -21,6 +21,8 @@
 #include <QString>
 #include <QPixmap>
 
+namespace sv {
+
 /**
  * A class for mapping intensity values onto various colour maps.
  */
@@ -131,6 +133,8 @@ protected:
     double m_min;
     double m_max;
 };
+
+} // end namespace sv
 
 #endif
 

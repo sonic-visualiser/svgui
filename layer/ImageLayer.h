@@ -26,8 +26,11 @@
 
 #include <map>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 class FileSource;
 
 class ImageLayer : public Layer
@@ -143,6 +146,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

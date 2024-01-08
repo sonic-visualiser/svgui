@@ -23,8 +23,11 @@
 
 #include "WheelCounter.h"
 
-class RangeMapper;
 class QMenu;
+
+namespace sv {
+
+class RangeMapper;
 
 class Thumbwheel : public QWidget
 {
@@ -108,5 +111,7 @@ protected:
     QImage m_cache;
     WheelCounter m_wheelCounter;
 };
+
+} // end namespace sv
 
 #endif

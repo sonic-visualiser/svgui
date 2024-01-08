@@ -17,6 +17,8 @@
 
 #include <chrono>
 
+namespace sv {
+
 class RenderTimer
 {
 public:
@@ -110,5 +112,7 @@ private:
     double m_hardLimit; // seconds
     bool m_softLimitOverridden;
 };
+
+} // end namespace sv
 
 #endif

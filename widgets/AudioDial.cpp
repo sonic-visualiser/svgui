@@ -56,6 +56,8 @@
 #include "MenuTitle.h"
 
 
+namespace sv {
+
 
 
 
@@ -655,4 +657,6 @@ AudioDial::leaveEvent(QEvent *e)
     QDial::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

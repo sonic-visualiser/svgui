@@ -38,6 +38,8 @@
 
 //#define DEBUG_MODEL_DATA_TABLE_DIALOG 1
 
+namespace sv {
+
 ModelDataTableDialog::ModelDataTableDialog(ModelId tabularModelId,
                                            QString title, QWidget *parent) :
     QMainWindow(parent),
@@ -352,3 +354,5 @@ ModelDataTableDialog::modelRemoved()
 }
 
     
+} // end namespace sv
+

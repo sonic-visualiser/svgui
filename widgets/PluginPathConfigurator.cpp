@@ -28,6 +28,8 @@
 
 #include "plugin/PluginPathSetter.h"
 
+namespace sv {
+
 PluginPathConfigurator::PluginPathConfigurator(QWidget *parent) :
     QFrame(parent)
 {
@@ -381,4 +383,6 @@ PluginPathConfigurator::seePluginsClicked()
     dialog.populate();
     dialog.exec();
 }
+
+} // end namespace sv
 

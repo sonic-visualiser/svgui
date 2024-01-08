@@ -25,6 +25,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 Panner::Panner(QWidget *parent) :
     QWidget(parent),
     m_rectX(0),
@@ -308,4 +310,6 @@ Panner::resetToDefault()
     emitAndUpdate();
 }
 
+
+} // end namespace sv
 

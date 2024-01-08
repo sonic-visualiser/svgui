@@ -38,6 +38,8 @@
 //#define DEBUG_WAVEFORM_PAINT 1
 //#define DEBUG_WAVEFORM_PAINT_BY_PIXEL 1
 
+namespace sv {
+
 using std::vector;
 
 double
@@ -1782,4 +1784,6 @@ WaveformLayer::setVerticalZoomStep(int step)
 {
     setGain(AudioLevel::dB_to_voltage(step - 50));
 }
+
+} // end namespace sv
 

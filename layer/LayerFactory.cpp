@@ -53,6 +53,8 @@
 
 #include <QSettings>
 
+namespace sv {
+
 LayerFactory *
 LayerFactory::m_instance = new LayerFactory;
 
@@ -588,3 +590,5 @@ LayerFactory::getLayerTypeForClipboardContents(const Clipboard &clip)
     return TimeInstants;
 }
     
+} // end namespace sv
+

@@ -27,6 +27,8 @@ class QTextEdit;
 class QDialog;
 class QAbstractButton;
 
+namespace sv {
+
 class KeyReference : public QObject
 {
     Q_OBJECT
@@ -70,5 +72,7 @@ protected:
     QTextEdit *m_text;
     QDialog *m_dialog;
 };
+
+} // end namespace sv
 
 #endif

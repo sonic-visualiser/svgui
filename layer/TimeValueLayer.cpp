@@ -52,6 +52,8 @@
 
 //#define DEBUG_TIME_VALUE_LAYER 1
 
+namespace sv {
+
 TimeValueLayer::TimeValueLayer() :
     SingleColourLayer(),
     m_editing(false),
@@ -2091,4 +2093,6 @@ TimeValueLayer::setProperties(const LayerAttributes &attributes)
 
     m_propertiesExplicitlySet = true;
 }
+
+} // end namespace sv
 

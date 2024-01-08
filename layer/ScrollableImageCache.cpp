@@ -21,6 +21,8 @@ using namespace std;
 
 //#define DEBUG_SCROLLABLE_IMAGE_CACHE 1
 
+namespace sv {
+
 void
 ScrollableImageCache::scrollTo(const LayerGeometryProvider *v,
                                sv_frame_t newStartFrame)
@@ -217,4 +219,6 @@ ScrollableImageCache::drawImage(int left,
         }
     }
 }
+
+} // end namespace sv
 

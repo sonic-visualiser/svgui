@@ -44,6 +44,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 RegionLayer::RegionLayer() :
     SingleColourLayer(),
     m_editing(false),
@@ -1637,4 +1639,6 @@ RegionLayer::setProperties(const LayerAttributes &attributes)
     m_propertiesExplicitlySet = true;
 }
 
+
+} // end namespace sv
 

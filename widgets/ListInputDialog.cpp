@@ -23,6 +23,8 @@
 #include <QPushButton>
 #include <QDialogButtonBox>
 
+namespace sv {
+
 ListInputDialog::ListInputDialog(QWidget *parent, const QString &title,
                                  const QString &labelText, const QStringList &list,
                                  int current) :
@@ -98,4 +100,6 @@ ListInputDialog::getItem(QWidget *parent, const QString &title,
 
     return dialog.getCurrentString();
 }
+
+} // end namespace sv
 
