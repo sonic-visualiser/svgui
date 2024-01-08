@@ -36,13 +36,10 @@ MIDIFileImportDialog::getTrackImportPreference(QStringList displayNames,
 
     singleTrack = "";
 
-    int nonTrackItems = 1;
-    
     available << allTracks;
 
     if (haveSomePercussion) {
         available << allNonPercussion;
-        ++nonTrackItems;
     }
 
     available << displayNames;
