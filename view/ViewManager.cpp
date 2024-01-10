@@ -800,8 +800,18 @@ ViewManager::setGlobalDarkBackground(bool dark)
     // since construction
     if (getGlobalDarkBackground()) {
         m_darkPalette = QApplication::palette();
+#ifdef DEBUG_VIEW_MANAGER
+        SVDEBUG << "ViewManager::setGlobalDarkBackground(" << dark << "): "
+                << "copied dark palette from existing widgets (window colour = "
+                << m_darkPalette.color(QPalette::Window).name() << ")" << endl;
+#endif
     } else {
         m_lightPalette = QApplication::palette();
+#ifdef DEBUG_VIEW_MANAGER
+        SVDEBUG << "ViewManager::setGlobalDarkBackground(" << dark << "): "
+                << "copied light palette from existing widgets (window colour = "
+                << m_lightPalette.color(QPalette::Window).name() << ")" << endl;
+#endif
     }
 
 #ifdef Q_OS_MAC
@@ -826,6 +836,12 @@ ViewManager::setGlobalDarkBackground(bool dark)
 #endif
 
         QApplication::setPalette(m_darkPalette);
+
+#ifdef DEBUG_VIEW_MANAGER
+        SVDEBUG << "ViewManager::setGlobalDarkBackground(" << dark << "): "
+                << "set dark palette to widgets (window colour = "
+                << m_darkPalette.color(QPalette::Window).name() << ")" << endl;
+#endif
         
     } else {
 
@@ -841,6 +857,12 @@ ViewManager::setGlobalDarkBackground(bool dark)
 #endif
         
         QApplication::setPalette(m_lightPalette);
+
+#ifdef DEBUG_VIEW_MANAGER
+        SVDEBUG << "ViewManager::setGlobalDarkBackground(" << dark << "): "
+                << "set light palette to widgets (window colour = "
+                << m_lightPalette.color(QPalette::Window).name() << ")" << endl;
+#endif
     }
 }
 
@@ -849,7 +871,13 @@ ViewManager::getGlobalDarkBackground() const
 {
     bool dark = false;
     QColor windowBg = QApplication::palette().color(QPalette::Window);
-    if (windowBg.red() + windowBg.green() + windowBg.blue() < 384) {
+    auto red = windowBg.red(), green = windowBg.green(), blue = windowBg.blue();
+#ifdef DEBUG_VIEW_MANAGER
+    SVDEBUG << "ViewManager::getGlobalDarkBackground: red = " << red
+            << ", green = " << green << ", blue = " << blue << ", total = "
+            << red + green + blue << endl;
+#endif
+    if (red + green + blue < 384) {
         dark = true;
     }
     return dark;
