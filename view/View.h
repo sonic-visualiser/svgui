@@ -553,26 +553,9 @@ protected:
     bool                m_lightBackground;
     bool                m_showProgress;
 
-#ifdef Q_OS_MAC
-#define CACHE_IS_QIMAGE 1
-#endif
-
-#ifdef Q_OS_WIN32
-#define CACHE_IS_QIMAGE 1
-#endif
-
-#ifdef Q_OS_LINUX
-#undef CACHE_IS_QIMAGE
-#endif
-    
     // I own both m_cache and m_buffer
-#ifdef CACHE_IS_QIMAGE
     QImage             *m_cache;
     QImage             *m_buffer;
-#else
-    QPixmap            *m_cache;
-    QPixmap            *m_buffer;
-#endif
     
     bool                m_cacheValid;
     sv_frame_t          m_cacheCentreFrame;
