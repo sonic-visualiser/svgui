@@ -42,6 +42,29 @@ using namespace std::rel_ops;
 
 using namespace std;
 
+static vector<QRgb>
+makeColourmap(const Colour3DPlotRenderer::Parameters &parameters)
+{
+    vector<QRgb> colourmap;
+    colourmap.reserve(256);
+    for (int pixel = 0; pixel < 256; ++pixel) {
+        colourmap.push_back(parameters.colourScale.getColourForPixel
+                            (pixel, parameters.colourRotation)
+                            .rgba());
+    }
+    return colourmap;
+}
+
+Colour3DPlotRenderer::Colour3DPlotRenderer(Sources sources,
+                                           Parameters parameters) :
+    m_sources(sources),
+    m_params(parameters),
+    m_colourmap(makeColourmap(parameters)),
+    m_secondsPerXPixel(0.0),
+    m_secondsPerXPixelValid(false)
+{
+}
+
 Colour3DPlotRenderer::RenderResult
 Colour3DPlotRenderer::render(const LayerGeometryProvider *v, QPainter &paint, QRect rect)
 {
@@ -1184,15 +1207,6 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
             << ": start = " << start << ", finish = " << finish << ", step = " << step << endl;
 #endif
 
-    vector<QRgb> colourmap;
-    colourmap.reserve(256);
-    for (int pixel = 0; pixel < 256; ++pixel) {
-        colourmap.push_back
-            (m_params.colourScale.getColourForPixel
-                            (pixel, m_params.colourRotation)
-             .rgba());
-    }
-
     ColumnOp::Column preparedColumn;
     ColumnOp::Column aggregateColumn(nbins, 0.f);
     ColumnOp::Column distributedColumn(h, 0.f);
@@ -1279,7 +1293,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
         if (!haveAnything) {
             for (int y = 0; y < h; ++y) {
-                target[y * targetWidth + x] = colourmap.at(0);
+                target[y * targetWidth + x] = m_colourmap.at(0);
             }
         } else {
 
@@ -1294,14 +1308,14 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 for (int y = 0; y < h; ++y) {
                     auto value = distributedColumn[y];
                     auto pixel = m_params.colourScale.getPixel(value);
-                    target[y * targetWidth + x] = colourmap.at(pixel);
+                    target[y * targetWidth + x] = m_colourmap.at(pixel);
                 }
             } else {
                 for (int y = h-1; y >= 0; --y) {
                     auto value = distributedColumn[y];
                     auto pixel = m_params.colourScale.getPixel(value);
                     int py = h - y - 1;
-                    target[py * targetWidth + x] = colourmap.at(pixel);
+                    target[py * targetWidth + x] = m_colourmap.at(pixel);
                 }
             }
         }            
@@ -1403,15 +1417,6 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             << ", step = " << step << endl;
 #endif
     
-    vector<QRgb> colourmap;
-    colourmap.reserve(256);
-    for (int pixel = 0; pixel < 256; ++pixel) {
-        colourmap.push_back
-            (m_params.colourScale.getColourForPixel
-                            (pixel, m_params.colourRotation)
-             .rgba());
-    }
-
     for (int x = start; x != finish; x += step) {
         
         // x is the on-canvas pixel coord; sx (later) will be the
@@ -1487,7 +1492,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 //                        << value << ", pixel " << pixel << "\n";
 #endif
 
-                target[iy * targetWidth + x] = colourmap.at(pixel);
+                target[iy * targetWidth + x] = m_colourmap.at(pixel);
             }
 
         } else {
@@ -1541,7 +1546,9 @@ Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
 void
 Colour3DPlotRenderer::recreateDrawBuffer(int w, int h)
 {
-    m_drawBuffer = QImage(w, h, QImage::Format_ARGB32_Premultiplied);
+    if (m_drawBuffer.width() != w || m_drawBuffer.height() != h) {
+        m_drawBuffer = QImage(w, h, QImage::Format_ARGB32_Premultiplied);
+    }
     m_drawBuffer.fill(m_params.colourScale.getColourForPixel
                       (0, m_params.colourRotation));
     m_magRanges = vector<MagnitudeRange>(w);

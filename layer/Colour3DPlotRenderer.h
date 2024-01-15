@@ -118,12 +118,7 @@ public:
         int colourRotation;
     };
     
-    Colour3DPlotRenderer(Sources sources, Parameters parameters) :
-        m_sources(sources),
-        m_params(parameters),
-        m_secondsPerXPixel(0.0),
-        m_secondsPerXPixelValid(false)
-    { }
+    Colour3DPlotRenderer(Sources sources, Parameters parameters);
 
     struct RenderResult {
         /**
@@ -248,8 +243,9 @@ public:
     QRect findSimilarRegionExtents(QPoint point) const;
     
 private:
-    Sources m_sources;
-    Parameters m_params;
+    const Sources m_sources;
+    const Parameters m_params;
+    const std::vector<QRgb> m_colourmap;
 
     // Draw buffer is the target of each partial repaint. It is always
     // at view height (not model height) and is cleared and repainted
