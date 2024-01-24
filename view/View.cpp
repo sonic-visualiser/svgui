@@ -2486,7 +2486,6 @@ View::paintEvent(QPaintEvent *e)
     // the buffer.
     QRect areaToPaint;
     QPainter paint;
-    setPaintFont(paint);
 
     if (shouldRepaintCache) {
         paint.begin(m_cache);
@@ -2568,6 +2567,7 @@ View::paintEvent(QPaintEvent *e)
     // unlike all the preceding, are at formal (1x) resolution
 
     paint.begin(this);
+    setPaintFont(paint);
     if (e) paint.setClipRect(e->rect());
 
     QRect finalPaintRect = e ? e->rect() : rect();
