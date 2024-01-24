@@ -37,7 +37,7 @@
 #include <QAction>
 
 #include <iostream>
-
+#include <mutex>
 #include <typeinfo>
 
 //#define DEBUG_COMMAND_HISTORY 1
@@ -102,7 +102,8 @@ CommandHistory::~CommandHistory()
 CommandHistory *
 CommandHistory::getInstance()
 {
-    if (!m_instance) m_instance = new CommandHistory();
+    static std::once_flag f;
+    std::call_once(f, [&]() { m_instance = new CommandHistory(); });
     return m_instance;
 }
 
