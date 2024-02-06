@@ -171,7 +171,9 @@ PluginReviewDialog::repopulateIgnoredTable()
     
     m_ignoredTable->setColumnCount(3);
     m_ignoredTable->setRowCount(ignored.size());
-    m_ignoredTable->setHorizontalHeaderLabels({ tr("Library"), tr("Reason") });
+    m_ignoredTable->setHorizontalHeaderLabels({
+            tr("Library"), tr("Reason"), ""
+        });
     
     int row = 0;
     
