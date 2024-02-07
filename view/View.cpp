@@ -748,8 +748,17 @@ View::getZoomLevel() const
 int
 View::effectiveDevicePixelRatio() const
 {
+    // This is the ratio in force when we are drawing to our internal
+    // buffer image. We aren't equipped to update correctly with
+    // fractional scaling, so it's an integer value. But we round up,
+    // because we get much better results drawing large and scaling
+    // down than the reverse. That does make the actual drawing very
+    // expensive, e.g. if the scale is 125% and we draw at 200%, but
+    // if we don't do this the results can look terrible.
+    
+    int dpratio = int(ceil(devicePixelRatioF()));
+    
 #ifdef Q_OS_MAC
-    int dpratio = devicePixelRatio();
     // devicePixelRatio can change if the window is moved, so we don't
     // want to cache it. But we no longer allow the scaledHiDpi
     // setting to be changed without recommending a restart, so we
@@ -766,10 +775,9 @@ View::effectiveDevicePixelRatio() const
             dpratio = 1;
         }
     }
-    return dpratio;
-#else
-    return 1;
 #endif
+    
+    return dpratio;
 }
 
 void
@@ -2571,6 +2579,7 @@ View::paintEvent(QPaintEvent *e)
     if (e) paint.setClipRect(e->rect());
 
     QRect finalPaintRect = e ? e->rect() : rect();
+    paint.setRenderHint(QPainter::SmoothPixmapTransform);
     paint.drawImage(finalPaintRect, *m_buffer, 
                     scaledRect(finalPaintRect, dpratio));
 
