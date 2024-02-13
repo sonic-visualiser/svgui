@@ -108,9 +108,8 @@ public:
     void setInProgressSelection(const Selection &selection, bool exclusive);
     void clearInProgressSelection();
 
-    const MultiSelection &getSelection() const override;
-
-    const MultiSelection::SelectionList &getSelections() const override;
+    MultiSelection getSelection() const override;
+    MultiSelection::SelectionList getSelections() const override;
     void setSelection(const Selection &selection);
     void addSelection(const Selection &selection);
     void removeSelection(const Selection &selection);

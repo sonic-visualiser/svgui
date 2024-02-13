@@ -288,13 +288,13 @@ ViewManager::clearInProgressSelection()
     emit inProgressSelectionChanged();
 }
 
-const MultiSelection &
+MultiSelection
 ViewManager::getSelection() const
 {
     return m_selections;
 }
 
-const MultiSelection::SelectionList &
+MultiSelection::SelectionList
 ViewManager::getSelections() const
 {
     return m_selections.getSelections();
