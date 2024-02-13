@@ -215,6 +215,9 @@ public:
     void setColourRotation(int);
     int getColourRotation() const;
 
+    void setSmooth(bool i);
+    bool getSmooth() const;
+
     VerticalPosition getPreferredFrameCountPosition() const override {
         return PositionTop;
     }
@@ -293,6 +296,7 @@ protected:
     BinDisplay          m_binDisplay;
     ColumnNormalization m_normalization; // of individual columns
     bool                m_normalizeVisibleArea;
+    bool                m_smooth;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
 
