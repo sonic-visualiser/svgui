@@ -21,24 +21,43 @@
 #include <QHeaderView>
 #include <QScreen>
 #include <QApplication>
+#include <QPushButton>
+#include <QLabel>
+#include <QSettings>
 
 #include "plugin/FeatureExtractionPluginFactory.h"
 #include "plugin/RealTimePluginFactory.h"
 
+namespace sv {
+
 PluginReviewDialog::PluginReviewDialog(QWidget *parent) :
     QDialog(parent)
 {
-    setWindowTitle(tr("Plugins Loaded"));
+    setWindowTitle(tr("Review Plugins"));
 
     QGridLayout *layout = new QGridLayout;
     setLayout(layout);
 
-    m_table = new QTableWidget;
-    layout->addWidget(m_table, 0, 1);
+    layout->addWidget(new QLabel(tr("<p>These plugins have been loaded.</p>")),
+                      0, 0);
     
+    m_table = new QTableWidget;
+    layout->addWidget(m_table, 1, 0, 1, 2);
+
+    layout->addWidget(new QLabel(tr("<p>These plugin libraries failed to load, and are being ignored.<br>Press Remove to remove a library from this list, so it will be checked again on next startup.</p>")), 2, 0);
+
+    m_ignoredTable = new QTableWidget;
+    layout->addWidget(m_ignoredTable, 3, 0, 1, 2);
+
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
-    layout->addWidget(bb, 1, 1);
+    layout->addWidget(bb, 4, 1);
     connect(bb, SIGNAL(rejected()), this, SLOT(close()));
+    bb->setFocus();
+
+    layout->setRowStretch(1, 10);
+    layout->setRowStretch(3, 3);
+
+    repopulateIgnoredTable();
 }
 
 PluginReviewDialog::~PluginReviewDialog()
@@ -126,6 +145,8 @@ PluginReviewDialog::populate()
     m_table->setSelectionMode(QAbstractItemView::NoSelection);
     m_table->resizeColumnsToContents();
 
+    repopulateIgnoredTable();
+    
     int twidth = m_table->horizontalHeader()->length();
     int theight = m_table->verticalHeader()->length();
     
@@ -137,4 +158,52 @@ PluginReviewDialog::populate()
 
     resize(width, height);
 }
+
+void
+PluginReviewDialog::repopulateIgnoredTable()
+{
+    QSettings settings;
+    settings.beginGroup("PluginScan");
+    auto ignored = settings.value("ignored").toMap();
+    settings.endGroup();
+
+    m_ignoredTable->clear();
+    
+    m_ignoredTable->setColumnCount(3);
+    m_ignoredTable->setRowCount(ignored.size());
+    m_ignoredTable->setHorizontalHeaderLabels({
+            tr("Library"), tr("Reason"), ""
+        });
+    
+    int row = 0;
+    
+    for (auto library: ignored.keys()) {
+        m_ignoredTable->setItem
+            (row, 0, new QTableWidgetItem(library));
+        m_ignoredTable->setItem
+            (row, 1, new QTableWidgetItem(ignored[library].toString()));
+
+        auto stopIgnoring = new QPushButton(tr("Remove"));
+        connect(stopIgnoring, &QPushButton::pressed,
+                [=]() {
+                    QSettings settings;
+                    settings.beginGroup("PluginScan");
+                    auto ignored = settings.value("ignored").toMap();
+                    ignored.remove(library);
+                    settings.setValue("ignored", ignored);
+                    settings.endGroup();
+                    repopulateIgnoredTable();
+                });
+                    
+        m_ignoredTable->setCellWidget
+            (row, 2, stopIgnoring);
+        row++;
+    }
+
+    m_ignoredTable->setSortingEnabled(false);
+    m_ignoredTable->setSelectionMode(QAbstractItemView::NoSelection);
+    m_ignoredTable->resizeColumnsToContents();
+}
+
+} // end namespace sv
 

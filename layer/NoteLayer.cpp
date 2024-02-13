@@ -46,6 +46,8 @@
 
 //#define DEBUG_NOTE_LAYER 1
 
+namespace sv {
+
 NoteLayer::NoteLayer() :
     SingleColourLayer(),
     m_modelUsesHz(true),
@@ -384,7 +386,7 @@ NoteLayer::setVerticalZoomStep(int step)
         newmax = (newdist + sqrt(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
-//        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
+//        SVCERR << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
         double dmid = (dmax + dmin) / 2;
@@ -779,11 +781,6 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             paint.setPen(v->getForeground());
             paint.setBrush(v->getForeground());
 
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
             QString vlabel;
             if (m_modelUsesHz) {
                 vlabel = QString("%1%2")
@@ -796,7 +793,7 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
             }
             
             PaintAssistant::drawVisibleText(v, paint, 
-                               x - paint.fontMetrics().width(vlabel) - 2,
+                               x - paint.fontMetrics().horizontalAdvance(vlabel) - 2,
                                y + paint.fontMetrics().height()/2
                                  - paint.fontMetrics().descent(), 
                                vlabel, PaintAssistant::OutlinedText);
@@ -875,16 +872,16 @@ NoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, Q
 void
 NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "NoteLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "NoteLayer::drawStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
     float eventValue = convertValueToEventValue(value);
     eventValue = roundf(eventValue);
 
@@ -901,16 +898,16 @@ NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 void
 NoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "NoteLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "NoteLayer::drawDrag(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double newValue = getValueForY(v, e->y());
+    double newValue = getValueForY(v, e->position().y());
     float newEventValue = convertValueToEventValue(newValue);
     newEventValue = roundf(newEventValue);
 
@@ -934,7 +931,7 @@ NoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 void
 NoteLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-//    SVDEBUG << "NoteLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "NoteLayer::drawEnd(" << e->position().x() << "," << e->position().y() << ")" << endl;
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model || !m_editing) return;
     finish(m_editingCommand);
@@ -948,7 +945,7 @@ NoteLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model) return;
 
-    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -972,7 +969,7 @@ NoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editing = false;
 
     Event p(0);
-    if (!getPointToDrag(v, e->x(), e->y(), p)) return;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), p)) return;
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
@@ -988,12 +985,12 @@ NoteLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 void
 NoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "NoteLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "NoteLayer::editStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model) return;
 
-    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
 
     m_dragPointX = v->getXForFrame(m_editingPoint.getFrame());
@@ -1005,20 +1002,20 @@ NoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     }
 
     m_editing = true;
-    m_dragStartX = e->x();
-    m_dragStartY = e->y();
+    m_dragStartX = e->position().x();
+    m_dragStartY = e->position().y();
 }
 
 void
 NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "NoteLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "NoteLayer::editDrag(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model || !m_editing) return;
 
-    int xdist = e->x() - m_dragStartX;
-    int ydist = e->y() - m_dragStartY;
+    int xdist = e->position().x() - m_dragStartX;
+    int ydist = e->position().y() - m_dragStartY;
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
@@ -1045,7 +1042,7 @@ NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 void
 NoteLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-//    SVDEBUG << "NoteLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "NoteLayer::editEnd(" << e->position().x() << "," << e->position().y() << ")" << endl;
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model || !m_editing) return;
 
@@ -1078,7 +1075,9 @@ NoteLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     if (!model) return false;
 
     Event note(0);
-    if (!getPointToDrag(v, e->x(), e->y(), note)) return false;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), note)) {
+        return false;
+    }
 
     ItemEditDialog *dialog = new ItemEditDialog
         (model->getSampleRate(),
@@ -1347,7 +1346,7 @@ NoteLayer::toXml(QTextStream &stream,
 }
 
 void
-NoteLayer::setProperties(const QXmlAttributes &attributes)
+NoteLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
@@ -1361,4 +1360,6 @@ NoteLayer::setProperties(const QXmlAttributes &attributes)
     if (ok && alsoOk && min != max) setDisplayExtents(min, max);
 }
 
+
+} // end namespace sv
 

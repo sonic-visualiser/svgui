@@ -24,9 +24,12 @@
 
 #include "data/model/RangeSummarisableTimeValueModel.h"
 
-class View;
 class QPainter;
 class QPixmap;
+
+namespace sv {
+
+class View;
 
 class WaveformLayer : public SingleColourLayer
 {
@@ -193,7 +196,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     int getVerticalZoomSteps(int &defaultStep) const override;
     int getCurrentVerticalZoomStep() const override;
@@ -261,5 +264,7 @@ protected:
     mutable bool m_cacheValid;
     mutable ZoomLevel m_cacheZoomLevel;
 };
+
+} // end namespace sv
 
 #endif

@@ -30,6 +30,8 @@
 
 #include <iostream>
 
+namespace sv {
+
 InteractiveFileFinder 
 InteractiveFileFinder::m_instance;
 
@@ -331,7 +333,7 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         break;
 
     case SessionOrAudioFile:
-        cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: SessionOrAudioFile cannot be used here" << endl;
+        SVCERR << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: SessionOrAudioFile cannot be used here" << endl;
         abort();
 
     case ImageFile:
@@ -353,7 +355,7 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         break;
 
     case AnyFile:
-        cerr << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: AnyFile cannot be used here" << endl;
+        SVCERR << "ERROR: Internal error: InteractiveFileFinder::getSaveFileName: AnyFile cannot be used here" << endl;
         abort();
     };
 
@@ -428,7 +430,7 @@ InteractiveFileFinder::getSaveFileName(FileType type,
         
         QFileInfo fi(path);
 
-        cerr << "type = " << type << ", suffix = " << fi.suffix() << endl;
+        SVCERR << "type = " << type << ", suffix = " << fi.suffix() << endl;
         
         if ((type == LayerFile || type == LayerFileNoMidi || 
              type == LayerFileNonSV || type == LayerFileNoMidiNonSV)
@@ -446,7 +448,7 @@ InteractiveFileFinder::getSaveFileName(FileType type,
             } else if (selectedFilter.contains(".ttl")) {
                 expectedExtension = "ttl";
             }
-            cerr << "expected extension = " << expectedExtension << endl;
+            SVCERR << "expected extension = " << expectedExtension << endl;
             if (expectedExtension != "") {
                 path = QString("%1.%2").arg(path).arg(expectedExtension);
                 fi = QFileInfo(path);
@@ -592,7 +594,7 @@ InteractiveFileFinder::findRelative(QString location, QString relativeTo)
     if (FileSource::isRemote(relativeTo)) {
         resolved = QUrl(relativeTo).resolved(fileName).toString();
         if (!FileSource(resolved).isAvailable()) resolved = "";
-        cerr << "resolved: " << resolved << endl;
+        SVCERR << "resolved: " << resolved << endl;
     } else {
         if (QUrl(relativeTo).scheme() == "file") {
             relativeTo = QUrl(relativeTo).toLocalFile();
@@ -676,4 +678,6 @@ InteractiveFileFinder::locateInteractive(FileType type, QString thing)
     return path;
 }
 
+
+} // end namespace sv
 

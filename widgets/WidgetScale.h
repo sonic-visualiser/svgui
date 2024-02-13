@@ -20,6 +20,8 @@
 
 #include "base/Debug.h"
 
+namespace sv {
+
 class WidgetScale
 {
 public:   
@@ -60,5 +62,7 @@ public:
                      scalePixelSize(size.height()));
     }
 };
+
+} // end namespace sv
 
 #endif

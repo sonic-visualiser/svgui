@@ -17,6 +17,8 @@
 
 #include <QWheelEvent>
 
+namespace sv {
+
 /**
  * Manage the little bit of tedious book-keeping associated with
  * translating vertical wheel events into up/down notch counts
@@ -61,5 +63,7 @@ public:
 private:
     int m_pendingWheelAngle;
 };
+
+} // end namespace sv
 
 #endif

@@ -25,12 +25,15 @@
 
 class QWidget;
 class QPaintEvent;
+class QMenu;
+
+namespace sv {
+
 class Layer;
 class Thumbwheel;
 class Panner;
 class NotifyingPushButton;
 class KeyReference;
-class QMenu;
 
 class Pane : public View
 {
@@ -128,7 +131,7 @@ protected:
     virtual void mouseReleaseEvent(QMouseEvent *e) override;
     virtual void mouseMoveEvent(QMouseEvent *e) override;
     virtual void mouseDoubleClickEvent(QMouseEvent *e) override;
-    virtual void enterEvent(QEvent *e) override;
+    virtual void enterEvent(QEnterEvent *e) override;
     virtual void leaveEvent(QEvent *e) override;
     virtual void wheelEvent(QWheelEvent *e) override;
     virtual void resizeEvent(QResizeEvent *e) override;
@@ -231,6 +234,8 @@ protected:
     static QCursor *m_measureCursor1;
     static QCursor *m_measureCursor2;
 };
+
+} // end namespace sv
 
 #endif
 

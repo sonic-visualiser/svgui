@@ -18,6 +18,8 @@
 
 #include <QIcon>
 
+namespace sv {
+
 class IconLoader
 {
 public:
@@ -35,6 +37,8 @@ private:
     QString makeScalableFilename(QString, bool);
     QString makeNonScalableFilename(QString, int, bool);
 };
+
+} // end namespace sv
 
 #endif
 

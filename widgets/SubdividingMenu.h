@@ -22,6 +22,8 @@
 #include <set>
 #include <map>
 
+namespace sv {
+
 /**
  * A menu that divides its entries into submenus, alphabetically.  For
  * menus that may contain a very large or small number of named items
@@ -71,6 +73,8 @@ protected:
     bool m_entriesSet;
     std::map<QString, QObject *> m_pendingEntries;
 };
+
+} // end namespace sv
 
 #endif
 

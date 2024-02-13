@@ -24,6 +24,8 @@ class QDoubleSpinBox;
 class QComboBox;
 class QLabel;
 
+namespace sv {
+
 class UnitConverter : public QDialog
 {
     Q_OBJECT
@@ -69,5 +71,7 @@ private:
     void setTo(QSpinBox *, int);
     void setTo(QDoubleSpinBox *, double);
 };
+
+} // end namespace sv
 
 #endif

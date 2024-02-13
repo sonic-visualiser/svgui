@@ -28,6 +28,8 @@
 #include <float.h> // for FLT_MIN/MAX
 
 
+namespace sv {
+
 ItemEditDialog::LabelOptions::LabelOptions() :
     valueLabel(tr("Value")),
     levelLabel(tr("Level"))
@@ -440,4 +442,6 @@ ItemEditDialog::reset()
     setText(m_defaultText);
     m_resetButton->setEnabled(false);
 }
+
+} // end namespace sv
 

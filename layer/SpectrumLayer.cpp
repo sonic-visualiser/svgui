@@ -32,6 +32,8 @@
 #include <QTextStream>
 
 
+namespace sv {
+
 SpectrumLayer::SpectrumLayer() :
     m_channel(-1),
     m_channelSet(false),
@@ -520,28 +522,23 @@ SpectrumLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
 
     int sw = getVerticalScaleWidth(v, false, paint);
 
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
     QRect value(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
-                paint.fontMetrics().width("0.0000001 V") + 2,
+                paint.fontMetrics().horizontalAdvance("0.0000001 V") + 2,
                 paint.fontMetrics().height());
     extents.push_back(value);
 
     QRect log(sw, cursorPos.y() + 2,
-              paint.fontMetrics().width("-80.000 dB") + 2,
+              paint.fontMetrics().horizontalAdvance("-80.000 dB") + 2,
               paint.fontMetrics().height());
     extents.push_back(log);
 
     QRect freq(cursorPos.x(),
                v->getPaintHeight() - paint.fontMetrics().height() - hoffset,
-               paint.fontMetrics().width("123456 Hz") + 2,
+               paint.fontMetrics().horizontalAdvance("123456 Hz") + 2,
                paint.fontMetrics().height());
     extents.push_back(freq);
 
-    int w(paint.fontMetrics().width("C#10+50c") + 2);
+    int w(paint.fontMetrics().horizontalAdvance("C#10+50c") + 2);
     QRect pitch(cursorPos.x() - w,
                 v->getPaintHeight() - paint.fontMetrics().height() - hoffset,
                 w,
@@ -593,7 +590,7 @@ SpectrumLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
         QString pitchLabel = Pitch::getPitchLabelForFrequency(fundamental);
         PaintAssistant::drawVisibleText(v, paint,
                                         cursorPos.x() -
-                                        paint.fontMetrics().width(pitchLabel) - 2,
+                                        paint.fontMetrics().horizontalAdvance(pitchLabel) - 2,
                                         v->getPaintHeight() - 2 - hoffset,
                                         pitchLabel,
                                         PaintAssistant::OutlinedText);
@@ -860,7 +857,7 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
             paint.fontMetrics().height() * 4;
         
         QString text = tr("%1 Hz").arg(illuminateFreq);
-        int lw = paint.fontMetrics().width(text);
+        int lw = paint.fontMetrics().horizontalAdvance(text);
 
         int gap = ViewManager::scalePixelSize(v->getXForViewX(3));
         double half = double(gap)/2.0;
@@ -933,7 +930,7 @@ SpectrumLayer::paintHorizontalScale(LayerGeometryProvider *v,
                    scaleLeft, paintHeight - freqScaleHeight);
 
     QString hz = tr("Hz");
-    int hzw = paint.fontMetrics().width(hz);
+    int hzw = paint.fontMetrics().horizontalAdvance(hz);
     if (scaleLeft > hzw + 5) {
         paint.drawText
             (scaleLeft - hzw - 5,
@@ -971,7 +968,7 @@ SpectrumLayer::toXml(QTextStream &stream,
 }
 
 void
-SpectrumLayer::setProperties(const QXmlAttributes &attributes)
+SpectrumLayer::setProperties(const LayerAttributes &attributes)
 {
     SliceLayer::setProperties(attributes);
 
@@ -991,3 +988,5 @@ SpectrumLayer::setProperties(const QXmlAttributes &attributes)
 }
 
     
+} // end namespace sv
+

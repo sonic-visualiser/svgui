@@ -24,8 +24,11 @@
 #include <QObject>
 #include <QColor>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 
 /**
  * Layer for displaying and editing notes, i.e. discrete events with
@@ -140,7 +143,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     /// VerticalScaleLayer methods
     int getYForValue(LayerGeometryProvider *v, double value) const override;
@@ -188,6 +191,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

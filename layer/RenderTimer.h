@@ -17,6 +17,8 @@
 
 #include <chrono>
 
+namespace sv {
+
 class RenderTimer
 {
 public:
@@ -43,7 +45,8 @@ public:
     RenderTimer(Type t) :
         m_start(std::chrono::steady_clock::now()),
         m_haveLimits(true),
-        m_minFraction(0.1),
+        m_minFraction(0.15),
+        m_almostFraction(0.65),
         m_softLimit(0.1),
         m_hardLimit(0.2),
         m_softLimitOverridden(false) {
@@ -76,11 +79,11 @@ public:
         if (elapsed > m_hardLimit) {
             return true;
         } else if (!m_softLimitOverridden && elapsed > m_softLimit) {
-            if (fractionComplete > 0.6) {
-                // If we're significantly more than half way by the
-                // time we reach the soft limit, ignore it (though
-                // always respect the hard limit, above). Otherwise
-                // respect the soft limit and report out of time now.
+            if (fractionComplete > m_almostFraction) {
+                // If we're "almost done" by the time we reach the
+                // soft limit, ignore it (though always respect the
+                // hard limit, above). Otherwise respect the soft
+                // limit and report out of time now.
                 m_softLimitOverridden = true;
             } else {
                 return true;
@@ -104,9 +107,12 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> m_start;
     bool m_haveLimits;
     double m_minFraction; // proportion, 0.0 -> 1.0
+    double m_almostFraction; // proportion, 0.0 -> 1.0
     double m_softLimit; // seconds
     double m_hardLimit; // seconds
     bool m_softLimitOverridden;
 };
+
+} // end namespace sv
 
 #endif

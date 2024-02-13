@@ -24,9 +24,12 @@
 
 #include "data/model/DenseThreeDimensionalModel.h"
 
-class View;
 class QPainter;
 class QImage;
+
+namespace sv {
+
+class View;
 
 /**
  * This is a view that displays dense 3-D data (time, some sort of
@@ -94,7 +97,7 @@ public:
                                      int value) const override;
     RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
     void setProperty(const PropertyName &, int value) override;
-    void setProperties(const QXmlAttributes &) override;
+    void setProperties(const LayerAttributes &) override;
     
     void setColourScale(ColourScaleType);
     ColourScaleType getColourScale() const { return m_colourScale; }
@@ -227,5 +230,7 @@ protected:
 
     void paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, QRect rect) const;
 };
+
+} // end namespace sv
 
 #endif

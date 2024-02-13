@@ -20,6 +20,8 @@
 
 class QEvent;
 
+namespace sv {
+
 class PluginReviewDialog : public QDialog
 {
     Q_OBJECT
@@ -28,10 +30,15 @@ public:
     PluginReviewDialog(QWidget *parent = 0);
     ~PluginReviewDialog();
 
+public slots:
     void populate();
+    void repopulateIgnoredTable();
     
 private:
     QTableWidget *m_table;
+    QTableWidget *m_ignoredTable;
 };
+
+} // end namespace sv
 
 #endif

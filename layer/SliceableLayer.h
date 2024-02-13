@@ -18,6 +18,8 @@
 
 #include "Layer.h"
 
+namespace sv {
+
 /**
  * Base class for layers that can be sliced, that is, that contain
  * models appropriate for use in a SliceLayer.
@@ -39,6 +41,8 @@ public:
 signals:
     void sliceableModelReplaced(ModelId, ModelId);
 };
+
+} // end namespace sv
 
 #endif
 

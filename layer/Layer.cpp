@@ -34,6 +34,8 @@
 
 #include <cmath>
 
+namespace sv {
+
 Layer::Layer() :
     m_haveDraggingRect(false),
     m_haveCurrentMeasureRect(false)
@@ -330,7 +332,7 @@ Layer::MeasureRect::toXml(QTextStream &stream, QString indent) const
 }
 
 void
-Layer::addMeasurementRect(const QXmlAttributes &attributes)
+Layer::addMeasurementRect(const LayerAttributes &attributes)
 {
     MeasureRect rect;
     QString fs = attributes.value("startFrame");
@@ -397,15 +399,15 @@ Layer::measureStart(LayerGeometryProvider *v, QMouseEvent *e)
     // once on measureStart, and then not modify it on drag (to avoid
     // drift from repeated conversion back and forth).
     
-    m_draggingRect.pixrect = QRect(e->x(), e->y(), 0, 0);
+    m_draggingRect.pixrect = QRect(e->position().x(), e->position().y(), 0, 0);
 
     if (m_draggingRect.haveFrames) {
-        m_draggingRect.startFrame = v->getFrameForX(e->x());
-        m_draggingRect.endFrame = v->getFrameForX(e->x());
+        m_draggingRect.startFrame = v->getFrameForX(e->position().x());
+        m_draggingRect.endFrame = v->getFrameForX(e->position().x());
     }
 
-    setMeasureRectYCoord(v, m_draggingRect, true, e->y());
-    setMeasureRectYCoord(v, m_draggingRect, false, e->y());
+    setMeasureRectYCoord(v, m_draggingRect, true, e->position().y());
+    setMeasureRectYCoord(v, m_draggingRect, false, e->position().y());
 
     m_haveDraggingRect = true;
 }
@@ -415,15 +417,15 @@ Layer::measureDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
     if (!m_haveDraggingRect) return;
 
-    m_draggingRect.pixrect.setHeight(e->y() - m_draggingRect.pixrect.y());
+    m_draggingRect.pixrect.setHeight(e->position().y() - m_draggingRect.pixrect.y());
 
     if (m_draggingRect.haveFrames) {
-        m_draggingRect.endFrame = v->getFrameForX(e->x());
+        m_draggingRect.endFrame = v->getFrameForX(e->position().x());
     } else {
-        m_draggingRect.pixrect.setWidth(e->x() - m_draggingRect.pixrect.x());
+        m_draggingRect.pixrect.setWidth(e->position().x() - m_draggingRect.pixrect.x());
     }
 
-    setMeasureRectYCoord(v, m_draggingRect, false, e->y());
+    setMeasureRectYCoord(v, m_draggingRect, false, e->position().y());
 }
 
 void
@@ -710,4 +712,6 @@ Layer::toBriefXml(QTextStream &stream,
         .arg(modelExportId)
         .arg(extraAttributes);
 }
+
+} // end namespace sv
 

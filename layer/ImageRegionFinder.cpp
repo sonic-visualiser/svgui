@@ -20,6 +20,8 @@
 #include <stack>
 #include <iostream>
 
+namespace sv {
+
 ImageRegionFinder::ImageRegionFinder()
 {
 }
@@ -122,4 +124,6 @@ ImageRegionFinder::similar(QRgb a, QRgb b) const
 
     return (dist < thresh);
 }
+
+} // end namespace sv
 

@@ -21,6 +21,8 @@
 #include <vector>
 #include <map>
 
+namespace sv {
+
 class SingleColourLayer : public Layer
 {
     Q_OBJECT
@@ -69,7 +71,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     virtual void setDefaultColourFor(LayerGeometryProvider *v);
 
@@ -97,5 +99,7 @@ private:
     void refColor();
     void unrefColor();
 };
+
+} // end namespace sv
 
 #endif

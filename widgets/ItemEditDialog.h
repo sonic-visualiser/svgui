@@ -25,6 +25,8 @@ class QSpinBox;
 class QDoubleSpinBox;
 class QLineEdit;
 
+namespace sv {
+
 class ItemEditDialog : public QDialog
 {
     Q_OBJECT
@@ -107,5 +109,7 @@ protected:
     QLineEdit *m_textField;
     QPushButton *m_resetButton;
 };
+
+} // end namespace sv
 
 #endif

@@ -30,6 +30,8 @@
 #include <QTimer>
 #include <QAction>
 
+namespace sv {
+
 TransformFinder::TransformFinder(QWidget *parent) :
     QDialog(parent),
     m_resultsFrame(nullptr),
@@ -169,7 +171,7 @@ TransformFinder::setupBeforeSearchLabel()
 void
 TransformFinder::searchTextChanged(const QString &text)
 {
-//    cerr << "text is " << text << endl;
+//    SVCERR << "text is " << text << endl;
     m_newSearchText = text;
 }
 
@@ -183,11 +185,11 @@ TransformFinder::timeout()
         QString text = m_newSearchText;
         m_newSearchText = "";
 
-        QStringList keywords = text.split(' ', QString::SkipEmptyParts);
+        QStringList keywords = text.split(' ', Qt::SkipEmptyParts);
         TransformFactory::SearchResults results =
             TransformFactory::getInstance()->search(keywords);
         
-//        cerr << results.size() << " result(s)..." << endl;
+//        SVCERR << results.size() << " result(s)..." << endl;
         
         std::set<TextMatcher::Match> sorted;
         sorted.clear();
@@ -241,7 +243,7 @@ TransformFinder::timeout()
 
         int i = m_upToDateCount;
 
-//        cerr << "sorted size = " << m_sortedResults.size() << endl;
+//        SVCERR << "sorted size = " << m_sortedResults.size() << endl;
 
         TransformDescription desc;
         TransformId tid = m_sortedResults[i].key;
@@ -350,7 +352,7 @@ TransformFinder::timeout()
         m_labels[i]->setFixedWidth(this->width() - 40);
         m_labels[i]->setUnselectedText(labelText);
 
-//        cerr << "selected text: " << selectedText << endl;
+//        SVCERR << "selected text: " << selectedText << endl;
         m_labels[i]->setSelectedText(selectedText);
 
         m_labels[i]->setSelected(m_selectedTransform == desc.identifier);
@@ -382,7 +384,7 @@ TransformFinder::selectedLabelChanged()
             }
         }
     }
-    cerr << "selectedLabelChanged: selected transform is now \""
+    SVCERR << "selectedLabelChanged: selected transform is now \""
               << m_selectedTransform << "\"" << endl;
 }
 
@@ -435,4 +437,6 @@ TransformFinder::down()
         }
     }
 }
+
+} // end namespace sv
 

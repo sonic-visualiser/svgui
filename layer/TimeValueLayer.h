@@ -25,8 +25,11 @@
 #include <QObject>
 #include <QColor>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 
 class TimeValueLayer : public SingleColourLayer, 
                        public VerticalScaleLayer, 
@@ -151,7 +154,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     /// Override from SingleColourLayer
     ColourSignificance getLayerColourSignificance() const override {
@@ -213,6 +216,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

@@ -24,16 +24,13 @@
 
 #include <cmath>
 
+namespace sv {
+
 int
 LogNumericalScale::getWidth(LayerGeometryProvider *,
                             QPainter &paint)
 {
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-    return paint.fontMetrics().width("-000.00") + 10;
+    return paint.fontMetrics().horizontalAdvance("-000.00") + 10;
 }
 
 void
@@ -76,11 +73,13 @@ LogNumericalScale::paintVertical(LayerGeometryProvider *v,
         paint.drawLine(w - 5, y, w, y);
 
         if (drawText) {
-            paint.drawText(w - paint.fontMetrics().width(label) - 6,
+            paint.drawText(w - paint.fontMetrics().horizontalAdvance(label) - 6,
                            ty, label);
         }
 
         prevy = y;
     }
 }
+
+} // end namespace sv
 

@@ -15,12 +15,14 @@
 
 #include "NotifyingComboBox.h"
 
+namespace sv {
+
 NotifyingComboBox::~NotifyingComboBox()
 {
 }
 
 void
-NotifyingComboBox::enterEvent(QEvent *e)
+NotifyingComboBox::enterEvent(QEnterEvent *e)
 {
     QComboBox::enterEvent(e);
     emit mouseEntered();
@@ -29,7 +31,9 @@ NotifyingComboBox::enterEvent(QEvent *e)
 void
 NotifyingComboBox::leaveEvent(QEvent *e)
 {
-    QComboBox::enterEvent(e);
+    QComboBox::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

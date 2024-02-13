@@ -19,6 +19,8 @@
 
 #include "WheelCounter.h"
 
+namespace sv {
+
 /**
  * A simple widget for coarse level and pan control.
  */
@@ -84,7 +86,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *ev) override;
     void mouseReleaseEvent(QMouseEvent *ev) override;
     void paintEvent(QPaintEvent *ev) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 
     void emitLevelChanged();
@@ -125,5 +127,7 @@ protected:
     double thinLineWidth(QRectF) const;
     double cornerRadius(QRectF) const;
 };
+
+} // end namespace sv
 
 #endif

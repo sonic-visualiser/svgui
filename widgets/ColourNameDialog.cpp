@@ -24,6 +24,8 @@
 #include <QPainter>
 #include <QPushButton>
 
+namespace sv {
+
 ColourNameDialog::ColourNameDialog(QString title, QString message,
                                    QColor colour, QString defaultName,
                                    QWidget *parent) :
@@ -106,3 +108,5 @@ ColourNameDialog::getColourName() const
 {
     return m_textField->text();
 }
+} // end namespace sv
+

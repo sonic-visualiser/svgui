@@ -21,6 +21,8 @@
 
 class QDoubleSpinBox;
 
+namespace sv {
+
 class RangeInputDialog : public QDialog
 {
     Q_OBJECT
@@ -46,5 +48,7 @@ protected:
     QDoubleSpinBox *m_rangeStart;
     QDoubleSpinBox *m_rangeEnd;
 };
+
+} // end namespace sv
 
 #endif

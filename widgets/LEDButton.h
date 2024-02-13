@@ -14,7 +14,7 @@
 
 /*
     This is a modified version of a source file from the KDE
-    libraries.  Copyright (c) 1998-2004 Jörg Habenicht, Richard J
+    libraries.  Copyright (c) 1998-2004 Joerg Habenicht, Richard J
     Moore and others, distributed under the GNU Lesser General Public
     License.
 
@@ -32,6 +32,8 @@
 #include "base/Debug.h"
 
 class QColor;
+
+namespace sv {
 
 class LEDButton : public QWidget
 {
@@ -71,7 +73,7 @@ public slots:
 protected:
     void paintEvent(QPaintEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 
     bool led_state;
@@ -80,5 +82,7 @@ protected:
     class LEDButtonPrivate;
     LEDButtonPrivate *d;
 };
+
+} // end namespace sv
 
 #endif

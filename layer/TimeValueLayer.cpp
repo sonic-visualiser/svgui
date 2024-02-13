@@ -42,7 +42,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QTextStream>
 #include <QMessageBox>
 #include <QInputDialog>
@@ -51,6 +51,8 @@
 #include <cmath>
 
 //#define DEBUG_TIME_VALUE_LAYER 1
+
+namespace sv {
 
 TimeValueLayer::TimeValueLayer() :
     SingleColourLayer(),
@@ -1298,16 +1300,11 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
                 italic = true;
             }
 
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
             if (label != "") {
                 // Quick test for 20px before we do the slower test using metrics
                 bool haveRoom = (nx > x + 20);
                 haveRoom = (haveRoom &&
-                            (nx > x + 6 + paint.fontMetrics().width(label)));
+                            (nx > x + 6 + paint.fontMetrics().horizontalAdvance(label)));
                 if (haveRoom ||
                     (!haveNext &&
                      (pointCount == 0 || !italic))) {
@@ -1431,22 +1428,22 @@ void
 TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
+    cerr << "TimeValueLayer::drawStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     int resolution = model->getResolution();
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
     bool havePoint = false;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (!points.empty()) {
         for (EventVector::iterator i = points.begin();
              i != points.end(); ++i) {
@@ -1480,20 +1477,20 @@ void
 TimeValueLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
+    cerr << "TimeValueLayer::drawDrag(" << e->position().x() << "," << e->position().y() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     int resolution = model->getResolution();
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
 
 #ifdef DEBUG_TIME_VALUE_LAYER
     cerr << points.size() << " points" << endl;
@@ -1558,7 +1555,7 @@ TimeValueLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -1584,7 +1581,7 @@ TimeValueLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 
     m_editing = false;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
     if (points.begin()->getFrame() != m_editingPoint.getFrame() ||
         points.begin()->getValue() != m_editingPoint.getValue()) return;
@@ -1600,13 +1597,13 @@ void
 TimeValueLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
+    cerr << "TimeValueLayer::editStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return;
 
     m_editingPoint = *points.begin();
@@ -1624,17 +1621,17 @@ void
 TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::editDrag(" << e->x() << "," << e->y() << ")" << endl;
+    cerr << "TimeValueLayer::editDrag(" << e->position().x() << "," << e->position().y() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
     if (m_plotStyle == PlotSegmentation && !m_permitValueEditOfSegmentation) {
         // Do not allow dragging up/down
@@ -1692,7 +1689,7 @@ TimeValueLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return false;
 
-    EventVector points = getLocalPoints(v, e->x());
+    EventVector points = getLocalPoints(v, e->position().x());
     if (points.empty()) return false;
 
     Event point = *points.begin();
@@ -1880,7 +1877,7 @@ TimeValueLayer::paste(LayerGeometryProvider *v, const Clipboard &from,
 
             if (!haveUsableLabels) {
                 if (i->hasLabel()) {
-                    if (i->getLabel().contains(QRegExp("[0-9]"))) {
+                    if (i->getLabel().contains(QRegularExpression("[0-9]"))) {
                         haveUsableLabels = true;
                     }
                 }
@@ -2051,7 +2048,7 @@ TimeValueLayer::toXml(QTextStream &stream,
 }
 
 void
-TimeValueLayer::setProperties(const QXmlAttributes &attributes)
+TimeValueLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
@@ -2096,4 +2093,6 @@ TimeValueLayer::setProperties(const QXmlAttributes &attributes)
 
     m_propertiesExplicitlySet = true;
 }
+
+} // end namespace sv
 

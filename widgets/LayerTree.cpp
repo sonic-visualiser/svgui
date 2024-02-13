@@ -27,6 +27,8 @@
 #include <iostream>
 
 
+namespace sv {
+
 ModelMetadataModel::ModelMetadataModel(PaneStack *stack, bool waveModelsOnly,
                                QObject *parent) :
     QAbstractItemModel(parent),
@@ -317,7 +319,7 @@ LayerTreeModel::paneAdded()
 void
 LayerTreeModel::paneAboutToBeDeleted(Pane *pane)
 {
-    cerr << "paneDeleted: " << pane << endl;
+    SVCERR << "paneDeleted: " << pane << endl;
     m_deletedPanes.insert(pane);
     emit layoutChanged();
 }
@@ -588,4 +590,6 @@ LayerTreeModel::columnCount(const QModelIndex &parent) const
 
     return 1;
 }
+
+} // end namespace sv
 

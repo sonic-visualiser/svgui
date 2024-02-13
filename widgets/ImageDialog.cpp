@@ -21,7 +21,7 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QGroupBox>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QApplication>
 #include <QUrl>
 #include <QMessageBox>
@@ -32,6 +32,8 @@
 #include "InteractiveFileFinder.h"
 
 #include <iostream>
+
+namespace sv {
 
 ImageDialog::ImageDialog(QString title,
                          QString image,
@@ -87,9 +89,12 @@ ImageDialog::ImageDialog(QString title,
 
     m_imagePreview->setMinimumSize(QSize(100, 100));
 
-    QDesktopWidget *desktop = QApplication::desktop();
-    m_imagePreview->setMaximumSize(QSize((desktop->width() * 2) / 3,
-                                         (desktop->height() * 2) / 3));
+    QScreen *s = screen();
+    if (s) {
+        QRect screenGeometry = s->availableGeometry();
+        m_imagePreview->setMaximumSize(QSize((screenGeometry.width() * 2) / 3,
+                                             (screenGeometry.height() * 2) / 3));
+    }
 
     grid->addWidget(databox, 0, 0);
     grid->addWidget(previewbox, 1, 0);
@@ -237,4 +242,6 @@ ImageDialog::browseClicked()
 }
 
 
+
+} // end namespace sv
 

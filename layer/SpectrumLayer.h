@@ -28,6 +28,8 @@
 #include <QColor>
 #include <QMutex>
 
+namespace sv {
+
 class SpectrumLayer : public SliceLayer,
                       public HorizontalScaleProvider
 {
@@ -66,7 +68,7 @@ public:
                                           int value) const override;
     virtual RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
     virtual void setProperty(const PropertyName &, int value) override;
-    virtual void setProperties(const QXmlAttributes &) override;
+    virtual void setProperties(const LayerAttributes &) override;
 
     virtual bool setDisplayExtents(double min, double max) override;
     
@@ -150,5 +152,7 @@ protected:
         else return m_windowSize / (1 << (m_windowHopLevel - 1));
     }
 };
+
+} // end namespace sv
 
 #endif

@@ -20,6 +20,8 @@
 
 //#define DEBUG_COLOUR_DATABASE 1
 
+namespace sv {
+
 ColourDatabase
 ColourDatabase::m_instance;
 
@@ -296,4 +298,6 @@ ColourDatabase::getExamplePixmap(int index, QSize size) const
                    size.width() - margin*2 - 1, size.height() - margin*2 - 1);
     return pmap;
 }
+
+} // end namespace sv
 

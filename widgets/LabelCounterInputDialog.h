@@ -19,6 +19,8 @@
 #include <QDialog>
 #include "data/model/Labeller.h"
 
+namespace sv {
+
 class LabelCounterInputDialog : public QDialog
 {
     Q_OBJECT
@@ -37,5 +39,7 @@ protected:
     int m_origCounter;
     int m_origSecondCounter;
 };
+
+} // end namespace sv
 
 #endif

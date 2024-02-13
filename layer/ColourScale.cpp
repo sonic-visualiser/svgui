@@ -23,6 +23,8 @@
 
 using namespace std;
 
+namespace sv {
+
 int ColourScale::m_maxPixel = 255;
 
 ColourScale::ColourScale(Parameters parameters) :
@@ -176,3 +178,5 @@ ColourScale::getColourForPixel(int pixel, int rotation) const
         return m_mapper.map(double(target));
     }
 }
+} // end namespace sv
+

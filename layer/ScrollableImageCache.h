@@ -23,6 +23,8 @@
 #include <QRect>
 #include <QPainter>
 
+namespace sv {
+
 /**
  * A cached image for a view that scrolls horizontally, such as a
  * spectrogram. The cache object holds an image, reports the size of
@@ -159,5 +161,7 @@ private:
     sv_frame_t m_startFrame;
     ZoomLevel m_zoomLevel;
 };
+
+} // end namespace sv
 
 #endif

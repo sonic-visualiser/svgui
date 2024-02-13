@@ -27,6 +27,8 @@
 #include <QApplication>
 #include <QScreen>
 
+namespace sv {
+
 LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     QDialog(parent),
     m_paneStack(stack)
@@ -45,7 +47,7 @@ LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     modelBox->setLayout(subgrid);
 
     subgrid->setSpacing(0);
-    subgrid->setMargin(5);
+    subgrid->setContentsMargins(5, 5, 5, 5);
 
     m_modelView = new QTableView;
     subgrid->addWidget(m_modelView);
@@ -70,7 +72,7 @@ LayerTreeDialog::LayerTreeDialog(PaneStack *stack, QWidget *parent) :
     layerBox->setLayout(subgrid);
 
     subgrid->setSpacing(0);
-    subgrid->setMargin(5);
+    subgrid->setContentsMargins(5, 5, 5, 5);
 
     m_layerView = new QTreeView;
 #if (QT_VERSION >= 0x050000)
@@ -108,4 +110,6 @@ LayerTreeDialog::~LayerTreeDialog()
 {
     delete m_layerModel;
 }
+
+} // end namespace sv
 

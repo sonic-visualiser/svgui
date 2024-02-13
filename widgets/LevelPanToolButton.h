@@ -17,8 +17,11 @@
 
 #include <QToolButton>
 
-class LevelPanWidget;
 class QMenu;
+
+namespace sv {
+
+class LevelPanWidget;
 
 class LevelPanToolButton : public QToolButton
 {
@@ -75,7 +78,7 @@ private slots:
     
 protected:
     void paintEvent(QPaintEvent *) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void wheelEvent(QWheelEvent *e) override;
@@ -88,5 +91,7 @@ protected:
     bool m_provideContextMenu;
     QMenu *m_lastContextMenu;
 };
+
+} // end namespace sv
 
 #endif

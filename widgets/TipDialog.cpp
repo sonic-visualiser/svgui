@@ -28,6 +28,8 @@
 
 #include <iostream>
 
+namespace sv {
+
 TipDialog::TipDialog(QWidget *parent) :
     QDialog(parent),
     m_tipNumber(0),
@@ -146,7 +148,7 @@ void
 TipDialog::showTip()
 {
     if (m_tipNumber < int(m_tips.size())) {
-        cerr << "Tip " << m_tipNumber << " is: " << m_tips[m_tipNumber] << endl;
+        SVCERR << "Tip " << m_tipNumber << " is: " << m_tips[m_tipNumber] << endl;
         m_label->setText(m_tips[m_tipNumber]);
     } else {
         accept();
@@ -196,24 +198,24 @@ TipDialog::TipFileParser::startElement(const QString &, const QString &,
         if (caption != "") m_dialog->m_caption = caption;
     } else if (name == "tip") {
         if (m_inTip) {
-            cerr << "WARNING: TipFileParser: nested <tip> elements" << endl;
+            SVCERR << "WARNING: TipFileParser: nested <tip> elements" << endl;
         }
         m_inTip = true;
     } else if (name == "text") {
         if (m_inTip) {
             m_inText = true;
-            cerr << "TipFileParser: adding new tip" << endl;
+            SVCERR << "TipFileParser: adding new tip" << endl;
             m_dialog->m_tips.push_back("");
         } else {
-            cerr << "WARNING: TipFileParser: <text> outside <tip> element" << endl;
+            SVCERR << "WARNING: TipFileParser: <text> outside <tip> element" << endl;
         }
     } else if (name == "html") {
         if (m_inTip) {
             m_inHtml = true;
-            cerr << "TipFileParser: adding new tip" << endl;
+            SVCERR << "TipFileParser: adding new tip" << endl;
             m_dialog->m_tips.push_back("");
         } else {
-            cerr << "WARNING: TipFileParser: <html> outside <tip> element" << endl;
+            SVCERR << "WARNING: TipFileParser: <html> outside <tip> element" << endl;
         }
     } else if (m_inHtml) {
         m_dialog->m_tips[m_dialog->m_tips.size()-1] += "<" + qName;
@@ -236,21 +238,21 @@ TipDialog::TipFileParser::endElement(const QString &, const QString &,
 
     if (name == "text") {
         if (!m_inText) {
-            cerr << "WARNING: TipFileParser: </text> without <text>" << endl;
+            SVCERR << "WARNING: TipFileParser: </text> without <text>" << endl;
         }
         m_inText = false;
     } else if (name == "html") {
         if (!m_inHtml) {
-            cerr << "WARNING: TipFileParser: </html> without <html>" << endl;
+            SVCERR << "WARNING: TipFileParser: </html> without <html>" << endl;
         }
         m_inHtml = false;
     } else if (name == "tip") {
         if (m_inText) {
-            cerr << "WARNING: TipFileParser: <text> without </text>" << endl;
+            SVCERR << "WARNING: TipFileParser: <text> without </text>" << endl;
         } else if (m_inHtml) {
-            cerr << "WARNING: TipFileParser: <html> without </html>" << endl;
+            SVCERR << "WARNING: TipFileParser: <html> without </html>" << endl;
         } else if (!m_inTip) {
-            cerr << "WARNING: TipFileParser: </tip> without <tip>" << endl;
+            SVCERR << "WARNING: TipFileParser: </tip> without <tip>" << endl;
         }
         m_inTip = false;
     } else if (m_inHtml) {
@@ -280,7 +282,7 @@ TipDialog::TipFileParser::error(const QXmlParseException &exception)
         .arg(exception.message())
         .arg(exception.lineNumber())
         .arg(exception.columnNumber());
-    cerr << errorString << endl;
+    SVCERR << errorString << endl;
     return QXmlDefaultHandler::error(exception);
 }
 
@@ -292,6 +294,8 @@ TipDialog::TipFileParser::fatalError(const QXmlParseException &exception)
         .arg(exception.message())
         .arg(exception.lineNumber())
         .arg(exception.columnNumber());
-    cerr << errorString << endl;
+    SVCERR << errorString << endl;
     return QXmlDefaultHandler::fatalError(exception);
 }
+} // end namespace sv
+

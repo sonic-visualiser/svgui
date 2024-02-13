@@ -48,6 +48,7 @@
 #include <QMimeData>
 #include <QApplication>
 #include <QMenu>
+#include <QRegularExpression>
 
 #include <iostream>
 #include <cmath>
@@ -66,6 +67,8 @@
 
 //#define DEBUG_PANE 1
 //#define DEBUG_PANE_SCALE_CHOICE 1
+
+namespace sv {
 
 QCursor *Pane::m_measureCursor1 = nullptr;
 QCursor *Pane::m_measureCursor2 = nullptr;
@@ -127,7 +130,7 @@ Pane::updateHeadsUpDisplay()
         m_headsUpDisplay = new QFrame(this);
 
         QGridLayout *layout = new QGridLayout;
-        layout->setMargin(0);
+        layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(0);
         m_headsUpDisplay->setLayout(layout);
         
@@ -224,7 +227,7 @@ Pane::updateHeadsUpDisplay()
             m_vthumb->setValue(layer->getCurrentVerticalZoomStep());
             m_vthumb->blockSignals(false);
 
-//            cerr << "Vertical thumbwheel: min 0, max " << max
+//            SVCERR << "Vertical thumbwheel: min 0, max " << max
 //                      << ", default " << defaultStep << ", value "
 //                      << m_vthumb->getValue() << endl;
 
@@ -707,14 +710,9 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
     if (desc != "") {
         
         paint.save();
-        
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
         int tabStop =
-            paint.fontMetrics().width(tr("Some lengthy prefix:"));
+            paint.fontMetrics().horizontalAdvance(tr("Some lengthy prefix:"));
         
         QRect boundingRect = 
             paint.fontMetrics().boundingRect
@@ -745,7 +743,7 @@ Pane::drawFeatureDescription(Layer *topLayer, QPainter &paint)
         QTextOption option;
         option.setWrapMode(QTextOption::NoWrap);
         option.setAlignment(Qt::AlignRight | Qt::AlignTop);
-        option.setTabStop(tabStop);
+        option.setTabStopDistance(tabStop);
         paint.drawText(QRectF(width() - boundingRect.width() - 10, 10,
                               boundingRect.width(),
                               boundingRect.height()),
@@ -816,7 +814,7 @@ Pane::drawCentreLine(sv_samplerate_t sampleRate, QPainter &paint, bool omitLine)
                           (m_centreFrame, sampleRate)
                           .toText(true)));
             
-            int tw = paint.fontMetrics().width(text);
+            int tw = paint.fontMetrics().horizontalAdvance(text);
             int x = width()/2 - 4 - tw;
             
             PaintAssistant::drawVisibleText(this, paint, x, y, text, PaintAssistant::OutlinedText);
@@ -881,11 +879,11 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, ModelId modelId,
     ModelId reference = model->getAlignmentReference();
 /*
     if (!reference) {
-        cerr << "Pane[" << this << "]::drawAlignmentStatus: No reference" << endl;
+        SVCERR << "Pane[" << this << "]::drawAlignmentStatus: No reference" << endl;
     } else if (reference == model->getId()) {
-        cerr << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << endl;
+        SVCERR << "Pane[" << this << "]::drawAlignmentStatus: This is the reference model" << endl;
     } else {
-        cerr << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << endl;
+        SVCERR << "Pane[" << this << "]::drawAlignmentStatus: This is not the reference" << endl;
     }
 */
     QString text;
@@ -923,7 +921,7 @@ Pane::drawAlignmentStatus(QRect r, QPainter &paint, ModelId modelId,
 
     int y = 5;
     if (down) y += paint.fontMetrics().height();
-    int w = paint.fontMetrics().width(text);
+    int w = paint.fontMetrics().horizontalAdvance(text);
     int h = paint.fontMetrics().height();
     if (r.top() > h + y || r.left() > w + m_scaleWidth + 5) {
         paint.restore();
@@ -965,7 +963,7 @@ Pane::drawWorkTitle(QRect r, QPainter &paint, ModelId modelId)
     paint.setFont(font);
 
     int y = 5;
-    int w = paint.fontMetrics().width(text);
+    int w = paint.fontMetrics().horizontalAdvance(text);
     int h = paint.fontMetrics().height();
     if (r.top() > h + y || r.left() > w + m_scaleWidth + 5) {
         paint.restore();
@@ -1013,7 +1011,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     std::vector<QPixmap> pixmaps;
     for (LayerList::iterator i = m_layerStack.begin(); i != m_layerStack.end(); ++i) {
         texts.push_back((*i)->getLayerPresentationName());
-//        cerr << "Pane " << this << ": Layer presentation name for " << *i << ": "
+//        SVCERR << "Pane " << this << ": Layer presentation name for " << *i << ": "
 //                  << texts[texts.size()-1] << endl;
         pixmaps.push_back((*i)->getLayerPresentationPixmap
                           (QSize(fontAscent, fontAscent)));
@@ -1032,7 +1030,7 @@ Pane::drawLayerNames(QRect r, QPainter &paint)
     
         for (int i = 0; i < texts.size(); ++i) {
 
-//            cerr << "Pane "<< this << ": text " << i << ": " << texts[i] << endl;
+//            SVCERR << "Pane "<< this << ": text " << i << ": " << texts[i] << endl;
             
             if (i + 1 == texts.size()) {
                 paint.setPen(getForeground());
@@ -1166,7 +1164,7 @@ Pane::drawDurationAndRate(QRect r, ModelId waveformModelId,
     int pbw = getProgressBarWidth();
     if (x < pbw + 5) x = pbw + 5;
 
-    if (r.x() < x + paint.fontMetrics().width(desc)) {
+    if (r.x() < x + paint.fontMetrics().horizontalAdvance(desc)) {
         PaintAssistant::drawVisibleText(this, paint, x,
                         height() - fontHeight + fontAscent - 6,
                         desc, PaintAssistant::OutlinedText);
@@ -1424,7 +1422,7 @@ Pane::mousePressEvent(QMouseEvent *e)
     m_releasing = false;
 
     if (mode == ViewManager::NavigateMode ||
-        (e->buttons() & Qt::MidButton) ||
+        (e->buttons() & Qt::MiddleButton) ||
         (mode == ViewManager::MeasureMode &&
          (e->buttons() & Qt::LeftButton) && m_shiftPressed)) {
 
@@ -1446,7 +1444,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             // location. This will happen only if nothing else of
             // interest happens (double-click, drag) before the
             // timeout.
-            schedulePlaybackFrameMove(getFrameForX(e->x()));
+            schedulePlaybackFrameMove(getFrameForX(e->position().x()));
         }
 
     } else if (mode == ViewManager::SelectMode) {
@@ -1454,7 +1452,7 @@ Pane::mousePressEvent(QMouseEvent *e)
         if (!hasTopLayerTimeXAxis()) return;
 
         bool closeToLeft = false, closeToRight = false;
-        Selection selection = getSelectionAt(e->x(), closeToLeft, closeToRight);
+        Selection selection = getSelectionAt(e->position().x(), closeToLeft, closeToRight);
 
         if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
 
@@ -1471,7 +1469,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             
         } else {
             
-            sv_frame_t mouseFrame = getFrameForX(e->x());
+            sv_frame_t mouseFrame = getFrameForX(e->position().x());
             int resolution = 1;
             sv_frame_t snapFrame = mouseFrame;
     
@@ -1481,7 +1479,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             if (layer && shouldSnap &&
                 !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
                 layer->snapToFeatureFrame(this, snapFrame,
-                                          resolution, Layer::SnapLeft, e->y());
+                                          resolution, Layer::SnapLeft, e->position().y());
             }
         
             if (snapFrame < 0) snapFrame = 0;
@@ -1582,7 +1580,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         mouseMoveEvent(e);
     }
 
-    sv_frame_t mouseFrame = e ? getFrameForX(e->x()) : 0;
+    sv_frame_t mouseFrame = e ? getFrameForX(e->position().x()) : 0;
     if (mouseFrame < 0) mouseFrame = 0;
 
     if (m_navigating || mode == ViewManager::NavigateMode) {
@@ -1714,7 +1712,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         // the window after pressing button first time).
 
         if (!(e->buttons() & Qt::LeftButton) &&
-            !(e->buttons() & Qt::MidButton)) {
+            !(e->buttons() & Qt::MiddleButton)) {
             m_clickedInRange = false;
             return;
         }
@@ -1741,7 +1739,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
     
         if (mode == ViewManager::SelectMode && hasTopLayerTimeXAxis()) {
             bool closeToLeft = false, closeToRight = false;
-            getSelectionAt(e->x(), closeToLeft, closeToRight);
+            getSelectionAt(e->position().x(), closeToLeft, closeToRight);
             if ((closeToLeft || closeToRight) && !(closeToLeft && closeToRight)) {
                 setCursor(Qt::SizeHorCursor);
             } else {
@@ -1860,8 +1858,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
                 if (layer) {
 
-                    int x = e->x();
-                    int y = e->y();
+                    int x = e->position().x();
+                    int y = e->position().y();
                     if (m_dragMode == VerticalDrag) x = m_clickPos.x();
                     else if (m_dragMode == HorizontalDrag) y = m_clickPos.y();
 
@@ -1926,8 +1924,8 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
                 if (layer && layer->isLayerEditable()) {
 
-                    int x = e->x();
-                    int y = e->y();
+                    int x = e->position().x();
+                    int y = e->position().y();
                     if (m_dragMode == VerticalDrag) x = m_clickPos.x();
                     else if (m_dragMode == HorizontalDrag) y = m_clickPos.y();
 
@@ -1949,7 +1947,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         Layer *layer = getTopLayer();
         if (layer) {
             layer->measureDrag(this, e);
-            if (layer->hasTimeXAxis()) edgeScrollMaybe(e->x());
+            if (layer->hasTimeXAxis()) edgeScrollMaybe(e->position().x());
         }
 
         update();
@@ -2016,12 +2014,12 @@ Pane::zoomToRegion(QRect r)
         }
         double rmin = min + ((max - min) * (height() - y1)) / height();
         double rmax = min + ((max - min) * (height() - y0)) / height();
-        cerr << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << endl;
+        SVCERR << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << endl;
         if (log) {
             rmin = pow(10, rmin);
             rmax = pow(10, rmax);
         }
-        cerr << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << endl;
+        SVCERR << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << endl;
 
         layer->setDisplayExtents(rmin, rmax);
         updateVerticalPanner();
@@ -2069,7 +2067,7 @@ Pane::dragTopLayer(QMouseEvent *e)
         m_dragMode == FreeDrag) {
 
         sv_frame_t fromFrame = getFrameForX(m_clickPos.x());
-        sv_frame_t toFrame = getFrameForX(e->x());
+        sv_frame_t toFrame = getFrameForX(e->position().x());
         sv_frame_t frameOff = toFrame - fromFrame;
 
         sv_frame_t newCentreFrame = m_dragCentreFrame;
@@ -2083,7 +2081,7 @@ Pane::dragTopLayer(QMouseEvent *e)
 
 #ifdef DEBUG_PANE
         SVDEBUG << "Pane::dragTopLayer: dragged from x = "
-                << m_clickPos.x() << " to " << e->x()
+                << m_clickPos.x() << " to " << e->position().x()
                 << ", from frame = " << fromFrame
                 << " to " << toFrame
                 << ", for frame offset of " << frameOff << endl;
@@ -2110,12 +2108,12 @@ Pane::dragTopLayer(QMouseEvent *e)
 
         if (getTopLayerDisplayExtents(vmin, vmax, dmin, dmax)) {
 
-//            cerr << "ydiff = " << ydiff << endl;
+//            SVCERR << "ydiff = " << ydiff << endl;
 
-            int ydiff = e->y() - m_clickPos.y();
+            int ydiff = e->position().y() - m_clickPos.y();
             double perpix = (dmax - dmin) / height();
             double valdiff = ydiff * perpix;
-//            cerr << "valdiff = " << valdiff << endl;
+//            SVCERR << "valdiff = " << valdiff << endl;
 
             if (m_dragMode == UnresolvedDrag && ydiff != 0) {
                 m_dragMode = VerticalDrag;
@@ -2131,7 +2129,7 @@ Pane::dragTopLayer(QMouseEvent *e)
                 newmin -= newmax - vmax;
                 newmax -= newmax - vmax;
             }
-//            cerr << "(" << dmin << ", " << dmax << ") -> ("
+//            SVCERR << "(" << dmin << ", " << dmax << ") -> ("
 //                      << newmin << ", " << newmax << ") (drag start " << m_dragStartMinValue << ")" << endl;
 
             setTopLayerDisplayExtents(newmin, newmax);
@@ -2207,7 +2205,7 @@ Pane::updateDragMode(DragMode dragMode,
 void
 Pane::dragExtendSelection(QMouseEvent *e)
 {
-    sv_frame_t mouseFrame = getFrameForX(e->x());
+    sv_frame_t mouseFrame = getFrameForX(e->position().x());
     int resolution = 1;
     sv_frame_t snapFrameLeft = mouseFrame;
     sv_frame_t snapFrameRight = mouseFrame;
@@ -2218,12 +2216,12 @@ Pane::dragExtendSelection(QMouseEvent *e)
     if (layer && shouldSnap &&
         !qobject_cast<TimeRulerLayer *>(layer)) { // don't snap to secs
         layer->snapToFeatureFrame(this, snapFrameLeft,
-                                  resolution, Layer::SnapLeft, e->y());
+                                  resolution, Layer::SnapLeft, e->position().y());
         layer->snapToFeatureFrame(this, snapFrameRight,
-                                  resolution, Layer::SnapRight, e->y());
+                                  resolution, Layer::SnapRight, e->position().y());
     }
         
-//        cerr << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
+//        SVCERR << "snap: frame = " << mouseFrame << ", start frame = " << m_selectionStartFrame << ", left = " << snapFrameLeft << ", right = " << snapFrameRight << endl;
 
     if (snapFrameLeft < 0) snapFrameLeft = 0;
     if (snapFrameRight < 0) snapFrameRight = 0;
@@ -2256,7 +2254,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
         m_manager->setInProgressSelection(sel, !m_resizing && !m_ctrlPressed);
 
         if (!same) {
-            edgeScrollMaybe(e->x());
+            edgeScrollMaybe(e->position().x());
         }
     }
 
@@ -2320,12 +2318,12 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     if (m_manager) mode = m_manager->getToolModeFor(this);
 
     bool relocate = (mode == ViewManager::NavigateMode ||
-                     (e->buttons() & Qt::MidButton));
+                     (e->buttons() & Qt::MiddleButton));
 
     if (mode == ViewManager::SelectMode) {
         m_clickedInRange = false;
         if (m_manager) m_manager->clearInProgressSelection();
-        emit doubleClickSelectInvoked(getFrameForX(e->x()));
+        emit doubleClickSelectInvoked(getFrameForX(e->position().x()));
         return;
     }
 
@@ -2347,7 +2345,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 
     if (relocate) {
 
-        sv_frame_t f = getFrameForX(e->x());
+        sv_frame_t f = getFrameForX(e->position().x());
 
         setCentreFrame(f);
 
@@ -2373,7 +2371,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 }
 
 void
-Pane::enterEvent(QEvent *)
+Pane::enterEvent(QEnterEvent *)
 {
     m_mouseInWidget = true;
 }
@@ -2397,8 +2395,9 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-    SVDEBUG << "Pane[" << getId() << "]::wheelEvent: delta = " << e->delta()
-            << ", angleDelta = (" << e->angleDelta().x()
+    SVDEBUG << "Pane[" << getId() << "]::wheelEvent: pixelDelta = ("
+            << e->pixelDelta().x() << "," << e->pixelDelta().y()
+            << "), angleDelta = (" << e->angleDelta().x()
             << "," << e->angleDelta().y() << "), pixelDelta = ("
             << e->pixelDelta().x() << "," << e->pixelDelta().y()
             << "), modifiers = " << modifierNames(e->modifiers()) << endl;
@@ -2600,7 +2599,7 @@ Pane::verticalPannerMoved(float , float y0, float , float h)
     double y1 = y0 + h;
     double newmax = vmin + ((1.0 - y0) * (vmax - vmin));
     double newmin = vmin + ((1.0 - y1) * (vmax - vmin));
-//    cerr << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
+//    SVCERR << "verticalPannerMoved: (" << x0 << "," << y0 << "," << w
 //              << "," << h << ") -> (" << newmin << "," << newmax << ")" << endl;
     setTopLayerDisplayExtents(newmin, newmax);
 }
@@ -2714,8 +2713,8 @@ Pane::dropEvent(QDropEvent *e)
             SVDEBUG << "accepting... data is \"" << e->mimeData()->data("text/uri-list").data() << "\"" << endl;
             emit dropAccepted(QString::fromLocal8Bit
                               (e->mimeData()->data("text/uri-list").data())
-                              .split(QRegExp("[\\r\\n]+"), 
-                                     QString::SkipEmptyParts));
+                              .split(QRegularExpression("[\\r\\n]+"), 
+                                     Qt::SkipEmptyParts));
         } else {
             emit dropAccepted(QString::fromLocal8Bit
                               (e->mimeData()->data("text/plain").data()));
@@ -2733,7 +2732,7 @@ Pane::editSelectionStart(QMouseEvent *e)
     }
 
     bool closeToLeft, closeToRight;
-    Selection s(getSelectionAt(e->x(), closeToLeft, closeToRight));
+    Selection s(getSelectionAt(e->position().x(), closeToLeft, closeToRight));
     if (s.isEmpty()) return false;
     m_editingSelection = s;
     m_editingSelectionEdge = (closeToLeft ? -1 : closeToRight ? 1 : 0);
@@ -2866,7 +2865,7 @@ Pane::zoomWheelsEnabledChanged()
 void
 Pane::viewZoomLevelChanged(View *v, ZoomLevel z, bool locked)
 {
-//    cerr << "Pane[" << this << "]::zoomLevelChanged (global now "
+//    SVCERR << "Pane[" << this << "]::zoomLevelChanged (global now "
 //              << (m_manager ? m_manager->getGlobalZoom() : 0) << ")" << endl;
 
     View::viewZoomLevelChanged(v, z, locked);
@@ -3061,4 +3060,6 @@ Pane::toXml(QTextStream &stream,
      .arg(m_centreLineVisible).arg(height()).arg(extraAttributes));
 }
 
+
+} // end namespace sv
 

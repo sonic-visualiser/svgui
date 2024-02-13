@@ -24,8 +24,11 @@
 #include <QObject>
 #include <QColor>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 class SparseTimeValueModel;
 
 class FlexiNoteLayer : public SingleColourLayer,
@@ -152,7 +155,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
     
     void setVerticalRangeToNoteRange(LayerGeometryProvider *v);
 
@@ -208,6 +211,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

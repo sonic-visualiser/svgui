@@ -38,6 +38,8 @@
 //#define DEBUG_WAVEFORM_PAINT 1
 //#define DEBUG_WAVEFORM_PAINT_BY_PIXEL 1
 
+namespace sv {
+
 using std::vector;
 
 double
@@ -1521,11 +1523,6 @@ WaveformLayer::getYScaleDifference(const LayerGeometryProvider *v, int y0, int y
 int
 WaveformLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &paint) const
 {
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
     if (m_scale == LinearScale) {
         QString sampleText = "0.0";
         if (m_gain != 1.f) {
@@ -1539,10 +1536,10 @@ WaveformLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &pa
                 }
             }
         }
-        return paint.fontMetrics().width(sampleText) + 13;
+        return paint.fontMetrics().horizontalAdvance(sampleText) + 13;
     } else {
-        return std::max(paint.fontMetrics().width(tr("0dB")),
-                        paint.fontMetrics().width(Strings::minus_infinity)) + 13;
+        return std::max(paint.fontMetrics().horizontalAdvance(tr("0dB")),
+                        paint.fontMetrics().horizontalAdvance(Strings::minus_infinity)) + 13;
     }
 }
 
@@ -1648,7 +1645,7 @@ WaveformLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pain
 
                 int tx = 3;
                 if (m_scale != LinearScale) {
-                    tx = w - 10 - paint.fontMetrics().width(text);
+                    tx = w - 10 - paint.fontMetrics().horizontalAdvance(text);
                 }
                   
                 int ty = y;
@@ -1726,7 +1723,7 @@ WaveformLayer::toXml(QTextStream &stream,
 }
 
 void
-WaveformLayer::setProperties(const QXmlAttributes &attributes)
+WaveformLayer::setProperties(const LayerAttributes &attributes)
 {
     bool ok = false;
 
@@ -1787,4 +1784,6 @@ WaveformLayer::setVerticalZoomStep(int step)
 {
     setGain(AudioLevel::dB_to_voltage(step - 50));
 }
+
+} // end namespace sv
 

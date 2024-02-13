@@ -26,8 +26,11 @@
 
 #include <map>
 
-class View;
 class QPainter;
+
+namespace sv {
+
+class View;
 class FileSource;
 
 class ImageLayer : public Layer
@@ -96,7 +99,7 @@ public:
 
     void setLayerDormant(const LayerGeometryProvider *v, bool dormant) override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     static bool isImageFileSupported(QString url); // based on extension alone
     
@@ -143,6 +146,8 @@ protected:
         if (c) CommandHistory::getInstance()->addCommand(c, false);
     }
 };
+
+} // end namespace sv
 
 #endif
 

@@ -27,6 +27,8 @@
 #include <cmath>
 #include <cassert>
 
+namespace sv {
+
 using std::cerr;
 using std::endl;
 
@@ -239,7 +241,7 @@ LevelPanWidget::emitPanChanged()
 void
 LevelPanWidget::mousePressEvent(QMouseEvent *e)
 {
-    if (e->button() == Qt::MidButton ||
+    if (e->button() == Qt::MiddleButton ||
         ((e->button() == Qt::LeftButton) &&
          (e->modifiers() & Qt::ControlModifier))) {
         setToDefault();
@@ -578,7 +580,7 @@ LevelPanWidget::paintEvent(QPaintEvent *)
 }
 
 void
-LevelPanWidget::enterEvent(QEvent *e)
+LevelPanWidget::enterEvent(QEnterEvent *e)
 {
     QWidget::enterEvent(e);
     emit mouseEntered();
@@ -587,7 +589,9 @@ LevelPanWidget::enterEvent(QEvent *e)
 void
 LevelPanWidget::leaveEvent(QEvent *e)
 {
-    QWidget::enterEvent(e);
+    QWidget::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

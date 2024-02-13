@@ -32,12 +32,15 @@
 #include <set>
 #include <map>
 
-class Command;
-class MacroCommand;
 class QAction;
 class QMenu;
 class QToolBar;
 class QTimer;
+
+namespace sv {
+
+class Command;
+class MacroCommand;
 
 /**
  * The CommandHistory class stores a list of executed commands and
@@ -228,5 +231,7 @@ protected:
     void clearStack(CommandStack &stack);
 };
 
+
+} // end namespace sv
 
 #endif

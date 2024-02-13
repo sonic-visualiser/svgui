@@ -26,6 +26,8 @@
 
 #include <QColor>
 
+namespace sv {
+
 class SliceLayer : public SingleColourLayer
 {
     Q_OBJECT
@@ -62,7 +64,7 @@ public:
                                           int value) const override;
     RangeMapper *getNewPropertyRangeMapper(const PropertyName &) const override;
     void setProperty(const PropertyName &, int value) override;
-    void setProperties(const QXmlAttributes &) override;
+    void setProperties(const LayerAttributes &) override;
 
     bool getValueExtents(double &min, double &max,
                          bool &logarithmic, QString &unit) const override;
@@ -200,5 +202,7 @@ protected:
     mutable sv_frame_t          m_currentf1;
     mutable std::vector<float>  m_values;
 };
+
+} // end namespace sv
 
 #endif

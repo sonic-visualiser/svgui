@@ -18,6 +18,8 @@
 
 #include "NotifyingComboBox.h"
 
+namespace sv {
+
 /**
  * Colour-picker combo box with swatches, optionally including "Add
  * New Colour..." entry to invoke a QColorDialog/ColourNameDialog
@@ -65,6 +67,8 @@ private:
     bool m_withAddNewColourEntry;
     QString m_unsetEntry;
 };
+
+} // end namespace sv
 
 #endif
 

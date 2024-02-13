@@ -16,6 +16,8 @@
 #ifndef SV_HORIZONTAL_SCALE_PROVIDER_H
 #define SV_HORIZONTAL_SCALE_PROVIDER_H
 
+namespace sv {
+
 class LayerGeometryProvider;
 
 /**
@@ -36,5 +38,7 @@ public:
                                     double freq)
         const = 0;
 };
+
+} // end namespace sv
 
 #endif

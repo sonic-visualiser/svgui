@@ -21,6 +21,8 @@
 #include <QSpinBox>
 #include <QDialogButtonBox>
 
+namespace sv {
+
 LabelCounterInputDialog::LabelCounterInputDialog(Labeller *labeller,
                                                  QWidget *parent) :
     QDialog(parent),
@@ -86,4 +88,6 @@ LabelCounterInputDialog::cancelClicked()
     m_labeller->setSecondLevelCounterValue(m_origSecondCounter);
     reject();
 }
+
+} // end namespace sv
 

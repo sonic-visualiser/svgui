@@ -31,12 +31,14 @@
 using namespace std;
 
 
+namespace sv {
+
 WindowShapePreview::WindowShapePreview(QWidget *parent) :
     QFrame(parent),
     m_windowType(HanningWindow)
 {
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
     m_windowTimeExampleLabel = new QLabel;
     m_windowFreqExampleLabel = new QLabel;
@@ -113,17 +115,12 @@ WindowShapePreview::updateLabels()
     path.addRect(0, 0, w, h + 1);
     timePainter.drawPath(path);
 
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
     QFont font;
     font.setPixelSize(int(10 * scaleRatio));
     font.setItalic(true);
     timePainter.setFont(font);
     QString label = tr("V / time");
-    timePainter.drawText(w - timePainter.fontMetrics().width(label) - 4,
+    timePainter.drawText(w - timePainter.fontMetrics().horizontalAdvance(label) - 4,
                          timePainter.fontMetrics().ascent() + 1, label);
 
     m_windowTimeExampleLabel->setPixmap(timeLabel);
@@ -207,7 +204,7 @@ WindowShapePreview::updateLabels()
 
     freqPainter.setFont(font);
     label = tr("dB / freq");
-    freqPainter.drawText(w - freqPainter.fontMetrics().width(label) - 4,
+    freqPainter.drawText(w - freqPainter.fontMetrics().horizontalAdvance(label) - 4,
                          freqPainter.fontMetrics().ascent() + 1, label);
 
     m_windowFreqExampleLabel->setPixmap(freqLabel);
@@ -219,4 +216,6 @@ WindowShapePreview::setWindowType(WindowType type)
     m_windowType = type;
     updateLabels();
 }
+
+} // end namespace sv
 

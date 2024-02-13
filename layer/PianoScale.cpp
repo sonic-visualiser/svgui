@@ -27,6 +27,8 @@
 #include <iostream>
 using namespace std;
 
+namespace sv {
+
 void
 PianoScale::paintPianoVertical(LayerGeometryProvider *v,
                                QPainter &paint,
@@ -158,4 +160,6 @@ PianoScale::paintPianoHorizontal(LayerGeometryProvider *v,
     }
 }
 
+
+} // end namespace sv
 

@@ -20,6 +20,8 @@
 #include <QTabWidget>
 #include <vector>
 
+namespace sv {
+
 class Layer;
 class View;
 class PropertyBox;
@@ -69,5 +71,7 @@ protected:
     void repopulate();
     void updateValues(PropertyContainer *);
 };
+
+} // end namespace sv
 
 #endif

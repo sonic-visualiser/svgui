@@ -22,12 +22,15 @@
 
 #include "data/model/Model.h"
 
-class ModelDataTableModel;
 class QTableView;
 class QModelIndex;
-class Command;
 class QToolBar;
 class QLineEdit;
+
+namespace sv {
+
+class ModelDataTableModel;
+class Command;
 
 class ModelDataTableDialog : public QMainWindow
 {
@@ -72,5 +75,7 @@ protected:
     int m_currentRow;
     bool m_trackPlayback;
 };
+
+} // end namespace sv
 
 #endif

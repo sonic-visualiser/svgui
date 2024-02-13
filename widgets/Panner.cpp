@@ -25,6 +25,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 Panner::Panner(QWidget *parent) :
     QWidget(parent),
     m_rectX(0),
@@ -89,7 +91,7 @@ Panner::scroll(bool up, int count)
 void
 Panner::mousePressEvent(QMouseEvent *e)
 {
-    if (e->button() == Qt::MidButton ||
+    if (e->button() == Qt::MiddleButton ||
         ((e->button() == Qt::LeftButton) &&
          (e->modifiers() & Qt::ControlModifier))) {
         resetToDefault();
@@ -145,7 +147,7 @@ Panner::wheelEvent(QWheelEvent *e)
 }
 
 void
-Panner::enterEvent(QEvent *)
+Panner::enterEvent(QEnterEvent *)
 {
     emit mouseEntered();
 }
@@ -308,4 +310,6 @@ Panner::resetToDefault()
     emitAndUpdate();
 }
 
+
+} // end namespace sv
 

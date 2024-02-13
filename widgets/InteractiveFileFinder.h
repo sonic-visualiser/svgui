@@ -22,6 +22,8 @@
 #include <QString>
 #include <QObject>
 
+namespace sv {
+
 class InteractiveFileFinder : public QObject,
                               public FileFinder
 {
@@ -74,6 +76,8 @@ protected:
 
     QWidget *m_parent;
 };
+
+} // end namespace sv
 
 #endif
 

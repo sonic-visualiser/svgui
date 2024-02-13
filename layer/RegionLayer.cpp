@@ -44,6 +44,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 RegionLayer::RegionLayer() :
     SingleColourLayer(),
     m_editing(false),
@@ -1165,11 +1167,11 @@ RegionLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<RegionModel>(m_model);
     if (!model) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
     m_editingPoint = Event(frame, float(value), 0, "");
     m_originalPoint = m_editingPoint;
@@ -1189,12 +1191,12 @@ RegionLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<RegionModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
     double newValue = m_editingPoint.getValue();
-    if (m_verticalScale != EqualSpaced) newValue = getValueForY(v, e->y());
+    if (m_verticalScale != EqualSpaced) newValue = getValueForY(v, e->position().y());
 
     sv_frame_t newFrame = m_editingPoint.getFrame();
     sv_frame_t newDuration = frame - newFrame;
@@ -1233,7 +1235,7 @@ RegionLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<RegionModel>(m_model);
     if (!model) return;
 
-    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -1258,7 +1260,7 @@ RegionLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editing = false;
 
     Event p(0);
-    if (!getPointToDrag(v, e->x(), e->y(), p)) return;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), p)) return;
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
@@ -1279,7 +1281,7 @@ RegionLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<RegionModel>(m_model);
     if (!model) return;
 
-    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) {
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), m_editingPoint)) {
         return;
     }
 
@@ -1294,8 +1296,8 @@ RegionLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     }
 
     m_editing = true;
-    m_dragStartX = e->x();
-    m_dragStartY = e->y();
+    m_dragStartX = e->position().x();
+    m_dragStartY = e->position().y();
     recalcSpacing();
 }
 
@@ -1305,8 +1307,8 @@ RegionLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<RegionModel>(m_model);
     if (!model || !m_editing) return;
 
-    int xdist = e->x() - m_dragStartX;
-    int ydist = e->y() - m_dragStartY;
+    int xdist = e->position().x() - m_dragStartX;
+    int ydist = e->position().y() - m_dragStartY;
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
@@ -1372,7 +1374,9 @@ RegionLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     if (!model) return false;
 
     Event region(0);
-    if (!getPointToDrag(v, e->x(), e->y(), region)) return false;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), region)) {
+        return false;
+    }
 
     ItemEditDialog *dialog = new ItemEditDialog
         (model->getSampleRate(),
@@ -1609,7 +1613,7 @@ RegionLayer::toXml(QTextStream &stream,
 }
 
 void
-RegionLayer::setProperties(const QXmlAttributes &attributes)
+RegionLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
@@ -1635,4 +1639,6 @@ RegionLayer::setProperties(const QXmlAttributes &attributes)
     m_propertiesExplicitlySet = true;
 }
 
+
+} // end namespace sv
 

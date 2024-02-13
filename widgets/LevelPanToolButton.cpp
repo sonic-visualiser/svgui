@@ -28,6 +28,8 @@
 #include "MenuTitle.h"
 
 #include <iostream>
+namespace sv {
+
 using std::cerr;
 using std::endl;
 
@@ -75,7 +77,7 @@ LevelPanToolButton::~LevelPanToolButton()
 void
 LevelPanToolButton::mousePressEvent(QMouseEvent *e)
 {
-    if (e->button() == Qt::MidButton ||
+    if (e->button() == Qt::MiddleButton ||
         ((e->button() == Qt::LeftButton) &&
          (e->modifiers() & Qt::ControlModifier))) {
         m_lpw->setToDefault();
@@ -250,7 +252,7 @@ LevelPanToolButton::paintEvent(QPaintEvent *)
 }
 
 void
-LevelPanToolButton::enterEvent(QEvent *e)
+LevelPanToolButton::enterEvent(QEnterEvent *e)
 {
     QToolButton::enterEvent(e);
     emit mouseEntered();
@@ -259,8 +261,10 @@ LevelPanToolButton::enterEvent(QEvent *e)
 void
 LevelPanToolButton::leaveEvent(QEvent *e)
 {
-    QToolButton::enterEvent(e);
+    QToolButton::leaveEvent(e);
     emit mouseLeft();
 }
 
+
+} // end namespace sv
 

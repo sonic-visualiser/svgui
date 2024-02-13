@@ -43,6 +43,8 @@
 #include <QPushButton>
 #include <QSettings>
 #include <QSvgGenerator>
+#include <QThreadPool>
+#include <QSemaphore>
 
 #include <iostream>
 #include <cassert>
@@ -52,6 +54,8 @@
 //#define DEBUG_VIEW_WIDGET_PAINT 1
 //#define DEBUG_PROGRESS_STUFF 1
 //#define DEBUG_VIEW_SCALE_CHOICE 1
+
+namespace sv {
 
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
@@ -744,8 +748,17 @@ View::getZoomLevel() const
 int
 View::effectiveDevicePixelRatio() const
 {
+    // This is the ratio in force when we are drawing to our internal
+    // buffer image. We aren't equipped to update correctly with
+    // fractional scaling, so it's an integer value. But we round up,
+    // because we get much better results drawing large and scaling
+    // down than the reverse. That does make the actual drawing very
+    // expensive, e.g. if the scale is 125% and we draw at 200%, but
+    // if we don't do this the results can look terrible.
+    
+    int dpratio = int(ceil(devicePixelRatioF()));
+    
 #ifdef Q_OS_MAC
-    int dpratio = devicePixelRatio();
     // devicePixelRatio can change if the window is moved, so we don't
     // want to cache it. But we no longer allow the scaledHiDpi
     // setting to be changed without recommending a restart, so we
@@ -762,10 +775,9 @@ View::effectiveDevicePixelRatio() const
             dpratio = 1;
         }
     }
-    return dpratio;
-#else
-    return 1;
 #endif
+    
+    return dpratio;
 }
 
 void
@@ -2336,7 +2348,7 @@ View::paintEvent(QPaintEvent *e)
 
     if (!m_buffer || wholeSize != m_buffer->size()) {
         delete m_buffer;
-        m_buffer = new QPixmap(wholeSize);
+        m_buffer = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
     }
 
     bool shouldUseCache = false;
@@ -2376,10 +2388,9 @@ View::paintEvent(QPaintEvent *e)
 #endif
             } else {
 
-                if (!m_cache ||
-                    m_cache->size() != wholeSize) {
+                if (!m_cache || m_cache->size() != wholeSize) {
                     delete m_cache;
-                    m_cache = new QPixmap(wholeSize);
+                    m_cache = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
                 }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -2400,8 +2411,15 @@ View::paintEvent(QPaintEvent *e)
 
             if (dx > -m_cache->width() && dx < m_cache->width()) {
 
-                m_cache->scroll(dx, 0, m_cache->rect(), nullptr);
-
+                int mx0 = std::max(0, -dx);
+                int mx1 = std::max(0, dx);
+                int mw = m_cache->width() - std::max(dx, -dx);
+                
+                for (int row = 0; row < m_cache->height(); ++row) {
+                    QRgb *sl = reinterpret_cast<QRgb *>(m_cache->scanLine(row));
+                    breakfastquay::v_move(sl + mx1, sl + mx0, mw);
+                }
+                
                 if (dx < 0) {
                     cacheAreaToRepaint = 
                         QRect(m_cache->width() + dx, 0, -dx, m_cache->height());
@@ -2479,36 +2497,16 @@ View::paintEvent(QPaintEvent *e)
 
     if (shouldRepaintCache) {
         paint.begin(m_cache);
-        areaToPaint = cacheAreaToRepaint;
+        paint.fillRect(cacheAreaToRepaint, getBackground());
+        paint.end();
     } else {
         paint.begin(m_buffer);
-        areaToPaint = requestedPaintArea;
+        paint.fillRect(requestedPaintArea, getBackground());
+        paint.end();
     }
 
-    setPaintFont(paint);
-
-    // This clipping is not a good idea I think - layers often
-    // intentionally paint outside the lines a little because they
-    // don't have a very precise idea about e.g. parts of text labels
-    // which overlay an area. We pass areaToPaint to the paint
-    // function anyway, so if clipping matters to it, it should enable
-    // it itself
-//    paint.setClipRect(areaToPaint);
-
-    paint.setPen(getBackground());
-    paint.setBrush(getBackground());
-    paint.drawRect(areaToPaint);
-
-    paint.setPen(getForeground());
-    paint.setBrush(Qt::NoBrush);
-        
-    for (LayerList::iterator i = scrollables.begin();
-         i != scrollables.end(); ++i) {
-
-        paint.setRenderHint(QPainter::Antialiasing, false);
-        paint.save();
-
-        Layer *layer = *i;
+    auto paintLayer = [&](Layer *layer, QImage *target,
+                          QRect area, bool enforceClipping) {
         
         bool useAligningProxy = false;
         if (m_useAligningProxy) {
@@ -2519,16 +2517,34 @@ View::paintEvent(QPaintEvent *e)
         }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-        SVCERR << "Painting scrollable layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with shouldRepaintCache = " << shouldRepaintCache << ", useAligningProxy = " << useAligningProxy << ", dpratio = " << dpratio << ", areaToPaint = " << areaToPaint.x() << "," << areaToPaint.y() << " " << areaToPaint.width() << "x" << areaToPaint.height() << endl;
+        SVCERR << "Painting layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with useAligningProxy = " << useAligningProxy << ", area = " << area.x() << "," << area.y() << " " << area.width() << "x" << area.height() << ", enforceClipping = " << enforceClipping << endl;
 #endif
-        
-        layer->paint(useAligningProxy ? &aligningProxy : &proxy,
-                     paint, areaToPaint);
 
-        paint.restore();
+        QPainter p(target);
+        p.setRenderHint(QPainter::Antialiasing, false);
+        if (enforceClipping) {
+            p.setClipRect(area);
+        }
+        p.setPen(getForeground());
+        p.setBrush(Qt::NoBrush);
+        setPaintFont(p);
+        layer->paint(useAligningProxy ? &aligningProxy : &proxy, p, area);
+        p.end();
+    };
+
+    for (auto layer : scrollables) {
+        // Clipping is not a good idea here - layers often
+        // intentionally paint outside the lines a little because they
+        // don't have a very precise idea about e.g. parts of text
+        // labels which overlay an area. We pass the area to the paint
+        // function anyway, so if clipping matters to it, it should
+        // enable it itself
+        if (shouldRepaintCache) {
+            paintLayer(layer, m_cache, cacheAreaToRepaint, false);
+        } else {
+            paintLayer(layer, m_buffer, requestedPaintArea, false);
+        }
     }
-
-    paint.end();
 
     if (shouldRepaintCache) {
         // and now we have
@@ -2539,47 +2555,22 @@ View::paintEvent(QPaintEvent *e)
 
     if (shouldUseCache) {
         paint.begin(m_buffer);
-        paint.drawPixmap(requestedPaintArea, *m_cache, requestedPaintArea);
+        paint.drawImage(requestedPaintArea, *m_cache, requestedPaintArea);
         paint.end();
     }
 
     // Now non-cacheable items.
 
-    paint.begin(m_buffer);
-    paint.setClipRect(requestedPaintArea);
-    setPaintFont(paint);
     if (scrollables.empty()) {
-        paint.setPen(getBackground());
-        paint.setBrush(getBackground());
-        paint.drawRect(requestedPaintArea);
+        paint.begin(m_buffer);
+        paint.fillRect(requestedPaintArea, getBackground());
+        paint.end();
+    }
+
+    for (auto layer : nonScrollables) {
+        paintLayer(layer, m_buffer, requestedPaintArea, true);
     }
         
-    paint.setPen(getForeground());
-    paint.setBrush(Qt::NoBrush);
-        
-    for (LayerList::iterator i = nonScrollables.begin(); 
-         i != nonScrollables.end(); ++i) {
-        
-        Layer *layer = *i;
-        
-        bool useAligningProxy = false;
-        if (m_useAligningProxy) {
-            if (layer->getModel() == alignmentReferenceId ||
-                layer->getSourceModel() == alignmentReferenceId) {
-                useAligningProxy = true;
-            }
-        }
-
-#ifdef DEBUG_VIEW_WIDGET_PAINT
-        SVCERR << "Painting non-scrollable layer " << layer << " (model " << layer->getModel() << ", source model " << layer->getSourceModel() << ") with shouldRepaintCache = " << shouldRepaintCache << ", useAligningProxy = " << useAligningProxy << ", dpratio = " << dpratio << ", requestedPaintArea = " << requestedPaintArea.x() << "," << requestedPaintArea.y() << " " << requestedPaintArea.width() << "x" << requestedPaintArea.height() << endl;
-#endif
-
-        layer->paint(useAligningProxy ? &aligningProxy : &proxy,
-                     paint, requestedPaintArea);
-    }
-        
-    paint.end();
-
     // Now paint to widget from buffer: target rects from here on,
     // unlike all the preceding, are at formal (1x) resolution
 
@@ -2588,8 +2579,9 @@ View::paintEvent(QPaintEvent *e)
     if (e) paint.setClipRect(e->rect());
 
     QRect finalPaintRect = e ? e->rect() : rect();
-    paint.drawPixmap(finalPaintRect, *m_buffer, 
-                     scaledRect(finalPaintRect, dpratio));
+    paint.setRenderHint(QPainter::SmoothPixmapTransform);
+    paint.drawImage(finalPaintRect, *m_buffer, 
+                    scaledRect(finalPaintRect, dpratio));
 
     drawSelections(paint);
     drawPlayPointer(paint);
@@ -2710,14 +2702,9 @@ View::drawSelections(QPainter &paint)
                       .toText(true)))
                 .arg(i->getEndFrame() - i->getStartFrame());
             
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-            int sw = metrics.width(startText),
-                ew = metrics.width(endText),
-                dw = metrics.width(durationText);
+            int sw = metrics.horizontalAdvance(startText),
+                ew = metrics.horizontalAdvance(endText),
+                dw = metrics.horizontalAdvance(durationText);
 
             int sy = metrics.ascent() + metrics.height() + 4;
             int ey = sy;
@@ -2864,7 +2851,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
             axs = QString("%1 (%2)").arg(axs)
                 .arg(Pitch::getPitchLabelForFrequency(v0));
         }
-        aw = paint.fontMetrics().width(axs);
+        aw = paint.fontMetrics().horizontalAdvance(axs);
         ++labelCount;
     }
 
@@ -2877,7 +2864,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
                 bxs = QString("%1 (%2)").arg(bxs)
                     .arg(Pitch::getPitchLabelForFrequency(v1));
             }
-            bw = paint.fontMetrics().width(bxs);
+            bw = paint.fontMetrics().horizontalAdvance(bxs);
         }
     }
 
@@ -2885,7 +2872,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         
     if (b0 && b1 && v1 != v0 && u0 == u1) {
         dxs = QString("[%1 %2]").arg(fabs(v1 - v0)).arg(u1);
-        dw = paint.fontMetrics().width(dxs);
+        dw = paint.fontMetrics().horizontalAdvance(dxs);
     }
     
     b0 = false;
@@ -2899,7 +2886,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
             ays = QString("%1 (%2)").arg(ays)
                 .arg(Pitch::getPitchLabelForFrequency(v0));
         }
-        aw = std::max(aw, paint.fontMetrics().width(ays));
+        aw = std::max(aw, paint.fontMetrics().horizontalAdvance(ays));
         ++labelCount;
     }
 
@@ -2912,7 +2899,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
                 bys = QString("%1 (%2)").arg(bys)
                     .arg(Pitch::getPitchLabelForFrequency(v1));
             }
-            bw = std::max(bw, paint.fontMetrics().width(bys));
+            bw = std::max(bw, paint.fontMetrics().horizontalAdvance(bys));
         }
     }
 
@@ -2939,7 +2926,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
         } else {
             dys = QString("[%1]").arg(dy);
         }
-        dw = std::max(dw, paint.fontMetrics().width(dys));
+        dw = std::max(dw, paint.fontMetrics().horizontalAdvance(dys));
     }
 
     int mw = r.width();
@@ -3312,3 +3299,6 @@ ViewPropertyContainer::ViewPropertyContainer(View *v) :
 ViewPropertyContainer::~ViewPropertyContainer()
 {
 }
+
+} // end namespace sv
+

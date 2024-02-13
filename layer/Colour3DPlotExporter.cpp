@@ -19,6 +19,8 @@
 
 #include "VerticalBinLayer.h"
 
+namespace sv {
+
 Colour3DPlotExporter::Colour3DPlotExporter(Sources sources, Parameters params) :
     m_sources(sources),
     m_params(params)
@@ -235,4 +237,6 @@ Colour3DPlotExporter::toStringExportRows(DataExportOptions opts,
 
     return rows;
 }
+
+} // end namespace sv
 

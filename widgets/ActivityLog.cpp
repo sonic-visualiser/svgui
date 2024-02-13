@@ -27,6 +27,8 @@
 
 #include "base/Debug.h"
 
+namespace sv {
+
 using std::cerr;
 using std::endl;
 
@@ -92,3 +94,5 @@ ActivityLog::scrollToEnd()
 }
 
     
+} // end namespace sv
+

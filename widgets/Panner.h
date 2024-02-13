@@ -20,6 +20,8 @@
 
 #include "WheelCounter.h"
 
+namespace sv {
+
 class Panner : public QWidget
 {
     Q_OBJECT
@@ -126,7 +128,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *e) override;
     void wheelEvent(QWheelEvent *e) override;
     void paintEvent(QPaintEvent *e) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 
     void normalise();
@@ -156,6 +158,8 @@ protected:
 
     WheelCounter m_wheelCounter;
 };
+
+} // end namespace sv
 
 #endif
 

@@ -23,6 +23,8 @@
 
 #include <set>
 
+namespace sv {
+
 class PaneStack;
 class View;
 class Pane;
@@ -121,5 +123,7 @@ protected:
     int m_modelNameColumn;
     int m_columnCount;
 };
+
+} // end namespace sv
 
 #endif

@@ -32,6 +32,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 TextLayer::TextLayer() :
     SingleColourLayer(),
     m_editing(false),
@@ -397,7 +399,7 @@ TextLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 void
 TextLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "TextLayer::drawStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::drawStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<TextModel>(m_model);
     if (!model) {
@@ -405,11 +407,11 @@ TextLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
         return;
     }
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double height = getHeightForY(v, e->y());
+    double height = getHeightForY(v, e->position().y());
 
     m_editingPoint = Event(frame, float(height), "");
     m_originalPoint = m_editingPoint;
@@ -424,16 +426,16 @@ TextLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 void
 TextLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "TextLayer::drawDrag(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::drawDrag(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<TextModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double height = getHeightForY(v, e->y());
+    double height = getHeightForY(v, e->position().y());
 
     m_editingCommand->remove(m_editingPoint);
     m_editingPoint = m_editingPoint
@@ -445,7 +447,7 @@ TextLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 void
 TextLayer::drawEnd(LayerGeometryProvider *v, QMouseEvent *)
 {
-//    SVDEBUG << "TextLayer::drawEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::drawEnd(" << e->position().x() << "," << e->position().y() << ")" << endl;
     auto model = ModelById::getAs<TextModel>(m_model);
     if (!model || !m_editing) return;
 
@@ -473,7 +475,7 @@ TextLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<TextModel>(m_model);
     if (!model) return;
 
-    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) return;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -497,7 +499,7 @@ TextLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editing = false;
 
     Event p;
-    if (!getPointToDrag(v, e->x(), e->y(), p)) return;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), p)) return;
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
@@ -511,12 +513,12 @@ TextLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
 void
 TextLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
-//    SVDEBUG << "TextLayer::editStart(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::editStart(" << e->position().x() << "," << e->position().y() << ")" << endl;
 
     auto model = ModelById::getAs<TextModel>(m_model);
     if (!model) return;
 
-    if (!getPointToDrag(v, e->x(), e->y(), m_editingPoint)) {
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), m_editingPoint)) {
         return;
     }
 
@@ -538,9 +540,9 @@ TextLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     if (!model || !m_editing) return;
 
     sv_frame_t frameDiff =
-        v->getFrameForX(e->x()) - v->getFrameForX(m_editOrigin.x());
+        v->getFrameForX(e->position().x()) - v->getFrameForX(m_editOrigin.x());
     double heightDiff =
-        getHeightForY(v, e->y()) - getHeightForY(v, m_editOrigin.y());
+        getHeightForY(v, e->position().y()) - getHeightForY(v, m_editOrigin.y());
 
     sv_frame_t frame = m_originalPoint.getFrame() + frameDiff;
     double height = m_originalPoint.getValue() + heightDiff;
@@ -562,7 +564,7 @@ TextLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 void
 TextLayer::editEnd(LayerGeometryProvider *, QMouseEvent *)
 {
-//    SVDEBUG << "TextLayer::editEnd(" << e->x() << "," << e->y() << ")" << endl;
+//    SVDEBUG << "TextLayer::editEnd(" << e->position().x() << "," << e->position().y() << ")" << endl;
     auto model = ModelById::getAs<TextModel>(m_model);
     if (!model || !m_editing) return;
 
@@ -595,7 +597,9 @@ TextLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     if (!model) return false;
 
     Event text;
-    if (!getPointToDrag(v, e->x(), e->y(), text)) return false;
+    if (!getPointToDrag(v, e->position().x(), e->position().y(), text)) {
+        return false;
+    }
 
     QString label = text.getLabel();
 
@@ -799,8 +803,10 @@ TextLayer::toXml(QTextStream &stream,
 }
 
 void
-TextLayer::setProperties(const QXmlAttributes &attributes)
+TextLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 }
+
+} // end namespace sv
 

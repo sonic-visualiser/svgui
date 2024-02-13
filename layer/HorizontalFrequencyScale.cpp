@@ -23,6 +23,8 @@
 
 #include <cmath>
 
+namespace sv {
+
 int
 HorizontalFrequencyScale::getHeight(LayerGeometryProvider *,
                                     QPainter &paint)
@@ -57,14 +59,9 @@ HorizontalFrequencyScale::paintScale(LayerGeometryProvider *v,
 
     for (int i = 0; i < n; ++i) {
 
-        // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-        // replacement (horizontalAdvance) was only added in Qt 5.11
-        // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        
         double val = ticks[i].value;
         QString label = QString::fromStdString(ticks[i].label);
-        int tw = paint.fontMetrics().width(label);
+        int tw = paint.fontMetrics().horizontalAdvance(label);
         
         int x = int(round(p->getXForFrequency(v, val)));
 
@@ -79,4 +76,6 @@ HorizontalFrequencyScale::paintScale(LayerGeometryProvider *v,
         marginx = x + tw + 10;
     }
 }
+
+} // end namespace sv
 

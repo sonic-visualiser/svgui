@@ -21,6 +21,8 @@
 
 class QImage;
 
+namespace sv {
+
 class ImageRegionFinder
 {
 public:
@@ -32,6 +34,8 @@ public:
 protected:
     bool similar(QRgb a, QRgb b) const;
 };
+
+} // end namespace sv
 
 #endif
 

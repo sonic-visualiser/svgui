@@ -28,6 +28,8 @@ class QCheckBox;
 
 #include "plugin/PluginPathSetter.h"
 
+namespace sv {
+
 class PluginPathConfigurator : public QFrame
 {
     Q_OBJECT
@@ -75,6 +77,8 @@ private:
     QString getLabelFor(PluginPathSetter::TypeKey);
     PluginPathSetter::TypeKey getKeyForLabel(QString label);
 };
+
+} // end namespace sv
 
 #endif
 

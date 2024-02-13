@@ -25,6 +25,8 @@
 
 using namespace std;
 
+namespace sv {
+
 ColourMapComboBox::ColourMapComboBox(bool includeSwatches, QWidget *parent) :
     NotifyingComboBox(parent),
     m_includeSwatches(includeSwatches)
@@ -71,4 +73,6 @@ ColourMapComboBox::rebuild()
     
     blockSignals(false);
 }
+
+} // end namespace sv
 

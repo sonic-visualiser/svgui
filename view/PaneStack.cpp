@@ -38,6 +38,8 @@
 
 //#define DEBUG_PANE_STACK 1
 
+namespace sv {
+
 PaneStack::PaneStack(QWidget *parent,
                      ViewManager *viewManager,
                      int options) :
@@ -52,14 +54,14 @@ PaneStack::PaneStack(QWidget *parent,
     m_layoutStyle(PropertyStackPerPaneLayout)
 {
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
     if (m_options & int(Option::NoUserResize)) {
 
         m_autoResizeStack = new QWidget;
         m_autoResizeLayout = new QVBoxLayout;
-        m_autoResizeLayout->setMargin(0);
+        m_autoResizeLayout->setContentsMargins(0, 0, 0, 0);
         m_autoResizeLayout->setSpacing(0);
         m_autoResizeStack->setLayout(m_autoResizeLayout);
         layout->addWidget(m_autoResizeStack);
@@ -90,7 +92,7 @@ PaneStack::addPane()
     QFrame *frame = new QFrame;
 
     QGridLayout *layout = new QGridLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     layout->setHorizontalSpacing(m_viewManager->scalePixelSize(2));
 
     AlignmentView *av = nullptr;
@@ -391,7 +393,7 @@ PaneStack::deletePane(Pane *pane)
         }
 
         if (!found) {
-            cerr << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << endl;
+            SVCERR << "WARNING: PaneStack::deletePane(" << pane << "): Pane not found in visible or hidden panes, not deleting" << endl;
             return;
         }
     }
@@ -534,10 +536,10 @@ PaneStack::setCurrentPane(Pane *pane) // may be null
     // background drawn transparent in Qt 4.1 -- I can't quite see why
     
     QPixmap selectedMap(1, 1);
-    selectedMap.fill(QApplication::palette().color(QPalette::Foreground));
+    selectedMap.fill(QApplication::palette().color(QPalette::WindowText));
     
     QPixmap unselectedMap(1, 1);
-    unselectedMap.fill(QApplication::palette().color(QPalette::Background));
+    unselectedMap.fill(QApplication::palette().color(QPalette::Window));
 
     bool found = false;
 
@@ -803,13 +805,15 @@ PaneStack::sizePanesEqually()
     }
 
 /*
-    cerr << "sizes: ";
+    SVCERR << "sizes: ";
     for (int i = 0; i < sizes.size(); ++i) {
-        cerr << sizes[i] << " ";
+        SVCERR << sizes[i] << " ";
     }
-    cerr << endl;
+    SVCERR << endl;
 */
 
     m_splitter->setSizes(sizes);
 }
+
+} // end namespace sv
 

@@ -57,6 +57,8 @@
 
 //#define DEBUG_PROPERTY_BOX 1
 
+namespace sv {
+
 PropertyBox::PropertyBox(PropertyContainer *container) :
     m_container(container),
     m_showButton(nullptr),
@@ -84,13 +86,13 @@ PropertyBox::PropertyBox(PropertyContainer *container) :
 
     m_mainWidget = new QWidget;
     m_mainBox->addWidget(m_mainWidget);
-    m_mainBox->insertStretch(2, 10);
+    m_mainBox->addStretch(10);
 
     m_viewPlayFrame = nullptr;
     populateViewPlayFrame();
 
     m_layout = new QGridLayout;
-    m_layout->setMargin(0);
+    m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setHorizontalSpacing(2);
     m_layout->setVerticalSpacing(1);
     m_mainWidget->setLayout(m_layout);
@@ -157,7 +159,8 @@ PropertyBox::populateViewPlayFrame()
     QGridLayout *layout = new QGridLayout;
     m_viewPlayFrame->setLayout(layout);
 
-    layout->setMargin(layout->margin() / 2);
+    int thinMargin = layout->contentsMargins().top() / 2;
+    layout->setContentsMargins(thinMargin, thinMargin, thinMargin, thinMargin);
 
 #ifdef DEBUG_PROPERTY_BOX
     SVDEBUG << "PropertyBox::populateViewPlayFrame: container " << m_container << " (name " << m_container->getPropertyContainerName() << ") params " << params << endl;
@@ -1003,4 +1006,6 @@ PropertyBox::mouseLeftWidget()
     }
 }
 
+
+} // end namespace sv
 

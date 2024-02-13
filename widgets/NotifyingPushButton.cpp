@@ -15,12 +15,14 @@
 
 #include "NotifyingPushButton.h"
 
+namespace sv {
+
 NotifyingPushButton::~NotifyingPushButton()
 {
 }
 
 void
-NotifyingPushButton::enterEvent(QEvent *e)
+NotifyingPushButton::enterEvent(QEnterEvent *e)
 {
     QPushButton::enterEvent(e);
     emit mouseEntered();
@@ -29,7 +31,9 @@ NotifyingPushButton::enterEvent(QEvent *e)
 void
 NotifyingPushButton::leaveEvent(QEvent *e)
 {
-    QPushButton::enterEvent(e);
+    QPushButton::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

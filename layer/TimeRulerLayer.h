@@ -21,9 +21,12 @@
 #include <QRect>
 #include <QColor>
 
+class QPainter;
+
+namespace sv {
+
 class View;
 class Model;
-class QPainter;
 
 class TimeRulerLayer : public SingleColourLayer
 {
@@ -59,7 +62,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     bool canExistWithoutModel() const override { return true; }
 
@@ -72,5 +75,7 @@ protected:
     int64_t getMajorTickUSec(LayerGeometryProvider *, bool &quarterTicks) const;
     int getXForUSec(LayerGeometryProvider *, double usec) const;
 };
+
+} // end namespace sv
 
 #endif

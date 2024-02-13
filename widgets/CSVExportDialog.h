@@ -22,6 +22,8 @@ class QComboBox;
 class QCheckBox;
 class QRadioButton;
 
+namespace sv {
+
 class CSVExportDialog : public QDialog
 {
     Q_OBJECT
@@ -121,5 +123,7 @@ private:
 private slots:
     void timestampsToggled(bool);
 };
+
+} // end namespace sv
 
 #endif

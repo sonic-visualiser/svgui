@@ -19,6 +19,8 @@
 
 #include "base/Debug.h"
 
+namespace sv {
+
 using std::set;
 using std::map;
 
@@ -341,4 +343,6 @@ SubdividingMenu::addMenu(const QString &name, QMenu *menu)
 #endif
     m_nameToChunkMenuMap[name]->addMenu(menu);
 }
+
+} // end namespace sv
 

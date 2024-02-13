@@ -17,6 +17,8 @@
 #include <QMessageBox>
 #include <QInputDialog>
 
+namespace sv {
+
 MIDIFileImportDialog::MIDIFileImportDialog(QWidget *parent) :
     m_parent(parent)
 {
@@ -34,13 +36,10 @@ MIDIFileImportDialog::getTrackImportPreference(QStringList displayNames,
 
     singleTrack = "";
 
-    int nonTrackItems = 1;
-    
     available << allTracks;
 
     if (haveSomePercussion) {
         available << allNonPercussion;
-        ++nonTrackItems;
     }
 
     available << displayNames;
@@ -69,4 +68,6 @@ MIDIFileImportDialog::showError(QString error)
 {
     QMessageBox::critical(nullptr, tr("Error in MIDI file import"), error);
 }
+
+} // end namespace sv
 

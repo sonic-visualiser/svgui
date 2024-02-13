@@ -17,6 +17,8 @@
 
 #include "Colour3DPlotRenderer.h"
 
+namespace sv {
+
 class Colour3DPlotExporter : public Model
 {
     Q_OBJECT
@@ -129,5 +131,7 @@ private:
     Sources m_sources;
     Parameters m_params;
 };
+
+} // end namespace sv
 
 #endif

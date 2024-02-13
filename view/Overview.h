@@ -23,6 +23,8 @@
 
 class QWidget;
 class QPaintEvent;
+namespace sv {
+
 class Layer;
 class View;
 
@@ -57,7 +59,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *e) override;
     void mouseMoveEvent(QMouseEvent *e) override;
     void mouseDoubleClickEvent(QMouseEvent *e) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
     bool shouldLabelSelections() const override { return false; }
 
@@ -74,6 +76,8 @@ protected:
     typedef std::set<View *> ViewSet;
     ViewSet m_views;
 };
+
+} // end namespace sv
 
 #endif
 

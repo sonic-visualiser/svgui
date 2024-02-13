@@ -31,6 +31,8 @@
 #include <cmath>
 #include <iostream>
 
+namespace sv {
+
 Thumbwheel::Thumbwheel(Qt::Orientation orientation,
                        QWidget *parent) :
     QWidget(parent),
@@ -344,7 +346,7 @@ Thumbwheel::getShowScale() const
 }
 
 void
-Thumbwheel::enterEvent(QEvent *)
+Thumbwheel::enterEvent(QEnterEvent *)
 {
     emit mouseEntered();
 }
@@ -358,7 +360,7 @@ Thumbwheel::leaveEvent(QEvent *)
 void
 Thumbwheel::mousePressEvent(QMouseEvent *e)
 {
-    if (e->button() == Qt::MidButton ||
+    if (e->button() == Qt::MiddleButton ||
         ((e->button() == Qt::LeftButton) &&
          (e->modifiers() & Qt::ControlModifier))) {
         resetToDefault();
@@ -454,9 +456,9 @@ Thumbwheel::mouseMoveEvent(QMouseEvent *e)
     if (!m_clicked) return;
     int dist = 0;
     if (m_orientation == Qt::Horizontal) {
-        dist = e->x() - m_clickPos.x();
+        dist = e->position().x() - m_clickPos.x();
     } else {
-        dist = e->y() - m_clickPos.y();
+        dist = e->position().y() - m_clickPos.y();
     }
 
     float rotation = m_clickRotation + (m_speed * float(dist)) / 100;
@@ -647,4 +649,6 @@ Thumbwheel::sizeHint() const
         return QSize(12, 80);
     }
 }
+
+} // end namespace sv
 

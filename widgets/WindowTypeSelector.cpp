@@ -22,6 +22,8 @@
 
 #include "base/Preferences.h"
 
+namespace sv {
+
 WindowTypeSelector::WindowTypeSelector(WindowType defaultType)
 {
     init(defaultType);
@@ -41,7 +43,7 @@ void
 WindowTypeSelector::init(WindowType defaultType)
 {
     QVBoxLayout *layout = new QVBoxLayout;
-    layout->setMargin(0);
+    layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
 
     // The WindowType enum is in rather a ragbag order -- reorder it here
@@ -116,4 +118,6 @@ WindowTypeSelector::windowIndexChanged(int index)
     m_windowShape->setWindowType(m_windowType);
     emit windowTypeChanged(type);
 }
+
+} // end namespace sv
 

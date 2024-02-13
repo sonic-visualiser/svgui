@@ -28,7 +28,6 @@
 
 #include <QObject>
 #include <QRect>
-#include <QXmlAttributes>
 #include <QMutex>
 #include <QPixmap>
 
@@ -37,20 +36,32 @@
 
 #include <iostream>
 
-class ZoomConstraint;
 class QPainter;
+class QMouseEvent;
+
+namespace sv {
+
+class ZoomConstraint;
 class View;
 class LayerGeometryProvider;
-class QMouseEvent;
 class Clipboard;
 class RangeMapper;
+
+/**
+ * This replaces the Qt5 QXmlAttributes, which is no longer in
+ * Qt6. QXmlAttributes was effectively a QList underneath rather than
+ * a QMap, since attributes in XML were ordered and could be
+ * duplicated. But QMap is closer to the proper API and discouraging
+ * duplicate attribute names is actually a good thing for us. We don't
+ * need support for XML namespaces, only name and value.
+ */
+typedef QMap<QString, QString> LayerAttributes;
 
 /**
  * The base class for visual representations of the data found in a
  * Model.  Layers are expected to be able to draw themselves onto a
  * View, and may also be editable.
  */
-
 class Layer : public PropertyContainer,
               public XmlExportable
 {
@@ -407,14 +418,14 @@ public:
      * their particular properties.
      */
     void toXml(QTextStream &stream, QString indent = "",
-                       QString extraAttributes = "") const override;
+               QString extraAttributes = "") const override;
 
     /**
      * Set the particular properties of a layer (those specific to the
      * subclass) from a set of XML attributes.  This is the effective
      * inverse of the toXml method.
      */
-    virtual void setProperties(const QXmlAttributes &) = 0;
+    virtual void setProperties(const LayerAttributes &) = 0;
 
     /**
      * Produce XML containing the layer's ID and type.  This is used
@@ -431,7 +442,7 @@ public:
      * (presumably taken from a measurement element).
      * Does not use a command.
      */
-    virtual void addMeasurementRect(const QXmlAttributes &);
+    virtual void addMeasurementRect(const LayerAttributes &);
 
     /**
      * Indicate that a layer is not currently visible in the given
@@ -719,6 +730,8 @@ private:
     mutable QMutex m_dormancyMutex;
     mutable std::map<const void *, bool> m_dormancy;
 };
+
+} // end namespace sv
 
 #endif
 

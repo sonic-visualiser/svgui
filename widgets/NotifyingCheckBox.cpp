@@ -15,12 +15,14 @@
 
 #include "NotifyingCheckBox.h"
 
+namespace sv {
+
 NotifyingCheckBox::~NotifyingCheckBox()
 {
 }
 
 void
-NotifyingCheckBox::enterEvent(QEvent *e)
+NotifyingCheckBox::enterEvent(QEnterEvent *e)
 {
     QCheckBox::enterEvent(e);
     emit mouseEntered();
@@ -29,7 +31,9 @@ NotifyingCheckBox::enterEvent(QEvent *e)
 void
 NotifyingCheckBox::leaveEvent(QEvent *e)
 {
-    QCheckBox::enterEvent(e);
+    QCheckBox::leaveEvent(e);
     emit mouseLeft();
 }
+
+} // end namespace sv
 

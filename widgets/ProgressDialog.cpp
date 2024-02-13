@@ -19,6 +19,8 @@
 #include <QApplication>
 #include <QTimer>
 
+namespace sv {
+
 ProgressDialog::ProgressDialog(QString message,
                                bool cancellable,
                                int timeBeforeShow,
@@ -113,3 +115,5 @@ ProgressDialog::setProgress(int percentage)
         if (!m_dialog->isModal()) qApp->processEvents();
     }
 }
+} // end namespace sv
+

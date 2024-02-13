@@ -18,6 +18,8 @@
 
 #include <QCheckBox>
 
+namespace sv {
+
 /**
  * Very trivial enhancement to QCheckBox to make it emit signals when
  * the mouse enters and leaves (for context help).
@@ -38,9 +40,11 @@ signals:
     void mouseLeft();
 
 protected:
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 };
+
+} // end namespace sv
 
 #endif
 

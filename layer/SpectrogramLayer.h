@@ -35,11 +35,14 @@
 #include <QImage>
 #include <QPixmap>
 
-class View;
 class QPainter;
 class QImage;
 class QPixmap;
 class QTimer;
+
+namespace sv {
+
+class View;
 class FFTModel;
 class Dense3DModelPeakCache;
 
@@ -212,6 +215,9 @@ public:
     void setColourRotation(int);
     int getColourRotation() const;
 
+    void setSmooth(bool i);
+    bool getSmooth() const;
+
     VerticalPosition getPreferredFrameCountPosition() const override {
         return PositionTop;
     }
@@ -244,7 +250,7 @@ public:
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 
-    void setProperties(const QXmlAttributes &attributes) override;
+    void setProperties(const LayerAttributes &attributes) override;
 
     void setLayerDormant(const LayerGeometryProvider *v, bool dormant) override;
 
@@ -290,6 +296,7 @@ protected:
     BinDisplay          m_binDisplay;
     ColumnNormalization m_normalization; // of individual columns
     bool                m_normalizeVisibleArea;
+    bool                m_smooth;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
 
@@ -365,5 +372,7 @@ protected:
     void setMeasureRectYCoord(LayerGeometryProvider *v,
                                       MeasureRect &r, bool start, int y) const override;
 };
+
+} // end namespace sv
 
 #endif

@@ -34,6 +34,8 @@
 
 //#define DEBUG_PROPERTY_STACK 1
 
+namespace sv {
+
 PropertyStack::PropertyStack(QWidget *parent, View *client) :
     QTabWidget(parent),
     m_client(client)
@@ -315,4 +317,6 @@ PropertyStack::activeTabClicked()
 {
     emit viewSelected(m_client);
 }
+
+} // end namespace sv
 

@@ -24,6 +24,8 @@ class QLabel;
     
 #include <QDialog>
 
+namespace sv {
+
 class CSVAudioFormatDialog : public QDialog
 {
     Q_OBJECT
@@ -53,5 +55,7 @@ protected:
     QList<QComboBox *> m_columnPurposeCombos;
     int m_fuzzyColumn;
 };
+
+} // end namespace sv
 
 #endif

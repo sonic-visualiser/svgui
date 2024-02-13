@@ -22,11 +22,14 @@
 #include <map>
 #include <memory>
 
-class AudioDial;
 class QDoubleSpinBox;
 class QCheckBox;
 class QGridLayout;
 class QComboBox;
+
+namespace sv {
+
+class AudioDial;
 
 class PluginParameterBox : public QFrame
 {
@@ -69,6 +72,8 @@ protected:
     std::map<QString, QString> m_nameMap;
     Vamp::PluginBase::ProgramList m_programs;
 };
+
+} // end namespace sv
 
 #endif
 

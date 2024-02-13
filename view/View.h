@@ -31,13 +31,15 @@
 
 // #define DEBUG_VIEW_WIDGET_PAINT 1
 
-class Layer;
-class ViewPropertyContainer;
-
 class QPushButton;
 
 #include <map>
 #include <set>
+
+namespace sv {
+
+class Layer;
+class ViewPropertyContainer;
 
 /**
  * View is the base class of widgets that display one or more
@@ -551,8 +553,10 @@ protected:
     bool                m_lightBackground;
     bool                m_showProgress;
 
-    QPixmap            *m_cache;  // I own this
-    QPixmap            *m_buffer; // I own this
+    // I own both m_cache and m_buffer
+    QImage             *m_cache;
+    QImage             *m_buffer;
+    
     bool                m_cacheValid;
     sv_frame_t          m_cacheCentreFrame;
     ZoomLevel           m_cacheZoomLevel;
@@ -638,6 +642,8 @@ public slots:
 protected:
     View *m_v;
 };
+
+} // end namespace sv
 
 #endif
 

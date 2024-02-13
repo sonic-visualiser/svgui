@@ -29,6 +29,9 @@ class QVBoxLayout;
 class QSplitter;
 class QGridLayout;
 class QPushButton;
+
+namespace sv {
+
 class View;
 class Pane;
 class Layer;
@@ -165,6 +168,8 @@ protected:
 
     LayoutStyle m_layoutStyle;
 };
+
+} // end namespace sv
 
 #endif
 

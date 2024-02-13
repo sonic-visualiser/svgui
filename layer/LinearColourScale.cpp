@@ -22,16 +22,13 @@
 
 #include "LayerGeometryProvider.h"
 
+namespace sv {
+
 int
 LinearColourScale::getWidth(LayerGeometryProvider *,
                             QPainter &paint)
 {
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-    return paint.fontMetrics().width("-000.00") + 15;
+    return paint.fontMetrics().horizontalAdvance("-000.00") + 15;
 }
 
 void
@@ -99,3 +96,5 @@ LinearColourScale::paintVertical(LayerGeometryProvider *v,
         val += inc;
     }
 }
+} // end namespace sv
+

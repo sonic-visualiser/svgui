@@ -56,6 +56,8 @@
 
 using namespace std;
 
+namespace sv {
+
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_channel(0),
     m_windowSize(1024),
@@ -80,6 +82,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_binDisplay(BinDisplay::AllBins),
     m_normalization(ColumnNormalization::None),
     m_normalizeVisibleArea(false),
+    m_smooth(true),
     m_lastEmittedZoomStep(-1),
     m_synchronous(false),
     m_haveDetailedScale(false),
@@ -127,6 +130,9 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     connect(prefs, SIGNAL(propertyChanged(PropertyContainer::PropertyName)),
             this, SLOT(preferenceChanged(PropertyContainer::PropertyName)));
     setWindowType(prefs->getWindowType());
+        
+    auto smoothing = prefs->getSpectrogramSmoothing();
+    m_smooth = (smoothing != Preferences::NoSpectrogramSmoothing);
 }
 
 SpectrogramLayer::~SpectrogramLayer()
@@ -299,6 +305,7 @@ SpectrogramLayer::getProperties() const
 //    list.push_back("Min Frequency");
 //    list.push_back("Max Frequency");
     list.push_back("Frequency Scale");
+    list.push_back("Smooth");
     return list;
 }
 
@@ -318,12 +325,14 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Min Frequency") return tr("Min Frequency");
     if (name == "Max Frequency") return tr("Max Frequency");
     if (name == "Frequency Scale") return tr("Frequency Scale");
+    if (name == "Smooth") return tr("Smooth");
     return "";
 }
 
 QString
-SpectrogramLayer::getPropertyIconName(const PropertyName &) const
+SpectrogramLayer::getPropertyIconName(const PropertyName &name) const
 {
+    if (name == "Smooth") return "smooth";
     return "";
 }
 
@@ -334,6 +343,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
     if (name == "Colour Rotation") return RangeProperty;
     if (name == "Threshold") return RangeProperty;
     if (name == "Colour") return ColourMapProperty;
+    if (name == "Smooth") return ToggleProperty;
     return ValueProperty;
 }
 
@@ -347,7 +357,8 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
         name == "Oversampling") return tr("Window");
     if (name == "Colour" ||
         name == "Threshold" ||
-        name == "Colour Rotation") return tr("Colour");
+        name == "Colour Rotation" ||
+        name == "Smooth") return tr("Colour");
     if (name == "Normalization" ||
         name == "Gain" ||
         name == "Colour Scale") return tr("Scale");
@@ -504,6 +515,13 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
         
         val = convertFromColumnNorm(m_normalization, m_normalizeVisibleArea);
 
+    } else if (name == "Smooth") {
+        
+        *min = 0;
+        *max = 1;
+        *deflt = 0;
+        val = (m_smooth ? 1 : 0);
+        
     } else {
         val = Layer::getPropertyRangeAndValue(name, min, max, deflt);
     }
@@ -720,6 +738,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
         case 1: setBinDisplay(BinDisplay::PeakBins); break;
         case 2: setBinDisplay(BinDisplay::PeakFrequencies); break;
         }
+    } else if (name == "Smooth") {
+        setSmooth(value ? true : false);
     } else if (name == "Normalization") {
         auto n = convertToColumnNorm(value);
         setNormalization(n.first);
@@ -731,7 +751,7 @@ void
 SpectrogramLayer::invalidateRenderers()
 {
 #ifdef DEBUG_SPECTROGRAM
-    cerr << "SpectrogramLayer::invalidateRenderers called" << endl;
+    SVDEBUG << "SpectrogramLayer::invalidateRenderers called" << endl;
 #endif
 
     for (ViewRendererMap::iterator i = m_renderers.begin();
@@ -749,16 +769,6 @@ SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
     if (name == "Window Type") {
         setWindowType(Preferences::getInstance()->getWindowType());
         return;
-    }
-    if (name == "Spectrogram Y Smoothing") {
-        invalidateRenderers();
-        invalidateMagnitudes();
-        emit layerParametersChanged();
-    }
-    if (name == "Spectrogram X Smoothing") {
-        invalidateRenderers();
-        invalidateMagnitudes();
-        emit layerParametersChanged();
     }
     if (name == "Tuning Frequency") {
         emit layerParametersChanged();
@@ -835,6 +845,21 @@ int
 SpectrogramLayer::getOversampling() const
 {
     return m_oversampling;
+}
+
+void
+SpectrogramLayer::setSmooth(bool n)
+{
+    if (m_smooth == n) return;
+    m_smooth = n;
+    invalidateRenderers();
+    emit layerParametersChanged();
+}
+
+bool
+SpectrogramLayer::getSmooth() const
+{
+    return m_smooth;
 }
 
 void
@@ -1096,7 +1121,7 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
     if (dormant) {
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "SpectrogramLayer::setLayerDormant(" << dormant << ")"
+        SVDEBUG << "SpectrogramLayer::setLayerDormant(" << dormant << ")"
                   << endl;
 #endif
 
@@ -1127,7 +1152,7 @@ void
 SpectrogramLayer::cacheInvalid(ModelId)
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::cacheInvalid()" << endl;
+    SVDEBUG << "SpectrogramLayer::cacheInvalid()" << endl;
 #endif
 
     invalidateRenderers();
@@ -1145,7 +1170,7 @@ SpectrogramLayer::cacheInvalid(
     )
 {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
+    SVDEBUG << "SpectrogramLayer::cacheInvalid(" << from << ", " << to << ")" << endl;
 #endif
 
     // We used to call invalidateMagnitudes(from, to) to invalidate
@@ -1562,7 +1587,7 @@ void
 SpectrogramLayer::invalidateMagnitudes()
 {
 #ifdef DEBUG_SPECTROGRAM
-    cerr << "SpectrogramLayer::invalidateMagnitudes called" << endl;
+    SVDEBUG << "SpectrogramLayer::invalidateMagnitudes called" << endl;
 #endif
     m_viewMags.clear();
 }
@@ -1636,10 +1661,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
             params.scaleFactor *= 2.f / float(getWindowSize());
         }
 
-        Preferences::SpectrogramSmoothing smoothing = 
-            Preferences::getInstance()->getSpectrogramSmoothing();
-        params.interpolate = 
-            (smoothing != Preferences::NoSpectrogramSmoothing);
+        params.interpolate = m_smooth;
 
         m_renderers[viewId] = new Colour3DPlotRenderer(sources, params);
 
@@ -1675,7 +1697,7 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
         result = renderer->renderTimeConstrained(v, paint, rect);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "rect width from this paint: " << result.rendered.width()
+        SVDEBUG << "rect width from this paint: " << result.rendered.width()
              << ", mag range in this paint: " << result.range.getMin() << " -> "
              << result.range.getMax() << endl;
 #endif
@@ -1692,7 +1714,7 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
         if (m_viewMags[viewId] != magRange) {
             m_viewMags[viewId] = magRange;
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-            cerr << "mag range in this view has changed: "
+            SVDEBUG << "mag range in this view has changed: "
                  << magRange.getMin() << " -> " << magRange.getMax() << endl;
 #endif
         }
@@ -1701,7 +1723,7 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
     if (!continuingPaint && m_normalizeVisibleArea &&
         m_viewMags[viewId] != m_lastRenderedMags[viewId]) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "mag range has changed from last rendered range: re-rendering"
+        SVDEBUG << "mag range has changed from last rendered range: re-rendering"
              << endl;
 #endif
         delete m_renderers[viewId];
@@ -1716,9 +1738,9 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     Profiler profiler("SpectrogramLayer::paint", false);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::paint() entering: m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
+    SVDEBUG << "SpectrogramLayer::paint() entering: m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
     
-    cerr << "SpectrogramLayer::paint(): rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
+    SVDEBUG << "SpectrogramLayer::paint(): rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
 #endif
 
     auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
@@ -1744,7 +1766,7 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
     }
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer: illuminateLocalFeatures("
+    SVDEBUG << "SpectrogramLayer: illuminateLocalFeatures("
               << localPos.x() << "," << localPos.y() << ")" << endl;
 #endif
 
@@ -1764,7 +1786,7 @@ SpectrogramLayer::illuminateLocalFeatures(LayerGeometryProvider *v, QPainter &pa
         int y0 = int(getYForFrequency(v, f0));
         
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-        cerr << "SpectrogramLayer: illuminate "
+        SVDEBUG << "SpectrogramLayer: illuminate "
                   << x0 << "," << y1 << " -> " << x1 << "," << y0 << endl;
 #endif
         
@@ -1801,7 +1823,7 @@ SpectrogramLayer::getCompletion(LayerGeometryProvider *) const
     if (!fftModel) return 100;
     int completion = fftModel->getCompletion();
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
+    SVDEBUG << "SpectrogramLayer::getCompletion: completion = " << completion << endl;
 #endif
     return completion;
 }
@@ -1929,11 +1951,6 @@ SpectrogramLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
                                       QPoint cursorPos,
                                       vector<QRect> &extents) const
 {
-    // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-    // replacement (horizontalAdvance) was only added in Qt 5.11
-    // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
     QRect vertical(cursorPos.x() - 12, 0, 12, v->getPaintHeight());
     extents.push_back(vertical);
 
@@ -1943,22 +1960,22 @@ SpectrogramLayer::getCrosshairExtents(LayerGeometryProvider *v, QPainter &paint,
     int sw = getVerticalScaleWidth(v, m_haveDetailedScale, paint);
 
     QRect freq(sw, cursorPos.y() - paint.fontMetrics().ascent() - 2,
-               paint.fontMetrics().width("123456 Hz") + 2,
+               paint.fontMetrics().horizontalAdvance("123456 Hz") + 2,
                paint.fontMetrics().height());
     extents.push_back(freq);
 
     QRect pitch(sw, cursorPos.y() + 2,
-                paint.fontMetrics().width("C#10+50c") + 2,
+                paint.fontMetrics().horizontalAdvance("C#10+50c") + 2,
                 paint.fontMetrics().height());
     extents.push_back(pitch);
 
     QRect rt(cursorPos.x(),
              v->getPaintHeight() - paint.fontMetrics().height() - 2,
-             paint.fontMetrics().width("1234.567 s"),
+             paint.fontMetrics().horizontalAdvance("1234.567 s"),
              paint.fontMetrics().height());
     extents.push_back(rt);
 
-    int w(paint.fontMetrics().width("1234567890") + 2);
+    int w(paint.fontMetrics().horizontalAdvance("1234567890") + 2);
     QRect frame(cursorPos.x() - w - 2,
                 v->getPaintHeight() - paint.fontMetrics().height() - 2,
                 w,
@@ -2014,7 +2031,7 @@ SpectrogramLayer::paintCrosshairs(LayerGeometryProvider *v, QPainter &paint,
     QString frameLabel = QString("%1").arg(frame);
     PaintAssistant::drawVisibleText
         (v, paint,
-         cursorPos.x() - paint.fontMetrics().width(frameLabel) - 2,
+         cursorPos.x() - paint.fontMetrics().horizontalAdvance(frameLabel) - 2,
          v->getPaintHeight() - 2,
          frameLabel,
          PaintAssistant::OutlinedText);
@@ -2171,7 +2188,7 @@ SpectrogramLayer::getColourScaleWidth(QPainter &paint) const
 {
     int cw;
 
-    cw = paint.fontMetrics().width("-80dB");
+    cw = paint.fontMetrics().horizontalAdvance("-80dB");
 
     return cw;
 }
@@ -2185,12 +2202,12 @@ SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, 
     int cw = 0;
     if (detailed) cw = getColourScaleWidth(paint);
 
-    int tw = paint.fontMetrics().width(QString("%1")
+    int tw = paint.fontMetrics().horizontalAdvance(QString("%1")
                                      .arg(m_maxFrequency > 0 ?
                                           m_maxFrequency - 1 :
                                           model->getSampleRate() / 2));
 
-    int fw = paint.fontMetrics().width(tr("43Hz"));
+    int fw = paint.fontMetrics().horizontalAdvance(tr("43Hz"));
     if (tw < fw) tw = fw;
 
     int tickw = (m_binScale == BinScale::Log ? 10 : 4);
@@ -2268,7 +2285,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
         paint.drawLine(cw + 7, h - vy, w - pkw - 1, h - vy);
 
         if (h - vy - textHeight >= -2) {
-            int tx = w - 3 - paint.fontMetrics().width(text) - max(tickw, pkw);
+            int tx = w - 3 - paint.fontMetrics().horizontalAdvance(text) - max(tickw, pkw);
             paint.drawText(tx, h - vy + toff, text);
         }
 
@@ -2303,7 +2320,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     int toff = -textHeight + paint.fontMetrics().ascent() + 2;
 
     int cw = getColourScaleWidth(paint);
-    int cbw = paint.fontMetrics().width("dB");
+    int cbw = paint.fontMetrics().horizontalAdvance("dB");
 
     int topLines = 2;
 
@@ -2322,7 +2339,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     double dBmax = AudioLevel::voltage_to_dB(max);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "paintVerticalScale: for view id " << v->getId()
+    SVDEBUG << "paintVerticalScale: for view id " << v->getId()
          << ": min = " << min << ", max = " << max
          << ", dBmin = " << dBmin << ", dBmax = " << dBmax << endl;
 #endif
@@ -2334,17 +2351,17 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
     bottom = QString("%1").arg(lrint(dBmin));
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    cerr << "adjusted dB range to min = " << dBmin << ", max = " << dBmax
+    SVDEBUG << "adjusted dB range to min = " << dBmin << ", max = " << dBmax
          << endl;
 #endif
         
-    paint.drawText((cw + 6 - paint.fontMetrics().width("dB")) / 2,
+    paint.drawText((cw + 6 - paint.fontMetrics().horizontalAdvance("dB")) / 2,
                    2 + textHeight + toff, "dB");
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(top),
                    2 + textHeight * topLines + toff + textHeight/2, top);
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(bottom),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(bottom),
                    h + toff - 3 - textHeight/2, bottom);
 
     paint.save();
@@ -2376,7 +2393,7 @@ SpectrogramLayer::paintDetailedScale(LayerGeometryProvider *v,
                      idb % 5 == 0))) {
             paint.setPen(v->getForeground());
             QString text = QString("%1").arg(idb);
-            paint.drawText(3 + cw - cbw - paint.fontMetrics().width(text),
+            paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(text),
                            y + toff + textHeight/2, text);
             paint.drawLine(5 + cw - cbw, y, 8 + cw - cbw, y);
             lasty = y;
@@ -2400,7 +2417,7 @@ SpectrogramLayer::paintDetailedScalePhase(LayerGeometryProvider *v,
 
     // Phase is not measured in dB of course, but this places the
     // scale at the same position as in the magnitude spectrogram
-    int cbw = paint.fontMetrics().width("dB");
+    int cbw = paint.fontMetrics().horizontalAdvance("dB");
 
     int topLines = 1;
 
@@ -2412,13 +2429,13 @@ SpectrogramLayer::paintDetailedScalePhase(LayerGeometryProvider *v,
     double min = -M_PI;
     double max =  M_PI;
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(top),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(top),
                    2 + textHeight * topLines + toff + textHeight/2, top);
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(middle),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(middle),
                    2 + textHeight * topLines + ch/2 + toff + textHeight/2, middle);
 
-    paint.drawText(3 + cw - cbw - paint.fontMetrics().width(bottom),
+    paint.drawText(3 + cw - cbw - paint.fontMetrics().horizontalAdvance(bottom),
                    h + toff - 3 - textHeight/2, bottom);
 
     paint.save();
@@ -2538,7 +2555,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
     double dmin = m_minFrequency, dmax = m_maxFrequency;
 //    getDisplayExtents(dmin, dmax);
 
-//    cerr << "current range " << dmin << " -> " << dmax << ", range " << dmax-dmin << ", mid " << (dmax + dmin)/2 << endl;
+//    SVDEBUG << "current range " << dmin << " -> " << dmax << ", range " << dmax-dmin << ", mid " << (dmax + dmin)/2 << endl;
     
     sv_samplerate_t sr = model->getSampleRate();
     SpectrogramRangeMapper mapper(sr, getFFTSize());
@@ -2572,7 +2589,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
         newmax = (newdist + sqrt(newdist*newdist + 4*dmin*dmax)) / 2;
         newmin = newmax - newdist;
 
-//        cerr << "newmin = " << newmin << ", newmax = " << newmax << endl;
+//        SVDEBUG << "newmin = " << newmin << ", newmax = " << newmax << endl;
 
     } else {
         double dmid = (dmax + dmin) / 2;
@@ -2657,13 +2674,15 @@ SpectrogramLayer::toXml(QTextStream &stream,
                  "colourScale=\"%3\" "
                  "colourRotation=\"%4\" "
                  "frequencyScale=\"%5\" "
-                 "binDisplay=\"%6\" ")
+                 "binDisplay=\"%6\" "
+                 "smooth=\"%7\" ")
         .arg(m_minFrequency)
         .arg(m_maxFrequency)
         .arg(convertFromColourScale(m_colourScale, m_colourScaleMultiple))
         .arg(m_colourRotation)
         .arg(int(m_binScale))
-        .arg(int(m_binDisplay));
+        .arg(int(m_binDisplay))
+        .arg(m_smooth ? "true" : "false");
 
     // New-style colour map attribute, by string id rather than by
     // number
@@ -2698,12 +2717,12 @@ SpectrogramLayer::toXml(QTextStream &stream,
     
     s += QString("normalizeVisibleArea=\"%1\" ")
         .arg(m_normalizeVisibleArea ? "true" : "false");
-    
+
     Layer::toXml(stream, indent, extraAttributes + " " + s);
 }
 
 void
-SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
+SpectrogramLayer::setProperties(const LayerAttributes &attributes)
 {
     bool ok = false;
 
@@ -2792,7 +2811,7 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         } else if (columnNormalization == "none") {
             setNormalization(ColumnNormalization::None);
         } else {
-            SVCERR << "NOTE: Unknown or unsupported columnNormalization attribute \""
+            SVDEBUG << "NOTE: Unknown or unsupported columnNormalization attribute \""
                  << columnNormalization << "\"" << endl;
         }
     }
@@ -2824,5 +2843,13 @@ SpectrogramLayer::setProperties(const QXmlAttributes &attributes)
         // gives us backward but not forward compatibility.
         setGain(m_gain / float(getFFTSize() / 2));
     }
+
+    if (attributes.contains("smooth")) {
+        bool smooth =
+            (attributes.value("smooth").trimmed() == "true");
+        setSmooth(smooth);
+    }
 }
     
+} // end namespace sv
+

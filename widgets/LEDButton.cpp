@@ -14,7 +14,7 @@
 
 /*
     This is a modified version of a source file from the KDE
-    libraries.  Copyright (c) 1998-2004 Jörg Habenicht, Richard J
+    libraries.  Copyright (c) 1998-2004 Joerg Habenicht, Richard J
     Moore, Chris Cannam and others, distributed under the GNU Lesser
     General Public License.
 
@@ -32,6 +32,8 @@
 
 #include <iostream>
 
+
+namespace sv {
 
 class LEDButton::LEDButtonPrivate
 {
@@ -85,7 +87,7 @@ LEDButton::~LEDButton()
 void
 LEDButton::mousePressEvent(QMouseEvent *e)
 {
-    cerr << "LEDButton(" << this << ")::mousePressEvent" << endl;
+    SVDEBUG << "LEDButton(" << this << ")::mousePressEvent" << endl;
 
     if (e->buttons() & Qt::LeftButton) {
         toggle();
@@ -96,7 +98,7 @@ LEDButton::mousePressEvent(QMouseEvent *e)
 }
 
 void
-LEDButton::enterEvent(QEvent *)
+LEDButton::enterEvent(QEnterEvent *)
 {
     emit mouseEntered();
 }
@@ -143,7 +145,7 @@ LEDButton::paintEvent(QPaintEvent *)
     paint.drawEllipse( 1, 1, width - 2, width - 2 );
 
     // Draw the bright light spot of the LED now, using modified "old"
-    // painter routine taken from KDEUI´s LEDButton widget:
+    // painter routine taken from KDEUI's LEDButton widget:
 
     // Setting the new width of the pen is essential to avoid "pixelized"
     // shadow like it can be observed with the old LED code
@@ -155,7 +157,7 @@ LEDButton::paintEvent(QPaintEvent *)
     light_width *= 2;
     light_width /= 3;
         
-    // Calculate the LED´s "light factor":
+    // Calculate the LED's "light factor":
     int light_quote = (130*2/(light_width?light_width:1))+100;
 
     // Now draw the bright spot on the LED:
@@ -186,7 +188,7 @@ LEDButton::paintEvent(QPaintEvent *)
     paint.setBrush(brush); // This avoids filling of the ellipse
 
     // Set the initial color value to colorGroup().light() (bright) and start
-    // drawing the shadow border at 45° (45*16 = 720).
+    // drawing the shadow border at 45 degrees (45*16 = 720).
 
     int angle = -720;
     color = palette().light().color();
@@ -288,4 +290,6 @@ LEDButton::minimumSizeHint() const
 {
     return WidgetScale::scaleQSize(QSize(17, 17));
 }
+
+} // end namespace sv
 

@@ -17,6 +17,8 @@
 
 #include <QLabel>
 
+namespace sv {
+
 class ClickableLabel : public QLabel
 {
     Q_OBJECT
@@ -35,5 +37,7 @@ protected:
         emit clicked();
     }
 };
+
+} // end namespace sv
 
 #endif

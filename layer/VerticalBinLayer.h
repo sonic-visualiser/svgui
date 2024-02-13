@@ -18,6 +18,8 @@
 
 #include "SliceableLayer.h"
 
+namespace sv {
+
 /**
  * Interface for layers in which the Y axis corresponds to bin number
  * rather than scale value. Colour3DPlotLayer and SpectrogramLayer are
@@ -58,6 +60,8 @@ public:
         return int(floor(getBinForY(v, y)));
     }
 };
+
+} // end namespace sv
 
 #endif
 

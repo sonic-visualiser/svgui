@@ -24,6 +24,8 @@
 
 //#define DEBUG_COLOUR_SELECTION 1
 
+namespace sv {
+
 SingleColourLayer::ColourRefCount 
 SingleColourLayer::m_colourRefCount;
 
@@ -291,7 +293,7 @@ SingleColourLayer::toXml(QTextStream &stream,
 }
 
 void
-SingleColourLayer::setProperties(const QXmlAttributes &attributes)
+SingleColourLayer::setProperties(const LayerAttributes &attributes)
 {
     QString colourName = attributes.value("colourName");
     QString colourSpec = attributes.value("colour");
@@ -335,3 +337,5 @@ void SingleColourLayer::unrefColor()
         m_colourRefCount[m_colour]--;
     }
 }
+} // end namespace sv
+

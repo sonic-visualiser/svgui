@@ -18,6 +18,8 @@
 #include <iostream>
 #include <QApplication>
 
+namespace sv {
+
 SelectableLabel::SelectableLabel(QWidget *p) :
     QLabel(p),
     m_selected(false)
@@ -129,7 +131,7 @@ SelectableLabel::mouseReleaseEvent(QMouseEvent *e)
 }
 
 void
-SelectableLabel::enterEvent(QEvent *)
+SelectableLabel::enterEvent(QEnterEvent *)
 {
 //    cerr << "enterEvent" << endl;
 //    QPalette palette = QApplication::palette();
@@ -147,3 +149,5 @@ SelectableLabel::leaveEvent(QEvent *)
 //    palette.setColor(QPalette::Window, Qt::gray);
 //    setPalette(palette);
 }
+} // end namespace sv
+

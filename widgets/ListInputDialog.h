@@ -25,6 +25,8 @@
 class QRadioButton;
 class QLabel;
 
+namespace sv {
+
 /**
  * Like QInputDialog::getItem(), except that it offers the items as a
  * set of radio buttons instead of in a single combo box.
@@ -54,5 +56,7 @@ protected:
     std::vector<QRadioButton *> m_radioButtons;
     QLabel *m_footnote;
 };
+
+} // end namespace sv
 
 #endif

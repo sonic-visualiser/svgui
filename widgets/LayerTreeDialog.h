@@ -18,11 +18,14 @@
 
 #include <QDialog>
 
+class QTreeView;
+class QTableView;
+
+namespace sv {
+
 class ModelMetadataModel;
 class LayerTreeModel;
 class PaneStack;
-class QTreeView;
-class QTableView;
 
 class LayerTreeDialog : public QDialog
 {
@@ -39,5 +42,7 @@ protected:
     LayerTreeModel *m_layerModel;
     QTreeView *m_layerView;
 };
+
+} // end namespace sv
 
 #endif

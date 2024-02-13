@@ -31,6 +31,8 @@
 
 #include "data/model/Model.h"
 
+namespace sv {
+
 class AudioPlaySource;
 class AudioRecordTarget;
 class Model;
@@ -398,6 +400,8 @@ protected:
     QPalette m_lightPalette;
     QPalette m_darkPalette;
 };
+
+} // end namespace sv
 
 #endif
 

@@ -22,6 +22,8 @@
 class QListView;
 class QStringListModel;
 
+namespace sv {
+
 class ActivityLog : public QDialog
 {
     Q_OBJECT
@@ -39,5 +41,7 @@ private:
     QStringListModel *m_model;
     QString m_prevName;
 };
+
+} // end namespace sv
 
 #endif

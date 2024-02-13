@@ -23,8 +23,11 @@
 
 #include "WheelCounter.h"
 
-class RangeMapper;
 class QMenu;
+
+namespace sv {
+
+class RangeMapper;
 
 class Thumbwheel : public QWidget
 {
@@ -82,7 +85,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *e) override;
     void wheelEvent(QWheelEvent *e) override;
     void paintEvent(QPaintEvent *e) override;
-    void enterEvent(QEvent *) override;
+    void enterEvent(QEnterEvent *) override;
     void leaveEvent(QEvent *) override;
 
     int m_min;
@@ -108,5 +111,7 @@ protected:
     QImage m_cache;
     WheelCounter m_wheelCounter;
 };
+
+} // end namespace sv
 
 #endif

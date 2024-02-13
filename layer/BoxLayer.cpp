@@ -41,6 +41,8 @@
 #include <iostream>
 #include <cmath>
 
+namespace sv {
+
 BoxLayer::BoxLayer() :
     SingleColourLayer(),
     m_editing(false),
@@ -604,11 +606,6 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
             (m_editing && m_editingPoint == p)) {
 
             paint.setPen(QPen(getBaseQColor(), v->scalePixelSize(2)));
-                
-            // Qt 5.13 deprecates QFontMetrics::width(), but its suggested
-            // replacement (horizontalAdvance) was only added in Qt 5.11
-            // which is too new for us
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
             if (abs(h) > 2 * fm.height()) {
             
@@ -622,13 +619,13 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
                 PaintAssistant::drawVisibleText
                     (v, paint, 
-                     x - fm.width(y0label) - gap,
+                     x - fm.horizontalAdvance(y0label) - gap,
                      y - fm.descent(), 
                      y0label, PaintAssistant::OutlinedText);
 
                 PaintAssistant::drawVisibleText
                     (v, paint, 
-                     x - fm.width(y1label) - gap,
+                     x - fm.horizontalAdvance(y1label) - gap,
                      y + h + fm.ascent(), 
                      y1label, PaintAssistant::OutlinedText);
 
@@ -642,7 +639,7 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
                 PaintAssistant::drawVisibleText
                     (v, paint, 
-                     x - fm.width(ylabel) - gap,
+                     x - fm.horizontalAdvance(ylabel) - gap,
                      y - fm.descent(), 
                      ylabel, PaintAssistant::OutlinedText);
             }
@@ -658,11 +655,11 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
                 (v, paint, x, y + fm.ascent() + gap,
                  t0label, PaintAssistant::OutlinedText);
 
-            if (w > fm.width(t0label) + fm.width(t1label) + gap * 3) {
+            if (w > fm.horizontalAdvance(t0label) + fm.horizontalAdvance(t1label) + gap * 3) {
 
                 PaintAssistant::drawVisibleText
                     (v, paint,
-                     x + w - fm.width(t1label),
+                     x + w - fm.horizontalAdvance(t1label),
                      y + fm.ascent() + gap,
                      t1label, PaintAssistant::OutlinedText);
 
@@ -670,7 +667,7 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
                 PaintAssistant::drawVisibleText
                     (v, paint,
-                     x + w - fm.width(t1label),
+                     x + w - fm.horizontalAdvance(t1label),
                      y + fm.ascent() + fm.height() + gap,
                      t1label, PaintAssistant::OutlinedText);
             }                
@@ -695,7 +692,7 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int y = getYForValue(v, p.getValue());
 
-        int labelWidth = fm.width(label);
+        int labelWidth = fm.horizontalAdvance(label);
 
         int gap = v->scalePixelSize(2);
 
@@ -768,11 +765,11 @@ BoxLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
-    sv_frame_t frame = v->getFrameForX(e->x());
+    sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->y());
+    double value = getValueForY(v, e->position().y());
 
     m_editingPoint = Event(frame, float(value), 0, "");
     m_originalPoint = m_editingPoint;
@@ -791,7 +788,7 @@ BoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
-    sv_frame_t dragFrame = v->getFrameForX(e->x());
+    sv_frame_t dragFrame = v->getFrameForX(e->position().x());
     if (dragFrame < 0) dragFrame = 0;
     dragFrame = dragFrame / model->getResolution() * model->getResolution();
 
@@ -804,7 +801,7 @@ BoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
         eventDuration = model->getResolution();
     }
 
-    double dragValue = getValueForY(v, e->y());
+    double dragValue = getValueForY(v, e->position().y());
 
     double eventValue = m_originalPoint.getValue();
     double eventFreqDiff = dragValue - eventValue;
@@ -838,7 +835,7 @@ BoxLayer::eraseStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
-    if (!getLocalPoint(v, e->x(), e->y(), m_editingPoint)) return;
+    if (!getLocalPoint(v, e->position().x(), e->position().y(), m_editingPoint)) return;
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -862,7 +859,7 @@ BoxLayer::eraseEnd(LayerGeometryProvider *v, QMouseEvent *e)
     m_editing = false;
 
     Event p(0);
-    if (!getLocalPoint(v, e->x(), e->y(), p)) return;
+    if (!getLocalPoint(v, e->position().x(), e->position().y(), p)) return;
     if (p.getFrame() != m_editingPoint.getFrame() ||
         p.getValue() != m_editingPoint.getValue()) return;
 
@@ -882,7 +879,7 @@ BoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
-    if (!getLocalPoint(v, e->x(), e->y(), m_editingPoint)) {
+    if (!getLocalPoint(v, e->position().x(), e->position().y(), m_editingPoint)) {
         return;
     }
 
@@ -897,8 +894,8 @@ BoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     }
 
     m_editing = true;
-    m_dragStartX = e->x();
-    m_dragStartY = e->y();
+    m_dragStartX = e->position().x();
+    m_dragStartY = e->position().y();
 }
 
 void
@@ -907,8 +904,8 @@ BoxLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
-    int xdist = e->x() - m_dragStartX;
-    int ydist = e->y() - m_dragStartY;
+    int xdist = e->position().x() - m_dragStartX;
+    int ydist = e->position().y() - m_dragStartY;
     int newx = m_dragPointX + xdist;
     int newy = m_dragPointY + ydist;
 
@@ -966,7 +963,9 @@ BoxLayer::editOpen(LayerGeometryProvider *v, QMouseEvent *e)
     if (!model) return false;
 
     Event region(0);
-    if (!getLocalPoint(v, e->x(), e->y(), region)) return false;
+    if (!getLocalPoint(v, e->position().x(), e->position().y(), region)) {
+        return false;
+    }
 
     ItemEditDialog::LabelOptions labelOptions;
     labelOptions.valueLabel = tr("Minimum Value");
@@ -1193,7 +1192,7 @@ BoxLayer::toXml(QTextStream &stream,
 }
 
 void
-BoxLayer::setProperties(const QXmlAttributes &attributes)
+BoxLayer::setProperties(const LayerAttributes &attributes)
 {
     SingleColourLayer::setProperties(attributes);
 
@@ -1203,4 +1202,6 @@ BoxLayer::setProperties(const QXmlAttributes &attributes)
     if (ok) setVerticalScale(scale);
 }
 
+
+} // end namespace sv
 
