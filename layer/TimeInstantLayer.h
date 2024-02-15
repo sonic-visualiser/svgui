@@ -114,6 +114,12 @@ public:
 
     int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const override { return 0; }
 
+    void overrideHighlightForPointsAt(sv_frame_t);
+    void removeOverrideHighlight();
+
+signals:
+    void frameIlluminated(sv_frame_t);
+
 protected:
     EventVector getLocalPoints(LayerGeometryProvider *v, int) const;
 
@@ -127,6 +133,8 @@ protected:
     ChangeEventsCommand *m_editingCommand;
     PlotStyle m_plotStyle;
     bool m_propertiesExplicitlySet;
+    bool m_overrideHighlight;
+    sv_frame_t m_highlightOverrideFrame;
 
     void finish(ChangeEventsCommand *command) {
         Command *c = command->finish();

@@ -47,7 +47,9 @@ TimeInstantLayer::TimeInstantLayer() :
     m_editingPoint(0, tr("New Point")),
     m_editingCommand(nullptr),
     m_plotStyle(PlotInstants),
-    m_propertiesExplicitlySet(false)
+    m_propertiesExplicitlySet(false),
+    m_overrideHighlight(false),
+    m_highlightOverrideFrame(0)
 {
 }
 
@@ -159,6 +161,21 @@ TimeInstantLayer::setPlotStyle(PlotStyle style)
 {
     if (m_plotStyle == style) return;
     m_plotStyle = style;
+    emit layerParametersChanged();
+}
+
+void
+TimeInstantLayer::overrideHighlightForPointsAt(sv_frame_t frame)
+{
+    m_highlightOverrideFrame = frame;
+    m_overrideHighlight = true;
+    emit layerParametersChanged();
+}
+
+void
+TimeInstantLayer::removeOverrideHighlight()
+{
+    m_overrideHighlight = false;
     emit layerParametersChanged();
 }
 
@@ -390,7 +407,14 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     QPoint localPos;
     sv_frame_t illuminateFrame = -1;
 
-    if (v->shouldIlluminateLocalFeatures(this, localPos)) {
+    if (m_overrideHighlight) {
+
+        illuminateFrame = m_highlightOverrideFrame;
+#ifdef DEBUG_TIME_INSTANT_LAYER
+        cerr << "TimeInstantLayer: using highlight override frame " << illuminateFrame << endl;
+#endif
+
+    } else if (v->shouldIlluminateLocalFeatures(this, localPos)) {
         EventVector localPoints = getLocalPoints(v, localPos.x());
         if (!localPoints.empty()) {
             illuminateFrame = localPoints.begin()->getFrame();
@@ -404,6 +428,8 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     paint.setClipRect(rect);
     paint.setClipping(clippingRequired);
     
+    bool illuminated = false;
+    
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
@@ -416,7 +442,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 #ifdef DEBUG_TIME_INSTANT_LAYER
         SVCERR << "point frame = " << p.getFrame() << " -> x = " << x << endl;
 #endif
-        
+
         if (x == prevX && m_plotStyle == PlotInstants &&
             p.getFrame() != illuminateFrame) {
 #ifdef DEBUG_TIME_INSTANT_LAYER
@@ -440,6 +466,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
                 
         if (p.getFrame() == illuminateFrame) {
             paint.setPen(getForegroundQColor(v->getView()));
+            illuminated = true;
         } else {
             paint.setPen(brushColour);
         }
@@ -519,6 +546,11 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         }
 
         prevX = x;
+    }
+    
+    if (illuminated) {
+        // emit (but with const cast)
+        const_cast<TimeInstantLayer *>(this)->frameIlluminated(illuminateFrame);
     }
 }
 
