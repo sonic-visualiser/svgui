@@ -72,8 +72,6 @@ public:
      * ids, but ViewProxy objects share the id of their View.
      */
     int getId() const override { return m_id; }
-
-
     
     /**
      * Retrieve the first visible sample frame on the widget.
@@ -136,26 +134,23 @@ public:
      * scaling case.
      */
     int getViewXForX(int x) const override { return x; }
-
+    
     /**
-     * Return the pixel y-coordinate corresponding to a given
-     * frequency, if the frequency range is as specified.  This does
-     * not imply any policy about layer frequency ranges, but it might
-     * be useful for layers to match theirs up if desired.
-     *
-     * Not thread-safe in logarithmic mode.  Call only from GUI thread.
+     * Return the (maybe fractional) pixel y-coordinate corresponding
+     * to a given frequency, if the frequency range is as specified.
+     * This does not imply any policy about layer frequency ranges,
+     * but it might be useful for layers to match theirs up if
+     * desired.
      */
     double getYForFrequency(double frequency, double minFreq, double maxFreq, 
-                           bool logarithmic) const override;
+                            FrequencyMapping mapping) const override;
 
     /**
-     * Return the closest frequency to the given pixel y-coordinate,
-     * if the frequency range is as specified.
-     *
-     * Not thread-safe in logarithmic mode.  Call only from GUI thread.
+     * Return the closest frequency to the given (maybe fractional)
+     * pixel y-coordinate, if the frequency range is as specified.
      */
     double getFrequencyForY(double y, double minFreq, double maxFreq,
-                            bool logarithmic) const override;
+                            FrequencyMapping mapping) const override;
 
     /**
      * Return the zoom level, i.e. the number of frames per pixel or

@@ -18,10 +18,11 @@
 
 #include <QRect>
 
+#include "LayerGeometryProvider.h"
+
 class QPainter;
 namespace sv {
 
-class LayerGeometryProvider;
 class HorizontalScaleProvider;
 
 class PianoScale
@@ -29,7 +30,7 @@ class PianoScale
 public:
     void paintPianoVertical
     (LayerGeometryProvider *v, QPainter &paint, QRect rect,
-     double minf, double maxf);
+     double minf, double maxf, FrequencyMapping mapping); // you normally want Log
     
     void paintPianoHorizontal
     (LayerGeometryProvider *v, const HorizontalScaleProvider *p,

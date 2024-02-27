@@ -34,7 +34,8 @@ PianoScale::paintPianoVertical(LayerGeometryProvider *v,
                                QPainter &paint,
                                QRect r,
                                double minf,
-                               double maxf)
+                               double maxf,
+                               FrequencyMapping mapping)
 {
     int x0 = r.x(), y0 = r.y(), x1 = r.x() + r.width(), y1 = r.y() + r.height();
 
@@ -46,7 +47,7 @@ PianoScale::paintPianoVertical(LayerGeometryProvider *v,
     for (int i = 0; i < 128; ++i) {
 
         double f = Pitch::getFrequencyForPitch(i);
-        int y = int(lrint(v->getYForFrequency(f, minf, maxf, true)));
+        int y = int(lrint(v->getYForFrequency(f, minf, maxf, mapping)));
 
         if (y < y0 - 2) break;
         if (y > y1 + 2) {

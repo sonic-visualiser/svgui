@@ -674,66 +674,79 @@ double
 View::getYForFrequency(double frequency,
                        double minf,
                        double maxf, 
-                       bool logarithmic) const
+                       FrequencyMapping mapping) const
 {
     Profiler profiler("View::getYForFrequency");
 
     int h = height();
 
-    if (logarithmic) {
+    switch (mapping) {
 
-        static double lastminf = 0.0, lastmaxf = 0.0;
-        static double logminf = 0.0, logmaxf = 0.0;
-
-        if (lastminf != minf) {
-            lastminf = (minf == 0.0 ? 1.0 : minf);
-            logminf = log10(minf);
-        }
-        if (lastmaxf != maxf) {
-            lastmaxf = (maxf < lastminf ? lastminf : maxf);
-            logmaxf = log10(maxf);
-        }
-
-        if (logminf == logmaxf) return 0;
-        return h - (h * (log10(frequency) - logminf)) / (logmaxf - logminf);
-
-    } else {
-        
+    case FrequencyMapping::Linear:
         if (minf == maxf) return 0;
         return h - (h * (frequency - minf)) / (maxf - minf);
+
+    case FrequencyMapping::Log:
+    {
+        double logminf = log10(minf);
+        double logmaxf = log10(maxf);
+        if (logminf == logmaxf) return 0;
+        return h - (h * (log10(frequency) - logminf)) / (logmaxf - logminf);
     }
+
+    case FrequencyMapping::Mel:
+    {
+        auto formula = Pitch::MelFormula::OShaughnessy;
+        double melminf = Pitch::getMelForFrequency(minf, formula);
+        double melmaxf = Pitch::getMelForFrequency(maxf, formula);
+        if (melminf == melmaxf) return 0;
+        double y = h - (h * (Pitch::getMelForFrequency(frequency, formula) -
+                             melminf) /
+                        (melmaxf - melminf));
+        SVDEBUG << "mel: frequency " << frequency << " -> " << y << endl;
+        return y;
+    }
+    }
+
+    return 0;
 }
 
 double
 View::getFrequencyForY(double y,
                        double minf,
                        double maxf,
-                       bool logarithmic) const
+                       FrequencyMapping mapping) const
 {
     double h = height();
 
-    if (logarithmic) {
+    switch (mapping) {
 
-        static double lastminf = 0.0, lastmaxf = 0.0;
-        static double logminf = 0.0, logmaxf = 0.0;
-
-        if (lastminf != minf) {
-            lastminf = (minf == 0.0 ? 1.0 : minf);
-            logminf = log10(minf);
-        }
-        if (lastmaxf != maxf) {
-            lastmaxf = (maxf < lastminf ? lastminf : maxf);
-            logmaxf = log10(maxf);
-        }
-
-        if (logminf == logmaxf) return 0;
-        return pow(10.0, logminf + ((logmaxf - logminf) * (h - y)) / h);
-
-    } else {
-
+    case FrequencyMapping::Linear:
         if (minf == maxf) return 0;
         return minf + ((h - y) * (maxf - minf)) / h;
+
+    case FrequencyMapping::Log:
+    {
+        double logminf = log10(minf);
+        double logmaxf = log10(maxf);
+        if (logminf == logmaxf) return 0;
+        return pow(10.0, logminf + ((logmaxf - logminf) * (h - y)) / h);
     }
+    
+    case FrequencyMapping::Mel:
+    {
+        auto formula = Pitch::MelFormula::OShaughnessy;
+        double melminf = Pitch::getMelForFrequency(minf, formula);
+        double melmaxf = Pitch::getMelForFrequency(maxf, formula);
+        if (melminf == melmaxf) return 0;
+        double frequency = Pitch::getFrequencyForMel
+            (melminf + ((melmaxf - melminf) * (h - y)) / h, formula);
+        SVDEBUG << "mel: y " << y << " -> frequency " << frequency << endl;
+        return frequency;
+    }
+    }
+
+    return 0;
 }
 
 ZoomLevel

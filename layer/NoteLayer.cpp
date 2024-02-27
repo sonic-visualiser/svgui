@@ -855,7 +855,8 @@ NoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, Q
         PianoScale().paintPianoVertical
             (v, paint, QRect(w - 10, 0, 10, h), 
              LogRange::unmap(min), 
-             LogRange::unmap(max));
+             LogRange::unmap(max),
+             FrequencyMapping::Log);
         paint.drawLine(w, 0, w, h);
     }
         

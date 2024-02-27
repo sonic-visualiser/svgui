@@ -1148,7 +1148,10 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         Colour3DPlotRenderer::Parameters params;
         params.colourScale = ColourScale(cparams);
         params.normalization = m_normalization;
-        params.binScale = m_binScale;
+        params.frequencyMapping = FrequencyMapping::Linear;
+        if (m_binScale == BinScale::Log) {
+            params.frequencyMapping = FrequencyMapping::Log;
+        }
         params.alwaysOpaque = m_opaque;
         params.invertVertical = m_invertVertical;
         params.interpolate = m_smooth;

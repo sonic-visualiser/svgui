@@ -43,7 +43,7 @@ enum class BinDisplay {
     PeakFrequencies
 };
 
-enum class BinScale {
+enum class BinScale { // Not actually used by this class, but by related ones
     Linear,
     Log
 };
@@ -66,7 +66,7 @@ public:
             colourScale(ColourScale::Parameters()),
             normalization(ColumnNormalization::None),
             binDisplay(BinDisplay::AllBins),
-            binScale(BinScale::Linear),
+            frequencyMapping(FrequencyMapping::Linear),
             alwaysOpaque(false),
             interpolate(false),
             invertVertical(false),
@@ -85,8 +85,12 @@ public:
         /** Selection of bins to display. */
         BinDisplay binDisplay;
 
-        /** Scale for vertical bin spacing (linear or logarithmic). */
-        BinScale binScale;
+        /** Adjustment for vertical bin spacing (linear, logarithmic,
+         *  mel). Only used for peak-frequency rendering, which
+         *  queries frequencies against the LayerGeometryProvider
+         *  directly. Other modes perform bin mapping using
+         *  verticalBinLayer->getBinForY. */
+        FrequencyMapping frequencyMapping;
 
         /** Whether cells should always be opaque. If false, then
          *  large cells (when zoomed in a long way) will be rendered

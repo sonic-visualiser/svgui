@@ -78,7 +78,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_colourScaleMultiple(1.0),
     m_colourMap(0),
     m_colourInverted(false),
-    m_binScale(BinScale::Linear),
+    m_frequencyMapping(FrequencyMapping::Linear),
     m_binDisplay(BinDisplay::AllBins),
     m_normalization(ColumnNormalization::None),
     m_normalizeVisibleArea(false),
@@ -103,7 +103,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
         setMinFrequency(40);
         setColourScale(ColourScaleType::Linear);
         setColourMap(ColourMapper::Sunset);
-        setBinScale(BinScale::Log);
+        setFrequencyMapping(FrequencyMapping::Log);
         colourConfigName = "spectrogram-melodic-colour";
         colourConfigDefault = int(ColourMapper::Sunset);
 //        setGain(20);
@@ -113,7 +113,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
         m_initialMaxFrequency = 2000;
         setMaxFrequency(2000);
         setMinFrequency(40);
-        setBinScale(BinScale::Log);
+        setFrequencyMapping(FrequencyMapping::Log);
         setColourScale(ColourScaleType::Linear);
         setBinDisplay(BinDisplay::PeakFrequencies);
         setNormalization(ColumnNormalization::Max1);
@@ -496,9 +496,9 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
     } else if (name == "Frequency Scale") {
 
         *min = 0;
-        *max = 1;
-        *deflt = int(BinScale::Linear);
-        val = (int)m_binScale;
+        *max = 2;
+        *deflt = int(FrequencyMapping::Linear);
+        val = (int)m_frequencyMapping;
 
     } else if (name == "Bin Display") {
 
@@ -613,7 +613,8 @@ SpectrogramLayer::getPropertyValueLabel(const PropertyName &name,
         switch (value) {
         default:
         case 0: return tr("Linear");
-        case 1: return tr("Log");
+        case 1: return tr("Mel");
+        case 2: return tr("Log");
         }
     }
     if (name == "Bin Display") {
@@ -728,8 +729,9 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
     } else if (name == "Frequency Scale") {
         switch (value) {
         default:
-        case 0: setBinScale(BinScale::Linear); break;
-        case 1: setBinScale(BinScale::Log); break;
+        case 0: setFrequencyMapping(FrequencyMapping::Linear); break;
+        case 1: setFrequencyMapping(FrequencyMapping::Mel); break;
+        case 2: setFrequencyMapping(FrequencyMapping::Log); break;
         }
     } else if (name == "Bin Display") {
         switch (value) {
@@ -1048,18 +1050,28 @@ SpectrogramLayer::getColourMap() const
 void
 SpectrogramLayer::setBinScale(BinScale binScale)
 {
-    if (m_binScale == binScale) return;
+    if (binScale == BinScale::Log) {
+        setFrequencyMapping(FrequencyMapping::Log);
+    } else {
+        setFrequencyMapping(FrequencyMapping::Linear);
+    }
+}
+
+void
+SpectrogramLayer::setFrequencyMapping(FrequencyMapping mapping)
+{
+    if (m_frequencyMapping == mapping) return;
 
     invalidateRenderers();
-    m_binScale = binScale;
+    m_frequencyMapping = mapping;
 
     emit layerParametersChanged();
 }
 
-BinScale
-SpectrogramLayer::getBinScale() const
+FrequencyMapping
+SpectrogramLayer::getFrequencyMapping() const
 {
-    return m_binScale;
+    return m_frequencyMapping;
 }
 
 void
@@ -1245,12 +1257,11 @@ SpectrogramLayer::getYForBin(const LayerGeometryProvider *v, double bin) const
     
     double minf = getEffectiveMinFrequency();
     double maxf = getEffectiveMaxFrequency();
-    bool logarithmic = (m_binScale == BinScale::Log);
     sv_samplerate_t sr = model->getSampleRate();
 
     double freq = (bin * sr) / getFFTSize();
     
-    double y = v->getYForFrequency(freq, minf, maxf, logarithmic);
+    double y = v->getYForFrequency(freq, minf, maxf, m_frequencyMapping);
     
     return y;
 }
@@ -1265,9 +1276,7 @@ SpectrogramLayer::getBinForY(const LayerGeometryProvider *v, double y) const
     double minf = getEffectiveMinFrequency();
     double maxf = getEffectiveMaxFrequency();
 
-    bool logarithmic = (m_binScale == BinScale::Log);
-
-    double freq = v->getFrequencyForY(y, minf, maxf, logarithmic);
+    double freq = v->getFrequencyForY(y, minf, maxf, m_frequencyMapping);
 
     // Now map on to ("proportion of") actual bins
     double bin = (freq * getFFTSize()) / sr;
@@ -1650,7 +1659,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         params.colourScale = ColourScale(cparams);
         params.normalization = m_normalization;
         params.binDisplay = m_binDisplay;
-        params.binScale = m_binScale;
+        params.frequencyMapping = m_frequencyMapping;
         params.alwaysOpaque = true;
         params.invertVertical = false;
         params.scaleFactor = 1.0;
@@ -1804,7 +1813,7 @@ SpectrogramLayer::getYForFrequency(const LayerGeometryProvider *v, double freque
     return v->getYForFrequency(frequency,
                                getEffectiveMinFrequency(),
                                getEffectiveMaxFrequency(),
-                               m_binScale == BinScale::Log);
+                               m_frequencyMapping);
 }
 
 double
@@ -1813,7 +1822,7 @@ SpectrogramLayer::getFrequencyForY(const LayerGeometryProvider *v, int y) const
     return v->getFrequencyForY(y,
                                getEffectiveMinFrequency(),
                                getEffectiveMaxFrequency(),
-                               m_binScale == BinScale::Log);
+                               m_frequencyMapping);
 }
 
 int
@@ -1846,8 +1855,9 @@ SpectrogramLayer::getValueExtents(double &min, double &max,
     sv_samplerate_t sr = model->getSampleRate();
     min = double(sr) / getFFTSize();
     max = double(sr) / 2;
-    
-    logarithmic = (m_binScale == BinScale::Log);
+
+    //!!! oops, we have no good return for mel scale
+    logarithmic = (m_frequencyMapping == FrequencyMapping::Log);
     unit = "Hz";
     return true;
 }
@@ -2210,7 +2220,7 @@ SpectrogramLayer::getVerticalScaleWidth(LayerGeometryProvider *, bool detailed, 
     int fw = paint.fontMetrics().horizontalAdvance(tr("43Hz"));
     if (tw < fw) tw = fw;
 
-    int tickw = (m_binScale == BinScale::Log ? 10 : 4);
+    int tickw = (m_frequencyMapping != FrequencyMapping::Linear ? 10 : 4);
     
     return cw + tickw + tw + 13;
 }
@@ -2236,8 +2246,8 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
     }
     m_haveDetailedScale = detailed;
 
-    int tickw = (m_binScale == BinScale::Log ? 10 : 4);
-    int pkw = (m_binScale == BinScale::Log ? 10 : 0);
+    int tickw = (m_frequencyMapping != FrequencyMapping::Linear ? 10 : 4);
+    int pkw = (m_frequencyMapping != FrequencyMapping::Linear ? 10 : 0);
 
     int bins = getFFTSize() / 2;
     sv_samplerate_t sr = model->getSampleRate();
@@ -2274,7 +2284,7 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
         int freq = int((sr * bin) / getFFTSize());
 
         if (py >= 0 && (vy - py) < textHeight - 1) {
-            if (m_binScale == BinScale::Linear) {
+            if (m_frequencyMapping == FrequencyMapping::Linear) {
                 paint.drawLine(w - tickw, h - vy, w, h - vy);
             }
             continue;
@@ -2292,13 +2302,14 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
         py = vy;
     }
 
-    if (m_binScale == BinScale::Log) {
+    if (m_frequencyMapping != FrequencyMapping::Linear) {
 
         // piano keyboard
 
         PianoScale().paintPianoVertical
             (v, paint, QRect(w - pkw - 1, 0, pkw, h),
-             getEffectiveMinFrequency(), getEffectiveMaxFrequency());
+             getEffectiveMinFrequency(), getEffectiveMaxFrequency(),
+             m_frequencyMapping);
     }
 
     m_haveDetailedScale = detailed;
@@ -2563,7 +2574,7 @@ SpectrogramLayer::setVerticalZoomStep(int step)
 
     double newmin, newmax;
 
-    if (m_binScale == BinScale::Log) {
+    if (m_frequencyMapping != FrequencyMapping::Linear) {
 
         // need to pick newmin and newmax such that
         //
@@ -2673,14 +2684,16 @@ SpectrogramLayer::toXml(QTextStream &stream,
                  "maxFrequency=\"%2\" "
                  "colourScale=\"%3\" "
                  "colourRotation=\"%4\" "
-                 "frequencyScale=\"%5\" "
-                 "binDisplay=\"%6\" "
-                 "smooth=\"%7\" ")
+                 "frequencyScale=\"%5\" " // Compatibility property only
+                 "frequencyMapping=\"%6\" " // Replacement for the above
+                 "binDisplay=\"%7\" "
+                 "smooth=\"%8\" ")
         .arg(m_minFrequency)
         .arg(m_maxFrequency)
         .arg(convertFromColourScale(m_colourScale, m_colourScaleMultiple))
         .arg(m_colourRotation)
-        .arg(int(m_binScale))
+        .arg(m_frequencyMapping == FrequencyMapping::Linear ? 0 : 1)
+        .arg(int(m_frequencyMapping))
         .arg(int(m_binDisplay))
         .arg(m_smooth ? "true" : "false");
 
@@ -2788,9 +2801,15 @@ SpectrogramLayer::setProperties(const LayerAttributes &attributes)
     int colourRotation = attributes.value("colourRotation").toInt(&ok);
     if (ok) setColourRotation(colourRotation);
 
-    BinScale binScale = (BinScale)
-        attributes.value("frequencyScale").toInt(&ok);
-    if (ok) setBinScale(binScale);
+    if (attributes.contains("frequencyMapping")) {
+        FrequencyMapping frequencyMapping = (FrequencyMapping)
+            attributes.value("frequencyMapping").toInt(&ok);
+        if (ok) setFrequencyMapping(frequencyMapping);
+    } else {
+        int binScale = attributes.value("frequencyScale").toInt(&ok);
+        if (ok) setFrequencyMapping(binScale == 0 ? FrequencyMapping::Linear
+                                    : FrequencyMapping::Log);
+    }
 
     BinDisplay binDisplay = (BinDisplay)
         attributes.value("binDisplay").toInt(&ok);

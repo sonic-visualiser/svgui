@@ -28,6 +28,12 @@ class ViewManager;
 class View;
 class Layer;
 
+enum class FrequencyMapping {
+    Linear,
+    Mel,
+    Log
+};
+
 /**
  * Interface for classes that provide geometry information (such as
  * size, start frame, and a large number of other properties) about
@@ -128,22 +134,18 @@ public:
      * This does not imply any policy about layer frequency ranges,
      * but it might be useful for layers to match theirs up if
      * desired.
-     *
-     * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
     virtual double getYForFrequency(double frequency,
                                     double minFreq, double maxFreq, 
-                                    bool logarithmic) const = 0;
+                                    FrequencyMapping mapping) const = 0;
 
     /**
      * Return the closest frequency to the given (maybe fractional)
      * pixel y-coordinate, if the frequency range is as specified.
-     *
-     * Not thread-safe in logarithmic mode.  Call only from GUI thread.
      */
     virtual double getFrequencyForY(double y,
                                     double minFreq, double maxFreq,
-                                    bool logarithmic) const = 0;
+                                    FrequencyMapping mapping) const = 0;
 
     /**
      * Return a y-coordinate at which text labels for individual items

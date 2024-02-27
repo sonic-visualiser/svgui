@@ -179,10 +179,17 @@ public:
     double getColourScaleMultiple() const;
     
     /**
-     * Specify the scale for the y axis.
+     * Specify the scale for the y axis. This function can be used to
+     * choose log or linear only and is here for backward
+     * compatibility. Use setFrequencyMapping in new code.
      */
     void setBinScale(BinScale);
-    BinScale getBinScale() const;
+
+    /**
+     * Specify the scale mapping for the y axis.
+     */
+    void setFrequencyMapping(FrequencyMapping);
+    FrequencyMapping getFrequencyMapping() const;
 
     /**
      * Specify the processing of frequency bins for the y axis.
@@ -292,7 +299,7 @@ protected:
     int                 m_colourMap;
     bool                m_colourInverted;
     mutable QColor      m_crosshairColour;
-    BinScale            m_binScale;
+    FrequencyMapping    m_frequencyMapping;
     BinDisplay          m_binDisplay;
     ColumnNormalization m_normalization; // of individual columns
     bool                m_normalizeVisibleArea;

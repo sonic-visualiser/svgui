@@ -90,15 +90,15 @@ public:
         return alignToReference(m_view->getModelsEndFrame());
     }
     double getYForFrequency(double frequency,
-                                    double minFreq, double maxFreq, 
-                                    bool logarithmic) const override {
+                            double minFreq, double maxFreq, 
+                            FrequencyMapping mapping) const override {
         return m_scaleFactor *
-            m_view->getYForFrequency(frequency, minFreq, maxFreq, logarithmic);
+            m_view->getYForFrequency(frequency, minFreq, maxFreq, mapping);
     }
     double getFrequencyForY(double y, double minFreq, double maxFreq,
-                                    bool logarithmic) const override {
+                            FrequencyMapping mapping) const override {
         return m_view->getFrequencyForY
-            (y / m_scaleFactor, minFreq, maxFreq, logarithmic);
+            (y / m_scaleFactor, minFreq, maxFreq, mapping);
     }
     int getTextLabelYCoord(const Layer *layer, QPainter &paint) const override {
         return m_scaleFactor * m_view->getTextLabelYCoord(layer, paint);

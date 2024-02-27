@@ -1156,7 +1156,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
     SVDEBUG << "render " << m_sources.source
             << ": renderDrawBuffer: normalization = " << int(m_params.normalization)
             << ", binDisplay = " << int(m_params.binDisplay)
-            << ", binScale = " << int(m_params.binScale)
+            << ", frequencyMapping = " << int(m_params.frequencyMapping)
             << ", alwaysOpaque = " << m_params.alwaysOpaque
             << ", interpolate = " << m_params.interpolate << endl;
     SVDEBUG << "render " << m_sources.source
@@ -1409,8 +1409,6 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
     QRgb *target = reinterpret_cast<QRgb *>(m_drawBuffer.bits());
     int targetWidth = m_drawBuffer.width();
     
-    bool logarithmic = (m_params.binScale == BinScale::Log);
-
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
             << ": start = " << start << ", finish = " << finish
@@ -1479,7 +1477,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
                 double value = pixelPeakColumn[bin - minbin];
             
                 double y = v->getYForFrequency
-                    (freq, minFreq, maxFreq, logarithmic);
+                    (freq, minFreq, maxFreq, m_params.frequencyMapping);
             
                 int iy = int(y + 0.5);
                 if (iy < 0 || iy >= h) continue;
