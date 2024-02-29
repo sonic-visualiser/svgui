@@ -302,12 +302,12 @@ BoxLayer::getLocalPoint(LayerGeometryProvider *v, int x, int y,
 }
 
 QString
-BoxLayer::getLabelPreceding(sv_frame_t frame) const
+BoxLayer::getLabelAtOrPreceding(sv_frame_t frame) const
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return "";
     EventVector points = model->getEventsStartingWithin
-        (model->getStartFrame(), frame - model->getStartFrame());
+        (model->getStartFrame(), frame - model->getStartFrame() + 1);
     if (!points.empty()) {
         for (auto i = points.rbegin(); i != points.rend(); ++i) {
             if (i->getLabel() != QString()) {

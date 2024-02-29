@@ -242,14 +242,14 @@ TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 }
 
 QString
-TimeInstantLayer::getLabelPreceding(sv_frame_t frame) const
+TimeInstantLayer::getLabelAtOrPreceding(sv_frame_t frame) const
 {
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model || !model->hasTextLabels()) return "";
 
     Event e;
     if (model->getNearestEventMatching
-        (frame,
+        (frame + 1, // Backward search does not include the given frame
          [](Event e) { return e.hasLabel() && e.getLabel() != ""; },
          EventSeries::Backward,
          e)) {
