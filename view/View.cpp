@@ -2264,12 +2264,6 @@ View::setPaintFont(QPainter &paint)
     paint.setFont(font);
 }
 
-QRect
-View::getPaintRect() const
-{
-    return rect();
-}
-
 void
 View::paintEvent(QPaintEvent *e)
 {

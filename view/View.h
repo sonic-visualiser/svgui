@@ -385,11 +385,11 @@ public:
      * of the view (if 1x display scaling is in effect) or of a larger
      * cached pixmap (if greater display scaling is in effect).
      */
-    QRect getPaintRect() const override;
+    QRect getPaintRect() const override { return rect(); }
 
-    QSize getPaintSize() const override { return getPaintRect().size(); }
-    int getPaintWidth() const override { return getPaintRect().width(); }
-    int getPaintHeight() const override { return getPaintRect().height(); }
+    QSize getPaintSize() const override { return size(); }
+    int getPaintWidth() const override { return width(); }
+    int getPaintHeight() const override { return height(); }
 
     double scaleSize(double size) const override;
     int scalePixelSize(int size) const override;

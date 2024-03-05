@@ -127,13 +127,15 @@ public:
                      r.height() * m_scaleFactor);
     }
     QSize getPaintSize() const override {
-        return getPaintRect().size();
+        QSize s = m_view->getPaintSize();
+        return QSize(s.width() * m_scaleFactor,
+                     s.height() * m_scaleFactor);
     }
-    int getPaintWidth() const override { 
-        return getPaintRect().width();
+    int getPaintWidth() const override {
+        return m_view->getPaintWidth() * m_scaleFactor;
     }
     int getPaintHeight() const override { 
-        return getPaintRect().height();
+        return m_view->getPaintHeight() * m_scaleFactor;
     }
     bool hasLightBackground() const override {
         return m_view->hasLightBackground();
