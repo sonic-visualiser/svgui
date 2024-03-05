@@ -45,7 +45,7 @@ public:
     void paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, QRect rect) const override;
 
     QString getFeatureDescription(LayerGeometryProvider *v, QPoint &) const override;
-    QString getLabelPreceding(sv_frame_t) const override;
+    QString getLabelAtOrPreceding(sv_frame_t) const override;
 
     bool snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
                             int &resolution,

@@ -199,7 +199,7 @@ public:
         return "";
     }
 
-    virtual QString getLabelPreceding(sv_frame_t /* frame */) const {
+    virtual QString getLabelAtOrPreceding(sv_frame_t /* frame */) const {
         return "";
     }
 

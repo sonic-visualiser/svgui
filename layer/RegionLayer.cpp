@@ -382,12 +382,12 @@ RegionLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &point
 }
 
 QString
-RegionLayer::getLabelPreceding(sv_frame_t frame) const
+RegionLayer::getLabelAtOrPreceding(sv_frame_t frame) const
 {
     auto model = ModelById::getAs<RegionModel>(m_model);
     if (!model) return "";
     EventVector points = model->getEventsStartingWithin
-        (model->getStartFrame(), frame - model->getStartFrame());
+        (model->getStartFrame(), frame - model->getStartFrame() + 1);
     if (!points.empty()) {
         for (auto i = points.rbegin(); i != points.rend(); ++i) {
             if (i->getLabel() != QString()) {

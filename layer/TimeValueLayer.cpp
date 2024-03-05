@@ -671,14 +671,14 @@ TimeValueLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 }
 
 QString
-TimeValueLayer::getLabelPreceding(sv_frame_t frame) const
+TimeValueLayer::getLabelAtOrPreceding(sv_frame_t frame) const
 {
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model || !model->hasTextLabels()) return "";
 
     Event e;
     if (model->getNearestEventMatching
-        (frame,
+        (frame + 1, // Backward search does not include the given frame
          [](Event e) { return e.hasLabel() && e.getLabel() != ""; },
          EventSeries::Backward,
          e)) {
