@@ -159,10 +159,8 @@ public:
     
     void setVerticalRangeToNoteRange(LayerGeometryProvider *v);
 
-    /// VerticalScaleLayer methods
-    int getYForValue(LayerGeometryProvider *v, double value) const override;
-    double getValueForY(LayerGeometryProvider *v, int y) const override;
-    QString getScaleUnits() const override;
+    /// VerticalScaleLayer method
+    CoordinateScale getYValueScale() const override;
 
 signals:
     void reAnalyseRegion(sv_frame_t, sv_frame_t, float, float);

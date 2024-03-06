@@ -16,6 +16,8 @@
 #ifndef VERTICAL_SCALE_LAYER_H
 #define VERTICAL_SCALE_LAYER_H
 
+#include "CoordinateScale.h"
+
 namespace sv {
 
 /**
@@ -28,10 +30,7 @@ class VerticalScaleLayer
 {
 public:
     virtual ~VerticalScaleLayer() { }
-    
-    virtual int getYForValue(LayerGeometryProvider *, double value) const = 0;
-    virtual double getValueForY(LayerGeometryProvider *, int y) const = 0;
-    virtual QString getScaleUnits() const = 0;
+    virtual CoordinateScale getYValueScale() const = 0;
 };
 
 } // end namespace sv
