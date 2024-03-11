@@ -179,6 +179,13 @@ protected:
 
     void schedulePlaybackFrameMove(sv_frame_t frame);
 
+    bool isCurrentlyMovingWithPlayback() const {
+        if (m_followPlay != PlaybackScrollContinuous) {
+            return false;
+        }
+        return (m_manager && m_manager->isPlaying());
+    }
+    
     bool m_identifyFeatures;
     QPoint m_identifyPoint;
     QPoint m_clickPos;
