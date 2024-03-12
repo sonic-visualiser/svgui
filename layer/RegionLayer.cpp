@@ -677,6 +677,23 @@ RegionLayer::yToSpacingIndex(LayerGeometryProvider *v, int y) const
     return vh;
 }
 
+CoordinateScale
+RegionLayer::getYCoordinateScale() const
+{
+    //!!! No way yet to handle EqualSpaced - look into this
+    auto model = ModelById::getAs<RegionModel>(m_model);
+    if (!model) {
+        return CoordinateScale(CoordinateScale::Direction::Vertical,
+                               "", false, 0.0, 0.0);
+    } else {
+        return CoordinateScale(CoordinateScale::Direction::Vertical,
+                               model->getScaleUnits(),
+                               m_verticalScale == LogScale,
+                               model->getValueMinimum(),
+                               model->getValueMaximum());
+    }
+}
+
 int
 RegionLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {

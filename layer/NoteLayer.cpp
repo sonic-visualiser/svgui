@@ -653,6 +653,35 @@ NoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, b
     if (max == min) max = min + 1.0;
 }
 
+CoordinateScale
+NoteLayer::getYCoordinateScale() const
+{
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) {
+        return CoordinateScale(CoordinateScale::Direction::Vertical,
+                               "", false, 0.0, 0.0);
+    } else {
+        QString unit = "Hz";
+        double min = 0.0, max = 0.0;
+        //!!! Can't call getDisplayExtents as it defers on auto-align
+        if (m_verticalScale == MIDIRangeScale) {
+            min = Pitch::getFrequencyForPitch(0);
+            max = Pitch::getFrequencyForPitch(127);
+        } else if (m_scaleMinimum == m_scaleMaximum) {
+            bool log = false;
+            getValueExtents(min, max, log, unit);
+        } else {
+            min = m_scaleMinimum;
+            max = m_scaleMaximum;
+        }
+        return CoordinateScale(CoordinateScale::Direction::Vertical,
+                               getScaleUnits(),
+                               m_verticalScale != LinearScale,
+                               min,
+                               max);
+    }
+}
+
 int
 NoteLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {

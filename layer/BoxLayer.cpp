@@ -449,8 +449,8 @@ BoxLayer::getScaleUnits() const
 
 void
 BoxLayer::getScaleExtents(LayerGeometryProvider *v,
-                                       double &min, double &max,
-                                       bool &log) const
+                          double &min, double &max,
+                          bool &log) const
 {
     min = 0.0;
     max = 0.0;
@@ -491,6 +491,22 @@ BoxLayer::getScaleExtents(LayerGeometryProvider *v,
     }
 
     if (max == min) max = min + 1.0;
+}
+
+CoordinateScale
+BoxLayer::getYCoordinateScale() const
+{
+    auto model = ModelById::getAs<BoxModel>(m_model);
+    if (!model) {
+        return CoordinateScale(CoordinateScale::Direction::Vertical,
+                               "", false, 0.0, 0.0);
+    } else {
+        return CoordinateScale(CoordinateScale::Direction::Vertical,
+                               getScaleUnits(),
+                               m_verticalScale == LogScale,
+                               model->getValueMinimum(),
+                               model->getValueMaximum());
+    }
 }
 
 int

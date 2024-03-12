@@ -40,7 +40,7 @@ public:
         Horizontal,
         Vertical
     };
-    
+
     /**
      * Construct a linear or logarithmic scale with an arbitrary unit
      * and given extents. In the case of a log scale, the extents are

@@ -16,6 +16,8 @@
 #ifndef VERTICAL_SCALE_LAYER_H
 #define VERTICAL_SCALE_LAYER_H
 
+#include "CoordinateScale.h"
+
 namespace sv {
 
 /**
@@ -28,7 +30,18 @@ class VerticalScaleLayer
 {
 public:
     virtual ~VerticalScaleLayer() { }
-    
+
+    /**
+     * Return the scale that this layer will use if it is not set to
+     * align against another layer's scale. The extents may depend on
+     * the content of the model and on the layer's parameters, but
+     * they will be determined entirely by this layer, disregarding
+     * any auto-align property. Layers in auto-align mode refer to the
+     * other layer's CoordinateScale rather than modify their own.
+     */
+    virtual CoordinateScale getYCoordinateScale() const = 0;
+
+    //!!! to go:
     virtual int getYForValue(LayerGeometryProvider *, double value) const = 0;
     virtual double getValueForY(LayerGeometryProvider *, int y) const = 0;
     virtual QString getScaleUnits() const = 0;
