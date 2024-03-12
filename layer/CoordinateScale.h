@@ -26,6 +26,13 @@ class LayerGeometryProvider;
  * Queries a LayerGeometryProvider to find the proper dimensions for
  * its axis direction. A CoordinateScale object is self-contained and
  * can be passed around by value.
+ *
+ * These are generally only used where a scale is monotonic through
+ * the visible area of the layer. Currently layers which may have more
+ * than one scale region (e.g. waveforms, whose y axis may be divided
+ * into multi-channel regions) or layers whose scale occupies only a
+ * part of their visible area (e.g. the x axis of spectra) are not
+ * able to make use of this.
  */
 class CoordinateScale
 {
@@ -42,24 +49,33 @@ public:
     };
 
     /**
-     * Construct a linear or logarithmic scale with an arbitrary unit
-     * and given extents. In the case of a log scale, the extents are
-     * actual values, not log-values.
+     * Construct a continuous linear or logarithmic scale with an
+     * arbitrary unit and given extents. In the case of a log scale,
+     * the extents are actual values, not log-values.
      */
     CoordinateScale(Direction direction, QString unit, bool logarithmic,
                     double minValue, double maxValue);
         
     /**
-     * Construct a frequency scale with a given map and
-     * extents. The extents should be in Hz and the unit of the scale
-     * will be Hz.
+     * Construct a frequency scale with a given map and extents. The
+     * extents should be in Hz and the unit of the scale will be "Hz".
      */
     CoordinateScale(Direction direction, FrequencyMap map,
                     double minValue, double maxValue);
 
+    /**
+     * Construct an integer-valued bin scale with the given
+     * extents. The extents should be in bin number (zero-based) and
+     * the unit of the scale will be "bins".
+     */
+    CoordinateScale(Direction direction, bool logarithmic,
+                    int minBin, int maxBin);
+    
     double getCoordForValue(LayerGeometryProvider *, double value) const;
     int getCoordForValueRounded(LayerGeometryProvider *, double value) const;
+
     double getValueForCoord(LayerGeometryProvider *, double coordinate) const;
+    int getValueForCoordRounded(LayerGeometryProvider *, double coordinate) const;
 
     Direction getDirection() const { return m_direction; }
     QString getUnit() const { return m_unit; }
@@ -69,6 +85,7 @@ public:
 private:
     Direction m_direction;
     bool m_isFrequencyScale;
+    bool m_isBinScale;
     QString m_unit;
     double m_logarithmic;
     FrequencyMap m_frequencyMap;

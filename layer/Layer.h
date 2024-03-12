@@ -557,6 +557,8 @@ public:
     /** 
      * Return the value and unit at the given y coordinate in the
      * given view.
+     *
+     *!!! provide default implementation that works for VerticalScaleLayers
      */
     virtual bool getYScaleValue(const LayerGeometryProvider *, int /* y */,
                                 double &/* value */, QString &/* unit */) const {

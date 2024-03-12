@@ -28,6 +28,7 @@ CoordinateScale::CoordinateScale(Direction direction, QString unit,
                                  double minValue, double maxValue) :
     m_direction(direction),
     m_isFrequencyScale(false), // (well, it still could be if unit is Hz)
+    m_isBinScale(false),
     m_unit(unit),
     m_logarithmic(logarithmic),
     m_frequencyMap(logarithmic ? FrequencyMap::Log : FrequencyMap::Linear),
@@ -39,6 +40,7 @@ CoordinateScale::CoordinateScale(Direction direction, FrequencyMap map,
                                  double minValue, double maxValue) :
     m_direction(direction),
     m_isFrequencyScale(true),
+    m_isBinScale(false),
     m_unit("Hz"),
     m_logarithmic(map == FrequencyMap::Log),
     m_frequencyMap(map),
@@ -46,14 +48,30 @@ CoordinateScale::CoordinateScale(Direction direction, FrequencyMap map,
     m_maxValue(maxValue)
 { }
 
+CoordinateScale::CoordinateScale(Direction direction, bool logarithmic,
+                                 int minBin, int maxBin) :
+    m_direction(direction),
+    m_isFrequencyScale(false),
+    m_isBinScale(true),
+    m_unit("bins"),
+    m_logarithmic(logarithmic),
+    m_minValue(minBin),
+    m_maxValue(maxBin)
+{
+}
+
 void
 CoordinateScale::mapExtents(double &min, double &max) const
 {
     if (isLinear()) {
         return;
     }
-
+    
     if (isLog()) {
+        if (m_isBinScale) {
+            min = min + 1;
+            max = max + 1;
+        }
         LogRange::mapRange(min, max);
         return;
     }
@@ -77,6 +95,9 @@ CoordinateScale::map(double value) const
     }
 
     if (isLog()) {
+        if (m_isBinScale) {
+            value = value + 1;
+        }
         return LogRange::map(value);
     }
 
@@ -97,7 +118,12 @@ CoordinateScale::unmap(double point) const
     }
 
     if (isLog()) {
-        return LogRange::unmap(point);
+        double value = LogRange::unmap(point);
+        if (m_isBinScale) {
+            return value - 1;
+        } else {
+            return value;
+        }
     }
 
     if (m_isFrequencyScale) {
@@ -122,6 +148,11 @@ CoordinateScale::getCoordForValue(LayerGeometryProvider *v, double value) const
     double point = map(value);
     double coord = 0.0;
 
+//!!! refer to Colour3DPlotLayer::getYForBin and getBinForY for
+//!!! handling of bin scales
+
+    //!!! refer to VerticalBinLayer for docs of bins
+    
     if (m_direction == Direction::Vertical) {
         double h = v->getPaintHeight();
         coord = h - (h * (point - minm)) / (maxm - minm);
@@ -136,8 +167,7 @@ CoordinateScale::getCoordForValue(LayerGeometryProvider *v, double value) const
 int
 CoordinateScale::getCoordForValueRounded(LayerGeometryProvider *v, double value) const
 {
-    //!!! or floor/trunc?
-    return int(round(getCoordForValue(v, value)));
+    return int(floor(getCoordForValue(v, value)));
 }
 
 double
@@ -158,6 +188,12 @@ CoordinateScale::getValueForCoord(LayerGeometryProvider *v, double coordinate) c
 
     double value = unmap(point);
     return value;
+}
+
+int
+CoordinateScale::getValueForCoordRounded(LayerGeometryProvider *v, double coordinate) const
+{
+    return int(floor(getValueForCoord(v, coordinate)));
 }
 
 } // end namespace sv
