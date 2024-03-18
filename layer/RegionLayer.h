@@ -130,7 +130,7 @@ public:
     void setProperties(const LayerAttributes &attributes) override;
 
     /// VerticalScaleLayer and ColourScaleLayer methods
-    CoordinateScale getYCoordinateScale() const override;
+//!!!    CoordinateScale getYCoordinateScale() const override;
     int getYForValue(LayerGeometryProvider *v, double value) const override;
     double getValueForY(LayerGeometryProvider *v, int y) const override;
     QString getScaleUnits() const override;

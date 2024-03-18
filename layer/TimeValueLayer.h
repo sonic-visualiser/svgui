@@ -175,7 +175,10 @@ public:
     }
 
     /// VerticalScaleLayer method
-    CoordinateScale getYValueScale() const override;
+//!!!    CoordinateScale getYValueScale() const override;
+    int getYForValue(LayerGeometryProvider *v, double value) const override;
+    double getValueForY(LayerGeometryProvider *v, int y) const override;
+    QString getScaleUnits() const override;
     
     /// ColourScaleLayer method
     QColor getColourForValue(LayerGeometryProvider *v, double value) const override;

@@ -39,7 +39,7 @@ public:
      * any auto-align property. Layers in auto-align mode refer to the
      * other layer's CoordinateScale rather than modify their own.
      */
-    virtual CoordinateScale getYCoordinateScale() const = 0;
+//    virtual CoordinateScale getYCoordinateScale() const = 0;
 
     //!!! to go:
     virtual int getYForValue(LayerGeometryProvider *, double value) const = 0;

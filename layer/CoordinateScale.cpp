@@ -32,8 +32,10 @@ CoordinateScale::CoordinateScale(Direction direction, QString unit,
     m_unit(unit),
     m_logarithmic(logarithmic),
     m_frequencyMap(logarithmic ? FrequencyMap::Log : FrequencyMap::Linear),
-    m_minValue(minValue),
-    m_maxValue(maxValue)
+    m_valueMin(minValue),
+    m_valueMax(maxValue),
+    m_displayMin(minValue),
+    m_displayMax(maxValue)
 { }
         
 CoordinateScale::CoordinateScale(Direction direction, FrequencyMap map,
@@ -44,8 +46,10 @@ CoordinateScale::CoordinateScale(Direction direction, FrequencyMap map,
     m_unit("Hz"),
     m_logarithmic(map == FrequencyMap::Log),
     m_frequencyMap(map),
-    m_minValue(minValue),
-    m_maxValue(maxValue)
+    m_valueMin(minValue),
+    m_valueMax(maxValue),
+    m_displayMin(minValue),
+    m_displayMax(maxValue)
 { }
 
 CoordinateScale::CoordinateScale(Direction direction, bool logarithmic,
@@ -55,9 +59,29 @@ CoordinateScale::CoordinateScale(Direction direction, bool logarithmic,
     m_isBinScale(true),
     m_unit("bins"),
     m_logarithmic(logarithmic),
-    m_minValue(minBin),
-    m_maxValue(maxBin)
+    m_valueMin(minBin),
+    m_valueMax(maxBin),
+    m_displayMin(minBin),
+    m_displayMax(maxBin)
 {
+}
+
+CoordinateScale
+CoordinateScale::withValueExtents(double min, double max) const
+{
+    CoordinateScale scale(*this);
+    scale.m_valueMin = min;
+    scale.m_valueMax = max;
+    return scale;
+}
+
+CoordinateScale
+CoordinateScale::withDisplayExtents(double min, double max) const
+{
+    CoordinateScale scale(*this);
+    scale.m_displayMin = min;
+    scale.m_displayMax = max;
+    return scale;
 }
 
 void
@@ -67,7 +91,7 @@ CoordinateScale::mapExtents(double &min, double &max) const
         return;
     }
     
-    if (isLog()) {
+    if (isLogarithmic()) {
         if (m_isBinScale) {
             min = min + 1;
             max = max + 1;
@@ -94,7 +118,7 @@ CoordinateScale::map(double value) const
         return value;
     }
 
-    if (isLog()) {
+    if (isLogarithmic()) {
         if (m_isBinScale) {
             value = value + 1;
         }
@@ -117,7 +141,7 @@ CoordinateScale::unmap(double point) const
         return point;
     }
 
-    if (isLog()) {
+    if (isLogarithmic()) {
         double value = LogRange::unmap(point);
         if (m_isBinScale) {
             return value - 1;
@@ -138,7 +162,7 @@ CoordinateScale::unmap(double point) const
 double
 CoordinateScale::getCoordForValue(LayerGeometryProvider *v, double value) const
 {
-    double minm = m_minValue, maxm = m_maxValue;
+    double minm = m_displayMin, maxm = m_displayMax;
     mapExtents(minm, maxm);
 
     if (minm == maxm) {
@@ -173,7 +197,7 @@ CoordinateScale::getCoordForValueRounded(LayerGeometryProvider *v, double value)
 double
 CoordinateScale::getValueForCoord(LayerGeometryProvider *v, double coordinate) const
 {
-    double minm = m_minValue, maxm = m_maxValue;
+    double minm = m_displayMin, maxm = m_displayMax;
     mapExtents(minm, maxm);
 
     double point = 0.0;

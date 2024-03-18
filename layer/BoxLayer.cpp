@@ -492,7 +492,7 @@ BoxLayer::getScaleExtents(LayerGeometryProvider *v,
 
     if (max == min) max = min + 1.0;
 }
-
+/*!!!
 CoordinateScale
 BoxLayer::getYCoordinateScale() const
 {
@@ -508,7 +508,7 @@ BoxLayer::getYCoordinateScale() const
                                model->getValueMaximum());
     }
 }
-
+*/
 int
 BoxLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {

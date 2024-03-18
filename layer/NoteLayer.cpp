@@ -652,7 +652,7 @@ NoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, b
 
     if (max == min) max = min + 1.0;
 }
-
+/*!!!
 CoordinateScale
 NoteLayer::getYCoordinateScale() const
 {
@@ -681,7 +681,7 @@ NoteLayer::getYCoordinateScale() const
                                max);
     }
 }
-
+*/
 int
 NoteLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {

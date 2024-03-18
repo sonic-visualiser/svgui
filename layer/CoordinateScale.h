@@ -51,14 +51,17 @@ public:
     /**
      * Construct a continuous linear or logarithmic scale with an
      * arbitrary unit and given extents. In the case of a log scale,
-     * the extents are actual values, not log-values.
+     * the extents are actual values, not log-values. The display
+     * extents will be initialised to the same as the value extents.
      */
     CoordinateScale(Direction direction, QString unit, bool logarithmic,
                     double minValue, double maxValue);
         
     /**
      * Construct a frequency scale with a given map and extents. The
-     * extents should be in Hz and the unit of the scale will be "Hz".
+     * extents should be in Hz and the unit of the scale will be
+     * "Hz". The display extents will be initialised to the same as
+     * the value extents.
      */
     CoordinateScale(Direction direction, FrequencyMap map,
                     double minValue, double maxValue);
@@ -66,7 +69,8 @@ public:
     /**
      * Construct an integer-valued bin scale with the given
      * extents. The extents should be in bin number (zero-based) and
-     * the unit of the scale will be "bins".
+     * the unit of the scale will be "bins". The display extents will
+     * be initialised to the same as the value extents.
      */
     CoordinateScale(Direction direction, bool logarithmic,
                     int minBin, int maxBin);
@@ -78,20 +82,33 @@ public:
     int getValueForCoordRounded(LayerGeometryProvider *, double coordinate) const;
 
     Direction getDirection() const { return m_direction; }
+    
     QString getUnit() const { return m_unit; }
-    double getMinValue() const { return m_minValue; }
-    double getMaxValue() const { return m_maxValue; }
 
-private:
-    Direction m_direction;
-    bool m_isFrequencyScale;
-    bool m_isBinScale;
-    QString m_unit;
-    double m_logarithmic;
-    FrequencyMap m_frequencyMap;
-    double m_minValue;
-    double m_maxValue;
+    double getValueMinimum() const { return m_valueMin; }
+    double getValueMaximum() const { return m_valueMax; }
 
+    double getDisplayMinimum() const { return m_displayMin; }
+    double getDisplayMaximum() const { return m_displayMax; }
+
+    CoordinateScale withValueExtents(double min, double max) const;
+    CoordinateScale withDisplayExtents(double min, double max) const;
+    
+    /**
+     * Return true if the scale is logarithmic. Note that a scale
+     * could have any kind of mapping - false does not imply linear.
+     */
+    bool isLogarithmic() const {
+        if (m_isFrequencyScale) {
+            return m_frequencyMap == FrequencyMap::Log;
+        } else {
+            return m_logarithmic;
+        }
+    }
+
+    /**
+     * Return true if the scale is linear.
+     */
     bool isLinear() const {
         if (m_isFrequencyScale) {
             return m_frequencyMap == FrequencyMap::Linear;
@@ -99,15 +116,19 @@ private:
             return !m_logarithmic;
         }
     }
+
+private:
+    Direction m_direction;
+    bool m_isFrequencyScale;
+    bool m_isBinScale;
+    QString m_unit;
+    bool m_logarithmic;
+    FrequencyMap m_frequencyMap;
+    double m_valueMin;
+    double m_valueMax;
+    double m_displayMin;
+    double m_displayMax;
     
-    bool isLog() const {
-        if (m_isFrequencyScale) {
-            return m_frequencyMap == FrequencyMap::Log;
-        } else {
-            return m_logarithmic;
-        }
-    }
-        
     double map(double value) const;
     double unmap(double point) const;
     void mapExtents(double &min, double &max) const;
