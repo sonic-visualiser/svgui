@@ -36,6 +36,12 @@
 
 namespace sv {
 
+Layer::ScaleExtents
+Layer::NO_VERTICAL_EXTENTS = {
+    Layer::ScaleApplication::None,
+    CoordinateScale(CoordinateScale::Direction::Vertical, "", false, 0.0, 0.0)
+};
+
 Layer::Layer() :
     m_haveDraggingRect(false),
     m_haveCurrentMeasureRect(false)

@@ -74,7 +74,7 @@ public:
      */
     CoordinateScale(Direction direction, bool logarithmic,
                     int minBin, int maxBin);
-    
+
     double getCoordForValue(LayerGeometryProvider *, double value) const;
     int getCoordForValueRounded(LayerGeometryProvider *, double value) const;
 

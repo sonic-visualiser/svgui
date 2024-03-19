@@ -536,6 +536,8 @@ public:
     };
 
     typedef std::pair<ScaleApplication, CoordinateScale> ScaleExtents;
+
+    static ScaleExtents NO_VERTICAL_EXTENTS;
     
     /**
      * Return the vertical extent and scale mapping for this layer and

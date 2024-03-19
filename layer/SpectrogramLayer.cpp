@@ -1849,11 +1849,7 @@ Layer::ScaleExtents
 SpectrogramLayer::getVerticalExtents() const
 {
     auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
-    if (!model) return {
-            Layer::ScaleApplication::None,
-            CoordinateScale(CoordinateScale::Direction::Vertical,
-                            "", false, 0.0, 0.0)
-        };
+    if (!model) return NO_VERTICAL_EXTENTS;
 
     sv_samplerate_t sr = model->getSampleRate();
     double min = double(sr) / getFFTSize();

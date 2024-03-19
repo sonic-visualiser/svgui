@@ -398,6 +398,11 @@ WaveformLayer::getVerticalExtents() const
         }
     }
 
+    if (alignable && m_scale == dBScale) {
+        scale = scale.withDisplayExtents
+            (AudioLevel::dB_to_voltage(m_dBMin), 1.0);
+    }
+
     //!!! display extents not set based on gain (but then
     //!!! getDisplayExtents doesn't handle it either?)
 

@@ -51,6 +51,10 @@ public:
         return ColourIrrelevant;
     }
 
+    ScaleExtents getVerticalExtents() const override {
+        return NO_VERTICAL_EXTENTS;
+    }
+    
     bool getValueExtents(double &, double &, bool &, QString &) const override {
         return false;
     }

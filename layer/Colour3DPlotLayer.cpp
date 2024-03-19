@@ -711,6 +711,32 @@ Colour3DPlotLayer::getCompletion(LayerGeometryProvider *) const
     else return 0;
 }
 
+Layer::ScaleExtents
+Colour3DPlotLayer::getVerticalExtents() const
+{
+    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
+    if (!model) return NO_VERTICAL_EXTENTS;
+
+    int valueMax = model->getHeight();
+    
+    CoordinateScale scale(CoordinateScale::Direction::Vertical,
+                          m_binScale == BinScale::Log, 0, valueMax);
+    
+    int min = m_miny;
+    int max = m_maxy;
+    if (max <= min) {
+        min = 0;
+        max = valueMax;
+    }
+    if (min < 0) min = 0;
+    if (max > valueMax) max = valueMax;
+
+    return {
+        Layer::ScaleApplication::Normal,
+        scale.withDisplayExtents(min, max)
+    };
+}
+
 bool
 Colour3DPlotLayer::getValueExtents(double &min, double &max,
                                    bool &logarithmic, QString &unit) const

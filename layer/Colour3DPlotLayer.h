@@ -141,6 +141,8 @@ public:
 
     bool hasLightBackground() const override;
 
+    ScaleExtents getVerticalExtents() const override;
+
     bool getValueExtents(double &min, double &max,
                          bool &logarithmic, QString &unit) const override;
 
