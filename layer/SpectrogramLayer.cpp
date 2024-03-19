@@ -1845,6 +1845,38 @@ SpectrogramLayer::getError(LayerGeometryProvider *) const
     return fftModel->getError();
 }
 
+Layer::ScaleExtents
+SpectrogramLayer::getVerticalExtents() const
+{
+    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+    if (!model) return {
+            Layer::ScaleApplication::None,
+            CoordinateScale(CoordinateScale::Direction::Vertical,
+                            "", false, 0.0, 0.0)
+        };
+
+    sv_samplerate_t sr = model->getSampleRate();
+    double min = double(sr) / getFFTSize();
+    double max = double(sr) / 2.0;
+    CoordinateScale::FrequencyMap map;
+    switch (m_frequencyMapping) {
+        //!!! merge FrequencyMapping (in LayerGeometryProvider) with
+        //!!! CoordinateScale::FrequencyMap... I don't really want
+        //!!! either to refer to the other for this, so put it
+        //!!! somewhere else ?
+    case FrequencyMapping::Linear: map = CoordinateScale::FrequencyMap::Linear;
+    case FrequencyMapping::Log: map = CoordinateScale::FrequencyMap::Log;
+    case FrequencyMapping::Mel: map = CoordinateScale::FrequencyMap::Mel;
+    }
+    CoordinateScale scale(CoordinateScale::Direction::Vertical, map, min, max);
+
+    return {
+        Layer::ScaleApplication::Normal,
+        scale.withDisplayExtents(getEffectiveMinFrequency(),
+                                 getEffectiveMaxFrequency())
+    };
+}
+
 bool
 SpectrogramLayer::getValueExtents(double &min, double &max,
                                   bool &logarithmic, QString &unit) const

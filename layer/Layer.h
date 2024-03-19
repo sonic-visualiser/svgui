@@ -26,6 +26,8 @@
 
 #include "system/System.h"
 
+#include "CoordinateScale.h"
+
 #include <QObject>
 #include <QRect>
 #include <QMutex>
@@ -495,6 +497,53 @@ public:
         return;
     }
 
+    /**
+     * ScaleApplication describes the current applicability of an
+     * extent range or scale (in any given dimension) in this layer.
+     */
+    enum class ScaleApplication {
+        /**
+         * The layer has extents and a scale mapping and they are in
+         * use. The extents reported by the layer are those used to
+         * determine placement of elements in the layer. If requested,
+         * the layer can draw a scale for them. Other layers may be
+         * aligned to the same scale if they share a unit.
+         */
+        Normal,
+
+        /**
+         * The layer has extents and a scale mapping, but they might
+         * not be in use, for example because the layer would prefer
+         * to auto-align with another layer. In that situation, they
+         * may still be used if nothing better is available to align
+         * with. If requested, the layer can draw a scale for them.
+         */
+        Deferring,
+
+        /**
+         * The layer has extents and a scale mapping and, if
+         * requested, can draw a scale. But there is something about
+         * the scale that makes it unsuitable to align another layer
+         * with (e.g. it is not continuous) so it should never be
+         * deferred to.
+         */
+        Personal,
+        
+        /**
+         * The layer has no meaningful extents.
+         */
+        None
+    };
+
+    typedef std::pair<ScaleApplication, CoordinateScale> ScaleExtents;
+    
+    /**
+     * Return the vertical extent and scale mapping for this layer and
+     * an indication of whether the extents are actually in use for
+     * positioning.
+     */
+    virtual ScaleExtents getVerticalExtents() const = 0;
+    
     /**
      * Return the minimum and maximum values for the y axis of the
      * model in this layer, as well as whether the layer is configured

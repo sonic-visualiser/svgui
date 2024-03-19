@@ -377,6 +377,36 @@ WaveformLayer::getCompletion(LayerGeometryProvider *) const
     return completion;
 }
 
+Layer::ScaleExtents
+WaveformLayer::getVerticalExtents() const
+{
+    CoordinateScale scale(CoordinateScale::Direction::Vertical,
+                          "V", m_scale == dBScale, -1.0, 1.0);
+
+    bool alignable = true;
+    
+    if (m_scale == MeterScale) {
+        alignable = false;
+    }
+    
+    if (m_channelCount > 1) {
+        if (m_channelMode == SeparateChannels) {
+            alignable = false;
+        }
+        if (m_channelMode == MergeChannels && m_scale != LinearScale) {
+            alignable = false;
+        }
+    }
+
+    //!!! display extents not set based on gain (but then
+    //!!! getDisplayExtents doesn't handle it either?)
+
+    return {
+        alignable ? ScaleApplication::Normal : ScaleApplication::Personal,
+        scale
+    };
+}
+
 bool
 WaveformLayer::getValueExtents(double &min, double &max,
                                bool &log, QString &unit) const

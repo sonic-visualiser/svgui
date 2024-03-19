@@ -259,6 +259,26 @@ NoteLayer::convertValueToEventValue(double value) const
     }
 }
 
+Layer::ScaleExtents
+NoteLayer::getVerticalExtents() const
+{
+    double valueMin = 0.0, valueMax = 0.0;
+    bool logarithmic = false;
+    QString unit;
+    bool have = getValueExtents(valueMin, valueMax, logarithmic, unit);
+    CoordinateScale scale(CoordinateScale::Direction::Vertical,
+                          unit, logarithmic, valueMin, valueMax);
+    if (have) {
+        double displayMin = valueMin, displayMax = valueMax;
+        getDisplayExtents(displayMin, displayMax);
+        scale = scale.withDisplayExtents(displayMin, displayMax);
+    }
+    return {
+        have ? Layer::ScaleApplication::Normal : Layer::ScaleApplication::None,
+        scale
+    };
+}
+
 bool
 NoteLayer::getValueExtents(double &min, double &max,
                            bool &logarithmic, QString &unit) const

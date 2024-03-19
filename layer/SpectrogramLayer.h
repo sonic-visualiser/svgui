@@ -245,6 +245,8 @@ public:
     int getCompletion(LayerGeometryProvider *v) const override;
     QString getError(LayerGeometryProvider *v) const override;
 
+    ScaleExtents getVerticalExtents() const override;
+    
     bool getValueExtents(double &min, double &max,
                          bool &logarithmic, QString &unit) const override;
 
