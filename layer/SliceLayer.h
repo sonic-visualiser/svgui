@@ -66,6 +66,8 @@ public:
     void setProperty(const PropertyName &, int value) override;
     void setProperties(const LayerAttributes &) override;
 
+    ScaleExtents getVerticalExtents() const override;
+
     bool getValueExtents(double &min, double &max,
                          bool &logarithmic, QString &unit) const override;
 

@@ -101,6 +101,8 @@ public:
 
     int getCompletion(LayerGeometryProvider *) const override;
 
+    ScaleExtents getVerticalExtents() const override;
+
     bool getValueExtents(double &min, double &max,
                                  bool &log, QString &unit) const override;
 

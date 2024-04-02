@@ -1259,6 +1259,25 @@ SliceLayer::setProperties(const LayerAttributes &attributes)
     if (ok && alsoOk) setDisplayExtents(min, max);
 }
 
+Layer::ScaleExtents
+SliceLayer::getVerticalExtents() const
+{
+    auto sliceableModel =
+        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
+    if (!sliceableModel) return NO_VERTICAL_EXTENTS;
+    
+    double valueMin = 0.0, valueMax = 0.0;
+    bool logarithmic = false;
+    QString unit;
+    (void)getValueExtents(valueMin, valueMax, logarithmic, unit);
+    CoordinateScale scale(CoordinateScale::Direction::Vertical,
+                          unit, logarithmic, valueMin, valueMax);
+    double displayMin = valueMin, displayMax = valueMax;
+    getDisplayExtents(displayMin, displayMax);
+    scale = scale.withDisplayExtents(displayMin, displayMax);
+    return { Layer::ScaleApplication::Normal, scale };
+}
+
 bool
 SliceLayer::getValueExtents(double &min, double &max, bool &logarithmic,
                             QString &unit) const

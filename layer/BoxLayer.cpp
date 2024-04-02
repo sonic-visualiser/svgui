@@ -197,6 +197,30 @@ BoxLayer::isLayerScrollable(const LayerGeometryProvider *v) const
     return !v->shouldIlluminateLocalFeatures(this, discard);
 }
 
+Layer::ScaleExtents
+BoxLayer::getVerticalExtents() const
+{
+    auto model = ModelById::getAs<BoxModel>(m_model);
+    if (!model) return NO_VERTICAL_EXTENTS;
+
+    //!!! This needs to take into account shouldAutoAlign - if true it
+    //!!! should return ScaleApplication::Deferring - but at the mo
+    //!!! getValueExtents and getDisplayExtents return wrongly (for
+    //!!! our purposes) if shouldAutoAlign so we need to bring them
+    //!!! inline here first
+    
+    double valueMin = 0.0, valueMax = 0.0;
+    bool logarithmic = false;
+    QString unit;
+    (void)getValueExtents(valueMin, valueMax, logarithmic, unit);
+    CoordinateScale scale(CoordinateScale::Direction::Vertical,
+                          unit, logarithmic, valueMin, valueMax);
+    double displayMin = valueMin, displayMax = valueMax;
+    getDisplayExtents(displayMin, displayMax);
+    scale = scale.withDisplayExtents(displayMin, displayMax);
+    return { Layer::ScaleApplication::Normal, scale };
+}
+
 bool
 BoxLayer::getValueExtents(double &min, double &max,
                           bool &logarithmic, QString &unit) const

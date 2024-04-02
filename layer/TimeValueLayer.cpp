@@ -400,7 +400,7 @@ TimeValueLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 }
 
 Layer::ScaleExtents
-NoteLayer::getVerticalExtents() const
+TimeValueLayer::getVerticalExtents() const
 {
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return NO_VERTICAL_EXTENTS;

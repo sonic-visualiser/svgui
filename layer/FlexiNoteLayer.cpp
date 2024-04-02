@@ -232,6 +232,30 @@ FlexiNoteLayer::getCompletion(LayerGeometryProvider *) const
     else return 0;
 }
 
+Layer::ScaleExtents
+FlexiNoteLayer::getVerticalExtents() const
+{
+    auto model = ModelById::getAs<NoteModel>(m_model);
+    if (!model) return NO_VERTICAL_EXTENTS;
+    
+    //!!! This needs to take into account shouldAutoAlign - if true it
+    //!!! should return ScaleApplication::Deferring - but at the mo
+    //!!! getValueExtents and getDisplayExtents return wrongly (for
+    //!!! our purposes) if shouldAutoAlign so we need to bring them
+    //!!! inline here first. See also NoteLayer of course
+
+    double valueMin = 0.0, valueMax = 0.0;
+    bool logarithmic = false;
+    QString unit;
+    (void)getValueExtents(valueMin, valueMax, logarithmic, unit);
+    CoordinateScale scale(CoordinateScale::Direction::Vertical,
+                          unit, logarithmic, valueMin, valueMax);
+    double displayMin = valueMin, displayMax = valueMax;
+    getDisplayExtents(displayMin, displayMax);
+    scale = scale.withDisplayExtents(displayMin, displayMax);
+    return { Layer::ScaleApplication::Normal, scale };
+}
+
 bool
 FlexiNoteLayer::getValueExtents(double &min, double &max,
                                 bool &logarithmic, QString &unit) const

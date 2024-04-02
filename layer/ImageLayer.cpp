@@ -128,6 +128,12 @@ ImageLayer::setProperty(const PropertyName &name, int value)
     Layer::setProperty(name, value);
 }
 
+Layer::ScaleExtents
+ImageLayer::getVerticalExtents() const
+{
+    return NO_VERTICAL_EXTENTS;
+}
+
 bool
 ImageLayer::getValueExtents(double &, double &, bool &, QString &) const
 {

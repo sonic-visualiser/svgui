@@ -110,6 +110,12 @@ TextLayer::setProperty(const PropertyName &name, int value)
     SingleColourLayer::setProperty(name, value);
 }
 
+Layer::ScaleExtents
+TextLayer::getVerticalExtents() const
+{
+    return NO_VERTICAL_EXTENTS;
+}
+
 bool
 TextLayer::getValueExtents(double &, double &, bool &, QString &) const
 {
