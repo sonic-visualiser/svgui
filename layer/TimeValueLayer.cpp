@@ -853,6 +853,7 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v,
     return true;
 }
 
+//!!! TO GO? But PlusMinusOneScale is only handled here?
 void
 TimeValueLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
 {
@@ -944,6 +945,7 @@ TimeValueLayer::getValueForY(LayerGeometryProvider *v, int y) const
     return val;
 }
 
+//!!! TO GO?
 bool
 TimeValueLayer::shouldAutoAlign() const
 {

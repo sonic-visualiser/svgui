@@ -201,6 +201,60 @@ View::getPropertyContainer(int i)
     return m_fixedOrderLayers[i-1];
 }
 
+CoordinateScale
+View::getEffectiveVerticalExtentsForLayer(Layer *layer) const
+{
+    auto declaredExtents = layer->getVerticalExtents();
+
+    if (declaredExtents.first == Layer::ScaleApplication::Deferring &&
+        declaredExtents.second.getUnit() != "") {
+        return getEffectiveVerticalExtents(declaredExtents.second.getUnit());
+    } else {
+        return declaredExtents.second;
+    }
+}
+
+CoordinateScale
+View::getEffectiveVerticalExtents(QString unit) const
+{
+    // First look for the topmost non-dormant layer that has an
+    // alignable scale. Failing that, accept a dormant layer - because
+    // a dormant layer can still draw a scale, and it makes sense for
+    // layers aligned to it not to jump about when its visibility is
+    // toggled.
+
+    //!!! not implemented yet -> Failing any of that, if a unit is
+    // provided, take the union of the scales of deferring layers with
+    // that unit
+
+    for (int acceptDormant = 0; acceptDormant <= 1; ++acceptDormant) {
+    
+        for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
+
+            Layer *layer = *i;
+            if (!acceptDormant && layer->isLayerDormant(this)) {
+                continue;
+            }
+
+            auto extents = layer->getVerticalExtents();
+            if (extents.first != Layer::ScaleApplication::Normal) {
+                continue;
+            }
+
+            if (unit != "" && extents.second.getUnit() != unit) {
+                continue;
+            }
+        
+            return extents.second;
+        }
+    }
+
+    
+
+    return Layer::NO_VERTICAL_EXTENTS.second;
+}
+
+//!!! TO GO
 bool
 View::getVisibleExtentsForUnit(QString unit,
                                double &min, double &max,
@@ -250,6 +304,7 @@ View::getVisibleExtentsForUnit(QString unit,
             layer->getDisplayExtents(min, max));
 }
         
+//!!! TO GO?
 Layer *
 View::getScaleProvidingLayerForUnit(QString unit) const
 {
@@ -327,6 +382,7 @@ View::getScaleProvidingLayerForUnit(QString unit) const
     return dormantOption;
 }
 
+//!!! TO GO
 bool
 View::getVisibleExtentsForAnyUnit(double &min, double &max,
                                   bool &log, QString &unit) const

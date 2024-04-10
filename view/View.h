@@ -20,6 +20,7 @@
 #include <QProgressBar>
 
 #include "layer/LayerGeometryProvider.h"
+#include "layer/CoordinateScale.h"
 
 #include "base/ZoomConstraint.h"
 #include "base/PropertyContainer.h"
@@ -350,6 +351,15 @@ public:
     virtual bool renderPartToSvgFile(QString filename,
                                      sv_frame_t f0, sv_frame_t f1);
 
+    //!!! DOC
+    CoordinateScale
+    getEffectiveVerticalExtentsForLayer(Layer *) const;
+
+    //!!! DOC
+    CoordinateScale
+    getEffectiveVerticalExtents(QString unit = {}) const;
+    
+    //!!! TO GO
     /**
      * Return the visible vertical extents for the given unit, if any.
      * Overridden from LayerGeometryProvider (see docs there).
@@ -357,6 +367,7 @@ public:
     bool getVisibleExtentsForUnit(QString unit, double &min, double &max,
                                   bool &log) const override;
 
+    //!!! TO GO
     /**
      * Return some visible vertical extents and unit. That is, if at
      * least one non-dormant layer has a non-empty unit and returns
