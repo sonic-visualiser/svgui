@@ -133,7 +133,7 @@ CSVAudioFormatDialog::CSVAudioFormatDialog(QWidget *parent, CSVFormat format,
     m_sampleRateCombo->setEditable(true);
 
     layout->addWidget(m_sampleRateCombo, row++, 1);
-    connect(m_sampleRateCombo, SIGNAL(activated(QString)),
+    connect(m_sampleRateCombo, SIGNAL(currentTextChanged(QString)),
             this, SLOT(sampleRateChanged(QString)));
     connect(m_sampleRateCombo, SIGNAL(editTextChanged(QString)),
             this, SLOT(sampleRateChanged(QString)));
