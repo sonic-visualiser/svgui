@@ -202,14 +202,27 @@ View::getPropertyContainer(int i)
 }
 
 CoordinateScale
-View::getEffectiveVerticalExtentsForLayer(Layer *layer) const
+View::getEffectiveVerticalExtentsForLayer(const Layer *layer) const
 {
     auto declaredExtents = layer->getVerticalExtents();
 
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+    SVDEBUG << "View::getEffectiveVerticalExtentsForLayer: layer = " << layer
+            << ": " << layer->getLayerPresentationName() << endl;
+#endif
+
     if (declaredExtents.first == Layer::ScaleApplication::Deferring &&
         declaredExtents.second.getUnit() != "") {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+        SVDEBUG << "layer is deferring and has a unit, deferring to something"
+                << endl;
+#endif
         return getEffectiveVerticalExtents(declaredExtents.second.getUnit());
     } else {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+        SVDEBUG << "layer isn't deferring or has no unit, using it directly"
+                << endl;
+#endif
         return declaredExtents.second;
     }
 }
@@ -217,41 +230,131 @@ View::getEffectiveVerticalExtentsForLayer(Layer *layer) const
 CoordinateScale
 View::getEffectiveVerticalExtents(QString unit) const
 {
-    // First look for the topmost non-dormant layer that has an
-    // alignable scale. Failing that, accept a dormant layer - because
-    // a dormant layer can still draw a scale, and it makes sense for
-    // layers aligned to it not to jump about when its visibility is
-    // toggled.
+    // Three passes:
 
-    //!!! not implemented yet -> Failing any of that, if a unit is
-    // provided, take the union of the scales of deferring layers with
-    // that unit
+    // 1. Look for the topmost non-dormant layer with that unit that
+    // has an alignable (normal) scale.
 
+    // 2. Failing that, look for the topmost layer with any dormancy
+    // with that unit that has an alignable (normal) scale. A dormant
+    // layer can still draw a scale, and it makes sense for layers
+    // aligned to it not to jump about when its visibility is toggled.
+
+    // 3. Failing any of that, if a unit is provided, take the union
+    // of the scales of non-dormant deferring layers with that unit.
+
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+    SVDEBUG << "View::getEffectiveVerticalExtents: unit = " << unit << ", have "
+            << m_layerStack.size() << " layer(s)" << endl;
+#endif
+    
     for (int acceptDormant = 0; acceptDormant <= 1; ++acceptDormant) {
+
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+        SVDEBUG << "pass with acceptDormant " << acceptDormant << endl;
+#endif
     
         for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
 
             Layer *layer = *i;
+
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVDEBUG << "considering layer " << layer
+                    << ": " << layer->getLayerPresentationName()
+                    << endl;
+#endif
+        
             if (!acceptDormant && layer->isLayerDormant(this)) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+                SVDEBUG << "... it's dormant" << endl;
+#endif
                 continue;
             }
 
             auto extents = layer->getVerticalExtents();
+
             if (extents.first != Layer::ScaleApplication::Normal) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+                SVDEBUG << "... it's not alignable" << endl;
+#endif
                 continue;
             }
 
             if (unit != "" && extents.second.getUnit() != unit) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+                SVDEBUG << "... it has the wrong unit ("
+                        << extents.second.getUnit() << ")" << endl;
+#endif
                 continue;
             }
         
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVDEBUG << "... it's good, returning it" << endl;
+#endif
             return extents.second;
         }
     }
 
+    CoordinateScale scale = Layer::NO_VERTICAL_EXTENTS.second;
+    bool haveAny = false;
     
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+    SVDEBUG << "View::getEffectiveVerticalExtents: found nothing suitable on its own, looking to merge scales" << endl;
+#endif
 
-    return Layer::NO_VERTICAL_EXTENTS.second;
+    for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
+
+        Layer *layer = *i;
+
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+        SVDEBUG << "considering layer " << layer
+                << ": " << layer->getLayerPresentationName()
+                << endl;
+#endif
+        
+        if (layer->isLayerDormant(this)) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVDEBUG << "... it's dormant" << endl;
+#endif
+            continue;
+        }
+
+        auto extents = layer->getVerticalExtents();
+
+        if (extents.first == Layer::ScaleApplication::Personal ||
+            extents.first == Layer::ScaleApplication::None) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVDEBUG << "... it's personal" << endl;
+#endif
+            continue;
+        }
+
+        if (unit != "" && extents.second.getUnit() != unit) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVDEBUG << "... it has the wrong unit ("
+                    << extents.second.getUnit() << ")" << endl;
+#endif
+            continue;
+        }
+
+        if (haveAny) {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVDEBUG << "... it's good, merging with it" << endl;
+#endif
+            scale = scale.unionWith(extents.second);
+        } else {
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+            SVDEBUG << "... it's good, initialising with it" << endl;
+#endif
+            scale = extents.second;
+            haveAny = true;
+        }
+    }
+
+#ifdef DEBUG_VIEW_SCALE_CHOICE
+    SVDEBUG << "... returning merged result" << endl;
+#endif
+    return scale;
 }
 
 //!!! TO GO

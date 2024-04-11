@@ -103,6 +103,12 @@ public:
     int getTextLabelYCoord(const Layer *layer, QPainter &paint) const override {
         return m_scaleFactor * m_view->getTextLabelYCoord(layer, paint);
     }
+    CoordinateScale getEffectiveVerticalExtentsForLayer(const Layer *layer) const override {
+        return m_view->getEffectiveVerticalExtentsForLayer(layer);
+    }
+    CoordinateScale getEffectiveVerticalExtents(QString unit = {}) const override {
+        return m_view->getEffectiveVerticalExtents(unit);
+    }
     bool getVisibleExtentsForUnit(QString unit, double &min, double &max,
                                   bool &log) const override {
         return m_view->getVisibleExtentsForUnit(unit, min, max, log);

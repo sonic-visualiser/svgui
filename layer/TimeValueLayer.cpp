@@ -405,22 +405,49 @@ TimeValueLayer::getVerticalExtents() const
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) return NO_VERTICAL_EXTENTS;
 
-    //!!! This needs to take into account shouldAutoAlign - if true it
-    //!!! should return ScaleApplication::Deferring - but at the mo
-    //!!! getValueExtents and getDisplayExtents return wrongly (for
-    //!!! our purposes) if shouldAutoAlign so we need to bring them
-    //!!! inline here first
+    double min = model->getValueMinimum();
+    double max = model->getValueMaximum();
+    bool logarithmic = (m_verticalScale == LogScale);
+    QString unit = getScaleUnits();
+
+    if (m_derivative) {
+        max = std::max(fabs(min), fabs(max));
+        min = -max;
+    }
+
+    if (!logarithmic && !m_derivative) {
+
+        if (max == min) {
+            max = max + 0.5;
+            min = min - 0.5;
+        } else {
+            double margin = (max - min) / 10.0;
+            max = max + margin;
+            min = min - margin;
+        }
+    }
     
-    double valueMin = 0.0, valueMax = 0.0;
-    bool logarithmic = false;
-    QString unit;
-    (void)getValueExtents(valueMin, valueMax, logarithmic, unit);
     CoordinateScale scale(CoordinateScale::Direction::Vertical,
-                          unit, logarithmic, valueMin, valueMax);
-    double displayMin = valueMin, displayMax = valueMax;
-    getDisplayExtents(displayMin, displayMax);
-    scale = scale.withDisplayExtents(displayMin, displayMax);
-    return { Layer::ScaleApplication::Normal, scale };
+                          unit, logarithmic, min, max);
+
+    if (m_scaleMinimum != m_scaleMaximum) {
+        
+        min = m_scaleMinimum;
+        max = m_scaleMaximum;
+        
+        if (m_derivative) {
+            max = std::max(fabs(min), fabs(max));
+            min = -max;
+        }
+
+        scale = scale.withDisplayExtents(min, max);
+    }
+
+    if (m_verticalScale == AutoAlignScale) {
+        return { Layer::ScaleApplication::Deferring, scale };
+    } else {
+        return { Layer::ScaleApplication::Normal, scale };
+    }
 }
 
 bool
@@ -906,6 +933,9 @@ TimeValueLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
 int
 TimeValueLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    return scale.getCoordForValueRounded(v, val);
+    /*!!!
     double min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->getPaintHeight();
@@ -925,12 +955,16 @@ TimeValueLayer::getYForValue(LayerGeometryProvider *v, double val) const
     }
 
     return int(h - ((val - min) * h) / (max - min));
+    */
 }
 
 double
 TimeValueLayer::getValueForY(LayerGeometryProvider *v, int y) const
 {
-    double min = 0.0, max = 0.0;
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    return scale.getValueForCoord(v, y);
+/*
+  double min = 0.0, max = 0.0;
     bool logarithmic = false;
     int h = v->getPaintHeight();
 
@@ -943,6 +977,7 @@ TimeValueLayer::getValueForY(LayerGeometryProvider *v, int y) const
     }
 
     return val;
+*/
 }
 
 //!!! TO GO?

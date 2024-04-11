@@ -93,6 +93,8 @@ public:
 
     CoordinateScale withValueExtents(double min, double max) const;
     CoordinateScale withDisplayExtents(double min, double max) const;
+
+    CoordinateScale unionWith(const CoordinateScale &other) const;
     
     /**
      * Return true if the scale is logarithmic. Note that a scale
@@ -107,7 +109,8 @@ public:
     }
 
     /**
-     * Return true if the scale is linear.
+     * Return true if the scale is linear. Note that a scale could
+     * have any kind of mapping - false does not imply logarithmic.
      */
     bool isLinear() const {
         if (m_isFrequencyScale) {

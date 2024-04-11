@@ -353,11 +353,11 @@ public:
 
     //!!! DOC
     CoordinateScale
-    getEffectiveVerticalExtentsForLayer(Layer *) const;
+    getEffectiveVerticalExtentsForLayer(const Layer *) const override;
 
     //!!! DOC
     CoordinateScale
-    getEffectiveVerticalExtents(QString unit = {}) const;
+    getEffectiveVerticalExtents(QString unit = {}) const override;
     
     //!!! TO GO
     /**

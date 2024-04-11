@@ -18,6 +18,8 @@
 #include "base/BaseTypes.h"
 #include "base/ZoomLevel.h"
 
+#include "CoordinateScale.h"
+
 #include <QMutex>
 #include <QMutexLocker>
 #include <QPainter>
@@ -157,6 +159,16 @@ public:
      */
     virtual int getTextLabelYCoord(const Layer *layer, QPainter &) const = 0;
 
+    
+    //!!! DOC
+    virtual CoordinateScale
+    getEffectiveVerticalExtentsForLayer(const Layer *) const = 0;
+
+    //!!! DOC
+    virtual CoordinateScale
+    getEffectiveVerticalExtents(QString unit = {}) const = 0;
+    
+    
     /**
      * Return the visible vertical extents for the given unit, if any.
      * That is:

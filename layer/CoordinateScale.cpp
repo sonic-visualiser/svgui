@@ -84,6 +84,27 @@ CoordinateScale::withDisplayExtents(double min, double max) const
     return scale;
 }
 
+CoordinateScale
+CoordinateScale::unionWith(const CoordinateScale &other) const
+{
+    CoordinateScale scale(*this);
+
+    if (scale.m_unit == "") {
+        scale.m_unit = other.m_unit;
+    } else if (scale.m_unit != other.m_unit) {
+        // Can't take union
+        return scale;
+    }
+
+    scale.m_valueMin = std::min(scale.m_valueMin, other.m_valueMin);
+    scale.m_valueMax = std::max(scale.m_valueMax, other.m_valueMax);
+
+    scale.m_displayMin = std::min(scale.m_displayMin, other.m_displayMin);
+    scale.m_displayMax = std::max(scale.m_displayMax, other.m_displayMax);
+
+    return scale;
+}
+
 void
 CoordinateScale::mapExtents(double &min, double &max) const
 {
