@@ -1028,6 +1028,8 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
 
+    CoordinateScale yCoordScale = v->getEffectiveVerticalExtentsForLayer(this);
+    
 #ifdef DEBUG_TIME_VALUE_LAYER
     SVCERR << "TimeValueLayer[" << this << ", model " << getModel() << "]::paint in " << v->getId() << endl;
 #endif
@@ -1115,7 +1117,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     if (m_plotStyle == PlotSegmentation) {
         textY = v->getTextLabelYCoord(this, paint);
     } else {
-        int originY = getYForValue(v, 0.f);
+        int originY = yCoordScale.getCoordForValueRounded(v, 0.f);
         if (originY > 0 && originY < v->getPaintHeight()) {
             paint.save();
             paint.setPen(getPartialShades(v)[1]);
@@ -1148,7 +1150,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
         }
 
         int x = v->getXForFrame(p.getFrame());
-        int y = getYForValue(v, value);
+        int y = yCoordScale.getCoordForValueRounded(v, value);
 
         bool gap = false;
         if (m_plotStyle == PlotDiscreteCurves) { 
@@ -1183,7 +1185,7 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
             if (m_derivative) nvalue -= p.getValue();
             nf = q.getFrame();
             nx = v->getXForFrame(nf);
-            ny = getYForValue(v, nvalue);
+            ny = yCoordScale.getCoordForValueRounded(v, nvalue);
             haveNext = true;
         }
 
