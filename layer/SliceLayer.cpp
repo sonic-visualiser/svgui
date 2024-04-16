@@ -1266,15 +1266,24 @@ SliceLayer::getVerticalExtents() const
         ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
     if (!sliceableModel) return NO_VERTICAL_EXTENTS;
     
-    double valueMin = 0.0, valueMax = 0.0;
-    bool logarithmic = false;
-    QString unit;
-    (void)getValueExtents(valueMin, valueMax, logarithmic, unit);
+    double min = 0;
+    double max = double(sliceableModel->getHeight());
+    bool logarithmic = (m_binScale == BinScale::LogBins);
+    QString unit = "";
+
     CoordinateScale scale(CoordinateScale::Direction::Vertical,
-                          unit, logarithmic, valueMin, valueMax);
-    double displayMin = valueMin, displayMax = valueMax;
-    getDisplayExtents(displayMin, displayMax);
-    scale = scale.withDisplayExtents(displayMin, displayMax);
+                          unit, logarithmic, min, max);
+
+    if (m_minbin < m_maxbin) {
+        if (m_minbin > 0) {
+            min = m_minbin;
+        }
+        if (m_maxbin < max) {
+            max = m_maxbin;
+        }
+        scale = scale.withDisplayExtents(min, max);
+    }
+
     return { Layer::ScaleApplication::Normal, scale };
 }
 

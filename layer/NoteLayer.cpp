@@ -264,23 +264,33 @@ NoteLayer::getVerticalExtents() const
 {
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model) return NO_VERTICAL_EXTENTS;
-    
-    //!!! This needs to take into account shouldAutoAlign - if true it
-    //!!! should return ScaleApplication::Deferring - but at the mo
-    //!!! getValueExtents and getDisplayExtents return wrongly (for
-    //!!! our purposes) if shouldAutoAlign so we need to bring them
-    //!!! inline here first
 
-    double valueMin = 0.0, valueMax = 0.0;
-    bool logarithmic = false;
-    QString unit;
-    (void)getValueExtents(valueMin, valueMax, logarithmic, unit);
+    double min = convertValueFromEventValue(model->getValueMinimum());
+    double max = convertValueFromEventValue(model->getValueMaximum());
+    bool logarithmic = (m_verticalScale != LinearScale);
+    QString unit = "Hz";
+
+    min /= 1.06;
+    max *= 1.06;
+
     CoordinateScale scale(CoordinateScale::Direction::Vertical,
-                          unit, logarithmic, valueMin, valueMax);
-    double displayMin = valueMin, displayMax = valueMax;
-    getDisplayExtents(displayMin, displayMax);
-    scale = scale.withDisplayExtents(displayMin, displayMax);
-    return { Layer::ScaleApplication::Normal, scale };
+                          unit, logarithmic, min, max);
+
+    if (m_verticalScale == MIDIRangeScale) {
+        min = Pitch::getFrequencyForPitch(0);
+        max = Pitch::getFrequencyForPitch(127);
+        scale = scale.withDisplayExtents(min, max);
+    } else if (m_scaleMinimum != m_scaleMaximum) {
+        min = m_scaleMinimum;
+        max = m_scaleMaximum;
+        scale = scale.withDisplayExtents(min, max);
+    }
+
+    if (m_verticalScale == AutoAlignScale) {
+        return { Layer::ScaleApplication::Deferring, scale };
+    } else {
+        return { Layer::ScaleApplication::Normal, scale };
+    }
 }
 
 bool
