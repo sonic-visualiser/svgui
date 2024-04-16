@@ -30,7 +30,7 @@ class VerticalScaleLayer
 {
 public:
     virtual ~VerticalScaleLayer() { }
-
+//#ifdef NOT_DEFINED
     /**
      * Return the scale that this layer will use if it is not set to
      * align against another layer's scale. The extents may depend on
@@ -45,6 +45,7 @@ public:
     virtual int getYForValue(LayerGeometryProvider *, double value) const = 0;
     virtual double getValueForY(LayerGeometryProvider *, int y) const = 0;
     virtual QString getScaleUnits() const = 0;
+//#endif
 };
 
 } // end namespace sv
