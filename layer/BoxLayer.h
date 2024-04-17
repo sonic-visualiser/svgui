@@ -16,7 +16,6 @@
 #define SV_BOX_LAYER_H
 
 #include "SingleColourLayer.h"
-#include "VerticalScaleLayer.h"
 
 #include "data/model/BoxModel.h"
 
@@ -31,8 +30,7 @@ namespace sv {
 
 class View;
 
-class BoxLayer : public SingleColourLayer,
-                 public VerticalScaleLayer
+class BoxLayer : public SingleColourLayer
 {
     Q_OBJECT
 

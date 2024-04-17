@@ -886,56 +886,6 @@ TimeValueLayer::snapToSimilarFeature(LayerGeometryProvider *v,
     return true;
 }
 
-//!!! TO GO? But PlusMinusOneScale is only handled here?
-void
-TimeValueLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
-{
-    min = 0.0;
-    max = 0.0;
-    log = false;
-
-    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
-    if (!model) return;
-
-    if (shouldAutoAlign()) {
-
-        if (!v->getVisibleExtentsForUnit(getScaleUnits(), min, max, log)) {
-            min = model->getValueMinimum();
-            max = model->getValueMaximum();
-        } else {
-#ifdef DEBUG_TIME_VALUE_LAYER
-            SVCERR << "getScaleExtents: view returned min = " << min
-                   << ", max = " << max << ", log = " << log << endl;
-#endif
-            if (log) {
-                LogRange::mapRange(min, max);
-#ifdef DEBUG_TIME_VALUE_LAYER
-                SVCERR << "getScaleExtents: mapped to min = " << min
-                       << ", max = " << max << endl;
-#endif
-            }
-        }
-
-    } else if (m_verticalScale == PlusMinusOneScale) {
-
-        min = -1.0;
-        max = 1.0;
-
-    } else {
-
-        getDisplayExtents(min, max);
-        
-        if (m_verticalScale == LogScale) {
-            LogRange::mapRange(min, max);
-            log = true;
-        }
-    }
-
-#ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::getScaleExtents: min = " << min << ", max = " << max << endl;
-#endif
-}
-
 bool
 TimeValueLayer::shouldAutoAlign() const
 {
@@ -946,14 +896,21 @@ TimeValueLayer::shouldAutoAlign() const
 QColor
 TimeValueLayer::getColourForValue(LayerGeometryProvider *v, double val) const
 {
-    double min, max;
-    bool log;
-    getScaleExtents(v, min, max, log);
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
+    // We could argue for getValueMinimum/Maximum or
+    // getDisplayMinimum/Maximum but we must make sure these match
+    // whatever we use in paintVerticalScale
+    
+    double min = scale.getValueMinimum();
+    double max = scale.getValueMaximum();
+    bool log = scale.isLogarithmic();
 
     if (min > max) std::swap(min, max);
     if (max == min) max = min + 1;
 
     if (log) {
+        LogRange::mapRange(min, max);
         val = LogRange::map(val);
     }
 

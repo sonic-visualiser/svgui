@@ -17,7 +17,6 @@
 #define SV_REGION_LAYER_H
 
 #include "SingleColourLayer.h"
-#include "VerticalScaleLayer.h"
 #include "ColourScaleLayer.h"
 
 #include "data/model/RegionModel.h"
@@ -34,7 +33,6 @@ namespace sv {
 class View;
 
 class RegionLayer : public SingleColourLayer,
-                    public VerticalScaleLayer,
                     public ColourScaleLayer
 {
     Q_OBJECT
@@ -140,7 +138,9 @@ protected slots:
 
 protected:
     double getValueForY(LayerGeometryProvider *v, int y, int avoid) const;
-    void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
+
+//!!! WARNING: EqualSpaced not implemented elsewhere yet!
+    /// void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
 
     double getValueForY(LayerGeometryProvider *v, int y) const;
     int getYForValue(LayerGeometryProvider *v, double value) const;

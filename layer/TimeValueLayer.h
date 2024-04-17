@@ -17,7 +17,6 @@
 #define SV_TIME_VALUE_LAYER_H
 
 #include "SingleColourLayer.h"
-#include "VerticalScaleLayer.h"
 #include "ColourScaleLayer.h"
 
 #include "data/model/SparseTimeValueModel.h"
@@ -32,7 +31,6 @@ namespace sv {
 class View;
 
 class TimeValueLayer : public SingleColourLayer, 
-                       public VerticalScaleLayer, 
                        public ColourScaleLayer
 {
     Q_OBJECT
@@ -183,7 +181,6 @@ signals:
     void frameIlluminated(sv_frame_t);
     
 protected:
-    void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     QString getScaleUnits() const;
     bool shouldAutoAlign() const;
 

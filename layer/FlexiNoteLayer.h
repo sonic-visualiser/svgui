@@ -17,7 +17,6 @@
 #define SV_FLEXINOTE_LAYER_H
 
 #include "SingleColourLayer.h"
-#include "VerticalScaleLayer.h"
 
 #include "data/model/NoteModel.h"
 
@@ -31,8 +30,7 @@ namespace sv {
 class View;
 class SparseTimeValueModel;
 
-class FlexiNoteLayer : public SingleColourLayer,
-                       public VerticalScaleLayer
+class FlexiNoteLayer : public SingleColourLayer
 {
     Q_OBJECT
 

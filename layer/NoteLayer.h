@@ -17,7 +17,6 @@
 #define SV_NOTE_LAYER_H
 
 #include "SingleColourLayer.h"
-#include "VerticalScaleLayer.h"
 
 #include "data/model/NoteModel.h"
 
@@ -41,8 +40,7 @@ class View;
  * pitch, but the layer always converts to and from Hz behind the
  * scenes.
  */
-class NoteLayer : public SingleColourLayer,
-                  public VerticalScaleLayer
+class NoteLayer : public SingleColourLayer
 {
     Q_OBJECT
 

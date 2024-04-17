@@ -623,6 +623,8 @@ RegionLayer::getScaleUnits() const
     else return "";
 }
 
+/*!!! Note: EqualSpaced not yet implemented elsewhere!
+  
 void
 RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
 {
@@ -677,6 +679,7 @@ RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max,
 
     if (max == min) max = min + 1.0;
 }
+*/
 
 int
 RegionLayer::spacingIndexToY(LayerGeometryProvider *v, int i) const
@@ -826,9 +829,15 @@ RegionLayer::getValueForY(LayerGeometryProvider *v, int y, int avoid) const
 QColor
 RegionLayer::getColourForValue(LayerGeometryProvider *v, double val) const
 {
-    double min, max;
-    bool log;
-    getScaleExtents(v, min, max, log);
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
+    // We could argue for getValueMinimum/Maximum or
+    // getDisplayMinimum/Maximum but we must make sure these match
+    // whatever we use in paintVerticalScale
+    
+    double min = scale.getValueMinimum();
+    double max = scale.getValueMaximum();
+    bool log = scale.isLogarithmic();
 
     if (min > max) std::swap(min, max);
     if (max == min) max = min + 1;
