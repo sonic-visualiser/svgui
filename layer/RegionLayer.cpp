@@ -700,24 +700,6 @@ RegionLayer::yToSpacingIndex(LayerGeometryProvider *v, int y) const
     return vh;
 }
 
-/*!!!
-  CoordinateScale
-RegionLayer::getYCoordinateScale() const
-{
-    //!!! No way yet to handle EqualSpaced - look into this
-    auto model = ModelById::getAs<RegionModel>(m_model);
-    if (!model) {
-        return CoordinateScale(CoordinateScale::Direction::Vertical,
-                               "", false, 0.0, 0.0);
-    } else {
-        return CoordinateScale(CoordinateScale::Direction::Vertical,
-                               model->getScaleUnits(),
-                               m_verticalScale == LogScale,
-                               model->getValueMinimum(),
-                               model->getValueMaximum());
-    }
-}
-*/
 int
 RegionLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {
@@ -740,16 +722,8 @@ RegionLayer::getYForValue(LayerGeometryProvider *v, double val) const
 
     } else {
 
-        getScaleExtents(v, min, max, logarithmic);
-
-//    cerr << "RegionLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
-//    cerr << "h = " << h << ", margin = " << margin << endl;
-
-        if (logarithmic) {
-            val = LogRange::map(val);
-        }
-
-        return int(h - ((val - min) * h) / (max - min));
+        CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+        return scale.getCoordForValueRounded(v, val);
     }
 }
 
@@ -844,15 +818,8 @@ RegionLayer::getValueForY(LayerGeometryProvider *v, int y, int avoid) const
 
     } else {
 
-        getScaleExtents(v, min, max, logarithmic);
-
-        double val = min + (double(h - y) * double(max - min)) / h;
-
-        if (logarithmic) {
-            val = pow(10.0, val);
-        }
-
-        return val;
+        CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+        return scale.getValueForCoord(v, y);
     }
 }
 
@@ -1183,12 +1150,16 @@ RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint,
 
     } else {
 
+        // We are only asked to draw if we are the reference scale, so
+        // don't use getEffectiveVerticalExtentsForLayer here
+        CoordinateScale scale = getVerticalExtents().second;
+
         getScaleExtents(v, min, max, logarithmic);
 
         if (logarithmic) {
-            LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
+            LogNumericalScale().paintVertical(v, scale, paint, 0, min, max);
         } else {
-            LinearNumericalScale().paintVertical(v, this, paint, 0, min, max);
+            LinearNumericalScale().paintVertical(v, scale, paint, 0, min, max);
         }
     }
         

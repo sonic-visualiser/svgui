@@ -23,7 +23,7 @@ class QPainter;
 namespace sv {
 
 class LayerGeometryProvider;
-class VerticalScaleLayer;
+class CoordinateScale;
 
 class LinearNumericalScale
 {
@@ -31,7 +31,7 @@ public:
     int getWidth(LayerGeometryProvider *v, QPainter &paint);
 
     void paintVertical
-    (LayerGeometryProvider *v, const VerticalScaleLayer *layer,
+    (LayerGeometryProvider *v, const CoordinateScale &verticalScale,
      QPainter &paint, int x0, double minf, double maxf);
 };
 

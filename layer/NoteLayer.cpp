@@ -501,9 +501,12 @@ NoteLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &point) 
     EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    
     int nearestDistance = -1;
     for (const auto &p: onPoints) {
-        int distance = getYForValue(v, valueOf(p)) - y;
+        int py = scale.getCoordForValueRounded(v, valueOf(p));
+        int distance = py - y;
         if (distance < 0) distance = -distance;
         if (nearestDistance == -1 || distance < nearestDistance) {
             nearestDistance = distance;
@@ -535,13 +538,16 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     Event note;
     EventVector::iterator i;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    
     for (i = points.begin(); i != points.end(); ++i) {
 
-        int y = getYForValue(v, valueOf(*i));
+        int y = scale.getCoordForValueRounded(v, valueOf(*i));
         int h = 3;
 
         if (model->getValueQuantization() != 0.0) {
-            h = y - getYForValue
+            h = y -
+                scale.getCoordForValueRounded
                 (v, convertValueFromEventValue(i->getValue() +
                                                model->getValueQuantization()));
             if (h < 3) h = 3;
@@ -601,7 +607,7 @@ NoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) const
     }
 
     pos = QPoint(v->getXForFrame(note.getFrame()),
-                 getYForValue(v, valueOf(note)));
+                 scale.getCoordForValueRounded(v, valueOf(note)));
     return text;
 }
 
@@ -686,80 +692,6 @@ NoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, b
 
     if (max == min) max = min + 1.0;
 }
-/*!!!
-CoordinateScale
-NoteLayer::getYCoordinateScale() const
-{
-    auto model = ModelById::getAs<NoteModel>(m_model);
-    if (!model) {
-        return CoordinateScale(CoordinateScale::Direction::Vertical,
-                               "", false, 0.0, 0.0);
-    } else {
-        QString unit = "Hz";
-        double min = 0.0, max = 0.0;
-        //!!! Can't call getDisplayExtents as it defers on auto-align
-        if (m_verticalScale == MIDIRangeScale) {
-            min = Pitch::getFrequencyForPitch(0);
-            max = Pitch::getFrequencyForPitch(127);
-        } else if (m_scaleMinimum == m_scaleMaximum) {
-            bool log = false;
-            getValueExtents(min, max, log, unit);
-        } else {
-            min = m_scaleMinimum;
-            max = m_scaleMaximum;
-        }
-        return CoordinateScale(CoordinateScale::Direction::Vertical,
-                               getScaleUnits(),
-                               m_verticalScale != LinearScale,
-                               min,
-                               max);
-    }
-}
-*/
-int
-NoteLayer::getYForValue(LayerGeometryProvider *v, double val) const
-{
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->getPaintHeight();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-#ifdef DEBUG_NOTE_LAYER
-    SVCERR << "NoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
-#endif
-
-    if (logarithmic) {
-        val = LogRange::map(val);
-#ifdef DEBUG_NOTE_LAYER
-        SVCERR << "logarithmic true, val now = " << val << endl;
-#endif
-    }
-
-    int y = int(h - ((val - min) * h) / (max - min)) - 1;
-#ifdef DEBUG_NOTE_LAYER
-    SVCERR << "y = " << y << endl;
-#endif
-    return y;
-}
-
-double
-NoteLayer::getValueForY(LayerGeometryProvider *v, int y) const
-{
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->getPaintHeight();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-    double val = min + (double(h - y) * double(max - min)) / h;
-
-    if (logarithmic) {
-        val = pow(10.0, val);
-    }
-
-    return val;
-}
 
 bool
 NoteLayer::shouldAutoAlign() const
@@ -817,19 +749,22 @@ NoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 
     paint.save();
     paint.setRenderHint(QPainter::Antialiasing, false);
-    
+
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
 
         const Event &p(*i);
 
         int x = v->getXForFrame(p.getFrame());
-        int y = getYForValue(v, valueOf(p));
+        int y = scale.getCoordForValueRounded(v, valueOf(p));
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int h = 3;
         
         if (model->getValueQuantization() != 0.0) {
-            h = y - getYForValue
+            h = y -
+                scale.getCoordForValueRounded
                 (v, convertValueFromEventValue
                  (p.getValue() + model->getValueQuantization()));
             if (h < 3) h = 3;
@@ -899,6 +834,11 @@ NoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, Q
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model || model->isEmpty()) return;
 
+    // We are only asked to draw if we are the reference scale, so
+    // don't use getEffectiveVerticalExtentsForLayer here
+    CoordinateScale scale = getVerticalExtents().second;
+
+    //!!! to go: (update PianoScale)
     QString unit;
     double min, max;
     bool logarithmic;
@@ -909,9 +849,9 @@ NoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, Q
     getScaleExtents(v, min, max, logarithmic);
 
     if (logarithmic) {
-        LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        LogNumericalScale().paintVertical(v, scale, paint, 0, min, max);
     } else {
-        LinearNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        LinearNumericalScale().paintVertical(v, scale, paint, 0, min, max);
     }
     
     if (logarithmic) {
@@ -941,11 +881,13 @@ NoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model) return;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->position().y());
+    double value = scale.getValueForCoord(v, e->position().y());
     float eventValue = convertValueToEventValue(value);
     eventValue = roundf(eventValue);
 
@@ -967,11 +909,13 @@ NoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model || !m_editing) return;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double newValue = getValueForY(v, e->position().y());
+    double newValue = scale.getValueForCoord(v, e->position().y());
     float newEventValue = convertValueToEventValue(newValue);
     newEventValue = roundf(newEventValue);
 
@@ -1057,8 +1001,10 @@ NoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     if (!getPointToDrag(v, e->position().x(), e->position().y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     m_dragPointX = v->getXForFrame(m_editingPoint.getFrame());
-    m_dragPointY = getYForValue(v, valueOf(m_editingPoint));
+    m_dragPointY = scale.getCoordForValueRounded(v, valueOf(m_editingPoint));
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -1078,6 +1024,8 @@ NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model || !m_editing) return;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     int xdist = e->position().x() - m_dragStartX;
     int ydist = e->position().y() - m_dragStartY;
     int newx = m_dragPointX + xdist;
@@ -1087,7 +1035,7 @@ NoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double newValue = getValueForY(v, newy);
+    double newValue = scale.getValueForCoord(v, newy);
     float newEventValue = convertValueToEventValue(newValue);
     newEventValue = roundf(newEventValue);
 

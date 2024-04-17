@@ -14,8 +14,8 @@
 */
 
 #include "LinearNumericalScale.h"
-#include "VerticalScaleLayer.h"
 #include "LayerGeometryProvider.h"
+#include "CoordinateScale.h"
 
 #include <QPainter>
 
@@ -34,7 +34,7 @@ LinearNumericalScale::getWidth(LayerGeometryProvider *,
 
 void
 LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
-                                    const VerticalScaleLayer *layer,
+                                    const CoordinateScale &scale,
                                     QPainter &paint,
                                     int x0,
                                     double minf,
@@ -55,13 +55,13 @@ LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
 
         if (i == n-1 &&
             v->getPaintHeight() < paint.fontMetrics().height() * (n*2)) {
-            if (layer->getScaleUnits() != "") drawText = false;
+            if (scale.getUnit() != "") drawText = false;
         }
 
         double val = ticks[i].value;
         QString label = QString::fromStdString(ticks[i].label);
         
-        y = layer->getYForValue(v, val);
+        y = scale.getCoordForValueRounded(v, val);
 
         ty = y - paint.fontMetrics().height() + paint.fontMetrics().ascent() + 2;
         

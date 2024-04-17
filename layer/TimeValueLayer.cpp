@@ -430,7 +430,11 @@ TimeValueLayer::getVerticalExtents() const
     CoordinateScale scale(CoordinateScale::Direction::Vertical,
                           unit, logarithmic, min, max);
 
-    if (m_scaleMinimum != m_scaleMaximum) {
+    if (m_verticalScale == PlusMinusOneScale) {
+
+        scale = scale.withDisplayExtents(-1.0, 1.0);
+
+    } else if (m_scaleMinimum != m_scaleMaximum) {
         
         min = m_scaleMinimum;
         max = m_scaleMaximum;
@@ -789,8 +793,10 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
             .arg(points.begin()->getLabel());
     }
 
-    pos = QPoint(v->getXForFrame(useFrame),
-                 getYForValue(v, points.begin()->getValue()));
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    int y = scale.getCoordForValueRounded(v, points.begin()->getValue());
+
+    pos = QPoint(v->getXForFrame(useFrame), y);
     return text;
 }
 
@@ -930,57 +936,6 @@ TimeValueLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &m
 #endif
 }
 
-int
-TimeValueLayer::getYForValue(LayerGeometryProvider *v, double val) const
-{
-    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
-    return scale.getCoordForValueRounded(v, val);
-    /*!!!
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->getPaintHeight();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-#ifdef DEBUG_TIME_VALUE_LAYER
-    SVCERR << "getYForValue(" << val << "): min " << min << ", max "
-           << max << ", log " << logarithmic << endl;
-#endif
-
-    if (logarithmic) {
-        val = LogRange::map(val);
-#ifdef DEBUG_TIME_VALUE_LAYER
-        SVCERR << "-> " << val << endl;
-#endif
-    }
-
-    return int(h - ((val - min) * h) / (max - min));
-    */
-}
-
-double
-TimeValueLayer::getValueForY(LayerGeometryProvider *v, int y) const
-{
-    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
-    return scale.getValueForCoord(v, y);
-/*
-  double min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->getPaintHeight();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-    double val = min + (double(h - y) * double(max - min)) / h;
-
-    if (logarithmic) {
-        val = LogRange::map(val);
-    }
-
-    return val;
-*/
-}
-
-//!!! TO GO?
 bool
 TimeValueLayer::shouldAutoAlign() const
 {
@@ -1439,7 +1394,7 @@ TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
 {
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model || model->isEmpty()) return;
-
+    
     QString unit;
     double min, max;
     bool logarithmic;
@@ -1460,12 +1415,16 @@ TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
 
     } else {
 
+        // We are only asked to draw if we are the reference scale, so
+        // don't use getEffectiveVerticalExtentsForLayer here
+        CoordinateScale scale = getVerticalExtents().second;
+
         getScaleExtents(v, min, max, logarithmic);
 
         if (logarithmic) {
-            LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
+            LogNumericalScale().paintVertical(v, scale, paint, 0, min, max);
         } else {
-            LinearNumericalScale().paintVertical(v, this, paint, 0, min, max);
+            LinearNumericalScale().paintVertical(v, scale, paint, 0, min, max);
         }
 
         if (logarithmic && (getScaleUnits() == "Hz")) {
@@ -1503,7 +1462,8 @@ TimeValueLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
-    double value = getValueForY(v, e->position().y());
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    double value = scale.getValueForCoord(v, e->position().y());
 
     bool havePoint = false;
 
@@ -1552,7 +1512,8 @@ TimeValueLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = (frame / resolution) * resolution;
 
-    double value = getValueForY(v, e->position().y());
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    double value = scale.getValueForCoord(v, e->position().y());
 
     EventVector points = getLocalPoints(v, e->position().x());
 
@@ -1695,7 +1656,8 @@ TimeValueLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->position().y());
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    double value = scale.getValueForCoord(v, e->position().y());
 
     if (m_plotStyle == PlotSegmentation && !m_permitValueEditOfSegmentation) {
         // Do not allow dragging up/down

@@ -269,6 +269,8 @@ BoxLayer::getLocalPoint(LayerGeometryProvider *v, int x, int y,
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !model->isReady()) return false;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     sv_frame_t frame = v->getFrameForX(x);
 
     EventVector onPoints = model->getEventsCovering(frame);
@@ -277,7 +279,8 @@ BoxLayer::getLocalPoint(LayerGeometryProvider *v, int x, int y,
     Event bestContaining;
     for (const auto &p: onPoints) {
         auto r = getRange(p);
-        if (y > getYForValue(v, r.first) || y < getYForValue(v, r.second)) {
+        if (y > scale.getCoordForValueRounded(v, r.first) ||
+            y < scale.getCoordForValueRounded(v, r.second)) {
             SVCERR << "inPoints: rejecting " << p.toXmlString() << endl;
             continue;
         }
@@ -309,8 +312,8 @@ BoxLayer::getLocalPoint(LayerGeometryProvider *v, int x, int y,
         for (const auto &p: onPoints) {
             const auto r = getRange(p);
             int distance = std::min
-                (getYForValue(v, r.first) - y,
-                 getYForValue(v, r.second) - y);
+                (scale.getCoordForValueRounded(v, r.first) - y,
+                 scale.getCoordForValueRounded(v, r.second) - y);
             if (distance < 0) distance = -distance;
             if (nearestDistance == -1 || distance < nearestDistance) {
                 nearestDistance = distance;
@@ -383,8 +386,9 @@ BoxLayer::getFeatureDescription(LayerGeometryProvider *v,
             .arg(box.getLabel());
     }
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
     pos = QPoint(v->getXForFrame(box.getFrame()),
-                 getYForValue(v, box.getValue()));
+                 scale.getCoordForValueRounded(v, box.getValue()));
     return text;
 }
 
@@ -513,69 +517,17 @@ BoxLayer::getScaleExtents(LayerGeometryProvider *v,
 
     if (max == min) max = min + 1.0;
 }
-/*!!!
-CoordinateScale
-BoxLayer::getYCoordinateScale() const
-{
-    auto model = ModelById::getAs<BoxModel>(m_model);
-    if (!model) {
-        return CoordinateScale(CoordinateScale::Direction::Vertical,
-                               "", false, 0.0, 0.0);
-    } else {
-        return CoordinateScale(CoordinateScale::Direction::Vertical,
-                               getScaleUnits(),
-                               m_verticalScale == LogScale,
-                               model->getValueMinimum(),
-                               model->getValueMaximum());
-    }
-}
-*/
-int
-BoxLayer::getYForValue(LayerGeometryProvider *v, double val) const
-{
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->getPaintHeight();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-//    cerr << "BoxLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
-//    cerr << "h = " << h << ", margin = " << margin << endl;
-
-    if (logarithmic) {
-        val = LogRange::map(val);
-    }
-
-    return int(h - ((val - min) * h) / (max - min));
-}
-
-double
-BoxLayer::getValueForY(LayerGeometryProvider *v, int y) const
-{
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->getPaintHeight();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-    double val = min + (double(h - y) * double(max - min)) / h;
-
-    if (logarithmic) {
-        val = pow(10.0, val);
-    }
-
-    return val;
-}
 
 void
-BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
-                             QRect rect) const
+BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !model->isOK()) return;
 
     sv_samplerate_t sampleRate = model->getSampleRate();
     if (!sampleRate) return;
+
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
 
 //    Profiler profiler("BoxLayer::paint", true);
 
@@ -620,8 +572,8 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
 
         int x = v->getXForFrame(p.getFrame());
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
-        int y = getYForValue(v, r.first);
-        int h = getYForValue(v, r.second) - y;
+        int y = scale.getCoordForValueRounded(v, r.first);
+        int h = scale.getCoordForValueRounded(v, r.second) - y;
         int ex = x + w;
         int gap = v->scalePixelSize(2);
 
@@ -727,7 +679,7 @@ BoxLayer::paint(LayerGeometryProvider *v, QPainter &paint,
         
         int x = v->getXForFrame(p.getFrame());
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
-        int y = getYForValue(v, p.getValue());
+        int y = scale.getCoordForValueRounded(v, p.getValue());
 
         int labelWidth = fm.horizontalAdvance(label);
 
@@ -772,6 +724,10 @@ BoxLayer::paintVerticalScale(LayerGeometryProvider *v,
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || model->isEmpty()) return;
 
+    // We are only asked to draw if we are the reference scale, so
+    // don't use getEffectiveVerticalExtentsForLayer here
+    CoordinateScale scale = getVerticalExtents().second;
+
     QString unit;
     double min, max;
     bool logarithmic;
@@ -781,9 +737,9 @@ BoxLayer::paintVerticalScale(LayerGeometryProvider *v,
     getScaleExtents(v, min, max, logarithmic);
 
     if (logarithmic) {
-        LogNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        LogNumericalScale().paintVertical(v, scale, paint, 0, min, max);
     } else {
-        LinearNumericalScale().paintVertical(v, this, paint, 0, min, max);
+        LinearNumericalScale().paintVertical(v, scale, paint, 0, min, max);
     }
         
     if (getScaleUnits() != "") {
@@ -802,11 +758,13 @@ BoxLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model) return;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->position().y());
+    double value = scale.getValueForCoord(v, e->position().y());
 
     m_editingPoint = Event(frame, float(value), 0, "");
     m_originalPoint = m_editingPoint;
@@ -825,6 +783,8 @@ BoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     sv_frame_t dragFrame = v->getFrameForX(e->position().x());
     if (dragFrame < 0) dragFrame = 0;
     dragFrame = dragFrame / model->getResolution() * model->getResolution();
@@ -838,7 +798,7 @@ BoxLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
         eventDuration = model->getResolution();
     }
 
-    double dragValue = getValueForY(v, e->position().y());
+    double dragValue = scale.getValueForCoord(v, e->position().y());
 
     double eventValue = m_originalPoint.getValue();
     double eventFreqDiff = dragValue - eventValue;
@@ -920,8 +880,10 @@ BoxLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
         return;
     }
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     m_dragPointX = v->getXForFrame(m_editingPoint.getFrame());
-    m_dragPointY = getYForValue(v, m_editingPoint.getValue());
+    m_dragPointY = scale.getCoordForValueRounded(v, m_editingPoint.getValue());
 
     m_originalPoint = m_editingPoint;
 
@@ -941,6 +903,8 @@ BoxLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (!model || !m_editing) return;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     int xdist = e->position().x() - m_dragStartX;
     int ydist = e->position().y() - m_dragStartY;
     int newx = m_dragPointX + xdist;
@@ -950,7 +914,7 @@ BoxLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, newy);
+    double value = scale.getValueForCoord(v, newy);
 
     if (!m_editingCommand) {
         m_editingCommand = new ChangeEventsCommand

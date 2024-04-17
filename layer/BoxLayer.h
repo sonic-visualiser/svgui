@@ -115,12 +115,6 @@ public:
 
     void setProperties(const LayerAttributes &attributes) override;
 
-    /// VerticalScaleLayer methods
-//!!!    CoordinateScale getYCoordinateScale() const override;
-    int getYForValue(LayerGeometryProvider *v, double value) const override;
-    double getValueForY(LayerGeometryProvider *v, int y) const override;
-    QString getScaleUnits() const override;
-
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
 
@@ -130,6 +124,8 @@ protected:
     // subsumes the uses of both getPointToDrag and getLocalPoints in
     // some other layer implementations.
     bool getLocalPoint(LayerGeometryProvider *v, int x, int y, Event &) const;
+
+    QString getScaleUnits() const;
 
     ModelId m_model;
     bool m_editing;

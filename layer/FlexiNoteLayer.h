@@ -161,12 +161,6 @@ public:
     
     void setVerticalRangeToNoteRange(LayerGeometryProvider *v);
 
-    /// VerticalScaleLayer method
-//!!!    CoordinateScale getYValueScale() const override;
-    int getYForValue(LayerGeometryProvider *v, double value) const override;
-    double getValueForY(LayerGeometryProvider *v, int y) const override;
-    QString getScaleUnits() const override;
-
 signals:
     void reAnalyseRegion(sv_frame_t, sv_frame_t, float, float);
     void materialiseReAnalysis();
@@ -174,6 +168,11 @@ signals:
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     bool shouldConvertMIDIToHz() const;
+
+    QString getScaleUnits() const;
+
+    int getYForValue(LayerGeometryProvider *v, double value) const;
+    double getValueForY(LayerGeometryProvider *v, int y) const;
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 

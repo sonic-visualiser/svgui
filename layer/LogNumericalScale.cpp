@@ -14,8 +14,8 @@
 */
 
 #include "LogNumericalScale.h"
-#include "VerticalScaleLayer.h"
 #include "LayerGeometryProvider.h"
+#include "CoordinateScale.h"
 
 #include "base/LogRange.h"
 #include "base/ScaleTickIntervals.h"
@@ -35,7 +35,7 @@ LogNumericalScale::getWidth(LayerGeometryProvider *,
 
 void
 LogNumericalScale::paintVertical(LayerGeometryProvider *v,
-                                 const VerticalScaleLayer *layer,
+                                 const CoordinateScale &scale,
                                  QPainter &paint,
                                  int x0,
                                  double minlog,
@@ -56,13 +56,13 @@ LogNumericalScale::paintVertical(LayerGeometryProvider *v,
 
         if (i == n-1 &&
             v->getPaintHeight() < paint.fontMetrics().height() * (n*2)) {
-            if (layer->getScaleUnits() != "") drawText = false;
+            if (scale.getUnit() != "") drawText = false;
         }
 
         double val = ticks[i].value;
         QString label = QString::fromStdString(ticks[i].label);
 
-        y = layer->getYForValue(v, val);
+        y = scale.getCoordForValueRounded(v, val);
 
         ty = y - paint.fontMetrics().height() + paint.fontMetrics().ascent() + 2;
         

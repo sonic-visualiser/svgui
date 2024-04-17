@@ -131,10 +131,7 @@ public:
 
     void setProperties(const LayerAttributes &attributes) override;
 
-    /// VerticalScaleLayer and ColourScaleLayer methods
-//!!!    CoordinateScale getYCoordinateScale() const override;
-    int getYForValue(LayerGeometryProvider *v, double value) const override;
-    double getValueForY(LayerGeometryProvider *v, int y) const override;
+    /// ColourScaleLayer methods
     QString getScaleUnits() const override;
     QColor getColourForValue(LayerGeometryProvider *v, double value) const override;
 
@@ -144,6 +141,9 @@ protected slots:
 protected:
     double getValueForY(LayerGeometryProvider *v, int y, int avoid) const;
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
+
+    double getValueForY(LayerGeometryProvider *v, int y) const;
+    int getYForValue(LayerGeometryProvider *v, double value) const;
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 

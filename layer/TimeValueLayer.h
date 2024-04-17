@@ -175,12 +175,6 @@ public:
             return SingleColourLayer::hasLightBackground();
         }
     }
-
-    /// VerticalScaleLayer method
-//!!!    CoordinateScale getYValueScale() const override;
-    int getYForValue(LayerGeometryProvider *v, double value) const override;
-    double getValueForY(LayerGeometryProvider *v, int y) const override;
-    QString getScaleUnits() const override;
     
     /// ColourScaleLayer method
     QColor getColourForValue(LayerGeometryProvider *v, double value) const override;
@@ -190,6 +184,7 @@ signals:
     
 protected:
     void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
+    QString getScaleUnits() const;
     bool shouldAutoAlign() const;
 
     EventVector getLocalPoints(LayerGeometryProvider *v, int) const;
