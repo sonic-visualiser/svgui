@@ -20,6 +20,7 @@
 #include <cmath>
 
 #include "base/Pitch.h"
+#include "base/Debug.h"
 
 #include "LayerGeometryProvider.h"
 #include "HorizontalScaleProvider.h"
@@ -33,9 +34,7 @@ void
 PianoScale::paintPianoVertical(LayerGeometryProvider *v,
                                QPainter &paint,
                                QRect r,
-                               double minf,
-                               double maxf,
-                               FrequencyMapping mapping)
+                               const CoordinateScale &scale)
 {
     int x0 = r.x(), y0 = r.y(), x1 = r.x() + r.width(), y1 = r.y() + r.height();
 
@@ -44,10 +43,14 @@ PianoScale::paintPianoVertical(LayerGeometryProvider *v,
     int py = y1, ppy = y1;
     paint.setBrush(paint.pen().color());
 
+    if (scale.getUnit() != "Hz") {
+        SVDEBUG << "WARNING: PianoScale::paintPianoVertical: CoordinateScale unit is not Hz (it is: \"" << scale.getUnit() << "\")" << endl;
+    }
+    
     for (int i = 0; i < 128; ++i) {
 
         double f = Pitch::getFrequencyForPitch(i);
-        int y = int(lrint(v->getYForFrequency(f, minf, maxf, mapping)));
+        int y = scale.getCoordForValueRounded(v, f);
 
         if (y < y0 - 2) break;
         if (y > y1 + 2) {

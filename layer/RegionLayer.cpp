@@ -1131,13 +1131,13 @@ RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint,
     auto model = ModelById::getAs<RegionModel>(m_model);
     if (!model || model->isEmpty()) return;
 
-    QString unit;
-    double min, max;
-    bool logarithmic;
-
     int w = getVerticalScaleWidth(v, false, paint);
 
     if (m_plotStyle == PlotSegmentation) {
+
+        QString unit;
+        double min, max;
+        bool logarithmic;
 
         getValueExtents(min, max, logarithmic, unit);
 
@@ -1154,12 +1154,10 @@ RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint,
         // don't use getEffectiveVerticalExtentsForLayer here
         CoordinateScale scale = getVerticalExtents().second;
 
-        getScaleExtents(v, min, max, logarithmic);
-
-        if (logarithmic) {
-            LogNumericalScale().paintVertical(v, scale, paint, 0, min, max);
+        if (scale.isLogarithmic()) {
+            LogNumericalScale().paintVertical(v, scale, paint, 0);
         } else {
-            LinearNumericalScale().paintVertical(v, scale, paint, 0, min, max);
+            LinearNumericalScale().paintVertical(v, scale, paint, 0);
         }
     }
         

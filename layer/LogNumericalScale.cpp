@@ -37,12 +37,12 @@ void
 LogNumericalScale::paintVertical(LayerGeometryProvider *v,
                                  const CoordinateScale &scale,
                                  QPainter &paint,
-                                 int x0,
-                                 double minlog,
-                                 double maxlog)
+                                 int x0)
 {
     int n = 10;
-    auto ticks = ScaleTickIntervals::logarithmicAlready({ minlog, maxlog, n });
+    double minf = scale.getDisplayMinimum();
+    double maxf = scale.getDisplayMaximum();
+    auto ticks = ScaleTickIntervals::logarithmic({ minf, maxf, n });
     n = int(ticks.size());
 
     int w = getWidth(v, paint) + x0;

@@ -972,28 +972,18 @@ FlexiNoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
     // don't use getEffectiveVerticalExtentsForLayer here
     CoordinateScale scale = getVerticalExtents().second;
 
-    //!!! to go: (update PianoScale)
-    QString unit;
-    double min, max;
-    bool logarithmic;
-
     int w = getVerticalScaleWidth(v, false, paint);
     int h = v->getPaintHeight();
 
-    getScaleExtents(v, min, max, logarithmic);
-
-    if (logarithmic) {
-        LogNumericalScale().paintVertical(v, scale, paint, 0, min, max);
+    if (scale.isLogarithmic()) {
+        LogNumericalScale().paintVertical(v, scale, paint, 0);
     } else {
-        LinearNumericalScale().paintVertical(v, scale, paint, 0, min, max);
+        LinearNumericalScale().paintVertical(v, scale, paint, 0);
     }
     
-    if (logarithmic && (getScaleUnits() == "Hz")) {
+    if (!scale.isLinear() && scale.getUnit() == "Hz") {
         PianoScale().paintPianoVertical
-            (v, paint, QRect(w - 10, 0, 10, h), 
-             LogRange::unmap(min), 
-             LogRange::unmap(max),
-             FrequencyMapping::Log);
+            (v, paint, QRect(w - 10, 0, 10, h), scale);
         paint.drawLine(w, 0, w, h);
     }
         

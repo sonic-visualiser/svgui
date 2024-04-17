@@ -728,18 +728,12 @@ BoxLayer::paintVerticalScale(LayerGeometryProvider *v,
     // don't use getEffectiveVerticalExtentsForLayer here
     CoordinateScale scale = getVerticalExtents().second;
 
-    QString unit;
-    double min, max;
-    bool logarithmic;
-
     int w = getVerticalScaleWidth(v, false, paint);
 
-    getScaleExtents(v, min, max, logarithmic);
-
-    if (logarithmic) {
-        LogNumericalScale().paintVertical(v, scale, paint, 0, min, max);
+    if (scale.isLogarithmic()) {
+        LogNumericalScale().paintVertical(v, scale, paint, 0);
     } else {
-        LinearNumericalScale().paintVertical(v, scale, paint, 0, min, max);
+        LinearNumericalScale().paintVertical(v, scale, paint, 0);
     }
         
     if (getScaleUnits() != "") {

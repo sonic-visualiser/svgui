@@ -31,7 +31,7 @@ public:
 
     void paintVertical
     (LayerGeometryProvider *v, const CoordinateScale &scale,
-     QPainter &paint, int x0, double minlog, double maxlog);
+     QPainter &paint, int x0);
 };
 
 } // end namespace sv

@@ -30,7 +30,7 @@ class PianoScale
 public:
     void paintPianoVertical
     (LayerGeometryProvider *v, QPainter &paint, QRect rect,
-     double minf, double maxf, FrequencyMapping mapping); // you normally want Log
+     const CoordinateScale &scale);
     
     void paintPianoHorizontal
     (LayerGeometryProvider *v, const HorizontalScaleProvider *p,

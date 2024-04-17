@@ -1394,15 +1394,15 @@ TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
 {
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model || model->isEmpty()) return;
-    
-    QString unit;
-    double min, max;
-    bool logarithmic;
 
     int w = getVerticalScaleWidth(v, false, paint);
     int h = v->getPaintHeight();
 
     if (m_plotStyle == PlotSegmentation) {
+    
+        QString unit;
+        double min, max;
+        bool logarithmic;
 
         getValueExtents(min, max, logarithmic, unit);
 
@@ -1419,20 +1419,17 @@ TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
         // don't use getEffectiveVerticalExtentsForLayer here
         CoordinateScale scale = getVerticalExtents().second;
 
-        getScaleExtents(v, min, max, logarithmic);
-
-        if (logarithmic) {
-            LogNumericalScale().paintVertical(v, scale, paint, 0, min, max);
+        //!!! This is now in common among several layers - could pull it out
+        
+        if (scale.isLogarithmic()) {
+            LogNumericalScale().paintVertical(v, scale, paint, 0);
         } else {
-            LinearNumericalScale().paintVertical(v, scale, paint, 0, min, max);
+            LinearNumericalScale().paintVertical(v, scale, paint, 0);
         }
 
-        if (logarithmic && (getScaleUnits() == "Hz")) {
+        if (!scale.isLinear() && scale.getUnit() == "Hz") {
             PianoScale().paintPianoVertical
-                (v, paint, QRect(w - 10, 0, 10, h), 
-                 LogRange::unmap(min), 
-                 LogRange::unmap(max),
-                 FrequencyMapping::Log);
+                (v, paint, QRect(w - 10, 0, 10, h), scale);
             paint.drawLine(w, 0, w, h);
         }
     }

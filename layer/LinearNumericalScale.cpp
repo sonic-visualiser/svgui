@@ -36,11 +36,11 @@ void
 LinearNumericalScale::paintVertical(LayerGeometryProvider *v,
                                     const CoordinateScale &scale,
                                     QPainter &paint,
-                                    int x0,
-                                    double minf,
-                                    double maxf)
+                                    int x0)
 {
     int n = 10;
+    double minf = scale.getDisplayMinimum();
+    double maxf = scale.getDisplayMaximum();
     auto ticks = ScaleTickIntervals::linear({ minf, maxf, n });
     n = int(ticks.size());
 

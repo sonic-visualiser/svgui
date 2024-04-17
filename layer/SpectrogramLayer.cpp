@@ -2341,10 +2341,10 @@ SpectrogramLayer::paintVerticalScale(LayerGeometryProvider *v, bool detailed,
 
         // piano keyboard
 
+        CoordinateScale scale = getVerticalExtents().second;
+    
         PianoScale().paintPianoVertical
-            (v, paint, QRect(w - pkw - 1, 0, pkw, h),
-             getEffectiveMinFrequency(), getEffectiveMaxFrequency(),
-             m_frequencyMapping);
+            (v, paint, QRect(w - pkw - 1, 0, pkw, h), scale);
     }
 
     m_haveDetailedScale = detailed;
