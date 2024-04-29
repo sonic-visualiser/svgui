@@ -28,8 +28,6 @@
 #include <QApplication>
 #include <QStyleFactory>
 
-#include <iostream>
-
 //#define DEBUG_VIEW_MANAGER 1
 
 namespace sv {
@@ -144,7 +142,7 @@ sv_frame_t
 ViewManager::getGlobalCentreFrame() const
 {
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::getGlobalCentreFrame: returning " << m_globalCentreFrame << endl;
+    SVCERR << "ViewManager::getGlobalCentreFrame: returning " << m_globalCentreFrame << endl;
 #endif
     return m_globalCentreFrame;
 }
@@ -153,7 +151,7 @@ void
 ViewManager::setGlobalCentreFrame(sv_frame_t f)
 {
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::setGlobalCentreFrame to " << f << endl;
+    SVCERR << "ViewManager::setGlobalCentreFrame to " << f << endl;
 #endif
     m_globalCentreFrame = f;
     emit globalCentreFrameChanged(f);
@@ -163,7 +161,7 @@ ZoomLevel
 ViewManager::getGlobalZoom() const
 {
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::getGlobalZoom: returning " << m_globalZoom << endl;
+    SVCERR << "ViewManager::getGlobalZoom: returning " << m_globalZoom << endl;
 #endif
     return m_globalZoom;
 }
@@ -174,16 +172,16 @@ ViewManager::getPlaybackFrame() const
     if (isRecording()) {
         m_playbackFrame = m_recordTarget->getRecordDuration();
 #ifdef DEBUG_VIEW_MANAGER
-        cout << "ViewManager::getPlaybackFrame(recording) -> " << m_playbackFrame << endl;
+        SVCERR << "ViewManager::getPlaybackFrame(recording) -> " << m_playbackFrame << endl;
 #endif
     } else if (isPlaying()) {
         m_playbackFrame = m_playSource->getCurrentPlayingFrame();
 #ifdef DEBUG_VIEW_MANAGER
-        cout << "ViewManager::getPlaybackFrame(playing) -> " << m_playbackFrame << endl;
+        SVCERR << "ViewManager::getPlaybackFrame(playing) -> " << m_playbackFrame << endl;
 #endif
     } else {
 #ifdef DEBUG_VIEW_MANAGER
-        cout << "ViewManager::getPlaybackFrame(not playing) -> " << m_playbackFrame << endl;
+        SVCERR << "ViewManager::getPlaybackFrame(not playing) -> " << m_playbackFrame << endl;
 #endif
     }
     return m_playbackFrame;
@@ -193,7 +191,7 @@ void
 ViewManager::setPlaybackFrame(sv_frame_t f)
 {
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::setPlaybackFrame(" << f << ")" << endl;
+    SVCERR << "ViewManager::setPlaybackFrame(" << f << ")" << endl;
 #endif
     if (f < 0) f = 0;
     if (m_playbackFrame != f) {
@@ -221,7 +219,7 @@ sv_frame_t
 ViewManager::alignPlaybackFrameToReference(sv_frame_t frame) const
 {
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::alignPlaybackFrameToReference(" << frame << "): playback model is " << m_playbackModel << endl;
+    SVCERR << "ViewManager::alignPlaybackFrameToReference(" << frame << "): playback model is " << m_playbackModel << endl;
 #endif
     if (m_playbackModel.isNone() || !m_alignMode) {
         return frame;
@@ -232,7 +230,7 @@ ViewManager::alignPlaybackFrameToReference(sv_frame_t frame) const
         } 
         sv_frame_t f = playbackModel->alignToReference(frame);
 #ifdef DEBUG_VIEW_MANAGER
-        cerr << "aligned frame = " << f << endl;
+        SVCERR << "aligned frame = " << f << endl;
 #endif
         return f;
     }
@@ -242,7 +240,7 @@ sv_frame_t
 ViewManager::alignReferenceToPlaybackFrame(sv_frame_t frame) const
 {
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::alignReferenceToPlaybackFrame(" << frame << "): playback model is " << m_playbackModel << endl;
+    SVCERR << "ViewManager::alignReferenceToPlaybackFrame(" << frame << "): playback model is " << m_playbackModel << endl;
 #endif
     if (m_playbackModel.isNone() || !m_alignMode) {
         return frame;
@@ -253,7 +251,7 @@ ViewManager::alignReferenceToPlaybackFrame(sv_frame_t frame) const
         } 
         sv_frame_t f = playbackModel->alignFromReference(frame);
 #ifdef DEBUG_VIEW_MANAGER
-        cerr << "aligned frame = " << f << endl;
+        SVCERR << "aligned frame = " << f << endl;
 #endif
         return f;
     }
@@ -556,7 +554,7 @@ void
 ViewManager::playStatusChanged(bool /* playing */)
 {
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::playStatusChanged" << endl;
+    SVCERR << "ViewManager::playStatusChanged" << endl;
 #endif
     checkPlayStatus();
 }
@@ -565,7 +563,7 @@ void
 ViewManager::recordStatusChanged(bool /* recording */)
 {
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::recordStatusChanged" << endl;
+    SVCERR << "ViewManager::recordStatusChanged" << endl;
 #endif
     checkPlayStatus();
 }
@@ -587,7 +585,7 @@ ViewManager::checkPlayStatus()
         m_playbackFrame = m_recordTarget->getRecordDuration();
 
 #ifdef DEBUG_VIEW_MANAGER
-        cerr << "ViewManager::checkPlayStatus: Recording, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
+        SVCERR << "ViewManager::checkPlayStatus: Recording, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
 #endif
 
         emit playbackFrameChanged(m_playbackFrame);
@@ -608,7 +606,7 @@ ViewManager::checkPlayStatus()
         m_playbackFrame = m_playSource->getCurrentPlayingFrame();
 
 #ifdef DEBUG_VIEW_MANAGER
-        cerr << "ViewManager::checkPlayStatus: Playing, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
+        SVCERR << "ViewManager::checkPlayStatus: Playing, frame " << m_playbackFrame << ", levels " << m_lastLeft << "," << m_lastRight << endl;
 #endif
 
         emit playbackFrameChanged(m_playbackFrame);
@@ -624,7 +622,7 @@ ViewManager::checkPlayStatus()
         }
 
 #ifdef DEBUG_VIEW_MANAGER
-        cerr << "ViewManager::checkPlayStatus: Not playing or recording" << endl;
+        SVCERR << "ViewManager::checkPlayStatus: Not playing or recording" << endl;
 #endif
     }
 }
@@ -648,7 +646,7 @@ ViewManager::viewCentreFrameChanged(sv_frame_t f, bool locked,
     View *v = dynamic_cast<View *>(sender());
 
 #ifdef DEBUG_VIEW_MANAGER
-    cerr << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << endl;
+    SVCERR << "ViewManager::viewCentreFrameChanged(" << f << ", " << locked << ", " << mode << "), view is " << v << endl;
 #endif
 
     if (locked) {
@@ -676,13 +674,13 @@ void
 ViewManager::seek(sv_frame_t f)
 {
 #ifdef DEBUG_VIEW_MANAGER 
-    cerr << "ViewManager::seek(" << f << ")" << endl;
+    SVCERR << "ViewManager::seek(" << f << ")" << endl;
 #endif
 
     if (isRecording()) {
         // ignore
 #ifdef DEBUG_VIEW_MANAGER
-        cerr << "ViewManager::seek: Ignoring during recording" << endl;
+        SVCERR << "ViewManager::seek: Ignoring during recording" << endl;
 #endif
         return;
     }
@@ -694,7 +692,7 @@ ViewManager::seek(sv_frame_t f)
             m_playbackFrame = f;
             m_playSource->play(f);
 #ifdef DEBUG_VIEW_MANAGER 
-            cerr << "ViewManager::seek: reseeking from " << playFrame << " to " << f << endl;
+            SVCERR << "ViewManager::seek: reseeking from " << playFrame << " to " << f << endl;
 #endif
             emit playbackFrameChanged(f);
         }
@@ -723,7 +721,7 @@ ViewManager::viewZoomLevelChanged(ZoomLevel z, bool locked)
     }
 
 #ifdef DEBUG_VIEW_MANAGER 
-    cerr << "ViewManager::viewZoomLevelChanged(" << v << ", " << z << ", " << locked << ")" << endl;
+    SVCERR << "ViewManager::viewZoomLevelChanged(" << v << ", " << z << ", " << locked << ")" << endl;
 #endif
 
     emit viewZoomLevelChanged(v, z, locked);
@@ -873,9 +871,9 @@ ViewManager::getGlobalDarkBackground() const
     QColor windowBg = QApplication::palette().color(QPalette::Window);
     auto red = windowBg.red(), green = windowBg.green(), blue = windowBg.blue();
 #ifdef DEBUG_VIEW_MANAGER
-    SVDEBUG << "ViewManager::getGlobalDarkBackground: red = " << red
-            << ", green = " << green << ", blue = " << blue << ", total = "
-            << red + green + blue << endl;
+//    SVDEBUG << "ViewManager::getGlobalDarkBackground: red = " << red
+//            << ", green = " << green << ", blue = " << blue << ", total = "
+//            << red + green + blue << endl;
 #endif
     if (red + green + blue < 384) {
         dark = true;
