@@ -448,9 +448,9 @@ TimeValueLayer::getVerticalExtents() const
     }
 
     if (m_verticalScale == AutoAlignScale) {
-        return { Layer::ScaleApplication::Deferring, scale };
+        return { ScaleApplication::Deferring, scale };
     } else {
-        return { Layer::ScaleApplication::Normal, scale };
+        return { ScaleApplication::Normal, scale };
     }
 }
 
@@ -458,69 +458,30 @@ bool
 TimeValueLayer::getValueExtents(double &min, double &max,
                                 bool &logarithmic, QString &unit) const
 {
-    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
-    if (!model) return false;
-
-    min = model->getValueMinimum();
-    max = model->getValueMaximum();
-
-    logarithmic = (m_verticalScale == LogScale);
-
-    unit = getScaleUnits();
-
-    if (m_derivative) {
-        max = std::max(fabs(min), fabs(max));
-        min = -max;
+    auto extents = getVerticalExtents();
+    if (extents.first == ScaleApplication::None) {
+        return false;
     }
-
-#ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::getValueExtents: min = " << min << ", max = " << max << endl;
-#endif
-
-    if (!shouldAutoAlign() && !logarithmic && !m_derivative) {
-
-        if (max == min) {
-            max = max + 0.5;
-            min = min - 0.5;
-        } else {
-            double margin = (max - min) / 10.0;
-            max = max + margin;
-            min = min - margin;
-        }
-
-#ifdef DEBUG_TIME_VALUE_LAYER
-        cerr << "TimeValueLayer::getValueExtents: min = " << min << ", max = " << max << " (after adjustment)" << endl;
-#endif
-    }
-
+    const auto &scale = extents.second;
+    min = scale.getValueMinimum();
+    max = scale.getValueMaximum();
+    logarithmic = scale.isLogarithmic();
+    unit = scale.getUnit();
     return true;
 }
 
 bool
 TimeValueLayer::getDisplayExtents(double &min, double &max) const
 {
-    auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
-    if (!model || shouldAutoAlign()) return false;
-
-    if (m_scaleMinimum == m_scaleMaximum) {
-        bool log;
-        QString unit;
-        getValueExtents(min, max, log, unit);
-    } else {
-        min = m_scaleMinimum;
-        max = m_scaleMaximum;
+    auto extents = getVerticalExtents();
+    if (extents.first == ScaleApplication::None ||
+        extents.first == ScaleApplication::Deferring) {
+        return false;
     }
-
-    if (m_derivative) {
-        max = std::max(fabs(min), fabs(max));
-        min = -max;
-    }
-
-#ifdef DEBUG_TIME_VALUE_LAYER
-    cerr << "TimeValueLayer::getDisplayExtents: min = " << min << ", max = " << max << endl;
-#endif
-
-    return true;
+    const auto &scale = extents.second;
+    min = scale.getDisplayMinimum();
+    max = scale.getDisplayMaximum();
+    return true;    
 }
 
 bool
@@ -1355,15 +1316,16 @@ TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
     int w = getVerticalScaleWidth(v, false, paint);
     int h = v->getPaintHeight();
 
+    // We are only asked to draw if we are the reference scale, so
+    // don't use getEffectiveVerticalExtentsForLayer here
+    CoordinateScale scale = getVerticalExtents().second;
+
     if (m_plotStyle == PlotSegmentation) {
     
-        QString unit;
-        double min, max;
-        bool logarithmic;
+        double min = scale.getValueMinimum();
+        double max = scale.getValueMaximum();
 
-        getValueExtents(min, max, logarithmic, unit);
-
-        if (logarithmic) {
+        if (scale.isLogarithmic()) {
             LogRange::mapRange(min, max);
             LogColourScale().paintVertical(v, this, paint, 0, min, max);
         } else {
@@ -1371,10 +1333,6 @@ TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
         }
 
     } else {
-
-        // We are only asked to draw if we are the reference scale, so
-        // don't use getEffectiveVerticalExtentsForLayer here
-        CoordinateScale scale = getVerticalExtents().second;
 
         //!!! This is now in common among several layers - could pull it out
         
@@ -1391,11 +1349,11 @@ TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
         }
     }
         
-    if (getScaleUnits() != "") {
+    if (scale.getUnit() != "") {
         int mw = w - 5;
         paint.drawText(5,
                        5 + paint.fontMetrics().ascent(),
-                       TextAbbrev::abbreviate(getScaleUnits(),
+                       TextAbbrev::abbreviate(scale.getUnit(),
                                               paint.fontMetrics(),
                                               mw));
     }
