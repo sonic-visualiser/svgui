@@ -219,21 +219,6 @@ BoxLayer::getVerticalExtents() const
 }
 
 bool
-BoxLayer::getValueExtents(double &min, double &max,
-                          bool &logarithmic, QString &unit) const
-{
-    auto model = ModelById::getAs<BoxModel>(m_model);
-    if (!model) return false;
-    min = model->getValueMinimum();
-    max = model->getValueMaximum();
-    unit = getScaleUnits();
-
-    if (m_verticalScale == LogScale) logarithmic = true;
-
-    return true;
-}
-
-bool
 BoxLayer::getDisplayExtents(double &min, double &max) const
 {
     auto model = ModelById::getAs<BoxModel>(m_model);
@@ -470,52 +455,6 @@ BoxLayer::getScaleUnits() const
     auto model = ModelById::getAs<BoxModel>(m_model);
     if (model) return model->getScaleUnits();
     else return "";
-}
-
-void
-BoxLayer::getScaleExtents(LayerGeometryProvider *v,
-                          double &min, double &max,
-                          bool &log) const
-{
-    min = 0.0;
-    max = 0.0;
-    log = false;
-
-    auto model = ModelById::getAs<BoxModel>(m_model);
-    if (!model) return;
-
-    QString queryUnits;
-    queryUnits = getScaleUnits();
-
-    if (m_verticalScale == AutoAlignScale) {
-
-        if (!v->getVisibleExtentsForUnit(queryUnits, min, max, log)) {
-
-            min = model->getValueMinimum();
-            max = model->getValueMaximum();
-
-//            cerr << "BoxLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
-
-        } else if (log) {
-
-            LogRange::mapRange(min, max);
-
-//            cerr << "BoxLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
-
-        }
-
-    } else {
-
-        min = model->getValueMinimum();
-        max = model->getValueMaximum();
-
-        if (m_verticalScale == LogScale) {
-            LogRange::mapRange(min, max);
-            log = true;
-        }
-    }
-
-    if (max == min) max = min + 1.0;
 }
 
 void

@@ -455,22 +455,6 @@ TimeValueLayer::getVerticalExtents() const
 }
 
 bool
-TimeValueLayer::getValueExtents(double &min, double &max,
-                                bool &logarithmic, QString &unit) const
-{
-    auto extents = getVerticalExtents();
-    if (extents.first == ScaleApplication::None) {
-        return false;
-    }
-    const auto &scale = extents.second;
-    min = scale.getValueMinimum();
-    max = scale.getValueMaximum();
-    logarithmic = scale.isLogarithmic();
-    unit = scale.getUnit();
-    return true;
-}
-
-bool
 TimeValueLayer::getDisplayExtents(double &min, double &max) const
 {
     auto extents = getVerticalExtents();
@@ -481,7 +465,7 @@ TimeValueLayer::getDisplayExtents(double &min, double &max) const
     const auto &scale = extents.second;
     min = scale.getDisplayMinimum();
     max = scale.getDisplayMaximum();
-    return true;    
+    return true;
 }
 
 bool
@@ -568,20 +552,20 @@ TimeValueLayer::setVerticalZoomStep(int step)
 
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return;
+
+    CoordinateScale scale = getVerticalExtents().second;
     
-    double min, max;
-    bool logarithmic;
-    QString unit;
-    getValueExtents(min, max, logarithmic, unit);
+    double min = scale.getValueMinimum();
+    double max = scale.getValueMaximum();
     
-    double dmin, dmax;
-    getDisplayExtents(dmin, dmax);
+    double dmin = scale.getDisplayMinimum();
+    double dmax = scale.getDisplayMaximum();
 
     double newdist = mapper->getValueForPosition(100 - step);
 
     double newmin, newmax;
 
-    if (logarithmic) {
+    if (scale.isLogarithmic()) {
 
         // see SpectrogramLayer::setVerticalZoomStep
 
@@ -621,14 +605,15 @@ TimeValueLayer::getNewVerticalZoomRangeMapper() const
     
     RangeMapper *mapper;
 
-    double min, max;
-    bool logarithmic;
-    QString unit;
-    getValueExtents(min, max, logarithmic, unit);
+    CoordinateScale scale = getVerticalExtents().second;
+    
+    double min = scale.getValueMinimum();
+    double max = scale.getValueMaximum();
+    QString unit = scale.getUnit();
 
     if (min == max) return nullptr;
     
-    if (logarithmic) {
+    if (scale.isLogarithmic()) {
         mapper = new LogRangeMapper(0, 100, min, max, unit);
     } else {
         mapper = new LinearRangeMapper(0, 100, min, max, unit);
@@ -1290,7 +1275,7 @@ TimeValueLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &
     auto model = ModelById::getAs<SparseTimeValueModel>(m_model);
     if (!model) {
         return 0;
-    } else if (shouldAutoAlign() && !valueExtentsMatchMine(v)) {
+    } else if (shouldAutoAlign() && !verticalExtentsMatchMine(v)) {
         return 0;
     } else if (m_plotStyle == PlotSegmentation) {
         if (m_verticalScale == LogScale) {

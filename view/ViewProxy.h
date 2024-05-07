@@ -109,10 +109,6 @@ public:
     CoordinateScale getEffectiveVerticalExtents(QString unit = {}) const override {
         return m_view->getEffectiveVerticalExtents(unit);
     }
-    bool getVisibleExtentsForUnit(QString unit, double &min, double &max,
-                                  bool &log) const override {
-        return m_view->getVisibleExtentsForUnit(unit, min, max, log);
-    }
     ZoomLevel getZoomLevel() const override {
         ZoomLevel z = m_view->getZoomLevel();
         if (z.zone == ZoomLevel::FramesPerPixel) {

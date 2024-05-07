@@ -143,14 +143,8 @@ public:
 
     ScaleExtents getVerticalExtents() const override;
 
-    bool getValueExtents(double &min, double &max,
-                         bool &logarithmic, QString &unit) const override;
-
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
-
-    bool getYScaleValue(const LayerGeometryProvider *, int /* y */,
-                        double &/* value */, QString &/* unit */) const override;
 
     int getVerticalZoomSteps(int &defaultStep) const override;
     int getCurrentVerticalZoomStep() const override;

@@ -547,19 +547,6 @@ public:
     virtual ScaleExtents getVerticalExtents() const = 0;
     
     /**
-     * Return the minimum and maximum values for the y axis of the
-     * model in this layer, as well as whether the layer is configured
-     * to use a logarithmic y axis display.  Also return the unit for
-     * these values if known.
-     *
-     * This function returns the "normal" extents for the layer, not
-     * necessarily the extents actually in use in the display (see
-     * getDisplayExtents).
-     */
-    virtual bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const = 0;
-
-    /**
      * Return the minimum and maximum values within the visible area
      * for the y axis of this layer.
      *
@@ -607,13 +594,21 @@ public:
 
     /** 
      * Return the value and unit at the given y coordinate in the
-     * given view.
-     *
-     *!!! provide default implementation that works for VerticalScaleLayers
+     * given view. Used for measurement rects. May be supported even
+     * when no well-defined scale is returned by getVerticalExtents,
+     * but the default implementation just calls that.
      */
-    virtual bool getYScaleValue(const LayerGeometryProvider *, int /* y */,
-                                double &/* value */, QString &/* unit */) const {
-        return false;
+    virtual bool getYScaleValue(const LayerGeometryProvider *v, int y,
+                                double &value, QString &unit) const {
+
+        auto extents = getVerticalExtents();
+        if (extents.first == ScaleApplication::Normal) {
+            value = extents.second.getValueForCoord(v, y);
+            unit = extents.second.getUnit();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -775,7 +770,7 @@ protected:
     void paintMeasurementRect(LayerGeometryProvider *v, QPainter &paint,
                               const MeasureRect &r, bool focus) const;
 
-    bool valueExtentsMatchMine(LayerGeometryProvider *v) const;
+    bool verticalExtentsMatchMine(LayerGeometryProvider *v) const;
     
     QString m_presentationName;
 

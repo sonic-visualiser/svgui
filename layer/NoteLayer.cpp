@@ -294,50 +294,16 @@ NoteLayer::getVerticalExtents() const
 }
 
 bool
-NoteLayer::getValueExtents(double &min, double &max,
-                           bool &logarithmic, QString &unit) const
-{
-    auto model = ModelById::getAs<NoteModel>(m_model);
-    if (!model) return false;
-
-    min = convertValueFromEventValue(model->getValueMinimum());
-    max = convertValueFromEventValue(model->getValueMaximum());
-    min /= 1.06;
-    max *= 1.06;
-    unit = "Hz";
-
-    if (m_verticalScale != LinearScale) {
-        logarithmic = true;
-    }
-
-    return true;
-}
-
-bool
 NoteLayer::getDisplayExtents(double &min, double &max) const
 {
-    auto model = ModelById::getAs<NoteModel>(m_model);
-    if (!model || shouldAutoAlign()) return false;
-
-    if (m_verticalScale == MIDIRangeScale) {
-        min = Pitch::getFrequencyForPitch(0);
-        max = Pitch::getFrequencyForPitch(127);
-        return true;
+    auto extents = getVerticalExtents();
+    if (extents.first == ScaleApplication::None ||
+        extents.first == ScaleApplication::Deferring) {
+        return false;
     }
-
-    if (m_scaleMinimum == m_scaleMaximum) {
-        QString unit;
-        bool log = false;
-        getValueExtents(min, max, log, unit);
-    } else {
-        min = m_scaleMinimum;
-        max = m_scaleMaximum;
-    }
-
-#ifdef DEBUG_NOTE_LAYER
-    SVCERR << "NoteLayer::getDisplayExtents: min = " << min << ", max = " << max << " (m_scaleMinimum = " << m_scaleMinimum << ", m_scaleMaximum = " << m_scaleMaximum << ")" << endl;
-#endif
-
+    const auto &scale = extents.second;
+    min = scale.getDisplayMinimum();
+    max = scale.getDisplayMaximum();
     return true;
 }
 
@@ -401,19 +367,19 @@ NoteLayer::setVerticalZoomStep(int step)
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return;
     
-    double min, max;
-    bool logarithmic;
-    QString unit;
-    getValueExtents(min, max, logarithmic, unit);
+    CoordinateScale scale = getVerticalExtents().second;
     
-    double dmin, dmax;
-    getDisplayExtents(dmin, dmax);
+    double min = scale.getValueMinimum();
+    double max = scale.getValueMaximum();
+    
+    double dmin = scale.getDisplayMinimum();
+    double dmax = scale.getDisplayMaximum();
 
     double newdist = mapper->getValueForPosition(100 - step);
 
     double newmin, newmax;
 
-    if (logarithmic) {
+    if (scale.isLogarithmic()) {
 
         // see SpectrogramLayer::setVerticalZoomStep
 
@@ -450,14 +416,15 @@ NoteLayer::getNewVerticalZoomRangeMapper() const
     
     RangeMapper *mapper;
 
-    double min, max;
-    bool logarithmic;
-    QString unit;
-    getValueExtents(min, max, logarithmic, unit);
+    CoordinateScale scale = getVerticalExtents().second;
+    
+    double min = scale.getValueMinimum();
+    double max = scale.getValueMaximum();
+    QString unit = scale.getUnit();
 
     if (min == max) return nullptr;
     
-    if (logarithmic) {
+    if (scale.isLogarithmic()) {
         mapper = new LogRangeMapper(0, 100, min, max, unit);
     } else {
         mapper = new LinearRangeMapper(0, 100, min, max, unit);
@@ -650,49 +617,6 @@ NoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     return false;
 }
 
-void
-NoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
-{
-    min = 0.0;
-    max = 0.0;
-    log = false;
-
-    auto model = ModelById::getAs<NoteModel>(m_model);
-    if (!model) return;
-    
-    if (shouldAutoAlign()) {
-
-        if (!v->getVisibleExtentsForUnit("Hz", min, max, log)) {
-
-            QString unit;
-            getValueExtents(min, max, log, unit);
-
-#ifdef DEBUG_NOTE_LAYER
-            SVCERR << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
-#endif
-
-        } else if (log) {
-
-            LogRange::mapRange(min, max);
-
-#ifdef DEBUG_NOTE_LAYER
-            SVCERR << "NoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
-#endif
-        }
-
-    } else {
-
-        getDisplayExtents(min, max);
-
-        if (m_verticalScale != LinearScale) {
-            LogRange::mapRange(min, max);
-            log = true;
-        }
-    }
-
-    if (max == min) max = min + 1.0;
-}
-
 bool
 NoteLayer::shouldAutoAlign() const
 {
@@ -817,7 +741,7 @@ NoteLayer::getVerticalScaleWidth(LayerGeometryProvider *v, bool, QPainter &paint
         return 0;
     }
 
-    if (shouldAutoAlign() && !valueExtentsMatchMine(v)) {
+    if (shouldAutoAlign() && !verticalExtentsMatchMine(v)) {
         return 0;
     }
 

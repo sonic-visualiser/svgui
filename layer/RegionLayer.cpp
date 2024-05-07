@@ -328,21 +328,6 @@ RegionLayer::getVerticalExtents() const
 }    
 
 bool
-RegionLayer::getValueExtents(double &min, double &max,
-                           bool &logarithmic, QString &unit) const
-{
-    auto model = ModelById::getAs<RegionModel>(m_model);
-    if (!model) return false;
-    min = model->getValueMinimum();
-    max = model->getValueMaximum();
-    unit = getScaleUnits();
-
-    if (m_verticalScale == LogScale) logarithmic = true;
-
-    return true;
-}
-
-bool
 RegionLayer::getDisplayExtents(double &min, double &max) const
 {
     auto model = ModelById::getAs<RegionModel>(m_model);
@@ -624,7 +609,8 @@ RegionLayer::getScaleUnits() const
 }
 
 /*!!! Note: EqualSpaced not yet implemented elsewhere!
-  
+ */
+#ifdef NOT_DEFINED
 void
 RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
 {
@@ -679,7 +665,7 @@ RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max,
 
     if (max == min) max = min + 1.0;
 }
-*/
+#endif // NOT_DEFINED
 
 int
 RegionLayer::spacingIndexToY(LayerGeometryProvider *v, int i) const
@@ -1142,15 +1128,16 @@ RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint,
 
     int w = getVerticalScaleWidth(v, false, paint);
 
+    // We are only asked to draw if we are the reference scale, so
+    // don't use getEffectiveVerticalExtentsForLayer here
+    CoordinateScale scale = getVerticalExtents().second;
+
     if (m_plotStyle == PlotSegmentation) {
 
-        QString unit;
-        double min, max;
-        bool logarithmic;
+        double min = scale.getValueMinimum();
+        double max = scale.getValueMaximum();
 
-        getValueExtents(min, max, logarithmic, unit);
-
-        if (logarithmic) {
+        if (scale.isLogarithmic()) {
             LogRange::mapRange(min, max);
             LogColourScale().paintVertical(v, this, paint, 0, min, max);
         } else {
@@ -1159,10 +1146,6 @@ RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint,
 
     } else {
 
-        // We are only asked to draw if we are the reference scale, so
-        // don't use getEffectiveVerticalExtentsForLayer here
-        CoordinateScale scale = getVerticalExtents().second;
-
         if (scale.isLogarithmic()) {
             LogNumericalScale().paintVertical(v, scale, paint, 0);
         } else {
@@ -1170,11 +1153,11 @@ RegionLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint,
         }
     }
         
-    if (getScaleUnits() != "") {
+    if (scale.getUnit() != "") {
         int mw = w - 5;
         paint.drawText(5,
                        5 + paint.fontMetrics().ascent(),
-                       TextAbbrev::abbreviate(getScaleUnits(),
+                       TextAbbrev::abbreviate(scale.getUnit(),
                                               paint.fontMetrics(),
                                               mw));
     }

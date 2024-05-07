@@ -184,9 +184,6 @@ public:
 
     ScaleExtents getVerticalExtents() const override;
     
-    bool getValueExtents(double &min, double &max,
-                                 bool &log, QString &unit) const override;
-
     bool getDisplayExtents(double & min, double &max) const override;
 
     bool getYScaleValue(const LayerGeometryProvider *v, int y,

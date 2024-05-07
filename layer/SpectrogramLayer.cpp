@@ -1881,23 +1881,6 @@ SpectrogramLayer::getVerticalExtents() const
 }
 
 bool
-SpectrogramLayer::getValueExtents(double &min, double &max,
-                                  bool &logarithmic, QString &unit) const
-{
-    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
-    if (!model) return false;
-
-    sv_samplerate_t sr = model->getSampleRate();
-    min = double(sr) / getFFTSize();
-    max = double(sr) / 2;
-
-    //!!! oops, we have no good return for mel scale
-    logarithmic = (m_frequencyMapping == FrequencyMapping::Log);
-    unit = "Hz";
-    return true;
-}
-
-bool
 SpectrogramLayer::getDisplayExtents(double &min, double &max) const
 {
     min = getEffectiveMinFrequency();

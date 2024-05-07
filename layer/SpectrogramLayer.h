@@ -247,9 +247,6 @@ public:
 
     ScaleExtents getVerticalExtents() const override;
     
-    bool getValueExtents(double &min, double &max,
-                         bool &logarithmic, QString &unit) const override;
-
     bool getDisplayExtents(double &min, double &max) const override;
 
     bool setDisplayExtents(double min, double max) override;

@@ -101,9 +101,6 @@ public:
 
     ScaleExtents getVerticalExtents() const override;
 
-    bool getValueExtents(double &min, double &max,
-                                 bool &log, QString &unit) const override;
-
     bool getDisplayExtents(double &min, double &max) const override;
 
     bool adoptExtents(double min, double max, QString unit) override;
@@ -114,8 +111,6 @@ public:
     void setProperties(const LayerAttributes &attributes) override;
 
 protected:
-    void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
-
     // Return the event that "most closely contains" the given
     // coordinates, if any; or the closest event that spans the given
     // x coordinate in the time axis; or false otherwise. This

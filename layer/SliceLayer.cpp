@@ -1288,23 +1288,6 @@ SliceLayer::getVerticalExtents() const
 }
 
 bool
-SliceLayer::getValueExtents(double &min, double &max, bool &logarithmic,
-                            QString &unit) const
-{
-    auto sliceableModel =
-        ModelById::getAs<DenseThreeDimensionalModel>(m_sliceableModel);
-    if (!sliceableModel) return false;
-    
-    min = 0;
-    max = double(sliceableModel->getHeight());
-
-    logarithmic = (m_binScale == BinScale::LogBins);
-    unit = "";
-
-    return true;
-}
-
-bool
 SliceLayer::getDisplayExtents(double &min, double &max) const
 {
     auto sliceableModel =

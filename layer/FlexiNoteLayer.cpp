@@ -280,27 +280,6 @@ FlexiNoteLayer::getVerticalExtents() const
 }
 
 bool
-FlexiNoteLayer::getValueExtents(double &min, double &max,
-                                bool &logarithmic, QString &unit) const
-{
-    auto model = ModelById::getAs<NoteModel>(m_model);
-    if (!model) return false;
-    min = model->getValueMinimum();
-    max = model->getValueMaximum();
-
-    if (shouldConvertMIDIToHz()) {
-        unit = "Hz";
-        min = Pitch::getFrequencyForPitch(int(lrint(min)));
-        max = Pitch::getFrequencyForPitch(int(lrint(max + 1)));
-    } else unit = getScaleUnits();
-
-    if (m_verticalScale == MIDIRangeScale ||
-        m_verticalScale == LogScale) logarithmic = true;
-
-    return true;
-}
-
-bool
 FlexiNoteLayer::getDisplayExtents(double &min, double &max) const
 {
     auto model = ModelById::getAs<NoteModel>(m_model);
@@ -403,19 +382,19 @@ FlexiNoteLayer::setVerticalZoomStep(int step)
     RangeMapper *mapper = getNewVerticalZoomRangeMapper();
     if (!mapper) return;
     
-    double min, max;
-    bool logarithmic;
-    QString unit;
-    getValueExtents(min, max, logarithmic, unit);
+    CoordinateScale scale = getVerticalExtents().second;
     
-    double dmin, dmax;
-    getDisplayExtents(dmin, dmax);
+    double min = scale.getValueMinimum();
+    double max = scale.getValueMaximum();
+    
+    double dmin = scale.getDisplayMinimum();
+    double dmax = scale.getDisplayMaximum();
 
     double newdist = mapper->getValueForPosition(100 - step);
 
     double newmin, newmax;
 
-    if (logarithmic) {
+    if (scale.isLogarithmic()) {
 
         // see SpectrogramLayer::setVerticalZoomStep
 
@@ -453,14 +432,15 @@ FlexiNoteLayer::getNewVerticalZoomRangeMapper() const
     
     RangeMapper *mapper;
 
-    double min, max;
-    bool logarithmic;
-    QString unit;
-    getValueExtents(min, max, logarithmic, unit);
+    CoordinateScale scale = getVerticalExtents().second;
+    
+    double min = scale.getValueMinimum();
+    double max = scale.getValueMaximum();
+    QString unit = scale.getUnit();
 
     if (min == max) return nullptr;
     
-    if (logarithmic) {
+    if (scale.isLogarithmic()) {
         mapper = new LogRangeMapper(0, 100, min, max, unit);
     } else {
         mapper = new LinearRangeMapper(0, 100, min, max, unit);
@@ -504,9 +484,11 @@ FlexiNoteLayer::getPointToDrag(LayerGeometryProvider *v, int x, int y, Event &po
     EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    
     int nearestDistance = -1;
     for (const auto &p: onPoints) {
-        int distance = getYForValue(v, p.getValue()) - y;
+        int distance = scale.getCoordForValueRounded(v, p.getValue()) - y;
         if (distance < 0) distance = -distance;
         if (nearestDistance == -1 || distance < nearestDistance) {
             nearestDistance = distance;
@@ -529,9 +511,11 @@ FlexiNoteLayer::getNoteToEdit(LayerGeometryProvider *v, int x, int y, Event &poi
     EventVector onPoints = model->getEventsCovering(frame);
     if (onPoints.empty()) return false;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    
     int nearestDistance = -1;
     for (const auto &p: onPoints) {
-        int distance = getYForValue(v, p.getValue()) - y;
+        int distance = scale.getCoordForValueRounded(v, p.getValue()) - y;
         if (distance < 0) distance = -distance;
         if (nearestDistance == -1 || distance < nearestDistance) {
             nearestDistance = distance;
@@ -563,13 +547,16 @@ FlexiNoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
     Event note(0);
     EventVector::iterator i;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+    
     for (i = points.begin(); i != points.end(); ++i) {
 
-        int y = getYForValue(v, i->getValue());
+        int y = scale.getCoordForValueRounded(v, i->getValue());
         int h = NOTE_HEIGHT; // GF: larger notes
 
         if (model->getValueQuantization() != 0.0) {
-            h = y - getYForValue
+            h = y -
+                scale.getCoordForValueRounded
                 (v, i->getValue() + model->getValueQuantization());
             if (h < NOTE_HEIGHT) h = NOTE_HEIGHT;
         }
@@ -628,7 +615,7 @@ FlexiNoteLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
     }
 
     pos = QPoint(v->getXForFrame(note.getFrame()),
-                 getYForValue(v, note.getValue()));
+                 scale.getCoordForValueRounded(v, note.getValue()));
     return text;
 }
 
@@ -711,121 +698,6 @@ FlexiNoteLayer::snapToFeatureFrame(LayerGeometryProvider *v, sv_frame_t &frame,
     return found;
 }
 
-void
-FlexiNoteLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
-{
-    min = 0.0;
-    max = 0.0;
-    log = false;
-
-    QString queryUnits;
-    if (shouldConvertMIDIToHz()) queryUnits = "Hz";
-    else queryUnits = getScaleUnits();
-
-    if (shouldAutoAlign()) {
-
-        if (!v->getVisibleExtentsForUnit(queryUnits, min, max, log)) {
-
-            auto model = ModelById::getAs<NoteModel>(m_model);
-            min = model->getValueMinimum();
-            max = model->getValueMaximum();
-
-            if (shouldConvertMIDIToHz()) {
-                min = Pitch::getFrequencyForPitch(int(lrint(min)));
-                max = Pitch::getFrequencyForPitch(int(lrint(max + 1)));
-            }
-
-#ifdef DEBUG_NOTE_LAYER
-            SVCERR << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
-#endif
-
-        } else if (log) {
-
-            LogRange::mapRange(min, max);
-
-#ifdef DEBUG_NOTE_LAYER
-            SVCERR << "FlexiNoteLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
-#endif
-        }
-
-    } else {
-
-        getDisplayExtents(min, max);
-
-        if (m_verticalScale == MIDIRangeScale) {
-            min = Pitch::getFrequencyForPitch(0);
-            max = Pitch::getFrequencyForPitch(70);
-        } else if (shouldConvertMIDIToHz()) {
-            min = Pitch::getFrequencyForPitch(int(lrint(min)));
-            max = Pitch::getFrequencyForPitch(int(lrint(max + 1)));
-        }
-
-        if (m_verticalScale == LogScale || m_verticalScale == MIDIRangeScale) {
-            LogRange::mapRange(min, max);
-            log = true;
-        }
-    }
-
-    if (max == min) max = min + 1.0;
-}
-
-int
-FlexiNoteLayer::getYForValue(LayerGeometryProvider *v, double val) const
-{
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->getPaintHeight();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-#ifdef DEBUG_NOTE_LAYER
-    SVCERR << "FlexiNoteLayer[" << this << "]::getYForValue(" << val << "): min = " << min << ", max = " << max << ", log = " << logarithmic << endl;
-#endif
-
-    if (shouldConvertMIDIToHz()) {
-        val = Pitch::getFrequencyForPitch(int(lrint(val)),
-                                          int(lrint((val - floor(val)) * 100.0)));
-#ifdef DEBUG_NOTE_LAYER
-        SVCERR << "shouldConvertMIDIToHz true, val now = " << val << endl;
-#endif
-    }
-
-    if (logarithmic) {
-        val = LogRange::map(val);
-#ifdef DEBUG_NOTE_LAYER
-        SVCERR << "logarithmic true, val now = " << val << endl;
-#endif
-    }
-
-    int y = int(h - ((val - min) * h) / (max - min)) - 1;
-#ifdef DEBUG_NOTE_LAYER
-    SVCERR << "y = " << y << endl;
-#endif
-    return y;
-}
-
-double
-FlexiNoteLayer::getValueForY(LayerGeometryProvider *v, int y) const
-{
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
-    int h = v->getPaintHeight();
-
-    getScaleExtents(v, min, max, logarithmic);
-
-    double val = min + (double(h - y) * double(max - min)) / h;
-
-    if (logarithmic) {
-        val = pow(10.f, val);
-    }
-
-    if (shouldConvertMIDIToHz()) {
-        val = Pitch::getPitchForFrequency(val);
-    }
-
-    return val;
-}
-
 bool
 FlexiNoteLayer::shouldAutoAlign() const
 {
@@ -875,6 +747,8 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
     paint.setRenderHint(QPainter::Antialiasing, false);
 
     int noteNumber = -1;
+    
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
 
     for (EventVector::const_iterator i = points.begin();
          i != points.end(); ++i) {
@@ -888,12 +762,13 @@ FlexiNoteLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
         }
 
         int x = v->getXForFrame(p.getFrame());
-        int y = getYForValue(v, p.getValue());
+        int y = scale.getCoordForValueRounded(v, p.getValue());
         int w = v->getXForFrame(p.getFrame() + p.getDuration()) - x;
         int h = NOTE_HEIGHT; //GF: larger notes
     
         if (model->getValueQuantization() != 0.0) {
-            h = y - getYForValue(v, p.getValue() + model->getValueQuantization());
+            h = y - scale.getCoordForValueRounded
+                (v, p.getValue() + model->getValueQuantization());
             if (h < NOTE_HEIGHT) h = NOTE_HEIGHT; //GF: larger notes
         }
 
@@ -1005,11 +880,13 @@ FlexiNoteLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
     auto model = ModelById::getAs<NoteModel>(m_model);
     if (!model) return;
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     sv_frame_t frame = v->getFrameForX(e->position().x());
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double value = getValueForY(v, e->position().y());
+    double value = scale.getValueForCoord(v, e->position().y());
 
     m_editingPoint = Event(frame, float(value), 0, 0.8f, tr("New Point"));
     m_originalPoint = m_editingPoint;
@@ -1033,7 +910,9 @@ FlexiNoteLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
     if (frame < 0) frame = 0;
     frame = frame / model->getResolution() * model->getResolution();
 
-    double newValue = getValueForY(v, e->position().y());
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
+    double newValue = scale.getValueForCoord(v, e->position().y());
 
     sv_frame_t newFrame = m_editingPoint.getFrame();
     sv_frame_t newDuration = frame - newFrame;
@@ -1114,6 +993,8 @@ FlexiNoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
     if (!getPointToDrag(v, e->position().x(), e->position().y(), m_editingPoint)) return;
     m_originalPoint = m_editingPoint;
     
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     if (m_editMode == RightBoundary) {
         m_dragPointX = v->getXForFrame
             (m_editingPoint.getFrame() + m_editingPoint.getDuration());
@@ -1121,7 +1002,8 @@ FlexiNoteLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
         m_dragPointX = v->getXForFrame
             (m_editingPoint.getFrame());
     }
-    m_dragPointY = getYForValue(v, m_editingPoint.getValue());
+
+    m_dragPointY = scale.getCoordForValueRounded(v, m_editingPoint.getValue());
 
     if (m_editingCommand) {
         finish(m_editingCommand);
@@ -1178,7 +1060,9 @@ FlexiNoteLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
     if (dragFrame < 0) dragFrame = 0;
     dragFrame = dragFrame / model->getResolution() * model->getResolution();
     
-    double value = getValueForY(v, newy);
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
+    double value = scale.getValueForCoord(v, newy);
 
     if (!m_editingCommand) {
         m_editingCommand =
@@ -1403,9 +1287,11 @@ FlexiNoteLayer::addNote(LayerGeometryProvider *v, QMouseEvent *e)
     if (!model) return;
 
     sv_frame_t duration = 10000;
+
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
     
     sv_frame_t frame = v->getFrameForX(e->position().x());
-    double value = getValueForY(v, e->position().y());
+    double value = scale.getValueForCoord(v, e->position().y());
     
     EventVector noteList = model->getAllEvents();
 
@@ -1621,10 +1507,12 @@ FlexiNoteLayer::getRelativeMousePosition(LayerGeometryProvider *v, Event &note, 
 {
     // GF: TODO: consolidate the tolerance values
 
+    CoordinateScale scale = v->getEffectiveVerticalExtentsForLayer(this);
+
     int ctol = 0;
     int noteStartX = v->getXForFrame(note.getFrame());
     int noteEndX = v->getXForFrame(note.getFrame() + note.getDuration());
-    int noteValueY = getYForValue(v,note.getValue());
+    int noteValueY = scale.getCoordForValueRounded(v,note.getValue());
     int noteStartY = noteValueY - (NOTE_HEIGHT / 2);
     int noteEndY = noteValueY + (NOTE_HEIGHT / 2);
     

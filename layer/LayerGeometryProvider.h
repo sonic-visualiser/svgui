@@ -168,24 +168,6 @@ public:
     virtual CoordinateScale
     getEffectiveVerticalExtents(QString unit = {}) const = 0;
     
-    
-    /**
-     * Return the visible vertical extents for the given unit, if any.
-     * That is:
-     * 
-     * - if at least one non-dormant layer uses the same unit and
-     *   returns some values from its getDisplayExtents() method,
-     *   return the extents from the topmost of those
-     *
-     * - otherwise, if at least one non-dormant layer uses the same
-     *   unit, return the union of the value extents of all of those
-     * 
-     * - otherwise return false
-     */
-    virtual bool getVisibleExtentsForUnit(QString unit,
-                                          double &min, double &max,
-                                          bool &log) const = 0;
-
     /**
      * Return the zoom level, i.e. the number of frames per pixel or
      * pixels per frame

@@ -123,9 +123,6 @@ public:
 
     ScaleExtents getVerticalExtents() const override;
     
-    bool getValueExtents(double &min, double &max,
-                         bool &log, QString &unit) const override;
-
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
 
@@ -164,13 +161,9 @@ signals:
     void materialiseReAnalysis();
     
 protected:
-    void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
     bool shouldConvertMIDIToHz() const;
 
     QString getScaleUnits() const;
-
-    int getYForValue(LayerGeometryProvider *v, double value) const;
-    double getValueForY(LayerGeometryProvider *v, int y) const;
 
     int getDefaultColourHint(bool dark, bool &impose) override;
 

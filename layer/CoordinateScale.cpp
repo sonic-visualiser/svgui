@@ -181,7 +181,7 @@ CoordinateScale::unmap(double point) const
 }
 
 double
-CoordinateScale::getCoordForValue(LayerGeometryProvider *v, double value) const
+CoordinateScale::getCoordForValue(const LayerGeometryProvider *v, double value) const
 {
     double minm = m_displayMin, maxm = m_displayMax;
     mapExtents(minm, maxm);
@@ -210,13 +210,13 @@ CoordinateScale::getCoordForValue(LayerGeometryProvider *v, double value) const
 }
 
 int
-CoordinateScale::getCoordForValueRounded(LayerGeometryProvider *v, double value) const
+CoordinateScale::getCoordForValueRounded(const LayerGeometryProvider *v, double value) const
 {
     return int(floor(getCoordForValue(v, value)));
 }
 
 double
-CoordinateScale::getValueForCoord(LayerGeometryProvider *v, double coordinate) const
+CoordinateScale::getValueForCoord(const LayerGeometryProvider *v, double coordinate) const
 {
     double minm = m_displayMin, maxm = m_displayMax;
     mapExtents(minm, maxm);
@@ -236,9 +236,49 @@ CoordinateScale::getValueForCoord(LayerGeometryProvider *v, double coordinate) c
 }
 
 int
-CoordinateScale::getValueForCoordRounded(LayerGeometryProvider *v, double coordinate) const
+CoordinateScale::getValueForCoordRounded(const LayerGeometryProvider *v, double coordinate) const
 {
     return int(floor(getValueForCoord(v, coordinate)));
+}
+
+bool
+CoordinateScale::visualRangeMatches(const CoordinateScale &other) const
+{
+    if (m_direction != other.m_direction) {
+        return false;
+    }
+
+    if (m_isFrequencyScale) {
+        if (other.m_isFrequencyScale) {
+            if (m_frequencyMap != other.m_frequencyMap) {
+                return false;
+            }
+        } else if (m_frequencyMap == FrequencyMap::Mel) {
+            return false;
+        } else if (m_frequencyMap == FrequencyMap::Log) {
+            if (!other.m_logarithmic) {
+                return false;
+            }
+        } else if (other.m_logarithmic) {
+            return false;
+        }
+    } else {
+        if (other.m_isFrequencyScale) {
+            return other.visualRangeMatches(*this);
+        } else if (m_logarithmic != other.m_logarithmic) {
+            return false;
+        }
+    }
+
+    double eps = 1.0e-10;
+    if (fabs(m_displayMin - other.m_displayMin) > eps) {
+        return false;
+    }
+    if (fabs(m_displayMax - other.m_displayMax) > eps) {
+        return false;
+    }
+
+    return true;
 }
 
 } // end namespace sv

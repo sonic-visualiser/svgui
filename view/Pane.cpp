@@ -19,6 +19,7 @@
 #include "base/ZoomConstraint.h"
 #include "base/RealTime.h"
 #include "base/Profiler.h"
+#include "base/LogRange.h"
 #include "ViewManager.h"
 #include "widgets/CommandHistory.h"
 #include "widgets/TextAbbrev.h"
@@ -548,14 +549,12 @@ Pane::getVerticalScaleWidth() const
 void
 Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
 {
-    double min, max;
-    bool log;
-    QString unit;
-
     bool includeColourScale = m_manager->shouldShowVerticalColourScale();
     
     Layer *scaleLayer = nullptr;
     int scaleWidth = 0;
+
+    QString unit;
 
 #ifdef DEBUG_PANE_SCALE_CHOICE
         SVCERR << "Pane[" << getId() << "]::drawVerticalScale: Have "
@@ -589,7 +588,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
                << endl;
 #endif
     }
-
+    
     if (scaleWidth > 0) {
         scaleLayer = topLayer;
 
@@ -612,8 +611,12 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
                 continue;
             }
 
-            if (layer->getValueExtents(min, max, log, unit)) {
+            auto extents = layer->getVerticalExtents();
+
+            if (extents.first == Layer::ScaleApplication::Normal) {
+                
                 scaleLayer = layer;
+                unit = extents.second.getUnit();
 
 #ifdef DEBUG_PANE_SCALE_CHOICE
                 SVCERR << "Pane[" << getId() << "]::drawVerticalScale: "
@@ -623,6 +626,21 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
                        << unit << "), using this layer or unit" << endl;
 #endif
                 break;
+
+            } else if (extents.second.getUnit() != "" &&
+                       extents.first == Layer::ScaleApplication::Deferring) {
+
+#ifdef DEBUG_PANE_SCALE_CHOICE
+                SVCERR << "Pane[" << getId() << "]::drawVerticalScale: "
+                       << "Layer " << layer
+                       << ", " << layer->getLayerPresentationName()
+                       << " is deferring and we have no unit yet, adopt its unit (unit = "
+                       << unit << ")" << endl;
+#endif
+
+                if (unit == "") {
+                    unit = extents.second.getUnit();
+                }
             }
 
             if (layer->isLayerOpaque()) {
@@ -656,8 +674,9 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
                     << "but we have a unit of " << unit
                     << " - seeking scale-providing layer for that" << endl;
 #endif
-            
-            scaleLayer = getScaleProvidingLayerForUnit(unit);
+
+            (void)getEffectiveVerticalExtentsAndLayerFromWhich
+                (unit, &scaleLayer);
             
 #ifdef DEBUG_PANE_SCALE_CHOICE
             SVDEBUG << "Pane[" << getId()
@@ -1320,12 +1339,14 @@ Pane::getTopLayerDisplayExtents(double &vmin, double &vmax,
 {
     Layer *layer = getTopLayer();
     if (!layer) return false;
-    bool vlog;
-    QString vunit;
-    bool rv = (layer->getValueExtents(vmin, vmax, vlog, vunit) &&
-               layer->getDisplayExtents(dmin, dmax));
-    if (unit) *unit = vunit;
-    return rv;
+    auto extents = layer->getVerticalExtents();
+    auto scale = extents.second;
+    vmin = scale.getValueMinimum();
+    vmax = scale.getValueMaximum();
+    dmin = scale.getDisplayMinimum();
+    dmax = scale.getDisplayMaximum();
+    if (unit) *unit = scale.getUnit();
+    return (extents.first == Layer::ScaleApplication::Normal);
 }
 
 bool
@@ -1994,32 +2015,33 @@ Pane::zoomToRegion(QRect r)
     setZoomLevel(getZoomConstraintLevel(newZoomLevel));
     setStartFrame(newStartFrame);
 
-    QString unit;
-    double min, max;
-    bool log;
+    CoordinateScale scale = Layer::NO_VERTICAL_EXTENTS.second;
     Layer *layer = nullptr;
+    
     for (LayerList::const_iterator i = m_layerStack.begin();
-         i != m_layerStack.end(); ++i) { 
-        if ((*i)->getValueExtents(min, max, log, unit) &&
-            (*i)->getDisplayExtents(min, max)) {
+         i != m_layerStack.end(); ++i) {
+        auto extents = (*i)->getVerticalExtents();
+        if (extents.first == Layer::ScaleApplication::Normal) {
             layer = *i;
+            scale = extents.second;
             break;
         }
     }
             
     if (layer) {
-        if (log) {
-            min = (min < 0.0) ? -log10(-min) : (min == 0.0) ? 0.0 : log10(min);
-            max = (max < 0.0) ? -log10(-max) : (max == 0.0) ? 0.0 : log10(max);
+        double min = scale.getDisplayMinimum();
+        double max = scale.getDisplayMaximum();
+        if (scale.isLogarithmic()) {
+            LogRange::mapRange(min, max);
         }
         double rmin = min + ((max - min) * (height() - y1)) / height();
         double rmax = min + ((max - min) * (height() - y0)) / height();
         SVCERR << "min: " << min << ", max: " << max << ", y0: " << y0 << ", y1: " << y1 << ", h: " << height() << ", rmin: " << rmin << ", rmax: " << rmax << endl;
-        if (log) {
-            rmin = pow(10, rmin);
-            rmax = pow(10, rmax);
+        if (scale.isLogarithmic()) {
+            rmin = LogRange::unmap(rmin);
+            rmax = LogRange::unmap(rmax);
         }
-        SVCERR << "finally: rmin: " << rmin << ", rmax: " << rmax << " " << unit << endl;
+        SVCERR << "finally: rmin: " << rmin << ", rmax: " << rmax << endl;
 
         layer->setDisplayExtents(rmin, rmax);
         updateVerticalPanner();

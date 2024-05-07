@@ -359,25 +359,6 @@ public:
     CoordinateScale
     getEffectiveVerticalExtents(QString unit = {}) const override;
     
-    //!!! TO GO
-    /**
-     * Return the visible vertical extents for the given unit, if any.
-     * Overridden from LayerGeometryProvider (see docs there).
-     */
-    bool getVisibleExtentsForUnit(QString unit, double &min, double &max,
-                                  bool &log) const override;
-
-    //!!! TO GO
-    /**
-     * Return some visible vertical extents and unit. That is, if at
-     * least one non-dormant layer has a non-empty unit and returns
-     * some values from its getDisplayExtents() method, return the
-     * extents and unit from the topmost of those. Otherwise return
-     * false.
-     */
-    bool getVisibleExtentsForAnyUnit(double &min, double &max,
-                                     bool &logarithmic, QString &unit) const;
-    
     int getTextLabelYCoord(const Layer *layer, QPainter &) const override;
 
     void toXml(QTextStream &stream, QString indent = "",
@@ -514,7 +495,8 @@ protected:
     LayerList getScrollableBackLayers(bool testChanged, bool &changed) const;
     LayerList getNonScrollableFrontLayers(bool testChanged, bool &changed) const;
 
-    Layer *getScaleProvidingLayerForUnit(QString unit) const;
+    CoordinateScale getEffectiveVerticalExtentsAndLayerFromWhich
+    (QString unit, Layer **layer) const;
     
     ZoomLevel getZoomConstraintLevel(ZoomLevel level,
                                      ZoomConstraint::RoundingDirection dir =

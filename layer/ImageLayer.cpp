@@ -135,12 +135,6 @@ ImageLayer::getVerticalExtents() const
 }
 
 bool
-ImageLayer::getValueExtents(double &, double &, bool &, QString &) const
-{
-    return false;
-}
-
-bool
 ImageLayer::isLayerScrollable(const LayerGeometryProvider *) const
 {
     return true;

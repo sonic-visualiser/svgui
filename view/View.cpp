@@ -230,6 +230,14 @@ View::getEffectiveVerticalExtentsForLayer(const Layer *layer) const
 CoordinateScale
 View::getEffectiveVerticalExtents(QString unit) const
 {
+    return (getEffectiveVerticalExtentsAndLayerFromWhich(unit, nullptr));
+}
+
+CoordinateScale
+View::getEffectiveVerticalExtentsAndLayerFromWhich(QString unit,
+                                                   Layer **layerReturnMaybe)
+    const
+{    
     // Three passes:
 
     // 1. Look for the topmost non-dormant layer with that unit that
@@ -291,6 +299,10 @@ View::getEffectiveVerticalExtents(QString unit) const
 #ifdef DEBUG_VIEW_SCALE_CHOICE
             SVDEBUG << "... it's good, returning it" << endl;
 #endif
+            if (layerReturnMaybe) {
+                *layerReturnMaybe = layer;
+            }
+                
             return extents.second;
         }
     }
@@ -355,179 +367,6 @@ View::getEffectiveVerticalExtents(QString unit) const
     SVDEBUG << "... returning merged result" << endl;
 #endif
     return scale;
-}
-
-//!!! TO GO
-bool
-View::getVisibleExtentsForUnit(QString unit,
-                               double &min, double &max,
-                               bool &log) const
-{
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-    SVCERR << "View[" << getId() << "]::getVisibleExtentsForUnit("
-           << unit << ")" << endl;
-#endif
-    
-    Layer *layer = getScaleProvidingLayerForUnit(unit);
-
-    QString layerUnit;
-    double layerMin, layerMax;
-
-    if (!layer) {
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-        SVCERR << "View[" << getId() << "]::getVisibleExtentsForUnit("
-               << unit << "): No scale-providing layer for this unit, "
-               << "taking union of extents of layers with this unit" << endl;
-#endif
-        bool haveAny = false;
-        bool layerLog;
-        for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
-            Layer *layer = *i;
-            if (layer->getValueExtents(layerMin, layerMax,
-                                       layerLog, layerUnit)) {
-                if (unit.toLower() != layerUnit.toLower()) {
-                    continue;
-                }
-                if (!haveAny || layerMin < min) {
-                    min = layerMin;
-                }
-                if (!haveAny || layerMax > max) {
-                    max = layerMax;
-                }
-                if (!haveAny || layerLog) {
-                    log = layerLog;
-                }
-                haveAny = true;
-            }
-        }
-        return haveAny;
-    }
-
-    return (layer->getValueExtents(layerMin, layerMax, log, layerUnit) &&
-            layer->getDisplayExtents(min, max));
-}
-        
-//!!! TO GO?
-Layer *
-View::getScaleProvidingLayerForUnit(QString unit) const
-{
-    // Return the layer which is used to provide the min/max/log for
-    // any auto-align layer of a given unit. This is also the layer
-    // that will draw the scale, if possible.
-    //
-    // The returned layer is
-    // 
-    // - the topmost visible layer having that unit that is not also
-    // auto-aligning; or if there is no such layer,
-    //
-    // - the topmost layer of any visibility having that unit that is
-    // not also auto-aligning (because a dormant layer can still draw
-    // a scale, and it makes sense for layers aligned to it not to
-    // jump about when its visibility is toggled); or if there is no
-    // such layer,
-    //
-    // - none
-
-    Layer *dormantOption = nullptr;
-    
-    for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
-
-        Layer *layer = *i;
-
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-        SVCERR << "View[" << getId() << "]::getScaleProvidingLayerForUnit("
-               << unit << "): Looking at layer " << layer
-               << " (" << layer->getLayerPresentationName() << ")" << endl;
-#endif
-        
-        QString layerUnit;
-        double layerMin = 0.0, layerMax = 0.0;
-        bool layerLog = false;
-
-        if (!layer->getValueExtents(layerMin, layerMax, layerLog, layerUnit)) {
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-            SVCERR << "... it has no value extents" << endl;
-#endif
-            continue;
-        }
-
-        if (layerUnit.toLower() != unit.toLower()) {
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-            SVCERR << "... it has the wrong unit (" << layerUnit << ")" << endl;
-#endif
-            continue;
-        }
-
-        double displayMin = 0.0, displayMax = 0.0;
-        if (!layer->getDisplayExtents(displayMin, displayMax)) {
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-            SVCERR << "... it has no display extents (is auto-aligning or not alignable)" << endl;
-#endif
-            continue;
-        }
-
-        if (layer->isLayerDormant(this)) {
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-            SVCERR << "... it's dormant" << endl;
-#endif
-            if (!dormantOption) {
-                dormantOption = layer;
-            }
-            continue;
-        }
-
-#ifdef DEBUG_VIEW_SCALE_CHOICE
-        SVCERR << "... it's good" << endl;
-#endif
-        return layer;
-    }
-
-    return dormantOption;
-}
-
-//!!! TO GO
-bool
-View::getVisibleExtentsForAnyUnit(double &min, double &max,
-                                  bool &log, QString &unit) const
-{
-    bool have = false;
-
-    // Iterate in reverse order, so as to return display extents of
-    // topmost layer that fits the bill
-    
-    for (auto i = m_layerStack.rbegin(); i != m_layerStack.rend(); ++i) { 
-
-        Layer *layer = *i;
-
-        if (layer->isLayerDormant(this)) {
-            continue;
-        }
-        
-        QString layerUnit;
-        double layerMin = 0.0, layerMax = 0.0;
-        bool layerLog = false;
-
-        if (!layer->getValueExtents(layerMin, layerMax, layerLog, layerUnit)) {
-            continue;
-        }
-        if (layerUnit == "") {
-            continue;
-        }
-
-        double displayMin = 0.0, displayMax = 0.0;
-        
-        if (layer->getDisplayExtents(displayMin, displayMax)) {
-
-            min = displayMin;
-            max = displayMax;
-            log = layerLog;
-            unit = layerUnit;
-            have = true;
-            break;
-        }
-    }
-
-    return have;
 }
 
 int

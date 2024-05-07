@@ -55,10 +55,6 @@ public:
         return NO_VERTICAL_EXTENTS;
     }
     
-    bool getValueExtents(double &, double &, bool &, QString &) const override {
-        return false;
-    }
-
     QString getLayerPresentationName() const override;
 
     int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const override { return 0; }

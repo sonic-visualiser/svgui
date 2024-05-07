@@ -633,28 +633,12 @@ Layer::paintMeasurementRect(LayerGeometryProvider *v, QPainter &paint,
 }
 
 bool
-Layer::valueExtentsMatchMine(LayerGeometryProvider *v) const
+Layer::verticalExtentsMatchMine(LayerGeometryProvider *v) const
 {
-    double min, min_;
-    double max, max_;
-    bool logarithmic, logarithmic_;
-    QString unit;
+    CoordinateScale mine = getVerticalExtents().second;
+    CoordinateScale theirs = v->getEffectiveVerticalExtents(mine.getUnit());
 
-    if (!getValueExtents(min_, max_, logarithmic_, unit)) {
-        return false;
-    }
-
-    if (!v->getVisibleExtentsForUnit(unit, min, max, logarithmic)) {
-        return false;
-    }
-
-    if (min != min_ ||
-        max != max_ ||
-        logarithmic != logarithmic_) {
-        return false;
-    }
-
-    return true;
+    return mine.visualRangeMatches(theirs);
 }
 
 void

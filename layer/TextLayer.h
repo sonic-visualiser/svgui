@@ -85,9 +85,6 @@ public:
 
     ScaleExtents getVerticalExtents() const override;
 
-    bool getValueExtents(double &min, double &max,
-                                 bool &logarithmic, QString &unit) const override;
-
     int getVerticalScaleWidth(LayerGeometryProvider *, bool, QPainter &) const override { return 0; }
 
     void toXml(QTextStream &stream, QString indent = "",

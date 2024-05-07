@@ -99,10 +99,6 @@ public:
         return NO_VERTICAL_EXTENTS;
     }
 
-    bool getValueExtents(double &, double &, bool &, QString &) const override {
-        return false;
-    }
-
     void toXml(QTextStream &stream, QString indent = "",
                        QString extraAttributes = "") const override;
 

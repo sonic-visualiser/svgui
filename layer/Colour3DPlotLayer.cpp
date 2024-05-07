@@ -738,22 +738,6 @@ Colour3DPlotLayer::getVerticalExtents() const
 }
 
 bool
-Colour3DPlotLayer::getValueExtents(double &min, double &max,
-                                   bool &logarithmic, QString &unit) const
-{
-    auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
-    if (!model) return false;
-
-    min = 0;
-    max = double(model->getHeight());
-
-    logarithmic = (m_binScale == BinScale::Log);
-    unit = "";
-
-    return true;
-}
-
-bool
 Colour3DPlotLayer::getDisplayExtents(double &min, double &max) const
 {
     auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
@@ -783,13 +767,6 @@ Colour3DPlotLayer::setDisplayExtents(double min, double max)
     
     emit layerParametersChanged();
     return true;
-}
-
-bool
-Colour3DPlotLayer::getYScaleValue(const LayerGeometryProvider *, int,
-                                  double &, QString &) const
-{
-    return false;//!!!
 }
 
 int

@@ -117,12 +117,6 @@ TextLayer::getVerticalExtents() const
 }
 
 bool
-TextLayer::getValueExtents(double &, double &, bool &, QString &) const
-{
-    return false;
-}
-
-bool
 TextLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 {
     QPoint discard;

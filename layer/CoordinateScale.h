@@ -75,11 +75,11 @@ public:
     CoordinateScale(Direction direction, bool logarithmic,
                     int minBin, int maxBin);
 
-    double getCoordForValue(LayerGeometryProvider *, double value) const;
-    int getCoordForValueRounded(LayerGeometryProvider *, double value) const;
+    double getCoordForValue(const LayerGeometryProvider *, double value) const;
+    int getCoordForValueRounded(const LayerGeometryProvider *, double value) const;
 
-    double getValueForCoord(LayerGeometryProvider *, double coordinate) const;
-    int getValueForCoordRounded(LayerGeometryProvider *, double coordinate) const;
+    double getValueForCoord(const LayerGeometryProvider *, double coordinate) const;
+    int getValueForCoordRounded(const LayerGeometryProvider *, double coordinate) const;
 
     Direction getDirection() const { return m_direction; }
     
@@ -120,6 +120,8 @@ public:
         }
     }
 
+    bool visualRangeMatches(const CoordinateScale &other) const;
+    
 private:
     Direction m_direction;
     bool m_isFrequencyScale;

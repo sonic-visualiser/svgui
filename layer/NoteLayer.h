@@ -111,9 +111,6 @@ public:
 
     ScaleExtents getVerticalExtents() const override;
     
-    bool getValueExtents(double &min, double &max,
-                         bool &log, QString &unit) const override;
-
     bool getDisplayExtents(double &min, double &max) const override;
     bool setDisplayExtents(double min, double max) override;
 
@@ -146,8 +143,6 @@ public:
     void setProperties(const LayerAttributes &attributes) override;
 
 protected:
-    void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
-
     QString getScaleUnits() const;
 
     int getDefaultColourHint(bool dark, bool &impose) override;
