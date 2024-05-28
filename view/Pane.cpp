@@ -369,6 +369,7 @@ Pane::setSelectionSnapToFeatures(bool snap)
 void
 Pane::paintEvent(QPaintEvent *e)
 {
+//    SVDEBUG << "Pane[" << getId() << "]::paintEvent" << endl;
 //    Profiler profiler("Pane::paintEvent", true);
 
     QPainter paint;
@@ -527,7 +528,7 @@ Pane::paintEvent(QPaintEvent *e)
 
     if (toolMode == ViewManager::MeasureMode && topLayer) {
         bool showFocus = false;
-        if (!m_manager || !m_manager->isPlaying()) showFocus = true;
+        if (!isCurrentlyMovingWithPlayback()) showFocus = true;
         topLayer->paintMeasurementRects(this, paint, showFocus, m_identifyPoint);
     }
     
@@ -1399,9 +1400,9 @@ Pane::mousePressEvent(QMouseEvent *e)
         return;
     }
 
-    SVDEBUG << "Pane[" << getId() << "]::mousePressEvent: buttons = "
-            << e->buttons() << ", modifiers = "
-            << modifierNames(e->modifiers()) << endl;
+//    SVDEBUG << "Pane[" << getId() << "]::mousePressEvent: buttons = "
+//            << e->buttons() << ", modifiers = "
+//            << modifierNames(e->modifiers()) << endl;
 
     m_clickPos = e->pos();
     m_mousePos = m_clickPos;
@@ -1747,11 +1748,12 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             }
         }
 
-        if (m_manager && !m_manager->isPlaying()) {
+        if (!isCurrentlyMovingWithPlayback()) {
 
             bool updating = false;
 
             if (getInteractionLayer() &&
+                m_manager &&
                 m_manager->shouldIlluminateLocalFeatures()) {
 
                 bool previouslyIdentifying = m_identifyFeatures;
@@ -2060,7 +2062,7 @@ Pane::dragTopLayer(QMouseEvent *e)
          e->pos(),
          true, // can move horiz
          canTopLayerMoveVertical(), // can move vert
-         canTopLayerMoveVertical() || (m_manager && m_manager->isPlaying()), // resist horiz
+         canTopLayerMoveVertical() || isCurrentlyMovingWithPlayback(), // resist horiz
          true); // resist vert
 
     if (m_dragMode == HorizontalDrag ||
@@ -2373,12 +2375,16 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 void
 Pane::enterEvent(QEnterEvent *)
 {
+//    SVDEBUG << "Pane[" << getId() << "]::enterEvent" << endl;
+
     m_mouseInWidget = true;
 }
 
 void
 Pane::leaveEvent(QEvent *)
 {
+//    SVDEBUG << "Pane[" << getId() << "]::leaveEvent" << endl;
+
     m_mouseInWidget = false;
     bool previouslyIdentifying = m_identifyFeatures;
     m_identifyFeatures = false;
@@ -2395,13 +2401,14 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-    SVDEBUG << "Pane[" << getId() << "]::wheelEvent: pixelDelta = ("
+/*
+  SVDEBUG << "Pane[" << getId() << "]::wheelEvent: pixelDelta = ("
             << e->pixelDelta().x() << "," << e->pixelDelta().y()
             << "), angleDelta = (" << e->angleDelta().x()
             << "," << e->angleDelta().y() << "), pixelDelta = ("
             << e->pixelDelta().x() << "," << e->pixelDelta().y()
             << "), modifiers = " << modifierNames(e->modifiers()) << endl;
-
+*/
     e->accept(); // we never want wheel events on the pane to be propagated
     
     int dx = e->angleDelta().x();
@@ -2491,8 +2498,8 @@ Pane::wheelEvent(QWheelEvent *e)
 void
 Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
 {
-    SVDEBUG << "Pane[" << getId() << "]::wheelVertical: sign = " << sign
-            << ", modifiers = " << modifierNames(mods) << endl;
+//    SVDEBUG << "Pane[" << getId() << "]::wheelVertical: sign = " << sign
+//            << ", modifiers = " << modifierNames(mods) << endl;
 
     if (mods & Qt::ShiftModifier) {
 
