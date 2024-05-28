@@ -24,6 +24,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QSettings>
+#include <QSplitter>
 
 #include "plugin/FeatureExtractionPluginFactory.h"
 #include "plugin/RealTimePluginFactory.h"
@@ -38,24 +39,38 @@ PluginReviewDialog::PluginReviewDialog(QWidget *parent) :
     QGridLayout *layout = new QGridLayout;
     setLayout(layout);
 
-    layout->addWidget(new QLabel(tr("<p>These plugins have been loaded.</p>")),
-                      0, 0);
+    QSplitter *splitter = new QSplitter;
+    splitter->setOrientation(Qt::Vertical);
+    layout->addWidget(splitter, 0, 0, 1, 2);
+
+    QWidget *sub1 = new QWidget;
+    splitter->addWidget(sub1);
+
+    QGridLayout *sub1layout = new QGridLayout;
+    sub1->setLayout(sub1layout);
+    
+    sub1layout->addWidget(new QLabel(tr("<p>These plugins have been loaded.</p>")), 0, 0);
     
     m_table = new QTableWidget;
-    layout->addWidget(m_table, 1, 0, 1, 2);
+    sub1layout->addWidget(m_table, 1, 0);
 
-    layout->addWidget(new QLabel(tr("<p>These plugin libraries failed to load, and are being ignored.<br>Press Remove to remove a library from this list, so it will be checked again on next startup.</p>")), 2, 0);
+    QWidget *sub2 = new QWidget;
+    splitter->addWidget(sub2);
+
+    QGridLayout *sub2layout = new QGridLayout;
+    sub2->setLayout(sub2layout);
+    
+    sub2layout->addWidget(new QLabel(tr("<p>These plugin libraries failed to load, and are being ignored.<br>Press Remove to remove a library from this list, so it will be checked again on next startup.</p>")), 0, 0);
 
     m_ignoredTable = new QTableWidget;
-    layout->addWidget(m_ignoredTable, 3, 0, 1, 2);
+    sub2layout->addWidget(m_ignoredTable, 1, 0);
 
     QDialogButtonBox *bb = new QDialogButtonBox(QDialogButtonBox::Close);
-    layout->addWidget(bb, 4, 1);
+    layout->addWidget(bb, 1, 1);
     connect(bb, SIGNAL(rejected()), this, SLOT(close()));
     bb->setFocus();
 
-    layout->setRowStretch(1, 10);
-    layout->setRowStretch(3, 3);
+    layout->setRowStretch(0, 10);
 
     repopulateIgnoredTable();
 }
@@ -172,17 +187,16 @@ PluginReviewDialog::repopulateIgnoredTable()
     m_ignoredTable->setColumnCount(3);
     m_ignoredTable->setRowCount(ignored.size());
     m_ignoredTable->setHorizontalHeaderLabels({
-            tr("Library"), tr("Reason"), ""
+            "", tr("Library"), tr("Reason")
         });
     
     int row = 0;
     
     for (auto library: ignored.keys()) {
-        m_ignoredTable->setItem
-            (row, 0, new QTableWidgetItem(library));
-        m_ignoredTable->setItem
-            (row, 1, new QTableWidgetItem(ignored[library].toString()));
 
+        // Put Remove first, so it is always visible even if the other
+        // columns go very wide - not beautiful, but practical
+        
         auto stopIgnoring = new QPushButton(tr("Remove"));
         connect(stopIgnoring, &QPushButton::pressed,
                 [=]() {
@@ -196,7 +210,13 @@ PluginReviewDialog::repopulateIgnoredTable()
                 });
                     
         m_ignoredTable->setCellWidget
-            (row, 2, stopIgnoring);
+            (row, 0, stopIgnoring);
+        
+        m_ignoredTable->setItem
+            (row, 1, new QTableWidgetItem(library));
+        m_ignoredTable->setItem
+            (row, 2, new QTableWidgetItem(ignored[library].toString()));
+        
         row++;
     }
 
