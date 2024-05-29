@@ -178,7 +178,7 @@ signals:
     void frameIlluminated(sv_frame_t);
     
 protected:
-    QString getScaleUnits() const;
+    QString getScaleUnits() const override; // ColourScaleLayer
     bool shouldAutoAlign() const;
 
     EventVector getLocalPoints(LayerGeometryProvider *v, int) const;

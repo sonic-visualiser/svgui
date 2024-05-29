@@ -39,13 +39,67 @@ public:
 
     void setCategory(QString category);
 
-    void registerShortcut(QAction *, QString overrideName = "");
-    void registerAlternativeShortcut(QAction *, QString alternative);
+    /** Register the key sequence for the given action using the text
+     *  of that action as the name of the assocated operation.
+     */
+    void registerShortcut(QAction *);
+
+    /** Register the key sequence for the given action using the given
+     *  name as the name of the assocated operation.
+     */
+    void registerShortcut(QAction *, QString actionName);
+
+    /** Register the given key sequence as the primary shortcut for
+     *  the action of the given name, with the given descriptive text.
+     */
+    void registerShortcut(QString actionName, QKeySequence shortcut, QString tipText);
+    
+    /** Register the given mouse mechanism as a shortcut for the
+     *  action of the given name, with the given descriptive
+     *  text. This is similar to registerShortcutVerbatim in that the
+     *  mouse action is used almost literally, except that modifiers
+     *  such as Ctrl are remapped appropriately for the Mac in a
+     *  similar manner to QKeySequence.
+     */
+    void registerMouseAction(QString actionName, QString mouseAction, QString tipText);
+    
+    /** Register the given text as the primary shortcut for the action
+     *  of the given name, with the given descriptive text. The
+     *  shortcut text is used verbatim and does not necessarily have
+     *  to be a key sequence.
+     */
+    void registerShortcutVerbatim(QString actionName, QString shortcut, QString tipText);
+
+    /** Register the given key sequence as an alternative shortcut for
+     *  the given action.
+     */
     void registerAlternativeShortcut(QAction *, QKeySequence alternative);
 
-    void registerShortcut(QString actionName, QString shortcut, QString tipText);
-    void registerAlternativeShortcut(QString actionName, QString alternative);
+    /** Register the given text as an alternative shortcut for the
+     *  given action. The text is used verbatim and does not
+     *  necessarily have to be a key sequence.
+     */
+    void registerAlternativeShortcutVerbatim(QAction *, QString alternative);
+    
+    /** Register the given key sequence as an alternative shortcut for
+     *  the action of the given name.
+     */
     void registerAlternativeShortcut(QString actionName, QKeySequence alternative);
+    
+    /** Register the given mouse mechanism as an alternative shortcut
+     *  for the action of the given name. This is similar to
+     *  registerAlternativeShortcutVerbatim in that the mouse action
+     *  is used almost literally, except that modifiers such as Ctrl
+     *  are remapped appropriately for the Mac in a similar manner to
+     *  QKeySequence.
+     */
+    void registerAlternativeMouseAction(QString actionName, QString mouseAction);
+
+    /** Register the given text as an alternative shortcut for the
+     *  action of the given name. The text is used verbatim and does
+     *  not necessarily have to be a key sequence.
+     */
+    void registerAlternativeShortcutVerbatim(QString actionName, QString alternative);
 
     void show();
     void hide();
@@ -61,6 +115,8 @@ protected:
         std::vector<QString> alternatives;
     };
 
+    void makeMacMouseReplacements(QString &);
+    
     typedef std::vector<KeyDetails> KeyList;
     typedef std::map<QString, KeyList> CategoryMap;
     typedef std::vector<QString> CategoryList;

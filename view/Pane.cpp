@@ -1362,31 +1362,31 @@ void
 Pane::registerShortcuts(KeyReference &kr)
 {
     kr.setCategory(tr("Zoom"));
-    kr.registerAlternativeShortcut(tr("Zoom In"), tr("Wheel Up"));
-    kr.registerAlternativeShortcut(tr("Zoom Out"), tr("Wheel Down"));
+    kr.registerAlternativeMouseAction(tr("Zoom In"), tr("Wheel Up"));
+    kr.registerAlternativeMouseAction(tr("Zoom Out"), tr("Wheel Down"));
 
     kr.setCategory(tr("General Pane Mouse Actions"));
     
-    kr.registerShortcut(tr("Zoom"), tr("Wheel"),
-                        tr("Zoom in or out in time axis"));
-    kr.registerShortcut(tr("Scroll"), tr("Ctrl+Wheel"),
-                        tr("Scroll rapidly left or right in time axis"));
-    kr.registerShortcut(tr("Scroll Vertically"), tr("Shift+Wheel"), 
-                        tr("Scroll up or down in the vertical axis"));
-    kr.registerShortcut(tr("Zoom Vertically"), tr("Alt+Wheel"), 
-                        tr("Zoom in or out in the vertical axis"));
-    kr.registerShortcut(tr("Navigate"), tr("MiddleClick"),
-                        tr("Click middle mouse button and drag to navigate with any tool"));
-    kr.registerShortcut(tr("Relocate"), tr("DoubleMiddleClick"),
-                        tr("Double-click middle mouse button to relocate with any tool"));
-    kr.registerShortcut(tr("Menu"),
+    kr.registerMouseAction(tr("Zoom"), tr("Wheel"),
+                           tr("Zoom in or out in time axis"));
+    kr.registerMouseAction(tr("Scroll"), tr("Ctrl+Wheel"),
+                           tr("Scroll rapidly left or right in time axis"));
+    kr.registerMouseAction(tr("Scroll Vertically"), tr("Shift+Wheel"), 
+                           tr("Scroll up or down in the vertical axis"));
+    kr.registerMouseAction(tr("Zoom Vertically"), tr("Alt+Wheel"), 
+                           tr("Zoom in or out in the vertical axis"));
+    kr.registerMouseAction(tr("Navigate"), tr("MiddleClick"),
+                           tr("Click middle mouse button and drag to navigate with any tool"));
+    kr.registerMouseAction(tr("Relocate"), tr("DoubleMiddleClick"),
+                           tr("Double-click middle mouse button to relocate with any tool"));
+    kr.registerMouseAction(tr("Menu"),
+                           tr("RightClick"),
 #ifdef Q_OS_MAC
-                        tr("Ctrl+Click"),
-                        tr("Ctrl+click mouse button to show pane context menu"));
+                           tr("Ctrl+click mouse button to show pane context menu")
 #else
-                        tr("RightClick"),
-                        tr("Click right mouse button to show pane context menu"));
+                           tr("Click right mouse button to show pane context menu")
 #endif
+        );
 }
 
 Layer *

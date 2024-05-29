@@ -47,22 +47,29 @@ KeyReference::setCategory(QString category)
 }
 
 void
-KeyReference::registerShortcut(QAction *action, QString overrideName)
+KeyReference::registerShortcut(QAction *action)
 {
     QString name = action->text();
-    if (overrideName != "") name = overrideName;
-
-    QString shortcut = action->shortcut().toString(QKeySequence::NativeText);
-    QString tip = action->statusTip();
-
-    registerShortcut(name, shortcut, tip);
+    name.replace(tr("&"), "");
+    registerShortcut(action, name);
 }
 
 void
-KeyReference::registerShortcut(QString name, QString shortcut, QString tip)
+KeyReference::registerShortcut(QAction *action, QString name)
 {
-    name.replace(tr("&"), "");
-            
+    registerShortcut(name, action->shortcut(), action->statusTip());
+}
+
+void
+KeyReference::registerShortcut(QString name, QKeySequence shortcut, QString tip)
+{
+    QString stext = shortcut.toString(QKeySequence::NativeText);
+    registerShortcutVerbatim(name, stext, tip);
+}
+
+void
+KeyReference::registerShortcutVerbatim(QString name, QString shortcut, QString tip)
+{
     KeyList &list = m_map[m_currentCategory];
 
     for (KeyList::iterator i = list.begin(); i != list.end(); ++i) {
@@ -83,24 +90,31 @@ KeyReference::registerShortcut(QString name, QString shortcut, QString tip)
 }
 
 void
-KeyReference::registerAlternativeShortcut(QAction *action, QString alternative)
-{
-    QString name = action->text();
-    registerAlternativeShortcut(name, alternative);
-}
-
-void
 KeyReference::registerAlternativeShortcut(QAction *action, QKeySequence shortcut)
 {
     QString name = action->text();
-    registerAlternativeShortcut(name, shortcut.toString(QKeySequence::NativeText));
+    name.replace(tr("&"), "");
+    registerAlternativeShortcut(name, shortcut);
 }
 
 void
-KeyReference::registerAlternativeShortcut(QString name, QString alternative)
+KeyReference::registerAlternativeShortcutVerbatim(QAction *action, QString alternative)
 {
+    QString name = action->text();
     name.replace(tr("&"), "");
+    registerAlternativeShortcutVerbatim(name, alternative);
+}
 
+void
+KeyReference::registerAlternativeShortcut(QString name, QKeySequence shortcut)
+{
+    QString stext = shortcut.toString(QKeySequence::NativeText);
+    registerAlternativeShortcutVerbatim(name, stext);
+}
+
+void
+KeyReference::registerAlternativeShortcutVerbatim(QString name, QString alternative)
+{
     KeyList &list = m_map[m_currentCategory];
 
     for (KeyList::iterator i = list.begin(); i != list.end(); ++i) {
@@ -112,9 +126,29 @@ KeyReference::registerAlternativeShortcut(QString name, QString alternative)
 }
 
 void
-KeyReference::registerAlternativeShortcut(QString name, QKeySequence shortcut)
+KeyReference::makeMacMouseReplacements(QString &mouseAction)
 {
-    registerAlternativeShortcut(name, shortcut.toString(QKeySequence::NativeText));
+#ifdef Q_OS_MAC
+    mouseAction.replace(tr("Ctrl+"), QChar(0x2318)); // Cmd
+    mouseAction.replace(tr("Shift+"), QChar(0x21E7)); // Shift
+    mouseAction.replace(tr("Alt+"), QChar(0x2325)); // Option
+    mouseAction.replace(tr("Right"), QChar(0x2303)); // Ctrl
+    mouseAction.replace(tr("Wheel"), tr("Scroll"));
+#endif
+}
+
+void
+KeyReference::registerMouseAction(QString name, QString mouseAction, QString tip)
+{
+    makeMacMouseReplacements(mouseAction);
+    registerShortcutVerbatim(name, mouseAction, tip);
+}
+
+void
+KeyReference::registerAlternativeMouseAction(QString name, QString mouseAction)
+{
+    makeMacMouseReplacements(mouseAction);
+    registerAlternativeShortcutVerbatim(name, mouseAction);
 }
 
 void

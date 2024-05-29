@@ -2497,9 +2497,7 @@ View::paintEvent(QPaintEvent *e)
     // Scrollable (cacheable) items first. If we are repainting the
     // cache, then we paint these to the cache; otherwise straight to
     // the buffer.
-    QRect areaToPaint;
     QPainter paint;
-
     if (shouldRepaintCache) {
         paint.begin(m_cache);
         paint.fillRect(cacheAreaToRepaint, getBackground());
