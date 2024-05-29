@@ -633,8 +633,6 @@ RegionLayer::yToSpacingIndex(LayerGeometryProvider *v, int y) const
 int
 RegionLayer::getYForValue(LayerGeometryProvider *v, double val) const
 {
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
     int h = v->getPaintHeight();
 
     if (m_verticalScale == EqualSpaced) {
@@ -648,7 +646,6 @@ RegionLayer::getYForValue(LayerGeometryProvider *v, double val) const
 
 //        SVDEBUG << "RegionLayer::getYForValue: value " << val << " -> i->second " << i->second << " -> y " << y << endl;
         return y;
-
 
     } else {
 
@@ -666,8 +663,6 @@ RegionLayer::getValueForY(LayerGeometryProvider *v, int y) const
 double
 RegionLayer::getValueForY(LayerGeometryProvider *v, int y, int avoid) const
 {
-    double min = 0.0, max = 0.0;
-    bool logarithmic = false;
     int h = v->getPaintHeight();
 
     if (m_verticalScale == EqualSpaced) {
