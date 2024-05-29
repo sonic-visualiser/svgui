@@ -135,10 +135,6 @@ protected slots:
 
 protected:
     double getValueForY(LayerGeometryProvider *v, int y, int avoid) const;
-
-//!!! WARNING: EqualSpaced not implemented elsewhere yet!
-    /// void getScaleExtents(LayerGeometryProvider *, double &min, double &max, bool &log) const;
-
     double getValueForY(LayerGeometryProvider *v, int y) const;
     int getYForValue(LayerGeometryProvider *v, double value) const;
 

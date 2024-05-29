@@ -608,65 +608,6 @@ RegionLayer::getScaleUnits() const
     else return "";
 }
 
-/*!!! Note: EqualSpaced not yet implemented elsewhere!
- */
-#ifdef NOT_DEFINED
-void
-RegionLayer::getScaleExtents(LayerGeometryProvider *v, double &min, double &max, bool &log) const
-{
-    min = 0.0;
-    max = 0.0;
-    log = false;
-
-    auto model = ModelById::getAs<RegionModel>(m_model);
-    if (!model) return;
-
-    QString queryUnits;
-    queryUnits = getScaleUnits();
-
-    if (m_verticalScale == AutoAlignScale) {
-
-        if (!v->getVisibleExtentsForUnit(queryUnits, min, max, log)) {
-
-            min = model->getValueMinimum();
-            max = model->getValueMaximum();
-
-//            cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
-
-        } else if (log) {
-
-            LogRange::mapRange(min, max);
-
-//            cerr << "RegionLayer[" << this << "]::getScaleExtents: min = " << min << ", max = " << max << ", log = " << log << endl;
-
-        }
-
-    } else if (m_verticalScale == EqualSpaced) {
-
-        if (!m_spacingMap.empty()) {
-            SpacingMap::const_iterator i = m_spacingMap.begin();
-            min = i->second;
-            i = m_spacingMap.end();
-            --i;
-            max = i->second;
-//            cerr << "RegionLayer[" << this << "]::getScaleExtents: equal spaced; min = " << min << ", max = " << max << ", log = " << log << endl;
-        }
-
-    } else {
-
-        min = model->getValueMinimum();
-        max = model->getValueMaximum();
-
-        if (m_verticalScale == LogScale) {
-            LogRange::mapRange(min, max);
-            log = true;
-        }
-    }
-
-    if (max == min) max = min + 1.0;
-}
-#endif // NOT_DEFINED
-
 int
 RegionLayer::spacingIndexToY(LayerGeometryProvider *v, int i) const
 {
