@@ -1375,10 +1375,16 @@ Pane::registerShortcuts(KeyReference &kr)
                            tr("Scroll up or down in the vertical axis"));
     kr.registerMouseAction(tr("Zoom Vertically"), tr("Alt+Wheel"), 
                            tr("Zoom in or out in the vertical axis"));
-    kr.registerMouseAction(tr("Navigate"), tr("MiddleClick"),
-                           tr("Click middle mouse button and drag to navigate with any tool"));
-    kr.registerMouseAction(tr("Relocate"), tr("DoubleMiddleClick"),
-                           tr("Double-click middle mouse button to relocate with any tool"));
+    kr.registerMouseAction(tr("Navigate"), tr("Alt+Click+Drag"),
+                           tr("Navigate with any tool selected"));
+    kr.registerMouseAction(tr("Relocate"), tr("Alt+DoubleClick"),
+                           tr("Relocate with any tool selected"));
+#ifndef Q_OS_MAC
+    // It's so unlikely that a Mac user will ever use these. They
+    // should work, but let's not clog up the documentation
+    kr.registerAlternativeMouseAction(tr("Navigate"), tr("MiddleClick"));
+    kr.registerAlternativeMouseAction(tr("Relocate"), tr("DoubleMiddleClick"));
+#endif
     kr.registerMouseAction(tr("Menu"),
                            tr("RightClick"),
 #ifdef Q_OS_MAC
@@ -1449,16 +1455,24 @@ Pane::mousePressEvent(QMouseEvent *e)
     m_editing = false;
     m_releasing = false;
 
-    if (mode == ViewManager::NavigateMode ||
-        (e->buttons() & Qt::MiddleButton) ||
-        (mode == ViewManager::MeasureMode &&
-         (e->buttons() & Qt::LeftButton) && m_shiftPressed)) {
+    if (mode == ViewManager::NavigateMode) {
+        m_navigating = true;
+    } else if (e->buttons() & Qt::MiddleButton) {
+        m_navigating = true;
+    } else if (m_altPressed) {
+        m_navigating = true;
+    } else if (mode == ViewManager::MeasureMode &&
+               m_shiftPressed &&
+               (e->buttons() & Qt::LeftButton)) {
+        m_navigating = true;
+    }
+    
+    if (m_navigating) {
 
         if (mode != ViewManager::NavigateMode) {
             setCursor(Qt::PointingHandCursor);
         }
 
-        m_navigating = true;
         m_dragCentreFrame = m_centreFrame;
         m_dragStartMinValue = 0;
         

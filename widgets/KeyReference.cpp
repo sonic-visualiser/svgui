@@ -57,7 +57,13 @@ KeyReference::registerShortcut(QAction *action)
 void
 KeyReference::registerShortcut(QAction *action, QString name)
 {
-    registerShortcut(name, action->shortcut(), action->statusTip());
+    auto shortcuts = action->shortcuts();
+    int n = shortcuts.size();
+    if (n == 0) return;
+    registerShortcut(name, shortcuts[0], action->statusTip());
+    for (int i = 1; i < n; ++i) {
+        registerAlternativeShortcut(name, shortcuts[i]);
+    }
 }
 
 void
@@ -192,6 +198,9 @@ KeyReference::show()
                      k != j->alternatives.end(); ++k) {
                     QString alt = *k;
                     alt.replace(" ", "&nbsp;");
+                    if (k != j->alternatives.begin()) {
+                        altdesc += " ";
+                    }
                     altdesc += tr("<i>or</i>&nbsp;<b>%1</b>").arg(alt);
                 }
                 altdesc = tr("</b>&nbsp;(%1)<b>").arg(altdesc);

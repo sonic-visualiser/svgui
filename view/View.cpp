@@ -467,7 +467,7 @@ View::setStartFrame(sv_frame_t f)
 }
 
 bool
-View::setCentreFrame(sv_frame_t f, bool e)
+View::setCentreFrame(sv_frame_t f, bool doEmit)
 {
     bool changeVisible = false;
 
@@ -514,7 +514,7 @@ View::setCentreFrame(sv_frame_t f, bool e)
             }
         }
 
-        if (e) {
+        if (doEmit) {
             sv_frame_t rf = alignToReference(m_centreFrame);
 #ifdef DEBUG_VIEW
             SVCERR << "View[" << getId() << "]::setCentreFrame(" << f
