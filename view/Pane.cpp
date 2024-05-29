@@ -1375,12 +1375,18 @@ Pane::registerShortcuts(KeyReference &kr)
                         tr("Scroll up or down in the vertical axis"));
     kr.registerShortcut(tr("Zoom Vertically"), tr("Alt+Wheel"), 
                         tr("Zoom in or out in the vertical axis"));
-    kr.registerShortcut(tr("Navigate"), tr("Middle"), 
-                        tr("Click middle button and drag to navigate with any tool"));
-    kr.registerShortcut(tr("Relocate"), tr("Double-Click Middle"), 
-                        tr("Double-click middle button to relocate with any tool"));
-    kr.registerShortcut(tr("Menu"), tr("Right"),
-                        tr("Show pane context menu"));
+    kr.registerShortcut(tr("Navigate"), tr("MiddleClick"),
+                        tr("Click middle mouse button and drag to navigate with any tool"));
+    kr.registerShortcut(tr("Relocate"), tr("DoubleMiddleClick"),
+                        tr("Double-click middle mouse button to relocate with any tool"));
+    kr.registerShortcut(tr("Menu"),
+#ifdef Q_OS_MAC
+                        tr("Ctrl+Click"),
+                        tr("Ctrl+click mouse button to show pane context menu"));
+#else
+                        tr("RightClick"),
+                        tr("Click right mouse button to show pane context menu"));
+#endif
 }
 
 Layer *
