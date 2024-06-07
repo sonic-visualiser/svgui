@@ -58,6 +58,9 @@ using namespace std;
 
 namespace sv {
 
+static const int lowestSettableThreshold_dB = -160;
+static const int negInfThreshold_dB = lowestSettableThreshold_dB - 1;
+
 SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_channel(0),
     m_windowSize(1024),
@@ -66,8 +69,8 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_oversampling(1),
     m_gain(1.0),
     m_initialGain(1.0),
-    m_threshold(1.0e-8f),
-    m_initialThreshold(1.0e-8f),
+    m_threshold(AudioLevel::dB_to_voltage(lowestSettableThreshold_dB)),
+    m_initialThreshold(AudioLevel::dB_to_voltage(lowestSettableThreshold_dB)),
     m_colourRotation(0),
     m_initialRotation(0),
     m_minFrequency(10),
@@ -391,7 +394,7 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
 
     } else if (name == "Threshold") {
 
-        *min = -81;
+        *min = negInfThreshold_dB;
         *max = -1;
 
         *deflt = int(round(AudioLevel::voltage_to_dB(m_initialThreshold)));
@@ -651,8 +654,11 @@ SpectrogramLayer::getNewPropertyRangeMapper(const PropertyName &name) const
         return new LinearRangeMapper(-50, 50, -25, 25, tr("dB"));
     }
     if (name == "Threshold") {
-        return new LinearRangeMapper(-81, -1, -81, -1, tr("dB"), false,
-                                     { { -81, Strings::minus_infinity } });
+        return new LinearRangeMapper(negInfThreshold_dB, -1,
+                                     negInfThreshold_dB, -1,
+                                     tr("dB"), false,
+                                     { { negInfThreshold_dB,
+                                           Strings::minus_infinity } });
     }
     return nullptr;
 }
@@ -663,7 +669,7 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
     if (name == "Gain") {
         setGain(AudioLevel::dB_to_voltage(value));
     } else if (name == "Threshold") {
-        if (value == -81) setThreshold(0.0);
+        if (value == negInfThreshold_dB) setThreshold(0.0);
         else setThreshold(AudioLevel::dB_to_voltage(value));
     } else if (name == "Colour Rotation") {
         setColourRotation(value);
