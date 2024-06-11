@@ -51,7 +51,7 @@ makeColourmap(const Colour3DPlotRenderer::Parameters &parameters)
         QColor c = parameters.colourScale.getColourForPixel
             (pixel, parameters.colourRotation);
         if (!parameters.opaque) {
-            c.setAlpha(20 + (pixel * 200) / 256);
+            c.setAlpha(20 + (pixel * 220) / 256);
         }
         colourmap.push_back(c.rgba());
     }
