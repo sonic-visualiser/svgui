@@ -315,7 +315,7 @@ Colour3DPlotLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Normalization") return tr("Normalization");
     if (name == "Invert Vertical Scale") return tr("Invert Vertical Scale");
     if (name == "Gain") return tr("Gain");
-    if (name == "Opaque") return tr("Always Opaque");
+    if (name == "Opaque") return tr("Opaque");
     if (name == "Smooth") return tr("Smooth");
     if (name == "Bin Scale") return tr("Bin Scale");
     return "";
@@ -1155,7 +1155,7 @@ Colour3DPlotLayer::getRenderer(const LayerGeometryProvider *v) const
         if (m_binScale == BinScale::Log) {
             params.frequencyMapping = FrequencyMapping::Log;
         }
-        params.alwaysOpaque = m_opaque;
+        params.opaque = m_opaque;
         params.invertVertical = m_invertVertical;
         params.interpolate = m_smooth;
 

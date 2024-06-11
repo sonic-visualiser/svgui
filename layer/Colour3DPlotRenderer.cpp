@@ -50,7 +50,9 @@ makeColourmap(const Colour3DPlotRenderer::Parameters &parameters)
     for (int pixel = 0; pixel < 256; ++pixel) {
         QColor c = parameters.colourScale.getColourForPixel
             (pixel, parameters.colourRotation);
-        c.setAlpha(20 + (pixel * 200) / 256);
+        if (!parameters.opaque) {
+            c.setAlpha(20 + (pixel * 200) / 256);
+        }
         colourmap.push_back(c.rgba());
     }
     return colourmap;
@@ -428,10 +430,10 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 
     ZoomLevel zoomLevel = v->getZoomLevel();
 
-    if (!m_params.alwaysOpaque && !m_params.interpolate) {
+    if (!m_params.opaque && !m_params.interpolate) {
 
-        // consider translucent option -- only if not smoothing & not
-        // explicitly requested opaque & sufficiently zoomed-in
+        // consider explicit translucent cell option -- only if not
+        // smoothing & not requested opaque & sufficiently zoomed-in
 
         ZoomLevel threshold(ZoomLevel::FramesPerPixel,
                             int(round(renderBinResolution / 3)));
@@ -1158,7 +1160,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
             << ": renderDrawBuffer: normalization = " << int(m_params.normalization)
             << ", binDisplay = " << int(m_params.binDisplay)
             << ", frequencyMapping = " << int(m_params.frequencyMapping)
-            << ", alwaysOpaque = " << m_params.alwaysOpaque
+            << ", opaque = " << m_params.opaque
             << ", interpolate = " << m_params.interpolate << endl;
     SVDEBUG << "render " << m_sources.source
             << ": using sourceModel of type " << sourceModel->getTypeName()

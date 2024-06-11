@@ -67,7 +67,7 @@ public:
             normalization(ColumnNormalization::None),
             binDisplay(BinDisplay::AllBins),
             frequencyMapping(FrequencyMapping::Linear),
-            alwaysOpaque(false),
+            opaque(false),
             interpolate(false),
             invertVertical(false),
             showDerivative(false),
@@ -92,11 +92,11 @@ public:
          *  verticalBinLayer->getBinForY. */
         FrequencyMapping frequencyMapping;
 
-        /** Whether cells should always be opaque. If false, then
-         *  large cells (when zoomed in a long way) will be rendered
-         *  translucent in order not to obscure anything in a layer
-         *  beneath. */
-        bool alwaysOpaque;
+        /** Whether cells should be opaque. If not, some transparency
+         *  will be applied so that layers underneath are (at least
+         *  somewhat) visible.
+         */
+        bool opaque;
 
         /** Whether to apply smoothing when rendering cells at more
          *  than one pixel per cell.  !!! todo: decide about separating

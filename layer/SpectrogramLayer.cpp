@@ -83,6 +83,7 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_binDisplay(BinDisplay::AllBins),
     m_normalization(ColumnNormalization::None),
     m_normalizeVisibleArea(false),
+    m_opaque(true),
     m_smooth(true),
     m_lastEmittedZoomStep(-1),
     m_synchronous(false),
@@ -306,6 +307,7 @@ SpectrogramLayer::getProperties() const
 //    list.push_back("Min Frequency");
 //    list.push_back("Max Frequency");
     list.push_back("Frequency Scale");
+    list.push_back("Opaque");
     list.push_back("Smooth");
     return list;
 }
@@ -326,6 +328,7 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
     if (name == "Min Frequency") return tr("Min Frequency");
     if (name == "Max Frequency") return tr("Max Frequency");
     if (name == "Frequency Scale") return tr("Frequency Scale");
+    if (name == "Opaque") return tr("Opaque");
     if (name == "Smooth") return tr("Smooth");
     return "";
 }
@@ -333,6 +336,7 @@ SpectrogramLayer::getPropertyLabel(const PropertyName &name) const
 QString
 SpectrogramLayer::getPropertyIconName(const PropertyName &name) const
 {
+    if (name == "Opaque") return "opaque";
     if (name == "Smooth") return "smooth";
     return "";
 }
@@ -344,6 +348,7 @@ SpectrogramLayer::getPropertyType(const PropertyName &name) const
     if (name == "Colour Rotation") return RangeProperty;
     if (name == "Threshold") return RangeProperty;
     if (name == "Colour") return ColourMapProperty;
+    if (name == "Opaque") return ToggleProperty;
     if (name == "Smooth") return ToggleProperty;
     return ValueProperty;
 }
@@ -359,6 +364,7 @@ SpectrogramLayer::getPropertyGroupName(const PropertyName &name) const
     if (name == "Colour" ||
         name == "Threshold" ||
         name == "Colour Rotation" ||
+        name == "Opaque" ||
         name == "Smooth") return tr("Colour");
     if (name == "Normalization" ||
         name == "Gain" ||
@@ -516,6 +522,13 @@ SpectrogramLayer::getPropertyRangeAndValue(const PropertyName &name,
         
         val = convertFromColumnNorm(m_normalization, m_normalizeVisibleArea);
 
+    } else if (name == "Opaque") {
+        
+        *min = 0;
+        *max = 1;
+        *deflt = 1;
+        val = (m_opaque ? 1 : 0);
+        
     } else if (name == "Smooth") {
         
         *min = 0;
@@ -744,6 +757,8 @@ SpectrogramLayer::setProperty(const PropertyName &name, int value)
         case 1: setBinDisplay(BinDisplay::PeakBins); break;
         case 2: setBinDisplay(BinDisplay::PeakFrequencies); break;
         }
+    } else if (name == "Opaque") {
+        setOpaque(value ? true : false);
     } else if (name == "Smooth") {
         setSmooth(value ? true : false);
     } else if (name == "Normalization") {
@@ -854,12 +869,27 @@ SpectrogramLayer::getOversampling() const
 }
 
 void
+SpectrogramLayer::setOpaque(bool n)
+{
+    if (m_opaque == n) return;
+    m_opaque = n;
+    invalidateRenderers();
+    emit layerParametersChanged();
+}
+
+void
 SpectrogramLayer::setSmooth(bool n)
 {
     if (m_smooth == n) return;
     m_smooth = n;
     invalidateRenderers();
     emit layerParametersChanged();
+}
+
+bool
+SpectrogramLayer::getOpaque() const
+{
+    return m_opaque;
 }
 
 bool
@@ -1664,7 +1694,6 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
         params.normalization = m_normalization;
         params.binDisplay = m_binDisplay;
         params.frequencyMapping = m_frequencyMapping;
-        params.alwaysOpaque = true;
         params.invertVertical = false;
         params.scaleFactor = 1.0;
         params.colourRotation = m_colourRotation;
@@ -1674,6 +1703,7 @@ SpectrogramLayer::getRenderer(LayerGeometryProvider *v) const
             params.scaleFactor *= 2.f / float(getWindowSize());
         }
 
+        params.opaque = m_opaque;
         params.interpolate = m_smooth;
 
         m_renderers[viewId] = new Colour3DPlotRenderer(sources, params);
@@ -2709,7 +2739,8 @@ SpectrogramLayer::toXml(QTextStream &stream,
                  "frequencyScale=\"%5\" " // Compatibility property only
                  "frequencyMapping=\"%6\" " // Replacement for the above
                  "binDisplay=\"%7\" "
-                 "smooth=\"%8\" ")
+                 "smooth=\"%8\" "
+                 "opaque=\"%9\" ")
         .arg(m_minFrequency)
         .arg(m_maxFrequency)
         .arg(convertFromColourScale(m_colourScale, m_colourScaleMultiple))
@@ -2717,7 +2748,8 @@ SpectrogramLayer::toXml(QTextStream &stream,
         .arg(m_frequencyMapping == FrequencyMapping::Linear ? 0 : 1)
         .arg(int(m_frequencyMapping))
         .arg(int(m_binDisplay))
-        .arg(m_smooth ? "true" : "false");
+        .arg(m_smooth ? "true" : "false")
+        .arg(m_opaque ? "true" : "false");
 
     // New-style colour map attribute, by string id rather than by
     // number
@@ -2883,6 +2915,12 @@ SpectrogramLayer::setProperties(const LayerAttributes &attributes)
         // wrong gain factor, so hack in a fix for that here -- this
         // gives us backward but not forward compatibility.
         setGain(m_gain / float(getFFTSize() / 2));
+    }
+
+    if (attributes.contains("opaque")) {
+        bool opaque =
+            (attributes.value("opaque").trimmed() == "true");
+        setOpaque(opaque);
     }
 
     if (attributes.contains("smooth")) {

@@ -218,6 +218,9 @@ public:
     void setColourRotation(int);
     int getColourRotation() const;
 
+    void setOpaque(bool i);
+    bool getOpaque() const;
+
     void setSmooth(bool i);
     bool getSmooth() const;
 
@@ -225,8 +228,7 @@ public:
         return PositionTop;
     }
 
-//!!!    bool isLayerOpaque() const override { return true; }
-    bool isLayerOpaque() const override { return false; }
+    bool isLayerOpaque() const override { return m_opaque; }
 
     ColourSignificance getLayerColourSignificance() const override {
         return ColourHasMeaningfulValue;
@@ -299,6 +301,7 @@ protected:
     BinDisplay          m_binDisplay;
     ColumnNormalization m_normalization; // of individual columns
     bool                m_normalizeVisibleArea;
+    bool                m_opaque;
     bool                m_smooth;
     int                 m_lastEmittedZoomStep;
     bool                m_synchronous;
