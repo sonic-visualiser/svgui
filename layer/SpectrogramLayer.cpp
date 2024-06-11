@@ -37,8 +37,6 @@
 #include "Colour3DPlotExporter.h"
 
 #include <QPainter>
-#include <QImage>
-#include <QPixmap>
 #include <QRect>
 #include <QApplication>
 #include <QMessageBox>

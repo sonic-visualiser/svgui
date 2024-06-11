@@ -170,6 +170,7 @@ ScrollableImageCache::drawImage(int left,
     }
         
     QPainter painter(&m_image);
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
     painter.drawImage(QRect(left, 0, width, m_image.height()),
                       image,
                       QRect(imageLeft, 0, imageWidth, image.height()));

@@ -32,12 +32,8 @@
 
 #include <QMutex>
 #include <QWaitCondition>
-#include <QImage>
-#include <QPixmap>
 
 class QPainter;
-class QImage;
-class QPixmap;
 class QTimer;
 
 namespace sv {
@@ -229,7 +225,8 @@ public:
         return PositionTop;
     }
 
-    bool isLayerOpaque() const override { return true; }
+//!!!    bool isLayerOpaque() const override { return true; }
+    bool isLayerOpaque() const override { return false; }
 
     ColourSignificance getLayerColourSignificance() const override {
         return ColourHasMeaningfulValue;

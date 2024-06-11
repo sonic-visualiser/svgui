@@ -48,9 +48,10 @@ makeColourmap(const Colour3DPlotRenderer::Parameters &parameters)
     vector<QRgb> colourmap;
     colourmap.reserve(256);
     for (int pixel = 0; pixel < 256; ++pixel) {
-        colourmap.push_back(parameters.colourScale.getColourForPixel
-                            (pixel, parameters.colourRotation)
-                            .rgba());
+        QColor c = parameters.colourScale.getColourForPixel
+            (pixel, parameters.colourRotation);
+        c.setAlpha(20 + (pixel * 200) / 256);
+        colourmap.push_back(c.rgba());
     }
     return colourmap;
 }
@@ -629,8 +630,8 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             QRect r(rx0, ry1, rw, ry0 - ry1);
 
             float value = preparedColumn[sy - minbin];
-            QColor colour = m_params.colourScale.getColour(value,
-                                                           m_params.colourRotation);
+            QColor colour = m_params.colourScale.getColour
+                (value, m_params.colourRotation);
 
             if (rw == 1) {
                 paint.setPen(colour);
@@ -878,7 +879,7 @@ Colour3DPlotRenderer::scaleDrawBufferImage(QImage image,
     
     // Same format as the target cache
     QImage target(targetWidth, targetHeight,
-                  QImage::Format_ARGB32_Premultiplied);
+                  QImage::Format_ARGB32);
 
     for (int y = 0; y < targetHeight; ++y) {
 
@@ -1545,10 +1546,9 @@ void
 Colour3DPlotRenderer::recreateDrawBuffer(int w, int h)
 {
     if (m_drawBuffer.width() != w || m_drawBuffer.height() != h) {
-        m_drawBuffer = QImage(w, h, QImage::Format_ARGB32_Premultiplied);
+        m_drawBuffer = QImage(w, h, QImage::Format_ARGB32);
     }
-    m_drawBuffer.fill(m_params.colourScale.getColourForPixel
-                      (0, m_params.colourRotation));
+    m_drawBuffer.fill(Qt::transparent);
     m_magRanges = vector<MagnitudeRange>(w);
 }
 
@@ -1558,8 +1558,7 @@ Colour3DPlotRenderer::clearDrawBuffer(int w, int h)
     if (m_drawBuffer.width() < w || m_drawBuffer.height() != h) {
         recreateDrawBuffer(w, h);
     } else {
-        m_drawBuffer.fill(m_params.colourScale.getColourForPixel
-                          (0, m_params.colourRotation));
+        m_drawBuffer.fill(Qt::transparent);
         m_magRanges = vector<MagnitudeRange>(w);
     }
 }

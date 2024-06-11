@@ -2338,6 +2338,9 @@ View::paintEvent(QPaintEvent *e)
     LayerList scrollables = getScrollableBackLayers(true, layersChanged);
     LayerList nonScrollables = getNonScrollableFrontLayers(true, layersChanged);
 
+    // In the case where we never encounter an opaque layer, we ought
+    // to clear the background before drawing from buffer to widget
+    
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     SVCERR << "View[" << getId() << "]::paintEvent: have " << scrollables.size()
               << " scrollable back layers and " << nonScrollables.size()
@@ -2564,12 +2567,6 @@ View::paintEvent(QPaintEvent *e)
 
     // Now non-cacheable items.
 
-    if (scrollables.empty()) {
-        paint.begin(m_buffer);
-        paint.fillRect(requestedPaintArea, getBackground());
-        paint.end();
-    }
-
     for (auto layer : nonScrollables) {
         paintLayer(layer, m_buffer, requestedPaintArea, true);
     }
@@ -2578,11 +2575,14 @@ View::paintEvent(QPaintEvent *e)
     // unlike all the preceding, are at formal (1x) resolution
 
     paint.begin(this);
-    setPaintFont(paint);
-    if (e) paint.setClipRect(e->rect());
-
+    
     QRect finalPaintRect = e ? e->rect() : rect();
+
+    paint.setClipRect(finalPaintRect);
+    setPaintFont(paint);
+
     paint.setRenderHint(QPainter::SmoothPixmapTransform);
+    paint.setCompositionMode(QPainter::CompositionMode_Source);
     paint.drawImage(finalPaintRect, *m_buffer, 
                     scaledRect(finalPaintRect, dpratio));
 
