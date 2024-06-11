@@ -55,7 +55,7 @@ Colour3DPlotLayer::Colour3DPlotLayer() :
     m_normalization(ColumnNormalization::None),
     m_normalizeVisibleArea(false),
     m_invertVertical(false),
-    m_opaque(false),
+    m_opaque(true),
     m_smooth(false),
     m_peakResolution(256),
     m_miny(0),
@@ -428,7 +428,7 @@ Colour3DPlotLayer::getPropertyRangeAndValue(const PropertyName &name,
         
         *min = 0;
         *max = 1;
-        *deflt = 0;
+        *deflt = 1;
         val = (m_opaque ? 1 : 0);
         
     } else if (name == "Smooth") {
