@@ -284,6 +284,7 @@ PropertyBox::updatePropertyEditor(PropertyContainer::PropertyName name,
 #ifdef Q_OS_MAC
             // Seems to be plenty of whitespace already
             m_groupLayouts[groupName]->setContentsMargins(0, 0, 0, 0);
+            m_groupLayouts[groupName]->setHorizontalSpacing(1);
 #else
             // Need a bit of padding on the left
             m_groupLayouts[groupName]->setContentsMargins
