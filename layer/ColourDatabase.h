@@ -158,8 +158,6 @@ protected:
     
     typedef std::vector<ColourRec> ColourList;
     ColourList m_colours;
-
-    static ColourDatabase m_instance;
 };
 
 } // end namespace sv
