@@ -1239,37 +1239,22 @@ SpectrogramLayer::hasLightBackground() const
 double
 SpectrogramLayer::getEffectiveMinFrequency() const
 {
-    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
-    if (!model) return 0.0;
-    
-    sv_samplerate_t sr = model->getSampleRate();
-    double minf = double(sr) / getFFTSize();
-
-    if (m_minFrequency > 0.0) {
-        int minbin = int((double(m_minFrequency) * getFFTSize()) / sr + 0.01);
-        if (minbin < 1) minbin = 1;
-        minf = minbin * sr / getFFTSize();
-    }
-
-    return minf;
+    return m_minFrequency;
 }
 
 double
 SpectrogramLayer::getEffectiveMaxFrequency() const
 {
-    auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
-    if (!model) return 0.0;
+    if (m_maxFrequency > m_minFrequency) {
+        return m_maxFrequency;
+    } else {
+        auto model = ModelById::getAs<DenseTimeValueModel>(m_model);
+        if (!model) return 0.0;
     
-    sv_samplerate_t sr = model->getSampleRate();
-    double maxf = double(sr) / 2;
-
-    if (m_maxFrequency > 0.0) {
-        int maxbin = int((double(m_maxFrequency) * getFFTSize()) / sr + 0.1);
-        if (maxbin > getFFTSize() / 2) maxbin = getFFTSize() / 2;
-        maxf = maxbin * sr / getFFTSize();
+        sv_samplerate_t sr = model->getSampleRate();
+        double maxf = double(sr) / 2;
+        return maxf;
     }
-
-    return maxf;
 }
 
 bool
@@ -1886,7 +1871,7 @@ SpectrogramLayer::getVerticalExtents() const
     if (!model) return NO_VERTICAL_EXTENTS;
 
     sv_samplerate_t sr = model->getSampleRate();
-    double min = double(sr) / getFFTSize();
+    double min = 0.0;
     double max = double(sr) / 2.0;
     CoordinateScale::FrequencyMap map;
     switch (m_frequencyMapping) {
