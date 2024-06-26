@@ -1894,14 +1894,15 @@ SpectrogramLayer::getVerticalExtents() const
         //!!! CoordinateScale::FrequencyMap... I don't really want
         //!!! either to refer to the other for this, so put it
         //!!! somewhere else ?
-    case FrequencyMapping::Linear:
-        map = CoordinateScale::FrequencyMap::Linear;
-        break;
     case FrequencyMapping::Log:
         map = CoordinateScale::FrequencyMap::Log;
         break;
     case FrequencyMapping::Mel:
         map = CoordinateScale::FrequencyMap::Mel;
+        break;
+    case FrequencyMapping::Linear:
+    default:
+        map = CoordinateScale::FrequencyMap::Linear;
         break;
     }
     CoordinateScale scale(CoordinateScale::Direction::Vertical, map, min, max);
