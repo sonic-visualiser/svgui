@@ -18,17 +18,21 @@
 
 #include <QPainter>
 
+#include <memory>
+
 //#define DEBUG_COLOUR_DATABASE 1
 
 namespace sv {
 
-ColourDatabase
-ColourDatabase::m_instance;
-
 ColourDatabase *
 ColourDatabase::getInstance()
 {
-    return &m_instance;
+    static std::unique_ptr<ColourDatabase> instance;
+    static std::once_flag f;
+    std::call_once(f, [&]() {
+        instance = std::unique_ptr<ColourDatabase>(new ColourDatabase());
+    });
+    return instance.get();
 }
 
 ColourDatabase::ColourDatabase()
@@ -69,7 +73,15 @@ int
 ColourDatabase::getColourIndex(QString name) const
 {
     int index = 0;
+
+#ifdef DEBUG_COLOUR_DATABASE
+    SVDEBUG << "ColourDatabase::getColourIndex(" << name << "): know " << m_colours.size() << " colours" << endl;
+#endif
+
     for (auto &c: m_colours) {
+#ifdef DEBUG_COLOUR_DATABASE
+        SVDEBUG << c.name << endl;
+#endif
         if (c.name == name) return index;
         ++index;
     }
@@ -203,6 +215,11 @@ ColourDatabase::addColour(QColor c, QString name)
 {
     int index = 0;
 
+#ifdef DEBUG_COLOUR_DATABASE
+    SVDEBUG << "ColourDatabase::addColour(" << c.name() << ", " << name << ")"
+            << endl;
+#endif
+    
     for (ColourList::iterator i = m_colours.begin();
          i != m_colours.end(); ++i) {
         if (i->name == name) {

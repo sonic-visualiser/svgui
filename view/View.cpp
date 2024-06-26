@@ -21,6 +21,7 @@
 #include "base/Pitch.h"
 #include "base/Preferences.h"
 #include "base/HitCount.h"
+#include "base/LogRange.h"
 #include "ViewProxy.h"
 
 #include "layer/TimeRulerLayer.h"
@@ -686,10 +687,11 @@ View::getYForFrequency(double frequency,
 
     case FrequencyMapping::Log:
     {
-        double logminf = log10(minf);
-        double logmaxf = log10(maxf);
+        double logminf = minf, logmaxf = maxf;
+        LogRange::mapRange(logminf, logmaxf);
         if (logminf == logmaxf) return 0;
-        return h - (h * (log10(frequency) - logminf)) / (logmaxf - logminf);
+        double logf = LogRange::map(frequency);
+        return h - (h * (logf - logminf)) / (logmaxf - logminf);
     }
 
     case FrequencyMapping::Mel:
@@ -725,10 +727,10 @@ View::getFrequencyForY(double y,
 
     case FrequencyMapping::Log:
     {
-        double logminf = log10(minf);
-        double logmaxf = log10(maxf);
+        double logminf = minf, logmaxf = maxf;
+        LogRange::mapRange(logminf, logmaxf);
         if (logminf == logmaxf) return 0;
-        return pow(10.0, logminf + ((logmaxf - logminf) * (h - y)) / h);
+        return LogRange::unmap(logminf + ((logmaxf - logminf) * (h - y)) / h);
     }
     
     case FrequencyMapping::Mel:
