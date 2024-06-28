@@ -2585,8 +2585,11 @@ View::paintEvent(QPaintEvent *e)
 
     paint.setRenderHint(QPainter::SmoothPixmapTransform);
     paint.setCompositionMode(QPainter::CompositionMode_Source);
+
     paint.drawImage(finalPaintRect, *m_buffer, 
                     scaledRect(finalPaintRect, dpratio));
+
+    paint.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
     drawSelections(paint);
     drawPlayPointer(paint);
