@@ -170,10 +170,24 @@ public:
     
     /**
      * Return the zoom level, i.e. the number of frames per pixel or
-     * pixels per frame
+     * pixels per frame, adjusted for the scale factor. Because the
+     * zoom level type uses an integer, this may be rounded, e.g. the
+     * view zoom levels 8 and 9 at scale factor 2 will both be
+     * returned as 4. You can therefore use this (for example) to
+     * decide on a summarisation level for rendering, but not to map
+     * between pixels and frames yourself - always call getFrameForX
+     * and getXForFrame instead.
      */
-    virtual ZoomLevel getZoomLevel() const = 0;
+    virtual ZoomLevel getRoundedZoomLevel() const = 0;
 
+    /**
+     * Return the zoom level unadjusted for the scale factor. This
+     * should not generally be used for anything, except to check
+     * whether the zoom has changed in case something needs
+     * regenerating - for which getRoundedZoomLevel is not adequate.
+     */
+    virtual ZoomLevel getRawZoomLevel() const = 0;
+    
     /**
      * To be called from a layer, to obtain the extent of the surface
      * that the layer is currently painting to. This may be the extent

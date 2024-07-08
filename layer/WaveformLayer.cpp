@@ -537,7 +537,7 @@ WaveformLayer::getSourceFramesForX(LayerGeometryProvider *v,
     f0 = f0 / modelZoomLevel;
     f0 = f0 * modelZoomLevel;
 
-    if (v->getZoomLevel().zone == ZoomLevel::PixelsPerFrame) {
+    if (v->getRoundedZoomLevel().zone == ZoomLevel::PixelsPerFrame) {
         f1 = f0 + 1;
     } else {
         viewFrame = v->getFrameForX(x + 1);
@@ -602,7 +602,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         return;
     }
   
-    ZoomLevel zoomLevel = v->getZoomLevel();
+    ZoomLevel zoomLevel = v->getRoundedZoomLevel();
 
 #ifdef DEBUG_WAVEFORM_PAINT
     Profiler profiler("WaveformLayer::paint", true);
@@ -727,7 +727,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
 
     RangeVec ranges;
 
-    if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel) {
+    if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
         getSummaryRanges(minChannel, maxChannel,
                          mixingChannels || mergingChannels,
                          frame0, frame1,
@@ -736,7 +736,7 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         getOversampledRanges(minChannel, maxChannel,
                              mixingChannels || mergingChannels,
                              frame0, frame1,
-                             v->getZoomLevel().level, ranges);
+                             zoomLevel.level, ranges);
     }
 
     if (!ranges.empty()) {
@@ -946,6 +946,8 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
 
     bool firstPoint = true;
     double prevRangeBottom = 0, prevRangeTop = 0;
+
+    auto zoomLevel = v->getRoundedZoomLevel();
     
     for (int x = x0; x <= x1; ++x) {
 
@@ -954,7 +956,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
 
         bool showIndividualSample = false;
         
-        if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel) {
+        if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
             if (!getSourceFramesForX(v, x, blockSize, f0, f1)) {
                 continue;
             }
@@ -962,7 +964,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
             i0 = (f0 - frame0) / blockSize;
             i1 = (f1 - frame0) / blockSize;
         } else {
-            int oversampleBy = v->getZoomLevel().level;
+            int oversampleBy = zoomLevel.level;
             f0 = f1 = v->getFrameForX(x);
             int xf0 = v->getXForFrame(f0);
             showIndividualSample = (x == xf0);
@@ -980,7 +982,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
 #endif
 
         if (i1 > i0 + 1) {
-            SVCERR << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << v->getZoomLevel() << ", model zoom = " << blockSize << ")" << endl;
+            SVCERR << "WaveformLayer::paint: ERROR: i1 " << i1 << " > i0 " << i0 << " plus one (zoom = " << zoomLevel << ", model zoom = " << blockSize << ")" << endl;
         }
 
         const auto &r = ranges[rangeix];
@@ -1166,7 +1168,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
     }
 
     double penWidth = 1.0;
-    if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel) {
+    if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
         penWidth = 0.0;
     }
     
@@ -1176,7 +1178,7 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
         paint->setPen(QPen(midColour, penWidth));
     }
 
-    if (v->getZoomLevel().zone == ZoomLevel::FramesPerPixel ||
+    if (zoomLevel.zone == ZoomLevel::FramesPerPixel ||
         m_oversampling) {
         
         paint->drawPath(waveformPath);
@@ -1199,8 +1201,8 @@ WaveformLayer::paintChannel(LayerGeometryProvider *v,
     
     if (!individualSamplePoints.empty()) {
         double sz = v->scaleSize(2.0);
-        if (v->getZoomLevel().zone == ZoomLevel::PixelsPerFrame) {
-            if (v->getZoomLevel().level < 10) {
+        if (zoomLevel.zone == ZoomLevel::PixelsPerFrame) {
+            if (zoomLevel.level < 10) {
                 sz = v->scaleSize(1.2);
             }
         }
@@ -1281,7 +1283,7 @@ WaveformLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) cons
     auto model = ModelById::getAs<RangeSummarisableTimeValueModel>(m_model);
     if (!model || !model->isOK()) return "";
 
-    ZoomLevel zoomLevel = v->getZoomLevel();
+    ZoomLevel zoomLevel = v->getRoundedZoomLevel();
 
     int desiredBlockSize = 1;
     if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {

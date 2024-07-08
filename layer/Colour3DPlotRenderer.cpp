@@ -112,8 +112,11 @@ Colour3DPlotRenderer::geometryChanged(const LayerGeometryProvider *v)
         return true; // never cached
     }
 
+    // Use getRawZoomLevel to pass to the cache, because the scaled
+    // version (getRoundedZoomLevel) does not always correctly
+    // indicate a change in zoom
     if (m_cache.getSize() == v->getPaintSize() &&
-        m_cache.getZoomLevel() == v->getZoomLevel() &&
+        m_cache.getZoomLevel() == v->getRawZoomLevel() &&
         m_cache.getStartFrame() == v->getStartFrame()) {
         return false;
     } else {
@@ -148,14 +151,15 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     SVDEBUG << "render " << m_sources.source
             << ": cache size is " << m_cache.getSize().width()
             << "x" << m_cache.getSize().height()
-            << " at zoom level " << m_cache.getZoomLevel() << endl;
+            << " at raw zoom level " << m_cache.getZoomLevel()
+            << endl;
 #endif
 
     bool justCreated = m_cache.getSize().isEmpty();
     
     bool justInvalidated =
         (m_cache.getSize() != v->getPaintSize() ||
-         m_cache.getZoomLevel() != v->getZoomLevel());
+         m_cache.getZoomLevel() != v->getRawZoomLevel());
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
@@ -165,10 +169,10 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 #endif
     
     m_cache.resize(v->getPaintSize());
-    m_cache.setZoomLevel(v->getZoomLevel());
+    m_cache.setZoomLevel(v->getRawZoomLevel());
 
     m_magCache.resize(v->getPaintSize().width());
-    m_magCache.setZoomLevel(v->getZoomLevel());
+    m_magCache.setZoomLevel(v->getRawZoomLevel());
     
     if (renderType == DirectTranslucent) {
         MagnitudeRange range = renderDirectTranslucent(v, paint, rect);
@@ -428,7 +432,7 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
         return DrawBufferPixelResolution;
     }
 
-    ZoomLevel zoomLevel = v->getZoomLevel();
+    ZoomLevel zoomLevel = v->getRoundedZoomLevel();
 
     if (!m_params.opaque && !m_params.interpolate) {
 
@@ -695,7 +699,7 @@ Colour3DPlotRenderer::getPreferredPeakCache(const LayerGeometryProvider *v,
     if (m_params.binDisplay == BinDisplay::PeakFrequencies) return;
     if (m_params.colourScale.getScale() == ColourScaleType::Phase) return;
     
-    ZoomLevel zoomLevel = v->getZoomLevel();
+    ZoomLevel zoomLevel = v->getRoundedZoomLevel();
     int binResolution;
     double renderBinResolution;
     if (!getBinResolutions(v, binResolution, renderBinResolution)) return;
@@ -1003,6 +1007,8 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
             << ": renderBinResolution " << renderBinResolution << endl;
+    SVDEBUG << "zoomLevel = " << v->getRoundedZoomLevel()
+            << ", drawBufferWidth = " << drawBufferWidth << endl;
 #endif
     
     for (int y = 0; y < h; ++y) {

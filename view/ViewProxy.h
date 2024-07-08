@@ -109,8 +109,8 @@ public:
     CoordinateScale getEffectiveVerticalExtents(QString unit = {}) const override {
         return m_view->getEffectiveVerticalExtents(unit);
     }
-    ZoomLevel getZoomLevel() const override {
-        ZoomLevel z = m_view->getZoomLevel();
+    ZoomLevel getRoundedZoomLevel() const override {
+        ZoomLevel z = m_view->getRawZoomLevel();
         if (z.zone == ZoomLevel::FramesPerPixel) {
             z.level /= m_scaleFactor;
             if (z.level < 1) {
@@ -120,6 +120,9 @@ public:
             z.level *= m_scaleFactor;
         }
         return z;
+    }
+    ZoomLevel getRawZoomLevel() const override {
+        return m_view->getRawZoomLevel();
     }
     QRect getPaintRect() const override {
         QRect r = m_view->getPaintRect();

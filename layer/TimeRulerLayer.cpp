@@ -162,7 +162,7 @@ TimeRulerLayer::getMajorTickUSec(LayerGeometryProvider *v,
     RealTime rtGap = (rtEnd - rtStart) / count;
 
 #ifdef DEBUG_TIME_RULER_LAYER
-    SVCERR << "zoomLevel = " << v->getZoomLevel()
+    SVCERR << "zoomLevel = " << v->getRoundedZoomLevel()
            << ", startFrame = " << startFrame << ", endFrame = " << endFrame
            << ", rtStart = " << rtStart << ", rtEnd = " << rtEnd
            << ", paint width = " << v->getPaintWidth()
@@ -220,7 +220,7 @@ TimeRulerLayer::getXForUSec(LayerGeometryProvider *v, double us) const
     sv_frame_t frame = sv_frame_t(floor(dframe + eps));
     int x;
 
-    ZoomLevel zoom = v->getZoomLevel();
+    ZoomLevel zoom = v->getRoundedZoomLevel();
 
     if (zoom.zone == ZoomLevel::FramesPerPixel) {
             
@@ -290,7 +290,7 @@ TimeRulerLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
 
     int minPixelSpacing = v->getXForViewX(50);
     sv_frame_t incFrame = lrint((double(incus) * sampleRate) / 1000000);
-    int incX = int(round(v->getZoomLevel().framesToPixels(double(incFrame))));
+    int incX = int(round(v->getRoundedZoomLevel().framesToPixels(double(incFrame))));
     int ticks = 10;
     if (incX < minPixelSpacing * 2) {
         ticks = quarter ? 4 : 5;

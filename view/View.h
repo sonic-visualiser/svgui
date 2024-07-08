@@ -155,10 +155,17 @@ public:
 
     /**
      * Return the zoom level, i.e. the number of frames per pixel or
-     * pixels per frame
+     * pixels per frame. In View (unlike ViewProxy) this is identical
+     * to getRawZoomLevel().
      */
-    ZoomLevel getZoomLevel() const override;
+    ZoomLevel getRoundedZoomLevel() const override;
 
+    /**
+     * Return the zoom level, i.e. the number of frames per pixel or
+     * pixels per frame.
+     */
+    ZoomLevel getRawZoomLevel() const override;
+    
     /**
      * Set the zoom level, i.e. the number of frames per pixel or
      * pixels per frame.  The centre frame will be unchanged; the

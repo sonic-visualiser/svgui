@@ -750,7 +750,13 @@ View::getFrequencyForY(double y,
 }
 
 ZoomLevel
-View::getZoomLevel() const
+View::getRoundedZoomLevel() const
+{
+    return getRawZoomLevel();
+}
+
+ZoomLevel
+View::getRawZoomLevel() const
 {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
 //        cout << "zoom level: " << m_zoomLevel << endl;
@@ -3188,8 +3194,8 @@ View::renderToNewImage()
 QImage *
 View::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = int(round(getZoomLevel().framesToPixels(double(f0))));
-    int x1 = int(round(getZoomLevel().framesToPixels(double(f1))));
+    int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
+    int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
     
     QImage *image = new QImage(x1 - x0, height(), QImage::Format_RGB32);
 
@@ -3216,8 +3222,8 @@ View::getRenderedImageSize()
 QSize
 View::getRenderedPartImageSize(sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = int(round(getZoomLevel().framesToPixels(double(f0))));
-    int x1 = int(round(getZoomLevel().framesToPixels(double(f1))));
+    int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
+    int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
 
     return QSize(x1 - x0, height());
 }
@@ -3234,8 +3240,8 @@ View::renderToSvgFile(QString filename)
 bool
 View::renderPartToSvgFile(QString filename, sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = int(round(getZoomLevel().framesToPixels(double(f0))));
-    int x1 = int(round(getZoomLevel().framesToPixels(double(f1))));
+    int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
+    int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
 
     QSvgGenerator generator;
     generator.setFileName(filename);

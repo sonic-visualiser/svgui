@@ -201,7 +201,7 @@ Pane::updateHeadsUpDisplay()
     }
 
     int count = countZoomLevels();
-    int current = getZoomLevelIndex(getZoomLevel());
+    int current = getZoomLevelIndex(m_zoomLevel);
     
     m_hthumb->setMinimumValue(1);
     m_hthumb->setMaximumValue(count);
@@ -1225,8 +1225,8 @@ Pane::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 QImage *
 Pane::renderPartToNewImage(sv_frame_t f0, sv_frame_t f1)
 {
-    int x0 = int(round(getZoomLevel().framesToPixels(double(f0))));
-    int x1 = int(round(getZoomLevel().framesToPixels(double(f1))));
+    int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
+    int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
 
     QImage *image = new QImage(x1 - x0 + m_scaleWidth,
                                height(), QImage::Format_RGB32);
