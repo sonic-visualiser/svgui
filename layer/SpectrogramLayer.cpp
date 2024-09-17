@@ -791,6 +791,11 @@ SpectrogramLayer::preferenceChanged(PropertyContainer::PropertyName name)
         setWindowType(Preferences::getInstance()->getWindowType());
         return;
     }
+    if (name == "Spectrogram Smoothing") {
+        setSmooth(Preferences::getInstance()->getSpectrogramSmoothing() ==
+                  Preferences::SpectrogramInterpolated);
+        return;
+    }
     if (name == "Tuning Frequency") {
         emit layerParametersChanged();
     }
