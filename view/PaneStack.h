@@ -61,7 +61,7 @@ public:
               ViewManager *viewManager,
               Options options = 0);
 
-    Pane *addPane(); // I own the returned value
+    Pane *addPane(int atIndex = -1); // I own the returned value
     void deletePane(Pane *pane); // Deletes the pane, but _not_ its layers
 
     int getPaneCount() const; // Returns only count of visible panes

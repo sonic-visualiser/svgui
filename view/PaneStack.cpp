@@ -87,7 +87,7 @@ PaneStack::PaneStack(QWidget *parent,
 }
 
 Pane *
-PaneStack::addPane()
+PaneStack::addPane(int index)
 {
     QFrame *frame = new QFrame;
 
@@ -177,10 +177,18 @@ PaneStack::addPane()
     frame->setLayout(layout);
 
     if (m_options & int(Option::NoUserResize)) {
-        m_autoResizeLayout->addWidget(frame);
+        if (index >= 0) {
+            m_autoResizeLayout->insertWidget(index, frame);
+        } else {
+            m_autoResizeLayout->addWidget(frame);
+        }
         frame->adjustSize();
     } else {
-        m_splitter->addWidget(frame);
+        if (index >= 0) {
+            m_splitter->insertWidget(index, frame);
+        } else {
+            m_splitter->addWidget(frame);
+        }
     }
 
     connect(pane, SIGNAL(propertyContainerAdded(PropertyContainer *)),
