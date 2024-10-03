@@ -410,6 +410,13 @@ public:
     sv_frame_t alignToReference(sv_frame_t) const;
     sv_frame_t getAlignedPlaybackFrame() const;
 
+    struct PlaybackFrameAligner {
+        virtual ~PlaybackFrameAligner() { }
+        virtual sv_frame_t map(const View *me, sv_frame_t frame) const = 0;
+    };
+    void setPlaybackFrameAligner(const PlaybackFrameAligner *);
+    const PlaybackFrameAligner *getPlaybackFrameAligner() const;
+    
     void updatePaintRect(QRect r) override { update(r); }
 
     int getScaleFactor() const override { return 1; } // See ViewProxy
@@ -564,6 +571,8 @@ protected:
     bool                m_haveSelectedLayer;
 
     bool                m_useAligningProxy;
+
+    const PlaybackFrameAligner *m_playbackFrameAligner;
 
     QString             m_lastError;
 

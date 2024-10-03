@@ -78,6 +78,7 @@ View::View(QWidget *w, bool showProgress) :
     m_deleting(false),
     m_haveSelectedLayer(false),
     m_useAligningProxy(false),
+    m_playbackFrameAligner(nullptr),
 #ifdef Q_OS_MAC
     m_useRetinaResolution(true),
     m_useRetinaResolutionChecked(false),
@@ -1671,6 +1672,11 @@ View::getAlignedPlaybackFrame() const
 {
     if (!m_manager) return 0;
     sv_frame_t pf = m_manager->getPlaybackFrame();
+
+    if (m_playbackFrameAligner) {
+        return m_playbackFrameAligner->map(this, pf);
+    }
+
     if (!m_manager->getAlignMode()) return pf;
 
     auto aligningModel = ModelById::get(getAligningModel());
@@ -1679,6 +1685,18 @@ View::getAlignedPlaybackFrame() const
     sv_frame_t af = aligningModel->alignFromReference(pf);
 
     return af;
+}
+
+void
+View::setPlaybackFrameAligner(const PlaybackFrameAligner *aligner)
+{
+    m_playbackFrameAligner = aligner;
+}
+
+const View::PlaybackFrameAligner *
+View::getPlaybackFrameAligner() const
+{
+    return m_playbackFrameAligner;
 }
 
 bool
