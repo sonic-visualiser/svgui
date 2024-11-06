@@ -1652,6 +1652,9 @@ View::getAligningAndReferenceModels(ModelId &aligning,
 sv_frame_t
 View::alignFromReference(sv_frame_t f) const
 {
+    if (m_playbackFrameAligner) {
+        return m_playbackFrameAligner->map(this, f);
+    }
     if (!m_manager || !m_manager->getAlignMode()) return f;
     auto aligningModel = ModelById::get(getAligningModel());
     if (!aligningModel) return f;
