@@ -143,9 +143,19 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
     int x0 = v->getXForViewX(rect.x());
     int x1 = v->getXForViewX(rect.x() + rect.width());
     if (x0 < 0) x0 = 0;
+    if (x0 > v->getPaintWidth()) x0 = v->getPaintWidth();
+    if (x1 < 0) x1 = 0;
     if (x1 > v->getPaintWidth()) x1 = v->getPaintWidth();
 
     sv_frame_t startFrame = v->getStartFrame();
+
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "render " << m_sources.source
+            << ": rect is " << rect.x() << "," << rect.y()
+            << " " << rect.width() << "x" << rect.height() << "; paint width = "
+            << v->getPaintWidth() << ", x0 = " << x0 << ", x1 = " << x1
+            << endl;
+#endif
 
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
     SVDEBUG << "render " << m_sources.source
@@ -989,6 +999,8 @@ Colour3DPlotRenderer::renderToCacheBinResolution(const LayerGeometryProvider *v,
 
     drawBufferWidth = int
         ((rightBoundaryFrame - leftBoundaryFrame) / renderBinResolution);
+
+//    SVCERR << "rightBoundaryFrame = " << rightBoundaryFrame << ", leftBoundaryFrame = " << leftBoundaryFrame << ", renderBinResolution = " << renderBinResolution << ", drawBufferWidth = " << drawBufferWidth << endl;
     
     int h = v->getPaintHeight();
 
