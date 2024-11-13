@@ -176,16 +176,18 @@ PaneStack::addPane(int index)
 
     frame->setLayout(layout);
 
+    int indexInWidgets = mapInsertionIndexToWidgets(index);
+    
     if (m_options & int(Option::NoUserResize)) {
         if (index >= 0) {
-            m_autoResizeLayout->insertWidget(index, frame);
+            m_autoResizeLayout->insertWidget(indexInWidgets, frame);
         } else {
             m_autoResizeLayout->addWidget(frame);
         }
         frame->adjustSize();
     } else {
         if (index >= 0) {
-            m_splitter->insertWidget(index, frame);
+            m_splitter->insertWidget(indexInWidgets, frame);
         } else {
             m_splitter->addWidget(frame);
         }
@@ -217,6 +219,51 @@ PaneStack::addPane(int index)
     relinkAlignmentViews();
 
     return pane;
+}
+
+int
+PaneStack::mapInsertionIndexToWidgets(int index) const
+{
+    // The index used to refer to pane position within the stack is
+    // among visible panes only. But hidden panes are still there in
+    // the stack or layout, so when we want to use its insertWidget
+    // method we need to adjust the index to skip hidden widgets
+
+    if (index <= 0) {
+        return index;
+    }
+
+    int counted = 0;
+
+    if (m_options & int(Option::NoUserResize)) {
+
+        // We're using m_autoResizeLayout, a QVBoxLayout
+        
+        for (int i = 0; i < m_autoResizeLayout->count(); ++i) {
+            if (counted == index) return i;
+            auto w = dynamic_cast<QWidgetItem *>(m_autoResizeLayout->itemAt(i));
+            if (w && dynamic_cast<QFrame *>(w->widget()) &&
+                w->widget()->isVisible()) {
+                ++counted;
+            }
+        }
+        return m_autoResizeLayout->count();
+
+    } else {
+
+        // We're using m_splitter, a QSplitter
+            
+        for (int i = 0; i < m_splitter->count(); ++i) {
+            if (counted == index) {
+                return i;
+            }
+            if (dynamic_cast<QFrame *>(m_splitter->widget(i)) &&
+                m_splitter->widget(i)->isVisible()) {
+                ++counted;
+            }
+        }
+        return m_splitter->count();
+    }
 }
 
 void
