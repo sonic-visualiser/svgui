@@ -2351,6 +2351,8 @@ View::paintEvent(QPaintEvent *e)
     //
     // Note that all rects except the target for the final step are at
     // cache (scaled, 2x as applicable) resolution.
+    //
+    // Steps 1-5 occur in paintBuffer, step 6 here.
 
     int dpratio = effectiveDevicePixelRatio();
 
@@ -2360,8 +2362,40 @@ View::paintEvent(QPaintEvent *e)
         requestedPaintArea &= scaledRect(e->rect(), dpratio);
     }
 
+    paintBuffer(requestedPaintArea);
+        
+    // Now paint to widget from buffer: target rects from here on,
+    // unlike all the preceding, are at formal (1x) resolution
+
+    QPainter paint;
+    paint.begin(this);
+    
+    QRect finalPaintRect = e ? e->rect() : rect();
+
+    paint.setClipRect(finalPaintRect);
+    setPaintFont(paint);
+
+    paint.setRenderHint(QPainter::SmoothPixmapTransform);
+    paint.setCompositionMode(QPainter::CompositionMode_Source);
+
+    paint.drawImage(finalPaintRect, *m_buffer, 
+                    scaledRect(finalPaintRect, dpratio));
+
+    paint.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+    drawSelections(paint);
+    drawPlayPointer(paint);
+
+    paint.end();
+}
+
+void
+View::paintBuffer(QRect requestedPaintArea)
+{
     // If not all layers are scrollable, but some of the back layers
     // are, we should store only those in the cache.
+
+    int dpratio = effectiveDevicePixelRatio();
 
     bool layersChanged = false;
     LayerList scrollables = getScrollableBackLayers(true, layersChanged);
@@ -2601,29 +2635,6 @@ View::paintEvent(QPaintEvent *e)
     for (auto layer : nonScrollables) {
         paintLayer(layer, m_buffer, requestedPaintArea, true);
     }
-        
-    // Now paint to widget from buffer: target rects from here on,
-    // unlike all the preceding, are at formal (1x) resolution
-
-    paint.begin(this);
-    
-    QRect finalPaintRect = e ? e->rect() : rect();
-
-    paint.setClipRect(finalPaintRect);
-    setPaintFont(paint);
-
-    paint.setRenderHint(QPainter::SmoothPixmapTransform);
-    paint.setCompositionMode(QPainter::CompositionMode_Source);
-
-    paint.drawImage(finalPaintRect, *m_buffer, 
-                    scaledRect(finalPaintRect, dpratio));
-
-    paint.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    drawSelections(paint);
-    drawPlayPointer(paint);
-
-    paint.end();
 }
 
 void

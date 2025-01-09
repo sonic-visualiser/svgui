@@ -488,6 +488,7 @@ protected:
     int m_id;
     
     void paintEvent(QPaintEvent *e) override;
+    void paintBuffer(QRect requestedPaintArea);
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
     virtual void drawPlayPointer(QPainter &);
