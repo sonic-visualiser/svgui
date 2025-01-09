@@ -371,7 +371,7 @@ void
 Pane::paintEvent(QPaintEvent *e)
 {
 //    SVDEBUG << "Pane[" << getId() << "]::paintEvent" << endl;
-//    Profiler profiler("Pane::paintEvent", true);
+    Profiler profiler("Pane::paintEvent", true);
 
     QPainter paint;
 
@@ -701,7 +701,7 @@ Pane::drawVerticalScale(QRect r, Layer *topLayer, QPainter &paint)
         
     if (m_scaleWidth > 0 && r.left() < m_scaleWidth) {
 
-//      Profiler profiler("Pane::paintEvent - painting vertical scale", true);
+        Profiler profiler("Pane::paintEvent - painting vertical scale", true);
 
         paint.save();
             
@@ -2485,10 +2485,12 @@ Pane::wheelEvent(QWheelEvent *e)
         horizontal = true;
     }        
 
-    if (e->phase() == Qt::ScrollBegin ||
-        std::abs(d) >= 120 ||
-        (d > 0 && m_pendingWheelAngle < 0) ||
-        (d < 0 && m_pendingWheelAngle > 0)) {
+    if (e->phase() == Qt::ScrollBegin) {
+        if (d < 0) m_pendingWheelAngle = -120;
+        else if (d > 0) m_pendingWheelAngle = 120;
+    } else if (std::abs(d) >= 120 ||
+               (d > 0 && m_pendingWheelAngle < 0) ||
+               (d < 0 && m_pendingWheelAngle > 0)) {
         m_pendingWheelAngle = d;
     } else {
         m_pendingWheelAngle += d;
