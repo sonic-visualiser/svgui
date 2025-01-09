@@ -358,7 +358,7 @@ void
 Pane::setCentreLineVisible(bool visible)
 {
     m_centreLineVisible = visible;
-    update();
+    causeUpdate();
 }
 
 void
@@ -1544,7 +1544,7 @@ Pane::mousePressEvent(QMouseEvent *e)
             }
         }
 
-        update();
+        causeUpdate();
 
     } else if (mode == ViewManager::DrawMode) {
 
@@ -1578,7 +1578,7 @@ Pane::mousePressEvent(QMouseEvent *e)
 
         Layer *layer = getTopLayer();
         if (layer) layer->measureStart(this, e);
-        update();
+        causeUpdate();
     }
 
     emit paneInteractedWith();
@@ -1671,14 +1671,14 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             }
         }
     
-        update();
+        causeUpdate();
 
     } else if (mode == ViewManager::DrawMode) {
 
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->drawEnd(this, e);
-            update();
+            causeUpdate();
         }
 
     } else if (mode == ViewManager::EraseMode) {
@@ -1686,7 +1686,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
             layer->eraseEnd(this, e);
-            update();
+            causeUpdate();
         }
 
     } else if (mode == ViewManager::NoteEditMode) {
@@ -1696,12 +1696,12 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
         if (layer) {
             layer->splitEnd(this, e);
-            update();
+            causeUpdate();
 
             if (m_editing) {
                 if (!editSelectionEnd(e)) {
                     layer->editEnd(this, e);
-                    update();
+                    causeUpdate();
                 }
             }
         } 
@@ -1713,7 +1713,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
                 Layer *layer = getInteractionLayer();
                 if (layer && layer->isLayerEditable()) {
                     layer->editEnd(this, e);
-                    update();
+                    causeUpdate();
                 }
             }
         } 
@@ -1723,7 +1723,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         Layer *layer = getTopLayer();
         if (layer) layer->measureEnd(this, e);
         if (m_measureCursor1) setCursor(*m_measureCursor1);
-        update();
+        causeUpdate();
     }
 
     m_clickedInRange = false;
@@ -1774,7 +1774,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             FlexiNoteLayer *layer = qobject_cast<FlexiNoteLayer *>(getTopFlexiNoteLayer());
             if (layer) {
                 layer->mouseMoveEvent(this, e); //!!! ew
-                update();
+                causeUpdate();
                 // return;
             }
         }   
@@ -1802,7 +1802,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                 
                 if (m_identifyFeatures != previouslyIdentifying ||
                     m_identifyPoint != prevPoint) {
-                    update();
+                    causeUpdate();
                     updating = true;
                 }
             }
@@ -1812,7 +1812,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                 Layer *layer = getTopLayer();
                 if (layer && layer->nearestMeasurementRectChanged
                     (this, prevPoint, m_identifyPoint)) {
-                    update();
+                    causeUpdate();
                 }
             }
         }
@@ -1825,7 +1825,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
         if (m_shiftPressed) {
 
             m_mousePos = e->pos();
-            update();
+            causeUpdate();
 
         } else {
 
@@ -1993,7 +1993,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
             if (layer->hasTimeXAxis()) edgeScrollMaybe(e->position().x());
         }
 
-        update();
+        causeUpdate();
     }
     
     if (m_dragMode != UnresolvedDrag) {
@@ -2302,7 +2302,7 @@ Pane::dragExtendSelection(QMouseEvent *e)
         }
     }
 
-    update();
+    causeUpdate();
 
     if (min != max) {
         m_playbackFrameMoveScheduled = false;
@@ -2333,7 +2333,7 @@ Pane::edgeScrollMaybe(int x)
         }
         if (move != 0) {
             setCentreFrame(m_centreFrame + move);
-            update();
+            causeUpdate();
         }
     }
 }
@@ -2384,7 +2384,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
 
         Layer *layer = getTopLayer();
         if (layer) layer->measureDoubleClick(this, e);
-        update();
+        causeUpdate();
     }
 
     if (relocate) {
@@ -2430,7 +2430,7 @@ Pane::leaveEvent(QEvent *)
     m_mouseInWidget = false;
     bool previouslyIdentifying = m_identifyFeatures;
     m_identifyFeatures = false;
-    if (previouslyIdentifying) update();
+    if (previouslyIdentifying) causeUpdate();
     emit contextHelpChanged("");
 }
 
@@ -2795,7 +2795,7 @@ Pane::editSelectionDrag(QMouseEvent *e)
 {
     if (m_editingSelection.isEmpty()) return false;
     m_mousePos = e->pos();
-    update();
+    causeUpdate();
     return true;
 }
 
@@ -2909,7 +2909,7 @@ void
 Pane::zoomWheelsEnabledChanged()
 {
     updateHeadsUpDisplay();
-    update();
+    causeUpdate();
 }
 
 void

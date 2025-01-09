@@ -88,6 +88,25 @@ View::View(QWidget *w, bool showProgress) :
     m_propertyContainer(new ViewPropertyContainer(this))
 {
 //    SVCERR << "View::View[" << getId() << "]" << endl;
+
+    m_repaintRequired = false;
+    m_repaintThread = QThread::create([&]() {
+        while (!m_deleting) {
+            m_repaintMutex.lock();
+            if (!m_repaintRequired && !m_deleting) {
+                m_repaintCondition.wait(&m_repaintMutex, 1000);
+            }
+            if (m_repaintRequired) {
+                int dpratio = effectiveDevicePixelRatio();
+                QRect r(scaledRect(rect(), dpratio));
+                paintBuffer(r);
+                m_repaintRequired = false;
+                update();
+            }
+            m_repaintMutex.unlock();
+        }
+    });
+    m_repaintThread->start();
 }
 
 View::~View()
@@ -95,6 +114,9 @@ View::~View()
 //    SVCERR << "View::~View[" << getId() << "]" << endl;
 
     m_deleting = true;
+    m_repaintCondition.wakeAll();
+    m_repaintThread->wait();
+    delete m_repaintThread;
     delete m_propertyContainer;
     delete m_cache;
     delete m_buffer;
@@ -402,7 +424,7 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
     if (pc == m_propertyContainer) {
         if (m_haveSelectedLayer) {
             m_haveSelectedLayer = false;
-            update();
+            causeUpdate();
         }
         return;
     }
@@ -422,7 +444,7 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
     if (selectedLayer) {
         m_haveSelectedLayer = true;
         m_layerStack.push_back(selectedLayer);
-        update();
+        causeUpdate();
     } else {
         m_haveSelectedLayer = false;
     }
@@ -440,7 +462,7 @@ void
 View::overlayModeChanged()
 {
     m_cacheValid = false;
-    update();
+    causeUpdate();
 }
 
 void
@@ -488,7 +510,7 @@ View::setCentreFrame(sv_frame_t f, bool doEmit)
 #ifdef DEBUG_VIEW
             SVCERR << "View[" << getId() << "]::setCentreFrame: in PixelsPerFrame zone, so change must be visible" << endl;
 #endif
-            update();
+            causeUpdate();
             changeVisible = true;
 
         } else {
@@ -511,7 +533,7 @@ View::setCentreFrame(sv_frame_t f, bool doEmit)
                        << m_zoomLevel.level << ")" << endl;
 #endif
                 
-                update();
+                causeUpdate();
                 changeVisible = true;
             }
         }
@@ -811,7 +833,7 @@ View::setZoomLevel(ZoomLevel z)
     }
     m_zoomLevel = z;
     emit zoomLevelChanged(z, m_followZoom);
-    update();
+    causeUpdate();
 }
 
 bool
@@ -940,7 +962,7 @@ View::addLayer(Layer *layer)
     connect(layer, SIGNAL(modelReplaced()),
             this,    SLOT(modelReplaced()));
 
-    update();
+    causeUpdate();
 
     emit propertyContainerAdded(layer);
 }
@@ -995,7 +1017,7 @@ View::removeLayer(Layer *layer)
     disconnect(layer, SIGNAL(modelReplaced()),
                this,    SLOT(modelReplaced()));
 
-    update();
+    causeUpdate();
 
     emit propertyContainerRemoved(layer);
 }
@@ -1174,7 +1196,7 @@ View::modelChanged(ModelId modelId)
 
     checkProgress(modelId);
 
-    update();
+    causeUpdate();
 }
 
 void
@@ -1221,7 +1243,7 @@ View::modelChangedWithin(ModelId modelId,
 
     checkProgress(modelId);
 
-    update();
+    causeUpdate();
 }    
 
 void
@@ -1249,7 +1271,7 @@ View::modelReplaced()
     SVCERR << "View[" << getId() << "]::modelReplaced()" << endl;
 #endif
     m_cacheValid = false;
-    update();
+    causeUpdate();
 }
 
 void
@@ -1262,7 +1284,7 @@ View::layerParametersChanged()
 #endif
 
     m_cacheValid = false;
-    update();
+    causeUpdate();
 
     if (layer) {
         emit propertyContainerPropertyChanged(layer);
@@ -1280,7 +1302,7 @@ void
 View::layerMeasurementRectsChanged()
 {
     Layer *layer = dynamic_cast<Layer *>(sender());
-    if (layer) update();
+    if (layer) causeUpdate();
 }
 
 void
@@ -1458,7 +1480,7 @@ View::movePlayPointer(sv_frame_t newFrame)
     case PlaybackIgnore:
         if (m_playPointerFrame >= getStartFrame() &&
             m_playPointerFrame < getEndFrame()) {
-            update();
+            causeUpdate();
         }
         break;
     }
@@ -1482,7 +1504,7 @@ View::selectionChanged()
         m_cacheValid = false;
         m_selectionCached = false;
     }
-    update();
+    causeUpdate();
 }
 
 sv_frame_t
@@ -2080,7 +2102,7 @@ View::checkProgress(ModelId modelId)
 
             if (completion < 100 &&
                 ModelById::isa<RangeSummarisableTimeValueModel>(modelId)) {
-                update(); // ensure duration &c gets updated
+                causeUpdate(); // ensure duration &c gets updated
             }
 
             if (completion >= 100) {
@@ -2292,6 +2314,17 @@ View::setPaintFont(QPainter &paint)
 }
 
 void
+View::causeUpdate()
+{
+    update();
+    {
+        QMutexLocker locker(&m_repaintMutex);
+        m_repaintRequired = true;
+        m_repaintCondition.wakeAll();
+    }
+}
+
+void
 View::paintEvent(QPaintEvent *e)
 {
     Profiler prof("View::paintEvent", false);
@@ -2362,7 +2395,7 @@ View::paintEvent(QPaintEvent *e)
         requestedPaintArea &= scaledRect(e->rect(), dpratio);
     }
 
-    paintBuffer(requestedPaintArea);
+//!!!    paintBuffer(requestedPaintArea);
         
     // Now paint to widget from buffer: target rects from here on,
     // unlike all the preceding, are at formal (1x) resolution
@@ -2378,8 +2411,13 @@ View::paintEvent(QPaintEvent *e)
     paint.setRenderHint(QPainter::SmoothPixmapTransform);
     paint.setCompositionMode(QPainter::CompositionMode_Source);
 
-    paint.drawImage(finalPaintRect, *m_buffer, 
-                    scaledRect(finalPaintRect, dpratio));
+    {
+        QMutexLocker locker(&m_repaintMutex);
+        if (m_buffer) {
+            paint.drawImage(finalPaintRect, *m_buffer, 
+                            scaledRect(finalPaintRect, dpratio));
+        }
+    }
 
     paint.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
@@ -3124,7 +3162,7 @@ View::waitForLayersToBeReady()
             progress.setValue(layerCompletion);
             qApp->processEvents();
             if (progress.wasCanceled()) {
-                update();
+                causeUpdate();
                 return false;
             }
 
@@ -3168,7 +3206,7 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
         qApp->processEvents();
         if (progress.wasCanceled()) {
             m_centreFrame = origCentreFrame;
-            update();
+            causeUpdate();
             return false;
         }
 
@@ -3208,7 +3246,7 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
     }
 
     m_centreFrame = origCentreFrame;
-    update();
+    causeUpdate();
     return true;
 }
 

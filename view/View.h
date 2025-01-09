@@ -18,6 +18,7 @@
 
 #include <QFrame>
 #include <QProgressBar>
+#include <QWaitCondition>
 
 #include "layer/LayerGeometryProvider.h"
 #include "layer/CoordinateScale.h"
@@ -486,6 +487,12 @@ protected:
     View(QWidget *, bool showProgress);
 
     int m_id;
+
+    void causeUpdate();
+    bool m_repaintRequired;
+    QThread *m_repaintThread;
+    QMutex m_repaintMutex;
+    QWaitCondition m_repaintCondition;
     
     void paintEvent(QPaintEvent *e) override;
     void paintBuffer(QRect requestedPaintArea);
