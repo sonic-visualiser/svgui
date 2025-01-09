@@ -603,9 +603,9 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
     }
   
     ZoomLevel zoomLevel = v->getRoundedZoomLevel();
+    Profiler profiler("WaveformLayer::paint", true);
 
 #ifdef DEBUG_WAVEFORM_PAINT
-    Profiler profiler("WaveformLayer::paint", true);
     SVCERR << "WaveformLayer::paint (" << rect.x() << "," << rect.y()
               << ") [" << rect.width() << "x" << rect.height() << "]: zoom " << zoomLevel << endl;
 #endif
@@ -663,7 +663,8 @@ WaveformLayer::paint(LayerGeometryProvider *v, QPainter &viewPainter, QRect rect
         paint = &viewPainter;
     }
 
-    paint->setRenderHint(QPainter::Antialiasing, true);
+    paint->setRenderHint(QPainter::Antialiasing,
+                         zoomLevel.zone == ZoomLevel::PixelsPerFrame);
 
     if (m_middleLineHeight != 0.5) {
         paint->save();
