@@ -101,7 +101,7 @@ ColourScale::getScale() const
 }
 
 int
-ColourScale::getPixel(double value) const
+ColourScale::getPixelGeneral(double value) const
 {
     double maxPixF = m_maxPixel;
 

@@ -96,7 +96,13 @@ public:
      * values below the threshold supplied in the constructor. All
      * other values are mapped onto the range 1-255.
      */
-    int getPixel(double value) const;
+    inline int getPixel(double value) const {
+        if (m_params.scaleType == ColourScaleType::Linear) {
+            return getPixelLinear(value);
+        } else {
+            return getPixelGeneral(value);
+        }
+    }
 
     /**
      * Return the colour for the given pixel number (which must be in
@@ -120,6 +126,19 @@ private:
     double m_mappedMin;
     double m_mappedMax;
     static int m_maxPixel;
+
+    int getPixelLinear(double value) const {
+        value *= m_params.gain;
+        if (value < m_params.threshold) return 0;
+        double mapped = value * m_params.multiple;
+        double proportion = (mapped - m_mappedMin) / (m_mappedMax - m_mappedMin);
+        int pixel = int(proportion * m_maxPixel) + 1;
+        if (pixel < 1) pixel = 1;
+        if (pixel > m_maxPixel) pixel = m_maxPixel;
+        return pixel;
+    }
+    
+    int getPixelGeneral(double value) const;
 };
 
 } // end namespace sv
