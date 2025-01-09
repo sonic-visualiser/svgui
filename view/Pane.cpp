@@ -2443,14 +2443,14 @@ Pane::resizeEvent(QResizeEvent *)
 void
 Pane::wheelEvent(QWheelEvent *e)
 {
-/*
-  SVDEBUG << "Pane[" << getId() << "]::wheelEvent: pixelDelta = ("
+    /*
+    SVDEBUG << "Pane[" << getId() << "]::wheelEvent: pixelDelta = ("
             << e->pixelDelta().x() << "," << e->pixelDelta().y()
             << "), angleDelta = (" << e->angleDelta().x()
-            << "," << e->angleDelta().y() << "), pixelDelta = ("
-            << e->pixelDelta().x() << "," << e->pixelDelta().y()
-            << "), modifiers = " << modifierNames(e->modifiers()) << endl;
-*/
+            << "," << e->angleDelta().y() << "), modifiers = "
+            << modifierNames(e->modifiers()) << endl;
+    */
+
     e->accept(); // we never want wheel events on the pane to be propagated
     
     int dx = e->angleDelta().x();
@@ -2465,7 +2465,7 @@ Pane::wheelEvent(QWheelEvent *e)
 
     if (e->modifiers() & Qt::ControlModifier) {
         // treat a vertical wheel as horizontal
-        SVDEBUG << "Ctrl held, treating as horizontal" << endl;
+//        SVDEBUG << "Ctrl held, treating as horizontal" << endl;
         if (abs(dx) > abs(dy)) {
             d = dx; // ok, it was horizontal already
         }
@@ -2474,13 +2474,13 @@ Pane::wheelEvent(QWheelEvent *e)
         // treat a horizontal wheel as vertical - this is because Qt
         // intercepts the event when Alt is pressed and pretends
         // vertical is horizontal, so we're just undoing that
-        SVDEBUG << "Alt held, treating as vertical" << endl;
+//        SVDEBUG << "Alt held, treating as vertical" << endl;
         if (abs(dx) > abs(dy)) {
             d = dx; // it was coerced to horizontal, so get the right delta
         }
         horizontal = false;
     } else if (abs(dx) > abs(dy)) {
-        SVDEBUG << "Direction is primarily horizontal" << endl;
+//        SVDEBUG << "Direction is primarily horizontal" << endl;
         d = dx;
         horizontal = true;
     }        
@@ -2597,20 +2597,19 @@ Pane::wheelHorizontalFine(int pixels, Qt::KeyboardModifiers)
 {
     // Scroll left or right by a fixed number of pixels
 
-    if (getStartFrame() < 0 && 
-        getEndFrame() >= getModelsEndFrame()) {
-        return;
-    }
-
     int delta = int(round(m_zoomLevel.pixelsToFrames(pixels)));
 
+    sv_frame_t target = m_centreFrame;
+    
     if (m_centreFrame < delta) {
-        setCentreFrame(0);
+        target = 0;
     } else if (m_centreFrame - delta >= getModelsEndFrame()) {
-        setCentreFrame(getModelsEndFrame());
+        target = getModelsEndFrame();
     } else {
-        setCentreFrame(m_centreFrame - delta);
+        target = m_centreFrame - delta;
     }
+
+    setCentreFrame(target);
 
     emit paneInteractedWith();
 }
