@@ -61,7 +61,7 @@ public:
               ViewManager *viewManager,
               Options options = 0);
 
-    Pane *addPane(int atIndex = -1); // I own the returned value
+    Pane *addPane(int atIndex = -1); // Index is among visible panes; I own returned value
     void deletePane(Pane *pane); // Deletes the pane, but _not_ its layers
 
     int getPaneCount() const; // Returns only count of visible panes
@@ -166,6 +166,8 @@ protected:
     void resizeEvent(QResizeEvent *) override;
     void adjustAlignmentViewHeights(int forMyHeight);
 
+    int mapInsertionIndexToWidgets(int index) const;
+    
     LayoutStyle m_layoutStyle;
 };
 
