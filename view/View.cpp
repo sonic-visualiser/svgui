@@ -2291,7 +2291,7 @@ View::setPaintFont(QPainter &paint)
 void
 View::paintEvent(QPaintEvent *e)
 {
-//    Profiler prof("View::paintEvent", false);
+    Profiler prof("View::paintEvent", false);
 
     QFrame::paintEvent(e);
 
@@ -2539,7 +2539,9 @@ View::paintEvent(QPaintEvent *e)
 
     auto paintLayer = [&](Layer *layer, QImage *target,
                           QRect area, bool enforceClipping) {
-        
+
+        Profiler prof("View::paintLayer", false);
+
         bool useAligningProxy = false;
         if (m_useAligningProxy) {
             if (layer->getModel() == alignmentReferenceId ||

@@ -1226,6 +1226,8 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
 
     for (int x = start; x != finish; x += step) {
 
+//        Profiler profiler("Colour3DPlotRenderer::renderDrawBuffer: per-pixel stuff");
+    
         // x is the on-canvas pixel coord; sx (later) will be the
         // source column index
         
@@ -1329,12 +1331,13 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
             }
         }            
                 
-        if (xPixelCount % 16 == 0) {
+        if (timeConstrained && (xPixelCount % 16 == 0)) {
             double fractionComplete = double(xPixelCount) / double(w);
             if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-                SVDEBUG << "render " << m_sources.source
-                        << ": out of time with xPixelCount = " << xPixelCount << endl;
+                SVCERR << "render " << m_sources.source
+                       << ": out of time with xPixelCount = " << xPixelCount
+                       << ", fractionComplete = " << fractionComplete << endl;
 #endif
                 updateTimings(timer, xPixelCount);
                 return xPixelCount;
@@ -1514,8 +1517,9 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
             double fractionComplete = double(xPixelCount) / double(w);
             if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-                SVDEBUG << "render " << m_sources.source
-                        << ": out of time" << endl;
+                SVCERR << "render " << m_sources.source
+                       << ": out of time with fractionComplete = "
+                       << fractionComplete << endl;
 #endif
                 updateTimings(timer, xPixelCount);
                 return xPixelCount;
@@ -1541,11 +1545,11 @@ Colour3DPlotRenderer::updateTimings(const RenderTimer &timer, int xPixelCount)
         m_secondsPerXPixelValid = true;
     
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "render " << m_sources.source
-            << ": across " << xPixelCount
-            << " x-pixels, seconds per x-pixel = "
-            << m_secondsPerXPixel << " (total = "
-            << (xPixelCount * m_secondsPerXPixel) << ")" << endl;
+    SVCERR << "render " << m_sources.source
+           << ": across " << xPixelCount
+           << " x-pixels, seconds per x-pixel = "
+           << m_secondsPerXPixel << " (total = "
+           << (xPixelCount * m_secondsPerXPixel) << ")" << endl;
 #endif
     }
 }
