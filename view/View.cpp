@@ -71,6 +71,8 @@ View::View(QWidget *w, bool showProgress) :
     m_showProgress(showProgress),
     m_cache(nullptr),
     m_buffer(nullptr),
+    m_bufferA(nullptr),
+    m_bufferB(nullptr),
     m_cacheValid(false),
     m_cacheCentreFrame(0),
     m_cacheZoomLevel(ZoomLevel::FramesPerPixel, 1024),
@@ -89,24 +91,37 @@ View::View(QWidget *w, bool showProgress) :
 {
 //    SVCERR << "View::View[" << getId() << "]" << endl;
 
+    m_useThreadedRepaint = false;
+
+    if (qgetenv("SV_THREADED_PAINT") != QByteArray()) {
+        SVDEBUG << "View::View: Using threaded paint" << endl;
+        m_useThreadedRepaint = true;
+    }
+    
     m_repaintRequired = false;
-    m_repaintThread = QThread::create([&]() {
-        while (!m_deleting) {
+    m_repaintThread = nullptr;
+
+    if (m_useThreadedRepaint) {
+        m_repaintThread = QThread::create([&]() {
             m_repaintMutex.lock();
-            if (!m_repaintRequired && !m_deleting) {
-                m_repaintCondition.wait(&m_repaintMutex, 1000);
-            }
-            if (m_repaintRequired) {
-                int dpratio = effectiveDevicePixelRatio();
-                QRect r(scaledRect(rect(), dpratio));
-                paintBuffer(r);
-                m_repaintRequired = false;
-                update();
+            while (!m_deleting) {
+                if (!m_repaintRequired && !m_deleting) {
+                    m_repaintCondition.wait(&m_repaintMutex);
+                }
+                if (m_repaintRequired) {
+                    m_repaintRequired = false;
+                    int dpratio = effectiveDevicePixelRatio();
+                    QRect r(scaledRect(rect(), dpratio));
+                    m_repaintMutex.unlock();
+                    paintBuffer(r);
+                    update();
+                    m_repaintMutex.lock();
+                }
             }
             m_repaintMutex.unlock();
-        }
-    });
-    m_repaintThread->start();
+        });
+        m_repaintThread->start();
+    }
 }
 
 View::~View()
@@ -114,12 +129,31 @@ View::~View()
 //    SVCERR << "View::~View[" << getId() << "]" << endl;
 
     m_deleting = true;
-    m_repaintCondition.wakeAll();
-    m_repaintThread->wait();
-    delete m_repaintThread;
+
+    if (m_useThreadedRepaint) {
+        m_repaintCondition.wakeAll();
+        m_repaintThread->wait();
+        delete m_repaintThread;
+    }
+    
     delete m_propertyContainer;
     delete m_cache;
-    delete m_buffer;
+    delete m_bufferA;
+    delete m_bufferB;
+}
+
+void
+View::causeUpdate()
+{
+    if (m_useThreadedRepaint) {
+        QMutexLocker locker(&m_repaintMutex);
+        if (!m_repaintRequired) {
+            m_repaintRequired = true;
+            m_repaintCondition.wakeAll();
+        }
+    } else {
+        update();
+    }
 }
 
 PropertyContainer::PropertyList
@@ -2314,17 +2348,6 @@ View::setPaintFont(QPainter &paint)
 }
 
 void
-View::causeUpdate()
-{
-    update();
-    {
-        QMutexLocker locker(&m_repaintMutex);
-        m_repaintRequired = true;
-        m_repaintCondition.wakeAll();
-    }
-}
-
-void
 View::paintEvent(QPaintEvent *e)
 {
     Profiler prof("View::paintEvent", false);
@@ -2395,7 +2418,11 @@ View::paintEvent(QPaintEvent *e)
         requestedPaintArea &= scaledRect(e->rect(), dpratio);
     }
 
-//!!!    paintBuffer(requestedPaintArea);
+    if (!m_useThreadedRepaint) {
+        // This is where most of the work is done, but if
+        // m_useThreadedRepaint then it's called from another thread
+        paintBuffer(requestedPaintArea);
+    }
         
     // Now paint to widget from buffer: target rects from here on,
     // unlike all the preceding, are at formal (1x) resolution
@@ -2412,7 +2439,7 @@ View::paintEvent(QPaintEvent *e)
     paint.setCompositionMode(QPainter::CompositionMode_Source);
 
     {
-        QMutexLocker locker(&m_repaintMutex);
+        QMutexLocker locker(&m_bufferSwapMutex);
         if (m_buffer) {
             paint.drawImage(finalPaintRect, *m_buffer, 
                             scaledRect(finalPaintRect, dpratio));
@@ -2455,11 +2482,22 @@ View::paintBuffer(QRect requestedPaintArea)
     QRect wholeArea(scaledRect(rect(), dpratio));
     QSize wholeSize(scaledSize(size(), dpratio));
 
-    if (!m_buffer || wholeSize != m_buffer->size()) {
-        delete m_buffer;
-        m_buffer = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
-    }
+    QImage *activeBuffer = m_bufferA;
 
+    if (m_useThreadedRepaint && m_buffer == m_bufferA) {
+        if (!m_bufferB || wholeSize != m_bufferB->size()) {
+            delete m_bufferB;
+            m_bufferB = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
+        }
+        activeBuffer = m_bufferB;
+    } else {
+        if (!m_bufferA || wholeSize != m_bufferA->size()) {
+            delete m_bufferA;
+            m_bufferA = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
+        }
+        activeBuffer = m_bufferA;
+    }
+    
     bool shouldUseCache = false;
     bool shouldRepaintCache = false;
     QRect cacheAreaToRepaint;
@@ -2607,7 +2645,7 @@ View::paintBuffer(QRect requestedPaintArea)
         paint.fillRect(cacheAreaToRepaint, getBackground());
         paint.end();
     } else {
-        paint.begin(m_buffer);
+        paint.begin(activeBuffer);
         paint.fillRect(requestedPaintArea, getBackground());
         paint.end();
     }
@@ -2651,7 +2689,7 @@ View::paintBuffer(QRect requestedPaintArea)
         if (shouldRepaintCache) {
             paintLayer(layer, m_cache, cacheAreaToRepaint, false);
         } else {
-            paintLayer(layer, m_buffer, requestedPaintArea, false);
+            paintLayer(layer, activeBuffer, requestedPaintArea, false);
         }
     }
 
@@ -2663,7 +2701,7 @@ View::paintBuffer(QRect requestedPaintArea)
     }
 
     if (shouldUseCache) {
-        paint.begin(m_buffer);
+        paint.begin(activeBuffer);
         paint.drawImage(requestedPaintArea, *m_cache, requestedPaintArea);
         paint.end();
     }
@@ -2671,7 +2709,12 @@ View::paintBuffer(QRect requestedPaintArea)
     // Now non-cacheable items.
 
     for (auto layer : nonScrollables) {
-        paintLayer(layer, m_buffer, requestedPaintArea, true);
+        paintLayer(layer, activeBuffer, requestedPaintArea, true);
+    }
+
+    {
+        QMutexLocker locker(&m_bufferSwapMutex);
+        m_buffer = activeBuffer;
     }
 }
 

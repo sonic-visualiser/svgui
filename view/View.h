@@ -489,6 +489,7 @@ protected:
     int m_id;
 
     void causeUpdate();
+    bool m_useThreadedRepaint;
     bool m_repaintRequired;
     QThread *m_repaintThread;
     QMutex m_repaintMutex;
@@ -565,7 +566,10 @@ protected:
 
     // I own both m_cache and m_buffer
     QImage             *m_cache;
-    QImage             *m_buffer;
+    QImage             *m_buffer; // alias for one of m_bufferA and m_bufferB
+    QImage             *m_bufferA;
+    QImage             *m_bufferB;
+    QMutex              m_bufferSwapMutex;
     
     bool                m_cacheValid;
     sv_frame_t          m_cacheCentreFrame;
