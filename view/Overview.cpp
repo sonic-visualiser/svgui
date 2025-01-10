@@ -42,6 +42,8 @@ Overview::Overview(QWidget *w) :
     bool light = hasLightBackground();
     if (light) m_boxColour = Qt::darkGray;
     else m_boxColour = Qt::lightGray;
+
+    m_useThreadedRepaint = false;
 }
 
 void
