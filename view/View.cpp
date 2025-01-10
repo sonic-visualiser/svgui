@@ -2675,7 +2675,17 @@ View::paintBuffer(QRect requestedPaintArea)
         p.setPen(getForeground());
         p.setBrush(Qt::NoBrush);
         setPaintFont(p);
+
+        if (m_useThreadedRepaint) {
+            layer->takeDiscretionaryPropertyMutex();
+        }
+        
         layer->paint(useAligningProxy ? &aligningProxy : &proxy, p, area);
+
+        if (m_useThreadedRepaint) {
+            layer->releaseDiscretionaryPropertyMutex();
+        }
+        
         p.end();
     };
 
