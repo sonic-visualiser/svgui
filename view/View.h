@@ -492,8 +492,9 @@ protected:
     bool m_useThreadedRepaint;
     bool m_repaintRequired;
     QThread *m_repaintThread;
-    QMutex m_repaintMutex;
     QWaitCondition m_repaintCondition;
+    QMutex m_repaintConditionMutex;
+    QMutex m_paintMutex;
     
     void paintEvent(QPaintEvent *e) override;
     void paintBuffer(QRect requestedPaintArea);

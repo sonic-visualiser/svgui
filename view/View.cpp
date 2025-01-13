@@ -103,22 +103,22 @@ View::View(QWidget *w, bool showProgress) :
 
     if (m_useThreadedRepaint) {
         m_repaintThread = QThread::create([&]() {
-            m_repaintMutex.lock();
+            m_repaintConditionMutex.lock();
             while (!m_deleting) {
                 if (!m_repaintRequired && !m_deleting) {
-                    m_repaintCondition.wait(&m_repaintMutex);
+                    m_repaintCondition.wait(&m_repaintConditionMutex);
                 }
                 if (m_repaintRequired) {
                     m_repaintRequired = false;
                     int dpratio = effectiveDevicePixelRatio();
                     QRect r(scaledRect(rect(), dpratio));
-                    m_repaintMutex.unlock();
+                    m_repaintConditionMutex.unlock();
                     paintBuffer(r);
                     update();
-                    m_repaintMutex.lock();
+                    m_repaintConditionMutex.lock();
                 }
             }
-            m_repaintMutex.unlock();
+            m_repaintConditionMutex.unlock();
         });
         m_repaintThread->start();
     }
@@ -146,7 +146,7 @@ void
 View::causeUpdate()
 {
     if (m_useThreadedRepaint) {
-        QMutexLocker locker(&m_repaintMutex);
+        QMutexLocker locker(&m_repaintConditionMutex);
         if (!m_repaintRequired) {
             m_repaintRequired = true;
             m_repaintCondition.wakeAll();
@@ -528,13 +528,19 @@ bool
 View::setCentreFrame(sv_frame_t f, bool doEmit)
 {
     bool changeVisible = false;
+    sv_frame_t frameToEmit = f;
+    
+    {
+        QMutexLocker locker(&m_paintMutex);
 
 #ifdef DEBUG_VIEW
-    SVCERR << "View[" << getId() << "]::setCentreFrame: from " << m_centreFrame
-           << " to " << f << endl;
+        SVCERR << "View[" << getId() << "]::setCentreFrame: from "
+               << m_centreFrame << " to " << f << endl;
 #endif
 
-    if (m_centreFrame != f) {
+        if (m_centreFrame == f) {
+            return false;
+        }
 
         sv_frame_t formerCentre = m_centreFrame;
         m_centreFrame = f;
@@ -544,7 +550,6 @@ View::setCentreFrame(sv_frame_t f, bool doEmit)
 #ifdef DEBUG_VIEW
             SVCERR << "View[" << getId() << "]::setCentreFrame: in PixelsPerFrame zone, so change must be visible" << endl;
 #endif
-            causeUpdate();
             changeVisible = true;
 
         } else {
@@ -567,23 +572,29 @@ View::setCentreFrame(sv_frame_t f, bool doEmit)
                        << m_zoomLevel.level << ")" << endl;
 #endif
                 
-                causeUpdate();
                 changeVisible = true;
             }
         }
 
         if (doEmit) {
-            sv_frame_t rf = alignToReference(m_centreFrame);
+            frameToEmit = alignToReference(m_centreFrame);
 #ifdef DEBUG_VIEW
             SVCERR << "View[" << getId() << "]::setCentreFrame(" << f
                  << "): m_centreFrame = " << m_centreFrame
                  << ", emitting centreFrameChanged with aligned frame "
-                 << rf << endl;
+                 << frameToEmit << endl;
 #endif
-            emit centreFrameChanged(rf, m_followPan, m_followPlay);
         }
     }
 
+    if (doEmit) {
+        emit centreFrameChanged(frameToEmit, m_followPan, m_followPlay);
+    }        
+    
+    if (changeVisible) {
+        causeUpdate();
+    }
+    
     return changeVisible;
 }
 
@@ -859,13 +870,18 @@ View::effectiveDevicePixelRatio() const
 void
 View::setZoomLevel(ZoomLevel z)
 {
+    {
+        QMutexLocker locker(&m_paintMutex);
+    
 //!!!    int dpratio = effectiveDevicePixelRatio();
 //    if (z < dpratio) return;
 //    if (z < 1) z = 1;
-    if (m_zoomLevel == z) {
-        return;
+        if (m_zoomLevel == z) {
+            return;
+        }
+        m_zoomLevel = z;
     }
-    m_zoomLevel = z;
+    
     emit zoomLevelChanged(z, m_followZoom);
     causeUpdate();
 }
@@ -2457,6 +2473,8 @@ View::paintEvent(QPaintEvent *e)
 void
 View::paintBuffer(QRect requestedPaintArea)
 {
+    QMutexLocker locker(&m_paintMutex);
+    
     // If not all layers are scrollable, but some of the back layers
     // are, we should store only those in the cache.
 
