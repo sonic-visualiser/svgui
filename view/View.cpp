@@ -131,15 +131,22 @@ View::~View()
     m_deleting = true;
 
     if (m_useThreadedRepaint) {
-        m_repaintCondition.wakeAll();
+        {
+            QMutexLocker locker(&m_repaintConditionMutex);
+            m_repaintCondition.wakeAll();
+        }
         m_repaintThread->wait();
         delete m_repaintThread;
     }
     
     delete m_propertyContainer;
     delete m_cache;
-    delete m_bufferA;
-    delete m_bufferB;
+
+    {
+        QMutexLocker locker(&m_bufferSwapMutex);
+        delete m_bufferA;
+        delete m_bufferB;
+    }
 }
 
 void
@@ -531,7 +538,7 @@ View::setCentreFrame(sv_frame_t f, bool doEmit)
     sv_frame_t frameToEmit = f;
     
     {
-        QMutexLocker locker(&m_paintMutex);
+        QMutexLocker locker(&m_positionMutex);
 
 #ifdef DEBUG_VIEW
         SVCERR << "View[" << getId() << "]::setCentreFrame: from "
@@ -599,18 +606,20 @@ View::setCentreFrame(sv_frame_t f, bool doEmit)
 }
 
 int
-View::getXForFrame(sv_frame_t frame) const
+View::getXForFrameWith(sv_frame_t frame,
+                       sv_frame_t centreFrame,
+                       ZoomLevel zoomLevel) const
 {
     // In FramesPerPixel mode, the pixel should be the one "covering"
     // the given frame, i.e. to the "left" of it - not necessarily the
     // nearest boundary.
     
-    sv_frame_t level = m_zoomLevel.level;
-    sv_frame_t fdiff = frame - m_centreFrame;
+    sv_frame_t level = zoomLevel.level;
+    sv_frame_t fdiff = frame - centreFrame;
     int result = 0;
 
     bool inRange = false;
-    if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+    if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
         inRange = ((fdiff / level) < sv_frame_t(INT_MAX) &&
                    (fdiff / level) > sv_frame_t(INT_MIN));
     } else {
@@ -622,8 +631,8 @@ View::getXForFrame(sv_frame_t frame) const
         
         sv_frame_t adjusted;
 
-        if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
-            sv_frame_t roundedCentreFrame = (m_centreFrame / level) * level;
+        if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+            sv_frame_t roundedCentreFrame = (centreFrame / level) * level;
             fdiff = frame - roundedCentreFrame;
             adjusted = fdiff / level;
             if ((fdiff < 0) && ((fdiff % level) != 0)) {
@@ -646,7 +655,7 @@ View::getXForFrame(sv_frame_t frame) const
         SVCERR << "ERROR: Frame " << frame
                << " is out of range in View::getXForFrame" << endl;
         SVCERR << "ERROR: (centre frame = " << getCentreFrame() << ", fdiff = "
-               << fdiff << ", zoom level = " << m_zoomLevel << ")" << endl;
+               << fdiff << ", zoom level = " << zoomLevel << ")" << endl;
         SVCERR << "ERROR: This is a logic error: getXForFrame should not be "
                << "called for locations unadjacent to the current view"
                << endl;
@@ -654,7 +663,7 @@ View::getXForFrame(sv_frame_t frame) const
     }
 
 #ifdef DEBUG_VIEW
-    if (m_zoomLevel.zone == ZoomLevel::PixelsPerFrame) {
+    if (zoomLevel.zone == ZoomLevel::PixelsPerFrame) {
         sv_frame_t reversed = getFrameForX(result);
         if (reversed != frame) {
             SVCERR << "View[" << getId() << "]::getXForFrame: WARNING: Converted frame " << frame << " to x " << result << " in PixelsPerFrame zone, but the reverse conversion gives frame " << reversed << " (error = " << reversed - frame << ")" << endl;
@@ -669,6 +678,12 @@ View::getXForFrame(sv_frame_t frame) const
 #endif
 
     return result;
+}
+
+int
+View::getXForFrame(sv_frame_t frame) const
+{
+    return getXForFrameWith(frame, m_centreFrame, m_zoomLevel);
 }
 
 sv_frame_t
@@ -871,7 +886,7 @@ void
 View::setZoomLevel(ZoomLevel z)
 {
     {
-        QMutexLocker locker(&m_paintMutex);
+        QMutexLocker locker(&m_positionMutex);
     
 //!!!    int dpratio = effectiveDevicePixelRatio();
 //    if (z < dpratio) return;
@@ -2473,12 +2488,19 @@ View::paintEvent(QPaintEvent *e)
 void
 View::paintBuffer(QRect requestedPaintArea)
 {
-    QMutexLocker locker(&m_paintMutex);
-    
     // If not all layers are scrollable, but some of the back layers
     // are, we should store only those in the cache.
 
-    int dpratio = effectiveDevicePixelRatio();
+    sv_frame_t paintingCentreFrame;
+    ZoomLevel paintingZoom;
+    int dpratio;
+
+    {
+        QMutexLocker locker(&m_positionMutex);
+        paintingCentreFrame = m_centreFrame;
+        paintingZoom = m_zoomLevel;
+        dpratio = effectiveDevicePixelRatio();
+    }
 
     bool layersChanged = false;
     LayerList scrollables = getScrollableBackLayers(true, layersChanged);
@@ -2488,12 +2510,13 @@ View::paintBuffer(QRect requestedPaintArea)
     // to clear the background before drawing from buffer to widget
     
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    SVCERR << "View[" << getId() << "]::paintEvent: have " << scrollables.size()
+    SVCERR << "View[" << getId() << "]::paintBuffer: have " << scrollables.size()
               << " scrollable back layers and " << nonScrollables.size()
               << " non-scrollable front layers" << endl;
 #endif
 
     if (layersChanged || scrollables.empty()) {
+        //???
         m_cacheValid = false;
     }
 
@@ -2502,18 +2525,21 @@ View::paintBuffer(QRect requestedPaintArea)
 
     QImage *activeBuffer = m_bufferA;
 
-    if (m_useThreadedRepaint && m_buffer == m_bufferA) {
-        if (!m_bufferB || wholeSize != m_bufferB->size()) {
-            delete m_bufferB;
-            m_bufferB = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
+    {
+        QMutexLocker locker(&m_bufferSwapMutex);
+        if (m_useThreadedRepaint && m_buffer == m_bufferA) {
+            if (!m_bufferB || wholeSize != m_bufferB->size()) {
+                delete m_bufferB;
+                m_bufferB = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
+            }
+            activeBuffer = m_bufferB;
+        } else {
+            if (!m_bufferA || wholeSize != m_bufferA->size()) {
+                delete m_bufferA;
+                m_bufferA = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
+            }
+            activeBuffer = m_bufferA;
         }
-        activeBuffer = m_bufferB;
-    } else {
-        if (!m_bufferA || wholeSize != m_bufferA->size()) {
-            delete m_bufferA;
-            m_bufferA = new QImage(wholeSize, QImage::Format_ARGB32_Premultiplied);
-        }
-        activeBuffer = m_bufferA;
     }
     
     bool shouldUseCache = false;
@@ -2530,14 +2556,14 @@ View::paintBuffer(QRect requestedPaintArea)
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
         SVCERR << "View[" << getId() << "]: cache " << m_cache << ", cache zoom "
-                  << m_cacheZoomLevel << ", zoom " << m_zoomLevel << endl;
+                  << m_cacheZoomLevel << ", zoom " << paintingZoom << endl;
 #endif
 
         using namespace std::rel_ops;
     
         if (!m_cacheValid ||
             !m_cache ||
-            m_cacheZoomLevel != m_zoomLevel ||
+            m_cacheZoomLevel != paintingZoom ||
             m_cache->size() != wholeSize) {
 
             // cache is not valid at all
@@ -2549,7 +2575,7 @@ View::paintBuffer(QRect requestedPaintArea)
                 shouldRepaintCache = false;
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                SVCERR << "View[" << getId() << "]::paintEvent: cache is invalid but only small area requested, will repaint directly instead" << endl;
+                SVCERR << "View[" << getId() << "]::paintBuffer: cache is invalid but only small area requested, will repaint directly instead" << endl;
 #endif
             } else {
 
@@ -2559,20 +2585,23 @@ View::paintBuffer(QRect requestedPaintArea)
                 }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                SVCERR << "View[" << getId() << "]::paintEvent: cache is invalid, will repaint whole" << endl;
+                SVCERR << "View[" << getId() << "]::paintBuffer: cache is invalid, will repaint whole" << endl;
 #endif
             }
 
             count.miss();
             
-        } else if (m_cacheCentreFrame != m_centreFrame) {
+        } else if (m_cacheCentreFrame != paintingCentreFrame) {
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-            SVCERR << "View[" << getId() << "]::paintEvent: cache centre frame is " << m_cacheCentreFrame << endl;
+            SVCERR << "View[" << getId() << "]::paintBuffer: cache centre frame is " << m_cacheCentreFrame << endl;
 #endif
 
-            int dx = dpratio * (getXForFrame(m_cacheCentreFrame) -
-                                getXForFrame(m_centreFrame));
+            int dx = dpratio *
+                (getXForFrameWith(m_cacheCentreFrame,
+                                  paintingCentreFrame, paintingZoom) -
+                 getXForFrameWith(paintingCentreFrame,
+                                  paintingCentreFrame, paintingZoom));
 
             if (dx > -m_cache->width() && dx < m_cache->width()) {
 
@@ -2596,18 +2625,18 @@ View::paintBuffer(QRect requestedPaintArea)
                 count.partial();
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                SVCERR << "View[" << getId() << "]::paintEvent: scrolled cache by " << dx << endl;
+                SVCERR << "View[" << getId() << "]::paintBuffer: scrolled cache by " << dx << endl;
 #endif
             } else {
                 count.miss();
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-                SVCERR << "View[" << getId() << "]::paintEvent: scrolling too far" << endl;
+                SVCERR << "View[" << getId() << "]::paintBuffer: scrolling too far" << endl;
 #endif
             }
 
         } else {
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-            SVCERR << "View[" << getId() << "]::paintEvent: cache is good" << endl;
+            SVCERR << "View[" << getId() << "]::paintBuffer: cache is good" << endl;
 #endif
             count.hit();
             shouldRepaintCache = false;
@@ -2615,7 +2644,7 @@ View::paintBuffer(QRect requestedPaintArea)
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    SVCERR << "View[" << getId() << "]::paintEvent: m_cacheValid = " << m_cacheValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
+    SVCERR << "View[" << getId() << "]::paintBuffer: m_cacheValid = " << m_cacheValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
 #endif
 
     if (shouldRepaintCache && !shouldUseCache) {
@@ -2695,6 +2724,7 @@ View::paintBuffer(QRect requestedPaintArea)
         setPaintFont(p);
 
         if (m_useThreadedRepaint) {
+            m_positionMutex.lock();
             layer->takeDiscretionaryPropertyMutex();
         }
         
@@ -2702,6 +2732,7 @@ View::paintBuffer(QRect requestedPaintArea)
 
         if (m_useThreadedRepaint) {
             layer->releaseDiscretionaryPropertyMutex();
+            m_positionMutex.unlock();
         }
         
         p.end();
@@ -2722,10 +2753,12 @@ View::paintBuffer(QRect requestedPaintArea)
     }
 
     if (shouldRepaintCache) {
+        QMutexLocker locker(&m_positionMutex);
         // and now we have
-        m_cacheValid = true;
-        m_cacheCentreFrame = m_centreFrame;
-        m_cacheZoomLevel = m_zoomLevel;
+        m_cacheCentreFrame = paintingCentreFrame;
+        m_cacheZoomLevel = paintingZoom;
+        m_cacheValid = (paintingCentreFrame == m_centreFrame &&
+                        paintingZoom == m_zoomLevel);
     }
 
     if (shouldUseCache) {

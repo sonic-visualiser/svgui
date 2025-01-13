@@ -493,8 +493,10 @@ protected:
     bool m_repaintRequired;
     QThread *m_repaintThread;
     QWaitCondition m_repaintCondition;
+
     QMutex m_repaintConditionMutex;
-    QMutex m_paintMutex;
+    QMutex m_contentMutex;
+    QMutex m_positionMutex;
     
     void paintEvent(QPaintEvent *e) override;
     void paintBuffer(QRect requestedPaintArea);
@@ -503,6 +505,9 @@ protected:
     virtual void drawPlayPointer(QPainter &);
     virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
     virtual void setPaintFont(QPainter &paint);
+
+    int getXForFrameWith(sv_frame_t frame, sv_frame_t centreFrame,
+                         ZoomLevel zoomLevel) const;
 
     QSize scaledSize(const QSize &s, int factor) {
         return QSize(s.width() * factor, s.height() * factor);
