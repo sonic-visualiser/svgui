@@ -493,13 +493,21 @@ protected:
     bool m_repaintRequired;
     QThread *m_repaintThread;
     QWaitCondition m_repaintCondition;
-
     QMutex m_repaintConditionMutex;
     QMutex m_contentMutex;
     QMutex m_positionMutex;
+
+    class RepaintThread : public QThread {
+    public:
+        RepaintThread(View *v) : m_v(v) { }
+        void run() override;
+    private:
+        View *m_v;
+    };
     
     void paintEvent(QPaintEvent *e) override;
     void paintBuffer(QRect requestedPaintArea);
+    void paintWholeBuffer();
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
     virtual void drawPlayPointer(QPainter &);

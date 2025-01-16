@@ -102,24 +102,7 @@ View::View(QWidget *w, bool showProgress) :
     m_repaintThread = nullptr;
 
     if (m_useThreadedRepaint) {
-        m_repaintThread = QThread::create([&]() {
-            m_repaintConditionMutex.lock();
-            while (!m_deleting) {
-                if (!m_repaintRequired && !m_deleting) {
-                    m_repaintCondition.wait(&m_repaintConditionMutex);
-                }
-                if (m_repaintRequired) {
-                    m_repaintRequired = false;
-                    int dpratio = effectiveDevicePixelRatio();
-                    QRect r(scaledRect(rect(), dpratio));
-                    m_repaintConditionMutex.unlock();
-                    paintBuffer(r);
-                    update();
-                    m_repaintConditionMutex.lock();
-                }
-            }
-            m_repaintConditionMutex.unlock();
-        });
+        m_repaintThread = new RepaintThread(this);
         m_repaintThread->start();
     }
 }
@@ -130,7 +113,7 @@ View::~View()
 
     m_deleting = true;
 
-    if (m_useThreadedRepaint) {
+    if (m_repaintThread) {
         {
             QMutexLocker locker(&m_repaintConditionMutex);
             m_repaintCondition.wakeAll();
@@ -150,11 +133,35 @@ View::~View()
 }
 
 void
+View::RepaintThread::run()
+{
+    m_v->m_repaintConditionMutex.lock();
+    
+    while (!m_v->m_deleting) {
+
+        if (!m_v->m_repaintRequired && !m_v->m_deleting) {
+            m_v->m_repaintCondition.wait(&m_v->m_repaintConditionMutex);
+        }
+        
+        std::cerr << "View[" << m_v->getId() << "]::repaintThread: required = " << m_v->m_repaintRequired << ", deleting = " << m_v->m_deleting << std::endl;
+        
+        if (m_v->m_repaintRequired) {
+            m_v->m_repaintRequired = false;
+            m_v->paintWholeBuffer();
+            QMetaObject::invokeMethod(m_v, "update", Qt::QueuedConnection);
+        }
+    }
+    
+    m_v->m_repaintConditionMutex.unlock();
+}
+
+void
 View::causeUpdate()
 {
     if (m_useThreadedRepaint) {
         QMutexLocker locker(&m_repaintConditionMutex);
         if (!m_repaintRequired) {
+            std::cerr << "View[" << getId() << "]::causeUpdate: causing one" << std::endl;
             m_repaintRequired = true;
             m_repaintCondition.wakeAll();
         }
@@ -887,13 +894,18 @@ View::setZoomLevel(ZoomLevel z)
 {
     {
         QMutexLocker locker(&m_positionMutex);
-    
-//!!!    int dpratio = effectiveDevicePixelRatio();
-//    if (z < dpratio) return;
-//    if (z < 1) z = 1;
+
+        std::cerr << "View[" << getId() << "]::setZoomLevel: z = " << z << std::endl;
+
+        // ensure our constraints are met
+        z = getZoomConstraintLevel(z, ZoomConstraint::RoundNearest);
+
+        std::cerr << "View[" << getId() << "]::setZoomLevel: z -> " << z << " (zoom level is " << m_zoomLevel << ")" << std::endl;
+        
         if (m_zoomLevel == z) {
             return;
         }
+
         m_zoomLevel = z;
     }
     
@@ -2396,10 +2408,6 @@ View::paintEvent(QPaintEvent *e)
         return;
     }
 
-    // ensure our constraints are met
-    m_zoomLevel = getZoomConstraintLevel
-        (m_zoomLevel, ZoomConstraint::RoundNearest);
-
     // We have a cache, which retains the state of scrollable (back)
     // layers from one paint to the next, and a buffer, which we paint
     // onto before copying directly to the widget. Both are at scaled
@@ -2453,6 +2461,9 @@ View::paintEvent(QPaintEvent *e)
         // This is where most of the work is done, but if
         // m_useThreadedRepaint then it's called from another thread
         paintBuffer(requestedPaintArea);
+    } else {
+        std::cerr << "View[" << getId() << "]::paintEvent: with zoom = "
+                  << m_zoomLevel << std::endl;
     }
         
     // Now paint to widget from buffer: target rects from here on,
@@ -2486,6 +2497,14 @@ View::paintEvent(QPaintEvent *e)
 }
 
 void
+View::paintWholeBuffer()
+{
+    int dpratio = effectiveDevicePixelRatio();
+    QRect r(scaledRect(rect(), dpratio));
+    paintBuffer(r);
+}
+
+void
 View::paintBuffer(QRect requestedPaintArea)
 {
     // If not all layers are scrollable, but some of the back layers
@@ -2502,6 +2521,12 @@ View::paintBuffer(QRect requestedPaintArea)
         dpratio = effectiveDevicePixelRatio();
     }
 
+    if (m_useThreadedRepaint) {
+        std::cerr << "View[" << getId() << "]::paintBuffer: paintingCentreFrame = "
+                  << paintingCentreFrame << ", paintingZoom = " << paintingZoom
+                  << std::endl;
+    }
+    
     bool layersChanged = false;
     LayerList scrollables = getScrollableBackLayers(true, layersChanged);
     LayerList nonScrollables = getNonScrollableFrontLayers(true, layersChanged);
