@@ -143,12 +143,15 @@ View::RepaintThread::run()
             m_v->m_repaintCondition.wait(&m_v->m_repaintConditionMutex);
         }
         
-        std::cerr << "View[" << m_v->getId() << "]::repaintThread: required = " << m_v->m_repaintRequired << ", deleting = " << m_v->m_deleting << std::endl;
+//        std::cerr << "View[" << m_v->getId() << "]::repaintThread: required = " << m_v->m_repaintRequired << ", deleting = " << m_v->m_deleting << std::endl;
         
         if (m_v->m_repaintRequired) {
             m_v->m_repaintRequired = false;
+            m_v->m_repaintConditionMutex.unlock();
             m_v->paintWholeBuffer();
+//            std::cerr << "View[" << m_v->getId() << "]::repaintThread: invoking update" << std::endl;
             QMetaObject::invokeMethod(m_v, "update", Qt::QueuedConnection);
+            m_v->m_repaintConditionMutex.lock();
         }
     }
     
@@ -161,7 +164,7 @@ View::causeUpdate()
     if (m_useThreadedRepaint) {
         QMutexLocker locker(&m_repaintConditionMutex);
         if (!m_repaintRequired) {
-            std::cerr << "View[" << getId() << "]::causeUpdate: causing one" << std::endl;
+//            std::cerr << "View[" << getId() << "]::causeUpdate: causing one" << std::endl;
             m_repaintRequired = true;
             m_repaintCondition.wakeAll();
         }
@@ -895,12 +898,12 @@ View::setZoomLevel(ZoomLevel z)
     {
         QMutexLocker locker(&m_positionMutex);
 
-        std::cerr << "View[" << getId() << "]::setZoomLevel: z = " << z << std::endl;
+//        std::cerr << "View[" << getId() << "]::setZoomLevel: z = " << z << std::endl;
 
         // ensure our constraints are met
         z = getZoomConstraintLevel(z, ZoomConstraint::RoundNearest);
 
-        std::cerr << "View[" << getId() << "]::setZoomLevel: z -> " << z << " (zoom level is " << m_zoomLevel << ")" << std::endl;
+//        std::cerr << "View[" << getId() << "]::setZoomLevel: z -> " << z << " (zoom level is " << m_zoomLevel << ")" << std::endl;
         
         if (m_zoomLevel == z) {
             return;
@@ -2462,8 +2465,8 @@ View::paintEvent(QPaintEvent *e)
         // m_useThreadedRepaint then it's called from another thread
         paintBuffer(requestedPaintArea);
     } else {
-        std::cerr << "View[" << getId() << "]::paintEvent: with zoom = "
-                  << m_zoomLevel << std::endl;
+//        std::cerr << "View[" << getId() << "]::paintEvent: with zoom = "
+//                  << m_zoomLevel << std::endl;
     }
         
     // Now paint to widget from buffer: target rects from here on,
@@ -2522,9 +2525,9 @@ View::paintBuffer(QRect requestedPaintArea)
     }
 
     if (m_useThreadedRepaint) {
-        std::cerr << "View[" << getId() << "]::paintBuffer: paintingCentreFrame = "
-                  << paintingCentreFrame << ", paintingZoom = " << paintingZoom
-                  << std::endl;
+//        std::cerr << "View[" << getId() << "]::paintBuffer: paintingCentreFrame = "
+//                  << paintingCentreFrame << ", paintingZoom = " << paintingZoom
+//                  << std::endl;
     }
     
     bool layersChanged = false;
@@ -2801,6 +2804,15 @@ View::paintBuffer(QRect requestedPaintArea)
     {
         QMutexLocker locker(&m_bufferSwapMutex);
         m_buffer = activeBuffer;
+    }
+    {
+        // Finally check whether these were changed again while we
+        // were painting
+        QMutexLocker locker(&m_positionMutex);
+        if (!(m_centreFrame == paintingCentreFrame &&
+              m_zoomLevel == paintingZoom)) {
+            m_repaintRequired = true;
+        }
     }
 }
 

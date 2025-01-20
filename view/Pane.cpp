@@ -370,7 +370,8 @@ Pane::setSelectionSnapToFeatures(bool snap)
 void
 Pane::paintEvent(QPaintEvent *e)
 {
-//    SVDEBUG << "Pane[" << getId() << "]::paintEvent" << endl;
+//    std::cerr << "Pane[" << getId() << "]::paintEvent" << std::endl;
+    
     Profiler profiler("Pane::paintEvent", true);
 
     QPainter paint;
@@ -2576,9 +2577,7 @@ Pane::wheelVertical(int sign, Qt::KeyboardModifiers mods)
                                                   ZoomConstraint::RoundUp);
         }
     
-        if (newZoomLevel != m_zoomLevel) {
-            setZoomLevel(newZoomLevel);
-        }
+        setZoomLevel(newZoomLevel);
     }
 
     emit paneInteractedWith();
