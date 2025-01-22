@@ -24,33 +24,64 @@ namespace sv {
 class ViewProxy : public LayerGeometryProvider
 {
 public:
-    /**
-     * Create a standard ViewProxy for the given view, mapping using
-     * the given scale factor. The scale factor is generally used with
-     * pixel-doubled "retina" Mac displays and is usually 1 elsewhere.
-     */
-    ViewProxy(View *view, int scaleFactor) :
-        m_view(view), m_scaleFactor(scaleFactor) { }
+    struct Parameters {
+        /**
+         * The view for which this is a proxy. The ViewProxy is
+         * created on-the-fly to capture the (horizontal) position and
+         * zoom of the view and its display scale factor at the time
+         * of construction, then used during rendering and discarded.
+         */
+        View *view;
 
-    /**
-     * Create a re-aligning ViewProxy for the given view, mapping
-     * using the given scale factor. The scale factor is generally
-     * used with pixel-doubled "retina" Mac displays and is usually 1
-     * elsewhere. 
-     * 
-     * Coordinates are mapped through the given alignment model, such
-     * that frame values passed from the caller are mapped "from
-     * reference" by that alignment before being used by the view or
-     * converted to pixel coordinates, and returned values are mapped
-     * back "to reference" before being passed back to the caller.
-     * 
-     * This form of proxy may be created specially for rendering a
-     * single layer which comes from a different alignment to that of
-     * the rest of the containing view.
-     */
-    ViewProxy(View *view, int scaleFactor, ModelId alignment) :
-        m_view(view), m_scaleFactor(scaleFactor), m_alignment(alignment) { }
+        /**
+         * The centre frame of the view at the time of
+         * construction. This is the centre frame that should be used
+         * throughout a single render cycle.
+         */
+        sv_frame_t centreFrame;
 
+        /**
+         * The zoom level of the view at the time of
+         * construction. This is the zoom level that should be used
+         * throughout a single render cycle.
+         */
+        ZoomLevel zoomLevel;
+
+        /**
+         * The display scale factor for the view. This is generally
+         * used with pixel-doubled "retina" Mac displays and is
+         * usually 1 elsewhere.
+         */
+        int scaleFactor;
+
+        /**
+         * An optional alignment model. If this is supplied,
+         * coordinates will be mapped through it, such that frame
+         * values passed from the caller are mapped "from reference"
+         * by that alignment before being used by the view or
+         * converted to pixel coordinates, and returned values are
+         * mapped back "to reference" before being passed back to the
+         * caller.
+         *
+         * A proxy using an alignment model may be created specially
+         * for rendering a single layer which comes from a different
+         * alignment to that of the rest of the containing view.
+         */
+        ModelId alignmentModelId;
+    };
+    
+    /**
+     * Create a standard ViewProxy for the given view, using the given
+     * parameters. See the parameter documentation above.
+     */
+    ViewProxy(Parameters params) :
+        m_view(params.view),
+        m_centreFrame(params.centreFrame),
+        m_rawZoomLevel(params.zoomLevel),
+        m_scaleFactor(params.scaleFactor),
+        m_alignment(params.alignmentModelId) {
+    }
+    
     int getId() const override {
         return m_view->getId();
     }
@@ -58,22 +89,26 @@ public:
         return m_scaleFactor;
     }
     sv_frame_t getStartFrame() const override {
-        return alignToReference(m_view->getStartFrame());
+        return getFrameForX(0);
     }
     sv_frame_t getCentreFrame() const override {
-        return alignToReference(m_view->getCentreFrame());
+        return alignToReference(m_centreFrame);
     }
     sv_frame_t getEndFrame() const override {
-        return alignToReference(m_view->getEndFrame());
+        return getFrameForX(m_view->width()) - 1;
     }
     int getXForFrame(sv_frame_t frame) const override {
         //!!! not actually correct, if frame lies between view's pixels
-        return m_scaleFactor * m_view->getXForFrame(alignFromReference(frame));
+        return m_scaleFactor *
+            m_view->getXForFrameWith(alignFromReference(frame),
+                                     m_centreFrame, m_rawZoomLevel);
     }
     sv_frame_t getFrameForX(int x) const override {
-        sv_frame_t f0 = m_view->getFrameForX(x / m_scaleFactor);
+        sv_frame_t f0 = m_view->getFrameForXWith(x / m_scaleFactor,
+                                                 m_centreFrame, m_rawZoomLevel);
         if (m_scaleFactor == 1) return alignToReference(f0);
-        sv_frame_t f1 = m_view->getFrameForX((x / m_scaleFactor) + 1);
+        sv_frame_t f1 = m_view->getFrameForXWith((x / m_scaleFactor) + 1,
+                                                 m_centreFrame, m_rawZoomLevel);
         sv_frame_t f = f0 + ((f1 - f0) * (x % m_scaleFactor)) / m_scaleFactor;
         return alignToReference(f);
     }
@@ -110,7 +145,7 @@ public:
         return m_view->getEffectiveVerticalExtents(unit);
     }
     ZoomLevel getRoundedZoomLevel() const override {
-        ZoomLevel z = m_view->getRawZoomLevel();
+        ZoomLevel z = m_rawZoomLevel;
         if (z.zone == ZoomLevel::FramesPerPixel) {
             z.level /= m_scaleFactor;
             if (z.level < 1) {
@@ -122,7 +157,7 @@ public:
         return z;
     }
     ZoomLevel getRawZoomLevel() const override {
-        return m_view->getRawZoomLevel();
+        return m_rawZoomLevel;
     }
     QRect getPaintRect() const override {
         QRect r = m_view->getPaintRect();
@@ -222,6 +257,8 @@ public:
 
 private:
     View *m_view;
+    sv_frame_t m_centreFrame;
+    ZoomLevel m_rawZoomLevel;
     int m_scaleFactor;
     ModelId m_alignment;
 

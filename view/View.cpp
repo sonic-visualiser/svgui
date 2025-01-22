@@ -480,7 +480,7 @@ View::propertyContainerSelected(View *client, PropertyContainer *pc)
         return;
     }
 
-    m_cacheValid = false;
+    invalidateCache();
 
     Layer *selectedLayer = nullptr;
 
@@ -512,7 +512,7 @@ View::toolModeChanged()
 void
 View::overlayModeChanged()
 {
-    m_cacheValid = false;
+    invalidateCache();
     causeUpdate();
 }
 
@@ -697,7 +697,7 @@ View::getXForFrame(sv_frame_t frame) const
 }
 
 sv_frame_t
-View::getFrameForX(int x) const
+View::getFrameForXWith(int x, sv_frame_t centreFrame, ZoomLevel zoomLevel) const
 {
     // Note, this must always return a value that is on a zoom-level
     // boundary - regardless of whether the nominal centre frame is on
@@ -715,11 +715,11 @@ View::getFrameForX(int x) const
     // nearest.
 
     int diff = x - (width()/2);
-    sv_frame_t level = m_zoomLevel.level;
+    sv_frame_t level = zoomLevel.level;
     sv_frame_t fdiff, result;
     
-    if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
-        sv_frame_t roundedCentreFrame = (m_centreFrame / level) * level;
+    if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+        sv_frame_t roundedCentreFrame = (centreFrame / level) * level;
         fdiff = diff * level;
         result = fdiff + roundedCentreFrame;
     } else {
@@ -727,17 +727,17 @@ View::getFrameForX(int x) const
         if ((diff < 0) && ((diff % level) != 0)) {
             --fdiff; // round to the left
         }
-        result = fdiff + m_centreFrame;
+        result = fdiff + centreFrame;
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
 /*
     if (x == 0) {
         SVCERR << "getFrameForX(" << x << "): diff = " << diff << ", fdiff = "
-               << fdiff << ", m_centreFrame = " << m_centreFrame
-               << ", level = " << m_zoomLevel.level
-               << ", diff % level = " << (diff % m_zoomLevel.level)
-               << ", nominal " << fdiff + m_centreFrame
+               << fdiff << ", centreFrame = " << centreFrame
+               << ", level = " << zoomLevel.level
+               << ", diff % level = " << (diff % zoomLevel.level)
+               << ", nominal " << fdiff + centreFrame
                << ", will return " << result
                << endl;
     }
@@ -745,7 +745,7 @@ View::getFrameForX(int x) const
 #endif
     
 #ifdef DEBUG_VIEW
-    if (m_zoomLevel.zone == ZoomLevel::FramesPerPixel) {
+    if (zoomLevel.zone == ZoomLevel::FramesPerPixel) {
         int reversed = getXForFrame(result);
         if (reversed != x) {
             SVCERR << "View[" << getId() << "]::getFrameForX: WARNING: Converted pixel " << x << " to frame " << result << " in FramesPerPixel zone, but the reverse conversion gives pixel " << reversed << " (error = " << reversed - x << ")" << endl;
@@ -760,6 +760,12 @@ View::getFrameForX(int x) const
 #endif
     
     return result;
+}
+
+sv_frame_t
+View::getFrameForX(int x) const
+{
+    return getFrameForXWith(x, m_centreFrame, m_zoomLevel);
 }
 
 double
@@ -983,7 +989,7 @@ View::getForeground() const
 void
 View::addLayer(Layer *layer)
 {
-    m_cacheValid = false;
+    invalidateCache();
 
     SingleColourLayer *scl = dynamic_cast<SingleColourLayer *>(layer);
     if (scl) scl->setDefaultColourFor(this);
@@ -1054,7 +1060,7 @@ View::removeLayer(Layer *layer)
         return;
     }
 
-    m_cacheValid = false;
+    invalidateCache();
 
     for (LayerList::iterator i = m_fixedOrderLayers.begin();
          i != m_fixedOrderLayers.end();
@@ -1269,7 +1275,7 @@ View::modelChanged(ModelId modelId)
     }
 
     if (recreate) {
-        m_cacheValid = false;
+        invalidateCache();
     }
 
     emit layerModelChanged();
@@ -1315,7 +1321,7 @@ View::modelChangedWithin(ModelId modelId,
     }
 
     if (recreate) {
-        m_cacheValid = false;
+        invalidateCache();
     }
 
     if (startFrame < myStartFrame) startFrame = myStartFrame;
@@ -1350,7 +1356,7 @@ View::modelReplaced()
 #ifdef DEBUG_VIEW_WIDGET_PAINT
     SVCERR << "View[" << getId() << "]::modelReplaced()" << endl;
 #endif
-    m_cacheValid = false;
+    invalidateCache();
     causeUpdate();
 }
 
@@ -1363,7 +1369,7 @@ View::layerParametersChanged()
     SVDEBUG << "View::layerParametersChanged()" << endl;
 #endif
 
-    m_cacheValid = false;
+    invalidateCache();
     causeUpdate();
 
     if (layer) {
@@ -1581,7 +1587,7 @@ void
 View::selectionChanged()
 {
     if (m_selectionCached) {
-        m_cacheValid = false;
+        invalidateCache();
         m_selectionCached = false;
     }
     causeUpdate();
@@ -2508,6 +2514,13 @@ View::paintWholeBuffer()
 }
 
 void
+View::invalidateCache()
+{
+    QMutexLocker locker(&m_positionMutex);
+    m_cacheValid = false;
+}
+
+void
 View::paintBuffer(QRect requestedPaintArea)
 {
     // If not all layers are scrollable, but some of the back layers
@@ -2516,12 +2529,14 @@ View::paintBuffer(QRect requestedPaintArea)
     sv_frame_t paintingCentreFrame;
     ZoomLevel paintingZoom;
     int dpratio;
+    bool cacheWasValid = false;
 
     {
         QMutexLocker locker(&m_positionMutex);
         paintingCentreFrame = m_centreFrame;
         paintingZoom = m_zoomLevel;
         dpratio = effectiveDevicePixelRatio();
+        cacheWasValid = m_cacheValid;
     }
 
     if (m_useThreadedRepaint) {
@@ -2544,8 +2559,7 @@ View::paintBuffer(QRect requestedPaintArea)
 #endif
 
     if (layersChanged || scrollables.empty()) {
-        //???
-        m_cacheValid = false;
+        cacheWasValid = false;
     }
 
     QRect wholeArea(scaledRect(rect(), dpratio));
@@ -2589,16 +2603,16 @@ View::paintBuffer(QRect requestedPaintArea)
 
         using namespace std::rel_ops;
     
-        if (!m_cacheValid ||
+        if (!cacheWasValid ||
             !m_cache ||
             m_cacheZoomLevel != paintingZoom ||
             m_cache->size() != wholeSize) {
 
             // cache is not valid at all
+            m_cacheValid = false;
 
             if (requestedPaintArea.width() < wholeSize.width() / 10) {
 
-                m_cacheValid = false;
                 shouldUseCache = false;
                 shouldRepaintCache = false;
 
@@ -2672,7 +2686,7 @@ View::paintBuffer(QRect requestedPaintArea)
     }
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
-    SVCERR << "View[" << getId() << "]::paintBuffer: m_cacheValid = " << m_cacheValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
+    SVCERR << "View[" << getId() << "]::paintBuffer: cacheWasValid = " << cacheWasValid << ", shouldUseCache = " << shouldUseCache << ", shouldRepaintCache = " << shouldRepaintCache << ", cacheAreaToRepaint = " << cacheAreaToRepaint.x() << "," << cacheAreaToRepaint.y() << " " << cacheAreaToRepaint.width() << "x" << cacheAreaToRepaint.height() << endl;
 #endif
 
     if (shouldRepaintCache && !shouldUseCache) {
@@ -2687,7 +2701,13 @@ View::paintBuffer(QRect requestedPaintArea)
     // device-pixel ratio for pixel-doubled hi-dpi rendering as
     // appropriate.
 
-    ViewProxy proxy(this, dpratio);
+    ViewProxy::Parameters params;
+    params.view = this;
+    params.centreFrame = paintingCentreFrame;
+    params.zoomLevel = paintingZoom;
+    params.scaleFactor = dpratio;
+    params.alignmentModelId = {};
+    ViewProxy proxy(params);
 
     // Some layers may need an aligning proxy. If a layer's model has
     // a source model that is the reference model for the aligning
@@ -2709,7 +2729,8 @@ View::paintBuffer(QRect requestedPaintArea)
         SVCERR << "no aligningModel" << endl;
 #endif
     }
-    ViewProxy aligningProxy(this, dpratio, alignmentModelId);
+    params.alignmentModelId = alignmentModelId;
+    ViewProxy aligningProxy(params);
     
     // Scrollable (cacheable) items first. If we are repainting the
     // cache, then we paint these to the cache; otherwise straight to
@@ -2752,7 +2773,6 @@ View::paintBuffer(QRect requestedPaintArea)
         setPaintFont(p);
 
         if (m_useThreadedRepaint) {
-            m_positionMutex.lock();
             layer->takeDiscretionaryPropertyMutex();
         }
         
@@ -2760,7 +2780,6 @@ View::paintBuffer(QRect requestedPaintArea)
 
         if (m_useThreadedRepaint) {
             layer->releaseDiscretionaryPropertyMutex();
-            m_positionMutex.unlock();
         }
         
         p.end();

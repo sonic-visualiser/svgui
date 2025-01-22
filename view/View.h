@@ -119,10 +119,26 @@ public:
     int getXForFrame(sv_frame_t frame) const override;
 
     /**
+     * As getXForFrame, but using the given centre and zoom instead
+     * of the actual values.
+     */
+    int getXForFrameWith(sv_frame_t frame,
+                         sv_frame_t centreFrame,
+                         ZoomLevel zoomLevel) const;
+
+    /**
      * Return the closest frame to the given pixel x-coordinate.
      */
     sv_frame_t getFrameForX(int x) const override;
 
+    /**
+     * As getFrameForX, but using the given centre and zoom instead
+     * of the actual values.
+     */
+    sv_frame_t getFrameForXWith(int x,
+                                sv_frame_t centreFrame,
+                                ZoomLevel zoomLevel) const;
+    
     /**
      * Return the closest pixel x-coordinate corresponding to a given
      * view x-coordinate. Default is no scaling, ViewProxy handles
@@ -508,14 +524,12 @@ protected:
     void paintEvent(QPaintEvent *e) override;
     void paintBuffer(QRect requestedPaintArea);
     void paintWholeBuffer();
+    void invalidateCache();
     virtual void drawSelections(QPainter &);
     virtual bool shouldLabelSelections() const { return true; }
     virtual void drawPlayPointer(QPainter &);
     virtual bool render(QPainter &paint, int x0, sv_frame_t f0, sv_frame_t f1);
     virtual void setPaintFont(QPainter &paint);
-
-    int getXForFrameWith(sv_frame_t frame, sv_frame_t centreFrame,
-                         ZoomLevel zoomLevel) const;
 
     QSize scaledSize(const QSize &s, int factor) {
         return QSize(s.width() * factor, s.height() * factor);
