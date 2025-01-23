@@ -1771,7 +1771,7 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     Profiler profiler("SpectrogramLayer::paint", false);
 
 #ifdef DEBUG_SPECTROGRAM_REPAINT
-    SVDEBUG << "SpectrogramLayer::paint() entering: m_model is " << m_model << ", zoom level is " << v->getZoomLevel() << endl;
+    SVDEBUG << "SpectrogramLayer::paint() entering in thread " << (size_t)QThread::currentThreadId() << ": m_model is " << m_model << ", zoom level is " << v->getRawZoomLevel() << endl;
     
     SVDEBUG << "SpectrogramLayer::paint(): rect is " << rect.x() << "," << rect.y() << " " << rect.width() << "x" << rect.height() << endl;
 #endif
@@ -1784,6 +1784,10 @@ SpectrogramLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     paintWithRenderer(v, paint, rect);
 
     illuminateLocalFeatures(v, paint);
+
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    SVDEBUG << "SpectrogramLayer::paint() returning in thread " << (size_t)QThread::currentThreadId() << endl;
+#endif
 }
 
 void
