@@ -63,6 +63,15 @@ typedef QMap<QString, QString> LayerAttributes;
  * The base class for visual representations of the data found in a
  * Model.  Layers are expected to be able to draw themselves onto a
  * View, and may also be editable.
+ *
+ * Layers are not thread-safe, so calls to them need to be either
+ * single-threaded or synchronised. The PropertyContainer base class
+ * provides a discretionary mutex (takeDiscretionaryPropertyMutex/
+ * releaseDiscretionaryPropertyMutex) which may be useful for
+ * synchronisation - see that class's documentation for more. Note
+ * that other than in the PropertyContainer's SetPropertyCommand,
+ * property containers and layers never use this mutex themselves.
+ * It's provided solely for callers to synchronise amongst each other.
  */
 class Layer : public PropertyContainer,
               public XmlExportable
@@ -755,9 +764,10 @@ protected:
     mutable bool m_haveCurrentMeasureRect;
     mutable QPoint m_currentMeasureRectPoint;
    
-    // Note that pixrects are only correct for a single view.
-    // So we should update them at the start of the paint procedure
-    // (painting is single threaded) and only use them after that.
+    // Note that pixrects are only correct for a single view.  So we
+    // should update them at the start of the paint procedure
+    // (painting is single threaded or synchronised) and only use them
+    // after that.
     void updateMeasurePixrects(LayerGeometryProvider *v) const;
 
     virtual void updateMeasureRectYCoords(LayerGeometryProvider *v, const MeasureRect &r) const;
