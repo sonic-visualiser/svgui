@@ -1356,7 +1356,10 @@ Pane::setTopLayerDisplayExtents(double dmin, double dmax)
 {
     Layer *layer = getTopLayer();
     if (!layer) return false;
-    return layer->setDisplayExtents(dmin, dmax);
+    layer->takeDiscretionaryPropertyMutex();
+    bool result = layer->setDisplayExtents(dmin, dmax);
+    layer->releaseDiscretionaryPropertyMutex();
+    return result;
 }
 
 void
@@ -2066,7 +2069,9 @@ Pane::zoomToRegion(QRect r)
         }
         SVCERR << "finally: rmin: " << rmin << ", rmax: " << rmax << endl;
 
+        layer->takeDiscretionaryPropertyMutex();
         layer->setDisplayExtents(rmin, rmax);
+        layer->releaseDiscretionaryPropertyMutex();
         updateVerticalPanner();
     }
 }
@@ -2635,7 +2640,9 @@ Pane::verticalThumbwheelMoved(int value)
         if (value > max) {
             value = max;
         }
+        layer->takeDiscretionaryPropertyMutex();
         layer->setVerticalZoomStep(value);
+        layer->releaseDiscretionaryPropertyMutex();
         updateVerticalPanner();
     }
 }    
