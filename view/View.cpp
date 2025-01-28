@@ -89,13 +89,18 @@ View::View(QWidget *w, bool showProgress) :
     m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
-//    SVCERR << "View::View[" << getId() << "]" << endl;
-
     m_useThreadedRepaint = true;
 
     if (qgetenv("SV_NO_THREADED_PAINT") != QByteArray()) {
-        SVDEBUG << "View::View: Suppressing threaded paint" << endl;
+        SVDEBUG << "View::View: Suppressing threaded paint per user request"
+                << endl;
         m_useThreadedRepaint = false;
+    } else {
+        int ideal = QThread::idealThreadCount();
+        if (ideal < 4) {
+            SVDEBUG << "View::View: Suppressing threaded paint because ideal thread count is too low (ideal = " << ideal << ")" << endl;
+            m_useThreadedRepaint = false;
+        }
     }
     
     m_repaintRequired = false;
