@@ -508,7 +508,7 @@ protected:
     void causeUpdate(QRect r);
 
     Qt::HANDLE m_constructedInThread;
-    bool m_useThreadedRepaint;
+    std::atomic<bool> m_useThreadedRepaint;
     bool m_repaintRequired;
     QThread *m_repaintThread;
     QWaitCondition m_repaintCondition;
