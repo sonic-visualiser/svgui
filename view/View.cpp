@@ -91,11 +91,11 @@ View::View(QWidget *w, bool showProgress) :
 {
 //    SVCERR << "View::View[" << getId() << "]" << endl;
 
-    m_useThreadedRepaint = false;
+    m_useThreadedRepaint = true;
 
-    if (qgetenv("SV_THREADED_PAINT") != QByteArray()) {
-        SVDEBUG << "View::View: Using threaded paint" << endl;
-        m_useThreadedRepaint = true;
+    if (qgetenv("SV_NO_THREADED_PAINT") != QByteArray()) {
+        SVDEBUG << "View::View: Suppressing threaded paint" << endl;
+        m_useThreadedRepaint = false;
     }
     
     m_repaintRequired = false;
@@ -105,6 +105,9 @@ View::View(QWidget *w, bool showProgress) :
         m_repaintThread = new RepaintThread(this);
         m_repaintThread->start();
     }
+
+    m_constructedInThread = QThread::currentThreadId();
+    SVDEBUG << "View constructed in thread " << m_constructedInThread << endl;
 }
 
 View::~View()
@@ -137,19 +140,18 @@ View::RepaintThread::run()
 {
     m_v->m_repaintConditionMutex.lock();
     
-    while (!m_v->m_deleting) {
+    while (!m_v->m_deleting && m_v->m_useThreadedRepaint) {
 
-        if (!m_v->m_repaintRequired && !m_v->m_deleting) {
+        if (!m_v->m_repaintRequired &&
+            !m_v->m_deleting &&
+            m_v->m_useThreadedRepaint) {
             m_v->m_repaintCondition.wait(&m_v->m_repaintConditionMutex);
         }
-        
-//        std::cerr << "View[" << m_v->getId() << "]::repaintThread: required = " << m_v->m_repaintRequired << ", deleting = " << m_v->m_deleting << std::endl;
         
         if (m_v->m_repaintRequired) {
             m_v->m_repaintRequired = false;
             m_v->m_repaintConditionMutex.unlock();
             m_v->paintWholeBuffer();
-//            std::cerr << "View[" << m_v->getId() << "]::repaintThread: invoking update" << std::endl;
             QMetaObject::invokeMethod(m_v, "update", Qt::QueuedConnection);
             m_v->m_repaintConditionMutex.lock();
         }
@@ -2421,6 +2423,21 @@ View::paintEvent(QPaintEvent *e)
 {
     Profiler prof("View::paintEvent", false);
 
+    auto calledInThread = QThread::currentThreadId();
+    if (calledInThread != m_constructedInThread) {
+        if (m_useThreadedRepaint) {
+            SVDEBUG << "View::paintEvent called in thread " << calledInThread
+                    << " which differs from construction thread "
+                    << m_constructedInThread << ", switching to non-threaded "
+                    << "repaint" << endl;
+            QMutexLocker plocker(&m_positionMutex);
+            QMutexLocker clocker(&m_repaintConditionMutex);
+            m_useThreadedRepaint = false;
+            update();
+            return;
+        }
+    }
+    
     QFrame::paintEvent(e);
 
 #ifdef DEBUG_VIEW_WIDGET_PAINT
@@ -2487,9 +2504,6 @@ View::paintEvent(QPaintEvent *e)
         // This is where most of the work is done, but if
         // m_useThreadedRepaint then it's called from another thread
         paintBuffer(requestedPaintArea);
-    } else {
-//        std::cerr << "View[" << getId() << "]::paintEvent: with zoom = "
-//                  << m_zoomLevel << std::endl;
     }
         
     // Now paint to widget from buffer: target rects from here on,
@@ -2556,12 +2570,6 @@ View::paintBuffer(QRect requestedPaintArea)
         cacheWasValid = m_cacheValid;
     }
 
-    if (m_useThreadedRepaint) {
-//        std::cerr << "View[" << getId() << "]::paintBuffer: paintingCentreFrame = "
-//                  << paintingCentreFrame << ", paintingZoom = " << paintingZoom
-//                  << std::endl;
-    }
-    
     bool layersChanged = false;
     LayerList scrollables = getScrollableBackLayers(true, layersChanged);
     LayerList nonScrollables = getNonScrollableFrontLayers(true, layersChanged);

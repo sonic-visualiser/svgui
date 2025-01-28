@@ -506,13 +506,13 @@ protected:
 
     void causeUpdate();
     void causeUpdate(QRect r);
-    
+
+    Qt::HANDLE m_constructedInThread;
     bool m_useThreadedRepaint;
     bool m_repaintRequired;
     QThread *m_repaintThread;
     QWaitCondition m_repaintCondition;
     QMutex m_repaintConditionMutex;
-    QMutex m_contentMutex;
     QMutex m_positionMutex;
 
     class RepaintThread : public QThread {
