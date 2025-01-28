@@ -434,7 +434,7 @@ public:
     void setPlaybackFrameAligner(const PlaybackFrameAligner *);
     const PlaybackFrameAligner *getPlaybackFrameAligner() const;
     
-    void updatePaintRect(QRect r) override { update(r); }
+    void updatePaintRect(QRect r) override { causeUpdate(r); }
 
     int getScaleFactor() const override { return 1; } // See ViewProxy
     
@@ -505,6 +505,8 @@ protected:
     int m_id;
 
     void causeUpdate();
+    void causeUpdate(QRect r);
+    
     bool m_useThreadedRepaint;
     bool m_repaintRequired;
     QThread *m_repaintThread;

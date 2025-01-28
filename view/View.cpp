@@ -173,6 +173,23 @@ View::causeUpdate()
     }
 }
 
+void
+View::causeUpdate(QRect r)
+{
+    if (m_useThreadedRepaint) {
+        //!!! Todo: support actual threaded rect updates rather than
+        //!!! repainting the whole thing every time
+        QMutexLocker locker(&m_repaintConditionMutex);
+        if (!m_repaintRequired) {
+//            std::cerr << "View[" << getId() << "]::causeUpdate: causing one" << std::endl;
+            m_repaintRequired = true;
+            m_repaintCondition.wakeAll();
+        }
+    } else {
+        update(r);
+    }
+}
+
 PropertyContainer::PropertyList
 View::getProperties() const
 {

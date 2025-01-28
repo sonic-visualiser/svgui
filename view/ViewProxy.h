@@ -208,10 +208,10 @@ public:
     }
 
     void updatePaintRect(QRect r) override {
-        m_view->update(r.x() / m_scaleFactor,
-                       r.y() / m_scaleFactor,
-                       r.width() / m_scaleFactor,
-                       r.height() / m_scaleFactor);
+        m_view->updatePaintRect(QRect(r.x() / m_scaleFactor,
+                                      r.y() / m_scaleFactor,
+                                      r.width() / m_scaleFactor,
+                                      r.height() / m_scaleFactor));
     }
 
     /**
