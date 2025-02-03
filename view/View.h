@@ -37,7 +37,6 @@ class QPushButton;
 
 #include <map>
 #include <set>
-#include <deque>
 
 namespace sv {
 
@@ -510,7 +509,7 @@ protected:
 
     Qt::HANDLE m_constructedInThread;
     std::atomic<bool> m_useThreadedRepaint;
-    std::deque<QRect> m_repaintsRequested;
+    bool m_repaintRequired;
     QThread *m_repaintThread;
     QWaitCondition m_repaintCondition;
     QMutex m_repaintConditionMutex;

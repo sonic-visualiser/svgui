@@ -103,6 +103,7 @@ View::View(QWidget *w, bool showProgress) :
         }
     }
     
+    m_repaintRequired = false;
     m_repaintThread = nullptr;
 
     if (m_useThreadedRepaint) {
@@ -146,44 +147,19 @@ View::RepaintThread::run()
     
     while (!m_v->m_deleting && m_v->m_useThreadedRepaint) {
 
-        if (m_v->m_repaintsRequested.empty() &&
+        if (!m_v->m_repaintRequired &&
             !m_v->m_deleting &&
             m_v->m_useThreadedRepaint) {
             m_v->m_repaintCondition.wait(&m_v->m_repaintConditionMutex);
         }
-
-        bool whole = false;
-        QRect part;
         
-        while (!m_v->m_repaintsRequested.empty()) {
-            QRect r = m_v->m_repaintsRequested.front();
-            m_v->m_repaintsRequested.pop_front();
-            if (r == QRect()) {
-                whole = true;
-            } else if (part == QRect()) {
-                part = r;
-            } else {
-                part = part.united(r);
-            }
-        }
-
-        if (!whole && (part == QRect())) {
-            continue;
-        }
-
-        int dpratio = m_v->effectiveDevicePixelRatio();
-
-        m_v->m_repaintConditionMutex.unlock();
-
-        if (whole) {
+        if (m_v->m_repaintRequired) {
+            m_v->m_repaintRequired = false;
+            m_v->m_repaintConditionMutex.unlock();
             m_v->paintWholeBuffer();
-        } else {
-            part = m_v->scaledRect(part, dpratio);
-            m_v->paintBuffer(part);
+            QMetaObject::invokeMethod(m_v, "update", Qt::QueuedConnection);
+            m_v->m_repaintConditionMutex.lock();
         }
-
-        QMetaObject::invokeMethod(m_v, "update", Qt::QueuedConnection);
-        m_v->m_repaintConditionMutex.lock();
     }
     
     m_v->m_repaintConditionMutex.unlock();
@@ -194,8 +170,11 @@ View::causeUpdate()
 {
     if (m_useThreadedRepaint) {
         QMutexLocker locker(&m_repaintConditionMutex);
-        m_repaintsRequested.push_back(QRect());
-        m_repaintCondition.wakeAll();
+        if (!m_repaintRequired) {
+//            std::cerr << "View[" << getId() << "]::causeUpdate: causing one" << std::endl;
+            m_repaintRequired = true;
+            m_repaintCondition.wakeAll();
+        }
     } else {
         update();
     }
@@ -205,9 +184,14 @@ void
 View::causeUpdate(QRect r)
 {
     if (m_useThreadedRepaint) {
+        //!!! Todo: support actual threaded rect updates rather than
+        //!!! repainting the whole thing every time
         QMutexLocker locker(&m_repaintConditionMutex);
-        m_repaintsRequested.push_back(r);
-        m_repaintCondition.wakeAll();
+        if (!m_repaintRequired) {
+//            std::cerr << "View[" << getId() << "]::causeUpdate: causing one" << std::endl;
+            m_repaintRequired = true;
+            m_repaintCondition.wakeAll();
+        }
     } else {
         update(r);
     }
@@ -958,8 +942,8 @@ View::setZoomLevel(ZoomLevel z)
         m_zoomLevel = z;
     }
     
-    causeUpdate();
     emit zoomLevelChanged(z, m_followZoom);
+    causeUpdate();
 }
 
 bool
@@ -2876,8 +2860,7 @@ View::paintBuffer(QRect requestedPaintArea)
         QMutexLocker locker(&m_positionMutex);
         if (!(m_centreFrame == paintingCentreFrame &&
               m_zoomLevel == paintingZoom)) {
-            QMutexLocker locker(&m_repaintConditionMutex);
-            m_repaintsRequested.push_back(QRect());
+            m_repaintRequired = true;
         }
     }
 }

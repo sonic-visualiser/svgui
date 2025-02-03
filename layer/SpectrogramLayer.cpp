@@ -1763,7 +1763,7 @@ SpectrogramLayer::paintWithRenderer(LayerGeometryProvider *v, QPainter &paint, Q
         if (uncached.width() > 0) {
 #ifdef DEBUG_SPECTROGRAM_REPAINT
             SVDEBUG << "have uncached rect of width " << uncached.width()
-                    << " from x = " << uncached.x() << endl;
+                    << endl;
 #endif
             v->updatePaintRect(uncached);
         }
