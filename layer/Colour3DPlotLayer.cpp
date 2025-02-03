@@ -260,6 +260,8 @@ Colour3DPlotLayer::getPeakCache() const
 void
 Colour3DPlotLayer::handleModelChanged(ModelId modelId)
 {
+    takeDiscretionaryPropertyMutex();
+    
     if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
         auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
         if (model) {
@@ -271,6 +273,9 @@ Colour3DPlotLayer::handleModelChanged(ModelId modelId)
         }
     }
     invalidatePeakCache();
+
+    releaseDiscretionaryPropertyMutex();
+    
     emit modelChanged(modelId);
 }
 
@@ -279,6 +284,8 @@ Colour3DPlotLayer::handleModelChangedWithin(ModelId modelId,
                                             sv_frame_t startFrame,
                                             sv_frame_t endFrame)
 {
+    takeDiscretionaryPropertyMutex();
+
     if (!m_colourScaleSet && m_colourScale == ColourScaleType::Linear) {
         auto model = ModelById::getAs<DenseThreeDimensionalModel>(m_model);
         if (model && model->getWidth() > 50) {
@@ -289,6 +296,9 @@ Colour3DPlotLayer::handleModelChangedWithin(ModelId modelId,
             }
         }
     }
+
+    releaseDiscretionaryPropertyMutex();
+    
     emit modelChangedWithin(modelId, startFrame, endFrame);
 }
 

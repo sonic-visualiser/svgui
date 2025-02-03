@@ -39,15 +39,10 @@ namespace sv {
 class ScrollableImageCache
 {
 public:
-    ScrollableImageCache() :
-        m_validLeft(0),
-        m_validWidth(0),
-        m_startFrame(0)
-    {}
+    ScrollableImageCache();
+    ~ScrollableImageCache();
 
-    void invalidate() {
-        m_validWidth = 0;
-    }
+    void invalidate();
     
     bool isValid() const {
         return m_validWidth > 0;

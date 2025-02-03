@@ -269,6 +269,13 @@ public:
     ModelId getSliceableModel() const override;
 
 protected slots:
+    // Because the modelChanged signals are called directly from the
+    // model, and not from something in the UI, they take the
+    // discretionary property mutex before calling cacheInvalid
+    void modelChanged(ModelId);
+    void modelChangedWithin(ModelId, sv_frame_t, sv_frame_t);
+
+    // These are the same as the above but without the mutex
     void cacheInvalid(ModelId);
     void cacheInvalid(ModelId, sv_frame_t startFrame, sv_frame_t endFrame);
     

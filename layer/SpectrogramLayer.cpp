@@ -278,12 +278,11 @@ SpectrogramLayer::setModel(ModelId modelId)
 
         connectSignals(m_model);
 
-        connect(newModel.get(),
-                SIGNAL(modelChanged(ModelId)),
-                this, SLOT(cacheInvalid(ModelId)));
-        connect(newModel.get(),
-                SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
-                this, SLOT(cacheInvalid(ModelId, sv_frame_t, sv_frame_t)));
+        connect(newModel.get(), &Model::modelChanged,
+                this, &SpectrogramLayer::modelChanged);
+
+        connect(newModel.get(), &Model::modelChangedWithin,
+                this, &SpectrogramLayer::modelChangedWithin);
     }
     
     emit modelReplaced();
@@ -1197,6 +1196,31 @@ SpectrogramLayer::isLayerScrollable(const LayerGeometryProvider *) const
     // guaranteeing to get an invisible seam if someone else scrolls
     // us and we just fill in
     return false;
+}
+
+void
+SpectrogramLayer::modelChanged(ModelId model)
+{
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    SVDEBUG << "SpectrogramLayer::modelChanged()" << endl;
+#endif
+
+    takeDiscretionaryPropertyMutex();
+    cacheInvalid(model);
+    releaseDiscretionaryPropertyMutex();
+}
+
+void
+SpectrogramLayer::modelChangedWithin(ModelId model,
+                                     sv_frame_t from, sv_frame_t to)
+{
+#ifdef DEBUG_SPECTROGRAM_REPAINT
+    SVDEBUG << "SpectrogramLayer::modelChangedWithin()" << endl;
+#endif
+
+    takeDiscretionaryPropertyMutex();
+    cacheInvalid(model, from, to);
+    releaseDiscretionaryPropertyMutex();
 }
 
 void
