@@ -348,12 +348,19 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
 
     } else { // must be DrawBufferPixelResolution, handled DirectTranslucent earlier
 
+/*!!! This is not desirable behaviour when using threaded repaint - we
+      don't actually know for sure here whether we're doing that, but
+      it is the default, and the worst case if we aren't is less bad
+      than it used to be
+  
         if (timeConstrained && !justCreated && justInvalidated) {
             SVDEBUG << "render " << m_sources.source
                     << ": invalidated cache in time-constrained context, that's all we're doing for now - wait for next update to start filling" << endl;
         } else {
+*/
+        
             renderToCachePixelResolution(v, x0, x1 - x0, rightToLeft, timeConstrained);
-        }
+/*        } */
     }
 
     QRect pr = rect & m_cache.getValidArea();
