@@ -3370,6 +3370,9 @@ View::waitForLayersToBeReady()
 bool
 View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 {
+    QMutexLocker plocker(&m_positionMutex);
+    QMutexLocker clocker(&m_repaintConditionMutex);
+    
     int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
     int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
 
@@ -3415,7 +3418,10 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 
         for (LayerList::iterator i = m_layerStack.begin();
              i != m_layerStack.end(); ++i) {
-            if (!((*i)->isLayerDormant(this))){
+
+            auto layer = *i;
+            
+            if (!(layer->isLayerDormant(this))){
 
                 paint.setRenderHint(QPainter::Antialiasing, false);
 
@@ -3424,11 +3430,19 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 
                 SVCERR << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
 
-                (*i)->setSynchronousPainting(true);
+                if (m_useThreadedRepaint) {
+                    layer->takeDiscretionaryPropertyMutex();
+                }
 
-                (*i)->paint(this, paint, chunk);
+                layer->setSynchronousPainting(true);
 
-                (*i)->setSynchronousPainting(false);
+                layer->paint(this, paint, chunk);
+
+                layer->setSynchronousPainting(false);
+
+                if (m_useThreadedRepaint) {
+                    layer->releaseDiscretionaryPropertyMutex();
+                }
 
                 paint.restore();
             }

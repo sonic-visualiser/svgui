@@ -914,7 +914,8 @@ ImageLayer::checkAddSourceAndConnect(QString img)
 void
 ImageLayer::checkAddSource(QString img, bool synchronise)
 {
-    SVDEBUG << "ImageLayer::checkAddSource(" << img << "): yes, trying..." << endl;
+    SVDEBUG << "ImageLayer::checkAddSource: img = " << img << ", synchronise = "
+            << synchronise << endl;
 
     QMutexLocker locker(synchronise ? &m_staticMutex : nullptr);
 
