@@ -192,7 +192,7 @@ Colour3DPlotExporter::toStringExportRows(DataExportOptions opts,
         
         if (binDisplay == BinDisplay::PeakFrequencies) {
             
-            FFTModel::PeakSet peaks = fftModel->getPeakFrequencies
+            FFTModel::Peaks peaks = fftModel->getPeakFrequencies
                 (FFTModel::AllPeaks, i, minbin, minbin + nbins - 1);
 
             // We don't apply normalisation or gain to the output, but

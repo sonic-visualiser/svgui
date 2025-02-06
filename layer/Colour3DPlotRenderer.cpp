@@ -1419,7 +1419,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
     int nbins  = int(binfory[h-1]) - minbin + 1;
     if (minbin + nbins > sh) nbins = sh - minbin;
 
-    FFTModel::PeakSet peakfreqs;
+    FFTModel::Peaks peakfreqs;
 
     int psx = -1;
     
@@ -1518,7 +1518,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 //                    << sx0 << endl;
 #endif
 
-            for (FFTModel::PeakSet::const_iterator pi = peakfreqs.begin();
+            for (FFTModel::Peaks::const_iterator pi = peakfreqs.begin();
                  pi != peakfreqs.end(); ++pi) {
 
                 int bin = pi->first;

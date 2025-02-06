@@ -790,7 +790,7 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
         peakmaxbin = int(((peakmaxfreq * fft->getHeight() * 2) /
                           fft->getSampleRate()));
         
-        FFTModel::PeakSet peaks = fft->getPeakFrequencies
+        FFTModel::Peaks peaks = fft->getPeakFrequencies
             (FFTModel::MajorPitchAdaptivePeaks, col, peakminbin, peakmaxbin);
 
         BiasCurve curve;
@@ -801,7 +801,7 @@ SpectrumLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) cons
 
         int fuzz = ViewManager::scalePixelSize(3);
         
-        for (FFTModel::PeakSet::iterator i = peaks.begin();
+        for (FFTModel::Peaks::iterator i = peaks.begin();
              i != peaks.end(); ++i) {
 
             double freq = i->second;
