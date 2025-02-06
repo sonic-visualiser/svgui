@@ -493,6 +493,7 @@ Colour3DPlotRenderer::decideRenderType(const LayerGeometryProvider *v) const
 
 ColumnOp::Column
 Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
+                                bool suppressCache,
                                 shared_ptr<DenseThreeDimensionalModel> source) const
 {
     Profiler profiler("Colour3DPlotRenderer::getColumn");
@@ -508,15 +509,15 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
     
     if (m_params.showDerivative && sx > 0) {
 
-        auto prev = getColumnRaw(sx - 1, minbin, nbins, source);
-        column = getColumnRaw(sx, minbin, nbins, source);
+        auto prev = getColumnRaw(sx - 1, minbin, nbins, suppressCache, source);
+        column = getColumnRaw(sx, minbin, nbins, suppressCache, source);
         
         for (int i = 0; i < nbins; ++i) {
             column[i] -= prev[i];
         }
 
     } else {
-        column = getColumnRaw(sx, minbin, nbins, source);
+        column = getColumnRaw(sx, minbin, nbins, suppressCache, source);
     }
 
     if (m_params.colourScale.getScale() == ColourScaleType::Phase &&
@@ -531,6 +532,7 @@ Colour3DPlotRenderer::getColumn(int sx, int minbin, int nbins,
 
 ColumnOp::Column
 Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
+                                   bool suppressCache,
                                    shared_ptr<DenseThreeDimensionalModel> source) const
 {
     Profiler profiler("Colour3DPlotRenderer::getColumnRaw");
@@ -544,7 +546,16 @@ Colour3DPlotRenderer::getColumnRaw(int sx, int minbin, int nbins,
         }
     }
 
-    return source->getColumn(sx, minbin, nbins);
+    if (suppressCache) {
+        auto fftModel = dynamic_cast<FFTModel *>(source.get());
+        if (fftModel) {
+            return fftModel->getColumnWithoutCache(sx, minbin, nbins);
+        } else {
+            return source->getColumn(sx, minbin, nbins);
+        }
+    } else {
+        return source->getColumn(sx, minbin, nbins);
+    }
 }
 
 MagnitudeRange
@@ -612,7 +623,7 @@ Colour3DPlotRenderer::renderDirectTranslucent(const LayerGeometryProvider *v,
             // peak pick -> distribute/interpolate -> apply display gain
 
             // this does the first three:
-            preparedColumn = getColumn(sx, minbin, nbins, model);
+            preparedColumn = getColumn(sx, minbin, nbins, false, model);
             
             magRange.sample(preparedColumn);
 
@@ -1291,7 +1302,7 @@ Colour3DPlotRenderer::renderDrawBuffer(int w, int h,
                 // peak pick -> distribute/interpolate -> apply display gain
 
                 // this does the first three:
-                preparedColumn = getColumn(sx, minbin, nbins, sourceModel);
+                preparedColumn = getColumn(sx, minbin, nbins, false, sourceModel);
 
                 magRange.sample(preparedColumn);
 
@@ -1467,12 +1478,23 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
         
         for (int sx = sx0; sx < sx1; ++sx) {
 
+            // sx is the source column index, and we are stepping
+            // through the source columns that contribute to current
+            // on-canvas pixel x
+
             if (sx < 0 || sx >= modelWidth) {
                 continue;
             }
 
-            if (sx != psx) {
-                preparedColumn = getColumn(sx, minbin, nbins, fft);
+            if (sx != psx) { // psx is index of existing preparedColumn, or -1
+
+                // The model should use its cache (as normal) if we
+                // are retrieving a column that will subsequently be
+                // used for peak calculations
+                bool shouldCache = (sx == sx0 || sx == sx0+1 || sx+1 == sx1);
+                bool suppressCache = !shouldCache;
+                
+                preparedColumn = getColumn(sx, minbin, nbins, suppressCache, fft);
                 magRange.sample(preparedColumn);
                 psx = sx;
             }
@@ -1532,7 +1554,7 @@ Colour3DPlotRenderer::renderDrawBufferPeakFrequencies(const LayerGeometryProvide
 #endif
         }
 
-        if (xPixelCount % 16 == 0) {
+        if (timeConstrained && x < (w*2)/3 && (xPixelCount % 16 == 0)) {
             double fractionComplete = double(xPixelCount) / double(w);
             if (timer.outOfTime(fractionComplete)) {
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
