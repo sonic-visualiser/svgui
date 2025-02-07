@@ -91,7 +91,7 @@ NoteLayer::setModel(ModelId modelId)
         connectSignals(m_model);
 
         QString unit = newModel->getScaleUnits();
-        m_modelUsesHz = (unit.toLower() == "hz");
+        m_modelUsesHz = (UnitDatabase::asCommonUnit(unit) == "Hz");
     }
     
     m_scaleMinimum = 0;
@@ -197,7 +197,7 @@ NoteLayer::setProperty(const PropertyName &name, int value)
         if (model) {
             QString unit = UnitDatabase::getInstance()->getUnitById(value);
             model->setScaleUnits(unit);
-            m_modelUsesHz = (unit.toLower() == "hz");
+            m_modelUsesHz = (UnitDatabase::asCommonUnit(unit) == "Hz");
             emit modelChanged(m_model);
         }
     } else {
@@ -771,7 +771,8 @@ NoteLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &paint, Q
         LinearNumericalScale().paintVertical(v, scale, paint, 0);
     }
     
-    if (!scale.isLinear() && scale.getUnit() == "Hz") {
+    if (!scale.isLinear() &&
+        UnitDatabase::asCommonUnit(scale.getUnit()) == "Hz") {
         PianoScale().paintPianoVertical
             (v, paint, QRect(w - 10, 0, 10, h), scale);
         paint.drawLine(w, 0, w, h);

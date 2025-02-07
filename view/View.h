@@ -550,6 +550,8 @@ protected:
 
     CoordinateScale getEffectiveVerticalExtentsAndLayerFromWhich
     (QString unit, Layer **layer) const;
+
+    bool areUnitsTheSame(QString, QString) const;
     
     ZoomLevel getZoomConstraintLevel(ZoomLevel level,
                                      ZoomConstraint::RoundingDirection dir =

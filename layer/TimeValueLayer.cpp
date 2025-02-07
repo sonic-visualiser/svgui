@@ -715,7 +715,7 @@ TimeValueLayer::getFeatureDescription(LayerGeometryProvider *v, QPoint &pos) con
     float value = points.begin()->getValue();
     QString unit = getScaleUnits();
 
-    if (unit == "Hz") {
+    if (UnitDatabase::asCommonUnit(unit) == "Hz") {
         valueText = tr("%1 Hz (%2, %3)")
             .arg(value)
             .arg(Pitch::getPitchLabelForFrequency(value))
@@ -1327,7 +1327,8 @@ TimeValueLayer::paintVerticalScale(LayerGeometryProvider *v, bool, QPainter &pai
             LinearNumericalScale().paintVertical(v, scale, paint, 0);
         }
 
-        if (!scale.isLinear() && scale.getUnit() == "Hz") {
+        if (!scale.isLinear() &&
+            UnitDatabase::asCommonUnit(scale.getUnit()) == "Hz") {
             PianoScale().paintPianoVertical
                 (v, paint, QRect(w - 10, 0, 10, h), scale);
             paint.drawLine(w, 0, w, h);

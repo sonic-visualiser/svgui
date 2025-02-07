@@ -21,6 +21,7 @@
 
 #include "base/Pitch.h"
 #include "base/Debug.h"
+#include "base/UnitDatabase.h"
 
 #include "LayerGeometryProvider.h"
 #include "HorizontalScaleProvider.h"
@@ -43,7 +44,7 @@ PianoScale::paintPianoVertical(LayerGeometryProvider *v,
     int py = y1, ppy = y1;
     paint.setBrush(paint.pen().color());
 
-    if (scale.getUnit() != "Hz") {
+    if (UnitDatabase::asCommonUnit(scale.getUnit()) != "Hz") {
         SVDEBUG << "WARNING: PianoScale::paintPianoVertical: CoordinateScale unit is not Hz (it is: \"" << scale.getUnit() << "\")" << endl;
     }
     

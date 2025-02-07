@@ -22,6 +22,7 @@
 #include "base/Preferences.h"
 #include "base/HitCount.h"
 #include "base/LogRange.h"
+#include "base/UnitDatabase.h"
 #include "ViewProxy.h"
 
 #include "layer/TimeRulerLayer.h"
@@ -387,7 +388,7 @@ View::getEffectiveVerticalExtentsAndLayerFromWhich(QString unit,
                 continue;
             }
 
-            if (unit != "" && extents.second.getUnit() != unit) {
+            if (unit != "" && !areUnitsTheSame(unit, extents.second.getUnit())) {
 #ifdef DEBUG_VIEW_SCALE_CHOICE
                 SVDEBUG << "... it has the wrong unit ("
                         << extents.second.getUnit() << ")" << endl;
@@ -440,7 +441,7 @@ View::getEffectiveVerticalExtentsAndLayerFromWhich(QString unit,
             continue;
         }
 
-        if (unit != "" && extents.second.getUnit() != unit) {
+        if (unit != "" && !areUnitsTheSame(unit, extents.second.getUnit())) {
 #ifdef DEBUG_VIEW_SCALE_CHOICE
             SVDEBUG << "... it has the wrong unit ("
                     << extents.second.getUnit() << ")" << endl;
@@ -466,6 +467,23 @@ View::getEffectiveVerticalExtentsAndLayerFromWhich(QString unit,
     SVDEBUG << "... returning merged result" << endl;
 #endif
     return scale;
+}
+
+bool
+View::areUnitsTheSame(QString u1, QString u2) const
+{
+    if (u1 == u2) {
+        return true;
+    }
+    QString c1 = UnitDatabase::asCommonUnit(u1);
+    if (c1 == "") {
+        return false;
+    }
+    QString c2 = UnitDatabase::asCommonUnit(u2);
+    if (c2 == "") {
+        return false;
+    }
+    return (c1 == c2);
 }
 
 int
@@ -3123,7 +3141,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 
     if ((b0 = topLayer->getXScaleValue(this, r.x(), v0, u0))) {
         axs = QString("%1 %2").arg(v0).arg(u0);
-        if (u0 == "Hz" && Pitch::isFrequencyInMidiRange(v0)) {
+        if (UnitDatabase::asCommonUnit(u0) == "Hz" &&
+            Pitch::isFrequencyInMidiRange(v0)) {
             axs = QString("%1 (%2)").arg(axs)
                 .arg(Pitch::getPitchLabelForFrequency(v0));
         }
@@ -3136,7 +3155,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     if (r.width() > 0) {
         if ((b1 = topLayer->getXScaleValue(this, r.x() + r.width(), v1, u1))) {
             bxs = QString("%1 %2").arg(v1).arg(u1);
-            if (u1 == "Hz" && Pitch::isFrequencyInMidiRange(v1)) {
+            if (UnitDatabase::asCommonUnit(u1) == "Hz" &&
+                Pitch::isFrequencyInMidiRange(v1)) {
                 bxs = QString("%1 (%2)").arg(bxs)
                     .arg(Pitch::getPitchLabelForFrequency(v1));
             }
@@ -3158,7 +3178,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
 
     if ((b0 = topLayer->getYScaleValue(this, r.y(), v0, u0))) {
         ays = QString("%1 %2").arg(v0).arg(u0);
-        if (u0 == "Hz" && Pitch::isFrequencyInMidiRange(v0)) {
+        if (UnitDatabase::asCommonUnit(u0) == "Hz" &&
+            Pitch::isFrequencyInMidiRange(v0)) {
             ays = QString("%1 (%2)").arg(ays)
                 .arg(Pitch::getPitchLabelForFrequency(v0));
         }
@@ -3171,7 +3192,8 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
     if (r.height() > 0) {
         if ((b1 = topLayer->getYScaleValue(this, r.y() + r.height(), v1, u1))) {
             bys = QString("%1 %2").arg(v1).arg(u1);
-            if (u1 == "Hz" && Pitch::isFrequencyInMidiRange(v1)) {
+            if (UnitDatabase::asCommonUnit(u1) == "Hz" &&
+                Pitch::isFrequencyInMidiRange(v1)) {
                 bys = QString("%1 (%2)").arg(bys)
                     .arg(Pitch::getPitchLabelForFrequency(v1));
             }
@@ -3189,7 +3211,7 @@ View::drawMeasurementRect(QPainter &paint, const Layer *topLayer, QRect r,
                                             dy, du)) &&
         dy != 0) {
         if (du != "") {
-            if (du == "Hz") {
+            if (UnitDatabase::asCommonUnit(du) == "Hz") {
                 int semis;
                 double cents;
                 semis = Pitch::getPitchForFrequencyDifference(v0, v1, &cents);
