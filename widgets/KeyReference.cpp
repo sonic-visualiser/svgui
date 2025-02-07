@@ -132,7 +132,11 @@ KeyReference::registerAlternativeShortcutVerbatim(QString name, QString alternat
 }
 
 void
-KeyReference::makeMacMouseReplacements(QString &mouseAction)
+KeyReference::makeMacMouseReplacements(QString &
+#ifdef Q_OS_MAC
+                                       mouseAction
+#endif
+    )
 {
 #ifdef Q_OS_MAC
     mouseAction.replace(tr("Ctrl+"), QChar(0x2318)); // Cmd

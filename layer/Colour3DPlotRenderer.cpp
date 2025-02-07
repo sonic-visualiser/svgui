@@ -165,17 +165,17 @@ Colour3DPlotRenderer::render(const LayerGeometryProvider *v,
             << endl;
 #endif
 
-    bool justCreated = m_cache.getSize().isEmpty();
-    
-    bool justInvalidated =
-        (m_cache.getSize() != v->getPaintSize() ||
-         m_cache.getZoomLevel() != v->getRawZoomLevel());
-
 #ifdef DEBUG_COLOUR_PLOT_REPAINT
-    SVDEBUG << "render " << m_sources.source
-            << ": justCreated = " << justCreated
-            << ", justInvalidated = " << justInvalidated
-            << endl;
+    {
+        bool justCreated = m_cache.getSize().isEmpty();
+        bool justInvalidated =
+            (m_cache.getSize() != v->getPaintSize() ||
+             m_cache.getZoomLevel() != v->getRawZoomLevel());
+        SVDEBUG << "render " << m_sources.source
+                << ": justCreated = " << justCreated
+                << ", justInvalidated = " << justInvalidated
+                << endl;
+    }
 #endif
     
     m_cache.resize(v->getPaintSize());
