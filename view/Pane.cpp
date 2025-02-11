@@ -1554,14 +1554,14 @@ Pane::mousePressEvent(QMouseEvent *e)
 
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
-            layer->drawStart(this, e);
+            invokeMouseFn(&Layer::drawStart, layer, e);
         }
 
     } else if (mode == ViewManager::EraseMode) {
 
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
-            layer->eraseStart(this, e);
+            invokeMouseFn(&Layer::eraseStart, layer, e);
         }
 
         // GF: handle mouse press for NoteEditMode 
@@ -1570,7 +1570,7 @@ Pane::mousePressEvent(QMouseEvent *e)
         std::cerr << "mouse pressed in note edit mode" << std::endl;
         Layer *layer = getTopFlexiNoteLayer();
         if (layer) {
-            layer->splitStart(this, e); 
+            invokeMouseFn(&Layer::splitStart, layer, e); 
         }
 
     } else if (mode == ViewManager::EditMode) {

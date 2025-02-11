@@ -22,6 +22,7 @@
 #include "base/ZoomConstraint.h"
 #include "View.h"
 #include "base/Selection.h"
+#include "layer/Layer.h"
 
 class QWidget;
 class QPaintEvent;
@@ -29,7 +30,6 @@ class QMenu;
 
 namespace sv {
 
-class Layer;
 class Thumbwheel;
 class Panner;
 class NotifyingPushButton;
@@ -240,6 +240,14 @@ protected:
     
     static QCursor *m_measureCursor1;
     static QCursor *m_measureCursor2;
+
+    // Wrapper for layer mutation functions with mutex
+    typedef void (Layer::*LayerMouseFn)(LayerGeometryProvider *, QMouseEvent *);
+    void invokeMouseFn(LayerMouseFn f, Layer *layer, QMouseEvent *e) {
+        layer->takeDiscretionaryPropertyMutex();
+        std::invoke(f, layer, this, e);
+        layer->releaseDiscretionaryPropertyMutex();
+    }
 };
 
 } // end namespace sv
