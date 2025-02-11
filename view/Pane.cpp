@@ -1581,7 +1581,7 @@ Pane::mousePressEvent(QMouseEvent *e)
     } else if (mode == ViewManager::MeasureMode) {
 
         Layer *layer = getTopLayer();
-        if (layer) layer->measureStart(this, e);
+        if (layer) invokeMouseFn(&Layer::measureStart, layer, e);
         causeUpdate();
     }
 
@@ -1681,7 +1681,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
-            layer->drawEnd(this, e);
+            invokeMouseFn(&Layer::drawEnd, layer, e);
             causeUpdate();
         }
 
@@ -1689,7 +1689,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
 
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
-            layer->eraseEnd(this, e);
+            invokeMouseFn(&Layer::eraseEnd, layer, e);
             causeUpdate();
         }
 
@@ -1699,12 +1699,12 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
         Layer *layer = getTopFlexiNoteLayer();
 
         if (layer) {
-            layer->splitEnd(this, e);
+            invokeMouseFn(&Layer::splitEnd, layer, e);
             causeUpdate();
 
             if (m_editing) {
                 if (!editSelectionEnd(e)) {
-                    layer->editEnd(this, e);
+                    invokeMouseFn(&Layer::editEnd, layer, e);
                     causeUpdate();
                 }
             }
@@ -1716,7 +1716,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
             if (!editSelectionEnd(e)) {
                 Layer *layer = getInteractionLayer();
                 if (layer && layer->isLayerEditable()) {
-                    layer->editEnd(this, e);
+                    invokeMouseFn(&Layer::editEnd, layer, e);
                     causeUpdate();
                 }
             }
@@ -1725,7 +1725,7 @@ Pane::mouseReleaseEvent(QMouseEvent *e)
     } else if (mode == ViewManager::MeasureMode) {
 
         Layer *layer = getTopLayer();
-        if (layer) layer->measureEnd(this, e);
+        if (layer) invokeMouseFn(&Layer::measureEnd, layer, e);
         if (m_measureCursor1) setCursor(*m_measureCursor1);
         causeUpdate();
     }
@@ -1846,14 +1846,14 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
-            layer->drawDrag(this, e);
+            invokeMouseFn(&Layer::drawDrag, layer, e);
         }
 
     } else if (mode == ViewManager::EraseMode) {
 
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
-            layer->eraseDrag(this, e);
+            invokeMouseFn(&Layer::eraseDrag, layer, e);
         }
 
         // GF: handling NoteEditMode dragging and boundary actions for mouseMoveEvent
@@ -1892,7 +1892,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                     Layer *layer = getTopFlexiNoteLayer();
                     if (layer) {
                         std::cerr << "calling edit start" << std::endl;
-                        layer->editStart(this, &clickEvent);
+                        invokeMouseFn(&Layer::editStart, layer, &clickEvent);
                     }
                 }
             }
@@ -1916,7 +1916,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                                           e->buttons(),
                                           e->modifiers());
                     std::cerr << "calling editDrag" << std::endl;
-                    layer->editDrag(this, &moveEvent);
+                    invokeMouseFn(&Layer::editDrag, layer, &moveEvent);
                 }
             }
         }
@@ -1958,7 +1958,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                 if (!editSelectionStart(&clickEvent)) {
                     Layer *layer = getInteractionLayer();
                     if (layer && layer->isLayerEditable()) {
-                        layer->editStart(this, &clickEvent);
+                        invokeMouseFn(&Layer::editStart, layer, &clickEvent);
                     }
                 }
             }
@@ -1982,7 +1982,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
                                           e->buttons(),
                                           e->modifiers());
                                               
-                    layer->editDrag(this, &moveEvent);
+                    invokeMouseFn(&Layer::editDrag, layer, &moveEvent);
                 }
             }
         }
@@ -1993,7 +1993,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
         Layer *layer = getTopLayer();
         if (layer) {
-            layer->measureDrag(this, e);
+            invokeMouseFn(&Layer::measureDrag, layer, e);
             if (layer->hasTimeXAxis()) edgeScrollMaybe(e->position().x());
         }
 
@@ -2389,7 +2389,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
     } else if (mode == ViewManager::MeasureMode) {
 
         Layer *layer = getTopLayer();
-        if (layer) layer->measureDoubleClick(this, e);
+        if (layer) invokeMouseFn(&Layer::measureDoubleClick, layer, e);
         causeUpdate();
     }
 
@@ -2413,7 +2413,7 @@ Pane::mouseDoubleClickEvent(QMouseEvent *e)
         std::cerr << "double click in note edit mode" << std::endl;
         Layer *layer = getInteractionLayer();
         if (layer && layer->isLayerEditable()) {
-            layer->addNote(this, e); 
+            invokeMouseFn(&Layer::addNote, layer, e); 
         }
     }
 

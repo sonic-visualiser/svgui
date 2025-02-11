@@ -58,18 +58,25 @@ Layer::connectSignals(ModelId modelId)
 {
     auto model = ModelById::get(modelId);
     if (!model) return;
+
+    // Avoid direct connections because of the possibility of mutex
+    // deadlock
     
-    connect(model.get(), SIGNAL(modelChanged(ModelId)),
-            this, SIGNAL(modelChanged(ModelId)));
+    connect(model.get(), &Model::modelChanged,
+            this, &Layer::modelChanged,
+            Qt::QueuedConnection);
 
-    connect(model.get(), SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)),
-            this, SIGNAL(modelChangedWithin(ModelId, sv_frame_t, sv_frame_t)));
+    connect(model.get(), &Model::modelChangedWithin,
+            this, &Layer::modelChangedWithin,
+            Qt::QueuedConnection);
 
-    connect(model.get(), SIGNAL(completionChanged(ModelId)),
-            this, SIGNAL(modelCompletionChanged(ModelId)));
+    connect(model.get(), &Model::completionChanged,
+            this, &Layer::modelCompletionChanged,
+            Qt::QueuedConnection);
 
-    connect(model.get(), SIGNAL(alignmentCompletionChanged(ModelId)),
-            this, SIGNAL(modelAlignmentCompletionChanged(ModelId)));
+    connect(model.get(), &Model::alignmentCompletionChanged,
+            this, &Layer::modelAlignmentCompletionChanged,
+            Qt::QueuedConnection);
 }
 
 ModelId
