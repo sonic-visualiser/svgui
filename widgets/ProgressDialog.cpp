@@ -32,7 +32,9 @@ ProgressDialog::ProgressDialog(QString message,
 {
     m_dialog = new QProgressDialog(message, cancellable ? tr("Cancel") : nullptr,
                                    0, 100, parent);
+    m_dialog->setMinimumDuration(3600000); // we want to control visibility
     m_dialog->setWindowModality(modality);
+    m_dialog->reset();
 
     if (timeBeforeShow > 0) {
         m_dialog->hide();
