@@ -91,6 +91,10 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
     m_exiting(false),
     m_peakCacheDivisor(8)
 {
+#ifdef DEBUG_SPECTROGRAM
+    SVDEBUG << "SpectrogramLayer[" << this << "]::SpectrogramLayer()" << endl;
+#endif
+    
     QString colourConfigName = "spectrogram-colour";
     int colourConfigDefault = int(ColourMapper::Green);
     
@@ -139,6 +143,9 @@ SpectrogramLayer::SpectrogramLayer(Configuration config) :
 
 SpectrogramLayer::~SpectrogramLayer()
 {
+#ifdef DEBUG_SPECTROGRAM
+    SVDEBUG << "SpectrogramLayer[" << this << "]::~SpectrogramLayer()" << endl;
+#endif
     invalidateRenderers();
     deleteDerivedModels();
 }
@@ -1181,7 +1188,9 @@ SpectrogramLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 
         Layer::setLayerDormant(v, true);
 
+        takeDiscretionaryPropertyMutex();
         invalidateRenderers();
+        releaseDiscretionaryPropertyMutex();
         
     } else {
 

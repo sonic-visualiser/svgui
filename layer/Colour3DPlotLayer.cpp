@@ -696,7 +696,9 @@ Colour3DPlotLayer::setLayerDormant(const LayerGeometryProvider *v, bool dormant)
 
         Layer::setLayerDormant(v, true);
 
+        takeDiscretionaryPropertyMutex();
         invalidatePeakCache(); // for memory-saving purposes
+        releaseDiscretionaryPropertyMutex();
         
     } else {
 

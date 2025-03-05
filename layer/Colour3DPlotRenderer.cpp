@@ -66,6 +66,18 @@ Colour3DPlotRenderer::Colour3DPlotRenderer(Sources sources,
     m_secondsPerXPixel(0.0),
     m_secondsPerXPixelValid(false)
 {
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "Colour3DPlotRenderer[" << this << "]::Colour3DPlotRenderer("
+            << m_sources.source << ")" << endl;
+#endif
+}
+
+Colour3DPlotRenderer::~Colour3DPlotRenderer()
+{
+#ifdef DEBUG_COLOUR_PLOT_REPAINT
+    SVDEBUG << "Colour3DPlotRenderer[" << this << "]::~Colour3DPlotRenderer()"
+            << endl;
+#endif
 }
 
 Colour3DPlotRenderer::RenderResult

@@ -123,6 +123,7 @@ public:
     };
     
     Colour3DPlotRenderer(Sources sources, Parameters parameters);
+    ~Colour3DPlotRenderer();
 
     struct RenderResult {
         /**
