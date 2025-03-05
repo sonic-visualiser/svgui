@@ -23,6 +23,7 @@
 
 #include <QFileInfo>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QImageReader>
@@ -625,18 +626,27 @@ InteractiveFileFinder::locateInteractive(FileType type, QString thing)
 
     while (!done) {
 
-        int rv = QMessageBox::question
-            (nullptr, 
-             tr("Failed to open file"),
-             question.arg(thing),
-             tr("Locate file..."),
-             tr("Use URL..."),
-             tr("Cancel"),
-             0, 2);
-        
-        switch (rv) {
+        QMessageBox mb(QMessageBox::Question,
+                       tr("Failed to open file"),
+                       question.arg(thing),
+                       QMessageBox::NoButton,
+                       nullptr);
 
-        case 0: // Locate file
+        auto locateButton =
+            mb.addButton(tr("Locate file..."), QMessageBox::ActionRole);
+        auto urlButton =
+            mb.addButton(tr("Use URL..."), QMessageBox::ActionRole);
+        auto nopeButton =
+            mb.addButton(tr("Cancel"), QMessageBox::RejectRole);
+
+        mb.setDefaultButton(locateButton);
+        mb.setEscapeButton(nopeButton);
+
+        mb.exec();
+
+        auto clicked = mb.clickedButton();
+        
+        if (clicked == locateButton) {
 
             if (QFileInfo(thing).dir().exists()) {
                 path = QFileInfo(thing).dir().canonicalPath();
@@ -644,10 +654,9 @@ InteractiveFileFinder::locateInteractive(FileType type, QString thing)
             
             path = getOpenFileName(type, path);
             done = (path != "");
-            break;
 
-        case 1: // Use URL
-        {
+        } else if (clicked == urlButton) {
+
             bool ok = false;
             path = QInputDialog::getText
                 (nullptr, tr("Use URL"),
@@ -664,13 +673,11 @@ InteractiveFileFinder::locateInteractive(FileType type, QString thing)
                     path = "";
                 }
             }
-            break;
-        }
 
-        case 2: // Cancel
+        } else { // Cancel, either via button or clicked == nullptr meaning Esc
+
             path = "";
             done = true;
-            break;
         }
     }
 

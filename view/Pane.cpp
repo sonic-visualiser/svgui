@@ -1884,6 +1884,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
                 QMouseEvent clickEvent(QEvent::MouseButtonPress,
                                        m_clickPos,
+                                       QCursor::pos(),
                                        Qt::NoButton,
                                        e->buttons(),
                                        e->modifiers());
@@ -1912,6 +1913,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
                     QMouseEvent moveEvent(QEvent::MouseMove,
                                           QPoint(x, y),
+                                          QCursor::pos(),
                                           Qt::NoButton,
                                           e->buttons(),
                                           e->modifiers());
@@ -1951,6 +1953,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
                 QMouseEvent clickEvent(QEvent::MouseButtonPress,
                                        m_clickPos,
+                                       QCursor::pos(),
                                        Qt::NoButton,
                                        e->buttons(),
                                        e->modifiers());
@@ -1978,6 +1981,7 @@ Pane::mouseMoveEvent(QMouseEvent *e)
 
                     QMouseEvent moveEvent(QEvent::MouseMove,
                                           QPoint(x, y),
+                                          QCursor::pos(),
                                           Qt::NoButton,
                                           e->buttons(),
                                           e->modifiers());
