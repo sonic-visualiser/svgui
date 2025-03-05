@@ -528,15 +528,25 @@ LayerFactory::setLayerProperties(Layer *layer, QString newXml)
     QDomDocument docOld, docNew;
     QString oldXml = layer->toXmlString();
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 5, 0)
+    if (!docOld.setContent(oldXml, false)) {
+        SVCERR << "LayerFactory::setLayerProperties: Failed to parse XML for existing layer properties! XML string is: " << oldXml << endl;
+        return;
+    }
+    if (!docNew.setContent(newXml, false)) {
+        SVCERR << "LayerFactory::setLayerProperties: Failed to parse XML: " << newXml << endl;
+        return;
+    }
+#else    
     if (!docOld.setContent(oldXml)) {
         SVCERR << "LayerFactory::setLayerProperties: Failed to parse XML for existing layer properties! XML string is: " << oldXml << endl;
         return;
     }
-
     if (!docNew.setContent(newXml)) {
         SVCERR << "LayerFactory::setLayerProperties: Failed to parse XML: " << newXml << endl;
         return;
     }
+#endif
         
     LayerAttributes attrs;
         
