@@ -25,21 +25,21 @@ Colour3DPlotExporter::Colour3DPlotExporter(Sources sources, Parameters params) :
     m_sources(sources),
     m_params(params)
 {
-    SVCERR << "Colour3DPlotExporter::Colour3DPlotExporter: constructed at "
-           << this << endl;
+//    SVCERR << "Colour3DPlotExporter::Colour3DPlotExporter: constructed at "
+//           << this << endl;
 }
 
 Colour3DPlotExporter::~Colour3DPlotExporter()
 {
-    SVCERR << "Colour3DPlotExporter[" << this << "]::~Colour3DPlotExporter"
-           << endl;
+//    SVCERR << "Colour3DPlotExporter[" << this << "]::~Colour3DPlotExporter"
+//           << endl;
 }
 
 void
 Colour3DPlotExporter::discardSources()
 {
-    SVCERR << "Colour3DPlotExporter[" << this << "]::discardSources"
-           << endl;
+//    SVCERR << "Colour3DPlotExporter[" << this << "]::discardSources"
+//           << endl;
     QMutexLocker locker(&m_mutex);
     m_sources.verticalBinLayer = nullptr;
     m_sources.source = {};
