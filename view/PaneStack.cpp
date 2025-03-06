@@ -818,7 +818,7 @@ PaneStack::sizePanesEqually()
 
     int count = sizes.size();
 
-    int fixed = 0, variable = 0, total = 0;
+    int variable = 0, total = 0;
     int varicount = 0;
 
     for (int i = 0; i < count; ++i) {
@@ -833,7 +833,6 @@ PaneStack::sizePanesEqually()
         if (m_splitter->widget(i)->isVisible()) {
             int minh = m_panes[j].pane->minimumSize().height();
             if (minh == m_panes[j].pane->maximumSize().height()) {
-                fixed += minh;
                 variable -= minh;
             } else {
                 varicount++;

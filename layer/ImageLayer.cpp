@@ -394,8 +394,6 @@ ImageLayer::drawImage(LayerGeometryProvider *v, QPainter &paint, const Event &p,
         boxHeight += labelRect.height() + spacing;
     }
 
-    int division = image.height();
-
     if (additionalText != "") {
 
         paint.save();
@@ -412,7 +410,6 @@ ImageLayer::drawImage(LayerGeometryProvider *v, QPainter &paint, const Event &p,
             boxWidth = tw;
         }
         boxHeight += paint.fontMetrics().height();
-        division += paint.fontMetrics().height();
     }                
 
     bottomMargin = v->getPaintHeight() - topMargin - boxHeight;
