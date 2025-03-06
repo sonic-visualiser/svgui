@@ -51,6 +51,7 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
+#include <mutex>
 
 //#define DEBUG_VIEW 1
 //#define DEBUG_VIEW_WIDGET_PAINT 1
@@ -58,6 +59,35 @@
 //#define DEBUG_VIEW_SCALE_CHOICE 1
 
 namespace sv {
+
+static bool
+shouldUseThreadedRepaint()
+{
+    static bool should = false;
+    static std::once_flag f;
+    std::call_once(f, [&]() {
+#ifdef Q_OS_MAC
+        SVDEBUG << "View::View: shouldUseThreadedRepaint: On this platform threaded paint is used by default, set SV_NO_THREADED_PAINT to suppress it" << endl;
+        if (qgetenv("SV_NO_THREADED_PAINT") == QByteArray()) {
+            SVDEBUG << "View::View: shouldUseThreadedRepaint: SV_NO_THREADED_PAINT is not set, using default behaviour" << endl;
+            should = true;
+        } else {
+            SVDEBUG << "View::View: shouldUseThreadedRepaint: SV_NO_THREADED_PAINT is set, suppressing threaded paint per user request" << endl;
+            should = false;
+        }
+#else
+        SVDEBUG << "View::View: shouldUseThreadedRepaint: On this platform threaded paint is not used by default, set SV_USE_THREADED_PAINT to request it" << endl;
+        if (qgetenv("SV_USE_THREADED_PAINT") == QByteArray()) {
+            SVDEBUG << "View::View: shouldUseThreadedRepaint: SV_USE_THREADED_PAINT is not set, using default behaviour" << endl;
+            should = false;
+        } else {
+            SVDEBUG << "View::View: shouldUseThreadedRepaint: SV_USE_THREADED_PAINT is set, enabling threaded paint per user request" << endl;
+            should = true;
+        }
+#endif
+    });
+    return should;
+}
 
 View::View(QWidget *w, bool showProgress) :
     QFrame(w),
@@ -90,19 +120,7 @@ View::View(QWidget *w, bool showProgress) :
     m_manager(nullptr),
     m_propertyContainer(new ViewPropertyContainer(this))
 {
-    m_useThreadedRepaint = true;
-
-    if (qgetenv("SV_NO_THREADED_PAINT") != QByteArray()) {
-        SVDEBUG << "View::View: Suppressing threaded paint per user request"
-                << endl;
-        m_useThreadedRepaint = false;
-    } else {
-        int ideal = QThread::idealThreadCount();
-        if (ideal < 4) {
-            SVDEBUG << "View::View: Suppressing threaded paint because ideal thread count is too low (ideal = " << ideal << ")" << endl;
-            m_useThreadedRepaint = false;
-        }
-    }
+    m_useThreadedRepaint = shouldUseThreadedRepaint();
     
     m_repaintRequired = false;
     m_repaintThread = nullptr;
