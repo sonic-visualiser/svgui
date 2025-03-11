@@ -130,6 +130,11 @@ View::View(QWidget *w, bool showProgress) :
         m_repaintThread->start();
     }
 
+    QSettings settings;
+    settings.beginGroup("View");
+    m_showCancelButtons = settings.value("showcancelbuttons", true).toBool();
+    settings.endGroup();
+
     m_constructedInThread = QThread::currentThreadId();
     SVDEBUG << "View constructed in thread " << m_constructedInThread << endl;
 }
@@ -2200,11 +2205,6 @@ View::checkProgress(ModelId modelId)
 #ifdef DEBUG_PROGRESS_STUFF
     SVCERR << "View[" << getId() << "]::checkProgress(" << modelId << ")" << endl;
 #endif
-
-    QSettings settings;
-    settings.beginGroup("View");
-    bool showCancelButton = settings.value("showcancelbuttons", true).toBool();
-    settings.endGroup();
     
     int ph = height();
     bool found = false;
@@ -2279,7 +2279,7 @@ View::checkProgress(ModelId modelId)
                     timer->start();
                 }
 
-                if (showCancelButton) {
+                if (m_showCancelButtons) {
                 
                     int scaled20 = scalePixelSize(20);
 
