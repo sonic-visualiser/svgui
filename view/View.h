@@ -637,6 +637,7 @@ protected:
     };
     typedef std::map<Layer *, ProgressBarRec> ProgressMap;
     ProgressMap m_progressBars; // I own the ProgressBarRecs and their contents
+    bool m_showCancelButtons;
 
     struct AlignmentProgressBarRec {
         ModelId alignedModel;
