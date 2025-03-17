@@ -95,7 +95,7 @@ public:
         return alignToReference(m_centreFrame);
     }
     sv_frame_t getEndFrame() const override {
-        return getFrameForX(m_view->width()) - 1;
+        return getFrameForX(getPaintWidth()) - 1;
     }
     int getXForFrame(sv_frame_t frame) const override {
         //!!! not actually correct, if frame lies between view's pixels
