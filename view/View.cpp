@@ -3410,11 +3410,13 @@ View::waitForLayersToBeReady()
 bool
 View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 {
-    QMutexLocker plocker(&m_positionMutex);
-    QMutexLocker clocker(&m_repaintConditionMutex);
-    
+    m_positionMutex.lock();
+
     int x0 = int(round(m_zoomLevel.framesToPixels(double(f0))));
     int x1 = int(round(m_zoomLevel.framesToPixels(double(f1))));
+    sv_frame_t origCentreFrame = m_centreFrame;
+
+    m_positionMutex.unlock();
 
     int w = x1 - x0;
 
@@ -3428,8 +3430,6 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
         return false;
     }
 
-    sv_frame_t origCentreFrame = m_centreFrame;
-    
     QProgressDialog progress(tr("Rendering image..."),
                              tr("Cancel"), 0, w / width(), this);
 
@@ -3437,12 +3437,17 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
 
         progress.setValue(x / width());
         qApp->processEvents();
+        
         if (progress.wasCanceled()) {
+            m_positionMutex.lock();
             m_centreFrame = origCentreFrame;
+            m_positionMutex.unlock();
             causeUpdate();
             return false;
         }
 
+        m_positionMutex.lock();
+        
         m_centreFrame = f0 + sv_frame_t(round(m_zoomLevel.pixelsToFrames
                                               (x + width()/2)));
         
@@ -3468,7 +3473,7 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
                 paint.save();
                 paint.translate(xorigin + x, 0);
 
-                SVCERR << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
+//                SVCERR << "Centre frame now: " << m_centreFrame << " drawing to " << chunk.x() + x + xorigin << ", " << chunk.width() << endl;
 
                 if (m_useThreadedRepaint) {
                     layer->takeDiscretionaryPropertyMutex();
@@ -3487,9 +3492,14 @@ View::render(QPainter &paint, int xorigin, sv_frame_t f0, sv_frame_t f1)
                 paint.restore();
             }
         }
+
+        m_positionMutex.unlock();
     }
 
+    m_positionMutex.lock();
     m_centreFrame = origCentreFrame;
+    m_positionMutex.unlock();
+        
     causeUpdate();
     return true;
 }
