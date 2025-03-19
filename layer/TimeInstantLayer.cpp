@@ -206,8 +206,17 @@ TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
 
     sv_frame_t frame = v->getFrameForX(x);
 
+#ifdef DEBUG_TIME_INSTANT_LAYER
+    SVDEBUG << "TimeInstantLayer::getLocalPoints: view mapped pos " << x << " back to frame " << frame << endl;
+#endif
+        
     EventVector exact = model->getEventsStartingAt(frame);
-    if (!exact.empty()) return exact;
+    if (!exact.empty()) {
+#ifdef DEBUG_TIME_INSTANT_LAYER
+        SVDEBUG << "TimeInstantLayer::getLocalPoints: found " << exact.size() << " exact matches" << endl;
+#endif
+        return exact;
+    }
 
     // overspill == 1, so one event either side of the given span
     EventVector neighbouring = model->getEventsWithin
@@ -218,14 +227,27 @@ TimeInstantLayer::getLocalPoints(LayerGeometryProvider *v, int x) const
     bool have = false;
     
     for (Event e: neighbouring) {
+
         sv_frame_t f = e.getFrame();
+
+#ifdef DEBUG_TIME_INSTANT_LAYER
+        SVDEBUG << "TimeInstantLayer::getLocalPoints: checking neighbouring point at " << f << " (with view start frame = " << v->getStartFrame() << ", end frame = " << v->getEndFrame() << ")" << endl;
+#endif
+        
         if (f < v->getStartFrame() || f > v->getEndFrame()) {
             continue;
         }
+        
         int px = v->getXForFrame(f);
+
+#ifdef DEBUG_TIME_INSTANT_LAYER
+        SVDEBUG << "TimeInstantLayer::getLocalPoints: px = " << px << ", x = " << x << ", with fuzz = " << fuzz << endl;
+#endif
+        
         if ((px > x && px - x > fuzz) || (px < x && x - px > fuzz + 3)) {
             continue;
         }
+        
         if (!have) {
             suitable = f;
             have = true;
@@ -355,7 +377,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
     sv_frame_t frame1 = v->getFrameForX(x1);
 
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVCERR << "TimeInstantLayer[" << this << "]::paint: x0 = "
+    SVDEBUG << "TimeInstantLayer[" << this << "]::paint: x0 = "
            << x0 << ", x1 = " << x1 << ", frame0 = " << frame0
            << ", frame1 = " << frame1 << endl;
 #endif
@@ -371,7 +393,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
                                               overspill));
 
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    SVCERR << "TimeInstantLayer[" << this << "]::paint: have " << points.size()
+    SVDEBUG << "TimeInstantLayer[" << this << "]::paint: have " << points.size()
            << " point(s) with overspill = " << overspill << " from model "
            << getModel() << endl;
 #endif
@@ -411,16 +433,30 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
 
         illuminateFrame = m_highlightOverrideFrame;
 #ifdef DEBUG_TIME_INSTANT_LAYER
-        cerr << "TimeInstantLayer: using highlight override frame " << illuminateFrame << endl;
+        SVDEBUG << "TimeInstantLayer: using highlight override frame " << illuminateFrame << endl;
 #endif
 
     } else if (v->shouldIlluminateLocalFeatures(this, localPos)) {
+
+#ifdef DEBUG_TIME_INSTANT_LAYER
+        SVDEBUG << "TimeInstantLayer: asked to illuminate local features, checking local points at pos = " << localPos.x() << endl;
+#endif
+        
         EventVector localPoints = getLocalPoints(v, localPos.x());
+
+#ifdef DEBUG_TIME_INSTANT_LAYER
+        SVDEBUG << "TimeInstantLayer: there are " << localPoints.size() << endl;
+#endif
+        
         if (!localPoints.empty()) {
             illuminateFrame = localPoints.begin()->getFrame();
         }
     }
-        
+
+#ifdef DEBUG_TIME_INSTANT_LAYER
+    SVDEBUG << "TimeInstantLayer: illuminateFrame = " << illuminateFrame << endl;
+#endif
+    
     int prevX = -1;
     int textY = v->getTextLabelYCoord(this, paint);
 
@@ -440,13 +476,13 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         int x = v->getXForFrame(p.getFrame());
 
 #ifdef DEBUG_TIME_INSTANT_LAYER
-        SVCERR << "point frame = " << p.getFrame() << " -> x = " << x << endl;
+        SVDEBUG << "point frame = " << p.getFrame() << " -> x = " << x << endl;
 #endif
 
         if (x == prevX && m_plotStyle == PlotInstants &&
             p.getFrame() != illuminateFrame) {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-            SVCERR << "(skipping)" << endl;
+            SVDEBUG << "(skipping)" << endl;
 #endif
             continue;
         }
@@ -472,7 +508,7 @@ TimeInstantLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) c
         }
 
 #ifdef DEBUG_TIME_INSTANT_LAYER
-        SVCERR << "m_plotStyle = " << m_plotStyle << ", iw = " << iw << endl;
+        SVDEBUG << "m_plotStyle = " << m_plotStyle << ", iw = " << iw << endl;
 #endif
         
         if (m_plotStyle == PlotInstants) {
@@ -558,7 +594,7 @@ void
 TimeInstantLayer::drawStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::drawStart(" << e->position().x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::drawStart(" << e->position().x() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
@@ -581,7 +617,7 @@ void
 TimeInstantLayer::drawDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::drawDrag(" << e->position().x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::drawDrag(" << e->position().x() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
@@ -603,7 +639,7 @@ TimeInstantLayer::drawEnd(LayerGeometryProvider *, QMouseEvent *
     )
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::drawEnd(" << e->position().x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::drawEnd(" << e->position().x() << ")" << endl;
 #endif
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model || !m_editing) return;
@@ -664,7 +700,7 @@ void
 TimeInstantLayer::editStart(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::editStart(" << e->position().x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::editStart(" << e->position().x() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
@@ -687,7 +723,7 @@ void
 TimeInstantLayer::editDrag(LayerGeometryProvider *v, QMouseEvent *e)
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::editDrag(" << e->position().x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::editDrag(" << e->position().x() << ")" << endl;
 #endif
 
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
@@ -714,7 +750,7 @@ TimeInstantLayer::editEnd(LayerGeometryProvider *, QMouseEvent *
     )
 {
 #ifdef DEBUG_TIME_INSTANT_LAYER
-    cerr << "TimeInstantLayer::editEnd(" << e->position().x() << ")" << endl;
+    SVDEBUG << "TimeInstantLayer::editEnd(" << e->position().x() << ")" << endl;
 #endif
     auto model = ModelById::getAs<SparseOneDimensionalModel>(m_model);
     if (!model || !m_editing) return;
