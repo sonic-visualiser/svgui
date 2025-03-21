@@ -27,14 +27,14 @@
 namespace sv {
 
 int
-LogNumericalScale::getWidth(LayerGeometryProvider *,
+LogNumericalScale::getWidth(LayerDimensionProvider *,
                             QPainter &paint)
 {
     return paint.fontMetrics().horizontalAdvance("-000.00") + 10;
 }
 
 void
-LogNumericalScale::paintVertical(LayerGeometryProvider *v,
+LogNumericalScale::paintVertical(LayerDimensionProvider *v,
                                  const CoordinateScale &scale,
                                  QPainter &paint,
                                  int x0)

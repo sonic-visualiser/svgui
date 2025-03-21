@@ -26,7 +26,7 @@ class QPainter;
 namespace sv {
 
 class Layer;
-class LayerGeometryProvider;
+class LayerDimensionProvider;
 
 class PaintAssistant
 {
@@ -49,7 +49,7 @@ public:
         OutlinedItalicText
     };
 
-    static void drawVisibleText(const LayerGeometryProvider *,
+    static void drawVisibleText(const LayerDimensionProvider *,
                                 QPainter &p, int x, int y,
                                 QString text, TextStyle style);
 };

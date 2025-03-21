@@ -200,7 +200,7 @@ PaintAssistant::getYForValue(Scale scale, AudioLevel::Quantity sort,
 }
 
 void
-PaintAssistant::drawVisibleText(const LayerGeometryProvider *v,
+PaintAssistant::drawVisibleText(const LayerDimensionProvider *v,
                                 QPainter &paint, int x, int y,
                                 QString text, TextStyle style)
 {

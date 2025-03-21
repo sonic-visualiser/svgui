@@ -19,11 +19,11 @@
 
 namespace sv {
 
-class LayerGeometryProvider;
+class LayerDimensionProvider;
 
 /**
  * A facility to map between coordinate and value in a given axis.
- * Queries a LayerGeometryProvider to find the proper dimensions for
+ * Queries a LayerDimensionProvider to find the proper dimensions for
  * its axis direction. A CoordinateScale object is self-contained and
  * can be passed around by value.
  *
@@ -75,11 +75,11 @@ public:
     CoordinateScale(Direction direction, bool logarithmic,
                     int minBin, int maxBin);
 
-    double getCoordForValue(const LayerGeometryProvider *, double value) const;
-    int getCoordForValueRounded(const LayerGeometryProvider *, double value) const;
+    double getCoordForValue(const LayerDimensionProvider *, double value) const;
+    int getCoordForValueRounded(const LayerDimensionProvider *, double value) const;
 
-    double getValueForCoord(const LayerGeometryProvider *, double coordinate) const;
-    int getValueForCoordRounded(const LayerGeometryProvider *, double coordinate) const;
+    double getValueForCoord(const LayerDimensionProvider *, double coordinate) const;
+    int getValueForCoordRounded(const LayerDimensionProvider *, double coordinate) const;
 
     Direction getDirection() const { return m_direction; }
     
