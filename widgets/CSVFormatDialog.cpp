@@ -124,7 +124,7 @@ CSVFormatDialog::init()
         m_separatorCombo->setEditable(false);
 
         layout->addWidget(m_separatorCombo, row++, 1);
-        connect(m_separatorCombo, SIGNAL(activated(QString)),
+        connect(m_separatorCombo, SIGNAL(currentTextChanged(QString)),
                 this, SLOT(separatorChanged(QString)));
 
     } else {
@@ -169,7 +169,7 @@ CSVFormatDialog::init()
     m_sampleRateCombo->setEditable(true);
 
     layout->addWidget(m_sampleRateCombo, row++, 1);
-    connect(m_sampleRateCombo, SIGNAL(activated(QString)),
+    connect(m_sampleRateCombo, SIGNAL(currentTextChanged(QString)),
             this, SLOT(sampleRateChanged(QString)));
     connect(m_sampleRateCombo, SIGNAL(editTextChanged(QString)),
             this, SLOT(sampleRateChanged(QString)));
@@ -185,7 +185,7 @@ CSVFormatDialog::init()
     m_incrementCombo->setEditable(true);
     
     layout->addWidget(m_incrementCombo, row++, 1);
-    connect(m_incrementCombo, SIGNAL(activated(QString)),
+    connect(m_incrementCombo, SIGNAL(currentTextChanged(QString)),
             this, SLOT(incrementChanged(QString)));
     connect(m_incrementCombo, SIGNAL(editTextChanged(QString)),
             this, SLOT(incrementChanged(QString)));
@@ -252,7 +252,8 @@ CSVFormatDialog::repopulate()
         QComboBox *cpc = new QComboBox;
         m_columnPurposeCombos.push_back(cpc);
         exampleLayout->addWidget(cpc, 0, i);
-        connect(cpc, SIGNAL(activated(int)), this, SLOT(columnPurposeChanged(int)));
+        connect(cpc, SIGNAL(activated(int)),
+                this, SLOT(columnPurposeChanged(int)));
         
         if (i == m_maxDisplayCols && columns > i + 2) {
             m_fuzzyColumn = i;
