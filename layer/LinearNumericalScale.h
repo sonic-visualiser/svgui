@@ -22,16 +22,16 @@ class QPainter;
 
 namespace sv {
 
-class LayerGeometryProvider;
+class LayerDimensionProvider;
 class CoordinateScale;
 
 class LinearNumericalScale
 {
 public:
-    int getWidth(LayerGeometryProvider *v, QPainter &paint);
+    int getWidth(LayerDimensionProvider *v, QPainter &paint);
 
     void paintVertical
-    (LayerGeometryProvider *v, const CoordinateScale &verticalScale,
+    (LayerDimensionProvider *v, const CoordinateScale &verticalScale,
      QPainter &paint, int x0);
 };
 

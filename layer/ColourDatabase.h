@@ -143,6 +143,12 @@ public:
      * Generate a swatch pixmap illustrating the colour at index c.
      */
     QPixmap getExamplePixmap(int c, QSize size) const;
+
+    /**
+     * Generate a swatch pixmap illustrating given colour.
+     */
+    QPixmap getExamplePixmap(QColor colour, QSize size, bool darkBackground)
+        const;
     
 signals:
     void colourDatabaseChanged();

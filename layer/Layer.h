@@ -27,6 +27,7 @@
 #include "system/System.h"
 
 #include "CoordinateScale.h"
+#include "LayerGeometryProvider.h"
 
 #include <QObject>
 #include <QRect>

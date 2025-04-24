@@ -302,10 +302,16 @@ ColourDatabase::getColourPropertyRange(int *min, int *max) const
 QPixmap
 ColourDatabase::getExamplePixmap(int index, QSize size) const
 {
+    return getExamplePixmap(getColour(index), size,
+                            useDarkBackground(index));
+}
+
+QPixmap
+ColourDatabase::getExamplePixmap(QColor colour, QSize size, bool darkBackground) const
+{
     QPixmap pmap(size);
-    pmap.fill(useDarkBackground(index) ? Qt::black : Qt::white);
+    pmap.fill(darkBackground ? Qt::black : Qt::white);
     QPainter paint(&pmap);
-    QColor colour(getColour(index));
     paint.setPen(colour);
     paint.setBrush(colour);
     int margin = 2;

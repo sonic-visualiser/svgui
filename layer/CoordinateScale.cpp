@@ -181,7 +181,7 @@ CoordinateScale::unmap(double point) const
 }
 
 double
-CoordinateScale::getCoordForValue(const LayerGeometryProvider *v, double value) const
+CoordinateScale::getCoordForValue(const LayerDimensionProvider *v, double value) const
 {
     double minm = m_displayMin, maxm = m_displayMax;
     mapExtents(minm, maxm);
@@ -210,13 +210,13 @@ CoordinateScale::getCoordForValue(const LayerGeometryProvider *v, double value) 
 }
 
 int
-CoordinateScale::getCoordForValueRounded(const LayerGeometryProvider *v, double value) const
+CoordinateScale::getCoordForValueRounded(const LayerDimensionProvider *v, double value) const
 {
     return int(floor(getCoordForValue(v, value)));
 }
 
 double
-CoordinateScale::getValueForCoord(const LayerGeometryProvider *v, double coordinate) const
+CoordinateScale::getValueForCoord(const LayerDimensionProvider *v, double coordinate) const
 {
     double minm = m_displayMin, maxm = m_displayMax;
     mapExtents(minm, maxm);
@@ -236,7 +236,7 @@ CoordinateScale::getValueForCoord(const LayerGeometryProvider *v, double coordin
 }
 
 int
-CoordinateScale::getValueForCoordRounded(const LayerGeometryProvider *v, double coordinate) const
+CoordinateScale::getValueForCoordRounded(const LayerDimensionProvider *v, double coordinate) const
 {
     return int(floor(getValueForCoord(v, coordinate)));
 }

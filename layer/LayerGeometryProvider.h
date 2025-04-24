@@ -37,6 +37,32 @@ enum class FrequencyMapping {
 };
 
 /**
+ * Mini base class for LayerGeometryProvider - a small subset of layer
+ * geometry methods for overall dimension and colour only.
+ */
+class LayerDimensionProvider
+{
+public:
+    virtual ~LayerDimensionProvider() { }
+    
+    /**
+     * To be called from a layer, to obtain the extent of the surface
+     * that the layer is currently painting to. This may be the extent
+     * of the view (if 1x display scaling is in effect) or of a larger
+     * cached pixmap (if greater display scaling is in effect).
+     */
+    virtual QRect getPaintRect() const = 0;
+
+    virtual QSize getPaintSize() const { return getPaintRect().size(); }
+    virtual int getPaintWidth() const { return getPaintRect().width(); }
+    virtual int getPaintHeight() const { return getPaintRect().height(); }
+
+    virtual bool hasLightBackground() const = 0;
+    virtual QColor getForeground() const = 0;
+    virtual QColor getBackground() const = 0;
+};
+
+/**
  * Interface for classes that provide geometry information (such as
  * size, start frame, and a large number of other properties) about
  * the disposition of a layer. The main implementor of this interface
@@ -52,7 +78,7 @@ enum class FrequencyMapping {
  * for a LayerGeometryProvider, for example to establish whether the
  * same one is being provided in two separate calls.
  */
-class LayerGeometryProvider
+class LayerGeometryProvider : public LayerDimensionProvider
 {
 protected:
     static int getNextId() {
@@ -187,22 +213,6 @@ public:
      * regenerating - for which getRoundedZoomLevel is not adequate.
      */
     virtual ZoomLevel getRawZoomLevel() const = 0;
-    
-    /**
-     * To be called from a layer, to obtain the extent of the surface
-     * that the layer is currently painting to. This may be the extent
-     * of the view (if 1x display scaling is in effect) or of a larger
-     * cached pixmap (if greater display scaling is in effect).
-     */
-    virtual QRect getPaintRect() const = 0;
-
-    virtual QSize getPaintSize() const { return getPaintRect().size(); }
-    virtual int getPaintWidth() const { return getPaintRect().width(); }
-    virtual int getPaintHeight() const { return getPaintRect().height(); }
-
-    virtual bool hasLightBackground() const = 0;
-    virtual QColor getForeground() const = 0;
-    virtual QColor getBackground() const = 0;
 
     virtual ViewManager *getViewManager() const = 0;
 
