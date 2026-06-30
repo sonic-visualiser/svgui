@@ -49,6 +49,9 @@
 
 #include <iostream>
 #include <cmath>
+#include <vector>
+#include <utility>
+#include <algorithm>
 
 //#define DEBUG_TIME_VALUE_LAYER 1
 
@@ -215,9 +218,9 @@ TimeValueLayer::getPropertyRangeAndValue(const PropertyName &name,
         val = m_colourMap;
 
     } else if (name == "Plot Type") {
-        
+
         if (min) *min = 0;
-        if (max) *max = 6;
+        if (max) *max = 7;
         if (deflt) *deflt = int(PlotConnectedPoints);
         
         val = int(m_plotStyle);
@@ -284,6 +287,7 @@ TimeValueLayer::getPropertyValueLabel(const PropertyName &name,
         case 4: return tr("Curve");
         case 5: return tr("Segmentation");
         case 6: return tr("Discrete Curves");
+        case 7: return tr("Cubic Hermite");
         }
     } else if (name == "Vertical Scale") {
         switch (value) {
@@ -393,7 +397,8 @@ TimeValueLayer::isLayerScrollable(const LayerGeometryProvider *v) const
 
     if (m_plotStyle == PlotLines ||
         m_plotStyle == PlotCurve ||
-        m_plotStyle == PlotDiscreteCurves) return true;
+        m_plotStyle == PlotDiscreteCurves ||
+        m_plotStyle == PlotCubicHermite) return true;
 
     QPoint discard;
     return !v->shouldIlluminateLocalFeatures(this, discard);
@@ -877,6 +882,54 @@ TimeValueLayer::getDefaultColourHint(bool darkbg, bool &impose)
         (QString(darkbg ? "Bright Green" : "Green"));
 }
 
+namespace {
+
+// Monotone cubic tangents after Fritsch & Carlson, "Monotone Piecewise Cubic
+// Interpolation" (SIAM J. Numer. Anal. 17(2), 1980). Driving the tangent to
+// zero at local extrema prevents overshoot and preserves monotonicity. The
+// n == 2 case returns zero tangents on purpose, so the Hermite degenerates to
+// a symmetric smoothstep (ease-in-out) rather than a straight line.
+std::vector<double>
+computeFritschCarlsonTangents(const std::vector<std::pair<double, double>> &points)
+{
+    size_t n = points.size();
+    if (n < 2) return std::vector<double>(n, 0.0);
+    if (n == 2) return { 0.0, 0.0 };          // smoothstep
+
+    std::vector<double> deltas(n - 1, 0.0);
+    for (size_t i = 0; i + 1 < n; ++i) {
+        double t0 = points[i].first,   v0 = points[i].second;
+        double t1 = points[i+1].first, v1 = points[i+1].second;
+        deltas[i] = (t1 > t0) ? (v1 - v0) / (t1 - t0) : 0.0;
+    }
+
+    std::vector<double> tangents(n, 0.0);
+    tangents[0] = deltas[0];
+    for (size_t i = 1; i + 1 < n; ++i) {
+        double dL = deltas[i-1], dR = deltas[i];
+        tangents[i] = (dL * dR <= 0.0) ? 0.0 : 2.0 / (1.0/dL + 1.0/dR);
+    }
+    tangents[n-1] = deltas[n-2];
+    return tangents;
+}
+
+// Cubic Hermite basis evaluated at t. t is expressed in frames; since s and
+// the h*m products are invariant under a linear rescaling of the time axis,
+// using frames instead of seconds yields the identical curve shape. The
+// h == 0 guard handles coincident frames.
+double cubicHermite(double t,
+                    double t0, double v0, double m0,
+                    double t1, double v1, double m1)
+{
+    double h = t1 - t0;
+    if (h == 0.0) return v0;
+    double s = (t - t0) / h, s2 = s*s, s3 = s2*s;
+    return (2*s3 - 3*s2 + 1)*v0 + (s3 - 2*s2 + s)*h*m0
+         + (-2*s3 + 3*s2)*v1   + (s3 - s2)*h*m1;
+}
+
+} // namespace
+
 void
 TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) const
 {
@@ -916,6 +969,93 @@ TimeValueLayer::paint(LayerGeometryProvider *v, QPainter &paint, QRect rect) con
            << model->getEndFrame() << ")" << endl;
 #endif
     
+    // PlotCubicHermite is rendered in a dedicated branch that bypasses the
+    // per-point loop. It draws a monotone cubic Hermite curve through the
+    // breakpoints using Fritsch-Carlson tangents, so the interpolation never
+    // overshoots the data. Tangents are computed over *all* model events, not
+    // just the visible window, so the curve does not change shape while
+    // scrolling; for the same reason this branch must run before the
+    // visible-window emptiness check above, otherwise a curve passing between
+    // two off-screen breakpoints would not be drawn. Interpolation happens in
+    // value space and each sample is mapped through yCoordScale, so the result
+    // is correct on a logarithmic vertical scale too. The derivative display
+    // (m_derivative) is intentionally not applied to this style.
+    if (m_plotStyle == PlotCubicHermite) {
+
+        EventVector allEvents = model->getAllEvents();
+        if (allEvents.empty()) return;
+
+        std::vector<std::pair<double, double>> pts;
+        pts.reserve(allEvents.size());
+        for (const auto &e : allEvents) {
+            pts.push_back({ double(e.getFrame()), double(e.getValue()) });
+        }
+        size_t n = pts.size();
+
+        int w = v->getXForFrame(frame0 + model->getResolution()) -
+                v->getXForFrame(frame0);
+        if (w < 1) w = 1;
+
+        paint.save();
+
+        // Zero / origin reference line, as in the other non-segmentation styles
+        int originY = yCoordScale.getCoordForValueRounded(v, 0.f);
+        if (originY > 0 && originY < v->getPaintHeight()) {
+            paint.save();
+            paint.setPen(getPartialShades(v)[1]);
+            paint.drawLine(x0, originY, x1, originY);
+            paint.restore();
+        }
+
+        if (n == 1) {
+
+            // Single point: small rectangle marker, like the other styles
+            int x = v->getXForFrame(sv_frame_t(llround(pts[0].first)));
+            int y = yCoordScale.getCoordForValueRounded(v, pts[0].second);
+            QColor brushColour(getBaseQColor());
+            brushColour.setAlpha(80);
+            paint.setPen(v->scalePen(QPen(getBaseQColor())));
+            paint.setBrush(brushColour);
+            paint.drawRect(x, y - 1, w, 2);
+
+        } else {
+
+            std::vector<double> tangents = computeFritschCarlsonTangents(pts);
+
+            int gx0 = std::max
+                (x0, v->getXForFrame(sv_frame_t(llround(pts.front().first))));
+            int gx1 = std::min
+                (x1, v->getXForFrame(sv_frame_t(llround(pts.back().first))));
+
+            QPainterPath curve;
+            bool started = false;
+            size_t seg = 0;
+
+            for (int px = gx0; px <= gx1; ++px) {
+                double tf = double(v->getFrameForX(px));
+                // Advance to the segment [seg, seg+1] that contains tf
+                while (seg + 2 < n && tf > pts[seg + 1].first) ++seg;
+                double value = cubicHermite
+                    (tf,
+                     pts[seg].first,   pts[seg].second,   tangents[seg],
+                     pts[seg+1].first, pts[seg+1].second, tangents[seg+1]);
+                double y = yCoordScale.getCoordForValue(v, value);
+                if (!started) { curve.moveTo(px, y); started = true; }
+                else          { curve.lineTo(px, y); }
+            }
+
+            paint.setPen(v->scalePen(QPen(getBaseQColor())));
+            paint.setBrush(Qt::NoBrush);
+            paint.setRenderHint(QPainter::Antialiasing, true);
+            paint.drawPath(curve);
+        }
+
+        paint.restore();
+        // looks like save/restore doesn't deal with this:
+        paint.setRenderHint(QPainter::Antialiasing, false);
+        return;
+    }
+
     if (points.empty()) return;
 
     paint.setPen(getBaseQColor());
