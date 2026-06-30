@@ -99,7 +99,8 @@ public:
         PlotLines,
         PlotCurve,
         PlotSegmentation,
-        PlotDiscreteCurves
+        PlotDiscreteCurves,
+        PlotCubicHermite
     };
 
     void setPlotStyle(PlotStyle style);
