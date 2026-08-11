@@ -289,6 +289,21 @@ public:
     virtual void setPlaybackFollow(PlaybackFollowMode m);
     virtual PlaybackFollowMode getPlaybackFollow() const { return m_followPlay; }
 
+    /**
+     * Set the position at which the playback pointer is held, as a
+     * fraction of the width of the view, when the playback follow mode
+     * is PlaybackScrollContinuous. The default is 0.5, so that the
+     * pointer is centred.
+     *
+     * A larger value keeps more of the material already played within
+     * the view, which is what you want when following a recording as it
+     * is being made: the interesting material is all behind the
+     * pointer, and there is nothing ahead of it to see.
+     */
+    virtual void setPlaybackFollowAnchor(double fraction);
+    sv_frame_t getCentreFrameForAnchoredPointer() const;
+    virtual double getPlaybackFollowAnchor() const { return m_followPlayAnchor; }
+
     typedef PropertyContainer::PropertyName PropertyName;
 
     // We implement the PropertyContainer API, although we don't
@@ -536,6 +551,7 @@ protected:
     bool                m_followPan;
     bool                m_followZoom;
     PlaybackFollowMode  m_followPlay;
+    double              m_followPlayAnchor;
     bool                m_followPlayIsDetached;
     sv_frame_t          m_playPointerFrame;
     bool                m_lightBackground;
