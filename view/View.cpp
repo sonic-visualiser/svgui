@@ -97,6 +97,7 @@ View::View(QWidget *w, bool showProgress) :
     m_followPan(true),
     m_followZoom(true),
     m_followPlay(PlaybackScrollPageWithCentre),
+    m_followPlayAnchor(0.5),
     m_followPlayIsDetached(false),
     m_playPointerFrame(0),
     m_showProgress(showProgress),
@@ -1310,6 +1311,44 @@ View::setFollowGlobalZoom(bool f)
     emit propertyContainerPropertyChanged(m_propertyContainer);
 }
 
+sv_frame_t
+View::getCentreFrameForAnchoredPointer() const
+{
+    // A view draws its centre frame at its middle pixel, so to hold the
+    // play pointer at some other fraction across we ask for a centre
+    // that many pixels earlier.
+
+    int w = width();
+    if (w < 2) return m_playPointerFrame;
+
+    int anchor = int(round(m_followPlayAnchor * w));
+    if (anchor < 1) anchor = 1;
+    if (anchor > w - 1) anchor = w - 1;
+
+    int d = anchor - w/2;
+    if (d == 0) return m_playPointerFrame;
+
+    sv_frame_t offset =
+        sv_frame_t(llround(m_zoomLevel.pixelsToFrames(double(d))));
+
+    sv_frame_t centre = m_playPointerFrame - offset;
+
+    // Rather than scrolling to before the beginning, hold still and let
+    // the pointer travel across until it reaches the anchor
+    if (centre < 0) centre = 0;
+
+    return centre;
+}
+
+void
+View::setPlaybackFollowAnchor(double fraction)
+{
+    if (fraction < 0.0) fraction = 0.0;
+    if (fraction > 1.0) fraction = 1.0;
+
+    m_followPlayAnchor = fraction;
+}
+
 void
 View::setPlaybackFollow(PlaybackFollowMode m)
 {
@@ -1537,7 +1576,7 @@ View::movePlayPointer(sv_frame_t newFrame)
 
     case PlaybackScrollContinuous:
         if (!somethingGoingOn) {
-            setCentreFrame(m_playPointerFrame, false);
+            setCentreFrame(getCentreFrameForAnchoredPointer(), false);
         }
         break;
 
