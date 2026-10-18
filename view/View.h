@@ -524,6 +524,7 @@ protected:
     };
     
     void paintEvent(QPaintEvent *e) override;
+    void resizeEvent(QResizeEvent *) override;
     void paintBuffer(QRect requestedPaintArea);
     void paintWholeBuffer();
     void invalidateCache();

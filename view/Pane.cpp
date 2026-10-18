@@ -2445,8 +2445,9 @@ Pane::leaveEvent(QEvent *)
 }
 
 void
-Pane::resizeEvent(QResizeEvent *)
+Pane::resizeEvent(QResizeEvent *e)
 {
+    View::resizeEvent(e);
     updateHeadsUpDisplay();
 }
 

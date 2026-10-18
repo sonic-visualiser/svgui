@@ -2460,6 +2460,14 @@ View::setPaintFont(QPainter &paint)
 }
 
 void
+View::resizeEvent(QResizeEvent *)
+{
+    if (m_useThreadedRepaint) { // unnecessary otherwise
+        causeUpdate();
+    }
+}
+
+void
 View::paintEvent(QPaintEvent *e)
 {
     Profiler prof("View::paintEvent", false);
