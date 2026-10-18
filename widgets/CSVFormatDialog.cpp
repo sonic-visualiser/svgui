@@ -30,6 +30,7 @@
 #include <QDialogButtonBox>
 #include <QCheckBox>
 #include <QSettings>
+#include <QFileInfo>
 
 #include <iostream>
 #include <cmath>
@@ -94,8 +95,13 @@ CSVFormatDialog::init()
 
     int row = 0;
 
+    QString fileTitle(tr("this file"));
+    if (m_csvFilePath != "") {
+        fileTitle = QString("\"%1\"").arg(QFileInfo(m_csvFilePath).fileName());
+    }
+
     layout->addWidget
-        (new QLabel(tr("Please select the correct data format for this file.")),
+        (new QLabel(tr("Please select the correct data format for %1.").arg(fileTitle)),
          row++, 0, 1, 4);
 
     m_exampleFrame = nullptr;
